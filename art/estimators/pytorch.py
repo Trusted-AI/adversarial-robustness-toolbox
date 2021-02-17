@@ -264,7 +264,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
 
         elif len(self.preprocessing_operations) == 1 or (
             len(self.preprocessing_operations) == 2
-            and isinstance(self.preprocessing[-1], (StandardisationMeanStd, StandardisationMeanStdPyTorch))
+            and isinstance(self.preprocessing_operations[-1], (StandardisationMeanStd, StandardisationMeanStdPyTorch))
         ):
             # Compatible with non-PyTorch defences if no chaining.
             for preprocess in self.preprocessing_operations[::-1]:
