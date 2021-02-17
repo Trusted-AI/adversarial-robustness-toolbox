@@ -62,7 +62,7 @@ class EOTShotNoiseTensorFlow(EOTNaturalCorruptionsTensorFlowV2):
         )
 
         self.lam = lam
-        self.lam_range = (0.0, lam) if isinstance(lam, float) else lam
+        self.lam_range = (0.0, lam) if isinstance(lam, (int, float)) else lam
         self._check_params()
 
     def _corrupt(self, x: "tf.Tensor", **kwargs) -> "tf.Tensor":

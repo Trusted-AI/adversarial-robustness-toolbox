@@ -62,7 +62,7 @@ class EOTBrightnessTensorFlowV2(EOTNaturalCorruptionsTensorFlowV2):
         )
 
         self.delta = delta
-        self.delta_range = (-delta, delta) if isinstance(delta, float) else delta
+        self.delta_range = (-delta, delta) if isinstance(delta, (int, float)) else delta
         self._check_params()
 
     def _corrupt(self, x: "tf.Tensor", **kwargs) -> "tf.Tensor":

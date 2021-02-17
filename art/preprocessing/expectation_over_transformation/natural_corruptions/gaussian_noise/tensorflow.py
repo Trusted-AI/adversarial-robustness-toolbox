@@ -61,7 +61,7 @@ class EOTGaussianNoiseTensorFlow(EOTNaturalCorruptionsTensorFlowV2):
         )
 
         self.std = std
-        self.std_range = (0.0, std)
+        self.std_range = (0.0, std) if isinstance(std, (int, float)) else std
         self._check_params()
 
     def _corrupt(self, x: "tf.Tensor", **kwargs) -> "tf.Tensor":
