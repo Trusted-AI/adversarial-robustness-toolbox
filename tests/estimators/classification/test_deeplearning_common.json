@@ -424,7 +424,7 @@
         "channels_first=False",
         "clip_values=array([0., 1.], dtype=float32)",
         "preprocessing_defences=None",
-        "preprocessing=[(mean=0, std=1, apply_fit=True, apply_predict=True)",
+        "preprocessing=StandardisationMeanStd(mean=0, std=1, apply_fit=True, apply_predict=True)",
         "input_layer=0, output_layer=0"
     ],
     "test_repr_kerastf": [
