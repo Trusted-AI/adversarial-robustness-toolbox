@@ -106,7 +106,7 @@ class BaseEstimator(ABC):
         from art.defences.preprocessor.preprocessor import Preprocessor
 
         if preprocessing_defences is None:
-            pass
+            self.preprocessing = [self._preprocessing_argument]
         elif isinstance(preprocessing_defences, Preprocessor):
             self.preprocessing = [preprocessing_defences] + [self._preprocessing_argument]
         else:
