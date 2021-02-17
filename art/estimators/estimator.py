@@ -47,7 +47,7 @@ class BaseEstimator(ABC):
         "clip_values",
         "preprocessing_defences",
         "postprocessing_defences",
-        # "preprocessing", # preprocessing cannot be set with set_params
+        "preprocessing",
     ]
 
     def __init__(
@@ -56,7 +56,7 @@ class BaseEstimator(ABC):
         clip_values: Optional["CLIP_VALUES_TYPE"],
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        preprocessing: Union["PREPROCESSING_TYPE", "Preprocessor"] = (0, 1),
     ):
         """
         Initialize a `BaseEstimator` object.
@@ -77,7 +77,7 @@ class BaseEstimator(ABC):
         self._model = model
         self._clip_values = clip_values
 
-        self.preprocessing = preprocessing
+        self.preprocessing = self._set_preprocessing(preprocessing)
         self.preprocessing_defences = self._set_preprocessing_defences(preprocessing_defences)
         self.postprocessing_defences = self._set_postprocessing_defences(postprocessing_defences)
         self.preprocessing_operations: List["Preprocessor"] = []
@@ -106,6 +106,23 @@ class BaseEstimator(ABC):
             )
         elif isinstance(self.preprocessing, Preprocessor):
             self.preprocessing_operations.append(self.preprocessing)
+        else:
+            raise ValueError("Preprocessing argument not recognised.")
+
+    @staticmethod
+    def _set_preprocessing(preprocessing: Union["PREPROCESSING_TYPE", "Preprocessor"]) -> "Preprocessor":
+        from art.defences.preprocessor.preprocessor import Preprocessor
+
+        if preprocessing is None:
+            from art.preprocessing.standardisation_mean_std.standardisation_mean_std import StandardisationMeanStd
+
+            return StandardisationMeanStd(mean=0.0, std=1.0)
+        elif isinstance(preprocessing, tuple):
+            from art.preprocessing.standardisation_mean_std.standardisation_mean_std import StandardisationMeanStd
+
+            return StandardisationMeanStd(mean=preprocessing[0], std=preprocessing[1])
+        elif isinstance(preprocessing, Preprocessor):
+            return preprocessing
         else:
             raise ValueError("Preprocessing argument not recognised.")
 
@@ -142,10 +159,12 @@ class BaseEstimator(ABC):
                 if hasattr(BaseEstimator, key) and isinstance(getattr(BaseEstimator, key), property):
                     setattr(self, "_" + key, value)
                 else:
-                    if key == "preprocessing_defences":
-                        self._set_preprocessing_defences(value)
+                    if key == "preprocessing":
+                        setattr(self, key, self._set_preprocessing(value))
+                    elif key == "preprocessing_defences":
+                        setattr(self, key, self._set_preprocessing_defences(value))
                     elif key == "postprocessing_defences":
-                        self._set_postprocessing_defences(value)
+                        setattr(self, key, self._set_postprocessing_defences(value))
                     else:
                         setattr(self, key, value)
             else:
