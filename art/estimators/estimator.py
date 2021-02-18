@@ -293,7 +293,7 @@ class BaseEstimator(ABC):
         :return: Tuple of `x` and `y` after applying the defences and standardisation.
         :rtype: Format as expected by the `model`
         """
-        if self.preprocessing:
+        if self.preprocessing_operations:
             for preprocess in self.preprocessing_operations:
                 if fit:
                     if preprocess.apply_fit:
