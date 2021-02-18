@@ -168,7 +168,7 @@ class TestDetectorClassifier(TestBase):
         repr_ = repr(self.detector_classifier)
         self.assertIn("art.estimators.classification.detector_classifier.DetectorClassifier", repr_)
         self.assertIn(
-            "preprocessing=[StandardisationMeanStd(mean=0, std=1, apply_fit=True, apply_predict=True)]", repr_
+            "preprocessing=StandardisationMeanStd(mean=0, std=1, apply_fit=True, apply_predict=True)", repr_
         )
 
 
