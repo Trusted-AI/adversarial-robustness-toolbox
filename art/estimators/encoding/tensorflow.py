@@ -29,7 +29,7 @@ from art.estimators.tensorflow import TensorFlowEstimator
 if TYPE_CHECKING:
     # pylint: disable=C0412
     import numpy as np
-    import tensorflow as tf
+    import tensorflow.compat.v1 as tf
 
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor import Preprocessor
@@ -42,6 +42,13 @@ class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):  # lgtm [py/missing-
     """
     This class implements an encoder model using the TensorFlow framework.
     """
+    estimator_params = TensorFlowEstimator.estimator_params + [
+        "input_ph",
+        "loss",
+        "sess",
+        "feed_dict",
+        "channels_first"
+    ]
 
     def __init__(
         self,
@@ -77,7 +84,7 @@ class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):  # lgtm [py/missing-
         :param feed_dict: A feed dictionary for the session run evaluating the classifier. This dictionary includes all
                           additionally required placeholders except the placeholders defined in this class.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow.compat.v1 as tf  # lgtm [py/repeated-import]
 
         super().__init__(
             model=model,
@@ -115,6 +122,33 @@ class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):  # lgtm [py/missing-
         :return: Shape of one input sample.
         """
         return self._input_shape  # type: ignore
+
+    @property
+    def input_ph(self) -> "tf.Placeholder":
+        """
+        Return the input placeholder.
+
+        :return: The input placeholder.
+        """
+        return self._input_ph  # type: ignore
+
+    @property
+    def loss(self) -> "tf.Tensor":
+        """
+        Return the loss function.
+
+        :return: The loss function.
+        """
+        return self._loss  # type: ignore
+
+    @property
+    def feed_dict(self) -> Dict[Any, Any]:
+        """
+        Return the feed dictionary for the session run evaluating the classifier.
+
+        :return: The feed dictionary for the session run evaluating the classifier.
+        """
+        return self._feed_dict  # type: ignore
 
     def predict(self, x: "np.ndarray", batch_size: int = 128, **kwargs):
         """
@@ -157,7 +191,7 @@ class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):  # lgtm [py/missing-
         """
         raise NotImplementedError
 
-    def loss(self, x: "np.ndarray", y: "np.ndarray", **kwargs) -> "np.ndarray":
+    def compute_loss(self, x: "np.ndarray", y: "np.ndarray", **kwargs) -> "np.ndarray":
         """
         Compute the loss of the neural network for samples `x`.
 

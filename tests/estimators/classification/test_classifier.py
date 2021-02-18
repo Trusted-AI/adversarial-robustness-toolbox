@@ -30,6 +30,8 @@ logger = logging.getLogger(__name__)
 
 
 class ClassifierInstance(ClassifierMixin, BaseEstimator):
+    estimator_params = BaseEstimator.estimator_params + ClassifierMixin.estimator_params
+
     def __init__(self, clip_values=None, channels_first=True):
         super(ClassifierInstance, self).__init__(model=None, clip_values=clip_values)
 
@@ -52,6 +54,10 @@ class ClassifierInstance(ClassifierMixin, BaseEstimator):
 class ClassifierNeuralNetworkInstance(
     ClassGradientsMixin, ClassifierMixin, NeuralNetworkMixin, LossGradientsMixin, BaseEstimator
 ):
+    estimator_params = (
+        BaseEstimator.estimator_params + NeuralNetworkMixin.estimator_params + ClassifierMixin.estimator_params
+    )
+
     def __init__(self, clip_values, channels_first=True):
         super(ClassifierNeuralNetworkInstance, self).__init__(
             model=None, clip_values=clip_values, channels_first=channels_first
@@ -66,7 +72,7 @@ class ClassifierNeuralNetworkInstance(
     def get_activations(self, x, layer, batch_size):
         pass
 
-    def loss(self, x, y, **kwargs):
+    def compute_loss(self, x, y, **kwargs):
         pass
 
     def loss_gradient(self, x, y, **kwargs):

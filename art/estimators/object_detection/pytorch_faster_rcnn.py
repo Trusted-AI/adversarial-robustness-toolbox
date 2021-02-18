@@ -42,6 +42,9 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
     """
     This class implements a model-specific object detector using Faster-RCNN and PyTorch.
     """
+    estimator_params = PyTorchEstimator.estimator_params + [
+        "attack_losses"
+    ]
 
     def __init__(
         self,
@@ -314,7 +317,7 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
     def set_learning_phase(self, train: bool) -> None:
         raise NotImplementedError
 
-    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the loss of the neural network for samples `x`.
 

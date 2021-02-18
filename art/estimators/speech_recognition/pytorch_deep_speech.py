@@ -50,6 +50,13 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
 
     | Paper link: https://arxiv.org/abs/1512.02595
     """
+    estimator_params = PyTorchEstimator.estimator_params + [
+        "optimizer",
+        "use_amp",
+        "opt_level",
+        "lm_config"
+        "verbose"
+    ]
 
     def __init__(
         self,
@@ -213,6 +220,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         # Save first version of the optimizer
         self._optimizer = optimizer
         self._use_amp = use_amp
+        self._opt_level = opt_level
 
         # Now create a decoder
         # Create the language model config first
@@ -234,6 +242,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         lm_config.cutoff_prob = cutoff_prob
         lm_config.beam_width = beam_width
         lm_config.lm_workers = lm_workers
+        self.lm_config = lm_config
 
         # Create the decoder with the lm config
         self.decoder = load_decoder(labels=self._model.labels, cfg=lm_config)
@@ -686,6 +695,34 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         :return: Current used device.
         """
         return self._device
+
+    @property
+    def use_amp(self) -> bool:
+        """
+        Return a boolean indicating whether to use the automatic mixed precision tool.
+
+        :return: Whether to use the automatic mixed precision tool.
+        """
+        return self._use_amp  # type: ignore
+
+    @property
+    def optimizer(self) -> "torch.optim.Optimizer":
+        """
+        Return the optimizer.
+
+        :return: The optimizer.
+        """
+        return self._optimizer  # type: ignore
+
+    @property
+    def opt_level(self) -> str:
+        """
+        Return a string specifying a pure or mixed precision optimization level.
+
+        :return: A string specifying a pure or mixed precision optimization level. Possible
+                 values are `O0`, `O1`, `O2`, and `O3`.
+        """
+        return self._opt_level  # type: ignore
 
     def get_activations(
         self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False

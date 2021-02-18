@@ -338,6 +338,7 @@ class NeuralNetworkMixin(ABC):
     Mixin abstract base class defining additional functionality required for neural network estimators. This base class
     has to be mixed in with class `BaseEstimator`.
     """
+    estimator_params = ["channels_first"]
 
     def __init__(self, channels_first: Optional[bool], **kwargs) -> None:
         """
@@ -429,7 +430,7 @@ class NeuralNetworkMixin(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the loss of the neural network for samples `x`.
 

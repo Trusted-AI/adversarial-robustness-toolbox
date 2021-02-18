@@ -48,6 +48,14 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
     """
     Wrapper class for importing MXNet Gluon models.
     """
+    estimator_params = MXEstimator.estimator_params + ClassifierMixin.estimator_params + [
+        "loss",
+        "input_shape",
+        "nb_classes",
+        "optimizer",
+        "ctx",
+        "channels_first",
+    ]
 
     def __init__(
         self,
@@ -118,6 +126,33 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
         :return: Shape of one input sample.
         """
         return self._input_shape  # type: ignore
+
+    @property
+    def loss(self) -> Union["mx.nd.loss", "mx.gluon.loss"]:
+        """
+        Return the loss function.
+
+        :return: The loss function.
+        """
+        return self._loss  # type: ignore
+
+    @property
+    def optimizer(self) -> "mx.gluon.Trainer":
+        """
+        Return the optimizer used to train the classifier.
+
+        :return: The optimizer used to train the classifier.
+        """
+        return self._optimizer  # type: ignore
+
+    @property
+    def ctx(self) -> "mx.context.Context":
+        """
+        Return the device on which the model runs.
+
+        :return: The device on which the model runs (CPU or GPU).
+        """
+        return self._ctx  # type: ignore
 
     def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
         """
@@ -361,7 +396,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
 
         return grads
 
-    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the loss of the neural network for samples `x`.
 
