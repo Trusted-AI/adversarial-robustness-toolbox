@@ -33,7 +33,7 @@ from tqdm.auto import trange
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
-from art.utils import check_and_transform_label_format
+from art.utils import check_and_transform_label_format, is_probability
 
 if TYPE_CHECKING:
     import tensorflow as tf
@@ -111,6 +111,8 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         if self.estimator.channels_first:
             raise ValueError("Color channel needs to be in last dimension.")
 
+        self.use_logits = None
+
         self.i_h_patch = 0
         self.i_w_patch = 1
 
@@ -142,8 +144,8 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             constraint=lambda x: tf.clip_by_value(x, self.estimator.clip_values[0], self.estimator.clip_values[1]),
         )
 
-        self._train_op = tf.keras.optimizers.SGD(
-            learning_rate=self.learning_rate, momentum=0.0, nesterov=False, name="SGD"
+        self._train_op = tf.keras.optimizers.Adam(
+            learning_rate=self.learning_rate, beta_1=0.9, beta_2=0.999, epsilon=1e-07, amsgrad=False, name="Adam"
         )
 
     def _train_step(
@@ -170,7 +172,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         return loss
 
-    def _probabilities(self, images: "tf.Tensor", mask: Optional["tf.Tensor"]) -> "tf.Tensor":
+    def _predictions(self, images: "tf.Tensor", mask: Optional["tf.Tensor"]) -> "tf.Tensor":
         import tensorflow as tf  # lgtm [py/repeated-import]
 
         patched_input = self._random_overlay(images, self._patch, mask=mask)
@@ -179,17 +181,17 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             patched_input, clip_value_min=self.estimator.clip_values[0], clip_value_max=self.estimator.clip_values[1],
         )
 
-        probabilities = self.estimator._predict_framework(patched_input)
+        predictions = self.estimator._predict_framework(patched_input)
 
-        return probabilities
+        return predictions
 
     def _loss(self, images: "tf.Tensor", target: "tf.Tensor", mask: Optional["tf.Tensor"]) -> "tf.Tensor":
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        probabilities = self._probabilities(images, mask)
+        predictions = self._predictions(images, mask)
 
         self._loss_per_example = tf.keras.losses.categorical_crossentropy(
-            y_true=target, y_pred=probabilities, from_logits=False, label_smoothing=0
+            y_true=target, y_pred=predictions, from_logits=self.use_logits, label_smoothing=0
         )
 
         loss = tf.reduce_mean(self._loss_per_example)
@@ -381,26 +383,20 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         mask = kwargs.get("mask")
         if mask is not None:
             mask = mask.copy()
-        if mask is not None and (
-            (mask.dtype != np.bool)
-            or not (mask.shape[0] == 1 or mask.shape[0] == x.shape[0])
-            or not (
-                (mask.shape[1] == x.shape[1] and mask.shape[2] == x.shape[2])
-                or (mask.shape[1] == x.shape[2] and mask.shape[2] == x.shape[3])
-            )
-        ):
-            raise ValueError(
-                "The shape of `mask` has to be equal to the shape of a single samples (1, H, W) or the"
-                "shape of `x` (N, H, W) without their channel dimensions."
-            )
-
-        if mask is not None and mask.shape[0] == 1:
-            mask = np.repeat(mask, repeats=x.shape[0], axis=0)
+        mask = self._check_mask(mask=mask, x=x)
 
         if kwargs.get("reset_patch"):
             self.reset_patch(initial_patch_value=self._initial_value)
 
         y = check_and_transform_label_format(labels=y, nb_classes=self.estimator.nb_classes)
+
+        # check if logits or probabilities
+        y_pred = self.estimator.predict(x=x[[0]])
+
+        if is_probability(y_pred):
+            self.use_logits = False
+        else:
+            self.use_logits = True
 
         if mask is None:
             if shuffle:
@@ -444,6 +440,22 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             self._get_circular_patch_mask(nb_samples=1).numpy()[0],
         )
 
+    def _check_mask(self, mask: np.ndarray, x: np.ndarray) -> np.ndarray:
+        if mask is not None and (
+            (mask.dtype != np.bool)
+            or not (mask.shape[0] == 1 or mask.shape[0] == x.shape[0])
+            or not (mask.shape[1] == x.shape[self.i_h + 1] and mask.shape[2] == x.shape[self.i_w + 1])
+        ):
+            raise ValueError(
+                "The shape of `mask` has to be equal to the shape of a single samples (1, H, W) or the"
+                "shape of `x` (N, H, W) without their channel dimensions."
+            )
+
+        if mask is not None and mask.shape[0] == 1:
+            mask = np.repeat(mask, repeats=x.shape[0], axis=0)
+
+        return mask
+
     def apply_patch(
         self,
         x: np.ndarray,
@@ -464,6 +476,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         """
         if mask is not None:
             mask = mask.copy()
+        mask = self._check_mask(mask=mask, x=x)
         patch = patch_external if patch_external is not None else self._patch
         return self._random_overlay(images=x, patch=patch, scale=scale, mask=mask).numpy()
 

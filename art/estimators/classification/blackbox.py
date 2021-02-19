@@ -39,10 +39,15 @@ class BlackBoxClassifier(Classifier):
     """
     Wrapper class for black-box classifiers.
     """
+    estimator_params = Classifier.estimator_params + [
+        "nb_classes",
+        "input_shape",
+        "predict"
+    ]
 
     def __init__(
         self,
-        predict: Callable,
+        predict_fn: Callable,
         input_shape: Tuple[int, ...],
         nb_classes: int,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
@@ -53,7 +58,7 @@ class BlackBoxClassifier(Classifier):
         """
         Create a `Classifier` instance for a black-box model.
 
-        :param predict: Function that takes in one input of the data and returns the one-hot encoded predicted class.
+        :param predict_fn: Function that takes in one input of the data and returns the one-hot encoded predicted class.
         :param input_shape: Size of input.
         :param nb_classes: Number of prediction classes.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
@@ -74,7 +79,7 @@ class BlackBoxClassifier(Classifier):
             preprocessing=preprocessing,
         )
 
-        self._predictions = predict
+        self._predict_fn = predict_fn
         self._input_shape = input_shape
         self._nb_classes = nb_classes
 
@@ -86,6 +91,15 @@ class BlackBoxClassifier(Classifier):
         :return: Shape of one input sample.
         """
         return self._input_shape  # type: ignore
+
+    @property
+    def predict_fn(self) -> Callable:
+        """
+        Return the prediction function.
+
+        :return: The prediction function.
+        """
+        return self._predict_fn  # type: ignore
 
     # pylint: disable=W0221
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
@@ -108,7 +122,7 @@ class BlackBoxClassifier(Classifier):
                 batch_index * batch_size,
                 min((batch_index + 1) * batch_size, x_preprocessed.shape[0]),
             )
-            predictions[begin:end] = self._predictions(x_preprocessed[begin:end])
+            predictions[begin:end] = self._predict_fn(x_preprocessed[begin:end])
 
         # Apply postprocessing
         predictions = self._apply_postprocessing(preds=predictions, fit=False)

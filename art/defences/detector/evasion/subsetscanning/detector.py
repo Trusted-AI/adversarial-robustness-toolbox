@@ -31,7 +31,6 @@ from tqdm.auto import trange, tqdm
 
 from art.defences.detector.evasion.subsetscanning.scanner import Scanner
 from art.estimators.classification.classifier import ClassifierNeuralNetwork
-from art.utils import deprecated
 
 
 if TYPE_CHECKING:
@@ -47,6 +46,12 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
 
     | Paper link: https://www.cs.cmu.edu/~neill/papers/mcfowland13a.pdf
     """
+    estimator_params = ClassifierNeuralNetwork.estimator_params + [
+        "classifier",
+        "bgd_data",
+        "layer",
+        "verbose"
+    ]
 
     def __init__(
         self, classifier: ClassifierNeuralNetwork, bgd_data: np.ndarray, layer: Union[int, str], verbose: bool = True
@@ -62,7 +67,6 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
         super().__init__(
             model=None,
             clip_values=classifier.clip_values,
-            channel_index=classifier.channel_index,
             channels_first=classifier.channels_first,
             preprocessing_defences=classifier.preprocessing_defences,
             preprocessing=classifier.preprocessing,
@@ -70,6 +74,7 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
         self.detector = classifier
         self.bgd_data = bgd_data
         self.verbose = verbose
+        self.layer = layer
 
         # Ensure that layer is well-defined
         if classifier.layer_names is None:
@@ -213,7 +218,7 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
         """
         raise NotImplementedError
 
-    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the loss of the neural network for samples `x`.
 
@@ -253,11 +258,6 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
     def clip_values(self) -> Optional["CLIP_VALUES_TYPE"]:
         return self.detector.clip_values
 
-    @property  # type: ignore
-    @deprecated(end_version="1.6.0", replaced_by="channels_first")
-    def channel_index(self) -> Optional[int]:
-        return self.detector.channel_index
-
     @property
     def channels_first(self) -> bool:
         """
@@ -268,6 +268,10 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
     @property
     def learning_phase(self) -> Optional[bool]:
         return self.detector.learning_phase
+
+    @property
+    def classifier(self) -> int:
+        return self.detector
 
     def class_gradient(self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs) -> np.ndarray:
         return self.detector.class_gradient(x, label=label)
