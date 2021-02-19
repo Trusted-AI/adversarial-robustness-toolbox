@@ -26,7 +26,7 @@ author = 'Maria-Irina Nicolae'
 # The short X.Y version
 version = '1.5'
 # The full version, including alpha/beta/rc tags
-release = '1.5.2-dev'
+release = '1.5.2'
 
 
 # -- General configuration ---------------------------------------------------
