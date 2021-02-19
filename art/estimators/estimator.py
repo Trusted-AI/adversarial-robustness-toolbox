@@ -81,8 +81,8 @@ class BaseEstimator(ABC):
         self.preprocessing_defences = self._set_preprocessing_defences(preprocessing_defences)
         self.postprocessing_defences = self._set_postprocessing_defences(postprocessing_defences)
         self.preprocessing_operations: List["Preprocessor"] = []
-        self._update_preprocessing_operations()
-        self._check_params()
+        BaseEstimator._update_preprocessing_operations(self)
+        BaseEstimator._check_params(self)
 
     def _update_preprocessing_operations(self):
         from art.defences.preprocessor.preprocessor import Preprocessor

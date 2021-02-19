@@ -117,6 +117,8 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
             kwargs["preprocessing"] = StandardisationMeanStdTensorFlowV2(mean=preprocessing[0], std=preprocessing[1])
 
         super().__init__(**kwargs)
+        TensorFlowV2Estimator._check_params(self)
+
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs):
         """

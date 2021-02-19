@@ -72,6 +72,8 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
             cuda_idx = torch.cuda.current_device()
             self._device = torch.device("cuda:{}".format(cuda_idx))
 
+        PyTorchEstimator._check_params(self)
+
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs):
         """
         Perform prediction of the neural network for samples `x`.
