@@ -119,7 +119,6 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         super().__init__(**kwargs)
         TensorFlowV2Estimator._check_params(self)
 
-
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs):
         """
         Perform prediction of the neural network for samples `x`.
