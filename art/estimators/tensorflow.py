@@ -117,10 +117,7 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
             kwargs["preprocessing"] = StandardisationMeanStdTensorFlowV2(mean=preprocessing[0], std=preprocessing[1])
 
         super().__init__(**kwargs)
-
-        from art.defences.preprocessor.preprocessor import PreprocessorTensorFlowV2
-
-        self.all_framework_preprocessing = all([isinstance(p, PreprocessorTensorFlowV2) for p in self.preprocessing])
+        TensorFlowV2Estimator._check_params(self)
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs):
         """
@@ -160,6 +157,23 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         """
         raise NotImplementedError
 
+    def set_params(self, **kwargs) -> None:
+        """
+        Take a dictionary of parameters and apply checks before setting them as attributes.
+
+        :param kwargs: A dictionary of attributes.
+        """
+        super().set_params(**kwargs)
+        self._check_params()
+
+    def _check_params(self) -> None:
+        from art.defences.preprocessor.preprocessor import PreprocessorTensorFlowV2
+
+        super()._check_params()
+        self.all_framework_preprocessing = all(
+            [isinstance(p, PreprocessorTensorFlowV2) for p in self.preprocessing_operations]
+        )
+
     def _apply_preprocessing(self, x, y, fit: bool = False) -> Tuple[Any, Any]:
         """
         Apply all preprocessing defences of the estimator on the raw inputs `x` and `y`. This function is should
@@ -186,7 +200,7 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
             StandardisationMeanStdTensorFlowV2,
         )
 
-        if not self.preprocessing:
+        if not self.preprocessing_operations:
             return x, y
 
         if isinstance(x, tf.Tensor):
@@ -201,7 +215,7 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
                 if y is not None:
                     y = tf.convert_to_tensor(y)
 
-            for preprocess in self.preprocessing:
+            for preprocess in self.preprocessing_operations:
                 if fit:
                     if preprocess.apply_fit:
                         x, y = preprocess.forward(x, y)
@@ -215,12 +229,14 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
                 if y is not None:
                     y = y.numpy()
 
-        elif len(self.preprocessing) == 1 or (
-            len(self.preprocessing) == 2
-            and isinstance(self.preprocessing[-1], (StandardisationMeanStd, StandardisationMeanStdTensorFlowV2))
+        elif len(self.preprocessing_operations) == 1 or (
+            len(self.preprocessing_operations) == 2
+            and isinstance(
+                self.preprocessing_operations[-1], (StandardisationMeanStd, StandardisationMeanStdTensorFlowV2)
+            )
         ):
             # Compatible with non-TensorFlow defences if no chaining.
-            for preprocess in self.preprocessing:
+            for preprocess in self.preprocessing_operations:
                 x, y = preprocess(x, y)
 
         else:
@@ -254,7 +270,7 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
             StandardisationMeanStdTensorFlowV2,
         )
 
-        if not self.preprocessing:
+        if not self.preprocessing_operations:
             return gradients
 
         if isinstance(x, tf.Tensor):
@@ -270,7 +286,7 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
                 gradients = tf.convert_to_tensor(gradients, dtype=config.ART_NUMPY_DTYPE)
                 x_orig = x
 
-                for preprocess in self.preprocessing:
+                for preprocess in self.preprocessing_operations:
                     if fit:
                         if preprocess.apply_fit:
                             x = preprocess.estimate_forward(x)
@@ -287,13 +303,20 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
                     "The input shape is {} while the gradient shape is {}".format(x.shape, gradients.shape)
                 )
 
-        elif len(self.preprocessing) == 1 or (
-            len(self.preprocessing) == 2
-            and isinstance(self.preprocessing[-1], (StandardisationMeanStd, StandardisationMeanStdTensorFlowV2))
+        elif len(self.preprocessing_operations) == 1 or (
+            len(self.preprocessing_operations) == 2
+            and isinstance(
+                self.preprocessing_operations[-1], (StandardisationMeanStd, StandardisationMeanStdTensorFlowV2)
+            )
         ):
             # Compatible with non-TensorFlow defences if no chaining.
-            defence = self.preprocessing[0]
-            gradients = defence.estimate_gradient(x, gradients)
+            for preprocess in self.preprocessing_operations[::-1]:
+                if fit:
+                    if preprocess.apply_fit:
+                        gradients = preprocess.estimate_gradient(x, gradients)
+                else:
+                    if preprocess.apply_predict:
+                        gradients = preprocess.estimate_gradient(x, gradients)
 
         else:
             raise NotImplementedError("The current combination of preprocessing types is not supported.")
