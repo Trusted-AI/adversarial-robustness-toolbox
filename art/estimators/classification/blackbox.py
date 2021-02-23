@@ -26,7 +26,7 @@ from typing import Callable, List, Optional, Union, Tuple, TYPE_CHECKING
 import numpy as np
 
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
-from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.classification.classifier import ClassifierMixin, Classifier
 
 if TYPE_CHECKING:
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
