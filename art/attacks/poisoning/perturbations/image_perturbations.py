@@ -121,7 +121,11 @@ def insert_image(
     if n_dim != 3:
         raise ValueError("Invalid array shape " + str(x.shape))
 
-    width, height, num_channels = x.shape
+    if channels_first:
+        num_channels, width, height = x.shape
+    else:
+        width, height, num_channels = x.shape
+
     no_color = num_channels == 1
     orig_img = Image.new('RGBA', (width, height), 0)
     backdoored_img = Image.new('RGBA', (width, height), 0)
