@@ -55,7 +55,7 @@ class BaseEstimator(ABC):
         clip_values: Optional["CLIP_VALUES_TYPE"],
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        preprocessing: Union["PREPROCESSING_TYPE", "Preprocessor"] = (0, 1),
     ):
         """
         Initialize a `BaseEstimator` object.
@@ -71,41 +71,81 @@ class BaseEstimator(ABC):
                used for data preprocessing. The first value will be subtracted from the input and the results will be
                divided by the second value.
         """
-        from art.defences.postprocessor.postprocessor import Postprocessor
         from art.defences.preprocessor.preprocessor import Preprocessor
 
         self._model = model
         self._clip_values = clip_values
 
-        self.preprocessing: List["Preprocessor"] = []
+        self.preprocessing = self._set_preprocessing(preprocessing)
+        self.preprocessing_defences = self._set_preprocessing_defences(preprocessing_defences)
+        self.postprocessing_defences = self._set_postprocessing_defences(postprocessing_defences)
+        self.preprocessing_operations: List["Preprocessor"] = []
+        BaseEstimator._update_preprocessing_operations(self)
+        BaseEstimator._check_params(self)
 
-        if preprocessing_defences is None:
+    def _update_preprocessing_operations(self):
+        from art.defences.preprocessor.preprocessor import Preprocessor
+
+        self.preprocessing_operations.clear()
+
+        if self.preprocessing_defences is None:
             pass
-        elif isinstance(preprocessing_defences, Preprocessor):
-            self.preprocessing.append(preprocessing_defences)
+        elif isinstance(self.preprocessing_defences, Preprocessor):
+            self.preprocessing_operations.append(self.preprocessing_defences)
         else:
-            self.preprocessing += preprocessing_defences
+            self.preprocessing_operations += self.preprocessing_defences
 
-        self.preprocessing_defences = preprocessing_defences
+        if self.preprocessing is None:
+            pass
+        elif isinstance(self.preprocessing, tuple):
+            from art.preprocessing.standardisation_mean_std.standardisation_mean_std import StandardisationMeanStd
+
+            self.preprocessing_operations.append(
+                StandardisationMeanStd(mean=self.preprocessing[0], std=self.preprocessing[1])
+            )
+        elif isinstance(self.preprocessing, Preprocessor):
+            self.preprocessing_operations.append(self.preprocessing)
+        else:
+            raise ValueError("Preprocessing argument not recognised.")
+
+    @staticmethod
+    def _set_preprocessing(preprocessing: Union["PREPROCESSING_TYPE", "Preprocessor"]) -> "Preprocessor":
+        from art.defences.preprocessor.preprocessor import Preprocessor
 
         if preprocessing is None:
-            pass
+            from art.preprocessing.standardisation_mean_std.standardisation_mean_std import StandardisationMeanStd
+
+            return StandardisationMeanStd(mean=0.0, std=1.0)
         elif isinstance(preprocessing, tuple):
             from art.preprocessing.standardisation_mean_std.standardisation_mean_std import StandardisationMeanStd
 
-            self.preprocessing.append(StandardisationMeanStd(mean=preprocessing[0], std=preprocessing[1]))
+            return StandardisationMeanStd(mean=preprocessing[0], std=preprocessing[1])
         elif isinstance(preprocessing, Preprocessor):
-            self.preprocessing.append(preprocessing)
+            return preprocessing
         else:
-            self.preprocessing += preprocessing
+            raise ValueError("Preprocessing argument not recognised.")
 
-        self.postprocessing_defences: Optional[List["Postprocessor"]]
+    @staticmethod
+    def _set_preprocessing_defences(
+        preprocessing_defences: Optional[Union["Preprocessor", List["Preprocessor"]]]
+    ) -> Optional[List["Preprocessor"]]:
+        from art.defences.preprocessor.preprocessor import Preprocessor
+
+        if isinstance(preprocessing_defences, Preprocessor):
+            return [preprocessing_defences]
+        else:
+            return preprocessing_defences
+
+    @staticmethod
+    def _set_postprocessing_defences(
+        postprocessing_defences: Optional[Union["Postprocessor", List["Postprocessor"]]]
+    ) -> Optional[List["Postprocessor"]]:
+        from art.defences.postprocessor.postprocessor import Postprocessor
+
         if isinstance(postprocessing_defences, Postprocessor):
-            self.postprocessing_defences = [postprocessing_defences]
+            return [postprocessing_defences]
         else:
-            self.postprocessing_defences = postprocessing_defences
-
-        self._check_params()
+            return postprocessing_defences
 
     def set_params(self, **kwargs) -> None:
         """
@@ -118,9 +158,17 @@ class BaseEstimator(ABC):
                 if hasattr(BaseEstimator, key) and isinstance(getattr(BaseEstimator, key), property):
                     setattr(self, "_" + key, value)
                 else:
-                    setattr(self, key, value)
+                    if key == "preprocessing":
+                        setattr(self, key, self._set_preprocessing(value))
+                    elif key == "preprocessing_defences":
+                        setattr(self, key, self._set_preprocessing_defences(value))
+                    elif key == "postprocessing_defences":
+                        setattr(self, key, self._set_postprocessing_defences(value))
+                    else:
+                        setattr(self, key, value)
             else:
-                raise ValueError("Unexpected parameter {} found in kwargs.".format(key))
+                raise ValueError("Unexpected parameter `{}` found in kwargs.".format(key))
+        self._update_preprocessing_operations()
         self._check_params()
 
     def get_params(self) -> Dict[str, Any]:
@@ -151,8 +199,8 @@ class BaseEstimator(ABC):
             else:
                 self._clip_values = np.array(self._clip_values, dtype=ART_NUMPY_DTYPE)
 
-        if isinstance(self.preprocessing, list):
-            for preprocess in self.preprocessing:
+        if isinstance(self.preprocessing_operations, list):
+            for preprocess in self.preprocessing_operations:
                 if not isinstance(preprocess, Preprocessor):
                     raise ValueError(
                         "All preprocessing defences have to be instance of "
@@ -261,8 +309,8 @@ class BaseEstimator(ABC):
         :return: Tuple of `x` and `y` after applying the defences and standardisation.
         :rtype: Format as expected by the `model`
         """
-        if self.preprocessing:
-            for preprocess in self.preprocessing:
+        if self.preprocessing_operations:
+            for preprocess in self.preprocessing_operations:
                 if fit:
                     if preprocess.apply_fit:
                         x, y = preprocess(x, y)
@@ -338,8 +386,8 @@ class LossGradientsMixin(ABC):
         :return: Gradients after backward pass through normalization and preprocessing defences.
         :rtype: Format as expected by the `model`
         """
-        if self.preprocessing:
-            for preprocess in self.preprocessing[::-1]:
+        if self.preprocessing_operations:
+            for preprocess in self.preprocessing_operations[::-1]:
                 if fit:
                     if preprocess.apply_fit:
                         gradients = preprocess.estimate_gradient(x, gradients)
