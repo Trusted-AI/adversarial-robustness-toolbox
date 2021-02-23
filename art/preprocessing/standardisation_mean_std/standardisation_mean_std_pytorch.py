@@ -72,8 +72,8 @@ class StandardisationMeanStdPyTorch(PreprocessorPyTorch):
         """
         import torch  # lgtm [py/repeated-import]
 
-        mean = torch.tensor(self.mean, device=self._device)
-        std = torch.tensor(self.std, device=self._device)
+        mean = torch.tensor(self.mean, device=self._device, dtype=torch.float32)
+        std = torch.tensor(self.std, device=self._device, dtype=torch.float32)
 
         x_norm = x - mean
         x_norm = x_norm / std

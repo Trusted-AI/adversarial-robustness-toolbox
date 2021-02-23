@@ -198,13 +198,7 @@ class MembershipInferenceBlackBox(InferenceAttack):
             import torch.nn as nn  # lgtm [py/repeated-import]
             import torch.optim as optim  # lgtm [py/repeated-import]
             from torch.utils.data import DataLoader  # lgtm [py/repeated-import]
-
-            use_cuda = torch.cuda.is_available()
-
-            def to_cuda(x):
-                if use_cuda:
-                    x = x.cuda()
-                return x
+            from art.utils import to_cuda
 
             loss_fn = nn.BCELoss()
             optimizer = optim.Adam(self.attack_model.parameters(), lr=self.learning_rate)
@@ -261,14 +255,18 @@ class MembershipInferenceBlackBox(InferenceAttack):
         if self.default_model and self.attack_model_type == "nn":
             import torch  # lgtm [py/repeated-import]
             from torch.utils.data import DataLoader  # lgtm [py/repeated-import]
+            from art.utils import to_cuda, from_cuda
 
             self.attack_model.eval()
             inferred = None
             test_set = self._get_attack_dataset(f_1=features, f_2=y)
             test_loader = DataLoader(test_set, batch_size=self.batch_size, shuffle=True, num_workers=0)
             for input1, input2, _ in test_loader:
+                input1, input2 = to_cuda(input1), to_cuda(input2)
                 outputs = self.attack_model(input1, input2)
                 predicted = torch.round(outputs)
+                predicted = from_cuda(predicted)
+
                 if inferred is None:
                     inferred = predicted.detach().numpy()
                 else:
