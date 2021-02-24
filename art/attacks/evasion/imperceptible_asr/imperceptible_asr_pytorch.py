@@ -243,8 +243,10 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         # Start to compute adversarial examples
         adv_x = x.copy()
 
-        # Put the estimator in the training mode
+        # Put the estimator in the training mode, otherwise CUDA can't backpropagate through the model.
+        # However, estimator uses batch norm layers which need to be frozen
         self.estimator.model.train()
+        self.estimator.set_batchnorm(train=False)
 
         # Compute perturbation with batching
         num_batch = int(np.ceil(len(x) / float(self.batch_size)))
@@ -265,6 +267,8 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             for i in range(len(adv_x_batch)):
                 adv_x[batch_index_1 + i] = adv_x_batch[i, : len(adv_x[batch_index_1 + i])]
 
+        # Unfreeze batch norm layers again
+        self.estimator.set_batchnorm(train=True)
         return adv_x
 
     def _generate_batch(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:

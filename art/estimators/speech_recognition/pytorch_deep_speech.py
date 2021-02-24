@@ -375,8 +375,10 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         x_ = np.empty(len(x), dtype=object)
         x_[:] = list(x)
 
-        # Put the model in the training mode
+        # Put the model in the training mode, otherwise CUDA can't backpropagate through the model.
+        # However, model uses batch norm layers which need to be frozen
         self._model.train()
+        self.set_batchnorm(train=False)
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x_, y, fit=False)
@@ -427,6 +429,8 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
             results = np.array([i for i in results], dtype=x.dtype)
             assert results.shape == x.shape and results.dtype == x.dtype
 
+        # Unfreeze batch norm layers again
+        self.set_batchnorm(train=True)
         return results
 
     def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, **kwargs) -> None:
