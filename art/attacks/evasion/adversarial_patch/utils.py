@@ -60,12 +60,10 @@ def insert_transformed_patch(x: np.ndarray, patch: np.ndarray, image_coords: np.
 
     # warp patch to destination coordinates
     x_out = cv2.warpPerspective(patch, h, (x.shape[1], x.shape[0]), cv2.INTER_CUBIC)
-    # cv2.imwrite("im_out.jpg", x_out)
 
     # mask to aid with insertion
     mask = np.ones(patch.shape)
     mask_out = cv2.warpPerspective(mask, h, (x.shape[1], x.shape[0]), cv2.INTER_CUBIC)
-    # cv2.imwrite("mask_out.jpg", mask_out * 255)
 
     # save image before adding shadows
     x_neg_patch = np.copy(x)
@@ -78,7 +76,5 @@ def insert_transformed_patch(x: np.ndarray, patch: np.ndarray, image_coords: np.
 
     if scaling:
         x_out = x_out / 255
-
-    # cv2.imwrite("im_out_2.jpg", x_out)
 
     return x_out
