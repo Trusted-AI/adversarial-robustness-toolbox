@@ -33,7 +33,7 @@ import six
 from art import config
 from art.estimators.classification.classifier import ClassGradientsMixin, ClassifierMixin
 from art.estimators.tensorflow import TensorFlowEstimator, TensorFlowV2Estimator
-from art.utils import Deprecated, deprecated_keyword_arg, check_and_transform_label_format
+from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
@@ -62,7 +62,6 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         "feed_dict",
     ]
 
-    @deprecated_keyword_arg("channel_index", end_version="1.6.0", replaced_by="channels_first")
     def __init__(
         self,
         input_ph: "tf.Placeholder",
@@ -72,7 +71,6 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         loss: Optional["tf.Tensor"] = None,
         learning: Optional["tf.Placeholder"] = None,
         sess: Optional["tf.Session"] = None,
-        channel_index=Deprecated,
         channels_first: bool = False,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
@@ -94,8 +92,6 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
                model and when computing gradients w.r.t. the loss function.
         :param learning: The placeholder to indicate if the model is training.
         :param sess: Computation session.
-        :param channel_index: Index of the axis in data containing the color channels or features.
-        :type channel_index: `int`
         :param channels_first: Set channels first or last.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
@@ -112,18 +108,9 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         # pylint: disable=E0401
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        # Remove in 1.6.0
-        if channel_index == 3:
-            channels_first = False
-        elif channel_index == 1:
-            channels_first = True
-        elif channel_index is not Deprecated:
-            raise ValueError("Not a proper channel_index. Use channels_first.")
-
         super().__init__(
             model=None,
             clip_values=clip_values,
-            channel_index=channel_index,
             channels_first=channels_first,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
@@ -739,7 +726,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
 
     def __repr__(self):
         repr_ = (
-            "%s(input_ph=%r, output=%r, labels_ph=%r, train=%r, loss=%r, learning=%r, sess=%r, channel_index=%r, "
+            "%s(input_ph=%r, output=%r, labels_ph=%r, train=%r, loss=%r, learning=%r, sess=%r, "
             "channels_first=%r, clip_values=%r, preprocessing_defences=%r, postprocessing_defences=%r, "
             "preprocessing=%r)"
             % (
@@ -751,7 +738,6 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
                 self._loss,
                 self._learning,
                 self._sess,
-                self.channel_index,
                 self.channels_first,
                 self.clip_values,
                 self.preprocessing_defences,
@@ -777,7 +763,6 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         "train_step",
     ]
 
-    @deprecated_keyword_arg("channel_index", end_version="1.6.0", replaced_by="channels_first")
     def __init__(
         self,
         model: Callable,
@@ -785,7 +770,6 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         input_shape: Tuple[int, ...],
         loss_object: Optional["tf.keras.losses.Loss"] = None,
         train_step: Optional[Callable] = None,
-        channel_index=Deprecated,
         channels_first: bool = False,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
@@ -803,8 +787,6 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         :type loss_object: `tf.keras.losses`
         :param train_step: A function that applies a gradient update to the trainable variables with signature
                            train_step(model, images, labels).
-        :param channel_index: Index of the axis in data containing the color channels or features.
-        :type channel_index: `int`
         :param channels_first: Set channels first or last.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
@@ -818,18 +800,9 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        # Remove in 1.6.0
-        if channel_index == 3:
-            channels_first = False
-        elif channel_index == 1:
-            channels_first = True
-        elif channel_index is not Deprecated:
-            raise ValueError("Not a proper channel_index. Use channels_first.")
-
         super().__init__(
             model=model,
             clip_values=clip_values,
-            channel_index=channel_index,
             channels_first=channels_first,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
@@ -1155,6 +1128,75 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
         return gradients
 
+    def clone_for_refitting(self) -> 'TensorFlowV2Classifier':  # lgtm [py/inheritance/incorrect-overridden-signature]
+        """
+        Create a copy of the classifier that can be refit from scratch. Will inherit same architecture, optimizer and
+        initialization as cloned model, but without weights.
+
+        :return: new estimator
+        """
+        import tensorflow as tf  # lgtm [py/repeated-import]
+        try:
+            # only works for functionally defined models
+            model = tf.keras.models.clone_model(self.model, input_tensors=self.model.inputs)
+        except ValueError:
+            raise ValueError(
+                'Cannot clone custom tensorflow models'
+            )
+
+        optimizer = self.model.optimizer
+        # reset optimizer variables
+        for var in optimizer.variables():
+            var.assign(tf.zeros_like(var))
+
+        model.compile(
+            optimizer=optimizer, loss=self.model.loss,
+            metrics=self.model.metrics,
+            loss_weights=self.model.compiled_loss._loss_weights,
+            weighted_metrics=self.model.compiled_metrics._weighted_metrics,
+            run_eagerly=self.model.run_eagerly
+        )
+
+        clone = type(self)(model, self.nb_classes, self.input_shape)
+        params = self.get_params()
+        del params['model']
+        clone.set_params(**params)
+        clone._train_step = self._train_step
+        clone._reduce_labels = self._reduce_labels
+        clone._loss_object = self._loss_object
+        return clone
+
+    def reset(self) -> None:
+        """
+        Resets the weights of the classifier so that it can be refit from scratch.
+
+        """
+        import tensorflow as tf  # lgtm [py/repeated-import]
+
+        for layer in self.model.layers:
+            if isinstance(layer, (tf.keras.Model, tf.keras.models.Sequential)):  # if there is a model as a layer
+                self.reset(layer)  # apply recursively
+                continue
+
+            # find initializers
+            if hasattr(layer, 'cell'):
+                init_container = layer.cell
+            else:
+                init_container = layer
+
+            for key, initializer in init_container.__dict__.items():
+                if "initializer" not in key:  # not an initializer skip
+                    continue
+
+                # find the corresponding variable, like the kernel or the bias
+                if key == 'recurrent_initializer':  # special case check
+                    var = getattr(init_container, 'recurrent_kernel', None)
+                else:
+                    var = getattr(init_container, key.replace("_initializer", ""), None)
+
+                if var is not None:
+                    var.assign(initializer(var.shape, var.dtype))
+
     def _get_layers(self) -> list:
         """
         Return the hidden layers in the model, if applicable.
@@ -1260,7 +1302,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
     def __repr__(self):
         repr_ = (
-            "%s(model=%r, nb_classes=%r, input_shape=%r, loss_object=%r, train_step=%r, channel_index=%r, "
+            "%s(model=%r, nb_classes=%r, input_shape=%r, loss_object=%r, train_step=%r, "
             "channels_first=%r, clip_values=%r, preprocessing_defences=%r, postprocessing_defences=%r, "
             "preprocessing=%r)"
             % (
@@ -1270,7 +1312,6 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                 self._input_shape,
                 self._loss_object,
                 self._train_step,
-                self.channel_index,
                 self.channels_first,
                 self.clip_values,
                 self.preprocessing_defences,
