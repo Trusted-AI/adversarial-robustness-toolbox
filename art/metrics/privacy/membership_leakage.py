@@ -58,7 +58,7 @@ def PDTP(
     from art.estimators.classification.tensorflow import TensorFlowV2Classifier
     from art.estimators.classification.scikitlearn import ScikitlearnClassifier
 
-    supported_classifiers = [PyTorchClassifier, TensorFlowV2Classifier, ScikitlearnClassifier]
+    supported_classifiers = (PyTorchClassifier, TensorFlowV2Classifier, ScikitlearnClassifier)
 
     if not isinstance(target_estimator, supported_classifiers) or not isinstance(
         extra_estimator, supported_classifiers
