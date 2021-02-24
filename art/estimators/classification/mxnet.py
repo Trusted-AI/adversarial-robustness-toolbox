@@ -409,6 +409,21 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
         """
         raise NotImplementedError
 
+    def clone_for_refitting(self) -> "MXClassifier":  # lgtm [py/inheritance/incorrect-overridden-signature]
+        """
+        Create a copy of the classifier that can be refit from scratch.
+
+        :return: new estimator
+        """
+        raise NotImplementedError
+
+    def reset(self) -> None:
+        """
+        Resets the weights of the classifier so that it can be refit from scratch.
+
+        """
+        raise NotImplementedError
+
     @property
     def layer_names(self) -> List[str]:
         """

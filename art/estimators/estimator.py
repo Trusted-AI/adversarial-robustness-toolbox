@@ -249,6 +249,23 @@ class BaseEstimator(ABC):
         """
         raise NotImplementedError
 
+    @abstractmethod
+    def clone_for_refitting(self) -> 'BaseEstimator':  # lgtm [py/inheritance/incorrect-overridden-signature]
+        """
+        Create a copy of the estimator that can be refit from scratch.
+
+        :return: new estimator
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def reset(self) -> None:
+        """
+        Resets the weights of the estimator so that it can be refit from scratch.
+
+        """
+        raise NotImplementedError
+
     @property
     def model(self):
         """

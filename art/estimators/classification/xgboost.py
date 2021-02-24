@@ -219,6 +219,21 @@ class XGBoostClassifier(ClassifierDecisionTree):
 
         return trees
 
+    def clone_for_refitting(self) -> 'XGBoostClassifier':  # lgtm [py/inheritance/incorrect-overridden-signature]
+        """
+        Create a copy of the estimator that can be refit from scratch.
+
+        :return: new estimator
+        """
+        raise NotImplementedError
+
+    def reset(self) -> None:
+        """
+        Resets the weights of the estimator so that it can be refit from scratch.
+
+        """
+        raise NotImplementedError
+
     def _get_leaf_nodes(self, node, i_tree, class_label, box) -> List["LeafNode"]:
         from art.metrics.verification_decisions_trees import LeafNode, Box, Interval
 

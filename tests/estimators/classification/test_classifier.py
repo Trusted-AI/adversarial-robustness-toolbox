@@ -50,6 +50,12 @@ class ClassifierInstance(ClassifierMixin, BaseEstimator):
     def input_shape(self):
         pass
 
+    def clone_for_refitting(self):
+        pass
+
+    def reset(self):
+        pass
+
 
 class ClassifierNeuralNetworkInstance(
     ClassGradientsMixin, ClassifierMixin, NeuralNetworkMixin, LossGradientsMixin, BaseEstimator
@@ -94,6 +100,12 @@ class ClassifierNeuralNetworkInstance(
         pass
 
     def input_shape(self):
+        pass
+
+    def clone_for_refitting(self):
+        pass
+
+    def reset(self):
         pass
 
 

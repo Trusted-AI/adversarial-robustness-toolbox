@@ -457,6 +457,22 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
 
         return loss_value
 
+    def clone_for_refitting(self) -> 'TensorFlowClassifier':  # lgtm [py/inheritance/incorrect-overridden-signature]
+        """
+        Create a copy of the classifier that can be refit from scratch. Will inherit same architecture, optimizer and
+        initialization as cloned model, but without weights.
+
+        :return: new estimator
+        """
+        raise NotImplementedError
+
+    def reset(self) -> None:
+        """
+        Resets the weights of the classifier so that it can be refit from scratch.
+
+        """
+        raise NotImplementedError
+
     def _init_class_grads(self, label=None):
         # pylint: disable=E0401
         import tensorflow as tf  # lgtm [py/repeated-import]
@@ -1127,6 +1143,75 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
             gradients = self._apply_preprocessing_gradient(x, gradients)
 
         return gradients
+
+    def clone_for_refitting(self) -> 'TensorFlowV2Classifier':  # lgtm [py/inheritance/incorrect-overridden-signature]
+        """
+        Create a copy of the classifier that can be refit from scratch. Will inherit same architecture, optimizer and
+        initialization as cloned model, but without weights.
+
+        :return: new estimator
+        """
+        import tensorflow as tf  # lgtm [py/repeated-import]
+        try:
+            # only works for functionally defined models
+            model = tf.keras.models.clone_model(self.model, input_tensors=self.model.inputs)
+        except ValueError:
+            raise ValueError(
+                'Cannot clone custom tensorflow models'
+            )
+
+        optimizer = self.model.optimizer
+        # reset optimizer variables
+        for var in optimizer.variables():
+            var.assign(tf.zeros_like(var))
+
+        model.compile(
+            optimizer=optimizer, loss=self.model.loss,
+            metrics=self.model.metrics,
+            loss_weights=self.model.compiled_loss._loss_weights,
+            weighted_metrics=self.model.compiled_metrics._weighted_metrics,
+            run_eagerly=self.model.run_eagerly
+        )
+
+        clone = type(self)(model, self.nb_classes, self.input_shape)
+        params = self.get_params()
+        del params['model']
+        clone.set_params(**params)
+        clone._train_step = self._train_step
+        clone._reduce_labels = self._reduce_labels
+        clone._loss_object = self._loss_object
+        return clone
+
+    def reset(self) -> None:
+        """
+        Resets the weights of the classifier so that it can be refit from scratch.
+
+        """
+        import tensorflow as tf  # lgtm [py/repeated-import]
+
+        for layer in self.model.layers:
+            if isinstance(layer, (tf.keras.Model, tf.keras.models.Sequential)):  # if there is a model as a layer
+                self.reset(layer)  # apply recursively
+                continue
+
+            # find initializers
+            if hasattr(layer, 'cell'):
+                init_container = layer.cell
+            else:
+                init_container = layer
+
+            for key, initializer in init_container.__dict__.items():
+                if "initializer" not in key:  # not an initializer skip
+                    continue
+
+                # find the corresponding variable, like the kernel or the bias
+                if key == 'recurrent_initializer':  # special case check
+                    var = getattr(init_container, 'recurrent_kernel', None)
+                else:
+                    var = getattr(init_container, key.replace("_initializer", ""), None)
+
+                if var is not None:
+                    var.assign(initializer(var.shape, var.dtype))
 
     def _get_layers(self) -> list:
         """
