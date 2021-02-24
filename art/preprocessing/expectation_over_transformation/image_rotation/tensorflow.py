@@ -21,11 +21,11 @@ This module implements
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 
-from art.preprocessing.preprocessing import PreprocessorTensorFlowV2
+from art.preprocessing.expectation_over_transformation.tensorflow import EoTTensorFlowV2
 
 if TYPE_CHECKING:
     import tensorflow as tf
@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class EoTImageRotationTensorFlowV2(PreprocessorTensorFlowV2):
+class EoTImageRotationTensorFlowV2(EoTTensorFlowV2):
     """
     This module implements Expectation over Transformation preprocessing.
     """
@@ -45,9 +45,9 @@ class EoTImageRotationTensorFlowV2(PreprocessorTensorFlowV2):
 
     def __init__(
         self,
-        nb_samples: int = 1,
+        nb_samples: int,
+        clip_values: "CLIP_VALUES_TYPE",
         angles_range: float = 3.14,
-        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         label_type: str = "classification",
         apply_fit: bool = False,
         apply_predict: bool = True,
@@ -56,61 +56,38 @@ class EoTImageRotationTensorFlowV2(PreprocessorTensorFlowV2):
         Create an instance of EoTImageRotationTensorFlowV2.
 
         :param nb_samples: Number of random samples per input sample.
-        :param angles_range: A positive scalar angle in radians defining the uniform sampling range from negative and
-                             positive angles_range.
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                             for features.
+        :param angles_range: A positive scalar angle in radians defining the uniform sampling range from negative and
+                             positive angles_range.
         :param label_type: String defining the type of labels. Currently supported: `classification`
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
         """
-        super().__init__(is_fitted=True, apply_fit=apply_fit, apply_predict=apply_predict)
+        super().__init__(apply_fit=apply_fit, apply_predict=apply_predict, nb_samples=nb_samples, clip_values=clip_values)
 
-        self.nb_samples = nb_samples
         self.angles_range = angles_range
-        self.clip_Values = clip_values
         self.label_type = label_type
         self._check_params()
 
-    def forward(self, x: "tf.Tensor", y: Optional["tf.Tensor"] = None) -> Tuple["tf.Tensor", Optional["tf.Tensor"]]:
+    def _transform(self, x: "tf.Tensor", **kwargs) -> "tf.Tensor":
         """
-        Apply audio filter to a single sample `x`.
+        Internal method implementing the corruption per image by changing its brightness.
 
-        :param x: A single audio sample.
-        :param y: Label of the sample `x`. This function does not affect them in any way.
-        :return: Similar sample.
+        :param x: Input samples.
+        :return: Corrupted samples.
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
         import tensorflow_addons as tfa
 
-        x_preprocess_list = list()
-        y_preprocess_list = list()
-
-        for i_image in range(x.shape[0]):
-            for i_sample in range(self.nb_samples):
-                angles = tf.random.uniform(shape=(), minval=-self.angles_range, maxval=self.angles_range)
-                images = x[i_image]
-                x_preprocess_i = tfa.image.rotate(images=images, angles=angles, interpolation="NEAREST", name=None)
-                if self.clip_Values is not None:
-                    x_preprocess_i = tf.clip_by_value(
-                        t=x_preprocess_i, clip_value_min=-self.angles_range, clip_value_max=self.angles_range, name=None
-                    )
-                x_preprocess_list.append(x_preprocess_i)
-                if y is not None:
-                    y_preprocess_list.append(y[i_image])
-
-        x_preprocess = tf.stack(x_preprocess_list, axis=0, name=None)
-        if y is None:
-            y_preprocess = y
-        else:
-            y_preprocess = tf.stack(y_preprocess_list, axis=0, name=None)
-
-        return x_preprocess, y_preprocess
+        angles = tf.random.uniform(shape=(), minval=-self.angles_range, maxval=self.angles_range)
+        x_preprocess_i = tfa.image.rotate(images=x, angles=angles, interpolation="NEAREST", name=None)
+        x_preprocess_i = tf.clip_by_value(
+            t=x_preprocess_i, clip_value_min=-self.clip_values[0], clip_value_max=self.clip_values[1], name=None
+        )
+        return x_preprocess_i
 
     def _check_params(self) -> None:
-
-        if not isinstance(self.nb_samples, int) or self.nb_samples < 1:
-            raise ValueError("The number of samples needs to be an integer greater than or equal to 1.")
 
         if not isinstance(self.angles_range, float) or np.pi / 2 < self.angles_range or self.angles_range <= 0.0:
             raise ValueError("The range of angles must be a float in the range (0.0, Pi/2].")
