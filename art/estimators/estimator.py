@@ -114,9 +114,7 @@ class BaseEstimator(ABC):
         from art.defences.preprocessor.preprocessor import Preprocessor
 
         if preprocessing is None:
-            from art.preprocessing.standardisation_mean_std.standardisation_mean_std import StandardisationMeanStd
-
-            return StandardisationMeanStd(mean=0.0, std=1.0)
+            return None
         elif isinstance(preprocessing, tuple):
             from art.preprocessing.standardisation_mean_std.standardisation_mean_std import StandardisationMeanStd
 

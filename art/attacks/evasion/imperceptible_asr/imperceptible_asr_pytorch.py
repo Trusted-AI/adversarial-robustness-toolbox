@@ -784,20 +784,21 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         else:
             raise NotImplementedError("Spectrogram window %s not supported." % window)
 
-        # Create a transformer to transform between the two spaces
-        transformer = torchaudio.transforms.Spectrogram(
-            n_fft=n_fft, hop_length=hop_length, win_length=win_length, window_fn=window_fn, power=None
-        )
-        transformer.to(self.estimator.device)
+        # return STFT of delta
+        delta_stft = torch.stft(
+            delta,
+            n_fft=n_fft,
+            hop_length=hop_length,
+            win_length=win_length,
+            center=False,
+            window=window_fn(win_length).to(self.estimator.device),
+        ).to(self.estimator.device)
 
-        # Transform the perturbation into the frequency space
-        transformed_delta = transformer(delta)
-
-        # To get the center
-        transformed_delta = transformed_delta[:, 1:-1, 0]
+        # take abs of complex STFT results
+        transformed_delta = torch.sqrt(torch.sum(torch.square(delta_stft), -1))
 
         # Compute the psd matrix
-        psd = (8.0 / 3.0) * torch.abs(transformed_delta / win_length)
+        psd = (8.0 / 3.0) * transformed_delta / win_length
         psd = psd ** 2
         psd = (
             torch.pow(torch.tensor(10.0), torch.tensor(9.6)).to(self.estimator.device)
