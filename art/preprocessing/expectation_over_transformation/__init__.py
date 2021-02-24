@@ -1,3 +1,1 @@
-from art.preprocessing.expectation_over_transformation.image_rotation.tensorflow import (
-    EoTImageRotationTensorFlowV2,
-)
+from art.preprocessing.expectation_over_transformation.image_rotation.tensorflow import EoTImageRotationTensorFlowV2

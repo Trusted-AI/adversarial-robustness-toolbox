@@ -19,13 +19,11 @@
 This module implements EoT of changes in brightness by addition of uniformly sampled delta.
 """
 import logging
-from typing import Tuple, Union, TYPE_CHECKING
+from typing import Tuple, Union, TYPE_CHECKING, Optional
 
 import numpy as np
 
-from art.preprocessing.expectation_over_transformation.tensorflow import (
-    EoTTensorFlowV2,
-)
+from art.preprocessing.expectation_over_transformation.tensorflow import EoTTensorFlowV2
 
 if TYPE_CHECKING:
     import tensorflow as tf
@@ -65,17 +63,20 @@ class EoTBrightnessTensorFlowV2(EoTTensorFlowV2):
         self.delta_range = (-delta, delta) if isinstance(delta, (int, float)) else delta
         self._check_params()
 
-    def _transform(self, x: "tf.Tensor", **kwargs) -> "tf.Tensor":
+    def _transform(
+        self, x: "tf.Tensor", y: Optional["tf.Tensor"], **kwargs
+    ) -> Tuple["tf.Tensor", Optional["tf.Tensor"]]:
         """
-        Internal method implementing the corruption per image by changing its brightness.
+        Transformation of an image with randomly sampled brightness.
 
         :param x: Input samples.
-        :return: Corrupted samples.
+        :param y: Label of the samples `x`.
+        :return: Transformed samples and labels.
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
         delta_i = np.random.uniform(low=self.delta_range[0], high=self.delta_range[1])
-        return tf.clip_by_value(x + delta_i, clip_value_min=self.clip_values[0], clip_value_max=self.clip_values[1])
+        return tf.clip_by_value(x + delta_i, clip_value_min=self.clip_values[0], clip_value_max=self.clip_values[1]), y
 
     def _check_params(self) -> None:
 

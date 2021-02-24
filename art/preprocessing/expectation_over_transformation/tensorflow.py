@@ -53,12 +53,15 @@ class EoTTensorFlowV2(PreprocessorTensorFlowV2):
         EoTTensorFlowV2._check_params(self)
 
     @abstractmethod
-    def _transform(self, x: "tf.Tensor", **kwargs) -> "tf.Tensor":
+    def _transform(
+        self, x: "tf.Tensor", y: Optional["tf.Tensor"], **kwargs
+    ) -> Tuple["tf.Tensor", Optional["tf.Tensor"]]:
         """
-        Internal method implementing the transformation per image.
+        Internal method implementing the transformation per input sample.
 
         :param x: Input samples.
-        :return: Corrupted samples.
+        :param y: Label of the samples `x`.
+        :return: Transformed samples and labels.
         """
         raise NotImplementedError
 

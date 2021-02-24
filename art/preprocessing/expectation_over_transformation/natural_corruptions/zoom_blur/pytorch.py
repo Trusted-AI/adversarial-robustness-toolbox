@@ -19,7 +19,7 @@
 This module implements EoT of zoom blur with uniformly sampled zoom factor.
 """
 import logging
-from typing import Tuple, Union, TYPE_CHECKING
+from typing import Tuple, Union, TYPE_CHECKING, Optional
 
 import numpy as np
 
@@ -63,12 +63,15 @@ class EoTZoomBlurPyTorch(EoTPyTorch):
         self.zoom_range = (1.0, zoom) if isinstance(zoom, (int, float)) else zoom
         self._check_params()
 
-    def _transform(self, x: "torch.Tensor", **kwargs) -> "torch.Tensor":
+    def _transform(
+        self, x: "torch.Tensor", y: Optional["torch.Tensor"], **kwargs
+    ) -> Tuple["torch.Tensor", Optional["torch.Tensor"]]:
         """
-        Internal method implementing the corruption per image with zoom blur.
+        Transformation of an image with randomly sampled zoom blur.
 
-        :param x: Input samples of shape HWC.
-        :return: Corrupted samples.
+        :param x: Input samples.
+        :param y: Label of the samples `x`.
+        :return: Transformed samples and labels.
         """
         import torch  # lgtm [py/repeated-import]
         import torchvision
@@ -93,7 +96,7 @@ class EoTZoomBlurPyTorch(EoTPyTorch):
             x_blur += x_resized[trim_top : trim_top + height, trim_left : trim_left + width, :]
 
         x_out = (x + x_blur) / (nb_zooms + 1)
-        return torch.clamp(x_out, min=self.clip_values[0], max=self.clip_values[1])
+        return torch.clamp(x_out, min=self.clip_values[0], max=self.clip_values[1]), y
 
     def _check_params(self) -> None:
 

@@ -19,7 +19,7 @@
 This module implements EoT of changes in brightness by addition of uniformly sampled delta.
 """
 import logging
-from typing import Tuple, Union, TYPE_CHECKING
+from typing import Tuple, Union, TYPE_CHECKING, Optional
 
 import numpy as np
 
@@ -63,17 +63,20 @@ class EoTBrightnessPyTorch(EoTPyTorch):
         self.delta_range = (-delta, delta) if isinstance(delta, (int, float)) else delta
         self._check_params()
 
-    def _transform(self, x: "torch.Tensor", **kwargs) -> "torch.Tensor":
+    def _transform(
+        self, x: "torch.Tensor", y: Optional["torch.Tensor"], **kwargs
+    ) -> Tuple["torch.Tensor", Optional["torch.Tensor"]]:
         """
-        Internal method implementing the corruption per image by changing its brightness.
+        Transformation of an image with randomly sampled brightness.
 
         :param x: Input samples.
-        :return: Corrupted samples.
+        :param y: Label of the samples `x`.
+        :return: Transformed samples and labels.
         """
         import torch  # lgtm [py/repeated-import]
 
         delta_i = np.random.uniform(low=self.delta_range[0], high=self.delta_range[1])
-        return torch.clamp(x + delta_i, min=self.clip_values[0], max=self.clip_values[1])
+        return torch.clamp(x + delta_i, min=self.clip_values[0], max=self.clip_values[1]), y
 
     def _check_params(self) -> None:
 

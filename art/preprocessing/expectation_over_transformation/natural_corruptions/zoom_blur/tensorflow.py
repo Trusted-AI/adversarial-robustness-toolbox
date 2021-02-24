@@ -19,13 +19,11 @@
 This module implements EoT of zoom blur with uniformly sampled zoom factor.
 """
 import logging
-from typing import Tuple, Union, TYPE_CHECKING
+from typing import Tuple, Union, TYPE_CHECKING, Optional
 
 import numpy as np
 
-from art.preprocessing.expectation_over_transformation.tensorflow import (
-    EoTTensorFlowV2,
-)
+from art.preprocessing.expectation_over_transformation.tensorflow import EoTTensorFlowV2
 
 if TYPE_CHECKING:
     import tensorflow as tf
@@ -47,7 +45,7 @@ class EoTZoomBlurTensorFlow(EoTTensorFlowV2):
         apply_predict: bool = True,
     ) -> None:
         """
-        Create an instance of EOTZoomBlurTensorFlow.
+        Create an instance of EoTZoomBlurTensorFlow.
 
         :param nb_samples: Number of random samples per input sample.
         :param clip_values: Tuple of float representing minimum and maximum values of input `(min, max)`.
@@ -65,12 +63,15 @@ class EoTZoomBlurTensorFlow(EoTTensorFlowV2):
         self.zoom_range = (1.0, zoom) if isinstance(zoom, (int, float)) else zoom
         self._check_params()
 
-    def _transform(self, x: "tf.Tensor", **kwargs) -> "tf.Tensor":
+    def _transform(
+        self, x: "tf.Tensor", y: Optional["tf.Tensor"], **kwargs
+    ) -> Tuple["tf.Tensor", Optional["tf.Tensor"]]:
         """
-        Internal method implementing the corruption per image with zoom blur.
+        Transformation of an image with randomly sampled zoom blur.
 
-        :param x: Input samples of shape HWC.
-        :return: Corrupted samples.
+        :param x: Input samples.
+        :param y: Label of the samples `x`.
+        :return: Transformed samples and labels.
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 

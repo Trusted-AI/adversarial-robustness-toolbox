@@ -19,7 +19,7 @@
 This module implements EoT of adding Gaussian noise with uniformly sampled standard deviation.
 """
 import logging
-from typing import Tuple, Union, TYPE_CHECKING
+from typing import Tuple, Union, TYPE_CHECKING, Optional
 
 import numpy as np
 
@@ -62,18 +62,21 @@ class EoTGaussianNoisePyTorch(EoTPyTorch):
         self.std_range = (0.0, std) if isinstance(std, (int, float)) else std
         self._check_params()
 
-    def _transform(self, x: "torch.Tensor", **kwargs) -> "torch.Tensor":
+    def _transform(
+        self, x: "torch.Tensor", y: Optional["torch.Tensor"], **kwargs
+    ) -> Tuple["torch.Tensor", Optional["torch.Tensor"]]:
         """
-        Internal method implementing the corruption per image by adding Gaussian noise.
+        Transformation of an image with randomly sampled Gaussian noise.
 
         :param x: Input samples.
-        :return: Corrupted samples.
+        :param y: Label of the samples `x`.
+        :return: Transformed samples and labels.
         """
         import torch  # lgtm [py/repeated-import]
 
         std_i = np.random.uniform(low=self.std_range[0], high=self.std_range[1])
         delta_i = torch.normal(mean=torch.zeros_like(x), std=torch.ones_like(x) * std_i)
-        return torch.clamp(x + delta_i, min=self.clip_values[0], max=self.clip_values[1])
+        return torch.clamp(x + delta_i, min=self.clip_values[0], max=self.clip_values[1]), y
 
     def _check_params(self) -> None:
 

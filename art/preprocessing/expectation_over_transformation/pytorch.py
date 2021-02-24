@@ -53,12 +53,15 @@ class EoTPyTorch(PreprocessorPyTorch):
         EoTPyTorch._check_params(self)
 
     @abstractmethod
-    def _transform(self, x: "torch.Tensor", **kwargs) -> "torch.Tensor":
+    def _transform(
+        self, x: "torch.Tensor", y: Optional["torch.Tensor"], **kwargs
+    ) -> Tuple["torch.Tensor", Optional["torch.Tensor"]]:
         """
-        Internal method implementing the transformation per image.
+        Internal method implementing the transformation per input sample.
 
         :param x: Input samples.
-        :return: Corrupted samples.
+        :param y: Label of the samples `x`.
+        :return: Transformed samples and labels.
         """
         raise NotImplementedError
 
@@ -69,8 +72,8 @@ class EoTPyTorch(PreprocessorPyTorch):
         Apply corruptions to inputs `x`.
 
         :param x: Input samples.
-        :param y: Label of the sample `x`. This function does not modify `y`.
-        :return: Corrupted samples and labels.
+        :param y: Label of the samples `x`.
+        :return: Transformed samples and labels.
         """
         import torch  # lgtm [py/repeated-import]
 
