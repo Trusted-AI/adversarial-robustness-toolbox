@@ -319,21 +319,6 @@ class DetectorClassifier(ClassifierNeuralNetwork):
         self.classifier.save(filename=filename + "_classifier", path=path)
         self.detector.save(filename=filename + "_detector", path=path)
 
-    def clone_for_refitting(self) -> 'DetectorClassifier':  # lgtm [py/inheritance/incorrect-overridden-signature]
-        """
-        Create a copy of the estimator that can be refit from scratch.
-
-        :return: new estimator
-        """
-        raise NotImplementedError
-
-    def reset(self) -> None:
-        """
-        Resets the weights of the estimator so that it can be refit from scratch.
-
-        """
-        raise NotImplementedError
-
     def __repr__(self):
         repr_ = "%s(classifier=%r, detector=%r, postprocessing_defences=%r, " "preprocessing=%r)" % (
             self.__module__ + "." + self.__class__.__name__,

@@ -478,12 +478,6 @@ class TestWasserstein(TestBase):
             def input_shape(self):
                 pass
 
-            def clone_for_refitting(self):
-                pass
-
-            def reset(self):
-                pass
-
         classifier = DummyClassifier()
         attack = Wasserstein(
             classifier,

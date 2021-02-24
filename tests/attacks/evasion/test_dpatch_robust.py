@@ -53,12 +53,6 @@ def fix_get_robust_dpatch():
         def input_shape(self):
             return self._input_shape
 
-        def clone_for_refitting(self):
-            raise NotImplementedError
-
-        def reset(self):
-            raise NotImplementedError
-
     frcnn = DummyObjectDetector()
     attack = RobustDPatch(
         frcnn,

@@ -457,22 +457,6 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
 
         return loss_value
 
-    def clone_for_refitting(self) -> 'TensorFlowClassifier':  # lgtm [py/inheritance/incorrect-overridden-signature]
-        """
-        Create a copy of the classifier that can be refit from scratch. Will inherit same architecture, optimizer and
-        initialization as cloned model, but without weights.
-
-        :return: new estimator
-        """
-        raise NotImplementedError
-
-    def reset(self) -> None:
-        """
-        Resets the weights of the classifier so that it can be refit from scratch.
-
-        """
-        raise NotImplementedError
-
     def _init_class_grads(self, label=None):
         # pylint: disable=E0401
         import tensorflow as tf  # lgtm [py/repeated-import]

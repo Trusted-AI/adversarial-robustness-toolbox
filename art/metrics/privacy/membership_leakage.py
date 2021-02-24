@@ -21,20 +21,23 @@ This module implements membership leakage metrics.
 from __future__ import absolute_import, division, print_function, unicode_literals
 from typing import TYPE_CHECKING, Optional
 
-import logging
-
 import numpy as np
 import scipy
 
 from art.utils import check_and_transform_label_format, is_probability
-from art.estimators.classification.classifier import ClassifierMixin
 
 if TYPE_CHECKING:
     from art.estimators.classification import Classifier
 
 
-def PDTP(target_estimator: "Classifier", extra_estimator: "Classifier", x: np.ndarray, y: np.ndarray,
-         indexes: Optional[np.ndarray] = None, num_iter: Optional[int] = 10) -> np.ndarray:
+def PDTP(
+    target_estimator: "Classifier",
+    extra_estimator: "Classifier",
+    x: np.ndarray,
+    y: np.ndarray,
+    indexes: Optional[np.ndarray] = None,
+    num_iter: Optional[int] = 10,
+) -> np.ndarray:
     """
         Compute the pointwise differential training privacy metric for the given classifier and training set.
         | Paper link: https://arxiv.org/abs/1712.09136
@@ -51,8 +54,16 @@ def PDTP(target_estimator: "Classifier", extra_estimator: "Classifier", x: np.nd
         :return: an array containing the average PDTP value for each sample in the training set. The higher the value,
                  the higher the privacy leakage for that sample.
     """
-    if ClassifierMixin not in type(target_estimator).__mro__ or ClassifierMixin not in type(extra_estimator).__mro__:
-        raise ValueError("PDTP metric only supports classifiers")
+    from art.estimators.classification.pytorch import PyTorchClassifier
+    from art.estimators.classification.tensorflow import TensorFlowV2Classifier
+    from art.estimators.classification.scikitlearn import ScikitlearnClassifier
+
+    supported_classifiers = [PyTorchClassifier, TensorFlowV2Classifier, ScikitlearnClassifier]
+
+    if not isinstance(target_estimator, supported_classifiers) or not isinstance(
+        extra_estimator, supported_classifiers
+    ):
+        raise ValueError("PDTP metric only supports classifiers of type PyTorch, TensorFlowV2 and ScikitLearn.")
     if target_estimator.input_shape[0] != x.shape[1]:
         raise ValueError("Shape of x does not match input_shape of classifier")
     y = check_and_transform_label_format(y, target_estimator.nb_classes)
@@ -69,9 +80,7 @@ def PDTP(target_estimator: "Classifier", extra_estimator: "Classifier", x: np.nd
             try:
                 pred = scipy.special.softmax(pred, axis=1)
             except:
-                raise ValueError(
-                    "PDTP metric only supports classifiers that output logits or probabilities."
-                )
+                raise ValueError("PDTP metric only supports classifiers that output logits or probabilities.")
         # divide into 100 bins and return center of bin
         bins = np.array(np.arange(0.0, 1.01, 0.01).round(decimals=2))
         pred_bin_indexes = np.digitize(pred, bins)
@@ -86,9 +95,7 @@ def PDTP(target_estimator: "Classifier", extra_estimator: "Classifier", x: np.nd
             try:
                 extra_estimator.reset()
             except NotImplementedError:
-                raise ValueError(
-                    "PDTP metric can only be applied to classifiers that implement the reset method."
-                )
+                raise ValueError("PDTP metric can only be applied to classifiers that implement the reset method.")
             extra_estimator.fit(alt_x, alt_y)
             # get probabilities from new model
             alt_pred = extra_estimator.predict(x)

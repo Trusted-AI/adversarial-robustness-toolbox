@@ -134,18 +134,3 @@ class NumpyRandomizedSmoothing(
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         """
         return self.classifier.class_gradient(x, label)
-
-    def clone_for_refitting(self) -> 'NumpyRandomizedSmoothing':  # lgtm [py/inheritance/incorrect-overridden-signature]
-        """
-        Create a copy of the estimator that can be refit from scratch.
-
-        :return: new estimator
-        """
-        raise NotImplementedError
-
-    def reset(self) -> None:
-        """
-        Resets the weights of the estimator so that it can be refit from scratch.
-
-        """
-        raise NotImplementedError

@@ -84,12 +84,6 @@ def asr_dummy_estimator(framework):
                 def set_learning_phase():
                     pass
 
-                def clone_for_refitting(self):
-                    pass
-
-                def reset(self) -> None:
-                    pass
-
                 @property
                 def input_shape(self):
                     return None
@@ -108,12 +102,6 @@ def asr_dummy_estimator(framework):
                     return x
 
                 def set_learning_phase():
-                    pass
-
-                def clone_for_refitting(self):
-                    pass
-
-                def reset(self) -> None:
                     pass
 
                 @property

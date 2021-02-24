@@ -565,21 +565,6 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
                 kwargs["verbose"] = 0
             super().fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
 
-    def clone_for_refitting(self) -> 'KerasClassifier':  # lgtm [py/inheritance/incorrect-overridden-signature]
-        """
-        Create a copy of the classifier that can be refit from scratch.
-
-        :return: new classifier
-        """
-        raise NotImplementedError
-
-    def reset(self) -> None:
-        """
-        Resets the weights of the classifier so that it can be refit from scratch.
-
-        """
-        raise NotImplementedError
-
     def get_activations(
         self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
     ) -> np.ndarray:
