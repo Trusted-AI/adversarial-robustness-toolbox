@@ -28,7 +28,6 @@ import numpy as np
 
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin, LossGradientsMixin
 from art.estimators.classification.classifier import ClassifierMixin, ClassGradientsMixin
-from art.utils import deprecated
 
 if TYPE_CHECKING:
     from art.utils import CLIP_VALUES_TYPE
@@ -44,6 +43,11 @@ class BinaryInputDetector(ClassGradientsMixin, ClassifierMixin, LossGradientsMix
     the user and trains it on data labeled as clean (label 0) or adversarial (label 1).
     """
 
+    estimator_params = (
+        BaseEstimator.estimator_params + NeuralNetworkMixin.estimator_params + ClassifierMixin.estimator_params
+        + ["detector"]
+    )
+
     def __init__(self, detector: "ClassifierNeuralNetwork") -> None:
         """
         Create a `BinaryInputDetector` instance which performs binary classification on input data.
@@ -53,7 +57,6 @@ class BinaryInputDetector(ClassGradientsMixin, ClassifierMixin, LossGradientsMix
         super().__init__(
             model=None,
             clip_values=detector.clip_values,
-            channel_index=detector.channel_index,
             channels_first=detector.channels_first,
             preprocessing_defences=detector.preprocessing_defences,
             preprocessing=detector.preprocessing,
@@ -92,7 +95,7 @@ class BinaryInputDetector(ClassGradientsMixin, ClassifierMixin, LossGradientsMix
         """
         raise NotImplementedError
 
-    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the loss of the neural network for samples `x`.
 
@@ -116,11 +119,6 @@ class BinaryInputDetector(ClassGradientsMixin, ClassifierMixin, LossGradientsMix
     @property
     def clip_values(self) -> Optional["CLIP_VALUES_TYPE"]:
         return self.detector.clip_values
-
-    @property  # type: ignore
-    @deprecated(end_version="1.6.0", replaced_by="channels_first")
-    def channel_index(self) -> Optional[int]:
-        return self.detector.channel_index
 
     @property
     def channels_first(self) -> Optional[bool]:
@@ -166,6 +164,10 @@ class BinaryActivationDetector(
     the user and is trained on the values of the activations of a classifier at a given layer.
     """
 
+    estimator_params = (
+        BaseEstimator.estimator_params + NeuralNetworkMixin.estimator_params + ClassifierMixin.estimator_params
+    )
+
     def __init__(
         self, classifier: "ClassifierNeuralNetwork", detector: "ClassifierNeuralNetwork", layer: Union[int, str],
     ) -> None:  # lgtm [py/similar-function]
@@ -180,7 +182,6 @@ class BinaryActivationDetector(
         super().__init__(
             model=None,
             clip_values=detector.clip_values,
-            channel_index=detector.channel_index,
             channels_first=detector.channels_first,
             preprocessing_defences=detector.preprocessing_defences,
             preprocessing=detector.preprocessing,
@@ -236,7 +237,7 @@ class BinaryActivationDetector(
         """
         raise NotImplementedError
 
-    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the loss of the neural network for samples `x`.
 
@@ -260,11 +261,6 @@ class BinaryActivationDetector(
     @property
     def clip_values(self) -> Optional["CLIP_VALUES_TYPE"]:
         return self.detector.clip_values
-
-    @property  # type: ignore
-    @deprecated(end_version="1.6.0", replaced_by="channels_first")
-    def channel_index(self) -> Optional[int]:
-        return self.detector.channel_index
 
     @property
     def channels_first(self) -> Optional[bool]:

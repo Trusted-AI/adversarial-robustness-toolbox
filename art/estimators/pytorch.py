@@ -36,6 +36,9 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
     """
     Estimator class for PyTorch models.
     """
+    estimator_params = BaseEstimator.estimator_params + NeuralNetworkMixin.estimator_params + [
+        "device_type",
+    ]
 
     def __init__(self, device_type: str = "gpu", **kwargs) -> None:
         """
@@ -65,9 +68,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
 
         super().__init__(**kwargs)
 
-        from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
-
-        self.all_framework_preprocessing = all([isinstance(p, PreprocessorPyTorch) for p in self.preprocessing])
+        self._device_type = device_type
 
         # Set device
         if device_type == "cpu" or not torch.cuda.is_available():
@@ -75,6 +76,17 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         else:
             cuda_idx = torch.cuda.current_device()
             self._device = torch.device("cuda:{}".format(cuda_idx))
+
+        PyTorchEstimator._check_params(self)
+
+    @property
+    def device_type(self) -> str:
+        """
+        Return the type of device on which the estimator is run.
+
+        :return: Type of device on which the estimator is run, either `gpu` or `cpu`.
+        """
+        return self._device_type  # type: ignore
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs):
         """
@@ -101,7 +113,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         """
         NeuralNetworkMixin.fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs)
 
-    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the loss of the neural network for samples `x`.
 
@@ -113,6 +125,23 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         :rtype: Format as expected by the `model`
         """
         raise NotImplementedError
+
+    def set_params(self, **kwargs) -> None:
+        """
+        Take a dictionary of parameters and apply checks before setting them as attributes.
+
+        :param kwargs: A dictionary of attributes.
+        """
+        super().set_params(**kwargs)
+        self._check_params()
+
+    def _check_params(self) -> None:
+        from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
+
+        super()._check_params()
+        self.all_framework_preprocessing = all(
+            [isinstance(p, PreprocessorPyTorch) for p in self.preprocessing_operations]
+        )
 
     def _apply_preprocessing(self, x, y, fit: bool = False, no_grad=True) -> Tuple[Any, Any]:
         """
@@ -142,7 +171,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
             StandardisationMeanStdPyTorch,
         )
 
-        if not self.preprocessing:
+        if not self.preprocessing_operations:
             return x, y
 
         if isinstance(x, torch.Tensor):
@@ -158,7 +187,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
                     y = torch.tensor(y, device=self._device)
 
             def chain_processes(x, y):
-                for preprocess in self.preprocessing:
+                for preprocess in self.preprocessing_operations:
                     if fit:
                         if preprocess.apply_fit:
                             x, y = preprocess.forward(x, y)
@@ -179,12 +208,12 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
                 if y is not None:
                     y = y.cpu().numpy()
 
-        elif len(self.preprocessing) == 1 or (
-            len(self.preprocessing) == 2
-            and isinstance(self.preprocessing[-1], (StandardisationMeanStd, StandardisationMeanStdPyTorch))
+        elif len(self.preprocessing_operations) == 1 or (
+            len(self.preprocessing_operations) == 2
+            and isinstance(self.preprocessing_operations[-1], (StandardisationMeanStd, StandardisationMeanStdPyTorch))
         ):
             # Compatible with non-PyTorch defences if no chaining.
-            for preprocess in self.preprocessing:
+            for preprocess in self.preprocessing_operations:
                 x, y = preprocess(x, y)
 
         else:
@@ -218,7 +247,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
             StandardisationMeanStdPyTorch,
         )
 
-        if not self.preprocessing:
+        if not self.preprocessing_operations:
             return gradients
 
         if isinstance(x, torch.Tensor):
@@ -232,7 +261,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
             gradients = torch.tensor(gradients, device=self._device)
             x_orig = x
 
-            for preprocess in self.preprocessing:
+            for preprocess in self.preprocessing_operations:
                 if fit:
                     if preprocess.apply_fit:
                         x = preprocess.estimate_forward(x)
@@ -249,13 +278,18 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
                     "The input shape is {} while the gradient shape is {}".format(x.shape, gradients.shape)
                 )
 
-        elif len(self.preprocessing) == 1 or (
-            len(self.preprocessing) == 2
-            and isinstance(self.preprocessing[-1], (StandardisationMeanStd, StandardisationMeanStdPyTorch))
+        elif len(self.preprocessing_operations) == 1 or (
+            len(self.preprocessing_operations) == 2
+            and isinstance(self.preprocessing_operations[-1], (StandardisationMeanStd, StandardisationMeanStdPyTorch))
         ):
             # Compatible with non-PyTorch defences if no chaining.
-            defence = self.preprocessing[0]
-            gradients = defence.estimate_gradient(x, gradients)
+            for preprocess in self.preprocessing_operations[::-1]:
+                if fit:
+                    if preprocess.apply_fit:
+                        gradients = preprocess.estimate_gradient(x, gradients)
+                else:
+                    if preprocess.apply_predict:
+                        gradients = preprocess.estimate_gradient(x, gradients)
 
         else:
             raise NotImplementedError("The current combination of preprocessing types is not supported.")
