@@ -25,18 +25,17 @@ specifically for PyTorch.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-
-from typing import Tuple, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional, Tuple
 
 import numpy as np
 import scipy
 
 from art.attacks.attack import EvasionAttack
+from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNetworkMixin
 from art.estimators.pytorch import PyTorchEstimator
-from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizerMixin
 from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
-from art.config import ART_NUMPY_DTYPE
+from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizerMixin
 
 if TYPE_CHECKING:
     import torch
@@ -455,7 +454,9 @@ class ImperceptibleASRPyTorch(EvasionAttack):
 
         # Transform data into the model input space
         inputs, targets, input_rates, target_sizes, batch_idx = self.estimator.preprocess_transform_model_input(
-            x=masked_adv_input.to(self.estimator.device), y=original_output, real_lengths=real_lengths,
+            x=masked_adv_input.to(self.estimator.device),
+            y=original_output,
+            real_lengths=real_lengths,
         )
 
         # Compute real input sizes
@@ -595,7 +596,10 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         return result
 
     def _forward_2nd_stage(
-        self, local_delta_rescale: "torch.Tensor", theta_batch: np.ndarray, original_max_psd_batch: np.ndarray,
+        self,
+        local_delta_rescale: "torch.Tensor",
+        theta_batch: np.ndarray,
+        original_max_psd_batch: np.ndarray,
     ) -> "torch.Tensor":
         """
         The forward pass of the second stage of the attack.
