@@ -100,7 +100,7 @@ def insert_image(
     Augments a matrix by setting a checkboard-like pattern of values some `distance` away from the bottom-right
     edge to 1. Works for single images or a batch of images.
 
-    :param x: N x W x H x C or N x C x W x H or N x W x H x C matrix or W x H x C matrix.
+    :param x: N x W x H x C or N x C x W x H or N x W x H x C matrix or W x H x C matrix. X is in range [0,1]
     :param backdoor_path: The path to the image to insert as a trigger.
     :param channels_first: Whether the channels axis is in the first or last dimension
     :param random: Whether or not the image should be randomly placed somewhere on the image.
@@ -131,9 +131,9 @@ def insert_image(
     backdoored_img = Image.new('RGBA', (width, height), 0)
 
     if no_color:
-        backdoored_input = Image.fromarray(np.copy(x).astype('uint8').squeeze(axis=2), mode=mode)
+        backdoored_input = Image.fromarray(np.copy(x * 255).astype('uint8').squeeze(axis=2), mode=mode)
     else:
-        backdoored_input = Image.fromarray(np.copy(x).astype('uint8'), mode=mode)
+        backdoored_input = Image.fromarray(np.copy(x * 255).astype('uint8'), mode=mode)
 
     orig_img.paste(backdoored_input)
 
@@ -156,7 +156,7 @@ def insert_image(
 
     backdoored_img = backdoored_img.convert(mode)
 
-    res = np.array(backdoored_img)
+    res = np.array(backdoored_img) / 255.0
 
     if no_color:
         res = np.expand_dims(res, 2)
