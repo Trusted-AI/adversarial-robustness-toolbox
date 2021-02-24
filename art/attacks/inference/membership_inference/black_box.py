@@ -178,9 +178,9 @@ class MembershipInferenceBlackBox(InferenceAttack):
             if NeuralNetworkMixin not in type(self.estimator).__mro__:
                 raise TypeError("loss input_type can only be used with neural networks")
             # members
-            features = self.estimator.loss(x, y).astype(np.float32).reshape(-1, 1)
+            features = self.estimator.compute_loss(x, y).astype(np.float32).reshape(-1, 1)
             # non-members
-            test_features = self.estimator.loss(test_x, test_y).astype(np.float32).reshape(-1, 1)
+            test_features = self.estimator.compute_loss(test_x, test_y).astype(np.float32).reshape(-1, 1)
         else:
             raise ValueError("Illegal value for parameter `input_type`.")
 
@@ -198,13 +198,7 @@ class MembershipInferenceBlackBox(InferenceAttack):
             import torch.nn as nn  # lgtm [py/repeated-import]
             import torch.optim as optim  # lgtm [py/repeated-import]
             from torch.utils.data import DataLoader  # lgtm [py/repeated-import]
-
-            use_cuda = torch.cuda.is_available()
-
-            def to_cuda(x):
-                if use_cuda:
-                    x = x.cuda()
-                return x
+            from art.utils import to_cuda
 
             loss_fn = nn.BCELoss()
             optimizer = optim.Adam(self.attack_model.parameters(), lr=self.learning_rate)
@@ -256,19 +250,23 @@ class MembershipInferenceBlackBox(InferenceAttack):
         if self.input_type == "prediction":
             features = self.estimator.predict(x).astype(np.float32)
         elif self.input_type == "loss":
-            features = self.estimator.loss(x, y).astype(np.float32).reshape(-1, 1)
+            features = self.estimator.compute_loss(x, y).astype(np.float32).reshape(-1, 1)
 
         if self.default_model and self.attack_model_type == "nn":
             import torch  # lgtm [py/repeated-import]
             from torch.utils.data import DataLoader  # lgtm [py/repeated-import]
+            from art.utils import to_cuda, from_cuda
 
             self.attack_model.eval()
             inferred = None
             test_set = self._get_attack_dataset(f_1=features, f_2=y)
             test_loader = DataLoader(test_set, batch_size=self.batch_size, shuffle=True, num_workers=0)
             for input1, input2, _ in test_loader:
+                input1, input2 = to_cuda(input1), to_cuda(input2)
                 outputs = self.attack_model(input1, input2)
                 predicted = torch.round(outputs)
+                predicted = from_cuda(predicted)
+
                 if inferred is None:
                     inferred = predicted.detach().numpy()
                 else:

@@ -31,7 +31,7 @@ from tqdm.auto import trange
 
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
-from art.estimators.estimator import BaseEstimator
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import check_and_transform_label_format, get_labels_np_array
 
@@ -53,7 +53,7 @@ class SquareAttack(EvasionAttack):
         "verbose",
     ]
 
-    _estimator_requirements = (BaseEstimator, ClassifierMixin)
+    _estimator_requirements = (BaseEstimator, ClassifierMixin, NeuralNetworkMixin)
 
     def __init__(
         self,
@@ -259,7 +259,7 @@ class SquareAttack(EvasionAttack):
 
                     return delta
 
-                delta_init = np.zeros(x_robust.shape)
+                delta_init = np.zeros(x_robust.shape, dtype=ART_NUMPY_DTYPE)
 
                 height_start = 0
                 for _ in range(n_tiles):
