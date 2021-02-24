@@ -23,8 +23,8 @@ from typing import Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 
-from art.preprocessing.expectation_over_transformation.natural_corruptions.tensorflow import (
-    EOTNaturalCorruptionsTensorFlowV2,
+from art.preprocessing.expectation_over_transformation.tensorflow import (
+    EoTTensorFlowV2,
 )
 
 if TYPE_CHECKING:
@@ -33,7 +33,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class EOTGaussianNoiseTensorFlow(EOTNaturalCorruptionsTensorFlowV2):
+class EoTGaussianNoiseTensorFlow(EoTTensorFlowV2):
     """
     This module implements EoT of adding Gaussian noise with uniformly sampled standard deviation.
     """
@@ -47,7 +47,7 @@ class EOTGaussianNoiseTensorFlow(EOTNaturalCorruptionsTensorFlowV2):
         apply_predict: bool = True,
     ) -> None:
         """
-        Create an instance of EOTGaussianNoiseTensorFlow.
+        Create an instance of EoTGaussianNoiseTensorFlow.
 
         :param nb_samples: Number of random samples per input sample.
         :param clip_values: Tuple of float representing minimum and maximum values of input `(min, max)`.
@@ -64,7 +64,7 @@ class EOTGaussianNoiseTensorFlow(EOTNaturalCorruptionsTensorFlowV2):
         self.std_range = (0.0, std) if isinstance(std, (int, float)) else std
         self._check_params()
 
-    def _corrupt(self, x: "tf.Tensor", **kwargs) -> "tf.Tensor":
+    def _transform(self, x: "tf.Tensor", **kwargs) -> "tf.Tensor":
         """
         Internal method implementing the corruption per image by adding Gaussian noise.
 

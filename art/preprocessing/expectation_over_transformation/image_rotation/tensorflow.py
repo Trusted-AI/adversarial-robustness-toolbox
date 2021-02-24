@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class EOTImageRotationTensorFlowV2(PreprocessorTensorFlowV2):
+class EoTImageRotationTensorFlowV2(PreprocessorTensorFlowV2):
     """
     This module implements Expectation over Transformation preprocessing.
     """
@@ -53,7 +53,7 @@ class EOTImageRotationTensorFlowV2(PreprocessorTensorFlowV2):
         apply_predict: bool = True,
     ) -> None:
         """
-        Create an instance of EOTImageRotationTensorFlowV2.
+        Create an instance of EoTImageRotationTensorFlowV2.
 
         :param nb_samples: Number of random samples per input sample.
         :param angles_range: A positive scalar angle in radians defining the uniform sampling range from negative and

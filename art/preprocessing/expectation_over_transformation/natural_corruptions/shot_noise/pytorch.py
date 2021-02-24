@@ -23,7 +23,7 @@ from typing import Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 
-from art.preprocessing.expectation_over_transformation.natural_corruptions.pytorch import EOTNaturalCorruptionsPyTorch
+from art.preprocessing.expectation_over_transformation.pytorch import EoTPyTorch
 
 if TYPE_CHECKING:
     import torch
@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class EOTShotNoisePyTorch(EOTNaturalCorruptionsPyTorch):
+class EoTShotNoisePyTorch(EoTPyTorch):
     """
     This module implements EoT of adding shot noise (Poisson) with uniformly sampled rate parameter.
     """
@@ -45,7 +45,7 @@ class EOTShotNoisePyTorch(EOTNaturalCorruptionsPyTorch):
         apply_predict: bool = True,
     ) -> None:
         """
-        Create an instance of EOTShotNoisePyTorch.
+        Create an instance of EoTShotNoisePyTorch.
 
         :param nb_samples: Number of random samples per input sample.
         :param clip_values: Tuple of float representing minimum and maximum values of input `(min, max)`.
@@ -63,7 +63,7 @@ class EOTShotNoisePyTorch(EOTNaturalCorruptionsPyTorch):
         self.lam_range = (0.0, lam) if isinstance(lam, (int, float)) else lam
         self._check_params()
 
-    def _corrupt(self, x: "torch.Tensor", **kwargs) -> "torch.Tensor":
+    def _transform(self, x: "torch.Tensor", **kwargs) -> "torch.Tensor":
         """
         Internal method implementing the corruption per image by adding shot (Poisson) noise.
 

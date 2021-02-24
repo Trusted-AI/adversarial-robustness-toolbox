@@ -23,7 +23,7 @@ from typing import Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 
-from art.preprocessing.expectation_over_transformation.natural_corruptions.pytorch import EOTNaturalCorruptionsPyTorch
+from art.preprocessing.expectation_over_transformation.pytorch import EoTPyTorch
 
 if TYPE_CHECKING:
     import torch
@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class EOTGaussianNoisePyTorch(EOTNaturalCorruptionsPyTorch):
+class EoTGaussianNoisePyTorch(EoTPyTorch):
     """
     This module implements EoT of adding Gaussian noise with uniformly sampled standard deviation.
     """
@@ -45,7 +45,7 @@ class EOTGaussianNoisePyTorch(EOTNaturalCorruptionsPyTorch):
         apply_predict: bool = True,
     ) -> None:
         """
-        Create an instance of EOTBrightnessPyTorch.
+        Create an instance of EoTBrightnessPyTorch.
 
         :param nb_samples: Number of random samples per input sample.
         :param clip_values: Tuple of float representing minimum and maximum values of input `(min, max)`.
@@ -62,7 +62,7 @@ class EOTGaussianNoisePyTorch(EOTNaturalCorruptionsPyTorch):
         self.std_range = (0.0, std) if isinstance(std, (int, float)) else std
         self._check_params()
 
-    def _corrupt(self, x: "torch.Tensor", **kwargs) -> "torch.Tensor":
+    def _transform(self, x: "torch.Tensor", **kwargs) -> "torch.Tensor":
         """
         Internal method implementing the corruption per image by adding Gaussian noise.
 

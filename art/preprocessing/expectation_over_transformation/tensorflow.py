@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module defines a base class for EoT of natural corruptions in TensorFlow.
+This module defines a base class for EoT in TensorFlow v2.
 """
 from abc import abstractmethod
 import logging
@@ -30,16 +30,16 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class EOTNaturalCorruptionsTensorFlowV2(PreprocessorTensorFlowV2):
+class EoTTensorFlowV2(PreprocessorTensorFlowV2):
     """
-    This module defines a base class for EoT of natural corruptions in TensorFlow.
+    This module defines a base class for EoT in TensorFlow v2.
     """
 
     def __init__(
         self, nb_samples: int, clip_values: Tuple[float, float], apply_fit: bool = False, apply_predict: bool = True,
     ) -> None:
         """
-        Create an instance of EOTNaturalCorruptionsTensorFlowV2.
+        Create an instance of EoTTensorFlowV2.
 
         :param nb_samples: Number of random samples per input sample.
         :param clip_values: Tuple of float representing minimum and maximum values of input `(min, max)`.
@@ -50,12 +50,12 @@ class EOTNaturalCorruptionsTensorFlowV2(PreprocessorTensorFlowV2):
 
         self.nb_samples = nb_samples
         self.clip_values = clip_values
-        EOTNaturalCorruptionsTensorFlowV2._check_params(self)
+        EoTTensorFlowV2._check_params(self)
 
     @abstractmethod
-    def _corrupt(self, x: "tf.Tensor", **kwargs) -> "tf.Tensor":
+    def _transform(self, x: "tf.Tensor", **kwargs) -> "tf.Tensor":
         """
-        Internal method implementing the corruption per image.
+        Internal method implementing the transformation per image.
 
         :param x: Input samples.
         :return: Corrupted samples.
@@ -78,7 +78,7 @@ class EOTNaturalCorruptionsTensorFlowV2(PreprocessorTensorFlowV2):
         for i_image in range(x.shape[0]):
             for i_sample in range(self.nb_samples):
                 x_i = x[i_image]
-                x_preprocess_i = self._corrupt(x_i)
+                x_preprocess_i = self._transform(x_i)
                 x_preprocess_list.append(x_preprocess_i)
 
                 if y is not None:

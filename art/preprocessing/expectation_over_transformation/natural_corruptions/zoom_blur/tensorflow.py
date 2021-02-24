@@ -23,8 +23,8 @@ from typing import Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 
-from art.preprocessing.expectation_over_transformation.natural_corruptions.tensorflow import (
-    EOTNaturalCorruptionsTensorFlowV2,
+from art.preprocessing.expectation_over_transformation.tensorflow import (
+    EoTTensorFlowV2,
 )
 
 if TYPE_CHECKING:
@@ -33,7 +33,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class EOTZoomBlurTensorFlow(EOTNaturalCorruptionsTensorFlowV2):
+class EoTZoomBlurTensorFlow(EoTTensorFlowV2):
     """
     This module implements EoT of zoom blur with uniformly sampled zoom factor.
     """
@@ -65,7 +65,7 @@ class EOTZoomBlurTensorFlow(EOTNaturalCorruptionsTensorFlowV2):
         self.zoom_range = (1.0, zoom) if isinstance(zoom, (int, float)) else zoom
         self._check_params()
 
-    def _corrupt(self, x: "tf.Tensor", **kwargs) -> "tf.Tensor":
+    def _transform(self, x: "tf.Tensor", **kwargs) -> "tf.Tensor":
         """
         Internal method implementing the corruption per image with zoom blur.
 

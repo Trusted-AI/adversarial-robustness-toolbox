@@ -23,7 +23,7 @@ from typing import Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 
-from art.preprocessing.expectation_over_transformation.natural_corruptions.pytorch import EOTNaturalCorruptionsPyTorch
+from art.preprocessing.expectation_over_transformation.pytorch import EoTPyTorch
 
 if TYPE_CHECKING:
     import torch
@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class EOTZoomBlurPyTorch(EOTNaturalCorruptionsPyTorch):
+class EoTZoomBlurPyTorch(EoTPyTorch):
     """
     This module implements EoT of zoom blur with uniformly sampled zoom factor.
     """
@@ -45,7 +45,7 @@ class EOTZoomBlurPyTorch(EOTNaturalCorruptionsPyTorch):
         apply_predict: bool = True,
     ) -> None:
         """
-        Create an instance of EOTZoomBlurPyTorch.
+        Create an instance of EoTZoomBlurPyTorch.
 
         :param nb_samples: Number of random samples per input sample.
         :param clip_values: Tuple of float representing minimum and maximum values of input `(min, max)`.
@@ -63,7 +63,7 @@ class EOTZoomBlurPyTorch(EOTNaturalCorruptionsPyTorch):
         self.zoom_range = (1.0, zoom) if isinstance(zoom, (int, float)) else zoom
         self._check_params()
 
-    def _corrupt(self, x: "torch.Tensor", **kwargs) -> "torch.Tensor":
+    def _transform(self, x: "torch.Tensor", **kwargs) -> "torch.Tensor":
         """
         Internal method implementing the corruption per image with zoom blur.
 

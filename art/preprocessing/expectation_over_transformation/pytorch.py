@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module defines a base class for EoT of natural corruptions in PyTorch.
+This module defines a base class for EoT in PyTorch.
 """
 from abc import abstractmethod
 import logging
@@ -30,16 +30,16 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class EOTNaturalCorruptionsPyTorch(PreprocessorPyTorch):
+class EoTPyTorch(PreprocessorPyTorch):
     """
-    This module defines a base class for EoT of natural corruptions in PyTorch.
+    This module defines a base class for EoT in PyTorch.
     """
 
     def __init__(
         self, nb_samples: int, clip_values: Tuple[float, float], apply_fit: bool = False, apply_predict: bool = True,
     ) -> None:
         """
-        Create an instance of EOTNaturalCorruptionsPyTorch.
+        Create an instance of EoTPyTorch.
 
         :param nb_samples: Number of random samples per input sample.
         :param clip_values: Tuple of float representing minimum and maximum values of input `(min, max)`.
@@ -50,12 +50,12 @@ class EOTNaturalCorruptionsPyTorch(PreprocessorPyTorch):
 
         self.nb_samples = nb_samples
         self.clip_values = clip_values
-        EOTNaturalCorruptionsPyTorch._check_params(self)
+        EoTPyTorch._check_params(self)
 
     @abstractmethod
-    def _corrupt(self, x: "torch.Tensor", **kwargs) -> "torch.Tensor":
+    def _transform(self, x: "torch.Tensor", **kwargs) -> "torch.Tensor":
         """
-        Internal method implementing the corruption per image.
+        Internal method implementing the transformation per image.
 
         :param x: Input samples.
         :return: Corrupted samples.
@@ -80,7 +80,7 @@ class EOTNaturalCorruptionsPyTorch(PreprocessorPyTorch):
         for i_image in range(x.shape[0]):
             for i_sample in range(self.nb_samples):
                 x_i = x[i_image]
-                x_preprocess_i = self._corrupt(x_i)
+                x_preprocess_i = self._transform(x_i)
                 x_preprocess_list.append(x_preprocess_i)
 
                 if y is not None:

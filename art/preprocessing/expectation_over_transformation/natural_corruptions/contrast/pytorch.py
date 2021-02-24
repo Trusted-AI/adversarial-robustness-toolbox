@@ -23,7 +23,7 @@ from typing import Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 
-from art.preprocessing.expectation_over_transformation.natural_corruptions.pytorch import EOTNaturalCorruptionsPyTorch
+from art.preprocessing.expectation_over_transformation.pytorch import EoTPyTorch
 
 if TYPE_CHECKING:
     import torch
@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class EOTContrastPyTorch(EOTNaturalCorruptionsPyTorch):
+class EoTContrastPyTorch(EoTPyTorch):
     """
     This module implements EoT of changes in contrast with uniformly sampled factor.
     """
@@ -45,7 +45,7 @@ class EOTContrastPyTorch(EOTNaturalCorruptionsPyTorch):
         apply_predict: bool = True,
     ) -> None:
         """
-        Create an instance of EOTBrightnessPyTorch.
+        Create an instance of EoTContrastPyTorch.
 
         :param nb_samples: Number of random samples per input sample.
         :param clip_values: Tuple of float representing minimum and maximum values of input `(min, max)`.
@@ -65,7 +65,7 @@ class EOTContrastPyTorch(EOTNaturalCorruptionsPyTorch):
         )
         self._check_params()
 
-    def _corrupt(self, x: "torch.Tensor", **kwargs) -> "torch.Tensor":
+    def _transform(self, x: "torch.Tensor", **kwargs) -> "torch.Tensor":
         """
         Internal method implementing the corruption per image by changing its contrast.
 

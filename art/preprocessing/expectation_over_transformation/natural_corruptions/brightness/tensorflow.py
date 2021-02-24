@@ -23,8 +23,8 @@ from typing import Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 
-from art.preprocessing.expectation_over_transformation.natural_corruptions.tensorflow import (
-    EOTNaturalCorruptionsTensorFlowV2,
+from art.preprocessing.expectation_over_transformation.tensorflow import (
+    EoTTensorFlowV2,
 )
 
 if TYPE_CHECKING:
@@ -33,7 +33,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class EOTBrightnessTensorFlowV2(EOTNaturalCorruptionsTensorFlowV2):
+class EoTBrightnessTensorFlowV2(EoTTensorFlowV2):
     """
     This module implements EoT of changes in brightness by addition of uniformly sampled delta.
     """
@@ -47,7 +47,7 @@ class EOTBrightnessTensorFlowV2(EOTNaturalCorruptionsTensorFlowV2):
         apply_predict: bool = True,
     ) -> None:
         """
-        Create an instance of EOTBrightnessTensorFlowV2.
+        Create an instance of EoTBrightnessTensorFlowV2.
 
         :param nb_samples: Number of random samples per input sample.
         :param clip_values: Tuple of float representing minimum and maximum values of input `(min, max)`.
@@ -65,7 +65,7 @@ class EOTBrightnessTensorFlowV2(EOTNaturalCorruptionsTensorFlowV2):
         self.delta_range = (-delta, delta) if isinstance(delta, (int, float)) else delta
         self._check_params()
 
-    def _corrupt(self, x: "tf.Tensor", **kwargs) -> "tf.Tensor":
+    def _transform(self, x: "tf.Tensor", **kwargs) -> "tf.Tensor":
         """
         Internal method implementing the corruption per image by changing its brightness.
 
