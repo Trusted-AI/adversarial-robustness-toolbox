@@ -45,7 +45,7 @@ def test_expectation_over_transformation_image_classification_tensorflow_v2(art_
         nb_samples = 3
 
         eot = EoTImageRotationTensorFlowV2(
-            nb_samples=nb_samples, angles_range=3.14 / 4, clip_values=None, label_type="classification"
+            nb_samples=nb_samples, angles_range=3.14 / 4, clip_values=(0.0, 1.0), label_type="classification"
         )
         x_eot, y_eot = eot.forward(x=x_train_mnist, y=y_train_mnist)
         assert x_eot.shape[0] == nb_samples * x_train_mnist.shape[0]
