@@ -23,7 +23,7 @@ import numpy as np
 from numpy.testing import assert_array_equal
 import pytest
 
-from art.preprocessing.expectation_over_transformation import EOTImageRotationTensorFlowV2
+from art.preprocessing.expectation_over_transformation import EoTImageRotationTensorFlowV2
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
@@ -44,7 +44,7 @@ def test_expectation_over_transformation_image_classification_tensorflow_v2(art_
 
         nb_samples = 3
 
-        eot = EOTImageRotationTensorFlowV2(
+        eot = EoTImageRotationTensorFlowV2(
             nb_samples=nb_samples, angles_range=3.14 / 4, clip_values=None, label_type="classification"
         )
         x_eot, y_eot = eot.forward(x=x_train_mnist, y=y_train_mnist)
