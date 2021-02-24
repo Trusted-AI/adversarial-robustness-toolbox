@@ -31,7 +31,6 @@ from tqdm.auto import trange, tqdm
 
 from art.defences.detector.evasion.subsetscanning.scanner import Scanner
 from art.estimators.classification.classifier import ClassifierNeuralNetwork
-from art.utils import deprecated
 
 
 if TYPE_CHECKING:
@@ -68,7 +67,6 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
         super().__init__(
             model=None,
             clip_values=classifier.clip_values,
-            channel_index=classifier.channel_index,
             channels_first=classifier.channels_first,
             preprocessing_defences=classifier.preprocessing_defences,
             preprocessing=classifier.preprocessing,
@@ -244,11 +242,6 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
     @property
     def clip_values(self) -> Optional["CLIP_VALUES_TYPE"]:
         return self.detector.clip_values
-
-    @property  # type: ignore
-    @deprecated(end_version="1.6.0", replaced_by="channels_first")
-    def channel_index(self) -> Optional[int]:
-        return self.detector.channel_index
 
     @property
     def channels_first(self) -> bool:

@@ -31,7 +31,6 @@ from tqdm.auto import trange
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
-from art.utils import Deprecated, deprecated_keyword_arg
 from art import config
 
 if TYPE_CHECKING:
@@ -225,13 +224,11 @@ class DPatch(EvasionAttack):
         return self._patch
 
     @staticmethod
-    @deprecated_keyword_arg("channel_index", end_version="1.6.0", replaced_by="channels_first")
     def _augment_images_with_patch(
         x: np.ndarray,
         patch: np.ndarray,
         random_location: bool,
         channels_first: bool,
-        channel_index=Deprecated,
         mask: Optional[np.ndarray] = None,
     ) -> Tuple[np.ndarray, List[Dict[str, int]]]:
         """
@@ -242,21 +239,11 @@ class DPatch(EvasionAttack):
         :param random_location: If True apply patch at randomly shifted locations, otherwise place patch at origin
                                 (top-left corner).
         :param channels_first: Set channels first or last.
-        :param channel_index: Index of the color channel.
-        :type channel_index: `int`
         :param mask: An boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
                      (N, H, W) without their channel dimensions. Any features for which the mask is True can be the
                      center location of the patch during sampling.
         :type mask: `np.ndarray`
         """
-        # Remove in 1.6.0
-        if channel_index == 3:
-            channels_first = False
-        elif channel_index == 1:
-            channels_first = True
-        elif channel_index is not Deprecated:
-            raise ValueError("Not a proper channel_index. Use channels_first.")
-
         transformations = list()
         x_copy = x.copy()
         patch_copy = patch.copy()
