@@ -182,6 +182,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         self.global_optimal_delta.to(self.estimator.device)
 
         # Create the optimizers
+        self._optimizer_1st_stage_arg = optimizer_1st_stage
         if optimizer_1st_stage is None:
             self.optimizer_1st_stage = torch.optim.SGD(
                 params=[self.global_optimal_delta], lr=self.learning_rate_1st_stage
@@ -191,6 +192,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
                 params=[self.global_optimal_delta], lr=self.learning_rate_1st_stage
             )
 
+        self._optimizer_2nd_stage_arg = optimizer_2nd_stage
         if optimizer_2nd_stage is None:
             self.optimizer_2nd_stage = torch.optim.SGD(
                 params=[self.global_optimal_delta], lr=self.learning_rate_2nd_stage
@@ -258,6 +260,16 @@ class ImperceptibleASRPyTorch(EvasionAttack):
 
             # First reset delta
             self.global_optimal_delta.data = torch.zeros(self.batch_size, self.global_max_length).type(torch.float32)
+
+            # Next, reset non-SGD optimizers
+            if self._optimizer_1st_stage_arg is not None:
+                self.optimizer_1st_stage = self._optimizer_1st_stage_arg(
+                    params=[self.global_optimal_delta], lr=self.learning_rate_1st_stage
+                )
+            if self._optimizer_2nd_stage_arg is not None:
+                self.optimizer_2nd_stage = self._optimizer_2nd_stage_arg(
+                    params=[self.global_optimal_delta], lr=self.learning_rate_2nd_stage
+                )
 
             # Then compute the batch
             adv_x_batch = self._generate_batch(adv_x[batch_index_1:batch_index_2], y[batch_index_1:batch_index_2])
