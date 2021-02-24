@@ -83,11 +83,15 @@ class EoTPyTorch(PreprocessorPyTorch):
         for i_image in range(x.shape[0]):
             for i_sample in range(self.nb_samples):
                 x_i = x[i_image]
-                x_preprocess_i = self._transform(x_i)
-                x_preprocess_list.append(x_preprocess_i)
+                if y is not None:
+                    y_i = y[i_image]
+                else:
+                    y_i = None
+                x_preprocess, y_preprocess_i = self._transform(x_i, y_i)
+                x_preprocess_list.append(x_preprocess)
 
                 if y is not None:
-                    y_preprocess_list.append(y[i_image])
+                    y_preprocess_list.append(y_preprocess_i)
 
         x_preprocess = torch.stack(x_preprocess_list, dim=0)
         if y is None:

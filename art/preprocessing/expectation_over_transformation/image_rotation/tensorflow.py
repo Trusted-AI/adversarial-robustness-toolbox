@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements
+This module implements Expectation over Transformation preprocessing for image rotation.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 
 class EoTImageRotationTensorFlowV2(EoTTensorFlowV2):
     """
-    This module implements Expectation over Transformation preprocessing.
+    This module implements Expectation over Transformation preprocessing for image rotation.
     """
 
     params = ["nb_samples", "angles_range", "clip_values", "label_type"]
@@ -86,11 +86,11 @@ class EoTImageRotationTensorFlowV2(EoTTensorFlowV2):
         import tensorflow_addons as tfa
 
         angles = tf.random.uniform(shape=(), minval=-self.angles_range, maxval=self.angles_range)
-        x_preprocess_i = tfa.image.rotate(images=x, angles=angles, interpolation="NEAREST", name=None)
-        x_preprocess_i = tf.clip_by_value(
-            t=x_preprocess_i, clip_value_min=-self.clip_values[0], clip_value_max=self.clip_values[1], name=None
+        x_preprocess = tfa.image.rotate(images=x, angles=angles, interpolation="NEAREST", name=None)
+        x_preprocess = tf.clip_by_value(
+            t=x_preprocess, clip_value_min=-self.clip_values[0], clip_value_max=self.clip_values[1], name=None
         )
-        return x_preprocess_i, y
+        return x_preprocess, y
 
     def _check_params(self) -> None:
 

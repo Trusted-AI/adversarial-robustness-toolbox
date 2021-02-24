@@ -92,7 +92,7 @@ class BaseEstimator(ABC):
         if preprocessing is None:
             pass
         elif isinstance(preprocessing, tuple):
-            from art.preprocessing.standardisation_mean_std.standardisation_mean_std import StandardisationMeanStd
+            from art.preprocessing.standardisation_mean_std.numpy import StandardisationMeanStd
 
             self.preprocessing.append(StandardisationMeanStd(mean=preprocessing[0], std=preprocessing[1]))
         elif isinstance(preprocessing, Preprocessor):
