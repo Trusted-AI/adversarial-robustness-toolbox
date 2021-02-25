@@ -123,7 +123,6 @@ class PoisoningAttackCleanLabelBackdoor(PoisoningAttackBlackBox):
 
         # Run untargeted PGD on selected points, making it hard to classify correctly
         perturbed_input = self.attack.generate(data[selected_indices])
-        logger.warning(f"perturbed input shape: {perturbed_input.shape}")
         no_change_detected = np.array([np.all(data[selected_indices][poison_idx] == perturbed_input[poison_idx])
                                        for poison_idx in range(len(perturbed_input))])
 
