@@ -121,19 +121,20 @@ def insert_image(
     if n_dim != 3:
         raise ValueError("Invalid array shape " + str(x.shape))
 
+    data = np.copy(x)
     if channels_first:
-        num_channels, width, height = x.shape
-    else:
-        width, height, num_channels = x.shape
+        data = data.transpose([2, 0, 1])
+
+    width, height, num_channels = x.shape
 
     no_color = num_channels == 1
     orig_img = Image.new('RGBA', (width, height), 0)
     backdoored_img = Image.new('RGBA', (width, height), 0)
 
     if no_color:
-        backdoored_input = Image.fromarray(np.copy(x * 255).astype('uint8').squeeze(axis=2), mode=mode)
+        backdoored_input = Image.fromarray((data * 255).astype('uint8').squeeze(axis=2), mode=mode)
     else:
-        backdoored_input = Image.fromarray(np.copy(x * 255).astype('uint8'), mode=mode)
+        backdoored_input = Image.fromarray((data * 255).astype('uint8'), mode=mode)
 
     orig_img.paste(backdoored_input)
 
@@ -160,5 +161,8 @@ def insert_image(
 
     if no_color:
         res = np.expand_dims(res, 2)
+
+    if channels_first:
+        res = res.transpose([2, 0, 1])
 
     return res
