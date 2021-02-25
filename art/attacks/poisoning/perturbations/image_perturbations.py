@@ -94,7 +94,7 @@ def insert_image(
         y_shift: int = 0,
         size: Optional[Tuple[int, int]] = None,
         mode: str = "L",
-        blend=0.6
+        blend=0.8,
 ) -> np.ndarray:
     """
     Augments a matrix by setting a checkboard-like pattern of values some `distance` away from the bottom-right
