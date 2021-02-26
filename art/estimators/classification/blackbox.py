@@ -40,11 +40,8 @@ class BlackBoxClassifier(ClassifierMixin, BaseEstimator):
     """
     Wrapper class for black-box classifiers.
     """
-    estimator_params = Classifier.estimator_params + [
-        "nb_classes",
-        "input_shape",
-        "predict"
-    ]
+
+    estimator_params = Classifier.estimator_params + ["nb_classes", "input_shape", "predict"]
 
     def __init__(
         self,

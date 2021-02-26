@@ -50,13 +50,8 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
 
     | Paper link: https://arxiv.org/abs/1512.02595
     """
-    estimator_params = PyTorchEstimator.estimator_params + [
-        "optimizer",
-        "use_amp",
-        "opt_level",
-        "lm_config"
-        "verbose"
-    ]
+
+    estimator_params = PyTorchEstimator.estimator_params + ["optimizer", "use_amp", "opt_level", "lm_config" "verbose"]
 
     def __init__(
         self,
