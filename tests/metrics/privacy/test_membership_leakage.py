@@ -38,9 +38,9 @@ def test_membership_leakage_decision_tree(art_warning, decision_tree_estimator, 
         leakage = PDTP(classifier, extra_classifier, x_train, y_train)
         logger.info("Average PDTP leakage: %.2f", (np.average(leakage)))
         logger.info("Max PDTP leakage: %.2f", (np.max(leakage)))
-        assert(classifier.model.tree_ == prev)
-        assert (np.all(leakage >= 1.0))
-        assert (leakage.shape[0] == x_train.shape[0])
+        assert classifier.model.tree_ == prev
+        assert np.all(leakage >= 1.0)
+        assert leakage.shape[0] == x_train.shape[0]
     except ARTTestException as e:
         art_warning(e)
 
@@ -54,8 +54,8 @@ def test_membership_leakage_tabular(art_warning, tabular_dl_estimator, get_iris_
         leakage = PDTP(classifier, extra_classifier, x_train, y_train)
         logger.info("Average PDTP leakage: %.2f", (np.average(leakage)))
         logger.info("Max PDTP leakage: %.2f", (np.max(leakage)))
-        assert(np.all(leakage >= 1.0))
-        assert (leakage.shape[0] == x_train.shape[0])
+        assert np.all(leakage >= 1.0)
+        assert leakage.shape[0] == x_train.shape[0]
     except ARTTestException as e:
         art_warning(e)
 
@@ -70,10 +70,10 @@ def test_membership_leakage_image(art_warning, image_dl_estimator, get_default_m
         leakage = PDTP(classifier, extra_classifier, x_train, y_train, indexes=indexes, num_iter=1)
         logger.info("Average PDTP leakage: %.2f", (np.average(leakage)))
         logger.info("Max PDTP leakage: %.2f", (np.max(leakage)))
-        assert (np.all(leakage >= 1.0))
-        assert(leakage.shape[0] == len(indexes))
+        assert np.all(leakage >= 1.0)
+        assert leakage.shape[0] == len(indexes)
     except ARTTestException as e:
-            art_warning(e)
+        art_warning(e)
 
 
 @pytest.mark.skipMlFramework("keras", "kerastf", "tensorflow1", "mxnet")

@@ -51,16 +51,12 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
     """
     This class implements a classifier with the TensorFlow framework.
     """
-    estimator_params = TensorFlowEstimator.estimator_params + ClassifierMixin.estimator_params + [
-        "input_ph",
-        "output",
-        "labels_ph",
-        "train",
-        "loss",
-        "learning",
-        "sess",
-        "feed_dict",
-    ]
+
+    estimator_params = (
+        TensorFlowEstimator.estimator_params
+        + ClassifierMixin.estimator_params
+        + ["input_ph", "output", "labels_ph", "train", "loss", "learning", "sess", "feed_dict",]
+    )
 
     def __init__(
         self,
@@ -757,11 +753,12 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
     """
     This class implements a classifier with the TensorFlow v2 framework.
     """
-    estimator_params = TensorFlowV2Estimator.estimator_params + ClassifierMixin.estimator_params + [
-        "input_shape",
-        "loss_object",
-        "train_step",
-    ]
+
+    estimator_params = (
+        TensorFlowV2Estimator.estimator_params
+        + ClassifierMixin.estimator_params
+        + ["input_shape", "loss_object", "train_step",]
+    )
 
     def __init__(
         self,
@@ -1128,7 +1125,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
         return gradients
 
-    def clone_for_refitting(self) -> 'TensorFlowV2Classifier':  # lgtm [py/inheritance/incorrect-overridden-signature]
+    def clone_for_refitting(self) -> "TensorFlowV2Classifier":  # lgtm [py/inheritance/incorrect-overridden-signature]
         """
         Create a copy of the classifier that can be refit from scratch. Will inherit same architecture, optimizer and
         initialization as cloned model, but without weights.
@@ -1136,13 +1133,12 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         :return: new estimator
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
+
         try:
             # only works for functionally defined models
             model = tf.keras.models.clone_model(self.model, input_tensors=self.model.inputs)
         except ValueError:
-            raise ValueError(
-                'Cannot clone custom tensorflow models'
-            )
+            raise ValueError("Cannot clone custom tensorflow models")
 
         optimizer = self.model.optimizer
         # reset optimizer variables
@@ -1150,16 +1146,17 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
             var.assign(tf.zeros_like(var))
 
         model.compile(
-            optimizer=optimizer, loss=self.model.loss,
+            optimizer=optimizer,
+            loss=self.model.loss,
             metrics=self.model.metrics,
             loss_weights=self.model.compiled_loss._loss_weights,
             weighted_metrics=self.model.compiled_metrics._weighted_metrics,
-            run_eagerly=self.model.run_eagerly
+            run_eagerly=self.model.run_eagerly,
         )
 
         clone = type(self)(model, self.nb_classes, self.input_shape)
         params = self.get_params()
-        del params['model']
+        del params["model"]
         clone.set_params(**params)
         clone._train_step = self._train_step
         clone._reduce_labels = self._reduce_labels
@@ -1179,7 +1176,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                 continue
 
             # find initializers
-            if hasattr(layer, 'cell'):
+            if hasattr(layer, "cell"):
                 init_container = layer.cell
             else:
                 init_container = layer
@@ -1189,8 +1186,8 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                     continue
 
                 # find the corresponding variable, like the kernel or the bias
-                if key == 'recurrent_initializer':  # special case check
-                    var = getattr(init_container, 'recurrent_kernel', None)
+                if key == "recurrent_initializer":  # special case check
+                    var = getattr(init_container, "recurrent_kernel", None)
                 else:
                     var = getattr(init_container, key.replace("_initializer", ""), None)
 

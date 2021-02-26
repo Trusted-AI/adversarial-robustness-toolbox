@@ -384,6 +384,7 @@ class NeuralNetworkMixin(ABC):
     Mixin abstract base class defining additional functionality required for neural network estimators. This base class
     has to be mixed in with class `BaseEstimator`.
     """
+
     estimator_params = ["channels_first"]
 
     def __init__(self, channels_first: Optional[bool], **kwargs) -> None:
