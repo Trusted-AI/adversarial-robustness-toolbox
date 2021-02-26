@@ -616,7 +616,7 @@ class Wasserstein(EvasionAttack):
 
         # Swap channels to prepare for local transport computation
         if not self.estimator.channels_first:
-            x = np.swapaxes(x, 1, 3)
+            x = np.transpose(x, (0, 2, 3, 1))
 
         # Compute local transport
         unfold_x = self._unfold(x=x, kernel_size=kernel_size, padding=kernel_size // 2)
@@ -633,7 +633,7 @@ class Wasserstein(EvasionAttack):
 
         # Swap channels for final result
         if not self.estimator.channels_first:
-            result = np.swapaxes(result, 1, 3)
+            result = np.transpose(result, (0, 3, 1, 2))
 
         return result
 
