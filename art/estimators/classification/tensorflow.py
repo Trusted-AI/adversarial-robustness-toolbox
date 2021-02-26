@@ -58,10 +58,6 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         + ["input_ph", "output", "labels_ph", "train", "loss", "learning", "sess", "feed_dict",]
     )
 
-<<<<<<< HEAD
-    @deprecated_keyword_arg("channel_index", end_version="1.6.0", replaced_by="channels_first")
-=======
->>>>>>> origin/dev_1.6.0
     def __init__(
         self,
         input_ph: "tf.Placeholder",
