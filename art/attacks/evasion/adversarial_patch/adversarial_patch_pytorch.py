@@ -53,6 +53,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
         "rotation_max",
         "scale_min",
         "scale_max",
+        "distortion_scale_max",
         "learning_rate",
         "max_iter",
         "batch_size",
@@ -68,10 +69,12 @@ class AdversarialPatchPyTorch(EvasionAttack):
         rotation_max: float = 22.5,
         scale_min: float = 0.1,
         scale_max: float = 1.0,
+        distortion_scale_max: float = 0.0,
         learning_rate: float = 5.0,
         max_iter: int = 500,
         batch_size: int = 16,
         patch_shape: Optional[Tuple[int, int, int]] = None,
+        patch_type: str = "circle",
         verbose: bool = True,
     ):
         """
@@ -84,18 +87,30 @@ class AdversarialPatchPyTorch(EvasionAttack):
                but less than `scale_max`.
         :param scale_max: The maximum scaling applied to random patches. The value should be in the range `[0, 1]`, but
                larger than `scale_min.`
+        :param distortion_scale_max: The maximum distortion scale for perspective transformation in range `[0, 1]`. If
+               distortion_scale_max=0.0 the perspective transformation sampling will be disabled.
         :param learning_rate: The learning rate of the optimization.
         :param max_iter: The number of optimization steps.
         :param batch_size: The size of the training batch.
         :param patch_shape: The shape of the adversarial patch as a tuple of shape HWC (width, height, nb_channels).
+        :param patch_type: The patch type, either circle or square.
         :param verbose: Show progress bars.
         """
         import torch  # lgtm [py/repeated-import]
+        import torchvision
+
+        torch_version = list(map(int, torch.__version__.lower().split(".")))
+        torchvision_version = list(map(int, torchvision.__version__.lower().split(".")))
+        assert torch_version[0] >= 1 and torch_version[1] >= 7, "AdversarialPatchPyTorch requires torch>=1.7.0"
+        assert (
+            torchvision_version[0] >= 0 and torchvision_version[1] >= 8
+        ), "AdversarialPatchPyTorch requires torchvision>=0.8.0"
 
         super().__init__(estimator=classifier)
         self.rotation_max = rotation_max
         self.scale_min = scale_min
         self.scale_max = scale_max
+        self.distortion_scale_max = distortion_scale_max
         self.learning_rate = learning_rate
         self.max_iter = max_iter
         self.batch_size = batch_size
@@ -103,6 +118,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
             self.patch_shape = self.estimator.input_shape
         else:
             self.patch_shape = patch_shape
+        self.patch_type = patch_type
 
         self.image_shape = classifier.input_shape
         self.verbose = verbose
@@ -195,12 +211,15 @@ class AdversarialPatchPyTorch(EvasionAttack):
 
         diameter = np.minimum(self.patch_shape[self.i_h_patch], self.patch_shape[self.i_w_patch])
 
-        x = np.linspace(-1, 1, diameter)
-        y = np.linspace(-1, 1, diameter)
-        x_grid, y_grid = np.meshgrid(x, y, sparse=True)
-        z_grid = (x_grid ** 2 + y_grid ** 2) ** sharpness
+        if self.patch_type == "circle":
+            x = np.linspace(-1, 1, diameter)
+            y = np.linspace(-1, 1, diameter)
+            x_grid, y_grid = np.meshgrid(x, y, sparse=True)
+            z_grid = (x_grid ** 2 + y_grid ** 2) ** sharpness
+            image_mask = 1 - np.clip(z_grid, -1, 1)
+        elif self.patch_type == "square":
+            image_mask = np.ones((diameter, diameter))
 
-        image_mask = 1 - np.clip(z_grid, -1, 1)
         image_mask = np.expand_dims(image_mask, axis=0)
         image_mask = np.broadcast_to(image_mask, self.patch_shape)
         image_mask = torch.Tensor(np.array(image_mask))
@@ -308,8 +327,38 @@ class AdversarialPatchPyTorch(EvasionAttack):
 
             phi_rotate = float(np.random.uniform(-self.rotation_max, self.rotation_max))
 
+            image_mask_i = image_mask[i_sample]
+
+            height = padded_patch.shape[self.i_h + 1]
+            width = padded_patch.shape[self.i_w + 1]
+
+            half_height = height // 2
+            half_width = width // 2
+            topleft = [
+                int(torch.randint(0, int(self.distortion_scale_max * half_width) + 1, size=(1,)).item()),
+                int(torch.randint(0, int(self.distortion_scale_max * half_height) + 1, size=(1,)).item()),
+            ]
+            topright = [
+                int(torch.randint(width - int(self.distortion_scale_max * half_width) - 1, width, size=(1,)).item()),
+                int(torch.randint(0, int(self.distortion_scale_max * half_height) + 1, size=(1,)).item()),
+            ]
+            botright = [
+                int(torch.randint(width - int(self.distortion_scale_max * half_width) - 1, width, size=(1,)).item()),
+                int(torch.randint(height - int(self.distortion_scale_max * half_height) - 1, height, size=(1,)).item()),
+            ]
+            botleft = [
+                int(torch.randint(0, int(self.distortion_scale_max * half_width) + 1, size=(1,)).item()),
+                int(torch.randint(height - int(self.distortion_scale_max * half_height) - 1, height, size=(1,)).item()),
+            ]
+            startpoints = [[0, 0], [width - 1, 0], [width - 1, height - 1], [0, height - 1]]
+            endpoints = [topleft, topright, botright, botleft]
+
+            image_mask_i = torchvision.transforms.functional.perspective(
+                img=image_mask_i, startpoints=startpoints, endpoints=endpoints, interpolation=2, fill=None
+            )
+
             image_mask_i = torchvision.transforms.functional.affine(
-                img=image_mask[i_sample],
+                img=image_mask_i,
                 angle=phi_rotate,
                 translate=[x_shift, y_shift],
                 scale=im_scale,
@@ -320,8 +369,14 @@ class AdversarialPatchPyTorch(EvasionAttack):
 
             image_mask_list.append(image_mask_i)
 
+            padded_patch_i = padded_patch[i_sample]
+
+            padded_patch_i = torchvision.transforms.functional.perspective(
+                img=padded_patch_i, startpoints=startpoints, endpoints=endpoints, interpolation=2, fill=None
+            )
+
             padded_patch_i = torchvision.transforms.functional.affine(
-                img=padded_patch[i_sample],
+                img=padded_patch_i,
                 angle=phi_rotate,
                 translate=[x_shift, y_shift],
                 scale=im_scale,
@@ -466,3 +521,12 @@ class AdversarialPatchPyTorch(EvasionAttack):
             self._patch.data = torch.Tensor(initial_patch_value).double()
         else:
             raise ValueError("Unexpected value for initial_patch_value.")
+
+    def _check_params(self) -> None:
+        super()._check_params()
+
+        if not isinstance(self.distortion_scale_max, (float, int)) or 1.0 <= self.distortion_scale_max < 0.0:
+            raise ValueError("The maximum distortion scale has to be greater than or equal 0.0 or smaller than 1.0.")
+
+        if self.patch_type not in ["circle", "square"]:
+            raise ValueError("The patch type has to be either `circle` or `square`.")
