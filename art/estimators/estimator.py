@@ -488,27 +488,6 @@ class NeuralNetworkMixin(ABC):
         return self._channels_first
 
     @property
-    @deprecated(
-        end_version="1.6.0", replaced_by="kwarg 'training_mode' in 'class_gradient' and 'loss_gradient' methods"
-    )
-    def learning_phase(self) -> Optional[bool]:
-        """
-        The learning phase set by the user. Possible values are `True` for training or `False` for prediction and
-        `None` if it has not been set by the library. In the latter case, the library does not do any explicit learning
-        phase manipulation and the current value of the backend framework is used. If a value has been set by the user
-        for this property, it will impact all following computations for model fitting, prediction and gradients.
-
-        :return: Learning phase.
-        """
-        return None  # type: ignore
-
-    @deprecated(
-        end_version="1.6.0", replaced_by="kwarg 'training_mode' in 'class_gradient' and 'loss_gradient' methods"
-    )
-    def set_learning_phase(self, train: bool) -> None:
-        pass
-
-    @property
     def layer_names(self) -> Optional[List[str]]:
         """
         Return the names of the hidden layers in the model, if applicable.
