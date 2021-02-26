@@ -46,12 +46,8 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
     """
     This class implements a model-specific object detector using Faster-RCNN and TensorFlow.
     """
-    estimator_params = TensorFlowEstimator.estimator_params + [
-        "images",
-        "sess",
-        "is_training",
-        "attack_losses"
-    ]
+
+    estimator_params = TensorFlowEstimator.estimator_params + ["images", "sess", "is_training", "attack_losses"]
 
     def __init__(
         self,

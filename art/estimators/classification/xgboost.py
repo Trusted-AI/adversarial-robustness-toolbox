@@ -49,6 +49,7 @@ class XGBoostClassifier(ClassifierDecisionTree):
     """
     Wrapper class for importing XGBoost models.
     """
+
     estimator_params = ClassifierDecisionTree.estimator_params + [
         "nb_features",
     ]

@@ -88,7 +88,8 @@ def SklearnClassifier(
 
     # This basic class at least generically handles `fit`, `predict` and `save`
     return ScikitlearnClassifier(
-        model, clip_values, preprocessing_defences, postprocessing_defences, preprocessing, use_logits,)
+        model, clip_values, preprocessing_defences, postprocessing_defences, preprocessing, use_logits,
+    )
 
 
 class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):  # lgtm [py/missing-call-to-init]
@@ -178,10 +179,7 @@ class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):  # lgtm [py/
         elif callable(getattr(self.model, "predict_proba", None)):
             y_pred = self.model.predict_proba(x_preprocessed)
         elif callable(getattr(self.model, "predict", None)):
-            y_pred = to_categorical(
-                self.model.predict(x_preprocessed),
-                nb_classes=self.model.classes_.shape[0],
-            )
+            y_pred = to_categorical(self.model.predict(x_preprocessed), nb_classes=self.model.classes_.shape[0],)
         else:
             raise ValueError("The provided model does not have methods `predict_proba` or `predict`.")
 
@@ -208,6 +206,28 @@ class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):  # lgtm [py/
 
         with open(full_path + ".pickle", "wb") as file_pickle:
             pickle.dump(self.model, file=file_pickle)
+
+    def clone_for_refitting(self) -> "ScikitlearnClassifier":  # lgtm [py/inheritance/incorrect-overridden-signature]
+        """
+        Create a copy of the classifier that can be refit from scratch.
+
+        :return: new estimator
+        """
+        import sklearn  # lgtm [py/repeated-import]
+
+        clone = type(self)(sklearn.base.clone(self.model))
+        params = self.get_params()
+        del params["model"]
+        clone.set_params(**params)
+        return clone
+
+    def reset(self) -> None:
+        """
+        Resets the weights of the classifier so that it can be refit from scratch.
+
+        """
+        # No need to do anything since scikitlearn models start from scratch each time fit() is called
+        pass
 
     def _get_input_shape(self, model) -> Optional[Tuple[int, ...]]:
         _input_shape: Optional[Tuple[int, ...]]
