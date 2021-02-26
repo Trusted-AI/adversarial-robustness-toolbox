@@ -585,7 +585,7 @@ class AdversarialPatchNumpy(EvasionAttack):
         """
         Insert patch to image based on given or selected coordinates.
 
-        :param x: The images to insert the patch.
+        :param x: The image to insert the patch.
         :param patch: The patch to be transformed and inserted.
         :param image_coords: The coordinates of the 4 corners of the transformed, inserted patch of shape
             [[x1, y1], [x2, y2], [x3, y3], [x4, y4]] in pixel units going in clockwise direction, starting with upper
