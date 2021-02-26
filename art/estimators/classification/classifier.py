@@ -91,6 +91,7 @@ class ClassifierMixin(ABC, metaclass=InputFilter):
     """
     Mixin abstract base class defining functionality for classifiers.
     """
+
     estimator_params = ["nb_classes"]
 
     def __init__(self, **kwargs) -> None:
@@ -150,6 +151,7 @@ class Classifier(ClassifierMixin, BaseEstimator, ABC):
     """
     Typing variable definition.
     """
+
     estimator_params = BaseEstimator.estimator_params + ClassifierMixin.estimator_params
 
 
@@ -157,6 +159,7 @@ class ClassifierLossGradients(ClassifierMixin, LossGradientsMixin, BaseEstimator
     """
     Typing variable definition.
     """
+
     estimator_params = BaseEstimator.estimator_params + ClassifierMixin.estimator_params
 
 
@@ -164,6 +167,7 @@ class ClassifierClassLossGradients(ClassGradientsMixin, ClassifierMixin, LossGra
     """
     Typing variable definition.
     """
+
     estimator_params = BaseEstimator.estimator_params + ClassifierMixin.estimator_params
 
 
@@ -173,6 +177,7 @@ class ClassifierNeuralNetwork(  # lgtm [py/conflicting-attributes]
     """
     Typing variable definition.
     """
+
     estimator_params = (
         BaseEstimator.estimator_params + NeuralNetworkMixin.estimator_params + ClassifierMixin.estimator_params
     )
@@ -194,4 +199,5 @@ class ClassifierDecisionTree(DecisionTreeMixin, ClassifierMixin, BaseEstimator, 
     """
     Typing variable definition.
     """
+
     estimator_params = BaseEstimator.estimator_params + ClassifierMixin.estimator_params

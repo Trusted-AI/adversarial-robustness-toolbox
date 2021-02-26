@@ -42,12 +42,13 @@ class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):  # lgtm [py/missing-
     """
     This class implements an encoder model using the TensorFlow framework.
     """
+
     estimator_params = TensorFlowEstimator.estimator_params + [
         "input_ph",
         "loss",
         "sess",
         "feed_dict",
-        "channels_first"
+        "channels_first",
     ]
 
     def __init__(

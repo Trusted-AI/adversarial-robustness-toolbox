@@ -42,6 +42,7 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
     """
     This class implements a GAN with the TensorFlow framework.
     """
+
     estimator_params = TensorFlowEstimator.estimator_params + [
         "input_ph",
         "loss",

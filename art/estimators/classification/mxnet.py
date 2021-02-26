@@ -30,7 +30,7 @@ import six
 from art import config
 from art.estimators.mxnet import MXEstimator
 from art.estimators.classification.classifier import ClassGradientsMixin, ClassifierMixin
-from art.utils import Deprecated, deprecated_keyword_arg, check_and_transform_label_format
+from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
@@ -48,16 +48,13 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
     """
     Wrapper class for importing MXNet Gluon models.
     """
-    estimator_params = MXEstimator.estimator_params + ClassifierMixin.estimator_params + [
-        "loss",
-        "input_shape",
-        "nb_classes",
-        "optimizer",
-        "ctx",
-        "channels_first",
-    ]
 
-    @deprecated_keyword_arg("channel_index", end_version="1.6.0", replaced_by="channels_first")
+    estimator_params = (
+        MXEstimator.estimator_params
+        + ClassifierMixin.estimator_params
+        + ["loss", "input_shape", "nb_classes", "optimizer", "ctx", "channels_first",]
+    )
+
     def __init__(
         self,
         model: "mx.gluon.Block",
@@ -66,7 +63,6 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
         nb_classes: int,
         optimizer: Optional["mx.gluon.Trainer"] = None,
         ctx: Optional["mx.context.Context"] = None,
-        channel_index=Deprecated,
         channels_first: bool = True,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
@@ -84,8 +80,6 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
         :param optimizer: The optimizer used to train the classifier. This parameter is only required if fitting will
                           be done with method fit.
         :param ctx: The device on which the model runs (CPU or GPU). If not provided, CPU is assumed.
-        :param channel_index: Index of the axis in data containing the color channels or features.
-        :type channel_index: `int`
         :param channels_first: Set channels first or last.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
@@ -99,18 +93,9 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
         """
         import mxnet as mx  # lgtm [py/repeated-import]
 
-        # Remove in 1.6.0
-        if channel_index == 3:
-            channels_first = False
-        elif channel_index == 1:
-            channels_first = True
-        elif channel_index is not Deprecated:
-            raise ValueError("Not a proper channel_index. Use channels_first.")
-
         super().__init__(
             model=model,
             clip_values=clip_values,
-            channel_index=channel_index,
             channels_first=channels_first,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
@@ -531,7 +516,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
 
     def __repr__(self):
         repr_ = (
-            "%s(model=%r, loss=%r, input_shape=%r, nb_classes=%r, optimizer=%r, ctx=%r, channel_index=%r,"
+            "%s(model=%r, loss=%r, input_shape=%r, nb_classes=%r, optimizer=%r, ctx=%r, "
             " channels_first=%r, clip_values=%r, preprocessing=%r, postprocessing_defences=%r,"
             " preprocessing=%r)"
             % (
@@ -542,7 +527,6 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
                 self.nb_classes,
                 self._optimizer,
                 self._ctx,
-                self.channel_index,
                 self.channels_first,
                 self.clip_values,
                 self.preprocessing,

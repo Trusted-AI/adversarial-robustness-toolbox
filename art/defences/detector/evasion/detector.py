@@ -28,7 +28,6 @@ import numpy as np
 
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin, LossGradientsMixin
 from art.estimators.classification.classifier import ClassifierMixin, ClassGradientsMixin
-from art.utils import deprecated
 
 if TYPE_CHECKING:
     from art.utils import CLIP_VALUES_TYPE
@@ -45,7 +44,9 @@ class BinaryInputDetector(ClassGradientsMixin, ClassifierMixin, LossGradientsMix
     """
 
     estimator_params = (
-        BaseEstimator.estimator_params + NeuralNetworkMixin.estimator_params + ClassifierMixin.estimator_params
+        BaseEstimator.estimator_params
+        + NeuralNetworkMixin.estimator_params
+        + ClassifierMixin.estimator_params
         + ["detector"]
     )
 
@@ -58,7 +59,6 @@ class BinaryInputDetector(ClassGradientsMixin, ClassifierMixin, LossGradientsMix
         super().__init__(
             model=None,
             clip_values=detector.clip_values,
-            channel_index=detector.channel_index,
             channels_first=detector.channels_first,
             preprocessing_defences=detector.preprocessing_defences,
             preprocessing=detector.preprocessing,
@@ -122,11 +122,6 @@ class BinaryInputDetector(ClassGradientsMixin, ClassifierMixin, LossGradientsMix
     def clip_values(self) -> Optional["CLIP_VALUES_TYPE"]:
         return self.detector.clip_values
 
-    @property  # type: ignore
-    @deprecated(end_version="1.6.0", replaced_by="channels_first")
-    def channel_index(self) -> Optional[int]:
-        return self.detector.channel_index
-
     @property
     def channels_first(self) -> Optional[bool]:
         """
@@ -189,7 +184,6 @@ class BinaryActivationDetector(
         super().__init__(
             model=None,
             clip_values=detector.clip_values,
-            channel_index=detector.channel_index,
             channels_first=detector.channels_first,
             preprocessing_defences=detector.preprocessing_defences,
             preprocessing=detector.preprocessing,
@@ -269,11 +263,6 @@ class BinaryActivationDetector(
     @property
     def clip_values(self) -> Optional["CLIP_VALUES_TYPE"]:
         return self.detector.clip_values
-
-    @property  # type: ignore
-    @deprecated(end_version="1.6.0", replaced_by="channels_first")
-    def channel_index(self) -> Optional[int]:
-        return self.detector.channel_index
 
     @property
     def channels_first(self) -> Optional[bool]:
