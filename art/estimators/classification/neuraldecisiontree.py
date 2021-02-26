@@ -72,7 +72,7 @@ class NeuralDecisionTree(Classifier):
         :param classifier: An instance of a `Classifier` who's is being used in the NDT or a list of classifiers to use
                            The interpretation of this list changes based on per_node_def
         :param cluster_list:  The clusters to group class labels by for each depth
-        :param per_node_def: If True, `classifier` should be equal to the number of elements in cluster list. `classifier`
+        :param per_node_train: If True, `classifier` should be equal to the number of elements in cluster list. `classifier`
                              will be interpreted as if each entry is the classifier definition for that cluster only.
                              If False, `classifier` will be assumped to be composed of multiple `Classifier` instances
                              each with different output sizes. This is only checked if `classifier` is a list.
