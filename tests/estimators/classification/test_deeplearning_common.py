@@ -168,7 +168,7 @@ def test_pickle(art_warning, image_dl_estimator, image_dl_estimator_defended, tm
             loaded = pickle.load(load_file)
 
         assert (classifier._clip_values == loaded._clip_values).all()
-        assert classifier._channel_index == loaded._channel_index
+        assert classifier._channels_first == loaded._channels_first
         assert classifier._use_logits == loaded._use_logits
         assert classifier._input_layer == loaded._input_layer
     except ARTTestException as e:

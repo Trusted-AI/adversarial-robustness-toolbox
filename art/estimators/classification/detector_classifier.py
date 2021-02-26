@@ -76,7 +76,6 @@ class DetectorClassifier(ClassifierNeuralNetwork):
             model=None,
             clip_values=classifier.clip_values,
             preprocessing=preprocessing,
-            channel_index=classifier.channel_index,
             channels_first=classifier.channels_first,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
