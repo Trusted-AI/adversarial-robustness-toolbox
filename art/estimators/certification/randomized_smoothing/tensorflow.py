@@ -48,11 +48,8 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
 
     | Paper link: https://arxiv.org/abs/1902.02918
     """
-    estimator_params = TensorFlowV2Classifier.estimator_params + [
-        "sample_size",
-        "scale",
-        "alpha"
-    ]
+
+    estimator_params = TensorFlowV2Classifier.estimator_params + ["sample_size", "scale", "alpha"]
 
     def __init__(
         self,

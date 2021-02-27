@@ -45,9 +45,8 @@ class CatBoostARTClassifier(ClassifierDecisionTree):
     """
     Wrapper class for importing CatBoost models.
     """
-    estimator_params = ClassifierDecisionTree.estimator_params + [
-        "nb_features"
-    ]
+
+    estimator_params = ClassifierDecisionTree.estimator_params + ["nb_features"]
 
     def __init__(
         self,

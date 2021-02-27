@@ -44,7 +44,9 @@ class BinaryInputDetector(ClassGradientsMixin, ClassifierMixin, LossGradientsMix
     """
 
     estimator_params = (
-        BaseEstimator.estimator_params + NeuralNetworkMixin.estimator_params + ClassifierMixin.estimator_params
+        BaseEstimator.estimator_params
+        + NeuralNetworkMixin.estimator_params
+        + ClassifierMixin.estimator_params
         + ["detector"]
     )
 

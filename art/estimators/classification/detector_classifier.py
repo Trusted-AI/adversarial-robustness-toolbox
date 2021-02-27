@@ -44,10 +44,8 @@ class DetectorClassifier(ClassifierNeuralNetwork):
     This class implements a Classifier extension that wraps a classifier and a detector.
     More details in https://arxiv.org/abs/1705.07263
     """
-    estimator_params = ClassifierNeuralNetwork.estimator_params + [
-        "classifier",
-        "detector"
-    ]
+
+    estimator_params = ClassifierNeuralNetwork.estimator_params + ["classifier", "detector"]
 
     def __init__(
         self,
