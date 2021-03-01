@@ -42,9 +42,8 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
     """
     This class implements a model-specific object detector using Faster-RCNN and PyTorch.
     """
-    estimator_params = PyTorchEstimator.estimator_params + [
-        "attack_losses"
-    ]
+
+    estimator_params = PyTorchEstimator.estimator_params + ["attack_losses"]
 
     def __init__(
         self,
