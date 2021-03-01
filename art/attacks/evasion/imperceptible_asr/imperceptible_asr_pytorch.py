@@ -25,18 +25,17 @@ specifically for PyTorch.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-
-from typing import Tuple, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional, Tuple
 
 import numpy as np
 import scipy
 
 from art.attacks.attack import EvasionAttack
+from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNetworkMixin
 from art.estimators.pytorch import PyTorchEstimator
-from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizerMixin
 from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
-from art.config import ART_NUMPY_DTYPE
+from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizerMixin
 
 if TYPE_CHECKING:
     import torch
@@ -245,8 +244,10 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         # Start to compute adversarial examples
         adv_x = x.copy()
 
-        # Put the estimator in the training mode
+        # Put the estimator in the training mode, otherwise CUDA can't backpropagate through the model.
+        # However, estimator uses batch norm layers which need to be frozen
         self.estimator.model.train()
+        self.estimator.set_batchnorm(train=False)
 
         # Compute perturbation with batching
         num_batch = int(np.ceil(len(x) / float(self.batch_size)))
@@ -277,6 +278,8 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             for i in range(len(adv_x_batch)):
                 adv_x[batch_index_1 + i] = adv_x_batch[i, : len(adv_x[batch_index_1 + i])]
 
+        # Unfreeze batch norm layers again
+        self.estimator.set_batchnorm(train=True)
         return adv_x
 
     def _generate_batch(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
@@ -463,7 +466,9 @@ class ImperceptibleASRPyTorch(EvasionAttack):
 
         # Transform data into the model input space
         inputs, targets, input_rates, target_sizes, batch_idx = self.estimator.preprocess_transform_model_input(
-            x=masked_adv_input.to(self.estimator.device), y=original_output, real_lengths=real_lengths,
+            x=masked_adv_input.to(self.estimator.device),
+            y=original_output,
+            real_lengths=real_lengths,
         )
 
         # Compute real input sizes
@@ -603,7 +608,10 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         return result
 
     def _forward_2nd_stage(
-        self, local_delta_rescale: "torch.Tensor", theta_batch: np.ndarray, original_max_psd_batch: np.ndarray,
+        self,
+        local_delta_rescale: "torch.Tensor",
+        theta_batch: np.ndarray,
+        original_max_psd_batch: np.ndarray,
     ) -> "torch.Tensor":
         """
         The forward pass of the second stage of the attack.
