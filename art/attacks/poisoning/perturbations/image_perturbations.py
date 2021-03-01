@@ -153,7 +153,7 @@ def insert_image(
 
     backdoored_img.paste(trigger, (x_shift, y_shift), mask=trigger)
     composite = Image.alpha_composite(orig_img, backdoored_img)
-    backdoored_img = Image.blend(backdoored_img, composite, blend)
+    backdoored_img = Image.blend(orig_img, composite, blend)
 
     backdoored_img = backdoored_img.convert(mode)
 
