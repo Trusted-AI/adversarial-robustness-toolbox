@@ -234,7 +234,13 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             )
 
         # Start to compute adversarial examples
-        adv_x = x.copy()
+        dtype = x.dtype
+
+        # Cast to type float64 to avoid overflow
+        if dtype.type == np.float64:
+            adv_x = x.copy()
+        else:
+            adv_x = x.copy().astype(np.float64)
 
         # Put the estimator in the training mode, otherwise CUDA can't backpropagate through the model.
         # However, estimator uses batch norm layers which need to be frozen
@@ -272,6 +278,10 @@ class ImperceptibleASRPyTorch(EvasionAttack):
 
         # Unfreeze batch norm layers again
         self.estimator.set_batchnorm(train=True)
+
+        # Recast to the original type if needed
+        if dtype.type == np.float32:
+            adv_x = adv_x.astype(dtype)
 
         return adv_x
 
