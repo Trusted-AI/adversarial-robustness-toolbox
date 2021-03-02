@@ -258,7 +258,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             )
 
             # First reset delta
-            self.global_optimal_delta.data = torch.zeros(self.batch_size, self.global_max_length).type(torch.float32)
+            self.global_optimal_delta.data = torch.zeros(self.batch_size, self.global_max_length).type(torch.float64)
 
             # Next, reset optimizers
             if self._optimizer_1st_stage_arg is not None:
@@ -320,7 +320,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
 
         # Reset delta with new result
         local_batch_shape = successful_adv_input_1st_stage.shape
-        self.global_optimal_delta.data = torch.zeros(self.batch_size, self.global_max_length).type(torch.float32)
+        self.global_optimal_delta.data = torch.zeros(self.batch_size, self.global_max_length).type(torch.float64)
         self.global_optimal_delta.data[
             : local_batch_shape[0], : local_batch_shape[1]
         ] = successful_perturbation_1st_stage
