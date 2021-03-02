@@ -1265,7 +1265,7 @@ class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassif
                 2
                 * self.model._gamma
                 * (-1)
-                * np.exp(-self.model._gamma * np.linalg.norm(x_sample - sv, ord=2))
+                * np.exp(-self.model._gamma * np.linalg.norm(x_sample - sv, ord=2) ** 2)
                 * (x_sample - sv)
             )
         elif self.model.kernel == "sigmoid":
