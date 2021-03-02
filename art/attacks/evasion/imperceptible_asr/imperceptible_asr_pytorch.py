@@ -186,18 +186,10 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             self.optimizer_1st_stage = torch.optim.SGD(
                 params=[self.global_optimal_delta], lr=self.learning_rate_1st_stage
             )
-        else:
-            self.optimizer_1st_stage = optimizer_1st_stage(
-                params=[self.global_optimal_delta], lr=self.learning_rate_1st_stage
-            )
 
         self._optimizer_2nd_stage_arg = optimizer_2nd_stage
         if optimizer_2nd_stage is None:
             self.optimizer_2nd_stage = torch.optim.SGD(
-                params=[self.global_optimal_delta], lr=self.learning_rate_2nd_stage
-            )
-        else:
-            self.optimizer_2nd_stage = optimizer_2nd_stage(
                 params=[self.global_optimal_delta], lr=self.learning_rate_2nd_stage
             )
 
@@ -262,7 +254,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             # First reset delta
             self.global_optimal_delta.data = torch.zeros(self.batch_size, self.global_max_length).type(torch.float32)
 
-            # Next, reset non-SGD optimizers
+            # Next, reset optimizers
             if self._optimizer_1st_stage_arg is not None:
                 self.optimizer_1st_stage = self._optimizer_1st_stage_arg(
                     params=[self.global_optimal_delta], lr=self.learning_rate_1st_stage
@@ -280,6 +272,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
 
         # Unfreeze batch norm layers again
         self.estimator.set_batchnorm(train=True)
+
         return adv_x
 
     def _generate_batch(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
@@ -772,7 +765,6 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         :return: The psd matrix.
         """
         import torch  # lgtm [py/repeated-import]
-        import torchaudio
 
         # These parameters are needed for the transformation
         sample_rate = self.estimator.model.audio_conf.sample_rate
@@ -796,7 +788,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         else:
             raise NotImplementedError("Spectrogram window %s not supported." % window)
 
-        # return STFT of delta
+        # Return STFT of delta
         delta_stft = torch.stft(
             delta,
             n_fft=n_fft,
@@ -806,7 +798,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             window=window_fn(win_length).to(self.estimator.device),
         ).to(self.estimator.device)
 
-        # take abs of complex STFT results
+        # Take abs of complex STFT results
         transformed_delta = torch.sqrt(torch.sum(torch.square(delta_stft), -1))
 
         # Compute the psd matrix
