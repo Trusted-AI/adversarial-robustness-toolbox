@@ -243,6 +243,7 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
             )
             params = self.estimator.get_params()
             del params["model"]
+            del params["nb_classes"]
             return KerasClassifier(self.orig_model, **params)
         else:
             raise NotImplementedError("Currently only Keras is supported")

@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2021
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -24,29 +24,27 @@ can be printed into the physical world with a common printer. The patch can be u
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-import math
 from typing import Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import trange
 
 from art.attacks.attack import EvasionAttack
-from art.attacks.evasion.adversarial_patch.utils import insert_transformed_patch
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
-from art.utils import check_and_transform_label_format, is_probability
+from art.utils import check_and_transform_label_format, is_probability, to_categorical
 
 if TYPE_CHECKING:
-    import tensorflow as tf
+    import torch
 
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
 
 
-class AdversarialPatchTensorFlowV2(EvasionAttack):
+class AdversarialPatchPyTorch(EvasionAttack):
     """
-    Implementation of the adversarial patch attack for square and rectangular images and videos in TensorFlow v2.
+    Implementation of the adversarial patch attack for square and rectangular images and videos in PyTorch.
 
     | Paper link: https://arxiv.org/abs/1712.09665
     """
@@ -55,6 +53,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         "rotation_max",
         "scale_min",
         "scale_max",
+        "distortion_scale_max",
         "learning_rate",
         "max_iter",
         "batch_size",
@@ -70,14 +69,16 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         rotation_max: float = 22.5,
         scale_min: float = 0.1,
         scale_max: float = 1.0,
+        distortion_scale_max: float = 0.0,
         learning_rate: float = 5.0,
         max_iter: int = 500,
         batch_size: int = 16,
         patch_shape: Optional[Tuple[int, int, int]] = None,
+        patch_type: str = "circle",
         verbose: bool = True,
     ):
         """
-        Create an instance of the :class:`.AdversarialPatchTensorFlowV2`.
+        Create an instance of the :class:`.AdversarialPatchPyTorch`.
 
         :param classifier: A trained classifier.
         :param rotation_max: The maximum rotation applied to random patches. The value is expected to be in the
@@ -86,18 +87,30 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
                but less than `scale_max`.
         :param scale_max: The maximum scaling applied to random patches. The value should be in the range `[0, 1]`, but
                larger than `scale_min.`
+        :param distortion_scale_max: The maximum distortion scale for perspective transformation in range `[0, 1]`. If
+               distortion_scale_max=0.0 the perspective transformation sampling will be disabled.
         :param learning_rate: The learning rate of the optimization.
         :param max_iter: The number of optimization steps.
         :param batch_size: The size of the training batch.
         :param patch_shape: The shape of the adversarial patch as a tuple of shape HWC (width, height, nb_channels).
+        :param patch_type: The patch type, either circle or square.
         :param verbose: Show progress bars.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import torch  # lgtm [py/repeated-import]
+        import torchvision
+
+        torch_version = list(map(int, torch.__version__.lower().split(".")))
+        torchvision_version = list(map(int, torchvision.__version__.lower().split(".")))
+        assert torch_version[0] >= 1 and torch_version[1] >= 7, "AdversarialPatchPyTorch requires torch>=1.7.0"
+        assert (
+            torchvision_version[0] >= 0 and torchvision_version[1] >= 8
+        ), "AdversarialPatchPyTorch requires torchvision>=0.8.0"
 
         super().__init__(estimator=classifier)
         self.rotation_max = rotation_max
         self.scale_min = scale_min
         self.scale_max = scale_max
+        self.distortion_scale_max = distortion_scale_max
         self.learning_rate = learning_rate
         self.max_iter = max_iter
         self.batch_size = batch_size
@@ -105,27 +118,29 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             self.patch_shape = self.estimator.input_shape
         else:
             self.patch_shape = patch_shape
+        self.patch_type = patch_type
+
         self.image_shape = classifier.input_shape
         self.verbose = verbose
         self._check_params()
 
-        if self.estimator.channels_first:
-            raise ValueError("Color channel needs to be in last dimension.")
+        if not self.estimator.channels_first:
+            raise ValueError("Input shape has to be wither NCHW or NFCHW.")
 
-        self.use_logits = None
+        self.i_h_patch = 1
+        self.i_w_patch = 2
 
-        self.i_h_patch = 0
-        self.i_w_patch = 1
+        self.input_shape = self.estimator.input_shape
 
         self.nb_dims = len(self.image_shape)
         if self.nb_dims == 3:
-            self.i_h = 0
-            self.i_w = 1
-        elif self.nb_dims == 4:
             self.i_h = 1
             self.i_w = 2
+        elif self.nb_dims == 4:
+            self.i_h = 2
+            self.i_w = 3
 
-        if self.patch_shape[0] != self.patch_shape[1]:
+        if self.patch_shape[1] != self.patch_shape[2]:
             raise ValueError("Patch height and width need to be the same.")
 
         if not (self.estimator.postprocessing_defences is None or self.estimator.postprocessing_defences == []):
@@ -138,110 +153,98 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             0
         ]
         self._initial_value = np.ones(self.patch_shape) * mean_value
-        self._patch = tf.Variable(
-            initial_value=self._initial_value,
-            shape=self.patch_shape,
-            dtype=tf.float32,
-            constraint=lambda x: tf.clip_by_value(x, self.estimator.clip_values[0], self.estimator.clip_values[1]),
-        )
+        self._patch = torch.tensor(self._initial_value, requires_grad=True, device=self.estimator.device)
 
-        self._train_op = tf.keras.optimizers.Adam(
-            learning_rate=self.learning_rate, beta_1=0.9, beta_2=0.999, epsilon=1e-07, amsgrad=False, name="Adam"
-        )
+        self._optimizer = torch.optim.Adam([self._patch], lr=self.learning_rate)
 
     def _train_step(
-        self, images: "tf.Tensor", target: Optional["tf.Tensor"] = None, mask: Optional["tf.Tensor"] = None
-    ) -> "tf.Tensor":
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        self, images: "torch.Tensor", target: "torch.Tensor", mask: Optional["torch.Tensor"] = None
+    ) -> "torch.Tensor":
+        import torch  # lgtm [py/repeated-import]
 
-        if target is None:
-            target = self.estimator.predict(x=images)
-            self.targeted = False
-        else:
-            self.targeted = True
+        self._optimizer.zero_grad()
+        loss = self._loss(images, target, mask)
+        loss.backward(retain_graph=True)
+        self._optimizer.step()
 
-        with tf.GradientTape() as tape:
-            tape.watch(self._patch)
-            loss = self._loss(images, target, mask)
-
-        gradients = tape.gradient(loss, [self._patch])
-
-        if not self.targeted:
-            gradients = [-g for g in gradients]
-
-        self._train_op.apply_gradients(zip(gradients, [self._patch]))
+        with torch.no_grad():
+            self._patch[:] = torch.clamp(
+                self._patch, min=self.estimator.clip_values[0], max=self.estimator.clip_values[1]
+            )
 
         return loss
 
-    def _predictions(self, images: "tf.Tensor", mask: Optional["tf.Tensor"]) -> "tf.Tensor":
-        import tensorflow as tf  # lgtm [py/repeated-import]
+    def _predictions(self, images: "torch.Tensor", mask: Optional["torch.Tensor"]) -> "torch.Tensor":
+        import torch  # lgtm [py/repeated-import]
 
         patched_input = self._random_overlay(images, self._patch, mask=mask)
-
-        patched_input = tf.clip_by_value(
-            patched_input, clip_value_min=self.estimator.clip_values[0], clip_value_max=self.estimator.clip_values[1],
+        patched_input = torch.clamp(
+            patched_input, min=self.estimator.clip_values[0], max=self.estimator.clip_values[1],
         )
 
         predictions = self.estimator._predict_framework(patched_input)
 
         return predictions
 
-    def _loss(self, images: "tf.Tensor", target: "tf.Tensor", mask: Optional["tf.Tensor"]) -> "tf.Tensor":
-        import tensorflow as tf  # lgtm [py/repeated-import]
+    def _loss(self, images: "torch.Tensor", target: "torch.Tensor", mask: Optional["torch.Tensor"]) -> "torch.Tensor":
+        import torch  # lgtm [py/repeated-import]
 
         predictions = self._predictions(images, mask)
 
-        self._loss_per_example = tf.keras.losses.categorical_crossentropy(
-            y_true=target, y_pred=predictions, from_logits=self.use_logits, label_smoothing=0
-        )
+        if self.use_logits:
+            loss = torch.nn.functional.cross_entropy(
+                input=predictions, target=torch.argmax(target, dim=1), reduction="mean"
+            )
+        else:
+            loss = torch.nn.functional.nll_loss(input=predictions, target=torch.argmax(target, dim=1), reduction="mean")
 
-        loss = tf.reduce_mean(self._loss_per_example)
+        if not self.targeted:
+            loss = -loss
 
         return loss
 
-    def _get_circular_patch_mask(self, nb_samples: int, sharpness: int = 40) -> "tf.Tensor":
+    def _get_circular_patch_mask(self, nb_samples: int, sharpness: int = 40) -> "torch.Tensor":
         """
         Return a circular patch mask.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import torch  # lgtm [py/repeated-import]
 
         diameter = np.minimum(self.patch_shape[self.i_h_patch], self.patch_shape[self.i_w_patch])
 
-        x = np.linspace(-1, 1, diameter)
-        y = np.linspace(-1, 1, diameter)
-        x_grid, y_grid = np.meshgrid(x, y, sparse=True)
-        z_grid = (x_grid ** 2 + y_grid ** 2) ** sharpness
+        if self.patch_type == "circle":
+            x = np.linspace(-1, 1, diameter)
+            y = np.linspace(-1, 1, diameter)
+            x_grid, y_grid = np.meshgrid(x, y, sparse=True)
+            z_grid = (x_grid ** 2 + y_grid ** 2) ** sharpness
+            image_mask = 1 - np.clip(z_grid, -1, 1)
+        elif self.patch_type == "square":
+            image_mask = np.ones((diameter, diameter))
 
-        image_mask = 1 - np.clip(z_grid, -1, 1)
-        image_mask = np.expand_dims(image_mask, axis=2)
+        image_mask = np.expand_dims(image_mask, axis=0)
         image_mask = np.broadcast_to(image_mask, self.patch_shape)
-        image_mask = tf.stack([image_mask] * nb_samples)
+        image_mask = torch.Tensor(np.array(image_mask))
+        image_mask = torch.stack([image_mask] * nb_samples, dim=0)
         return image_mask
 
     def _random_overlay(
         self,
-        images: Union[np.ndarray, "tf.Tensor"],
-        patch: Union[np.ndarray, "tf.Variable"],
+        images: "torch.Tensor",
+        patch: "torch.Tensor",
         scale: Optional[float] = None,
-        mask: Optional[Union[np.ndarray, "tf.Tensor"]] = None,
-    ) -> "tf.Tensor":
-        import tensorflow as tf  # lgtm [py/repeated-import]
-        import tensorflow_addons as tfa
+        mask: Optional["torch.Tensor"] = None,
+    ) -> "torch.Tensor":
+        import torch  # lgtm [py/repeated-import]
+        import torchvision
 
         nb_samples = images.shape[0]
 
         image_mask = self._get_circular_patch_mask(nb_samples=nb_samples)
-        image_mask = tf.cast(image_mask, images.dtype)
+        image_mask = image_mask.float()
 
         smallest_image_edge = np.minimum(self.image_shape[self.i_h], self.image_shape[self.i_w])
 
-        image_mask = tf.image.resize(
-            image_mask,
-            size=(smallest_image_edge, smallest_image_edge),
-            method=tf.image.ResizeMethod.BILINEAR,
-            preserve_aspect_ratio=False,
-            antialias=False,
-            name=None,
+        image_mask = torchvision.transforms.functional.resize(
+            img=image_mask, size=(smallest_image_edge, smallest_image_edge), interpolation=2,
         )
 
         pad_h_before = int((self.image_shape[self.i_h] - image_mask.shape[self.i_h_patch + 1]) / 2)
@@ -250,40 +253,41 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         pad_w_before = int((self.image_shape[self.i_w] - image_mask.shape[self.i_w_patch + 1]) / 2)
         pad_w_after = int(self.image_shape[self.i_w] - pad_w_before - image_mask.shape[self.i_w_patch + 1])
 
-        image_mask = tf.pad(
-            image_mask,
-            paddings=tf.constant([[0, 0], [pad_h_before, pad_h_after], [pad_w_before, pad_w_after], [0, 0]]),
-            mode="CONSTANT",
-            constant_values=0,
-            name=None,
+        image_mask = torchvision.transforms.functional.pad(
+            img=image_mask,
+            padding=[pad_h_before, pad_w_before, pad_h_after, pad_w_after],
+            fill=0,
+            padding_mode="constant",
         )
 
-        image_mask = tf.cast(image_mask, images.dtype)
+        if self.nb_dims == 4:
+            image_mask = torch.unsqueeze(image_mask, dim=1)
+            image_mask = torch.repeat_interleave(image_mask, dim=1, repeats=self.input_shape[0])
 
-        patch = tf.cast(patch, images.dtype)
-        padded_patch = tf.stack([patch] * nb_samples)
+        image_mask = image_mask.float()
 
-        padded_patch = tf.image.resize(
-            padded_patch,
-            size=(smallest_image_edge, smallest_image_edge),
-            method=tf.image.ResizeMethod.BILINEAR,
-            preserve_aspect_ratio=False,
-            antialias=False,
-            name=None,
+        patch = patch.float()
+        padded_patch = torch.stack([patch] * nb_samples)
+
+        padded_patch = torchvision.transforms.functional.resize(
+            img=padded_patch, size=(smallest_image_edge, smallest_image_edge), interpolation=2,
         )
 
-        padded_patch = tf.pad(
-            padded_patch,
-            paddings=tf.constant([[0, 0], [pad_h_before, pad_h_after], [pad_w_before, pad_w_after], [0, 0]]),
-            mode="CONSTANT",
-            constant_values=0,
-            name=None,
+        padded_patch = torchvision.transforms.functional.pad(
+            img=padded_patch,
+            padding=[pad_h_before, pad_w_before, pad_h_after, pad_w_after],
+            fill=0,
+            padding_mode="constant",
         )
 
-        padded_patch = tf.cast(padded_patch, images.dtype)
+        if self.nb_dims == 4:
+            padded_patch = torch.unsqueeze(padded_patch, dim=1)
+            padded_patch = torch.repeat_interleave(padded_patch, dim=1, repeats=self.input_shape[0])
 
-        transform_vectors = list()
-        translation_vectors = list()
+        padded_patch = padded_patch.float()
+
+        image_mask_list = list()
+        padded_patch_list = list()
 
         for i_sample in range(nb_samples):
             if scale is None:
@@ -321,44 +325,71 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
                 x_shift = pos[1] - self.image_shape[self.i_w] // 2
                 y_shift = pos[0] - self.image_shape[self.i_h] // 2
 
-            phi_rotate = float(np.random.uniform(-self.rotation_max, self.rotation_max)) / 180.0 * math.pi
+            phi_rotate = float(np.random.uniform(-self.rotation_max, self.rotation_max))
 
-            # Rotation
-            rotation_matrix = np.array(
-                [[math.cos(-phi_rotate), -math.sin(-phi_rotate)], [math.sin(-phi_rotate), math.cos(-phi_rotate)],]
+            image_mask_i = image_mask[i_sample]
+
+            height = padded_patch.shape[self.i_h + 1]
+            width = padded_patch.shape[self.i_w + 1]
+
+            half_height = height // 2
+            half_width = width // 2
+            topleft = [
+                int(torch.randint(0, int(self.distortion_scale_max * half_width) + 1, size=(1,)).item()),
+                int(torch.randint(0, int(self.distortion_scale_max * half_height) + 1, size=(1,)).item()),
+            ]
+            topright = [
+                int(torch.randint(width - int(self.distortion_scale_max * half_width) - 1, width, size=(1,)).item()),
+                int(torch.randint(0, int(self.distortion_scale_max * half_height) + 1, size=(1,)).item()),
+            ]
+            botright = [
+                int(torch.randint(width - int(self.distortion_scale_max * half_width) - 1, width, size=(1,)).item()),
+                int(torch.randint(height - int(self.distortion_scale_max * half_height) - 1, height, size=(1,)).item()),
+            ]
+            botleft = [
+                int(torch.randint(0, int(self.distortion_scale_max * half_width) + 1, size=(1,)).item()),
+                int(torch.randint(height - int(self.distortion_scale_max * half_height) - 1, height, size=(1,)).item()),
+            ]
+            startpoints = [[0, 0], [width - 1, 0], [width - 1, height - 1], [0, height - 1]]
+            endpoints = [topleft, topright, botright, botleft]
+
+            image_mask_i = torchvision.transforms.functional.perspective(
+                img=image_mask_i, startpoints=startpoints, endpoints=endpoints, interpolation=2, fill=None
             )
 
-            # Scale
-            xform_matrix = rotation_matrix * (1.0 / im_scale)
-            a_0, a_1 = xform_matrix[0]
-            b_0, b_1 = xform_matrix[1]
+            image_mask_i = torchvision.transforms.functional.affine(
+                img=image_mask_i,
+                angle=phi_rotate,
+                translate=[x_shift, y_shift],
+                scale=im_scale,
+                shear=[0, 0],
+                resample=0,
+                fillcolor=None,
+            )
 
-            x_origin = float(self.image_shape[self.i_w]) / 2
-            y_origin = float(self.image_shape[self.i_h]) / 2
+            image_mask_list.append(image_mask_i)
 
-            x_origin_shifted, y_origin_shifted = np.matmul(xform_matrix, np.array([x_origin, y_origin]))
+            padded_patch_i = padded_patch[i_sample]
 
-            x_origin_delta = x_origin - x_origin_shifted
-            y_origin_delta = y_origin - y_origin_shifted
+            padded_patch_i = torchvision.transforms.functional.perspective(
+                img=padded_patch_i, startpoints=startpoints, endpoints=endpoints, interpolation=2, fill=None
+            )
 
-            # Run translation in a second step to position patch exactly inside of the mask
-            transform_vectors.append([a_0, a_1, x_origin_delta, b_0, b_1, y_origin_delta, 0, 0])
-            translation_vectors.append([1, 0, -x_shift, 0, 1, -y_shift, 0, 0])
+            padded_patch_i = torchvision.transforms.functional.affine(
+                img=padded_patch_i,
+                angle=phi_rotate,
+                translate=[x_shift, y_shift],
+                scale=im_scale,
+                shear=[0, 0],
+                resample=0,
+                fillcolor=None,
+            )
 
-        image_mask = tfa.image.transform(image_mask, transform_vectors, "BILINEAR",)
-        padded_patch = tfa.image.transform(padded_patch, transform_vectors, "BILINEAR",)
+            padded_patch_list.append(padded_patch_i)
 
-        image_mask = tfa.image.transform(image_mask, translation_vectors, "BILINEAR",)
-        padded_patch = tfa.image.transform(padded_patch, translation_vectors, "BILINEAR",)
-
-        if self.nb_dims == 4:
-            image_mask = tf.stack([image_mask] * images.shape[1], axis=1)
-            image_mask = tf.cast(image_mask, images.dtype)
-
-            padded_patch = tf.stack([padded_patch] * images.shape[1], axis=1)
-            padded_patch = tf.cast(padded_patch, images.dtype)
-
-        inverted_mask = tf.constant(1, dtype=image_mask.dtype) - image_mask
+        image_mask = torch.stack(image_mask_list, dim=0)
+        padded_patch = torch.stack(padded_patch_list, dim=0)
+        inverted_mask = torch.from_numpy(np.ones(shape=image_mask.shape, dtype=np.float32)) - image_mask
 
         return images * inverted_mask + padded_patch * image_mask
 
@@ -368,17 +399,13 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         :param x: An array with the original input images of shape NHWC or input videos of shape NFHWC.
         :param y: An array with the original true labels.
-        :param mask: A boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
+        :param mask: An boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
                      (N, H, W) without their channel dimensions. Any features for which the mask is True can be the
                      center location of the patch during sampling.
         :type mask: `np.ndarray`
-        :param reset_patch: If `True` reset patch to initial values of mean of minimal and maximal clip value, else if
-                            `False` (default) restart from previous patch values created by previous call to `generate`
-                            or mean of minimal and maximal clip value if first call to `generate`.
-        :type reset_patch: bool
         :return: An array with adversarial patch and an array of the patch mask.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import torch  # lgtm [py/repeated-import]
 
         shuffle = kwargs.get("shuffle", True)
         mask = kwargs.get("mask")
@@ -386,8 +413,15 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             mask = mask.copy()
         mask = self._check_mask(mask=mask, x=x)
 
-        if kwargs.get("reset_patch"):
-            self.reset_patch(initial_patch_value=self._initial_value)
+        if y is None:
+            logger.info("Setting labels to estimator predictions and running untargeted attack because `y=None`.")
+            y = to_categorical(np.argmax(self.estimator.predict(x=x), axis=1), nb_classes=self.estimator.nb_classes)
+            self.targeted = False
+        else:
+            self.targeted = True
+
+        if y is None:
+            raise ValueError("The labels `y` cannot be None, please provide labels `y`.")
 
         y = check_and_transform_label_format(labels=y, nb_classes=self.estimator.nb_classes)
 
@@ -399,45 +433,31 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         else:
             self.use_logits = True
 
+        x_tensor = torch.Tensor(x)
+        y_tensor = torch.Tensor(y)
+
         if mask is None:
-            if shuffle:
-                dataset = (
-                    tf.data.Dataset.from_tensor_slices((x, y))
-                    .shuffle(10000)
-                    .batch(self.batch_size)
-                    .repeat(math.ceil(x.shape[0] / self.batch_size))
-                )
-            else:
-                dataset = (
-                    tf.data.Dataset.from_tensor_slices((x, y))
-                    .batch(self.batch_size)
-                    .repeat(math.ceil(x.shape[0] / self.batch_size))
-                )
+            dataset = torch.utils.data.TensorDataset(x_tensor, y_tensor)
+            data_loader = torch.utils.data.DataLoader(
+                dataset=dataset, batch_size=self.batch_size, shuffle=shuffle, drop_last=False,
+            )
         else:
-            if shuffle:
-                dataset = (
-                    tf.data.Dataset.from_tensor_slices((x, y, mask))
-                    .shuffle(10000)
-                    .batch(self.batch_size)
-                    .repeat(math.ceil(x.shape[0] / self.batch_size))
-                )
-            else:
-                dataset = (
-                    tf.data.Dataset.from_tensor_slices((x, y, mask))
-                    .batch(self.batch_size)
-                    .repeat(math.ceil(x.shape[0] / self.batch_size))
-                )
+            mask_tensor = torch.Tensor(mask)
+            dataset = torch.utils.data.TensorDataset(x_tensor, y_tensor, mask_tensor)
+            data_loader = torch.utils.data.DataLoader(
+                dataset=dataset, batch_size=self.batch_size, shuffle=shuffle, drop_last=False,
+            )
 
         for _ in trange(self.max_iter, desc="Adversarial Patch TensorFlow v2", disable=not self.verbose):
             if mask is None:
-                for images, target in dataset:
+                for images, target in data_loader:
                     _ = self._train_step(images=images, target=target, mask=None)
             else:
-                for images, target, mask_i in dataset:
+                for images, target, mask_i in data_loader:
                     _ = self._train_step(images=images, target=target, mask=mask_i)
 
         return (
-            self._patch.numpy(),
+            self._patch.detach().cpu().numpy(),
             self._get_circular_patch_mask(nb_samples=1).numpy()[0],
         )
 
@@ -475,11 +495,14 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
                      center location of the patch during sampling.
         :return: The patched samples.
         """
+        import torch  # lgtm [py/repeated-import]
+
         if mask is not None:
             mask = mask.copy()
         mask = self._check_mask(mask=mask, x=x)
         patch = patch_external if patch_external is not None else self._patch
-        return self._random_overlay(images=x, patch=patch, scale=scale, mask=mask).numpy()
+        x = torch.Tensor(x)
+        return self._random_overlay(images=x, patch=patch, scale=scale, mask=mask).detach().cpu().numpy()
 
     def reset_patch(self, initial_patch_value: Optional[Union[float, np.ndarray]] = None) -> None:
         """
@@ -487,26 +510,23 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         :param initial_patch_value: Patch value to use for resetting the patch.
         """
+        import torch  # lgtm [py/repeated-import]
+
         if initial_patch_value is None:
-            self._patch.assign(self._initial_value)
+            self._patch.data = torch.Tensor(self._initial_value).double()
         elif isinstance(initial_patch_value, float):
             initial_value = np.ones(self.patch_shape) * initial_patch_value
-            self._patch.assign(initial_value)
+            self._patch.data = torch.Tensor(initial_value).double()
         elif self._patch.shape == initial_patch_value.shape:
-            self._patch.assign(initial_patch_value)
+            self._patch.data = torch.Tensor(initial_patch_value).double()
         else:
             raise ValueError("Unexpected value for initial_patch_value.")
 
-    @staticmethod
-    def insert_transformed_patch(x: np.ndarray, patch: np.ndarray, image_coords: np.ndarray):
-        """
-        Insert patch to image based on given or selected coordinates.
+    def _check_params(self) -> None:
+        super()._check_params()
 
-        :param x: The image to insert the patch.
-        :param patch: The patch to be transformed and inserted.
-        :param image_coords: The coordinates of the 4 corners of the transformed, inserted patch of shape
-            [[x1, y1], [x2, y2], [x3, y3], [x4, y4]] in pixel units going in clockwise direction, starting with upper
-            left corner.
-        :return: The input `x` with the patch inserted.
-        """
-        return insert_transformed_patch(x, patch, image_coords)
+        if not isinstance(self.distortion_scale_max, (float, int)) or 1.0 <= self.distortion_scale_max < 0.0:
+            raise ValueError("The maximum distortion scale has to be greater than or equal 0.0 or smaller than 1.0.")
+
+        if self.patch_type not in ["circle", "square"]:
+            raise ValueError("The patch type has to be either `circle` or `square`.")
