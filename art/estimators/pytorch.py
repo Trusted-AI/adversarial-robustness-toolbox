@@ -19,15 +19,14 @@
 This module implements the abstract estimator `PyTorchEstimator` for PyTorch models.
 """
 import logging
-from typing import Any, Tuple
+from typing import TYPE_CHECKING, Any, List, Tuple
 
 import numpy as np
 
-from art.estimators.estimator import (
-    BaseEstimator,
-    LossGradientsMixin,
-    NeuralNetworkMixin,
-)
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNetworkMixin
+
+if TYPE_CHECKING:
+    import torch
 
 logger = logging.getLogger(__name__)
 
@@ -36,9 +35,10 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
     """
     Estimator class for PyTorch models.
     """
-    estimator_params = BaseEstimator.estimator_params + NeuralNetworkMixin.estimator_params + [
-        "device_type",
-    ]
+
+    estimator_params = (
+        BaseEstimator.estimator_params + NeuralNetworkMixin.estimator_params + ["device_type",]
+    )
 
     def __init__(self, device_type: str = "gpu", **kwargs) -> None:
         """
@@ -295,3 +295,49 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
             raise NotImplementedError("The current combination of preprocessing types is not supported.")
 
         return gradients
+
+    def _set_layer(self, train: bool, layerinfo: List["torch.nn.modules.Module"]) -> None:
+        """
+        Set all layers that are an instance of `layerinfo` into training or evaluation mode.
+
+        :param train: False for evaluation mode.
+        :param layerinfo: List of module types.
+        """
+        from torch import nn
+
+        assert all([issubclass(l, nn.modules.Module) for l in layerinfo])
+
+        def set_train(layer, layerinfo=layerinfo):
+            "Set layer into training mode if instance of `layerinfo`."
+            if isinstance(layer, tuple(layerinfo)):
+                layer.train()
+
+        def set_eval(layer, layerinfo=layerinfo):
+            "Set layer into evaluation mode if instance of `layerinfo`."
+            if isinstance(layer, tuple(layerinfo)):
+                layer.eval()
+
+        if train:
+            self._model.apply(set_train)
+        else:
+            self._model.apply(set_eval)
+
+    def set_dropout(self, train: bool) -> None:
+        """
+        Set all dropout layers into train or eval mode.
+
+        :param train: False for evaluation mode.
+        """
+        from torch import nn
+
+        self._set_layer(train=train, layerinfo=[nn.modules.dropout._DropoutNd])
+
+    def set_batchnorm(self, train: bool) -> None:
+        """
+        Set all batch normalization layers into train or eval mode.
+
+        :param train: False for evaluation mode.
+        """
+        from torch import nn
+
+        self._set_layer(train=train, layerinfo=[nn.modules.batchnorm._BatchNorm])

@@ -46,12 +46,8 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
 
     | Paper link: https://www.cs.cmu.edu/~neill/papers/mcfowland13a.pdf
     """
-    estimator_params = ClassifierNeuralNetwork.estimator_params + [
-        "classifier",
-        "bgd_data",
-        "layer",
-        "verbose"
-    ]
+
+    estimator_params = ClassifierNeuralNetwork.estimator_params + ["classifier", "bgd_data", "layer", "verbose"]
 
     def __init__(
         self, classifier: ClassifierNeuralNetwork, bgd_data: np.ndarray, layer: Union[int, str], verbose: bool = True

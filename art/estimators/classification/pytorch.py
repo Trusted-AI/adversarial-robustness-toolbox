@@ -55,14 +55,11 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
     This class implements a classifier with the PyTorch framework.
     """
 
-    estimator_params = PyTorchEstimator.estimator_params + ClassifierMixin.estimator_params + [
-        "loss",
-        "input_shape",
-        "optimizer",
-        "use_amp",
-        "opt_level",
-        "loss_scale",
-    ]
+    estimator_params = (
+        PyTorchEstimator.estimator_params
+        + ClassifierMixin.estimator_params
+        + ["loss", "input_shape", "optimizer", "use_amp", "opt_level", "loss_scale",]
+    )
 
     def __init__(
         self,
@@ -301,6 +298,24 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         return predictions
 
+    def _predict_framework(self, x: "torch.Tensor", **kwargs) -> "torch.Tensor":
+        """
+        Perform prediction for a batch of inputs.
+
+        :param x: Test set.
+        :return: Tensor of predictions of shape `(nb_inputs, nb_classes)`.
+        """
+        # Apply preprocessing
+        x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False, no_grad=False)
+
+        # Put the model in the eval mode
+        self._model.eval()
+
+        model_outputs = self._model(x_preprocessed)
+        output = model_outputs[-1]
+
+        return output
+
     def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, **kwargs) -> None:
         """
         Fit the classifier on the training set `(x, y)`.
@@ -420,7 +435,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             # Fit a generic data generator through the API
             super().fit_generator(generator, nb_epochs=nb_epochs)
 
-    def clone_for_refitting(self) -> 'PyTorchClassifier':  # lgtm [py/inheritance/incorrect-overridden-signature]
+    def clone_for_refitting(self) -> "PyTorchClassifier":  # lgtm [py/inheritance/incorrect-overridden-signature]
         """
         Create a copy of the classifier that can be refit from scratch. Will inherit same architecture, optimizer and
         initialization as cloned model, but without weights.
@@ -432,7 +447,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         # reset weights
         clone.reset()
         params = self.get_params()
-        del params['model']
+        del params["model"]
         clone.set_params(**params)
         return clone
 
@@ -441,6 +456,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         Resets the weights of the classifier so that it can be refit from scratch.
 
         """
+
         def weight_reset(module):
             reset_parameters = getattr(module, "reset_parameters", None)
             if reset_parameters and callable(reset_parameters):
