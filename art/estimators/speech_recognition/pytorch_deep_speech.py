@@ -275,10 +275,9 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         :param batch_size: Batch size.
         :param transcription_output: Indicate whether the function will produce probability or transcription as
                                      prediction output. If transcription_output is not available, then probability
-                                     output is returned.
-        :type transcription_output: `bool`
+                                     output is returned. Default: True
         :return: Predicted probability (if transcription_output False) or transcription (default, if
-                 transcription_output is True or None):
+                 transcription_output is True):
                  - Probability return is a tuple of (probs, sizes), where `probs` is the probability of characters of
                  shape (nb_samples, seq_length, nb_classes) and `sizes` is the real sequence length of shape
                  (nb_samples,).
@@ -346,9 +345,9 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         result_outputs[batch_idx] = result_outputs_
 
         # Check if users want transcription outputs
-        transcription_output = kwargs.get("transcription_output")
+        transcription_output = kwargs.get("transcription_output", True)
 
-        if transcription_output is None or transcription_output is False:
+        if transcription_output is False:
             return result_outputs, result_output_sizes
 
         # Now users want transcription outputs
