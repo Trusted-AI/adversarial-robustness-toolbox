@@ -484,7 +484,7 @@ def floats_to_one_hot(labels):
         unique = np.unique(feature)
         unique.sort()
         for index, value in enumerate(unique):
-            feature[feature==value] = index
+            feature[feature == value] = index
     return labels.astype(np.float32)
 
 
