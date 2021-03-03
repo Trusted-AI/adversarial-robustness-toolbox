@@ -669,7 +669,8 @@ class ImperceptibleASRPyTorch(EvasionAttack):
 
         psd = abs(transformed_x / win_length)
         original_max_psd = np.max(psd * psd)
-        psd = 10 * np.log10(psd * psd + 10e-20)
+        with np.errstate(divide='ignore'):
+            psd = (20 * np.log10(psd)).clip(min=-200)
         psd = 96 - np.max(psd) + psd
 
         # Compute freqs and barks

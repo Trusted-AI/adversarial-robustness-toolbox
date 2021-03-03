@@ -158,7 +158,10 @@ class ImperceptibleASR(EvasionAttack):
 
             # create batch of adversarial examples
             x_imperceptible[begin:end] = self._generate_batch(x[begin:end], y[begin:end])
-        return np.array(x_imperceptible, dtype=object)
+
+        # for ragged input, use np.object dtype
+        dtype = np.float32 if x.ndim != 1 else np.object
+        return np.array(x_imperceptible, dtype=dtype)
 
     def _generate_batch(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
         """
@@ -190,19 +193,22 @@ class ImperceptibleASR(EvasionAttack):
         """
         batch_size = x.shape[0]
 
+        # for ragged input, use np.object dtype
+        dtype = np.float32 if x.ndim != 1 else np.object
+
         epsilon = [self.eps] * batch_size
         x_adversarial = [None] * batch_size
 
         x_perturbed = x.copy()
 
-        for i in range(self.max_iter_1):
+        for i in range(1, self.max_iter_1 + 1):
             # perform FGSM step for x
             gradients = self.estimator.loss_gradient(x_perturbed, y, batch_mode=True)
-            x_perturbed = x_perturbed - self.learning_rate_1 * np.array([np.sign(g) for g in gradients], dtype=object)
+            x_perturbed = x_perturbed - self.learning_rate_1 * np.array([np.sign(g) for g in gradients], dtype=dtype)
 
             # clip perturbation
             perturbation = x_perturbed - x
-            perturbation = np.array([np.clip(p, -e, e) for p, e in zip(perturbation, epsilon)], dtype=object)
+            perturbation = np.array([np.clip(p, -e, e) for p, e in zip(perturbation, epsilon)], dtype=dtype)
 
             # re-apply clipped perturbation to x
             x_perturbed = x + perturbation
@@ -227,7 +233,7 @@ class ImperceptibleASR(EvasionAttack):
                 logger.critical("Adversarial attack stage 1 for x_%s was not successful", j)
                 x_adversarial[j] = x_perturbed[j]
 
-        return np.array(x_adversarial, dtype=object)
+        return np.array(x_adversarial, dtype=dtype)
 
     def _create_imperceptible(self, x: np.ndarray, x_adversarial: np.ndarray, y: np.ndarray) -> np.ndarray:
         """
@@ -246,7 +252,10 @@ class ImperceptibleASR(EvasionAttack):
         batch_size = x.shape[0]
         alpha_min = 0.0005
 
-        alpha = np.array([self.alpha] * batch_size)
+        # for ragged input, use np.object dtype
+        dtype = np.float32 if x.ndim != 1 else np.object
+
+        alpha = np.array([self.alpha] * batch_size, dtype=np.float32)
         loss_theta_previous = [np.inf] * batch_size
         x_imperceptible = [None] * batch_size
         # if inputs are *not* ragged, we can't multiply alpha * gradients_theta
@@ -255,13 +264,16 @@ class ImperceptibleASR(EvasionAttack):
 
         x_perturbed = x_adversarial.copy()
 
-        for i in range(self.max_iter_2):
+        for i in range(1, self.max_iter_2 + 1):
             # get perturbation
             perturbation = x_perturbed - x
 
             # get loss gradients of both losses
             gradients_net = self.estimator.loss_gradient(x_perturbed, y, batch_mode=True)
             gradients_theta, loss_theta = self._loss_gradient_masking_threshold(perturbation, x)
+
+            # check shapes match, otherwise unexpected errors can occur
+            assert gradients_net.shape == gradients_theta.shape
 
             # perform gradient descent steps
             x_perturbed = x_perturbed - self.learning_rate_2 * (gradients_net + alpha * gradients_theta)
@@ -290,7 +302,7 @@ class ImperceptibleASR(EvasionAttack):
                 logger.critical("Adversarial attack stage 2 for x_%s was not successful", j)
                 x_imperceptible[j] = x_perturbed[j]
 
-        return np.array(x_imperceptible, dtype=object)
+        return np.array(x_imperceptible, dtype=dtype)
 
     def _loss_gradient_masking_threshold(
         self, perturbation: np.ndarray, x: np.ndarray
@@ -348,7 +360,9 @@ class ImperceptibleASR(EvasionAttack):
             gradient = gradient_padded[:length]
             gradients.append(gradient)
 
-        return np.array(gradients, dtype=object), loss
+        # for ragged input, use np.object dtype
+        dtype = np.float32 if x.ndim != 1 else np.object
+        return np.array(gradients, dtype=dtype), loss
 
     def _loss_gradient_masking_threshold_tf(
         self, perturbation: "Tensor", psd_maximum_stabilized: "Tensor", masking_threshold_stabilized: "Tensor"
@@ -435,8 +449,8 @@ class ImperceptibleASR(EvasionAttack):
 
         # compute power spectral density (PSD)
         # note: fixes implementation of Qin et al. by also considering the square root of gain_factor
-        gain_factor = 8.0 / 3.0
-        psd_matrix = gain_factor * tf1.square(tf1.abs(stft_matrix / self._window_size))
+        gain_factor = np.sqrt(8.0 / 3.0)
+        psd_matrix = tf1.square(tf1.abs(gain_factor * stft_matrix / self._window_size))
 
         # approximate normalized psd: psd_matrix_approximated = 10^((96.0 - psd_matrix_max + psd_matrix)/10)
         psd_matrix_approximated = tf1.pow(10.0, 9.6) / tf1.expand_dims(psd_maximum_stabilized, -1) * psd_matrix
@@ -463,12 +477,12 @@ class ImperceptibleASR(EvasionAttack):
             center=False,
             window=torch.hann_window(self._window_size).to(self.estimator._device),
         ).to(self.estimator._device)
-        stft_matrix_abs = torch.sqrt(torch.sum(torch.square(stft_matrix), -1))
 
         # compute power spectral density (PSD)
         # note: fixes implementation of Qin et al. by also considering the square root of gain_factor
-        gain_factor = 8.0 / 3.0
-        psd_matrix = gain_factor * torch.square(stft_matrix_abs / self._window_size)
+        gain_factor = np.sqrt(8.0 / 3.0)
+        stft_matrix_abs = torch.sqrt(torch.sum(torch.square(gain_factor * stft_matrix / self._window_size), -1))
+        psd_matrix = torch.square(stft_matrix_abs)
 
         # approximate normalized psd: psd_matrix_approximated = 10^((96.0 - psd_matrix_max + psd_matrix)/10)
         psd_matrix_approximated = pow(10.0, 9.6) / torch.unsqueeze(psd_maximum_stabilized, 1) * psd_matrix
@@ -555,7 +569,7 @@ class PsychoacousticMasker:
             frame of shape `(frame_length)`.
         """
         psd_matrix, psd_max = self.power_spectral_density(audio)
-        threshold = np.zeros(psd_matrix.shape)
+        threshold = np.zeros_like(psd_matrix)
         for frame in range(psd_matrix.shape[1]):
             # apply methods for finding and filtering maskers
             maskers, masker_idx = self.filter_maskers(*self.find_maskers(psd_matrix[:, frame]))
@@ -745,6 +759,7 @@ class PsychoacousticMasker:
         """
         # note: deviates from Qin et al. implementation by taking the log of the summation, which they do for numerical
         #       stability of the stage 2 optimization. We stabilize the optimization in the loss itself.
-        return 10 * np.log10(
-            np.sum(10 ** (individual_threshold / 10), axis=0) + 10 ** (self.absolute_threshold_hearing / 10)
-        )
+        with np.errstate(divide='ignore'):
+            return 10 * np.log10(
+                np.sum(10 ** (individual_threshold / 10), axis=0) + 10 ** (self.absolute_threshold_hearing / 10)
+            )
