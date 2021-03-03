@@ -78,8 +78,13 @@ class EoTContrastPyTorch(EoTPyTorch):
         import torch  # lgtm [py/repeated-import]
 
         contrast_factor_i = np.random.uniform(low=self.contrast_factor_range[0], high=self.contrast_factor_range[1])
-        red, green, blue = x[:, :, 0], x[:, :, 1], x[:, :, 2]
-        x_gray = 0.2989 * red + 0.587 * green + 0.114 * blue
+        if x.shape[2] == 3:
+            red, green, blue = x[:, :, 0], x[:, :, 1], x[:, :, 2]
+            x_gray = 0.2989 * red + 0.587 * green + 0.114 * blue
+        elif x.shape[2] == 1:
+            x_gray = x[:, :, 0]
+        else:
+            raise ValueError("Number of color channels is not 1 or 3 in input `x` of format HWC.")
         mean = torch.mean(x_gray, dim=(-2, -1), keepdim=True)
 
         return (

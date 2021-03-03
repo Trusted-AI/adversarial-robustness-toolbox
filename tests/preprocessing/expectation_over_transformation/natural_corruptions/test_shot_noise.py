@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2021
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -20,7 +20,6 @@ import logging
 import numpy as np
 import pytest
 
-from art.preprocessing.expectation_over_transformation.image_rotation.tensorflow import EoTImageRotationTensorFlowV2
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
@@ -34,55 +33,45 @@ def fix_get_mnist_subset(get_mnist_dataset):
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
-@pytest.mark.only_with_platform("tensorflow2")
-def test_eot_image_rotation_classification_tensorflow_v2(art_warning, fix_get_mnist_subset):
+@pytest.mark.only_with_platform("pytorch")
+def test_eot_shot_noise_pytorch(art_warning, fix_get_mnist_subset):
     try:
+        import torch
+        from art.preprocessing.expectation_over_transformation.natural_corruptions.shot_noise.pytorch import (
+            EoTShotNoisePyTorch,
+        )
+
         x_train_mnist, y_train_mnist, _, _ = fix_get_mnist_subset
+        x_train_mnist = np.transpose(x_train_mnist, (0, 2, 3, 1))  # transpose to NHWC
 
         nb_samples = 3
 
-        eot = EoTImageRotationTensorFlowV2(
-            nb_samples=nb_samples, angles=(45.0, 45.0), clip_values=(0.0, 1.0), label_type="classification"
-        )
-        x_eot, y_eot = eot.forward(x=x_train_mnist, y=y_train_mnist)
+        eot = EoTShotNoisePyTorch(nb_samples=nb_samples, lam=(0.2, 0.2), clip_values=(0.0, 1.0))
+        x_eot, y_eot = eot.forward(x=torch.from_numpy(x_train_mnist), y=torch.from_numpy(y_train_mnist))
 
         assert x_eot.shape[0] == nb_samples * x_train_mnist.shape[0]
         assert y_eot.shape[0] == nb_samples * y_train_mnist.shape[0]
 
-        x_eot_expected = np.array(
-            [
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.07058824,
-                0.3137255,
-                0.6117647,
-                0.05490196,
-                0.0,
-                0.54509807,
-                0.04313726,
-                0.13725491,
-                0.31764707,
-                0.9411765,
-                0.1764706,
-                0.0627451,
-                0.3647059,
-                0.0,
-                0.99215686,
-                0.99215686,
-                0.98039216,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-            ]
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.only_with_platform("tensorflow2")
+def test_eot_shot_noise_tensorflow_v2(art_warning, fix_get_mnist_subset):
+    try:
+        from art.preprocessing.expectation_over_transformation.natural_corruptions.shot_noise.tensorflow import (
+            EoTShotNoiseTensorFlow,
         )
 
-        np.testing.assert_almost_equal(x_eot.numpy()[0, 14, :, 0], x_eot_expected)
+        x_train_mnist, y_train_mnist, _, _ = fix_get_mnist_subset
+
+        nb_samples = 3
+
+        eot = EoTShotNoiseTensorFlow(nb_samples=nb_samples, lam=(0.2, 0.2), clip_values=(0.0, 1.0))
+        x_eot, y_eot = eot.forward(x=x_train_mnist, y=y_train_mnist)
+
+        assert x_eot.shape[0] == nb_samples * x_train_mnist.shape[0]
+        assert y_eot.shape[0] == nb_samples * y_train_mnist.shape[0]
 
     except ARTTestException as e:
         art_warning(e)

@@ -76,7 +76,7 @@ class EoTGaussianNoiseTensorFlow(EoTTensorFlowV2):
 
         std_i = np.random.uniform(low=self.std_range[0], high=self.std_range[1])
         delta_i = tf.random.normal(shape=x.shape, mean=0.0, stddev=std_i, seed=None)
-        return tf.clip_by_value(x + delta_i, clip_value_min=self.clip_values[0], clip_value_max=self.clip_values[1])
+        return tf.clip_by_value(x + delta_i, clip_value_min=self.clip_values[0], clip_value_max=self.clip_values[1]), y
 
     def _check_params(self) -> None:
 

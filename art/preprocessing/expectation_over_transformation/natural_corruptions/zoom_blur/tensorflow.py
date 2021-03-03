@@ -100,7 +100,7 @@ class EoTZoomBlurTensorFlow(EoTTensorFlowV2):
             x_blur += x_resized[trim_top : trim_top + height, trim_left : trim_left + width, :]
 
         x_out = (x + x_blur) / (nb_zooms + 1)
-        return tf.clip_by_value(x_out, clip_value_min=self.clip_values[0], clip_value_max=self.clip_values[1])
+        return tf.clip_by_value(x_out, clip_value_min=self.clip_values[0], clip_value_max=self.clip_values[1]), y
 
     def _check_params(self) -> None:
 
