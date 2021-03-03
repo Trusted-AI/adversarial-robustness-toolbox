@@ -658,21 +658,12 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         hop_length = int(sample_rate * window_stride)
         win_length = n_fft
 
-        window = self.estimator.model.audio_conf.window.value
+        window_name = self.estimator.model.audio_conf.window.value
 
-        if window == "hamming":
-            window_fn = scipy.signal.windows.hamming
-        elif window == "hann":
-            window_fn = scipy.signal.windows.hann
-        elif window == "blackman":
-            window_fn = scipy.signal.windows.blackman
-        elif window == "bartlett":
-            window_fn = scipy.signal.windows.bartlett
-        else:
-            raise NotImplementedError("Spectrogram window %s not supported." % window)
+        window = scipy.signal.get_window(window_name, win_length, fftbins=True)
 
         transformed_x = librosa.core.stft(
-            y=x, n_fft=n_fft, hop_length=hop_length, win_length=win_length, window=window_fn, center=False
+            y=x, n_fft=n_fft, hop_length=hop_length, win_length=win_length, window=window, center=False
         )
         transformed_x *= np.sqrt(8.0 / 3.0)
 
