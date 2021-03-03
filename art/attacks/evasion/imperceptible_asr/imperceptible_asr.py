@@ -61,6 +61,7 @@ class ImperceptibleASR(EvasionAttack):
         "learning_rate_2",
         "max_iter_2",
         "batch_size",
+        "loss_theta_min",
     ]
 
     _estimator_requirements = (NeuralNetworkMixin, LossGradientsMixin, BaseEstimator, SpeechRecognizerMixin)
@@ -75,7 +76,8 @@ class ImperceptibleASR(EvasionAttack):
         alpha: float = 0.05,
         learning_rate_2: float = 1.0,
         max_iter_2: int = 4000,
-        batch_size: int = 16,
+        loss_theta_min: float = 0.05,
+        batch_size: int = 1,
     ) -> None:
         """
         Create an instance of the :class:`.ImperceptibleASR`.
@@ -88,6 +90,7 @@ class ImperceptibleASR(EvasionAttack):
         :param alpha: Initial alpha value for balancing stage 2 loss.
         :param learning_rate_2: Learning rate for stage 2 of attack.
         :param max_iter_2: Number of iterations for stage 2 of attack.
+        :param loss_theta_min: If imperceptible loss reaches minimum, stop early. Works best with `batch_size=1`.
         :param batch_size: Batch size.
         """
 
@@ -102,6 +105,7 @@ class ImperceptibleASR(EvasionAttack):
         self.max_iter_2 = max_iter_2
         self._targeted = True
         self.batch_size = batch_size
+        self.loss_theta_min = loss_theta_min
         self._check_params()
 
         # init some aliases
@@ -255,6 +259,8 @@ class ImperceptibleASR(EvasionAttack):
         # for ragged input, use np.object dtype
         dtype = np.float32 if x.ndim != 1 else np.object
 
+        early_stop = [False] * batch_size
+
         alpha = np.array([self.alpha] * batch_size, dtype=np.float32)
         loss_theta_previous = [np.inf] * batch_size
         x_imperceptible = [None] * batch_size
@@ -299,6 +305,19 @@ class ImperceptibleASR(EvasionAttack):
                         # decrease alpha
                         alpha[j] = max(alpha[j] * 0.8, alpha_min)
                 logger.info("Current iteration %s, alpha %s, loss theta %s", i, alpha, loss_theta)
+
+            # note: avoids nan values in loss theta, which can occur when loss converges to zero.
+            for j in range(batch_size):
+                if loss_theta[j] < self.loss_theta_min and not early_stop[j]:
+                    logger.warning(
+                        "Batch sample %s reached minimum threshold of %s for theta loss.", j, self.loss_theta_min
+                    )
+                    early_stop[j] = True
+            if all(early_stop):
+                logger.warning(
+                    "All batch samples reached minimum threshold for theta loss. Stopping early at iteration %s.", i
+                )
+                break
 
         # return perturbed x if no adversarial example found
         for j in range(batch_size):
@@ -537,6 +556,9 @@ class ImperceptibleASR(EvasionAttack):
         if self.learning_rate_2 <= 0.0:
             raise ValueError("The learning rate for stage 2 must be greater than 0.0.")
 
+        if not isinstance(self.loss_theta_min, float):
+            raise ValueError("The loss_theta_min threshold must be of type float.")
+
         if self.batch_size <= 0:
             raise ValueError("The batch size `batch_size` has to be positive.")
 
@@ -678,7 +700,7 @@ class PsychoacousticMasker:
         stft_matrix = librosa.core.stft(audio_float, **stft_params)
 
         # compute power spectral density (PSD)
-        with np.errstate(divide='ignore'):
+        with np.errstate(divide="ignore"):
             gain_factor = np.sqrt(8.0 / 3.0)
             psd_matrix = 20 * np.log10(np.abs(gain_factor * stft_matrix / self.window_size))
             psd_matrix = psd_matrix.clip(min=-200)
@@ -775,7 +797,7 @@ class PsychoacousticMasker:
         """
         # note: deviates from Qin et al. implementation by taking the log of the summation, which they do for numerical
         #       stability of the stage 2 optimization. We stabilize the optimization in the loss itself.
-        with np.errstate(divide='ignore'):
+        with np.errstate(divide="ignore"):
             return 10 * np.log10(
                 np.sum(10 ** (individual_threshold / 10), axis=0) + 10 ** (self.absolute_threshold_hearing / 10)
             )

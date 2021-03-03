@@ -81,5 +81,6 @@ class CarliniWagnerASR(ImperceptibleASR):
         # set remaining stage 2 params to some random values
         self.alpha = 0.1
         self.learning_rate_2 = 0.1
+        self._loss_theta_min = 0.0
 
         self._check_params()
