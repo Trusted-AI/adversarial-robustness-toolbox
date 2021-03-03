@@ -29,7 +29,7 @@ from sklearn.neural_network import MLPClassifier
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.attack import AttributeInferenceAttack
-from art.utils import check_and_transform_label_format, float_to_categorical
+from art.utils import check_and_transform_label_format, float_to_categorical, floats_to_one_hot
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
@@ -119,10 +119,11 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
 
         # get vector of attacked feature
         y = x[:, self.attack_feature]
-        y_ready = y
         if self.single_index_feature:
             y_one_hot = float_to_categorical(y)
-            y_ready = check_and_transform_label_format(y_one_hot, len(np.unique(y)), return_one_hot=True)
+        else:
+            y_one_hot = floats_to_one_hot(y)
+        y_ready = check_and_transform_label_format(y_one_hot, len(np.unique(y)), return_one_hot=True)
 
         # create training set for attack model
         x_train = np.concatenate((np.delete(x, self.attack_feature, 1), predictions), axis=1).astype(np.float32)
