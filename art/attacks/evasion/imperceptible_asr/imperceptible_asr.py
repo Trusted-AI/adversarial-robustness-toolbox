@@ -170,6 +170,8 @@ class ImperceptibleASR(EvasionAttack):
         """
         # create adversarial example
         x_adversarial = self._create_adversarial(x, y)
+        if self.max_iter_2 == 0:
+            return x_adversarial
 
         # make adversarial example imperceptible
         x_imperceptible = self._create_imperceptible(x, x_adversarial, y)
@@ -260,6 +262,8 @@ class ImperceptibleASR(EvasionAttack):
         if x.ndim != 1:
             alpha = np.expand_dims(alpha, axis=-1)
 
+        masking_threshold, psd_maximum = self._stabilized_threshold_and_psd_maximum(x)
+
         x_perturbed = x_adversarial.copy()
 
         for i in range(1, self.max_iter_2 + 1):
@@ -268,7 +272,9 @@ class ImperceptibleASR(EvasionAttack):
 
             # get loss gradients of both losses
             gradients_net = self.estimator.loss_gradient(x_perturbed, y, batch_mode=True)
-            gradients_theta, loss_theta = self._loss_gradient_masking_threshold(perturbation, x)
+            gradients_theta, loss_theta = self._loss_gradient_masking_threshold(
+                perturbation, x, masking_threshold, psd_maximum
+            )
 
             # check shapes match, otherwise unexpected errors can occur
             assert gradients_net.shape == gradients_theta.shape
@@ -302,8 +308,32 @@ class ImperceptibleASR(EvasionAttack):
 
         return np.array(x_imperceptible, dtype=dtype)
 
+    def _stabilized_threshold_and_psd_maximum(self, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        """Return batch of stabilized masking thresholds and PSD maxima.
+
+        :param x: An array with the original inputs to be attacked.
+        :return: Tuple consisting of stabilized masking thresholds and PSD maxima.
+        """
+        masking_threshold = []
+        psd_maximum = []
+        x_padded, _ = pad_sequence_input(x)
+
+        for x_i in x_padded:
+            mt, pm = self.masker.calculate_threshold_and_psd_maximum(x_i)
+            masking_threshold.append(mt)
+            psd_maximum.append(pm)
+        # stabilize imperceptible loss by canceling out the "10*log" term in power spectral density maximum and
+        # masking threshold
+        masking_threshold_stabilized = 10 ** (np.array(masking_threshold) * 0.1)
+        psd_maximum_stabilized = 10 ** (np.array(psd_maximum) * 0.1)
+        return masking_threshold_stabilized, psd_maximum_stabilized
+
     def _loss_gradient_masking_threshold(
-        self, perturbation: np.ndarray, x: np.ndarray
+        self,
+        perturbation: np.ndarray,
+        x: np.ndarray,
+        masking_threshold_stabilized: np.ndarray,
+        psd_maximum_stabilized: np.ndarray,
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Compute loss gradient of the global masking threshold w.r.t. the PSD approximate of the perturbation.
@@ -314,26 +344,13 @@ class ImperceptibleASR(EvasionAttack):
 
         :param perturbation: Adversarial perturbation.
         :param x: An array with the original inputs to be attacked.
+        :param masking_threshold_stabilized: Stabilized masking threshold for the original input `x`.
+        :param psd_maximum_stabilized: Stabilized maximum across frames, i.e. shape is `(batch_size, frame_length)`, of
+            the original unnormalized PSD of `x`.
         :return: Tuple consisting of the loss gradient, which has same shape as `perturbation`, and loss value.
         """
         # pad input
         perturbation_padded, delta_mask = pad_sequence_input(perturbation)
-        x_padded, _ = pad_sequence_input(x)
-
-        # calculate masking threshold and PSD maximum
-        masking_threshold = []
-        psd_maximum = []
-        for x_i in x_padded:
-            mt, pm = self.masker.calculate_threshold_and_psd_maximum(x_i)
-            masking_threshold.append(mt)
-            psd_maximum.append(pm)
-        masking_threshold = np.array(masking_threshold)
-        psd_maximum = np.array(psd_maximum)
-
-        # stabilize masking threshold loss by canceling out the "10*log" term in power spectral density and masking
-        # threshold
-        masking_threshold_stabilized = 10 ** (masking_threshold * 0.1)
-        psd_maximum_stabilized = 10 ** (psd_maximum * 0.1)
 
         if self._framework == "tensorflow":
             # get loss gradients (TensorFlow)
