@@ -31,7 +31,7 @@ from art.estimators.estimator import BaseEstimator
 from art.estimators.classification import ClassifierMixin
 from art.estimators.classification.scikitlearn import ScikitlearnDecisionTreeClassifier
 
-# from tests.attacks.utils import backend_test_classifier_type_check_fail
+from tests.attacks.utils import backend_test_classifier_type_check_fail
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
@@ -229,5 +229,5 @@ def test_errors(art_warning, tabular_dl_estimator_for_attack, get_iris_dataset):
         art_warning(e)
 
 
-# def test_classifier_type_check_fail():
-#     backend_test_classifier_type_check_fail(AttributeInferenceBlackBox, (BaseEstimator, ClassifierMixin))
+def test_classifier_type_check_fail():
+    backend_test_classifier_type_check_fail(AttributeInferenceBlackBox, (BaseEstimator, ClassifierMixin))
