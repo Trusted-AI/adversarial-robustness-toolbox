@@ -16,12 +16,12 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements Expectation over Transformation preprocessing for image rotation.
+This module implements Expectation over Transformation preprocessing for image rotation in TensorFlow.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, TYPE_CHECKING, Tuple
+from typing import Optional, TYPE_CHECKING, Tuple, Union
 
 import numpy as np
 
@@ -36,10 +36,10 @@ logger = logging.getLogger(__name__)
 
 class EoTImageRotationTensorFlowV2(EoTTensorFlowV2):
     """
-    This module implements Expectation over Transformation preprocessing for image rotation.
+    This module implements Expectation over Transformation preprocessing for image rotation in TensorFlow.
     """
 
-    params = ["nb_samples", "angles_range", "clip_values", "label_type"]
+    params = ["nb_samples", "angles", "clip_values", "label_type"]
 
     label_types = ["classification"]
 
@@ -47,7 +47,7 @@ class EoTImageRotationTensorFlowV2(EoTTensorFlowV2):
         self,
         nb_samples: int,
         clip_values: "CLIP_VALUES_TYPE",
-        angles_range: float = 3.14,
+        angles: Union[float, Tuple[float, float]] = 45.0,
         label_type: str = "classification",
         apply_fit: bool = False,
         apply_predict: bool = True,
@@ -58,8 +58,8 @@ class EoTImageRotationTensorFlowV2(EoTTensorFlowV2):
         :param nb_samples: Number of random samples per input sample.
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                             for features.
-        :param angles_range: A positive scalar angle in radians defining the uniform sampling range from negative and
-                             positive angles_range.
+        :param angles: A positive scalar angle in degrees defining the uniform sampling range from negative to
+                       positive angles_range.
         :param label_type: String defining the type of labels. Currently supported: `classification`
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
@@ -68,7 +68,8 @@ class EoTImageRotationTensorFlowV2(EoTTensorFlowV2):
             apply_fit=apply_fit, apply_predict=apply_predict, nb_samples=nb_samples, clip_values=clip_values
         )
 
-        self.angles_range = angles_range
+        self.angles = angles
+        self.angles_range = (-angles, angles) if isinstance(angles, (int, float)) else angles
         self.label_type = label_type
         self._check_params()
 
@@ -85,7 +86,8 @@ class EoTImageRotationTensorFlowV2(EoTTensorFlowV2):
         import tensorflow as tf  # lgtm [py/repeated-import]
         import tensorflow_addons as tfa
 
-        angles = tf.random.uniform(shape=(), minval=-self.angles_range, maxval=self.angles_range)
+        angles = tf.random.uniform(shape=(), minval=self.angles_range[0], maxval=self.angles_range[1])
+        angles = angles / 360.0 * 2.0 * np.pi
         x_preprocess = tfa.image.rotate(images=x, angles=angles, interpolation="NEAREST", name=None)
         x_preprocess = tf.clip_by_value(
             t=x_preprocess, clip_value_min=-self.clip_values[0], clip_value_max=self.clip_values[1], name=None
@@ -94,8 +96,16 @@ class EoTImageRotationTensorFlowV2(EoTTensorFlowV2):
 
     def _check_params(self) -> None:
 
-        if not isinstance(self.angles_range, float) or np.pi / 2 < self.angles_range or self.angles_range <= 0.0:
-            raise ValueError("The range of angles must be a float in the range (0.0, Pi/2].")
+        if not (isinstance(self.angles, (int, float)) or isinstance(self.angles, tuple)) or (
+            isinstance(self.angles, tuple)
+            and (
+                len(self.angles) != 2
+                or not isinstance(self.angles[0], (int, float))
+                or not isinstance(self.angles[1], (int, float))
+                or self.angles[0] > self.angles[1]
+            )
+        ):
+            raise ValueError("The range of angles must be a float in the range (0.0, 180.0].")
 
         if self.label_type not in self.label_types:
             raise ValueError(
