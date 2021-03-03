@@ -120,9 +120,7 @@ class ImperceptibleASR(EvasionAttack):
 
             # TensorFlow placeholders
             self._delta = tf1.placeholder(tf1.float32, shape=[None, None], name="art_delta")
-            self._power_spectral_density_maximum_tf = tf1.placeholder(
-                tf1.float32, shape=[None, None], name="art_psd_max"
-            )
+            self._power_spectral_density_maximum_tf = tf1.placeholder(tf1.float32, shape=[None], name="art_psd_max")
             self._masking_threshold_tf = tf1.placeholder(
                 tf1.float32, shape=[None, None, None], name="art_masking_threshold"
             )
@@ -453,7 +451,7 @@ class ImperceptibleASR(EvasionAttack):
         psd_matrix = tf1.square(tf1.abs(gain_factor * stft_matrix / self._window_size))
 
         # approximate normalized psd: psd_matrix_approximated = 10^((96.0 - psd_matrix_max + psd_matrix)/10)
-        psd_matrix_approximated = tf1.pow(10.0, 9.6) / tf1.expand_dims(psd_maximum_stabilized, -1) * psd_matrix
+        psd_matrix_approximated = tf1.pow(10.0, 9.6) / tf1.reshape(psd_maximum_stabilized, [-1, 1, 1]) * psd_matrix
 
         # return PSD matrix such that shape is (batch_size, window_size // 2 + 1, frame_length)
         return tf1.transpose(psd_matrix_approximated, [0, 2, 1])
@@ -485,7 +483,7 @@ class ImperceptibleASR(EvasionAttack):
         psd_matrix = torch.square(stft_matrix_abs)
 
         # approximate normalized psd: psd_matrix_approximated = 10^((96.0 - psd_matrix_max + psd_matrix)/10)
-        psd_matrix_approximated = pow(10.0, 9.6) / torch.unsqueeze(psd_maximum_stabilized, 1) * psd_matrix
+        psd_matrix_approximated = pow(10.0, 9.6) / psd_maximum_stabilized.reshape(-1, 1, 1) * psd_matrix
 
         # return PSD matrix such that shape is (batch_size, window_size // 2 + 1, frame_length)
         return psd_matrix_approximated
@@ -631,8 +629,11 @@ class PsychoacousticMasker:
             valid_domain = np.logical_and(20 <= self.fft_frequencies, self.fft_frequencies <= 2e4)
             freq = self.fft_frequencies[valid_domain] * 0.001
 
-            # outside valid ATH domain, set values to np.inf
-            self._absolute_threshold_hearing = np.ones(valid_domain.shape) * np.inf
+            # outside valid ATH domain, set values to -np.inf
+            # note: This ensures that every possible masker in the bins <=20Hz is valid. As a consequence, the global
+            # masking threshold formula will always return a value different to np.inf
+            self._absolute_threshold_hearing = np.ones(valid_domain.shape) * -np.inf
+
             self._absolute_threshold_hearing[valid_domain] = (
                 3.64 * pow(freq, -0.8) - 6.5 * np.exp(-0.6 * np.square(freq - 3.3)) + 0.001 * pow(freq, 4) - 12
             )
@@ -646,29 +647,27 @@ class PsychoacousticMasker:
         :return: PSD matrix of shape `(window_size // 2 + 1, frame_length)` and maximum vector of shape
         `(frame_length)`.
         """
-        # compute short-time Fourier transform (STFT)
-        stft_params = {
-            "fs": self.sample_rate,
-            "window": ss.get_window("hann", self.window_size, fftbins=True),
-            "nperseg": self.window_size,
-            "nfft": self.window_size,
-            "noverlap": self.window_size - self.hop_size,
-            "boundary": None,
-            "padded": False,
-        }
-        _, _, stft_matrix = ss.stft(audio, **stft_params)
+        import librosa
 
-        # undo SciPy's hard-coded normalization
-        # https://github.com/scipy/scipy/blob/01d8bfb6f239df4ce70c799b9b485b53733c9911/scipy/signal/spectral.py#L1802
-        stft_matrix *= stft_params["window"].sum()
+        # compute short-time Fourier transform (STFT)
+        audio_float = audio.astype(np.float32)
+        stft_params = {
+            "n_fft": self.window_size,
+            "hop_length": self.hop_size,
+            "win_length": self.window_size,
+            "window": ss.get_window("hann", self.window_size, fftbins=True),
+            "center": False,
+        }
+        stft_matrix = librosa.core.stft(audio_float, **stft_params)
 
         # compute power spectral density (PSD)
-        gain_factor = np.sqrt(8.0 / 3.0)
-        psd_matrix = 10 * np.log10(np.abs(gain_factor * stft_matrix / self.window_size) ** 2 + np.finfo(np.float32).eps)
+        with np.errstate(divide='ignore'):
+            gain_factor = np.sqrt(8.0 / 3.0)
+            psd_matrix = 20 * np.log10(np.abs(gain_factor * stft_matrix / self.window_size))
+            psd_matrix = psd_matrix.clip(min=-200)
 
         # normalize PSD at 96dB
-        # note: deviates from Qin et al. implementation by taking maximum across frames
-        psd_matrix_max = np.max(psd_matrix, axis=0)
+        psd_matrix_max = np.max(psd_matrix)
         psd_matrix_normalized = 96.0 - psd_matrix_max + psd_matrix
 
         return psd_matrix_normalized, psd_matrix_max
