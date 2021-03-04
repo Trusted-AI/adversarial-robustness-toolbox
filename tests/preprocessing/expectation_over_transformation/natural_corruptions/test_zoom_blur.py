@@ -46,7 +46,7 @@ def test_eot_zoom_blur_pytorch(art_warning, fix_get_mnist_subset):
 
         nb_samples = 3
 
-        eot = EoTZoomBlurPyTorch(nb_samples=nb_samples, zoom=(1.0, 1.5), clip_values=(0.0, 1.0))
+        eot = EoTZoomBlurPyTorch(nb_samples=nb_samples, zoom=(1.5, 1.5), clip_values=(0.0, 1.0))
         x_eot, y_eot = eot.forward(x=torch.from_numpy(x_train_mnist), y=torch.from_numpy(y_train_mnist))
 
         assert x_eot.shape[0] == nb_samples * x_train_mnist.shape[0]
@@ -64,18 +64,18 @@ def test_eot_zoom_blur_pytorch(art_warning, fix_get_mnist_subset):
                 0.0000000e00,
                 0.0000000e00,
                 0.0000000e00,
-                0.0000000e00,
-                1.3863939e-04,
-                2.1103114e-02,
-                3.4391126e-01,
-                8.7550414e-01,
-                9.4271177e-01,
-                9.0662521e-01,
-                5.0556481e-01,
-                1.4227462e-01,
-                1.8304091e-02,
-                0.0000000e00,
-                0.0000000e00,
+                9.3583600e-05,
+                6.7037535e-03,
+                7.0553131e-02,
+                4.1708022e-01,
+                8.4442711e-01,
+                9.2741704e-01,
+                8.8823336e-01,
+                6.6305310e-01,
+                3.1785199e-01,
+                1.1077325e-01,
+                2.7649008e-02,
+                4.9111363e-03,
                 0.0000000e00,
                 0.0000000e00,
                 0.0000000e00,
@@ -85,6 +85,7 @@ def test_eot_zoom_blur_pytorch(art_warning, fix_get_mnist_subset):
             ]
         )
 
+        print(x_eot.numpy()[0, 14, :, 0])
         np.testing.assert_almost_equal(x_eot.numpy()[0, 14, :, 0], x_eot_expected)
 
     except ARTTestException as e:
@@ -102,7 +103,7 @@ def test_eot_zoom_blur_tensorflow_v2(art_warning, fix_get_mnist_subset):
 
         nb_samples = 3
 
-        eot = EoTZoomBlurTensorFlow(nb_samples=nb_samples, zoom=(1.0, 1.5), clip_values=(0.0, 1.0))
+        eot = EoTZoomBlurTensorFlow(nb_samples=nb_samples, zoom=(1.5, 1.5), clip_values=(0.0, 1.0))
         x_eot, y_eot = eot.forward(x=x_train_mnist, y=y_train_mnist)
 
         assert x_eot.shape[0] == nb_samples * x_train_mnist.shape[0]
@@ -120,18 +121,18 @@ def test_eot_zoom_blur_tensorflow_v2(art_warning, fix_get_mnist_subset):
                 0.0000000e00,
                 0.0000000e00,
                 0.0000000e00,
-                0.0000000e00,
-                1.3863939e-04,
-                2.1103114e-02,
-                3.4391126e-01,
-                8.7550414e-01,
-                9.4271177e-01,
-                9.0662521e-01,
-                5.0556481e-01,
-                1.4227462e-01,
-                1.8304091e-02,
-                0.0000000e00,
-                0.0000000e00,
+                9.3583600e-05,
+                6.7037535e-03,
+                7.0553131e-02,
+                4.1708022e-01,
+                8.4442711e-01,
+                9.2741704e-01,
+                8.8823336e-01,
+                6.6305310e-01,
+                3.1785199e-01,
+                1.1077325e-01,
+                2.7649008e-02,
+                4.9111363e-03,
                 0.0000000e00,
                 0.0000000e00,
                 0.0000000e00,
