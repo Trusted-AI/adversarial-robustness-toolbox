@@ -21,7 +21,7 @@ import pytest
 import numpy as np
 
 from art.attacks.evasion import SquareAttack
-from art.estimators.estimator import BaseEstimator
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
 
 from tests.attacks.utils import backend_test_classifier_type_check_fail
@@ -39,18 +39,26 @@ def fix_get_mnist_subset(get_mnist_dataset):
 
 
 @pytest.mark.framework_agnostic
-def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
+@pytest.mark.parametrize("norm", [2, "inf"])
+def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack, norm):
     try:
         classifier = image_dl_estimator_for_attack(SquareAttack)
 
-        attack = SquareAttack(estimator=classifier, norm=np.inf, max_iter=5, eps=0.3, p_init=0.8, nb_restarts=1)
+        attack = SquareAttack(estimator=classifier, norm=norm, max_iter=5, eps=0.3, p_init=0.8, nb_restarts=1)
 
         (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
         x_train_mnist_adv = attack.generate(x=x_train_mnist, y=y_train_mnist)
 
-        assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.053533513, abs=0.025)
-        assert np.max(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.3, abs=0.05)
+        if norm == "inf":
+            expected_mean = 0.053533513
+            expected_max = 0.3
+        elif norm == 2:
+            expected_mean = 0.00073682
+            expected_max = 0.25
+
+        assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(expected_mean, abs=0.025)
+        assert np.max(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(expected_max, abs=0.05)
     except ARTTestException as e:
         art_warning(e)
 
@@ -58,6 +66,6 @@ def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator_for_atta
 @pytest.mark.framework_agnostic
 def test_classifier_type_check_fail(art_warning):
     try:
-        backend_test_classifier_type_check_fail(SquareAttack, [BaseEstimator, ClassifierMixin])
+        backend_test_classifier_type_check_fail(SquareAttack, [BaseEstimator, ClassifierMixin, NeuralNetworkMixin])
     except ARTTestException as e:
         art_warning(e)

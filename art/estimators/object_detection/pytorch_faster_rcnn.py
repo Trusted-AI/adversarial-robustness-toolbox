@@ -25,7 +25,6 @@ import numpy as np
 
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
 from art.estimators.pytorch import PyTorchEstimator
-from art.utils import Deprecated, deprecated_keyword_arg
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
@@ -44,12 +43,12 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
     This class implements a model-specific object detector using Faster-RCNN and PyTorch.
     """
 
-    @deprecated_keyword_arg("channel_index", end_version="1.6.0", replaced_by="channels_first")
+    estimator_params = PyTorchEstimator.estimator_params + ["attack_losses"]
+
     def __init__(
         self,
         model: Optional["torchvision.models.detection.fasterrcnn_resnet50_fpn"] = None,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        channel_index=Deprecated,
         channels_first: Optional[bool] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
@@ -71,8 +70,6 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
                the shape of clip values needs to match the total number of features.
-        :param channel_index: Index of the axis in data containing the color channels or features.
-        :type channel_index: `int`
         :param channels_first: Set channels first or last.
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
@@ -86,18 +83,9 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         """
         import torch  # lgtm [py/repeated-import]
 
-        # Remove in 1.6.0
-        if channel_index == 3:
-            channels_first = False
-        elif channel_index == 1:
-            channels_first = True
-        elif channel_index is not Deprecated:
-            raise ValueError("Not a proper channel_index. Use channels_first.")
-
         super().__init__(
             model=model,
             clip_values=clip_values,
-            channel_index=channel_index,
             channels_first=channels_first,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
@@ -328,7 +316,7 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
     def set_learning_phase(self, train: bool) -> None:
         raise NotImplementedError
 
-    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the loss of the neural network for samples `x`.
 

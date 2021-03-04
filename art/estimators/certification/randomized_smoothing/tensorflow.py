@@ -49,6 +49,8 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
     | Paper link: https://arxiv.org/abs/1902.02918
     """
 
+    estimator_params = TensorFlowV2Classifier.estimator_params + ["sample_size", "scale", "alpha"]
+
     def __init__(
         self,
         model,
@@ -221,7 +223,7 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
         """
         raise NotImplementedError
 
-    def loss(self, x: np.ndarray, y: np.ndarray, reduction: str = "none", **kwargs) -> np.ndarray:
+    def compute_loss(self, x: np.ndarray, y: np.ndarray, reduction: str = "none", **kwargs) -> np.ndarray:
         """
         Compute the loss of the neural network for samples `x`.
 

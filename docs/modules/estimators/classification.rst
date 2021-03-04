@@ -19,6 +19,13 @@ BlackBox Classifier
    :special-members: __init__
    :inherited-members:
 
+BlackBox Classifier NeuralNetwork
+---------------------------------
+.. autoclass:: BlackBoxClassifierNeuralNetwork
+   :members:
+   :special-members: __init__
+   :inherited-members:
+
 Keras Classifier
 ----------------
 .. autoclass:: KerasClassifier
