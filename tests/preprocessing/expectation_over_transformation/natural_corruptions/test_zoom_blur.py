@@ -95,54 +95,58 @@ def test_eot_zoom_blur_pytorch(art_warning, fix_get_mnist_subset):
 @pytest.mark.only_with_platform("tensorflow2")
 def test_eot_zoom_blur_tensorflow_v2(art_warning, fix_get_mnist_subset):
     try:
-        from art.preprocessing.expectation_over_transformation.natural_corruptions.zoom_blur.tensorflow import (
-            EoTZoomBlurTensorFlow,
-        )
+        import torchvision
+        torchvision_version = list(map(int, torchvision.__version__.lower().split(".")))
 
-        x_train_mnist, y_train_mnist, _, _ = fix_get_mnist_subset
+        if torchvision_version[0] >= 0 and torchvision_version[1] >= 8:
+            from art.preprocessing.expectation_over_transformation.natural_corruptions.zoom_blur.tensorflow import (
+                EoTZoomBlurTensorFlow,
+            )
 
-        nb_samples = 3
+            x_train_mnist, y_train_mnist, _, _ = fix_get_mnist_subset
 
-        eot = EoTZoomBlurTensorFlow(nb_samples=nb_samples, zoom=(1.5, 1.5), clip_values=(0.0, 1.0))
-        x_eot, y_eot = eot.forward(x=x_train_mnist, y=y_train_mnist)
+            nb_samples = 3
 
-        assert x_eot.shape[0] == nb_samples * x_train_mnist.shape[0]
-        assert y_eot.shape[0] == nb_samples * y_train_mnist.shape[0]
+            eot = EoTZoomBlurTensorFlow(nb_samples=nb_samples, zoom=(1.5, 1.5), clip_values=(0.0, 1.0))
+            x_eot, y_eot = eot.forward(x=x_train_mnist, y=y_train_mnist)
 
-        x_eot_expected = np.array(
-            [
-                0.0000000e00,
-                0.0000000e00,
-                0.0000000e00,
-                0.0000000e00,
-                0.0000000e00,
-                0.0000000e00,
-                0.0000000e00,
-                0.0000000e00,
-                0.0000000e00,
-                0.0000000e00,
-                9.3583600e-05,
-                6.7037535e-03,
-                7.0553131e-02,
-                4.1708022e-01,
-                8.4442711e-01,
-                9.2741704e-01,
-                8.8823336e-01,
-                6.6305310e-01,
-                3.1785199e-01,
-                1.1077325e-01,
-                2.7649008e-02,
-                4.9111363e-03,
-                0.0000000e00,
-                0.0000000e00,
-                0.0000000e00,
-                0.0000000e00,
-                0.0000000e00,
-                0.0000000e00,
-            ]
-        )
+            assert x_eot.shape[0] == nb_samples * x_train_mnist.shape[0]
+            assert y_eot.shape[0] == nb_samples * y_train_mnist.shape[0]
 
-        np.testing.assert_almost_equal(x_eot.numpy()[0, 14, :, 0], x_eot_expected)
+            x_eot_expected = np.array(
+                [
+                    0.0000000e00,
+                    0.0000000e00,
+                    0.0000000e00,
+                    0.0000000e00,
+                    0.0000000e00,
+                    0.0000000e00,
+                    0.0000000e00,
+                    0.0000000e00,
+                    0.0000000e00,
+                    0.0000000e00,
+                    9.3583600e-05,
+                    6.7037535e-03,
+                    7.0553131e-02,
+                    4.1708022e-01,
+                    8.4442711e-01,
+                    9.2741704e-01,
+                    8.8823336e-01,
+                    6.6305310e-01,
+                    3.1785199e-01,
+                    1.1077325e-01,
+                    2.7649008e-02,
+                    4.9111363e-03,
+                    0.0000000e00,
+                    0.0000000e00,
+                    0.0000000e00,
+                    0.0000000e00,
+                    0.0000000e00,
+                    0.0000000e00,
+                ]
+            )
+
+            np.testing.assert_almost_equal(x_eot.numpy()[0, 14, :, 0], x_eot_expected)
 
     except ARTTestException as e:
         art_warning(e)
