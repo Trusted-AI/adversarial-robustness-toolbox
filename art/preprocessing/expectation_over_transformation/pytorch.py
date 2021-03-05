@@ -69,7 +69,7 @@ class EoTPyTorch(PreprocessorPyTorch):
         self, x: "torch.Tensor", y: Optional["torch.Tensor"] = None
     ) -> Tuple["torch.Tensor", Optional["torch.Tensor"]]:
         """
-        Apply corruptions to inputs `x`.
+        Apply transformations to inputs `x` and labels `y`.
 
         :param x: Input samples.
         :param y: Label of the samples `x`.

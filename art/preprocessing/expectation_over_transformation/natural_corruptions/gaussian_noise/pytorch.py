@@ -50,7 +50,8 @@ class EoTGaussianNoisePyTorch(EoTPyTorch):
         :param nb_samples: Number of random samples per input sample.
         :param clip_values: Tuple of float representing minimum and maximum values of input `(min, max)`.
         :param std: Range to sample the standard deviation for the Gaussian distribution. A single float
-            is translated to range [0, std]. The applied delta is sampled uniformly from this range for each image.
+                    is translated to range [0, std]. The applied delta is sampled uniformly from this range for each
+                    image.
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
         """

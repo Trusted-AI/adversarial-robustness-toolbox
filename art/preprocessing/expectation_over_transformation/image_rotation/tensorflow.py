@@ -18,8 +18,6 @@
 """
 This module implements Expectation over Transformation preprocessing for image rotation in TensorFlow.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import logging
 from typing import Optional, TYPE_CHECKING, Tuple, Union
 
@@ -34,7 +32,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class EoTImageRotationTensorFlowV2(EoTTensorFlowV2):
+class EoTImageRotationTensorFlow(EoTTensorFlowV2):
     """
     This module implements Expectation over Transformation preprocessing for image rotation in TensorFlow.
     """
@@ -53,7 +51,7 @@ class EoTImageRotationTensorFlowV2(EoTTensorFlowV2):
         apply_predict: bool = True,
     ) -> None:
         """
-        Create an instance of EoTImageRotationTensorFlowV2.
+        Create an instance of EoTImageRotationTensorFlow.
 
         :param nb_samples: Number of random samples per input sample.
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed

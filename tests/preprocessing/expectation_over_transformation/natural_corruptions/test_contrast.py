@@ -95,14 +95,14 @@ def test_eot_contrast_pytorch(art_warning, fix_get_mnist_subset):
 def test_eot_contrast_tensorflow_v2(art_warning, fix_get_mnist_subset):
     try:
         from art.preprocessing.expectation_over_transformation.natural_corruptions.contrast.tensorflow import (
-            EoTContrastTensorFlowV2,
+            EoTContrastTensorFlow,
         )
 
         x_train_mnist, y_train_mnist, _, _ = fix_get_mnist_subset
 
         nb_samples = 3
 
-        eot = EoTContrastTensorFlowV2(nb_samples=nb_samples, contrast_factor=(0.2, 0.2), clip_values=(0.0, 1.0))
+        eot = EoTContrastTensorFlow(nb_samples=nb_samples, contrast_factor=(0.2, 0.2), clip_values=(0.0, 1.0))
         x_eot, y_eot = eot.forward(x=x_train_mnist, y=y_train_mnist)
 
         assert x_eot.shape[0] == nb_samples * x_train_mnist.shape[0]

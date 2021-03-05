@@ -32,7 +32,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class StandardisationMeanStdTensorFlowV2(PreprocessorTensorFlowV2):
+class StandardisationMeanStdTensorFlow(PreprocessorTensorFlowV2):
     """
     Implement the standardisation with mean and standard deviation.
     """
@@ -43,7 +43,7 @@ class StandardisationMeanStdTensorFlowV2(PreprocessorTensorFlowV2):
         self, mean: float = 0.0, std: float = 1.0, apply_fit: bool = True, apply_predict: bool = True,
     ):
         """
-        Create an instance of StandardisationMeanStdTensorFlowV2.
+        Create an instance of StandardisationMeanStdTensorFlow.
 
         :param mean: Mean.
         :param std: Standard Deviation.
@@ -72,6 +72,6 @@ class StandardisationMeanStdTensorFlowV2(PreprocessorTensorFlowV2):
         pass
 
     def __repr__(self):
-        return "StandardisationMeanStdTensorFlowV2(mean={}, std={}, apply_fit={}, apply_predict={})".format(
+        return "StandardisationMeanStdTensorFlow(mean={}, std={}, apply_fit={}, apply_predict={})".format(
             self.mean, self.std, self.apply_fit, self.apply_predict
         )

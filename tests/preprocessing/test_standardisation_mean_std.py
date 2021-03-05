@@ -25,7 +25,7 @@ import pytest
 from art.preprocessing.standardisation_mean_std import (
     StandardisationMeanStd,
     StandardisationMeanStdPyTorch,
-    StandardisationMeanStdTensorFlowV2,
+    StandardisationMeanStdTensorFlow,
 )
 
 from tests.utils import ARTTestException
@@ -65,7 +65,7 @@ def test_standardisation_mean_std_tensorflow_v2(art_warning):
         x = np.ones(shape=(32, 32, 3)) * 5
         mean = 2.5
         std = 1.5
-        standard = StandardisationMeanStdTensorFlowV2(mean=mean, std=std)
+        standard = StandardisationMeanStdTensorFlow(mean=mean, std=std)
         x_preprocessed, _ = standard(x=x, y=None)
         np.testing.assert_array_equal(x_preprocessed, np.ones_like(x_preprocessed) * (5 - mean) / std)
     except ARTTestException as e:

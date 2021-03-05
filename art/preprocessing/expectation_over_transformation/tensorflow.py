@@ -67,7 +67,7 @@ class EoTTensorFlowV2(PreprocessorTensorFlowV2):
 
     def forward(self, x: "tf.Tensor", y: Optional["tf.Tensor"] = None) -> Tuple["tf.Tensor", Optional["tf.Tensor"]]:
         """
-        Apply corruptions to inputs `x`.
+        Apply transformations to inputs `x` and labels `y`.
 
         :param x: Input samples.
         :param y: Label of the sample `x`. This function does not modify `y`.

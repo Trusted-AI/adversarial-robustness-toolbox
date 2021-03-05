@@ -37,6 +37,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
 def test_eot_zoom_blur_pytorch(art_warning, fix_get_mnist_subset):
     try:
         import torchvision
+
         if "+" in torchvision.__version__:
             torchvision_version = torchvision.__version__.split("+")[0]
         else:

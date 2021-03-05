@@ -50,8 +50,8 @@ class EoTZoomBlurTensorFlow(EoTTensorFlowV2):
         :param nb_samples: Number of random samples per input sample.
         :param clip_values: Tuple of float representing minimum and maximum values of input `(min, max)`.
         :param zoom: Range to sample the zoom factor. A single float is translated to range [1.0, zoom] or a tuple of
-            floats is used to create sampling range [zoom[0], zoom[1]]. The applied zoom is sampled uniformly from this
-            range for each image.
+                     floats is used to create sampling range [zoom[0], zoom[1]]. The applied zoom is sampled uniformly
+                     from this range for each image.
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
         """

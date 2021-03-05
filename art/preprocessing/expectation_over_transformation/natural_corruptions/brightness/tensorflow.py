@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class EoTBrightnessTensorFlowV2(EoTTensorFlowV2):
+class EoTBrightnessTensorFlow(EoTTensorFlowV2):
     """
     This module implements EoT of changes in brightness by addition of uniformly sampled delta.
     """
@@ -45,7 +45,7 @@ class EoTBrightnessTensorFlowV2(EoTTensorFlowV2):
         apply_predict: bool = True,
     ) -> None:
         """
-        Create an instance of EoTBrightnessTensorFlowV2.
+        Create an instance of EoTBrightnessTensorFlow.
 
         :param nb_samples: Number of random samples per input sample.
         :param clip_values: Tuple of float representing minimum and maximum values of input `(min, max)`.

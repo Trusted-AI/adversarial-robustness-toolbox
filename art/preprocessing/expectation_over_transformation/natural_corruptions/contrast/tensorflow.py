@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class EoTContrastTensorFlowV2(EoTTensorFlowV2):
+class EoTContrastTensorFlow(EoTTensorFlowV2):
     """
     This module implements EoT of changes in contrast with uniformly sampled factor.
     """
@@ -45,7 +45,7 @@ class EoTContrastTensorFlowV2(EoTTensorFlowV2):
         apply_predict: bool = True,
     ) -> None:
         """
-        Create an instance of EoTContrastTensorFlowV2.
+        Create an instance of EoTContrastTensorFlow.
 
         :param nb_samples: Number of random samples per input sample.
         :param clip_values: Tuple of float representing minimum and maximum values of input `(min, max)`.
@@ -87,11 +87,14 @@ class EoTContrastTensorFlowV2(EoTTensorFlowV2):
             raise ValueError("Number of color channels is not 1 or 3 in input `x` of format HWC.")
         mean = tf.math.reduce_mean(x_gray, axis=None)
 
-        return tf.clip_by_value(
-            contrast_factor_i * x + (1.0 - contrast_factor_i) * mean,
-            clip_value_min=self.clip_values[0],
-            clip_value_max=self.clip_values[1],
-        ), y
+        return (
+            tf.clip_by_value(
+                contrast_factor_i * x + (1.0 - contrast_factor_i) * mean,
+                clip_value_min=self.clip_values[0],
+                clip_value_max=self.clip_values[1],
+            ),
+            y,
+        )
 
     def _check_params(self) -> None:
 
