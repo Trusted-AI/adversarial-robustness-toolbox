@@ -23,7 +23,7 @@ mxnet==1.6.0
 --find-links https://download.pytorch.org/whl/torch_stable.html
 torch==1.8.0+cpu
 torchaudio~=0.8.0
-torchvision~=0.9.0+cpu
+torchvision~=0.9.0
 catboost==0.24.1
 GPy==1.9.9
 lightgbm==3.0.0
