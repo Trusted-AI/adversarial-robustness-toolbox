@@ -30,7 +30,7 @@ import logging
 from typing import Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
-from tqdm import trange
+from tqdm.auto import trange
 
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator

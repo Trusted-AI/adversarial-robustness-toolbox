@@ -7,7 +7,7 @@
 ![Continuous Integration](https://github.com/Trusted-AI/adversarial-robustness-toolbox/workflows/Continuous%20Integration/badge.svg)
 ![CodeQL](https://github.com/Trusted-AI/adversarial-robustness-toolbox/workflows/CodeQL/badge.svg)
 [![Documentation Status](https://readthedocs.org/projects/adversarial-robustness-toolbox/badge/?version=latest)](http://adversarial-robustness-toolbox.readthedocs.io/en/latest/?badge=latest)
-[![GitHub version](https://badge.fury.io/gh/Trusted-AI%2Fadversarial-robustness-toolbox.svg)](https://badge.fury.io/gh/Trusted-AI%2Fadversarial-robustness-toolbox)
+[![PyPI](https://badge.fury.io/py/adversarial-robustness-toolbox.svg)](https://badge.fury.io/py/adversarial-robustness-toolbox)
 [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/Trusted-AI/adversarial-robustness-toolbox.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/Trusted-AI/adversarial-robustness-toolbox/context:python)
 [![Total alerts](https://img.shields.io/lgtm/alerts/g/Trusted-AI/adversarial-robustness-toolbox.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/Trusted-AI/adversarial-robustness-toolbox/alerts/)
 [![codecov](https://codecov.io/gh/Trusted-AI/adversarial-robustness-toolbox/branch/master/graph/badge.svg)](https://codecov.io/gh/Trusted-AI/adversarial-robustness-toolbox)
@@ -17,12 +17,12 @@
 [![slack-img](https://img.shields.io/badge/chat-on%20slack-yellow.svg)](https://ibm-art.slack.com/)
 
 
-对抗性鲁棒性工具箱（ART）是用于机器学习安全性的Python库。 ART提供的工具可
-开发人员和研究人员针对以下方面捍卫和评估机器学习模型和应用程序：
-逃避，中毒，提取和推断的对抗性威胁。 ART支持所有流行的机器学习框架
+对抗性鲁棒性工具集（ART）是用于机器学习安全性的Python库。ART提供的工具可
+帮助开发人员和研究人员针对以下方面捍卫和评估机器学习模型和应用程序：
+逃逸，数据污染，模型提取和推断的对抗性威胁。ART支持所有流行的机器学习框架
 （TensorFlow，Keras，PyTorch，MXNet，scikit-learn，XGBoost，LightGBM，CatBoost，GPy等），所有数据类型
 （图像，表格，音频，视频等）和机器学习任务（分类，物体检测，语音识别，
-生成，认证等）。
+生成模型，认证等）。
 
 <p align="center">
   <img src="docs/images/adversarial_threats_attacker.png?raw=true" width="400" title="ART logo">
@@ -34,7 +34,7 @@
 
 | **[开始使用][get-started]**     | **[文献资料][documentation]**     | **[贡献][contributing]**           |
 |-------------------------------------|-------------------------------|-----------------------------------|
-| - [安装][installation]<br>- [例子](examples/README.md)<br>- [笔记本电脑](notebooks/README.md) | - [进攻][attacks]<br>- [防御][defences]<br>- [估算器][estimators]<br>- [指标][metrics]<br>- [技术文档](https://adversarial-robustness-toolbox.readthedocs.io) | - [Slack](https://ibm-art.slack.com), [邀请函](https://join.slack.com/t/ibm-art/shared_invite/enQtMzkyOTkyODE4NzM4LTA4NGQ1OTMxMzFmY2Q1MzE1NWI2MmEzN2FjNGNjOGVlODVkZDE0MjA1NTA4OGVkMjVkNmQ4MTY1NmMyOGM5YTg)<br>- [贡献](CONTRIBUTING.md)<br>- [路线图][roadmap]<br>- [引用][citing] |
+| - [安装][installation]<br>- [例子](examples/README.md)<br>- [Notebooks](notebooks/README.md) | - [攻击][attacks]<br>- [防御][defences]<br>- [评估器][estimators]<br>- [指标][metrics]<br>- [技术文档](https://adversarial-robustness-toolbox.readthedocs.io) | - [Slack](https://ibm-art.slack.com), [邀请函](https://join.slack.com/t/ibm-art/shared_invite/enQtMzkyOTkyODE4NzM4LTA4NGQ1OTMxMzFmY2Q1MzE1NWI2MmEzN2FjNGNjOGVlODVkZDE0MjA1NTA4OGVkMjVkNmQ4MTY1NmMyOGM5YTg)<br>- [贡献](CONTRIBUTING.md)<br>- [路线图][roadmap]<br>- [引用][citing] |
 
 [get-started]: https://github.com/Trusted-AI/adversarial-robustness-toolbox/wiki/Get-Started
 [attacks]: https://github.com/Trusted-AI/adversarial-robustness-toolbox/wiki/ART-Attacks
@@ -47,10 +47,9 @@
 [roadmap]: https://github.com/Trusted-AI/adversarial-robustness-toolbox/wiki/Roadmap
 [citing]: https://github.com/Trusted-AI/adversarial-robustness-toolbox/wiki/Contributing#citing-art
 
-该图书馆正在不断发展中。 欢迎反馈，错误报告和贡献！
+该库正在不断开发中。欢迎反馈，错误报告和贡献！
 
 # 致谢
 
-本材料部分基于国防高级研究计划局（DARPA）支持的工作
-合同编号HR001120C0013。本材料中表达的任何意见，发现和结论或建议均为
-作者的观点，并不一定反映国防高级研究计划局（DARPA）的观点。
+本材料部分基于国防高级研究计划局（DARPA）支持的工作，合同编号HR001120C0013。
+本材料中表达的任何意见，发现和结论或建议均为作者的观点，并不一定反映国防高级研究计划局（DARPA）的观点。

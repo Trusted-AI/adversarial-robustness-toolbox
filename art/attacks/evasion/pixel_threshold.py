@@ -43,7 +43,7 @@ from six import string_types
 from scipy._lib._util import check_random_state
 from scipy.optimize.optimize import _status_message
 from scipy.optimize import OptimizeResult, minimize
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
@@ -149,6 +149,11 @@ class PixelThreshold(EvasionAttack):
             logger.info("Performing minimal perturbation Attack.")
 
         if np.max(x) <= 1:
+            scale_input = True
+        else:
+            scale_input = False
+
+        if scale_input:
             x = x * 255.0
 
         adv_x_best = []
@@ -179,8 +184,8 @@ class PixelThreshold(EvasionAttack):
 
         adv_x_best = np.array(adv_x_best)
 
-        if np.max(x) <= 1:
-            x = x / 255.0
+        if scale_input:
+            adv_x_best = adv_x_best / 255.0
 
         if y is not None:
             y = to_categorical(y, self.estimator.nb_classes)
@@ -276,7 +281,7 @@ class PixelThreshold(EvasionAttack):
                     predict_fn,
                     maxfun=max(1, 400 // len(bounds)) * len(bounds) * 100,
                     callback=callback_fn,
-                    iterations=1,
+                    iterations=max_iter,
                 )
             except Exception as exception:
                 if self.verbose:
