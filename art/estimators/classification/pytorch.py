@@ -505,7 +505,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         loss = self._loss(model_outputs[-1], labels_t)
         self._loss.reduction = prev_reduction
 
-        return loss.detach().numpy()
+        return loss.detach().cpu().numpy()
 
     def loss_gradient(
         self, x: Union[np.ndarray, "torch.Tensor"], y: Union[np.ndarray, "torch.Tensor"], **kwargs

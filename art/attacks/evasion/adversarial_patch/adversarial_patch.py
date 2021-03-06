@@ -127,10 +127,14 @@ class AdversarialPatch(EvasionAttack):
 
         :param x: An array with the original input images of shape NHWC or NCHW or input videos of shape NFHWC or NFCHW.
         :param y: An array with the original true labels.
-        :param mask: An boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
+        :param mask: A boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
                      (N, H, W) without their channel dimensions. Any features for which the mask is True can be the
                      center location of the patch during sampling.
         :type mask: `np.ndarray`
+        :param reset_patch: If `True` reset patch to initial values of mean of minimal and maximal clip value, else if
+                            `False` (default) restart from previous patch values created by previous call to `generate`
+                            or mean of minimal and maximal clip value if first call to `generate`.
+        :type reset_patch: bool
         :return: An array with adversarial patch and an array of the patch mask.
         """
         logger.info("Creating adversarial patch.")
@@ -156,6 +160,14 @@ class AdversarialPatch(EvasionAttack):
         :return: The patched instances.
         """
         return self._attack.apply_patch(x, scale, patch_external=patch_external)
+
+    def reset_patch(self, initial_patch_value: Optional[Union[float, np.ndarray]]) -> None:
+        """
+        Reset the adversarial patch.
+
+        :param initial_patch_value: Patch value to use for resetting the patch.
+        """
+        self._attack.reset_patch(initial_patch_value=initial_patch_value)
 
     def set_params(self, **kwargs) -> None:
         super().set_params(**kwargs)

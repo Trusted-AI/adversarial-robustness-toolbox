@@ -630,7 +630,10 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         :return: the gradient of the function w.r.t vars
         :rtype: `np.ndarray`
         """
-        import keras.backend as k
+        if self.is_tensorflow:
+            import tensorflow.keras.backend as k
+        else:
+            import keras.backend as k
 
         if not hasattr(self, "_custom_loss_func"):
             self._custom_loss_func = {}

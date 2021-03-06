@@ -26,7 +26,7 @@ import logging
 from typing import Optional, Union, TYPE_CHECKING
 
 import numpy as np
-from tqdm import trange
+from tqdm.auto import trange
 
 from art.attacks.attack import EvasionAttack
 from art.config import ART_NUMPY_DTYPE
@@ -109,13 +109,15 @@ class SaliencyMapMethod(EvasionAttack):
 
             # Main algorithm for each batch
             # Initialize the search space; optimize to remove features that can't be changed
-            search_space = np.zeros(batch.shape)
             if self.estimator.clip_values is not None:
+                search_space = np.zeros(batch.shape)
                 clip_min, clip_max = self.estimator.clip_values
                 if self.theta > 0:
                     search_space[batch < clip_max] = 1
                 else:
                     search_space[batch > clip_min] = 1
+            else:
+                search_space = np.ones(batch.shape)
 
             # Get current predictions
             current_pred = preds[batch_index_1:batch_index_2]

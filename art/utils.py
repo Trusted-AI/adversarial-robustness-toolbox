@@ -35,9 +35,12 @@ import zipfile
 import numpy as np
 from scipy.special import gammainc
 import six
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from art import config
+
+if TYPE_CHECKING:
+    import torch
 
 logger = logging.getLogger(__name__)
 
@@ -1235,3 +1238,36 @@ def pad_sequence_input(x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         x_padded[i, : len(x_i)] = x_i
         x_mask[i, : len(x_i)] = 1
     return x_padded, x_mask
+
+
+# -------------------------------------------------------------------------------------------------------- CUDA SUPPORT
+
+
+def to_cuda(x: "torch.Tensor") -> "torch.Tensor":
+    """
+    Move the tensor from the CPU to the GPU if a GPU is available.
+
+    :param x: CPU Tensor to move to GPU if available.
+    :return: The CPU Tensor moved to a GPU Tensor.
+    """
+    from torch.cuda import is_available
+
+    use_cuda = is_available()
+    if use_cuda:
+        x = x.cuda()
+    return x
+
+
+def from_cuda(x: "torch.Tensor") -> "torch.Tensor":
+    """
+    Move the tensor from the GPU to the CPU if a GPU is available.
+
+    :param x: GPU Tensor to move to CPU if available.
+    :return: The GPU Tensor moved to a CPU Tensor.
+    """
+    from torch.cuda import is_available
+
+    use_cuda = is_available()
+    if use_cuda:
+        x = x.cpu()
+    return x
