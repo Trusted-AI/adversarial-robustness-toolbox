@@ -30,7 +30,7 @@ from tqdm.auto import trange
 from art.attacks.attack import PoisoningAttackWhiteBox
 from art.estimators import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
-from art.estimators.classification.keras import KerasClassifier
+from art.estimators.classification.pytorch import PyTorchClassifier
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
@@ -38,15 +38,16 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class ConvexPolytopeAttack(PoisoningAttackWhiteBox):
+class BullseyePolytopeAttack(PoisoningAttackWhiteBox):
     """
-    Close implementation of Feature Collision Poisoning Attack by Shafahi, Huang, et al 2018.
-    "Poison Frogs! Targeted Clean-Label Poisoning Attacks on Neural Networks"
+    Implementation of Bullseye Polytope Attack by Aghakhani, et. al. 2020.
+    "Bullseye Polytope: A Scalable Clean-Label Poisoning Attack with Improved Transferability"
+
 
     This implementation dynamically calculates the dimension of the feature layer, and doesn't hardcode this
     value to 2048 as done in the paper. Thus we recommend using larger values for the similarity_coefficient.
 
-    | Paper link: https://arxiv.org/abs/1804.00792
+    | Paper link: https://arxiv.org/abs/2005.00191
     """
 
     attack_params = PoisoningAttackWhiteBox.attack_params + [
@@ -59,54 +60,62 @@ class ConvexPolytopeAttack(PoisoningAttackWhiteBox):
         "num_old_obj",
         "max_iter",
         "similarity_coeff",
-        "watermark",
+        "transfer",
         "verbose",
     ]
 
-    _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassifierMixin, KerasClassifier)
+    _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassifierMixin, PyTorchClassifier)
 
     def __init__(
-        self,
-        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
-        target: np.ndarray,
-        feature_layer: Union[Union[str, int], List[Union[str, int]]],
-        learning_rate: float = 4e-2,
-        decay_coeff: float = 0.5,
-        stopping_tol: float = 1e-10,
-        obj_threshold: Optional[float] = None,
-        num_old_obj: int = 40,
-        max_iter: int = 120,
-        similarity_coeff: float = 256.0,
-        watermark: Optional[float] = None,
-        verbose: bool = True,
+            self,
+            classifier: Union["CLASSIFIER_NEURALNETWORK_TYPE", List["CLASSIFIER_NEURALNETWORK_TYPE"]],
+            target: np.ndarray,
+            feature_layer: Union[Union[str, int], List[Union[str, int]]],
+            opt: str = 'adam', # SGD, adam or signedadam https://github.com/ucsb-seclab/BullseyePoison/blob/65af294fd4136d15282360d5f65b44ae9390444b/trainer.py#L239
+            max_iter: int = 4000,
+            learning_rate: float = 4e-2,
+            momentum: float = 0.9,
+            decay_iter: Union[int, List[int]] = 1000,
+            decay_coeff: float = 0.5,
+            epsilon: float = 1e-10,
+            norm: Union[float, str] = 'inf',
+            dropout: int = 0.3,
+            transfer: bool = True,
+            verbose: bool = True,
     ):
         """
         Initialize an Feature Collision Clean-Label poisoning attack
 
-        :param classifier: A trained neural network classifier.
-        :param target: The target input to misclassify at test time.
-        :param feature_layer: The name of the feature representation layer.
-        :param learning_rate: The learning rate of clean-label attack optimization.
-        :param decay_coeff: The decay coefficient of the learning rate.
-        :param stopping_tol: Stop iterations after changes in attacks in less than this threshold.
-        :param obj_threshold: Stop iterations after changes in objectives values are less than this threshold.
-        :param num_old_obj: The number of old objective values to store.
+        :param classifier: The proxy classifiers used for the attack. Can be a single classifier or list of classifiers
+                           with varying architectures.
+        :param target: The target input(s) of shape (N, W, H, C) to misclassify at test time. Multiple targets will be averaged
+        :param feature_layer: The name(s) of the feature representation layer(s).
+        :param opt: The optimizer to use for the attack. Can be 'adam', 'sgd', or 'signedadam'
         :param max_iter: The maximum number of iterations for the attack.
-        :param similarity_coeff: The maximum number of iterations for the attack.
-        :param watermark: Whether The opacity of the watermarked target image.
+        :param learning_rate: The learning rate of clean-label attack optimization.
+        :param momentum: The momentum of clean-label attack optimization.
+        :param decay_iter: Which iterations to decay the learning rate.
+                           Can be a integer (every N interations) or list of integers [0, 500, 1500]
+        :param decay_coeff: The decay coefficient of the learning rate.
+        :param epsilon: The perturbation budget
+        :param norm: The norm of the epsilon-ball
+        :param dropout: Dropout to apply while training
+        :param transfer: True for transfer learning. False for end-to-end training.
         :param verbose: Show progress bars.
         """
         super().__init__(classifier=classifier)  # type: ignore
         self.target = target
+        self.opt = opt
+        self.momentum = momentum
+        self.decay_iter = decay_iter
+        self.epsilon = epsilon
+        self.norm = norm
+        self.dropout = dropout
+        self.transfer = transfer
         self.feature_layer = feature_layer
         self.learning_rate = learning_rate
         self.decay_coeff = decay_coeff
-        self.stopping_tol = stopping_tol
-        self.obj_threshold = obj_threshold
-        self.num_old_obj = num_old_obj
         self.max_iter = max_iter
-        self.similarity_coeff = similarity_coeff
-        self.watermark = watermark
         self.verbose = verbose
         self._check_params()
 
@@ -118,7 +127,7 @@ class ConvexPolytopeAttack(PoisoningAttackWhiteBox):
         )
         self.attack_loss = tensor_norm(self.poison_feature_rep - self.target_feature_rep)
 
-    def poison(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
+    def poison(self, x: np.ndarray, y: Optional[np.ndarray] = None, fetch_nearest: bool = False, num_poison: Optional[int] = None, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
         """
         Iteratively finds optimal attack points starting at values at x
 

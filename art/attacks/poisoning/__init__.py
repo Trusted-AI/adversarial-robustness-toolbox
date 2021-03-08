@@ -6,4 +6,4 @@ from art.attacks.poisoning.poisoning_attack_svm import PoisoningAttackSVM
 from art.attacks.poisoning.feature_collision_attack import FeatureCollisionAttack
 from art.attacks.poisoning.adversarial_embedding_attack import PoisoningAttackAdversarialEmbedding
 from art.attacks.poisoning.clean_label_backdoor_attack import PoisoningAttackCleanLabelBackdoor
-from art.attacks.poisoning.convex_polytope.convex_polytope_attack import ConvexPolytopeAttack
+from art.attacks.poisoning.convex_polytope.bullseye_polytope_attack import BullseyePolytopeAttack
