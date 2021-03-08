@@ -67,7 +67,7 @@ class MembershipInferenceBlackBoxRuleBased(InferenceAttack):
         if y is None:
             raise ValueError("MembershipInferenceBlackBoxRuleBased requires true labels `y`.")
 
-        if self.estimator.input_shape:
+        if self.estimator.input_shape is not None:
             if self.estimator.input_shape[0] != x.shape[1]:
                 raise ValueError("Shape of x does not match input_shape of classifier")
 

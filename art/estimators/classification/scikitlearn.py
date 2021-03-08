@@ -196,6 +196,8 @@ class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):  # lgtm [py/
         _input_shape: Optional[Tuple[int, ...]]
         if hasattr(model, "n_features_"):
             _input_shape = (model.n_features_,)
+        elif hasattr(model, "n_features_in_"):
+            _input_shape = (model.n_features_in_,)
         elif hasattr(model, "feature_importances_"):
             _input_shape = (len(model.feature_importances_),)
         elif hasattr(model, "coef_"):

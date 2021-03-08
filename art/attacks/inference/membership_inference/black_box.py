@@ -153,7 +153,7 @@ class MembershipInferenceBlackBox(InferenceAttack):
         :param test_y: True labels for `test_x`.
         :return: An array holding the inferred membership status, 1 indicates a member and 0 indicates non-member.
         """
-        if self.estimator.input_shape:
+        if self.estimator.input_shape is not None:
             if self.estimator.input_shape[0] != x.shape[1]:
                 raise ValueError("Shape of x does not match input_shape of classifier")
             if self.estimator.input_shape[0] != test_x.shape[1]:
@@ -246,7 +246,7 @@ class MembershipInferenceBlackBox(InferenceAttack):
         if y is None:
             raise ValueError("MembershipInferenceBlackBox requires true labels `y`.")
 
-        if self.estimator.input_shape:
+        if self.estimator.input_shape is not None:
             if self.estimator.input_shape[0] != x.shape[1]:
                 raise ValueError("Shape of x does not match input_shape of classifier")
 

@@ -109,7 +109,7 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         """
 
         # Checks:
-        if self.estimator.input_shape:
+        if self.estimator.input_shape is not None:
             if self.estimator.input_shape[0] != x.shape[1]:
                 raise ValueError("Shape of x does not match input_shape of classifier")
         if self.single_index_feature and self.attack_feature >= x.shape[1]:
@@ -143,7 +143,7 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         """
         if y.shape[0] != x.shape[0]:
             raise ValueError("Number of rows in x and y do not match")
-        if self.estimator.input_shape:
+        if self.estimator.input_shape is not None:
             if self.single_index_feature and self.estimator.input_shape[0] != x.shape[1] + 1:
                 raise ValueError("Number of features in x + 1 does not match input_shape of classifier")
 
