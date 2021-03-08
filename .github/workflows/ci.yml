@@ -113,7 +113,7 @@ jobs:
           pip install tensorflow==${{ matrix.tensorflow }}
           pip install keras==${{ matrix.keras }}
           pip install scikit-learn==${{ matrix.scikit-learn }}
-          pip install torch==${{ matrix.torch }} torchvision==${{ matrix.torchvision }} torchaudio==${{ matrix.torchaudio }}-f https://download.pytorch.org/whl/torch_stable.html
+          pip install torch==${{ matrix.torch }} torchvision==${{ matrix.torchvision }} torchaudio==${{ matrix.torchaudio }} -f https://download.pytorch.org/whl/torch_stable.html
           pip list
       - name: Pre-install tensorflow
         if: ${{ matrix.framework == 'tensorflow' || matrix.framework == 'keras' || matrix.framework == 'kerastf' }}
