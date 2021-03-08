@@ -20,7 +20,7 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
@@ -31,22 +31,16 @@ jobs:
             tensorflow: 1.15.5
             tf_version: v1
             keras: 2.2.5
-          - name: TensorFlow 2.2.2 (Keras 2.3.1 Python 3.7)
-            framework: tensorflow
-            python: 3.7
-            tensorflow: 2.2.2
-            tf_version: v2
-            keras: 2.3.1
-          - name: TensorFlow 2.2.2v1 (Keras 2.3.1 Python 3.7)
-            framework: tensorflow2v1
-            python: 3.7
-            tensorflow: 2.2.2
-            tf_version: v2
-            keras: 2.3.1
           - name: TensorFlow 2.3.2 (Keras 2.4.3 Python 3.7)
             framework: tensorflow
             python: 3.7
             tensorflow: 2.3.2
+            tf_version: v2
+            keras: 2.4.3
+          - name: TensorFlow 2.4.1v1 (Keras 2.4.3 Python 3.8)
+            framework: tensorflow2v1
+            python: 3.8
+            tensorflow: 2.4.1
             tf_version: v2
             keras: 2.4.3
           - name: TensorFlow 2.4.1 (Keras 2.4.3 Python 3.8)
@@ -79,6 +73,13 @@ jobs:
           - name: mxnet (Python 3.7)
             framework: mxnet
             python: 3.7
+          - name: TensorFlow+Lingvo 2.1.0v1 (Keras 2.3.1 Python 3.6)
+            framework: tensorflow2v1
+            python: 3.6
+            tensorflow: 2.1.0
+            tf_version: v2
+            keras: 2.3.1
+            lingvo: 0.6.4
           - name: legacy (TensorFlow 2.2.1 Keras 2.3.1 scikit-learn 0.22.2 Python 3.7)
             framework: legacy
             python: 3.7
@@ -115,7 +116,7 @@ jobs:
           pip install scikit-learn==${{ matrix.scikit-learn }}
           pip list
       - name: Pre-install tensorflow
-        if: ${{ matrix.framework == 'tensorflow' || matrix.framework == 'keras' || matrix.framework == 'kerastf' }}
+        if: ${{ matrix.framework == 'tensorflow' || matrix.framework == 'keras' || matrix.framework == 'kerastf' || matrix.framework == 'tensorflow2v1' }}
         run: |
           pip install tensorflow==${{ matrix.tensorflow }}
           pip install keras==${{ matrix.keras }}
@@ -124,6 +125,14 @@ jobs:
         if: ${{ matrix.framework == 'scikitlearn' }}
         run: |
           pip install scikit-learn==${{ matrix.scikit-learn }}
+          pip list
+      - name: Pre-install Lingvo ASR
+        if: ${{ matrix.tensorflow == '2.1.0' }}
+        run: |
+          pip install tensorflow==${{ matrix.tensorflow }}
+          pip install lingvo==${{ matrix.lingvo }}
+          pip install tensorflow-addons==0.9.1
+          pip install model-pruning-google-research==0.0.3
           pip list
       - name: Run ${{ matrix.name }} Tests
         run: ./run_tests.sh ${{ matrix.framework }}
