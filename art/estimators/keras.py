@@ -38,6 +38,8 @@ class KerasEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
     Estimator class for Keras models.
     """
 
+    estimator_params = BaseEstimator.estimator_params + NeuralNetworkMixin.estimator_params
+
     def __init__(self, **kwargs) -> None:
         """
         Estimator class for Keras models.
@@ -69,7 +71,7 @@ class KerasEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         """
         NeuralNetworkMixin.fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs)
 
-    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the loss of the neural network for samples `x`.
 
