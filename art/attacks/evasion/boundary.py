@@ -204,7 +204,7 @@ class BoundaryAttack(EvasionAttack):
             return x
 
         # If an initial adversarial example found, then go with boundary attack
-        x_adv = self._attack(initial_sample[0], x, initial_sample[1], self.delta, self.epsilon, clip_min, clip_max,)
+        x_adv = self._attack(initial_sample[0], x, y_p, initial_sample[1], self.delta, self.epsilon, clip_min, clip_max,)
 
         return x_adv
 
@@ -212,6 +212,7 @@ class BoundaryAttack(EvasionAttack):
         self,
         initial_sample: np.ndarray,
         original_sample: np.ndarray,
+        y_p: int,
         target: int,
         initial_delta: float,
         initial_epsilon: float,
@@ -223,6 +224,7 @@ class BoundaryAttack(EvasionAttack):
 
         :param initial_sample: An initial adversarial example.
         :param original_sample: The original input.
+        :param y_p: The predicted label of the original input.
         :param target: The target label.
         :param initial_delta: Initial step size for the orthogonal step.
         :param initial_epsilon: Initial step size for the step towards the target.
@@ -248,7 +250,12 @@ class BoundaryAttack(EvasionAttack):
                     potential_advs.append(potential_adv)
 
                 preds = np.argmax(self.estimator.predict(np.array(potential_advs), batch_size=self.batch_size), axis=1,)
-                satisfied = preds == target
+
+                if self.targeted:
+                    satisfied = preds == target
+                else:
+                    satisfied = preds != y_p
+
                 delta_ratio = np.mean(satisfied)
 
                 if delta_ratio < 0.2:
@@ -270,7 +277,12 @@ class BoundaryAttack(EvasionAttack):
                 potential_advs = x_advs + perturb
                 potential_advs = np.clip(potential_advs, clip_min, clip_max)
                 preds = np.argmax(self.estimator.predict(potential_advs, batch_size=self.batch_size), axis=1,)
-                satisfied = preds == target
+
+                if self.targeted:
+                    satisfied = preds == target
+                else:
+                    satisfied = preds != y_p
+
                 epsilon_ratio = np.mean(satisfied)
 
                 if epsilon_ratio < 0.2:
@@ -279,12 +291,12 @@ class BoundaryAttack(EvasionAttack):
                     self.curr_epsilon /= self.step_adapt
 
                 if epsilon_ratio > 0:
-                    x_adv = potential_advs[np.where(satisfied)[0][0]]
+                    self._best_adv(original_sample, potential_advs[np.where(satisfied)[0]])
                     self.curr_adv = x_adv
                     break
             else:
                 logger.warning("Adversarial example found but not optimal.")
-                return x_advs[0]
+                return self._best_adv(original_sample, x_advs)
 
             if self.min_epsilon is not None and self.curr_epsilon < self.min_epsilon:
                 return x_adv
@@ -384,6 +396,19 @@ class BoundaryAttack(EvasionAttack):
                 logger.warning("Failed to draw a random image that is adversarial, attack failed.")
 
         return initial_sample
+
+    @staticmethod
+    def _best_adv(original_sample: np.ndarray, potential_advs: np.ndarray) -> np.ndarray:
+        """
+        From the potential adversarial examples, find the one that has the minimum L2 distance from the original sample
+
+        :param original_sample: The original input.
+        :param potential_advs: Array containing the potential adversarial examples
+        :return: The adversarial example that has the minimum L2 distance from the original input
+        """
+        shape = potential_advs.shape
+        min_idx = np.linalg.norm(original_sample.flatten() - potential_advs.reshape(shape[0], -1), axis=1).argmin()
+        return potential_advs[min_idx]
 
     def _check_params(self) -> None:
         if not isinstance(self.max_iter, (int, np.int)) or self.max_iter < 0:
