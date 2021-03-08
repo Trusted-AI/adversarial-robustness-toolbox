@@ -291,7 +291,7 @@ class BoundaryAttack(EvasionAttack):
                     self.curr_epsilon /= self.step_adapt
 
                 if epsilon_ratio > 0:
-                    self._best_adv(original_sample, potential_advs[np.where(satisfied)[0]])
+                    x_adv = self._best_adv(original_sample, potential_advs[np.where(satisfied)[0]])
                     self.curr_adv = x_adv
                     break
             else:
