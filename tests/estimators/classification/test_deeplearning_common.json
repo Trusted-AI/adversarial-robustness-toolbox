@@ -392,7 +392,7 @@
         "train_step=<function get_image_classifier_tf_v2.<locals>.train_step",
         "channels_first=False, ",
         "clip_values=array([0., 1.], dtype=float32), ",
-        "preprocessing_defences=None, postprocessing_defences=None, preprocessing=StandardisationMeanStdTensorFlowV2(mean=0, std=1, apply_fit=True, apply_predict=True)"
+        "preprocessing_defences=None, postprocessing_defences=None, preprocessing=StandardisationMeanStdTensorFlow(mean=0, std=1, apply_fit=True, apply_predict=True)"
     ],
     "test_repr_tensorflow1": [
         "TensorFlowClassifier",
