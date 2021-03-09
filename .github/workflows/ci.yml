@@ -59,9 +59,12 @@ jobs:
             python: 3.7
             tensorflow: 2.3.2
             keras: 2.4.3
-          - name: PyTorch (Python 3.7)
+          - name: PyTorch (Python 3.8)
             framework: pytorch
-            python: 3.7
+            python: 3.8
+            torch: 1.8.0+cpu
+            torchvision: 0.9.0+cpu
+            torchaudio: 0.8.0
           - name: scikit-learn 0.22.2 (Python 3.7)
             framework: scikitlearn
             scikit-learn: 0.22.2
@@ -118,7 +121,7 @@ jobs:
           pip install torchaudio==${{ matrix.torchaudio }} -f https://download.pytorch.org/whl/torch_stable.html
           pip list
       - name: Pre-install tensorflow
-        if: ${{ matrix.framework == 'tensorflow' || matrix.framework == 'keras' || matrix.framework == 'kerastf' }}
+        if: ${{ matrix.framework == 'tensorflow' || matrix.framework == 'keras' || matrix.framework == 'kerastf' || matrix.framework == 'tensorflow2v1' }}
         run: |
           pip install tensorflow==${{ matrix.tensorflow }}
           pip install keras==${{ matrix.keras }}
@@ -127,6 +130,13 @@ jobs:
         if: ${{ matrix.framework == 'scikitlearn' }}
         run: |
           pip install scikit-learn==${{ matrix.scikit-learn }}
+          pip list
+      - name: Pre-install torch
+        if: ${{ matrix.framework == 'pytorch' }}
+        run: |
+          pip install torch==${{ matrix.torch }} -f https://download.pytorch.org/whl/torch_stable.html
+          pip install torchvision==${{ matrix.torchvision }} -f https://download.pytorch.org/whl/torch_stable.html
+          pip install torchaudio==${{ matrix.torchaudio }} -f https://download.pytorch.org/whl/torch_stable.html
           pip list
       - name: Run ${{ matrix.name }} Tests
         run: ./run_tests.sh ${{ matrix.framework }}
