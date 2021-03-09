@@ -30,7 +30,7 @@ def get_adv_trainer(framework, image_dl_estimator):
 
         if framework == "keras":
             trainer = None
-        if framework == "tensorflow":
+        if framework in ["tensorflow", "tensorflow2v1"]:
             trainer = None
         if framework == "pytorch":
             classifier = image_dl_estimator()[0][0]

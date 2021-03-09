@@ -471,8 +471,8 @@ class AutoProjectedGradientDescent(EvasionAttack):
                         perturbation = projection(x_1 - x_init_batch, self.eps, self.norm)
                         x_1 = x_init_batch + perturbation
 
-                        f_0 = self.estimator.loss(x=x_k, y=y_batch, reduction="mean")
-                        f_1 = self.estimator.loss(x=x_1, y=y_batch, reduction="mean")
+                        f_0 = self.estimator.compute_loss(x=x_k, y=y_batch, reduction="mean")
+                        f_1 = self.estimator.compute_loss(x=x_1, y=y_batch, reduction="mean")
 
                         self.eta_w_j_m_1 = eta
                         self.f_max_w_j_m_1 = f_0
@@ -506,9 +506,13 @@ class AutoProjectedGradientDescent(EvasionAttack):
                         perturbation = projection(x_k_p_1 - x_init_batch, self.eps, self.norm)
                         x_k_p_1 = x_init_batch + perturbation
 
-                        f_k_p_1 = self.estimator.loss(x=x_k_p_1, y=y_batch, reduction="mean")
+                        f_k_p_1 = self.estimator.compute_loss(x=x_k_p_1, y=y_batch, reduction="mean")
 
-                        if f_k_p_1 > self.f_max:
+                        if f_k_p_1 == 0.0:
+                            x_k = x_k_p_1.copy()
+                            break
+
+                        if (not self.targeted and f_k_p_1 > self.f_max) or (self.targeted and f_k_p_1 < self.f_max):
                             self.count_condition_1 += 1
                             self.x_max = x_k_p_1
                             self.x_max_m_1 = x_k

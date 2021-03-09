@@ -22,23 +22,22 @@ Mandarin in PyTorch.
 | Paper link: https://arxiv.org/abs/1512.02595
 """
 import logging
-from typing import List, Optional, Tuple, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional, Tuple, Union
 
 import numpy as np
 
-from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizerMixin
-from art.estimators.pytorch import PyTorchEstimator
-from art.utils import get_file
 from art import config
+from art.estimators.pytorch import PyTorchEstimator
+from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizerMixin
+from art.utils import get_file
 
 if TYPE_CHECKING:
     import torch
-
     from deepspeech_pytorch.model import DeepSpeech
 
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
-    from art.defences.preprocessor.preprocessor import Preprocessor
     from art.defences.postprocessor.postprocessor import Postprocessor
+    from art.defences.preprocessor.preprocessor import Preprocessor
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +49,8 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
 
     | Paper link: https://arxiv.org/abs/1512.02595
     """
+
+    estimator_params = PyTorchEstimator.estimator_params + ["optimizer", "use_amp", "opt_level", "lm_config" "verbose"]
 
     def __init__(
         self,
@@ -124,7 +125,6 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
                             if available otherwise run on CPU.
         """
         import torch  # lgtm [py/repeated-import]
-
         from deepspeech_pytorch.configs.inference_config import LMConfig
         from deepspeech_pytorch.enums import DecoderType
         from deepspeech_pytorch.utils import load_decoder, load_model
@@ -213,6 +213,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         # Save first version of the optimizer
         self._optimizer = optimizer
         self._use_amp = use_amp
+        self._opt_level = opt_level
 
         # Now create a decoder
         # Create the language model config first
@@ -234,6 +235,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         lm_config.cutoff_prob = cutoff_prob
         lm_config.beam_width = beam_width
         lm_config.lm_workers = lm_workers
+        self.lm_config = lm_config
 
         # Create the decoder with the lm config
         self.decoder = load_decoder(labels=self._model.labels, cfg=lm_config)
@@ -258,7 +260,11 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
                 enabled = True
 
             self._model, self._optimizer = amp.initialize(
-                models=self._model, optimizers=self._optimizer, enabled=enabled, opt_level=opt_level, loss_scale=1.0,
+                models=self._model,
+                optimizers=self._optimizer,
+                enabled=enabled,
+                opt_level=opt_level,
+                loss_scale=1.0,
             )
 
     def predict(
@@ -375,8 +381,10 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         x_ = np.empty(len(x), dtype=object)
         x_[:] = list(x)
 
-        # Put the model in the training mode
+        # Put the model in the training mode, otherwise CUDA can't backpropagate through the model.
+        # However, model uses batch norm layers which need to be frozen
         self._model.train()
+        self.set_batchnorm(train=False)
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x_, y, fit=False)
@@ -427,6 +435,8 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
             results = np.array([i for i in results], dtype=x.dtype)
             assert results.shape == x.shape and results.dtype == x.dtype
 
+        # Unfreeze batch norm layers again
+        self.set_batchnorm(train=True)
         return results
 
     def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, **kwargs) -> None:
@@ -517,7 +527,10 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
                 self._optimizer.step()
 
     def preprocess_transform_model_input(
-        self, x: "torch.Tensor", y: np.ndarray, real_lengths: np.ndarray,
+        self,
+        x: "torch.Tensor",
+        y: np.ndarray,
+        real_lengths: np.ndarray,
     ) -> Tuple["torch.Tensor", "torch.Tensor", "torch.Tensor", "torch.Tensor", List]:
         """
         Apply preprocessing and then transform the user input space into the model input space. This function is used
@@ -548,7 +561,11 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
 
         # Transform the input space
         inputs, targets, input_rates, target_sizes, batch_idx = self._transform_model_input(
-            x=x, y=y, compute_gradient=False, tensor_input=True, real_lengths=real_lengths,
+            x=x,
+            y=y,
+            compute_gradient=False,
+            tensor_input=True,
+            real_lengths=real_lengths,
         )
 
         return inputs, targets, input_rates, target_sizes, batch_idx
@@ -582,7 +599,6 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         """
         import torch  # lgtm [py/repeated-import]
         import torchaudio
-
         from deepspeech_pytorch.loader.data_loader import _collate_fn
 
         # These parameters are needed for the transformation
@@ -686,6 +702,34 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         :return: Current used device.
         """
         return self._device
+
+    @property
+    def use_amp(self) -> bool:
+        """
+        Return a boolean indicating whether to use the automatic mixed precision tool.
+
+        :return: Whether to use the automatic mixed precision tool.
+        """
+        return self._use_amp  # type: ignore
+
+    @property
+    def optimizer(self) -> "torch.optim.Optimizer":
+        """
+        Return the optimizer.
+
+        :return: The optimizer.
+        """
+        return self._optimizer  # type: ignore
+
+    @property
+    def opt_level(self) -> str:
+        """
+        Return a string specifying a pure or mixed precision optimization level.
+
+        :return: A string specifying a pure or mixed precision optimization level. Possible
+                 values are `O0`, `O1`, `O2`, and `O3`.
+        """
+        return self._opt_level  # type: ignore
 
     def get_activations(
         self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False

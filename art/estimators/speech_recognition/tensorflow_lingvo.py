@@ -101,6 +101,8 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
         },
     }
 
+    estimator_params = TensorFlowV2Estimator.estimator_params + ["random_seed", "sess"]
+
     def __init__(
         self,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,

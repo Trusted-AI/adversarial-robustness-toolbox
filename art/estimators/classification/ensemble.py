@@ -27,7 +27,6 @@ import numpy as np
 
 from art.estimators.classification.classifier import ClassifierNeuralNetwork
 from art.estimators.estimator import NeuralNetworkMixin
-from art.utils import Deprecated, deprecated_keyword_arg
 
 if TYPE_CHECKING:
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
@@ -44,12 +43,15 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
     trained when the ensemble is created and no training procedures are provided through this class.
     """
 
-    @deprecated_keyword_arg("channel_index", end_version="1.6.0", replaced_by="channels_first")
+    estimator_params = ClassifierNeuralNetwork.estimator_params + [
+        "classifiers",
+        "classifier_weights",
+    ]
+
     def __init__(
         self,
         classifiers: List[ClassifierNeuralNetwork],
         classifier_weights: Union[list, np.ndarray, None] = None,
-        channel_index=Deprecated,
         channels_first: bool = False,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
@@ -63,8 +65,6 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         :param classifiers: List of :class:`.Classifier` instances to be ensembled together.
         :param classifier_weights: List of weights, one scalar per classifier, to assign to their prediction when
                aggregating results. If `None`, all classifiers are assigned the same weight.
-        :param channel_index: Index of the axis in data containing the color channels or features.
-        :type channel_index: `int`
         :param channels_first: Set channels first or last.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
@@ -80,18 +80,9 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         if preprocessing_defences is not None:
             raise NotImplementedError("Preprocessing is not applicable in this classifier.")
 
-        # Remove in 1.6.0
-        if channel_index == 3:
-            channels_first = False
-        elif channel_index == 1:
-            channels_first = True
-        elif channel_index is not Deprecated:
-            raise ValueError("Not a proper channel_index. Use channels_first.")
-
         super().__init__(
             model=None,
             clip_values=clip_values,
-            channel_index=channel_index,
             channels_first=channels_first,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
@@ -150,6 +141,24 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         :return: Shape of one input sample.
         """
         return self._input_shape  # type: ignore
+
+    @property
+    def classifiers(self) -> List[ClassifierNeuralNetwork]:
+        """
+        Return the Classifier instances that are ensembled together.
+
+        :return: Classifier instances that are ensembled together.
+        """
+        return self._classifiers  # type: ignore
+
+    @property
+    def classifier_weights(self) -> Union[list, np.ndarray, None]:
+        """
+        Return the list of classifier weights to assign to their prediction when aggregating results.
+
+        :return: The list of classifier weights to assign to their prediction when aggregating results.
+        """
+        return self._classifier_weights  # type: ignore
 
     def predict(self, x: np.ndarray, batch_size: int = 128, raw: bool = False, **kwargs) -> np.ndarray:
         """
@@ -291,13 +300,12 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
 
     def __repr__(self):
         repr_ = (
-            "%s(classifiers=%r, classifier_weights=%r, channel_index=%r, channels_first=%r, clip_values=%r, "
+            "%s(classifiers=%r, classifier_weights=%r, channels_first=%r, clip_values=%r, "
             "preprocessing_defences=%r, postprocessing_defences=%r, preprocessing=%r)"
             % (
                 self.__module__ + "." + self.__class__.__name__,
                 self._classifiers,
                 self._classifier_weights,
-                self.channel_index,
                 self.channels_first,
                 self.clip_values,
                 self.preprocessing_defences,
@@ -320,7 +328,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         """
         raise NotImplementedError
 
-    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the loss of the neural network for samples `x`.
 
