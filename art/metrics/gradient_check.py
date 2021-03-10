@@ -27,7 +27,9 @@ if TYPE_CHECKING:
     from art.estimators.estimator import LossGradientsMixin
 
 
-def loss_gradient_check(estimator: "LossGradientsMixin", x: np.ndarray, y: np.ndarray) -> np.ndarray:
+def loss_gradient_check(
+    estimator: "LossGradientsMixin", x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs
+) -> np.ndarray:
     """
         Compute the gradient of the loss function w.r.t. `x` and identify points where the gradient is zero, nan, or inf
 
@@ -35,6 +37,7 @@ def loss_gradient_check(estimator: "LossGradientsMixin", x: np.ndarray, y: np.nd
         :param x: Input with shape as expected by the classifier's model.
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,).
+        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
         :return: Array of booleans with the shape (len(x), 3). If true means the gradient of the loss w.r.t. the
                  particular `x` was bad (zero, nan, inf).
         """
@@ -42,7 +45,7 @@ def loss_gradient_check(estimator: "LossGradientsMixin", x: np.ndarray, y: np.nd
 
     is_bad = []
     for i in trange(len(x), desc="Gradient check"):
-        grad = estimator.loss_gradient(x[[i]], y[[i]])
+        grad = estimator.loss_gradient(x=x[[i]], y=y[[i]], training_mode=training_mode, **kwargs)
         is_bad.append(
             [(np.min(grad) == 0 and np.max(grad) == 0), np.any(np.isnan(grad)), np.any(np.isinf(grad)),]
         )

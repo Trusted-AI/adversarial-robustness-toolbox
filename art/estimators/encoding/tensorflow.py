@@ -155,7 +155,7 @@ class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):  # lgtm [py/missing-
         """
         Perform prediction for a batch of inputs.
 
-        :param x: Test set.
+        :param x: Input samples.
         :param batch_size: Batch size.
         :return: Array of encoding predictions of shape `(num_inputs, encoding_length)`.
         """
@@ -180,13 +180,7 @@ class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):  # lgtm [py/missing-
         """
         raise NotImplementedError
 
-    def set_learning_phase(self, train: bool) -> None:
-        """
-        Do nothing.
-        """
-        raise NotImplementedError
-
-    def loss_gradient(self, x: "np.ndarray", y: "np.ndarray", **kwargs) -> "np.ndarray":
+    def loss_gradient(self, x: "np.ndarray", y: "np.ndarray", training_mode: bool = False, **kwargs) -> "np.ndarray":
         """
         No gradients to compute for this method; do nothing.
         """
