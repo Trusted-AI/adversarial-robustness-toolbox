@@ -246,10 +246,11 @@ class AttributeInferenceBaseline:
 
         # get vector of attacked feature
         y = x[:, self.attack_feature]
-        y_ready = y
         if self.single_index_feature:
             y_one_hot = float_to_categorical(y)
-            y_ready = check_and_transform_label_format(y_one_hot, len(np.unique(y)), return_one_hot=True)
+        else:
+            y_one_hot = floats_to_one_hot(y)
+        y_ready = check_and_transform_label_format(y_one_hot, len(np.unique(y)), return_one_hot=True)
 
         # create training set for attack model
         x_train = np.delete(x, self.attack_feature, 1).astype(np.float32)
@@ -274,7 +275,17 @@ class AttributeInferenceBaseline:
             values: np.ndarray = kwargs.get("values")
             return np.array([values[np.argmax(arr)] for arr in self.attack_model.predict(x_test)])
         else:
-            return np.array(self.attack_model.predict(x_test))
+            if "values" in kwargs.keys():
+                values = kwargs.get("values")
+                predictions = self.attack_model.predict(x_test).astype(np.float32)
+                i = 0
+                for column in predictions.T:
+                    for index in range(len(values[i])):
+                        np.place(column, [column == index], values[i][index])
+                    i += 1
+                return np.array(predictions)
+            else:
+                return np.array(self.attack_model.predict(x_test))
 
     def _check_params(self) -> None:
         if not isinstance(self.attack_feature, int) and not isinstance(self.attack_feature, slice):
