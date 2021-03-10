@@ -129,6 +129,10 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         self._opt_level = opt_level
         self._loss_scale = loss_scale
 
+        # Check if model is RNN-like to decide if freezing batch-norm and dropout layers might be required for loss and
+        # class gradient calculation
+        self.is_rnn = any([isinstance(m, torch.nn.modules.RNNBase) for m in self._model.modules()])
+
         # Get the internal layers
         self._layer_names = self._model.get_layers
 
@@ -493,8 +497,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         # Backpropagation through RNN modules in eval mode raises RuntimeError due to cudnn issues and require training
         # mode, i.e. RuntimeError: cudnn RNN backward can only be called in training mode. Therefore, if the model is
         # an RNN type we always use training mode but freeze batch-norm and dropout layers if training_mode=False.
-        is_rnn = any([isinstance(m, torch.nn.modules.RNNBase) for m in self._model.modules()])
-        if is_rnn:
+        if self.is_rnn:
             self._model.train(mode=True)
             if not training_mode:
                 logger.debug(
@@ -651,8 +654,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         # Backpropagation through RNN modules in eval mode raises RuntimeError due to cudnn issues and require training
         # mode, i.e. RuntimeError: cudnn RNN backward can only be called in training mode. Therefore, if the model is
         # an RNN type we always use training mode but freeze batch-norm and dropout layers if training_mode=False.
-        is_rnn = any([isinstance(m, torch.nn.modules.RNNBase) for m in self._model.modules()])
-        if is_rnn:
+        if self.is_rnn:
             self._model.train(mode=True)
             if not training_mode:
                 logger.debug(
