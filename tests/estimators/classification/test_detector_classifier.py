@@ -134,17 +134,6 @@ class TestDetectorClassifier(TestBase):
         gradients = self.detector_classifier.class_gradient(x=self.x_test_mnist[0:n_test_local], label=label)
         self.assertEqual(gradients.shape, (n_test_local, 1, 1, 28, 28))
 
-    def test_set_learning(self):
-        self.detector_classifier.set_learning_phase(False)
-        self.assertFalse(self.detector_classifier.classifier._model.training)
-        self.assertFalse(self.detector_classifier.detector._model.training)
-        self.assertFalse(self.detector_classifier.learning_phase)
-
-        self.detector_classifier.set_learning_phase(True)
-        self.assertTrue(self.detector_classifier.classifier._model.training)
-        self.assertTrue(self.detector_classifier.detector._model.training)
-        self.assertTrue(self.detector_classifier.learning_phase)
-
     def test_save(self):
         model = self.detector_classifier
         t_file = tempfile.NamedTemporaryFile()

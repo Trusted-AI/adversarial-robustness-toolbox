@@ -81,9 +81,6 @@ def asr_dummy_estimator(framework):
                 def loss_gradient(self, x, y, **kwargs):
                     return x
 
-                def set_learning_phase():
-                    pass
-
                 @property
                 def input_shape(self):
                     return None
@@ -100,9 +97,6 @@ def asr_dummy_estimator(framework):
 
                 def loss_gradient(self, x, y, **kwargs):
                     return x
-
-                def set_learning_phase():
-                    pass
 
                 @property
                 def input_shape(self):

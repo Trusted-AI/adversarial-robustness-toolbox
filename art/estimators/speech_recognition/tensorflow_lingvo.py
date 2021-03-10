@@ -543,9 +543,6 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
 
         return np.array(gradients, dtype=object)
 
-    def set_learning_phase(self, train: bool) -> None:
-        raise NotImplementedError
-
     def get_activations(
         self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
     ) -> np.ndarray:

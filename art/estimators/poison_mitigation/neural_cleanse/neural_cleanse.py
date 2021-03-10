@@ -93,7 +93,7 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
         """
         Perform prediction for a batch of inputs.
 
-        :param x: Test set.
+        :param x: Input samples.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
         raise NotImplementedError
@@ -122,7 +122,7 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
         """
         Perform prediction of the given classifier for a batch of inputs, potentially filtering suspicious input
 
-        :param x: Test set.
+        :param x: Input samples.
         :param batch_size: Batch size.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """

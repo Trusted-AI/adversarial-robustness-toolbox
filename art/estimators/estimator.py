@@ -401,8 +401,7 @@ class NeuralNetworkMixin(ABC):
         """
         Perform prediction of the neural network for samples `x`.
 
-        :param x: Samples of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
-                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
+        :param x: Input samples.
         :param batch_size: Batch size.
         :return: Predictions.
         :rtype: Format as expected by the `model`
@@ -468,15 +467,6 @@ class NeuralNetworkMixin(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def set_learning_phase(self, train: bool) -> None:
-        """
-        Set the learning phase for the backend framework.
-
-        :param train: `True` if the learning phase is training, otherwise `False`.
-        """
-        raise NotImplementedError
-
-    @abstractmethod
     def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the loss of the neural network for samples `x`.
@@ -496,18 +486,6 @@ class NeuralNetworkMixin(ABC):
         :return: Boolean to indicate index of the color channels in the sample `x`.
         """
         return self._channels_first
-
-    @property
-    def learning_phase(self) -> Optional[bool]:
-        """
-        The learning phase set by the user. Possible values are `True` for training or `False` for prediction and
-        `None` if it has not been set by the library. In the latter case, the library does not do any explicit learning
-        phase manipulation and the current value of the backend framework is used. If a value has been set by the user
-        for this property, it will impact all following computations for model fitting, prediction and gradients.
-
-        :return: Learning phase.
-        """
-        return self._learning_phase  # type: ignore
 
     @property
     def layer_names(self) -> Optional[List[str]]:
