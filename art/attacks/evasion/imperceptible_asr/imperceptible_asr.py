@@ -62,6 +62,12 @@ class ImperceptibleASR(EvasionAttack):
         "max_iter_2",
         "batch_size",
         "loss_theta_min",
+        "decrease_factor_eps",
+        "num_iter_decrease_eps",
+        "increase_factor_alpha",
+        "num_iter_increase_alpha",
+        "decrease_factor_alpha",
+        "num_iter_decrease_alpha",
     ]
 
     _estimator_requirements = (NeuralNetworkMixin, LossGradientsMixin, BaseEstimator, SpeechRecognizerMixin)
@@ -77,10 +83,19 @@ class ImperceptibleASR(EvasionAttack):
         learning_rate_2: float = 1.0,
         max_iter_2: int = 4000,
         loss_theta_min: float = 0.05,
+        decrease_factor_eps: float = 0.8,
+        num_iter_decrease_eps: int = 10,
+        increase_factor_alpha: float = 1.2,
+        num_iter_increase_alpha: int = 20,
+        decrease_factor_alpha: float = 0.8,
+        num_iter_decrease_alpha: int = 50,
         batch_size: int = 1,
     ) -> None:
         """
         Create an instance of the :class:`.ImperceptibleASR`.
+
+        The default parameters assume that audio input is in `int16` range. If using normalized audio input, parameters
+        `eps` and `learning_rate_{1,2}` need to be scaled with a factor `2^-15`
 
         :param estimator: A trained speech recognition estimator.
         :param masker: A Psychoacoustic masker.
@@ -91,6 +106,12 @@ class ImperceptibleASR(EvasionAttack):
         :param learning_rate_2: Learning rate for stage 2 of attack.
         :param max_iter_2: Number of iterations for stage 2 of attack.
         :param loss_theta_min: If imperceptible loss reaches minimum, stop early. Works best with `batch_size=1`.
+        :param decrease_factor_eps: Decrease factor for epsilon (Paper default: 0.8).
+        :param num_iter_decrease_eps: Iterations after which to decrease epsilon if attack succeeds (Paper default: 10).
+        :param increase_factor_alpha: Increase factor for alpha (Paper default: 1.2).
+        :param num_iter_increase_alpha: Iterations after which to increase alpha if attack succeeds (Paper default: 20).
+        :param decrease_factor_alpha: Decrease factor for alpha (Paper default: 0.8).
+        :param num_iter_decrease_alpha: Iterations after which to decrease alpha if attack fails (Paper default: 50).
         :param batch_size: Batch size.
         """
 
@@ -106,6 +127,12 @@ class ImperceptibleASR(EvasionAttack):
         self._targeted = True
         self.batch_size = batch_size
         self.loss_theta_min = loss_theta_min
+        self.decrease_factor_eps = decrease_factor_eps
+        self.num_iter_decrease_eps = num_iter_decrease_eps
+        self.increase_factor_alpha = increase_factor_alpha
+        self.num_iter_increase_alpha = num_iter_increase_alpha
+        self.decrease_factor_alpha = decrease_factor_alpha
+        self.num_iter_decrease_alpha = num_iter_decrease_alpha
         self._check_params()
 
         # init some aliases
@@ -217,7 +244,7 @@ class ImperceptibleASR(EvasionAttack):
             # re-apply clipped perturbation to x
             x_perturbed = x + perturbation
 
-            if i % 10 == 0:
+            if i % self.num_iter_decrease_eps == 0:
                 prediction = self.estimator.predict(x_perturbed, batch_size=batch_size)
                 for j in range(batch_size):
                     # validate adversarial target, i.e. f(x_perturbed)=y
@@ -226,7 +253,7 @@ class ImperceptibleASR(EvasionAttack):
                         perturbation_norm = np.max(np.abs(perturbation[j]))
                         if epsilon[j] > perturbation_norm:
                             epsilon[j] = perturbation_norm
-                        epsilon[j] *= 0.8
+                        epsilon[j] *= self.decrease_factor_eps
                         # save current best adversarial example
                         x_adversarial[j] = x_perturbed[j]
                 logger.info("Current iteration %s, epsilon %s", i, epsilon)
@@ -288,22 +315,22 @@ class ImperceptibleASR(EvasionAttack):
             # perform gradient descent steps
             x_perturbed = x_perturbed - self.learning_rate_2 * (gradients_net + alpha * gradients_theta)
 
-            if i % 20 == 0 or i % 50 == 0:
+            if i % self.num_iter_increase_alpha == 0 or i % self.num_iter_decrease_alpha == 0:
                 prediction = self.estimator.predict(x_perturbed, batch_size=batch_size)
                 for j in range(batch_size):
                     # validate if adversarial target succeeds, i.e. f(x_perturbed)=y
-                    if i % 20 == 0 and prediction[j] == y[j].upper():
+                    if i % self.num_iter_increase_alpha == 0 and prediction[j] == y[j].upper():
                         # increase alpha
-                        alpha[j] *= 1.2
+                        alpha[j] *= self.increase_factor_alpha
                         # save current best imperceptible, adversarial example
                         if loss_theta[j] < loss_theta_previous[j]:
                             x_imperceptible[j] = x_perturbed[j]
                             loss_theta_previous[j] = loss_theta[j]
 
                     # validate if adversarial target fails, i.e. f(x_perturbed)!=y
-                    if i % 50 == 0 and prediction[j] != y[j].upper():
+                    if i % self.num_iter_decrease_alpha == 0 and prediction[j] != y[j].upper():
                         # decrease alpha
-                        alpha[j] = max(alpha[j] * 0.8, alpha_min)
+                        alpha[j] = max(alpha[j] * self.decrease_factor_alpha, alpha_min)
                 logger.info("Current iteration %s, alpha %s, loss theta %s", i, alpha, loss_theta)
 
             # note: avoids nan values in loss theta, which can occur when loss converges to zero.
@@ -328,7 +355,8 @@ class ImperceptibleASR(EvasionAttack):
         return np.array(x_imperceptible, dtype=dtype)
 
     def _stabilized_threshold_and_psd_maximum(self, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-        """Return batch of stabilized masking thresholds and PSD maxima.
+        """
+        Return batch of stabilized masking thresholds and PSD maxima.
 
         :param x: An array with the original inputs to be attacked.
         :return: Tuple consisting of stabilized masking thresholds and PSD maxima.
@@ -558,6 +586,36 @@ class ImperceptibleASR(EvasionAttack):
 
         if not isinstance(self.loss_theta_min, float):
             raise ValueError("The loss_theta_min threshold must be of type float.")
+
+        if not isinstance(self.decrease_factor_eps, float):
+            raise ValueError("The factor to decrease eps must be of type float.")
+        if self.decrease_factor_eps <= 0.0:
+            raise ValueError("The factor to decrease eps must be greater than 0.0.")
+
+        if not isinstance(self.num_iter_decrease_alpha, int):
+            raise ValueError("The number of iterations must be of type int.")
+        if self.num_iter_decrease_alpha <= 0:
+            raise ValueError("The number of iterations must be greater than 0.")
+
+        if not isinstance(self.increase_factor_alpha, float):
+            raise ValueError("The factor to increase alpha must be of type float.")
+        if self.increase_factor_alpha <= 0.0:
+            raise ValueError("The factor to increase alpha must be greater than 0.0.")
+
+        if not isinstance(self.num_iter_increase_alpha, int):
+            raise ValueError("The number of iterations must be of type int.")
+        if self.num_iter_increase_alpha <= 0:
+            raise ValueError("The number of iterations must be greater than 0.")
+
+        if not isinstance(self.decrease_factor_alpha, float):
+            raise ValueError("The factor to decrease alpha must be of type float.")
+        if self.decrease_factor_alpha <= 0.0:
+            raise ValueError("The factor to decrease alpha must be greater than 0.0.")
+
+        if not isinstance(self.num_iter_decrease_alpha, int):
+            raise ValueError("The number of iterations must be of type int.")
+        if self.num_iter_decrease_alpha <= 0:
+            raise ValueError("The number of iterations must be greater than 0.")
 
         if self.batch_size <= 0:
             raise ValueError("The batch size `batch_size` has to be positive.")
