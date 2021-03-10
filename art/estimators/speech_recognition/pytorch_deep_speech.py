@@ -735,6 +735,3 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
     ) -> np.ndarray:
         raise NotImplementedError
-
-    def set_learning_phase(self, train: bool) -> None:
-        raise NotImplementedError

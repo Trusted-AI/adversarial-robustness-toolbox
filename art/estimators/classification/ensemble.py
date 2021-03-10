@@ -131,7 +131,6 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
                 )
 
         self._classifiers = classifiers
-        self._learning_phase: Optional[bool] = None
 
     @property
     def input_shape(self) -> Tuple[int, ...]:
@@ -167,7 +166,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         models without aggregation. The same option should be used for logits output, as logits are not comparable
         between models and should not be aggregated.
 
-        :param x: Test set.
+        :param x: Input samples.
         :param batch_size: Size of batches.
         :param raw: Return the individual classifier raw outputs (not aggregated).
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`, or of shape
@@ -241,7 +240,12 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         raise NotImplementedError
 
     def class_gradient(
-        self, x: np.ndarray, label: Union[int, List[int], None] = None, raw: bool = False, **kwargs
+        self,
+        x: np.ndarray,
+        label: Union[int, List[int], None] = None,
+        training_mode: bool = False,
+        raw: bool = False,
+        **kwargs
     ) -> np.ndarray:
         """
         Compute per-class derivatives w.r.t. `x`.
@@ -249,6 +253,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         :param x: Sample input with shape as expected by the model.
         :param label: Index of a specific per-class derivative. If `None`, then gradients for all
                       classes will be computed.
+        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
         :param raw: Return the individual classifier raw outputs (not aggregated).
         :return: Array of gradients of input features w.r.t. each class in the form
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
@@ -257,7 +262,8 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         """
         grads = np.array(
             [
-                self._classifier_weights[i] * self._classifiers[i].class_gradient(x, label)
+                self._classifier_weights[i]
+                * self._classifiers[i].class_gradient(x=x, label=label, training_mode=training_mode, **kwargs)
                 for i in range(self._nb_classifiers)
             ]
         )
@@ -266,19 +272,23 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
 
         return np.sum(grads, axis=0)
 
-    def loss_gradient(self, x: np.ndarray, y: np.ndarray, raw: bool = False, **kwargs) -> np.ndarray:
+    def loss_gradient(
+        self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, raw: bool = False, **kwargs
+    ) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
         :param x: Sample input with shape as expected by the model.
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,).
+        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
         :param raw: Return the individual classifier raw outputs (not aggregated).
         :return: Array of gradients of the same shape as `x`. If `raw=True`, shape becomes `[nb_classifiers, x.shape]`.
         """
         grads = np.array(
             [
-                self._classifier_weights[i] * self._classifiers[i].loss_gradient(x, y)
+                self._classifier_weights[i]
+                * self._classifiers[i].loss_gradient(x=x, y=y, training_mode=training_mode, **kwargs)
                 for i in range(self._nb_classifiers)
             ]
         )
@@ -286,17 +296,6 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
             return grads
 
         return np.sum(grads, axis=0)
-
-    def set_learning_phase(self, train: bool) -> None:
-        """
-        Set the learning phase for the backend framework.
-
-        :param train: True to set the learning phase to training, False to set it to prediction.
-        """
-        if self._learning_phase is not None and isinstance(train, bool):
-            for classifier in self._classifiers:
-                classifier.set_learning_phase(train)
-            self._learning_phase = train
 
     def __repr__(self):
         repr_ = (

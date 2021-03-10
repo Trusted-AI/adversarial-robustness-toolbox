@@ -165,7 +165,7 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierClassLossG
         """
         Perform prediction for a batch of inputs. Rounds results first.
 
-        :param x: Test set.
+        :param x: Input samples.
         :param batch_size: Size of batches.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
@@ -181,14 +181,6 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierClassLossG
         :param layer: Layer for computing the activations.
         :param batch_size: Size of batches.
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
-        """
-        raise NotImplementedError
-
-    def set_learning_phase(self, train: bool) -> None:
-        """
-        Set the learning phase for the backend framework.
-
-        :param train: `True` if the learning phase is training, `False` if learning phase is not training.
         """
         raise NotImplementedError
 

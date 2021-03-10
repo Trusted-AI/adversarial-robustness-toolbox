@@ -129,6 +129,10 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         self._opt_level = opt_level
         self._loss_scale = loss_scale
 
+        # Check if model is RNN-like to decide if freezing batch-norm and dropout layers might be required for loss and
+        # class gradient calculation
+        self.is_rnn = any([isinstance(m, torch.nn.modules.RNNBase) for m in self._model.modules()])
+
         # Get the internal layers
         self._layer_names = self._model.get_layers
 
@@ -262,18 +266,19 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         else:
             return y
 
-    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
+    def predict(self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs) -> np.ndarray:
         """
         Perform prediction for a batch of inputs.
 
-        :param x: Test set.
+        :param x: Input samples.
         :param batch_size: Size of batches.
+        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
         import torch  # lgtm [py/repeated-import]
 
-        # Put the model in the eval mode
-        self._model.eval()
+        # Set model mode
+        self._model.train(mode=training_mode)
 
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
@@ -435,7 +440,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             # Fit a generic data generator through the API
             super().fit_generator(generator, nb_epochs=nb_epochs)
 
-    def clone_for_refitting(self) -> "PyTorchClassifier":  # lgtm [py/inheritance/incorrect-overridden-signature]
+    def clone_for_refitting(self) -> 'PyTorchClassifier':  # lgtm [py/inheritance/incorrect-overridden-signature]
         """
         Create a copy of the classifier that can be refit from scratch. Will inherit same architecture, optimizer and
         initialization as cloned model, but without weights.
@@ -464,7 +469,9 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         self.model.apply(weight_reset)
 
-    def class_gradient(self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs) -> np.ndarray:
+    def class_gradient(
+        self, x: np.ndarray, label: Union[int, List[int], None] = None, training_mode: bool = False, **kwargs
+    ) -> np.ndarray:
         """
         Compute per-class derivatives w.r.t. `x`.
 
@@ -473,11 +480,32 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                       output is computed for all samples. If multiple values as provided, the first dimension should
                       match the batch size of `x`, and each value will be used as target for its corresponding sample in
                       `x`. If `None`, then gradients for all classes will be computed for each sample.
+        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+                              Note on RNN-like models: Backpropagation through RNN modules in eval mode raises
+                              RuntimeError due to cudnn issues and require training mode, i.e. RuntimeError: cudnn RNN
+                              backward can only be called in training mode. Therefore, if the model is an RNN type we
+                              always use training mode but freeze batch-norm and dropout layers if
+                              `training_mode=False.`
         :return: Array of gradients of input features w.r.t. each class in the form
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         """
         import torch  # lgtm [py/repeated-import]
+
+        self._model.train(mode=training_mode)
+
+        # Backpropagation through RNN modules in eval mode raises RuntimeError due to cudnn issues and require training
+        # mode, i.e. RuntimeError: cudnn RNN backward can only be called in training mode. Therefore, if the model is
+        # an RNN type we always use training mode but freeze batch-norm and dropout layers if training_mode=False.
+        if self.is_rnn:
+            self._model.train(mode=True)
+            if not training_mode:
+                logger.debug(
+                    "Freezing batch-norm and dropout layers for gradient calculation in train mode with eval parameters"
+                    "of batch-norm and dropout."
+                )
+                self.set_batchnorm(train=False)
+                self.set_dropout(train=False)
 
         if not (
             (label is None)
@@ -573,6 +601,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         """
         import torch  # lgtm [py/repeated-import]
 
+        self._model.eval()
+
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
 
@@ -597,7 +627,11 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         return loss.detach().cpu().numpy()
 
     def loss_gradient(
-        self, x: Union[np.ndarray, "torch.Tensor"], y: Union[np.ndarray, "torch.Tensor"], **kwargs
+        self,
+        x: Union[np.ndarray, "torch.Tensor"],
+        y: Union[np.ndarray, "torch.Tensor"],
+        training_mode: bool = False,
+        **kwargs
     ) -> Union[np.ndarray, "torch.Tensor"]:
         """
         Compute the gradient of the loss function w.r.t. `x`.
@@ -605,9 +639,30 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         :param x: Sample input with shape as expected by the model.
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
                   `(nb_samples,)`.
+        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+                              Note on RNN-like models: Backpropagation through RNN modules in eval mode raises
+                              RuntimeError due to cudnn issues and require training mode, i.e. RuntimeError: cudnn RNN
+                              backward can only be called in training mode. Therefore, if the model is an RNN type we
+                              always use training mode but freeze batch-norm and dropout layers if
+                              `training_mode=False.`
         :return: Array of gradients of the same shape as `x`.
         """
         import torch  # lgtm [py/repeated-import]
+
+        self._model.train(mode=training_mode)
+
+        # Backpropagation through RNN modules in eval mode raises RuntimeError due to cudnn issues and require training
+        # mode, i.e. RuntimeError: cudnn RNN backward can only be called in training mode. Therefore, if the model is
+        # an RNN type we always use training mode but freeze batch-norm and dropout layers if training_mode=False.
+        if self.is_rnn:
+            self._model.train(mode=True)
+            if not training_mode:
+                logger.debug(
+                    "Freezing batch-norm and dropout layers for gradient calculation in train mode with eval parameters"
+                    "of batch-norm and dropout."
+                )
+                self.set_batchnorm(train=False)
+                self.set_dropout(train=False)
 
         # Apply preprocessing
         if self.all_framework_preprocessing:
@@ -676,6 +731,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         """
         import torch  # lgtm [py/repeated-import]
 
+        self._model.eval()
+
         # Apply defences
         x_preprocessed, _ = self._apply_preprocessing(x=x, y=None, fit=False)
 
@@ -712,16 +769,6 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         results = np.concatenate(results)
 
         return results
-
-    def set_learning_phase(self, train: bool) -> None:
-        """
-        Set the learning phase for the backend framework.
-
-        :param train: True to set the learning phase to training, False to set it to prediction.
-        """
-        if isinstance(train, bool):
-            self._learning_phase = train
-            self._model.train(train)
 
     def save(self, filename: str, path: Optional[str] = None) -> None:
         """
