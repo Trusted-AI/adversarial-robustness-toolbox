@@ -477,6 +477,11 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                       match the batch size of `x`, and each value will be used as target for its corresponding sample in
                       `x`. If `None`, then gradients for all classes will be computed for each sample.
         :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+                              Note on RNN-like models: Backpropagation through RNN modules in eval mode raises
+                              RuntimeError due to cudnn issues and require training mode, i.e. RuntimeError: cudnn RNN
+                              backward can only be called in training mode. Therefore, if the model is an RNN type we
+                              always use training mode but freeze batch-norm and dropout layers if
+                              `training_mode=False.`
         :return: Array of gradients of input features w.r.t. each class in the form
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
@@ -484,6 +489,20 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         import torch  # lgtm [py/repeated-import]
 
         self._model.train(mode=training_mode)
+
+        # Backpropagation through RNN modules in eval mode raises RuntimeError due to cudnn issues and require training
+        # mode, i.e. RuntimeError: cudnn RNN backward can only be called in training mode. Therefore, if the model is
+        # an RNN type we always use training mode but freeze batch-norm and dropout layers if training_mode=False.
+        is_rnn = any([isinstance(m, torch.nn.modules.RNNBase) for m in self._model.modules()])
+        if is_rnn:
+            self._model.train(mode=True)
+            if not training_mode:
+                logger.debug(
+                    "Freezing batch-norm and dropout layers for gradient calculation in train mode with eval parameters"
+                    "of batch-norm and dropout."
+                )
+                self.set_batchnorm(train=False)
+                self.set_dropout(train=False)
 
         if not (
             (label is None)
@@ -618,22 +637,30 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
                   `(nb_samples,)`.
         :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+                              Note on RNN-like models: Backpropagation through RNN modules in eval mode raises
+                              RuntimeError due to cudnn issues and require training mode, i.e. RuntimeError: cudnn RNN
+                              backward can only be called in training mode. Therefore, if the model is an RNN type we
+                              always use training mode but freeze batch-norm and dropout layers if
+                              `training_mode=False.`
         :return: Array of gradients of the same shape as `x`.
         """
         import torch  # lgtm [py/repeated-import]
 
         self._model.train(mode=training_mode)
 
-        # Backprop through RNN modules in eval mode raises RuntimeError due to cudnn issue, i.e.
-        # RuntimeError: cudnn RNN backward can only be called in training mode
-        has_rnn = any([isinstance(m, torch.nn.modules.RNNBase) for m in self._model.modules()])
-        if has_rnn:
-            logger.debug(
-                "Ignoring training_mode arg: setting model into train mode; batchnorm and droput are still frozen."
-            )
+        # Backpropagation through RNN modules in eval mode raises RuntimeError due to cudnn issues and require training
+        # mode, i.e. RuntimeError: cudnn RNN backward can only be called in training mode. Therefore, if the model is
+        # an RNN type we always use training mode but freeze batch-norm and dropout layers if training_mode=False.
+        is_rnn = any([isinstance(m, torch.nn.modules.RNNBase) for m in self._model.modules()])
+        if is_rnn:
             self._model.train(mode=True)
-            self.set_batchnorm(train=False)
-            self.set_dropout(train=False)
+            if not training_mode:
+                logger.debug(
+                    "Freezing batch-norm and dropout layers for gradient calculation in train mode with eval parameters"
+                    "of batch-norm and dropout."
+                )
+                self.set_batchnorm(train=False)
+                self.set_dropout(train=False)
 
         # Apply preprocessing
         if self.all_framework_preprocessing:
