@@ -68,7 +68,7 @@ class CarliniWagnerASR(ImperceptibleASR):
         """
         # pylint: disable=W0231
 
-        # re-implement init such that inherrited methods work
+        # re-implement init such that inherited methods work
         EvasionAttack.__init__(self, estimator=estimator)  # pylint: disable=W0233
         self.masker = None
         self.eps = eps
@@ -81,5 +81,12 @@ class CarliniWagnerASR(ImperceptibleASR):
         # set remaining stage 2 params to some random values
         self.alpha = 0.1
         self.learning_rate_2 = 0.1
+        self.loss_theta_min = 0.0
+        self.decrease_factor_eps: float = 1.0
+        self.num_iter_decrease_eps: int = 1
+        self.increase_factor_alpha: float = 1.0
+        self.num_iter_increase_alpha: int = 1
+        self.decrease_factor_alpha: float = 1.0
+        self.num_iter_decrease_alpha: int = 1
 
         self._check_params()
