@@ -139,7 +139,11 @@ class TestImperceptibleASR:
             test_delta = test_input * 0
 
             imperceptible_asr = ImperceptibleASR(estimator=asr_dummy_estimator(), masker=PsychoacousticMasker())
-            loss_gradient, loss = imperceptible_asr._loss_gradient_masking_threshold(test_delta, test_input)
+
+            masking_threshold, psd_maximum = imperceptible_asr._stabilized_threshold_and_psd_maximum(test_input)
+            loss_gradient, loss = imperceptible_asr._loss_gradient_masking_threshold(
+                test_delta, test_input, masking_threshold, psd_maximum
+            )
 
             assert [g.shape for g in loss_gradient] == [d.shape for d in test_delta]
             assert loss.ndim == 1 and loss.shape == test_delta.shape
@@ -154,7 +158,7 @@ class TestImperceptibleASR:
             tf1.reset_default_graph()
 
             test_delta = audio_batch_padded
-            test_psd_maximum = np.ones((test_delta.shape[0], 28))
+            test_psd_maximum = np.ones((test_delta.shape[0]))
             test_masking_threshold = np.zeros((test_delta.shape[0], 1025, 28))
 
             imperceptible_asr = ImperceptibleASR(estimator=asr_dummy_estimator(), masker=PsychoacousticMasker())
@@ -175,7 +179,7 @@ class TestImperceptibleASR:
     def test_loss_gradient_masking_threshold_torch(self, art_warning, asr_dummy_estimator, audio_batch_padded):
         try:
             test_delta = audio_batch_padded
-            test_psd_maximum = np.ones((test_delta.shape[0], 28))
+            test_psd_maximum = np.ones((test_delta.shape[0], 1, 1))
             test_masking_threshold = np.zeros((test_delta.shape[0], 1025, 28))
 
             imperceptible_asr = ImperceptibleASR(estimator=asr_dummy_estimator(), masker=PsychoacousticMasker())
@@ -196,7 +200,7 @@ class TestImperceptibleASR:
             tf1.reset_default_graph()
 
             test_delta = audio_batch_padded
-            test_psd_maximum = np.ones((test_delta.shape[0], 28))
+            test_psd_maximum = np.ones((test_delta.shape[0]))
 
             masker = PsychoacousticMasker()
             imperceptible_asr = ImperceptibleASR(estimator=asr_dummy_estimator(), masker=masker)
@@ -223,7 +227,7 @@ class TestImperceptibleASR:
             import torch
 
             test_delta = audio_batch_padded
-            test_psd_maximum = np.ones((test_delta.shape[0], 28))
+            test_psd_maximum = np.ones((test_delta.shape[0], 1, 1))
 
             masker = PsychoacousticMasker()
             imperceptible_asr = ImperceptibleASR(estimator=asr_dummy_estimator(), masker=masker)
@@ -252,8 +256,8 @@ class TestPsychoacousticMasker:
             masker = PsychoacousticMasker()
             psd_matrix, psd_max = masker.power_spectral_density(test_input)
 
-            assert psd_matrix.shape[0] == masker.window_size // 2 + 1
-            assert psd_matrix.shape[1] == psd_max.shape[0]
+            assert psd_matrix.shape == (masker.window_size // 2 + 1, 28)
+            assert np.floor(psd_max) == 78.0
         except ARTTestException as e:
             art_warning(e)
 
@@ -283,8 +287,8 @@ class TestPsychoacousticMasker:
             masker = PsychoacousticMasker()
             maskers, masker_idx = masker.filter_maskers(test_maskers, test_masker_idx)
 
-            assert masker_idx.tolist() == [9]
-            assert maskers.tolist() == [91]
+            assert masker_idx.tolist() == [2]
+            assert maskers.tolist() == [96]
         except ARTTestException as e:
             art_warning(e)
 
@@ -328,7 +332,7 @@ class TestPsychoacousticMasker:
             masker = PsychoacousticMasker()
             threshold, psd_max = masker.calculate_threshold_and_psd_maximum(test_input)
 
-            assert threshold.shape[1] == psd_max.shape[0]
-            assert threshold.shape[0] == masker.window_size // 2 + 1
+            assert threshold.shape == (masker.window_size // 2 + 1, 28)
+            assert np.floor(psd_max) == 78.0
         except ARTTestException as e:
             art_warning(e)
