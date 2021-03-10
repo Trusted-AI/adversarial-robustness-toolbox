@@ -449,15 +449,13 @@ def to_categorical(labels: Union[np.ndarray, List[float]], nb_classes: Optional[
     return categorical
 
 
-def float_to_categorical(labels, nb_classes=None):
+def float_to_categorical(labels: np.ndarray, nb_classes: Optional[int] = None):
     """
     Convert an array of floating point labels to binary class matrix.
 
     :param labels: An array of integer labels of shape `(nb_samples,)`
-    :type labels: `np.ndarray`
     :param nb_classes: The number of classes (possible labels)
-    :type nb_classes: `int`
-    :return: A binary matrix representation of `y` in the shape `(nb_samples, nb_classes)`
+    :return: A binary matrix representation of `labels` in the shape `(nb_samples, nb_classes)`
     :rtype: `np.ndarray`
     """
     labels = np.array(labels)
@@ -469,6 +467,23 @@ def float_to_categorical(labels, nb_classes=None):
     categorical = np.zeros((labels.shape[0], nb_classes), dtype=np.float32)
     categorical[np.arange(labels.shape[0]), np.squeeze(indexes)] = 1
     return categorical
+
+
+def floats_to_one_hot(labels: np.ndarray):
+    """
+    Convert a 2D-array of floating point labels to binary class matrix.
+
+    :param labels: A 2D-array of floating point labels of shape `(nb_samples, nb_classes)`
+    :return: A binary matrix representation of `labels` in the shape `(nb_samples, nb_classes)`
+    :rtype: `np.ndarray`
+    """
+    labels = np.array(labels)
+    for feature in labels.T:
+        unique = np.unique(feature)
+        unique.sort()
+        for index, value in enumerate(unique):
+            feature[feature == value] = index
+    return labels.astype(np.float32)
 
 
 def check_and_transform_label_format(

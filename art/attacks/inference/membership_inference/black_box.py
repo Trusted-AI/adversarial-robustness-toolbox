@@ -153,10 +153,11 @@ class MembershipInferenceBlackBox(InferenceAttack):
         :param test_y: True labels for `test_x`.
         :return: An array holding the inferred membership status, 1 indicates a member and 0 indicates non-member.
         """
-        if self.estimator.input_shape[0] != x.shape[1]:
-            raise ValueError("Shape of x does not match input_shape of classifier")
-        if self.estimator.input_shape[0] != test_x.shape[1]:
-            raise ValueError("Shape of test_x does not match input_shape of classifier")
+        if self.estimator.input_shape is not None:
+            if self.estimator.input_shape[0] != x.shape[1]:
+                raise ValueError("Shape of x does not match input_shape of classifier")
+            if self.estimator.input_shape[0] != test_x.shape[1]:
+                raise ValueError("Shape of test_x does not match input_shape of classifier")
 
         y = check_and_transform_label_format(y, len(np.unique(y)), return_one_hot=True)
         test_y = check_and_transform_label_format(test_y, len(np.unique(test_y)), return_one_hot=True)
@@ -178,9 +179,9 @@ class MembershipInferenceBlackBox(InferenceAttack):
             if NeuralNetworkMixin not in type(self.estimator).__mro__:
                 raise TypeError("loss input_type can only be used with neural networks")
             # members
-            features = self.estimator.loss(x, y).astype(np.float32).reshape(-1, 1)
+            features = self.estimator.compute_loss(x, y).astype(np.float32).reshape(-1, 1)
             # non-members
-            test_features = self.estimator.loss(test_x, test_y).astype(np.float32).reshape(-1, 1)
+            test_features = self.estimator.compute_loss(test_x, test_y).astype(np.float32).reshape(-1, 1)
         else:
             raise ValueError("Illegal value for parameter `input_type`.")
 
@@ -239,8 +240,9 @@ class MembershipInferenceBlackBox(InferenceAttack):
         if y is None:
             raise ValueError("MembershipInferenceBlackBox requires true labels `y`.")
 
-        if self.estimator.input_shape[0] != x.shape[1]:
-            raise ValueError("Shape of x does not match input_shape of classifier")
+        if self.estimator.input_shape is not None:
+            if self.estimator.input_shape[0] != x.shape[1]:
+                raise ValueError("Shape of x does not match input_shape of classifier")
 
         y = check_and_transform_label_format(y, len(np.unique(y)), return_one_hot=True)
 
@@ -250,7 +252,7 @@ class MembershipInferenceBlackBox(InferenceAttack):
         if self.input_type == "prediction":
             features = self.estimator.predict(x).astype(np.float32)
         elif self.input_type == "loss":
-            features = self.estimator.loss(x, y).astype(np.float32).reshape(-1, 1)
+            features = self.estimator.compute_loss(x, y).astype(np.float32).reshape(-1, 1)
 
         if self.default_model and self.attack_model_type == "nn":
             import torch  # lgtm [py/repeated-import]

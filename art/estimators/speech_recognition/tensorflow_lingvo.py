@@ -101,6 +101,8 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
         },
     }
 
+    estimator_params = TensorFlowV2Estimator.estimator_params + ["random_seed", "sess"]
+
     def __init__(
         self,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
@@ -544,9 +546,6 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
         # for ragged input, use np.object dtype
         dtype = np.float32 if x.ndim != 1 else np.object
         return np.array(gradients, dtype=dtype)
-
-    def set_learning_phase(self, train: bool) -> None:
-        raise NotImplementedError
 
     def get_activations(
         self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False

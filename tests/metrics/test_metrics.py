@@ -60,7 +60,7 @@ class TestMetrics(unittest.TestCase):
         # Compute minimal perturbations
         params = {"eps_step": 1.0, "eps": 1.0}
         emp_robust = empirical_robustness(classifier, x_train, str("fgsm"), params)
-        self.assertAlmostEqual(emp_robust, 1.000369094488189, 4)
+        self.assertAlmostEqual(emp_robust, 1.000369094488189, 3)
 
         params = {"eps_step": 0.1, "eps": 0.2}
         emp_robust = empirical_robustness(classifier, x_train, str("fgsm"), params)
