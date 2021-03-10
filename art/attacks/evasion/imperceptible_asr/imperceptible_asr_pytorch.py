@@ -31,7 +31,6 @@ import numpy as np
 import scipy
 
 from art.attacks.attack import EvasionAttack
-from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNetworkMixin
 from art.estimators.pytorch import PyTorchEstimator
 from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
@@ -186,18 +185,10 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             self.optimizer_1st_stage = torch.optim.SGD(
                 params=[self.global_optimal_delta], lr=self.learning_rate_1st_stage
             )
-        else:
-            self.optimizer_1st_stage = optimizer_1st_stage(
-                params=[self.global_optimal_delta], lr=self.learning_rate_1st_stage
-            )
 
         self._optimizer_2nd_stage_arg = optimizer_2nd_stage
         if optimizer_2nd_stage is None:
             self.optimizer_2nd_stage = torch.optim.SGD(
-                params=[self.global_optimal_delta], lr=self.learning_rate_2nd_stage
-            )
-        else:
-            self.optimizer_2nd_stage = optimizer_2nd_stage(
                 params=[self.global_optimal_delta], lr=self.learning_rate_2nd_stage
             )
 
@@ -242,7 +233,13 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             )
 
         # Start to compute adversarial examples
-        adv_x = x.copy()
+        dtype = x.dtype
+
+        # Cast to type float64 to avoid overflow
+        if dtype.type == np.float64:
+            adv_x = x.copy()
+        else:
+            adv_x = x.copy().astype(np.float64)
 
         # Put the estimator in the training mode, otherwise CUDA can't backpropagate through the model.
         # However, estimator uses batch norm layers which need to be frozen
@@ -260,9 +257,9 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             )
 
             # First reset delta
-            self.global_optimal_delta.data = torch.zeros(self.batch_size, self.global_max_length).type(torch.float32)
+            self.global_optimal_delta.data = torch.zeros(self.batch_size, self.global_max_length).type(torch.float64)
 
-            # Next, reset non-SGD optimizers
+            # Next, reset optimizers
             if self._optimizer_1st_stage_arg is not None:
                 self.optimizer_1st_stage = self._optimizer_1st_stage_arg(
                     params=[self.global_optimal_delta], lr=self.learning_rate_1st_stage
@@ -280,6 +277,11 @@ class ImperceptibleASRPyTorch(EvasionAttack):
 
         # Unfreeze batch norm layers again
         self.estimator.set_batchnorm(train=True)
+
+        # Recast to the original type if needed
+        if dtype.type == np.float32:
+            adv_x = adv_x.astype(dtype)
+
         return adv_x
 
     def _generate_batch(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
@@ -317,7 +319,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
 
         # Reset delta with new result
         local_batch_shape = successful_adv_input_1st_stage.shape
-        self.global_optimal_delta.data = torch.zeros(self.batch_size, self.global_max_length).type(torch.float32)
+        self.global_optimal_delta.data = torch.zeros(self.batch_size, self.global_max_length).type(torch.float64)
         self.global_optimal_delta.data[
             : local_batch_shape[0], : local_batch_shape[1]
         ] = successful_perturbation_1st_stage
@@ -353,11 +355,11 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         local_max_length = np.max(real_lengths)
 
         # Initialize rescale
-        rescale = np.ones([local_batch_size, local_max_length], dtype=ART_NUMPY_DTYPE) * self.initial_rescale
+        rescale = np.ones([local_batch_size, local_max_length], dtype=np.float64) * self.initial_rescale
 
         # Reformat input
-        input_mask = np.zeros([local_batch_size, local_max_length], dtype=ART_NUMPY_DTYPE)
-        original_input = np.zeros([local_batch_size, local_max_length], dtype=ART_NUMPY_DTYPE)
+        input_mask = np.zeros([local_batch_size, local_max_length], dtype=np.float64)
+        original_input = np.zeros([local_batch_size, local_max_length], dtype=np.float64)
 
         for local_batch_size_idx in range(local_batch_size):
             input_mask[local_batch_size_idx, : len(x[local_batch_size_idx])] = 1
@@ -521,12 +523,12 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         local_max_length = np.max(real_lengths)
 
         # Initialize alpha and rescale
-        alpha = np.array([self.initial_alpha] * local_batch_size, dtype=ART_NUMPY_DTYPE)
-        rescale = np.ones([local_batch_size, local_max_length], dtype=ART_NUMPY_DTYPE) * self.initial_rescale
+        alpha = np.array([self.initial_alpha] * local_batch_size, dtype=np.float64)
+        rescale = np.ones([local_batch_size, local_max_length], dtype=np.float64) * self.initial_rescale
 
         # Reformat input
-        input_mask = np.zeros([local_batch_size, local_max_length], dtype=ART_NUMPY_DTYPE)
-        original_input = np.zeros([local_batch_size, local_max_length], dtype=ART_NUMPY_DTYPE)
+        input_mask = np.zeros([local_batch_size, local_max_length], dtype=np.float64)
+        original_input = np.zeros([local_batch_size, local_max_length], dtype=np.float64)
 
         for local_batch_size_idx in range(local_batch_size):
             input_mask[local_batch_size_idx, : len(x[local_batch_size_idx])] = 1
@@ -678,7 +680,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         barks = 13 * np.arctan(0.00076 * freqs) + 3.5 * np.arctan(pow(freqs / 7500.0, 2))
 
         # Compute quiet threshold
-        ath = np.zeros(len(barks), dtype=ART_NUMPY_DTYPE) - np.inf
+        ath = np.zeros(len(barks), dtype=np.float64) - np.inf
         bark_idx = np.argmax(barks > 1)
         ath[bark_idx:] = (
             3.64 * pow(freqs[bark_idx:] * 0.001, -0.8)
@@ -700,7 +702,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             if len(psd[:, i]) - 1 in masker_idx:
                 masker_idx = np.delete(masker_idx, len(psd[:, i]) - 1)
 
-            barks_psd = np.zeros([len(masker_idx), 3], dtype=ART_NUMPY_DTYPE)
+            barks_psd = np.zeros([len(masker_idx), 3], dtype=np.float64)
             barks_psd[:, 0] = barks[masker_idx]
             barks_psd[:, 1] = 10 * np.log10(
                 pow(10, psd[:, i][masker_idx - 1] / 10.0)
@@ -742,7 +744,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             for m in range(barks_psd.shape[0]):
                 d_z = barks - barks_psd[m, 0]
                 zero_idx = np.argmax(d_z > 0)
-                s_f = np.zeros(len(d_z), dtype=ART_NUMPY_DTYPE)
+                s_f = np.zeros(len(d_z), dtype=np.float64)
                 s_f[:zero_idx] = 27 * d_z[:zero_idx]
                 s_f[zero_idx:] = (-27 + 0.37 * max(barks_psd[m, 1] - 40, 0)) * d_z[zero_idx:]
                 t_s.append(barks_psd[m, 1] + delta[m] + s_f)
@@ -764,7 +766,6 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         :return: The psd matrix.
         """
         import torch  # lgtm [py/repeated-import]
-        import torchaudio
 
         # These parameters are needed for the transformation
         sample_rate = self.estimator.model.audio_conf.sample_rate
@@ -788,7 +789,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         else:
             raise NotImplementedError("Spectrogram window %s not supported." % window)
 
-        # return STFT of delta
+        # Return STFT of delta
         delta_stft = torch.stft(
             delta,
             n_fft=n_fft,
@@ -798,7 +799,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             window=window_fn(win_length).to(self.estimator.device),
         ).to(self.estimator.device)
 
-        # take abs of complex STFT results
+        # Take abs of complex STFT results
         transformed_delta = torch.sqrt(torch.sum(torch.square(delta_stft), -1))
 
         # Compute the psd matrix
