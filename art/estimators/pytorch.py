@@ -36,6 +36,10 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
     Estimator class for PyTorch models.
     """
 
+    estimator_params = (
+        BaseEstimator.estimator_params + NeuralNetworkMixin.estimator_params + ["device_type",]
+    )
+
     def __init__(self, device_type: str = "gpu", **kwargs) -> None:
         """
         Estimator class for PyTorch models.
@@ -56,13 +60,15 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
 
         preprocessing = kwargs.get("preprocessing")
         if isinstance(preprocessing, tuple):
-            from art.preprocessing.standardisation_mean_std.standardisation_mean_std_pytorch import (
+            from art.preprocessing.standardisation_mean_std.pytorch import (
                 StandardisationMeanStdPyTorch,
             )
 
             kwargs["preprocessing"] = StandardisationMeanStdPyTorch(mean=preprocessing[0], std=preprocessing[1])
 
         super().__init__(**kwargs)
+
+        self._device_type = device_type
 
         # Set device
         if device_type == "cpu" or not torch.cuda.is_available():
@@ -72,6 +78,15 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
             self._device = torch.device("cuda:{}".format(cuda_idx))
 
         PyTorchEstimator._check_params(self)
+
+    @property
+    def device_type(self) -> str:
+        """
+        Return the type of device on which the estimator is run.
+
+        :return: Type of device on which the estimator is run, either `gpu` or `cpu`.
+        """
+        return self._device_type  # type: ignore
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs):
         """
@@ -98,7 +113,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         """
         NeuralNetworkMixin.fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs)
 
-    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the loss of the neural network for samples `x`.
 
@@ -151,9 +166,8 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         :rtype: Format as expected by the `model`
         """
         import torch
-
-        from art.preprocessing.standardisation_mean_std.standardisation_mean_std import StandardisationMeanStd
-        from art.preprocessing.standardisation_mean_std.standardisation_mean_std_pytorch import (
+        from art.preprocessing.standardisation_mean_std.numpy import StandardisationMeanStd
+        from art.preprocessing.standardisation_mean_std.pytorch import (
             StandardisationMeanStdPyTorch,
         )
 
@@ -228,9 +242,8 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         :rtype: Format as expected by the `model`
         """
         import torch
-
-        from art.preprocessing.standardisation_mean_std.standardisation_mean_std import StandardisationMeanStd
-        from art.preprocessing.standardisation_mean_std.standardisation_mean_std_pytorch import (
+        from art.preprocessing.standardisation_mean_std.numpy import StandardisationMeanStd
+        from art.preprocessing.standardisation_mean_std.pytorch import (
             StandardisationMeanStdPyTorch,
         )
 

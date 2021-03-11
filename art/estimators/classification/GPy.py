@@ -162,7 +162,7 @@ class GPyGaussianProcessClassifier(ClassifierClassLossGradients):
         """
         Perform prediction for a batch of inputs.
 
-        :param x: Test set.
+        :param x: Input samples.
         :param logits: `True` if the prediction should be done without squashing function.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
@@ -189,7 +189,7 @@ class GPyGaussianProcessClassifier(ClassifierClassLossGradients):
         """
         Perform uncertainty prediction for a batch of inputs.
 
-        :param x: Test set.
+        :param x: Input samples.
         :return: Array of uncertainty predictions of shape `(nb_inputs)`.
         """
         # Apply preprocessing

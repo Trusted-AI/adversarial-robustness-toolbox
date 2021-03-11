@@ -32,7 +32,6 @@ from art.attacks.evasion.adversarial_patch.adversarial_patch_numpy import Advers
 from art.attacks.evasion.adversarial_patch.adversarial_patch_tensorflow import AdversarialPatchTensorFlowV2
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
-
 from art.estimators.classification import TensorFlowV2Classifier
 from art.attacks.attack import EvasionAttack
 
@@ -168,6 +167,19 @@ class AdversarialPatch(EvasionAttack):
         :param initial_patch_value: Patch value to use for resetting the patch.
         """
         self._attack.reset_patch(initial_patch_value=initial_patch_value)
+
+    def insert_transformed_patch(self, x: np.ndarray, patch: np.ndarray, image_coords: np.ndarray):
+        """
+        Insert patch to image based on given or selected coordinates.
+
+        :param x: The image to insert the patch.
+        :param patch: The patch to be transformed and inserted.
+        :param image_coords: The coordinates of the 4 corners of the transformed, inserted patch of shape
+            [[x1, y1], [x2, y2], [x3, y3], [x4, y4]] in pixel units going in clockwise direction, starting with upper
+            left corner.
+        :return: The input `x` with the patch inserted.
+        """
+        return self._attack.insert_transformed_patch(x, patch, image_coords)
 
     def set_params(self, **kwargs) -> None:
         super().set_params(**kwargs)
