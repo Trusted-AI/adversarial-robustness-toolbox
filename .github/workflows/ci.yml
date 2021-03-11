@@ -25,66 +25,66 @@ jobs:
       fail-fast: false
       matrix:
         include:
-#          - name: TensorFlow 1.15.5 (Keras 2.2.5 Python 3.7)
-#            framework: tensorflow
-#            python: 3.7
-#            tensorflow: 1.15.5
-#            tf_version: v1
-#            keras: 2.2.5
-#          - name: TensorFlow 2.3.2 (Keras 2.4.3 Python 3.7)
-#            framework: tensorflow
-#            python: 3.7
-#            tensorflow: 2.3.2
-#            tf_version: v2
-#            keras: 2.4.3
-#          - name: TensorFlow 2.4.1v1 (Keras 2.4.3 Python 3.8)
-#            framework: tensorflow2v1
-#            python: 3.8
-#            tensorflow: 2.4.1
-#            tf_version: v2
-#            keras: 2.4.3
-#          - name: TensorFlow 2.4.1 (Keras 2.4.3 Python 3.8)
-#            framework: tensorflow
-#            python: 3.8
-#            tensorflow: 2.4.1
-#            tf_version: v2
-#            keras: 2.4.3
-#          - name: Keras 2.3.1 (TensorFlow 2.2.1 Python 3.7)
-#            framework: keras
-#            python: 3.7
-#            tensorflow: 2.2.1
-#            keras: 2.3.1
-#          - name: TensorFlow-Keras 2.3.2 (Keras 2.4.3 Python 3.7)
-#            framework: kerastf
-#            python: 3.7
-#            tensorflow: 2.3.2
-#            keras: 2.4.3
-#          - name: PyTorch (Python 3.8)
-#            framework: pytorch
-#            python: 3.8
-#            torch: 1.8.0+cpu
-#            torchvision: 0.9.0+cpu
-#            torchaudio: 0.8.0
-#          - name: scikit-learn 0.22.2 (Python 3.7)
-#            framework: scikitlearn
-#            scikit-learn: 0.22.2
-#            python: 3.7
-#          - name: scikit-learn 0.23.2 (Python 3.8)
-#            framework: scikitlearn
-#            scikit-learn: 0.23.2
-#            python: 3.8
-#          - name: mxnet (Python 3.7)
-#            framework: mxnet
-#            python: 3.7
-#          - name: legacy (TensorFlow 2.3.2 Keras 2.4.3  PyTorch 1.7.1 scikit-learn 0.22.2 Python 3.7)
-#            framework: legacy
-#            python: 3.7
-#            tensorflow: 2.3.2
-#            keras: 2.4.3
-#            scikit-learn: 0.22.2
-#            torch: 1.7.1
-#            torchvision: 0.8.1
-#            torchaudio: 0.7.0
+          - name: TensorFlow 1.15.5 (Keras 2.2.5 Python 3.7)
+            framework: tensorflow
+            python: 3.7
+            tensorflow: 1.15.5
+            tf_version: v1
+            keras: 2.2.5
+          - name: TensorFlow 2.3.2 (Keras 2.4.3 Python 3.7)
+            framework: tensorflow
+            python: 3.7
+            tensorflow: 2.3.2
+            tf_version: v2
+            keras: 2.4.3
+          - name: TensorFlow 2.4.1v1 (Keras 2.4.3 Python 3.8)
+            framework: tensorflow2v1
+            python: 3.8
+            tensorflow: 2.4.1
+            tf_version: v2
+            keras: 2.4.3
+          - name: TensorFlow 2.4.1 (Keras 2.4.3 Python 3.8)
+            framework: tensorflow
+            python: 3.8
+            tensorflow: 2.4.1
+            tf_version: v2
+            keras: 2.4.3
+          - name: Keras 2.3.1 (TensorFlow 2.2.1 Python 3.7)
+            framework: keras
+            python: 3.7
+            tensorflow: 2.2.1
+            keras: 2.3.1
+          - name: TensorFlow-Keras 2.3.2 (Keras 2.4.3 Python 3.7)
+            framework: kerastf
+            python: 3.7
+            tensorflow: 2.3.2
+            keras: 2.4.3
+          - name: PyTorch (Python 3.7)
+            framework: pytorch
+            python: 3.7
+            torch: 1.7.1+cpu
+            torchvision: 0.8.1+cpu
+            torchaudio: 0.7.0
+          - name: scikit-learn 0.22.2 (Python 3.7)
+            framework: scikitlearn
+            scikit-learn: 0.22.2
+            python: 3.7
+          - name: scikit-learn 0.23.2 (Python 3.8)
+            framework: scikitlearn
+            scikit-learn: 0.23.2
+            python: 3.8
+          - name: mxnet (Python 3.7)
+            framework: mxnet
+            python: 3.7
+          - name: legacy (TensorFlow 2.3.2 Keras 2.4.3  PyTorch 1.7.1 scikit-learn 0.22.2 Python 3.7)
+            framework: legacy
+            python: 3.7
+            tensorflow: 2.3.2
+            keras: 2.4.3
+            scikit-learn: 0.22.2
+            torch: 1.7.1
+            torchvision: 0.8.1
+            torchaudio: 0.7.0
           - name: legacy (TensorFlow 2.4.1 Keras 2.4.3 PyTorch 1.8.0 scikit-learn 0.23.2 Python 3.8)
             framework: legacy
             python: 3.8
