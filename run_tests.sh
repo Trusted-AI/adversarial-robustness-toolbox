@@ -62,7 +62,7 @@ then
     pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/estimators/classification/test_deeplearning_specific.py --mlFramework=$mlFramework --skip_travis=True --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed estimators/classification tests for framework $mlFramework"; fi
 else
-    declare -a attacks=("tests/attacks/test_adversarial_patch.py")# \
+    declare -a attacks=("tests/attacks/test_adversarial_patch.py")
 #                        "tests/attacks/test_adversarial_embedding.py" \
 #                        "tests/attacks/test_backdoor_attack.py" \
 #                        "tests/attacks/test_carlini.py" \
@@ -143,7 +143,7 @@ else
                     "tests/test_utils.py" \
                     "tests/test_visualization.py" )
 
-    tests_modules=("attacks")# \
+    tests_modules=("attacks")
 #                   "classifiers" \
 #                   "object_detectors" \
 #                   "speech_recognizers" \
