@@ -298,10 +298,10 @@ class FastGradientMethod(EvasionAttack):
 
         if isinstance(self.eps, (int, float)):
             if self.eps < 0:
-                raise ValueError("The perturbation size `eps` has to be positive.")
+                raise ValueError("The perturbation size `eps` has to be nonnegative.")
         else:
             if (self.eps < 0).any():
-                raise ValueError("The perturbation size `eps` has to be positive.")
+                raise ValueError("The perturbation size `eps` has to be nonnegative.")
 
         if isinstance(self.eps_step, (int, float)):
             if self.eps_step <= 0:

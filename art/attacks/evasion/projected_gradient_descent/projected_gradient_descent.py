@@ -202,10 +202,10 @@ class ProjectedGradientDescent(EvasionAttack):
 
         if isinstance(self.eps, (int, float)):
             if self.eps < 0:
-                raise ValueError("The perturbation size `eps` has to be positive.")
+                raise ValueError("The perturbation size `eps` has to be nonnegative.")
         else:
             if (self.eps < 0).any():
-                raise ValueError("The perturbation size `eps` has to be positive.")
+                raise ValueError("The perturbation size `eps` has to be nonnegative.")
 
         if isinstance(self.eps_step, (int, float)):
             if self.eps_step <= 0:
@@ -232,8 +232,8 @@ class ProjectedGradientDescent(EvasionAttack):
         if self.batch_size <= 0:
             raise ValueError("The batch size `batch_size` has to be positive.")
 
-        if self.max_iter <= 0:
-            raise ValueError("The number of iterations `max_iter` has to be a positive integer.")
+        if self.max_iter < 0:
+            raise ValueError("The number of iterations `max_iter` has to be a nonnegative integer.")
 
         if not isinstance(self.verbose, bool):
             raise ValueError("The verbose has to be a Boolean.")
