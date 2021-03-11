@@ -304,7 +304,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        perturbation_step = eps_step * perturbation
+        perturbation_step = tf.constant(eps_step, dtype=ART_NUMPY_DTYPE) * perturbation
         perturbation_step = tf.where(tf.math.is_nan(perturbation_step), 0, perturbation_step)
         x = x + perturbation_step
         if self.estimator.clip_values is not None:
