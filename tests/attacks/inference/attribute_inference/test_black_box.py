@@ -38,7 +38,7 @@ from tests.utils import ARTTestException
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.skipMlFramework("dl_frameworks")
+@pytest.mark.skip_framework("dl_frameworks")
 def test_black_box(art_warning, decision_tree_estimator, get_iris_dataset):
     try:
         attack_feature = 2  # petal length
@@ -88,7 +88,7 @@ def test_black_box(art_warning, decision_tree_estimator, get_iris_dataset):
         art_warning(e)
 
 
-@pytest.mark.skipMlFramework("dl_frameworks")
+@pytest.mark.skip_framework("dl_frameworks")
 def test_black_box_with_model(art_warning, decision_tree_estimator, get_iris_dataset):
     try:
         attack_feature = 2  # petal length
@@ -146,7 +146,7 @@ def test_black_box_with_model(art_warning, decision_tree_estimator, get_iris_dat
         art_warning(e)
 
 
-@pytest.mark.skipMlFramework("dl_frameworks")
+@pytest.mark.skip_framework("dl_frameworks")
 def test_black_box_one_hot(art_warning, get_iris_dataset):
     try:
         attack_feature = 2  # petal length
@@ -207,7 +207,7 @@ def test_black_box_one_hot(art_warning, get_iris_dataset):
         art_warning(e)
 
 
-@pytest.mark.skipMlFramework("dl_frameworks")
+@pytest.mark.skip_framework("dl_frameworks")
 def test_black_box_one_hot_float(art_warning, get_iris_dataset):
     try:
         attack_feature = 2  # petal length

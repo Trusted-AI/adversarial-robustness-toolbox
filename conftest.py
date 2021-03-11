@@ -74,10 +74,10 @@ def get_default_framework():
 
 def pytest_addoption(parser):
     parser.addoption(
-        "--mlFramework",
+        "--framework",
         action="store",
         default=get_default_framework(),
-        help="ART tests allow you to specify which mlFramework to use. The default mlFramework used is `tensorflow`. "
+        help="ART tests allow you to specify which framework to use. The default framework used is `tensorflow`. "
         "Other options available are {0}".format(art_supported_frameworks),
     )
     parser.addoption(
@@ -643,7 +643,7 @@ def create_test_image(create_test_dir):
 
 @pytest.fixture(scope="session")
 def framework(request):
-    ml_framework = request.config.getoption("--mlFramework")
+    ml_framework = request.config.getoption("--framework")
     if ml_framework == "tensorflow":
         import tensorflow as tf
 
@@ -654,12 +654,12 @@ def framework(request):
 
     if ml_framework not in art_supported_frameworks:
         raise Exception(
-            "mlFramework value {0} is unsupported. Please use one of these valid values: {1}".format(
+            "framework value {0} is unsupported. Please use one of these valid values: {1}".format(
                 ml_framework, " ".join(art_supported_frameworks)
             )
         )
-    # if utils_test.is_valid_framework(mlFramework):
-    #     raise Exception("The mlFramework specified was incorrect. Valid options available
+    # if utils_test.is_valid_framework(framework):
+    #     raise Exception("The framework specified was incorrect. Valid options available
     #     are {0}".format(art_supported_frameworks))
     return ml_framework
 
@@ -755,7 +755,7 @@ def get_mnist_dataset(load_mnist_dataset, mnist_shape):
     np.testing.assert_array_almost_equal(y_test_mnist_original, y_test_mnist, decimal=3)
 
 
-# ART test fixture to skip test for specific mlFramework values
+# ART test fixture to skip test for specific framework values
 # eg: @pytest.mark.only_with_platform("tensorflow")
 @pytest.fixture(autouse=True)
 def only_with_platform(request, framework):
@@ -764,13 +764,13 @@ def only_with_platform(request, framework):
             pytest.skip("skipped on this platform: {}".format(framework))
 
 
-# ART test fixture to skip test for specific mlFramework values
-# eg: @pytest.mark.skipMlFramework("tensorflow", "keras", "pytorch", "scikitlearn",
+# ART test fixture to skip test for specific framework values
+# eg: @pytest.mark.skip_framework("tensorflow", "keras", "pytorch", "scikitlearn",
 # "mxnet", "kerastf", "non_dl_frameworks", "dl_frameworks")
 @pytest.fixture(autouse=True)
 def skip_by_framework(request, framework):
-    if request.node.get_closest_marker("skipMlFramework"):
-        framework_to_skip_list = list(request.node.get_closest_marker("skipMlFramework").args)
+    if request.node.get_closest_marker("skip_framework"):
+        framework_to_skip_list = list(request.node.get_closest_marker("skip_framework").args)
         if "dl_frameworks" in framework_to_skip_list:
             framework_to_skip_list.extend(deep_learning_frameworks)
 
