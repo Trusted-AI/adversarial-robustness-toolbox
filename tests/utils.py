@@ -929,12 +929,10 @@ def get_image_classifier_pt(from_logits=False, load_init=True):
     :type load_init: `bool`
     :return: PyTorchClassifier
     """
-    logger.info("get_image_classifier_pt-A")
     import torch
     import torch.nn as nn
     import torch.optim as optim
     from art.estimators.classification.pytorch import PyTorchClassifier
-    logger.info("get_image_classifier_pt-B")
 
     class Model(torch.nn.Module):
         """
@@ -944,104 +942,70 @@ def get_image_classifier_pt(from_logits=False, load_init=True):
         """
 
         def __init__(self):
-            logger.info("get_image_classifier_pt-B-1")
             super(Model, self).__init__()
-            logger.info("get_image_classifier_pt-B-2")
 
             self.conv = torch.nn.Conv2d(in_channels=1, out_channels=1, kernel_size=7)
-            logger.info("get_image_classifier_pt-B-3")
             self.relu = torch.nn.ReLU()
-            logger.info("get_image_classifier_pt-B-4")
             self.pool = torch.nn.MaxPool2d(4, 4)
-            logger.info("get_image_classifier_pt-B-5")
             self.fullyconnected = torch.nn.Linear(25, 10)
-            logger.info("get_image_classifier_pt-B-6")
 
             if load_init:
-                logger.info("get_image_classifier_pt-B-7")
                 w_conv2d = np.load(
                     os.path.join(
                         os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_CONV2D_MNIST.npy"
                     )
                 )
-                logger.info("get_image_classifier_pt-B-8")
                 b_conv2d = np.load(
                     os.path.join(
                         os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_CONV2D_MNIST.npy"
                     )
                 )
-                logger.info("get_image_classifier_pt-B-9")
                 w_dense = np.load(
                     os.path.join(
                         os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_DENSE_MNIST.npy"
                     )
                 )
-                logger.info("get_image_classifier_pt-B-10")
                 b_dense = np.load(
                     os.path.join(
                         os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_DENSE_MNIST.npy"
                     )
                 )
-                logger.info("get_image_classifier_pt-B-11")
 
                 w_conv2d_pt = w_conv2d.reshape((1, 1, 7, 7))
-                logger.info("get_image_classifier_pt-B-12")
 
                 self.conv.weight = torch.nn.Parameter(torch.Tensor(w_conv2d_pt))
-                logger.info("get_image_classifier_pt-B-13")
                 self.conv.bias = torch.nn.Parameter(torch.Tensor(b_conv2d))
-                logger.info("get_image_classifier_pt-B-14")
                 self.fullyconnected.weight = torch.nn.Parameter(torch.Tensor(np.transpose(w_dense)))
-                logger.info("get_image_classifier_pt-B-15")
                 self.fullyconnected.bias = torch.nn.Parameter(torch.Tensor(b_dense))
-                logger.info("get_image_classifier_pt-B-16")
 
         # pylint: disable=W0221
         # disable pylint because of API requirements for function
-        logger.info("get_image_classifier_pt-C")
         def forward(self, x):
             """
             Forward function to evaluate the model
             :param x: Input to the model
             :return: Prediction of the model
             """
-            logger.info("get_image_classifier_pt-C-2")
             x = self.conv(x)
-            logger.info("get_image_classifier_pt-C-3")
             x = self.relu(x)
-            logger.info("get_image_classifier_pt-C-4")
             x = self.pool(x)
-            logger.info("get_image_classifier_pt-C-5")
             x = x.reshape(-1, 25)
-            logger.info("get_image_classifier_pt-C-6")
             x = self.fullyconnected(x)
-            logger.info("get_image_classifier_pt-C-7")
             if not from_logits:
-                logger.info("get_image_classifier_pt-C-8")
                 x = torch.nn.functional.softmax(x, dim=1)
-                logger.info("get_image_classifier_pt-C-9")
-            logger.info("get_image_classifier_pt-C-10")
             return x
 
-        logger.info("get_image_classifier_pt-C-11")
-
     # Define the network
-    logger.info("get_image_classifier_pt-C-12")
     model = Model()
-    logger.info("get_image_classifier_pt-D")
 
     # Define a loss function and optimizer
     loss_fn = torch.nn.CrossEntropyLoss(reduction="sum")
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
-    logger.info("get_image_classifier_pt-E")
-
     # Get classifier
     ptc = PyTorchClassifier(
         model=model, loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10, clip_values=(0, 1)
     )
-
-    logger.info("get_image_classifier_pt-F")
 
     return ptc
 

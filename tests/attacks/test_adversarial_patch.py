@@ -138,23 +138,16 @@ class TestAdversarialPatch(TestBase):
         Third test with the PyTorchClassifier.
         :return:
         """
-        logger.info('test_4_pytorch-A')
         ptc = get_image_classifier_pt(from_logits=True)
-        logger.info('test_4_pytorch-B')
 
         x_train = np.reshape(self.x_train_mnist, (self.n_train, 1, 28, 28)).astype(np.float32)
-
-        logger.info('test_4_pytorch-C')
 
         attack_ap = AdversarialPatch(
             ptc, rotation_max=0.5, scale_min=0.4, scale_max=0.41, learning_rate=5.0, batch_size=10, max_iter=5
         )
-        logger.info('test_4_pytorch-D')
 
         target = np.zeros(self.x_train_mnist.shape[0])
         patch_adv, _ = attack_ap.generate(x_train, target)
-
-        logger.info('test_4_pytorch-E')
 
         self.assertAlmostEqual(patch_adv[0, 8, 8], 0.6715167, delta=0.05)
         self.assertAlmostEqual(patch_adv[0, 14, 14], 0.6292826, delta=0.05)
