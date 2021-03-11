@@ -63,7 +63,7 @@ jobs:
             framework: pytorch
             python: 3.7
             torch: 1.7.1+cpu
-            torchvision: 0.8.1+cpu
+            torchvision: 0.8.2+cpu
             torchaudio: 0.7.0
           - name: scikit-learn 0.22.2 (Python 3.7)
             framework: scikitlearn
