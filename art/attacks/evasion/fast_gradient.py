@@ -377,15 +377,12 @@ class FastGradientMethod(EvasionAttack):
         self, batch: np.ndarray, perturbation: np.ndarray, eps_step: Union[int, float, np.ndarray]
     ) -> np.ndarray:
 
-        if isinstance(eps_step, (int, float)) and eps_step == np.inf:
+        perturbation_step = eps_step * perturbation
+        perturbation_step[np.isnan(perturbation_step)] = 0
+        batch = batch + perturbation_step
+        if self.estimator.clip_values is not None:
             clip_min, clip_max = self.estimator.clip_values
-            batch[perturbation < 0.0] = clip_min
-            batch[perturbation > 0.0] = clip_max
-        else:
-            batch = batch + eps_step * perturbation
-            if self.estimator.clip_values is not None:
-                clip_min, clip_max = self.estimator.clip_values
-                batch = np.clip(batch, clip_min, clip_max)
+            batch = np.clip(batch, clip_min, clip_max)
 
         return batch
 

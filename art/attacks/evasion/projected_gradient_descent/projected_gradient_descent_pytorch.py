@@ -311,20 +311,16 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         """
         import torch  # lgtm [py/repeated-import]
 
-        if isinstance(eps_step, (int, float)) and eps_step == np.inf:
+        eps_step = np.array(eps_step, dtype=ART_NUMPY_DTYPE)
+        perturbation_step = torch.tensor(eps_step).to(self.estimator.device) * perturbation
+        perturbation_step[torch.isnan(perturbation_step)] = 0
+        x = x + perturbation_step
+        if self.estimator.clip_values is not None:
             clip_min, clip_max = self.estimator.clip_values
-            x[perturbation < 0.0] = float(clip_min)
-            x[perturbation > 0.0] = float(clip_max)
-        else:
-            eps_step = np.array(eps_step, dtype=ART_NUMPY_DTYPE)
-            x = x + torch.tensor(eps_step).to(self.estimator.device) * perturbation
-
-            if self.estimator.clip_values is not None:
-                clip_min, clip_max = self.estimator.clip_values
-                x = torch.max(
-                    torch.min(x, torch.tensor(clip_max).to(self.estimator.device)),
-                    torch.tensor(clip_min).to(self.estimator.device),
-                )
+            x = torch.max(
+                torch.min(x, torch.tensor(clip_max).to(self.estimator.device)),
+                torch.tensor(clip_min).to(self.estimator.device),
+            )
 
         return x
 
