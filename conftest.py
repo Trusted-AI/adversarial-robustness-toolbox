@@ -755,7 +755,7 @@ def get_mnist_dataset(load_mnist_dataset, mnist_shape):
     np.testing.assert_array_almost_equal(y_test_mnist_original, y_test_mnist, decimal=3)
 
 
-# ART test fixture to skip test for specific mlFramework values
+# ART test fixture to skip test for specific framework values
 # eg: @pytest.mark.only_with_platform("tensorflow")
 @pytest.fixture(autouse=True)
 def only_with_platform(request, framework):
@@ -764,13 +764,13 @@ def only_with_platform(request, framework):
             pytest.skip("skipped on this platform: {}".format(framework))
 
 
-# ART test fixture to skip test for specific mlFramework values
-# eg: @pytest.mark.skipMlFramework("tensorflow", "keras", "pytorch", "scikitlearn",
+# ART test fixture to skip test for specific framework values
+# eg: @pytest.mark.skip_framework("tensorflow", "keras", "pytorch", "scikitlearn",
 # "mxnet", "kerastf", "non_dl_frameworks", "dl_frameworks")
 @pytest.fixture(autouse=True)
 def skip_by_framework(request, framework):
-    if request.node.get_closest_marker("skipMlFramework"):
-        framework_to_skip_list = list(request.node.get_closest_marker("skipMlFramework").args)
+    if request.node.get_closest_marker("skip_framework"):
+        framework_to_skip_list = list(request.node.get_closest_marker("skip_framework").args)
         if "dl_frameworks" in framework_to_skip_list:
             framework_to_skip_list.extend(deep_learning_frameworks)
 
