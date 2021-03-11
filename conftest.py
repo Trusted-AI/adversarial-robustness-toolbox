@@ -74,10 +74,10 @@ def get_default_framework():
 
 def pytest_addoption(parser):
     parser.addoption(
-        "--mlFramework",
+        "--framework",
         action="store",
         default=get_default_framework(),
-        help="ART tests allow you to specify which mlFramework to use. The default mlFramework used is `tensorflow`. "
+        help="ART tests allow you to specify which framework to use. The default framework used is `tensorflow`. "
         "Other options available are {0}".format(art_supported_frameworks),
     )
     parser.addoption(
@@ -643,7 +643,7 @@ def create_test_image(create_test_dir):
 
 @pytest.fixture(scope="session")
 def framework(request):
-    ml_framework = request.config.getoption("--mlFramework")
+    ml_framework = request.config.getoption("--framework")
     if ml_framework == "tensorflow":
         import tensorflow as tf
 
@@ -654,12 +654,12 @@ def framework(request):
 
     if ml_framework not in art_supported_frameworks:
         raise Exception(
-            "mlFramework value {0} is unsupported. Please use one of these valid values: {1}".format(
+            "framework value {0} is unsupported. Please use one of these valid values: {1}".format(
                 ml_framework, " ".join(art_supported_frameworks)
             )
         )
-    # if utils_test.is_valid_framework(mlFramework):
-    #     raise Exception("The mlFramework specified was incorrect. Valid options available
+    # if utils_test.is_valid_framework(framework):
+    #     raise Exception("The framework specified was incorrect. Valid options available
     #     are {0}".format(art_supported_frameworks))
     return ml_framework
 
