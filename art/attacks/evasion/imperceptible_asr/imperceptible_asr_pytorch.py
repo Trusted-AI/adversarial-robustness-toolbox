@@ -90,8 +90,8 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         max_iter_2: int = 4000,
         learning_rate_1: float = 0.001,
         learning_rate_2: float = 5e-4,
-        optimizer_1: "torch.optim.Optimizer" = "torch.optim.Adam",
-        optimizer_2: "torch.optim.Optimizer" = "torch.optim.Adam",
+        optimizer_1: Optional["torch.optim.Optimizer"] = None,
+        optimizer_2: Optional["torch.optim.Optimizer"] = None,
         global_max_length: int = 200000,
         initial_rescale: float = 1.0,
         decrease_factor_eps: float = 0.8,
@@ -116,8 +116,10 @@ class ImperceptibleASRPyTorch(EvasionAttack):
                            attack.
         :param learning_rate_1: The learning rate applied for the first stage of the optimization of the attack.
         :param learning_rate_2: The learning rate applied for the second stage of the optimization of the attack.
-        :param optimizer_1: The optimizer applied for the first stage of the optimization of the attack.
-        :param optimizer_2: The optimizer applied for the second stage of the optimization of the attack.
+        :param optimizer_1: The optimizer applied for the first stage of the optimization of the attack. If `None`
+                            attack will use `torch.optim.Adam`.
+        :param optimizer_2: The optimizer applied for the second stage of the optimization of the attack. If `None`
+                            attack will use `torch.optim.Adam`.
         :param global_max_length: The length of the longest audio signal allowed by this attack.
         :param initial_rescale: Initial rescale coefficient to speedup the decrease of the perturbation size during
                                 the first stage of the optimization of the attack.
@@ -177,10 +179,16 @@ class ImperceptibleASRPyTorch(EvasionAttack):
 
         # Create the optimizers
         self._optimizer_arg_1 = optimizer_1
-        self.optimizer_1 = self._optimizer_arg_1(params=[self.global_optimal_delta], lr=self.learning_rate_1)
+        if self._optimizer_arg_1 is None:
+            self.optimizer_1 = torch.optim.Adam(params=[self.global_optimal_delta], lr=self.learning_rate_1)
+        else:
+            self.optimizer_1 = self._optimizer_arg_1(params=[self.global_optimal_delta], lr=self.learning_rate_1)
 
         self._optimizer_arg_2 = optimizer_2
-        self.optimizer_2 = self._optimizer_arg_2(params=[self.global_optimal_delta], lr=self.learning_rate_2)
+        if self._optimizer_arg_2 is None:
+            self.optimizer_2 = torch.optim.Adam(params=[self.global_optimal_delta], lr=self.learning_rate_2)
+        else:
+            self.optimizer_2 = self._optimizer_arg_2(params=[self.global_optimal_delta], lr=self.learning_rate_2)
 
         # Setup for AMP use
         if self._use_amp:
@@ -247,8 +255,15 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             self.global_optimal_delta.data = torch.zeros(self.batch_size, self.global_max_length).type(torch.float64)
 
             # Next, reset optimizers
-            self.optimizer_1 = self._optimizer_arg_1(params=[self.global_optimal_delta], lr=self.learning_rate_1)
-            self.optimizer_2 = self._optimizer_arg_2(params=[self.global_optimal_delta], lr=self.learning_rate_2)
+            if self._optimizer_arg_1 is None:
+                self.optimizer_1 = torch.optim.Adam(params=[self.global_optimal_delta], lr=self.learning_rate_1)
+            else:
+                self.optimizer_1 = self._optimizer_arg_1(params=[self.global_optimal_delta], lr=self.learning_rate_1)
+
+            if self._optimizer_arg_2 is None:
+                self.optimizer_2 = torch.optim.Adam(params=[self.global_optimal_delta], lr=self.learning_rate_2)
+            else:
+                self.optimizer_2 = self._optimizer_arg_2(params=[self.global_optimal_delta], lr=self.learning_rate_2)
 
             # Then compute the batch
             adv_x_batch = self._generate_batch(adv_x[batch_index_1:batch_index_2], y[batch_index_1:batch_index_2])
