@@ -1246,7 +1246,8 @@ def pad_sequence_input(x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     max_length = max(map(len, x))
     batch_size = x.shape[0]
 
-    x_padded = np.zeros((batch_size, max_length))
+    # note: use dtype of inner elements
+    x_padded = np.zeros((batch_size, max_length), dtype=x[0].dtype)
     x_mask = np.zeros((batch_size, max_length), dtype=bool)
 
     for i, x_i in enumerate(x):

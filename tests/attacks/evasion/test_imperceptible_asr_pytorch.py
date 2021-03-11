@@ -38,7 +38,7 @@ def test_imperceptible_asr_pytorch(art_warning, expected_values, use_amp, device
 
     from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
     from art.attacks.evasion.imperceptible_asr.imperceptible_asr_pytorch import ImperceptibleASRPyTorch
-    from art.defences.preprocessor import LFilterPyTorch
+    from art.preprocessing.audio import LFilterPyTorch
 
     try:
         # Load data for testing
