@@ -73,7 +73,3 @@ def test_adversarial_trainer_fbf_pytorch_fit_and_predict(get_adv_trainer, fix_ge
 
     np.testing.assert_array_almost_equal(accuracy, 0.32, decimal=4)
     np.testing.assert_array_almost_equal(accuracy_new, 0.14, decimal=4)
-
-
-if __name__ == "__main__":
-    pytest.cmdline.main("-q -s {} --mlFramework=pytorch --durations=0".format(__file__).split(" "))
