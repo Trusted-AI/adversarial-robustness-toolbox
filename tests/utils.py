@@ -929,10 +929,12 @@ def get_image_classifier_pt(from_logits=False, load_init=True):
     :type load_init: `bool`
     :return: PyTorchClassifier
     """
+    logger.info("get_image_classifier_pt-A")
     import torch
     import torch.nn as nn
     import torch.optim as optim
     from art.estimators.classification.pytorch import PyTorchClassifier
+    logger.info("get_image_classifier_pt-B")
 
     class Model(torch.nn.Module):
         """
@@ -980,6 +982,7 @@ def get_image_classifier_pt(from_logits=False, load_init=True):
 
         # pylint: disable=W0221
         # disable pylint because of API requirements for function
+        logger.info("get_image_classifier_pt-C")
         def forward(self, x):
             """
             Forward function to evaluate the model
@@ -997,15 +1000,20 @@ def get_image_classifier_pt(from_logits=False, load_init=True):
 
     # Define the network
     model = Model()
+    logger.info("get_image_classifier_pt-D")
 
     # Define a loss function and optimizer
     loss_fn = torch.nn.CrossEntropyLoss(reduction="sum")
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
+    logger.info("get_image_classifier_pt-E")
+
     # Get classifier
     ptc = PyTorchClassifier(
         model=model, loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10, clip_values=(0, 1)
     )
+
+    logger.info("get_image_classifier_pt-F")
 
     return ptc
 
