@@ -1635,11 +1635,14 @@ def master_seed(seed=1234, set_random=True, set_numpy=True, set_tensorflow=False
             logger.info("Could not set random seed for TensorFlow.")
 
     if set_mxnet:
+        logger.info("master_seed-A")
         try:
             import mxnet as mx
+            logger.info("master_seed-B")
 
             logger.info("Setting random seed for MXNet.")
             mx.random.seed(seed)
+            logger.info("master_seed-C")
         except ImportError:
             logger.info("Could not set random seed for MXNet.")
 
