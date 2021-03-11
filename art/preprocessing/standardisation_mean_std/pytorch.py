@@ -78,7 +78,7 @@ class StandardisationMeanStdPyTorch(PreprocessorPyTorch):
         """
         Apply standardisation with mean and standard deviation to input `x`.
 
-        :param x: Input samples to standardise of shapes `NCHW`, `NHWC`, `NCFHW` or `NFHWC`.
+        :param x: Input samples to standardise.
         :param y: Label data, will not be affected by this preprocessing.
         :return: Standardised input samples and unmodified labels.
         """

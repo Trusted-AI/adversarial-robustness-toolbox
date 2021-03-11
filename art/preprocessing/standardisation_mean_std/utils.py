@@ -28,7 +28,7 @@ def broadcastable_mean_std(x: np.ndarray, mean: np.ndarray, std: np.ndarray) -> 
     """
     Ensure that the mean and standard deviation are broadcastable with respect to input `x`.
 
-    :param x: Input samples to standardise of shapes `NCHW`, `NHWC`, `NCFHW` or `NFHWC`.
+    :param x: Input samples to standardise.
     :param mean: Mean.
     :param std: Standard Deviation.
     """

@@ -63,7 +63,7 @@ class StandardisationMeanStd(Preprocessor):
         """
         Apply StandardisationMeanStd inputs `x`.
 
-        :param x: Input samples to standardise of shapes `NCHW`, `NHWC`, `NCFHW` or `NFHWC`.
+        :param x: Input samples to standardise.
         :param y: Label data, will not be affected by this preprocessing.
         :return: Standardise input samples and unmodified labels.
         """
