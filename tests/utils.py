@@ -989,16 +989,28 @@ def get_image_classifier_pt(from_logits=False, load_init=True):
             :param x: Input to the model
             :return: Prediction of the model
             """
+            logger.info("get_image_classifier_pt-C-2")
             x = self.conv(x)
+            logger.info("get_image_classifier_pt-C-3")
             x = self.relu(x)
+            logger.info("get_image_classifier_pt-C-4")
             x = self.pool(x)
+            logger.info("get_image_classifier_pt-C-5")
             x = x.reshape(-1, 25)
+            logger.info("get_image_classifier_pt-C-6")
             x = self.fullyconnected(x)
+            logger.info("get_image_classifier_pt-C-7")
             if not from_logits:
+                logger.info("get_image_classifier_pt-C-8")
                 x = torch.nn.functional.softmax(x, dim=1)
+                logger.info("get_image_classifier_pt-C-9")
+            logger.info("get_image_classifier_pt-C-10")
             return x
 
+        logger.info("get_image_classifier_pt-C-11")
+
     # Define the network
+    logger.info("get_image_classifier_pt-C-12")
     model = Model()
     logger.info("get_image_classifier_pt-D")
 
