@@ -944,41 +944,57 @@ def get_image_classifier_pt(from_logits=False, load_init=True):
         """
 
         def __init__(self):
+            logger.info("get_image_classifier_pt-B-1")
             super(Model, self).__init__()
+            logger.info("get_image_classifier_pt-B-2")
 
             self.conv = torch.nn.Conv2d(in_channels=1, out_channels=1, kernel_size=7)
+            logger.info("get_image_classifier_pt-B-3")
             self.relu = torch.nn.ReLU()
+            logger.info("get_image_classifier_pt-B-4")
             self.pool = torch.nn.MaxPool2d(4, 4)
+            logger.info("get_image_classifier_pt-B-5")
             self.fullyconnected = torch.nn.Linear(25, 10)
+            logger.info("get_image_classifier_pt-B-6")
 
             if load_init:
+                logger.info("get_image_classifier_pt-B-7")
                 w_conv2d = np.load(
                     os.path.join(
                         os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_CONV2D_MNIST.npy"
                     )
                 )
+                logger.info("get_image_classifier_pt-B-8")
                 b_conv2d = np.load(
                     os.path.join(
                         os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_CONV2D_MNIST.npy"
                     )
                 )
+                logger.info("get_image_classifier_pt-B-9")
                 w_dense = np.load(
                     os.path.join(
                         os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_DENSE_MNIST.npy"
                     )
                 )
+                logger.info("get_image_classifier_pt-B-10")
                 b_dense = np.load(
                     os.path.join(
                         os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_DENSE_MNIST.npy"
                     )
                 )
+                logger.info("get_image_classifier_pt-B-11")
 
                 w_conv2d_pt = w_conv2d.reshape((1, 1, 7, 7))
+                logger.info("get_image_classifier_pt-B-12")
 
                 self.conv.weight = torch.nn.Parameter(torch.Tensor(w_conv2d_pt))
+                logger.info("get_image_classifier_pt-B-13")
                 self.conv.bias = torch.nn.Parameter(torch.Tensor(b_conv2d))
+                logger.info("get_image_classifier_pt-B-14")
                 self.fullyconnected.weight = torch.nn.Parameter(torch.Tensor(np.transpose(w_dense)))
+                logger.info("get_image_classifier_pt-B-15")
                 self.fullyconnected.bias = torch.nn.Parameter(torch.Tensor(b_dense))
+                logger.info("get_image_classifier_pt-B-16")
 
         # pylint: disable=W0221
         # disable pylint because of API requirements for function
