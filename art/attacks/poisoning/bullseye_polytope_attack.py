@@ -172,8 +172,6 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
         s_init_coeff_list = []
         n_poisons = len(x)
         for n, net in enumerate(self.subsistute_networks):
-            # net = net.model
-            # net.eval()
             # End to end training
             if self.endtoend:
                 block_feats = [feat.detach()
