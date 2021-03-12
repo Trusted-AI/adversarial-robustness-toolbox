@@ -44,7 +44,6 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
     Implementation of Bullseye Polytope Attack by Aghakhani, et. al. 2020.
     "Bullseye Polytope: A Scalable Clean-Label Poisoning Attack with Improved Transferability"
 
-
     This implementation is based on UCSB's original code here: https://github.com/ucsb-seclab/BullseyePoison
 
     | Paper link: https://arxiv.org/abs/2005.00191
