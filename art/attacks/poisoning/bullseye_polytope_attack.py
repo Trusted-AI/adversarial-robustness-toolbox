@@ -129,8 +129,8 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
             self,
             x: np.ndarray,
             y: Optional[np.ndarray] = None,
-            mean: Optional[Tuple[float, ...]] = None,
-            std: Optional[Tuple[float, ...]] = None,
+            mean: Optional[List[float]] = None,
+            std: Optional[List[float]] = None,
             **kwargs
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -143,10 +143,14 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
         :return: An tuple holding the (poisoning examples, poisoning labels).
         """
         if mean is None:
-            mean = torch.Tensor((0.4914, 0.4822, 0.4465)).reshape(1, 3, 1, 1)
+            mean = torch.Tensor([0.4914, 0.4822, 0.4465]).reshape(1, 3, 1, 1)
+        else:
+            mean = torch.Tensor(mean).reshape(1, 3, 1, 1)
 
         if std is None:
-            std = torch.Tensor((0.2023, 0.1994, 0.2010)).reshape(1, 3, 1, 1)
+            std = torch.Tensor([0.2023, 0.1994, 0.2010]).reshape(1, 3, 1, 1)
+        else:
+            std = torch.Tensor(std).reshape(1, 3, 1, 1)
 
         base_tensor_list = [torch.from_numpy(sample).to(self.estimator.device) for sample in x]
         poison_batch = PoisonBatch([torch.from_numpy(np.copy(sample)).to(self.estimator.device) for sample in x])
