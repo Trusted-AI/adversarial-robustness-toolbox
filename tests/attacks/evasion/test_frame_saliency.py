@@ -40,7 +40,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
-@pytest.mark.skipMlFramework("pytorch")
+@pytest.mark.skip_framework("pytorch")
 @pytest.mark.framework_agnostic
 def test_one_shot(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
@@ -61,7 +61,7 @@ def test_one_shot(art_warning, fix_get_mnist_subset, image_dl_estimator_for_atta
         art_warning(e)
 
 
-@pytest.mark.skipMlFramework("pytorch")
+@pytest.mark.skip_framework("pytorch")
 @pytest.mark.framework_agnostic
 def test_iterative_saliency(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
@@ -86,7 +86,7 @@ def test_iterative_saliency(art_warning, fix_get_mnist_subset, image_dl_estimato
         art_warning(e)
 
 
-@pytest.mark.skipMlFramework("pytorch")
+@pytest.mark.skip_framework("pytorch")
 @pytest.mark.framework_agnostic
 def test_iterative_saliency_refresh(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:

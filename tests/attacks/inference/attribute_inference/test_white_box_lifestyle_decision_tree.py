@@ -33,7 +33,7 @@ from tests.utils import ARTTestException
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.skipMlFramework("dl_frameworks")
+@pytest.mark.skip_framework("dl_frameworks")
 def test_white_box_lifestyle(art_warning, decision_tree_estimator, get_iris_dataset):
     try:
         attack_feature = 2  # petal length

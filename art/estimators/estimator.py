@@ -55,7 +55,7 @@ class BaseEstimator(ABC):
         clip_values: Optional["CLIP_VALUES_TYPE"],
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: Union["PREPROCESSING_TYPE", "Preprocessor"] = (0, 1),
+        preprocessing: Union["PREPROCESSING_TYPE", "Preprocessor"] = (0.0, 1.0),
     ):
         """
         Initialize a `BaseEstimator` object.
