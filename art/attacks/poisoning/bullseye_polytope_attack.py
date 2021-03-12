@@ -277,6 +277,7 @@ def get_poison_tuples(poison_batch, poison_label):
 
 def loss_from_center(subs_net_list, target_feat_list, poison_batch, net_repeat, end2end, feature_layer) -> \
         "torch.Tensor":
+    import torch
     if end2end:
         loss = 0
         for net, center_feats in zip(subs_net_list, target_feat_list):
