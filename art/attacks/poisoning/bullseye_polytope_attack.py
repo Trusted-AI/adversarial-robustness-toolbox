@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2021
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -200,6 +200,14 @@ class BullseyePolytopeAttack(PoisoningAttackWhiteBox):
             total_loss.backward()
 
             optimizer.step()
+            # # clip the perturbations into the range
+            # # perturb_range01 = torch.clamp((poison_batch.poison.data - base_tensor_batch) * std,
+            # perturb_range01 = torch.clamp((poison_batch.poison.data - base_tensor_batch),
+            #                               -self.epsilon,
+            #                               self.epsilon)
+            # # perturbed_range01 = torch.clamp(base_range01_batch.data + perturb_range01.data, 0, 1)
+            # # poison_batch.poison.data = (perturbed_range01 - mean) / std
+            # poison_batch.poison.data = perturb_range01
 
             # clip the perturbations into the range
             perturb_range01 = torch.clamp((poison_batch.poison.data - base_tensor_batch) * std,
