@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements clean-label attacks on Neural Networks.
+This module implements Bullseye Polytope clean-label attacks on Neural Networks.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -39,7 +39,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class BullseyePolytopeAttack(PoisoningAttackWhiteBox):
+class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
     """
     Implementation of Bullseye Polytope Attack by Aghakhani, et. al. 2020.
     "Bullseye Polytope: A Scalable Clean-Label Poisoning Attack with Improved Transferability"
