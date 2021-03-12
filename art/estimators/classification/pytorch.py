@@ -716,7 +716,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         return grads
 
     def get_activations(
-            self, x: Union[np.ndarray, torch.Tensor], layer: Optional[Union[int, str]] = None, batch_size: int = 128,
+            self, x: Union[np.ndarray, "torch.Tensor"], layer: Optional[Union[int, str]] = None, batch_size: int = 128,
             framework: bool = False, input_tensor: bool = False
     ) -> np.ndarray:
         """
