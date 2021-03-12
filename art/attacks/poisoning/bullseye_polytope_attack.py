@@ -269,7 +269,8 @@ def loss_from_center(subs_net_list, target_feat_list, poison_batch, net_repeat, 
         loss = 0
         for net, center_feats in zip(subs_net_list, target_feat_list):
             if net_repeat > 1:
-                poisons_feats_repeats = [net.get_activations(poison_batch(), layer=feature_layer, framework=True, input_tensor=True)
+                poisons_feats_repeats = [net.get_activations(poison_batch(), layer=feature_layer, framework=True,
+                                                             input_tensor=True)
                                          for _ in range(net_repeat)]
                 BLOCK_NUM = len(poisons_feats_repeats[0])
                 poisons_feats = []
@@ -277,7 +278,8 @@ def loss_from_center(subs_net_list, target_feat_list, poison_batch, net_repeat, 
                     poisons_feats.append(
                         sum([poisons_feat_r[block_idx] for poisons_feat_r in poisons_feats_repeats]) / net_repeat)
             elif net_repeat == 1:
-                poisons_feats = net.get_activations(poison_batch(), layer=feature_layer, framework=True, input_tensor=True)
+                poisons_feats = net.get_activations(poison_batch(), layer=feature_layer, framework=True,
+                                                    input_tensor=True)
             else:
                 assert False, "net_repeat set to {}".format(net_repeat)
 
