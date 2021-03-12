@@ -261,23 +261,23 @@ def test_black_box_one_hot_float(art_warning, get_iris_dataset):
         tree.fit(x_train, y_train)
         classifier = ScikitlearnDecisionTreeClassifier(tree)
 
-        attack = AttributeInferenceBlackBox(classifier, attack_feature = attack_feature)
+        attack = AttributeInferenceBlackBox(classifier, attack_feature=attack_feature)
         # get original model's predictions
         x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train)]).reshape(-1, 1)
         x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test)]).reshape(-1, 1)
         # train attack model
         attack.fit(x_train)
         # infer attacked feature
-        values = [[-0.6324555, 1.5811388],
-                  [-0.4395245, 2.2751858],
-                  [-1.1108746, 0.9001915]]
+        values = [[-0.6324555, 1.5811388], [-0.4395245, 2.2751858], [-1.1108746, 0.9001915]]
         inferred_train = attack.infer(x_train_for_attack, x_train_predictions, values=values)
         inferred_test = attack.infer(x_test_for_attack, x_test_predictions, values=values)
         # check accuracy
-        train_acc = np.sum(np.all(np.around(inferred_train, decimals=3) ==
-                                  np.around(train_one_hot, decimals=3), axis=1)) / len(inferred_train)
-        test_acc = np.sum(np.all(np.around(inferred_test, decimals=3) ==
-                                 np.around(test_one_hot, decimals=3), axis=1)) / len(inferred_test)
+        train_acc = np.sum(
+            np.all(np.around(inferred_train, decimals=3) == np.around(train_one_hot, decimals=3), axis=1)
+        ) / len(inferred_train)
+        test_acc = np.sum(
+            np.all(np.around(inferred_test, decimals=3) == np.around(test_one_hot, decimals=3), axis=1)
+        ) / len(inferred_test)
         assert pytest.approx(0.9145, abs=0.03) == train_acc
         assert pytest.approx(0.9333, abs=0.03) == test_acc
 
