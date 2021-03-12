@@ -109,7 +109,7 @@ class BullseyePolytopeAttack(PoisoningAttackWhiteBox):
         :param verbose: Show progress bars.
         """
         self.subsistute_networks: List["CLASSIFIER_NEURALNETWORK_TYPE"] = \
-            [classifier] if isinstance(classifier, list) else classifier
+            [classifier] if not isinstance(classifier, list) else classifier
 
         super().__init__(classifier=self.subsistute_networks[0])  # type: ignore
         self.target = target
@@ -201,7 +201,7 @@ class BullseyePolytopeAttack(PoisoningAttackWhiteBox):
 
             poison_batch.zero_grad()
             total_loss = loss_from_center(self.subsistute_networks, target_feat_list, poison_batch, self.net_repeat,
-                                          self.endtoend)
+                                          self.endtoend, self.feature_layer)
             total_loss.backward()
 
             optimizer.step()
@@ -263,12 +263,12 @@ def get_poison_tuples(poison_batch, poison_label):
     return np.vstack(poison), poison_label
 
 
-def loss_from_center(subs_net_list, target_feat_list, poison_batch, net_repeat, end2end) -> "torch.Tensor":
+def loss_from_center(subs_net_list, target_feat_list, poison_batch, net_repeat, end2end, feature_layer) -> "torch.Tensor":
     if end2end:
         loss = 0
         for net, center_feats in zip(subs_net_list, target_feat_list):
             if net_repeat > 1:
-                poisons_feats_repeats = [net.get_activations(poison_batch(), framework=True, input_tensor=True)
+                poisons_feats_repeats = [net.get_activations(poison_batch(), layer=feature_layer, framework=True, input_tensor=True)
                                          for _ in range(net_repeat)]
                 BLOCK_NUM = len(poisons_feats_repeats[0])
                 poisons_feats = []
@@ -276,7 +276,7 @@ def loss_from_center(subs_net_list, target_feat_list, poison_batch, net_repeat, 
                     poisons_feats.append(
                         sum([poisons_feat_r[block_idx] for poisons_feat_r in poisons_feats_repeats]) / net_repeat)
             elif net_repeat == 1:
-                poisons_feats = net.get_activations(poison_batch(), framework=True, input_tensor=True)
+                poisons_feats = net.get_activations(poison_batch(), layer=feature_layer, framework=True, input_tensor=True)
             else:
                 assert False, "net_repeat set to {}".format(net_repeat)
 
@@ -293,8 +293,8 @@ def loss_from_center(subs_net_list, target_feat_list, poison_batch, net_repeat, 
     else:
         loss = 0
         for net, center in zip(subs_net_list, target_feat_list):
-            poisons = [net.get_activations(poison_batch(), framework=True, input_tensor=True) for _ in
-                       range(net_repeat)]
+            poisons = [net.get_activations(poison_batch(), layer=feature_layer, framework=True, input_tensor=True)
+                       for _ in range(net_repeat)]
             poisons = sum(poisons) / len(poisons)
 
             diff = torch.mean(poisons, dim=0) - center
