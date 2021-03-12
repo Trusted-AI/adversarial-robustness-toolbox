@@ -28,7 +28,7 @@ from tests.utils import ARTTestException
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.skipMlFramework("non_dl_frameworks", "tensorflow", "mxnet", "keras", "kerastf")
+@pytest.mark.skip_framework("non_dl_frameworks", "tensorflow", "mxnet", "keras", "kerastf")
 def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator):
     try:
         (x_train, y_train), (_, _) = get_default_mnist_subset
@@ -47,7 +47,7 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator):
         art_warning(e)
 
 
-@pytest.mark.skipMlFramework("non_dl_frameworks", "tensorflow", "mxnet", "keras", "kerastf")
+@pytest.mark.skip_framework("non_dl_frameworks", "tensorflow", "mxnet", "keras", "kerastf")
 def test_failure_modes(art_warning, get_default_mnist_subset, image_dl_estimator):
     try:
         (x_train, y_train), (_, _) = get_default_mnist_subset
