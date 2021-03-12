@@ -24,7 +24,6 @@ import logging
 from typing import Optional, Tuple, Union, TYPE_CHECKING, List
 
 import numpy as np
-import torch
 import time
 from tqdm.auto import trange
 
@@ -34,6 +33,7 @@ from art.estimators.classification.classifier import ClassifierMixin
 from art.estimators.classification.pytorch import PyTorchClassifier
 
 if TYPE_CHECKING:
+    import torch
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
@@ -141,6 +141,21 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
         :param std: The standard deviation of the dataset. Defaults to CIFAR std
         :return: An tuple holding the (poisoning examples, poisoning labels).
         """
+        import torch
+
+        class PoisonBatch(torch.nn.Module):
+            """
+            Implementing this to work with PyTorch optimizers.
+            """
+
+            def __init__(self, base_list):
+                super(PoisonBatch, self).__init__()
+                base_batch = torch.stack(base_list, 0)
+                self.poison = torch.nn.Parameter(base_batch.clone())
+
+            def forward(self):
+                return self.poison
+
         if mean is None:
             mean = torch.Tensor([0.4914, 0.4822, 0.4465]).reshape(1, 3, 1, 1)
         else:
@@ -304,17 +319,3 @@ def loss_from_center(subs_net_list, target_feat_list, poison_batch, net_repeat, 
         loss = loss / len(subs_net_list)
 
     return loss
-
-
-class PoisonBatch(torch.nn.Module):
-    """
-    Implementing this to work with PyTorch optimizers.
-    """
-
-    def __init__(self, base_list):
-        super(PoisonBatch, self).__init__()
-        base_batch = torch.stack(base_list, 0)
-        self.poison = torch.nn.Parameter(base_batch.clone())
-
-    def forward(self):
-        return self.poison
