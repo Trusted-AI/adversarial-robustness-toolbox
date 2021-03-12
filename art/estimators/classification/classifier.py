@@ -57,7 +57,9 @@ class InputFilter(ABCMeta):
                         kwargs["x"] = np.array(kwargs["x"])
                 else:
                     if not isinstance(args[0], np.ndarray):
-                        lst[0] = np.array(args[0])
+                        pass
+                        # TODO: @Beat is there an easy way to bypass this filter and allow tensors?
+                        # lst[0] = np.array(args[0])
 
                 if "y" in kwargs:
                     if kwargs["y"] is not None and not isinstance(kwargs["y"], np.ndarray):
