@@ -57,9 +57,7 @@ class InputFilter(ABCMeta):
                         kwargs["x"] = np.array(kwargs["x"])
                 else:
                     if not isinstance(args[0], np.ndarray):
-                        pass
-                        # TODO: @Beat is there an easy way to bypass this filter and allow tensors?
-                        # lst[0] = np.array(args[0])
+                        lst[0] = np.array(args[0])
 
                 if "y" in kwargs:
                     if kwargs["y"] is not None and not isinstance(kwargs["y"], np.ndarray):
@@ -89,7 +87,7 @@ class InputFilter(ABCMeta):
                 setattr(cls, item, new_function)
 
 
-class ClassifierMixin(ABC, metaclass=InputFilter):
+class ClassifierMixin(ABC):
     """
     Mixin abstract base class defining functionality for classifiers.
     """
