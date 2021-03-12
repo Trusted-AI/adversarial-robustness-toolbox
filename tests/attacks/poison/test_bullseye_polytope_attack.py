@@ -39,6 +39,10 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator):
 
         np.testing.assert_equal(poison_data.shape, x_train[5:10].shape)
         np.testing.assert_equal(poison_labels.shape, y_train[5:10].shape)
+
+        with pytest.raises(AssertionError):
+            np.testing.assert_equal(poison_data, x_train[5:10])
+
     except ARTTestException as e:
         art_warning(e)
 
