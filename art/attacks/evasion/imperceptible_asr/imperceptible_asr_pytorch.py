@@ -464,9 +464,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
 
         # Transform data into the model input space
         inputs, targets, input_rates, target_sizes, batch_idx = self.estimator.preprocess_transform_model_input(
-            x=masked_adv_input.to(self.estimator.device),
-            y=original_output,
-            real_lengths=real_lengths,
+            x=masked_adv_input.to(self.estimator.device), y=original_output, real_lengths=real_lengths,
         )
 
         # Compute real input sizes
@@ -606,10 +604,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         return result
 
     def _forward_2nd_stage(
-        self,
-        local_delta_rescale: "torch.Tensor",
-        theta_batch: np.ndarray,
-        original_max_psd_batch: np.ndarray,
+        self, local_delta_rescale: "torch.Tensor", theta_batch: np.ndarray, original_max_psd_batch: np.ndarray,
     ) -> "torch.Tensor":
         """
         The forward pass of the second stage of the attack.
@@ -667,7 +662,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
 
         psd = abs(transformed_x / win_length)
         original_max_psd = np.max(psd * psd)
-        with np.errstate(divide='ignore'):
+        with np.errstate(divide="ignore"):
             psd = (20 * np.log10(psd)).clip(min=-200)
         psd = 96 - np.max(psd) + psd
 
