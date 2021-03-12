@@ -47,8 +47,7 @@ class BullseyePolytopeAttack(PoisoningAttackWhiteBox):
     "Bullseye Polytope: A Scalable Clean-Label Poisoning Attack with Improved Transferability"
 
 
-    This implementation dynamically calculates the dimension of the feature layer, and doesn't hardcode this
-    value to 2048 as done in the paper. Thus we recommend using larger values for the similarity_coefficient.
+    This implementation is based on UCSB's original code here: https://github.com/ucsb-seclab/BullseyePoison
 
     | Paper link: https://arxiv.org/abs/2005.00191
     """
@@ -76,14 +75,13 @@ class BullseyePolytopeAttack(PoisoningAttackWhiteBox):
             classifier: Union["CLASSIFIER_NEURALNETWORK_TYPE", List["CLASSIFIER_NEURALNETWORK_TYPE"]],
             target: np.ndarray,
             feature_layer: Union[Union[str, int], List[Union[str, int]]],
-            opt: str = 'adam', # SGD, adam or signedadam https://github.com/ucsb-seclab/BullseyePoison/blob/65af294fd4136d15282360d5f65b44ae9390444b/trainer.py#L239
+            opt: str = 'adam',
             max_iter: int = 4000,
             learning_rate: float = 4e-2,
             momentum: float = 0.9,
-            decay_iter: Union[int, List[int]] = 1000,
+            decay_iter: Union[int, List[int]] = 10000,
             decay_coeff: float = 0.5,
             epsilon: float = 0.1,
-            norm: Union[float, str] = 'inf',
             dropout: int = 0.3,
             net_repeat: int = 1,
             endtoend: bool = True,
@@ -94,7 +92,8 @@ class BullseyePolytopeAttack(PoisoningAttackWhiteBox):
 
         :param classifier: The proxy classifiers used for the attack. Can be a single classifier or list of classifiers
                            with varying architectures.
-        :param target: The target input(s) of shape (N, W, H, C) to misclassify at test time. Multiple targets will be averaged
+        :param target: The target input(s) of shape (N, W, H, C) to misclassify at test time. Multiple targets will be
+                       averaged.
         :param feature_layer: The name(s) of the feature representation layer(s).
         :param opt: The optimizer to use for the attack. Can be 'adam', 'sgd', or 'signedadam'
         :param max_iter: The maximum number of iterations for the attack.
@@ -104,14 +103,13 @@ class BullseyePolytopeAttack(PoisoningAttackWhiteBox):
                            Can be a integer (every N interations) or list of integers [0, 500, 1500]
         :param decay_coeff: The decay coefficient of the learning rate.
         :param epsilon: The perturbation budget
-        :param norm: The norm of the epsilon-ball
         :param dropout: Dropout to apply while training
         :param net_repeat: The number of times to repeat prediction on each network
         :param endtoend: True for end-to-end training. False for transfer learning.
         :param verbose: Show progress bars.
         """
         self.subsistute_networks: List["CLASSIFIER_NEURALNETWORK_TYPE"] = \
-            [classifier] if type(classifier) != type([]) else classifier
+            [classifier] if isinstance(classifier, list) else classifier
 
         super().__init__(classifier=self.subsistute_networks[0])  # type: ignore
         self.target = target
@@ -119,7 +117,6 @@ class BullseyePolytopeAttack(PoisoningAttackWhiteBox):
         self.momentum = momentum
         self.decay_iter = decay_iter
         self.epsilon = epsilon
-        self.norm = norm
         self.dropout = dropout
         self.net_repeat = net_repeat
         self.endtoend = endtoend
@@ -134,8 +131,8 @@ class BullseyePolytopeAttack(PoisoningAttackWhiteBox):
             self,
             x: np.ndarray,
             y: Optional[np.ndarray] = None,
-            fetch_nearest: bool = False,
-            num_poison: Optional[int] = None,
+            mean: Optional[Tuple[float, ...]] = None,
+            std: Optional[Tuple[float, ...]] = None,
             **kwargs
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -143,9 +140,16 @@ class BullseyePolytopeAttack(PoisoningAttackWhiteBox):
 
         :param x: The base images to begin the poison process.
         :param y: Target label
+        :param mean: The mean of the dataset. Defaults to CIFAR10 Mean.
+        :param std: The standard deviation of the dataset. Defaults to CIFAR std
         :return: An tuple holding the (poisoning examples, poisoning labels).
         """
-        # target_net.eval()
+        if mean is None:
+            mean = torch.Tensor((0.4914, 0.4822, 0.4465)).reshape(1, 3, 1, 1)
+
+        if std is None:
+            std = torch.Tensor((0.2023, 0.1994, 0.2010)).reshape(1, 3, 1, 1)
+
         base_tensor_list = [torch.from_numpy(sample).to(self.estimator.device) for sample in x]
         poison_batch = PoisonBatch([torch.from_numpy(np.copy(sample)).to(self.estimator.device) for sample in x])
         opt_method = self.opt.lower()
@@ -160,10 +164,6 @@ class BullseyePolytopeAttack(PoisoningAttackWhiteBox):
             logger.info("Using Adam to craft poison samples")
             optimizer = torch.optim.Adam(poison_batch.parameters(), lr=self.learning_rate, betas=(self.momentum, 0.999))
 
-        target = torch.from_numpy(self.target).to(self.estimator.device)
-        mean = torch.Tensor((0.4914, 0.4822, 0.4465)).reshape(1, 3, 1, 1)
-        std = torch.Tensor((0.2023, 0.1994, 0.2010)).reshape(1, 3, 1, 1)
-        # std, mean = std.to(self.estimator.device), mean.to(self.estimator.device)
         base_tensor_batch = torch.stack(base_tensor_list, 0)
         base_range01_batch = base_tensor_batch * std + mean
 
@@ -177,34 +177,34 @@ class BullseyePolytopeAttack(PoisoningAttackWhiteBox):
         s_init_coeff_list = []
         n_poisons = len(x)
         for n, net in enumerate(self.subsistute_networks):
-            net = net.model
-            net.eval()
+            # net = net.model
+            # net.eval()
             # End to end training
             if self.endtoend:
-                block_feats = [feat.detach() for feat in net(x=target, block=True)]
+                block_feats = [feat.detach()
+                               for feat in net.get_activations(x, layer=self.feature_layer, framework=True)]
                 target_feat_list.append(block_feats)
-                s_coeff = [torch.ones(n_poisons, 1).to(self.estimator.device) / n_poisons for _ in range(len(block_feats))]
+                s_coeff = [torch.ones(n_poisons, 1).to(self.estimator.device) / n_poisons for _ in
+                           range(len(block_feats))]
             else:
-                target_feat_list.append(net(x=target, penu=True).detach())
+                target_feat_list.append(net.get_activations(x, layer=self.feature_layer, framework=True).detach())
                 s_coeff = torch.ones(n_poisons, 1).to(self.estimator.device) / n_poisons
 
             s_init_coeff_list.append(s_coeff)
 
-        poisons_time = 0
-        start_ite = 0  # TODO: where is this called and this isn't zero?
-        for ite in trange(start_ite, self.max_iter):
-            if ite in self.decay_iter:
+        for ite in trange(self.max_iter):
+            if ite % self.decay_iter == 0 and ite != 0:
                 for param_group in optimizer.param_groups:
                     param_group['lr'] *= self.decay_coeff
-                print("%s Iteration %d, Adjusted lr to %.2e" % (time.strftime("%Y-%m-%d %H:%M:%S"), ite, self.learning_rate))
+                print("%s Iteration %d, Adjusted lr to %.2e" % (time.strftime("%Y-%m-%d %H:%M:%S"), ite,
+                                                                self.learning_rate))
 
             poison_batch.zero_grad()
-            t = time.time()
-            total_loss = loss_from_center(self.subsistute_networks, target_feat_list, poison_batch, self.net_repeat, self.endtoend)
+            total_loss = loss_from_center(self.subsistute_networks, target_feat_list, poison_batch, self.net_repeat,
+                                          self.endtoend)
             total_loss.backward()
 
             optimizer.step()
-            poisons_time += int(time.time() - t)
 
             # clip the perturbations into the range
             perturb_range01 = torch.clamp((poison_batch.poison.data - base_tensor_batch) * std,
@@ -228,40 +228,39 @@ class BullseyePolytopeAttack(PoisoningAttackWhiteBox):
         if not isinstance(self.feature_layer, (str, int)):
             raise TypeError("Feature layer should be a string or int")
 
-        if self.decay_coeff <= 0:
-            raise ValueError("Decay coefficient must be positive")
+        if self.opt.lower() not in ['adam', 'signedadam', 'sgd']:
+            raise ValueError("Optimizer must be 'adam', 'signedadam', or 'sgd'")
 
-        # if self.stopping_tol <= 0:
-        #     raise ValueError("Stopping tolerance must be positive")
-        #
-        # if self.obj_threshold and self.obj_threshold <= 0:
-        #     raise ValueError("Objective threshold must be positive")
-        #
-        # if self.num_old_obj <= 0:
-        #     raise ValueError("Number of old stored objectives must be positive")
-        #
-        # if self.max_iter <= 0:
-        #     raise ValueError("Number of old stored objectives must be positive")
-        #
-        # if self.watermark and not (isinstance(self.watermark, float) and 0 <= self.watermark < 1):
-        #     raise ValueError("Watermark must be between 0 and 1")
-        #
-        # if not isinstance(self.verbose, bool):
-        #     raise ValueError("The argument `verbose` has to be of type bool.")
+        if 1 < self.momentum < 0:
+            raise ValueError("Momentum must be between 0 and 1")
+
+        if self.decay_iter < 0:
+            raise ValueError("decay_iter must be at least 0")
+
+        if self.epsilon <= 0:
+            raise ValueError("epsilon must be at least 0")
+
+        if 1 < self.dropout < 0:
+            raise ValueError("dropout must be between 0 and 1")
+
+        if self.net_repeat < 1:
+            raise ValueError("net_repeat must be at least 1")
+
+        valid_layer = 0 <= self.feature_layer < len(self.estimator.layer_names)
+        if not valid_layer:
+            raise ValueError("Invalid feature layer")
+
+        if 1 < self.decay_coeff < 0:
+            raise ValueError("Decay coefficient must be between zero and one")
 
 
 def get_poison_tuples(poison_batch, poison_label):
     """
     Includes the labels
     """
-    poison_tuple = [(poison_batch.poison.data[num_p].detach().cpu(), poison_label) for num_p in
-                    range(poison_batch.poison.size(0))]
-    poison, labels = zip(*poison_tuple)
-    poison = np.array(poison)
-    labels = np.array(labels)
-    print(f"final poison shape: {poison.shape}")
-    print(f"final labels shape: {labels.shape}")
-    return poison, labels
+    poison = [poison_batch.poison.data[num_p].unsqueeze(0).detach().cpu().numpy()
+              for num_p in range(poison_batch.poison.size(0))]
+    return np.vstack(poison), poison_label
 
 
 def loss_from_center(subs_net_list, target_feat_list, poison_batch, net_repeat, end2end) -> "torch.Tensor":
@@ -269,21 +268,24 @@ def loss_from_center(subs_net_list, target_feat_list, poison_batch, net_repeat, 
         loss = 0
         for net, center_feats in zip(subs_net_list, target_feat_list):
             if net_repeat > 1:
-                poisons_feats_repeats = [net(x=poison_batch(), block=True) for _ in range(net_repeat)]
+                poisons_feats_repeats = [net.get_activations(poison_batch(), framework=True, input_tensor=True)
+                                         for _ in range(net_repeat)]
                 BLOCK_NUM = len(poisons_feats_repeats[0])
                 poisons_feats = []
                 for block_idx in range(BLOCK_NUM):
                     poisons_feats.append(
                         sum([poisons_feat_r[block_idx] for poisons_feat_r in poisons_feats_repeats]) / net_repeat)
             elif net_repeat == 1:
-                poisons_feats = net(x=poison_batch(), block=True)
+                poisons_feats = net.get_activations(poison_batch(), framework=True, input_tensor=True)
             else:
                 assert False, "net_repeat set to {}".format(net_repeat)
 
             net_loss = 0
             for pfeat, cfeat in zip(poisons_feats, center_feats):
                 diff = torch.mean(pfeat, dim=0) - cfeat
-                diff_norm = torch.norm(diff, dim=1) / torch.norm(cfeat, dim=1)
+                diff_norm = torch.norm(diff, dim=0)
+                cfeat_norm = torch.norm(cfeat, dim=0)
+                diff_norm = diff_norm / cfeat_norm
                 net_loss += torch.mean(diff_norm)
             loss += net_loss / len(center_feats)
         loss = loss / len(subs_net_list)
@@ -291,7 +293,8 @@ def loss_from_center(subs_net_list, target_feat_list, poison_batch, net_repeat, 
     else:
         loss = 0
         for net, center in zip(subs_net_list, target_feat_list):
-            poisons = [net(x=poison_batch(), penu=True) for _ in range(net_repeat)]
+            poisons = [net.get_activations(poison_batch(), framework=True, input_tensor=True) for _ in
+                       range(net_repeat)]
             poisons = sum(poisons) / len(poisons)
 
             diff = torch.mean(poisons, dim=0) - center
@@ -413,7 +416,7 @@ class SignedAdam(Optimizer):
                 bias_correction2 = 1 - beta2 ** state['step']
                 step_size = group['lr'] * math.sqrt(bias_correction2) / bias_correction1
 
-                #p.data.addcdiv_(-step_size, exp_avg, denom)
+                # p.data.addcdiv_(-step_size, exp_avg, denom)
                 p.data -= step_size * torch.sign(exp_avg / denom)
 
         return loss
