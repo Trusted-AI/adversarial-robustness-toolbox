@@ -199,22 +199,15 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
             total_loss = loss_from_center(self.subsistute_networks, target_feat_list, poison_batch, self.net_repeat,
                                           self.endtoend, self.feature_layer)
             total_loss.backward()
-
             optimizer.step()
-            # # clip the perturbations into the range
-            # # perturb_range01 = torch.clamp((poison_batch.poison.data - base_tensor_batch) * std,
-            # perturb_range01 = torch.clamp((poison_batch.poison.data - base_tensor_batch),
-            #                               -self.epsilon,
-            #                               self.epsilon)
-            # # perturbed_range01 = torch.clamp(base_range01_batch.data + perturb_range01.data, 0, 1)
-            # # poison_batch.poison.data = (perturbed_range01 - mean) / std
-            # poison_batch.poison.data = perturb_range01
 
             # clip the perturbations into the range
             perturb_range01 = torch.clamp((poison_batch.poison.data - base_tensor_batch) * std,
                                           -self.epsilon,
                                           self.epsilon)
-            perturbed_range01 = torch.clamp(base_range01_batch.data + perturb_range01.data, 0, 1)
+            perturbed_range01 = torch.clamp(base_range01_batch.data + perturb_range01.data,
+                                            self.estimator.clip_values[0],
+                                            self.estimator.clip_values[1])
             poison_batch.poison.data = (perturbed_range01 - mean) / std
 
         if y is None:
@@ -267,7 +260,8 @@ def get_poison_tuples(poison_batch, poison_label):
     return np.vstack(poison), poison_label
 
 
-def loss_from_center(subs_net_list, target_feat_list, poison_batch, net_repeat, end2end, feature_layer) -> "torch.Tensor":
+def loss_from_center(subs_net_list, target_feat_list, poison_batch, net_repeat, end2end, feature_layer) -> \
+        "torch.Tensor":
     if end2end:
         loss = 0
         for net, center_feats in zip(subs_net_list, target_feat_list):
