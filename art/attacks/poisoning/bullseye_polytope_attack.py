@@ -98,7 +98,7 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
         :param learning_rate: The learning rate of clean-label attack optimization.
         :param momentum: The momentum of clean-label attack optimization.
         :param decay_iter: Which iterations to decay the learning rate.
-                           Can be a integer (every N interations) or list of integers [0, 500, 1500]
+                           Can be a integer (every N iterations) or list of integers [0, 500, 1500]
         :param decay_coeff: The decay coefficient of the learning rate.
         :param epsilon: The perturbation budget
         :param dropout: Dropout to apply while training
