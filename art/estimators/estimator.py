@@ -387,7 +387,7 @@ class NeuralNetworkMixin(ABC):
     has to be mixed in with class `BaseEstimator`.
     """
 
-    estimator_params = ["channels_first"]
+    # estimator_params = ["channels_first"]
 
     def __init__(self, channels_first: Optional[bool], **kwargs) -> None:
         """

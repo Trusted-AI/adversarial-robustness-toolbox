@@ -71,7 +71,7 @@ def test_black_box_baseline(art_warning, decision_tree_estimator, get_iris_datas
         inferred_train = attack.infer(x_train_for_attack, x_train_predictions, values=values)
         inferred_test = attack.infer(x_test_for_attack, x_test_predictions, values=values)
         # check accuracy
-        train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
+        # train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
         test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
 
         baseline_attack = AttributeInferenceBaseline(attack_feature=attack_feature)
@@ -81,9 +81,9 @@ def test_black_box_baseline(art_warning, decision_tree_estimator, get_iris_datas
         baseline_inferred_train = baseline_attack.infer(x_train_for_attack, values=values)
         baseline_inferred_test = baseline_attack.infer(x_test_for_attack, values=values)
         # check accuracy
-        baseline_train_acc = np.sum(baseline_inferred_train == x_train_feature.reshape(1, -1)) / len(
-            baseline_inferred_train
-        )
+        # baseline_train_acc = np.sum(baseline_inferred_train == x_train_feature.reshape(1, -1)) / len(
+        #     baseline_inferred_train
+        # )
         baseline_test_acc = np.sum(baseline_inferred_test == x_test_feature.reshape(1, -1)) / len(
             baseline_inferred_test
         )
@@ -96,7 +96,7 @@ def test_black_box_baseline(art_warning, decision_tree_estimator, get_iris_datas
 
 def test_errors(art_warning, get_iris_dataset):
     try:
-        (x_train, y_train), (x_test, y_test) = get_iris_dataset
+        (x_train, y_train), (_, _) = get_iris_dataset
 
         with pytest.raises(ValueError):
             AttributeInferenceBaseline(attack_feature="a")
@@ -105,6 +105,6 @@ def test_errors(art_warning, get_iris_dataset):
         attack = AttributeInferenceBaseline(attack_feature=8)
         with pytest.raises(ValueError):
             attack.fit(x_train)
-        attack = AttributeInferenceBaseline()
+        _ = AttributeInferenceBaseline()
     except ARTTestException as e:
         art_warning(e)

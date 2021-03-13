@@ -26,7 +26,6 @@ from typing import Optional, Union, TYPE_CHECKING
 import numpy as np
 from sklearn.neural_network import MLPClassifier
 
-from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.attack import AttributeInferenceAttack
 from art.utils import check_and_transform_label_format, float_to_categorical, floats_to_one_hot
