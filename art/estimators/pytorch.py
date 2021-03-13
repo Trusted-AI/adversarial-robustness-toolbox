@@ -56,7 +56,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
                be divided by the second one.
         :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
         """
-        import torch
+        import torch  # lgtm [py/repeated-import]
 
         preprocessing = kwargs.get("preprocessing")
         if isinstance(preprocessing, tuple):
@@ -150,7 +150,8 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         :return: Tuple of `x` and `y` after applying the defences and standardisation.
         :rtype: Format as expected by the `model`
         """
-        import torch
+        import torch  # lgtm [py/repeated-import]
+
         from art.preprocessing.standardisation_mean_std.numpy import StandardisationMeanStd
         from art.preprocessing.standardisation_mean_std.pytorch import StandardisationMeanStdPyTorch
 
@@ -224,7 +225,8 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         :return: Gradients after backward pass through preprocessing defences.
         :rtype: Format as expected by the `model`
         """
-        import torch
+        import torch  # lgtm [py/repeated-import]
+
         from art.preprocessing.standardisation_mean_std.numpy import StandardisationMeanStd
         from art.preprocessing.standardisation_mean_std.pytorch import StandardisationMeanStdPyTorch
 
@@ -284,9 +286,9 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         :param train: False for evaluation mode.
         :param layerinfo: List of module types.
         """
-        from torch import nn
+        import torch  # lgtm [py/repeated-import]
 
-        assert all([issubclass(l, nn.modules.Module) for l in layerinfo])
+        assert all([issubclass(l, torch.nn.modules.Module) for l in layerinfo])
 
         def set_train(layer, layerinfo=layerinfo):
             "Set layer into training mode if instance of `layerinfo`."
@@ -309,9 +311,9 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
 
         :param train: False for evaluation mode.
         """
-        from torch import nn
+        import torch  # lgtm [py/repeated-import]
 
-        self._set_layer(train=train, layerinfo=[nn.modules.dropout._DropoutNd])
+        self._set_layer(train=train, layerinfo=[torch.nn.modules.dropout._DropoutNd])
 
     def set_batchnorm(self, train: bool) -> None:
         """
@@ -319,6 +321,6 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
 
         :param train: False for evaluation mode.
         """
-        from torch import nn
+        import torch  # lgtm [py/repeated-import]
 
-        self._set_layer(train=train, layerinfo=[nn.modules.batchnorm._BatchNorm])
+        self._set_layer(train=train, layerinfo=[torch.nn.modules.batchnorm._BatchNorm])

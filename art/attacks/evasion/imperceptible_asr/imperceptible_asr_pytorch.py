@@ -52,18 +52,18 @@ class ImperceptibleASRPyTorch(EvasionAttack):
     """
 
     attack_params = EvasionAttack.attack_params + [
-        "initial_eps",
-        "max_iter_1st_stage",
-        "max_iter_2nd_stage",
-        "learning_rate_1st_stage",
-        "learning_rate_2nd_stage",
-        "optimizer_1st_stage",
-        "optimizer_2nd_stage",
+        "eps",
+        "max_iter_1",
+        "max_iter_2",
+        "learning_rate_1",
+        "learning_rate_2",
+        "optimizer_1",
+        "optimizer_2",
         "global_max_length",
         "initial_rescale",
-        "rescale_factor",
-        "num_iter_adjust_rescale",
-        "initial_alpha",
+        "decrease_factor_eps",
+        "num_iter_decrease_eps",
+        "alpha",
         "increase_factor_alpha",
         "num_iter_increase_alpha",
         "decrease_factor_alpha",
@@ -85,22 +85,22 @@ class ImperceptibleASRPyTorch(EvasionAttack):
     def __init__(
         self,
         estimator: PyTorchDeepSpeech,
-        initial_eps: float = 0.001,
-        max_iter_1st_stage: int = 1000,
-        max_iter_2nd_stage: int = 4000,
-        learning_rate_1st_stage: float = 0.1,
-        learning_rate_2nd_stage: float = 0.001,
-        optimizer_1st_stage: Optional["torch.optim.Optimizer"] = None,
-        optimizer_2nd_stage: Optional["torch.optim.Optimizer"] = None,
-        global_max_length: int = 10000,
+        eps: float = 0.05,
+        max_iter_1: int = 10,
+        max_iter_2: int = 4000,
+        learning_rate_1: float = 0.001,
+        learning_rate_2: float = 5e-4,
+        optimizer_1: Optional["torch.optim.Optimizer"] = None,
+        optimizer_2: Optional["torch.optim.Optimizer"] = None,
+        global_max_length: int = 200000,
         initial_rescale: float = 1.0,
-        rescale_factor: float = 0.8,
-        num_iter_adjust_rescale: int = 10,
-        initial_alpha: float = 0.05,
+        decrease_factor_eps: float = 0.8,
+        num_iter_decrease_eps: int = 1,
+        alpha: float = 1.2,
         increase_factor_alpha: float = 1.2,
         num_iter_increase_alpha: int = 20,
         decrease_factor_alpha: float = 0.8,
-        num_iter_decrease_alpha: int = 50,
+        num_iter_decrease_alpha: int = 20,
         batch_size: int = 32,
         use_amp: bool = False,
         opt_level: str = "O1",
@@ -109,27 +109,25 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         Create a :class:`.ImperceptibleASRPyTorch` instance.
 
         :param estimator: A trained estimator.
-        :param initial_eps: Initial maximum perturbation that the attacker can introduce.
-        :param max_iter_1st_stage: The maximum number of iterations applied for the first stage of the optimization of
-                                   the attack.
-        :param max_iter_2nd_stage: The maximum number of iterations applied for the second stage of the optimization of
-                                   the attack.
-        :param learning_rate_1st_stage: The initial learning rate applied for the first stage of the optimization of
-                                        the attack.
-        :param learning_rate_2nd_stage: The initial learning rate applied for the second stage of the optimization of
-                                        the attack.
-        :param optimizer_1st_stage: The optimizer applied for the first stage of the optimization of the attack. If
-                                    `None` attack will use `torch.optim.SGD`.
-        :param optimizer_2nd_stage: The optimizer applied for the second stage of the optimization of the attack. If
-                                    `None` attack will use `torch.optim.SGD`.
+        :param eps: Maximum perturbation that the attacker can introduce.
+        :param max_iter_1: The maximum number of iterations applied for the first stage of the optimization of the
+                           attack.
+        :param max_iter_2: The maximum number of iterations applied for the second stage of the optimization of the
+                           attack.
+        :param learning_rate_1: The learning rate applied for the first stage of the optimization of the attack.
+        :param learning_rate_2: The learning rate applied for the second stage of the optimization of the attack.
+        :param optimizer_1: The optimizer applied for the first stage of the optimization of the attack. If `None`
+                            attack will use `torch.optim.Adam`.
+        :param optimizer_2: The optimizer applied for the second stage of the optimization of the attack. If `None`
+                            attack will use `torch.optim.Adam`.
         :param global_max_length: The length of the longest audio signal allowed by this attack.
         :param initial_rescale: Initial rescale coefficient to speedup the decrease of the perturbation size during
                                 the first stage of the optimization of the attack.
-        :param rescale_factor: The factor to adjust the rescale coefficient during the first stage of the optimization
-                               of the attack.
-        :param num_iter_adjust_rescale: Number of iterations to adjust the rescale coefficient.
-        :param initial_alpha: The initial value of the alpha coefficient used in the second stage of the optimization
-                              of the attack.
+        :param decrease_factor_eps: The factor to adjust the rescale coefficient during the first stage of the
+                                    optimization of the attack.
+        :param num_iter_decrease_eps: Number of iterations to adjust the rescale coefficient, and therefore adjust the
+                                      perturbation size.
+        :param alpha: Value of the alpha coefficient used in the second stage of the optimization of the attack.
         :param increase_factor_alpha: The factor to increase the alpha coefficient used in the second stage of the
                                       optimization of the attack.
         :param num_iter_increase_alpha: Number of iterations to increase alpha.
@@ -150,16 +148,16 @@ class ImperceptibleASRPyTorch(EvasionAttack):
 
         # Set attack attributes
         self._targeted = True
-        self.initial_eps = initial_eps
-        self.max_iter_1st_stage = max_iter_1st_stage
-        self.max_iter_2nd_stage = max_iter_2nd_stage
-        self.learning_rate_1st_stage = learning_rate_1st_stage
-        self.learning_rate_2nd_stage = learning_rate_2nd_stage
+        self.eps = eps
+        self.max_iter_1 = max_iter_1
+        self.max_iter_2 = max_iter_2
+        self.learning_rate_1 = learning_rate_1
+        self.learning_rate_2 = learning_rate_2
         self.global_max_length = global_max_length
         self.initial_rescale = initial_rescale
-        self.rescale_factor = rescale_factor
-        self.num_iter_adjust_rescale = num_iter_adjust_rescale
-        self.initial_alpha = initial_alpha
+        self.decrease_factor_eps = decrease_factor_eps
+        self.num_iter_decrease_eps = num_iter_decrease_eps
+        self.alpha = alpha
         self.increase_factor_alpha = increase_factor_alpha
         self.num_iter_increase_alpha = num_iter_increase_alpha
         self.decrease_factor_alpha = decrease_factor_alpha
@@ -180,17 +178,17 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         self.global_optimal_delta.to(self.estimator.device)
 
         # Create the optimizers
-        self._optimizer_1st_stage_arg = optimizer_1st_stage
-        if optimizer_1st_stage is None:
-            self.optimizer_1st_stage = torch.optim.SGD(
-                params=[self.global_optimal_delta], lr=self.learning_rate_1st_stage
-            )
+        self._optimizer_arg_1 = optimizer_1
+        if self._optimizer_arg_1 is None:
+            self.optimizer_1 = torch.optim.Adam(params=[self.global_optimal_delta], lr=self.learning_rate_1)
+        else:
+            self.optimizer_1 = self._optimizer_arg_1(params=[self.global_optimal_delta], lr=self.learning_rate_1)
 
-        self._optimizer_2nd_stage_arg = optimizer_2nd_stage
-        if optimizer_2nd_stage is None:
-            self.optimizer_2nd_stage = torch.optim.SGD(
-                params=[self.global_optimal_delta], lr=self.learning_rate_2nd_stage
-            )
+        self._optimizer_arg_2 = optimizer_2
+        if self._optimizer_arg_2 is None:
+            self.optimizer_2 = torch.optim.Adam(params=[self.global_optimal_delta], lr=self.learning_rate_2)
+        else:
+            self.optimizer_2 = self._optimizer_arg_2(params=[self.global_optimal_delta], lr=self.learning_rate_2)
 
         # Setup for AMP use
         if self._use_amp:
@@ -201,9 +199,9 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             else:
                 enabled = True
 
-            self.estimator._model, [self.optimizer_1st_stage, self.optimizer_2nd_stage] = amp.initialize(
+            self.estimator._model, [self.optimizer_1, self.optimizer_2] = amp.initialize(
                 models=self.estimator._model,
-                optimizers=[self.optimizer_1st_stage, self.optimizer_2nd_stage],
+                optimizers=[self.optimizer_1, self.optimizer_2],
                 enabled=enabled,
                 opt_level=opt_level,
                 loss_scale=1.0,
@@ -251,23 +249,21 @@ class ImperceptibleASRPyTorch(EvasionAttack):
 
         for m in range(num_batch):
             # Batch indexes
-            batch_index_1, batch_index_2 = (
-                m * self.batch_size,
-                min((m + 1) * self.batch_size, len(x)),
-            )
+            batch_index_1, batch_index_2 = (m * self.batch_size, min((m + 1) * self.batch_size, len(x)))
 
             # First reset delta
             self.global_optimal_delta.data = torch.zeros(self.batch_size, self.global_max_length).type(torch.float64)
 
             # Next, reset optimizers
-            if self._optimizer_1st_stage_arg is not None:
-                self.optimizer_1st_stage = self._optimizer_1st_stage_arg(
-                    params=[self.global_optimal_delta], lr=self.learning_rate_1st_stage
-                )
-            if self._optimizer_2nd_stage_arg is not None:
-                self.optimizer_2nd_stage = self._optimizer_2nd_stage_arg(
-                    params=[self.global_optimal_delta], lr=self.learning_rate_2nd_stage
-                )
+            if self._optimizer_arg_1 is None:
+                self.optimizer_1 = torch.optim.Adam(params=[self.global_optimal_delta], lr=self.learning_rate_1)
+            else:
+                self.optimizer_1 = self._optimizer_arg_1(params=[self.global_optimal_delta], lr=self.learning_rate_1)
+
+            if self._optimizer_arg_2 is None:
+                self.optimizer_2 = torch.optim.Adam(params=[self.global_optimal_delta], lr=self.learning_rate_2)
+            else:
+                self.optimizer_2 = self._optimizer_arg_2(params=[self.global_optimal_delta], lr=self.learning_rate_2)
 
             # Then compute the batch
             adv_x_batch = self._generate_batch(adv_x[batch_index_1:batch_index_2], y[batch_index_1:batch_index_2])
@@ -369,9 +365,9 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         successful_adv_input = [None] * local_batch_size
         trans = [None] * local_batch_size
 
-        for iter_1st_stage_idx in range(self.max_iter_1st_stage):
+        for iter_1st_stage_idx in range(self.max_iter_1):
             # Zero the parameter gradients
-            self.optimizer_1st_stage.zero_grad()
+            self.optimizer_1.zero_grad()
 
             # Call to forward pass
             loss, local_delta, decoded_output, masked_adv_input, _ = self._forward_1st_stage(
@@ -388,7 +384,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             if self._use_amp:
                 from apex import amp
 
-                with amp.scale_loss(loss, self.optimizer_1st_stage) as scaled_loss:
+                with amp.scale_loss(loss, self.optimizer_1) as scaled_loss:
                     scaled_loss.backward()
 
             else:
@@ -398,25 +394,25 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             self.global_optimal_delta.grad = torch.sign(self.global_optimal_delta.grad)
 
             # Do optimization
-            self.optimizer_1st_stage.step()
+            self.optimizer_1.step()
 
             # Save the best adversarial example and adjust the rescale coefficient if successful
-            if iter_1st_stage_idx % self.num_iter_adjust_rescale == 0:
+            if iter_1st_stage_idx % self.num_iter_decrease_eps == 0:
                 for local_batch_size_idx in range(local_batch_size):
                     if decoded_output[local_batch_size_idx] == y[local_batch_size_idx]:
                         # Adjust the rescale coefficient
                         max_local_delta = np.max(np.abs(local_delta[local_batch_size_idx].detach().numpy()))
 
-                        if rescale[local_batch_size_idx][0] * self.initial_eps > max_local_delta:
-                            rescale[local_batch_size_idx] = max_local_delta / self.initial_eps
-                        rescale[local_batch_size_idx] *= self.rescale_factor
+                        if rescale[local_batch_size_idx][0] * self.eps > max_local_delta:
+                            rescale[local_batch_size_idx] = max_local_delta / self.eps
+                        rescale[local_batch_size_idx] *= self.decrease_factor_eps
 
                         # Save the best adversarial example
                         successful_adv_input[local_batch_size_idx] = masked_adv_input[local_batch_size_idx]
                         trans[local_batch_size_idx] = decoded_output[local_batch_size_idx]
 
             # If attack is unsuccessful
-            if iter_1st_stage_idx == self.max_iter_1st_stage - 1:
+            if iter_1st_stage_idx == self.max_iter_1 - 1:
                 for local_batch_size_idx in range(local_batch_size):
                     if successful_adv_input[local_batch_size_idx] is None:
                         successful_adv_input[local_batch_size_idx] = masked_adv_input[local_batch_size_idx]
@@ -461,7 +457,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
 
         # Compute perturbed inputs
         local_delta = self.global_optimal_delta[:local_batch_size, :local_max_length]
-        local_delta_rescale = torch.clamp(local_delta, -self.initial_eps, self.initial_eps).to(self.estimator.device)
+        local_delta_rescale = torch.clamp(local_delta, -self.eps, self.eps).to(self.estimator.device)
         local_delta_rescale *= torch.tensor(rescale).to(self.estimator.device)
         adv_input = local_delta_rescale + torch.tensor(original_input).to(self.estimator.device)
         masked_adv_input = adv_input * torch.tensor(input_mask).to(self.estimator.device)
@@ -521,7 +517,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         local_max_length = np.max(real_lengths)
 
         # Initialize alpha and rescale
-        alpha = np.array([self.initial_alpha] * local_batch_size, dtype=np.float64)
+        alpha = np.array([self.alpha] * local_batch_size, dtype=np.float64)
         rescale = np.ones([local_batch_size, local_max_length], dtype=np.float64) * self.initial_rescale
 
         # Reformat input
@@ -537,9 +533,9 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         best_loss_2nd_stage = [np.inf] * local_batch_size
         trans = [None] * local_batch_size
 
-        for iter_2nd_stage_idx in range(self.max_iter_2nd_stage):
+        for iter_2nd_stage_idx in range(self.max_iter_2):
             # Zero the parameter gradients
-            self.optimizer_2nd_stage.zero_grad()
+            self.optimizer_2.zero_grad()
 
             # Call to forward pass of the first stage
             loss_1st_stage, _, decoded_output, masked_adv_input, local_delta_rescale = self._forward_1st_stage(
@@ -567,14 +563,14 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             if self._use_amp:
                 from apex import amp
 
-                with amp.scale_loss(loss, self.optimizer_2nd_stage) as scaled_loss:
+                with amp.scale_loss(loss, self.optimizer_2) as scaled_loss:
                     scaled_loss.backward()
 
             else:
                 loss.backward()
 
             # Do optimization
-            self.optimizer_2nd_stage.step()
+            self.optimizer_2.step()
 
             # Save the best adversarial example and adjust the alpha coefficient
             for local_batch_size_idx in range(local_batch_size):
@@ -597,7 +593,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
                     alpha[local_batch_size_idx] = max(alpha[local_batch_size_idx], 0.0005)
 
             # If attack is unsuccessful
-            if iter_2nd_stage_idx == self.max_iter_2nd_stage - 1:
+            if iter_2nd_stage_idx == self.max_iter_2 - 1:
                 for local_batch_size_idx in range(local_batch_size):
                     if successful_adv_input[local_batch_size_idx] is None:
                         successful_adv_input[local_batch_size_idx] = masked_adv_input[local_batch_size_idx]
@@ -812,27 +808,27 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         """
         Apply attack-specific checks.
         """
-        if self.initial_eps <= 0:
-            raise ValueError("The perturbation size `initial_eps` has to be positive.")
+        if self.eps <= 0:
+            raise ValueError("The perturbation size `eps` has to be positive.")
 
-        if not isinstance(self.max_iter_1st_stage, int):
+        if not isinstance(self.max_iter_1, int):
             raise ValueError("The maximum number of iterations must be of type int.")
-        if not self.max_iter_1st_stage > 0:
+        if not self.max_iter_1 > 0:
             raise ValueError("The maximum number of iterations must be greater than 0.")
 
-        if not isinstance(self.max_iter_2nd_stage, int):
+        if not isinstance(self.max_iter_2, int):
             raise ValueError("The maximum number of iterations must be of type int.")
-        if not self.max_iter_2nd_stage > 0:
+        if not self.max_iter_2 > 0:
             raise ValueError("The maximum number of iterations must be greater than 0.")
 
-        if not isinstance(self.learning_rate_1st_stage, float):
+        if not isinstance(self.learning_rate_1, float):
             raise ValueError("The learning rate must be of type float.")
-        if not self.learning_rate_1st_stage > 0.0:
+        if not self.learning_rate_1 > 0.0:
             raise ValueError("The learning rate must be greater than 0.0.")
 
-        if not isinstance(self.learning_rate_2nd_stage, float):
+        if not isinstance(self.learning_rate_2, float):
             raise ValueError("The learning rate must be of type float.")
-        if not self.learning_rate_2nd_stage > 0.0:
+        if not self.learning_rate_2 > 0.0:
             raise ValueError("The learning rate must be greater than 0.0.")
 
         if not isinstance(self.global_max_length, int):
@@ -845,20 +841,20 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         if not self.initial_rescale > 0.0:
             raise ValueError("The initial rescale coefficient must be greater than 0.0.")
 
-        if not isinstance(self.rescale_factor, float):
-            raise ValueError("The rescale factor must be of type float.")
-        if not self.rescale_factor > 0.0:
-            raise ValueError("The rescale factor must be greater than 0.0.")
+        if not isinstance(self.decrease_factor_eps, float):
+            raise ValueError("The rescale factor of `eps` must be of type float.")
+        if not self.decrease_factor_eps > 0.0:
+            raise ValueError("The rescale factor of `eps` must be greater than 0.0.")
 
-        if not isinstance(self.num_iter_adjust_rescale, int):
+        if not isinstance(self.num_iter_decrease_eps, int):
             raise ValueError("The number of iterations must be of type int.")
-        if not self.num_iter_adjust_rescale > 0:
+        if not self.num_iter_decrease_eps > 0:
             raise ValueError("The number of iterations must be greater than 0.")
 
-        if not isinstance(self.initial_alpha, float):
-            raise ValueError("The initial alpha must be of type float.")
-        if not self.initial_alpha > 0.0:
-            raise ValueError("The initial alpha must be greater than 0.0.")
+        if not isinstance(self.alpha, float):
+            raise ValueError("The value of alpha must be of type float.")
+        if not self.alpha > 0.0:
+            raise ValueError("The value of alpha must be greater than 0.0.")
 
         if not isinstance(self.increase_factor_alpha, float):
             raise ValueError("The factor to increase alpha must be of type float.")
