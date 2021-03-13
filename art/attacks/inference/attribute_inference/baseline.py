@@ -44,12 +44,11 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
     The idea is to train a simple neural network to learn the attacked feature from the rest of the features. Should
     be used to compare with other attribute inference results.
     """
+
     _estimator_requirements = ()
 
     def __init__(
-        self,
-        attack_model: Optional["CLASSIFIER_TYPE"] = None,
-        attack_feature: Union[int, slice] = 0,
+        self, attack_model: Optional["CLASSIFIER_TYPE"] = None, attack_feature: Union[int, slice] = 0,
     ):
         """
         Create an AttributeInferenceBaseline attack instance.

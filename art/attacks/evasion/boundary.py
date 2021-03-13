@@ -204,8 +204,9 @@ class BoundaryAttack(EvasionAttack):
             return x
 
         # If an initial adversarial example found, then go with boundary attack
-        x_adv = self._attack(initial_sample[0], x, y_p, initial_sample[1], self.delta, self.epsilon, clip_min,
-                             clip_max,)
+        x_adv = self._attack(
+            initial_sample[0], x, y_p, initial_sample[1], self.delta, self.epsilon, clip_min, clip_max,
+        )
 
         return x_adv
 

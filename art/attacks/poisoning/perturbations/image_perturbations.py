@@ -86,15 +86,15 @@ def add_pattern_bd(x: np.ndarray, distance: int = 2, pixel_value: int = 1) -> np
 
 
 def insert_image(
-        x: np.ndarray,
-        backdoor_path: str = "../utils/data/backdoors/alert.png",
-        channels_first: bool = False,
-        random: bool = True,
-        x_shift: int = 0,
-        y_shift: int = 0,
-        size: Optional[Tuple[int, int]] = None,
-        mode: str = "L",
-        blend=0.8,
+    x: np.ndarray,
+    backdoor_path: str = "../utils/data/backdoors/alert.png",
+    channels_first: bool = False,
+    random: bool = True,
+    x_shift: int = 0,
+    y_shift: int = 0,
+    size: Optional[Tuple[int, int]] = None,
+    mode: str = "L",
+    blend=0.8,
 ) -> np.ndarray:
     """
     Augments a matrix by setting a checkboard-like pattern of values some `distance` away from the bottom-right
@@ -115,8 +115,11 @@ def insert_image(
     n_dim = len(x.shape)
     if n_dim == 4:
         return np.array(
-            [insert_image(single_img, backdoor_path, channels_first, random, x_shift, y_shift, size, mode, blend)
-             for single_img in x])
+            [
+                insert_image(single_img, backdoor_path, channels_first, random, x_shift, y_shift, size, mode, blend)
+                for single_img in x
+            ]
+        )
 
     if n_dim != 3:
         raise ValueError("Invalid array shape " + str(x.shape))
@@ -128,17 +131,17 @@ def insert_image(
     width, height, num_channels = x.shape
 
     no_color = num_channels == 1
-    orig_img = Image.new('RGBA', (width, height), 0)
-    backdoored_img = Image.new('RGBA', (width, height), 0)
+    orig_img = Image.new("RGBA", (width, height), 0)
+    backdoored_img = Image.new("RGBA", (width, height), 0)
 
     if no_color:
-        backdoored_input = Image.fromarray((data * 255).astype('uint8').squeeze(axis=2), mode=mode)
+        backdoored_input = Image.fromarray((data * 255).astype("uint8").squeeze(axis=2), mode=mode)
     else:
-        backdoored_input = Image.fromarray((data * 255).astype('uint8'), mode=mode)
+        backdoored_input = Image.fromarray((data * 255).astype("uint8"), mode=mode)
 
     orig_img.paste(backdoored_input)
 
-    trigger = Image.open(backdoor_path).convert('RGBA')
+    trigger = Image.open(backdoor_path).convert("RGBA")
     if size:
         trigger = trigger.resize(size)
 
