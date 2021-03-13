@@ -27,7 +27,7 @@ import scipy
 from art.utils import check_and_transform_label_format, is_probability
 
 if TYPE_CHECKING:
-    from art.estimators.classification import Classifier
+    from art.estimators.classification.classifier import Classifier
 
 
 def PDTP(

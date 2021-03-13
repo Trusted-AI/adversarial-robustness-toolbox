@@ -56,7 +56,7 @@ def SklearnClassifier(
     clip_values: Optional["CLIP_VALUES_TYPE"] = None,
     preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
     postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-    preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+    preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
     use_logits: bool = False,
 ) -> "ScikitlearnClassifier":
     """
@@ -103,7 +103,7 @@ class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):  # lgtm [py/
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
         use_logits: bool = False,
     ) -> None:
         """
@@ -161,7 +161,7 @@ class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):  # lgtm [py/
         """
         Perform prediction for a batch of inputs.
 
-        :param x: Test set.
+        :param x: Input samples.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         :raises `ValueError`: If the classifier does not have methods `predict` or `predict_proba`.
         """
@@ -233,6 +233,8 @@ class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):  # lgtm [py/
         _input_shape: Optional[Tuple[int, ...]]
         if hasattr(model, "n_features_"):
             _input_shape = (model.n_features_,)
+        elif hasattr(model, "n_features_in_"):
+            _input_shape = (model.n_features_in_,)
         elif hasattr(model, "feature_importances_"):
             _input_shape = (len(model.feature_importances_),)
         elif hasattr(model, "coef_"):
@@ -271,7 +273,7 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
     ) -> None:
         """
         Create a `Classifier` instance from a scikit-learn Decision Tree Classifier model.
@@ -417,7 +419,7 @@ class ScikitlearnDecisionTreeRegressor(ScikitlearnDecisionTreeClassifier):
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
     ) -> None:
         """
         Create a `Regressor` instance from a scikit-learn Decision Tree Regressor model.
@@ -507,7 +509,7 @@ class ScikitlearnExtraTreeClassifier(ScikitlearnDecisionTreeClassifier):
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
     ) -> None:
         """
         Create a `Classifier` instance from a scikit-learn Extra TreeClassifier Classifier model.
@@ -546,7 +548,7 @@ class ScikitlearnAdaBoostClassifier(ScikitlearnClassifier):
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
     ) -> None:
         """
         Create a `Classifier` instance from a scikit-learn AdaBoost Classifier model.
@@ -585,7 +587,7 @@ class ScikitlearnBaggingClassifier(ScikitlearnClassifier):
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
     ) -> None:
         """
         Create a `Classifier` instance from a scikit-learn Bagging Classifier model.
@@ -625,7 +627,7 @@ class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier, DecisionTreeMixin):
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
     ):
         """
         Create a `Classifier` instance from a scikit-learn Extra Trees Classifier model.
@@ -698,7 +700,7 @@ class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier, DecisionTreeM
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
     ) -> None:
         """
         Create a `Classifier` instance from a scikit-learn Gradient Boosting Classifier model.
@@ -772,7 +774,7 @@ class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
     ) -> None:
         """
         Create a `Classifier` instance from a scikit-learn Random Forest Classifier model.
@@ -845,7 +847,7 @@ class ScikitlearnLogisticRegression(ClassGradientsMixin, LossGradientsMixin, Sci
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
     ) -> None:
         """
         Create a `Classifier` instance from a scikit-learn Logistic Regression model.
@@ -1040,7 +1042,7 @@ class ScikitlearnGaussianNB(ScikitlearnClassifier):
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
     ) -> None:
         """
         Create a `Classifier` instance from a scikit-learn Gaussian Naive Bayes (GaussianNB) model.
@@ -1089,7 +1091,7 @@ class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassif
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
     ) -> None:
         """
         Create a `Classifier` instance from a scikit-learn C-Support Vector Classification model.
@@ -1302,7 +1304,7 @@ class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassif
                 2
                 * self.model._gamma
                 * (-1)
-                * np.exp(-self.model._gamma * np.linalg.norm(x_sample - sv, ord=2))
+                * np.exp(-self.model._gamma * np.linalg.norm(x_sample - sv, ord=2) ** 2)
                 * (x_sample - sv)
             )
         elif self.model.kernel == "sigmoid":
@@ -1460,7 +1462,7 @@ class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassif
         """
         Perform prediction for a batch of inputs.
 
-        :param x: Test set.
+        :param x: Input samples.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
         # pylint: disable=E0001

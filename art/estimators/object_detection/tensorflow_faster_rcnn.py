@@ -61,7 +61,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         channels_first: bool = False,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
         attack_losses: Tuple[str, ...] = (
             "Loss/RPNLoss/localization_loss",
             "Loss/RPNLoss/objectness_loss",
@@ -106,6 +106,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
 
         # Super initialization
         super().__init__(
+            model=model,
             clip_values=clip_values,
             channels_first=channels_first,
             preprocessing_defences=preprocessing_defences,
@@ -492,7 +493,4 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         raise NotImplementedError
 
     def get_activations(self):
-        raise NotImplementedError
-
-    def set_learning_phase(self, train: bool) -> None:
         raise NotImplementedError

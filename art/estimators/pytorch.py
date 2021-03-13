@@ -60,9 +60,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
 
         preprocessing = kwargs.get("preprocessing")
         if isinstance(preprocessing, tuple):
-            from art.preprocessing.standardisation_mean_std.standardisation_mean_std_pytorch import (
-                StandardisationMeanStdPyTorch,
-            )
+            from art.preprocessing.standardisation_mean_std.pytorch import StandardisationMeanStdPyTorch
 
             kwargs["preprocessing"] = StandardisationMeanStdPyTorch(mean=preprocessing[0], std=preprocessing[1])
 
@@ -153,11 +151,8 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         :rtype: Format as expected by the `model`
         """
         import torch
-
-        from art.preprocessing.standardisation_mean_std.standardisation_mean_std import StandardisationMeanStd
-        from art.preprocessing.standardisation_mean_std.standardisation_mean_std_pytorch import (
-            StandardisationMeanStdPyTorch,
-        )
+        from art.preprocessing.standardisation_mean_std.numpy import StandardisationMeanStd
+        from art.preprocessing.standardisation_mean_std.pytorch import StandardisationMeanStdPyTorch
 
         if not self.preprocessing_operations:
             return x, y
@@ -230,11 +225,8 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         :rtype: Format as expected by the `model`
         """
         import torch
-
-        from art.preprocessing.standardisation_mean_std.standardisation_mean_std import StandardisationMeanStd
-        from art.preprocessing.standardisation_mean_std.standardisation_mean_std_pytorch import (
-            StandardisationMeanStdPyTorch,
-        )
+        from art.preprocessing.standardisation_mean_std.numpy import StandardisationMeanStd
+        from art.preprocessing.standardisation_mean_std.pytorch import StandardisationMeanStdPyTorch
 
         if not self.preprocessing_operations:
             return gradients

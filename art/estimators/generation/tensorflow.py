@@ -60,7 +60,7 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
         feed_dict: Optional[Dict[Any, Any]] = None,
     ):
         """
@@ -162,7 +162,7 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
         y = self._sess.run(self._model, feed_dict=feed_dict)
         return y
 
-    def loss_gradient(self, x, y, **kwargs) -> "np.ndarray":
+    def loss_gradient(self, x, y, training_mode: bool = False, **kwargs) -> "np.ndarray":
         raise NotImplementedError
 
     def fit(self, x, y, batch_size=128, nb_epochs=10, **kwargs):
@@ -179,12 +179,6 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
         """
         raise NotImplementedError
 
-    def set_learning_phase(self, train: bool) -> None:
-        """
-        do nothing.
-        """
-        raise NotImplementedError
-
     @property
     def model(self) -> "tf.Tensor":
         """
@@ -193,15 +187,6 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
         :return: The generator tensor.
         """
         return self._model
-
-    @property
-    def input_ph(self) -> "tf.Placeholder":
-        """
-        Returns the encoding seed input of the generator of shape `(batch_size, encoding_length)`.
-
-        :return: The encoding seed input of the generator.
-        """
-        return self._input_ph
 
     @property
     def encoding_length(self) -> int:

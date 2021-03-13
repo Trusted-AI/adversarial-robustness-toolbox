@@ -260,11 +260,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
                 enabled = True
 
             self._model, self._optimizer = amp.initialize(
-                models=self._model,
-                optimizers=self._optimizer,
-                enabled=enabled,
-                opt_level=opt_level,
-                loss_scale=1.0,
+                models=self._model, optimizers=self._optimizer, enabled=enabled, opt_level=opt_level, loss_scale=1.0,
             )
 
     def predict(
@@ -279,10 +275,9 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         :param batch_size: Batch size.
         :param transcription_output: Indicate whether the function will produce probability or transcription as
                                      prediction output. If transcription_output is not available, then probability
-                                     output is returned.
-        :type transcription_output: `bool`
+                                     output is returned. Default: True
         :return: Predicted probability (if transcription_output False) or transcription (default, if
-                 transcription_output is True or None):
+                 transcription_output is True):
                  - Probability return is a tuple of (probs, sizes), where `probs` is the probability of characters of
                  shape (nb_samples, seq_length, nb_classes) and `sizes` is the real sequence length of shape
                  (nb_samples,).
@@ -350,9 +345,9 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         result_outputs[batch_idx] = result_outputs_
 
         # Check if users want transcription outputs
-        transcription_output = kwargs.get("transcription_output")
+        transcription_output = kwargs.get("transcription_output", True)
 
-        if transcription_output is None or transcription_output is False:
+        if transcription_output is False:
             return result_outputs, result_output_sizes
 
         # Now users want transcription outputs
@@ -527,10 +522,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
                 self._optimizer.step()
 
     def preprocess_transform_model_input(
-        self,
-        x: "torch.Tensor",
-        y: np.ndarray,
-        real_lengths: np.ndarray,
+        self, x: "torch.Tensor", y: np.ndarray, real_lengths: np.ndarray,
     ) -> Tuple["torch.Tensor", "torch.Tensor", "torch.Tensor", "torch.Tensor", List]:
         """
         Apply preprocessing and then transform the user input space into the model input space. This function is used
@@ -561,11 +553,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
 
         # Transform the input space
         inputs, targets, input_rates, target_sizes, batch_idx = self._transform_model_input(
-            x=x,
-            y=y,
-            compute_gradient=False,
-            tensor_input=True,
-            real_lengths=real_lengths,
+            x=x, y=y, compute_gradient=False, tensor_input=True, real_lengths=real_lengths,
         )
 
         return inputs, targets, input_rates, target_sizes, batch_idx
@@ -734,7 +722,4 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
     def get_activations(
         self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
     ) -> np.ndarray:
-        raise NotImplementedError
-
-    def set_learning_phase(self, train: bool) -> None:
         raise NotImplementedError

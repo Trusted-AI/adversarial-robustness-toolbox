@@ -140,7 +140,3 @@ class TestDeprecatedKeyword:
         exc_msg = "Deprecated keyword argument must default to the Decorator singleton."
         with pytest.raises(ValueError, match=exc_msg):
             simple_addition(a=1)
-
-
-if __name__ == "__main__":
-    pytest.cmdline.main("-q -s {} --mlFramework=tensorflow --durations=0".format(__file__).split(" "))

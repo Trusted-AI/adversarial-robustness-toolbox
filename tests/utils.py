@@ -146,7 +146,7 @@ def check_adverse_predicted_sample_y(y_pred_adv, y_non_adv):
 def is_valid_framework(framework):
     if framework not in art_supported_frameworks:
         raise Exception(
-            "mlFramework value {0} is unsupported. Please use one of these valid values: {1}".format(
+            "Framework value {0} is unsupported. Please use one of these valid values: {1}".format(
                 framework, " ".join(art_supported_frameworks)
             )
         )
