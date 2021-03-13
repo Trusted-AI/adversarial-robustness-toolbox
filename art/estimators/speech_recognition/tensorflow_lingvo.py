@@ -513,7 +513,9 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
             gradient = gradient_padded[:length]
             gradients.append(gradient)
 
-        return np.array(gradients, dtype=object)
+        # for ragged input, use np.object dtype
+        dtype = np.float32 if x.ndim != 1 else np.object
+        return np.array(gradients, dtype=dtype)
 
     def _loss_gradient_per_sequence(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
         """
@@ -539,7 +541,9 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
             gradient = self._sess.run(self._loss_gradient_op, feed_dict)
             gradients.append(np.squeeze(gradient))
 
-        return np.array(gradients, dtype=object)
+        # for ragged input, use np.object dtype
+        dtype = np.float32 if x.ndim != 1 else np.object
+        return np.array(gradients, dtype=dtype)
 
     def set_learning_phase(self, train: bool) -> None:
         raise NotImplementedError

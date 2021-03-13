@@ -19,15 +19,14 @@
 This module implements the abstract estimator `PyTorchEstimator` for PyTorch models.
 """
 import logging
-from typing import Any, Tuple
+from typing import TYPE_CHECKING, Any, List, Tuple
 
 import numpy as np
 
-from art.estimators.estimator import (
-    BaseEstimator,
-    LossGradientsMixin,
-    NeuralNetworkMixin,
-)
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNetworkMixin
+
+if TYPE_CHECKING:
+    import torch
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +52,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
                be divided by the second one.
         :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
         """
-        import torch
+        import torch  # lgtm [py/repeated-import]
 
         preprocessing = kwargs.get("preprocessing")
         if isinstance(preprocessing, tuple):
@@ -151,7 +150,8 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         :return: Tuple of `x` and `y` after applying the defences and standardisation.
         :rtype: Format as expected by the `model`
         """
-        import torch
+        import torch  # lgtm [py/repeated-import]
+
         from art.preprocessing.standardisation_mean_std.standardisation_mean_std import StandardisationMeanStd
         from art.preprocessing.standardisation_mean_std.standardisation_mean_std_pytorch import (
             StandardisationMeanStdPyTorch,
@@ -227,7 +227,8 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         :return: Gradients after backward pass through preprocessing defences.
         :rtype: Format as expected by the `model`
         """
-        import torch
+        import torch  # lgtm [py/repeated-import]
+
         from art.preprocessing.standardisation_mean_std.standardisation_mean_std import StandardisationMeanStd
         from art.preprocessing.standardisation_mean_std.standardisation_mean_std_pytorch import (
             StandardisationMeanStdPyTorch,
@@ -281,3 +282,49 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
             raise NotImplementedError("The current combination of preprocessing types is not supported.")
 
         return gradients
+
+    def _set_layer(self, train: bool, layerinfo: List["torch.nn.modules.Module"]) -> None:
+        """
+        Set all layers that are an instance of `layerinfo` into training or evaluation mode.
+
+        :param train: False for evaluation mode.
+        :param layerinfo: List of module types.
+        """
+        import torch  # lgtm [py/repeated-import]
+
+        assert all([issubclass(l, torch.nn.modules.Module) for l in layerinfo])
+
+        def set_train(layer, layerinfo=layerinfo):
+            "Set layer into training mode if instance of `layerinfo`."
+            if isinstance(layer, tuple(layerinfo)):
+                layer.train()
+
+        def set_eval(layer, layerinfo=layerinfo):
+            "Set layer into evaluation mode if instance of `layerinfo`."
+            if isinstance(layer, tuple(layerinfo)):
+                layer.eval()
+
+        if train:
+            self._model.apply(set_train)
+        else:
+            self._model.apply(set_eval)
+
+    def set_dropout(self, train: bool) -> None:
+        """
+        Set all dropout layers into train or eval mode.
+
+        :param train: False for evaluation mode.
+        """
+        import torch  # lgtm [py/repeated-import]
+
+        self._set_layer(train=train, layerinfo=[torch.nn.modules.dropout._DropoutNd])
+
+    def set_batchnorm(self, train: bool) -> None:
+        """
+        Set all batch normalization layers into train or eval mode.
+
+        :param train: False for evaluation mode.
+        """
+        import torch  # lgtm [py/repeated-import]
+
+        self._set_layer(train=train, layerinfo=[torch.nn.modules.batchnorm._BatchNorm])

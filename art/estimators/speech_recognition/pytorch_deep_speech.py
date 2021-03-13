@@ -22,23 +22,22 @@ Mandarin in PyTorch.
 | Paper link: https://arxiv.org/abs/1512.02595
 """
 import logging
-from typing import List, Optional, Tuple, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional, Tuple, Union
 
 import numpy as np
 
-from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizerMixin
-from art.estimators.pytorch import PyTorchEstimator
-from art.utils import get_file
 from art import config
+from art.estimators.pytorch import PyTorchEstimator
+from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizerMixin
+from art.utils import get_file
 
 if TYPE_CHECKING:
     import torch
-
     from deepspeech_pytorch.model import DeepSpeech
 
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
-    from art.defences.preprocessor.preprocessor import Preprocessor
     from art.defences.postprocessor.postprocessor import Postprocessor
+    from art.defences.preprocessor.preprocessor import Preprocessor
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -124,7 +123,6 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
                             if available otherwise run on CPU.
         """
         import torch  # lgtm [py/repeated-import]
-
         from deepspeech_pytorch.configs.inference_config import LMConfig
         from deepspeech_pytorch.enums import DecoderType
         from deepspeech_pytorch.utils import load_decoder, load_model
@@ -273,10 +271,9 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         :param batch_size: Batch size.
         :param transcription_output: Indicate whether the function will produce probability or transcription as
                                      prediction output. If transcription_output is not available, then probability
-                                     output is returned.
-        :type transcription_output: `bool`
+                                     output is returned. Default: True
         :return: Predicted probability (if transcription_output False) or transcription (default, if
-                 transcription_output is True or None):
+                 transcription_output is True):
                  - Probability return is a tuple of (probs, sizes), where `probs` is the probability of characters of
                  shape (nb_samples, seq_length, nb_classes) and `sizes` is the real sequence length of shape
                  (nb_samples,).
@@ -344,9 +341,9 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         result_outputs[batch_idx] = result_outputs_
 
         # Check if users want transcription outputs
-        transcription_output = kwargs.get("transcription_output")
+        transcription_output = kwargs.get("transcription_output", True)
 
-        if transcription_output is None or transcription_output is False:
+        if transcription_output is False:
             return result_outputs, result_output_sizes
 
         # Now users want transcription outputs
@@ -375,8 +372,10 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         x_ = np.empty(len(x), dtype=object)
         x_[:] = list(x)
 
-        # Put the model in the training mode
+        # Put the model in the training mode, otherwise CUDA can't backpropagate through the model.
+        # However, model uses batch norm layers which need to be frozen
         self._model.train()
+        self.set_batchnorm(train=False)
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x_, y, fit=False)
@@ -427,6 +426,8 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
             results = np.array([i for i in results], dtype=x.dtype)
             assert results.shape == x.shape and results.dtype == x.dtype
 
+        # Unfreeze batch norm layers again
+        self.set_batchnorm(train=True)
         return results
 
     def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, **kwargs) -> None:
@@ -582,7 +583,6 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         """
         import torch  # lgtm [py/repeated-import]
         import torchaudio
-
         from deepspeech_pytorch.loader.data_loader import _collate_fn
 
         # These parameters are needed for the transformation
