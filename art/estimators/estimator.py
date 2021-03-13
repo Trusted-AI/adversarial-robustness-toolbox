@@ -109,7 +109,7 @@ class BaseEstimator(ABC):
             raise ValueError("Preprocessing argument not recognised.")
 
     @staticmethod
-    def _set_preprocessing(preprocessing: Union["PREPROCESSING_TYPE", "Preprocessor"]) -> "Preprocessor":
+    def _set_preprocessing(preprocessing: Optional[Union["PREPROCESSING_TYPE", "Preprocessor"]]) -> Optional["Preprocessor"]:
         from art.defences.preprocessor.preprocessor import Preprocessor
 
         if preprocessing is None:
