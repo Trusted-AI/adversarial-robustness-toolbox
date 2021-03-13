@@ -278,6 +278,11 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         # Get gradient wrt loss; invert it if attack is targeted
         grad = self.estimator.loss_gradient(x=x, y=y) * (1 - 2 * int(self.targeted))
 
+        # Check for nan before normalisation an replace with 0
+        if torch.any(grad.isnan()):
+            logger.warning("Elements of the loss gradient are NaN and have been replaced with 0.0.")
+            grad[grad.isnan()] = 0.0
+
         # Apply mask
         if mask is not None:
             grad = torch.where(mask == 0.0, torch.tensor(0.0), grad)

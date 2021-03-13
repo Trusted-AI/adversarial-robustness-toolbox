@@ -340,12 +340,20 @@ class FastGradientMethod(EvasionAttack):
         # Get gradient wrt loss; invert it if attack is targeted
         grad = self.estimator.loss_gradient(batch, batch_labels) * (1 - 2 * int(self.targeted))
 
+        # Check for NaN before normalisation an replace with 0
+        if np.isnan(grad).any():
+            logger.warning("Elements of the loss gradient are NaN and have been replaced with 0.0.")
+            grad = np.where(np.isnan(grad), 0.0, grad)
+
         # Apply mask
         if mask is not None:
             grad = np.where(mask == 0.0, 0.0, grad)
 
         # Apply norm bound
         def _apply_norm(grad, object_type=False):
+            if np.isinf(grad).any():
+                logger.info("The loss gradient array contains at least one positive or negative infinity.")
+
             if self.norm in [np.inf, "inf"]:
                 grad = np.sign(grad)
             elif self.norm == 1:
