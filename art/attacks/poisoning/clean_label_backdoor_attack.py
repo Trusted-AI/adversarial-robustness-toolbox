@@ -21,9 +21,9 @@ This module implements Backdoor Attacks to poison data used in ML models.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-import numpy as np
-
 from typing import Optional, Tuple, TYPE_CHECKING, Union
+
+import numpy as np
 
 from art.attacks.attack import PoisoningAttackBlackBox
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
@@ -102,7 +102,7 @@ class PoisoningAttackCleanLabelBackdoor(PoisoningAttackBlackBox):
         self._check_params()
 
     def poison(
-        self, x: np.ndarray, y: Optional[np.ndarray] = None, broadcast=False, **kwargs
+        self, x: np.ndarray, y: Optional[np.ndarray] = None, broadcast: bool = False, **kwargs
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Calls perturbation function on input x and returns the perturbed input and poison labels for the data.

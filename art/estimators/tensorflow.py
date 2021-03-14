@@ -84,8 +84,8 @@ class TensorFlowEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator)
         """
         if self._sess is not None:
             return self._sess
-        else:
-            raise NotImplementedError("A valid TensorFlow session is not available.")
+
+        raise NotImplementedError("A valid TensorFlow session is not available.")
 
 
 class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
@@ -177,10 +177,7 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         if not self.preprocessing_operations:
             return x, y
 
-        if isinstance(x, tf.Tensor):
-            input_is_tensor = True
-        else:
-            input_is_tensor = False
+        input_is_tensor = isinstance(x, tf.Tensor)
 
         if self.all_framework_preprocessing and not (not input_is_tensor and x.dtype == np.object):
             # Convert np arrays to torch tensors.
@@ -245,10 +242,7 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         if not self.preprocessing_operations:
             return gradients
 
-        if isinstance(x, tf.Tensor):
-            input_is_tensor = True
-        else:
-            input_is_tensor = False
+        input_is_tensor = isinstance(x, tf.Tensor)
 
         if self.all_framework_preprocessing and not (not input_is_tensor and x.dtype == np.object):
             with tf.GradientTape() as tape:

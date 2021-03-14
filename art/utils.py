@@ -53,7 +53,6 @@ CLIP_VALUES_TYPE = Tuple[Union[int, float, np.ndarray], Union[int, float, np.nda
 
 if TYPE_CHECKING:
     # pylint: disable=R0401
-
     from art.defences.preprocessor.preprocessor import Preprocessor
 
     PREPROCESSING_TYPE = Optional[
@@ -904,11 +903,11 @@ def load_nursery(raw: bool = False, test_set: float = 0.2, transform_social: boo
     def modify_label(value):  # 5 classes
         if value == "not_recom":
             return 0
-        elif value == "very_recom":
+        if value == "very_recom":
             return 1
-        elif value == "priority":
+        if value == "priority":
             return 2
-        elif value == "spec_prior":
+        if value == "spec_prior":
             return 3
         else:
             raise Exception("Bad label value: %s" % value)
@@ -921,8 +920,7 @@ def load_nursery(raw: bool = False, test_set: float = 0.2, transform_social: boo
         def modify_social(value):
             if value == "problematic":
                 return 1
-            else:
-                return 0
+            return 0
 
         data["social"] = data["social"].apply(modify_social)
         categorical_features.remove("social")
@@ -949,7 +947,6 @@ def load_nursery(raw: bool = False, test_set: float = 0.2, transform_social: boo
         data = pd.concat([label, scaled_features], axis=1, join="inner")
 
     features = data.drop(["label"], axis=1)
-    # print(features.columns)
     min_, max_ = np.amin(features.to_numpy()), np.amax(features.to_numpy())
 
     # Split training and test sets
@@ -1029,8 +1026,6 @@ def get_file(filename: str, url: str, path: Optional[str] = None, extract: bool 
     :return: Path to the downloaded file.
     """
     if path is None:
-        from art import config
-
         path_ = os.path.expanduser(config.ART_DATA_PATH)
     else:
         path_ = os.path.expanduser(path)

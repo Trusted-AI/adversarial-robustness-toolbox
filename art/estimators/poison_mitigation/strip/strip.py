@@ -109,7 +109,7 @@ class STRIPMixin(AbstainPredictorMixin):
         entropies = []
 
         # Find normal entropy distribution
-        for i, img in enumerate(tqdm(x_val)):
+        for _, img in enumerate(tqdm(x_val)):
             selected_indices = np.random.choice(np.arange(len(x_val)), self.num_samples)
             perturbed_images = np.array([combine_images(img, x_val[idx]) for idx in selected_indices])
             perturbed_predictions = self.predict_fn(perturbed_images)

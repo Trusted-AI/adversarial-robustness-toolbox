@@ -137,18 +137,18 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
                 raise ValueError("Missing parameter `values`.")
             values: np.ndarray = kwargs.get("values")
             return np.array([values[np.argmax(arr)] for arr in self.attack_model.predict(x_test)])
-        else:
-            if "values" in kwargs.keys():
-                values = kwargs.get("values")
-                predictions = self.attack_model.predict(x_test).astype(np.float32)
-                i = 0
-                for column in predictions.T:
-                    for index in range(len(values[i])):
-                        np.place(column, [column == index], values[i][index])
-                    i += 1
-                return np.array(predictions)
-            else:
-                return np.array(self.attack_model.predict(x_test))
+
+        if "values" in kwargs.keys():
+            values = kwargs.get("values")
+            predictions = self.attack_model.predict(x_test).astype(np.float32)
+            i = 0
+            for column in predictions.T:
+                for index in range(len(values[i])):
+                    np.place(column, [column == index], values[i][index])
+                i += 1
+            return np.array(predictions)
+
+        return np.array(self.attack_model.predict(x_test))
 
     def _check_params(self) -> None:
         if not isinstance(self.attack_feature, int) and not isinstance(self.attack_feature, slice):
