@@ -128,8 +128,6 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
             self,
             x: np.ndarray,
             y: Optional[np.ndarray] = None,
-            mean: Optional[List[float]] = None,
-            std: Optional[List[float]] = None,
             **kwargs
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -137,8 +135,6 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
 
         :param x: The base images to begin the poison process.
         :param y: Target label
-        :param mean: The mean of the dataset. Defaults to CIFAR10 Mean.
-        :param std: The standard deviation of the dataset. Defaults to CIFAR std
         :return: An tuple holding the (poisoning examples, poisoning labels).
         """
         import torch
@@ -156,16 +152,6 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
             def forward(self):
                 return self.poison
 
-        if mean is None:
-            mean = torch.Tensor([0.4914, 0.4822, 0.4465]).reshape(1, 3, 1, 1)
-        else:
-            mean = torch.Tensor(mean).reshape(1, 3, 1, 1)
-
-        if std is None:
-            std = torch.Tensor([0.2023, 0.1994, 0.2010]).reshape(1, 3, 1, 1)
-        else:
-            std = torch.Tensor(std).reshape(1, 3, 1, 1)
-
         base_tensor_list = [torch.from_numpy(sample).to(self.estimator.device) for sample in x]
         poison_batch = PoisonBatch([torch.from_numpy(np.copy(sample)).to(self.estimator.device) for sample in x])
         opt_method = self.opt.lower()
@@ -178,7 +164,7 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
             optimizer = torch.optim.Adam(poison_batch.parameters(), lr=self.learning_rate, betas=(self.momentum, 0.999))
 
         base_tensor_batch = torch.stack(base_tensor_list, 0)
-        base_range01_batch = base_tensor_batch * std + mean
+        base_range01_batch = base_tensor_batch
 
         # Because we have turned on DP for the substitute networks,
         # the target image's feature becomes random.
@@ -217,13 +203,13 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
             optimizer.step()
 
             # clip the perturbations into the range
-            perturb_range01 = torch.clamp((poison_batch.poison.data - base_tensor_batch) * std,
+            perturb_range01 = torch.clamp((poison_batch.poison.data - base_tensor_batch),
                                           -self.epsilon,
                                           self.epsilon)
             perturbed_range01 = torch.clamp(base_range01_batch.data + perturb_range01.data,
                                             self.estimator.clip_values[0],
                                             self.estimator.clip_values[1])
-            poison_batch.poison.data = (perturbed_range01 - mean) / std
+            poison_batch.poison.data = perturbed_range01
 
         if y is None:
             raise ValueError("You must pass in the target label as y")
