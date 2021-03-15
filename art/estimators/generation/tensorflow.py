@@ -179,6 +179,9 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
         """
         raise NotImplementedError
 
+    def compute_loss(self, x: "np.ndarray", y: "np.ndarray", **kwargs) -> "np.ndarray":
+        raise NotImplementedError
+
     @property
     def model(self) -> "tf.Tensor":
         """
