@@ -92,7 +92,7 @@ class ClassifierMixin(ABC, metaclass=InputFilter):
     Mixin abstract base class defining functionality for classifiers.
     """
 
-    # estimator_params = ["nb_classes"]
+    estimator_params = ["nb_classes"]
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
