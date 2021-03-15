@@ -245,7 +245,7 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
             for _ in range(mini_batch_size):
                 x_batch, _ = gen.next()
                 y_batch = [y_target] * x_batch.shape[0]
-                batch_loss_ce, batch_loss_reg, batch_loss, batch_loss_acc = self.train([x_batch, y_batch])
+                _, batch_loss_reg, _, batch_loss_acc = self.train([x_batch, y_batch])
 
                 loss_reg_list.extend(list(batch_loss_reg.flatten()))
                 loss_acc_list.extend(list(batch_loss_acc.flatten()))

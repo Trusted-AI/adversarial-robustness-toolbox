@@ -909,8 +909,7 @@ def load_nursery(raw: bool = False, test_set: float = 0.2, transform_social: boo
             return 2
         if value == "spec_prior":
             return 3
-        else:
-            raise Exception("Bad label value: %s" % value)
+        raise Exception("Bad label value: %s" % value)
 
     data["label"] = data["label"].apply(modify_label)
     data["children"] = data["children"].apply(lambda x: 4 if x == "more" else x)
@@ -1059,7 +1058,7 @@ def get_file(filename: str, url: str, path: Optional[str] = None, extract: bool 
                 ssl._create_default_https_context = ssl._create_unverified_context
 
                 if verbose:
-                    with tqdm() as t:
+                    with tqdm() as t_bar:
                         last_block = [0]
 
                         def progress_bar(blocks: int = 1, block_size: int = 1, total_size: Optional[int] = None):
@@ -1069,8 +1068,8 @@ def get_file(filename: str, url: str, path: Optional[str] = None, extract: bool 
                             :param total_size: Total size (in tqdm units). If [default: None] or -1, remains unchanged.
                             """
                             if total_size not in (None, -1):
-                                t.total = total_size
-                            displayed = t.update((blocks - last_block[0]) * block_size)
+                                t_bar.total = total_size
+                            displayed = t_bar.update((blocks - last_block[0]) * block_size)
                             last_block[0] = blocks
                             return displayed
 

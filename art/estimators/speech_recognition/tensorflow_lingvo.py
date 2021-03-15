@@ -313,7 +313,8 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
         decoder_inputs.tgt["weights"] = 1.0 - decoder_inputs.tgt["paddings"]
         return decoder_inputs
 
-    def _create_log_mel_features(self, x: "Tensor") -> "Tensor":
+    @staticmethod
+    def _create_log_mel_features(x: "Tensor") -> "Tensor":
         """Extract Log-Mel features from audio samples of shape (batch_size, max_length)."""
         from lingvo.core.py_utils import NestedMap
         import tensorflow.compat.v1 as tf1
@@ -350,7 +351,8 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
         features = tf1.reshape(features, features_shape)
         return features
 
-    def _pad_audio_input(self, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    @staticmethod
+    def _pad_audio_input(x: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Apply padding to a batch of audio samples such that it has shape of (batch_size, max_length)."""
         max_length = max(map(len, x))
         batch_size = x.shape[0]

@@ -133,7 +133,7 @@ class PoisoningAttackCleanLabelBackdoor(PoisoningAttackBlackBox):
         if any(no_change_detected):
             logger.warning("Perturbed input is the same as original data after PGD. Check params.")
             idx_no_change = np.arange(len(no_change_detected))[no_change_detected]
-            logger.warning(f"{len(idx_no_change)} indices without change: {idx_no_change}")
+            logger.warning(f"%d indices without change: %d", len(idx_no_change), idx_no_change)
 
         # Add backdoor and poison with the same label
         poisoned_input, _ = self.backdoor.poison(perturbed_input, self.target, broadcast=True)

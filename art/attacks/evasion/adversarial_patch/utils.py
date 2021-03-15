@@ -15,6 +15,9 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements utility functions for adversarial patch attacks.
+"""
 import numpy as np
 
 
@@ -56,14 +59,14 @@ def insert_transformed_patch(x: np.ndarray, patch: np.ndarray, image_coords: np.
         )
 
     # calculate homography
-    h, status = cv2.findHomography(patch_coords, image_coords)
+    height, _ = cv2.findHomography(patch_coords, image_coords)
 
     # warp patch to destination coordinates
-    x_out = cv2.warpPerspective(patch, h, (x.shape[1], x.shape[0]), cv2.INTER_CUBIC)
+    x_out = cv2.warpPerspective(patch, height, (x.shape[1], x.shape[0]), cv2.INTER_CUBIC)
 
     # mask to aid with insertion
     mask = np.ones(patch.shape)
-    mask_out = cv2.warpPerspective(mask, h, (x.shape[1], x.shape[0]), cv2.INTER_CUBIC)
+    mask_out = cv2.warpPerspective(mask, height, (x.shape[1], x.shape[0]), cv2.INTER_CUBIC)
 
     # save image before adding shadows
     x_neg_patch = np.copy(x)

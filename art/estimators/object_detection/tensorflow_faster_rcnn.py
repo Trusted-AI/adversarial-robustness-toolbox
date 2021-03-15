@@ -353,7 +353,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
                 else:
                     loss = loss + self._losses[loss_name]
 
-            self._loss_grads: Tensor = tf.gradients(loss, self.images)[0]
+            self._loss_grads: tf.Tensor = tf.gradients(loss, self.images)[0]
 
         # Create feed_dict
         feed_dict = {self.images: x_preprocessed}
