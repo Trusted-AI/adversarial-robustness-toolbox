@@ -98,7 +98,7 @@ class BaseEstimator(ABC):
         if self.preprocessing is None:
             pass
         elif isinstance(self.preprocessing, tuple):
-            from art.preprocessing.standardisation_mean_std.standardisation_mean_std import StandardisationMeanStd
+            from art.preprocessing.standardisation_mean_std.numpy import StandardisationMeanStd
 
             self.preprocessing_operations.append(
                 StandardisationMeanStd(mean=self.preprocessing[0], std=self.preprocessing[1])
@@ -109,7 +109,9 @@ class BaseEstimator(ABC):
             raise ValueError("Preprocessing argument not recognised.")
 
     @staticmethod
-    def _set_preprocessing(preprocessing: Union["PREPROCESSING_TYPE", "Preprocessor"]) -> "Preprocessor":
+    def _set_preprocessing(
+        preprocessing: Optional[Union["PREPROCESSING_TYPE", "Preprocessor"]]
+    ) -> Optional["Preprocessor"]:
         from art.defences.preprocessor.preprocessor import Preprocessor
 
         if preprocessing is None:

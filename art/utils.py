@@ -57,7 +57,9 @@ if TYPE_CHECKING:
     from art.defences.preprocessor.preprocessor import Preprocessor
 
     PREPROCESSING_TYPE = Optional[
-        Tuple[Union[int, float, np.ndarray], Union[int, float, np.ndarray]], Preprocessor, Tuple[Preprocessor, ...]
+        Union[
+            Tuple[Union[int, float, np.ndarray], Union[int, float, np.ndarray]], Preprocessor, Tuple[Preprocessor, ...]
+        ]
     ]
 
     from art.estimators.classification.classifier import (

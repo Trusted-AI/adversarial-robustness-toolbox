@@ -114,9 +114,7 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         """
         preprocessing = kwargs.get("preprocessing")
         if isinstance(preprocessing, tuple):
-            from art.preprocessing.standardisation_mean_std.tensorflow import (
-                StandardisationMeanStdTensorFlow,
-            )
+            from art.preprocessing.standardisation_mean_std.tensorflow import StandardisationMeanStdTensorFlow
 
             kwargs["preprocessing"] = StandardisationMeanStdTensorFlow(mean=preprocessing[0], std=preprocessing[1])
 
@@ -200,9 +198,7 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
         from art.preprocessing.standardisation_mean_std.numpy import StandardisationMeanStd
-        from art.preprocessing.standardisation_mean_std.tensorflow import (
-            StandardisationMeanStdTensorFlow,
-        )
+        from art.preprocessing.standardisation_mean_std.tensorflow import StandardisationMeanStdTensorFlow
 
         if not self.preprocessing_operations:
             return x, y
@@ -270,9 +266,7 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
         from art.preprocessing.standardisation_mean_std.numpy import StandardisationMeanStd
-        from art.preprocessing.standardisation_mean_std.tensorflow import (
-            StandardisationMeanStdTensorFlow,
-        )
+        from art.preprocessing.standardisation_mean_std.tensorflow import StandardisationMeanStdTensorFlow
 
         if not self.preprocessing_operations:
             return gradients

@@ -202,15 +202,6 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
         return self._model
 
     @property
-    def input_ph(self) -> "tf.Placeholder":
-        """
-        Returns the encoding seed input of the generator of shape `(batch_size, encoding_length)`.
-
-        :return: The encoding seed input of the generator.
-        """
-        return self._input_ph
-
-    @property
     def encoding_length(self) -> int:
         """
         Returns the length of the encoding size output.
