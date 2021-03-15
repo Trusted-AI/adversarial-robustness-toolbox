@@ -102,7 +102,7 @@ class PoisoningAttackCleanLabelBackdoor(PoisoningAttackBlackBox):
         self._check_params()
 
     def poison(
-        self, x: np.ndarray, y: Optional[np.ndarray] = None, broadcast: bool = False, **kwargs
+        self, x: np.ndarray, y: Optional[np.ndarray] = None, broadcast: bool = True, **kwargs
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Calls perturbation function on input x and returns the perturbed input and poison labels for the data.
@@ -136,7 +136,7 @@ class PoisoningAttackCleanLabelBackdoor(PoisoningAttackBlackBox):
             logger.warning(f"%d indices without change: %d", len(idx_no_change), idx_no_change)
 
         # Add backdoor and poison with the same label
-        poisoned_input, _ = self.backdoor.poison(perturbed_input, self.target, broadcast=True)
+        poisoned_input, _ = self.backdoor.poison(perturbed_input, self.target, broadcast=broadcast)
         data[selected_indices] = poisoned_input
 
         return data, estimated_labels
