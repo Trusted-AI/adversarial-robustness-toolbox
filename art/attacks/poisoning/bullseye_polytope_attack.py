@@ -52,8 +52,7 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
     attack_params = PoisoningAttackWhiteBox.attack_params + [
         "target",
         "feature_layer",
-        "opt"
-        "max_iter",
+        "opt" "max_iter",
         "learning_rate",
         "momentum",
         "decay_iter",
@@ -68,21 +67,21 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
     _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassifierMixin, PyTorchClassifier)
 
     def __init__(
-            self,
-            classifier: Union["CLASSIFIER_NEURALNETWORK_TYPE", List["CLASSIFIER_NEURALNETWORK_TYPE"]],
-            target: np.ndarray,
-            feature_layer: Union[Union[str, int], List[Union[str, int]]],
-            opt: str = 'adam',
-            max_iter: int = 4000,
-            learning_rate: float = 4e-2,
-            momentum: float = 0.9,
-            decay_iter: Union[int, List[int]] = 10000,
-            decay_coeff: float = 0.5,
-            epsilon: float = 0.1,
-            dropout: int = 0.3,
-            net_repeat: int = 1,
-            endtoend: bool = True,
-            verbose: bool = True,
+        self,
+        classifier: Union["CLASSIFIER_NEURALNETWORK_TYPE", List["CLASSIFIER_NEURALNETWORK_TYPE"]],
+        target: np.ndarray,
+        feature_layer: Union[Union[str, int], List[Union[str, int]]],
+        opt: str = "adam",
+        max_iter: int = 4000,
+        learning_rate: float = 4e-2,
+        momentum: float = 0.9,
+        decay_iter: Union[int, List[int]] = 10000,
+        decay_coeff: float = 0.5,
+        epsilon: float = 0.1,
+        dropout: int = 0.3,
+        net_repeat: int = 1,
+        endtoend: bool = True,
+        verbose: bool = True,
     ):
         """
         Initialize an Feature Collision Clean-Label poisoning attack
@@ -105,8 +104,9 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
         :param endtoend: True for end-to-end training. False for transfer learning.
         :param verbose: Show progress bars.
         """
-        self.subsistute_networks: List["CLASSIFIER_NEURALNETWORK_TYPE"] = \
-            [classifier] if not isinstance(classifier, list) else classifier
+        self.subsistute_networks: List["CLASSIFIER_NEURALNETWORK_TYPE"] = [classifier] if not isinstance(
+            classifier, list
+        ) else classifier
 
         super().__init__(classifier=self.subsistute_networks[0])  # type: ignore
         self.target = target
@@ -124,12 +124,7 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
         self.verbose = verbose
         self._check_params()
 
-    def poison(
-            self,
-            x: np.ndarray,
-            y: Optional[np.ndarray] = None,
-            **kwargs
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    def poison(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
         """
         Iteratively finds optimal attack points starting at values at x
 
@@ -156,10 +151,10 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
         poison_batch = PoisonBatch([torch.from_numpy(np.copy(sample)).to(self.estimator.device) for sample in x])
         opt_method = self.opt.lower()
 
-        if opt_method == 'sgd':
+        if opt_method == "sgd":
             logger.info("Using SGD to craft poison samples")
             optimizer = torch.optim.SGD(poison_batch.parameters(), lr=self.learning_rate, momentum=self.momentum)
-        elif opt_method == 'adam':
+        elif opt_method == "adam":
             logger.info("Using Adam to craft poison samples")
             optimizer = torch.optim.Adam(poison_batch.parameters(), lr=self.learning_rate, betas=(self.momentum, 0.999))
 
@@ -178,11 +173,13 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
         for n, net in enumerate(self.subsistute_networks):
             # End to end training
             if self.endtoend:
-                block_feats = [feat.detach()
-                               for feat in net.get_activations(x, layer=self.feature_layer, framework=True)]
+                block_feats = [
+                    feat.detach() for feat in net.get_activations(x, layer=self.feature_layer, framework=True)
+                ]
                 target_feat_list.append(block_feats)
-                s_coeff = [torch.ones(n_poisons, 1).to(self.estimator.device) / n_poisons for _ in
-                           range(len(block_feats))]
+                s_coeff = [
+                    torch.ones(n_poisons, 1).to(self.estimator.device) / n_poisons for _ in range(len(block_feats))
+                ]
             else:
                 target_feat_list.append(net.get_activations(x, layer=self.feature_layer, framework=True).detach())
                 s_coeff = torch.ones(n_poisons, 1).to(self.estimator.device) / n_poisons
@@ -192,23 +189,31 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
         for ite in trange(self.max_iter):
             if ite % self.decay_iter == 0 and ite != 0:
                 for param_group in optimizer.param_groups:
-                    param_group['lr'] *= self.decay_coeff
-                print("%s Iteration %d, Adjusted lr to %.2e" % (time.strftime("%Y-%m-%d %H:%M:%S"), ite,
-                                                                self.learning_rate))
+                    param_group["lr"] *= self.decay_coeff
+                print(
+                    "%s Iteration %d, Adjusted lr to %.2e"
+                    % (time.strftime("%Y-%m-%d %H:%M:%S"), ite, self.learning_rate)
+                )
 
             poison_batch.zero_grad()
-            total_loss = loss_from_center(self.subsistute_networks, target_feat_list, poison_batch, self.net_repeat,
-                                          self.endtoend, self.feature_layer)
+            total_loss = loss_from_center(
+                self.subsistute_networks,
+                target_feat_list,
+                poison_batch,
+                self.net_repeat,
+                self.endtoend,
+                self.feature_layer,
+            )
             total_loss.backward()
             optimizer.step()
 
             # clip the perturbations into the range
-            perturb_range01 = torch.clamp((poison_batch.poison.data - base_tensor_batch),
-                                          -self.epsilon,
-                                          self.epsilon)
-            perturbed_range01 = torch.clamp(base_range01_batch.data + perturb_range01.data,
-                                            self.estimator.clip_values[0],
-                                            self.estimator.clip_values[1])
+            perturb_range01 = torch.clamp((poison_batch.poison.data - base_tensor_batch), -self.epsilon, self.epsilon)
+            perturbed_range01 = torch.clamp(
+                base_range01_batch.data + perturb_range01.data,
+                self.estimator.clip_values[0],
+                self.estimator.clip_values[1],
+            )
             poison_batch.poison.data = perturbed_range01
 
         if y is None:
@@ -226,7 +231,7 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
         if not isinstance(self.feature_layer, (str, int)):
             raise TypeError("Feature layer should be a string or int")
 
-        if self.opt.lower() not in ['adam', 'sgd']:
+        if self.opt.lower() not in ["adam", "sgd"]:
             raise ValueError("Optimizer must be 'adam' or 'sgd'")
 
         if 1 < self.momentum < 0:
@@ -244,8 +249,7 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
         if self.net_repeat < 1:
             raise ValueError("net_repeat must be at least 1")
 
-        valid_layer = 0 <= self.feature_layer < len(self.estimator.layer_names)
-        if not valid_layer:
+        if not 0 <= self.feature_layer < len(self.estimator.layer_names):
             raise ValueError("Invalid feature layer")
 
         if 1 < self.decay_coeff < 0:
@@ -256,29 +260,33 @@ def get_poison_tuples(poison_batch, poison_label):
     """
     Includes the labels
     """
-    poison = [poison_batch.poison.data[num_p].unsqueeze(0).detach().cpu().numpy()
-              for num_p in range(poison_batch.poison.size(0))]
+    poison = [
+        poison_batch.poison.data[num_p].unsqueeze(0).detach().cpu().numpy()
+        for num_p in range(poison_batch.poison.size(0))
+    ]
     return np.vstack(poison), poison_label
 
 
-def loss_from_center(subs_net_list, target_feat_list, poison_batch, net_repeat, end2end, feature_layer) -> \
-        "torch.Tensor":
+def loss_from_center(
+    subs_net_list, target_feat_list, poison_batch, net_repeat, end2end, feature_layer
+) -> "torch.Tensor":
     import torch
+
     if end2end:
         loss = 0
         for net, center_feats in zip(subs_net_list, target_feat_list):
             if net_repeat > 1:
-                poisons_feats_repeats = [net.get_activations(poison_batch(), layer=feature_layer, framework=True,
-                                                             input_tensor=True)
-                                         for _ in range(net_repeat)]
+                poisons_feats_repeats = [
+                    net.get_activations(poison_batch(), layer=feature_layer, framework=True) for _ in range(net_repeat)
+                ]
                 BLOCK_NUM = len(poisons_feats_repeats[0])
                 poisons_feats = []
                 for block_idx in range(BLOCK_NUM):
                     poisons_feats.append(
-                        sum([poisons_feat_r[block_idx] for poisons_feat_r in poisons_feats_repeats]) / net_repeat)
+                        sum([poisons_feat_r[block_idx] for poisons_feat_r in poisons_feats_repeats]) / net_repeat
+                    )
             elif net_repeat == 1:
-                poisons_feats = net.get_activations(poison_batch(), layer=feature_layer, framework=True,
-                                                    input_tensor=True)
+                poisons_feats = net.get_activations(poison_batch(), layer=feature_layer, framework=True)
             else:
                 assert False, "net_repeat set to {}".format(net_repeat)
 
@@ -295,8 +303,9 @@ def loss_from_center(subs_net_list, target_feat_list, poison_batch, net_repeat, 
     else:
         loss = 0
         for net, center in zip(subs_net_list, target_feat_list):
-            poisons = [net.get_activations(poison_batch(), layer=feature_layer, framework=True, input_tensor=True)
-                       for _ in range(net_repeat)]
+            poisons = [
+                net.get_activations(poison_batch(), layer=feature_layer, framework=True) for _ in range(net_repeat)
+            ]
             poisons = sum(poisons) / len(poisons)
 
             diff = torch.mean(poisons, dim=0) - center

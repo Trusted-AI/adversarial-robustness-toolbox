@@ -716,8 +716,11 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         return grads
 
     def get_activations(
-            self, x: Union[np.ndarray, "torch.Tensor"], layer: Optional[Union[int, str]] = None, batch_size: int = 128,
-            framework: bool = False, input_tensor: bool = False
+        self,
+        x: Union[np.ndarray, "torch.Tensor"],
+        layer: Optional[Union[int, str]] = None,
+        batch_size: int = 128,
+        framework: bool = False,
     ) -> np.ndarray:
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
@@ -728,7 +731,6 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         :param layer: Layer for computing the activations
         :param batch_size: Size of batches.
         :param framework: If true, return the intermediate tensor representation of the activation.
-        :param input_tensor: Whether to expect the input to be a Tensor
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         """
         import torch  # lgtm [py/repeated-import]
@@ -751,8 +753,9 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             raise TypeError("Layer must be of type str or int")
 
         if framework:
-            return self._model(torch.from_numpy(x).to(self._device))[layer_index] if not input_tensor else \
-                self._model(x)[layer_index]
+            if isinstance(x, torch.Tensor):
+                return self._model(x)[layer_index]
+            return self._model(torch.from_numpy(x).to(self._device))[layer_index]
 
         # Run prediction with batch processing
         results = []

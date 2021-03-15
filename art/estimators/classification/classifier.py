@@ -57,8 +57,7 @@ class InputFilter(ABCMeta):
                         kwargs["x"] = np.array(kwargs["x"])
                 else:
                     if not isinstance(args[0], np.ndarray):
-                        if "input_tensor" not in kwargs or not kwargs["input_tensor"]:
-                            lst[0] = np.array(args[0])
+                        lst[0] = np.array(args[0])
 
                 if "y" in kwargs:
                     if kwargs["y"] is not None and not isinstance(kwargs["y"], np.ndarray):
@@ -75,7 +74,7 @@ class InputFilter(ABCMeta):
             replacement_function.__name__ = "new_" + func_name
             return replacement_function
 
-        replacement_list_no_y = ["predict", "get_activations"]
+        replacement_list_no_y = ["predict"]
         replacement_list_has_y = ["fit"]
 
         for item in replacement_list_no_y:
