@@ -57,7 +57,8 @@ class InputFilter(ABCMeta):
                         kwargs["x"] = np.array(kwargs["x"])
                 else:
                     if not isinstance(args[0], np.ndarray):
-                        lst[0] = np.array(args[0])
+                        if "input_tensor" not in kwargs or not kwargs["input_tensor"]:
+                            lst[0] = np.array(args[0])
 
                 if "y" in kwargs:
                     if kwargs["y"] is not None and not isinstance(kwargs["y"], np.ndarray):
@@ -87,7 +88,7 @@ class InputFilter(ABCMeta):
                 setattr(cls, item, new_function)
 
 
-class ClassifierMixin(ABC):
+class ClassifierMixin(ABC, metaclass=InputFilter):
     """
     Mixin abstract base class defining functionality for classifiers.
     """
