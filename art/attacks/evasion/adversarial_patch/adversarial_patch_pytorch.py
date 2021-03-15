@@ -86,7 +86,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
         :param scale_min: The minimum scaling applied to random patches. The value should be in the range `[0, 1]`,
                but less than `scale_max`.
         :param scale_max: The maximum scaling applied to random patches. The value should be in the range `[0, 1]`, but
-               larger than `scale_min.`
+               larger than `scale_min`.
         :param distortion_scale_max: The maximum distortion scale for perspective transformation in range `[0, 1]`. If
                distortion_scale_max=0.0 the perspective transformation sampling will be disabled.
         :param learning_rate: The learning rate of the optimization.

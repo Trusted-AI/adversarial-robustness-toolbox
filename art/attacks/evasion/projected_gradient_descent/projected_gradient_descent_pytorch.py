@@ -93,7 +93,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
                 "The framework-specific implementation only supports framework-specific preprocessing."
             )
 
-        super(ProjectedGradientDescentPyTorch, self).__init__(
+        super().__init__(
             estimator=estimator,
             norm=norm,
             eps=eps,

@@ -71,8 +71,6 @@ class BaseEstimator(ABC):
                used for data preprocessing. The first value will be subtracted from the input and the results will be
                divided by the second value.
         """
-        from art.defences.preprocessor.preprocessor import Preprocessor
-
         self._model = model
         self._clip_values = clip_values
 
@@ -116,14 +114,14 @@ class BaseEstimator(ABC):
 
         if preprocessing is None:
             return None
-        elif isinstance(preprocessing, tuple):
+        if isinstance(preprocessing, tuple):
             from art.preprocessing.standardisation_mean_std.numpy import StandardisationMeanStd
 
             return StandardisationMeanStd(mean=preprocessing[0], std=preprocessing[1])
-        elif isinstance(preprocessing, Preprocessor):
+        if isinstance(preprocessing, Preprocessor):
             return preprocessing
-        else:
-            raise ValueError("Preprocessing argument not recognised.")
+
+        raise ValueError("Preprocessing argument not recognised.")
 
     @staticmethod
     def _set_preprocessing_defences(
@@ -133,8 +131,8 @@ class BaseEstimator(ABC):
 
         if isinstance(preprocessing_defences, Preprocessor):
             return [preprocessing_defences]
-        else:
-            return preprocessing_defences
+
+        return preprocessing_defences
 
     @staticmethod
     def _set_postprocessing_defences(
@@ -144,8 +142,8 @@ class BaseEstimator(ABC):
 
         if isinstance(postprocessing_defences, Postprocessor):
             return [postprocessing_defences]
-        else:
-            return postprocessing_defences
+
+        return postprocessing_defences
 
     def set_params(self, **kwargs) -> None:
         """
@@ -327,9 +325,9 @@ class BaseEstimator(ABC):
     def __repr__(self):
         class_name = self.__class__.__name__
         attributes = {}
-        for k, v in self.__dict__.items():
+        for k, value in self.__dict__.items():
             k = k[1:] if k[0] == "_" else k
-            attributes[k] = v
+            attributes[k] = value
         attributes = ["{}={}".format(k, v) for k, v in attributes.items()]
         repr_string = class_name + "(" + ", ".join(attributes) + ")"
         return repr_string
@@ -507,9 +505,9 @@ class NeuralNetworkMixin(ABC):
         name = self.__class__.__name__
 
         attributes = {}
-        for k, v in self.__dict__.items():
+        for k, value in self.__dict__.items():
             k = k[1:] if k[0] == "_" else k
-            attributes[k] = v
+            attributes[k] = value
         attrs = ["{}={}".format(k, v) for k, v in attributes.items()]
         repr_ = name + "(" + ", ".join(attrs) + ")"
 

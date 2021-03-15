@@ -248,21 +248,22 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         return self._loss_scale  # type: ignore
 
     def reduce_labels(self, y: Union[np.ndarray, "torch.Tensor"]) -> Union[np.ndarray, "torch.Tensor"]:
+        """
+        Reduce labels from one-hot encoded to index labels.
+        """
         import torch  # lgtm [py/repeated-import]
 
         # Check if the loss function requires as input index labels instead of one-hot-encoded labels
         if self._reduce_labels and self._int_labels:
             if isinstance(y, torch.Tensor):
                 return torch.argmax(y, dim=1)
-            else:
-                return np.argmax(y, axis=1)
+            return np.argmax(y, axis=1)
         elif self._reduce_labels:  # float labels
             if isinstance(y, torch.Tensor):
                 return torch.argmax(y, dim=1).type("torch.FloatTensor")
-            else:
-                y_index = np.argmax(y, axis=1).astype(np.float32)
-                y_index = np.expand_dims(y_index, axis=1)
-                return y_index
+            y_index = np.argmax(y, axis=1).astype(np.float32)
+            y_index = np.expand_dims(y_index, axis=1)
+            return y_index
         else:
             return y
 
@@ -369,7 +370,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                 model_outputs = self._model(i_batch)
 
                 # Form the loss function
-                loss = self._loss(model_outputs[-1], o_batch)
+                loss = self._loss(model_outputs[-1], o_batch)  # lgtm [py/call-to-non-callable]
 
                 # Do training
                 if self._use_amp:
@@ -688,7 +689,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         # Compute the gradient and return
         model_outputs = self._model(inputs_t)
-        loss = self._loss(model_outputs[-1], labels_t)
+        loss = self._loss(model_outputs[-1], labels_t)  # lgtm [py/call-to-non-callable]
 
         # Clean gradients
         self._model.zero_grad()

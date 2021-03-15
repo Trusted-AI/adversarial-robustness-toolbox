@@ -81,7 +81,7 @@ class EoTPyTorch(PreprocessorPyTorch):
         y_preprocess_list = list()
 
         for i_image in range(x.shape[0]):
-            for i_sample in range(self.nb_samples):
+            for _ in range(self.nb_samples):
                 x_i = x[i_image]
                 if y is not None:
                     y_i = y[i_image]

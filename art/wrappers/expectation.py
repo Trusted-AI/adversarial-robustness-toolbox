@@ -105,9 +105,13 @@ class ExpectationOverTransformations(ClassifierWrapper, ClassifierClassLossGradi
         :return: Array of gradients of the same shape as `x`.
         """
         logger.info("Applying expectation over transformations.")
-        loss_gradient = self.classifier.loss_gradient(x=next(self.transformation())(x), y=y, **kwargs)
+        loss_gradient = self.classifier.loss_gradient(
+            x=next(self.transformation())(x), y=y, training_mode=training_mode, **kwargs
+        )
         for _ in range(self.sample_size - 1):
-            loss_gradient += self.classifier.loss_gradient(x=next(self.transformation())(x), y=y, **kwargs)
+            loss_gradient += self.classifier.loss_gradient(
+                x=next(self.transformation())(x), y=y, training_mode=training_mode, **kwargs
+            )
         return loss_gradient / self.sample_size
 
     def class_gradient(

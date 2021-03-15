@@ -1,3 +1,7 @@
+"""
+Classifier API for abstracting classification models for testing purposes. Soon to be replaced by Estimator API.
+Use `art.estimators.classification instead.
+"""
 from art.estimators.classification.scikitlearn import SklearnClassifier
 from art.estimators.classification.scikitlearn import ScikitlearnClassifier
 from art.estimators.classification.scikitlearn import ScikitlearnDecisionTreeClassifier
