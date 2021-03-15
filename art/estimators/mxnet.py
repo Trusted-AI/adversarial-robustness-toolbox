@@ -56,7 +56,7 @@ class MXEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         :return: Predictions.
         :rtype: Format as expected by the `model`
         """
-        return NeuralNetworkMixin.predict(self, x, batch_size=128, **kwargs)
+        return NeuralNetworkMixin.predict(self, x, batch_size=batch_size, **kwargs)
 
     def fit(self, x: np.ndarray, y, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
         """
@@ -69,4 +69,4 @@ class MXEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         :param batch_size: Batch size.
         :param nb_epochs: Number of training epochs.
         """
-        NeuralNetworkMixin.fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs)
+        NeuralNetworkMixin.fit(self, x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
