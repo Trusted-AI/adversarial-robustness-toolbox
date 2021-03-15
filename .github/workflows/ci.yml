@@ -150,6 +150,7 @@ jobs:
           python-version: 3.7
       - name: Pre-install
         run: |
+          sudo apt-get update
           sudo apt-get -y -q install ffmpeg libavcodec-extra
           pip install tensorflow==2.2.2
           pip install keras==2.3.1
