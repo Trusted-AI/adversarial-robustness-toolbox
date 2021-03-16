@@ -95,7 +95,7 @@ class HopSkipJump(EvasionAttack):
         self.init_eval = init_eval
         self.init_size = init_size
         self.curr_iter = 0
-        self.batch_size = 1
+        self.batch_size = batch_size
         self.verbose = verbose
         self._check_params()
         self.curr_iter = 0
