@@ -65,7 +65,7 @@ class HopSkipJump(EvasionAttack):
     def __init__(
         self,
         classifier: "CLASSIFIER_TYPE",
-        batch_size: int = 128,
+        batch_size: int = 1,
         targeted: bool = False,
         norm: Union[int, float, str] = 2,
         max_iter: int = 50,
