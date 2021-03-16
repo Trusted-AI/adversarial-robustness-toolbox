@@ -65,6 +65,7 @@ class HopSkipJump(EvasionAttack):
     def __init__(
         self,
         classifier: "CLASSIFIER_TYPE",
+        batch_size: int = 128,
         targeted: bool = False,
         norm: Union[int, float, str] = 2,
         max_iter: int = 50,
@@ -77,6 +78,7 @@ class HopSkipJump(EvasionAttack):
         Create a HopSkipJump attack instance.
 
         :param classifier: A trained classifier.
+        :param batch_size: The size of the batch used by the estimator during inference.
         :param targeted: Should the attack target one specific class.
         :param norm: Order of the norm. Possible values: "inf", np.inf or 2.
         :param max_iter: Maximum number of iterations.
@@ -93,7 +95,7 @@ class HopSkipJump(EvasionAttack):
         self.init_eval = init_eval
         self.init_size = init_size
         self.curr_iter = 0
-        self.batch_size = 1
+        self.batch_size = batch_size
         self.verbose = verbose
         self._check_params()
         self.curr_iter = 0

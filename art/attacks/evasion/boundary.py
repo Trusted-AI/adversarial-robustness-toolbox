@@ -67,6 +67,7 @@ class BoundaryAttack(EvasionAttack):
     def __init__(
         self,
         estimator: "CLASSIFIER_TYPE",
+        batch_size: int = 128,
         targeted: bool = True,
         delta: float = 0.01,
         epsilon: float = 0.01,
@@ -82,6 +83,7 @@ class BoundaryAttack(EvasionAttack):
         Create a boundary attack instance.
 
         :param estimator: A trained classifier.
+        :param batch_size: The size of the batch used by the estimator during inference.
         :param targeted: Should the attack target one specific class.
         :param delta: Initial step size for the orthogonal step.
         :param epsilon: Initial step size for the step towards the target.
@@ -104,7 +106,7 @@ class BoundaryAttack(EvasionAttack):
         self.sample_size = sample_size
         self.init_size = init_size
         self.min_epsilon = min_epsilon
-        self.batch_size = 1
+        self.batch_size = batch_size
         self.verbose = verbose
         self._check_params()
 
