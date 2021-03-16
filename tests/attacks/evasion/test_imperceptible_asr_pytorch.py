@@ -28,8 +28,8 @@ from tests.utils import ARTTestException
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.skipModule("apex.amp", "deepspeech_pytorch", "torchaudio")
-@pytest.mark.skipMlFramework("tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+@pytest.mark.skip_module("apex.amp", "deepspeech_pytorch", "torchaudio")
+@pytest.mark.skip_framework("tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
 @pytest.mark.parametrize("use_amp", [False, True])
 @pytest.mark.parametrize("device_type", ["cpu", "gpu"])
 def test_imperceptible_asr_pytorch(art_warning, expected_values, use_amp, device_type):

@@ -31,7 +31,6 @@ from tqdm.auto import trange, tqdm
 
 from art.defences.detector.evasion.subsetscanning.scanner import Scanner
 from art.estimators.classification.classifier import ClassifierNeuralNetwork
-from art.utils import deprecated
 
 
 if TYPE_CHECKING:
@@ -48,6 +47,8 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
     | Paper link: https://www.cs.cmu.edu/~neill/papers/mcfowland13a.pdf
     """
 
+    estimator_params = ClassifierNeuralNetwork.estimator_params + ["classifier", "bgd_data", "layer", "verbose"]
+
     def __init__(
         self, classifier: ClassifierNeuralNetwork, bgd_data: np.ndarray, layer: Union[int, str], verbose: bool = True
     ) -> None:
@@ -62,7 +63,6 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
         super().__init__(
             model=None,
             clip_values=classifier.clip_values,
-            channel_index=classifier.channel_index,
             channels_first=classifier.channels_first,
             preprocessing_defences=classifier.preprocessing_defences,
             preprocessing=classifier.preprocessing,
@@ -70,6 +70,7 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
         self.detector = classifier
         self.bgd_data = bgd_data
         self.verbose = verbose
+        self.layer = layer
 
         # Ensure that layer is well-defined
         if classifier.layer_names is None:
@@ -153,7 +154,7 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
             with tqdm(
                 total=len(clean_pvalranges) + len(adv_pvalranges), desc="Subset scanning", disable=not self.verbose
             ) as pbar:
-                for j, c_p in enumerate(clean_pvalranges):
+                for _, c_p in enumerate(clean_pvalranges):
                     best_score, _, _, _ = Scanner.fgss_individ_for_nets(c_p)
                     clean_scores.append(best_score)
                     pbar.update(1)
@@ -213,7 +214,7 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
         """
         raise NotImplementedError
 
-    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the loss of the neural network for samples `x`.
 
@@ -238,11 +239,6 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
     def clip_values(self) -> Optional["CLIP_VALUES_TYPE"]:
         return self.detector.clip_values
 
-    @property  # type: ignore
-    @deprecated(end_version="1.6.0", replaced_by="channels_first")
-    def channel_index(self) -> Optional[int]:
-        return self.detector.channel_index
-
     @property
     def channels_first(self) -> bool:
         """
@@ -251,14 +247,38 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
         return self.channels_first
 
     @property
-    def learning_phase(self) -> Optional[bool]:
-        return self.detector.learning_phase
+    def classifier(self) -> int:
+        return self.detector
 
-    def class_gradient(self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs) -> np.ndarray:
-        return self.detector.class_gradient(x, label=label)
+    def class_gradient(
+        self, x: np.ndarray, label: Union[int, List[int], None] = None, training_mode: bool = False, **kwargs
+    ) -> np.ndarray:
+        """
+        Compute per-class derivatives w.r.t. `x`.
 
-    def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
-        return self.detector.loss_gradient(x, y)
+        :param x: Sample input with shape as expected by the model.
+        :param label: Index of a specific per-class derivative. If an integer is provided, the gradient of that class
+                      output is computed for all samples. If multiple values as provided, the first dimension should
+                      match the batch size of `x`, and each value will be used as target for its corresponding sample in
+                      `x`. If `None`, then gradients for all classes will be computed for each sample.
+        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :return: Array of gradients of input features w.r.t. each class in the form
+                 `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
+                 `(batch_size, 1, input_shape)` when `label` parameter is specified.
+        """
+        return self.detector.class_gradient(x=x, label=label, training_mode=training_mode, **kwargs)
+
+    def loss_gradient(self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs) -> np.ndarray:
+        """
+        Compute the gradient of the loss function w.r.t. `x`.
+
+        :param x: Sample input with shape as expected by the model.
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
+                  `(nb_samples,)`.
+        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :return: Array of gradients of the same shape as `x`.
+        """
+        return self.detector.loss_gradient(x=x, y=y, training_mode=training_mode, **kwargs)
 
     def get_activations(
         self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
@@ -271,9 +291,6 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
         :raises `NotImplementedException`: This method is not supported for detectors.
         """
         raise NotImplementedError
-
-    def set_learning_phase(self, train: bool) -> None:
-        self.detector.set_learning_phase(train)
 
     def save(self, filename: str, path: Optional[str] = None) -> None:
         self.detector.save(filename, path)

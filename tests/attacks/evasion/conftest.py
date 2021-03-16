@@ -72,7 +72,7 @@ def asr_dummy_estimator(framework):
         if framework in ("tensorflow2v1", "tensorflow2"):
 
             class TensorFlowV2ASRDummy(TensorFlowV2Estimator, SpeechRecognizerMixin):
-                def get_activations():
+                def get_activations(self):
                     pass
 
                 def predict(self, x):
@@ -81,18 +81,18 @@ def asr_dummy_estimator(framework):
                 def loss_gradient(self, x, y, **kwargs):
                     return x
 
-                def set_learning_phase():
-                    pass
-
                 @property
                 def input_shape(self):
                     return None
+
+                def compute_loss(self, x, y, **kwargs):
+                    pass
 
             asr_dummy = TensorFlowV2ASRDummy(channels_first=None, model=None, clip_values=None)
         if framework == "pytorch":
 
             class PyTorchASRDummy(PyTorchEstimator, SpeechRecognizerMixin):
-                def get_activations():
+                def get_activations(self):
                     pass
 
                 def predict(self, x):
@@ -101,12 +101,12 @@ def asr_dummy_estimator(framework):
                 def loss_gradient(self, x, y, **kwargs):
                     return x
 
-                def set_learning_phase():
-                    pass
-
                 @property
                 def input_shape(self):
                     return None
+
+                def compute_loss(self, x, y, **kwargs):
+                    pass
 
             asr_dummy = PyTorchASRDummy(channels_first=None, model=None, clip_values=None)
         if asr_dummy is None:

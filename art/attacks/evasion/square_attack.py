@@ -42,6 +42,11 @@ logger = logging.getLogger(__name__)
 
 
 class SquareAttack(EvasionAttack):
+    """
+    This class implements the `SquareAttack` attack.
+
+    | Paper link: https://arxiv.org/abs/1912.00049
+    """
 
     attack_params = EvasionAttack.attack_params + [
         "norm",
@@ -230,24 +235,25 @@ class SquareAttack(EvasionAttack):
 
                 height_tile = height // n_tiles
 
-                def _get_perturbation(h):
-                    delta = np.zeros([h, h])
-                    gaussian_perturbation = np.zeros([h // 2, h])
+                def _get_perturbation(height):
+                    delta = np.zeros([height, height])
+                    gaussian_perturbation = np.zeros([height // 2, height])
 
-                    x_c = h // 4
-                    y_c = h // 2
+                    x_c = height // 4
+                    y_c = height // 2
 
                     for i_y in range(y_c):
                         gaussian_perturbation[
-                            max(x_c, 0) : min(x_c + (2 * i_y + 1), h // 2), max(0, y_c) : min(y_c + (2 * i_y + 1), h)
+                            max(x_c, 0) : min(x_c + (2 * i_y + 1), height // 2),
+                            max(0, y_c) : min(y_c + (2 * i_y + 1), height),
                         ] += 1.0 / ((i_y + 1) ** 2)
                         x_c -= 1
                         y_c -= 1
 
                     gaussian_perturbation /= np.sqrt(np.sum(gaussian_perturbation ** 2))
 
-                    delta[: h // 2] = gaussian_perturbation
-                    delta[h // 2 : h // 2 + gaussian_perturbation.shape[0]] = -gaussian_perturbation
+                    delta[: height // 2] = gaussian_perturbation
+                    delta[height // 2 : height // 2 + gaussian_perturbation.shape[0]] = -gaussian_perturbation
 
                     delta /= np.sqrt(np.sum(delta ** 2))
 

@@ -67,8 +67,9 @@ class MembershipInferenceBlackBoxRuleBased(InferenceAttack):
         if y is None:
             raise ValueError("MembershipInferenceBlackBoxRuleBased requires true labels `y`.")
 
-        if self.estimator.input_shape[0] != x.shape[1]:
-            raise ValueError("Shape of x does not match input_shape of classifier")
+        if self.estimator.input_shape is not None:
+            if self.estimator.input_shape[0] != x.shape[1]:
+                raise ValueError("Shape of x does not match input_shape of classifier")
 
         y = check_and_transform_label_format(y, len(np.unique(y)), return_one_hot=True)
         if y.shape[0] != x.shape[0]:

@@ -14,6 +14,12 @@ Adversarial Patch - Numpy
    :members:
    :special-members:
 
+Adversarial Patch - PyTorch
+---------------------------
+.. autoclass:: AdversarialPatchPyTorch
+   :members:
+   :special-members:
+
 Adversarial Patch - TensorFlowV2
 --------------------------------
 .. autoclass:: AdversarialPatchTensorFlowV2
@@ -53,6 +59,12 @@ Carlini and Wagner L_2 Attack
 Carlini and Wagner L_inf Attack
 -------------------------------
 .. autoclass:: CarliniLInfMethod
+   :members:
+   :special-members:
+
+Carlini and Wagner ASR Attack
+-----------------------------
+.. autoclass:: CarliniWagnerASR
    :members:
    :special-members:
 
@@ -194,8 +206,8 @@ ShapeShifter Attack
    :members:
    :special-members:
 
-SimBA Attack
-------------
+Simple Black-box Adversarial Attack
+-----------------------------------
 .. autoclass:: SimBA
    :members:
    :special-members:

@@ -46,12 +46,14 @@ class CatBoostARTClassifier(ClassifierDecisionTree):
     Wrapper class for importing CatBoost models.
     """
 
+    estimator_params = ClassifierDecisionTree.estimator_params + ["nb_features"]
+
     def __init__(
         self,
         model: Optional["CatBoostClassifier"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         nb_features: Optional[int] = None,
     ) -> None:
@@ -94,6 +96,15 @@ class CatBoostARTClassifier(ClassifierDecisionTree):
         """
         return self._input_shape  # type: ignore
 
+    @property
+    def nb_features(self) -> int:
+        """
+        Return the number of features.
+
+        :return: The number of features.
+        """
+        return self._input_shape[0]  # type: ignore
+
     def fit(self, x: np.ndarray, y: np.ndarray, **kwargs) -> None:
         """
         Fit the classifier on the training set `(x, y)`.
@@ -113,7 +124,7 @@ class CatBoostARTClassifier(ClassifierDecisionTree):
         """
         Perform prediction for a batch of inputs.
 
-        :param x: Test set.
+        :param x: Input samples.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
         # Apply preprocessing

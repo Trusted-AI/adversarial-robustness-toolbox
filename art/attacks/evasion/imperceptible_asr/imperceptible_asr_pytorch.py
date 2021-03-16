@@ -620,7 +620,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         losses = []
         relu = torch.nn.ReLU()
 
-        for i in range(len(theta_batch)):
+        for i, _ in enumerate(theta_batch):
             psd_transform_delta = self._psd_transform(
                 delta=local_delta_rescale[i, :], original_max_psd=original_max_psd_batch[i]
             )
@@ -813,67 +813,67 @@ class ImperceptibleASRPyTorch(EvasionAttack):
 
         if not isinstance(self.max_iter_1, int):
             raise ValueError("The maximum number of iterations must be of type int.")
-        if not self.max_iter_1 > 0:
+        if self.max_iter_1 <= 0:
             raise ValueError("The maximum number of iterations must be greater than 0.")
 
         if not isinstance(self.max_iter_2, int):
             raise ValueError("The maximum number of iterations must be of type int.")
-        if not self.max_iter_2 > 0:
+        if self.max_iter_2 <= 0:
             raise ValueError("The maximum number of iterations must be greater than 0.")
 
         if not isinstance(self.learning_rate_1, float):
             raise ValueError("The learning rate must be of type float.")
-        if not self.learning_rate_1 > 0.0:
+        if self.learning_rate_1 <= 0.0:
             raise ValueError("The learning rate must be greater than 0.0.")
 
         if not isinstance(self.learning_rate_2, float):
             raise ValueError("The learning rate must be of type float.")
-        if not self.learning_rate_2 > 0.0:
+        if self.learning_rate_2 <= 0.0:
             raise ValueError("The learning rate must be greater than 0.0.")
 
         if not isinstance(self.global_max_length, int):
             raise ValueError("The length of the longest audio signal must be of type int.")
-        if not self.global_max_length > 0:
+        if self.global_max_length <= 0:
             raise ValueError("The length of the longest audio signal must be greater than 0.")
 
         if not isinstance(self.initial_rescale, float):
             raise ValueError("The initial rescale coefficient must be of type float.")
-        if not self.initial_rescale > 0.0:
+        if self.initial_rescale <= 0.0:
             raise ValueError("The initial rescale coefficient must be greater than 0.0.")
 
         if not isinstance(self.decrease_factor_eps, float):
             raise ValueError("The rescale factor of `eps` must be of type float.")
-        if not self.decrease_factor_eps > 0.0:
+        if self.decrease_factor_eps <= 0.0:
             raise ValueError("The rescale factor of `eps` must be greater than 0.0.")
 
         if not isinstance(self.num_iter_decrease_eps, int):
             raise ValueError("The number of iterations must be of type int.")
-        if not self.num_iter_decrease_eps > 0:
+        if self.num_iter_decrease_eps <= 0:
             raise ValueError("The number of iterations must be greater than 0.")
 
         if not isinstance(self.alpha, float):
             raise ValueError("The value of alpha must be of type float.")
-        if not self.alpha > 0.0:
+        if self.alpha <= 0.0:
             raise ValueError("The value of alpha must be greater than 0.0.")
 
         if not isinstance(self.increase_factor_alpha, float):
             raise ValueError("The factor to increase alpha must be of type float.")
-        if not self.increase_factor_alpha > 0.0:
+        if self.increase_factor_alpha <= 0.0:
             raise ValueError("The factor to increase alpha must be greater than 0.0.")
 
         if not isinstance(self.num_iter_increase_alpha, int):
             raise ValueError("The number of iterations must be of type int.")
-        if not self.num_iter_increase_alpha > 0:
+        if self.num_iter_increase_alpha <= 0:
             raise ValueError("The number of iterations must be greater than 0.")
 
         if not isinstance(self.decrease_factor_alpha, float):
             raise ValueError("The factor to decrease alpha must be of type float.")
-        if not self.decrease_factor_alpha > 0.0:
+        if self.decrease_factor_alpha <= 0.0:
             raise ValueError("The factor to decrease alpha must be greater than 0.0.")
 
         if not isinstance(self.num_iter_decrease_alpha, int):
             raise ValueError("The number of iterations must be of type int.")
-        if not self.num_iter_decrease_alpha > 0:
+        if self.num_iter_decrease_alpha <= 0:
             raise ValueError("The number of iterations must be greater than 0.")
 
         if self.batch_size <= 0:
