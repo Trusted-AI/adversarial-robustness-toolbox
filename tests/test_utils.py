@@ -44,13 +44,9 @@ class TestUtils(unittest.TestCase):
         master_seed(seed=1234)
 
     def test_master_seed_mx(self):
-        logger.info("test_master_seed_mx-0")
         import mxnet as mx
 
-        logger.info("test_master_seed_mx-A")
-
         master_seed(seed=1234, set_mxnet=True)
-        logger.info("test_master_seed_mx-A")
         x = mx.nd.random.uniform(0, 1, shape=(10,)).asnumpy()
         y = mx.nd.random.uniform(0, 1, shape=(10,)).asnumpy()
 
