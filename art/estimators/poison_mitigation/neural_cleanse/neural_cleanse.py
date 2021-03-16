@@ -93,7 +93,7 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
         """
         Perform prediction for a batch of inputs.
 
-        :param x: Test set.
+        :param x: Input samples.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
         raise NotImplementedError
@@ -122,7 +122,7 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
         """
         Perform prediction of the given classifier for a batch of inputs, potentially filtering suspicious input
 
-        :param x: Test set.
+        :param x: Input samples.
         :param batch_size: Batch size.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
@@ -188,7 +188,7 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
                     self._prune_neuron_at_index(ranked_indices[num_neurons_pruned])
                     num_neurons_pruned += 1
                     backdoor_effective = self.check_backdoor_effective(backdoor_data, backdoor_labels)
-                logger.info("Pruning complete. Pruned {} neurons".format(num_neurons_pruned))
+                logger.info("Pruning complete. Pruned %d neurons", num_neurons_pruned)
 
             elif mitigation_type == "filtering":
                 # using top 1% of ranked neurons by activation difference to adv vs. clean inputs
@@ -237,7 +237,7 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
             labels_for_class = np.copy(y_val[np.argmax(y_val, axis=1) == backdoored_label])
 
             if len(data_for_class) == 0:
-                logger.warning("No validation data exists for infected class: " + str(backdoored_label))
+                logger.warning("No validation data exists for infected class: %s", str(backdoored_label))
 
             clean_data.append(np.copy(data_for_class))
             data_for_class = (1 - mask) * data_for_class + mask * pattern
@@ -292,7 +292,7 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
             # Points with anomaly_index > 2 have 95% probability of being an outlier
             # Backdoor outliers show up as masks with small l1 norms
             if l1_norms[class_idx] <= median and anomaly_index > 2:
-                logger.warning("Detected potential backdoor in class: " + str(class_idx))
+                logger.warning("Detected potential backdoor in class: %s", str(class_idx))
                 flagged_labels.append(class_idx)
 
         return [(label, masks[label], patterns[label]) for label in flagged_labels]

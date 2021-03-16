@@ -139,6 +139,13 @@ jobs:
           pip install torch==${{ matrix.torch }} -f https://download.pytorch.org/whl/torch_stable.html
           pip install torchvision==${{ matrix.torchvision }} -f https://download.pytorch.org/whl/torch_stable.html
           pip install torchaudio==${{ matrix.torchaudio }} -f https://download.pytorch.org/whl/torch_stable.html
+      - name: Pre-install Lingvo ASR
+        if: ${{ matrix.tensorflow == '2.1.0' }}
+        run: |
+          pip install tensorflow==${{ matrix.tensorflow }}
+          pip install lingvo==${{ matrix.lingvo }}
+          pip install tensorflow-addons==0.9.1
+          pip install model-pruning-google-research==0.0.3
           pip list
       - name: Run ${{ matrix.name }} Tests
         run: ./run_tests.sh ${{ matrix.framework }}

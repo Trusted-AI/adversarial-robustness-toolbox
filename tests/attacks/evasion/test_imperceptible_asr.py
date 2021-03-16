@@ -34,21 +34,21 @@ class TestImperceptibleASR:
     Test the ImperceptibleASR attack.
     """
 
-    @pytest.mark.skipMlFramework("tensorflow1", "tensorflow2", "mxnet", "kerastf", "non_dl_frameworks")
+    @pytest.mark.skip_framework("tensorflow1", "tensorflow2", "mxnet", "kerastf", "non_dl_frameworks")
     def test_is_subclass(self, art_warning):
         try:
             assert issubclass(ImperceptibleASR, EvasionAttack)
         except ARTTestException as e:
             art_warning(e)
 
-    @pytest.mark.skipMlFramework("tensorflow1", "tensorflow2", "mxnet", "kerastf", "non_dl_frameworks")
+    @pytest.mark.skip_framework("tensorflow1", "tensorflow2", "mxnet", "kerastf", "non_dl_frameworks")
     def test_implements_abstract_methods(self, art_warning, asr_dummy_estimator):
         try:
             ImperceptibleASR(estimator=asr_dummy_estimator(), masker=PsychoacousticMasker())
         except ARTTestException as e:
             art_warning(e)
 
-    @pytest.mark.skipMlFramework("tensorflow1", "tensorflow2", "mxnet", "kerastf", "non_dl_frameworks")
+    @pytest.mark.skip_framework("tensorflow1", "tensorflow2", "mxnet", "kerastf", "non_dl_frameworks")
     def test_generate(self, art_warning, mocker, asr_dummy_estimator, audio_data):
         try:
             test_input, test_target = audio_data
@@ -62,7 +62,7 @@ class TestImperceptibleASR:
         except ARTTestException as e:
             art_warning(e)
 
-    @pytest.mark.skipMlFramework("tensorflow1", "tensorflow2", "mxnet", "kerastf", "non_dl_frameworks")
+    @pytest.mark.skip_framework("tensorflow1", "tensorflow2", "mxnet", "kerastf", "non_dl_frameworks")
     def test_generate_batch(self, art_warning, mocker, asr_dummy_estimator, audio_data):
         try:
             test_input, test_target = audio_data
@@ -78,7 +78,7 @@ class TestImperceptibleASR:
         except ARTTestException as e:
             art_warning(e)
 
-    @pytest.mark.skipMlFramework("tensorflow1", "tensorflow2", "mxnet", "kerastf", "non_dl_frameworks")
+    @pytest.mark.skip_framework("tensorflow1", "tensorflow2", "mxnet", "kerastf", "non_dl_frameworks")
     def test_create_adversarial(self, art_warning, mocker, asr_dummy_estimator, audio_data):
         try:
             test_input, test_target = audio_data
@@ -105,7 +105,7 @@ class TestImperceptibleASR:
         except ARTTestException as e:
             art_warning(e)
 
-    @pytest.mark.skipMlFramework("tensorflow1", "tensorflow2", "mxnet", "kerastf", "non_dl_frameworks")
+    @pytest.mark.skip_framework("tensorflow1", "tensorflow2", "mxnet", "kerastf", "non_dl_frameworks")
     def test_create_imperceptible(self, art_warning, mocker, asr_dummy_estimator, audio_data):
         try:
             test_input, test_target = audio_data
@@ -132,21 +132,25 @@ class TestImperceptibleASR:
         except ARTTestException as e:
             art_warning(e)
 
-    @pytest.mark.skipMlFramework("tensorflow", "mxnet", "kerastf", "non_dl_frameworks")
+    @pytest.mark.skip_framework("tensorflow", "mxnet", "kerastf", "non_dl_frameworks")
     def test_loss_gradient_masking_threshold(self, art_warning, asr_dummy_estimator, audio_data):
         try:
             test_input, _ = audio_data
             test_delta = test_input * 0
 
             imperceptible_asr = ImperceptibleASR(estimator=asr_dummy_estimator(), masker=PsychoacousticMasker())
-            loss_gradient, loss = imperceptible_asr._loss_gradient_masking_threshold(test_delta, test_input)
+
+            masking_threshold, psd_maximum = imperceptible_asr._stabilized_threshold_and_psd_maximum(test_input)
+            loss_gradient, loss = imperceptible_asr._loss_gradient_masking_threshold(
+                test_delta, test_input, masking_threshold, psd_maximum
+            )
 
             assert [g.shape for g in loss_gradient] == [d.shape for d in test_delta]
             assert loss.ndim == 1 and loss.shape == test_delta.shape
         except ARTTestException as e:
             art_warning(e)
 
-    @pytest.mark.skipMlFramework("pytorch", "tensorflow1", "tensorflow2", "mxnet", "kerastf", "non_dl_frameworks")
+    @pytest.mark.skip_framework("pytorch", "tensorflow1", "tensorflow2", "mxnet", "kerastf", "non_dl_frameworks")
     def test_loss_gradient_masking_threshold_tf(self, art_warning, asr_dummy_estimator, audio_batch_padded):
         try:
             import tensorflow.compat.v1 as tf1
@@ -154,7 +158,7 @@ class TestImperceptibleASR:
             tf1.reset_default_graph()
 
             test_delta = audio_batch_padded
-            test_psd_maximum = np.ones((test_delta.shape[0], 28))
+            test_psd_maximum = np.ones((test_delta.shape[0]))
             test_masking_threshold = np.zeros((test_delta.shape[0], 1025, 28))
 
             imperceptible_asr = ImperceptibleASR(estimator=asr_dummy_estimator(), masker=PsychoacousticMasker())
@@ -171,11 +175,11 @@ class TestImperceptibleASR:
         except ARTTestException as e:
             art_warning(e)
 
-    @pytest.mark.skipMlFramework("tensorflow", "mxnet", "kerastf", "non_dl_frameworks")
+    @pytest.mark.skip_framework("tensorflow", "mxnet", "kerastf", "non_dl_frameworks")
     def test_loss_gradient_masking_threshold_torch(self, art_warning, asr_dummy_estimator, audio_batch_padded):
         try:
             test_delta = audio_batch_padded
-            test_psd_maximum = np.ones((test_delta.shape[0], 28))
+            test_psd_maximum = np.ones((test_delta.shape[0], 1, 1))
             test_masking_threshold = np.zeros((test_delta.shape[0], 1025, 28))
 
             imperceptible_asr = ImperceptibleASR(estimator=asr_dummy_estimator(), masker=PsychoacousticMasker())
@@ -188,7 +192,7 @@ class TestImperceptibleASR:
         except ARTTestException as e:
             art_warning(e)
 
-    @pytest.mark.skipMlFramework("pytorch", "tensorflow1", "tensorflow2", "mxnet", "kerastf", "non_dl_frameworks")
+    @pytest.mark.skip_framework("pytorch", "tensorflow1", "tensorflow2", "mxnet", "kerastf", "non_dl_frameworks")
     def test_approximate_power_spectral_density_tf(self, art_warning, asr_dummy_estimator, audio_batch_padded):
         try:
             import tensorflow.compat.v1 as tf1
@@ -196,7 +200,7 @@ class TestImperceptibleASR:
             tf1.reset_default_graph()
 
             test_delta = audio_batch_padded
-            test_psd_maximum = np.ones((test_delta.shape[0], 28))
+            test_psd_maximum = np.ones((test_delta.shape[0]))
 
             masker = PsychoacousticMasker()
             imperceptible_asr = ImperceptibleASR(estimator=asr_dummy_estimator(), masker=masker)
@@ -217,13 +221,13 @@ class TestImperceptibleASR:
         except ARTTestException as e:
             art_warning(e)
 
-    @pytest.mark.skipMlFramework("tensorflow", "mxnet", "kerastf", "non_dl_frameworks")
+    @pytest.mark.skip_framework("tensorflow", "mxnet", "kerastf", "non_dl_frameworks")
     def test_approximate_power_spectral_density_torch(self, art_warning, asr_dummy_estimator, audio_batch_padded):
         try:
             import torch
 
             test_delta = audio_batch_padded
-            test_psd_maximum = np.ones((test_delta.shape[0], 28))
+            test_psd_maximum = np.ones((test_delta.shape[0], 1, 1))
 
             masker = PsychoacousticMasker()
             imperceptible_asr = ImperceptibleASR(estimator=asr_dummy_estimator(), masker=masker)
@@ -252,8 +256,8 @@ class TestPsychoacousticMasker:
             masker = PsychoacousticMasker()
             psd_matrix, psd_max = masker.power_spectral_density(test_input)
 
-            assert psd_matrix.shape[0] == masker.window_size // 2 + 1
-            assert psd_matrix.shape[1] == psd_max.shape[0]
+            assert psd_matrix.shape == (masker.window_size // 2 + 1, 28)
+            assert np.floor(psd_max) == 78.0
         except ARTTestException as e:
             art_warning(e)
 
@@ -283,8 +287,8 @@ class TestPsychoacousticMasker:
             masker = PsychoacousticMasker()
             maskers, masker_idx = masker.filter_maskers(test_maskers, test_masker_idx)
 
-            assert masker_idx.tolist() == [9]
-            assert maskers.tolist() == [91]
+            assert masker_idx.tolist() == [2]
+            assert maskers.tolist() == [96]
         except ARTTestException as e:
             art_warning(e)
 
@@ -328,7 +332,7 @@ class TestPsychoacousticMasker:
             masker = PsychoacousticMasker()
             threshold, psd_max = masker.calculate_threshold_and_psd_maximum(test_input)
 
-            assert threshold.shape[1] == psd_max.shape[0]
-            assert threshold.shape[0] == masker.window_size // 2 + 1
+            assert threshold.shape == (masker.window_size // 2 + 1, 28)
+            assert np.floor(psd_max) == 78.0
         except ARTTestException as e:
             art_warning(e)

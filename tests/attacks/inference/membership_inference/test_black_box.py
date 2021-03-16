@@ -66,7 +66,7 @@ def test_black_box_loss_tabular(art_warning, model_type, tabular_dl_estimator_fo
         art_warning(e)
 
 
-@pytest.mark.skipMlFramework("tensorflow", "pytorch", "scikitlearn", "mxnet", "kerastf")
+@pytest.mark.skip_framework("tensorflow", "pytorch", "scikitlearn", "mxnet", "kerastf")
 @pytest.mark.skipif(keras.__version__.startswith("2.2"), reason="requires Keras 2.3.0 or higher")
 def test_black_box_keras_loss(art_warning, get_iris_dataset):
     try:
@@ -116,7 +116,7 @@ def test_black_box_tabular_gb(art_warning, tabular_dl_estimator_for_attack, get_
         art_warning(e)
 
 
-@pytest.mark.skipMlFramework("tensorflow", "keras", "scikitlearn", "mxnet", "kerastf")
+@pytest.mark.skip_framework("tensorflow", "keras", "scikitlearn", "mxnet", "kerastf")
 def test_black_box_with_model(art_warning, tabular_dl_estimator_for_attack, estimator_for_attack, get_iris_dataset):
     try:
         classifier = tabular_dl_estimator_for_attack(MembershipInferenceBlackBox)
