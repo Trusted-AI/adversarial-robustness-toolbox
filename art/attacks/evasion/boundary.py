@@ -67,7 +67,7 @@ class BoundaryAttack(EvasionAttack):
     def __init__(
         self,
         estimator: "CLASSIFIER_TYPE",
-        batch_size: int = 128,
+        batch_size: int = 64,
         targeted: bool = True,
         delta: float = 0.01,
         epsilon: float = 0.01,
