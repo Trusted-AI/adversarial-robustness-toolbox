@@ -74,7 +74,7 @@ class InputFilter(ABCMeta):
             replacement_function.__name__ = "new_" + func_name
             return replacement_function
 
-        replacement_list_no_y = ["predict", "get_activations"]
+        replacement_list_no_y = ["predict"]
         replacement_list_has_y = ["fit"]
 
         for item in replacement_list_no_y:
