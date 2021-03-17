@@ -1,0 +1,80 @@
+name: Continuous Integration
+on:
+  # Run on manual trigger
+  workflow_dispatch:
+
+  # Run on pull requests
+  pull_request:
+    paths-ignore:
+      - '*.md'
+
+  # Run when pushing to main or dev branches
+  push:
+    branches:
+      - main
+      - dev*
+
+  # Run scheduled CI flow daily
+  schedule:
+    - cron: '0 8 * * 0'
+
+jobs:
+  test:
+    runs-on: ubuntu-16.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: mxnet (Python 3.7)
+            framework: mxnet
+            python: 3.7
+          - name: legacy (TensorFlow 2.3.2 Keras 2.4.3  PyTorch 1.7.1 scikit-learn 0.22.2 Python 3.7)
+            framework: legacy
+            python: 3.7
+            tensorflow: 2.3.2
+            keras: 2.4.3
+            scikit-learn: 0.22.2
+            torch: 1.7.1+cpu
+            torchvision: 0.8.2+cpu
+            torchaudio: 0.7.2
+          - name: legacy (TensorFlow 2.4.1 Keras 2.4.3 PyTorch 1.7.1 scikit-learn 0.23.2 Python 3.7)
+            framework: legacy
+            python: 3.7
+            tensorflow: 2.4.1
+            keras: 2.4.3
+            torch: 1.7.1+cpu
+            torchvision: 0.8.2+cpu
+            torchaudio: 0.7.2
+            scikit-learn: 0.23.2
+
+    name: Run ${{ matrix.name }} Tests
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get -y -q install ffmpeg libavcodec-extra
+          python -m pip install --upgrade pip setuptools wheel
+          pip install tensorflow==2.4.1
+          pip install keras==2.4.3
+          pip3 install -q -r requirements.txt
+          pip list
+      - name: Pre-install legacy
+        if: ${{ matrix.framework == 'legacy' }}
+        run: |
+          pip install tensorflow==${{ matrix.tensorflow }}
+          pip install keras==${{ matrix.keras }}
+          pip install scikit-learn==${{ matrix.scikit-learn }}
+          pip install torch==${{ matrix.torch }} -f https://download.pytorch.org/whl/torch_stable.html
+          pip install torchvision==${{ matrix.torchvision }} -f https://download.pytorch.org/whl/torch_stable.html
+          pip install torchaudio==${{ matrix.torchaudio }} -f https://download.pytorch.org/whl/torch_stable.html
+          pip list
+      - name: Run ${{ matrix.name }} Tests
+        run: ./run_tests.sh ${{ matrix.framework }}
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
