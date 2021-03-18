@@ -2,6 +2,12 @@
 ================================================
 .. automodule:: art.attacks.inference.attribute_inference
 
+Attribute Inference Baseline
+----------------------------
+.. autoclass:: AttributeInferenceBaseline
+   :members:
+   :special-members:
+
 Attribute Inference Black-Box
 -----------------------------
 .. autoclass:: AttributeInferenceBlackBox

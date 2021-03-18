@@ -38,6 +38,8 @@ class KerasEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
     Estimator class for Keras models.
     """
 
+    estimator_params = BaseEstimator.estimator_params + NeuralNetworkMixin.estimator_params
+
     def __init__(self, **kwargs) -> None:
         """
         Estimator class for Keras models.
@@ -54,7 +56,7 @@ class KerasEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         :return: Predictions.
         :rtype: Format as expected by the `model`
         """
-        return NeuralNetworkMixin.predict(self, x, batch_size=128, **kwargs)
+        return NeuralNetworkMixin.predict(self, x, batch_size=batch_size, **kwargs)
 
     def fit(self, x: np.ndarray, y, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
         """
@@ -67,9 +69,9 @@ class KerasEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         :param batch_size: Batch size.
         :param nb_epochs: Number of training epochs.
         """
-        NeuralNetworkMixin.fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs)
+        NeuralNetworkMixin.fit(self, x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
-    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the loss of the neural network for samples `x`.
 

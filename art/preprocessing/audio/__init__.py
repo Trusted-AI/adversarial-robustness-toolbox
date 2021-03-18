@@ -1,2 +1,5 @@
-from art.preprocessing.audio.l_filter.l_filter import LFilter
-from art.preprocessing.audio.l_filter.l_filter_pytorch import LFilterPyTorch
+"""
+This module contains audio preprocessing tools.
+"""
+from art.preprocessing.audio.l_filter.numpy import LFilter
+from art.preprocessing.audio.l_filter.pytorch import LFilterPyTorch

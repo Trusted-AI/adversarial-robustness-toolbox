@@ -112,8 +112,8 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         """
         if y is None:
             raise ValueError("Target labels `y` need to be provided for a targeted attack.")
-        else:
-            y_attack = np.copy(y)
+
+        y_attack = np.copy(y)
 
         num_poison = len(x)
         if num_poison == 0:

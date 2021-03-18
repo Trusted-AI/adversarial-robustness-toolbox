@@ -91,7 +91,7 @@ class TestBlackBoxClassifier(TestBase):
         self.assertIn("clip_values=[  0. 255.]", repr_)
         self.assertIn("defences=None", repr_)
         self.assertIn(
-            "preprocessing=StandardisationMeanStd(mean=0, std=1, apply_fit=True, apply_predict=True)", repr_
+            "preprocessing=StandardisationMeanStd(mean=0.0, std=1.0, apply_fit=True, apply_predict=True)", repr_
         )
 
 

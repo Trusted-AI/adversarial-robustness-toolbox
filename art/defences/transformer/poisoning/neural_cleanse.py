@@ -123,8 +123,8 @@ class NeuralCleanse(Transformer):
                 batch_size=batch_size,
             )
             return transformed_classifier
-        else:
-            raise NotImplementedError("Only Keras classifiers (v2.2.4) are supported for this defence.")
+
+        raise NotImplementedError("Only Keras classifiers (v2.2.4) are supported for this defence.")
 
     def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> None:
         """
