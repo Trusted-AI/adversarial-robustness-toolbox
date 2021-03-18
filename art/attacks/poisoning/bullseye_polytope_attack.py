@@ -52,7 +52,8 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
     attack_params = PoisoningAttackWhiteBox.attack_params + [
         "target",
         "feature_layer",
-        "opt" "max_iter",
+        "opt",
+        "max_iter",
         "learning_rate",
         "momentum",
         "decay_iter",
@@ -132,7 +133,7 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
         :param y: Target label
         :return: An tuple holding the (poisoning examples, poisoning labels).
         """
-        import torch
+        import torch  # lgtm [py/repeated-import]
 
         class PoisonBatch(torch.nn.Module):
             """
@@ -270,7 +271,7 @@ def get_poison_tuples(poison_batch, poison_label):
 def loss_from_center(
     subs_net_list, target_feat_list, poison_batch, net_repeat, end2end, feature_layer
 ) -> "torch.Tensor":
-    import torch
+    import torch  # lgtm [py/repeated-import]
 
     if end2end:
         loss = 0
