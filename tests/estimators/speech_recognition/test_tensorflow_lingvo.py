@@ -21,7 +21,6 @@ import logging
 
 import numpy as np
 import pytest
-import tensorflow as tf
 from numpy.testing import assert_allclose, assert_array_equal
 from scipy.io.wavfile import read
 

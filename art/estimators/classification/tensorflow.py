@@ -1162,8 +1162,8 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         try:
             # only works for functionally defined models
             model = tf.keras.models.clone_model(self.model, input_tensors=self.model.inputs)
-        except ValueError:
-            raise ValueError("Cannot clone custom tensorflow models")
+        except ValueError as e:
+            raise ValueError("Cannot clone custom tensorflow models") from e
 
         optimizer = self.model.optimizer
         # reset optimizer variables
@@ -1191,14 +1191,14 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
     def reset(self) -> None:
         """
         Resets the weights of the classifier so that it can be refit from scratch.
-
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
         for layer in self.model.layers:
             if isinstance(layer, (tf.keras.Model, tf.keras.models.Sequential)):  # if there is a model as a layer
-                self.reset(layer)  # apply recursively
-                continue
+                raise NotImplementedError("Resetting of models with models as layers has not been tested.")
+            #     self.reset(layer)  # apply recursively
+            #     continue
 
             # find initializers
             if hasattr(layer, "cell"):

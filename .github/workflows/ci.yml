@@ -20,7 +20,7 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-16.04
+    runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
@@ -62,6 +62,9 @@ jobs:
           - name: PyTorch (Python 3.7)
             framework: pytorch
             python: 3.7
+            torch: 1.7.1+cpu
+            torchvision: 0.8.2+cpu
+            torchaudio: 0.7.2
           - name: scikit-learn 0.22.2 (Python 3.7)
             framework: scikitlearn
             scikit-learn: 0.22.2
@@ -70,9 +73,6 @@ jobs:
             framework: scikitlearn
             scikit-learn: 0.23.2
             python: 3.8
-          - name: mxnet (Python 3.7)
-            framework: mxnet
-            python: 3.7
           - name: TensorFlow+Lingvo 2.1.0v1 (Keras 2.3.1 Python 3.6)
             framework: tensorflow2v1
             python: 3.6
@@ -80,18 +80,27 @@ jobs:
             tf_version: v2
             keras: 2.3.1
             lingvo: 0.6.4
-          - name: legacy (TensorFlow 2.2.1 Keras 2.3.1 scikit-learn 0.22.2 Python 3.7)
-            framework: legacy
-            python: 3.7
-            tensorflow: 2.2.1
-            keras: 2.3.1
-            scikit-learn: 0.22.2
-          - name: legacy (TensorFlow 2.3.2 Keras 2.4.3 scikit-learn 0.23.2 Python 3.8)
-            framework: legacy
-            python: 3.8
-            tensorflow: 2.3.2
-            keras: 2.4.3
-            scikit-learn: 0.23.2
+#          - name: mxnet (Python 3.7)
+#            framework: mxnet
+#            python: 3.7
+#          - name: legacy (TensorFlow 2.3.2 Keras 2.4.3  PyTorch 1.7.1 scikit-learn 0.22.2 Python 3.7)
+#            framework: legacy
+#            python: 3.7
+#            tensorflow: 2.3.2
+#            keras: 2.4.3
+#            scikit-learn: 0.22.2
+#            torch: 1.7.1+cpu
+#            torchvision: 0.8.2+cpu
+#            torchaudio: 0.7.2
+#          - name: legacy (TensorFlow 2.4.1 Keras 2.4.3 PyTorch 1.7.1 scikit-learn 0.23.2 Python 3.7)
+#            framework: legacy
+#            python: 3.7
+#            tensorflow: 2.4.1
+#            keras: 2.4.3
+#            torch: 1.7.1+cpu
+#            torchvision: 0.8.2+cpu
+#            torchaudio: 0.7.2
+#            scikit-learn: 0.23.2
 
     name: Run ${{ matrix.name }} Tests
     steps:
@@ -106,6 +115,8 @@ jobs:
           sudo apt-get update
           sudo apt-get -y -q install ffmpeg libavcodec-extra
           python -m pip install --upgrade pip setuptools wheel
+          pip install tensorflow==2.4.1
+          pip install keras==2.4.3
           pip3 install -q -r requirements.txt
           pip list
       - name: Pre-install legacy
@@ -114,6 +125,9 @@ jobs:
           pip install tensorflow==${{ matrix.tensorflow }}
           pip install keras==${{ matrix.keras }}
           pip install scikit-learn==${{ matrix.scikit-learn }}
+          pip install torch==${{ matrix.torch }} -f https://download.pytorch.org/whl/torch_stable.html
+          pip install torchvision==${{ matrix.torchvision }} -f https://download.pytorch.org/whl/torch_stable.html
+          pip install torchaudio==${{ matrix.torchaudio }} -f https://download.pytorch.org/whl/torch_stable.html
           pip list
       - name: Pre-install tensorflow
         if: ${{ matrix.framework == 'tensorflow' || matrix.framework == 'keras' || matrix.framework == 'kerastf' || matrix.framework == 'tensorflow2v1' }}
@@ -126,6 +140,12 @@ jobs:
         run: |
           pip install scikit-learn==${{ matrix.scikit-learn }}
           pip list
+      - name: Pre-install torch
+        if: ${{ matrix.framework == 'pytorch' }}
+        run: |
+          pip install torch==${{ matrix.torch }} -f https://download.pytorch.org/whl/torch_stable.html
+          pip install torchvision==${{ matrix.torchvision }} -f https://download.pytorch.org/whl/torch_stable.html
+          pip install torchaudio==${{ matrix.torchaudio }} -f https://download.pytorch.org/whl/torch_stable.html
       - name: Pre-install Lingvo ASR
         if: ${{ matrix.tensorflow == '2.1.0' }}
         run: |

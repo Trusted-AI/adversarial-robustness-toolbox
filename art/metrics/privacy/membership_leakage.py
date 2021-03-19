@@ -72,7 +72,7 @@ def PDTP(
 
     results = []
 
-    for i in range(num_iter):
+    for _ in range(num_iter):
         iter_results = []
         # get probabilities from original model
         pred = target_estimator.predict(x)
@@ -94,8 +94,10 @@ def PDTP(
             alt_y = np.delete(y, row, 0)
             try:
                 extra_estimator.reset()
-            except NotImplementedError:
-                raise ValueError("PDTP metric can only be applied to classifiers that implement the reset method.")
+            except NotImplementedError as e:
+                raise ValueError(
+                    "PDTP metric can only be applied to classifiers that implement the reset method."
+                ) from e
             extra_estimator.fit(alt_x, alt_y)
             # get probabilities from new model
             alt_pred = extra_estimator.predict(x)

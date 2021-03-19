@@ -126,6 +126,7 @@ class MembershipInferenceBlackBox(InferenceAttack):
                         self.output = nn.Sigmoid()
 
                     def forward(self, x_1, label):
+                        """Forward the model."""
                         out_x1 = self.features(x_1)
                         out_l = self.labels(label)
                         is_member = self.combine(torch.cat((out_x1, out_l), 1))

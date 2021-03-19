@@ -154,7 +154,7 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
             with tqdm(
                 total=len(clean_pvalranges) + len(adv_pvalranges), desc="Subset scanning", disable=not self.verbose
             ) as pbar:
-                for j, c_p in enumerate(clean_pvalranges):
+                for _, c_p in enumerate(clean_pvalranges):
                     best_score, _, _, _ = Scanner.fgss_individ_for_nets(c_p)
                     clean_scores.append(best_score)
                     pbar.update(1)

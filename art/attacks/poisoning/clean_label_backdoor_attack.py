@@ -21,9 +21,9 @@ This module implements Backdoor Attacks to poison data used in ML models.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-import numpy as np
-
 from typing import Optional, Tuple, TYPE_CHECKING, Union
+
+import numpy as np
 
 from art.attacks.attack import PoisoningAttackBlackBox
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
@@ -102,7 +102,7 @@ class PoisoningAttackCleanLabelBackdoor(PoisoningAttackBlackBox):
         self._check_params()
 
     def poison(
-        self, x: np.ndarray, y: Optional[np.ndarray] = None, broadcast=False, **kwargs
+        self, x: np.ndarray, y: Optional[np.ndarray] = None, broadcast: bool = True, **kwargs
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Calls perturbation function on input x and returns the perturbed input and poison labels for the data.
@@ -133,10 +133,10 @@ class PoisoningAttackCleanLabelBackdoor(PoisoningAttackBlackBox):
         if any(no_change_detected):
             logger.warning("Perturbed input is the same as original data after PGD. Check params.")
             idx_no_change = np.arange(len(no_change_detected))[no_change_detected]
-            logger.warning(f"{len(idx_no_change)} indices without change: {idx_no_change}")
+            logger.warning(f"%d indices without change: %d", len(idx_no_change), idx_no_change)
 
         # Add backdoor and poison with the same label
-        poisoned_input, _ = self.backdoor.poison(perturbed_input, self.target, broadcast=True)
+        poisoned_input, _ = self.backdoor.poison(perturbed_input, self.target, broadcast=broadcast)
         data[selected_indices] = poisoned_input
 
         return data, estimated_labels

@@ -248,21 +248,22 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         return self._loss_scale  # type: ignore
 
     def reduce_labels(self, y: Union[np.ndarray, "torch.Tensor"]) -> Union[np.ndarray, "torch.Tensor"]:
+        """
+        Reduce labels from one-hot encoded to index labels.
+        """
         import torch  # lgtm [py/repeated-import]
 
         # Check if the loss function requires as input index labels instead of one-hot-encoded labels
         if self._reduce_labels and self._int_labels:
             if isinstance(y, torch.Tensor):
                 return torch.argmax(y, dim=1)
-            else:
-                return np.argmax(y, axis=1)
+            return np.argmax(y, axis=1)
         elif self._reduce_labels:  # float labels
             if isinstance(y, torch.Tensor):
                 return torch.argmax(y, dim=1).type("torch.FloatTensor")
-            else:
-                y_index = np.argmax(y, axis=1).astype(np.float32)
-                y_index = np.expand_dims(y_index, axis=1)
-                return y_index
+            y_index = np.argmax(y, axis=1).astype(np.float32)
+            y_index = np.expand_dims(y_index, axis=1)
+            return y_index
         else:
             return y
 
@@ -369,7 +370,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                 model_outputs = self._model(i_batch)
 
                 # Form the loss function
-                loss = self._loss(model_outputs[-1], o_batch)
+                loss = self._loss(model_outputs[-1], o_batch)  # lgtm [py/call-to-non-callable]
 
                 # Do training
                 if self._use_amp:
@@ -688,7 +689,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         # Compute the gradient and return
         model_outputs = self._model(inputs_t)
-        loss = self._loss(model_outputs[-1], labels_t)
+        loss = self._loss(model_outputs[-1], labels_t)  # lgtm [py/call-to-non-callable]
 
         # Clean gradients
         self._model.zero_grad()
@@ -716,7 +717,11 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         return grads
 
     def get_activations(
-        self, x: np.ndarray, layer: Union[int, str], batch_size: int = 128, framework: bool = False
+        self,
+        x: Union[np.ndarray, "torch.Tensor"],
+        layer: Optional[Union[int, str]] = None,
+        batch_size: int = 128,
+        framework: bool = False,
     ) -> np.ndarray:
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
@@ -749,6 +754,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             raise TypeError("Layer must be of type str or int")
 
         if framework:
+            if isinstance(x, torch.Tensor):
+                return self._model(x)[layer_index]
             return self._model(torch.from_numpy(x).to(self._device))[layer_index]
 
         # Run prediction with batch processing

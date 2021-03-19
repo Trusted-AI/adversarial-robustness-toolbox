@@ -56,7 +56,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
                be divided by the second one.
         :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
         """
-        import torch
+        import torch  # lgtm [py/repeated-import]
 
         preprocessing = kwargs.get("preprocessing")
         if isinstance(preprocessing, tuple):
@@ -96,7 +96,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         :return: Predictions.
         :rtype: Format as expected by the `model`
         """
-        return NeuralNetworkMixin.predict(self, x, batch_size=128, **kwargs)
+        return NeuralNetworkMixin.predict(self, x, batch_size=batch_size, **kwargs)
 
     def fit(self, x: np.ndarray, y, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
         """
@@ -109,20 +109,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         :param batch_size: Batch size.
         :param nb_epochs: Number of training epochs.
         """
-        NeuralNetworkMixin.fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs)
-
-    def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
-        """
-        Compute the loss of the neural network for samples `x`.
-
-        :param x: Samples of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
-                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
-        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices
-                  of shape `(nb_samples,)`.
-        :return: Loss values.
-        :rtype: Format as expected by the `model`
-        """
-        raise NotImplementedError
+        NeuralNetworkMixin.fit(self, x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
     def set_params(self, **kwargs) -> None:
         """
@@ -163,17 +150,15 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         :return: Tuple of `x` and `y` after applying the defences and standardisation.
         :rtype: Format as expected by the `model`
         """
-        import torch
+        import torch  # lgtm [py/repeated-import]
+
         from art.preprocessing.standardisation_mean_std.numpy import StandardisationMeanStd
         from art.preprocessing.standardisation_mean_std.pytorch import StandardisationMeanStdPyTorch
 
         if not self.preprocessing_operations:
             return x, y
 
-        if isinstance(x, torch.Tensor):
-            input_is_tensor = True
-        else:
-            input_is_tensor = False
+        input_is_tensor = isinstance(x, torch.Tensor)
 
         if self.all_framework_preprocessing and not (not input_is_tensor and x.dtype == np.object):
             if not input_is_tensor:
@@ -237,17 +222,15 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         :return: Gradients after backward pass through preprocessing defences.
         :rtype: Format as expected by the `model`
         """
-        import torch
+        import torch  # lgtm [py/repeated-import]
+
         from art.preprocessing.standardisation_mean_std.numpy import StandardisationMeanStd
         from art.preprocessing.standardisation_mean_std.pytorch import StandardisationMeanStdPyTorch
 
         if not self.preprocessing_operations:
             return gradients
 
-        if isinstance(x, torch.Tensor):
-            input_is_tensor = True
-        else:
-            input_is_tensor = False
+        input_is_tensor = isinstance(x, torch.Tensor)
 
         if self.all_framework_preprocessing and not (not input_is_tensor and x.dtype == np.object):
             # Convert np arrays to torch tensors.
@@ -297,9 +280,9 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         :param train: False for evaluation mode.
         :param layerinfo: List of module types.
         """
-        from torch import nn
+        import torch  # lgtm [py/repeated-import]
 
-        assert all([issubclass(l, nn.modules.Module) for l in layerinfo])
+        assert all([issubclass(l, torch.nn.modules.Module) for l in layerinfo])
 
         def set_train(layer, layerinfo=layerinfo):
             "Set layer into training mode if instance of `layerinfo`."
@@ -322,9 +305,9 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
 
         :param train: False for evaluation mode.
         """
-        from torch import nn
+        import torch  # lgtm [py/repeated-import]
 
-        self._set_layer(train=train, layerinfo=[nn.modules.dropout._DropoutNd])
+        self._set_layer(train=train, layerinfo=[torch.nn.modules.dropout._DropoutNd])
 
     def set_batchnorm(self, train: bool) -> None:
         """
@@ -332,6 +315,6 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
 
         :param train: False for evaluation mode.
         """
-        from torch import nn
+        import torch  # lgtm [py/repeated-import]
 
-        self._set_layer(train=train, layerinfo=[nn.modules.batchnorm._BatchNorm])
+        self._set_layer(train=train, layerinfo=[torch.nn.modules.batchnorm._BatchNorm])

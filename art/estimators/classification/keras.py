@@ -638,8 +638,8 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         if framework:
             placeholder = k.placeholder(shape=x.shape)
             return placeholder, keras_layer(placeholder)
-        else:
-            return activations
+
+        return activations
 
     def custom_loss_gradient(self, nn_function, tensors, input_values, name="default"):
         """

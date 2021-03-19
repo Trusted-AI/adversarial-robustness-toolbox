@@ -172,6 +172,12 @@ class BinaryInputDetector(ClassGradientsMixin, ClassifierMixin, LossGradientsMix
         raise NotImplementedError
 
     def save(self, filename: str, path: Optional[str] = None) -> None:
+        """
+        Save the detector model.
+
+        param filename: The name of the saved file.
+        param path: The path to the location of the saved file.
+        """
         self.detector.save(filename, path)
 
 
@@ -335,4 +341,10 @@ class BinaryActivationDetector(
         raise NotImplementedError
 
     def save(self, filename: str, path: Optional[str] = None) -> None:
+        """
+        Save the detector model.
+
+        param filename: The name of the saved file.
+        param path: The path to the location of the saved file.
+        """
         self.detector.save(filename, path)
