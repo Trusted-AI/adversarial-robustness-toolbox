@@ -73,6 +73,13 @@ jobs:
             framework: scikitlearn
             scikit-learn: 0.23.2
             python: 3.8
+          - name: TensorFlow+Lingvo 2.1.0v1 (Keras 2.3.1 Python 3.6)
+            framework: tensorflow2v1
+            python: 3.6
+            tensorflow: 2.1.0
+            tf_version: v2
+            keras: 2.3.1
+            lingvo: 0.6.4
 #          - name: mxnet (Python 3.7)
 #            framework: mxnet
 #            python: 3.7
