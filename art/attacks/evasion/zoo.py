@@ -146,7 +146,6 @@ class ZooAttack(EvasionAttack):
         self._init_size = 32
         if self.abort_early:
             self._early_stop_iters = self.max_iter // 10 if self.max_iter >= 10 else self.max_iter
-        self.nb_parallel = nb_parallel
 
         # Initialize noise variable to zero
         if self.input_is_feature_vector:
@@ -442,12 +441,23 @@ class ZooAttack(EvasionAttack):
                 % coord_batch.shape[-1]
             )
         else:
-            indices = (
-                np.random.choice(
-                    coord_batch.shape[-1] * x.shape[0], self.nb_parallel * self._current_noise.shape[0], replace=False,
+            try:
+                indices = (
+                    np.random.choice(
+                        coord_batch.shape[-1] * x.shape[0],
+                        self.nb_parallel * self._current_noise.shape[0],
+                        replace=False,
+                    )
+                    % coord_batch.shape[-1]
                 )
-                % coord_batch.shape[-1]
-            )
+            except ValueError as e:
+                if "Cannot take a larger sample than population when 'replace=False'" in str(e):
+                    raise ValueError(
+                        "Too many samples are requested for the random indices. Try to reduce the number of parallel"
+                        "coordinate updates `nb_parallel`."
+                    ) from e
+                else:
+                    raise e
 
         # Create the batch of modifications to run
         for i in range(self.nb_parallel * self._current_noise.shape[0]):
