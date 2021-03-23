@@ -37,8 +37,9 @@ def firstTemporalDerivative(X: torch.Tensor) -> torch.Tensor:
         The first order temporal derivative with dimensions
         (T consecutive frames, H rows, W columns, C color channels).
     """
-    # Use dims to ensure that it is only shifted on the first dimensions. Per the paper,
-    # we roll x_1,...,x_T in X. Since T is the first dimension of X, we use dim=0.
+    # Use dims to ensure that it is only shifted on the first dimensions. Per
+    # the paper, we roll x_1,...,x_T in X. Since T is the first dimension of X,
+    # we use dim=0.
     return torch.roll(X, 1, dims=0) - torch.roll(X, 0, dims=0)
 
 
@@ -54,9 +55,41 @@ def secondTemporalDerivative(X: torch.Tensor) -> torch.Tensor:
         The first order temporal derivative with dimensions
         (T consecutive frames, H rows, W columns, C color channels).
     """
-    # Use dims to ensure that it is only shifted on the first dimensions. Per the paper,
-    # we roll x_1,...,x_T in X. Since T is the first dimension of X, we use dim=0.
+    # Use dims to ensure that it is only shifted on the first dimensions.
+    # Per the paper, we roll x_1,...,x_T in X. Since T is the first dimension of
+    # X, we use dim=0.
     return torch.roll(X, -1, dims=0) - 2 * torch.roll(X, 0, dims=0) - torch.roll(X, 1, dims=0)
+
+
+def adversarialLoss(predictions: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
+    raise NotImplementedError("adversarialLoss")
+
+
+# TODO: Implement both thick and rough ;).
+# TODO: Also, get rid of the garbage I call most of these comments.
+def thickness(delta: torch.Tensor, T: int) -> torch.Tensor:
+    """
+    Thickness Function
+    :param delta: `torch.Tensor`
+        Delta parameter from the paper
+    :param T: `int`
+
+    :return: `torch.Tensor`
+        The THICKness. Like oatmeal + oatmeal=oatmeal^2
+    """
+    raise NotImplementedError("thickness")
+
+
+def roughness(delta: torch.Tensor, T: int) -> torch.Tensor:
+    """
+    ROUGH AND ROWDY
+    :param delta: `torch.Tensor`
+        Delta parameter from the paper
+    :param T:
+    :return:
+        Rough.
+    """
+    raise NotImplementedError("thickness")
 
 
 # TODO: Delete this, and replace with full unittests
