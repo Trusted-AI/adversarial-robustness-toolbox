@@ -39,7 +39,6 @@ class TestMixinWKerasClassifier(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         k.clear_session()
-        k.set_learning_phase(1)
 
         # Get MNIST
         (x_train, y_train), (x_test, y_test), _, _ = load_mnist()

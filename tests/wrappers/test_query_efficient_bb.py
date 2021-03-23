@@ -41,8 +41,6 @@ NB_TEST = 11
 class TestWrappingClassifierAttack(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        k.set_learning_phase(1)
-
         (x_train, y_train), (x_test, y_test), _, _ = load_dataset("mnist")
         x_train, y_train, x_test, y_test = x_train[:NB_TRAIN], y_train[:NB_TRAIN], x_test[:NB_TEST], y_test[:NB_TEST]
         cls.mnist = (x_train, y_train), (x_test, y_test)

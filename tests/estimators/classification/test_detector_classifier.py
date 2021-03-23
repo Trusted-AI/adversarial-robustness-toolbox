@@ -134,17 +134,6 @@ class TestDetectorClassifier(TestBase):
         gradients = self.detector_classifier.class_gradient(x=self.x_test_mnist[0:n_test_local], label=label)
         self.assertEqual(gradients.shape, (n_test_local, 1, 1, 28, 28))
 
-    def test_set_learning(self):
-        self.detector_classifier.set_learning_phase(False)
-        self.assertFalse(self.detector_classifier.classifier._model.training)
-        self.assertFalse(self.detector_classifier.detector._model.training)
-        self.assertFalse(self.detector_classifier.learning_phase)
-
-        self.detector_classifier.set_learning_phase(True)
-        self.assertTrue(self.detector_classifier.classifier._model.training)
-        self.assertTrue(self.detector_classifier.detector._model.training)
-        self.assertTrue(self.detector_classifier.learning_phase)
-
     def test_save(self):
         model = self.detector_classifier
         t_file = tempfile.NamedTemporaryFile()
@@ -168,7 +157,7 @@ class TestDetectorClassifier(TestBase):
         repr_ = repr(self.detector_classifier)
         self.assertIn("art.estimators.classification.detector_classifier.DetectorClassifier", repr_)
         self.assertIn(
-            "preprocessing=[StandardisationMeanStd(mean=0, std=1, apply_fit=True, apply_predict=True)]", repr_
+            "preprocessing=StandardisationMeanStd(mean=0.0, std=1.0, apply_fit=True, apply_predict=True)", repr_
         )
 
 

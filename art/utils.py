@@ -39,6 +39,9 @@ from tqdm.auto import tqdm
 
 from art import config
 
+if TYPE_CHECKING:
+    import torch
+
 logger = logging.getLogger(__name__)
 
 
@@ -50,11 +53,12 @@ CLIP_VALUES_TYPE = Tuple[Union[int, float, np.ndarray], Union[int, float, np.nda
 
 if TYPE_CHECKING:
     # pylint: disable=R0401
-
     from art.defences.preprocessor.preprocessor import Preprocessor
 
     PREPROCESSING_TYPE = Optional[
-        Tuple[Union[int, float, np.ndarray], Union[int, float, np.ndarray]], Preprocessor, Tuple[Preprocessor, ...]
+        Union[
+            Tuple[Union[int, float, np.ndarray], Union[int, float, np.ndarray]], Preprocessor, Tuple[Preprocessor, ...]
+        ]
     ]
 
     from art.estimators.classification.classifier import (
@@ -446,15 +450,13 @@ def to_categorical(labels: Union[np.ndarray, List[float]], nb_classes: Optional[
     return categorical
 
 
-def float_to_categorical(labels, nb_classes=None):
+def float_to_categorical(labels: np.ndarray, nb_classes: Optional[int] = None):
     """
     Convert an array of floating point labels to binary class matrix.
 
     :param labels: An array of integer labels of shape `(nb_samples,)`
-    :type labels: `np.ndarray`
     :param nb_classes: The number of classes (possible labels)
-    :type nb_classes: `int`
-    :return: A binary matrix representation of `y` in the shape `(nb_samples, nb_classes)`
+    :return: A binary matrix representation of `labels` in the shape `(nb_samples, nb_classes)`
     :rtype: `np.ndarray`
     """
     labels = np.array(labels)
@@ -466,6 +468,23 @@ def float_to_categorical(labels, nb_classes=None):
     categorical = np.zeros((labels.shape[0], nb_classes), dtype=np.float32)
     categorical[np.arange(labels.shape[0]), np.squeeze(indexes)] = 1
     return categorical
+
+
+def floats_to_one_hot(labels: np.ndarray):
+    """
+    Convert a 2D-array of floating point labels to binary class matrix.
+
+    :param labels: A 2D-array of floating point labels of shape `(nb_samples, nb_classes)`
+    :return: A binary matrix representation of `labels` in the shape `(nb_samples, nb_classes)`
+    :rtype: `np.ndarray`
+    """
+    labels = np.array(labels)
+    for feature in labels.T:
+        unique = np.unique(feature)
+        unique.sort()
+        for index, value in enumerate(unique):
+            feature[feature == value] = index
+    return labels.astype(np.float32)
 
 
 def check_and_transform_label_format(
@@ -884,14 +903,13 @@ def load_nursery(raw: bool = False, test_set: float = 0.2, transform_social: boo
     def modify_label(value):  # 5 classes
         if value == "not_recom":
             return 0
-        elif value == "very_recom":
+        if value == "very_recom":
             return 1
-        elif value == "priority":
+        if value == "priority":
             return 2
-        elif value == "spec_prior":
+        if value == "spec_prior":
             return 3
-        else:
-            raise Exception("Bad label value: %s" % value)
+        raise Exception("Bad label value: %s" % value)
 
     data["label"] = data["label"].apply(modify_label)
     data["children"] = data["children"].apply(lambda x: 4 if x == "more" else x)
@@ -901,8 +919,7 @@ def load_nursery(raw: bool = False, test_set: float = 0.2, transform_social: boo
         def modify_social(value):
             if value == "problematic":
                 return 1
-            else:
-                return 0
+            return 0
 
         data["social"] = data["social"].apply(modify_social)
         categorical_features.remove("social")
@@ -929,7 +946,6 @@ def load_nursery(raw: bool = False, test_set: float = 0.2, transform_social: boo
         data = pd.concat([label, scaled_features], axis=1, join="inner")
 
     features = data.drop(["label"], axis=1)
-    # print(features.columns)
     min_, max_ = np.amin(features.to_numpy()), np.amax(features.to_numpy())
 
     # Split training and test sets
@@ -1009,8 +1025,6 @@ def get_file(filename: str, url: str, path: Optional[str] = None, extract: bool 
     :return: Path to the downloaded file.
     """
     if path is None:
-        from art import config
-
         path_ = os.path.expanduser(config.ART_DATA_PATH)
     else:
         path_ = os.path.expanduser(path)
@@ -1044,7 +1058,7 @@ def get_file(filename: str, url: str, path: Optional[str] = None, extract: bool 
                 ssl._create_default_https_context = ssl._create_unverified_context
 
                 if verbose:
-                    with tqdm() as t:
+                    with tqdm() as t_bar:
                         last_block = [0]
 
                         def progress_bar(blocks: int = 1, block_size: int = 1, total_size: Optional[int] = None):
@@ -1054,8 +1068,8 @@ def get_file(filename: str, url: str, path: Optional[str] = None, extract: bool 
                             :param total_size: Total size (in tqdm units). If [default: None] or -1, remains unchanged.
                             """
                             if total_size not in (None, -1):
-                                t.total = total_size
-                            displayed = t.update((blocks - last_block[0]) * block_size)
+                                t_bar.total = total_size
+                            displayed = t_bar.update((blocks - last_block[0]) * block_size)
                             last_block[0] = blocks
                             return displayed
 
@@ -1228,10 +1242,44 @@ def pad_sequence_input(x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     max_length = max(map(len, x))
     batch_size = x.shape[0]
 
-    x_padded = np.zeros((batch_size, max_length))
+    # note: use dtype of inner elements
+    x_padded = np.zeros((batch_size, max_length), dtype=x[0].dtype)
     x_mask = np.zeros((batch_size, max_length), dtype=bool)
 
     for i, x_i in enumerate(x):
         x_padded[i, : len(x_i)] = x_i
         x_mask[i, : len(x_i)] = 1
     return x_padded, x_mask
+
+
+# -------------------------------------------------------------------------------------------------------- CUDA SUPPORT
+
+
+def to_cuda(x: "torch.Tensor") -> "torch.Tensor":
+    """
+    Move the tensor from the CPU to the GPU if a GPU is available.
+
+    :param x: CPU Tensor to move to GPU if available.
+    :return: The CPU Tensor moved to a GPU Tensor.
+    """
+    from torch.cuda import is_available
+
+    use_cuda = is_available()
+    if use_cuda:
+        x = x.cuda()
+    return x
+
+
+def from_cuda(x: "torch.Tensor") -> "torch.Tensor":
+    """
+    Move the tensor from the GPU to the CPU if a GPU is available.
+
+    :param x: GPU Tensor to move to CPU if available.
+    :return: The GPU Tensor moved to a CPU Tensor.
+    """
+    from torch.cuda import is_available
+
+    use_cuda = is_available()
+    if use_cuda:
+        x = x.cpu()
+    return x

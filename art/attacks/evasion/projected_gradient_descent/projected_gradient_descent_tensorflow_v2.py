@@ -209,7 +209,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
         logger.info(
             "Success rate of attack: %.2f%%",
-            100 * compute_success(self.estimator, x, y, adv_x, self.targeted, batch_size=self.batch_size),
+            100 * compute_success(self.estimator, x, targets, adv_x, self.targeted, batch_size=self.batch_size),
         )
 
         return adv_x
@@ -269,6 +269,11 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
             1 - 2 * int(self.targeted), dtype=ART_NUMPY_DTYPE
         )
 
+        # Check for NaN before normalisation an replace with 0
+        if tf.reduce_any(tf.math.is_nan(grad)):
+            logger.warning("Elements of the loss gradient are NaN and have been replaced with 0.0.")
+            grad = tf.where(tf.math.is_nan(grad), tf.zeros_like(grad), grad)
+
         # Apply mask
         if mask is not None:
             grad = tf.where(mask == 0.0, 0.0, grad)
@@ -304,11 +309,12 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        x = x + tf.constant(eps_step, dtype=ART_NUMPY_DTYPE) * perturbation
-
+        perturbation_step = tf.constant(eps_step, dtype=ART_NUMPY_DTYPE) * perturbation
+        perturbation_step = tf.where(tf.math.is_nan(perturbation_step), 0, perturbation_step)
+        x = x + perturbation_step
         if self.estimator.clip_values is not None:
             clip_min, clip_max = self.estimator.clip_values
-            x = tf.clip_by_value(x, clip_min, clip_max)
+            x = tf.clip_by_value(x, clip_value_min=clip_min, clip_value_max=clip_max)
 
         return x
 

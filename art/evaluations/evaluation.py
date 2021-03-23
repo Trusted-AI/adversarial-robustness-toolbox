@@ -15,12 +15,21 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
+"""
+This module contains the abstract base class for evaluations.
+"""
 from abc import ABC, abstractmethod
 from typing import Any
 
 
 class Evaluation(ABC):
+    """
+    This class defines the abstract base class for evaluations.
+    """
+
     @abstractmethod
     def evaluate(self, *args, **kwargs) -> Any:
+        """
+        Abstract method running the evaluation.
+        """
         raise NotImplementedError
