@@ -441,9 +441,6 @@ class ZooAttack(EvasionAttack):
                 % coord_batch.shape[-1]
             )
         else:
-            print(coord_batch.shape)
-            print(x.shape)
-            print(self._current_noise.shape)
             try:
                 indices = (
                     np.random.choice(
