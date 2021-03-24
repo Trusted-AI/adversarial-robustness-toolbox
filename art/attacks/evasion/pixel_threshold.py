@@ -161,13 +161,12 @@ class PixelThreshold(EvasionAttack):
             if self.th is None:
                 self.min_th = 127
                 start, end = 1, 127
+                image_result: Union[List[np.ndarray], np.ndarray] = []
                 while True:
-                    image_result: Union[List[np.ndarray], np.ndarray] = []
                     threshold = (start + end) // 2
                     success, trial_image_result = self._attack(image, target_class, threshold, max_iter)
-                    if image_result or success:
-                        image_result = trial_image_result
                     if success:
+                        image_result = trial_image_result
                         end = threshold - 1
                     else:
                         start = threshold + 1
