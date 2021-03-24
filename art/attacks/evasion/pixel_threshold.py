@@ -99,7 +99,7 @@ class PixelThreshold(EvasionAttack):
         self.type_attack = -1
         self.th = th
         self.es = es
-        self.max_iter = maxiter
+        self.max_iter = max_iter
         self._targeted = targeted
         self.verbose = verbose
         PixelThreshold._check_params(self)
