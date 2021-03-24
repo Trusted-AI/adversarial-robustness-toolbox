@@ -38,6 +38,7 @@ import numpy as np
 # from scipy.optimize import differential_evolution
 # In the meantime, the modified implementation is used which is defined in the
 # lines `453-1457`.
+# Otherwise may use Tensorflow's implementation of DE.
 
 from six import string_types
 from scipy._lib._util import check_random_state
@@ -49,6 +50,9 @@ from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import compute_success, to_categorical, check_and_transform_label_format
+
+from art.preprocessing.standardisation_mean_std.utils import broadcastable_mean_std
+from art.config import ART_NUMPY_DTYPE
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
@@ -67,15 +71,16 @@ class PixelThreshold(EvasionAttack):
         https://arxiv.org/abs/1906.06026
     """
 
-    attack_params = EvasionAttack.attack_params + ["th", "es", "targeted", "verbose"]
+    attack_params = EvasionAttack.attack_params + ["th", "es", "max_iter", "targeted", "verbose"]
     _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassifierMixin)
 
     def __init__(
         self,
         classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
-        th: Optional[int],
-        es: int,
-        targeted: bool,
+        th: Optional[int] = None,
+        es: int = 0,
+        max_iter: int = 100,
+        targeted: bool = False,
         verbose: bool = True,
     ) -> None:
         """
@@ -84,6 +89,7 @@ class PixelThreshold(EvasionAttack):
         :param classifier: A trained classifier.
         :param th: threshold value of the Pixel/ Threshold attack. th=None indicates finding a minimum threshold.
         :param es: Indicates whether the attack uses CMAES (0) or DE (1) as Evolutionary Strategy.
+        :param max_iter: Sets the Maximum iterations to run the Evolutionary Strategies for optimisation.
         :param targeted: Indicates whether the attack is targeted (True) or untargeted (False).
         :param verbose: Print verbose messages of ES and show progress bars.
         """
@@ -93,6 +99,7 @@ class PixelThreshold(EvasionAttack):
         self.type_attack = -1
         self.th = th
         self.es = es
+        self.max_iter = maxiter
         self._targeted = targeted
         self.verbose = verbose
         PixelThreshold._check_params(self)
@@ -105,6 +112,9 @@ class PixelThreshold(EvasionAttack):
             self.img_rows = self.estimator.input_shape[-3]
             self.img_cols = self.estimator.input_shape[-2]
             self.img_channels = self.estimator.input_shape[-1]
+
+        self.mean = self.estimator.preprocessing[0]
+        self.std  = self.estimator.preprocessing[1]
 
     def _check_params(self) -> None:
         if self.th is not None:
@@ -122,6 +132,20 @@ class PixelThreshold(EvasionAttack):
 
         if not isinstance(self.verbose, bool):
             raise ValueError("The argument `verbose` has to be of type bool.")
+
+    def depreprocess_images(self, x):
+        if x.dtype in [np.uint8, np.uint16, np.uint32, np.uint64]:
+            raise TypeError(
+                "The data type of input data `x` is {} and cannot represent negative values. Consider "
+                "changing the data type of the input data `x` to a type that supports negative values e.g. "
+                "np.float32.".format(x.dtype)
+            )
+
+        broadcastable_mean, broadcastable_std = broadcastable_mean_std(x, self.mean, self.std)
+
+        x_norm = x_norm * broadcastable_std
+        x_norm = x + broadcastable_mean
+        x_norm = x_norm.astype(ART_NUMPY_DTYPE)
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, max_iter: int = 100, **kwargs) -> np.ndarray:
         """
@@ -148,13 +172,11 @@ class PixelThreshold(EvasionAttack):
         if self.th is None:
             logger.info("Performing minimal perturbation Attack.")
 
-        if np.max(x) <= 1:
-            scale_input = True
-        else:
-            scale_input = False
+        
+        scale_input = True if np.max(x) <= 1 else False
 
         if scale_input:
-            x = x * 255.0
+            x = self.depreprocess_images(x)
 
         adv_x_best = []
         for image, target_class in tqdm(zip(x, y), desc="Pixel threshold", disable=not self.verbose):
@@ -182,7 +204,7 @@ class PixelThreshold(EvasionAttack):
         adv_x_best = np.array(adv_x_best)
 
         if scale_input:
-            adv_x_best = adv_x_best / 255.0
+            adv_x_best = self.estimator._apply_preprocessing(adv_x_best, y) 
 
         if y is not None:
             y = to_categorical(y, self.estimator.nb_classes)
@@ -233,7 +255,7 @@ class PixelThreshold(EvasionAttack):
         )
 
     def _attack(
-        self, image: np.ndarray, target_class: np.ndarray, limit: int, max_iter: int
+        self, image: np.ndarray, target_class: np.ndarray, limit: int
     ) -> Tuple[bool, np.ndarray]:
         """
         Attack the given image `image` with the threshold `limit` for the `target_class` which is true label for
@@ -278,7 +300,7 @@ class PixelThreshold(EvasionAttack):
                     predict_fn,
                     maxfun=max(1, 400 // len(bounds)) * len(bounds) * 100,
                     callback=callback_fn,
-                    iterations=max_iter,
+                    iterations=self.max_iter,
                 )
             except Exception as exception:
                 if self.verbose:
@@ -290,7 +312,7 @@ class PixelThreshold(EvasionAttack):
                 predict_fn,
                 bounds,
                 disp=self.verbose,
-                maxiter=max_iter,
+                maxiter=self.max_iter,
                 popsize=max(1, 400 // len(bounds)),
                 recombination=1,
                 atol=-1,
@@ -321,7 +343,8 @@ class PixelAttack(PixelThreshold):
         self,
         classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
         th: Optional[int] = None,
-        es: int = 0,
+        es: int = 1,
+        max_iter: int = 100,
         targeted: bool = False,
         verbose: bool = False,
     ) -> None:
@@ -331,10 +354,11 @@ class PixelAttack(PixelThreshold):
         :param classifier: A trained classifier.
         :param th: threshold value of the Pixel/ Threshold attack. th=None indicates finding a minimum threshold.
         :param es: Indicates whether the attack uses CMAES (0) or DE (1) as Evolutionary Strategy.
+        :param max_iter: Sets the Maximum iterations to run the Evolutionary Strategies for optimisation.
         :param targeted: Indicates whether the attack is targeted (True) or untargeted (False).
         :param verbose: Indicates whether to print verbose messages of ES used.
         """
-        super().__init__(classifier, th, es, targeted, verbose)
+        super().__init__(classifier, th, es, max_iter, targeted, verbose)
         self.type_attack = 0
 
     def _perturb_image(self, x: np.ndarray, img: np.ndarray) -> np.ndarray:
@@ -403,6 +427,7 @@ class ThresholdAttack(PixelThreshold):
         classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
         th: Optional[int] = None,
         es: int = 0,
+        max_iter: int = 100,
         targeted: bool = False,
         verbose: bool = False,
     ) -> None:
@@ -412,10 +437,11 @@ class ThresholdAttack(PixelThreshold):
         :param classifier: A trained classifier.
         :param th: threshold value of the Pixel/ Threshold attack. th=None indicates finding a minimum threshold.
         :param es: Indicates whether the attack uses CMAES (0) or DE (1) as Evolutionary Strategy.
+        :param max_iter: Sets the Maximum iterations to run the Evolutionary Strategies for optimisation.
         :param targeted: Indicates whether the attack is targeted (True) or untargeted (False).
         :param verbose: Indicates whether to print verbose messages of ES used.
         """
-        super().__init__(classifier, th, es, targeted, verbose)
+        super().__init__(classifier, th, es, max_iter, targeted, verbose)
         self.type_attack = 1
 
     def _perturb_image(self, x: np.ndarray, img: np.ndarray) -> np.ndarray:
