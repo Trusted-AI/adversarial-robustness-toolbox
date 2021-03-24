@@ -173,7 +173,7 @@ class PixelThreshold(EvasionAttack):
             logger.info("Performing minimal perturbation Attack.")
 
         
-        scale_input = True if np.max(x) <= 1 else False
+        scale_input = False if np.max(x) > 1 else True
 
         if scale_input:
             x = self.depreprocess_images(x)
