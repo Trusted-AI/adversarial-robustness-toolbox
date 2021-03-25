@@ -64,7 +64,7 @@ class TestElasticNet(TestBase):
         master_seed(seed=1234)
         super().setUp()
 
-    def est_2_tensorflow_failure_attack(self):
+    def test_2_tensorflow_failure_attack(self):
         """
         Test the corner case when attack fails.
         :return:
@@ -191,7 +191,6 @@ class TestElasticNet(TestBase):
                 0.0
             ]
         )
-
         np.testing.assert_array_almost_equal(x_test_adv[0, 14, :, 0], expected_x_test_adv, decimal=6)
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
         self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
@@ -268,7 +267,7 @@ class TestElasticNet(TestBase):
         if sess is not None:
             sess.close()
 
-    def est_9a_keras_mnist(self):
+    def test_9a_keras_mnist(self):
         """
         Second test with the KerasClassifier.
         :return:
@@ -342,7 +341,7 @@ class TestElasticNet(TestBase):
 
         k.clear_session()
 
-    def est_6_pytorch_mnist(self):
+    def test_6_pytorch_mnist(self):
         """
         Third test with the PyTorchClassifier.
         :return:
@@ -410,10 +409,10 @@ class TestElasticNet(TestBase):
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
-    def est_1_classifier_type_check_fail(self):
+    def test_1_classifier_type_check_fail(self):
         backend_test_classifier_type_check_fail(ElasticNet, [BaseEstimator, ClassGradientsMixin])
 
-    def est_8_keras_iris_clipped(self):
+    def test_8_keras_iris_clipped(self):
         classifier = get_tabular_classifier_kr()
         attack = ElasticNet(classifier, targeted=False, max_iter=10)
         x_test_adv = attack.generate(self.x_test_iris)
@@ -477,7 +476,9 @@ class TestElasticNet(TestBase):
         accuracy = 1.0 - np.sum(predictions_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
         logger.info("EAD success rate on Iris: %.2f%%", (accuracy * 100))
 
-    def est_9_keras_iris_unbounded(self):
+        k.clear_session()
+
+    def test_9_keras_iris_unbounded(self):
         classifier = get_tabular_classifier_kr()
 
         # Recreate a classifier without clip values
@@ -542,8 +543,10 @@ class TestElasticNet(TestBase):
         accuracy = 1.0 - np.sum(predictions_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
         logger.info("EAD success rate on Iris: %.2f%%", (accuracy * 100))
 
-    def est_3_tensorflow_iris(self):
-        classifier, _ = get_tabular_classifier_tf()
+        k.clear_session()
+
+    def test_3_tensorflow_iris(self):
+        classifier, sess = get_tabular_classifier_tf()
 
         # Test untargeted attack
         attack = ElasticNet(classifier, targeted=False, max_iter=10)
@@ -613,7 +616,7 @@ class TestElasticNet(TestBase):
         targets = random_targets(self.y_test_iris, nb_classes=3)
         attack = ElasticNet(classifier, targeted=True, max_iter=10)
         x_test_adv = attack.generate(self.x_test_iris, **{"y": targets})
-        expected_x_test_adv = np.asarray([0.8859426, 0.51877, 0.5014498, 0.05447771])
+        expected_x_test_adv = np.asarray([0.885649, 0.51815695, 0.5026782, 0.0558902])
         np.testing.assert_array_almost_equal(x_test_adv[0, :], expected_x_test_adv, decimal=6)
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
         self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
@@ -675,7 +678,11 @@ class TestElasticNet(TestBase):
         accuracy = np.sum(predictions_adv == np.argmax(targets, axis=1)) / self.y_test_iris.shape[0]
         logger.info("Targeted EAD success rate on Iris: %.2f%%", (accuracy * 100))
 
-    def est_5_pytorch_iris(self):
+        # Close session
+        if sess is not None:
+            sess.close()
+
+    def test_5_pytorch_iris(self):
         classifier = get_tabular_classifier_pt()
         attack = ElasticNet(classifier, targeted=False, max_iter=10)
         x_test_adv = attack.generate(self.x_test_iris.astype(np.float32))
@@ -741,7 +748,7 @@ class TestElasticNet(TestBase):
         accuracy = 1.0 - np.sum(predictions_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
         logger.info("EAD success rate on Iris: %.2f%%", (accuracy * 100))
 
-    def est_7_scikitlearn(self):
+    def test_7_scikitlearn(self):
         from sklearn.linear_model import LogisticRegression
         from sklearn.svm import SVC, LinearSVC
 
