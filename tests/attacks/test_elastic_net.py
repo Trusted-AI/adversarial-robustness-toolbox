@@ -188,7 +188,7 @@ class TestElasticNet(TestBase):
                 0.0,
                 0.0,
                 0.0,
-                0.0
+                0.0,
             ]
         )
         np.testing.assert_array_almost_equal(x_test_adv[0, 14, :, 0], expected_x_test_adv, decimal=6)
