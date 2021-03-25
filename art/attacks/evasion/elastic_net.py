@@ -144,16 +144,25 @@ class ElasticNet(EvasionAttack):
         # Compute the current predictions
         predictions = self.estimator.predict(np.array(x_adv, dtype=ART_NUMPY_DTYPE), batch_size=self.batch_size)
 
+        # Then compute individual outputs
+        z_target = np.sum(predictions * target, axis=1)
+        z_other = np.max(
+            predictions * (1 - target) + (np.min(predictions, axis=1) - 1)[:, np.newaxis] * target, axis=1,
+        )
+
         if self.targeted:
             i_sub = np.argmax(target, axis=1)
             i_add = np.argmax(
                 predictions * (1 - target) + (np.min(predictions, axis=1) - 1)[:, np.newaxis] * target, axis=1,
             )
+            cond = (z_other - z_target + self.confidence) < 0
+
         else:
             i_add = np.argmax(target, axis=1)
             i_sub = np.argmax(
                 predictions * (1 - target) + (np.min(predictions, axis=1) - 1)[:, np.newaxis] * target, axis=1,
             )
+            cond = (z_target - z_other + self.confidence) < 0
 
         loss_gradient = self.estimator.class_gradient(x_adv, label=i_add)
         loss_gradient -= self.estimator.class_gradient(x_adv, label=i_sub)
@@ -165,6 +174,9 @@ class ElasticNet(EvasionAttack):
 
         loss_gradient *= c_mult
         loss_gradient += 2 * (x_adv - x)
+
+        # Set gradients where loss is constant to zero
+        loss_gradient[cond] = 0.0
 
         return loss_gradient
 
