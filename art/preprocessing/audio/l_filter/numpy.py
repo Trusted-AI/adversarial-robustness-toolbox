@@ -116,7 +116,14 @@ class LFilter(Preprocessor):
         :param grad: Gradient value so far.
         :return: The gradient (estimate) of the defence.
         """
+        if not (self.denominator_coef[0] == 1.0 and np.sum(self.denominator_coef) == 1.0):
+            logger.warning(
+                "Gradient estimation for a non-fir filtering operation is not supported. A BPDA gradient estimation "
+                "is returned."
+            )
+            return grad
 
+        
 
         return grad
 
@@ -128,11 +135,16 @@ class LFilter(Preprocessor):
         :param size: The size of the FIR input or output.
         :return: A gradient matrix.
         """
+        # Initialize gradients redundantly
         grad_matrix = np.zeros(shape=(size, size + self.numerator_coef.size - 1), dtype=ART_NUMPY_DTYPE)
 
+        # Compute gradients
         flipped_numerator_coef = np.flip(self.numerator_coef)
         for i in range(size):
             grad_matrix[i, i : i + self.numerator_coef.size] = flipped_numerator_coef
+
+        # Remove temporary gradients
+        grad_matrix = grad_matrix[:, self.numerator_coef.size - 1 : ]
 
         return grad_matrix
 
