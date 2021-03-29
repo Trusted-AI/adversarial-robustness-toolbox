@@ -23,7 +23,7 @@ This module implements the Geometric Decision-based Attack (GeoDA), a black-box 
 import os
 import math
 import logging
-from typing import Optional, Union, TYPE_CHECKING
+from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import trange
@@ -87,6 +87,7 @@ class GeoDA(EvasionAttack):
         self.sub_dim = sub_dim
         self.max_iter = max_iter
         self._targeted = targeted
+
         self.verbose = verbose
         self._check_params()
 
@@ -94,6 +95,10 @@ class GeoDA(EvasionAttack):
         self.nb_calls = 0
         self.clip_min = 0.0
         self.clip_max = 0.0
+        self.bin_search_tol = 0.0001  # binary search tolerance
+        self.nb_channels = (
+            self.estimator.input_shape[0] if self.estimator.channels_first else self.estimator.input_shape[2]
+        )
 
         # Optimal number of iterations
         mu = 0.6
@@ -104,25 +109,25 @@ class GeoDA(EvasionAttack):
         self.q_opt_iter, self.iterate = self._opt_query_iteration(q_opt_it, iteration, mu)
 
     @staticmethod
-    def _generate_2d_dct_basis(sub_dim, res):
-        def alpha(a, n):
+    def _generate_2d_dct_basis(sub_dim: int, res: int) -> np.ndarray:
+        def alpha(a: int, num: int):
             """
             Get alpha.
             """
             if a == 0:
-                return math.sqrt(1.0 / n)
+                return math.sqrt(1.0 / num)
             else:
-                return math.sqrt(2.0 / n)
+                return math.sqrt(2.0 / num)
 
-        def dct(x, y, v, u, n):
+        def dct(i_x: int, i_y: int, i_v: int, i_u: int, num: int) -> float:
             """
             Get 2D DCT.
             """
             return (
-                alpha(u, n)
-                * alpha(v, n)
-                * math.cos(((2 * x + 1) * (u * math.pi)) / (2 * n))
-                * math.cos(((2 * y + 1) * (v * math.pi)) / (2 * n))
+                alpha(i_u, num)
+                * alpha(i_v, num)
+                * math.cos(((2 * i_x + 1) * (i_u * math.pi)) / (2 * num))
+                * math.cos(((2 * i_y + 1) * (i_v * math.pi)) / (2 * num))
             )
 
         # We can get different frequencies by setting u and v
@@ -151,6 +156,8 @@ class GeoDA(EvasionAttack):
         """
         y = check_and_transform_label_format(y, self.estimator.nb_classes, return_one_hot=True)
 
+        x_adv = x.copy()
+
         # Assert that, if attack is targeted, y is provided
         if self.targeted and y is None:
             raise ValueError("Target labels `y` need to be provided for a targeted attack.")
@@ -177,37 +184,46 @@ class GeoDA(EvasionAttack):
             self.sub_basis = self._generate_2d_dct_basis(sub_dim=self.sub_dim, res=image_size).astype(ART_NUMPY_DTYPE)
             np.save(path, self.sub_basis)
 
-        # Reset number of calls
-        self.nb_calls = 0
-        tol = 0.0001
+        for i in trange(x.shape[0], desc="GeoDA - samples", disable=not self.verbose, position=0):
+            x_i = x[[i]]
+            y_i = y[[i]]
 
-        # Random search
-        x_random = self._find_random_adversarial(x=x, y=y)
-        logger.info("Random search adversarial example is adversarial: %r" % self._is_adversarial(x_random, y))
+            # Reset number of calls
+            self.nb_calls = 0
 
-        # Binary search
-        x_boundary = self._bin_search(x, y, x_random, tol=tol)
-        logger.info("Binary search example at boundary is adversarial: %r" % self._is_adversarial(x_boundary, y))
+            # Random search
+            x_random = self._find_random_adversarial(x=x_i, y=y_i)
+            logger.info("Random search adversarial example is adversarial: %r" % self._is_adversarial(x_random, y_i))
 
-        grad = 0
-        sigma = 0.0002
+            # Binary search
+            x_boundary = self._binary_search(x_i, y_i, x_random, tol=self.bin_search_tol)
+            logger.info("Binary search example at boundary is adversarial: %r" % self._is_adversarial(x_boundary, y_i))
 
-        x_adv = x
+            grad = 0
+            sigma = 0.0002
 
-        for i in trange(self.iterate, desc="GeoDA - steps", disable=not self.verbose):
-            grad_oi, ratios = self._black_grad_batch(x_boundary, self.q_opt_iter[i], sigma, self.batch_size, y)
-            grad = grad_oi + grad
-            x_adv = self._go_to_boundary(x, y, grad)
-            x_adv = self._bin_search(x, y, x_adv, tol=tol)
-            x_boundary = x_adv
+            x_adv_i = x_i
 
-        x_adv = np.clip(x_adv, a_min=self.clip_min, a_max=self.clip_max)
+            for k in trange(self.iterate, desc="GeoDA - steps", disable=not self.verbose, position=1):
+                grad_oi, ratios = self._black_grad_batch(x_boundary, self.q_opt_iter[k], sigma, self.batch_size, y_i)
+                grad = grad_oi + grad
+                x_adv_i = self._go_to_boundary(x_i, y_i, grad)
+                x_adv_i = self._binary_search(x_i, y_i, x_adv_i, tol=self.bin_search_tol)
+                x_boundary = x_adv_i
+
+            x_adv_i = np.clip(x_adv_i, a_min=self.clip_min, a_max=self.clip_max)
+
+            x_adv[i] = x_adv_i
 
         return x_adv
 
     def _is_adversarial(self, x_adv: np.ndarray, y_true: np.ndarray) -> bool:
         """
         Check if example is adversarial.
+
+        :param x: Current example.
+        :param y: True label of `x`.
+        :return: Boolean if `x` is mis-classified.
         """
         y_prediction = self.estimator.predict(x=x_adv)
         return np.argmax(y_prediction, axis=1)[0] != np.argmax(y_true, axis=1)[0]
@@ -215,6 +231,10 @@ class GeoDA(EvasionAttack):
     def _find_random_adversarial(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
         """
         Find an adversarial example by random search.
+
+        :param x: Current example.
+        :param y: True label of `x`.
+        :return: A random adversarial example for `x`.
         """
         nb_calls = 0
         step_size = 0.02
@@ -230,9 +250,14 @@ class GeoDA(EvasionAttack):
 
         return x_perturbed
 
-    def _bin_search(self, x, y, x_random, tol):
+    def _binary_search(self, x: np.ndarray, y: np.ndarray, x_random: np.ndarray, tol: float) -> np.ndarray:
         """
-        Find example on decision boundary between input and random sample.
+        Find example on decision boundary between input and random sample by binary search.
+
+        :param x: Current example.
+        :param y: True label of `x`.
+        :param x_random: Random adversarial example of `x`.
+        :return: The adversarial example at the decision boundary.
         """
         x_adv = x_random
         x_cln = x
@@ -247,28 +272,31 @@ class GeoDA(EvasionAttack):
 
         return x_adv
 
-    def _opt_query_iteration(self, Nq, T, eta):
+    def _opt_query_iteration(self, var_nq: int, var_t: int, eta: int) -> Tuple[List[int], int]:
         """
         Determine optimal distribution of number of queries.
         """
-        coefficients = [eta ** (-2 * i / 3) for i in range(0, T)]
+        coefficients = [eta ** (-2 * i / 3) for i in range(0, var_t)]
         coefficients[0] = 1 * coefficients[0]
         sum_coefficients = sum(coefficients)
-        opt_q = [round(Nq * coefficients[i] / sum_coefficients) for i in range(0, T)]
+        opt_q = [round(var_nq * coefficients[i] / sum_coefficients) for i in range(0, var_t)]
 
         if opt_q[0] > 80:
-            T = T + 1
-            opt_q, T = self._opt_query_iteration(Nq, T, eta)
+            var_t = var_t + 1
+            opt_q, var_t = self._opt_query_iteration(var_nq, var_t, eta)
         elif opt_q[0] < 50:
-            T = T - 1
-            opt_q, T = self._opt_query_iteration(Nq, T, eta)
+            var_t = var_t - 1
+            opt_q, var_t = self._opt_query_iteration(var_nq, var_t, eta)
 
-        return opt_q, T
+        return opt_q, var_t
 
-    def _black_grad_batch(self, x_boundary, q_max, sigma, batch_size, original_label):
-
+    def _black_grad_batch(
+        self, x_boundary: np.ndarray, q_max: int, sigma: float, batch_size: int, original_label: np.ndarray
+    ) -> Tuple[np.ndarray, int]:
+        """
+        Calculate Gradient towards decision boundary.
+        """
         self.nb_calls += q_max
-
         grad_tmp = []  # estimated gradients in each estimate_batch
         z = []  # sign of grad_tmp
         outs = []
@@ -304,9 +332,14 @@ class GeoDA(EvasionAttack):
 
         return grad_f, sum(z)
 
-    def _go_to_boundary(self, x, y, grad):
+    def _go_to_boundary(self, x: np.ndarray, y: np.ndarray, grad: np.ndarray) -> np.ndarray:
         """
         Move towards decision boundary.
+
+        :param x: Current example to be moved towards the decision boundary.
+        :param y: The true label.
+        :param grad: Gradient towards decision boundary.
+        :return: Example moved towards decision boundary.
         """
         epsilon = 5
         nb_calls = 0
@@ -319,7 +352,6 @@ class GeoDA(EvasionAttack):
 
         while not self._is_adversarial(x_perturbed, y):
             nb_calls += 1
-
             if nb_calls > 100:
                 logger.info("Moving towards decision boundary failed because of too many iterations.")
                 break
@@ -331,12 +363,16 @@ class GeoDA(EvasionAttack):
 
         return x_perturbed
 
-    def _sub_noise(self, num_noises, x):
+    def _sub_noise(self, num_noises: int, basis: np.ndarray):
         """
         Create subspace random perturbation.
+
+        :param num_noises: Number of random subspace noises.
+        :param basis: Subspace bases.
+        :return: Random subspace perturbations.
         """
-        noise = np.random.normal(size=(x.shape[1], 3 * num_noises))
-        sub_noise = np.matmul(x, noise).transpose((1, 0)).astype(ART_NUMPY_DTYPE)
+        noise = np.random.normal(size=(basis.shape[1], self.nb_channels * num_noises)) * (self.clip_max - self.clip_min)
+        sub_noise = np.matmul(basis, noise).transpose((1, 0)).astype(ART_NUMPY_DTYPE)
         r_list = sub_noise.reshape((num_noises,) + self.estimator.input_shape)
         return r_list
 
