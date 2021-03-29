@@ -108,6 +108,34 @@ class LFilter(Preprocessor):
 
         return x_preprocess, y
 
+    def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
+        """
+        Provide an estimate of the gradients of the defence for the backward pass.
+
+        :param x: Input data for which the gradient is estimated. First dimension is the batch size.
+        :param grad: Gradient value so far.
+        :return: The gradient (estimate) of the defence.
+        """
+
+
+        return grad
+
+    def _compute_gradient_matrix(self, size: int) -> np.ndarray:
+        """
+        Compute the gradient of the FIR output with respect to the FIR input. The gradient computation result is stored
+        as a matrix.
+
+        :param size: The size of the FIR input or output.
+        :return: A gradient matrix.
+        """
+        grad_matrix = np.zeros(shape=(size, size + self.numerator_coef.size - 1), dtype=ART_NUMPY_DTYPE)
+
+        flipped_numerator_coef = np.flip(self.numerator_coef)
+        for i in range(size):
+            grad_matrix[i, i : i + self.numerator_coef.size] = flipped_numerator_coef
+
+        return grad_matrix
+
     def _check_params(self) -> None:
         if not isinstance(self.denominator_coef, np.ndarray) or self.denominator_coef[0] == 0:
             raise ValueError("The first element of the denominator coefficient vector must be non zero.")
