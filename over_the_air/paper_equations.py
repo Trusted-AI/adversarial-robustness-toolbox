@@ -61,13 +61,58 @@ def secondTemporalDerivative(X: torch.Tensor) -> torch.Tensor:
     return torch.roll(X, -1, dims=0) - 2 * torch.roll(X, 0, dims=0) - torch.roll(X, 1, dims=0)
 
 
-def adversarialLoss(predictions: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
-    raise NotImplementedError("adversarialLoss")
+def objectiveFunc(predictions: torch.Tensor,
+                  labels: torch.Tensor,
+                  delta: torch.Tensor,
+                  regularization_param: float,
+                  beta_1: float,
+                  beta_2: float) -> torch.Tensor:
+    """
+    Equation (1): The objective function. Does NOT include the argmin nor constraints from equation (2).
+    :param predictions:
+    :param labels:
+    :param delta:
+    :param regularization_param:
+    :param beta_1:
+    :param beta_2:
+    :return:
+    """
+    raise NotImplementedError("objectiveFunc")
 
 
-# TODO: Implement both thick and rough ;).
+def adversarialLoss(predictions: torch.Tensor, labels: torch.Tensor, m: float) -> torch.Tensor:
+    """
+
+    :param predictions: Logits?
+    :param labels:
+    :param m:
+    :return:
+    """
+    # Number of samples x Number of Labels
+    samples, n = predictions.shape
+    pred_mask = torch.ones(samples, n).type(torch.bool)
+    pred_mask[torch.arange(end=samples), labels[:]] = False
+
+    # Equation (4) from the paper:
+    #   You need the `==` or else pytorch throws a fit.
+    #
+    #   predictions[pred_mask == False]:
+    #       Get the logits for the true labeled class
+    #
+    #   torch.max(predictions[pred_mask == True].view(samples,m-1), dim=-1)[0]:
+    #       Get the max logit for each row that is not the true class.
+    l_m = (
+            predictions[pred_mask == False]
+            - torch.max(predictions[pred_mask == True].view(samples, n - 1), dim=-1)[0]
+            + m
+    )
+
+    # Equation 3
+    return torch.max(torch.zeros(labels.shape), torch.min(1 / m * torch.pow(l_m, 2), l_m))
+
+
 # TODO: Also, get rid of the garbage I call most of these comments.
-def thickness(delta: torch.Tensor, T: int) -> torch.Tensor:
+def thicknessRegularization(delta: torch.Tensor, T: int) -> torch.Tensor:
     """
     Thickness Function
     :param delta: `torch.Tensor`
@@ -75,12 +120,12 @@ def thickness(delta: torch.Tensor, T: int) -> torch.Tensor:
     :param T: `int`
 
     :return: `torch.Tensor`
-        The THICKness. Like oatmeal + oatmeal=oatmeal^2
+        The THICKness. Like oatmeal * oatmeal=oatmeal^2
     """
-    raise NotImplementedError("thickness")
+    return torch.pow(tensorNorm(delta, 2), 2) / (3 * T)
 
 
-def roughness(delta: torch.Tensor, T: int) -> torch.Tensor:
+def roughnessRegularization(delta: torch.Tensor, T: int) -> torch.Tensor:
     """
     ROUGH AND ROWDY
     :param delta: `torch.Tensor`
@@ -89,7 +134,10 @@ def roughness(delta: torch.Tensor, T: int) -> torch.Tensor:
     :return:
         Rough.
     """
-    raise NotImplementedError("thickness")
+    return 1 / (3 * T) * (
+            torch.pow(tensorNorm(firstTemporalDerivative(delta), 2), 2)
+            + torch.pow(tensorNorm(secondTemporalDerivative(delta), 2), 2)
+    )
 
 
 # TODO: Delete this, and replace with full unittests
@@ -106,6 +154,12 @@ def testingMain():
     # Sanity check part 100000000
     assert dX.shape == torch.Size([4, 3, 3, 3])
     assert d2X.shape == torch.Size([4, 3, 3, 3])
+
+    preds = torch.rand(10, 10, requires_grad=True)
+    tmp_labels = torch.randint(low=0, high=10, size=(10,))
+    loss = torch.mean(adversarialLoss(preds, tmp_labels, .5))
+    loss.backward()
+    print(f"Loss: {loss}")
 
     print("?")
 
