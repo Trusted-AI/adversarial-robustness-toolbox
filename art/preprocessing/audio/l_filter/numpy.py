@@ -141,7 +141,7 @@ class LFilter(Preprocessor):
                 # Then combine with the input gradient
                 grad_x_i = np.zeros(x_i.size)
                 for j in range(x_i.size):
-                    grad_x_i[j] = np.sum(grad[i, :] * grad_matrix[:, j])
+                    grad_x_i[j] = np.sum(grad[i] * grad_matrix[:, j])
 
                 # And store the result
                 x_grad_list.append(grad_x_i)
@@ -162,6 +162,7 @@ class LFilter(Preprocessor):
         if x.dtype == np.object:
             x_grad = np.empty(x.shape[0], dtype=object)
             x_grad[:] = list(x_grad_list)
+
         else:
             x_grad = np.array(x_grad_list)
 
