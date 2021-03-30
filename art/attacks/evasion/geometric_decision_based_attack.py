@@ -66,7 +66,7 @@ class GeoDA(EvasionAttack):
         norm: Union[int, float, str] = 2,
         sub_dim: int = 10,
         max_iter: int = 4000,
-        targeted: bool = True,
+        targeted: bool = False,
         verbose: bool = True,
     ) -> None:
         """
@@ -221,11 +221,15 @@ class GeoDA(EvasionAttack):
         """
         Check if example is adversarial.
 
-        :param x: Current example.
-        :param y: True label of `x`.
+        :param x_adv: Current example.
+        :param y_true: True label of `x`.
         :return: Boolean if `x` is mis-classified.
         """
         y_prediction = self.estimator.predict(x=x_adv)
+
+        if self.targeted:
+            return np.argmax(y_prediction, axis=1)[0] == np.argmax(y_true, axis=1)[0]
+
         return np.argmax(y_prediction, axis=1)[0] != np.argmax(y_true, axis=1)[0]
 
     def _find_random_adversarial(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
@@ -272,7 +276,7 @@ class GeoDA(EvasionAttack):
 
         return x_adv
 
-    def _opt_query_iteration(self, var_nq: int, var_t: int, eta: int) -> Tuple[List[int], int]:
+    def _opt_query_iteration(self, var_nq: int, var_t: int, eta: float) -> Tuple[List[int], int]:
         """
         Determine optimal distribution of number of queries.
         """
