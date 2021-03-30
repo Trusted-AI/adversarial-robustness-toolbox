@@ -1033,7 +1033,7 @@ def get_classifier_bb(defences=None):
 
 def get_classifier_bb_nn(defences=None):
     """
-    Standard BlackBox Neural Network classifier for unit testing
+    Standard BlackBox Neural Network classifier for unit testing.
 
     :return: BlackBoxClassifierNeuralNetwork
     """
