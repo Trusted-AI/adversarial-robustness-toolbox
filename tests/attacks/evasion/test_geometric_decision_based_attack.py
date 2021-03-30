@@ -130,17 +130,19 @@ def test_opt_query_iteration(art_warning, image_dl_estimator):
         art_warning(e)
 
 
-def test_sub_noise(art_warning, image_dl_estimator):
+def test_sub_noise(art_warning, image_dl_estimator, fix_get_mnist_subset):
     try:
+        (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+
         classifier, _ = image_dl_estimator(from_logits=True)
         attack = GeoDA(estimator=classifier, sub_dim=5, max_iter=4000, targeted=False)
         c = attack._sub_noise(num_noises=64, basis=np.ones((28 * 28, 25)))
-        assert c.shape == (64, 28, 28, 1)
+
+        assert c[0].shape == x_train_mnist[0].shape
     except ARTTestException as e:
         art_warning(e)
 
 
-@pytest.mark.framework_agnostic
 def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator):
     try:
         classifier, _ = image_dl_estimator(from_logits=True)

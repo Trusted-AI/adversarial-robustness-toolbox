@@ -170,7 +170,7 @@ class GeoDA(EvasionAttack):
 
         # Check for square input images
         if (self.estimator.channels_first and x.shape[2] != x.shape[3]) or (
-            not self.estimator.channels_first and not x.shape[1] == x.shape[2]
+            not self.estimator.channels_first and x.shape[1] != x.shape[2]
         ):
             raise ValueError("Input images `x` have to be square.")
 
