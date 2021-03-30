@@ -379,6 +379,7 @@ class GeoDA(EvasionAttack):
         """
         noise = np.random.normal(size=(basis.shape[1], self.nb_channels * num_noises)) * (self.clip_max - self.clip_min)
         sub_noise = np.matmul(basis, noise).transpose((1, 0)).astype(ART_NUMPY_DTYPE)
+        print('type(sub_noise)', type(sub_noise))
         print('sub_noise.shape', sub_noise.shape)
         print('num_noises', num_noises)
         print('self.estimator.input_shape', self.estimator.input_shape)
