@@ -1031,6 +1031,29 @@ def get_classifier_bb(defences=None):
     return bbc
 
 
+def get_classifier_bb_nn(defences=None):
+    """
+    Standard BlackBox Neural Network classifier for unit testing.
+
+    :return: BlackBoxClassifierNeuralNetwork
+    """
+    from art.estimators.classification.blackbox import BlackBoxClassifierNeuralNetwork
+    from art.utils import to_categorical
+
+    # define black-box classifier
+    def predict(x):
+        with open(
+            os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/data/mnist", "api_output.txt")
+        ) as json_file:
+            predictions = json.load(json_file)
+        return to_categorical(predictions["values"][: len(x)], nb_classes=10)
+
+    bbc = BlackBoxClassifierNeuralNetwork(
+        predict, (28, 28, 1), 10, clip_values=(0, 255), preprocessing_defences=defences
+    )
+    return bbc
+
+
 def get_image_classifier_mxnet_custom_ini():
     import mxnet
 
