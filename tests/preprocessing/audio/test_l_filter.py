@@ -133,6 +133,10 @@ def test_estimate_gradient(fir_filter, art_warning, expected_values):
         grad1 = expected_data[4]
         grad2 = expected_data[5]
 
+        result0 = expected_data[6]
+        result1 = expected_data[7]
+        result2 = expected_data[8]
+
         # Create signal data
         x = np.array([np.array(x1 * 2), np.array(x2 * 2), np.array(x3 * 2)])
 
@@ -151,14 +155,13 @@ def test_estimate_gradient(fir_filter, art_warning, expected_values):
         audio_filter = LFilter(numerator_coef=numerator_coef, denominator_coef=denominator_coef)
 
         # Estimate gradient
-        print(audio_filter.estimate_gradient(x, grad=grad), fir_filter)
+        estimated_grad = audio_filter.estimate_gradient(x, grad=grad)
 
         # Test
-#        assert result[1] is None
-#        np.testing.assert_array_almost_equal(result_0, result[0][0], decimal=0)
-#        np.testing.assert_array_almost_equal(result_1, result[0][1], decimal=0)
-#        np.testing.assert_array_almost_equal(result_2, result[0][2], decimal=0)
+        assert estimated_grad.shape == x.shape
+        np.testing.assert_array_almost_equal(result0, estimated_grad[0], decimal=0)
+        np.testing.assert_array_almost_equal(result1, estimated_grad[1], decimal=0)
+        np.testing.assert_array_almost_equal(result2, estimated_grad[2], decimal=0)
 
     except ARTTestException as e:
         art_warning(e)
-
