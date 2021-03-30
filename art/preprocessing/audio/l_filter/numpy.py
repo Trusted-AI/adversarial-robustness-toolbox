@@ -116,6 +116,13 @@ class LFilter(Preprocessor):
         :param grad: Gradient value so far.
         :return: The gradient (estimate) of the defence.
         """
+        if (grad.shape != x.shape) and (
+            (len(grad.shape) != len(x.shape) + 1) or (grad.shape[2:] != x.shape[1:]) or (grad.shape[0] != x.shape[0])
+        ):
+            raise ValueError(
+                "The `so far` gradient shape {} does not suit the input shape {}".format(grad.shape, x.shape)
+            )
+
         if not (self.denominator_coef[0] == 1.0 and np.sum(self.denominator_coef) == 1.0):
             logger.warning(
                 "Gradient estimation for a non-fir filtering operation is not supported. A BPDA gradient estimation "
@@ -123,9 +130,39 @@ class LFilter(Preprocessor):
             )
             return grad
 
-        
+        # We will compute gradient for one sample at a time
+        x_grad_list = list()
 
-        return grad
+        if grad.shape == x.shape:
+            for i, x_i in enumerate(x):
+                # First compute the gradient matrix
+                grad_matrix = self._compute_gradient_matrix(size=x_i.size)
+
+                # Then combine with the input gradient
+                grad_x_i = np.zeros(x_i.size)
+                for j in range(x_i.size):
+                    grad_x_i[j] = np.sum(grad[i, :] * grad_matrix[:, j])
+
+                # And store the result
+                x_grad_list.append(grad_x_i)
+
+        else:
+            for i, x_i in enumerate(x):
+                # First compute the gradient matrix
+                grad_matrix = self._compute_gradient_matrix(size=x_i.size)
+
+                # Then combine with the input gradient
+                grad_x_i = np.zeros_like(grad[i])
+                for j in range(x_i.size):
+                    grad_x_i[:, j] = np.sum(grad[i, :, :] * grad_matrix[:, j], axis=1)
+
+                # And store the result
+                x_grad_list.append(grad_x_i)
+
+        x_grad = np.empty(x.shape[0], dtype=object)
+        x_grad[:] = list(x_grad_list)
+
+        return x_grad
 
     def _compute_gradient_matrix(self, size: int) -> np.ndarray:
         """
@@ -144,7 +181,7 @@ class LFilter(Preprocessor):
             grad_matrix[i, i : i + self.numerator_coef.size] = flipped_numerator_coef
 
         # Remove temporary gradients
-        grad_matrix = grad_matrix[:, self.numerator_coef.size - 1 : ]
+        grad_matrix = grad_matrix[:, self.numerator_coef.size - 1 :]
 
         return grad_matrix
 
