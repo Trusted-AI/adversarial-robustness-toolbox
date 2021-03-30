@@ -145,12 +145,10 @@ def test_sub_noise(art_warning, image_dl_estimator, fix_get_mnist_subset):
 
 def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator):
     try:
-        classifier, _ = image_dl_estimator(from_logits=True)
-
-        attack = GeoDA(estimator=classifier, sub_dim=5, max_iter=400, targeted=False)
-
         (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
+        classifier, _ = image_dl_estimator(from_logits=True)
+        attack = GeoDA(estimator=classifier, sub_dim=5, max_iter=400, targeted=False)
         x_train_mnist_adv = attack.generate(x=x_train_mnist, y=y_train_mnist)
 
         assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.008579584, abs=0.005)
