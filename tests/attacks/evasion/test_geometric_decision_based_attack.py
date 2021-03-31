@@ -25,7 +25,7 @@ from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
 
 from tests.attacks.utils import backend_test_classifier_type_check_fail
-from tests.utils import ARTTestException, master_seed
+from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
@@ -147,14 +147,11 @@ def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator):
     try:
         (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
-        master_seed(seed=1234)
-
         classifier, _ = image_dl_estimator(from_logits=True)
         attack = GeoDA(estimator=classifier, sub_dim=5, max_iter=400, targeted=False, verbose=False)
         x_train_mnist_adv = attack.generate(x=x_train_mnist, y=y_train_mnist)
 
         assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.008579584, abs=0.005)
-        assert np.max(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.45, abs=0.125)
     except ARTTestException as e:
         art_warning(e)
 
