@@ -123,7 +123,7 @@ class LFilter(Preprocessor):
                 "The shape of `grad` {} does not match the shape of input `x` {}".format(grad.shape, x.shape)
             )
 
-        if not (self.denominator_coef[0] == 1.0 and np.sum(self.denominator_coef) == 1.0):
+        if self.denominator_coef[0] != 1.0 and np.sum(self.denominator_coef) != 1.0:
             logger.warning(
                 "Gradient estimation for a non-fir filtering operation is not supported. A BPDA gradient estimation "
                 "is returned."
