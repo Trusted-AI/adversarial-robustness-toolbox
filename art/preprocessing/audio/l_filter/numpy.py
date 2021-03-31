@@ -123,40 +123,34 @@ class LFilter(Preprocessor):
                 "The shape of `grad` {} does not match the shape of input `x` {}".format(grad.shape, x.shape)
             )
 
-        if self.denominator_coef[0] != 1.0 and np.sum(self.denominator_coef) != 1.0:
+        if self.denominator_coef[0] != 1.0 or np.sum(self.denominator_coef) != 1.0:
             logger.warning(
-                "Accurate gradient estimation is currently only implemented for finite impulse response filtering, the coefficients indicate infinite response filtering, therefore Backward Pass Differentiable Approximation (BPDA) is applied instead."
+                "Accurate gradient estimation is currently only implemented for finite impulse response filtering, "
+                "the coefficients indicate infinite response filtering, therefore Backward Pass Differentiable "
+                "Approximation (BPDA) is applied instead."
             )
             return grad
 
         # We will compute gradient for one sample at a time
         x_grad_list = list()
 
-        if grad.shape == x.shape:
-            for i, x_i in enumerate(x):
-                # First compute the gradient matrix
-                grad_matrix = self._compute_gradient_matrix(size=x_i.size)
+        for i, x_i in enumerate(x):
+            # First compute the gradient matrix
+            grad_matrix = self._compute_gradient_matrix(size=x_i.size)
 
-                # Then combine with the input gradient
+            # Then combine with the input gradient
+            if grad.shape == x.shape:
                 grad_x_i = np.zeros(x_i.size)
                 for j in range(x_i.size):
                     grad_x_i[j] = np.sum(grad[i] * grad_matrix[:, j])
 
-                # And store the result
-                x_grad_list.append(grad_x_i)
-
-        else:
-            for i, x_i in enumerate(x):
-                # First compute the gradient matrix
-                grad_matrix = self._compute_gradient_matrix(size=x_i.size)
-
-                # Then combine with the input gradient
+            else:
                 grad_x_i = np.zeros_like(grad[i])
                 for j in range(x_i.size):
                     grad_x_i[:, j] = np.sum(grad[i, :, :] * grad_matrix[:, j], axis=1)
 
-                # And store the result
-                x_grad_list.append(grad_x_i)
+            # And store the result
+            x_grad_list.append(grad_x_i)
 
         if x.dtype == np.object:
             x_grad = np.empty(x.shape[0], dtype=object)
