@@ -120,7 +120,7 @@ class LFilter(Preprocessor):
             (len(grad.shape) != len(x.shape) + 1) or (grad.shape[2:] != x.shape[1:]) or (grad.shape[0] != x.shape[0])
         ):
             raise ValueError(
-                "The `so far` gradient shape {} does not suit the input shape {}".format(grad.shape, x.shape)
+                "The shape of `grad` {} does not match the shape of input `x` {}".format(grad.shape, x.shape)
             )
 
         if not (self.denominator_coef[0] == 1.0 and np.sum(self.denominator_coef) == 1.0):
