@@ -125,8 +125,7 @@ class LFilter(Preprocessor):
 
         if self.denominator_coef[0] != 1.0 and np.sum(self.denominator_coef) != 1.0:
             logger.warning(
-                "Gradient estimation for a non-fir filtering operation is not supported. A BPDA gradient estimation "
-                "is returned."
+                "Accurate gradient estimation is currently only implemented for finite impulse response filtering, the coefficients indicate infinite response filtering, therefore Backward Pass Differentiable Approximation (BPDA) is applied instead."
             )
             return grad
 
