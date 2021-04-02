@@ -113,9 +113,6 @@ class PixelThreshold(EvasionAttack):
             self.img_cols = self.estimator.input_shape[-2]
             self.img_channels = self.estimator.input_shape[-1]
 
-        self.mean = self.estimator.preprocessing[0]
-        self.std  = self.estimator.preprocessing[1]
-
     def _check_params(self) -> None:
         if self.th is not None:
             if self.th <= 0:
