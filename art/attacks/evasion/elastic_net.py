@@ -148,13 +148,6 @@ class ElasticNet(EvasionAttack):
         # Compute the current predictions
         predictions = self.estimator.predict(np.array(x_adv, dtype=ART_NUMPY_DTYPE), batch_size=self.batch_size)
 
-        # Then compute individual outputs
-        z_target = np.sum(predictions * target, axis=1)
-        z_other = np.max(
-            predictions * (1 - target) + (np.min(predictions, axis=1) - 1)[:, np.newaxis] * target,
-            axis=1,
-        )
-
         if self.targeted:
             i_sub = np.argmax(target, axis=1)
             i_add = np.argmax(
