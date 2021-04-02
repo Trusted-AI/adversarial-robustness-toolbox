@@ -162,7 +162,6 @@ class ElasticNet(EvasionAttack):
                 predictions * (1 - target) + (np.min(predictions, axis=1) - 1)[:, np.newaxis] * target,
                 axis=1,
             )
-            cond = (z_target - z_other + self.confidence) < 0
 
         loss_gradient = self.estimator.class_gradient(x_adv, label=i_add)
         loss_gradient -= self.estimator.class_gradient(x_adv, label=i_sub)
