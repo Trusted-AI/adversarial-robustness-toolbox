@@ -222,7 +222,7 @@ class PixelThreshold(EvasionAttack):
         """
         Perturbs the given image `img` with the given perturbation `x`.
         """
-        return img if self.sca;
+        return img 
 
     def _attack_success(self, adv_x, x, target_class):
         """
