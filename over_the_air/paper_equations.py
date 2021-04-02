@@ -66,9 +66,11 @@ def objectiveFunc(predictions: torch.Tensor,
                   delta: torch.Tensor,
                   regularization_param: float,
                   beta_1: float,
-                  beta_2: float) -> torch.Tensor:
+                  beta_2: float,
+                  m: float) -> torch.Tensor:
     """
-    Equation (1): The objective function. Does NOT include the argmin nor constraints from equation (2).
+    Equation (1): The objective function. Does NOT include the argmin nor constraints from
+    equation (2).
     :param predictions:
     :param labels:
     :param delta:
@@ -77,7 +79,14 @@ def objectiveFunc(predictions: torch.Tensor,
     :param beta_2:
     :return:
     """
-    raise NotImplementedError("objectiveFunc")
+    T = delta.shape[0]
+    # The first summation from equation (1)
+    regularization_term = regularization_param * (
+            beta_1 * thicknessRegularization(delta, T)
+            + beta_2 * roughnessRegularization(delta, T)
+    )
+
+    return regularization_term + torch.mean(adversarialLoss(predictions, labels, m))
 
 
 def adversarialLoss(predictions: torch.Tensor, labels: torch.Tensor, m: float) -> torch.Tensor:
@@ -157,11 +166,9 @@ def testingMain():
 
     preds = torch.rand(10, 10, requires_grad=True)
     tmp_labels = torch.randint(low=0, high=10, size=(10,))
-    loss = torch.mean(adversarialLoss(preds, tmp_labels, .5))
+    loss = objectiveFunc(preds, tmp_labels, X, .1, 1, 1, .5)
     loss.backward()
     print(f"Loss: {loss}")
-
-    print("?")
 
 
 if __name__ == '__main__':
