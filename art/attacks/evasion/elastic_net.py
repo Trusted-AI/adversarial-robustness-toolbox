@@ -173,7 +173,9 @@ class ElasticNet(EvasionAttack):
         loss_gradient += 2 * (x_adv - x)
 
         # Set gradients where loss is constant to zero
-        cond = (predictions[i_add] - predictions[i_sub] + self.confidence) < 0
+        cond = (
+            predictions[np.arange(x.shape[0]), i_add] - predictions[np.arange(x.shape[0]), i_sub] + self.confidence
+        ) < 0
         loss_gradient[cond] = 0.0
 
         return loss_gradient
