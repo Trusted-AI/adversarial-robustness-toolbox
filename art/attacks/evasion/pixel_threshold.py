@@ -133,20 +133,6 @@ class PixelThreshold(EvasionAttack):
         if not isinstance(self.verbose, bool):
             raise ValueError("The argument `verbose` has to be of type bool.")
 
-    def depreprocess_images(self, x):
-        if x.dtype in [np.uint8, np.uint16, np.uint32, np.uint64]:
-            raise TypeError(
-                "The data type of input data `x` is {} and cannot represent negative values. Consider "
-                "changing the data type of the input data `x` to a type that supports negative values e.g. "
-                "np.float32.".format(x.dtype)
-            )
-
-        broadcastable_mean, broadcastable_std = broadcastable_mean_std(x, self.mean, self.std)
-
-        x_norm = x_norm * broadcastable_std
-        x_norm = x + broadcastable_mean
-        x_norm = x_norm.astype(ART_NUMPY_DTYPE)
-
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, max_iter: int = 100, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
@@ -170,14 +156,11 @@ class PixelThreshold(EvasionAttack):
                 y = np.argmax(y, axis=1)
 
         if self.th is None:
-            logger.info("Performing minimal perturbation Attack.")
-
-        
-        scale_input = False if np.max(x) > 1 else True
-
-        if scale_input:
-            x = self.depreprocess_images(x)
-
+            logger.info("Performing minimal perturbation Attack. This takes substainally long time to process. For sanity check, pass th=10 to the Attack instance.")
+            
+        if np.max(x) < 2:
+            logger.warning('Processing Input in the float range of Pixels, Original Attacks were on Un-Processed Images and performance of evolutionary strategy substainally decreases if the input is in the float domain.')
+            
         adv_x_best = []
         for image, target_class in tqdm(zip(x, y), desc="Pixel threshold", disable=not self.verbose):
             if self.th is None:
@@ -202,9 +185,6 @@ class PixelThreshold(EvasionAttack):
             adv_x_best += [image_result]
 
         adv_x_best = np.array(adv_x_best)
-
-        if scale_input:
-            adv_x_best = self.estimator._apply_preprocessing(adv_x_best, y) 
 
         if y is not None:
             y = to_categorical(y, self.estimator.nb_classes)
@@ -242,7 +222,7 @@ class PixelThreshold(EvasionAttack):
         """
         Perturbs the given image `img` with the given perturbation `x`.
         """
-        return img
+        return img if self.sca;
 
     def _attack_success(self, adv_x, x, target_class):
         """
