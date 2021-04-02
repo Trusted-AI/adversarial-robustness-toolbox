@@ -154,8 +154,6 @@ class ElasticNet(EvasionAttack):
                 predictions * (1 - target) + (np.min(predictions, axis=1) - 1)[:, np.newaxis] * target,
                 axis=1,
             )
-            cond = (z_other - z_target + self.confidence) < 0
-
         else:
             i_add = np.argmax(target, axis=1)
             i_sub = np.argmax(
