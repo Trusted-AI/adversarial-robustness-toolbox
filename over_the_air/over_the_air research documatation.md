@@ -30,3 +30,10 @@ Adversarial-Robustness-Toolbox Research Documentation
 8. Juggling Balls
 9. Shooting goal soccer
 10. High Jump
+
+**Equation that we implement from over-the-air paper(paper_equations.py)**
+Notice: The X param is suitable for any dimensions, however the paper only implement 4-dimensional
+1.  Tensor p-norm(equation 5)
+2.  First Temporal Derivative(equation 7)
+3.  Second Temporal Derivative (equation 8): Roll(X,-1) - 2*Roll(X, 0) + Roll(X,1)
+4.  Objective Function(Equation 1)
