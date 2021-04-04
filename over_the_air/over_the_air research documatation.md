@@ -18,3 +18,15 @@ Adversarial-Robustness-Toolbox Research Documentation
 1. Preprocessing the video
 2. Blockers: only support C++ for video processing
 3. SOLVED: After discussion with Mr.Beater from IBM(The head of this Open Source project) we don’t need to preprocess the video
+
+**List out the video label that we are going to use to train**
+1. Extinguishing Fire
+2. Bartending
+3. Ironing
+4. Triple Jump
+5. Playing Drums
+6. Arm Wrestling
+7. Planting Trees
+8. Juggling Balls
+9. Shooting goal soccer
+10. High Jump
