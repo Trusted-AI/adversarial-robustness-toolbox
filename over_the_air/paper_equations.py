@@ -61,6 +61,9 @@ def secondTemporalDerivative(X: torch.Tensor) -> torch.Tensor:
     return torch.roll(X, -1, dims=0) - 2 * torch.roll(X, 0, dims=0) - torch.roll(X, 1, dims=0)
 
 
+#####################################################################
+# Test this                                                         #
+#####################################################################
 def objectiveFunc(predictions: torch.Tensor,
                   labels: torch.Tensor,
                   delta: torch.Tensor,
@@ -168,7 +171,23 @@ def testingMain():
     preds = torch.rand(10, 10, requires_grad=True)
     tmp_labels = torch.randint(low=0, high=10, size=(10,))
     loss = objectiveFunc(preds, tmp_labels, X, .1, 1, 1, .5)
+
+    #####################################################################
+    # Call Backward like this                                           #
+    #####################################################################
     loss.backward()
+
+    #####################################################################
+    # Call this too                                                     #
+    #####################################################################
+    assert X.grad is not None and torch.norm(X.grad) != 0
+
+    #####################################################################
+    # Use this for regulariztation                                      #
+    #####################################################################
+    X = torch.ones(1, 1, 9)
+    T = 1
+
     print(f"Loss: {loss}")
 
 
