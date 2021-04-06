@@ -42,7 +42,7 @@ kornia~=0.4.1
 
 # other
 pytest~=6.2.3
-pytest-pep8~=1.0.6
+pytest-flake8~=1.0.7
 pytest-mock~=3.3.1
 pytest-cov~=2.10.1
 codecov~=2.1.9
