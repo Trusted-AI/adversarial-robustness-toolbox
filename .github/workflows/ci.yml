@@ -62,9 +62,9 @@ jobs:
           - name: PyTorch (Python 3.7)
             framework: pytorch
             python: 3.7
-            torch: 1.7.1+cpu
-            torchvision: 0.8.2+cpu
-            torchaudio: 0.7.2
+            torch: 1.8.1+cpu
+            torchvision: 0.9.1+cpu
+            torchaudio: 0.8.1
           - name: scikit-learn 0.22.2 (Python 3.7)
             framework: scikitlearn
             scikit-learn: 0.22.2
