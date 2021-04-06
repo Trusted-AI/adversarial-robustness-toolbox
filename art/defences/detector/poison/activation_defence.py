@@ -122,7 +122,10 @@ class ActivationDefence(PoisonFilteringDefence):
             activations = self._get_activations()
             self.activations_by_class = self._segment_by_class(activations, self.y_train)
 
-        (self.clusters_by_class, self.red_activations_by_class,) = self.cluster_activations()
+        (
+            self.clusters_by_class,
+            self.red_activations_by_class,
+        ) = self.cluster_activations()
         _, self.assigned_clean_by_class = self.analyze_clusters()
 
         # Now check ground truth:
@@ -200,7 +203,10 @@ class ActivationDefence(PoisonFilteringDefence):
         if not self.activations_by_class:
             activations = self._get_activations()
             self.activations_by_class = self._segment_by_class(activations, self.y_train)
-        (self.clusters_by_class, self.red_activations_by_class,) = self.cluster_activations()
+        (
+            self.clusters_by_class,
+            self.red_activations_by_class,
+        ) = self.cluster_activations()
         report, self.assigned_clean_by_class = self.analyze_clusters()
         # Here, assigned_clean_by_class[i][j] is 1 if the jth data point in the ith class was
         # determined to be clean by activation cluster
@@ -296,20 +302,26 @@ class ActivationDefence(PoisonFilteringDefence):
 
         analyzer = ClusteringAnalyzer()
         if self.cluster_analysis == "smaller":
-            (self.assigned_clean_by_class, self.poisonous_clusters, report,) = analyzer.analyze_by_size(
-                self.clusters_by_class
-            )
+            (
+                self.assigned_clean_by_class,
+                self.poisonous_clusters,
+                report,
+            ) = analyzer.analyze_by_size(self.clusters_by_class)
         elif self.cluster_analysis == "relative-size":
-            (self.assigned_clean_by_class, self.poisonous_clusters, report,) = analyzer.analyze_by_relative_size(
-                self.clusters_by_class
-            )
+            (
+                self.assigned_clean_by_class,
+                self.poisonous_clusters,
+                report,
+            ) = analyzer.analyze_by_relative_size(self.clusters_by_class)
         elif self.cluster_analysis == "distance":
             (self.assigned_clean_by_class, self.poisonous_clusters, report,) = analyzer.analyze_by_distance(
-                self.clusters_by_class, separated_activations=self.red_activations_by_class,
+                self.clusters_by_class,
+                separated_activations=self.red_activations_by_class,
             )
         elif self.cluster_analysis == "silhouette-scores":
             (self.assigned_clean_by_class, self.poisonous_clusters, report,) = analyzer.analyze_by_silhouette_score(
-                self.clusters_by_class, reduced_activations_by_class=self.red_activations_by_class,
+                self.clusters_by_class,
+                reduced_activations_by_class=self.red_activations_by_class,
             )
         else:
             raise ValueError("Unsupported cluster analysis technique " + self.cluster_analysis)

@@ -516,7 +516,15 @@ class Wasserstein(EvasionAttack):
 
             # Check for convergence
             next_convergence = self._projected_sinkhorn_evaluation(
-                x, x_init, alpha, exp_alpha, beta, exp_beta, psi, K, eps,
+                x,
+                x_init,
+                alpha,
+                exp_alpha,
+                beta,
+                exp_beta,
+                psi,
+                K,
+                eps,
             )
 
             if (np.abs(convergence - next_convergence) <= 1e-4 + 1e-4 * np.abs(next_convergence)).all():

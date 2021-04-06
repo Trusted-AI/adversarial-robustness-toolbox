@@ -105,9 +105,9 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
         :param endtoend: True for end-to-end training. False for transfer learning.
         :param verbose: Show progress bars.
         """
-        self.subsistute_networks: List["CLASSIFIER_NEURALNETWORK_TYPE"] = [classifier] if not isinstance(
-            classifier, list
-        ) else classifier
+        self.subsistute_networks: List["CLASSIFIER_NEURALNETWORK_TYPE"] = (
+            [classifier] if not isinstance(classifier, list) else classifier
+        )
 
         super().__init__(classifier=self.subsistute_networks[0])  # type: ignore
         self.target = target
@@ -176,9 +176,10 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
             if self.endtoend:
                 if isinstance(self.feature_layer, list):
 
-                    block_feats = [torch.stack([
-                        feat.detach() for feat in net.get_activations(x, layer=layer, framework=True)
-                    ], 0) for layer in self.feature_layer]
+                    block_feats = [
+                        torch.stack([feat.detach() for feat in net.get_activations(x, layer=layer, framework=True)], 0)
+                        for layer in self.feature_layer
+                    ]
                 else:
                     block_feats = [
                         feat.detach() for feat in net.get_activations(x, layer=self.feature_layer, framework=True)
@@ -283,6 +284,7 @@ def loss_from_center(
     subs_net_list, target_feat_list, poison_batch, net_repeat, end2end, feature_layer
 ) -> "torch.Tensor":
     import torch  # lgtm [py/repeated-import]
+
     if end2end:
         loss = 0
         for net, center_feats in zip(subs_net_list, target_feat_list):
@@ -298,10 +300,13 @@ def loss_from_center(
                     )
             elif net_repeat == 1:
                 if isinstance(feature_layer, list):
-                    poisons_feats = torch.cat([torch.flatten(net.get_activations(poison_batch(),
-                                                                                 layer=layer,
-                                                                                 framework=True), 0)
-                                               for layer in feature_layer], 0)
+                    poisons_feats = torch.cat(
+                        [
+                            torch.flatten(net.get_activations(poison_batch(), layer=layer, framework=True), 0)
+                            for layer in feature_layer
+                        ],
+                        0,
+                    )
                 else:
                     poisons_feats = net.get_activations(poison_batch(), layer=feature_layer, framework=True)
             else:

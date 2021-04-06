@@ -150,7 +150,12 @@ def test_pickle(art_warning, get_default_mnist_subset, image_dl_estimator):
 @pytest.mark.skip_framework("tensorflow", "tensorflow2v1", "keras", "kerastf", "mxnet", "non_dl_frameworks")
 @pytest.mark.parametrize("device_type", ["cpu", "gpu"])
 def test_loss_gradient_amp(
-    art_warning, get_default_mnist_subset, image_dl_estimator, expected_values, mnist_shape, device_type,
+    art_warning,
+    get_default_mnist_subset,
+    image_dl_estimator,
+    expected_values,
+    mnist_shape,
+    device_type,
 ):
     import torch
     import torch.nn as nn
@@ -191,14 +196,18 @@ def test_loss_gradient_amp(
         sub_gradients = gradients[0, 0, :, 14]
 
         np.testing.assert_array_almost_equal(
-            sub_gradients, expected_gradients_1, decimal=4,
+            sub_gradients,
+            expected_gradients_1,
+            decimal=4,
         )
 
         # Second test of gradients
         sub_gradients = gradients[0, 0, 14, :]
 
         np.testing.assert_array_almost_equal(
-            sub_gradients, expected_gradients_2, decimal=4,
+            sub_gradients,
+            expected_gradients_2,
+            decimal=4,
         )
 
         # Compute loss gradients with framework
@@ -214,14 +223,18 @@ def test_loss_gradient_amp(
         sub_gradients = gradients[0, 0, :, 14]
 
         np.testing.assert_array_almost_equal(
-            sub_gradients, expected_gradients_1, decimal=4,
+            sub_gradients,
+            expected_gradients_1,
+            decimal=4,
         )
 
         # Second test of gradients
         sub_gradients = gradients[0, 0, 14, :]
 
         np.testing.assert_array_almost_equal(
-            sub_gradients, expected_gradients_2, decimal=4,
+            sub_gradients,
+            expected_gradients_2,
+            decimal=4,
         )
 
     except ARTTestException as e:

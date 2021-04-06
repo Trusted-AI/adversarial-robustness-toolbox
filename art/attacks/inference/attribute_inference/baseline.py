@@ -47,7 +47,9 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
     _estimator_requirements = ()
 
     def __init__(
-        self, attack_model: Optional["CLASSIFIER_TYPE"] = None, attack_feature: Union[int, slice] = 0,
+        self,
+        attack_model: Optional["CLASSIFIER_TYPE"] = None,
+        attack_feature: Union[int, slice] = 0,
     ):
         """
         Create an AttributeInferenceBaseline attack instance.

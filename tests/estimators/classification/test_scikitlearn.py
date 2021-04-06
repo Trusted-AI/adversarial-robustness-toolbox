@@ -288,7 +288,9 @@ class TestScikitlearnBinaryLogisticRegression(TestBase):
         x_train_binary = cls.x_train_iris[
             binary_class_index,
         ]
-        y_train_binary = cls.y_train_iris[binary_class_index,][:, [0, 1]]
+        y_train_binary = cls.y_train_iris[
+            binary_class_index,
+        ][:, [0, 1]]
 
         cls.sklearn_model = LogisticRegression(
             verbose=0, C=1, solver="newton-cg", dual=False, fit_intercept=True, multi_class="ovr"
@@ -311,7 +313,9 @@ class TestScikitlearnBinaryLogisticRegression(TestBase):
         x_test_binary = self.x_test_iris[
             binary_class_index,
         ]
-        y_test_binary = self.y_test_iris[binary_class_index,][:, [0, 1]]
+        y_test_binary = self.y_test_iris[
+            binary_class_index,
+        ][:, [0, 1]]
 
         grad_predicted = self.classifier.loss_gradient(x_test_binary[0:1], y_test_binary[0:1])
         grad_expected = np.asarray([[-0.25267282, 0.21424159, -0.79708695, -0.31098431]])

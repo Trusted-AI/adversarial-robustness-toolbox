@@ -194,7 +194,10 @@ class BinaryActivationDetector(
     )
 
     def __init__(
-        self, classifier: "ClassifierNeuralNetwork", detector: "ClassifierNeuralNetwork", layer: Union[int, str],
+        self,
+        classifier: "ClassifierNeuralNetwork",
+        detector: "ClassifierNeuralNetwork",
+        layer: Union[int, str],
     ) -> None:  # lgtm [py/similar-function]
         """
         Create a `BinaryActivationDetector` instance which performs binary classification on activation information.

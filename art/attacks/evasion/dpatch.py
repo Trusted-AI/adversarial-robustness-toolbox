@@ -165,8 +165,16 @@ class DPatch(EvasionAttack):
 
                 target_dict = dict()
                 target_dict["boxes"] = np.asarray([[i_x_1, i_y_1, i_x_2, i_y_2]])
-                target_dict["labels"] = np.asarray([self.target_label[i_image],])
-                target_dict["scores"] = np.asarray([1.0,])
+                target_dict["labels"] = np.asarray(
+                    [
+                        self.target_label[i_image],
+                    ]
+                )
+                target_dict["scores"] = np.asarray(
+                    [
+                        1.0,
+                    ]
+                )
 
                 patch_target.append(target_dict)
 
@@ -194,7 +202,8 @@ class DPatch(EvasionAttack):
                 i_batch_end = min((i_batch + 1) * self.batch_size, patched_images.shape[0])
 
                 gradients = self.estimator.loss_gradient(
-                    x=patched_images[i_batch_start:i_batch_end], y=patch_target[i_batch_start:i_batch_end],
+                    x=patched_images[i_batch_start:i_batch_end],
+                    y=patch_target[i_batch_start:i_batch_end],
                 )
 
                 for i_image in range(gradients.shape[0]):
@@ -218,7 +227,9 @@ class DPatch(EvasionAttack):
 
             if self.estimator.clip_values is not None:
                 self._patch = np.clip(
-                    self._patch, a_min=self.estimator.clip_values[0], a_max=self.estimator.clip_values[1],
+                    self._patch,
+                    a_min=self.estimator.clip_values[0],
+                    a_max=self.estimator.clip_values[1],
                 )
 
         return self._patch

@@ -178,5 +178,8 @@ class SecurityCurve(Evaluation):
         return np.mean(np.argmax(y, axis=1) == np.argmax(y_pred, axis=1)).item()
 
     def __repr__(self):
-        repr_ = "{}(eps={})".format(self.__module__ + "." + self.__class__.__name__, self.eps,)
+        repr_ = "{}(eps={})".format(
+            self.__module__ + "." + self.__class__.__name__,
+            self.eps,
+        )
         return repr_

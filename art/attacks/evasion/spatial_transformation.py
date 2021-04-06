@@ -118,11 +118,23 @@ class SpatialTransformation(EvasionAttack):
 
             grid_trans_x = [
                 int(round(g))
-                for g in list(np.linspace(-max_num_pixel_trans_x, max_num_pixel_trans_x, num=self.num_translations,))
+                for g in list(
+                    np.linspace(
+                        -max_num_pixel_trans_x,
+                        max_num_pixel_trans_x,
+                        num=self.num_translations,
+                    )
+                )
             ]
             grid_trans_y = [
                 int(round(g))
-                for g in list(np.linspace(-max_num_pixel_trans_y, max_num_pixel_trans_y, num=self.num_translations,))
+                for g in list(
+                    np.linspace(
+                        -max_num_pixel_trans_y,
+                        max_num_pixel_trans_y,
+                        num=self.num_translations,
+                    )
+                )
             ]
             grid_rot = list(np.linspace(-self.max_rotation, self.max_rotation, num=self.num_rotations))
 
@@ -175,7 +187,8 @@ class SpatialTransformation(EvasionAttack):
             self.attack_rot = rot
 
             logger.info(
-                "Success rate of spatial transformation attack: %.2f%%", 100 * self.fooling_rate,
+                "Success rate of spatial transformation attack: %.2f%%",
+                100 * self.fooling_rate,
             )
             logger.info("Attack-translation in x: %.2f%%", self.attack_trans_x)
             logger.info("Attack-translation in y: %.2f%%", self.attack_trans_y)
@@ -198,7 +211,10 @@ class SpatialTransformation(EvasionAttack):
 
         if self.estimator.clip_values is not None:
             np.clip(
-                x_adv, self.estimator.clip_values[0], self.estimator.clip_values[1], out=x_adv,
+                x_adv,
+                self.estimator.clip_values[0],
+                self.estimator.clip_values[1],
+                out=x_adv,
             )
 
         return x_adv

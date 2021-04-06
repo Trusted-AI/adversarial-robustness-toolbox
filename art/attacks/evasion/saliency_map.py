@@ -148,10 +148,12 @@ class SaliencyMapMethod(EvasionAttack):
                     # Update adversarial examples
                     tmp_batch = batch[active_indices]
                     tmp_batch[np.arange(len(active_indices)), feat_ind[:, 0]] = clip_func(
-                        clip_value, tmp_batch[np.arange(len(active_indices)), feat_ind[:, 0]] + self.theta,
+                        clip_value,
+                        tmp_batch[np.arange(len(active_indices)), feat_ind[:, 0]] + self.theta,
                     )
                     tmp_batch[np.arange(len(active_indices)), feat_ind[:, 1]] = clip_func(
-                        clip_value, tmp_batch[np.arange(len(active_indices)), feat_ind[:, 1]] + self.theta,
+                        clip_value,
+                        tmp_batch[np.arange(len(active_indices)), feat_ind[:, 1]] + self.theta,
                     )
                     batch[active_indices] = tmp_batch
 
@@ -166,7 +168,10 @@ class SaliencyMapMethod(EvasionAttack):
                     batch[active_indices] = tmp_batch
 
                 # Recompute model prediction
-                current_pred = np.argmax(self.estimator.predict(np.reshape(batch, [batch.shape[0]] + dims)), axis=1,)
+                current_pred = np.argmax(
+                    self.estimator.predict(np.reshape(batch, [batch.shape[0]] + dims)),
+                    axis=1,
+                )
 
                 # Update active_indices
                 active_indices = np.where(

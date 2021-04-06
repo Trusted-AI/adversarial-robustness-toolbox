@@ -55,7 +55,16 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
     estimator_params = (
         TensorFlowEstimator.estimator_params
         + ClassifierMixin.estimator_params
-        + ["input_ph", "output", "labels_ph", "train", "loss", "learning", "sess", "feed_dict",]
+        + [
+            "input_ph",
+            "output",
+            "labels_ph",
+            "train",
+            "loss",
+            "learning",
+            "sess",
+            "feed_dict",
+        ]
     )
 
     def __init__(
@@ -627,10 +636,13 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
 
         builder = saved_model.builder.SavedModelBuilder(full_path)
         signature = predict_signature_def(
-            inputs={"SavedInputPhD": self._input_ph}, outputs={"SavedOutput": self._output},
+            inputs={"SavedInputPhD": self._input_ph},
+            outputs={"SavedOutput": self._output},
         )
         builder.add_meta_graph_and_variables(
-            sess=self._sess, tags=[tag_constants.SERVING], signature_def_map={"predict": signature},
+            sess=self._sess,
+            tags=[tag_constants.SERVING],
+            signature_def_map={"predict": signature},
         )
         builder.save()
 
@@ -773,7 +785,11 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
     estimator_params = (
         TensorFlowV2Estimator.estimator_params
         + ClassifierMixin.estimator_params
-        + ["input_shape", "loss_object", "train_step",]
+        + [
+            "input_shape",
+            "loss_object",
+            "train_step",
+        ]
     )
 
     def __init__(

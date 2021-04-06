@@ -65,7 +65,12 @@ class TestTensorFlowFasterRCNN(TestBase):
         result = self.obj_dec.predict(self.x_test_mnist)
 
         self.assertTrue(
-            list(result[0].keys()) == ["boxes", "labels", "scores",]
+            list(result[0].keys())
+            == [
+                "boxes",
+                "labels",
+                "scores",
+            ]
         )
 
         self.assertTrue(result[0]["boxes"].shape == (300, 4))
@@ -98,8 +103,16 @@ class TestTensorFlowFasterRCNN(TestBase):
         result = self.obj_dec.predict(self.x_test_mnist[:2])
 
         y = [
-            {"boxes": result[0]["boxes"], "labels": result[0]["labels"], "scores": np.ones_like(result[0]["labels"]),},
-            {"boxes": result[1]["boxes"], "labels": result[1]["labels"], "scores": np.ones_like(result[1]["labels"]),},
+            {
+                "boxes": result[0]["boxes"],
+                "labels": result[0]["labels"],
+                "scores": np.ones_like(result[0]["labels"]),
+            },
+            {
+                "boxes": result[1]["boxes"],
+                "labels": result[1]["labels"],
+                "scores": np.ones_like(result[1]["labels"]),
+            },
         ]
 
         # Compute gradients

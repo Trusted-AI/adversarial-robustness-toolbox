@@ -52,7 +52,14 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
     estimator_params = (
         MXEstimator.estimator_params
         + ClassifierMixin.estimator_params
-        + ["loss", "input_shape", "nb_classes", "optimizer", "ctx", "channels_first",]
+        + [
+            "loss",
+            "input_shape",
+            "nb_classes",
+            "optimizer",
+            "ctx",
+            "channels_first",
+        ]
     )
 
     def __init__(
