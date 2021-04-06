@@ -58,7 +58,14 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
     estimator_params = (
         PyTorchEstimator.estimator_params
         + ClassifierMixin.estimator_params
-        + ["loss", "input_shape", "optimizer", "use_amp", "opt_level", "loss_scale",]
+        + [
+            "loss",
+            "input_shape",
+            "optimizer",
+            "use_amp",
+            "opt_level",
+            "loss_scale",
+        ]
     )
 
     def __init__(
@@ -141,10 +148,16 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         # Index of layer at which the class gradients should be calculated
         self._layer_idx_gradients = -1
 
-        if isinstance(self._loss, (torch.nn.CrossEntropyLoss, torch.nn.NLLLoss, torch.nn.MultiMarginLoss),):
+        if isinstance(
+            self._loss,
+            (torch.nn.CrossEntropyLoss, torch.nn.NLLLoss, torch.nn.MultiMarginLoss),
+        ):
             self._reduce_labels = True
             self._int_labels = True
-        elif isinstance(self._loss, (torch.nn.BCELoss),):
+        elif isinstance(
+            self._loss,
+            (torch.nn.BCELoss),
+        ):
             self._reduce_labels = True
             self._int_labels = False
         else:
@@ -561,18 +574,24 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         if label is None:
             for i in range(self.nb_classes):
                 torch.autograd.backward(
-                    preds[:, i], torch.tensor([1.0] * len(preds[:, 0])).to(self._device), retain_graph=True,
+                    preds[:, i],
+                    torch.tensor([1.0] * len(preds[:, 0])).to(self._device),
+                    retain_graph=True,
                 )
 
         elif isinstance(label, (int, np.integer)):
             torch.autograd.backward(
-                preds[:, label], torch.tensor([1.0] * len(preds[:, 0])).to(self._device), retain_graph=True,
+                preds[:, label],
+                torch.tensor([1.0] * len(preds[:, 0])).to(self._device),
+                retain_graph=True,
             )
         else:
             unique_label = list(np.unique(label))
             for i in unique_label:
                 torch.autograd.backward(
-                    preds[:, i], torch.tensor([1.0] * len(preds[:, 0])).to(self._device), retain_graph=True,
+                    preds[:, i],
+                    torch.tensor([1.0] * len(preds[:, 0])).to(self._device),
+                    retain_graph=True,
                 )
 
             grads = np.swapaxes(np.array(grads), 0, 1)
@@ -954,7 +973,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                         else:
                             raise TypeError("The input model must inherit from `nn.Module`.")
                         logger.info(
-                            "Inferred %i hidden layers on PyTorch classifier.", len(result),
+                            "Inferred %i hidden layers on PyTorch classifier.",
+                            len(result),
                         )
 
                         return result

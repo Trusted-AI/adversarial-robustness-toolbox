@@ -51,7 +51,11 @@ class FeatureSqueezing(Preprocessor):
     params = ["clip_values", "bit_depth"]
 
     def __init__(
-        self, clip_values: CLIP_VALUES_TYPE, bit_depth: int = 8, apply_fit: bool = False, apply_predict: bool = True,
+        self,
+        clip_values: CLIP_VALUES_TYPE,
+        bit_depth: int = 8,
+        apply_fit: bool = False,
+        apply_predict: bool = True,
     ) -> None:
         """
         Create an instance of feature squeezing.

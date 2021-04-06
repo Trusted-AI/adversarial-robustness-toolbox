@@ -113,10 +113,22 @@ class TestRONI(unittest.TestCase):
 
         cls.classifier.fit(all_data, all_labels)
         cls.defense_cal = RONIDefense(
-            cls.classifier, all_data, all_labels, trusted_data, trusted_labels, eps=0.1, calibrated=True,
+            cls.classifier,
+            all_data,
+            all_labels,
+            trusted_data,
+            trusted_labels,
+            eps=0.1,
+            calibrated=True,
         )
         cls.defence_no_cal = RONIDefense(
-            cls.classifier, all_data, all_labels, trusted_data, trusted_labels, eps=0.1, calibrated=False,
+            cls.classifier,
+            all_data,
+            all_labels,
+            trusted_data,
+            trusted_labels,
+            eps=0.1,
+            calibrated=False,
         )
 
     def setUp(self):
@@ -129,7 +141,10 @@ class TestRONI(unittest.TestCase):
     def test_wrong_parameters_2(self):
         (all_data, _), (_, y_test), (_, _), (_, _), (_, _) = self.mnist
         self.assertRaises(
-            ValueError, self.defence_no_cal.set_params, x_train=-all_data, y_train=y_test,
+            ValueError,
+            self.defence_no_cal.set_params,
+            x_train=-all_data,
+            y_train=y_test,
         )
         self.assertRaises(ValueError, self.defense_cal.set_params, x_train=-all_data, y_train=y_test)
 

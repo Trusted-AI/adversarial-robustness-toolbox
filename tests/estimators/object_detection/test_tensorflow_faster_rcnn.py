@@ -65,111 +65,55 @@ class TestTensorFlowFasterRCNN(TestBase):
         result = self.obj_dec.predict(self.x_test_mnist)
 
         self.assertTrue(
-            list(result.keys())
+            list(result[0].keys())
             == [
-                "detection_boxes",
-                "detection_scores",
-                "detection_classes",
-                "detection_multiclass_scores",
-                "detection_anchor_indices",
-                "num_detections",
-                "raw_detection_boxes",
-                "raw_detection_scores",
+                "boxes",
+                "labels",
+                "scores",
             ]
         )
 
-        self.assertTrue(result["detection_boxes"].shape == (10, 300, 4))
+        self.assertTrue(result[0]["boxes"].shape == (300, 4))
         expected_detection_boxes = np.asarray([0.65566427, 0.0, 1.0, 0.9642794])
-        np.testing.assert_array_almost_equal(result["detection_boxes"][0, 2, :], expected_detection_boxes, decimal=6)
+        np.testing.assert_array_almost_equal(result[0]["boxes"][2, :], expected_detection_boxes, decimal=6)
 
-        self.assertTrue(result["detection_scores"].shape == (10, 300))
+        self.assertTrue(result[0]["scores"].shape == (300,))
         expected_detection_scores = np.asarray(
             [
-                6.02739106e-04,
-                3.72770795e-04,
-                2.96768820e-04,
-                2.12859799e-04,
-                1.72638058e-04,
-                1.51401327e-04,
-                1.47289087e-04,
-                1.25616702e-04,
-                1.19876706e-04,
-                1.06633954e-04,
+                3.356745e-04,
+                3.190193e-04,
+                2.967696e-04,
+                2.128600e-04,
+                1.726381e-04,
+                1.472894e-04,
+                1.198768e-04,
+                1.109493e-04,
+                1.066341e-04,
+                8.560477e-05,
             ]
         )
-        np.testing.assert_array_almost_equal(result["detection_scores"][0, :10], expected_detection_scores, decimal=6)
+        np.testing.assert_array_almost_equal(result[0]["scores"][:10], expected_detection_scores, decimal=6)
 
-        self.assertTrue(result["detection_classes"].shape == (10, 300))
-        expected_detection_classes = np.asarray([81.0, 71.0, 66.0, 15.0, 63.0, 71.0, 66.0, 84.0, 64.0, 37.0])
-        np.testing.assert_array_almost_equal(result["detection_classes"][0, :10], expected_detection_classes, decimal=6)
-
-        self.assertTrue(result["detection_multiclass_scores"].shape == (10, 300, 91))
-        expected_detection_multiclass_scores = np.asarray(
-            [
-                9.9915493e-01,
-                1.5380951e-05,
-                3.2381786e-06,
-                2.3546692e-05,
-                1.0490003e-06,
-                2.9198272e-05,
-                1.9808563e-06,
-                6.0102529e-06,
-                8.9344621e-06,
-                2.8579292e-05,
-            ]
-        )
-        np.testing.assert_array_almost_equal(
-            result["detection_multiclass_scores"][0, 2, :10], expected_detection_multiclass_scores, decimal=6
-        )
-
-        self.assertTrue(result["detection_anchor_indices"].shape == (10, 300))
-        expected_detection_anchor_indices = np.asarray([22.0, 22.0, 4.0, 35.0, 61.0, 49.0, 16.0, 22.0, 16.0, 61.0])
-        np.testing.assert_array_almost_equal(
-            result["detection_anchor_indices"][0, :10], expected_detection_anchor_indices, decimal=6
-        )
-
-        self.assertTrue(result["num_detections"].shape == (10,))
-        expected_num_detections = np.asarray([300.0, 300.0, 300.0, 300.0, 300.0, 300.0, 300.0, 300.0, 300.0, 300.0])
-        np.testing.assert_array_almost_equal(result["num_detections"], expected_num_detections, decimal=6)
-
-        self.assertTrue(result["raw_detection_boxes"].shape == (10, 300, 4))
-        expected_raw_detection_boxes = np.asarray([0.05784893, 0.05130966, 0.41411403, 0.95867515])
-        np.testing.assert_array_almost_equal(
-            result["raw_detection_boxes"][0, 2, :], expected_raw_detection_boxes, decimal=6
-        )
-
-        self.assertTrue(result["raw_detection_scores"].shape == (10, 300, 91))
-        expected_raw_detection_scores = np.asarray(
-            [
-                9.9981636e-01,
-                2.3866653e-06,
-                2.2101715e-06,
-                1.3920785e-05,
-                9.3873712e-07,
-                4.0993282e-06,
-                3.3591269e-07,
-                6.7879691e-06,
-                2.8425752e-06,
-                9.0685753e-06,
-            ]
-        )
-        np.testing.assert_array_almost_equal(
-            result["raw_detection_scores"][0, 2, :10], expected_raw_detection_scores, decimal=6
-        )
+        self.assertTrue(result[0]["labels"].shape == (300,))
+        expected_detection_classes = np.asarray([71.0, 81.0, 66.0, 15.0, 63.0, 66.0, 64.0, 84.0, 37.0, 2.0])
+        np.testing.assert_array_almost_equal(result[0]["labels"][:10], expected_detection_classes, decimal=6)
 
     def test_loss_gradient(self):
         # Create labels
         result = self.obj_dec.predict(self.x_test_mnist[:2])
 
-        groundtruth_boxes_list = [result["detection_boxes"][i] for i in range(2)]
-        groundtruth_classes_list = [result["detection_classes"][i] for i in range(2)]
-        groundtruth_weights_list = [np.ones_like(r) for r in groundtruth_classes_list]
-
-        y = {
-            "groundtruth_boxes_list": groundtruth_boxes_list,
-            "groundtruth_classes_list": groundtruth_classes_list,
-            "groundtruth_weights_list": groundtruth_weights_list,
-        }
+        y = [
+            {
+                "boxes": result[0]["boxes"],
+                "labels": result[0]["labels"],
+                "scores": np.ones_like(result[0]["labels"]),
+            },
+            {
+                "boxes": result[1]["boxes"],
+                "labels": result[1]["labels"],
+                "scores": np.ones_like(result[1]["labels"]),
+            },
+        ]
 
         # Compute gradients
         grads = self.obj_dec.loss_gradient(self.x_test_mnist[:2], y)

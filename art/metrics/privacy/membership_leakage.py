@@ -39,20 +39,20 @@ def PDTP(
     num_iter: Optional[int] = 10,
 ) -> np.ndarray:
     """
-        Compute the pointwise differential training privacy metric for the given classifier and training set.
-        | Paper link: https://arxiv.org/abs/1712.09136
+    Compute the pointwise differential training privacy metric for the given classifier and training set.
+    | Paper link: https://arxiv.org/abs/1712.09136
 
-        :param target_estimator: The classifier to be analyzed.
-        :param extra_estimator: Another classifier of the same type as the target classifier, but not yet fit.
-        :param x: The training data of the classifier.
-        :param y: Target values (class labels) of `x`, one-hot-encoded of shape (nb_samples, nb_classes) or indices of
-                  shape (nb_samples,).
-        :param indexes: the subset of indexes of `x` to compute the PDTP metric on. If not supplied, PDTP will be
-                        computed for all samples in `x`.
-        :param num_iter: the number of iterations of PDTP computation to run for each sample. If not supplied,
-                         defaults to 10. The result is the average across iterations.
-        :return: an array containing the average PDTP value for each sample in the training set. The higher the value,
-                 the higher the privacy leakage for that sample.
+    :param target_estimator: The classifier to be analyzed.
+    :param extra_estimator: Another classifier of the same type as the target classifier, but not yet fit.
+    :param x: The training data of the classifier.
+    :param y: Target values (class labels) of `x`, one-hot-encoded of shape (nb_samples, nb_classes) or indices of
+              shape (nb_samples,).
+    :param indexes: the subset of indexes of `x` to compute the PDTP metric on. If not supplied, PDTP will be
+                    computed for all samples in `x`.
+    :param num_iter: the number of iterations of PDTP computation to run for each sample. If not supplied,
+                     defaults to 10. The result is the average across iterations.
+    :return: an array containing the average PDTP value for each sample in the training set. The higher the value,
+             the higher the privacy leakage for that sample.
     """
     from art.estimators.classification.pytorch import PyTorchClassifier
     from art.estimators.classification.tensorflow import TensorFlowV2Classifier

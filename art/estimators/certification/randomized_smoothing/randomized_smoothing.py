@@ -44,7 +44,14 @@ class RandomizedSmoothingMixin(ABC):
     | Paper link: https://arxiv.org/abs/1902.02918
     """
 
-    def __init__(self, sample_size: int, *args, scale: float = 0.1, alpha: float = 0.001, **kwargs,) -> None:
+    def __init__(
+        self,
+        sample_size: int,
+        *args,
+        scale: float = 0.1,
+        alpha: float = 0.001,
+        **kwargs,
+    ) -> None:
         """
         Create a randomized smoothing wrapper.
 

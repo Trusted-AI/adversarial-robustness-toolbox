@@ -108,7 +108,11 @@ def save_image(image_array: np.ndarray, f_name: str) -> None:
 
 
 def plot_3d(
-    points: np.ndarray, labels: List[int], colors: Optional[List[str]] = None, save: bool = True, f_name: str = "",
+    points: np.ndarray,
+    labels: List[int],
+    colors: Optional[List[str]] = None,
+    save: bool = True,
+    f_name: str = "",
 ) -> "matplotlib.figure.Figure":
     """
     Generates a 3-D plot in of the provided points where the labels define the color that will be used to color each

@@ -114,9 +114,16 @@ class HighConfidenceLowUncertainty(EvasionAttack):
             constr_unc = {"type": "ineq", "fun": constraint_unc, "args": (init_args,)}
             args = {"args": init_args, "orig": x[i].reshape(-1)}
             # finally, run optimization
-            x_adv[i] = minimize(minfun, x_adv[i], args=args, bounds=bounds, constraints=[constr_conf, constr_unc],)["x"]
+            x_adv[i] = minimize(
+                minfun,
+                x_adv[i],
+                args=args,
+                bounds=bounds,
+                constraints=[constr_conf, constr_unc],
+            )["x"]
         logger.info(
-            "Success rate of HCLU attack: %.2f%%", 100 * compute_success(self.estimator, x, y, x_adv),
+            "Success rate of HCLU attack: %.2f%%",
+            100 * compute_success(self.estimator, x, y, x_adv),
         )
         return x_adv
 

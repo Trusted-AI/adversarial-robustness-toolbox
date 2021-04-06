@@ -81,7 +81,11 @@ class AdversarialTrainerMadryPGD(Trainer):
 
         # Setting up adversary and perform adversarial training:
         self.attack = ProjectedGradientDescent(
-            classifier, eps=eps, eps_step=eps_step, max_iter=max_iter, num_random_init=num_random_init,
+            classifier,
+            eps=eps,
+            eps_step=eps_step,
+            max_iter=max_iter,
+            num_random_init=num_random_init,
         )
 
         self.trainer = AdversarialTrainer(classifier, self.attack, ratio=1.0)  # type: ignore

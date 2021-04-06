@@ -73,6 +73,10 @@ jobs:
             framework: scikitlearn
             scikit-learn: 0.23.2
             python: 3.8
+          - name: scikit-learn 0.24.1 (Python 3.8)
+            framework: scikitlearn
+            scikit-learn: 0.24.1
+            python: 3.8
           - name: TensorFlow+Lingvo 2.1.0v1 (Keras 2.3.1 Python 3.6)
             framework: tensorflow2v1
             python: 3.6

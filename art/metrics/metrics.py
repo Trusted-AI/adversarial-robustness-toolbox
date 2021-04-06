@@ -47,7 +47,15 @@ SUPPORTED_METHODS: Dict[str, Dict[str, Any]] = {
         "class": FastGradientMethod,
         "params": {"eps_step": 0.1, "eps_max": 1.0, "clip_min": 0.0, "clip_max": 1.0},
     },
-    "hsj": {"class": HopSkipJump, "params": {"max_iter": 50, "max_eval": 10000, "init_eval": 100, "init_size": 100,},},
+    "hsj": {
+        "class": HopSkipJump,
+        "params": {
+            "max_iter": 50,
+            "max_eval": 10000,
+            "init_eval": 100,
+            "init_size": 100,
+        },
+    },
 }
 
 
@@ -72,7 +80,10 @@ def get_crafter(classifier: "CLASSIFIER_TYPE", attack: str, params: Optional[Dic
 
 
 def empirical_robustness(
-    classifier: "CLASSIFIER_TYPE", x: np.ndarray, attack_name: str, attack_params: Optional[Dict[str, Any]] = None,
+    classifier: "CLASSIFIER_TYPE",
+    x: np.ndarray,
+    attack_name: str,
+    attack_params: Optional[Dict[str, Any]] = None,
 ) -> Union[float, np.ndarray]:
     """
     Compute the Empirical Robustness of a classifier object over the sample `x` for a given adversarial crafting
@@ -305,7 +316,8 @@ def clever_t(
 
     # Generate a pool of samples
     rand_pool = np.reshape(
-        random_sphere(nb_points=pool_factor * batch_size, nb_dims=dim, radius=radius, norm=norm), shape,
+        random_sphere(nb_points=pool_factor * batch_size, nb_dims=dim, radius=radius, norm=norm),
+        shape,
     )
     rand_pool += np.repeat(np.array([x]), pool_factor * batch_size, 0)
     rand_pool = rand_pool.astype(ART_NUMPY_DTYPE)

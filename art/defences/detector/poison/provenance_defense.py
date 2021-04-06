@@ -174,7 +174,11 @@ class ProvenanceDefense(PoisonFilteringDefence):
             filtered_model.fit(filtered_data, filtered_labels)
 
             var_w = performance_diff(
-                filtered_model, unfiltered_model, self.x_val, self.y_val, perf_function=self.perf_func,
+                filtered_model,
+                unfiltered_model,
+                self.x_val,
+                self.y_val,
+                perf_function=self.perf_func,
             )
             if self.eps < var_w:
                 suspected[device_idx] = var_w
@@ -192,9 +196,14 @@ class ProvenanceDefense(PoisonFilteringDefence):
         self.set_params(**kwargs)
 
         suspected = {}
-        (train_data, valid_data, train_labels, valid_labels, train_prov, valid_prov,) = train_test_split(
-            self.x_train, self.y_train, self.p_train, test_size=self.pp_valid
-        )
+        (
+            train_data,
+            valid_data,
+            train_labels,
+            valid_labels,
+            train_prov,
+            valid_prov,
+        ) = train_test_split(self.x_train, self.y_train, self.p_train, test_size=self.pp_valid)
 
         train_segments = segment_by_class(train_data, train_prov, self.num_devices)
         valid_segments = segment_by_class(valid_data, valid_prov, self.num_devices)

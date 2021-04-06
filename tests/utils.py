@@ -643,10 +643,10 @@ def get_image_classifier_kr_functional(input_layer=1, output_layer=1):
 
 def get_image_classifier_kr_tf_functional(input_layer=1, output_layer=1):
     """
-       Standard Keras_tf classifier for unit testing built with a functional model
+    Standard Keras_tf classifier for unit testing built with a functional model
 
-       :return: KerasClassifier
-       """
+    :return: KerasClassifier
+    """
     import tensorflow as tf
 
     if tf.__version__[0] == "2":
@@ -1031,6 +1031,29 @@ def get_classifier_bb(defences=None):
     return bbc
 
 
+def get_classifier_bb_nn(defences=None):
+    """
+    Standard BlackBox Neural Network classifier for unit testing.
+
+    :return: BlackBoxClassifierNeuralNetwork
+    """
+    from art.estimators.classification.blackbox import BlackBoxClassifierNeuralNetwork
+    from art.utils import to_categorical
+
+    # define black-box classifier
+    def predict(x):
+        with open(
+            os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/data/mnist", "api_output.txt")
+        ) as json_file:
+            predictions = json.load(json_file)
+        return to_categorical(predictions["values"][: len(x)], nb_classes=10)
+
+    bbc = BlackBoxClassifierNeuralNetwork(
+        predict, (28, 28, 1), 10, clip_values=(0, 255), preprocessing_defences=defences
+    )
+    return bbc
+
+
 def get_image_classifier_mxnet_custom_ini():
     import mxnet
 
@@ -1089,9 +1112,17 @@ def get_gan_inverse_gan_ft():
         sess = tf.Session()
         sess.run(tf.global_variables_initializer())
 
-        gan = TensorFlowGenerator(input_ph=z_ph, model=gen_tf, sess=sess,)
+        gan = TensorFlowGenerator(
+            input_ph=z_ph,
+            model=gen_tf,
+            sess=sess,
+        )
 
-        inverse_gan = TensorFlowEncoder(input_ph=image_to_enc_ph, model=enc_tf, sess=sess,)
+        inverse_gan = TensorFlowEncoder(
+            input_ph=image_to_enc_ph,
+            model=enc_tf,
+            sess=sess,
+        )
         return gan, inverse_gan, sess
 
 

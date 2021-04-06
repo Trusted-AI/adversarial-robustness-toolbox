@@ -99,17 +99,17 @@ class LFilterPyTorch(PreprocessorPyTorch):
         :return: Similar sample.
         """
         import torch  # lgtm [py/repeated-import]
-        from torchaudio.functional import lfilter
+        import torchaudio
 
-        if int(torch.__version__.split(".")[1]) > 5:
-            x_preprocess = lfilter(
+        if int(torchaudio.__version__.split(".")[1]) > 5:
+            x_preprocess = torchaudio.functional.lfilter(
                 b_coeffs=torch.tensor(self.numerator_coef, device=self._device),
                 a_coeffs=torch.tensor(self.denominator_coef, device=self._device),
                 waveform=x,
                 clamp=False,
             )
         else:
-            x_preprocess = lfilter(
+            x_preprocess = torchaudio.functional.lfilter(
                 b_coeffs=torch.tensor(self.numerator_coef, device=self._device),
                 a_coeffs=torch.tensor(self.denominator_coef, device=self._device),
                 waveform=x,

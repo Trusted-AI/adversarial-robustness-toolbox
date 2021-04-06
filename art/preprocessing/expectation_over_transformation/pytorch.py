@@ -36,7 +36,11 @@ class EoTPyTorch(PreprocessorPyTorch):
     """
 
     def __init__(
-        self, nb_samples: int, clip_values: Tuple[float, float], apply_fit: bool = False, apply_predict: bool = True,
+        self,
+        nb_samples: int,
+        clip_values: Tuple[float, float],
+        apply_fit: bool = False,
+        apply_predict: bool = True,
     ) -> None:
         """
         Create an instance of EoTPyTorch.

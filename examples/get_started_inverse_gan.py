@@ -63,7 +63,11 @@ def create_ts1_encoder_model(batch_size):
 
     unmodified_z_tensor, images_tensor = encoder_reconstructor.generate_z_extrapolated_k()
 
-    encoder = TensorFlowEncoder(input_ph=images_tensor, model=unmodified_z_tensor, sess=sess,)
+    encoder = TensorFlowEncoder(
+        input_ph=images_tensor,
+        model=unmodified_z_tensor,
+        sess=sess,
+    )
 
     return encoder
 
@@ -74,7 +78,9 @@ def create_ts1_generator_model(batch_size):
     generator.sess.run(generator.init_opt)
 
     generator = TensorFlowGenerator(
-        input_ph=generator.z_general_placeholder, model=generator.z_hats_recs, sess=generator.sess,
+        input_ph=generator.z_general_placeholder,
+        model=generator.z_hats_recs,
+        sess=generator.sess,
     )
 
     return generator
