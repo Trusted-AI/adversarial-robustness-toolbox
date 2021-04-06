@@ -115,3 +115,53 @@ def test_relation_clip_values_error(art_warning):
 
     except ARTTestException as e:
         art_warning(e)
+
+
+@pytest.mark.framework_agnostic
+@pytest.mark.parametrize("fir_filter", [False, True])
+def test_estimate_gradient(fir_filter, art_warning, expected_values):
+
+    try:
+        # Load data for testing
+        expected_data = expected_values()
+
+        x1 = expected_data[0]
+        x2 = expected_data[1]
+        x3 = expected_data[2]
+
+        grad0 = expected_data[3]
+        grad1 = expected_data[4]
+        grad2 = expected_data[5]
+
+        result0 = expected_data[6]
+        result1 = expected_data[7]
+        result2 = expected_data[8]
+
+        # Create signal data
+        x = np.array([np.array(x1 * 2), np.array(x2 * 2), np.array(x3 * 2)])
+
+        # Create input gradient
+        grad = np.array([np.array(grad0), np.array(grad1), np.array(grad2)])
+
+        # Filter params
+        numerator_coef = np.array([0.1, 0.2, -0.1, -0.2])
+
+        if fir_filter:
+            denominator_coef = np.array([1.0])
+        else:
+            denominator_coef = np.array([1.0, 0.1, 0.3, 0.4])
+
+        # Create filter
+        audio_filter = LFilter(numerator_coef=numerator_coef, denominator_coef=denominator_coef)
+
+        # Estimate gradient
+        estimated_grad = audio_filter.estimate_gradient(x, grad=grad)
+
+        # Test
+        assert estimated_grad.shape == x.shape
+        np.testing.assert_array_almost_equal(result0, estimated_grad[0], decimal=0)
+        np.testing.assert_array_almost_equal(result1, estimated_grad[1], decimal=0)
+        np.testing.assert_array_almost_equal(result2, estimated_grad[2], decimal=0)
+
+    except ARTTestException as e:
+        art_warning(e)
