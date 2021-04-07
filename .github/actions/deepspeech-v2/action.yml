@@ -3,5 +3,5 @@ description: 'Run tests on deepspeech version 2'
 runs:
   using: 'composite'
   steps:
-    - run: ${{ github.action_path }}/run.sh
+    - run: $GITHUB_ACTION_PATH/run.sh
       shell: bash
