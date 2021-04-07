@@ -42,12 +42,13 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - name: Pre-install Lingvo ASR
+        # scipy beyond 1.6.0 is not available on Python 3.6, therefore we adapt the installation of requirements.txt
         run: |
           sudo apt-get update
           sudo apt-get -y -q install ffmpeg libavcodec-extra
           python -m pip install --upgrade pip setuptools wheel
-          pip3 install -q -r $(grep -ivE "scipy" requirements.txt) # scipy beyond 1.6.0 is not available on Python 3.6
-          pip install scipy==1.5.4 # scipy beyond 1.6.0 is not available on Python 3.6
+          pip3 install -q -r $(grep -ivE "scipy" requirements.txt)
+          pip install scipy==1.5.4
           pip install tensorflow==${{ matrix.tensorflow }}
           pip install keras==${{ matrix.keras }}
           pip install lingvo==${{ matrix.lingvo }}
