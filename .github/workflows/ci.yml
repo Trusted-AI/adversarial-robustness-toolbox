@@ -187,4 +187,4 @@ jobs:
       - name: Check Types (mypy)
         run: (mypy art || exit 0)
       - name: pytest
-        run: pytest --flake8 -v
+        run: py.test --flake8 -m flake8
