@@ -1,7 +1,7 @@
 # base
 numpy>=1.18.0
 scipy==1.6.2
-matplotlib==3.3.4
+matplotlib==3.4.1
 scikit-learn>=0.22.2,==0.23.*
 six==1.15.0
 Pillow==8.1.2
@@ -46,7 +46,7 @@ pytest-pep8~=1.0.6
 pytest-mock~=3.3.1
 pytest-cov~=2.10.1
 codecov~=2.1.11
-requests~=2.24.0
+requests~=2.25.1
 
 
 
