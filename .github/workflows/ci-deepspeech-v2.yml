@@ -21,6 +21,7 @@ on:
 jobs:
   test_deepspeech_v2:
     name: A job to test deepspeech version 2
+    runs-on: ubuntu-latest
     steps:
       - name: Load docker image
         uses: ./.github/actions/deepspeech-v2
