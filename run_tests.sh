@@ -124,12 +124,7 @@ else
                          "tests/defences/test_thermometer_encoding.py" \
                          "tests/defences/test_variance_minimization.py" \
                          "tests/defences/detector/evasion/subsetscanning/test_detector.py" \
-                         "tests/defences/detector/evasion/test_detector.py" \
-                         "tests/defences/detector/poison/test_activation_defence.py" \
-                         "tests/defences/detector/poison/test_clustering_analyzer.py" \
-                         "tests/defences/detector/poison/test_ground_truth_evaluator.py" \
-                         "tests/defences/detector/poison/test_provenance_defence.py" \
-                         "tests/defences/detector/poison/test_roni.py" )
+                         "tests/defences/detector/evasion/test_detector.py" )
 
     declare -a metrics=("tests/metrics/test_gradient_check.py" \
                         "tests/metrics/test_metrics.py" \
