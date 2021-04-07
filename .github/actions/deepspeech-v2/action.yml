@@ -1,5 +1,7 @@
 name: 'Test deepspeech version 2'
 description: 'Run tests on deepspeech version 2'
 runs:
-  using: 'sh'
-  main: 'run.sh'
+  using: 'composite'
+  steps:
+    - run: ${{ github.action_path }}/run.sh
+      shell: bash
