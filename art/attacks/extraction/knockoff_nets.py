@@ -301,12 +301,11 @@ class KnockoffNets(ExtractionAttack):
         """
         if self.reward == "cert":
             return self._reward_cert(y_output)
-        elif self.reward == "div":
+        if self.reward == "div":
             return self._reward_div(y_output, n)
-        elif self.reward == "loss":
+        if self.reward == "loss":
             return self._reward_loss(y_output, y_hat)
-        else:
-            return self._reward_all(y_output, y_hat, n)
+        return self._reward_all(y_output, y_hat, n)
 
     @staticmethod
     def _reward_cert(y_output: np.ndarray) -> float:

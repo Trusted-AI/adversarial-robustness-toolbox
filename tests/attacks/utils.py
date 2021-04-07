@@ -160,7 +160,7 @@ def backend_targeted_tabular(attack, fix_get_iris):
     logger.info("Success rate of targeted boundary on Iris: %.2f%%", (accuracy * 100))
 
 
-def back_end_untargeted_images(attack, fix_get_mnist_subset, fix_mlFramework):
+def back_end_untargeted_images(attack, fix_get_mnist_subset, fix_framework):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
     x_test_adv = attack.generate(x_test_mnist)
@@ -171,7 +171,7 @@ def back_end_untargeted_images(attack, fix_get_mnist_subset, fix_mlFramework):
     y_pred_adv = np.argmax(attack.estimator.predict(x_test_adv), axis=1)
     assert (y_pred != y_pred_adv).any()
 
-    if fix_mlFramework in ["keras"]:
+    if fix_framework in ["keras"]:
         k.clear_session()
 
 
@@ -181,7 +181,7 @@ def backend_untargeted_tabular(attack, iris_dataset, clipped):
     x_test_adv = attack.generate(x_test_iris)
 
     # TODO remove that platform specific case
-    # if mlFramework in ["scikitlearn"]:
+    # if framework in ["scikitlearn"]:
     #     np.testing.assert_array_almost_equal(np.abs(x_test_adv - x_test_iris), .1, decimal=5)
 
     check_adverse_example_x(x_test_adv, x_test_iris)

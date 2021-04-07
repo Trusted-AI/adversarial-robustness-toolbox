@@ -24,3 +24,7 @@ CLEVER
 Wasserstein Distance
 --------------------
 .. autofunction:: wasserstein_distance
+
+Pointwise Differential Training Privacy
+---------------------------------------
+.. autofunction:: PDTP
