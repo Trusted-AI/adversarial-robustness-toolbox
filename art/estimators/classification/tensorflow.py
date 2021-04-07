@@ -1138,19 +1138,20 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                 if self.all_framework_preprocessing:
                     x_grad = tf.convert_to_tensor(x)
                     tape.watch(x_grad)
-                    x_input, _ = self._apply_preprocessing(x_grad, y=None, fit=False)
+                    x_input, y_input = self._apply_preprocessing(x_grad, y=y, fit=False)
                 else:
-                    x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
+                    x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y=y, fit=False)
                     x_grad = tf.convert_to_tensor(x_preprocessed)
                     tape.watch(x_grad)
                     x_input = x_grad
+                    y_input = y_preprocessed
 
                 predictions = self.model(x_input, training=training_mode)
 
                 if self._reduce_labels:
-                    loss = self._loss_object(np.argmax(y, axis=1), predictions)
+                    loss = self._loss_object(np.argmax(y_input, axis=1), predictions)
                 else:
-                    loss = self._loss_object(y, predictions)
+                    loss = self._loss_object(y_input, predictions)
 
             gradients = tape.gradient(loss, x_grad)
 
