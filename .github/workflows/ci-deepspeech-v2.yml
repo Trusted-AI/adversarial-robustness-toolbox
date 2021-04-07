@@ -20,13 +20,14 @@ on:
 
 jobs:
   test_deepspeech_v2:
-    runs-on: ubuntu-latest
     name: A job to test deepspeech version 2
     steps:
+      - name: Load docker image
+        uses: ./.github/actions/deepspeech-v2
       - name: Checkout Repo
         uses: actions/checkout@v2
-      - name: Test deepspeech version 2 action
-        uses: ./
+      - name: Run tests
+        uses: ./.github/actions/run.sh
 #      - name: Run ${{ matrix.name }} Tests
 #        run: ./run_tests.sh ${{ matrix.framework }}
 #      - name: Upload coverage to Codecov

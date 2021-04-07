@@ -2,4 +2,4 @@ name: 'Test deepspeech version 2'
 description: 'Run tests on deepspeech version 2'
 runs:
   using: 'docker'
-  image: 'Dockerfile_deepspeech_v2'
+  image: 'Dockerfile'
