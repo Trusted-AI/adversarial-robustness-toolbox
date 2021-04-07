@@ -15,26 +15,39 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import importlib
 import json
 import logging
 import os
 import shutil
 import tempfile
+import warnings
 
 import numpy as np
 import pytest
 import requests
-import warnings
 
-from art.data_generators import PyTorchDataGenerator, TensorFlowDataGenerator, KerasDataGenerator, MXDataGenerator
+from art.data_generators import KerasDataGenerator, MXDataGenerator, PyTorchDataGenerator, TensorFlowDataGenerator
 from art.defences.preprocessor import FeatureSqueezing, JpegCompression, SpatialSmoothing
 from art.estimators.classification import KerasClassifier
-from tests.utils import master_seed, get_image_classifier_kr, get_image_classifier_tf, get_image_classifier_pt
-from tests.utils import get_tabular_classifier_kr, get_tabular_classifier_tf, get_tabular_classifier_pt
-from tests.utils import get_tabular_classifier_scikit_list, load_dataset, get_image_classifier_kr_tf
-from tests.utils import get_image_classifier_mxnet_custom_ini, get_image_classifier_kr_tf_with_wildcard
-from tests.utils import get_image_classifier_kr_tf_functional, get_image_classifier_kr_functional
-from tests.utils import ARTTestFixtureNotImplemented, get_attack_classifier_pt
+from tests.utils import (
+    ARTTestFixtureNotImplemented,
+    get_attack_classifier_pt,
+    get_image_classifier_kr,
+    get_image_classifier_kr_functional,
+    get_image_classifier_kr_tf,
+    get_image_classifier_kr_tf_functional,
+    get_image_classifier_kr_tf_with_wildcard,
+    get_image_classifier_mxnet_custom_ini,
+    get_image_classifier_pt,
+    get_image_classifier_tf,
+    get_tabular_classifier_kr,
+    get_tabular_classifier_pt,
+    get_tabular_classifier_scikit_list,
+    get_tabular_classifier_tf,
+    load_dataset,
+    master_seed,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -61,10 +74,10 @@ def get_default_framework():
 
 def pytest_addoption(parser):
     parser.addoption(
-        "--mlFramework",
+        "--framework",
         action="store",
         default=get_default_framework(),
-        help="ART tests allow you to specify which mlFramework to use. The default mlFramework used is `tensorflow`. "
+        help="ART tests allow you to specify which framework to use. The default framework used is `tensorflow`. "
         "Other options available are {0}".format(art_supported_frameworks),
     )
     parser.addoption(
@@ -163,6 +176,11 @@ def setup_tear_down_framework(framework):
 
         if tf.__version__[0] != "2":
             tf.reset_default_graph()
+
+    if framework == "tensorflow2v1":
+        import tensorflow.compat.v1 as tf1
+
+        tf1.reset_default_graph()
     yield True
 
     # Ran after each test
@@ -403,7 +421,7 @@ def get_image_classifier_mx_instance(get_image_classifier_mx_model, mnist_shape)
             clip_values=(0, 1),
             preprocessing_defences=None,
             postprocessing_defences=None,
-            preprocessing=(0, 1),
+            preprocessing=(0.0, 1.0),
         )
 
         return mxc
@@ -625,7 +643,7 @@ def create_test_image(create_test_dir):
 
 @pytest.fixture(scope="session")
 def framework(request):
-    ml_framework = request.config.getoption("--mlFramework")
+    ml_framework = request.config.getoption("--framework")
     if ml_framework == "tensorflow":
         import tensorflow as tf
 
@@ -636,12 +654,12 @@ def framework(request):
 
     if ml_framework not in art_supported_frameworks:
         raise Exception(
-            "mlFramework value {0} is unsupported. Please use one of these valid values: {1}".format(
+            "framework value {0} is unsupported. Please use one of these valid values: {1}".format(
                 ml_framework, " ".join(art_supported_frameworks)
             )
         )
-    # if utils_test.is_valid_framework(mlFramework):
-    #     raise Exception("The mlFramework specified was incorrect. Valid options available
+    # if utils_test.is_valid_framework(framework):
+    #     raise Exception("The framework specified was incorrect. Valid options available
     #     are {0}".format(art_supported_frameworks))
     return ml_framework
 
@@ -737,7 +755,7 @@ def get_mnist_dataset(load_mnist_dataset, mnist_shape):
     np.testing.assert_array_almost_equal(y_test_mnist_original, y_test_mnist, decimal=3)
 
 
-# ART test fixture to skip test for specific mlFramework values
+# ART test fixture to skip test for specific framework values
 # eg: @pytest.mark.only_with_platform("tensorflow")
 @pytest.fixture(autouse=True)
 def only_with_platform(request, framework):
@@ -746,13 +764,13 @@ def only_with_platform(request, framework):
             pytest.skip("skipped on this platform: {}".format(framework))
 
 
-# ART test fixture to skip test for specific mlFramework values
-# eg: @pytest.mark.skipMlFramework("tensorflow", "keras", "pytorch", "scikitlearn",
+# ART test fixture to skip test for specific framework values
+# eg: @pytest.mark.skip_framework("tensorflow", "keras", "pytorch", "scikitlearn",
 # "mxnet", "kerastf", "non_dl_frameworks", "dl_frameworks")
 @pytest.fixture(autouse=True)
 def skip_by_framework(request, framework):
-    if request.node.get_closest_marker("skipMlFramework"):
-        framework_to_skip_list = list(request.node.get_closest_marker("skipMlFramework").args)
+    if request.node.get_closest_marker("skip_framework"):
+        framework_to_skip_list = list(request.node.get_closest_marker("skip_framework").args)
         if "dl_frameworks" in framework_to_skip_list:
             framework_to_skip_list.extend(deep_learning_frameworks)
 
@@ -795,39 +813,22 @@ def framework_agnostic(request, framework):
 
 
 # ART test fixture to skip test for specific required modules
-# eg: @pytest.mark.skipModule("deepspeech_pytorch", "apex.amp", "object_detection")
+# eg: @pytest.mark.skip_module("deepspeech_pytorch", "apex.amp", "object_detection")
 @pytest.fixture(autouse=True)
 def skip_by_module(request):
-    import importlib
+    if request.node.get_closest_marker("skip_module"):
+        modules_from_args = request.node.get_closest_marker("skip_module").args
 
-    if request.node.get_closest_marker("skipModule"):
-        module_to_skip_list = list(request.node.get_closest_marker("skipModule").args)
+        # separate possible parent modules and test them first
+        modules_parents = [m.split(".", 1)[0] for m in modules_from_args]
 
-        if "deepspeech_pytorch" in module_to_skip_list:
-            deepspeech_pytorch_spec = importlib.util.find_spec("deepspeech_pytorch")
-            deepspeech_pytorch_found = deepspeech_pytorch_spec is not None
+        # merge with modules including submodules (Note: sort ensures that parent comes first)
+        modules_full = sorted(set(modules_parents).union(modules_from_args))
 
-            if not deepspeech_pytorch_found:
-                pytest.skip(
-                    "Skip unittests if the `deepspeech_pytorch` module is not found because of pre-trained model."
-                )
+        for module in modules_full:
+            if module in modules_full:
+                module_spec = importlib.util.find_spec(module)
+                module_found = module_spec is not None
 
-        if "object_detection" in module_to_skip_list:
-            object_detection_spec = importlib.util.find_spec("object_detection")
-            object_detection_found = object_detection_spec is not None
-
-            if not object_detection_found:
-                pytest.skip(
-                    "Skip unittests if the `object_detection` module is not found because of pre-trained model."
-                )
-
-        if "apex.amp" in module_to_skip_list:
-            apex_spec = importlib.util.find_spec("apex")
-            if apex_spec is not None:
-                amp_spec = importlib.util.find_spec("apex.amp")
-            else:
-                amp_spec = None
-            amp_found = amp_spec is not None
-
-            if not amp_found:
-                pytest.skip("Skip unittests if the `apex.amp` module is not found.")
+                if not module_found:
+                    pytest.skip(f"Test skipped because package {module} not available.")

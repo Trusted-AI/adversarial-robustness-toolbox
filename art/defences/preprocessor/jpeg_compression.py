@@ -35,7 +35,6 @@ from tqdm.auto import tqdm
 
 from art.config import ART_NUMPY_DTYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
-from art.utils import Deprecated, deprecated_keyword_arg
 
 if TYPE_CHECKING:
     from art.utils import CLIP_VALUES_TYPE
@@ -59,14 +58,12 @@ class JpegCompression(Preprocessor):
         https://arxiv.org/abs/1902.06705
     """
 
-    params = ["quality", "channel_index", "channels_first", "clip_values", "verbose"]
+    params = ["quality", "channels_first", "clip_values", "verbose"]
 
-    @deprecated_keyword_arg("channel_index", end_version="1.6.0", replaced_by="channels_first")
     def __init__(
         self,
         clip_values: "CLIP_VALUES_TYPE",
         quality: int = 50,
-        channel_index=Deprecated,
         channels_first: bool = False,
         apply_fit: bool = True,
         apply_predict: bool = True,
@@ -78,24 +75,14 @@ class JpegCompression(Preprocessor):
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :param quality: The image quality, on a scale from 1 (worst) to 95 (best). Values above 95 should be avoided.
-        :param channel_index: Index of the axis in data containing the color channels or features.
-        :type channel_index: `int`
         :param channels_first: Set channels first or last.
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
         :param verbose: Show progress bars.
         """
-        # Remove in 1.6.0
-        if channel_index == 3:
-            channels_first = False
-        elif channel_index == 1:
-            channels_first = True
-        elif channel_index is not Deprecated:
-            raise ValueError("Not a proper channel_index. Use channels_first.")
 
         super().__init__(is_fitted=True, apply_fit=apply_fit, apply_predict=apply_predict)
         self.quality = quality
-        self.channel_index = channel_index
         self.channels_first = channels_first
         self.clip_values = clip_values
         self.verbose = verbose

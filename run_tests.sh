@@ -8,59 +8,62 @@ export TF_CPP_MIN_LOG_LEVEL="3"
 
 #NOTE: All the tests should be ran within this loop. All other tests are legacy tests that must be
 # made framework independent to be incorporated within this loop
-mlFrameworkList=("tensorflow" "keras" "pytorch" "scikitlearn" "mxnet" "kerastf")
-mlFramework=$1
+frameworkList=("tensorflow" "keras" "pytorch" "scikitlearn" "mxnet" "kerastf")
+framework=$1
 
-if [[ ${mlFramework} != "legacy" ]]
+if [[ ${framework} != "legacy" ]]
 then
     echo "#######################################################################"
-    echo "############## Running tests with framework $mlFramework ##############"
+    echo "############### Running tests with framework $framework ###############"
     echo "#######################################################################"
 
-    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/detector/poison --mlFramework=$mlFramework --skip_travis=True --durations=0
-    if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/detector/poison tests"; fi
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/detector/poison/test_spectral_signature_defense.py --framework=$framework --skip_travis=True --durations=0
+    if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/detector/poison/test_spectral_signature_defense.py tests"; fi
 
-    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/preprocessor --mlFramework=$mlFramework --skip_travis=True --durations=0
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/preprocessor --framework=$framework --skip_travis=True --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor tests"; fi
 
-    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/transformer --mlFramework=$mlFramework --skip_travis=True --durations=0
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/transformer --framework=$framework --skip_travis=True --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/transformer tests"; fi
 
-    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/preprocessing/audio --mlFramework=$mlFramework --skip_travis=True --durations=0
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/preprocessing/audio --framework=$framework --skip_travis=True --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed preprocessing/audio tests"; fi
 
-    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/preprocessing/expectation_over_transformation --mlFramework=$mlFramework --skip_travis=True --durations=0
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/preprocessing/expectation_over_transformation --framework=$framework --skip_travis=True --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed preprocessing/expectation_over_transformation tests"; fi
 
-    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/utils --mlFramework=$mlFramework --skip_travis=True --durations=0
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/utils --framework=$framework --skip_travis=True --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed utils tests"; fi
 
-    pytest --cov-report=xml --cov=art --cov-append  -q -vv -s tests/attacks/poison/ --mlFramework=$mlFramework  --skip_travis=True --durations=0
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv -s tests/attacks/poison/ --framework=$framework  --skip_travis=True --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/poison tests"; fi
 
-    pytest --cov-report=xml --cov=art --cov-append  -q -vv -s tests/attacks/evasion/ --mlFramework=$mlFramework  --skip_travis=True --durations=0
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv -s tests/attacks/evasion/ --framework=$framework  --skip_travis=True --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion/test_shadow_attack.py"; fi
 
-    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/estimators/speech_recognition/ --mlFramework=$mlFramework  --skip_travis=True --durations=0
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/estimators/speech_recognition/ --framework=$framework  --skip_travis=True --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed estimators/speech_recognition tests"; fi
 
-    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/attacks/inference/ --mlFramework=$mlFramework --skip_travis=True --durations=0
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/attacks/inference/ --framework=$framework --skip_travis=True --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/inference"; fi
 
-    pytest -q -s tests/attacks/evasion/test_brendel_and_bethge.py --mlFramework=$mlFramework --durations=0
+    pytest -q -s tests/attacks/evasion/test_brendel_and_bethge.py --framework=$framework --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion/test_brendel_and_bethge.py"; fi
 
-    pytest --cov-report=xml --cov=art --cov-append -q -vv tests/classifiersFrameworks/  --mlFramework=$mlFramework --skip_travis=True --durations=0
+    pytest --cov-report=xml --cov=art --cov-append -q -vv tests/classifiersFrameworks/  --framework=$framework --skip_travis=True --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed classifiersFrameworks tests"; fi
 
-    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/preprocessor/test_spatial_smoothing_pytorch.py  --mlFramework=$mlFramework --skip_travis=True --durations=0
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/preprocessor/test_spatial_smoothing_pytorch.py  --framework=$framework --skip_travis=True --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor/test_spatial_smoothing_pytorch.py tests"; fi
 
-    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/estimators/classification/test_deeplearning_common.py --mlFramework=$mlFramework --skip_travis=True --durations=0
-    if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed estimators/classification/test_deeplearning_common.py $mlFramework"; fi
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/estimators/classification/test_deeplearning_common.py --framework=$framework --skip_travis=True --durations=0
+    if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed estimators/classification/test_deeplearning_common.py $framework"; fi
 
-    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/estimators/classification/test_deeplearning_specific.py --mlFramework=$mlFramework --skip_travis=True --durations=0
-    if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed estimators/classification tests for framework $mlFramework"; fi
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/estimators/classification/test_deeplearning_specific.py --framework=$framework --skip_travis=True --durations=0
+    if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed estimators/classification tests for framework $framework"; fi
+
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/metrics/privacy --framework=$framework --skip_travis=True --durations=0
+    if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed metrics/privacy tests"; fi
 else
     declare -a attacks=("tests/attacks/test_adversarial_patch.py" \
                         "tests/attacks/test_adversarial_embedding.py" \
@@ -82,11 +85,8 @@ else
                         "tests/attacks/test_projected_gradient_descent.py" \
                         "tests/attacks/test_saliency_map.py" \
                         "tests/attacks/test_spatial_transformation.py" \
-                        "tests/attacks/test_universal_perturbation.py" \
-                        "tests/attacks/test_virtual_adversarial.py" \
                         "tests/attacks/test_zoo.py" \
                         "tests/attacks/test_pixel_attack.py" \
-                        "tests/attacks/test_threshold_attack.py" \
                         "tests/attacks/test_wasserstein.py" \
                         "tests/attacks/test_shapeshifter.py" \
                         "tests/attacks/test_targeted_universal_perturbation.py" \
@@ -117,13 +117,19 @@ else
                          "tests/defences/test_gaussian_noise.py" \
                          "tests/defences/test_high_confidence.py" \
                          "tests/defences/test_label_smoothing.py" \
+                         "tests/defences/test_neural_cleanse.py" \
                          "tests/defences/test_pixel_defend.py" \
                          "tests/defences/test_reverse_sigmoid.py" \
                          "tests/defences/test_rounded.py" \
                          "tests/defences/test_thermometer_encoding.py" \
                          "tests/defences/test_variance_minimization.py" \
                          "tests/defences/detector/evasion/subsetscanning/test_detector.py" \
-                         "tests/defences/detector/evasion/test_detector.py" )
+                         "tests/defences/detector/evasion/test_detector.py" \
+                         "tests/defences/detector/poison/test_activation_defence.py" \
+                         "tests/defences/detector/poison/test_clustering_analyzer.py" \
+                         "tests/defences/detector/poison/test_ground_truth_evaluator.py" \
+                         "tests/defences/detector/poison/test_provenance_defence.py" \
+                         "tests/defences/detector/poison/test_roni.py" )
 
     declare -a metrics=("tests/metrics/test_gradient_check.py" \
                         "tests/metrics/test_metrics.py" \

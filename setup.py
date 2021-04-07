@@ -7,7 +7,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 install_requires = [
-    "numpy",
+    "numpy>=1.18.0",
     "scipy>=1.4.1",
     "matplotlib",
     "scikit-learn>=0.22.2,==0.23.*",
@@ -21,6 +21,7 @@ install_requires = [
     "ffmpeg-python",
     "cma",
     "mypy",
+    "numba~=0.52.0"
 ]
 
 docs_require = [

@@ -61,18 +61,17 @@ class RandomizedSmoothingMixin(ABC):
         """
         Perform prediction for a batch of inputs.
 
-        :param x: Test set.
+        :param x: Input samples.
         :param batch_size: Size of batches.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
         raise NotImplementedError
 
-    # pylint: disable=W0221
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
         """
         Perform prediction of the given classifier for a batch of inputs, taking an expectation over transformations.
 
-        :param x: Test set.
+        :param x: Input samples.
         :param batch_size: Batch size.
         :param is_abstain: True if function will abstain from prediction and return 0s. Default: True
         :type is_abstain: `boolean`

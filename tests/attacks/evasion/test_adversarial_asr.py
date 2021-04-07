@@ -45,7 +45,7 @@ class TestImperceptibleASR:
         except ARTTestException as e:
             art_warning(e)
 
-    @pytest.mark.skipMlFramework("tensorflow1", "mxnet", "kerastf", "non_dl_frameworks")
+    @pytest.mark.skip_framework("tensorflow1", "mxnet", "kerastf", "non_dl_frameworks")
     def test_implements_abstract_methods(self, art_warning, asr_dummy_estimator):
         try:
             CarliniWagnerASR(estimator=asr_dummy_estimator())
@@ -61,7 +61,7 @@ class TestImperceptibleASR:
         except ARTTestException as e:
             art_warning(e)
 
-    @pytest.mark.skipMlFramework("tensorflow1", "mxnet", "kerastf", "non_dl_frameworks")
+    @pytest.mark.skip_framework("tensorflow1", "mxnet", "kerastf", "non_dl_frameworks")
     def test_generate_batch(self, art_warning, mocker, asr_dummy_estimator, audio_data):
         try:
             test_input, test_target = audio_data

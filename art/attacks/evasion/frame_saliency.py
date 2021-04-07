@@ -112,8 +112,8 @@ class FrameSaliencyAttack(EvasionAttack):
         if self.method == "one_shot":
             if y is None:
                 return self.attacker.generate(x)
-            else:
-                return self.attacker.generate(x, y)
+
+            return self.attacker.generate(x, y)
 
         if y is None:
             # Throw error if attack is targeted, but no targets are provided

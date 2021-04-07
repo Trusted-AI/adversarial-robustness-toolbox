@@ -174,11 +174,11 @@ class ShadowAttack(EvasionAttack):
         :param perturbation: The perturbation to be regularised.
         :return: The loss gradients of the perturbation.
         """
+        if not self.estimator.channels_first:
+            perturbation = perturbation.transpose((0, 3, 1, 2))
+
         if self.framework == "tensorflow":
             import tensorflow as tf
-
-            if not self.estimator.channels_first:
-                perturbation = perturbation.transpose((0, 3, 1, 2))
 
             if tf.executing_eagerly():
                 with tf.GradientTape() as tape:
@@ -204,9 +204,6 @@ class ShadowAttack(EvasionAttack):
                     loss_c = tf.norm(tf.reduce_mean(tf.abs(perturbation_t), axis=[2, 3]), ord=2, axis=1) ** 2
                     loss = self.lambda_tv * loss_tv + self.lambda_s * loss_s + self.lambda_c * loss_c
                     gradients = tape.gradient(loss, perturbation_t).numpy()
-
-                    if not self.estimator.channels_first:
-                        gradients = gradients.transpose(0, 2, 3, 1)
 
             else:
                 raise ValueError("Expecting eager execution.")
@@ -237,6 +234,9 @@ class ShadowAttack(EvasionAttack):
             gradients = perturbation_t.grad.numpy()
         else:
             raise NotImplementedError
+
+        if not self.estimator.channels_first:
+            gradients = gradients.transpose(0, 2, 3, 1)
 
         return gradients
 

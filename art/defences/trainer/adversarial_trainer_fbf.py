@@ -97,7 +97,7 @@ class AdversarialTrainerFBF(Trainer, abc.ABC):
         """
         Perform prediction using the adversarially trained classifier.
 
-        :param x: Test set.
+        :param x: Input samples.
         :param kwargs: Other parameters to be passed on to the `predict` function of the classifier.
         :return: Predictions for test set.
         """

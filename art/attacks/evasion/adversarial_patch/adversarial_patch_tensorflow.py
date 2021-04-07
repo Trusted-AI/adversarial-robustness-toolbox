@@ -31,9 +31,10 @@ import numpy as np
 from tqdm.auto import trange
 
 from art.attacks.attack import EvasionAttack
+from art.attacks.evasion.adversarial_patch.utils import insert_transformed_patch
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
-from art.utils import check_and_transform_label_format
+from art.utils import check_and_transform_label_format, is_probability
 
 if TYPE_CHECKING:
     import tensorflow as tf
@@ -111,6 +112,8 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         if self.estimator.channels_first:
             raise ValueError("Color channel needs to be in last dimension.")
 
+        self.use_logits = None
+
         self.i_h_patch = 0
         self.i_w_patch = 1
 
@@ -134,16 +137,16 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         mean_value = (self.estimator.clip_values[1] - self.estimator.clip_values[0]) / 2.0 + self.estimator.clip_values[
             0
         ]
-        initial_value = np.ones(self.patch_shape) * mean_value
+        self._initial_value = np.ones(self.patch_shape) * mean_value
         self._patch = tf.Variable(
-            initial_value=initial_value,
+            initial_value=self._initial_value,
             shape=self.patch_shape,
             dtype=tf.float32,
             constraint=lambda x: tf.clip_by_value(x, self.estimator.clip_values[0], self.estimator.clip_values[1]),
         )
 
-        self._train_op = tf.keras.optimizers.SGD(
-            learning_rate=self.learning_rate, momentum=0.0, nesterov=False, name="SGD"
+        self._train_op = tf.keras.optimizers.Adam(
+            learning_rate=self.learning_rate, beta_1=0.9, beta_2=0.999, epsilon=1e-07, amsgrad=False, name="Adam"
         )
 
     def _train_step(
@@ -170,7 +173,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         return loss
 
-    def _probabilities(self, images: "tf.Tensor", mask: Optional["tf.Tensor"]) -> "tf.Tensor":
+    def _predictions(self, images: "tf.Tensor", mask: Optional["tf.Tensor"]) -> "tf.Tensor":
         import tensorflow as tf  # lgtm [py/repeated-import]
 
         patched_input = self._random_overlay(images, self._patch, mask=mask)
@@ -179,17 +182,17 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             patched_input, clip_value_min=self.estimator.clip_values[0], clip_value_max=self.estimator.clip_values[1],
         )
 
-        probabilities = self.estimator._predict_framework(patched_input)
+        predictions = self.estimator._predict_framework(patched_input)
 
-        return probabilities
+        return predictions
 
     def _loss(self, images: "tf.Tensor", target: "tf.Tensor", mask: Optional["tf.Tensor"]) -> "tf.Tensor":
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        probabilities = self._probabilities(images, mask)
+        predictions = self._predictions(images, mask)
 
         self._loss_per_example = tf.keras.losses.categorical_crossentropy(
-            y_true=target, y_pred=probabilities, from_logits=False, label_smoothing=0
+            y_true=target, y_pred=predictions, from_logits=self.use_logits, label_smoothing=0
         )
 
         loss = tf.reduce_mean(self._loss_per_example)
@@ -365,10 +368,14 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         :param x: An array with the original input images of shape NHWC or input videos of shape NFHWC.
         :param y: An array with the original true labels.
-        :param mask: An boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
+        :param mask: A boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
                      (N, H, W) without their channel dimensions. Any features for which the mask is True can be the
                      center location of the patch during sampling.
         :type mask: `np.ndarray`
+        :param reset_patch: If `True` reset patch to initial values of mean of minimal and maximal clip value, else if
+                            `False` (default) restart from previous patch values created by previous call to `generate`
+                            or mean of minimal and maximal clip value if first call to `generate`.
+        :type reset_patch: bool
         :return: An array with adversarial patch and an array of the patch mask.
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
@@ -377,23 +384,20 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         mask = kwargs.get("mask")
         if mask is not None:
             mask = mask.copy()
-        if mask is not None and (
-            (mask.dtype != np.bool)
-            or not (mask.shape[0] == 1 or mask.shape[0] == x.shape[0])
-            or not (
-                (mask.shape[1] == x.shape[1] and mask.shape[2] == x.shape[2])
-                or (mask.shape[1] == x.shape[2] and mask.shape[2] == x.shape[3])
-            )
-        ):
-            raise ValueError(
-                "The shape of `mask` has to be equal to the shape of a single samples (1, H, W) or the"
-                "shape of `x` (N, H, W) without their channel dimensions."
-            )
+        mask = self._check_mask(mask=mask, x=x)
 
-        if mask is not None and mask.shape[0] == 1:
-            mask = np.repeat(mask, repeats=x.shape[0], axis=0)
+        if kwargs.get("reset_patch"):
+            self.reset_patch(initial_patch_value=self._initial_value)
 
         y = check_and_transform_label_format(labels=y, nb_classes=self.estimator.nb_classes)
+
+        # check if logits or probabilities
+        y_pred = self.estimator.predict(x=x[[0]])
+
+        if is_probability(y_pred):
+            self.use_logits = False
+        else:
+            self.use_logits = True
 
         if mask is None:
             if shuffle:
@@ -437,6 +441,22 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             self._get_circular_patch_mask(nb_samples=1).numpy()[0],
         )
 
+    def _check_mask(self, mask: np.ndarray, x: np.ndarray) -> np.ndarray:
+        if mask is not None and (
+            (mask.dtype != np.bool)
+            or not (mask.shape[0] == 1 or mask.shape[0] == x.shape[0])
+            or not (mask.shape[1] == x.shape[self.i_h + 1] and mask.shape[2] == x.shape[self.i_w + 1])
+        ):
+            raise ValueError(
+                "The shape of `mask` has to be equal to the shape of a single samples (1, H, W) or the"
+                "shape of `x` (N, H, W) without their channel dimensions."
+            )
+
+        if mask is not None and mask.shape[0] == 1:
+            mask = np.repeat(mask, repeats=x.shape[0], axis=0)
+
+        return mask
+
     def apply_patch(
         self,
         x: np.ndarray,
@@ -457,14 +477,36 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         """
         if mask is not None:
             mask = mask.copy()
+        mask = self._check_mask(mask=mask, x=x)
         patch = patch_external if patch_external is not None else self._patch
         return self._random_overlay(images=x, patch=patch, scale=scale, mask=mask).numpy()
 
-    def reset_patch(self, initial_patch_value: np.ndarray) -> None:
+    def reset_patch(self, initial_patch_value: Optional[Union[float, np.ndarray]] = None) -> None:
         """
         Reset the adversarial patch.
 
         :param initial_patch_value: Patch value to use for resetting the patch.
         """
-        initial_value = np.ones(self.patch_shape) * initial_patch_value
-        self._patch.assign(np.ones(shape=self.patch_shape) * initial_value)
+        if initial_patch_value is None:
+            self._patch.assign(self._initial_value)
+        elif isinstance(initial_patch_value, float):
+            initial_value = np.ones(self.patch_shape) * initial_patch_value
+            self._patch.assign(initial_value)
+        elif self._patch.shape == initial_patch_value.shape:
+            self._patch.assign(initial_patch_value)
+        else:
+            raise ValueError("Unexpected value for initial_patch_value.")
+
+    @staticmethod
+    def insert_transformed_patch(x: np.ndarray, patch: np.ndarray, image_coords: np.ndarray):
+        """
+        Insert patch to image based on given or selected coordinates.
+
+        :param x: The image to insert the patch.
+        :param patch: The patch to be transformed and inserted.
+        :param image_coords: The coordinates of the 4 corners of the transformed, inserted patch of shape
+            [[x1, y1], [x2, y2], [x3, y3], [x4, y4]] in pixel units going in clockwise direction, starting with upper
+            left corner.
+        :return: The input `x` with the patch inserted.
+        """
+        return insert_transformed_patch(x, patch, image_coords)

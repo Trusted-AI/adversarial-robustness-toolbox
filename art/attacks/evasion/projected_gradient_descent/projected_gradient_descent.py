@@ -185,21 +185,27 @@ class ProjectedGradientDescent(EvasionAttack):
         self._attack.set_params(**kwargs)
 
     def _check_params(self) -> None:
-        # Check if order of the norm is acceptable given current implementation
+
         if self.norm not in [1, 2, np.inf, "inf"]:
             raise ValueError('Norm order must be either 1, 2, `np.inf` or "inf".')
 
-        if not (isinstance(self.eps, (int, float, np.ndarray)) and isinstance(self.eps_step, (int, float, np.ndarray))):
+        if not (
+            isinstance(self.eps, (int, float))
+            and isinstance(self.eps_step, (int, float))
+            or isinstance(self.eps, np.ndarray)
+            and isinstance(self.eps_step, np.ndarray)
+        ):
             raise TypeError(
-                "The perturbation size `eps` and the perturbation step-size `eps_step` must have the same type."
+                "The perturbation size `eps` and the perturbation step-size `eps_step` must have the same type of `int`"
+                ", `float`, or `np.ndarray`."
             )
 
         if isinstance(self.eps, (int, float)):
-            if self.eps <= 0:
-                raise ValueError("The perturbation size `eps` has to be positive.")
+            if self.eps < 0:
+                raise ValueError("The perturbation size `eps` has to be nonnegative.")
         else:
-            if (self.eps <= 0).any():
-                raise ValueError("The perturbation size `eps` has to be positive.")
+            if (self.eps < 0).any():
+                raise ValueError("The perturbation size `eps` has to be nonnegative.")
 
         if isinstance(self.eps_step, (int, float)):
             if self.eps_step <= 0:
@@ -214,13 +220,6 @@ class ProjectedGradientDescent(EvasionAttack):
                     "The perturbation size `eps` and the perturbation step-size `eps_step` must have the same shape."
                 )
 
-            if self.norm in ["inf", np.inf] and (self.eps_step > self.eps).any():
-                raise ValueError("The iteration step `eps_step` has to be smaller than the total attack `eps`.")
-
-        else:
-            if self.norm in ["inf", np.inf] and self.eps_step > self.eps:
-                raise ValueError("The iteration step `eps_step` has to be smaller than the total attack `eps`.")
-
         if not isinstance(self.targeted, bool):
             raise ValueError("The flag `targeted` has to be of type bool.")
 
@@ -233,8 +232,8 @@ class ProjectedGradientDescent(EvasionAttack):
         if self.batch_size <= 0:
             raise ValueError("The batch size `batch_size` has to be positive.")
 
-        if self.max_iter <= 0:
-            raise ValueError("The number of iterations `max_iter` has to be a positive integer.")
+        if self.max_iter < 0:
+            raise ValueError("The number of iterations `max_iter` has to be a nonnegative integer.")
 
         if not isinstance(self.verbose, bool):
             raise ValueError("The verbose has to be a Boolean.")

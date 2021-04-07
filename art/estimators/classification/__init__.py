@@ -7,7 +7,7 @@ from art.estimators.classification.classifier import (
     ClassGradientsMixin,
 )
 
-from art.estimators.classification.blackbox import BlackBoxClassifier
+from art.estimators.classification.blackbox import BlackBoxClassifier, BlackBoxClassifierNeuralNetwork
 from art.estimators.classification.catboost import CatBoostARTClassifier
 from art.estimators.classification.detector_classifier import DetectorClassifier
 from art.estimators.classification.ensemble import EnsembleClassifier
