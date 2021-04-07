@@ -1,0 +1,8 @@
+# Container image
+FROM minhitbk/art_testing_envs:deepspeech_v2
+
+# Copy code file to the container
+COPY deepspeech_entrypoint.sh /deepspeech_entrypoint.sh
+
+# Code file to execute when the container starts
+ENTRYPOINT ["/deepspeech_entrypoint.sh"]
