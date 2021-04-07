@@ -10,13 +10,13 @@ import pytest
 from tensorflow.keras.callbacks import LearningRateScheduler
 
 from art.defences.preprocessor import FeatureSqueezing, JpegCompression, SpatialSmoothing
-from tests.utils import ARTTestException, ARTTestFixtureNotImplemented
+from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.skip_framework("non_dl_frameworks", "tensorflow2")
-def test_layers(art_warning, get_default_mnist_subset, framework, image_dl_estimator):
+@pytest.mark.skip_framework("non_dl_frameworks")
+def test_get_activations(art_warning, get_default_mnist_subset, framework, image_dl_estimator):
     try:
         classifier, _ = image_dl_estimator(from_logits=True)
 
