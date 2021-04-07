@@ -31,7 +31,7 @@ torchvision==0.8.2+cpu -f https://download.pytorch.org/whl/torch_stable.html
 catboost==0.24.4
 GPy==1.9.9
 lightgbm==3.0.0
-xgboost==1.3.1
+xgboost==1.3.3
 kornia~=0.4.1
 
 # Lingvo ASR dependencies
