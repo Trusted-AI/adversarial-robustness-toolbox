@@ -26,7 +26,7 @@ jobs:
       - name: Checkout Repo for Local Action
         uses: actions/checkout@v2
       - name: Run Docker Container
-        uses: .github/actions/deepspeech-v2
+        uses: ./.github/actions/deepspeech-v2
       - name: Checkout Repo for Tests
         uses: actions/checkout@v2
       - name: Run Tests
