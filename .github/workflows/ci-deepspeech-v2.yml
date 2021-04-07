@@ -23,11 +23,13 @@ jobs:
     name: A job to test deepspeech version 2
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repo
+      - name: Checkout Repo for Local Action
         uses: actions/checkout@v2
-      - name: Load docker image
-        uses: ./.github/actions/deepspeech-v2
-      - name: Run tests
+      - name: Run Docker Container
+        uses: .github/actions/deepspeech-v2
+      - name: Checkout Repo for Tests
+        uses: actions/checkout@v2
+      - name: Run Tests
         uses: ./.github/actions/run.sh
 #      - name: Run ${{ matrix.name }} Tests
 #        run: ./run_tests.sh ${{ matrix.framework }}
