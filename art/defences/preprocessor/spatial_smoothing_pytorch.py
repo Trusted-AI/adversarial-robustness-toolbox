@@ -100,13 +100,25 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
                 # Half-pad the input so that the output keeps the same shape.
                 # * center pixel located lower right
                 half_pad = [int(k % 2 == 0) for k in kernel_size]
+                if hasattr(self, "padding"):
+                    # kornia < 0.5.0
+                    padding = self.padding
+                else:
+                    # kornia >= 0.5.0
+                    from kornia.filters.median import _compute_zero_padding
+                    padding = _compute_zero_padding(kernel_size)
                 self.p2d = [
-                    int(self.padding[-1]) + half_pad[-1],
-                    int(self.padding[-1]),
-                    int(self.padding[-2]) + half_pad[-2],
-                    int(self.padding[-2]),
+                    int(padding[-1]) + half_pad[-1],
+                    int(padding[-1]),
+                    int(padding[-2]) + half_pad[-2],
+                    int(padding[-2]),
                 ]
                 # PyTorch requires Padding size should be less than the corresponding input dimension,
+
+                if not hasattr(self, "kernel"):
+                    # kornia >= 0.5.0
+                    from kornia.filters.kernels import get_binary_kernel2d
+                    self.kernel = get_binary_kernel2d(kernel_size)
 
             def forward(self, input: "torch.Tensor"):  # type: ignore
                 import torch  # lgtm [py/repeated-import]
