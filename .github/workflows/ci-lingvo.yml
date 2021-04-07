@@ -47,7 +47,7 @@ jobs:
           sudo apt-get update
           sudo apt-get -y -q install ffmpeg libavcodec-extra
           python -m pip install --upgrade pip setuptools wheel
-          pip3 install -q -r $(grep -ivE "scipy" requirements.txt)
+          pip install -q -r <(sed '/^[scipy]/d' requirements.txt)
           pip install scipy==1.5.4
           pip install tensorflow==${{ matrix.tensorflow }}
           pip install keras==${{ matrix.keras }}
