@@ -22,15 +22,16 @@ jobs:
   test_deepspeech_v2:
     name: A job to test deepspeech version 2
     runs-on: ubuntu-latest
+    container: minhitbk/art_testing_envs:deepspeech_v2
     steps:
-      - name: Checkout Repo for Local Action
+      - name: Checkout Repo
         uses: actions/checkout@v2
-      - name: Run Docker Container
+      - name: Run Test Action
         uses: ./.github/actions/deepspeech-v2
-      - name: Checkout Repo for Tests
-        uses: actions/checkout@v2
-      - name: Run Tests
-        uses: ./.github/actions/run.sh
+#      - name: Checkout Repo for Tests
+#        uses: actions/checkout@v2
+#      - name: Run Tests
+#        uses: ./.github/actions/run.sh
 #      - name: Run ${{ matrix.name }} Tests
 #        run: ./run_tests.sh ${{ matrix.framework }}
 #      - name: Upload coverage to Codecov
