@@ -164,6 +164,8 @@ def testingMain():
     dX = firstTemporalDerivative(X)
     d2X = secondTemporalDerivative(X)
 
+    print(firstTemporalDerivative(torch.Tensor([1, 0, 0, 0])))
+
     # Sanity check part 100000000
     assert dX.shape == torch.Size([4, 3, 3, 3])
     assert d2X.shape == torch.Size([4, 3, 3, 3])
