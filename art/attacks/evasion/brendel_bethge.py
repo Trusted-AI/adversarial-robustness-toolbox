@@ -285,7 +285,7 @@ class BFGSB(object):
         func_calls,
         m,
         gk,
-        l,
+        var_l,
         u,
         x0,
         x,
@@ -302,7 +302,7 @@ class BFGSB(object):
         t = m * ls_c
 
         for k2 in range(100):
-            ls_pt = self._project(pt + ls_alpha * dpt, l, u)
+            ls_pt = self._project(pt + ls_alpha * dpt, var_l, u)
 
             gkp1, dgkp1 = fun_and_jac(ls_pt, x0, x, b, min_, max_, c, r)
             func_calls += 1
@@ -322,7 +322,7 @@ class BFGSB(object):
         gfk,
         old_fval,
         old_old_fval,
-        l,
+        var_l,
         u,
         args,  # noqa: #E741
     ):
@@ -362,7 +362,7 @@ class BFGSB(object):
             old_fval = old_old_fval
             fprime_star = None
 
-        _xkp1 = self._project(xk + alpha1 * pk, l, u)
+        _xkp1 = self._project(xk + alpha1 * pk, var_l, u)
         phi_a1, _ls_ingfk = fun_and_jac(_xkp1, *args)
         _ls_fc += 1
         # derphi_a1 = phiprime(alpha1)  evaluated below
@@ -420,7 +420,7 @@ class BFGSB(object):
                             a_j = a_lo + 0.5 * dalpha
 
                     # Check new value of a_j
-                    _xkp1 = self._project(xk + a_j * pk, l, u)
+                    _xkp1 = self._project(xk + a_j * pk, var_l, u)
                     # if _xkp1[1] < 0:
                     #     _xkp1[1] = 0
                     phi_aj, _ls_ingfk = fun_and_jac(_xkp1, *args)
@@ -471,7 +471,7 @@ class BFGSB(object):
             if i > maxiter:
                 break
 
-            _xkp1 = self._project(xk + alpha1 * pk, l, u)
+            _xkp1 = self._project(xk + alpha1 * pk, var_l, u)
             _, _ls_ingfk = fun_and_jac(_xkp1, *args)
             derphi_a1 = 0
             for v in range(N):
@@ -529,7 +529,7 @@ class BFGSB(object):
                             a_j = a_lo + 0.5 * dalpha
 
                     # Check new value of a_j
-                    _xkp1 = self._project(xk + a_j * pk, l, u)
+                    _xkp1 = self._project(xk + a_j * pk, var_l, u)
                     phi_aj, _ls_ingfk = fun_and_jac(_xkp1, *args)
                     derphi_aj = 0
                     for v in range(N):
@@ -577,7 +577,7 @@ class BFGSB(object):
             alpha0 = alpha1
             alpha1 = alpha2
             phi_a0 = phi_a1
-            _xkp1 = self._project(xk + alpha1 * pk, l, u)
+            _xkp1 = self._project(xk + alpha1 * pk, var_l, u)
             phi_a1, _ls_ingfk = fun_and_jac(_xkp1, *args)
             _ls_fc += 1
             derphi_a0 = derphi_a1

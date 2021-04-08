@@ -376,6 +376,7 @@ def test_save_2(art_warning, image_dl_estimator, get_default_mnist_subset, tmp_p
     except ARTTestException as e:
         art_warning(e)
 
+
 @pytest.mark.skip_framework("non_dl_frameworks")
 def test_repr(art_warning, image_dl_estimator, framework, expected_values, store_expected_values):
     try:
