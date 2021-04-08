@@ -29,7 +29,6 @@ from scipy.signal import lfilter
 import numpy as np
 from tqdm.auto import tqdm
 
-from art.config import ART_NUMPY_DTYPE
 from art.preprocessing.preprocessing import Preprocessor
 
 if TYPE_CHECKING:
@@ -101,7 +100,6 @@ class LFilter(Preprocessor):
             x_preprocess[i] = lfilter(
                 b=self.numerator_coef, a=self.denominator_coef, x=x_preprocess_i, axis=self.axis, zi=self.initial_cond
             )
-            x_preprocess[i] = x_preprocess[i].astype(ART_NUMPY_DTYPE)
 
         if self.clip_values is not None:
             np.clip(x_preprocess, self.clip_values[0], self.clip_values[1], out=x_preprocess)
