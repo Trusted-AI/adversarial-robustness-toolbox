@@ -78,27 +78,25 @@ def test_pytorch_deep_speech(art_warning, expected_values, use_amp, device_type)
 
         # Test transcription outputs
         transcriptions = speech_recognizer.predict(x, batch_size=2, transcription_output=True)
-        print(transcriptions)
+
         assert (expected_transcriptions1 == transcriptions).all()
 
         # Test transcription outputs, corner case
         transcriptions = speech_recognizer.predict(np.array([x[0]]), batch_size=2, transcription_output=True)
-        print(transcriptions)
+
         assert (expected_transcriptions2 == transcriptions).all()
 
         # Now test loss gradients
         # Compute gradients
         grads = speech_recognizer.loss_gradient(x, y)
-        print(grads[0][0:20])
-        print(grads[1][0:20])
-        print(grads[2][0:20])
+
         assert grads[0].shape == (1300,)
         assert grads[1].shape == (1500,)
         assert grads[2].shape == (1400,)
 
-        np.testing.assert_array_almost_equal(grads[0][0:20], expected_gradients1, decimal=-2)
-        np.testing.assert_array_almost_equal(grads[1][0:20], expected_gradients2, decimal=-2)
-        np.testing.assert_array_almost_equal(grads[2][0:20], expected_gradients3, decimal=-2)
+        np.testing.assert_array_almost_equal(grads[0][:20], expected_gradients1, decimal=-2)
+        np.testing.assert_array_almost_equal(grads[1][:20], expected_gradients2, decimal=-2)
+        np.testing.assert_array_almost_equal(grads[2][:20], expected_gradients3, decimal=-2)
 
         # Now test fit function
         # Create the optimizer
@@ -113,7 +111,7 @@ def test_pytorch_deep_speech(art_warning, expected_values, use_amp, device_type)
 
         # After train
         transcriptions2 = speech_recognizer.predict(x, batch_size=2, transcription_output=True)
-        print(transcriptions1, transcriptions2)
+
         assert not ((transcriptions1 == transcriptions2).all())
 
     except ARTTestException as e:
