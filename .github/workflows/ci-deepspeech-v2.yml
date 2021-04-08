@@ -4,19 +4,19 @@ on:
   workflow_dispatch:
 
   # Run on pull requests
-#  pull_request:
-#    paths-ignore:
-#      - '*.md'
+  pull_request:
+    paths-ignore:
+      - '*.md'
 
   # Run when pushing to main or dev branches
-#  push:
-#    branches:
-#      - main
-#      - dev*
+  push:
+    branches:
+      - main
+      - dev*
 
   # Run scheduled CI flow daily
-#  schedule:
-#    - cron: '0 8 * * 0'
+  schedule:
+    - cron: '0 8 * * 0'
 
 jobs:
   test_deepspeech_v2:
@@ -28,11 +28,5 @@ jobs:
         uses: actions/checkout@v2
       - name: Run Test Action
         uses: ./.github/actions/deepspeech-v2
-#      - name: Checkout Repo for Tests
-#        uses: actions/checkout@v2
-#      - name: Run Tests
-#        uses: ./.github/actions/run.sh
-#      - name: Run ${{ matrix.name }} Tests
-#        run: ./run_tests.sh ${{ matrix.framework }}
-#      - name: Upload coverage to Codecov
-#        uses: codecov/codecov-action@v1
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
