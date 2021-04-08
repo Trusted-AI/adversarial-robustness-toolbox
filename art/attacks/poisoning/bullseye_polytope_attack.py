@@ -79,7 +79,7 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
         decay_iter: Union[int, List[int]] = 10000,
         decay_coeff: float = 0.5,
         epsilon: float = 0.1,
-        dropout: int = 0.3,
+        dropout: float = 0.3,
         net_repeat: int = 1,
         endtoend: bool = True,
         verbose: bool = True,
@@ -189,7 +189,11 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
                     torch.ones(n_poisons, 1).to(self.estimator.device) / n_poisons for _ in range(len(block_feats))
                 ]
             else:
-                target_feat_list.append(net.get_activations(x, layer=self.feature_layer, framework=True).detach())
+                activations = net.get_activations(x, layer=self.feature_layer, framework=True)
+                if activations is not None:
+                    target_feat_list.append(activations.detach())
+                else:
+                    raise ValueError("Activations are None.")
                 s_coeff = torch.ones(n_poisons, 1).to(self.estimator.device) / n_poisons
 
             s_init_coeff_list.append(s_coeff)
@@ -245,8 +249,13 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
         if 1 < self.momentum < 0:
             raise ValueError("Momentum must be between 0 and 1")
 
-        if self.decay_iter < 0:
+        if isinstance(self.decay_iter, int) and self.decay_iter < 0:
             raise ValueError("decay_iter must be at least 0")
+
+        if isinstance(self.decay_iter, list) and not all(
+            [isinstance(decay_iter, int) and decay_iter > 0 for decay_iter in self.decay_iter]
+        ):
+            raise ValueError("decay_iter is not a list of positive integers")
 
         if self.epsilon <= 0:
             raise ValueError("epsilon must be at least 0")
@@ -259,11 +268,17 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
 
         if isinstance(self.feature_layer, list):
             for layer in self.feature_layer:
-                if not 0 <= layer < len(self.estimator.layer_names):
-                    raise ValueError("Invalid feature layer")
+                if isinstance(layer, int):
+                    if not 0 <= layer < len(self.estimator.layer_names):
+                        raise ValueError("feature_layer is not list of positive integers")
+                elif not isinstance(layer, str):
+                    raise ValueError("feature_layer is not list of strings")
         else:
-            if not 0 <= self.feature_layer < len(self.estimator.layer_names):
-                raise ValueError("Invalid feature layer")
+            if isinstance(self.feature_layer, int):
+                if not 0 <= self.feature_layer < len(self.estimator.layer_names):
+                    raise ValueError("feature_layer is not positive integer")
+                elif not isinstance(self.feature_layer, str):
+                    raise ValueError("feature_layer is not a string")
 
         if 1 < self.decay_coeff < 0:
             raise ValueError("Decay coefficient must be between zero and one")

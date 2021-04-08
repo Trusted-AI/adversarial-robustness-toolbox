@@ -926,9 +926,9 @@ def load_nursery(raw: bool = False, test_set: float = 0.2, transform_social: boo
     )
 
     # load data
-    features = ["parents", "has_nurs", "form", "children", "housing", "finance", "social", "health", "label"]
+    features_names = ["parents", "has_nurs", "form", "children", "housing", "finance", "social", "health", "label"]
     categorical_features = ["parents", "has_nurs", "form", "housing", "finance", "social", "health"]
-    data = pd.read_csv(path, sep=",", names=features, engine="python")
+    data = pd.read_csv(path, sep=",", names=features_names, engine="python")
     # remove rows with missing label or too sparse label
     data = data.dropna(subset=["label"])
     data.drop(data.loc[data["label"] == "recommend"].index, axis=0, inplace=True)

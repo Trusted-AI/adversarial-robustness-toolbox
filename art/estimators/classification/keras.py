@@ -585,7 +585,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             super().fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
 
     def get_activations(
-        self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
+        self, x: np.ndarray, layer: Union[int, str], batch_size: int = 128, framework: bool = False
     ) -> np.ndarray:
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
