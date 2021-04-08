@@ -159,4 +159,4 @@ jobs:
       - name: Check Types (mypy)
         run: (mypy art || exit 0)
       - name: pytest
-        run: py.test --pep8 -m pep8
+        run: (py.test --flake8 -m flake8 || exit 0)
