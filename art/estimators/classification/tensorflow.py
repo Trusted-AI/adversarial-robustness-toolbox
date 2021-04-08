@@ -390,7 +390,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         else:
             # For each sample, compute the gradients w.r.t. the indicated target class (possibly distinct)
             unique_label = list(np.unique(label))
-            grads = self._sess.run([self._class_grads[l] for l in unique_label], feed_dict=feed_dict)
+            grads = self._sess.run([self._class_grads[ul] for ul in unique_label], feed_dict=feed_dict)
             grads = np.swapaxes(np.array(grads), 0, 1)
             lst = [unique_label.index(i) for i in label]
             grads = np.expand_dims(grads[np.arange(len(grads)), lst], axis=1)

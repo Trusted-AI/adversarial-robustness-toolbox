@@ -67,8 +67,6 @@ class TestBase(unittest.TestCase):
         cls._x_test_iris_original = cls.x_test_iris.copy()
         cls._y_test_iris_original = cls.y_test_iris.copy()
 
-        import warnings
-
         # Filter warning for scipy, removed with scipy 1.4
         warnings.filterwarnings("ignore", ".*the output shape of zoom.*")
 
@@ -135,7 +133,7 @@ def check_adverse_example_x(x_adv, x_original, max=1.0, min=0.0, bounded=True):
         assert np.amax(x_adv) <= max, "x_test_adv values should have all been below {0}".format(max)
         assert np.amin(x_adv) >= min, "x_test_adv values should have all been above {0}".format(min)
     else:
-        assert (x_adv > max).any(), "some x_test_adv values should have been above 1".format(max)
+        assert (x_adv > max).any(), "some x_test_adv values should have been above {0}".format(max)
         assert (x_adv < min).any(), " some x_test_adv values should have all been below {0}".format(min)
 
 
@@ -331,7 +329,6 @@ def get_image_classifier_tf_v2(from_logits=False):
     """
     # pylint: disable=E0401
     import tensorflow as tf
-    from tensorflow.keras import Model
     from tensorflow.keras.models import Sequential
     from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPool2D
     from art.estimators.classification.tensorflow import TensorFlowV2Classifier
@@ -930,8 +927,6 @@ def get_image_classifier_pt(from_logits=False, load_init=True):
     :return: PyTorchClassifier
     """
     import torch
-    import torch.nn as nn
-    import torch.optim as optim
     from art.estimators.classification.pytorch import PyTorchClassifier
 
     class Model(torch.nn.Module):

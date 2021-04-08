@@ -253,7 +253,7 @@ class TestEnsembleClassifier(TestBase):
         self.assertIn("art.estimators.classification.ensemble.EnsembleClassifier", repr_)
         self.assertIn("classifier_weights=array([0.5, 0.5])", repr_)
         self.assertIn(
-            f"channels_first=False, clip_values=array([0., 1.], dtype=float32), "
+            "channels_first=False, clip_values=array([0., 1.], dtype=float32), "
             "preprocessing_defences=None, postprocessing_defences=None, preprocessing=StandardisationMeanStd(mean=0.0, "
             "std=1.0, apply_fit=True, apply_predict=True)",
             repr_,

@@ -32,7 +32,6 @@ if TYPE_CHECKING:
     # pylint: disable=C0412
     import tensorflow.compat.v1 as tf
     from object_detection.meta_architectures.faster_rcnn_meta_arch import FasterRCNNMetaArch
-    from tensorflow.python.framework.ops import Tensor
     from tensorflow.python.client.session import Session
 
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE

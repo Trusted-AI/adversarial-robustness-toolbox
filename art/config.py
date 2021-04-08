@@ -48,11 +48,11 @@ def set_data_path(path):
     if not os.access(expanded_path, os.R_OK):
         raise OSError(f"path {expanded_path} cannot be read from")
     if not os.access(expanded_path, os.W_OK):
-        logger.warning(f"path %s is read only", expanded_path)
+        logger.warning("path %s is read only", expanded_path)
 
     global ART_DATA_PATH
     ART_DATA_PATH = expanded_path
-    logger.info(f"set ART_DATA_PATH to %s", expanded_path)
+    logger.info("set ART_DATA_PATH to %s", expanded_path)
 
 
 # Load data from configuration file if it exists. Otherwise create one.

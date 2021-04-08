@@ -262,7 +262,7 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
 
     def _check_params(self) -> None:
         if isinstance(self.feature_layer, str):
-            layer_names = {l.name for l in self.estimator.model.layers}
+            layer_names = {layer.name for layer in self.estimator.model.layers}
             if self.feature_layer not in layer_names:
                 raise ValueError("Layer {} not found in model".format(self.feature_layer))
         elif isinstance(self.feature_layer, int):

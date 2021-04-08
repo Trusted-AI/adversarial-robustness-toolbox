@@ -282,7 +282,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         """
         import torch  # lgtm [py/repeated-import]
 
-        assert all([issubclass(l, torch.nn.modules.Module) for l in layerinfo])
+        assert all([issubclass(layer, torch.nn.modules.Module) for layer in layerinfo])
 
         def set_train(layer, layerinfo=layerinfo):
             "Set layer into training mode if instance of `layerinfo`."

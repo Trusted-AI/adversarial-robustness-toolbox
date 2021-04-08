@@ -483,7 +483,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             # For each sample, compute the gradients w.r.t. the indicated target class (possibly distinct)
             unique_label = list(np.unique(label))
             gradients = np.array(
-                [self._class_gradients_idx[l]([x_preprocessed, int(training_mode)]) for l in unique_label]
+                [self._class_gradients_idx[ul]([x_preprocessed, int(training_mode)]) for ul in unique_label]
             )
             gradients = np.swapaxes(np.squeeze(gradients, axis=1), 0, 1)
             lst = [unique_label.index(i) for i in label]

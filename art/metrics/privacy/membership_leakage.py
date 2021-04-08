@@ -79,7 +79,7 @@ def PDTP(
         if not is_probability(pred):
             try:
                 pred = scipy.special.softmax(pred, axis=1)
-            except:
+            except Exception:
                 raise ValueError("PDTP metric only supports classifiers that output logits or probabilities.")
         # divide into 100 bins and return center of bin
         bins = np.array(np.arange(0.0, 1.01, 0.01).round(decimals=2))
@@ -116,7 +116,7 @@ def PDTP(
     # get average of iterations for each sample
     # We now have a list of list, internal lists represent an iteration. We need to transpose and get averages.
     per_sample = list(map(list, zip(*results)))
-    avg_per_sample = np.array([sum(l) / len(l) for l in per_sample])
+    avg_per_sample = np.array([sum(val) / len(val) for val in per_sample])
 
     # return leakage per sample
     return avg_per_sample
