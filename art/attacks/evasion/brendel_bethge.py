@@ -70,7 +70,7 @@ class BFGSB(object):
         if maxiter is None:
             maxiter = N * 200
 
-        l = bounds[:, 0]  # noqa: E741
+        var_l = bounds[:, 0]
         u = bounds[:, 1]
 
         func_calls = 0
@@ -98,7 +98,7 @@ class BFGSB(object):
                 if _gfk[v] < 0:
                     gv = max(qk[v] - u[v], _gfk[v])
                 else:
-                    gv = min(qk[v] - l[v], _gfk[v])
+                    gv = min(qk[v] - var_l[v], _gfk[v])
 
                 if pg_norm < np.abs(gv):
                     pg_norm = np.abs(gv)
@@ -107,8 +107,8 @@ class BFGSB(object):
                 break
 
             # get cauchy point
-            x_cp = self._cauchy_point(qk, l, u, _gfk.copy(), Hk)
-            qk1 = self._subspace_min(qk, l, u, x_cp, _gfk.copy(), Hk)
+            x_cp = self._cauchy_point(qk, var_l, u, _gfk.copy(), Hk)
+            qk1 = self._subspace_min(qk, var_l, u, x_cp, _gfk.copy(), Hk)
             pk = qk1 - qk
 
             (
@@ -119,7 +119,7 @@ class BFGSB(object):
                 old_old_fval,
                 gfkp1,
                 fnev,
-            ) = self._line_search_wolfe(fun_and_jac, qk, pk, _gfk, old_fval, old_old_fval, l, u, args)
+            ) = self._line_search_wolfe(fun_and_jac, qk, pk, _gfk, old_fval, old_old_fval, var_l, u, args)
             func_calls += fnev
 
             if alpha_k is None:
@@ -128,7 +128,7 @@ class BFGSB(object):
             if np.abs(old_fval - old_old_fval) <= (ftol + ftol * np.abs(old_fval)):
                 break
 
-            qkp1 = self._project(qk + alpha_k * pk, l, u)
+            qkp1 = self._project(qk + alpha_k * pk, var_l, u)
 
             if gfkp1 is None:
                 _, gfkp1 = fun_and_jac(qkp1, *args)
@@ -172,7 +172,7 @@ class BFGSB(object):
 
         return qk
 
-    def _cauchy_point(self, x, l, u, g, B):  # noqa: E741
+    def _cauchy_point(self, x, var_l, u, g, B):
         # finds the cauchy point for q(x)=x'Gx+x'd s$t. l<=x<=u
         # g=G*x+d #gradient of q(x)
         # converted from r-code: https://github.com/andrewhooker/PopED/blob/master/R/cauchy_point.R
@@ -184,7 +184,7 @@ class BFGSB(object):
             if g[i] < 0:
                 t[i] = (x[i] - u[i]) / g[i]
             elif g[i] > 0:
-                t[i] = (x[i] - l[i]) / g[i]
+                t[i] = (x[i] - var_l[i]) / g[i]
             elif g[i] == 0:
                 t[i] = np.inf
 
@@ -226,11 +226,11 @@ class BFGSB(object):
 
         return x_cp
 
-    def _subspace_min(self, x, l, u, x_cp, d, G):  # noqa: E741
+    def _subspace_min(self, x, var_l, u, x_cp, d, G):
         # converted from r-code: https://github.com/andrewhooker/PopED/blob/master/R/subspace_min.R
         n = x.shape[0]
         Z = np.eye(n)
-        fixed = (x_cp <= l + 1e-8) + (x_cp >= u - 1e8)
+        fixed = (x_cp <= var_l + 1e-8) + (x_cp >= u - 1e8)
 
         if np.all(fixed):
             x = x_cp
@@ -247,7 +247,7 @@ class BFGSB(object):
         for i in np.arange(n)[~fixed]:
             dk = d[i]
             if dk < 0:
-                temp2 = l[i] - x_cp[i]
+                temp2 = var_l[i] - x_cp[i]
                 if temp2 >= 0:
                     temp1 = 0
                 else:
@@ -267,11 +267,11 @@ class BFGSB(object):
 
         return x_cp + alpha * Z.dot(d[~fixed])
 
-    def _project(self, q, l, u):  # noqa: E741
+    def _project(self, q, var_l, u):
         N = q.shape[0]
         for k in range(N):
-            if q[k] < l[k]:
-                q[k] = l[k]
+            if q[k] < var_l[k]:
+                q[k] = var_l[k]
             elif q[k] > u[k]:
                 q[k] = u[k]
 
@@ -293,7 +293,7 @@ class BFGSB(object):
         min_,
         max_,
         c,
-        r,  # noqa: E741
+        r,
     ):
         ls_rho = 0.6
         ls_c = 1e-4
@@ -314,7 +314,7 @@ class BFGSB(object):
 
         return ls_alpha, ls_pt, gkp1, dgkp1, func_calls
 
-    def _line_search_wolfe(  # noqa: C901
+    def _line_search_wolfe(
         self,
         fun_and_jac,
         xk,
@@ -324,7 +324,7 @@ class BFGSB(object):
         old_old_fval,
         var_l,
         u,
-        args,  # noqa: #E741
+        args,
     ):
         """Find alpha that satisfies strong Wolfe conditions.
         Uses the line search algorithm to enforce strong Wolfe conditions
@@ -876,7 +876,7 @@ spec = [("bfgsb", BFGSB.class_type.instance_type)]  # type: ignore
 
 @jitclass(spec=spec)
 class L2Optimizer(Optimizer):
-    def optimize_distance_s_t_boundary_and_trustregion(self, x0, x, b, min_, max_, c, r):  # noqa: C901
+    def optimize_distance_s_t_boundary_and_trustregion(self, x0, x, b, min_, max_, c, r):
         """
         Solves the L2 trust region problem
 

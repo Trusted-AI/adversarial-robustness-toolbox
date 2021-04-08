@@ -157,7 +157,7 @@ jobs:
           pip install -q -r requirements.txt
           pip list
       - name: pycodestyle
-        run: (pycodestyle --ignore=C0330,C0415,E203,E231,W503 --max-line-length=120 art || exit 0)
+        run: pycodestyle --ignore=C0330,C0415,E203,E231,W503 --max-line-length=120 art
       - name: pylint
         run: (pylint --disable=C0330,C0415,E203,E1136 -rn art || exit 0)
       - name: Check Types (mypy)
