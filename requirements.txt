@@ -13,7 +13,7 @@ ffmpeg-python==0.2.0
 cma==3.0.3
 pandas==1.2.3
 librosa==0.8.0
-numba~=0.52.0
+numba~=0.53.1
 opencv-python
 
 # frameworks
