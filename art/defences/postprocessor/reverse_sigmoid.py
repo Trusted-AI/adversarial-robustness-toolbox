@@ -37,7 +37,11 @@ class ReverseSigmoid(Postprocessor):
     params = ["beta", "gamma"]
 
     def __init__(
-        self, beta: float = 1.0, gamma: float = 0.1, apply_fit: bool = False, apply_predict: bool = True,
+        self,
+        beta: float = 1.0,
+        gamma: float = 0.1,
+        apply_fit: bool = False,
+        apply_predict: bool = True,
     ) -> None:
         """
         Create a ReverseSigmoid postprocessor.

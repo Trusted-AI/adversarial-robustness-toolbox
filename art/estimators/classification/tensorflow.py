@@ -55,7 +55,16 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
     estimator_params = (
         TensorFlowEstimator.estimator_params
         + ClassifierMixin.estimator_params
-        + ["input_ph", "output", "labels_ph", "train", "loss", "learning", "sess", "feed_dict",]
+        + [
+            "input_ph",
+            "output",
+            "labels_ph",
+            "train",
+            "loss",
+            "learning",
+            "sess",
+            "feed_dict",
+        ]
     )
 
     def __init__(
@@ -627,10 +636,13 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
 
         builder = saved_model.builder.SavedModelBuilder(full_path)
         signature = predict_signature_def(
-            inputs={"SavedInputPhD": self._input_ph}, outputs={"SavedOutput": self._output},
+            inputs={"SavedInputPhD": self._input_ph},
+            outputs={"SavedOutput": self._output},
         )
         builder.add_meta_graph_and_variables(
-            sess=self._sess, tags=[tag_constants.SERVING], signature_def_map={"predict": signature},
+            sess=self._sess,
+            tags=[tag_constants.SERVING],
+            signature_def_map={"predict": signature},
         )
         builder.save()
 
@@ -773,7 +785,11 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
     estimator_params = (
         TensorFlowV2Estimator.estimator_params
         + ClassifierMixin.estimator_params
-        + ["input_shape", "loss_object", "train_step",]
+        + [
+            "input_shape",
+            "loss_object",
+            "train_step",
+        ]
     )
 
     def __init__(
@@ -1122,19 +1138,20 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                 if self.all_framework_preprocessing:
                     x_grad = tf.convert_to_tensor(x)
                     tape.watch(x_grad)
-                    x_input, _ = self._apply_preprocessing(x_grad, y=None, fit=False)
+                    x_input, y_input = self._apply_preprocessing(x_grad, y=y, fit=False)
                 else:
-                    x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
+                    x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y=y, fit=False)
                     x_grad = tf.convert_to_tensor(x_preprocessed)
                     tape.watch(x_grad)
                     x_input = x_grad
+                    y_input = y_preprocessed
 
                 predictions = self.model(x_input, training=training_mode)
 
                 if self._reduce_labels:
-                    loss = self._loss_object(np.argmax(y, axis=1), predictions)
+                    loss = self._loss_object(np.argmax(y_input, axis=1), predictions)
                 else:
-                    loss = self._loss_object(y, predictions)
+                    loss = self._loss_object(y_input, predictions)
 
             gradients = tape.gradient(loss, x_grad)
 
@@ -1242,7 +1259,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         import tensorflow as tf  # lgtm [py/repeated-import]
 
         if isinstance(self._model, (tf.keras.Model, tf.keras.models.Sequential)):
-            return self._model.layers
+            return [layer.name for layer in self._model.layers if hasattr(layer, "name")]
 
         return None  # type: ignore
 

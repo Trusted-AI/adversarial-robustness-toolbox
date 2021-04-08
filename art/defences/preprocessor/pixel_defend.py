@@ -110,7 +110,10 @@ class PixelDefend(Preprocessor):
             for feat_index in range(x.shape[1]):
                 # Setup the search space
                 f_probs = probs[i, feat_index, :]
-                f_range = range(int(max(x_i[feat_index] - self.eps, 0)), int(min(x_i[feat_index] + self.eps, 255) + 1),)
+                f_range = range(
+                    int(max(x_i[feat_index] - self.eps, 0)),
+                    int(min(x_i[feat_index] + self.eps, 255) + 1),
+                )
 
                 # Look in the search space
                 best_prob = -1

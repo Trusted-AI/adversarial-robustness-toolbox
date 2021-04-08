@@ -67,7 +67,13 @@ class TestAdversarialPatch(TestBase):
         tfc, sess = get_image_classifier_tf(from_logits=True)
 
         attack_ap = AdversarialPatchNumpy(
-            tfc, rotation_max=0.5, scale_min=0.4, scale_max=0.41, learning_rate=5.0, batch_size=10, max_iter=5,
+            tfc,
+            rotation_max=0.5,
+            scale_min=0.4,
+            scale_max=0.41,
+            learning_rate=5.0,
+            batch_size=10,
+            max_iter=5,
         )
 
         target = np.zeros(self.x_train_mnist.shape[0])

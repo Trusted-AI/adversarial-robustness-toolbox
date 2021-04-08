@@ -184,7 +184,14 @@ class BoundaryAttack(EvasionAttack):
         return x_adv
 
     def _perturb(
-        self, x: np.ndarray, y: int, y_p: int, init_pred: int, adv_init: np.ndarray, clip_min: float, clip_max: float,
+        self,
+        x: np.ndarray,
+        y: int,
+        y_p: int,
+        init_pred: int,
+        adv_init: np.ndarray,
+        clip_min: float,
+        clip_max: float,
     ) -> np.ndarray:
         """
         Internal attack function for one example.
@@ -207,7 +214,14 @@ class BoundaryAttack(EvasionAttack):
 
         # If an initial adversarial example found, then go with boundary attack
         x_adv = self._attack(
-            initial_sample[0], x, y_p, initial_sample[1], self.delta, self.epsilon, clip_min, clip_max,
+            initial_sample[0],
+            x,
+            y_p,
+            initial_sample[1],
+            self.delta,
+            self.epsilon,
+            clip_min,
+            clip_max,
         )
 
         return x_adv
@@ -253,7 +267,10 @@ class BoundaryAttack(EvasionAttack):
                     potential_adv = np.clip(potential_adv, clip_min, clip_max)
                     potential_advs.append(potential_adv)
 
-                preds = np.argmax(self.estimator.predict(np.array(potential_advs), batch_size=self.batch_size), axis=1,)
+                preds = np.argmax(
+                    self.estimator.predict(np.array(potential_advs), batch_size=self.batch_size),
+                    axis=1,
+                )
 
                 if self.targeted:
                     satisfied = preds == target
@@ -280,7 +297,10 @@ class BoundaryAttack(EvasionAttack):
                 perturb *= self.curr_epsilon
                 potential_advs = x_advs + perturb
                 potential_advs = np.clip(potential_advs, clip_min, clip_max)
-                preds = np.argmax(self.estimator.predict(potential_advs, batch_size=self.batch_size), axis=1,)
+                preds = np.argmax(
+                    self.estimator.predict(potential_advs, batch_size=self.batch_size),
+                    axis=1,
+                )
 
                 if self.targeted:
                     satisfied = preds == target
@@ -338,7 +358,14 @@ class BoundaryAttack(EvasionAttack):
         return perturb
 
     def _init_sample(
-        self, x: np.ndarray, y: int, y_p: int, init_pred: int, adv_init: np.ndarray, clip_min: float, clip_max: float,
+        self,
+        x: np.ndarray,
+        y: int,
+        y_p: int,
+        init_pred: int,
+        adv_init: np.ndarray,
+        clip_min: float,
+        clip_max: float,
     ) -> Optional[Tuple[np.ndarray, int]]:
         """
         Find initial adversarial example for the attack.
@@ -368,7 +395,8 @@ class BoundaryAttack(EvasionAttack):
             for _ in range(self.init_size):
                 random_img = nprd.uniform(clip_min, clip_max, size=x.shape).astype(x.dtype)
                 random_class = np.argmax(
-                    self.estimator.predict(np.array([random_img]), batch_size=self.batch_size), axis=1,
+                    self.estimator.predict(np.array([random_img]), batch_size=self.batch_size),
+                    axis=1,
                 )[0]
 
                 if random_class == y:
@@ -388,7 +416,8 @@ class BoundaryAttack(EvasionAttack):
             for _ in range(self.init_size):
                 random_img = nprd.uniform(clip_min, clip_max, size=x.shape).astype(x.dtype)
                 random_class = np.argmax(
-                    self.estimator.predict(np.array([random_img]), batch_size=self.batch_size), axis=1,
+                    self.estimator.predict(np.array([random_img]), batch_size=self.batch_size),
+                    axis=1,
                 )[0]
 
                 if random_class != y_p:
