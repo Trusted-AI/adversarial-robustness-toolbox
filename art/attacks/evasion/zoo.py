@@ -185,7 +185,10 @@ class ZooAttack(EvasionAttack):
         ]
         preds = self.estimator.predict(np.array(zoom(x_adv, zoom=ratios)), batch_size=self.batch_size)
         z_target = np.sum(preds * target, axis=1)
-        z_other = np.max(preds * (1 - target) + (np.min(preds, axis=1) - 1)[:, np.newaxis] * target, axis=1,)
+        z_other = np.max(
+            preds * (1 - target) + (np.min(preds, axis=1) - 1)[:, np.newaxis] * target,
+            axis=1,
+        )
 
         if self.targeted:
             # If targeted, optimize for making the target class most likely
@@ -259,7 +262,10 @@ class ZooAttack(EvasionAttack):
         # Start with a binary search
         for bss in range(self.binary_search_steps):
             logger.debug(
-                "Binary search step %i out of %i (c_mean==%f)", bss, self.binary_search_steps, np.mean(c_current),
+                "Binary search step %i out of %i (c_mean==%f)",
+                bss,
+                self.binary_search_steps,
+                np.mean(c_current),
             )
 
             # Run with 1 specific binary search step
@@ -389,9 +395,7 @@ class ZooAttack(EvasionAttack):
             # Reset Adam if a valid example has been found to avoid overshoot
             mask_fine_tune = (~fine_tuning) & (loss == l2dist) & (prev_loss != prev_l2dist)
             fine_tuning[mask_fine_tune] = True
-            self._reset_adam(
-                self.adam_mean.size, np.repeat(mask_fine_tune, x_adv[0].size)  # type: ignore
-            )
+            self._reset_adam(self.adam_mean.size, np.repeat(mask_fine_tune, x_adv[0].size))  # type: ignore
             prev_l2dist = l2dist
 
             # Abort early if no improvement is obtained
@@ -414,12 +418,22 @@ class ZooAttack(EvasionAttack):
             if not self.estimator.channels_first:
                 best_attack = zoom(
                     best_attack,
-                    [1, int(x_batch.shape[1]) / best_attack.shape[1], int(x_batch.shape[2]) / best_attack.shape[2], 1,],
+                    [
+                        1,
+                        int(x_batch.shape[1]) / best_attack.shape[1],
+                        int(x_batch.shape[2]) / best_attack.shape[2],
+                        1,
+                    ],
                 )
             else:
                 best_attack = zoom(
                     best_attack,
-                    [1, 1, int(x_batch.shape[2]) / best_attack.shape[2], int(x_batch.shape[2]) / best_attack.shape[3],],
+                    [
+                        1,
+                        1,
+                        int(x_batch.shape[2]) / best_attack.shape[2],
+                        int(x_batch.shape[2]) / best_attack.shape[3],
+                    ],
                 )
 
         return best_dist, best_label, best_attack
@@ -469,7 +483,10 @@ class ZooAttack(EvasionAttack):
         expanded_targets = np.repeat(targets, 2 * self.nb_parallel, axis=0).reshape((-1,) + targets.shape[1:])
         expanded_c = np.repeat(c_batch, 2 * self.nb_parallel)
         _, _, loss = self._loss(
-            expanded_x, expanded_x + coord_batch.reshape(expanded_x.shape), expanded_targets, expanded_c,
+            expanded_x,
+            expanded_x + coord_batch.reshape(expanded_x.shape),
+            expanded_targets,
+            expanded_c,
         )
         self._current_noise = self._optimizer_adam_coordinate(
             loss,
@@ -555,7 +572,15 @@ class ZooAttack(EvasionAttack):
                 else:
                     self._current_noise = np.zeros(x.shape, dtype=ART_NUMPY_DTYPE)
             else:
-                resized_x = zoom(x, (1, dims[1] / x.shape[1], dims[2] / x.shape[2], dims[3] / x.shape[3],),)
+                resized_x = zoom(
+                    x,
+                    (
+                        1,
+                        dims[1] / x.shape[1],
+                        dims[2] / x.shape[2],
+                        dims[3] / x.shape[3],
+                    ),
+                )
                 self._current_noise = np.zeros(dims, dtype=ART_NUMPY_DTYPE)
             self._sample_prob = np.ones(nb_vars, dtype=ART_NUMPY_DTYPE) / nb_vars
         else:
@@ -604,7 +629,9 @@ class ZooAttack(EvasionAttack):
         for i in range(0, image.shape[1], kernel_size):
             for j in range(0, image.shape[2], kernel_size):
                 img_pool[:, i : i + kernel_size, j : j + kernel_size] = np.max(
-                    image[:, i : i + kernel_size, j : j + kernel_size], axis=(1, 2), keepdims=True,
+                    image[:, i : i + kernel_size, j : j + kernel_size],
+                    axis=(1, 2),
+                    keepdims=True,
                 )
 
         return img_pool

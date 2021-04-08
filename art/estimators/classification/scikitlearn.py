@@ -88,7 +88,12 @@ def SklearnClassifier(
 
     # This basic class at least generically handles `fit`, `predict` and `save`
     return ScikitlearnClassifier(
-        model, clip_values, preprocessing_defences, postprocessing_defences, preprocessing, use_logits,
+        model,
+        clip_values,
+        preprocessing_defences,
+        postprocessing_defences,
+        preprocessing,
+        use_logits,
     )
 
 
@@ -179,7 +184,10 @@ class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):  # lgtm [py/
         elif callable(getattr(self.model, "predict_proba", None)):
             y_pred = self.model.predict_proba(x_preprocessed)
         elif callable(getattr(self.model, "predict", None)):
-            y_pred = to_categorical(self.model.predict(x_preprocessed), nb_classes=self.model.classes_.shape[0],)
+            y_pred = to_categorical(
+                self.model.predict(x_preprocessed),
+                nb_classes=self.model.classes_.shape[0],
+            )
         else:
             raise ValueError("The provided model does not have methods `predict_proba` or `predict`.")
 
@@ -994,7 +1002,9 @@ class ScikitlearnLogisticRegression(ClassGradientsMixin, LossGradientsMixin, Sci
             class_weight = np.ones(self.nb_classes)
         else:
             class_weight = compute_class_weight(
-                class_weight=self.model.class_weight, classes=self.model.classes_, y=y_index,
+                class_weight=self.model.class_weight,
+                classes=self.model.classes_,
+                y=y_index,
             )
 
         y_pred = self.model.predict_proba(X=x_preprocessed)
@@ -1155,7 +1165,13 @@ class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassif
                 sign_multiplier = 1
 
             if label is None:
-                gradients = np.zeros((x_preprocessed.shape[0], self.nb_classes, x_preprocessed.shape[1],))
+                gradients = np.zeros(
+                    (
+                        x_preprocessed.shape[0],
+                        self.nb_classes,
+                        x_preprocessed.shape[1],
+                    )
+                )
 
                 for i_label in range(self.nb_classes):  # type: ignore
                     for i_sample in range(num_samples):
@@ -1166,16 +1182,24 @@ class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassif
                                 else:
                                     label_multiplier = 1
 
-                                for label_sv in range(support_indices[i_label], support_indices[i_label + 1],):
+                                for label_sv in range(
+                                    support_indices[i_label],
+                                    support_indices[i_label + 1],
+                                ):
                                     alpha_i_k_y_i = self.model.dual_coef_[
-                                        not_label if not_label < i_label else not_label - 1, label_sv,
+                                        not_label if not_label < i_label else not_label - 1,
+                                        label_sv,
                                     ]
                                     grad_kernel = self._get_kernel_gradient_sv(label_sv, x_preprocessed[i_sample])
                                     gradients[i_sample, i_label] += label_multiplier * alpha_i_k_y_i * grad_kernel
 
-                                for not_label_sv in range(support_indices[not_label], support_indices[not_label + 1],):
+                                for not_label_sv in range(
+                                    support_indices[not_label],
+                                    support_indices[not_label + 1],
+                                ):
                                     alpha_i_k_y_i = self.model.dual_coef_[
-                                        i_label if i_label < not_label else i_label - 1, not_label_sv,
+                                        i_label if i_label < not_label else i_label - 1,
+                                        not_label_sv,
                                     ]
                                     grad_kernel = self._get_kernel_gradient_sv(not_label_sv, x_preprocessed[i_sample])
                                     gradients[i_sample, i_label] += label_multiplier * alpha_i_k_y_i * grad_kernel
@@ -1193,14 +1217,19 @@ class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassif
 
                             for label_sv in range(support_indices[label], support_indices[label + 1]):
                                 alpha_i_k_y_i = self.model.dual_coef_[
-                                    not_label if not_label < label else not_label - 1, label_sv,
+                                    not_label if not_label < label else not_label - 1,
+                                    label_sv,
                                 ]
                                 grad_kernel = self._get_kernel_gradient_sv(label_sv, x_preprocessed[i_sample])
                                 gradients[i_sample, 0] += label_multiplier * alpha_i_k_y_i * grad_kernel
 
-                            for not_label_sv in range(support_indices[not_label], support_indices[not_label + 1],):
+                            for not_label_sv in range(
+                                support_indices[not_label],
+                                support_indices[not_label + 1],
+                            ):
                                 alpha_i_k_y_i = self.model.dual_coef_[
-                                    label if label < not_label else label - 1, not_label_sv,
+                                    label if label < not_label else label - 1,
+                                    not_label_sv,
                                 ]
                                 grad_kernel = self._get_kernel_gradient_sv(not_label_sv, x_preprocessed[i_sample])
                                 gradients[i_sample, 0] += label_multiplier * alpha_i_k_y_i * grad_kernel
@@ -1221,15 +1250,20 @@ class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassif
                                 label_multiplier = 1
 
                             for label_sv in range(
-                                support_indices[label[i_sample]], support_indices[label[i_sample] + 1],
+                                support_indices[label[i_sample]],
+                                support_indices[label[i_sample] + 1],
                             ):
                                 alpha_i_k_y_i = self.model.dual_coef_[
-                                    not_label if not_label < label[i_sample] else not_label - 1, label_sv,
+                                    not_label if not_label < label[i_sample] else not_label - 1,
+                                    label_sv,
                                 ]
                                 grad_kernel = self._get_kernel_gradient_sv(label_sv, x_preprocessed[i_sample])
                                 gradients[i_sample, 0] += label_multiplier * alpha_i_k_y_i * grad_kernel
 
-                            for not_label_sv in range(support_indices[not_label], support_indices[not_label + 1],):
+                            for not_label_sv in range(
+                                support_indices[not_label],
+                                support_indices[not_label + 1],
+                            ):
                                 alpha_i_k_y_i = self.model.dual_coef_[
                                     label[i_sample] if label[i_sample] < not_label else label[i_sample] - 1,
                                     not_label_sv,
@@ -1244,7 +1278,13 @@ class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassif
 
         elif isinstance(self.model, sklearn.svm.LinearSVC):
             if label is None:
-                gradients = np.zeros((x_preprocessed.shape[0], self.nb_classes, x_preprocessed.shape[1],))
+                gradients = np.zeros(
+                    (
+                        x_preprocessed.shape[0],
+                        self.nb_classes,
+                        x_preprocessed.shape[1],
+                    )
+                )
 
                 for i in range(self.nb_classes):  # type: ignore
                     for i_sample in range(num_samples):
@@ -1377,7 +1417,10 @@ class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassif
                             grad_kernel = self._get_kernel_gradient_sv(i_label_sv, x_preprocessed[i_sample])
                             gradients[i_sample, :] += sign_multiplier * alpha_i_k_y_i * grad_kernel
 
-                        for i_not_label_sv in range(support_indices[i_not_label], support_indices[i_not_label + 1],):
+                        for i_not_label_sv in range(
+                            support_indices[i_not_label],
+                            support_indices[i_not_label + 1],
+                        ):
                             alpha_i_k_y_i = self.model.dual_coef_[i_not_label_i, i_not_label_sv] * label_multiplier
                             grad_kernel = self._get_kernel_gradient_sv(i_not_label_sv, x_preprocessed[i_sample])
                             gradients[i_sample, :] += sign_multiplier * alpha_i_k_y_i * grad_kernel

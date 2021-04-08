@@ -643,10 +643,10 @@ def get_image_classifier_kr_functional(input_layer=1, output_layer=1):
 
 def get_image_classifier_kr_tf_functional(input_layer=1, output_layer=1):
     """
-       Standard Keras_tf classifier for unit testing built with a functional model
+    Standard Keras_tf classifier for unit testing built with a functional model
 
-       :return: KerasClassifier
-       """
+    :return: KerasClassifier
+    """
     import tensorflow as tf
 
     if tf.__version__[0] == "2":
@@ -1112,9 +1112,17 @@ def get_gan_inverse_gan_ft():
         sess = tf.Session()
         sess.run(tf.global_variables_initializer())
 
-        gan = TensorFlowGenerator(input_ph=z_ph, model=gen_tf, sess=sess,)
+        gan = TensorFlowGenerator(
+            input_ph=z_ph,
+            model=gen_tf,
+            sess=sess,
+        )
 
-        inverse_gan = TensorFlowEncoder(input_ph=image_to_enc_ph, model=enc_tf, sess=sess,)
+        inverse_gan = TensorFlowEncoder(
+            input_ph=image_to_enc_ph,
+            model=enc_tf,
+            sess=sess,
+        )
         return gan, inverse_gan, sess
 
 

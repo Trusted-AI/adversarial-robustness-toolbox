@@ -110,9 +110,15 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierClassLossG
         :return: Two arrays of new input samples to approximate gradient.
         """
         minus = clip_and_round(
-            np.repeat(x, self.num_basis, axis=0) - epsilon_map, self.clip_values, self.round_samples,
+            np.repeat(x, self.num_basis, axis=0) - epsilon_map,
+            self.clip_values,
+            self.round_samples,
         )
-        plus = clip_and_round(np.repeat(x, self.num_basis, axis=0) + epsilon_map, self.clip_values, self.round_samples,)
+        plus = clip_and_round(
+            np.repeat(x, self.num_basis, axis=0) + epsilon_map,
+            self.clip_values,
+            self.round_samples,
+        )
         return minus, plus
 
     def class_gradient(self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs) -> np.ndarray:
