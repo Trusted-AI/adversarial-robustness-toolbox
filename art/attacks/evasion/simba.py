@@ -107,6 +107,15 @@ class SimBA(EvasionAttack):
         x = x.astype(ART_NUMPY_DTYPE)
         preds = self.estimator.predict(x, batch_size=self.batch_size)
 
+        if divmod(x.shape[2] - self.freq_dim, self.stride)[1] != 0:
+            raise ValueError(
+                "Incompatible value combination in image height/width, freq_dim and stride detected. "
+                "Adapt these parameters to fulfill the following conditions: "
+                "divmod(image_height - freq_dim, stride)[1] == 0 "
+                "and "
+                "divmod(image_width - freq_dim, stride)[1] == 0"
+            )
+
         if y is None:
             if self.targeted:
                 raise ValueError("Target labels `y` need to be provided for a targeted attack.")
