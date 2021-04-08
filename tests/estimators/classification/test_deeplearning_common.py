@@ -338,7 +338,7 @@ def test_input_shape(art_warning, image_dl_estimator, mnist_shape):
         art_warning(e)
 
 
-@pytest.mark.skip_framework("non_dl_frameworks")
+@pytest.mark.skip_framework("tensorflow2", "non_dl_frameworks")
 def test_save_1(art_warning, image_dl_estimator):
     try:
         classifier, _ = image_dl_estimator(from_logits=True)
