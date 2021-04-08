@@ -28,7 +28,7 @@ from tests.utils import ARTTestException
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.skip_module("apex.amp", "deepspeech_pytorch")
+@pytest.mark.skip_module("deepspeech_pytorch")
 @pytest.mark.skip_framework("tensorflow", "tensorflow2v1", "keras", "kerastf", "mxnet", "non_dl_frameworks")
 @pytest.mark.parametrize("use_amp", [False, True])
 @pytest.mark.parametrize("device_type", ["cpu", "gpu"])
@@ -39,6 +39,10 @@ def test_pytorch_deep_speech(art_warning, expected_values, use_amp, device_type)
     from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
 
     try:
+        # Skip test if gpu is not available and use_amp is true
+        if use_amp and not torch.cuda.is_available():
+            return
+
         # Load data for testing
         expected_data = expected_values()
 
@@ -67,25 +71,27 @@ def test_pytorch_deep_speech(art_warning, expected_values, use_amp, device_type)
 
         # Test probability outputs
         speech_recognizer = PyTorchDeepSpeech(pretrained_model="librispeech", device_type=device_type, use_amp=use_amp)
-        probs, sizes = speech_recognizer.predict(x, batch_size=2)
+        probs, sizes = speech_recognizer.predict(x, batch_size=2, transcription_output=False)
 
         np.testing.assert_array_almost_equal(probs[1][1], expected_probs, decimal=3)
         np.testing.assert_array_almost_equal(sizes, expected_sizes)
 
         # Test transcription outputs
         transcriptions = speech_recognizer.predict(x, batch_size=2, transcription_output=True)
-
+        print(transcriptions)
         assert (expected_transcriptions1 == transcriptions).all()
 
         # Test transcription outputs, corner case
         transcriptions = speech_recognizer.predict(np.array([x[0]]), batch_size=2, transcription_output=True)
-
+        print(transcriptions)
         assert (expected_transcriptions2 == transcriptions).all()
 
         # Now test loss gradients
         # Compute gradients
         grads = speech_recognizer.loss_gradient(x, y)
-
+        print(grads[0][0:20])
+        print(grads[1][0:20])
+        print(grads[2][0:20])
         assert grads[0].shape == (1300,)
         assert grads[1].shape == (1500,)
         assert grads[2].shape == (1400,)
@@ -107,7 +113,7 @@ def test_pytorch_deep_speech(art_warning, expected_values, use_amp, device_type)
 
         # After train
         transcriptions2 = speech_recognizer.predict(x, batch_size=2, transcription_output=True)
-
+        print(transcriptions1, transcriptions2)
         assert not ((transcriptions1 == transcriptions2).all())
 
     except ARTTestException as e:
