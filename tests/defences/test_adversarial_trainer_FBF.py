@@ -30,7 +30,7 @@ def get_adv_trainer(framework, image_dl_estimator):
 
         if framework == "keras":
             trainer = None
-        if framework == "tensorflow":
+        if framework in ["tensorflow", "tensorflow2v1"]:
             trainer = None
         if framework == "pytorch":
             classifier = image_dl_estimator()[0][0]
@@ -73,7 +73,3 @@ def test_adversarial_trainer_fbf_pytorch_fit_and_predict(get_adv_trainer, fix_ge
 
     np.testing.assert_array_almost_equal(accuracy, 0.32, decimal=4)
     np.testing.assert_array_almost_equal(accuracy_new, 0.14, decimal=4)
-
-
-if __name__ == "__main__":
-    pytest.cmdline.main("-q -s {} --mlFramework=pytorch --durations=0".format(__file__).split(" "))

@@ -50,6 +50,8 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
     | Paper link: https://arxiv.org/abs/1902.02918
     """
 
+    estimator_params = PyTorchClassifier.estimator_params + ["sample_size", "scale", "alpha"]
+
     def __init__(
         self,
         model: "torch.nn.Module",
@@ -61,7 +63,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
         device_type: str = "gpu",
         sample_size: int = 32,
         scale: float = 0.1,
@@ -137,7 +139,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         """
         Perform prediction of the given classifier for a batch of inputs, taking an expectation over transformations.
 
-        :param x: Test set.
+        :param x: Input samples.
         :param batch_size: Batch size.
         :param is_abstain: True if function will abstain from prediction and return 0s. Default: True
         :type is_abstain: `boolean`
@@ -145,13 +147,14 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         """
         return RandomizedSmoothingMixin.predict(self, x, batch_size=128, **kwargs)
 
-    def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def loss_gradient(self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
         :param x: Sample input with shape as expected by the model.
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,).
+        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
         :param sampling: True if loss gradients should be determined with Monte Carlo sampling.
         :type sampling: `bool`
         :return: Array of gradients of the same shape as `x`.
@@ -161,6 +164,8 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         sampling = kwargs.get("sampling")
 
         if sampling:
+            self._model.train(mode=training_mode)
+
             # Apply preprocessing
             x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
 
@@ -199,11 +204,13 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
             assert gradients.shape == x.shape
 
         else:
-            gradients = PyTorchClassifier.loss_gradient(self, x, y, **kwargs)
+            gradients = PyTorchClassifier.loss_gradient(self, x=x, y=y, training_mode=training_mode, **kwargs)
 
         return gradients
 
-    def class_gradient(self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs) -> np.ndarray:
+    def class_gradient(
+        self, x: np.ndarray, label: Union[int, List[int], None] = None, training_mode: bool = False, **kwargs
+    ) -> np.ndarray:
         """
         Compute per-class derivatives of the given classifier w.r.t. `x` of original classifier.
 
@@ -212,21 +219,9 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
                       output is computed for all samples. If multiple values as provided, the first dimension should
                       match the batch size of `x`, and each value will be used as target for its corresponding sample in
                       `x`. If `None`, then gradients for all classes will be computed for each sample.
+        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
         :return: Array of gradients of input features w.r.t. each class in the form
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
-        """
-        raise NotImplementedError
-
-    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
-        """
-        Compute the loss of the neural network for samples `x`.
-
-        :param x: Samples of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
-                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
-        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices
-                  of shape `(nb_samples,)`.
-        :return: Loss values.
-        :rtype: Format as expected by the `model`
         """
         raise NotImplementedError

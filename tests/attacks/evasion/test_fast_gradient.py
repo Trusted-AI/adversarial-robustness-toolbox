@@ -147,7 +147,7 @@ def test_minimal_perturbations_images(art_warning, fix_get_mnist_subset, image_d
 
 
 @pytest.mark.parametrize("norm", [np.inf, 1, 2])
-@pytest.mark.skipMlFramework("pytorch")  # temporarily skipping for pytorch until find bug fix in bounded test
+@pytest.mark.skip_framework("pytorch")  # temporarily skipping for pytorch until find bug fix in bounded test
 @pytest.mark.framework_agnostic
 def test_norm_images(art_warning, norm, fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
@@ -183,7 +183,7 @@ def test_norm_images(art_warning, norm, fix_get_mnist_subset, image_dl_estimator
         art_warning(e)
 
 
-@pytest.mark.skipMlFramework("scikitlearn")  # temporarily skipping for scikitlearn until find bug fix in bounded test
+@pytest.mark.skip_framework("scikitlearn")  # temporarily skipping for scikitlearn until find bug fix in bounded test
 @pytest.mark.parametrize("targeted, clipped", [(True, True), (True, False), (False, True), (False, False)])
 @pytest.mark.framework_agnostic
 def test_tabular(art_warning, tabular_dl_estimator, framework, get_iris_dataset, targeted, clipped):

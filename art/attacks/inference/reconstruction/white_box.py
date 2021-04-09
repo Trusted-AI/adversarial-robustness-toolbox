@@ -82,14 +82,14 @@ class DatabaseReconstruction(ReconstructionAttack):
             y = np.argmax(y, axis=1)
 
         tol = float("inf")
-        x0 = x[0, :]
+        x_0 = x[0, :]
         x_guess = None
         y_guess = None
 
         for _y in range(self.estimator.nb_classes):
             args = (_y, x, y, self._estimator, self.estimator, self.params)
             _x, _tol, _ = fmin_l_bfgs_b(
-                self.objective, x0, args=args, approx_grad=True, factr=100, pgtol=1e-10, bounds=None
+                self.objective, x_0, args=args, approx_grad=True, factr=100, pgtol=1e-10, bounds=None
             )
 
             if _tol < tol:

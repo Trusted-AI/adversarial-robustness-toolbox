@@ -392,16 +392,16 @@ class ShapeShifter(EvasionAttack):
             for _ in range(self.random_size):
                 if self.texture_as_input:
                     # Random transformation
-                    background, image_frame, y_ = self.random_transform(x)
+                    background, image_frame, y_transform = self.random_transform(x)
 
                     # Add more to feed_dict
                     feed_dict["background_phd:0"] = background
                     feed_dict["image_frame_phd:0"] = image_frame
 
                     for i in range(x.shape[0]):
-                        feed_dict["groundtruth_boxes_{}:0".format(i)] = y_["groundtruth_boxes_list"][i]
-                        feed_dict["groundtruth_classes_{}:0".format(i)] = y_["groundtruth_classes_list"][i]
-                        feed_dict["groundtruth_weights_{}:0".format(i)] = y_["groundtruth_weights_list"][i]
+                        feed_dict["groundtruth_boxes_{}:0".format(i)] = y_transform["groundtruth_boxes_list"][i]
+                        feed_dict["groundtruth_classes_{}:0".format(i)] = y_transform["groundtruth_classes_list"][i]
+                        feed_dict["groundtruth_weights_{}:0".format(i)] = y_transform["groundtruth_weights_list"][i]
 
                 else:
                     # Random transformation
@@ -610,20 +610,19 @@ class ShapeShifter(EvasionAttack):
                 current_texture,
             )
 
-        else:
-            # Create final attack optimization operator
-            final_attack_optimization_op = optimizer.apply_gradients(
-                grads_and_vars=[(final_gradients, current_image_variable)], name="final_attack_optimization_op"
-            )
+        # Create final attack optimization operator
+        final_attack_optimization_op = optimizer.apply_gradients(
+            grads_and_vars=[(final_gradients, current_image_variable)], name="final_attack_optimization_op"
+        )
 
-            return (
-                project_texture_op,
-                current_image_assign_to_input_image_op,
-                accumulated_gradients_op,
-                final_attack_optimization_op,
-                current_image_variable,
-                current_image,
-            )
+        return (
+            project_texture_op,
+            current_image_assign_to_input_image_op,
+            accumulated_gradients_op,
+            final_attack_optimization_op,
+            current_image_variable,
+            current_image,
+        )
 
     def _create_optimizer(self) -> "Optimizer":
         """

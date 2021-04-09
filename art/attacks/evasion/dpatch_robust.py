@@ -30,7 +30,7 @@ import random
 from typing import Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
-from tqdm import trange
+from tqdm.auto import trange
 
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
@@ -384,7 +384,7 @@ class RobustDPatch(EvasionAttack):
             raise ValueError("The first element of the brightness range must be less or equal to the second one.")
 
         if not isinstance(self.rotation_weights, (tuple, list)) or not all(
-            isinstance(s, float) or isinstance(s, int) for s in self.rotation_weights
+            isinstance(s, (float, int)) for s in self.rotation_weights
         ):
             raise ValueError("The rotation sampling weights must be provided as tuple or list of float or int values.")
         if len(self.rotation_weights) != 4:

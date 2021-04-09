@@ -4,7 +4,7 @@ dataset and creates adversarial examples using the Fast Gradient Sign Method. He
 the model, it would also be possible to provide a pretrained model to the ART classifier.
 The parameters are chosen for reduced computational requirements of the script and not optimised for accuracy.
 """
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 import numpy as np
 
 from art.attacks.evasion import FastGradientMethod
@@ -24,7 +24,7 @@ x = tf.layers.conv2d(input_ph, filters=4, kernel_size=5, activation=tf.nn.relu)
 x = tf.layers.max_pooling2d(x, 2, 2)
 x = tf.layers.conv2d(x, filters=10, kernel_size=5, activation=tf.nn.relu)
 x = tf.layers.max_pooling2d(x, 2, 2)
-x = tf.contrib.layers.flatten(x)
+x = tf.layers.flatten(x)
 x = tf.layers.dense(x, 100, activation=tf.nn.relu)
 logits = tf.layers.dense(x, 10)
 

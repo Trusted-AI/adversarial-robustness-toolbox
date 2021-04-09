@@ -26,7 +26,7 @@ import logging
 from typing import Optional, TYPE_CHECKING
 
 import numpy as np
-from tqdm import trange
+from tqdm.auto import trange
 
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import ExtractionAttack
@@ -55,6 +55,7 @@ class KnockoffNets(ExtractionAttack):
         "sampling_strategy",
         "reward",
         "verbose",
+        "use_probability",
     ]
 
     _estimator_requirements = (BaseEstimator, ClassifierMixin)
@@ -69,6 +70,7 @@ class KnockoffNets(ExtractionAttack):
         sampling_strategy: str = "random",
         reward: str = "all",
         verbose: bool = True,
+        use_probability: bool = False,
     ) -> None:
         """
         Create a KnockoffNets attack instance. Note, it is assumed that both the victim classifier and the thieved
@@ -92,6 +94,7 @@ class KnockoffNets(ExtractionAttack):
         self.sampling_strategy = sampling_strategy
         self.reward = reward
         self.verbose = verbose
+        self.use_probability = use_probability
         self._check_params()
 
     def extract(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> "CLASSIFIER_TYPE":
@@ -173,8 +176,9 @@ class KnockoffNets(ExtractionAttack):
         :return: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)`.
         """
         labels = self.estimator.predict(x=x, batch_size=self.batch_size_query)
-        labels = np.argmax(labels, axis=1)
-        labels = to_categorical(labels=labels, nb_classes=self.estimator.nb_classes)
+        if not self.use_probability:
+            labels = np.argmax(labels, axis=1)
+            labels = to_categorical(labels=labels, nb_classes=self.estimator.nb_classes)
 
         return labels
 
@@ -297,12 +301,11 @@ class KnockoffNets(ExtractionAttack):
         """
         if self.reward == "cert":
             return self._reward_cert(y_output)
-        elif self.reward == "div":
+        if self.reward == "div":
             return self._reward_div(y_output, n)
-        elif self.reward == "loss":
+        if self.reward == "loss":
             return self._reward_loss(y_output, y_hat)
-        else:
-            return self._reward_all(y_output, y_hat, n)
+        return self._reward_all(y_output, y_hat, n)
 
     @staticmethod
     def _reward_cert(y_output: np.ndarray) -> float:
@@ -403,3 +406,5 @@ class KnockoffNets(ExtractionAttack):
 
         if not isinstance(self.verbose, bool):
             raise ValueError("The argument `verbose` has to be of type bool.")
+        if not isinstance(self.use_probability, bool):
+            raise ValueError("The argument `use_probability` has to be of type bool.")

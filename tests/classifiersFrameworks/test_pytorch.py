@@ -101,12 +101,12 @@ def _test_preprocessing_defences_backward(
     # Apply the same backward pass one by one.
     x = x_test_mnist
     x_intermediates = [x]
-    for preprocess in classifier.preprocessing[:-1]:
+    for preprocess in classifier.preprocessing_operations[:-1]:
         x = preprocess(x)[0]
         x_intermediates.append(x)
 
     gradients = pseudo_gradients
-    for preprocess, x in zip(classifier.preprocessing[::-1], x_intermediates[::-1]):
+    for preprocess, x in zip(classifier.preprocessing_operations[::-1], x_intermediates[::-1]):
         gradients = preprocess.estimate_gradient(x, gradients)
 
     np.testing.assert_array_almost_equal(gradients_in_chain, gradients, decimal=4)

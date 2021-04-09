@@ -28,7 +28,7 @@ from typing import Optional
 
 import numpy as np
 from scipy.optimize import minimize
-from tqdm import trange
+from tqdm.auto import trange
 
 from art.attacks.attack import EvasionAttack
 from art.estimators.classification.GPy import GPyGaussianProcessClassifier

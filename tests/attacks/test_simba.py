@@ -23,7 +23,7 @@ import unittest
 import numpy as np
 
 from art.attacks.evasion.simba import SimBA
-from art.estimators.estimator import BaseEstimator
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import get_labels_np_array
 
@@ -146,7 +146,7 @@ class TestSimBA(TestBase):
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
     def test_1_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(SimBA, (BaseEstimator, ClassifierMixin))
+        backend_test_classifier_type_check_fail(SimBA, (BaseEstimator, ClassifierMixin, NeuralNetworkMixin))
 
 
 if __name__ == "__main__":

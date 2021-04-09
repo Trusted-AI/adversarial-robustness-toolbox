@@ -27,7 +27,7 @@ from typing import Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 import six
-from tqdm import trange
+from tqdm.auto import trange
 
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack

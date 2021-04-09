@@ -25,7 +25,7 @@ import logging
 from typing import Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
-from tqdm import trange
+from tqdm.auto import trange
 
 from art.attacks.attack import PoisoningAttackWhiteBox
 from art.estimators import BaseEstimator, NeuralNetworkMixin
@@ -289,15 +289,18 @@ def tensor_norm(tensor, norm_type: Union[int, float, str] = 2):
     tensor_type = get_class_name(tensor)
     if tensor_type not in supported_types:
         raise TypeError("Tensor type `" + tensor_type + "` is not supported")
-    elif tensor_type in tf_tensor_types:
+
+    if tensor_type in tf_tensor_types:
         import tensorflow as tf
 
         return tf.norm(tensor, ord=norm_type)
-    elif tensor_type in torch_tensor_types:
+
+    if tensor_type in torch_tensor_types:
         import torch
 
         return torch.norm(tensor, p=norm_type)
-    elif tensor_type in mxnet_tensor_types:
+
+    if tensor_type in mxnet_tensor_types:
         import mxnet
 
         return mxnet.ndarray.norm(tensor, ord=norm_type)

@@ -49,15 +49,12 @@ class TestActivationDefence(unittest.TestCase):
         tf_version = [int(v) for v in tf.__version__.split(".")]
         if tf_version[0] == 2 and tf_version[1] >= 3:
             tf.compat.v1.disable_eager_execution()
-            from tensorflow.keras import backend as k
             from tensorflow.keras.models import Sequential
             from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
         else:
-            import keras.backend as k
             from keras.models import Sequential
             from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 
-        k.set_learning_phase(1)
         model = Sequential()
         model.add(Conv2D(32, kernel_size=(3, 3), activation="relu", input_shape=x_train.shape[1:]))
         model.add(MaxPooling2D(pool_size=(3, 3)))

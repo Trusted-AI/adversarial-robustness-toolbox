@@ -37,7 +37,7 @@ import logging
 from typing import List, Optional, Union, TYPE_CHECKING
 
 import numpy as np
-from tqdm import trange, tqdm
+from tqdm.auto import trange, tqdm
 
 from art.defences.trainer.trainer import Trainer
 
@@ -245,7 +245,7 @@ class AdversarialTrainer(Trainer):
         """
         Perform prediction using the adversarially trained classifier.
 
-        :param x: Test set.
+        :param x: Input samples.
         :param kwargs: Other parameters to be passed on to the `predict` function of the classifier.
         :return: Predictions for test set.
         """

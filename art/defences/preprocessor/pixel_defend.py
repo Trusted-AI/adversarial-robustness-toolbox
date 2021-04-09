@@ -31,7 +31,7 @@ import logging
 from typing import Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from art.config import ART_NUMPY_DTYPE
 from art.defences.preprocessor.preprocessor import Preprocessor

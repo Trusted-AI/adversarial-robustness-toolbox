@@ -29,7 +29,7 @@ import numpy as np
 import numpy.linalg as la
 from scipy.optimize import fmin as scipy_optimizer
 from scipy.stats import weibull_min
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.evasion.fast_gradient import FastGradientMethod
@@ -297,6 +297,7 @@ def clever_t(
         raise ValueError("The `pool_factor` must be larger than 1.")
 
     # Some auxiliary vars
+    rand_pool_grad_set = []
     grad_norm_set = []
     dim = reduce(lambda x_, y: x_ * y, x.shape, 1)
     shape = [pool_factor * batch_size]
@@ -319,21 +320,29 @@ def clever_t(
     elif norm != 2:
         raise ValueError("Norm {} not supported".format(norm))
 
-    # Loop over the batches
-    for _ in range(nb_batches):
-        # Random generation of data points
-        sample_xs = rand_pool[np.random.choice(pool_factor * batch_size, batch_size)]
+    # Compute gradients for all samples in rand_pool
+    for i in range(batch_size):
+        rand_pool_batch = rand_pool[i * pool_factor : (i + 1) * pool_factor]
 
         # Compute gradients
-        grad_pred_class = classifier.class_gradient(sample_xs, label=pred_class)
-        grad_target_class = classifier.class_gradient(sample_xs, label=target_class)
+        grad_pred_class = classifier.class_gradient(rand_pool_batch, label=pred_class)
+        grad_target_class = classifier.class_gradient(rand_pool_batch, label=target_class)
 
         if np.isnan(grad_pred_class).any() or np.isnan(grad_target_class).any():
             raise Exception("The classifier results NaN gradients.")
 
         grad = grad_pred_class - grad_target_class
-        grad = np.reshape(grad, (batch_size, -1))
-        grad_norm = np.max(np.linalg.norm(grad, ord=norm, axis=1))
+        grad = np.reshape(grad, (pool_factor, -1))
+        grad = np.linalg.norm(grad, ord=norm, axis=1)
+        rand_pool_grad_set.extend(grad)
+
+    rand_pool_grads = np.array(rand_pool_grad_set)
+
+    # Loop over the batches
+    for _ in range(nb_batches):
+        # Random selection of gradients
+        grad_norm = rand_pool_grads[np.random.choice(pool_factor * batch_size, batch_size)]
+        grad_norm = np.max(grad_norm)
         grad_norm_set.append(grad_norm)
 
     # Maximum likelihood estimation for max gradient norms

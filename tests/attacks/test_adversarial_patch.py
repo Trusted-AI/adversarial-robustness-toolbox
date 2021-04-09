@@ -82,6 +82,45 @@ class TestAdversarialPatch(TestBase):
             self.assertAlmostEqual(patch_adv[14, 14, 0], 0.6292826, delta=0.05)
             self.assertAlmostEqual(float(np.sum(patch_adv)), 424.31439208984375, delta=1.0)
 
+        # insert_transformed_patch
+        x_out = attack_ap.insert_transformed_patch(
+            self.x_train_mnist[0], np.ones((14, 14, 1)), np.asarray([[2, 13], [2, 18], [12, 22], [8, 13]])
+        )
+        x_out_expexted = np.array(
+            [
+                0.0,
+                0.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                0.84313726,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.1764706,
+                0.7294118,
+                0.99215686,
+                0.99215686,
+                0.5882353,
+                0.10588235,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+            ],
+            dtype=np.float32,
+        )
+        np.testing.assert_almost_equal(x_out[15, :, 0], x_out_expexted, decimal=3)
+
         if sess is not None:
             sess.close()
 
@@ -107,9 +146,48 @@ class TestAdversarialPatch(TestBase):
         target = np.zeros(self.x_train_mnist.shape[0])
         patch_adv, _ = attack_ap.generate(self.x_train_mnist, target, shuffle=False)
 
-        self.assertAlmostEqual(patch_adv[8, 8, 0], 0.3776834, delta=0.05)
-        self.assertAlmostEqual(patch_adv[14, 14, 0], 0.4999926, delta=0.05)
-        self.assertAlmostEqual(float(np.sum(patch_adv)), 405.7377624511719, delta=1.0)
+        self.assertAlmostEqual(patch_adv[8, 8, 0], 1.0, delta=0.05)
+        self.assertAlmostEqual(patch_adv[14, 14, 0], 0.0, delta=0.05)
+        self.assertAlmostEqual(float(np.sum(patch_adv)), 377.415771484375, delta=1.0)
+
+        # insert_transformed_patch
+        x_out = attack_ap.insert_transformed_patch(
+            self.x_train_mnist[0], np.ones((14, 14, 1)), np.asarray([[2, 13], [2, 18], [12, 22], [8, 13]])
+        )
+        x_out_expexted = np.array(
+            [
+                0.0,
+                0.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                0.84313726,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.1764706,
+                0.7294118,
+                0.99215686,
+                0.99215686,
+                0.5882353,
+                0.10588235,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+            ],
+            dtype=np.float32,
+        )
+        np.testing.assert_almost_equal(x_out[15, :, 0], x_out_expexted, decimal=3)
 
     @unittest.skipIf(
         int(keras.__version__.split(".")[0]) == 2 and int(keras.__version__.split(".")[1]) < 3,
@@ -132,6 +210,45 @@ class TestAdversarialPatch(TestBase):
         self.assertAlmostEqual(patch_adv[8, 8, 0], 0.67151666, delta=0.05)
         self.assertAlmostEqual(patch_adv[14, 14, 0], 0.6292826, delta=0.05)
         self.assertAlmostEqual(float(np.sum(patch_adv)), 424.31439208984375, delta=1.0)
+
+        # insert_transformed_patch
+        x_out = attack_ap.insert_transformed_patch(
+            self.x_train_mnist[0], np.ones((14, 14, 1)), np.asarray([[2, 13], [2, 18], [12, 22], [8, 13]])
+        )
+        x_out_expexted = np.array(
+            [
+                0.0,
+                0.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                0.84313726,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.1764706,
+                0.7294118,
+                0.99215686,
+                0.99215686,
+                0.5882353,
+                0.10588235,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+            ],
+            dtype=np.float32,
+        )
+        np.testing.assert_almost_equal(x_out[15, :, 0], x_out_expexted, decimal=3)
 
     def test_4_pytorch(self):
         """

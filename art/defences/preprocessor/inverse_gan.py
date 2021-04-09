@@ -114,7 +114,7 @@ class InverseGAN(Preprocessor):
             iteration_count += 1
             logging.info("Iteration: %d", iteration_count)
             z_i_reshaped = np.reshape(z_i, [batch_size, self.gan.encoding_length])
-            loss = self.loss(z_i_reshaped, x)
+            loss = self.compute_loss(z_i_reshaped, x)
 
             return loss
 
@@ -147,7 +147,7 @@ class InverseGAN(Preprocessor):
 
         return y
 
-    def loss(self, z_encoding: np.ndarray, image_adv: np.ndarray) -> np.ndarray:
+    def compute_loss(self, z_encoding: np.ndarray, image_adv: np.ndarray) -> np.ndarray:
         """
         Given a encoding z, computes the loss between the projected sample and the original sample.
 

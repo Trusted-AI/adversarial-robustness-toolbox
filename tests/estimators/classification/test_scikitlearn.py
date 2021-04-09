@@ -338,16 +338,16 @@ class TestScikitlearnSVCSVC(TestBase):
 
     def test_loss_gradient(self):
         grad_predicted = self.classifier.loss_gradient(self.x_test_iris[0:1], self.y_test_iris[0:1])
-        grad_expected = np.asarray([[-2.7088013, 0.31372938, -7.4563603, -3.5995052]])
+        grad_expected = np.asarray([[-2.8753524, 0.31140438, -7.889445, -3.8314016]])
         np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=4)
 
     def test_class_gradient_none_1(self):
         grad_predicted = self.classifier.class_gradient(self.x_test_iris[0:1], label=None)
         grad_expected = [
             [
-                [-1.423344, 1.61497281, -5.69580521, -2.29865516],
-                [-0.41941481, -1.301, 0.36379309, -0.14524699],
-                [1.84275881, -0.3139728, 5.33201212, 2.44390215],
+                [-1.52398277, 1.6984953, -6.05832438, -2.45788848],
+                [-0.43530558, -1.38692786, 0.41607214, -0.15109791],
+                [1.95928835, -0.31156744, 5.64225224, 2.6089864],
             ]
         ]
         np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=4)
@@ -356,41 +356,41 @@ class TestScikitlearnSVCSVC(TestBase):
         grad_predicted = self.classifier.class_gradient(self.x_test_iris[0:2], label=None)
         grad_expected = [
             [
-                [-1.423344, 1.61497281, -5.69580521, -2.29865516],
-                [-0.41941481, -1.301, 0.36379309, -0.14524699],
-                [1.84275881, -0.3139728, 5.33201212, 2.44390215],
+                [-1.52398277, 1.6984953, -6.05832438, -2.45788848],
+                [-0.43530558, -1.38692786, 0.41607214, -0.15109791],
+                [1.95928835, -0.31156744, 5.64225224, 2.6089864],
             ],
             [
-                [-1.400397, 1.58932854, -5.82124657, -2.40741955],
-                [-0.43525245, -1.30608313, 0.38701557, -0.12901405],
-                [1.83564945, -0.28324542, 5.434231, 2.5364336],
+                [-1.52592969, 1.67535916, -6.2138464, -2.57887417],
+                [-0.43875292, -1.38381583, 0.48486185, -0.1011285],
+                [1.96468261, -0.29154334, 5.72898455, 2.68000267],
             ],
         ]
         np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=4)
 
     def test_class_gradient_int_1(self):
         grad_predicted = self.classifier.class_gradient(self.x_test_iris[0:1], label=1)
-        grad_expected = [[[-0.41941481, -1.301, 0.36379309, -0.14524699]]]
+        grad_expected = [[[-0.43530558, -1.38692786, 0.41607214, -0.15109791]]]
         np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=4)
 
     def test_class_gradient_int_2(self):
         grad_predicted = self.classifier.class_gradient(self.x_test_iris[0:2], label=1)
         grad_expected = [
-            [[-0.41941481, -1.301, 0.36379309, -0.14524699]],
-            [[-0.43525245, -1.30608313, 0.38701557, -0.12901405]],
+            [[-0.43530558, -1.38692786, 0.41607214, -0.15109791]],
+            [[-0.43875292, -1.38381583, 0.48486185, -0.1011285]],
         ]
         np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=4)
 
     def test_class_gradient_list_1(self):
         grad_predicted = self.classifier.class_gradient(self.x_test_iris[0:1], label=[1])
-        grad_expected = [[[-0.41941481, -1.301, 0.36379309, -0.14524699]]]
+        grad_expected = [[[-0.43530558, -1.38692786, 0.41607214, -0.15109791]]]
         np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=4)
 
     def test_class_gradient_list_2(self):
         grad_predicted = self.classifier.class_gradient(self.x_test_iris[0:2], label=[1, 2])
         grad_expected = [
-            [[-0.41941481, -1.301, 0.36379309, -0.14524699]],
-            [[1.83564945, -0.28324542, 5.434231, 2.5364336]],
+            [[-0.43530558, -1.38692786, 0.41607214, -0.15109791]],
+            [[1.96468261, -0.29154334, 5.72898455, 2.68000267]],
         ]
         np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=4)
 

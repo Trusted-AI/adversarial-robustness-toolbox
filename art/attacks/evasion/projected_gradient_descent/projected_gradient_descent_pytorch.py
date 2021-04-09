@@ -29,7 +29,7 @@ import logging
 from typing import Optional, Union, TYPE_CHECKING
 
 import numpy as np
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
@@ -93,7 +93,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
                 "The framework-specific implementation only supports framework-specific preprocessing."
             )
 
-        super(ProjectedGradientDescentPyTorch, self).__init__(
+        super().__init__(
             estimator=estimator,
             norm=norm,
             eps=eps,
@@ -213,7 +213,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         logger.info(
             "Success rate of attack: %.2f%%",
-            100 * compute_success(self.estimator, x, y, adv_x, self.targeted, batch_size=self.batch_size),
+            100 * compute_success(self.estimator, x, targets, adv_x, self.targeted, batch_size=self.batch_size),
         )
 
         return adv_x
@@ -238,9 +238,11 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         :param eps_step: Attack step size (input variation) at each iteration.
         :return: Adversarial examples.
         """
+        import torch  # lgtm [py/repeated-import]
+
         inputs = x.to(self.estimator.device)
         targets = targets.to(self.estimator.device)
-        adv_x = inputs
+        adv_x = torch.clone(inputs)
 
         if mask is not None:
             mask = mask.to(self.estimator.device)
@@ -276,6 +278,11 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         # Get gradient wrt loss; invert it if attack is targeted
         grad = self.estimator.loss_gradient(x=x, y=y) * (1 - 2 * int(self.targeted))
 
+        # Check for nan before normalisation an replace with 0
+        if torch.any(grad.isnan()):
+            logger.warning("Elements of the loss gradient are NaN and have been replaced with 0.0.")
+            grad[grad.isnan()] = 0.0
+
         # Apply mask
         if mask is not None:
             grad = torch.where(mask == 0.0, torch.tensor(0.0), grad)
@@ -310,8 +317,9 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         import torch  # lgtm [py/repeated-import]
 
         eps_step = np.array(eps_step, dtype=ART_NUMPY_DTYPE)
-        x = x + torch.tensor(eps_step).to(self.estimator.device) * perturbation
-
+        perturbation_step = torch.tensor(eps_step).to(self.estimator.device) * perturbation
+        perturbation_step[torch.isnan(perturbation_step)] = 0
+        x = x + perturbation_step
         if self.estimator.clip_values is not None:
             clip_min, clip_max = self.estimator.clip_values
             x = torch.max(

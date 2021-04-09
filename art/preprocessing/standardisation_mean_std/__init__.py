@@ -1,5 +1,6 @@
-from art.preprocessing.standardisation_mean_std.standardisation_mean_std import StandardisationMeanStd
-from art.preprocessing.standardisation_mean_std.standardisation_mean_std_pytorch import StandardisationMeanStdPyTorch
-from art.preprocessing.standardisation_mean_std.standardisation_mean_std_tensorflow import (
-    StandardisationMeanStdTensorFlowV2,
-)
+"""
+This module contains tool for input standardisation with mean and standard deviation.
+"""
+from art.preprocessing.standardisation_mean_std.numpy import StandardisationMeanStd
+from art.preprocessing.standardisation_mean_std.pytorch import StandardisationMeanStdPyTorch
+from art.preprocessing.standardisation_mean_std.tensorflow import StandardisationMeanStdTensorFlow
