@@ -51,9 +51,6 @@ from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import compute_success, to_categorical, check_and_transform_label_format
 
-from art.preprocessing.standardisation_mean_std.utils import broadcastable_mean_std
-from art.config import ART_NUMPY_DTYPE
-
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
 
