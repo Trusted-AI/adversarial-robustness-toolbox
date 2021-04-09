@@ -185,7 +185,10 @@ class PixelThreshold(EvasionAttack):
                 
             else:
                 
-                success, image_result = self._attack(image, target_class, self.th, max_iter)-
+                success, image_result = self._attack(image, target_class, self.th, max_iter)
+                
+                if not success:
+                    image_result = image
                 
             adv_x_best += [image_result]
 
