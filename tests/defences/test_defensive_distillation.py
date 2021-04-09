@@ -30,7 +30,7 @@ from tests.utils import get_tabular_classifier_tf, get_tabular_classifier_kr, ge
 
 logger = logging.getLogger(__name__)
 
-BATCH_SIZE = 100
+BATCH_SIZE = 10
 NB_EPOCHS = 30
 
 
@@ -223,6 +223,8 @@ class TestDefensiveDistillation(TestBase):
         preds1 = np.argmax(preds1, axis=1)
         preds2 = np.argmax(preds2, axis=1)
         acc = np.sum(preds1 == preds2) / len(preds1)
+
+        print('acc', acc)
 
         self.assertGreater(acc, 0.2)
 
