@@ -51,14 +51,20 @@ def poison_dataset(get_default_mnist_subset, image_dl_estimator):
     return _poison_dataset
 
 
-@pytest.mark.skipMlFramework("non_dl_frameworks", "mxnet", "pytorch", "tensorflow")
-def test_poison(art_warning, image_dl_estimator, poison_dataset):
+@pytest.mark.skip_framework("non_dl_frameworks", "mxnet", "pytorch", "tensorflow")
+def test_poison(art_warning, image_dl_estimator, poison_dataset, get_default_mnist_subset):
     """
     Test the backdoor attack with a pattern-based perturbation can be trained on classifier
     """
     try:
         krc, _ = image_dl_estimator()
+        (x_clean, y_clean), (_, _) = get_default_mnist_subset
         x_adv, y_adv = poison_dataset()
+
         krc.fit(x_adv, y_adv, nb_epochs=NB_EPOCHS, batch_size=32)
+
+        np.testing.assert_equal(y_adv[:1000], y_clean[:1000])
+        with pytest.raises(AssertionError):
+            np.testing.assert_equal(x_adv, x_clean)
     except ARTTestException as e:
         art_warning(e)
