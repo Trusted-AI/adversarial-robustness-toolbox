@@ -140,9 +140,8 @@ def insert_image(
 
     data = np.copy(x)
     if channels_first:
-        data = data.transpose([2, 0, 1])
-
-    width, height, num_channels = x.shape
+        data = data.transpose([1, 2, 0])
+    width, height, num_channels = data.shape
 
     no_color = num_channels == 1
     orig_img = Image.new("RGBA", (width, height), 0)

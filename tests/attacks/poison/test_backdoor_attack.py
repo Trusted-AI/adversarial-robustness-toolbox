@@ -42,6 +42,7 @@ max_val = 1
 @pytest.fixture()
 def poison_dataset(get_default_mnist_subset):
     (x_clean, y_clean), (_, _) = get_default_mnist_subset
+    print(x_clean.shape)
 
     def _poison_dataset(poison_func):
         x_poison = np.copy(x_clean)
@@ -93,7 +94,7 @@ def poison_image_3(x, channels_first):
     return insert_image(x, backdoor_path=backdoor_path, random=True, size=(100, 100), channels_first=channels_first)
 
 
-@pytest.mark.skip_framework("non_dl_frameworks", "mxnet")
+@pytest.mark.skip_framework("non_dl_frameworks")
 def test_backdoor_pattern(art_warning, image_dl_estimator, poison_dataset, mxnet_or_pytorch):
     """
     Test the backdoor attack with a pattern-based perturbation can be trained on classifier
@@ -133,13 +134,13 @@ def test_backdoor_pixel(art_warning, image_dl_estimator, poison_dataset, mxnet_o
         art_warning(e)
 
 
-@pytest.mark.skip_framework("non_dl_frameworks", "mxnet")
+@pytest.mark.skip_framework("non_dl_frameworks")
 def test_backdoor_image(art_warning, image_dl_estimator, poison_dataset, mxnet_or_pytorch):
     """
     Test the backdoor attack with a pattern-based perturbation can be trained on classifier
     """
     try:
-        krc, _ = image_dl_estimator()
+        krc, _ = image_dl_estimator(functional=mxnet_or_pytorch)
         (is_poison_train, x_poisoned_raw, y_poisoned_raw) = poison_dataset(
             lambda x: poison_image_1(x, channels_first=mxnet_or_pytorch))
         n_train = np.shape(y_poisoned_raw)[0]
@@ -147,19 +148,20 @@ def test_backdoor_image(art_warning, image_dl_estimator, poison_dataset, mxnet_o
         np.random.shuffle(shuffled_indices)
         x_train = x_poisoned_raw[shuffled_indices]
         y_train = y_poisoned_raw[shuffled_indices]
-
+        print(x_train.shape)
+        print(y_train.shape)
         krc.fit(x_train, y_train, nb_epochs=NB_EPOCHS, batch_size=32)
     except ARTTestException as e:
         art_warning(e)
 
 
-@pytest.mark.skip_framework("non_dl_frameworks", "mxnet")
+@pytest.mark.skip_framework("non_dl_frameworks")
 def test_multiple_perturbations(art_warning, image_dl_estimator, poison_dataset, mxnet_or_pytorch):
     """
     Test the backdoor attack with a pattern-based perturbation can be trained on classifier
     """
     try:
-        krc, _ = image_dl_estimator()
+        krc, _ = image_dl_estimator(functional=mxnet_or_pytorch)
 
         def func1(x):
             return poison_image_1(x, channels_first=mxnet_or_pytorch)
