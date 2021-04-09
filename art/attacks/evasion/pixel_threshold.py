@@ -155,30 +155,41 @@ class PixelThreshold(EvasionAttack):
         if self.th is None:
             logger.info("Performing minimal perturbation Attack. This takes substainally long time to process. For sanity check, pass th=10 to the Attack instance.")
             
-        if np.max(x) < 2:
-            logger.warning('Processing Input in the float range of Pixels, Original Attacks were on Un-Processed Images and performance of evolutionary strategy substainally decreases if the input is in the float domain.')
-            
+        if np.max(x) <= 1:
+            raise ValueError("Processing Input in the float range of Pixels, Original Attacks were on Un-Processed Images and performance of evolutionary strategy substainally decreases if the input is in the float domain.")            
+        
         adv_x_best = []
+        self.adv_th = []
         for image, target_class in tqdm(zip(x, y), desc="Pixel threshold", disable=not self.verbose):
+            
             if self.th is None:
-                self.min_th = 127
+           
+                min_th = -1
                 start, end = 1, 127
+                
                 image_result = image
+                
                 while True:
+                    
                     threshold = (start + end) // 2
                     success, trial_image_result = self._attack(image, target_class, threshold, max_iter)
                     
                     if success:
                         image_result = trial_image_result
                         end = threshold - 1
-                        self.min_th = threshold
+                        min_th = threshold
                     else:
                         start = threshold + 1
                     
                     if end < start:
                         break
+                        
+                self.adv_th = [min_th]
+                
             else:
-                success, image_result = self._attack(image, target_class, self.th, max_iter)
+                
+                success, image_result = self._attack(image, target_class, self.th, max_iter)-
+                
             adv_x_best += [image_result]
 
         adv_x_best = np.array(adv_x_best)
