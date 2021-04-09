@@ -39,3 +39,4 @@ class RegularizationTest:
     def test_roughnessRegularizaiton(self):
         for x in RegularizationTest.regularizationInput:
             assert roughnessRegularization(x, 1).size() == [1,4]
+
