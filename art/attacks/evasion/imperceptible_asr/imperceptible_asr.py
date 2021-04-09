@@ -75,7 +75,7 @@ class ImperceptibleASR(EvasionAttack):
     def __init__(
         self,
         estimator: "SPEECH_RECOGNIZER_TYPE",
-        masker: Optional["PsychoacousticMasker"],
+        masker: "PsychoacousticMasker",
         eps: float = 2000.0,
         learning_rate_1: float = 100.0,
         max_iter_1: int = 1000,
@@ -140,6 +140,8 @@ class ImperceptibleASR(EvasionAttack):
         self._hop_size = masker.hop_size
         self._sample_rate = masker.sample_rate
 
+        self._framework: Optional[str] = None
+
         if isinstance(self.estimator, TensorFlowV2Estimator):
             import tensorflow.compat.v1 as tf1
 
@@ -163,11 +165,8 @@ class ImperceptibleASR(EvasionAttack):
         elif isinstance(self.estimator, PyTorchEstimator):
             # set framework attribute
             self._framework = "pytorch"
-        else:
-            # set framework attribute
-            self._framework = None
 
-    def generate(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate imperceptible, adversarial examples.
 
@@ -176,6 +175,9 @@ class ImperceptibleASR(EvasionAttack):
             lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`.
         :return: An array holding the adversarial examples.
         """
+        if y is None:
+            raise ValueError("The target values `y` cannot be None. Please provide a `np.ndarray` of target labels.")
+
         nb_samples = x.shape[0]
 
         x_imperceptible = [None] * nb_samples
@@ -479,7 +481,7 @@ class ImperceptibleASR(EvasionAttack):
         )
 
         # calculate hinge loss
-        loss = torch.mean(
+        loss = torch.mean(  # type: ignore
             torch.nn.functional.relu(psd_perturbation - masking_threshold_stabilized_torch), dim=(1, 2), keepdims=False
         )
 
@@ -644,7 +646,7 @@ class PsychoacousticMasker:
         # init some private properties for lazy loading
         self._fft_frequencies = None
         self._bark = None
-        self._absolute_threshold_hearing = None
+        self._absolute_threshold_hearing: Optional[np.ndarray] = None
 
     def calculate_threshold_and_psd_maximum(self, audio: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """

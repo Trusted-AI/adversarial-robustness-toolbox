@@ -62,6 +62,7 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
         "norm",
         "dropout",
         "endtoend",
+        "batch_size",
         "verbose",
     ]
 
@@ -82,6 +83,7 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
         dropout: float = 0.3,
         net_repeat: int = 1,
         endtoend: bool = True,
+        batch_size: int = 128,
         verbose: bool = True,
     ):
         """
@@ -103,6 +105,7 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
         :param dropout: Dropout to apply while training
         :param net_repeat: The number of times to repeat prediction on each network
         :param endtoend: True for end-to-end training. False for transfer learning.
+        :param batch_size: Batch size.
         :param verbose: Show progress bars.
         """
         self.subsistute_networks: List["CLASSIFIER_NEURALNETWORK_TYPE"] = (
@@ -122,6 +125,7 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
         self.learning_rate = learning_rate
         self.decay_coeff = decay_coeff
         self.max_iter = max_iter
+        self.batch_size = batch_size
         self.verbose = verbose
         self._check_params()
 
@@ -154,10 +158,10 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
 
         if opt_method == "sgd":
             logger.info("Using SGD to craft poison samples")
-            optimizer = torch.optim.SGD(poison_batch.parameters(), lr=self.learning_rate, momentum=self.momentum)
+            optimizer = torch.optim.SGD(poison_batch.parameters(), lr=self.learning_rate, momentum=self.momentum)  # type: ignore
         elif opt_method == "adam":
             logger.info("Using Adam to craft poison samples")
-            optimizer = torch.optim.Adam(poison_batch.parameters(), lr=self.learning_rate, betas=(self.momentum, 0.999))
+            optimizer = torch.optim.Adam(poison_batch.parameters(), lr=self.learning_rate, betas=(self.momentum, 0.999))  # type: ignore
 
         base_tensor_batch = torch.stack(base_tensor_list, 0)
         base_range01_batch = base_tensor_batch
@@ -171,25 +175,34 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
         # Initializing from the coefficients of last step gives faster convergence.
         s_init_coeff_list = []
         n_poisons = len(x)
+        s_coeff: Union["torch.Tensor", List["torch.Tensor"]]
         for n, net in enumerate(self.subsistute_networks):
             # End to end training
             if self.endtoend:
                 if isinstance(self.feature_layer, list):
-
-                    block_feats = [
-                        torch.stack([feat.detach() for feat in net.get_activations(x, layer=layer, framework=True)], 0)
-                        for layer in self.feature_layer
-                    ]
+                    block_feats = list()
+                    for layer in self.feature_layer:
+                        activations = net.get_activations(x, layer=layer, batch_size=self.batch_size, framework=True)
+                        if activations is not None:
+                            block_feats += [torch.stack([feat.detach() for feat in activations], 0)]
+                        else:
+                            raise ValueError("Activations are None.")
                 else:
-                    block_feats = [
-                        feat.detach() for feat in net.get_activations(x, layer=self.feature_layer, framework=True)
-                    ]
+                    layer_2: Union[int, str] = self.feature_layer
+                    activations = net.get_activations(x, layer=layer_2, batch_size=self.batch_size, framework=True)
+                    if activations is not None:
+                        block_feats = [feat.detach() for feat in activations]
+                    else:
+                        raise ValueError("Activations are None.")
                 target_feat_list.append(block_feats)
                 s_coeff = [
                     torch.ones(n_poisons, 1).to(self.estimator.device) / n_poisons for _ in range(len(block_feats))
                 ]
             else:
-                activations = net.get_activations(x, layer=self.feature_layer, framework=True)
+                if isinstance(self.feature_layer, list):
+                    raise NotImplementedError
+                layer_3: Union[int, str] = self.feature_layer
+                activations = net.get_activations(x, layer=layer_3, batch_size=self.batch_size, framework=True)
                 if activations is not None:
                     target_feat_list.append(activations.detach())
                 else:
@@ -283,6 +296,9 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
         if 1 < self.decay_coeff < 0:
             raise ValueError("Decay coefficient must be between zero and one")
 
+        if not isinstance(self.batch_size, int) or self.batch_size <= 0:
+            raise ValueError("batch_size must be a positive integer")
+
 
 def get_poison_tuples(poison_batch, poison_label):
     """
@@ -301,8 +317,9 @@ def loss_from_center(
     import torch  # lgtm [py/repeated-import]
 
     if end2end:
-        loss = 0
+        loss = torch.tensor(0.0)
         for net, center_feats in zip(subs_net_list, target_feat_list):
+            poisons_feats: Union[List[float], "torch.Tensor", np.ndarray]
             if net_repeat > 1:
                 poisons_feats_repeats = [
                     net.get_activations(poison_batch(), layer=feature_layer, framework=True) for _ in range(net_repeat)
@@ -327,7 +344,7 @@ def loss_from_center(
             else:
                 assert False, "net_repeat set to {}".format(net_repeat)
 
-            net_loss = 0
+            net_loss = torch.tensor(0.0)
             for pfeat, cfeat in zip(poisons_feats, center_feats):
                 diff = torch.mean(pfeat, dim=0) - cfeat
                 diff_norm = torch.norm(diff, dim=0)
@@ -338,15 +355,15 @@ def loss_from_center(
         loss = loss / len(subs_net_list)
 
     else:
-        loss = 0
+        loss = torch.tensor(0.0)
         for net, center in zip(subs_net_list, target_feat_list):
-            poisons = [
+            poisons_list = [
                 net.get_activations(poison_batch(), layer=feature_layer, framework=True) for _ in range(net_repeat)
             ]
-            poisons = sum(poisons) / len(poisons)
+            poisons = torch.tensor(sum(poisons_list) / len(poisons_list))
 
-            diff = torch.mean(poisons, dim=0) - center
-            diff_norm = torch.norm(diff, dim=1) / torch.norm(center, dim=1)
+            diff_2 = torch.mean(poisons, dim=0) - center
+            diff_norm = torch.norm(diff_2, dim=1) / torch.norm(center, dim=1)
             loss += torch.mean(diff_norm)
 
         loss = loss / len(subs_net_list)

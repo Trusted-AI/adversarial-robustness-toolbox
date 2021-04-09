@@ -106,6 +106,7 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
                 else:
                     # kornia >= 0.5.0
                     from kornia.filters.median import _compute_zero_padding
+
                     padding = _compute_zero_padding(kernel_size)
                 self.p2d = [
                     int(padding[-1]) + half_pad[-1],
@@ -118,6 +119,7 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
                 if not hasattr(self, "kernel"):
                     # kornia >= 0.5.0
                     from kornia.filters.kernels import get_binary_kernel2d
+
                     self.kernel = get_binary_kernel2d(kernel_size)
 
             def forward(self, input: "torch.Tensor"):  # type: ignore
