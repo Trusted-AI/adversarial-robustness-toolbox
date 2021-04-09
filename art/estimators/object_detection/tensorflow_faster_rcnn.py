@@ -494,3 +494,6 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
 
     def get_activations(self):
         raise NotImplementedError
+
+    def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+        raise NotImplementedError

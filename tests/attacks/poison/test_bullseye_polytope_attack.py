@@ -48,21 +48,43 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator):
 
 
 @pytest.mark.skip_framework("non_dl_frameworks", "tensorflow", "mxnet", "keras", "kerastf")
+def test_poison_multiple_layers(art_warning, get_default_mnist_subset, image_dl_estimator):
+    try:
+        (x_train, y_train), (_, _) = get_default_mnist_subset
+        classifier, _ = image_dl_estimator(functional=True)
+        target = np.expand_dims(x_train[3], 0)
+        num_layers = len(classifier.layer_names)
+        attack = BullseyePolytopeAttackPyTorch(classifier, target, [num_layers - 2, num_layers - 3])
+        poison_data, poison_labels = attack.poison(x_train[5:10], y_train[5:10])
+
+        np.testing.assert_equal(poison_data.shape, x_train[5:10].shape)
+        np.testing.assert_equal(poison_labels.shape, y_train[5:10].shape)
+
+        with pytest.raises(AssertionError):
+            np.testing.assert_equal(poison_data, x_train[5:10])
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework("non_dl_frameworks", "tensorflow", "mxnet", "keras", "kerastf")
 def test_failure_modes(art_warning, get_default_mnist_subset, image_dl_estimator):
     try:
         (x_train, y_train), (_, _) = get_default_mnist_subset
         classifier, _ = image_dl_estimator(functional=True)
         target = np.expand_dims(x_train[3], 0)
         with pytest.raises(ValueError):
-            attack = BullseyePolytopeAttackPyTorch(classifier, target, len(classifier.layer_names) - 2,
-                                                   learning_rate=-1)
+            attack = BullseyePolytopeAttackPyTorch(
+                classifier, target, len(classifier.layer_names) - 2, learning_rate=-1
+            )
         with pytest.raises(ValueError):
             attack = BullseyePolytopeAttackPyTorch(classifier, target, len(classifier.layer_names) - 2, max_iter=-1)
         with pytest.raises(TypeError):
             attack = BullseyePolytopeAttackPyTorch(classifier, target, 2.5)
         with pytest.raises(ValueError):
-            attack = BullseyePolytopeAttackPyTorch(classifier, target, len(classifier.layer_names) - 2,
-                                                   opt="new optimizer")
+            attack = BullseyePolytopeAttackPyTorch(
+                classifier, target, len(classifier.layer_names) - 2, opt="new optimizer"
+            )
         with pytest.raises(ValueError):
             attack = BullseyePolytopeAttackPyTorch(classifier, target, len(classifier.layer_names) - 2, momentum=1.2)
         with pytest.raises(ValueError):

@@ -105,9 +105,9 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
         :param endtoend: True for end-to-end training. False for transfer learning.
         :param verbose: Show progress bars.
         """
-        self.subsistute_networks: List["CLASSIFIER_NEURALNETWORK_TYPE"] = [classifier] if not isinstance(
-            classifier, list
-        ) else classifier
+        self.subsistute_networks: List["CLASSIFIER_NEURALNETWORK_TYPE"] = (
+            [classifier] if not isinstance(classifier, list) else classifier
+        )
 
         super().__init__(classifier=self.subsistute_networks[0])  # type: ignore
         self.target = target
@@ -174,9 +174,16 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
         for n, net in enumerate(self.subsistute_networks):
             # End to end training
             if self.endtoend:
-                block_feats = [
-                    feat.detach() for feat in net.get_activations(x, layer=self.feature_layer, framework=True)
-                ]
+                if isinstance(self.feature_layer, list):
+
+                    block_feats = [
+                        torch.stack([feat.detach() for feat in net.get_activations(x, layer=layer, framework=True)], 0)
+                        for layer in self.feature_layer
+                    ]
+                else:
+                    block_feats = [
+                        feat.detach() for feat in net.get_activations(x, layer=self.feature_layer, framework=True)
+                    ]
                 target_feat_list.append(block_feats)
                 s_coeff = [
                     torch.ones(n_poisons, 1).to(self.estimator.device) / n_poisons for _ in range(len(block_feats))
@@ -229,8 +236,8 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
         if self.max_iter < 1:
             raise ValueError("Value of max_iter at least 1")
 
-        if not isinstance(self.feature_layer, (str, int)):
-            raise TypeError("Feature layer should be a string or int")
+        if not isinstance(self.feature_layer, (str, int, list)):
+            raise TypeError("Feature layer should be a string or int or list of string or int")
 
         if self.opt.lower() not in ["adam", "sgd"]:
             raise ValueError("Optimizer must be 'adam' or 'sgd'")
@@ -250,8 +257,13 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
         if self.net_repeat < 1:
             raise ValueError("net_repeat must be at least 1")
 
-        if not 0 <= self.feature_layer < len(self.estimator.layer_names):
-            raise ValueError("Invalid feature layer")
+        if isinstance(self.feature_layer, list):
+            for layer in self.feature_layer:
+                if not 0 <= layer < len(self.estimator.layer_names):
+                    raise ValueError("Invalid feature layer")
+        else:
+            if not 0 <= self.feature_layer < len(self.estimator.layer_names):
+                raise ValueError("Invalid feature layer")
 
         if 1 < self.decay_coeff < 0:
             raise ValueError("Decay coefficient must be between zero and one")
@@ -287,7 +299,16 @@ def loss_from_center(
                         sum([poisons_feat_r[block_idx] for poisons_feat_r in poisons_feats_repeats]) / net_repeat
                     )
             elif net_repeat == 1:
-                poisons_feats = net.get_activations(poison_batch(), layer=feature_layer, framework=True)
+                if isinstance(feature_layer, list):
+                    poisons_feats = torch.cat(
+                        [
+                            torch.flatten(net.get_activations(poison_batch(), layer=layer, framework=True), 0)
+                            for layer in feature_layer
+                        ],
+                        0,
+                    )
+                else:
+                    poisons_feats = net.get_activations(poison_batch(), layer=feature_layer, framework=True)
             else:
                 assert False, "net_repeat set to {}".format(net_repeat)
 
