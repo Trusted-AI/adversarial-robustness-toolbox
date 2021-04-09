@@ -286,7 +286,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         """
         import torch  # lgtm [py/repeated-import]
 
-        assert all([issubclass(layer, torch.nn.modules.Module) for layer in layerinfo])
+        assert all([issubclass(layer, torch.nn.modules.Module) for layer in layerinfo])  # type: ignore
 
         def set_train(layer, layerinfo=layerinfo):
             "Set layer into training mode if instance of `layerinfo`."
@@ -311,7 +311,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         """
         import torch  # lgtm [py/repeated-import]
 
-        self._set_layer(train=train, layerinfo=[torch.nn.modules.dropout._DropoutNd])
+        self._set_layer(train=train, layerinfo=[torch.nn.modules.dropout._DropoutNd])  # type: ignore
 
     def set_batchnorm(self, train: bool) -> None:
         """
@@ -321,4 +321,4 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         """
         import torch  # lgtm [py/repeated-import]
 
-        self._set_layer(train=train, layerinfo=[torch.nn.modules.batchnorm._BatchNorm])
+        self._set_layer(train=train, layerinfo=[torch.nn.modules.batchnorm._BatchNorm])  # type: ignore

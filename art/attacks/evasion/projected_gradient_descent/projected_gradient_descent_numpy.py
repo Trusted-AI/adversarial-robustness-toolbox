@@ -334,7 +334,7 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
                     else:
                         # replace adversarial examples if they are successful
                         attack_success = compute_success_array(
-                            self.estimator,
+                            self.estimator,  # type: ignore
                             x[batch_index_1:batch_index_2],
                             targets[batch_index_1:batch_index_2],
                             batch,
@@ -347,7 +347,7 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
                 "Success rate of attack: %.2f%%",
                 100
                 * compute_success(
-                    self.estimator,
+                    self.estimator,  # type: ignore
                     x,
                     targets,
                     adv_x,

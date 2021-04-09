@@ -2054,7 +2054,7 @@ class BrendelBethgeAttack(EvasionAttack):
                 self._loss_fn = logits_difference
                 self._loss_object = logits_difference
 
-            estimator_bb = TensorFlowV2Classifier(
+            estimator_bb: "CLASSIFIER_LOSS_GRADIENTS_TYPE" = TensorFlowV2Classifier(
                 model=estimator.model,
                 nb_classes=estimator.nb_classes,
                 input_shape=estimator.input_shape,
@@ -2115,7 +2115,7 @@ class BrendelBethgeAttack(EvasionAttack):
 
             estimator_bb = PyTorchClassifier(
                 model=estimator.model,
-                loss=self._loss_object,
+                loss=self._loss_object,  # type: ignore
                 input_shape=estimator.input_shape,
                 nb_classes=estimator.nb_classes,
                 optimizer=None,
@@ -2124,11 +2124,16 @@ class BrendelBethgeAttack(EvasionAttack):
                 preprocessing_defences=estimator.preprocessing_defences,
                 postprocessing_defences=estimator.postprocessing_defences,
                 preprocessing=estimator.preprocessing,
-                device_type=estimator._device,
+                device_type=str(estimator._device),
             )
 
         else:
-            estimator_bb = None
+            logger.warning(
+                "The type of the provided estimator is not yet support for automated setting of logits "
+                "difference loss. Therefore, this attack is defaulting to attacking the loss provided by "
+                "the model in the provided estimator."
+            )
+            estimator_bb = estimator
 
         super().__init__(estimator=estimator_bb)
         self.norm = norm
@@ -2153,6 +2158,12 @@ class BrendelBethgeAttack(EvasionAttack):
             self._optimizer = L2Optimizer()
         elif norm in ["inf", np.inf]:
             self._optimizer = LinfOptimizer()
+
+        # Set binary search threshold
+        if norm == 2:
+            self.theta = 0.01 / np.sqrt(np.prod(self.estimator.input_shape))
+        else:
+            self.theta = 0.01 / np.prod(self.estimator.input_shape)
 
     def generate(
         self,
@@ -2352,11 +2363,10 @@ class BrendelBethgeAttack(EvasionAttack):
 
                     k += 1  # idx of masked sample
 
-            deltas = np.stack(deltas)
-            deltas = deltas.astype(np.float32)
+            deltas_array = np.stack(deltas).astype(np.float32)
 
             # add step to current perturbation
-            x = (x + deltas).reshape(original_shape)
+            x = (x + deltas_array).reshape(original_shape)
 
         return best_advs.astype(config.ART_NUMPY_DTYPE)
 

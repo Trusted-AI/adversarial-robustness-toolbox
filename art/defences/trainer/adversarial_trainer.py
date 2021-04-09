@@ -112,6 +112,8 @@ class AdversarialTrainer(Trainer):
         """
         logger.info("Performing adversarial training using %i attacks.", len(self.attacks))
         size = generator.size
+        if size is None:
+            raise ValueError("Generator size is required and cannot be None.")
         batch_size = generator.batch_size
         nb_batches = int(np.ceil(size / batch_size))  # type: ignore
         ind = np.arange(generator.size)

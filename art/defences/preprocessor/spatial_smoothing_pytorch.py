@@ -27,7 +27,7 @@ This module implements the local spatial smoothing defence in `SpatialSmoothing`
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import Optional, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
 
@@ -107,14 +107,14 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
                     # kornia >= 0.5.0
                     from kornia.filters.median import _compute_zero_padding
 
-                    padding = _compute_zero_padding(kernel_size)
+                    padding = _compute_zero_padding(kernel_size)  # type: ignore
                 self.p2d = [
-                    int(padding[-1]) + half_pad[-1],
-                    int(padding[-1]),
-                    int(padding[-2]) + half_pad[-2],
-                    int(padding[-2]),
+                    int(padding[-1]) + half_pad[-1],  # type: ignore
+                    int(padding[-1]),  # type: ignore
+                    int(padding[-2]) + half_pad[-2],  # type: ignore
+                    int(padding[-2]),  # type: ignore
                 ]
-                # PyTorch requires Padding size should be less than the corresponding input dimension,
+                # PyTorch requires padding size should be less than the corresponding input dimension.
 
                 if not hasattr(self, "kernel"):
                     # kornia >= 0.5.0

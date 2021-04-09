@@ -217,7 +217,7 @@ class ShapeShifter(EvasionAttack):
         assert list(x.shape[1:]) == self.estimator.input_shape
 
         # Check if label is provided
-        label = kwargs.get("label")
+        label: Optional[Dict[str, List[np.ndarray]]] = kwargs.get("label")
         if label is None and not self.texture_as_input:
             raise ValueError("Need the target labels for image as input.")
 
@@ -282,7 +282,9 @@ class ShapeShifter(EvasionAttack):
         if not isinstance(target_class, int):
             raise TypeError("Target class must be of type `int`.")
 
-        # Do attack
+        # Run attack
+        if label is None:
+            raise ValueError("Labels cannot be None.")
         result = self._attack_training(
             x=x,
             y=label,
@@ -923,7 +925,7 @@ class ShapeShifter(EvasionAttack):
         """
         Apply attack-specific checks.
         """
-        if not isinstance(self.random_transform, Callable):
+        if not hasattr(self.random_transform, "__call__"):
             raise ValueError("The applied random transformation function must be of type Callable.")
 
         if not isinstance(self.box_classifier_weight, float):

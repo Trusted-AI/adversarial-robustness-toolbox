@@ -208,13 +208,13 @@ class MembershipInferenceBlackBox(InferenceAttack):
             from art.utils import to_cuda
 
             loss_fn = nn.BCELoss()
-            optimizer = optim.Adam(self.attack_model.parameters(), lr=self.learning_rate)
+            optimizer = optim.Adam(self.attack_model.parameters(), lr=self.learning_rate)  # type: ignore
 
             attack_train_set = self._get_attack_dataset(f_1=x_1, f_2=x_2, label=y_new)
             train_loader = DataLoader(attack_train_set, batch_size=self.batch_size, shuffle=True, num_workers=0)
 
-            self.attack_model = to_cuda(self.attack_model)
-            self.attack_model.train()
+            self.attack_model = to_cuda(self.attack_model)  # type: ignore
+            self.attack_model.train()  # type: ignore
 
             for _ in range(self.epochs):
                 for (input1, input2, targets) in train_loader:
@@ -223,7 +223,7 @@ class MembershipInferenceBlackBox(InferenceAttack):
                     targets = torch.autograd.Variable(targets)
 
                     optimizer.zero_grad()
-                    outputs = self.attack_model(input1, input2)
+                    outputs = self.attack_model(input1, input2)  # type: ignore
                     loss = loss_fn(outputs, targets.unsqueeze(1))  # lgtm [py/call-to-non-callable]
 
                     loss.backward()
@@ -233,7 +233,7 @@ class MembershipInferenceBlackBox(InferenceAttack):
                 y_ready = check_and_transform_label_format(y_new, len(np.unique(y_new)), return_one_hot=False)
             else:
                 y_ready = check_and_transform_label_format(y_new, len(np.unique(y_new)), return_one_hot=True)
-            self.attack_model.fit(np.c_[x_1, x_2], y_ready)
+            self.attack_model.fit(np.c_[x_1, x_2], y_ready)  # type: ignore
 
     def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
@@ -265,24 +265,26 @@ class MembershipInferenceBlackBox(InferenceAttack):
             from torch.utils.data import DataLoader  # lgtm [py/repeated-import]
             from art.utils import to_cuda, from_cuda
 
-            self.attack_model.eval()
+            self.attack_model.eval()  # type: ignore
             inferred = None
             test_set = self._get_attack_dataset(f_1=features, f_2=y)
             test_loader = DataLoader(test_set, batch_size=self.batch_size, shuffle=True, num_workers=0)
             for input1, input2, _ in test_loader:
                 input1, input2 = to_cuda(input1), to_cuda(input2)
-                outputs = self.attack_model(input1, input2)
+                outputs = self.attack_model(input1, input2)  # type: ignore
                 predicted = torch.round(outputs)
                 predicted = from_cuda(predicted)
 
                 if inferred is None:
-                    inferred = predicted.detach().numpy()
+                    inferred_array = predicted.detach().numpy()
                 else:
-                    inferred = np.vstack((inferred, predicted.detach().numpy()))
-            inferred = inferred.reshape(-1).astype(np.int)
+                    inferred_array = np.vstack((inferred, predicted.detach().numpy()))
+            inferred_return = inferred_array.reshape(-1).astype(np.int)
         else:
-            inferred = np.array([np.argmax(arr) for arr in self.attack_model.predict(np.c_[features, y])])
-        return inferred
+            pred = self.attack_model.predict(np.c_[features, y])  # type: ignore
+            inferred_return = np.array([np.argmax(arr) for arr in pred])
+
+        return inferred_return
 
     def _get_attack_dataset(self, f_1, f_2, label=None):
         from torch.utils.data.dataset import Dataset

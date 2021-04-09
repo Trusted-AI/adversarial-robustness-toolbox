@@ -213,7 +213,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
                             "If loss_type='difference_logits_ratio' the estimator has to to predict logits."
                         )
 
-                    class difference_logits_ratio:
+                    class DifferenceLogitsRatioTensorFlowV2:
                         def __init__(self):
                             self.reduction = "mean"
 
@@ -244,8 +244,8 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
                             return tf.reduce_mean(dlr)
 
-                    self._loss_fn = difference_logits_ratio()
-                    self._loss_object = difference_logits_ratio()
+                    self._loss_fn = DifferenceLogitsRatioTensorFlowV2()
+                    self._loss_object = DifferenceLogitsRatioTensorFlowV2()
 
                 estimator_apgd = TensorFlowV2Classifier(
                     model=estimator.model,
@@ -281,7 +281,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
                             "If loss_type='difference_logits_ratio' the estimator has to to predict logits."
                         )
 
-                    class difference_logits_ratio:
+                    class DifferenceLogitsRatioPyTorch:
                         def __init__(self):
                             self.reduction = "mean"
 
@@ -319,7 +319,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
                             return torch.mean(dlr.float())
 
-                    self._loss_object = difference_logits_ratio()
+                    self._loss_object = DifferenceLogitsRatioPyTorch()
 
                 estimator_apgd = PyTorchClassifier(
                     model=estimator.model,
@@ -332,7 +332,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
                     preprocessing_defences=estimator.preprocessing_defences,
                     postprocessing_defences=estimator.postprocessing_defences,
                     preprocessing=estimator.preprocessing,
-                    device_type=estimator._device,
+                    device_type=str(estimator._device),
                 )
 
             else:

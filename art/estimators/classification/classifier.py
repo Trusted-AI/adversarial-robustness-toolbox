@@ -95,7 +95,7 @@ class ClassifierMixin(ABC, metaclass=InputFilter):
     estimator_params = ["nb_classes"]
 
     def __init__(self, **kwargs) -> None:
-        super().__init__(**kwargs)
+        super().__init__(**kwargs)  # type: ignore
         self._nb_classes: int = -1
 
     @property

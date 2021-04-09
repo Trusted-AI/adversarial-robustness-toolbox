@@ -247,7 +247,7 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
         return self.channels_first
 
     @property
-    def classifier(self) -> int:
+    def classifier(self) -> ClassifierNeuralNetwork:
         return self.detector
 
     def class_gradient(

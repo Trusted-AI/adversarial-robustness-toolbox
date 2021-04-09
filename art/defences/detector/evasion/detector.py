@@ -123,7 +123,7 @@ class BinaryInputDetector(ClassGradientsMixin, ClassifierMixin, LossGradientsMix
         return self.detector.clip_values
 
     @property
-    def channels_first(self) -> Optional[bool]:
+    def channels_first(self) -> bool:
         """
         :return: Boolean to indicate index of the color channels in the sample `x`.
         """
@@ -291,7 +291,7 @@ class BinaryActivationDetector(
         return self.detector.clip_values
 
     @property
-    def channels_first(self) -> Optional[bool]:
+    def channels_first(self) -> bool:
         """
         :return: Boolean to indicate index of the color channels in the sample `x`.
         """

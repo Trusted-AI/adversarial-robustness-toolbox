@@ -394,7 +394,7 @@ class NeuralNetworkMixin(ABC):
         :param channels_first: Set channels first or last.
         """
         self._channels_first: bool = channels_first
-        super().__init__(**kwargs)
+        super().__init__(**kwargs)  # type: ignore
 
     @abstractmethod
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs):

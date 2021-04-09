@@ -182,19 +182,19 @@ class PixelThreshold(EvasionAttack):
                 success, image_result = self._attack(image, target_class, self.th, max_iter)
             adv_x_best += [image_result]
 
-        adv_x_best = np.array(adv_x_best)
+        adv_x_best_array = np.array(adv_x_best)
 
         if scale_input:
-            adv_x_best = adv_x_best / 255.0
+            adv_x_best_array = adv_x_best_array / 255.0
 
         if y is not None:
             y = to_categorical(y, self.estimator.nb_classes)
 
         logger.info(
             "Success rate of Attack: %.2f%%",
-            100 * compute_success(self.estimator, x, y, adv_x_best, self.targeted, 1),
+            100 * compute_success(self.estimator, x, y, adv_x_best_array, self.targeted, 1),
         )
-        return adv_x_best
+        return adv_x_best_array
 
     def _get_bounds(self, img: np.ndarray, limit) -> Tuple[List[list], list]:
         """

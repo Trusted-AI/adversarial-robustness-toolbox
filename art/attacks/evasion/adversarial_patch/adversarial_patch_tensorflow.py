@@ -112,7 +112,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         if self.estimator.channels_first:
             raise ValueError("Color channel needs to be in last dimension.")
 
-        self.use_logits = None
+        self.use_logits: Optional[bool] = None
 
         self.i_h_patch = 0
         self.i_w_patch = 1

@@ -55,7 +55,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
     | Paper link: https://arxiv.org/abs/1706.06083
     """
 
-    _estimator_requirements = (BaseEstimator, LossGradientsMixin, ClassifierMixin)
+    _estimator_requirements = (BaseEstimator, LossGradientsMixin, ClassifierMixin)  # type: ignore
 
     def __init__(
         self,
@@ -180,7 +180,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
 
             # Compute batch_eps and batch_eps_step
-            if isinstance(self.eps, np.ndarray):
+            if isinstance(self.eps, np.ndarray) and isinstance(self.eps_step, np.ndarray):
                 if len(self.eps.shape) == len(x.shape) and self.eps.shape[0] == x.shape[0]:
                     batch_eps = self.eps[batch_index_1:batch_index_2]
                     batch_eps_step = self.eps_step[batch_index_1:batch_index_2]

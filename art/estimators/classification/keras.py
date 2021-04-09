@@ -489,17 +489,24 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
         elif isinstance(label, (int, np.integer)):
             # Compute the gradients only w.r.t. the provided label
-            gradients = np.swapaxes(
-                np.array(self._class_gradients_idx[label]([x_preprocessed, int(training_mode)])), axis1=0, axis2=1
-            )  # type: ignore
+            grad_fn = self._class_gradients_idx[label]
+            if grad_fn is not None:
+                gradients = np.swapaxes(np.array(grad_fn([x_preprocessed, int(training_mode)])), axis1=0, axis2=1)
+            else:
+                raise ValueError("Class gradient operation is not defined.")
             assert gradients.shape == (x_preprocessed.shape[0], 1) + x_preprocessed.shape[1:]
 
         else:
             # For each sample, compute the gradients w.r.t. the indicated target class (possibly distinct)
             unique_label = list(np.unique(label))
-            gradients = np.array(
-                [self._class_gradients_idx[ul]([x_preprocessed, int(training_mode)]) for ul in unique_label]
-            )
+            gradients_list = list()
+            for ul in unique_label:
+                grad_fn = self._class_gradients_idx[ul]
+                if grad_fn is not None:
+                    gradients_list.append(grad_fn([x_preprocessed, int(training_mode)]))
+                else:
+                    raise ValueError("Class gradient operation is not defined.")
+            gradients = np.array(gradients_list)
             gradients = np.swapaxes(np.squeeze(gradients, axis=1), 0, 1)
             lst = [unique_label.index(i) for i in label]
             gradients = np.expand_dims(gradients[np.arange(len(gradients)), lst], axis=1)
