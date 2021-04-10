@@ -32,6 +32,7 @@ from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizer
 from art.utils import get_file
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     import torch
     from deepspeech_pytorch.model import DeepSpeech
 
@@ -242,7 +243,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
 
         # Setup for AMP use
         if self._use_amp:
-            from apex import amp
+            from apex import amp  # pylint: disable=E0611
 
             if self._optimizer is None:
                 logger.warning(
@@ -408,7 +409,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
 
         # Compute gradients
         if self._use_amp:
-            from apex import amp
+            from apex import amp  # pylint: disable=E0611
 
             with amp.scale_loss(loss, self._optimizer) as scaled_loss:
                 scaled_loss.backward()
@@ -431,7 +432,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         results = self._apply_preprocessing_gradient(x_in, results)
 
         if x.dtype != np.object:
-            results = np.array([i for i in results], dtype=x.dtype)
+            results = np.array([i for i in results], dtype=x.dtype)  # pylint: disable=R1721
             assert results.shape == x.shape and results.dtype == x.dtype
 
         # Unfreeze batch norm layers again
@@ -515,7 +516,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
 
                 # Actual training
                 if self._use_amp:
-                    from apex import amp
+                    from apex import amp  # pylint: disable=E0611
 
                     with amp.scale_loss(loss, self._optimizer) as scaled_loss:
                         scaled_loss.backward()

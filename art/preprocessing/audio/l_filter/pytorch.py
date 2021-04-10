@@ -32,6 +32,7 @@ from art.preprocessing.preprocessing import PreprocessorPyTorch
 from art.config import ART_NUMPY_DTYPE
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     import torch
     from art.utils import CLIP_VALUES_TYPE
 

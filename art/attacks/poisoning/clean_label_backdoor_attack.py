@@ -101,7 +101,7 @@ class PoisoningAttackCleanLabelBackdoor(PoisoningAttackBlackBox):
         )
         self._check_params()
 
-    def poison(
+    def poison(  # pylint: disable=W0221
         self, x: np.ndarray, y: Optional[np.ndarray] = None, broadcast: bool = True, **kwargs
     ) -> Tuple[np.ndarray, np.ndarray]:
         """

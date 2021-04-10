@@ -21,10 +21,10 @@ This module implements Bullseye Polytope clean-label attacks on Neural Networks.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+import time
 from typing import Optional, Tuple, Union, TYPE_CHECKING, List
 
 import numpy as np
-import time
 from tqdm.auto import trange
 
 from art.attacks.attack import PoisoningAttackWhiteBox
@@ -33,6 +33,7 @@ from art.estimators.classification.classifier import ClassifierMixin
 from art.estimators.classification.pytorch import PyTorchClassifier
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     import torch
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
 
@@ -145,11 +146,12 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
             """
 
             def __init__(self, base_list):
-                super(PoisonBatch, self).__init__()
+                super().__init__()
                 base_batch = torch.stack(base_list, 0)
                 self.poison = torch.nn.Parameter(base_batch.clone())
 
             def forward(self):
+                """Forward method."""
                 return self.poison
 
         base_tensor_list = [torch.from_numpy(sample).to(self.estimator.device) for sample in x]
@@ -158,10 +160,14 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
 
         if opt_method == "sgd":
             logger.info("Using SGD to craft poison samples")
-            optimizer = torch.optim.SGD(poison_batch.parameters(), lr=self.learning_rate, momentum=self.momentum)  # type: ignore
+            optimizer = torch.optim.SGD(
+                poison_batch.parameters(), lr=self.learning_rate, momentum=self.momentum  # type: ignore
+            )
         elif opt_method == "adam":
             logger.info("Using Adam to craft poison samples")
-            optimizer = torch.optim.Adam(poison_batch.parameters(), lr=self.learning_rate, betas=(self.momentum, 0.999))  # type: ignore
+            optimizer = torch.optim.Adam(
+                poison_batch.parameters(), lr=self.learning_rate, betas=(self.momentum, 0.999)  # type: ignore
+            )
 
         base_tensor_batch = torch.stack(base_tensor_list, 0)
         base_range01_batch = base_tensor_batch
@@ -176,7 +182,7 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
         s_init_coeff_list = []
         n_poisons = len(x)
         s_coeff: Union["torch.Tensor", List["torch.Tensor"]]
-        for n, net in enumerate(self.subsistute_networks):
+        for _, net in enumerate(self.subsistute_networks):
             # End to end training
             if self.endtoend:
                 if isinstance(self.feature_layer, list):
@@ -286,12 +292,12 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
                         raise ValueError("feature_layer is not list of positive integers")
                 elif not isinstance(layer, str):
                     raise ValueError("feature_layer is not list of strings")
-        else:
-            if isinstance(self.feature_layer, int):
-                if not 0 <= self.feature_layer < len(self.estimator.layer_names):
-                    raise ValueError("feature_layer is not positive integer")
-                elif not isinstance(self.feature_layer, str):
-                    raise ValueError("feature_layer is not a string")
+
+        if isinstance(self.feature_layer, int):
+            if not 0 <= self.feature_layer < len(self.estimator.layer_names):
+                raise ValueError("feature_layer is not positive integer")
+            if not isinstance(self.feature_layer, str):
+                raise ValueError("feature_layer is not a string")
 
         if 1 < self.decay_coeff < 0:
             raise ValueError("Decay coefficient must be between zero and one")
@@ -314,6 +320,9 @@ def get_poison_tuples(poison_batch, poison_label):
 def loss_from_center(
     subs_net_list, target_feat_list, poison_batch, net_repeat, end2end, feature_layer
 ) -> "torch.Tensor":
+    """
+    Calculate loss from center.
+    """
     import torch  # lgtm [py/repeated-import]
 
     if end2end:
@@ -324,9 +333,9 @@ def loss_from_center(
                 poisons_feats_repeats = [
                     net.get_activations(poison_batch(), layer=feature_layer, framework=True) for _ in range(net_repeat)
                 ]
-                BLOCK_NUM = len(poisons_feats_repeats[0])
+                block_num = len(poisons_feats_repeats[0])
                 poisons_feats = []
-                for block_idx in range(BLOCK_NUM):
+                for block_idx in range(block_num):
                     poisons_feats.append(
                         sum([poisons_feat_r[block_idx] for poisons_feat_r in poisons_feats_repeats]) / net_repeat
                     )

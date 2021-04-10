@@ -165,7 +165,7 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
         else:
             raise NotImplementedError("This attack currently only supports Keras.")
 
-    def poison(
+    def poison(  # pylint: disable=W0221
         self, x: np.ndarray, y: Optional[np.ndarray] = None, broadcast=False, **kwargs
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -178,7 +178,7 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
         """
         return self.backdoor.poison(x, y, broadcast=broadcast)
 
-    def poison_estimator(
+    def poison_estimator(  # pylint: disable=W0221
         self, x: np.ndarray, y: np.ndarray, batch_size: int = 64, nb_epochs: int = 10, **kwargs
     ) -> "CLASSIFIER_TYPE":
         """
@@ -204,9 +204,9 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
                     all_src = np.all(y == src, axis=1)
                     selected_indices[all_src] = np.random.uniform(size=sum(all_src)) < self.pp_poison[0]
         else:
-            for pp, (src, _) in zip(self.pp_poison, self.target):
+            for p_p, (src, _) in zip(self.pp_poison, self.target):
                 all_src = np.all(y == src, axis=1)
-                selected_indices[all_src] = np.random.uniform(size=sum(all_src)) < pp
+                selected_indices[all_src] = np.random.uniform(size=sum(all_src)) < p_p
 
         # Poison selected indices
         if isinstance(self.target, np.ndarray):
@@ -288,8 +288,8 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
                 raise ValueError("Target should be list of source label pairs")
             if len(self.pp_poison) != len(self.target):
                 raise ValueError("pp_poison and target lists should be the same length")
-            for pp in self.pp_poison:
-                _check_pp_poison(pp)
+            for p_p in self.pp_poison:
+                _check_pp_poison(p_p)
 
         if self.regularization <= 0:
             raise ValueError("Regularization constant must be positive")

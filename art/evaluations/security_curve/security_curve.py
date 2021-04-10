@@ -51,6 +51,7 @@ class SecurityCurve(Evaluation):
         self.accuracy_adv_list: List[float] = list()
         self.accuracy: Optional[float] = None
 
+    # pylint: disable=W0221
     def evaluate(  # type: ignore
         self,
         classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE",

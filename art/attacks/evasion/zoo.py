@@ -464,14 +464,14 @@ class ZooAttack(EvasionAttack):
                     )
                     % coord_batch.shape[-1]
                 )
-            except ValueError as e:
-                if "Cannot take a larger sample than population when 'replace=False'" in str(e):
+            except ValueError as error:
+                if "Cannot take a larger sample than population when 'replace=False'" in str(error):
                     raise ValueError(
                         "Too many samples are requested for the random indices. Try to reduce the number of parallel"
                         "coordinate updates `nb_parallel`."
-                    ) from e
-                else:
-                    raise e
+                    ) from error
+
+                raise error
 
         # Create the batch of modifications to run
         for i in range(self.nb_parallel * self._current_noise.shape[0]):

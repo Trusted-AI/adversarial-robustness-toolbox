@@ -40,6 +40,7 @@ from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_n
 from art.utils import compute_success, random_sphere, compute_success_array
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     import tensorflow as tf
     from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 
@@ -258,7 +259,9 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
         return adv_x
 
-    def _compute_perturbation(self, x: "tf.Tensor", y: "tf.Tensor", mask: Optional["tf.Tensor"]) -> "tf.Tensor":
+    def _compute_perturbation(  # pylint: disable=W0221
+        self, x: "tf.Tensor", y: "tf.Tensor", mask: Optional["tf.Tensor"]
+    ) -> "tf.Tensor":
         """
         Compute perturbations.
 
@@ -309,7 +312,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
         return grad
 
-    def _apply_perturbation(
+    def _apply_perturbation(  # pylint: disable=W0221
         self, x: "tf.Tensor", perturbation: "tf.Tensor", eps_step: Union[int, float, np.ndarray]
     ) -> "tf.Tensor":
         """

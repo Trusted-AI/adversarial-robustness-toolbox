@@ -113,7 +113,9 @@ class NumpyRandomizedSmoothing(  # lgtm [py/conflicting-attributes]
         """
         return self.classifier.fit(x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
-    def loss_gradient(self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs) -> np.ndarray:
+    def loss_gradient(  # pylint: disable=W0221
+        self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs
+    ) -> np.ndarray:
         """
         Compute the gradient of the given classifier's loss function w.r.t. `x` of the original classifier.
         :param x: Sample input with shape as expected by the model.
@@ -123,7 +125,7 @@ class NumpyRandomizedSmoothing(  # lgtm [py/conflicting-attributes]
         """
         return self.classifier.loss_gradient(x=x, y=y, training_mode=training_mode, **kwargs)
 
-    def class_gradient(
+    def class_gradient(  # pylint: disable=W0221
         self, x: np.ndarray, label: Union[int, List[int]] = None, training_mode: bool = False, **kwargs
     ) -> np.ndarray:
         """

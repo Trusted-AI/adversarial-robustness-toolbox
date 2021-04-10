@@ -39,6 +39,10 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements Brendel and Bethge attack.
+"""
+# pylint: disable=C0103,R0201,C0115,C0116,C0144,C0302,W0612,W0613,E1120,R1716,R1705,R1723,R1720
 from typing import Union, Optional, Tuple, TYPE_CHECKING
 import logging
 
@@ -60,7 +64,7 @@ logger = logging.getLogger(__name__)
 
 
 @jitclass(spec=[])
-class BFGSB(object):
+class BFGSB:
     def __init__(self):
         pass
 
@@ -634,7 +638,7 @@ class BFGSB(object):
         return xmin
 
 
-class Optimizer(object):
+class Optimizer:
     """
     Base class for the trust-region optimization. If feasible, this optimizer solves the problem
 
@@ -2165,7 +2169,7 @@ class BrendelBethgeAttack(EvasionAttack):
         else:
             self.theta = 0.01 / np.prod(self.estimator.input_shape)
 
-    def generate(
+    def generate(  # pylint: disable=W0221
         self,
         x: np.ndarray,
         y: Optional[np.ndarray] = None,

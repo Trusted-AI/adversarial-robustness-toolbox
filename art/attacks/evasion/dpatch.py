@@ -95,7 +95,7 @@ class DPatch(EvasionAttack):
 
         self.target_label: Optional[Union[int, np.ndarray, List[int]]] = list()
 
-    def generate(
+    def generate(  # pylint: disable=W0221
         self,
         x: np.ndarray,
         y: Optional[np.ndarray] = None,
@@ -159,9 +159,9 @@ class DPatch(EvasionAttack):
 
             for i_image in range(patched_images.shape[0]):
                 if isinstance(self.target_label, int):
-                    tl = self.target_label
+                    t_l = self.target_label
                 else:
-                    tl = self.target_label[i_image]
+                    t_l = self.target_label[i_image]
 
                 i_x_1 = transforms[i_image]["i_x_1"]
                 i_x_2 = transforms[i_image]["i_x_2"]
@@ -172,7 +172,7 @@ class DPatch(EvasionAttack):
                 target_dict["boxes"] = np.asarray([[i_x_1, i_y_1, i_x_2, i_y_2]])
                 target_dict["labels"] = np.asarray(
                     [
-                        tl,
+                        t_l,
                     ]
                 )
                 target_dict["scores"] = np.asarray(

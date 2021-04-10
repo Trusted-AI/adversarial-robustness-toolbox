@@ -240,7 +240,7 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
         import lingvo.tasks.asr.decoder as decoder
         import asr.decoder_patched as decoder_patched
 
-        decoder.AsrDecoderBase._ComputeMetrics = decoder_patched.AsrDecoderBase._ComputeMetrics
+        decoder.AsrDecoderBase._ComputeMetrics = decoder_patched.AsrDecoderBase._ComputeMetrics  # pylint: disable=W0212
 
         # check and download Lingvo ASR vocab
         # vocab_path = self._check_and_download_vocab()
@@ -254,7 +254,7 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
         # register model params
         model_name = "asr.librispeech.Librispeech960Wpm"
         model_imports.ImportParams(model_name)
-        params = model_registry._ModelRegistryHelper.GetParams(model_name, "Test")
+        params = model_registry._ModelRegistryHelper.GetParams(model_name, "Test")  # pylint: disable=W0212
 
         # set random seed parameter
         if self.random_seed is not None:
@@ -460,7 +460,9 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
         loss_gradient = tf1.gradients(loss, [x])[0]
         return loss_gradient
 
-    def loss_gradient(self, x: np.ndarray, y: np.ndarray, batch_mode: bool = False, **kwargs) -> np.ndarray:
+    def loss_gradient(  # pylint: disable=W0221
+        self, x: np.ndarray, y: np.ndarray, batch_mode: bool = False, **kwargs
+    ) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 

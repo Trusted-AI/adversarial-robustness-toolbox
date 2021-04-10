@@ -81,7 +81,8 @@ class EoTGaussianNoiseTensorFlow(EoTTensorFlowV2):
 
     def _check_params(self) -> None:
 
-        if not (isinstance(self.std, (int, float)) or isinstance(self.std, tuple)) or (
+        # pylint: disable=R0916
+        if not isinstance(self.std, (int, float, tuple)) or (
             isinstance(self.std, tuple)
             and (
                 len(self.std) != 2

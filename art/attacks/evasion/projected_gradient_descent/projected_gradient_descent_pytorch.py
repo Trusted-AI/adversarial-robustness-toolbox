@@ -40,6 +40,7 @@ from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_n
 from art.utils import compute_success, random_sphere, compute_success_array
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     import torch
     from art.estimators.classification.pytorch import PyTorchClassifier
 
@@ -261,7 +262,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         return adv_x.cpu().detach().numpy()
 
-    def _compute_perturbation(
+    def _compute_perturbation(  # pylint: disable=W0221
         self, x: "torch.Tensor", y: "torch.Tensor", mask: Optional["torch.Tensor"]
     ) -> "torch.Tensor":
         """
@@ -310,7 +311,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         return grad
 
-    def _apply_perturbation(
+    def _apply_perturbation(  # pylint: disable=W0221
         self, x: "torch.Tensor", perturbation: "torch.Tensor", eps_step: Union[int, float, np.ndarray]
     ) -> "torch.Tensor":
         """

@@ -37,6 +37,7 @@ from art.estimators.tensorflow import TensorFlowV2Estimator
 from art.utils import pad_sequence_input
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     from tensorflow.compat.v1 import Tensor
     from torch import Tensor as PTensor
 
@@ -368,9 +369,9 @@ class ImperceptibleASR(EvasionAttack):
         x_padded, _ = pad_sequence_input(x)
 
         for x_i in x_padded:
-            mt, pm = self.masker.calculate_threshold_and_psd_maximum(x_i)
-            masking_threshold.append(mt)
-            psd_maximum.append(pm)
+            m_t, p_m = self.masker.calculate_threshold_and_psd_maximum(x_i)
+            masking_threshold.append(m_t)
+            psd_maximum.append(p_m)
         # stabilize imperceptible loss by canceling out the "10*log" term in power spectral density maximum and
         # masking threshold
         masking_threshold_stabilized = 10 ** (np.array(masking_threshold) * 0.1)
@@ -408,6 +409,7 @@ class ImperceptibleASR(EvasionAttack):
                 self._power_spectral_density_maximum_tf: psd_maximum_stabilized,
                 self._masking_threshold_tf: masking_threshold_stabilized,
             }
+            # pylint: disable=W0212
             gradients_padded, loss = self.estimator._sess.run(self._loss_gradient_masking_threshold_op_tf, feed_dict)
         elif self._framework == "pytorch":
             # get loss gradients (TensorFlow)
@@ -468,6 +470,7 @@ class ImperceptibleASR(EvasionAttack):
         import torch  # lgtm [py/import-and-import-from]
 
         # define tensors
+        # pylint: disable=W0212
         perturbation_torch = torch.from_numpy(perturbation).to(self.estimator._device)
         masking_threshold_stabilized_torch = torch.from_numpy(masking_threshold_stabilized).to(self.estimator._device)
         psd_maximum_stabilized_torch = torch.from_numpy(psd_maximum_stabilized).to(self.estimator._device)
@@ -533,6 +536,7 @@ class ImperceptibleASR(EvasionAttack):
         import torch  # lgtm [py/import-and-import-from]
 
         # compute short-time Fourier transform (STFT)
+        # pylint: disable=W0212
         stft_matrix = torch.stft(
             perturbation,
             n_fft=self._window_size,

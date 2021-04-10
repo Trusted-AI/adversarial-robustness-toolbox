@@ -25,6 +25,7 @@ The Pixel Attack is a generalisation of One Pixel Attack.
 | Pixel and Threshold Attack Paper link:
     https://arxiv.org/abs/1906.06026
 """
+# pylint: disable=C0302
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -91,8 +92,8 @@ class PixelThreshold(EvasionAttack):
 
         self._project = True
         self.type_attack = -1
-        self.th = th
-        self.es = es
+        self.th = th  # pylint: disable=C0103
+        self.es = es  # pylint: disable=C0103
         self._targeted = targeted
         self.verbose = verbose
         PixelThreshold._check_params(self)
@@ -123,7 +124,9 @@ class PixelThreshold(EvasionAttack):
         if not isinstance(self.verbose, bool):
             raise ValueError("The argument `verbose` has to be of type bool.")
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, max_iter: int = 100, **kwargs) -> np.ndarray:
+    def generate(  # pylint: disable=W0221
+        self, x: np.ndarray, y: Optional[np.ndarray] = None, max_iter: int = 100, **kwargs
+    ) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
@@ -148,10 +151,7 @@ class PixelThreshold(EvasionAttack):
         if self.th is None:
             logger.info("Performing minimal perturbation Attack.")
 
-        if np.max(x) <= 1:
-            scale_input = True
-        else:
-            scale_input = False
+        scale_input = bool(np.max(x) <= 1)
 
         if scale_input:
             x = x * 255.0
@@ -220,7 +220,8 @@ class PixelThreshold(EvasionAttack):
 
         return bounds, initial
 
-    def _perturb_image(self, x: np.ndarray, img: np.ndarray) -> np.ndarray:
+    @staticmethod
+    def _perturb_image(x: np.ndarray, img: np.ndarray) -> np.ndarray:  # pylint: disable=W0613
         """
         Perturbs the given image `img` with the given perturbation `x`.
         """
@@ -249,7 +250,7 @@ class PixelThreshold(EvasionAttack):
             predictions = self.estimator.predict(self._perturb_image(x, image))[:, target_class]
             return predictions if not self.targeted else 1 - predictions
 
-        def callback_fn(x, convergence=None):
+        def callback_fn(x, convergence=None):  # pylint: disable=R1710,W0613
             if self.es == 0:
                 if self._attack_success(x.result[0], image, target_class):
                     raise Exception("Attack Completed :) Earlier than expected")
@@ -284,9 +285,8 @@ class PixelThreshold(EvasionAttack):
                     callback=callback_fn,
                     iterations=max_iter,
                 )
-            except Exception as exception:
-                if self.verbose:
-                    print(exception)
+            except Exception as exception:  # pylint: disable=W0703
+                logger.info(exception)
 
             adv_x = strategy.result[0]
         else:
@@ -305,8 +305,8 @@ class PixelThreshold(EvasionAttack):
 
         if self._attack_success(adv_x, image, target_class):
             return True, self._perturb_image(adv_x, image)[0]
-        else:
-            return False, image
+
+        return False, image
 
 
 class PixelAttack(PixelThreshold):
@@ -375,8 +375,7 @@ class PixelAttack(PixelThreshold):
 
                 if count == limit - 1:
                     break
-                else:
-                    continue
+
             min_bounds = [0, 0]
             for _ in range(self.img_channels):
                 min_bounds += [0]
@@ -444,7 +443,7 @@ class ThresholdAttack(PixelThreshold):
 
 # TODO: Make the attack compatible with current version of SciPy Optimize
 # Differential Evolution
-
+# pylint: disable=W0105
 """
 A slight modification to Scipy's implementation of differential evolution.
 To speed up predictions, the entire parameters array is passed to `self.func`,
@@ -1174,7 +1173,7 @@ class DifferentialEvolutionSolver:
                 is True
             ):
                 warning_flag = True
-                status_message = "callback function requested stop early " "by returning True"
+                status_message = "callback function requested stop early by returning True"
                 break
 
             intol = np.std(self.population_energies) <= self.atol + self.tol * np.abs(np.mean(self.population_energies))
@@ -1366,7 +1365,7 @@ class DifferentialEvolutionSolver:
         for index in np.where((trial < 0) | (trial > 1))[0]:
             trial[index] = self.random_number_generator.rand()
 
-    def _mutate(self, candidate):
+    def _mutate(self, candidate):  # pylint: disable=R1710
         """
         create a trial vector based on a mutation strategy
         """
@@ -1392,7 +1391,7 @@ class DifferentialEvolutionSolver:
             trial = np.where(crossovers, bprime, trial)
             return trial
 
-        elif self.strategy in self._exponential:
+        if self.strategy in self._exponential:
             i = 0
             while i < self.parameter_count and rng.rand() < self.cross_over_probability:
                 trial[fill_point] = bprime[fill_point]

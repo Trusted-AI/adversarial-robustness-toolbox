@@ -168,11 +168,13 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         # Create the main variable to optimize
         if self.estimator.device.type == "cpu":
             self.global_optimal_delta = Variable(
-                torch.zeros(self.batch_size, self.global_max_length).type(torch.FloatTensor), requires_grad=True  # type: ignore
+                torch.zeros(self.batch_size, self.global_max_length).type(torch.FloatTensor),  # type: ignore
+                requires_grad=True,
             )
         else:
             self.global_optimal_delta = Variable(
-                torch.zeros(self.batch_size, self.global_max_length).type(torch.cuda.FloatTensor), requires_grad=True  # type: ignore
+                torch.zeros(self.batch_size, self.global_max_length).type(torch.cuda.FloatTensor),  # type: ignore
+                requires_grad=True,
             )
 
         self.global_optimal_delta.to(self.estimator.device)
@@ -182,17 +184,21 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         if self._optimizer_arg_1 is None:
             self.optimizer_1 = torch.optim.Adam(params=[self.global_optimal_delta], lr=self.learning_rate_1)
         else:
-            self.optimizer_1 = self._optimizer_arg_1(params=[self.global_optimal_delta], lr=self.learning_rate_1)  # type: ignore
+            self.optimizer_1 = self._optimizer_arg_1(
+                params=[self.global_optimal_delta], lr=self.learning_rate_1  # type: ignore
+            )
 
         self._optimizer_arg_2 = optimizer_2
         if self._optimizer_arg_2 is None:
             self.optimizer_2 = torch.optim.Adam(params=[self.global_optimal_delta], lr=self.learning_rate_2)
         else:
-            self.optimizer_2 = self._optimizer_arg_2(params=[self.global_optimal_delta], lr=self.learning_rate_2)  # type: ignore
+            self.optimizer_2 = self._optimizer_arg_2(
+                params=[self.global_optimal_delta], lr=self.learning_rate_2  # type: ignore
+            )
 
         # Setup for AMP use
         if self._use_amp:
-            from apex import amp
+            from apex import amp  # pylint: disable=E0611
 
             if self.estimator.device.type == "cpu":
                 enabled = False
@@ -258,12 +264,16 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             if self._optimizer_arg_1 is None:
                 self.optimizer_1 = torch.optim.Adam(params=[self.global_optimal_delta], lr=self.learning_rate_1)
             else:
-                self.optimizer_1 = self._optimizer_arg_1(params=[self.global_optimal_delta], lr=self.learning_rate_1)  # type: ignore
+                self.optimizer_1 = self._optimizer_arg_1(
+                    params=[self.global_optimal_delta], lr=self.learning_rate_1  # type: ignore
+                )
 
             if self._optimizer_arg_2 is None:
                 self.optimizer_2 = torch.optim.Adam(params=[self.global_optimal_delta], lr=self.learning_rate_2)
             else:
-                self.optimizer_2 = self._optimizer_arg_2(params=[self.global_optimal_delta], lr=self.learning_rate_2)  # type: ignore
+                self.optimizer_2 = self._optimizer_arg_2(
+                    params=[self.global_optimal_delta], lr=self.learning_rate_2  # type: ignore
+                )
 
             # Then compute the batch
             adv_x_batch = self._generate_batch(adv_x[batch_index_1:batch_index_2], y[batch_index_1:batch_index_2])
@@ -382,7 +392,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
 
             # Actual training
             if self._use_amp:
-                from apex import amp
+                from apex import amp  # pylint: disable=E0611
 
                 with amp.scale_loss(loss, self.optimizer_1) as scaled_loss:
                     scaled_loss.backward()
@@ -563,7 +573,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
 
             # Actual training
             if self._use_amp:
-                from apex import amp
+                from apex import amp  # pylint: disable=E0611
 
                 with amp.scale_loss(loss, self.optimizer_2) as scaled_loss:
                     scaled_loss.backward()

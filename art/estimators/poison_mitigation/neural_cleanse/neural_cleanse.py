@@ -43,7 +43,7 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
 
     def __init__(
         self,
-        steps: int = 1000,
+        steps: int,
         *args,
         init_cost: float = 1e-3,
         norm: Union[int, float] = 2,

@@ -58,7 +58,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-KERAS_MODEL_TYPE = Union["keras.models.Model", "tf.keras.models.Model"]
+KERAS_MODEL_TYPE = Union["keras.models.Model", "tf.keras.models.Model"]  # pylint: disable=C0103
 
 
 class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
@@ -346,7 +346,9 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         """
         return self._output_layer  # type: ignore
 
-    def compute_loss(self, x: np.ndarray, y: np.ndarray, reduction: str = "none", **kwargs) -> np.ndarray:
+    def compute_loss(  # pylint: disable=W0221
+        self, x: np.ndarray, y: np.ndarray, reduction: str = "none", **kwargs
+    ) -> np.ndarray:
         """
         Compute the loss of the neural network for samples `x`.
 
@@ -410,7 +412,9 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
         return loss_value
 
-    def loss_gradient(self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs) -> np.ndarray:
+    def loss_gradient(  # pylint: disable=W0221
+        self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs
+    ) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
@@ -442,7 +446,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
         return gradients
 
-    def class_gradient(
+    def class_gradient(  # pylint: disable=W0221
         self, x: np.ndarray, label: Optional[Union[int, List[int]]] = None, training_mode: bool = False, **kwargs
     ) -> np.ndarray:
         """
@@ -500,8 +504,8 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             # For each sample, compute the gradients w.r.t. the indicated target class (possibly distinct)
             unique_label = list(np.unique(label))
             gradients_list = list()
-            for ul in unique_label:
-                grad_fn = self._class_gradients_idx[ul]
+            for u_l in unique_label:
+                grad_fn = self._class_gradients_idx[u_l]
                 if grad_fn is not None:
                     gradients_list.append(grad_fn([x_preprocessed, int(training_mode)]))
                 else:
@@ -515,7 +519,9 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
         return gradients
 
-    def predict(self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs) -> np.ndarray:
+    def predict(  # pylint: disable=W0221
+        self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs
+    ) -> np.ndarray:
         """
         Perform prediction for a batch of inputs.
 

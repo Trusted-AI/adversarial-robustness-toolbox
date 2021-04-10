@@ -149,7 +149,9 @@ class MembershipInferenceBlackBox(InferenceAttack):
             elif self.attack_model_type == "gb":
                 self.attack_model = GradientBoostingClassifier()
 
-    def fit(self, x: np.ndarray, y: np.ndarray, test_x: np.ndarray, test_y: np.ndarray, **kwargs):
+    def fit(  # pylint: disable=W0613
+        self, x: np.ndarray, y: np.ndarray, test_x: np.ndarray, test_y: np.ndarray, **kwargs
+    ):
         """
         Infer membership in the training set of the target estimator.
 

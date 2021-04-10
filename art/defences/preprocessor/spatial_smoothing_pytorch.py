@@ -27,13 +27,14 @@ This module implements the local spatial smoothing defence in `SpatialSmoothing`
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Tuple, TYPE_CHECKING, Union
+from typing import Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 
 from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     import torch
     from art.utils import CLIP_VALUES_TYPE
 
@@ -122,6 +123,7 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
 
                     self.kernel = get_binary_kernel2d(kernel_size)
 
+            # pylint: disable=W0622
             def forward(self, input: "torch.Tensor"):  # type: ignore
                 import torch  # lgtm [py/repeated-import]
                 import torch.nn.functional as F
