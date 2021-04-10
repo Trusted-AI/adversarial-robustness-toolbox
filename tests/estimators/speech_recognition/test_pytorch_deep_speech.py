@@ -90,7 +90,7 @@ def test_pytorch_deep_speech(art_warning, expected_values, use_amp, device_type)
         # Compute gradients
         grads = speech_recognizer.loss_gradient(x, y)
 
-        assert grads[0].shape == (130,)
+        assert grads[0].shape == (1300,)
         assert grads[1].shape == (1500,)
         assert grads[2].shape == (1400,)
 
