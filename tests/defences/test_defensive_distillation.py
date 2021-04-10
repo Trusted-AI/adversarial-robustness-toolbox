@@ -224,8 +224,6 @@ class TestDefensiveDistillation(TestBase):
         preds2 = np.argmax(preds2, axis=1)
         acc = np.sum(preds1 == preds2) / len(preds1)
 
-        print('acc', acc)
-
         self.assertGreater(acc, 0.2)
 
         ce = cross_entropy(preds1, preds2)
