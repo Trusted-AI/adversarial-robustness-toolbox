@@ -127,8 +127,8 @@ class TestThresholdAttack(TestBase):
             targets = y_test
 
         for es in [1]:  # Option 0 is not easy to reproduce reliably, we should consider it at a later time
-            df = ThresholdAttack(classifier, th=128, es=es, targeted=targeted)
-            x_test_adv = df.generate(x_test_original, targets, max_iter=10)
+            df = ThresholdAttack(classifier, th=128, es=es, max_iter=10, targeted=targeted)
+            x_test_adv = df.generate(x_test_original, targets)
 
             np.testing.assert_raises(AssertionError, np.testing.assert_array_equal, x_test, x_test_adv)
             self.assertFalse((0.0 == x_test_adv).all())
