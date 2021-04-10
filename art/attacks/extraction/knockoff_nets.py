@@ -260,10 +260,10 @@ class KnockoffNets(ExtractionAttack):
             for i_action in range(nb_actions):
                 if i_action != action:
                     h_func[i_action] = (
-                        h_func[i_action] - 1.0 / learning_rate[i_action] * (reward - avg_reward) * probs[i_action]
+                        h_func[i_action] - 1.0 / learning_rate[action] * (reward - avg_reward) * probs[i_action]
                     )
                 else:
-                    h_func[i_action] = h_func[i_action] + 1.0 / learning_rate[i_action] * (reward - avg_reward) * (
+                    h_func[i_action] = h_func[i_action] + 1.0 / learning_rate[action] * (reward - avg_reward) * (
                         1 - probs[i_action]
                     )
 
