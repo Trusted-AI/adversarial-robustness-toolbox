@@ -129,7 +129,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
 
         super()._check_params()
         self.all_framework_preprocessing = all(
-            [isinstance(p, PreprocessorPyTorch) for p in self.preprocessing_operations]
+            (isinstance(p, PreprocessorPyTorch) for p in self.preprocessing_operations)
         )
 
     def _apply_preprocessing(self, x, y, fit: bool = False, no_grad=True) -> Tuple[Any, Any]:  # pylint: disable=W0221
@@ -286,7 +286,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         """
         import torch  # lgtm [py/repeated-import]
 
-        assert all([issubclass(layer, torch.nn.modules.Module) for layer in layerinfo])  # type: ignore
+        assert all((issubclass(layer, torch.nn.modules.Module) for layer in layerinfo))  # type: ignore
 
         def set_train(layer, layerinfo=layerinfo):
             "Set layer into training mode if instance of `layerinfo`."

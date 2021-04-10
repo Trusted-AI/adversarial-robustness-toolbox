@@ -184,16 +184,16 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         if self._optimizer_arg_1 is None:
             self.optimizer_1 = torch.optim.Adam(params=[self.global_optimal_delta], lr=self.learning_rate_1)
         else:
-            self.optimizer_1 = self._optimizer_arg_1(
-                params=[self.global_optimal_delta], lr=self.learning_rate_1  # type: ignore
+            self.optimizer_1 = self._optimizer_arg_1(  # type: ignore
+                params=[self.global_optimal_delta], lr=self.learning_rate_1
             )
 
         self._optimizer_arg_2 = optimizer_2
         if self._optimizer_arg_2 is None:
             self.optimizer_2 = torch.optim.Adam(params=[self.global_optimal_delta], lr=self.learning_rate_2)
         else:
-            self.optimizer_2 = self._optimizer_arg_2(
-                params=[self.global_optimal_delta], lr=self.learning_rate_2  # type: ignore
+            self.optimizer_2 = self._optimizer_arg_2(  # type: ignore
+                params=[self.global_optimal_delta], lr=self.learning_rate_2
             )
 
         # Setup for AMP use
@@ -264,15 +264,15 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             if self._optimizer_arg_1 is None:
                 self.optimizer_1 = torch.optim.Adam(params=[self.global_optimal_delta], lr=self.learning_rate_1)
             else:
-                self.optimizer_1 = self._optimizer_arg_1(
-                    params=[self.global_optimal_delta], lr=self.learning_rate_1  # type: ignore
+                self.optimizer_1 = self._optimizer_arg_1(  # type: ignore
+                    params=[self.global_optimal_delta], lr=self.learning_rate_1
                 )
 
             if self._optimizer_arg_2 is None:
                 self.optimizer_2 = torch.optim.Adam(params=[self.global_optimal_delta], lr=self.learning_rate_2)
             else:
-                self.optimizer_2 = self._optimizer_arg_2(
-                    params=[self.global_optimal_delta], lr=self.learning_rate_2  # type: ignore
+                self.optimizer_2 = self._optimizer_arg_2(  # type: ignore
+                    params=[self.global_optimal_delta], lr=self.learning_rate_2
                 )
 
             # Then compute the batch

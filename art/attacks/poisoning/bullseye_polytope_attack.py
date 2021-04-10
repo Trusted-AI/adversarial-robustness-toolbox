@@ -160,13 +160,11 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
 
         if opt_method == "sgd":
             logger.info("Using SGD to craft poison samples")
-            optimizer = torch.optim.SGD(
-                poison_batch.parameters(), lr=self.learning_rate, momentum=self.momentum  # type: ignore
-            )
+            optimizer = torch.optim.SGD(poison_batch.parameters(), lr=self.learning_rate, momentum=self.momentum)
         elif opt_method == "adam":
             logger.info("Using Adam to craft poison samples")
-            optimizer = torch.optim.Adam(
-                poison_batch.parameters(), lr=self.learning_rate, betas=(self.momentum, 0.999)  # type: ignore
+            optimizer = torch.optim.Adam(  # type: ignore
+                poison_batch.parameters(), lr=self.learning_rate, betas=(self.momentum, 0.999)
             )
 
         base_tensor_batch = torch.stack(base_tensor_list, 0)
@@ -272,7 +270,7 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
             raise ValueError("decay_iter must be at least 0")
 
         if isinstance(self.decay_iter, list) and not all(
-            [isinstance(decay_iter, int) and decay_iter > 0 for decay_iter in self.decay_iter]
+            (isinstance(decay_iter, int) and decay_iter > 0 for decay_iter in self.decay_iter)
         ):
             raise ValueError("decay_iter is not a list of positive integers")
 

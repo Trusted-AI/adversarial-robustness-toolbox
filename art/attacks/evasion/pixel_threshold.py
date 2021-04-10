@@ -220,8 +220,7 @@ class PixelThreshold(EvasionAttack):
 
         return bounds, initial
 
-    @staticmethod
-    def _perturb_image(x: np.ndarray, img: np.ndarray) -> np.ndarray:  # pylint: disable=W0613
+    def _perturb_image(self, x: np.ndarray, img: np.ndarray) -> np.ndarray:  # pylint: disable=W0613,R0201
         """
         Perturbs the given image `img` with the given perturbation `x`.
         """

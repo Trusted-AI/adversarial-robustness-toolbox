@@ -179,12 +179,7 @@ class AdversarialTrainer(Trainer):
                 attack_id = (attack_id + 1) % len(self.attacks)
 
     def fit(  # pylint: disable=W0221
-        self,
-        x: np.ndarray,
-        y: np.ndarray,
-        batch_size: int = 128,
-        nb_epochs: int = 20,
-        **kwargs
+        self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 20, **kwargs
     ) -> None:
         """
         Train a model adversarially. See class documentation for more information on the exact procedure.

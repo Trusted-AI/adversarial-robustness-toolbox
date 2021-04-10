@@ -198,11 +198,11 @@ class PoisoningAttackTransformer(PoisoningAttack):
     These attacks have an additional method, `poison_estimator`, that returns the poisoned classifier.
     """
 
-    def __init__(self, classifier: Optional["CLASSIFIER_TYPE"], **kwargs) -> None:
+    def __init__(self, classifier: Optional["CLASSIFIER_TYPE"]) -> None:
         """
         :param classifier: A trained classifier (or none if no classifier is needed)
         """
-        super().__init__(classifier, **kwargs)
+        super().__init__(classifier)
 
     @abc.abstractmethod
     def poison(self, x: np.ndarray, y=Optional[np.ndarray], **kwargs) -> Tuple[np.ndarray, np.ndarray]:

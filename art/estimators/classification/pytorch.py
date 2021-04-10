@@ -138,7 +138,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         # Check if model is RNN-like to decide if freezing batch-norm and dropout layers might be required for loss and
         # class gradient calculation
-        self.is_rnn = any([isinstance(m, torch.nn.modules.RNNBase) for m in self._model.modules()])
+        self.is_rnn = any((isinstance(m, torch.nn.modules.RNNBase) for m in self._model.modules()))
 
         # Get the internal layers
         self._layer_names: List[str] = self._model.get_layers  # type: ignore
