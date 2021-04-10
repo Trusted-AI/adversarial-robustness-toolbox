@@ -148,8 +148,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get -y -q install ffmpeg libavcodec-extra
-          pip install tensorflow==2.2.2
-          pip install keras==2.3.1
+          pip install tensorflow==2.4.1
+          pip install keras==2.4.3
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip setuptools wheel
@@ -158,9 +158,12 @@ jobs:
           pip list
       - name: pycodestyle
         run: pycodestyle --ignore=C0330,C0415,E203,E231,W503 --max-line-length=120 art
+        continue-on-error: true
       - name: pylint
         run: pylint --disable=C0330,C0415,E203,E1136,E0401,E1102 -rn art
+        continue-on-error: true
       - name: Check Types (mypy)
         run: mypy art
+        continue-on-error: true
       - name: pytest-flake8
         run: pytest --flake8 -v -m flake8
