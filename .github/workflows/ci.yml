@@ -158,12 +158,12 @@ jobs:
           pip list
       - name: pycodestyle
         run: pycodestyle --ignore=C0330,C0415,E203,E231,W503 --max-line-length=120 art
-        continue-on-error: true
       - name: pylint
+        if: ${{ always() }}
         run: pylint --disable=C0330,C0415,E203,E1136,E0401,E1102 -rn art
-        continue-on-error: true
-      - name: Check Types (mypy)
+      - name: mypy
+        if: ${{ always() }}
         run: mypy art
-        continue-on-error: true
       - name: pytest-flake8
+        if: ${{ always() }}
         run: pytest --flake8 -v -m flake8
