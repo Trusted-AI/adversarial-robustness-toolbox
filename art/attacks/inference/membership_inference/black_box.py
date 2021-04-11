@@ -268,7 +268,7 @@ class MembershipInferenceBlackBox(InferenceAttack):
             from art.utils import to_cuda, from_cuda
 
             self.attack_model.eval()  # type: ignore
-            inferred = None
+            inferred: Optional[np.ndarray] = None
             test_set = self._get_attack_dataset(f_1=features, f_2=y)
             test_loader = DataLoader(test_set, batch_size=self.batch_size, shuffle=True, num_workers=0)
             for input1, input2, _ in test_loader:
@@ -278,10 +278,14 @@ class MembershipInferenceBlackBox(InferenceAttack):
                 predicted = from_cuda(predicted)
 
                 if inferred is None:
-                    inferred_array = predicted.detach().numpy()
+                    inferred = predicted.detach().numpy()
                 else:
-                    inferred_array = np.vstack((inferred, predicted.detach().numpy()))
-            inferred_return = inferred_array.reshape(-1).astype(np.int)
+                    inferred = np.vstack((inferred, predicted.detach().numpy()))
+
+            if inferred is not None:
+                inferred_return = inferred.reshape(-1).astype(np.int)
+            else:
+                raise ValueError("No data available.")
         else:
             pred = self.attack_model.predict(np.c_[features, y])  # type: ignore
             inferred_return = np.array([np.argmax(arr) for arr in pred])
