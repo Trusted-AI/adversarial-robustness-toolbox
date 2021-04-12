@@ -77,7 +77,7 @@ class StandardisationMeanStdTensorFlow(PreprocessorTensorFlowV2):
 
         x_norm = x - self._broadcastable_mean
         x_norm = x_norm / self._broadcastable_std
-        x_norm = tf.cast(x_norm, dtype=ART_NUMPY_DTYPE)
+        x_norm = tf.cast(x_norm, dtype=ART_NUMPY_DTYPE)  # pylint: disable=E1123,E1120
 
         return x_norm, y
 

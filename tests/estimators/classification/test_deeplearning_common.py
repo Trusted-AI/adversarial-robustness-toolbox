@@ -10,13 +10,13 @@ import pytest
 from tensorflow.keras.callbacks import LearningRateScheduler
 
 from art.defences.preprocessor import FeatureSqueezing, JpegCompression, SpatialSmoothing
-from tests.utils import ARTTestException, ARTTestFixtureNotImplemented
+from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.skip_framework("non_dl_frameworks", "tensorflow2")
-def test_layers(art_warning, get_default_mnist_subset, framework, image_dl_estimator):
+@pytest.mark.skip_framework("non_dl_frameworks")
+def test_get_activations(art_warning, get_default_mnist_subset, framework, image_dl_estimator):
     try:
         classifier, _ = image_dl_estimator(from_logits=True)
 
@@ -338,8 +338,8 @@ def test_input_shape(art_warning, image_dl_estimator, mnist_shape):
         art_warning(e)
 
 
-@pytest.mark.skip_framework("non_dl_frameworks")
-def test_save(art_warning, image_dl_estimator):
+@pytest.mark.skip_framework("tensorflow2", "non_dl_frameworks")
+def test_save_1(art_warning, image_dl_estimator):
     try:
         classifier, _ = image_dl_estimator(from_logits=True)
         t_file = tempfile.NamedTemporaryFile()
@@ -361,20 +361,8 @@ def test_save(art_warning, image_dl_estimator):
         art_warning(e)
 
 
-@pytest.mark.skip_framework("non_dl_frameworks")
-def test_repr(art_warning, image_dl_estimator, framework, expected_values, store_expected_values):
-    try:
-        classifier, _ = image_dl_estimator(from_logits=True)
-        repr_ = repr(classifier)
-        for message in expected_values():
-            assert message in repr_, "{0}: was not contained within repr".format(message)
-
-    except ARTTestException as e:
-        art_warning(e)
-
-
 @pytest.mark.skip_framework("tensorflow", "non_dl_frameworks")
-def test_save(art_warning, image_dl_estimator, get_default_mnist_subset, tmp_path):
+def test_save_2(art_warning, image_dl_estimator, get_default_mnist_subset, tmp_path):
     try:
         classifier, _ = image_dl_estimator()
         (x_train_mnist, y_train_mnist), (_, _) = get_default_mnist_subset
@@ -385,6 +373,18 @@ def test_save(art_warning, image_dl_estimator, get_default_mnist_subset, tmp_pat
         assert not os.listdir(full_path._str)
         classifier.save("modelFile", path=full_path._str)
         assert os.listdir(full_path._str)
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework("non_dl_frameworks")
+def test_repr(art_warning, image_dl_estimator, framework, expected_values, store_expected_values):
+    try:
+        classifier, _ = image_dl_estimator(from_logits=True)
+        repr_ = repr(classifier)
+        for message in expected_values():
+            assert message in repr_, "{0}: was not contained within repr".format(message)
+
     except ARTTestException as e:
         art_warning(e)
 

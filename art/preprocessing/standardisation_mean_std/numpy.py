@@ -87,7 +87,7 @@ class StandardisationMeanStd(Preprocessor):
 
         return x_norm, y
 
-    def estimate_gradient(self, x: np.ndarray, gradient: np.ndarray) -> np.ndarray:
+    def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
         """
         Provide an estimate of the gradients of preprocessor for the backward pass. If the preprocessor is not
         differentiable, this is an estimate of the gradient, most often replacing the computation performed by the
@@ -98,7 +98,7 @@ class StandardisationMeanStd(Preprocessor):
         :return: The gradient (estimate) of the defence.
         """
         _, std = broadcastable_mean_std(x, self.mean, self.std)
-        gradient_back = gradient / std
+        gradient_back = grad / std
 
         return gradient_back
 
