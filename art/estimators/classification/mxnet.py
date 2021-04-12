@@ -258,7 +258,9 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
             # Fit a generic data generator through the API
             super().fit_generator(generator, nb_epochs=nb_epochs)
 
-    def predict(self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs) -> np.ndarray:
+    def predict(  # pylint: disable=W0221
+        self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs
+    ) -> np.ndarray:
         """
         Perform prediction for a batch of inputs.
 
@@ -295,7 +297,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
 
         return predictions
 
-    def class_gradient(
+    def class_gradient(  # pylint: disable=W0221
         self, x: np.ndarray, label: Union[int, List[int], None] = None, training_mode: bool = False, **kwargs
     ) -> np.ndarray:
         """
@@ -371,7 +373,9 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
 
         return grads
 
-    def loss_gradient(self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs) -> np.ndarray:
+    def loss_gradient(  # pylint: disable=W0221
+        self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs
+    ) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 

@@ -132,7 +132,7 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         # train attack model
         self.attack_model.fit(x_train, y_ready)
 
-    def infer(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Infer the attacked feature.
 
@@ -142,6 +142,11 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         :type values: `np.ndarray`
         :return: The inferred feature values.
         """
+        if y is None:
+            raise ValueError(
+                "The target values `y` cannot be None. Please provide a `np.ndarray` of model predictions."
+            )
+
         if y.shape[0] != x.shape[0]:
             raise ValueError("Number of rows in x and y do not match")
         if self.estimator.input_shape is not None:
@@ -153,7 +158,7 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         if self.single_index_feature:
             if "values" not in kwargs.keys():
                 raise ValueError("Missing parameter `values`.")
-            values = kwargs.get("values")
+            values: np.ndarray = kwargs.get("values")
             return np.array([values[np.argmax(arr)] for arr in self.attack_model.predict(x_test)])
 
         if "values" in kwargs.keys():

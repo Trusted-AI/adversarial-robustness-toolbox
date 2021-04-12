@@ -18,6 +18,7 @@
 """
 This module implements the classifier `TensorFlowClassifier` for TensorFlow models.
 """
+# pylint: disable=C0302
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -225,7 +226,9 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         """
         return self._feed_dict  # type: ignore
 
-    def predict(self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs) -> np.ndarray:
+    def predict(  # pylint: disable=W0221
+        self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs
+    ) -> np.ndarray:
         """
         Perform prediction for a batch of inputs.
 
@@ -343,7 +346,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         else:
             super().fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
 
-    def class_gradient(
+    def class_gradient(  # pylint: disable=W0221
         self, x: np.ndarray, label: Union[int, List[int], None] = None, training_mode: bool = False, **kwargs
     ) -> np.ndarray:
         """
@@ -399,7 +402,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         else:
             # For each sample, compute the gradients w.r.t. the indicated target class (possibly distinct)
             unique_label = list(np.unique(label))
-            grads = self._sess.run([self._class_grads[l] for l in unique_label], feed_dict=feed_dict)
+            grads = self._sess.run([self._class_grads[ul] for ul in unique_label], feed_dict=feed_dict)
             grads = np.swapaxes(np.array(grads), 0, 1)
             lst = [unique_label.index(i) for i in label]
             grads = np.expand_dims(grads[np.arange(len(grads)), lst], axis=1)
@@ -408,7 +411,9 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
 
         return grads
 
-    def loss_gradient(self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs) -> np.ndarray:
+    def loss_gradient(  # pylint: disable=W0221
+        self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs
+    ) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
@@ -443,7 +448,9 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
 
         return grads
 
-    def compute_loss(self, x: np.ndarray, y: np.ndarray, reduction: str = "none", **kwargs) -> np.ndarray:
+    def compute_loss(  # pylint: disable=W0221
+        self, x: np.ndarray, y: np.ndarray, reduction: str = "none", **kwargs
+    ) -> np.ndarray:
         """
         Compute the loss of the neural network for samples `x`.
 
@@ -876,7 +883,9 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         """
         return self._train_step  # type: ignore
 
-    def predict(self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs) -> np.ndarray:
+    def predict(  # pylint: disable=W0221
+        self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs
+    ) -> np.ndarray:
         """
         Perform prediction for a batch of inputs.
 
@@ -905,7 +914,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         predictions = self._apply_postprocessing(preds=results, fit=False)
         return predictions
 
-    def _predict_framework(self, x: "tf.Tensor", training_mode: bool = False, **kwargs) -> "tf.Tensor":
+    def _predict_framework(self, x: "tf.Tensor", training_mode: bool = False) -> "tf.Tensor":
         """
         Perform prediction for a batch of inputs.
 
@@ -981,7 +990,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
             # Fit a generic data generator through the API
             super().fit_generator(generator, nb_epochs=nb_epochs)
 
-    def class_gradient(
+    def class_gradient(  # pylint: disable=W0221
         self, x: np.ndarray, label: Union[int, List[int], None] = None, training_mode: bool = False, **kwargs
     ) -> np.ndarray:
         """
@@ -1065,7 +1074,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
         return gradients
 
-    def compute_loss(
+    def compute_loss(  # pylint: disable=W0221
         self, x: np.ndarray, y: np.ndarray, reduction: str = "none", training_mode: bool = False, **kwargs
     ) -> np.ndarray:
         """
@@ -1109,7 +1118,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         self._loss_object.reduction = prev_reduction
         return loss.numpy()
 
-    def loss_gradient(
+    def loss_gradient(  # pylint: disable=W0221
         self,
         x: Union[np.ndarray, "tf.Tensor"],
         y: Union[np.ndarray, "tf.Tensor"],
@@ -1138,19 +1147,20 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                 if self.all_framework_preprocessing:
                     x_grad = tf.convert_to_tensor(x)
                     tape.watch(x_grad)
-                    x_input, _ = self._apply_preprocessing(x_grad, y=None, fit=False)
+                    x_input, y_input = self._apply_preprocessing(x_grad, y=y, fit=False)
                 else:
-                    x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
+                    x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y=y, fit=False)
                     x_grad = tf.convert_to_tensor(x_preprocessed)
                     tape.watch(x_grad)
                     x_input = x_grad
+                    y_input = y_preprocessed
 
                 predictions = self.model(x_input, training=training_mode)
 
                 if self._reduce_labels:
-                    loss = self._loss_object(np.argmax(y, axis=1), predictions)
+                    loss = self._loss_object(np.argmax(y_input, axis=1), predictions)
                 else:
-                    loss = self._loss_object(y, predictions)
+                    loss = self._loss_object(y_input, predictions)
 
             gradients = tape.gradient(loss, x_grad)
 
@@ -1178,8 +1188,8 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         try:
             # only works for functionally defined models
             model = tf.keras.models.clone_model(self.model, input_tensors=self.model.inputs)
-        except ValueError as e:
-            raise ValueError("Cannot clone custom tensorflow models") from e
+        except ValueError as error:
+            raise ValueError("Cannot clone custom tensorflow models") from error
 
         optimizer = self.model.optimizer
         # reset optimizer variables
@@ -1190,8 +1200,8 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
             optimizer=optimizer,
             loss=self.model.loss,
             metrics=self.model.metrics,
-            loss_weights=self.model.compiled_loss._loss_weights,
-            weighted_metrics=self.model.compiled_metrics._weighted_metrics,
+            loss_weights=self.model.compiled_loss._loss_weights,  # pylint: disable=W0212
+            weighted_metrics=self.model.compiled_metrics._weighted_metrics,  # pylint: disable=W0212
             run_eagerly=self.model.run_eagerly,
         )
 
@@ -1199,9 +1209,9 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         params = self.get_params()
         del params["model"]
         clone.set_params(**params)
-        clone._train_step = self._train_step
-        clone._reduce_labels = self._reduce_labels
-        clone._loss_object = self._loss_object
+        clone._train_step = self._train_step  # pylint: disable=W0212
+        clone._reduce_labels = self._reduce_labels  # pylint: disable=W0212
+        clone._loss_object = self._loss_object  # pylint: disable=W0212
         return clone
 
     def reset(self) -> None:
@@ -1258,7 +1268,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         import tensorflow as tf  # lgtm [py/repeated-import]
 
         if isinstance(self._model, (tf.keras.Model, tf.keras.models.Sequential)):
-            return self._model.layers
+            return [layer.name for layer in self._model.layers if hasattr(layer, "name")]
 
         return None  # type: ignore
 

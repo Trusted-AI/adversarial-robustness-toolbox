@@ -30,7 +30,7 @@ from tests.utils import get_tabular_classifier_tf, get_tabular_classifier_kr, ge
 
 logger = logging.getLogger(__name__)
 
-BATCH_SIZE = 100
+BATCH_SIZE = 10
 NB_EPOCHS = 30
 
 

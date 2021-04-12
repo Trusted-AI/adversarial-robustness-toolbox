@@ -98,7 +98,8 @@ class EoTContrastPyTorch(EoTPyTorch):
 
     def _check_params(self) -> None:
 
-        if not (isinstance(self.contrast_factor, (int, float)) or isinstance(self.contrast_factor, tuple)) or (
+        # pylint: disable=R0916
+        if not isinstance(self.contrast_factor, (int, float, tuple)) or (
             isinstance(self.contrast_factor, tuple)
             and (
                 len(self.contrast_factor) != 2
