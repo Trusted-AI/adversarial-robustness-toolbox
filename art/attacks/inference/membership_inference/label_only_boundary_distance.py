@@ -21,7 +21,7 @@ This module implements the Label-Only Inference Attack based on Decision Boundar
 | Paper link: https://arxiv.org/abs/2007.14321
 """
 import logging
-from typing import Optional, NoReturn, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 
@@ -112,7 +112,7 @@ class LabelOnlyDecisionBoundary(InferenceAttack):
 
     def calibrate_distance_threshold(
         self, x_train: np.ndarray, y_train: np.ndarray, x_test: np.ndarray, y_test: np.ndarray, **kwargs
-    ) -> NoReturn:
+    ):
         """
         Calibrate distance threshold maximising the membership inference accuracy on `x_train` and `x_test`.
 

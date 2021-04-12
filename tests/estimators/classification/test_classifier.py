@@ -145,7 +145,7 @@ class TestClassifierNeuralNetwork(TestBase):
         classifier = ClassifierNeuralNetworkInstance((0, 1))
         repr_ = repr(classifier)
         self.assertIn("ClassifierNeuralNetworkInstance", repr_)
-        self.assertIn(f"channels_first=True", repr_)
+        self.assertIn("channels_first=True", repr_)
         self.assertIn("clip_values=[0. 1.]", repr_)
         self.assertIn("defences=None", repr_)
         self.assertIn(

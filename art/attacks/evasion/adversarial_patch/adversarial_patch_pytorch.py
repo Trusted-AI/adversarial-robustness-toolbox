@@ -35,6 +35,7 @@ from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import check_and_transform_label_format, is_probability, to_categorical
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     import torch
 
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
@@ -184,7 +185,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
             max=self.estimator.clip_values[1],
         )
 
-        predictions = self.estimator._predict_framework(patched_input)
+        predictions = self.estimator._predict_framework(patched_input)  # pylint: disable=W0212
 
         return predictions
 

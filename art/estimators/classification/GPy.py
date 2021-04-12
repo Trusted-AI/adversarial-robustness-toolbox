@@ -18,6 +18,7 @@
 """
 This module implements a wrapper class for GPy Gaussian Process classification models.
 """
+# pylint: disable=C0103
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -91,10 +92,7 @@ class GPyGaussianProcessClassifier(ClassifierClassLossGradients):
 
     # pylint: disable=W0221
     def class_gradient(  # type: ignore
-        self,
-        x: np.ndarray,
-        label: Union[int, List[int], None] = None,
-        eps: float = 0.0001,
+        self, x: np.ndarray, label: Union[int, List[int], None] = None, eps: float = 0.0001, **kwargs
     ) -> np.ndarray:
         """
         Compute per-class derivatives w.r.t. `x`.

@@ -59,7 +59,7 @@ class STRIP(Transformer):
         super().__init__(classifier=classifier)
         self._check_params()
 
-    def __call__(
+    def __call__(  # type: ignore
         self,
         num_samples: int = 20,
         false_acceptance_rate: float = 0.01,
@@ -80,7 +80,7 @@ class STRIP(Transformer):
             ),
         )
 
-        return self.classifier
+        return self.classifier  # type: ignore
 
     def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> None:
         """

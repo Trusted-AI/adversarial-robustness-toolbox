@@ -90,8 +90,8 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
         nb_batches = int(np.ceil(len(x) / batch_size))
         ind = np.arange(len(x))
 
-        def lr_schedule(t):
-            return np.interp([t], [0, nb_epochs * 2 // 5, nb_epochs], [0, 0.21, 0])[0]
+        def lr_schedule(step_t):
+            return np.interp([step_t], [0, nb_epochs * 2 // 5, nb_epochs], [0, 0.21, 0])[0]
 
         logger.info("Adversarial Training FBF")
 
@@ -158,8 +158,8 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
         else:
             raise ValueError("Size is None.")
 
-        def lr_schedule(t):
-            return np.interp([t], [0, nb_epochs * 2 // 5, nb_epochs], [0, 0.21, 0])[0]
+        def lr_schedule(step_t):
+            return np.interp([step_t], [0, nb_epochs * 2 // 5, nb_epochs], [0, 0.21, 0])[0]
 
         logger.info("Adversarial Training FBF")
 
@@ -200,7 +200,7 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
         """
         import torch
 
-        if self._classifier._optimizer is None:
+        if self._classifier._optimizer is None:  # pylint: disable=W0212
             raise ValueError("Optimizer of classifier is currently None, but is required for adversarial training.")
 
         n = x_batch.shape[0]
@@ -214,38 +214,40 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
             x_batch_pert = x_batch + delta
 
         # Apply preprocessing
-        x_preprocessed, y_preprocessed = self._classifier._apply_preprocessing(x_batch_pert, y_batch, fit=True)
+        x_preprocessed, y_preprocessed = self._classifier._apply_preprocessing(  # pylint: disable=W0212
+            x_batch_pert, y_batch, fit=True
+        )
 
         # Check label shape
-        if self._classifier._reduce_labels:
+        if self._classifier._reduce_labels:  # pylint: disable=W0212
             y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
-        i_batch = torch.from_numpy(x_preprocessed).to(self._classifier._device)
-        o_batch = torch.from_numpy(y_preprocessed).to(self._classifier._device)
+        i_batch = torch.from_numpy(x_preprocessed).to(self._classifier._device)  # pylint: disable=W0212
+        o_batch = torch.from_numpy(y_preprocessed).to(self._classifier._device)  # pylint: disable=W0212
 
         # Zero the parameter gradients
-        self._classifier._optimizer.zero_grad()
+        self._classifier._optimizer.zero_grad()  # pylint: disable=W0212
 
         # Perform prediction
-        model_outputs = self._classifier._model(i_batch)
+        model_outputs = self._classifier._model(i_batch)  # pylint: disable=W0212
 
         # Form the loss function
-        loss = self._classifier._loss(model_outputs[-1], o_batch)
+        loss = self._classifier._loss(model_outputs[-1], o_batch)  # pylint: disable=W0212
 
-        self._classifier._optimizer.param_groups[0].update(lr=l_r)
+        self._classifier._optimizer.param_groups[0].update(lr=l_r)  # pylint: disable=W0212
 
         # Actual training
         if self._use_amp:
-            import apex.amp as amp
+            import apex.amp as amp  # pylint: disable=E0611
 
-            with amp.scale_loss(loss, self._classifier._optimizer) as scaled_loss:
+            with amp.scale_loss(loss, self._classifier._optimizer) as scaled_loss:  # pylint: disable=W0212
                 scaled_loss.backward()
         else:
             loss.backward()
 
         # clip the gradients
-        torch.nn.utils.clip_grad_norm_(self._classifier._model.parameters(), 0.5)
-        self._classifier._optimizer.step()
+        torch.nn.utils.clip_grad_norm_(self._classifier._model.parameters(), 0.5)  # pylint: disable=W0212
+        self._classifier._optimizer.step()  # pylint: disable=W0212
 
         train_loss = loss.item() * o_batch.size(0)
         train_acc = (model_outputs[0].max(1)[1] == o_batch).sum().item()

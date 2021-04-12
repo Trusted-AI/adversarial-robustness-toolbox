@@ -81,7 +81,8 @@ class EoTShotNoisePyTorch(EoTPyTorch):
 
     def _check_params(self) -> None:
 
-        if not (isinstance(self.lam, (int, float)) or isinstance(self.lam, tuple)) or (
+        # pylint: disable=R0916
+        if not isinstance(self.lam, (int, float, tuple)) or (
             isinstance(self.lam, tuple)
             and (
                 len(self.lam) != 2

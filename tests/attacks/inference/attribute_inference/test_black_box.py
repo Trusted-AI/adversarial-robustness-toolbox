@@ -138,8 +138,10 @@ def test_black_box_with_model(art_warning, decision_tree_estimator, get_iris_dat
         inferred_train = attack.infer(x_train_for_attack, x_train_predictions, values=values)
         inferred_test = attack.infer(x_test_for_attack, x_test_predictions, values=values)
         # check accuracy
-        train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
-        test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
+        # train_acc
+        _ = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
+        # test_acc
+        _ = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
         # assert train_acc == pytest.approx(0.5523, abs=0.03)
         # assert test_acc == pytest.approx(0.5777, abs=0.03)
     except ARTTestException as e:

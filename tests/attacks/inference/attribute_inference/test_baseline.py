@@ -68,7 +68,8 @@ def test_black_box_baseline(art_warning, decision_tree_estimator, get_iris_datas
         # train attack model
         attack.fit(x_train)
         # infer attacked feature
-        inferred_train = attack.infer(x_train_for_attack, x_train_predictions, values=values)
+        # inferred_train
+        _ = attack.infer(x_train_for_attack, x_train_predictions, values=values)
         inferred_test = attack.infer(x_test_for_attack, x_test_predictions, values=values)
         # check accuracy
         # train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
@@ -78,7 +79,8 @@ def test_black_box_baseline(art_warning, decision_tree_estimator, get_iris_datas
         # train attack model
         baseline_attack.fit(x_train)
         # infer attacked feature
-        baseline_inferred_train = baseline_attack.infer(x_train_for_attack, values=values)
+        # baseline_inferred_train
+        _ = baseline_attack.infer(x_train_for_attack, values=values)
         baseline_inferred_test = baseline_attack.infer(x_test_for_attack, values=values)
         # check accuracy
         # baseline_train_acc = np.sum(baseline_inferred_train == x_train_feature.reshape(1, -1)) / len(

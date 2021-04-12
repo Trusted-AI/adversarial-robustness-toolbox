@@ -223,7 +223,7 @@ class KnockoffNets(ExtractionAttack):
         queried_labels = []
 
         avg_reward = 0.0
-        for it in trange(1, self.nb_stolen + 1, desc="Knock-off nets", disable=not self.verbose):
+        for iteration in trange(1, self.nb_stolen + 1, desc="Knock-off nets", disable=not self.verbose):
             # Sample an action
             action = np.random.choice(np.arange(0, nb_actions), p=probs)
 
@@ -250,18 +250,22 @@ class KnockoffNets(ExtractionAttack):
             y_hat = thieved_classifier.predict(x=np.array([sampled_x]), batch_size=self.batch_size_query)
 
             # Compute rewards
-            reward = self._reward(y_output, y_hat, it)
-            avg_reward = avg_reward + (1.0 / it) * (reward - avg_reward)
+            reward = self._reward(y_output, y_hat, iteration)
+            avg_reward = avg_reward + (1.0 / iteration) * (reward - avg_reward)
 
             # Update learning rate
             learning_rate[action] += 1
 
             # Update H function
-            for a in range(nb_actions):
-                if a != action:
-                    h_func[a] = h_func[a] - 1.0 / learning_rate[action] * (reward - avg_reward) * probs[a]
+            for i_action in range(nb_actions):
+                if i_action != action:
+                    h_func[i_action] = (
+                        h_func[i_action] - 1.0 / learning_rate[action] * (reward - avg_reward) * probs[i_action]
+                    )
                 else:
-                    h_func[a] = h_func[a] + 1.0 / learning_rate[action] * (reward - avg_reward) * (1 - probs[a])
+                    h_func[i_action] = h_func[i_action] + 1.0 / learning_rate[action] * (reward - avg_reward) * (
+                        1 - probs[i_action]
+                    )
 
             # Update probs
             aux_exp = np.exp(h_func)
@@ -289,14 +293,14 @@ class KnockoffNets(ExtractionAttack):
         :return: An array with one input to the victim classifier.
         """
         if len(y.shape) == 2:
-            y_ = np.argmax(y, axis=1)
+            y_index = np.argmax(y, axis=1)
         else:
-            y_ = y
+            y_index = y
 
-        x_ = x[y_ == action]
-        rnd_idx = np.random.choice(len(x_))
+        x_index = x[y_index == action]
+        rnd_idx = np.random.choice(len(x_index))
 
-        return x_[rnd_idx]
+        return x_index[rnd_idx]
 
     def _reward(self, y_output: np.ndarray, y_hat: np.ndarray, n: int) -> float:
         """

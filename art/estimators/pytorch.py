@@ -129,10 +129,10 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
 
         super()._check_params()
         self.all_framework_preprocessing = all(
-            [isinstance(p, PreprocessorPyTorch) for p in self.preprocessing_operations]
+            (isinstance(p, PreprocessorPyTorch) for p in self.preprocessing_operations)
         )
 
-    def _apply_preprocessing(self, x, y, fit: bool = False, no_grad=True) -> Tuple[Any, Any]:
+    def _apply_preprocessing(self, x, y, fit: bool = False, no_grad=True) -> Tuple[Any, Any]:  # pylint: disable=W0221
         """
         Apply all preprocessing defences of the estimator on the raw inputs `x` and `y`. This function is should
         only be called from function `_apply_preprocessing`.
@@ -286,7 +286,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         """
         import torch  # lgtm [py/repeated-import]
 
-        assert all([issubclass(l, torch.nn.modules.Module) for l in layerinfo])
+        assert all((issubclass(layer, torch.nn.modules.Module) for layer in layerinfo))  # type: ignore
 
         def set_train(layer, layerinfo=layerinfo):
             "Set layer into training mode if instance of `layerinfo`."
@@ -311,7 +311,8 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         """
         import torch  # lgtm [py/repeated-import]
 
-        self._set_layer(train=train, layerinfo=[torch.nn.modules.dropout._DropoutNd])
+        # pylint: disable=W0212
+        self._set_layer(train=train, layerinfo=[torch.nn.modules.dropout._DropoutNd])  # type: ignore
 
     def set_batchnorm(self, train: bool) -> None:
         """
@@ -321,4 +322,5 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         """
         import torch  # lgtm [py/repeated-import]
 
-        self._set_layer(train=train, layerinfo=[torch.nn.modules.batchnorm._BatchNorm])
+        # pylint: disable=W0212
+        self._set_layer(train=train, layerinfo=[torch.nn.modules.batchnorm._BatchNorm])  # type: ignore

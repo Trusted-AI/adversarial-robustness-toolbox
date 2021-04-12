@@ -40,7 +40,7 @@ def test_wrong_parameters(params, art_warning, get_default_mnist_subset, image_d
 
         classifier.fit(x_train_mnist[:NB_TRAIN], y_train_mnist[:NB_TRAIN], nb_epochs=1)
         with pytest.raises(ValueError):
-            defence = SpectralSignatureDefense(classifier, x_train_mnist[:NB_TRAIN], y_train_mnist[:NB_TRAIN], **params)
+            _ = SpectralSignatureDefense(classifier, x_train_mnist[:NB_TRAIN], y_train_mnist[:NB_TRAIN], **params)
     except ARTTestException as e:
         art_warning(e)
 
@@ -82,6 +82,6 @@ def test_evaluate_defense(art_warning, get_default_mnist_subset, image_dl_estima
             eps_multiplier=EPS_MULTIPLIER,
             expected_pp_poison=UB_PCT_POISON,
         )
-        res = defence.evaluate_defence(np.zeros(NB_TRAIN))
+        _ = defence.evaluate_defence(np.zeros(NB_TRAIN))
     except ARTTestException as e:
         art_warning(e)

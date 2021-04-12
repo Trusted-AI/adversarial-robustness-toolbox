@@ -34,6 +34,7 @@ import numpy as np
 from art.defences.preprocessor.preprocessor import PreprocessorTensorFlowV2
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     import tensorflow as tf
     from art.utils import CLIP_VALUES_TYPE
 
