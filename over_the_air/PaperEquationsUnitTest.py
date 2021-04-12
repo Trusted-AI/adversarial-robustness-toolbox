@@ -7,7 +7,7 @@ from over_the_air.paper_equations import (firstTemporalDerivative, secondTempora
 
 # $ pytest -k TestClassDemoInstance
 
-# Dimension Test for Derivatives
+# Derivative Tests
 class DerivativeTest:
     OnesInput = torch.ones(4, 3, 3, 3)
     ZeroesInput = torch.zeros(4, 3, 3, 3)
@@ -27,15 +27,27 @@ class DerivativeTest:
         # Should Output 4 * 3 * 3 * 3 tensor of zeroes
         assert secondTemporalDerivative(self.ZeroesInput) == self.ZeroesInput
 
-"""
-# Dimension Test for Regularization
+# Regularization Tests
 class RegularizationTest:
+    OnesInput = torch.ones(4, 3, 3, 3)
+    ZeroesInput = torch.zeros(4, 3, 3, 3)
 
     def test_thicknessRegularization(self):
-        for x in RegularizationTest.regularizationInput:
-            assert thicknessRegularization(x, 1).size() == [1, 4]
+        assert thicknessRegularization(self.OnesInput, 1).size() == (4, 3, 3, 3)
+        assert thicknessRegularization(self.ZeroesInput, 1).size() == (4, 3, 3, 3)
+        # Output Check
+        assert thicknessRegularization(self.OnesInput, 1) == self.OnesInput
+        assert thicknessRegularization(self.ZeroesInput, 1) == self.ZeroesInput
 
     def test_roughnessRegularizaiton(self):
-        for x in RegularizationTest.regularizationInput:
-            assert roughnessRegularization(x, 1).size() == [1, 4]
+        assert roughnessRegularization(self.OnesInput, 1).size() == (4, 3, 3, 3)
+        assert roughnessRegularization(self.ZeroesInput, 1).size() == (4, 3, 3, 3)
+        # Output Check
+        assert roughnessRegularization(self.ZeroesInput, 1) == self.ZeroesInput
+
+
 """
+class AdversarialLossTest: 
+"""
+
+
