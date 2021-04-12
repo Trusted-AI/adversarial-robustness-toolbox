@@ -1,42 +1,41 @@
 import pytest
 import torch
 
-from over_the_air.paper_equations import firstTemporalDerivative, secondTemporalDerivative, adversarialLoss, thicknessRegularization, roughnessRegularization
+from over_the_air.paper_equations import (firstTemporalDerivative, secondTemporalDerivative, adversarialLoss,
+    thicknessRegularization, roughnessRegularization)
+
 
 # $ pytest -k TestClassDemoInstance
 
-
-#Dimension Test for Derivatives
+# Dimension Test for Derivatives
 class DerivativeTest:
-    derivativeInput = [torch.Tensor([1,0,0,0]),
-                      torch.Tensor([0,1,0,0]),
-                      torch.Tensor([0,0,1,0]),
-                      torch.Tensor([0,0,0,1])]
+    OnesInput = torch.ones(4, 3, 3, 3)
+    ZeroesInput = torch.zeros(4, 3, 3, 3)
 
     def test_firstTemporalDerivative(self):
-        for x in DerivativeTest.derivativeInput:
-            assert firstTemporalDerivative(x).size() == [1,4]
-            #if x == DerivativeTest.derivativeInput[0]:
-                #assert firstTemporalDerivative(x) == torch.Tensor([0,0,0,0])
+        # Dimension Check
+        assert firstTemporalDerivative(self.OnesInput).size() == (4, 3, 3, 3)
+        assert firstTemporalDerivative(self.ZeroesInput).size() == (4, 3, 3, 3)
+        # Output Check
+        # Should Output 4 * 3 * 3 * 3 tensor of zeroes
+        assert firstTemporalDerivative(self.OnesInput) == self.ZeroesInput
 
     def test_secondTemporalDerivative(self):
-        for x in Derivativetest.derivativeInput:
-            assert secondTemporalDerivative(x).size() == [1,4]
-            #if x == DerivativeTest.derivativeInput:
-                #assert secondTemporalDerivative(x) == torch.tensor([0,0,0,0])
+        assert secondTemporalDerivative(self.OnesInput).size() == (4, 3, 3, 3)
+        assert secondTemporalDerivative(self.ZeroesInput).size() == (4, 3, 3, 3)
+        # Output Check
+        # Should Output 4 * 3 * 3 * 3 tensor of zeroes
+        assert secondTemporalDerivative(self.ZeroesInput) == self.ZeroesInput
 
-#Dimension Test for Regularization
+"""
+# Dimension Test for Regularization
 class RegularizationTest:
-    regularizationInput = [torch.Tensor([1,0,0,0]),
-                            torch.Tensor([0,1,0,0]),
-                            torch.Tensor([0,0,1,0]),
-                            torch.Tensor([0,0,0,1])]
 
     def test_thicknessRegularization(self):
         for x in RegularizationTest.regularizationInput:
-            assert thicknessRegularization(x, 1).size() == [1,4]
+            assert thicknessRegularization(x, 1).size() == [1, 4]
 
     def test_roughnessRegularizaiton(self):
         for x in RegularizationTest.regularizationInput:
-            assert roughnessRegularization(x, 1).size() == [1,4]
-
+            assert roughnessRegularization(x, 1).size() == [1, 4]
+"""
