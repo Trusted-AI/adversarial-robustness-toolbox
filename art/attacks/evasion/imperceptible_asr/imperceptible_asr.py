@@ -37,6 +37,7 @@ from art.estimators.tensorflow import TensorFlowV2Estimator
 from art.utils import pad_sequence_input
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     from tensorflow.compat.v1 import Tensor
     from torch import Tensor as PTensor
 
@@ -75,7 +76,7 @@ class ImperceptibleASR(EvasionAttack):
     def __init__(
         self,
         estimator: "SPEECH_RECOGNIZER_TYPE",
-        masker: Optional["PsychoacousticMasker"],
+        masker: "PsychoacousticMasker",
         eps: float = 2000.0,
         learning_rate_1: float = 100.0,
         max_iter_1: int = 1000,
@@ -140,6 +141,8 @@ class ImperceptibleASR(EvasionAttack):
         self._hop_size = masker.hop_size
         self._sample_rate = masker.sample_rate
 
+        self._framework: Optional[str] = None
+
         if isinstance(self.estimator, TensorFlowV2Estimator):
             import tensorflow.compat.v1 as tf1
 
@@ -163,11 +166,8 @@ class ImperceptibleASR(EvasionAttack):
         elif isinstance(self.estimator, PyTorchEstimator):
             # set framework attribute
             self._framework = "pytorch"
-        else:
-            # set framework attribute
-            self._framework = None
 
-    def generate(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate imperceptible, adversarial examples.
 
@@ -176,6 +176,9 @@ class ImperceptibleASR(EvasionAttack):
             lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`.
         :return: An array holding the adversarial examples.
         """
+        if y is None:
+            raise ValueError("The target values `y` cannot be None. Please provide a `np.ndarray` of target labels.")
+
         nb_samples = x.shape[0]
 
         x_imperceptible = [None] * nb_samples
@@ -366,9 +369,9 @@ class ImperceptibleASR(EvasionAttack):
         x_padded, _ = pad_sequence_input(x)
 
         for x_i in x_padded:
-            mt, pm = self.masker.calculate_threshold_and_psd_maximum(x_i)
-            masking_threshold.append(mt)
-            psd_maximum.append(pm)
+            m_t, p_m = self.masker.calculate_threshold_and_psd_maximum(x_i)
+            masking_threshold.append(m_t)
+            psd_maximum.append(p_m)
         # stabilize imperceptible loss by canceling out the "10*log" term in power spectral density maximum and
         # masking threshold
         masking_threshold_stabilized = 10 ** (np.array(masking_threshold) * 0.1)
@@ -406,6 +409,7 @@ class ImperceptibleASR(EvasionAttack):
                 self._power_spectral_density_maximum_tf: psd_maximum_stabilized,
                 self._masking_threshold_tf: masking_threshold_stabilized,
             }
+            # pylint: disable=W0212
             gradients_padded, loss = self.estimator._sess.run(self._loss_gradient_masking_threshold_op_tf, feed_dict)
         elif self._framework == "pytorch":
             # get loss gradients (TensorFlow)
@@ -466,6 +470,7 @@ class ImperceptibleASR(EvasionAttack):
         import torch  # lgtm [py/import-and-import-from]
 
         # define tensors
+        # pylint: disable=W0212
         perturbation_torch = torch.from_numpy(perturbation).to(self.estimator._device)
         masking_threshold_stabilized_torch = torch.from_numpy(masking_threshold_stabilized).to(self.estimator._device)
         psd_maximum_stabilized_torch = torch.from_numpy(psd_maximum_stabilized).to(self.estimator._device)
@@ -479,7 +484,7 @@ class ImperceptibleASR(EvasionAttack):
         )
 
         # calculate hinge loss
-        loss = torch.mean(
+        loss = torch.mean(  # type: ignore
             torch.nn.functional.relu(psd_perturbation - masking_threshold_stabilized_torch), dim=(1, 2), keepdims=False
         )
 
@@ -531,6 +536,7 @@ class ImperceptibleASR(EvasionAttack):
         import torch  # lgtm [py/import-and-import-from]
 
         # compute short-time Fourier transform (STFT)
+        # pylint: disable=W0212
         stft_matrix = torch.stft(
             perturbation,
             n_fft=self._window_size,
@@ -644,7 +650,7 @@ class PsychoacousticMasker:
         # init some private properties for lazy loading
         self._fft_frequencies = None
         self._bark = None
-        self._absolute_threshold_hearing = None
+        self._absolute_threshold_hearing: Optional[np.ndarray] = None
 
     def calculate_threshold_and_psd_maximum(self, audio: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """

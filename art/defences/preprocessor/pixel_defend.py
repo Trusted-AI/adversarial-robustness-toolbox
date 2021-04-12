@@ -95,9 +95,11 @@ class PixelDefend(Preprocessor):
         # Convert into `uint8`
         original_shape = x.shape
         if self.pixel_cnn is not None:
-            probs = self.pixel_cnn.get_activations(x, layer=-1, batch_size=self.batch_size).reshape(
-                (x.shape[0], -1, 256)
-            )
+            activations = self.pixel_cnn.get_activations(x, layer=-1, batch_size=self.batch_size)
+            if activations is not None:
+                probs = activations.reshape((x.shape[0], -1, 256))
+            else:
+                raise ValueError("Activations are None.")
         else:
             raise ValueError("No model received for `pixel_cnn`.")
 

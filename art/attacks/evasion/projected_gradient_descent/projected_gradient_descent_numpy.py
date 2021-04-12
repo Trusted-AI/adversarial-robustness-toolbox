@@ -106,12 +106,12 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
         if self.random_eps:
             if isinstance(eps, (int, float)):
                 lower, upper = 0, eps
-                mu, sigma = 0, (eps / 2)
+                var_mu, sigma = 0, (eps / 2)
             else:
                 lower, upper = np.zeros_like(eps), eps
-                mu, sigma = np.zeros_like(eps), (eps / 2)
+                var_mu, sigma = np.zeros_like(eps), (eps / 2)
 
-            self.norm_dist = truncnorm((lower - mu) / sigma, (upper - mu) / sigma, loc=mu, scale=sigma)
+            self.norm_dist = truncnorm((lower - var_mu) / sigma, (upper - var_mu) / sigma, loc=var_mu, scale=sigma)
 
     def _random_eps(self):
         """
@@ -334,7 +334,7 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
                     else:
                         # replace adversarial examples if they are successful
                         attack_success = compute_success_array(
-                            self.estimator,
+                            self.estimator,  # type: ignore
                             x[batch_index_1:batch_index_2],
                             targets[batch_index_1:batch_index_2],
                             batch,
@@ -347,7 +347,7 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
                 "Success rate of attack: %.2f%%",
                 100
                 * compute_success(
-                    self.estimator,
+                    self.estimator,  # type: ignore
                     x,
                     targets,
                     adv_x,

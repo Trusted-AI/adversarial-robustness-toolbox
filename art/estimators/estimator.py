@@ -387,14 +387,14 @@ class NeuralNetworkMixin(ABC):
 
     estimator_params = ["channels_first"]
 
-    def __init__(self, channels_first: Optional[bool], **kwargs) -> None:
+    def __init__(self, channels_first: bool, **kwargs) -> None:
         """
         Initialize a neural network attributes.
 
         :param channels_first: Set channels first or last.
         """
-        self._channels_first: Optional[bool] = channels_first
-        super().__init__(**kwargs)
+        self._channels_first: bool = channels_first
+        super().__init__(**kwargs)  # type: ignore
 
     @abstractmethod
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs):
@@ -481,7 +481,7 @@ class NeuralNetworkMixin(ABC):
         raise NotImplementedError
 
     @property
-    def channels_first(self) -> Optional[bool]:
+    def channels_first(self) -> bool:
         """
         :return: Boolean to indicate index of the color channels in the sample `x`.
         """

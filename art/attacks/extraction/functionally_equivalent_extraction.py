@@ -43,7 +43,7 @@ from art.estimators.classification.blackbox import BlackBoxClassifier
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
 
-NUMPY_DTYPE = np.float64
+NUMPY_DTYPE = np.float64  # pylint: disable=C0103
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +80,7 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
         self.w_1: Optional[np.ndarray] = None  # Weight matrix of second dense layer
         self.b_1: Optional[np.ndarray] = None  # Bias vector of second dense layer
 
-    def extract(
+    def extract(  # pylint: disable=W0221
         self,
         x: np.ndarray,
         y: Optional[np.ndarray] = None,

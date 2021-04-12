@@ -274,7 +274,7 @@ def get_class_name(obj: object) -> str:
     return module + "." + obj.__class__.__name__
 
 
-def tensor_norm(tensor, norm_type: Union[int, float, str] = 2):
+def tensor_norm(tensor, norm_type: Union[int, float, str] = 2):  # pylint: disable=R1710
     """
     Compute the norm of a tensor.
 

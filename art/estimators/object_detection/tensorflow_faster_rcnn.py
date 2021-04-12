@@ -32,8 +32,7 @@ if TYPE_CHECKING:
     # pylint: disable=C0412
     import tensorflow.compat.v1 as tf
     from object_detection.meta_architectures.faster_rcnn_meta_arch import FasterRCNNMetaArch
-    from tensorflow.python.framework.ops import Tensor
-    from tensorflow.python.client.session import Session
+    from tensorflow.python.client.session import Session  # pylint: disable=E0611
 
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor.preprocessor import Preprocessor
@@ -374,7 +373,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
 
         return grads
 
-    def predict(
+    def predict(  # pylint: disable=W0221
         self, x: np.ndarray, batch_size: int = 128, standardise_output: bool = False, **kwargs
     ) -> List[Dict[str, np.ndarray]]:
         """
@@ -489,10 +488,12 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         """
         return self._detections
 
-    def fit(self):
+    def fit(self, x: np.ndarray, y, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
         raise NotImplementedError
 
-    def get_activations(self):
+    def get_activations(
+        self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
+    ) -> np.ndarray:
         raise NotImplementedError
 
     def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:

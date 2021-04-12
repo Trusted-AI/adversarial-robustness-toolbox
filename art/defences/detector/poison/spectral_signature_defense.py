@@ -124,7 +124,7 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
 
         for idx, feature in enumerate(features_split):
             # Check for empty list
-            if len(feature):
+            if len(feature):  # pylint: disable=C1801
                 score = SpectralSignatureDefense.spectral_signature_scores(np.vstack(feature))
                 score_cutoff = np.quantile(score, max(1 - self.eps_multiplier * self.expected_pp_poison, 0.0))
                 score_by_class.append(score)
