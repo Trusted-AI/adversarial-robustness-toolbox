@@ -28,7 +28,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 import numpy as np
 
 from art import config
-from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizerMixin
+from art.estimators.speech_recognition.speech_recognizer import BaseSpeechRecognizer
 from art.estimators.tensorflow import TensorFlowV2Estimator
 from art.utils import get_file, make_directory
 
@@ -43,7 +43,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
+class TensorFlowLingvoASR(BaseSpeechRecognizer, TensorFlowV2Estimator):
     """
     This class implements the task-specific Lingvo ASR model of Qin et al. (2019).
 
