@@ -22,15 +22,12 @@ from typing import TYPE_CHECKING, List, Optional, Tuple, Union
 
 import numpy as np
 
-from art import config
 from art.estimators.pytorch import PyTorchEstimator
 from art.estimators.speech_recognition.speech_recognizer import BaseSpeechRecognizer
 from art.estimators.speech_recognition.speech_recognizer import PytorchSpeechRecognizerMixin
-from art.utils import get_file
 
 if TYPE_CHECKING:
     import torch
-    from deepspeech_pytorch.model import DeepSpeech
 
     from art.defences.postprocessor.postprocessor import Postprocessor
     from art.defences.preprocessor.preprocessor import Preprocessor
@@ -146,6 +143,21 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, BaseSpeechRecognizer, PyTorc
                and providing it takes no effect.
         """
         raise NotImplementedError
+
+    def to_training_mode(self) -> None:
+        """
+        Put the estimator in the training mode. This method has no impact on the PyTorchEspresso estimator.
+        """
+        pass
+
+    def batch_norm(self, train: bool) -> None:
+        """
+        Set all batch normalization layers into train or eval mode. This method has no impact on the PyTorchEspresso
+        estimator.
+
+        :param train: False for evaluation mode.
+        """
+        pass
 
     @property
     def input_shape(self) -> Tuple[int, ...]:
