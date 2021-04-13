@@ -337,13 +337,10 @@ def loss_from_center(
                     )
             elif net_repeat == 1:
                 if isinstance(feature_layer, list):
-                    poisons_feats = torch.cat(
-                        [
-                            torch.flatten(net.get_activations(poison_batch(), layer=layer, framework=True), 0)
-                            for layer in feature_layer
-                        ],
-                        0,
-                    )
+                    poisons_feats = [
+                        torch.flatten(net.get_activations(poison_batch(), layer=layer, framework=True), 0)
+                        for layer in feature_layer
+                    ]
                 else:
                     poisons_feats = net.get_activations(poison_batch(), layer=feature_layer, framework=True)
             else:
