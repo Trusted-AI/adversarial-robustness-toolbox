@@ -144,6 +144,20 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, BaseSpeechRecognizer, PyTorc
         """
         raise NotImplementedError
 
+    def compute_loss_and_decoded_output(
+        self, masked_adv_input: "torch.Tensor", original_output: np.ndarray, **kwargs
+    ) -> Tuple["torch.Tensor", np.ndarray]:
+        """
+        Compute loss function and decoded output.
+
+        :param masked_adv_input: The perturbed inputs.
+        :param original_output: Target values of shape (nb_samples). Each sample in `original_output` is a string and
+                                it may possess different lengths. A possible example of `original_output` could be:
+                                `original_output = np.array(['SIXTY ONE', 'HELLO'])`.
+        :return: The loss and the decoded output.
+        """
+        raise NotImplementedError
+
     def to_training_mode(self) -> None:
         """
         Put the estimator in the training mode. This method has no impact on the PyTorchEspresso estimator.
