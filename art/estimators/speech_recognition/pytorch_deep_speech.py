@@ -526,7 +526,59 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, BaseSpeechRecognizer, PyTo
 
                 self._optimizer.step()
 
-    def preprocess_transform_model_input(
+    def compute_loss_and_decoded_output(
+        self, masked_adv_input: "torch.Tensor", original_output: np.ndarray, **kwargs
+    ) -> Tuple["torch.Tensor", np.ndarray]:
+        """
+        Compute loss function and decoded output.
+
+        :param masked_adv_input: The perturbed inputs.
+        :param original_output: Target values of shape (nb_samples). Each sample in `original_output` is a string and
+                                it may possess different lengths. A possible example of `original_output` could be:
+                                `original_output = np.array(['SIXTY ONE', 'HELLO'])`.
+        :param real_lengths: Real lengths of original sequences.
+        :return: The loss and the decoded output.
+        """
+        from warpctc_pytorch import CTCLoss
+
+        # This estimator needs to have real lengths for loss computation
+        real_lengths = kwargs.get("real_lengths")
+        if real_lengths is None:
+            raise ValueError(
+                "The PyTorchDeepSpeech estimator needs information about the real lengths of input sequences to "
+                "compute loss and decoded output."
+            )
+
+        # Transform data into the model input space
+        inputs, targets, input_rates, target_sizes, batch_idx = self._preprocess_transform_model_input(
+            x=masked_adv_input.to(self.device), y=original_output, real_lengths=real_lengths,
+        )
+
+        # Compute real input sizes
+        input_sizes = input_rates.mul_(inputs.size()[-1]).int()
+
+        # Call to DeepSpeech model for prediction
+        outputs, output_sizes = self.model(inputs.to(self.device), input_sizes.to(self.device))
+        outputs_ = outputs.transpose(0, 1)
+        float_outputs = outputs_.float()
+
+        # Loss function
+        criterion = CTCLoss()
+        loss = criterion(float_outputs, targets, output_sizes, target_sizes).to(self.device)
+        loss = loss / inputs.size(0)
+
+        # Compute transcription
+        decoded_output, _ = self.decoder.decode(outputs, output_sizes)
+        decoded_output = [do[0] for do in decoded_output]
+        decoded_output = np.array(decoded_output)
+
+        # Rearrange to the original order
+        decoded_output_ = decoded_output.copy()
+        decoded_output[batch_idx] = decoded_output_
+
+        return loss, decoded_output
+
+    def _preprocess_transform_model_input(
         self,
         x: "torch.Tensor",
         y: np.ndarray,
