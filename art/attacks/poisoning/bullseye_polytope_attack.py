@@ -294,8 +294,6 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
         if isinstance(self.feature_layer, int):
             if not 0 <= self.feature_layer < len(self.estimator.layer_names):
                 raise ValueError("feature_layer is not positive integer")
-        if not isinstance(self.feature_layer, str):
-            raise ValueError("feature_layer has to be either an integer or a string.")
 
         if 1 < self.decay_coeff < 0:
             raise ValueError("Decay coefficient must be between zero and one")
