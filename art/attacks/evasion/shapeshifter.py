@@ -658,7 +658,10 @@ class ShapeShifter(EvasionAttack):
         return optimizer
 
     def _create_attack_loss(
-        self, initial_input: "Tensor", current_value: "Tensor", custom_loss: Optional["Tensor"] = None,
+        self,
+        initial_input: "Tensor",
+        current_value: "Tensor",
+        custom_loss: Optional["Tensor"] = None,
     ) -> "Tensor":
         """
         Create the loss tensor of this attack.
@@ -886,7 +889,12 @@ class ShapeShifter(EvasionAttack):
 
         # Compute partial loss
         partial_loss = tf.add_n(
-            [weight_rpn_background_loss, weight_rpn_foreground_loss, weight_rpn_cw_loss,], name="partial_rpn_loss"
+            [
+                weight_rpn_background_loss,
+                weight_rpn_foreground_loss,
+                weight_rpn_cw_loss,
+            ],
+            name="partial_rpn_loss",
         )
 
         return partial_loss

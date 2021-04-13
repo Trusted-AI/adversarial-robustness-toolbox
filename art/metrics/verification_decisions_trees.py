@@ -116,7 +116,12 @@ class LeafNode:
     """
 
     def __init__(
-        self, tree_id: Optional[int], class_label: int, node_id: Optional[int], box: Box, value: float,
+        self,
+        tree_id: Optional[int],
+        class_label: int,
+        node_id: Optional[int],
+        box: Box,
+        value: float,
     ) -> None:
         """
         Create a leaf node representation.
@@ -261,7 +266,8 @@ class RobustnessVerificationTreeModelsCliqueMethod:
                 average_bound += clique_bound
             else:
                 logger.info(
-                    "point %s: WARNING! no robust eps found, verification bound is set as 0 !", i_sample,
+                    "point %s: WARNING! no robust eps found, verification bound is set as 0 !",
+                    i_sample,
                 )
 
         verified_error = 1.0 - num_initial_successes / num_samples
@@ -273,7 +279,10 @@ class RobustnessVerificationTreeModelsCliqueMethod:
         return average_bound, verified_error
 
     def _get_k_partite_clique(
-        self, accessible_leaves: List[List[LeafNode]], label: int, target_label: Optional[int],
+        self,
+        accessible_leaves: List[List[LeafNode]],
+        label: int,
+        target_label: Optional[int],
     ) -> Tuple[float, List]:
         """
         Find the K partite cliques among the accessible leaf nodes.
@@ -304,7 +313,10 @@ class RobustnessVerificationTreeModelsCliqueMethod:
                 cliques_old.append({"box": accessible_leaf.box, "value": new_leaf_value})
 
             # Loop over all all trees
-            for i_tree in range(start_tree + 1, min(len(accessible_leaves), start_tree + self.max_clique),):
+            for i_tree in range(
+                start_tree + 1,
+                min(len(accessible_leaves), start_tree + self.max_clique),
+            ):
                 cliques_new.clear()
                 # Loop over all existing cliques
                 for clique in cliques_old:
@@ -397,7 +409,10 @@ class RobustnessVerificationTreeModelsCliqueMethod:
             if interval.lower_bound < feature_value < interval.upper_bound:
                 distance = 0.0
             else:
-                difference = max(feature_value - interval.upper_bound, interval.lower_bound - feature_value,)
+                difference = max(
+                    feature_value - interval.upper_bound,
+                    interval.lower_bound - feature_value,
+                )
                 if norm == 0:
                     distance = 1.0
                 elif norm == np.inf:

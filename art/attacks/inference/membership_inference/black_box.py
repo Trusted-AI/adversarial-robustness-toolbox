@@ -41,10 +41,10 @@ logger = logging.getLogger(__name__)
 
 class MembershipInferenceBlackBox(InferenceAttack):
     """
-        Implementation of a learned black-box membership inference attack.
+    Implementation of a learned black-box membership inference attack.
 
-        This implementation can use as input to the learning process probabilities/logits or losses,
-        depending on the type of model and provided configuration.
+    This implementation can use as input to the learning process probabilities/logits or losses,
+    depending on the type of model and provided configuration.
     """
 
     attack_params = InferenceAttack.attack_params + [
@@ -92,10 +92,10 @@ class MembershipInferenceBlackBox(InferenceAttack):
 
                 class MembershipInferenceAttackModel(nn.Module):
                     """
-                        Implementation of a pytorch model for learning a membership inference attack.
+                    Implementation of a pytorch model for learning a membership inference attack.
 
-                        The features used are probabilities/logits or losses for the attack training data along with
-                        its true labels.
+                    The features used are probabilities/logits or losses for the attack training data along with
+                    its true labels.
                     """
 
                     def __init__(self, num_classes, num_features=None):
@@ -118,10 +118,15 @@ class MembershipInferenceBlackBox(InferenceAttack):
                         )
 
                         self.labels = nn.Sequential(
-                            nn.Linear(self.num_classes, 256), nn.ReLU(), nn.Linear(256, 64), nn.ReLU(),
+                            nn.Linear(self.num_classes, 256),
+                            nn.ReLU(),
+                            nn.Linear(256, 64),
+                            nn.ReLU(),
                         )
 
-                        self.combine = nn.Sequential(nn.Linear(64 * 2, 1),)
+                        self.combine = nn.Sequential(
+                            nn.Linear(64 * 2, 1),
+                        )
 
                         self.output = nn.Sigmoid()
 
@@ -284,10 +289,10 @@ class MembershipInferenceBlackBox(InferenceAttack):
 
         class AttackDataset(Dataset):
             """
-                Implementation of a pytorch dataset for membership inference attack.
+            Implementation of a pytorch dataset for membership inference attack.
 
-                The features are probabilities/logits or losses for the attack training data (`x_1`) along with
-                its true labels (`x_2`). The labels (`y`) are a boolean representing whether this is a member.
+            The features are probabilities/logits or losses for the attack training data (`x_1`) along with
+            its true labels (`x_2`). The labels (`y`) are a boolean representing whether this is a member.
             """
 
             def __init__(self, x_1, x_2, y=None):

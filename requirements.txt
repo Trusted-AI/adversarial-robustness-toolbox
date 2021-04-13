@@ -2,7 +2,7 @@
 numpy>=1.18.0
 scipy==1.4.1
 matplotlib==3.3.4
-scikit-learn>=0.22.2,==0.23.*
+scikit-learn>=0.22.2,<=0.24.1
 six==1.15.0
 Pillow==8.1.2
 tqdm==4.59.0
