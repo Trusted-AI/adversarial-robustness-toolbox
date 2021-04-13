@@ -15,6 +15,7 @@ RUN apt-get update \
         cmake \
         libavcodec-extra \
         ffmpeg \
+        curl \
      && apt-get clean all \
      && rm -r /var/lib/apt/lists/*
 
@@ -41,4 +42,3 @@ RUN cd deepspeech.pytorch && pip install -e .
 
 RUN pip install numba==0.50.0
 RUN pip install pytest-cov
-RUN pip install curl
