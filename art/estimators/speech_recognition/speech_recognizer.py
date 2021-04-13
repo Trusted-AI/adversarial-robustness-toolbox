@@ -16,13 +16,21 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements mixin abstract base class for all speech recognizers in ART.
+This module implements mixin abstract base class and mixin abstract framework-specific classes for all speech
+recognizers in ART.
 """
 
 from abc import ABC
 
 
-class SpeechRecognizerMixin(ABC):
+class BaseSpeechRecognizer(ABC):
     """
-    Mix-in Base class for ART speech recognizers.
+    Base class for ART speech recognizers.
+    """
+
+
+class PytorchSpeechRecognizerMixin(ABC):
+    """
+    Pytorch class for ART speech recognizers. This class is used to define common methods for using inside pytorch
+    imperceptible asr attack.
     """
