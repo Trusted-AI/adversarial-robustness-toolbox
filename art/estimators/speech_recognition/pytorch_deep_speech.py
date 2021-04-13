@@ -676,6 +676,20 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, BaseSpeechRecognizer, PyTo
 
         return inputs, targets, input_percentages, target_sizes, batch_idx
 
+    def to_training_mode(self) -> None:
+        """
+        Put the estimator in the training mode.
+        """
+        self.model.train()
+
+    def batch_norm(self, train: bool) -> None:
+        """
+        Set all batch normalization layers into train or eval mode.
+
+        :param train: False for evaluation mode.
+        """
+        self.set_batchnorm(train=train)
+
     @property
     def input_shape(self) -> Tuple[int, ...]:
         """
