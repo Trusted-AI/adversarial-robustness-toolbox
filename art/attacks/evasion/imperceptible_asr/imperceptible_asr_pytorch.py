@@ -450,53 +450,26 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         :param rescale: Current rescale coefficients.
         :param input_mask: Masks of true inputs.
         :param real_lengths: Real lengths of original sequences.
-        :return: A tuple of (loss, local_delta, decoded_output, masked_adv_input)
+        :return: A tuple of (loss, local_delta, decoded_output, masked_adv_input, local_delta_rescale)
                     - loss: The loss tensor of the first stage of the attack.
                     - local_delta: The delta of the current batch.
                     - decoded_output: Transcription output.
                     - masked_adv_input: Perturbed inputs.
+                    - local_delta_rescale: The rescaled delta.
         """
         import torch  # lgtm [py/repeated-import]
-# TODO
-        from warpctc_pytorch import CTCLoss
-#####
+
         # Compute perturbed inputs
         local_delta = self.global_optimal_delta[:local_batch_size, :local_max_length]
         local_delta_rescale = torch.clamp(local_delta, -self.eps, self.eps).to(self.estimator.device)
         local_delta_rescale *= torch.tensor(rescale).to(self.estimator.device)
         adv_input = local_delta_rescale + torch.tensor(original_input).to(self.estimator.device)
         masked_adv_input = adv_input * torch.tensor(input_mask).to(self.estimator.device)
-# TODO
-        # Transform data into the model input space
-        inputs, targets, input_rates, target_sizes, batch_idx = self.estimator.preprocess_transform_model_input(
-            x=masked_adv_input.to(self.estimator.device),
-            y=original_output,
-            real_lengths=real_lengths,
+
+        # Compute loss and decoded output
+        loss, decoded_output = self.estimator.compute_loss_and_decoded_output(
+            masked_adv_input=masked_adv_input, original_output=original_output, real_lengths=real_lengths,
         )
-
-        # Compute real input sizes
-        input_sizes = input_rates.mul_(inputs.size()[-1]).int()
-
-        # Call to DeepSpeech model for prediction
-        outputs, output_sizes = self.estimator.model(
-            inputs.to(self.estimator.device), input_sizes.to(self.estimator.device)
-        )
-        outputs_ = outputs.transpose(0, 1)
-        float_outputs = outputs_.float()
-
-        # Loss function
-        criterion = CTCLoss()
-        loss = criterion(float_outputs, targets, output_sizes, target_sizes).to(self.estimator.device)
-        loss = loss / inputs.size(0)
-
-        # Compute transcription
-        decoded_output, _ = self.estimator.decoder.decode(outputs, output_sizes)
-        decoded_output = [do[0] for do in decoded_output]
-        decoded_output = np.array(decoded_output)
-#####
-        # Rearrange to the original order
-        decoded_output_ = decoded_output.copy()
-        decoded_output[batch_idx] = decoded_output_
 
         return loss, local_delta, decoded_output, masked_adv_input, local_delta_rescale
 
