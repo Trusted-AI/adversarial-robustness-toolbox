@@ -20,7 +20,7 @@ This module implements mixin abstract base class and mixin abstract framework-sp
 recognizers in ART.
 """
 
-from abc import ABC
+from abc import ABC, abstractmethod
 
 
 class BaseSpeechRecognizer(ABC):
@@ -34,3 +34,19 @@ class PytorchSpeechRecognizerMixin(ABC):
     Pytorch class for ART speech recognizers. This class is used to define common methods for using inside pytorch
     imperceptible asr attack.
     """
+
+    @abstractmethod
+    def to_training_mode(self) -> None:
+        """
+        Put the estimator in the training mode.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def batch_norm(self, train: bool) -> None:
+        """
+        Set all batch normalization layers into train or eval mode.
+
+        :param train: False for evaluation mode.
+        """
+        raise NotImplementedError
