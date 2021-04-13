@@ -28,14 +28,14 @@ logger = logging.getLogger(__name__)
 
 # ------------------------------------------------------------------------------------------------- CONSTANTS AND TYPES
 
-ART_NUMPY_DTYPE = np.float32
+ART_NUMPY_DTYPE = np.float32  # pylint: disable=C0103
 ART_DATA_PATH: str
 
 # --------------------------------------------------------------------------------------------- DEFAULT PACKAGE CONFIGS
 
 _folder = os.path.expanduser("~")
 if not os.access(_folder, os.W_OK):
-    _folder = "/tmp"
+    _folder = "/tmp"  # pylint: disable=C0103
 _folder = os.path.join(_folder, ".art")
 
 
@@ -48,11 +48,11 @@ def set_data_path(path):
     if not os.access(expanded_path, os.R_OK):
         raise OSError(f"path {expanded_path} cannot be read from")
     if not os.access(expanded_path, os.W_OK):
-        logger.warning(f"path %s is read only", expanded_path)
+        logger.warning("path %s is read only", expanded_path)
 
-    global ART_DATA_PATH
+    global ART_DATA_PATH  # pylint: disable=W0603
     ART_DATA_PATH = expanded_path
-    logger.info(f"set ART_DATA_PATH to %s", expanded_path)
+    logger.info("set ART_DATA_PATH to %s", expanded_path)
 
 
 # Load data from configuration file if it exists. Otherwise create one.

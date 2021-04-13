@@ -20,7 +20,7 @@ This module defines a base class for EoT in PyTorch.
 """
 from abc import abstractmethod
 import logging
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import Optional, Tuple, TYPE_CHECKING, List
 
 from art.preprocessing.preprocessing import PreprocessorPyTorch
 
@@ -82,11 +82,12 @@ class EoTPyTorch(PreprocessorPyTorch):
         import torch  # lgtm [py/repeated-import]
 
         x_preprocess_list = list()
-        y_preprocess_list = list()
+        y_preprocess_list: List["torch.Tensor"] = list()
 
         for i_image in range(x.shape[0]):
             for _ in range(self.nb_samples):
                 x_i = x[i_image]
+                y_i: Optional["torch.Tensor"]
                 if y is not None:
                     y_i = y[i_image]
                 else:
@@ -94,7 +95,7 @@ class EoTPyTorch(PreprocessorPyTorch):
                 x_preprocess, y_preprocess_i = self._transform(x_i, y_i)
                 x_preprocess_list.append(x_preprocess)
 
-                if y is not None:
+                if y is not None and y_preprocess_i is not None:
                     y_preprocess_list.append(y_preprocess_i)
 
         x_preprocess = torch.stack(x_preprocess_list, dim=0)

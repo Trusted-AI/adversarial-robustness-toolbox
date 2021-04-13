@@ -90,7 +90,9 @@ class AdversarialTrainerMadryPGD(Trainer):
 
         self.trainer = AdversarialTrainer(classifier, self.attack, ratio=1.0)  # type: ignore
 
-    def fit(self, x: np.ndarray, y: np.ndarray, validation_data: Optional[np.ndarray] = None, **kwargs) -> None:
+    def fit(  # pylint: disable=W0221
+        self, x: np.ndarray, y: np.ndarray, validation_data: Optional[np.ndarray] = None, **kwargs
+    ) -> None:
         """
         Train a model adversarially. See class documentation for more information on the exact procedure.
 

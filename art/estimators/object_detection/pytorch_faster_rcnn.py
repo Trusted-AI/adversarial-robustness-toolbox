@@ -236,9 +236,9 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
             raise NotImplementedError("Combination of inputs and preprocessing not supported.")
 
         if isinstance(y_preprocessed, np.ndarray):
-            labels_t = torch.from_numpy(y_preprocessed).to(self._device)
+            labels_t = torch.from_numpy(y_preprocessed).to(self._device)  # type: ignore
         else:
-            labels_t = y_preprocessed
+            labels_t = y_preprocessed  # type: ignore
 
         output = self._model(inputs_t, labels_t)
 

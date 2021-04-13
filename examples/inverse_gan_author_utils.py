@@ -104,23 +104,23 @@ INPUT_TRANSFORM_DICT = {
 }
 
 
-def model_a(nb_filters=64, nb_classes=10, input_shape=(None, 28, 28, 1)):
-    layers = [
-        Conv2D(nb_filters, (5, 5), (1, 1), "SAME", use_bias=True),
-        ReLU(),
-        Conv2D(nb_filters, (5, 5), (2, 2), "VALID", use_bias=True),
-        ReLU(),
-        Flatten(),
-        Dropout(0.25),
-        Linear(128),
-        ReLU(),
-        Dropout(0.5),
-        Linear(nb_classes),
-        Softmax(),
-    ]
-
-    model = DefenseMLP(layers, input_shape, feature_layer="ReLU7")
-    return model
+# def model_a(nb_filters=64, nb_classes=10, input_shape=(None, 28, 28, 1)):
+#     layers = [
+#         Conv2D(nb_filters, (5, 5), (1, 1), "SAME", use_bias=True),
+#         ReLU(),
+#         Conv2D(nb_filters, (5, 5), (2, 2), "VALID", use_bias=True),
+#         ReLU(),
+#         Flatten(),
+#         Dropout(0.25),
+#         Linear(128),
+#         ReLU(),
+#         Dropout(0.5),
+#         Linear(nb_classes),
+#         Softmax(),
+#     ]
+#
+#     model = DefenseMLP(layers, input_shape, feature_layer="ReLU7")
+#     return model
 
 
 def generator_loss(loss_func, fake):
@@ -824,7 +824,7 @@ class AbstractModel(object):
         if not os.path.isdir(checkpoint_dir):
             try:
                 saver.restore(self.sess, checkpoint_dir)
-            except Exception as e:
+            except Exception:
                 print(" [!] Failed to find a checkpoint at {}".format(checkpoint_dir))
         else:
             print(" [-] Reading checkpoints... {} ".format(checkpoint_dir))
@@ -1299,39 +1299,6 @@ class DefenseGANv2(AbstractModel):
         self.initialized = True
 
 
-def discriminator_loss(loss_func, real, fake):
-    real_loss = 0
-    fake_loss = 0
-
-    if loss_func.__contains__("wgan"):
-        real_loss = -tf.reduce_mean(real)
-        fake_loss = tf.reduce_mean(fake)
-
-    if loss_func == "dcgan":
-        real_loss = tf.losses.sigmoid_cross_entropy(
-            tf.ones_like(real),
-            real,
-            reduction=Reduction.MEAN,
-        )
-        fake_loss = tf.losses.sigmoid_cross_entropy(
-            tf.zeros_like(fake),
-            fake,
-            reduction=Reduction.MEAN,
-        )
-
-    if loss_func == "hingegan":
-        real_loss = tf.reduce_mean(relu(1 - real))
-        fake_loss = tf.reduce_mean(relu(1 + fake))
-
-    if loss_func == "ragan":
-        real_loss = tf.reduce_mean(tf.nn.softplus(-(real - tf.reduce_mean(fake))))
-        fake_loss = tf.reduce_mean(tf.nn.softplus(fake - tf.reduce_mean(real)))
-
-    loss = real_loss + fake_loss
-
-    return loss
-
-
 class InvertorDefenseGAN(DefenseGANv2):
     @property
     def default_properties(self):
@@ -1561,11 +1528,7 @@ class EncoderReconstructor(object):
         print("Reconstruction module initialzied...\n")
 
     def generate_z_extrapolated_k(self):
-        # config = tf.ConfigProto()
-        # config.gpu_options.allow_growth = True
-
         x_shape = [28, 28, 1]
-        classes = 10  # lgtm [py/unused-local-variable]
 
         # TODO use as TS1Encoder Input
         images_tensor = tf.placeholder(tf.float32, shape=[None] + x_shape)
