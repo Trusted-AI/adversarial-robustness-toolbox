@@ -84,7 +84,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
 
     def __init__(
         self,
-        estimator: PyTorchDeepSpeech,
+        estimator: Union[PyTorchDeepSpeech, PyTorchEspresso],
         eps: float = 0.05,
         max_iter_1: int = 10,
         max_iter_2: int = 4000,
@@ -239,10 +239,11 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         # Cast to type float64 to avoid overflow
         adv_x = np.array([x_i.copy().astype(np.float64) for x_i in x])
 
-        # Put the estimator in the training mode, otherwise CUDA can't backpropagate through the model.
-        # However, estimator uses batch norm layers which need to be frozen
-        self.estimator.model.train()
-        self.estimator.set_batchnorm(train=False)
+        # Put the estimator in the training mode, otherwise CUDA may not be able to backpropagate through the model in
+        # case a PyTorchDeepSpeech estimator is used. However, the PyTorchDeepSpeech estimator uses batch norm layers
+        # which need to be frozen
+        self.estimator.to_training_mode()
+        self.estimator.batch_norm(train=False)
 
         # Compute perturbation with batching
         num_batch = int(np.ceil(len(x) / float(self.batch_size)))
@@ -275,8 +276,8 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             for i in range(len(adv_x_batch)):
                 adv_x[batch_index_1 + i] = adv_x_batch[i, : len(adv_x[batch_index_1 + i])]
 
-        # Unfreeze batch norm layers again
-        self.estimator.set_batchnorm(train=True)
+        # Unfreeze batch norm layers again, needed in case of PyTorchDeepSpeech
+        self.estimator.batch_norm(train=True)
 
         # Recast to the original type
         adv_x = np.array([adv_x[i].astype(x[i].dtype) for i in range(len(adv_x))])
@@ -456,15 +457,16 @@ class ImperceptibleASRPyTorch(EvasionAttack):
                     - masked_adv_input: Perturbed inputs.
         """
         import torch  # lgtm [py/repeated-import]
+# TODO
         from warpctc_pytorch import CTCLoss
-
+#####
         # Compute perturbed inputs
         local_delta = self.global_optimal_delta[:local_batch_size, :local_max_length]
         local_delta_rescale = torch.clamp(local_delta, -self.eps, self.eps).to(self.estimator.device)
         local_delta_rescale *= torch.tensor(rescale).to(self.estimator.device)
         adv_input = local_delta_rescale + torch.tensor(original_input).to(self.estimator.device)
         masked_adv_input = adv_input * torch.tensor(input_mask).to(self.estimator.device)
-
+# TODO
         # Transform data into the model input space
         inputs, targets, input_rates, target_sizes, batch_idx = self.estimator.preprocess_transform_model_input(
             x=masked_adv_input.to(self.estimator.device),
@@ -491,7 +493,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         decoded_output, _ = self.estimator.decoder.decode(outputs, output_sizes)
         decoded_output = [do[0] for do in decoded_output]
         decoded_output = np.array(decoded_output)
-
+#####
         # Rearrange to the original order
         decoded_output_ = decoded_output.copy()
         decoded_output[batch_idx] = decoded_output_
@@ -648,7 +650,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         :return: A tuple of the masking threshold and the maximum psd.
         """
         import librosa
-
+# TODO
         # First compute the psd matrix
         # These parameters are needed for the transformation
         sample_rate = self.estimator.model.audio_conf.sample_rate
@@ -662,7 +664,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         window_name = self.estimator.model.audio_conf.window.value
 
         window = scipy.signal.get_window(window_name, win_length, fftbins=True)
-
+######
         transformed_x = librosa.core.stft(
             y=x, n_fft=n_fft, hop_length=hop_length, win_length=win_length, window=window, center=False
         )
@@ -765,7 +767,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         :return: The psd matrix.
         """
         import torch  # lgtm [py/repeated-import]
-
+# TODO
         # These parameters are needed for the transformation
         sample_rate = self.estimator.model.audio_conf.sample_rate
         window_size = self.estimator.model.audio_conf.window_size
@@ -787,7 +789,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             window_fn = torch.bartlett_window  # type: ignore
         else:
             raise NotImplementedError("Spectrogram window %s not supported." % window)
-
+#####
         # Return STFT of delta
         delta_stft = torch.stft(
             delta,
