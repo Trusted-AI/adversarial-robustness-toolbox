@@ -19,8 +19,10 @@
 This module implements mixin abstract base class and mixin abstract framework-specific classes for all speech
 recognizers in ART.
 """
-
 from abc import ABC, abstractmethod
+from typing import Tuple
+
+import numpy as np
 
 
 class BaseSpeechRecognizer(ABC):
@@ -34,6 +36,21 @@ class PytorchSpeechRecognizerMixin(ABC):
     Pytorch class for ART speech recognizers. This class is used to define common methods for using inside pytorch
     imperceptible asr attack.
     """
+
+    @abstractmethod
+    def compute_loss_and_decoded_output(
+        self, masked_adv_input: "torch.Tensor", original_output: np.ndarray, **kwargs
+    ) -> Tuple["torch.Tensor", np.ndarray]:
+        """
+        Compute loss function and decoded output.
+
+        :param masked_adv_input: The perturbed inputs.
+        :param original_output: Target values of shape (nb_samples). Each sample in `original_output` is a string and
+                                it may possess different lengths. A possible example of `original_output` could be:
+                                `original_output = np.array(['SIXTY ONE', 'HELLO'])`.
+        :return: The loss and the decoded output.
+        """
+        raise NotImplementedError
 
     @abstractmethod
     def to_training_mode(self) -> None:
