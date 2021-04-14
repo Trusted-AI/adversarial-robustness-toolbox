@@ -78,7 +78,7 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierClassLossG
         """
         return self._input_shape  # type: ignore
 
-    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
+    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:  # pylint: disable=W0221
         """
         Perform prediction of the classifier for input `x`.
 

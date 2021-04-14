@@ -53,7 +53,7 @@ class PoisoningAttackBackdoor(PoisoningAttackBlackBox):
         self.perturbation = perturbation
         self._check_params()
 
-    def poison(
+    def poison(  # pylint: disable=W0221
         self, x: np.ndarray, y: Optional[np.ndarray] = None, broadcast=False, **kwargs
     ) -> Tuple[np.ndarray, np.ndarray]:
         """

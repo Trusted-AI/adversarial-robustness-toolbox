@@ -123,13 +123,13 @@ class BinaryInputDetector(ClassGradientsMixin, ClassifierMixin, LossGradientsMix
         return self.detector.clip_values
 
     @property
-    def channels_first(self) -> Optional[bool]:
+    def channels_first(self) -> bool:
         """
         :return: Boolean to indicate index of the color channels in the sample `x`.
         """
         return self._channels_first
 
-    def class_gradient(
+    def class_gradient(  # pylint: disable=W0221
         self, x: np.ndarray, label: Union[int, List[int], None] = None, training_mode: bool = False, **kwargs
     ) -> np.ndarray:
         """
@@ -147,7 +147,9 @@ class BinaryInputDetector(ClassGradientsMixin, ClassifierMixin, LossGradientsMix
         """
         return self.detector.class_gradient(x, label=label, training_mode=training_mode, **kwargs)
 
-    def loss_gradient(self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs) -> np.ndarray:
+    def loss_gradient(  # pylint: disable=W0221
+        self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs
+    ) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
@@ -291,7 +293,7 @@ class BinaryActivationDetector(
         return self.detector.clip_values
 
     @property
-    def channels_first(self) -> Optional[bool]:
+    def channels_first(self) -> bool:
         """
         :return: Boolean to indicate index of the color channels in the sample `x`.
         """
@@ -301,7 +303,7 @@ class BinaryActivationDetector(
     def layer_names(self) -> List[str]:
         raise NotImplementedError
 
-    def class_gradient(
+    def class_gradient(  # pylint: disable=W0221
         self, x: np.ndarray, label: Union[int, List[int], None] = None, training_mode: bool = False, **kwargs
     ) -> np.ndarray:
         """
@@ -319,7 +321,9 @@ class BinaryActivationDetector(
         """
         return self.detector.class_gradient(x=x, label=label, training_mode=training_mode, **kwargs)
 
-    def loss_gradient(self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs) -> np.ndarray:
+    def loss_gradient(  # pylint: disable=W0221
+        self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs
+    ) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 

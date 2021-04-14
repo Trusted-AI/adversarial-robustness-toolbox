@@ -43,7 +43,7 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
 
     def __init__(
         self,
-        steps: int = 1000,
+        steps: int,
         *args,
         init_cost: float = 1e-3,
         norm: Union[int, float] = 2,
@@ -86,14 +86,18 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
         self.cost_multiplier_up = cost_multiplier
         self.cost_multiplier_down = cost_multiplier ** 1.5
         self.batch_size = batch_size
-        self.top_indices = []
+        self.top_indices: List[int] = []
         self.activation_threshold = 0
 
-    def _predict_classifier(self, x: np.ndarray) -> np.ndarray:
+    def _predict_classifier(
+        self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs
+    ) -> np.ndarray:
         """
         Perform prediction for a batch of inputs.
 
         :param x: Input samples.
+        :param batch_size: Size of batches.
+        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
         raise NotImplementedError
@@ -118,7 +122,7 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
         """
         raise NotImplementedError
 
-    def predict(self, x: np.ndarray, batch_size: int = 128) -> np.ndarray:
+    def predict(self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs) -> np.ndarray:
         """
         Perform prediction of the given classifier for a batch of inputs, potentially filtering suspicious input
 
@@ -126,7 +130,7 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
         :param batch_size: Batch size.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
-        predictions = self._predict_classifier(x)
+        predictions = self._predict_classifier(x=x, batch_size=batch_size, training_mode=training_mode, **kwargs)
 
         if len(self.top_indices) == 0:
             logger.warning("Filtering mitigation not activated, suspected backdoors may be triggered")

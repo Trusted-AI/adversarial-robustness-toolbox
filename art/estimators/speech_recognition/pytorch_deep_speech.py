@@ -33,6 +33,7 @@ from art.estimators.speech_recognition.speech_recognizer import PytorchSpeechRec
 from art.utils import get_file
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     import torch
     from deepspeech_pytorch.model import DeepSpeech
 
@@ -243,7 +244,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, BaseSpeechRecognizer, PyTo
 
         # Setup for AMP use
         if self._use_amp:
-            from apex import amp
+            from apex import amp  # pylint: disable=E0611
 
             if self._optimizer is None:
                 logger.warning(
@@ -409,7 +410,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, BaseSpeechRecognizer, PyTo
 
         # Compute gradients
         if self._use_amp:
-            from apex import amp
+            from apex import amp  # pylint: disable=E0611
 
             with amp.scale_loss(loss, self._optimizer) as scaled_loss:
                 scaled_loss.backward()
@@ -432,7 +433,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, BaseSpeechRecognizer, PyTo
         results = self._apply_preprocessing_gradient(x_in, results)
 
         if x.dtype != np.object:
-            results = np.array([i for i in results], dtype=x.dtype)
+            results = np.array([i for i in results], dtype=x.dtype)  # pylint: disable=R1721
             assert results.shape == x.shape and results.dtype == x.dtype
 
         # Unfreeze batch norm layers again
@@ -516,7 +517,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, BaseSpeechRecognizer, PyTo
 
                 # Actual training
                 if self._use_amp:
-                    from apex import amp
+                    from apex import amp  # pylint: disable=E0611
 
                     with amp.scale_loss(loss, self._optimizer) as scaled_loss:
                         scaled_loss.backward()
@@ -658,13 +659,13 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, BaseSpeechRecognizer, PyTo
 
         # Get window for the transformation
         if window_name == "hamming":
-            window_fn = torch.hamming_window
+            window_fn = torch.hamming_window  # type: ignore
         elif window_name == "hann":
-            window_fn = torch.hann_window
+            window_fn = torch.hann_window  # type: ignore
         elif window_name == "blackman":
-            window_fn = torch.blackman_window
+            window_fn = torch.blackman_window  # type: ignore
         elif window_name == "bartlett":
-            window_fn = torch.bartlett_window
+            window_fn = torch.bartlett_window  # type: ignore
         else:
             raise NotImplementedError("Spectrogram window %s not supported." % window_name)
 
@@ -687,7 +688,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, BaseSpeechRecognizer, PyTo
                 target = list(filter(None, [label_map.get(letter) for letter in list(y[i])]))
 
             # Push the sequence to device
-            if not tensor_input:
+            if isinstance(x, np.ndarray) and not tensor_input:
                 x[i] = x[i].astype(config.ART_NUMPY_DTYPE)
                 x[i] = torch.tensor(x[i]).to(self._device)
 
