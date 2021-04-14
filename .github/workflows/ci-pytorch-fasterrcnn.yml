@@ -1,4 +1,4 @@
-name: CI
+name: CI PyTorchFasterRCNN
 on:
   # Run on manual trigger
   workflow_dispatch:
@@ -19,27 +19,18 @@ on:
     - cron: '0 8 * * 0'
 
 jobs:
-  test:
+  test_pytorch_fasterrcnn:
+    name: PyTorchFasterRCNN
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - name: PyTorch (Python 3.7)
-            framework: pytorch
-            python: 3.7
-            torch: 1.6.0+cpu
-            torchvision: 0.7.0+cpu
-            torchaudio: 0.6.0
-
-    name: ${{ matrix.name }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v2
       - name: Setup Python
         uses: actions/setup-python@v2
         with:
-          python-version: ${{ matrix.python }}
+          python-version: 3.7
       - name: Install Dependencies
         run: |
           sudo apt-get update
@@ -48,13 +39,10 @@ jobs:
           pip3 install -q -r requirements.txt
           pip list
       - name: Pre-install torch
-        if: ${{ matrix.framework == 'pytorch' }}
         run: |
-          pip install torch==${{ matrix.torch }} -f https://download.pytorch.org/whl/torch_stable.html
-          pip install torchvision==${{ matrix.torchvision }} -f https://download.pytorch.org/whl/torch_stable.html
-          pip install torchaudio==${{ matrix.torchaudio }} -f https://download.pytorch.org/whl/torch_stable.html
-      - name: Checkout Repo
-        uses: actions/checkout@v2
+          pip install torch==1.6.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
+          pip install torchvision==0.7.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
+          pip install torchaudio==0.6.0 -f https://download.pytorch.org/whl/torch_stable.html
       - name: Run Test Action
         uses: ./.github/actions/PyTorchFasterRCNN
       - name: Upload coverage to Codecov
