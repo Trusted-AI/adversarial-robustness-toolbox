@@ -1,5 +1,5 @@
-name: 'Test DeepSpeech v2'
-description: 'Run tests for DeepSpeech v2'
+name: 'Test PyTorchFasterRCNN'
+description: 'Run tests for PyTorchFasterRCNN'
 runs:
   using: 'composite'
   steps:
