@@ -173,6 +173,19 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, BaseSpeechRecognizer, PyTorc
         """
         pass
 
+    def get_transformation_params(self) -> Tuple[int, str, int, int, int]:
+        """
+        Get parameters needed for audio transformation.
+
+        :return: A tuple of (sample_rate, window_name, win_length, n_fft, hop_length)
+                    - sample_rate: audio sampling rate.
+                    - window_name: the type of window to create.
+                    - win_length: the number of samples in the window.
+                    - n_fft: FFT window size.
+                    - hop_length: number audio of frames between STFT columns.
+        """
+        raise NotImplementedError
+
     @property
     def input_shape(self) -> Tuple[int, ...]:
         """
