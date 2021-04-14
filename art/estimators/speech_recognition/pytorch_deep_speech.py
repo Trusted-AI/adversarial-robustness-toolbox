@@ -653,27 +653,20 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, BaseSpeechRecognizer, PyTo
         import torchaudio
         from deepspeech_pytorch.loader.data_loader import _collate_fn
 
-        # These parameters are needed for the transformation
-        sample_rate = self._model.audio_conf.sample_rate
-        window_size = self._model.audio_conf.window_size
-        window_stride = self._model.audio_conf.window_stride
+        # Get parameters needed for the transformation
+        sample_rate, window_name, win_length, n_fft, hop_length = self.get_transformation_params()
 
-        n_fft = int(sample_rate * window_size)
-        hop_length = int(sample_rate * window_stride)
-        win_length = n_fft
-
-        window = self._model.audio_conf.window.value
-
-        if window == "hamming":
+        # Get window for the transformation
+        if window_name == "hamming":
             window_fn = torch.hamming_window
-        elif window == "hann":
+        elif window_name == "hann":
             window_fn = torch.hann_window
-        elif window == "blackman":
+        elif window_name == "blackman":
             window_fn = torch.blackman_window
-        elif window == "bartlett":
+        elif window_name == "bartlett":
             window_fn = torch.bartlett_window
         else:
-            raise NotImplementedError("Spectrogram window %s not supported." % window)
+            raise NotImplementedError("Spectrogram window %s not supported." % window_name)
 
         # Create a transformer to transform between the two spaces
         transformer = torchaudio.transforms.Spectrogram(
@@ -727,6 +720,29 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, BaseSpeechRecognizer, PyTo
         inputs, targets, input_percentages, target_sizes = _collate_fn(batch)
 
         return inputs, targets, input_percentages, target_sizes, batch_idx
+
+    def get_transformation_params(self) -> Tuple[int, str, int, int, int]:
+        """
+        Get parameters needed for audio transformation.
+
+        :return: A tuple of (sample_rate, window_name, win_length, n_fft, hop_length)
+                    - sample_rate: audio sampling rate.
+                    - window_name: the type of window to create.
+                    - win_length: the number of samples in the window.
+                    - n_fft: FFT window size.
+                    - hop_length: number audio of frames between STFT columns.
+        """
+        # These parameters are needed for audio transformation
+        window_name = self.model.audio_conf.window.value
+        sample_rate = self.model.audio_conf.sample_rate
+        window_size = self.model.audio_conf.window_size
+        window_stride = self.model.audio_conf.window_stride
+
+        n_fft = int(sample_rate * window_size)
+        hop_length = int(sample_rate * window_stride)
+        win_length = n_fft
+
+        return sample_rate, window_name, win_length, n_fft, hop_length
 
     def to_training_mode(self) -> None:
         """
