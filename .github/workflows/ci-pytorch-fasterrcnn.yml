@@ -53,6 +53,8 @@ jobs:
           pip install torch==${{ matrix.torch }} -f https://download.pytorch.org/whl/torch_stable.html
           pip install torchvision==${{ matrix.torchvision }} -f https://download.pytorch.org/whl/torch_stable.html
           pip install torchaudio==${{ matrix.torchaudio }} -f https://download.pytorch.org/whl/torch_stable.html
+      - name: Checkout Repo
+        uses: actions/checkout@v2
       - name: Run Test Action
         uses: ./.github/actions/PyTorchFasterRCNN
       - name: Upload coverage to Codecov
