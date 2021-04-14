@@ -25,7 +25,7 @@ specifically for PyTorch.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING, Optional, Tuple, Union
 
 import numpy as np
 import scipy
@@ -34,7 +34,9 @@ from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNetworkMixin
 from art.estimators.pytorch import PyTorchEstimator
 from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
-from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizerMixin
+from art.estimators.speech_recognition.pytorch_espresso import PyTorchEspresso
+from art.estimators.speech_recognition.speech_recognizer import BaseSpeechRecognizer
+from art.estimators.speech_recognition.speech_recognizer import PytorchSpeechRecognizerMixin
 
 if TYPE_CHECKING:
     import torch
@@ -77,9 +79,11 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         BaseEstimator,
         LossGradientsMixin,
         NeuralNetworkMixin,
-        SpeechRecognizerMixin,
+        BaseSpeechRecognizer,
+        PytorchSpeechRecognizerMixin,
         PyTorchEstimator,
         PyTorchDeepSpeech,
+        PyTorchEspresso,
     )
 
     def __init__(
@@ -620,21 +624,15 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         :return: A tuple of the masking threshold and the maximum psd.
         """
         import librosa
-# TODO
+
         # First compute the psd matrix
-        # These parameters are needed for the transformation
-        sample_rate = self.estimator.model.audio_conf.sample_rate
-        window_size = self.estimator.model.audio_conf.window_size
-        window_stride = self.estimator.model.audio_conf.window_stride
+        # Get parameters needed for the transformation
+        sample_rate, window_name, win_length, n_fft, hop_length = self.estimator.get_transformation_params()
 
-        n_fft = int(sample_rate * window_size)
-        hop_length = int(sample_rate * window_stride)
-        win_length = n_fft
-
-        window_name = self.estimator.model.audio_conf.window.value
-
+        # Get window for the transformation
         window = scipy.signal.get_window(window_name, win_length, fftbins=True)
-######
+
+        # Do transformation
         transformed_x = librosa.core.stft(
             y=x, n_fft=n_fft, hop_length=hop_length, win_length=win_length, window=window, center=False
         )
@@ -647,7 +645,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         psd = 96 - np.max(psd) + psd
 
         # Compute freqs and barks
-        freqs = librosa.core.fft_frequencies(sample_rate, win_length)
+        freqs = librosa.core.fft_frequencies(sr=sample_rate, n_fft=n_fft)
         barks = 13 * np.arctan(0.00076 * freqs) + 3.5 * np.arctan(pow(freqs / 7500.0, 2))
 
         # Compute quiet threshold
@@ -737,29 +735,22 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         :return: The psd matrix.
         """
         import torch  # lgtm [py/repeated-import]
-# TODO
-        # These parameters are needed for the transformation
-        sample_rate = self.estimator.model.audio_conf.sample_rate
-        window_size = self.estimator.model.audio_conf.window_size
-        window_stride = self.estimator.model.audio_conf.window_stride
 
-        n_fft = int(sample_rate * window_size)
-        hop_length = int(sample_rate * window_stride)
-        win_length = n_fft
+        # Get parameters needed for the transformation
+        sample_rate, window_name, win_length, n_fft, hop_length = self.estimator.get_transformation_params()
 
-        window = self.estimator.model.audio_conf.window.value
-
-        if window == "hamming":
+        # Get window for the transformation
+        if window_name == "hamming":
             window_fn = torch.hamming_window
-        elif window == "hann":
+        elif window_name == "hann":
             window_fn = torch.hann_window
-        elif window == "blackman":
+        elif window_name == "blackman":
             window_fn = torch.blackman_window
-        elif window == "bartlett":
+        elif window_name == "bartlett":
             window_fn = torch.bartlett_window
         else:
-            raise NotImplementedError("Spectrogram window %s not supported." % window)
-#####
+            raise NotImplementedError("Spectrogram window %s not supported." % window_name)
+
         # Return STFT of delta
         delta_stft = torch.stft(
             delta,
