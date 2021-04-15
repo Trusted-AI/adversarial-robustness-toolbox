@@ -21,7 +21,7 @@ import numpy as np
 import pytest
 
 from art.estimators.pytorch import PyTorchEstimator
-from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizerMixin
+from art.estimators.speech_recognition.speech_recognizer import BaseSpeechRecognizer
 from art.estimators.tensorflow import TensorFlowV2Estimator
 from tests.utils import ARTTestFixtureNotImplemented
 
@@ -71,7 +71,7 @@ def asr_dummy_estimator(framework):
         asr_dummy = None
         if framework in ("tensorflow2v1", "tensorflow2"):
 
-            class TensorFlowV2ASRDummy(TensorFlowV2Estimator, SpeechRecognizerMixin):
+            class TensorFlowV2ASRDummy(TensorFlowV2Estimator, BaseSpeechRecognizer):
                 def get_activations(self):
                     pass
 
@@ -91,7 +91,7 @@ def asr_dummy_estimator(framework):
             asr_dummy = TensorFlowV2ASRDummy(channels_first=None, model=None, clip_values=None)
         if framework == "pytorch":
 
-            class PyTorchASRDummy(PyTorchEstimator, SpeechRecognizerMixin):
+            class PyTorchASRDummy(PyTorchEstimator, BaseSpeechRecognizer):
                 def get_activations(self):
                     pass
 
