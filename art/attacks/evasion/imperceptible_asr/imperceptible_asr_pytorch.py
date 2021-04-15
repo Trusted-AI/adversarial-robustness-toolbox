@@ -84,6 +84,13 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         PytorchSpeechRecognizerMixin,
         PyTorchEstimator,
         PyTorchDeepSpeech,
+    ) or (
+        BaseEstimator,
+        LossGradientsMixin,
+        NeuralNetworkMixin,
+        BaseSpeechRecognizer,
+        PytorchSpeechRecognizerMixin,
+        PyTorchEstimator,
         PyTorchEspresso,
     )
 
