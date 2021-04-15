@@ -480,7 +480,9 @@ class ImperceptibleASRPyTorch(EvasionAttack):
 
         # Compute loss and decoded output
         loss, decoded_output = self.estimator.compute_loss_and_decoded_output(
-            masked_adv_input=masked_adv_input, original_output=original_output, real_lengths=real_lengths,
+            masked_adv_input=masked_adv_input,
+            original_output=original_output,
+            real_lengths=real_lengths,
         )
 
         return loss, local_delta, decoded_output, masked_adv_input, local_delta_rescale

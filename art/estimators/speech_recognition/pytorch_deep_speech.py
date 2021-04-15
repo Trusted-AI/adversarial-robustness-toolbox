@@ -552,7 +552,9 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, BaseSpeechRecognizer, PyTo
 
         # Transform data into the model input space
         inputs, targets, input_rates, target_sizes, batch_idx = self._preprocess_transform_model_input(
-            x=masked_adv_input.to(self.device), y=original_output, real_lengths=real_lengths,
+            x=masked_adv_input.to(self.device),
+            y=original_output,
+            real_lengths=real_lengths,
         )
 
         # Compute real input sizes
