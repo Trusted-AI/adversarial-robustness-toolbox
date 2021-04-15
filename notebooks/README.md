@@ -1,5 +1,11 @@
 # Adversarial Robustness Toolbox notebooks
 
+## Expectation over Transformation (EoT)
+
+[expectation_over_transformation_classification_rotation.ipynb](expectation_over_transformation_classification_rotation.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/expectation_over_transformation_classification_rotation.ipynb)]
+show how to use Expectation over Transformation (EoT) sampling to make adversarial examples robust against rotation for image classification.
+
+
 ## Video Action Recognition
 
 [adversarial_action_recognition.ipynb](adversarial_action_recognition.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/adversarial_action_recognition.ipynb)]
