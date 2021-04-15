@@ -1,7 +1,0 @@
-name: 'Test PyTorchFasterRCNN'
-description: 'Run tests for PyTorchFasterRCNN'
-runs:
-  using: 'composite'
-  steps:
-    - run: $GITHUB_ACTION_PATH/run.sh
-      shell: bash
