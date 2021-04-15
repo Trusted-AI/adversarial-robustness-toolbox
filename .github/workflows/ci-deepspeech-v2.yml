@@ -1,4 +1,4 @@
-name: Continuous Integration Deepspeech v2
+name: CI PyTorchDeepSpeech v2
 on:
   # Run on manual trigger
   workflow_dispatch:
@@ -20,7 +20,7 @@ on:
 
 jobs:
   test_deepspeech_v2:
-    name: A job to test deepspeech version 2
+    name: PyTorchDeepSpeech v2
     runs-on: ubuntu-latest
     container: minhitbk/art_testing_envs:deepspeech_v2
     steps:
