@@ -28,7 +28,7 @@ import numpy as np
 
 from art import config
 from art.estimators.pytorch import PyTorchEstimator
-from art.estimators.speech_recognition.speech_recognizer import BaseSpeechRecognizer
+from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizerMixin
 from art.estimators.speech_recognition.speech_recognizer import PytorchSpeechRecognizerMixin
 from art.utils import get_file
 
@@ -44,7 +44,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, BaseSpeechRecognizer, PyTorchEstimator):
+class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTorchEstimator):
     """
     This class implements a model-specific automatic speech recognizer using the end-to-end speech recognizer
     DeepSpeech and PyTorch.

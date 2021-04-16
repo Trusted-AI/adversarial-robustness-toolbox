@@ -25,9 +25,9 @@ from typing import Tuple
 import numpy as np
 
 
-class BaseSpeechRecognizer(ABC):
+class SpeechRecognizerMixin(ABC):
     """
-    Base class for ART speech recognizers.
+    Mix-in base class for ART speech recognizers.
     """
 
 

@@ -26,7 +26,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 
-from typing import TYPE_CHECKING, Optional, Tuple, List, Union
+from typing import TYPE_CHECKING, Optional, Tuple, List
 
 import numpy as np
 import scipy
@@ -35,8 +35,7 @@ from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNetworkMixin
 from art.estimators.pytorch import PyTorchEstimator
 from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
-from art.estimators.speech_recognition.pytorch_espresso import PyTorchEspresso
-from art.estimators.speech_recognition.speech_recognizer import BaseSpeechRecognizer
+from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizerMixin
 from art.estimators.speech_recognition.speech_recognizer import PytorchSpeechRecognizerMixin
 
 if TYPE_CHECKING:
@@ -80,23 +79,15 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         BaseEstimator,
         LossGradientsMixin,
         NeuralNetworkMixin,
-        BaseSpeechRecognizer,
+        SpeechRecognizerMixin,
         PytorchSpeechRecognizerMixin,
         PyTorchEstimator,
         PyTorchDeepSpeech,
-    ) or (
-        BaseEstimator,
-        LossGradientsMixin,
-        NeuralNetworkMixin,
-        BaseSpeechRecognizer,
-        PytorchSpeechRecognizerMixin,
-        PyTorchEstimator,
-        PyTorchEspresso,
     )
 
     def __init__(
         self,
-        estimator: Union[PyTorchDeepSpeech, PyTorchEspresso],
+        estimator: PyTorchDeepSpeech,
         eps: float = 0.05,
         max_iter_1: int = 10,
         max_iter_2: int = 4000,

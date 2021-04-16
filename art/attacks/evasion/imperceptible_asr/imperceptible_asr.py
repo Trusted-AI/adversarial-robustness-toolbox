@@ -32,7 +32,7 @@ import scipy.signal as ss
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNetworkMixin
 from art.estimators.pytorch import PyTorchEstimator
-from art.estimators.speech_recognition.speech_recognizer import BaseSpeechRecognizer
+from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizerMixin
 from art.estimators.tensorflow import TensorFlowV2Estimator
 from art.utils import pad_sequence_input
 
@@ -71,7 +71,7 @@ class ImperceptibleASR(EvasionAttack):
         "num_iter_decrease_alpha",
     ]
 
-    _estimator_requirements = (NeuralNetworkMixin, LossGradientsMixin, BaseEstimator, BaseSpeechRecognizer)
+    _estimator_requirements = (NeuralNetworkMixin, LossGradientsMixin, BaseEstimator, SpeechRecognizerMixin)
 
     def __init__(
         self,
