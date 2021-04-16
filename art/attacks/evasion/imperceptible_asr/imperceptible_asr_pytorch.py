@@ -25,7 +25,6 @@ specifically for PyTorch.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-
 from typing import TYPE_CHECKING, Optional, Tuple, List
 
 import numpy as np
