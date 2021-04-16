@@ -403,11 +403,11 @@ class SquareAttack(EvasionAttack):
                     if self.estimator.channels_first:
                         new_deltas_size = [x_init.shape[0], channels, height_tile, height_tile]
                         random_choice_size = [x_init.shape[0], channels, 1, 1]
-                        perturbation_size = [1, 1, height_tile, height_tile]
+                        perturbation_size = (1, 1, height_tile, height_tile)
                     else:
                         new_deltas_size = [x_init.shape[0], height_tile, height_tile, channels]
                         random_choice_size = [x_init.shape[0], 1, 1, channels]
-                        perturbation_size = [1, height_tile, height_tile, 1]
+                        perturbation_size = (1, height_tile, height_tile, 1)
 
                     delta_new = (
                         np.ones(new_deltas_size)

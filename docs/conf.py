@@ -15,7 +15,7 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('..'))
 
-import art
+# import art
 
 # -- Project information -----------------------------------------------------
 
@@ -26,7 +26,7 @@ author = 'Maria-Irina Nicolae'
 # The short X.Y version
 version = '1.6'
 # The full version, including alpha/beta/rc tags
-release = '1.6.0'
+release = '1.6.1-dev'
 
 
 # -- General configuration ---------------------------------------------------

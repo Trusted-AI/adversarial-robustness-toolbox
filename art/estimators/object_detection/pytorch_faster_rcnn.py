@@ -53,7 +53,12 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
         preprocessing: "PREPROCESSING_TYPE" = None,
-        attack_losses: Tuple[str, ...] = ("loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg",),
+        attack_losses: Tuple[str, ...] = (
+            "loss_classifier",
+            "loss_box_reg",
+            "loss_objectness",
+            "loss_rpn_box_reg",
+        ),
         device_type: str = "gpu",
     ):
         """
@@ -231,9 +236,9 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
             raise NotImplementedError("Combination of inputs and preprocessing not supported.")
 
         if isinstance(y_preprocessed, np.ndarray):
-            labels_t = torch.from_numpy(y_preprocessed).to(self._device)
+            labels_t = torch.from_numpy(y_preprocessed).to(self._device)  # type: ignore
         else:
-            labels_t = y_preprocessed
+            labels_t = y_preprocessed  # type: ignore
 
         output = self._model(inputs_t, labels_t)
 

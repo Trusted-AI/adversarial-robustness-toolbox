@@ -61,7 +61,7 @@ class TestMetricsTrees(unittest.TestCase):
         master_seed(seed=42)
 
     def test_XGBoost(self):
-        model = XGBClassifier(n_estimators=4, max_depth=6, objective="multi:softprob",  eval_metric="merror")
+        model = XGBClassifier(n_estimators=4, max_depth=6, objective="multi:softprob", eval_metric="merror")
         model.fit(self.x_train, np.argmax(self.y_train, axis=1))
 
         classifier = XGBoostClassifier(model=model, nb_features=self.n_features, nb_classes=self.n_classes)

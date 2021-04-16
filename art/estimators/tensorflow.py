@@ -147,7 +147,7 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
 
         super()._check_params()
         self.all_framework_preprocessing = all(
-            [isinstance(p, PreprocessorTensorFlowV2) for p in self.preprocessing_operations]
+            (isinstance(p, PreprocessorTensorFlowV2) for p in self.preprocessing_operations)
         )
 
     def _apply_preprocessing(self, x, y, fit: bool = False) -> Tuple[Any, Any]:

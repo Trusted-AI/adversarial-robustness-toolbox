@@ -40,6 +40,7 @@ from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_n
 from art.utils import compute_success, random_sphere, compute_success_array
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     import torch
     from art.estimators.classification.pytorch import PyTorchClassifier
 
@@ -55,7 +56,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
     | Paper link: https://arxiv.org/abs/1706.06083
     """
 
-    _estimator_requirements = (BaseEstimator, LossGradientsMixin, ClassifierMixin)
+    _estimator_requirements = (BaseEstimator, LossGradientsMixin, ClassifierMixin)  # type: ignore
 
     def __init__(
         self,
@@ -154,7 +155,8 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         else:
             dataset = torch.utils.data.TensorDataset(
-                torch.from_numpy(x.astype(ART_NUMPY_DTYPE)), torch.from_numpy(targets.astype(ART_NUMPY_DTYPE)),
+                torch.from_numpy(x.astype(ART_NUMPY_DTYPE)),
+                torch.from_numpy(targets.astype(ART_NUMPY_DTYPE)),
             )
 
         data_loader = torch.utils.data.DataLoader(
@@ -176,7 +178,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
 
             # Compute batch_eps and batch_eps_step
-            if isinstance(self.eps, np.ndarray):
+            if isinstance(self.eps, np.ndarray) and isinstance(self.eps_step, np.ndarray):
                 if len(self.eps.shape) == len(x.shape) and self.eps.shape[0] == x.shape[0]:
                     batch_eps = self.eps[batch_index_1:batch_index_2]
                     batch_eps_step = self.eps_step[batch_index_1:batch_index_2]
@@ -249,12 +251,18 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         for i_max_iter in range(self.max_iter):
             adv_x = self._compute_torch(
-                adv_x, inputs, targets, mask, eps, eps_step, self.num_random_init > 0 and i_max_iter == 0,
+                adv_x,
+                inputs,
+                targets,
+                mask,
+                eps,
+                eps_step,
+                self.num_random_init > 0 and i_max_iter == 0,
             )
 
         return adv_x.cpu().detach().numpy()
 
-    def _compute_perturbation(
+    def _compute_perturbation(  # pylint: disable=W0221
         self, x: "torch.Tensor", y: "torch.Tensor", mask: Optional["torch.Tensor"]
     ) -> "torch.Tensor":
         """
@@ -303,7 +311,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         return grad
 
-    def _apply_perturbation(
+    def _apply_perturbation(  # pylint: disable=W0221
         self, x: "torch.Tensor", perturbation: "torch.Tensor", eps_step: Union[int, float, np.ndarray]
     ) -> "torch.Tensor":
         """
@@ -418,10 +426,13 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
                     "The parameter `eps` of type `np.ndarray` is not supported to use with norm 2."
                 )
 
-            values_tmp = values_tmp * torch.min(
-                torch.tensor([1.0], dtype=torch.float32).to(self.estimator.device),
-                eps / (torch.norm(values_tmp, p=2, dim=1) + tol),
-            ).unsqueeze_(-1)
+            values_tmp = (
+                values_tmp
+                * torch.min(
+                    torch.tensor([1.0], dtype=torch.float32).to(self.estimator.device),
+                    eps / (torch.norm(values_tmp, p=2, dim=1) + tol),
+                ).unsqueeze_(-1)
+            )
 
         elif norm_p == 1:
             if isinstance(eps, np.ndarray):
@@ -429,10 +440,13 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
                     "The parameter `eps` of type `np.ndarray` is not supported to use with norm 1."
                 )
 
-            values_tmp = values_tmp * torch.min(
-                torch.tensor([1.0], dtype=torch.float32).to(self.estimator.device),
-                eps / (torch.norm(values_tmp, p=1, dim=1) + tol),
-            ).unsqueeze_(-1)
+            values_tmp = (
+                values_tmp
+                * torch.min(
+                    torch.tensor([1.0], dtype=torch.float32).to(self.estimator.device),
+                    eps / (torch.norm(values_tmp, p=1, dim=1) + tol),
+                ).unsqueeze_(-1)
+            )
 
         elif norm_p in [np.inf, "inf"]:
             if isinstance(eps, np.ndarray):

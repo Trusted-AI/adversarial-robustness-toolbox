@@ -34,12 +34,13 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class input_filter(abc.ABCMeta):
+class InputFilter(abc.ABCMeta):
     """
     Metaclass to ensure that inputs are ndarray for all of the subclass generate and extract calls
     """
 
-    def __init__(cls, name, bases, clsdict):
+    # pylint: disable=W0613
+    def __init__(cls, name, bases, clsdict):  # pylint: disable=W0231
         """
         This function overrides any existing generate or extract methods with a new method that
         ensures the input is an `np.ndarray`. There is an assumption that the input object has implemented
@@ -84,7 +85,7 @@ class input_filter(abc.ABCMeta):
                 setattr(cls, item, new_function)
 
 
-class Attack(abc.ABC, metaclass=input_filter):
+class Attack(abc.ABC, metaclass=InputFilter):
     """
     Abstract base class for all attack abstract base classes.
     """
@@ -96,6 +97,8 @@ class Attack(abc.ABC, metaclass=input_filter):
         """
         :param estimator: An estimator.
         """
+        super().__init__()
+
         if self.estimator_requirements is None:
             raise ValueError("Estimator requirements have not been defined in `_estimator_requirements`.")
 
@@ -106,10 +109,12 @@ class Attack(abc.ABC, metaclass=input_filter):
 
     @property
     def estimator(self):
+        """The estimator."""
         return self._estimator
 
     @property
     def estimator_requirements(self):
+        """The estimator requirements."""
         return self._estimator_requirements
 
     def set_params(self, **kwargs) -> None:
@@ -193,7 +198,7 @@ class PoisoningAttackTransformer(PoisoningAttack):
     These attacks have an additional method, `poison_estimator`, that returns the poisoned classifier.
     """
 
-    def __init__(self, classifier: Optional["CLASSIFIER_TYPE"], **kwargs) -> None:
+    def __init__(self, classifier: Optional["CLASSIFIER_TYPE"]) -> None:
         """
         :param classifier: A trained classifier (or none if no classifier is needed)
         """

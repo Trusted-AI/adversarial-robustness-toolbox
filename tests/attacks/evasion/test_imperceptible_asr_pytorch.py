@@ -28,7 +28,7 @@ from tests.utils import ARTTestException
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.skip_module("apex.amp", "deepspeech_pytorch", "torchaudio")
+@pytest.mark.skip_module("deepspeech_pytorch", "torchaudio")
 @pytest.mark.skip_framework("tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
 @pytest.mark.parametrize("use_amp", [False, True])
 @pytest.mark.parametrize("device_type", ["cpu", "gpu"])
@@ -41,12 +41,16 @@ def test_imperceptible_asr_pytorch(art_warning, expected_values, use_amp, device
     from art.preprocessing.audio import LFilterPyTorch
 
     try:
+        # Skip test if gpu is not available and use_amp is true
+        if use_amp and not torch.cuda.is_available():
+            return
+
         # Load data for testing
         expected_data = expected_values()
 
-        x1 = expected_data[0]
-        x2 = expected_data[1]
-        x3 = expected_data[2]
+        x1 = expected_data["x1"]
+        x2 = expected_data["x2"]
+        x3 = expected_data["x3"]
 
         # Create signal data
         x = np.array(
@@ -61,8 +65,8 @@ def test_imperceptible_asr_pytorch(art_warning, expected_values, use_amp, device
         y = np.array(["S", "I", "GD"])
 
         # Create DeepSpeech estimator with preprocessing
-        numerator_coef = np.array([0.0000001, 0.0000002, -0.0000001, -0.0000002])
-        denominator_coef = np.array([1.0, 0.0, 0.0, 0.0])
+        numerator_coef = np.array([0.0000001, 0.0000002, -0.0000001, -0.0000002], dtype=ART_NUMPY_DTYPE)
+        denominator_coef = np.array([1.0, 0.0, 0.0, 0.0], dtype=ART_NUMPY_DTYPE)
         audio_filter = LFilterPyTorch(
             numerator_coef=numerator_coef, denominator_coef=denominator_coef, device_type=device_type
         )
@@ -82,8 +86,8 @@ def test_imperceptible_asr_pytorch(art_warning, expected_values, use_amp, device
             max_iter_2=5,
             learning_rate_1=0.00001,
             learning_rate_2=0.001,
-            optimizer_1=torch.optim.SGD,
-            optimizer_2=torch.optim.SGD,
+            optimizer_1=torch.optim.Adam,
+            optimizer_2=torch.optim.Adam,
             global_max_length=2000,
             initial_rescale=1.0,
             decrease_factor_eps=0.8,

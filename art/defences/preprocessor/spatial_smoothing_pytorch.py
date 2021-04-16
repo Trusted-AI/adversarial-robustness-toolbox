@@ -34,6 +34,7 @@ import numpy as np
 from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     import torch
     from art.utils import CLIP_VALUES_TYPE
 
@@ -106,20 +107,23 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
                 else:
                     # kornia >= 0.5.0
                     from kornia.filters.median import _compute_zero_padding
-                    padding = _compute_zero_padding(kernel_size)
+
+                    padding = _compute_zero_padding(kernel_size)  # type: ignore
                 self.p2d = [
-                    int(padding[-1]) + half_pad[-1],
-                    int(padding[-1]),
-                    int(padding[-2]) + half_pad[-2],
-                    int(padding[-2]),
+                    int(padding[-1]) + half_pad[-1],  # type: ignore
+                    int(padding[-1]),  # type: ignore
+                    int(padding[-2]) + half_pad[-2],  # type: ignore
+                    int(padding[-2]),  # type: ignore
                 ]
-                # PyTorch requires Padding size should be less than the corresponding input dimension,
+                # PyTorch requires padding size should be less than the corresponding input dimension.
 
                 if not hasattr(self, "kernel"):
                     # kornia >= 0.5.0
                     from kornia.filters.kernels import get_binary_kernel2d
+
                     self.kernel = get_binary_kernel2d(kernel_size)
 
+            # pylint: disable=W0622
             def forward(self, input: "torch.Tensor"):  # type: ignore
                 import torch  # lgtm [py/repeated-import]
                 import torch.nn.functional as F

@@ -95,9 +95,11 @@ class PixelDefend(Preprocessor):
         # Convert into `uint8`
         original_shape = x.shape
         if self.pixel_cnn is not None:
-            probs = self.pixel_cnn.get_activations(x, layer=-1, batch_size=self.batch_size).reshape(
-                (x.shape[0], -1, 256)
-            )
+            activations = self.pixel_cnn.get_activations(x, layer=-1, batch_size=self.batch_size)
+            if activations is not None:
+                probs = activations.reshape((x.shape[0], -1, 256))
+            else:
+                raise ValueError("Activations are None.")
         else:
             raise ValueError("No model received for `pixel_cnn`.")
 
@@ -110,7 +112,10 @@ class PixelDefend(Preprocessor):
             for feat_index in range(x.shape[1]):
                 # Setup the search space
                 f_probs = probs[i, feat_index, :]
-                f_range = range(int(max(x_i[feat_index] - self.eps, 0)), int(min(x_i[feat_index] + self.eps, 255) + 1),)
+                f_range = range(
+                    int(max(x_i[feat_index] - self.eps, 0)),
+                    int(min(x_i[feat_index] + self.eps, 255) + 1),
+                )
 
                 # Look in the search space
                 best_prob = -1
