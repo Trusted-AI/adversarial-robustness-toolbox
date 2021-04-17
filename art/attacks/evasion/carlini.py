@@ -802,11 +802,11 @@ class CarliniLInfMethod(EvasionAttack):
 class CarliniL0Method(EvasionAttack):
     """
     The L_0 distance metric is non-differentiable and therefore is ill-suited for standard gradient descent.
-    Instead, we use an iterative algorithm that, in each iteration, identifies some pixels that don’t have much effect
-    on the classifier output and then fixes those pixels, so their value will never be changed. The set of fixed pixels
+    Instead, we use an iterative algorithm that, in each iteration, identifies some features that don’t have much effect
+    on the classifier output and then fixes those features, so their value will never be changed. The set of fixed features
     grows in each iteration until we have, by process of elimination, identified a minimal (but possibly not minimum)
-    subset of pixels that can be modified to generate an adversarial example. In each iteration, we use our L_2 attack
-    to identify which pixels are unimportant.
+    subset of features that can be modified to generate an adversarial example. In each iteration, we use our L_2 attack
+    to identify which features are unimportant [Carlini and Wagner, 2017].
 
     | Paper link: https://arxiv.org/abs/1608.04644
     """
