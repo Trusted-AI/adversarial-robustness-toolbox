@@ -803,10 +803,10 @@ class CarliniL0Method(CarliniL2Method):
     """
     The L_0 distance metric is non-differentiable and therefore is ill-suited for standard gradient descent.
     Instead, we use an iterative algorithm that, in each iteration, identifies some features that don’t have much effect
-    on the classifier output and then fixes those features, so their value will never be changed. The set of fixed features
-    grows in each iteration until we have, by process of elimination, identified a minimal (but possibly not minimum)
-    subset of features that can be modified to generate an adversarial example. In each iteration, we use our L_2 attack
-    to identify which features are unimportant [Carlini and Wagner, 2017].
+    on the classifier output and then fixes those features, so their value will never be changed.
+    The set of fixed features grows in each iteration until we have, by process of elimination, identified a minimal
+    (but possibly not minimum) subset of features that can be modified to generate an adversarial example.
+    In each iteration, we use our L_2 attack to identify which features are unimportant [Carlini and Wagner, 2017].
 
     | Paper link: https://arxiv.org/abs/1608.04644
     """
@@ -840,7 +840,7 @@ class CarliniL0Method(CarliniL2Method):
         max_halving=5,
         max_doubling=5,
         batch_size=1,
-    ):
+    ) -> None:
         """
         Create a Carlini L_0 attack instance.
 
@@ -875,7 +875,7 @@ class CarliniL0Method(CarliniL2Method):
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :type batch_size: `int`
         """
-        super(CarliniL0Method, self).__init__(estimator=classifier)
+        super().__init__(estimator=classifier)
 
         kwargs = {
             "confidence": confidence,
@@ -1104,7 +1104,7 @@ class CarliniL0Method(CarliniL2Method):
                             new_x_adv_batch_tanh = \
                                 x_adv2 + lr_mult * \
                                 perturbation_tanh[do_doubling] * \
-                                acivation_batch[do_doubling]
+                                activation_batch[do_doubling]
                             new_x_adv_batch = tanh_to_original(new_x_adv_batch_tanh, clip_min, clip_max)
                             _, l2dist[active_and_do_doubling], loss[active_and_do_doubling] = self._loss(
                                 x_batch[active_and_do_doubling],
@@ -1199,10 +1199,10 @@ class CarliniL0Method(CarliniL2Method):
                 clip_min,
                 clip_max,
             )
-            perturbation_L1_norm = np.abs(x_adv - x)
+            perturbation_l1_norm = np.abs(x_adv - x)
 
             # gradient * perturbation tells how much reduction to the objective function we obtain for each attribute
-            objective_reduction = np.abs(objective_loss_gradient) * perturbation_L1_norm
+            objective_reduction = np.abs(objective_loss_gradient) * perturbation_l1_norm
 
             # Assign infinity as the objective_reduction value for fixed feature (in order not to select them again)
             objective_reduction += np.array(np.where(activation != 0, np.inf, activation))
@@ -1216,7 +1216,7 @@ class CarliniL0Method(CarliniL2Method):
             print(
                 "L0 norm before fixing :\n{}\nNumber active features :\n{}\nIndex of fixed feature :\n{}"
                 .format(
-                    np.sum((perturbation_L1_norm > self._perturbation_threshold).astype(int), axis=1),
+                    np.sum((perturbation_l1_norm > self._perturbation_threshold).astype(int), axis=1),
                     np.sum(activation, axis=1),
                     fix_feature_index
                 )
