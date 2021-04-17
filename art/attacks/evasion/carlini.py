@@ -799,7 +799,7 @@ class CarliniLInfMethod(EvasionAttack):
             raise ValueError("The batch size must be an integer greater than zero.")
 
 
-class CarliniL0Method(EvasionAttack):
+class CarliniL0Method(CarliniL2Method):
     """
     The L_0 distance metric is non-differentiable and therefore is ill-suited for standard gradient descent.
     Instead, we use an iterative algorithm that, in each iteration, identifies some features that don’t have much effect
@@ -909,88 +909,6 @@ class CarliniL0Method(EvasionAttack):
         # To overcom this problem, we set a threshold of minimal diffrence considered as perturbation
         # Below this threshold, a diffrence between values is considered as tanh transformation diffrence
         self._perturbation_threshold = 1e-06
-
-    def _loss(self, x, x_adv, target, c_weight):
-        """
-        Compute the objective function value.
-
-        :param x: An array with the original input.
-        :type x: `np.ndarray`
-        :param x_adv: An array with the adversarial input.
-        :type x_adv: `np.ndarray`
-        :param target: An array with the target class (one-hot encoded).
-        :type target: `np.ndarray`
-        :param c_weight: Weight of the loss term aiming for classification as target.
-        :type c_weight: `float`
-        :return: A tuple holding the current logits, l2 distance and overall loss.
-        :rtype: `(float, float, float)`
-        """
-        l2dist = np.sum(np.square(x - x_adv).reshape(x.shape[0], -1), axis=1)
-        z_predicted = self.estimator.predict(
-            np.array(x_adv, dtype=ART_NUMPY_DTYPE), logits=True, batch_size=self.batch_size
-        )
-        z_target = np.sum(z_predicted * target, axis=1)
-        z_other = np.max(z_predicted * (1 - target) + (np.min(z_predicted, axis=1) - 1)[:, np.newaxis] * target, axis=1)
-
-        # The following differs from the exact definition given in Carlini and Wagner (2016). There (page 9, left
-        # column, last equation), the maximum is taken over Z_other - Z_target (or Z_target - Z_other respectively)
-        # and -confidence. However, it doesn't seem that that would have the desired effect (loss term is <= 0 if and
-        # only if the difference between the logit of the target and any other class differs by at least confidence).
-        # Hence the rearrangement here.
-
-        if self.targeted:
-            # if targeted, optimize for making the target class most likely
-            loss = np.maximum(z_other - z_target + self.confidence, np.zeros(x.shape[0]))
-        else:
-            # if untargeted, optimize for making any other class most likely
-            loss = np.maximum(z_target - z_other + self.confidence, np.zeros(x.shape[0]))
-
-        return z_predicted, l2dist, c_weight * loss + l2dist
-
-    def _loss_gradient(self, z_logits, target, x, x_adv, x_adv_tanh, c_weight, clip_min, clip_max):
-        """
-        Compute the gradient of the loss function.
-
-        :param z_logits: An array with the current logits.
-        :type z_logits: `np.ndarray`
-        :param target: An array with the target class (one-hot encoded).
-        :type target: `np.ndarray`
-        :param x: An array with the original input.
-        :type x: `np.ndarray`
-        :param x_adv: An array with the adversarial input.
-        :type x_adv: `np.ndarray`
-        :param x_adv_tanh: An array with the adversarial input in tanh space.
-        :type x_adv_tanh: `np.ndarray`
-        :param c_weight: Weight of the loss term aiming for classification as target.
-        :type c_weight: `float`
-        :param clip_min: Minimum clipping value.
-        :type clip_min: `float`
-        :param clip_max: Maximum clipping value.
-        :type clip_max: `float`
-        :return: An array with the gradient of the loss function.
-        :type target: `np.ndarray`
-        """
-        if self.targeted:
-            i_sub = np.argmax(target, axis=1)
-            i_add = np.argmax(z_logits * (1 - target) + (np.min(z_logits, axis=1) - 1)[:, np.newaxis] * target, axis=1)
-        else:
-            i_add = np.argmax(target, axis=1)
-            i_sub = np.argmax(z_logits * (1 - target) + (np.min(z_logits, axis=1) - 1)[:, np.newaxis] * target, axis=1)
-
-        loss_gradient = self.estimator.class_gradient(x_adv, label=i_add)
-        loss_gradient -= self.estimator.class_gradient(x_adv, label=i_sub)
-        loss_gradient = loss_gradient.reshape(x.shape)
-
-        c_mult = c_weight
-        for _ in range(len(x.shape) - 1):
-            c_mult = c_mult[:, np.newaxis]
-
-        loss_gradient *= c_mult
-        loss_gradient += 2 * (x_adv - x)
-        loss_gradient *= clip_max - clip_min
-        loss_gradient *= (1 - np.square(np.tanh(x_adv_tanh))) / (2 * self._tanh_smoother)
-
-        return loss_gradient
 
     def generate(self, x, y=None, **kwargs):
         """
@@ -1311,49 +1229,3 @@ class CarliniL0Method(EvasionAttack):
                     fix_feature_index
                 )
             )
-
-    def set_params(self, **kwargs):
-        """Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
-
-        :param confidence: Confidence of adversarial examples: a higher value produces examples that are farther away,
-               from the original input, but classified with higher confidence as the target class.
-        :type confidence: `float`
-        :param targeted: Should the attack target one specific class
-        :type targeted: `bool`
-        :param learning_rate: The learning rate for the attack algorithm. Smaller values produce better results but are
-               slower to converge.
-        :type learning_rate: `float`
-        :param binary_search_steps: number of times to adjust constant with binary search (positive value)
-        :type binary_search_steps: `int`
-        :param max_iter: The maximum number of iterations.
-        :type max_iter: `int`
-        :param initial_const: (optional float, positive) The initial trade-off constant c to use to tune the relative
-               importance of distance and confidence. If binary_search_steps is large,
-               the initial constant is not important. The default value 1e-4 is suggested in Carlini and Wagner (2016).
-        :type initial_const: `float`
-        :param max_halving: Maximum number of halving steps in the line search optimization.
-        :type max_halving: `int`
-        :param max_doubling: Maximum number of doubling steps in the line search optimization.
-        :type max_doubling: `int`
-        :param batch_size: Internal size of batches on which adversarial samples are generated.
-        :type batch_size: `int`
-        """
-        # Save attack-specific parameters
-        super(CarliniL0Method, self).set_params(**kwargs)
-
-        if not isinstance(self.binary_search_steps, (int, np.int)) or self.binary_search_steps < 0:
-            raise ValueError("The number of binary search steps must be a non-negative integer.")
-
-        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter < 0:
-            raise ValueError("The number of iterations must be a non-negative integer.")
-
-        if not isinstance(self.max_halving, (int, np.int)) or self.max_halving < 1:
-            raise ValueError("The number of halving steps must be an integer greater than zero.")
-
-        if not isinstance(self.max_doubling, (int, np.int)) or self.max_doubling < 1:
-            raise ValueError("The number of doubling steps must be an integer greater than zero.")
-
-        if not isinstance(self.batch_size, (int, np.int)) or self.batch_size < 1:
-            raise ValueError("The batch size must be an integer greater than zero.")
-
-        return True
