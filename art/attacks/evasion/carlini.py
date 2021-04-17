@@ -806,7 +806,7 @@ class CarliniL0Method(CarliniL2Method):
     on the classifier output and then fixes those features, so their value will never be changed.
     The set of fixed features grows in each iteration until we have, by process of elimination, identified a minimal
     (but possibly not minimum) subset of features that can be modified to generate an adversarial example.
-    In each iteration, we use our L_2 attack to identify which features are unimportant [Carlini and Wagner, 2017].
+    In each iteration, we use our L_2 attack to identify which features are unimportant [Carlini and Wagner, 2016].
 
     | Paper link: https://arxiv.org/abs/1608.04644
     """
@@ -837,6 +837,7 @@ class CarliniL0Method(CarliniL2Method):
         max_iter=10,
         initial_const=0.01,
         mask=None,
+        warm_start=True,
         max_halving=5,
         max_doubling=5,
         batch_size=1,
@@ -868,6 +869,9 @@ class CarliniL0Method(CarliniL2Method):
         :param mask: The initial features that can be modified by the algorithm. If not specified, the
                 algorithm uses the full feature set.
         :type mask: `np.ndarray`
+        :param warm_start: Instead of starting gradien descent in each iteration from the initial image. we start the
+                gradient descent from the solution found on the previous iteration.
+        :type warm_start: `boolean`
         :param max_halving: Maximum number of halving steps in the line search optimization.
         :type max_halving: `int`
         :param max_doubling: Maximum number of doubling steps in the line search optimization.
@@ -885,6 +889,7 @@ class CarliniL0Method(CarliniL2Method):
             "max_iter": max_iter,
             "initial_const": initial_const,
             "mask": mask,
+            "warm_start": warm_start,
             "max_halving": max_halving,
             "max_doubling": max_doubling,
             "batch_size": batch_size,
@@ -962,8 +967,11 @@ class CarliniL0Method(CarliniL2Method):
                 logger.debug("Processing batch %i out of %i", batch_id, nb_batches)
 
                 batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
-                # x_batch = x[batch_index_1:batch_index_2]
-                x_batch = x_adv[batch_index_1:batch_index_2]  # use for future implementation of warm_start
+                if self.warm_start:
+                    # Start the gradient descent from the solution found on the previous iteration
+                    x_batch = x_adv[batch_index_1:batch_index_2]
+                else:
+                    x_batch = x[batch_index_1:batch_index_2]
                 y_batch = y[batch_index_1:batch_index_2]
                 activation_batch = activation[batch_index_1:batch_index_2]
 
