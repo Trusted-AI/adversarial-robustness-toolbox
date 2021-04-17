@@ -837,7 +837,6 @@ class CarliniL0Method(CarliniL2Method):
         max_iter=10,
         initial_const=0.01,
         mask=None,
-        # warm_start=True, # For later implementation of warm_start
         max_halving=5,
         max_doubling=5,
         batch_size=1,
@@ -869,9 +868,6 @@ class CarliniL0Method(CarliniL2Method):
         :param mask: The initial features that can be modified by the algorithm. If not specified, the
                 algorithm uses the full feature set.
         :type mask: `np.ndarray`
-        :param warm_start: Instead of starting gradien descent in each iteration from the initial image. we start the
-                gradient descent from the solution found on the previous iteration.
-        :type warm_start: `boolean`
         :param max_halving: Maximum number of halving steps in the line search optimization.
         :type max_halving: `int`
         :param max_doubling: Maximum number of doubling steps in the line search optimization.
@@ -889,7 +885,6 @@ class CarliniL0Method(CarliniL2Method):
             "max_iter": max_iter,
             "initial_const": initial_const,
             "mask": mask,
-            # "warm_start": warm_start, # For later implementation of warm_start
             "max_halving": max_halving,
             "max_doubling": max_doubling,
             "batch_size": batch_size,
@@ -981,7 +976,6 @@ class CarliniL0Method(CarliniL2Method):
                 c_double = np.ones(x_batch.shape[0]) > 0
 
                 # Initialize placeholders for best l2 distance and attack found so far
-                best_l2dist = np.inf * np.ones(x_batch.shape[0])
                 best_l0dist_batch = np.inf * np.ones(x_batch.shape[0])
                 best_x_adv_batch = x_batch.copy()
 
@@ -1186,7 +1180,6 @@ class CarliniL0Method(CarliniL2Method):
             # If the L_2 attack can't find any adversarial examples with the new activation, return the last one
             z_logits, l2dist, loss = self._loss(x, x_adv, y, c_final)
             attack_success = loss - l2dist <= 0
-            # l0dist = np.sum((np.abs(x_batch - x_adv_batch) > self._perturbation_threshold).astype(int), axis=1)
             l0dist = np.sum((np.abs(x - x_adv) > self._perturbation_threshold).astype(int), axis=1)
             improved_adv = attack_success & (l0dist < best_l0dist)
             if np.sum(improved_adv) > 0:
@@ -1211,7 +1204,7 @@ class CarliniL0Method(CarliniL2Method):
             # gradient * perturbation tells how much reduction to the objective function we obtain for each attribute
             objective_reduction = np.abs(objective_loss_gradient) * perturbation_L1_norm
 
-            # Put a huge nomber as objective_reduction value for fixed feature (in order not to select them again)
+            # Put a huge number as objective_reduction value for fixed feature (in order not to select them again)
             # was np.inf before, but inf * 0 = nan
             objective_reduction += 999999999999999 * (activation == 0).astype(int)
 
