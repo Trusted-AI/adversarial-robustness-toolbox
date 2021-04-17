@@ -160,7 +160,7 @@ class XGBoostClassifier(ClassifierDecisionTree):
 
         if isinstance(self._model, Booster):
             try:
-                return int(len(self._model.get_dump(dump_format="json")) / self._model.n_estimators)
+                return int(len(self._model.get_dump(dump_format="json")) / self._model.n_estimators)  # type: ignore
             except AttributeError:
                 if nb_classes is not None:
                     return nb_classes

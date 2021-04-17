@@ -1301,9 +1301,10 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                         i_layer = i_name
                         break
             elif isinstance(layer, int):
-                if layer < 0 or layer >= len(self.layer_names):
+                if layer < -len(self.layer_names) or layer >= len(self.layer_names):
                     raise ValueError(
-                        "Layer index %d is outside of range (0 to %d included)." % (layer, len(self.layer_names) - 1)
+                        "Layer index %d is outside of range (-%d to %d)."
+                        % (layer, len(self.layer_names), len(self.layer_names) - 1)
                     )
                 i_layer = layer
             else:
