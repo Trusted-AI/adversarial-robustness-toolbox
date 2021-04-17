@@ -19,19 +19,21 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import unittest
-import keras
-import keras.backend as k
+# import keras
+# import keras.backend as k
 import numpy as np
 
 from art.attacks.evasion.carlini import CarliniL2Method, CarliniLInfMethod
-from art.estimators.classification.keras import KerasClassifier
+# from art.estimators.classification.keras import KerasClassifier
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassGradientsMixin
-from art.utils import random_targets, to_categorical
+from art.utils import random_targets
+# from art.utils import to_categorical
 
 from tests.utils import TestBase, master_seed
-from tests.utils import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
-from tests.utils import get_tabular_classifier_tf, get_tabular_classifier_kr, get_tabular_classifier_pt
+from tests.utils import get_image_classifier_tf
+# from test.utils import get_image_classifier_kr, get_image_classifier_pt
+# from tests.utils import get_tabular_classifier_tf, get_tabular_classifier_kr, get_tabular_classifier_pt
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 
 logger = logging.getLogger(__name__)

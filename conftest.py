@@ -297,7 +297,7 @@ def store_expected_values(request):
     def _store_expected_values(values_to_store, framework=""):
 
         framework_name = framework
-        if framework_name is not "":
+        if framework_name:
             framework_name = "_" + framework_name
 
         file_name = request.node.location[0].split("/")[-1][:-3] + ".json"
@@ -332,7 +332,7 @@ def expected_values(framework, request):
     file_name = request.node.location[0].split("/")[-1][:-3] + ".json"
 
     framework_name = framework
-    if framework_name is not "":
+    if framework_name:
         framework_name = "_" + framework_name
 
     def _expected_values():

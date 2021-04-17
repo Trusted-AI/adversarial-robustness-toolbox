@@ -100,7 +100,8 @@ class EoTZoomBlurPyTorch(EoTPyTorch):
 
     def _check_params(self) -> None:
 
-        if not (isinstance(self.zoom, (int, float)) or isinstance(self.zoom, tuple)) or (
+        # pylint: disable=R0916
+        if not isinstance(self.zoom, (int, float, tuple)) or (
             isinstance(self.zoom, tuple)
             and (
                 len(self.zoom) != 2

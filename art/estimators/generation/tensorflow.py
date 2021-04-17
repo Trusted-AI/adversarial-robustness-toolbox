@@ -162,7 +162,7 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
         y = self._sess.run(self._model, feed_dict=feed_dict)
         return y
 
-    def loss_gradient(self, x, y, training_mode: bool = False, **kwargs) -> "np.ndarray":
+    def loss_gradient(self, x, y, training_mode: bool = False, **kwargs) -> "np.ndarray":  # pylint: disable=W0221
         raise NotImplementedError
 
     def fit(self, x, y, batch_size=128, nb_epochs=10, **kwargs):

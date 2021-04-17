@@ -26,6 +26,7 @@ import numpy as np
 from art.preprocessing.expectation_over_transformation.tensorflow import EoTTensorFlowV2
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     import tensorflow as tf
     from art.utils import CLIP_VALUES_TYPE
 
@@ -84,6 +85,7 @@ class EoTImageRotationTensorFlow(EoTTensorFlowV2):
         import tensorflow as tf  # lgtm [py/repeated-import]
         import tensorflow_addons as tfa
 
+        # pylint: disable=E1120,E1123
         angles = tf.random.uniform(shape=(), minval=self.angles_range[0], maxval=self.angles_range[1])
         angles = angles / 360.0 * 2.0 * np.pi
         x_preprocess = tfa.image.rotate(images=x, angles=angles, interpolation="NEAREST", name=None)
@@ -94,7 +96,8 @@ class EoTImageRotationTensorFlow(EoTTensorFlowV2):
 
     def _check_params(self) -> None:
 
-        if not (isinstance(self.angles, (int, float)) or isinstance(self.angles, tuple)) or (
+        # pylint: disable=R0916
+        if not isinstance(self.angles, (int, float, tuple)) or (
             isinstance(self.angles, tuple)
             and (
                 len(self.angles) != 2

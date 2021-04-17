@@ -36,7 +36,7 @@ class InputFilter(ABCMeta):
     Metaclass to ensure that inputs are ndarray for all of the subclass generate and extract calls.
     """
 
-    def __init__(cls, name, bases, clsdict):
+    def __init__(cls, name, bases, clsdict):  # pylint: disable=W0231,W0613
         """
         This function overrides any existing generate or extract methods with a new method that
         ensures the input is an ndarray. There is an assumption that the input object has implemented
@@ -95,7 +95,7 @@ class ClassifierMixin(ABC, metaclass=InputFilter):
     estimator_params = ["nb_classes"]
 
     def __init__(self, **kwargs) -> None:
-        super().__init__(**kwargs)
+        super().__init__(**kwargs)  # type: ignore
         self._nb_classes: int = -1
 
     @property

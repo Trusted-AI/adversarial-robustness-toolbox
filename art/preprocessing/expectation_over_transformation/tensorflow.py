@@ -36,7 +36,11 @@ class EoTTensorFlowV2(PreprocessorTensorFlowV2):
     """
 
     def __init__(
-        self, nb_samples: int, clip_values: Tuple[float, float], apply_fit: bool = False, apply_predict: bool = True,
+        self,
+        nb_samples: int,
+        clip_values: Tuple[float, float],
+        apply_fit: bool = False,
+        apply_predict: bool = True,
     ) -> None:
         """
         Create an instance of EoTTensorFlowV2.
@@ -88,7 +92,7 @@ class EoTTensorFlowV2(PreprocessorTensorFlowV2):
                 x_preprocess, y_preprocess_i = self._transform(x_i, y_i)
                 x_preprocess_list.append(x_preprocess)
 
-                if y is not None:
+                if y is not None and y_preprocess_i is not None:
                     y_preprocess_list.append(y_preprocess_i)
 
         x_preprocess = tf.stack(x_preprocess_list, axis=0)

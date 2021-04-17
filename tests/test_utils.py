@@ -251,13 +251,13 @@ class TestUtils(unittest.TestCase):
 
         logits = np.random.normal(10 * y_, scale=0.1)
         ps = (np.exp(logits).T / np.sum(np.exp(logits), axis=1)).T
-        c, l = get_label_conf(ps)
+        confs, labels = get_label_conf(ps)
 
-        self.assertEqual(c.shape, y.shape)
-        self.assertEqual(l.shape, y.shape)
+        self.assertEqual(confs.shape, y.shape)
+        self.assertEqual(labels.shape, y.shape)
 
-        self.assertTrue(np.all(l == y))
-        self.assertTrue(np.allclose(c, 0.99, atol=1e-2))
+        self.assertTrue(np.all(labels == y))
+        self.assertTrue(np.allclose(confs, 0.99, atol=1e-2))
 
     def test_get_labels_np_array(self):
         y = np.array([3, 1, 4, 1, 5, 9])

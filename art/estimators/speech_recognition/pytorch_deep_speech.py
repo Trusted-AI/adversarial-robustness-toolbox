@@ -32,6 +32,7 @@ from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizer
 from art.utils import get_file
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     import torch
     from deepspeech_pytorch.model import DeepSpeech
 
@@ -242,7 +243,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
 
         # Setup for AMP use
         if self._use_amp:
-            from apex import amp
+            from apex import amp  # pylint: disable=E0611
 
             if self._optimizer is None:
                 logger.warning(
@@ -260,7 +261,11 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
                 enabled = True
 
             self._model, self._optimizer = amp.initialize(
-                models=self._model, optimizers=self._optimizer, enabled=enabled, opt_level=opt_level, loss_scale=1.0,
+                models=self._model,
+                optimizers=self._optimizer,
+                enabled=enabled,
+                opt_level=opt_level,
+                loss_scale=1.0,
             )
 
     def predict(
@@ -404,7 +409,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
 
         # Compute gradients
         if self._use_amp:
-            from apex import amp
+            from apex import amp  # pylint: disable=E0611
 
             with amp.scale_loss(loss, self._optimizer) as scaled_loss:
                 scaled_loss.backward()
@@ -427,7 +432,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         results = self._apply_preprocessing_gradient(x_in, results)
 
         if x.dtype != np.object:
-            results = np.array([i for i in results], dtype=x.dtype)
+            results = np.array([i for i in results], dtype=x.dtype)  # pylint: disable=R1721
             assert results.shape == x.shape and results.dtype == x.dtype
 
         # Unfreeze batch norm layers again
@@ -511,7 +516,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
 
                 # Actual training
                 if self._use_amp:
-                    from apex import amp
+                    from apex import amp  # pylint: disable=E0611
 
                     with amp.scale_loss(loss, self._optimizer) as scaled_loss:
                         scaled_loss.backward()
@@ -522,7 +527,10 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
                 self._optimizer.step()
 
     def preprocess_transform_model_input(
-        self, x: "torch.Tensor", y: np.ndarray, real_lengths: np.ndarray,
+        self,
+        x: "torch.Tensor",
+        y: np.ndarray,
+        real_lengths: np.ndarray,
     ) -> Tuple["torch.Tensor", "torch.Tensor", "torch.Tensor", "torch.Tensor", List]:
         """
         Apply preprocessing and then transform the user input space into the model input space. This function is used
@@ -553,7 +561,11 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
 
         # Transform the input space
         inputs, targets, input_rates, target_sizes, batch_idx = self._transform_model_input(
-            x=x, y=y, compute_gradient=False, tensor_input=True, real_lengths=real_lengths,
+            x=x,
+            y=y,
+            compute_gradient=False,
+            tensor_input=True,
+            real_lengths=real_lengths,
         )
 
         return inputs, targets, input_rates, target_sizes, batch_idx
@@ -601,13 +613,13 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         window = self._model.audio_conf.window.value
 
         if window == "hamming":
-            window_fn = torch.hamming_window
+            window_fn = torch.hamming_window  # type: ignore
         elif window == "hann":
-            window_fn = torch.hann_window
+            window_fn = torch.hann_window  # type: ignore
         elif window == "blackman":
-            window_fn = torch.blackman_window
+            window_fn = torch.blackman_window  # type: ignore
         elif window == "bartlett":
-            window_fn = torch.bartlett_window
+            window_fn = torch.bartlett_window  # type: ignore
         else:
             raise NotImplementedError("Spectrogram window %s not supported." % window)
 
@@ -630,7 +642,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
                 target = list(filter(None, [label_map.get(letter) for letter in list(y[i])]))
 
             # Push the sequence to device
-            if not tensor_input:
+            if isinstance(x, np.ndarray) and not tensor_input:
                 x[i] = x[i].astype(config.ART_NUMPY_DTYPE)
                 x[i] = torch.tensor(x[i]).to(self._device)
 
@@ -722,4 +734,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
     def get_activations(
         self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
     ) -> np.ndarray:
+        raise NotImplementedError
+
+    def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         raise NotImplementedError
