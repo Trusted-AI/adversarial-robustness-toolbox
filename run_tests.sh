@@ -107,6 +107,7 @@ else
                             "tests/estimators/classification/test_scikitlearn.py" \
                             "tests/estimators/classification/test_xgboost.py" )
 
+    # test_pytorch_faster_rcnn.py is not included because it has it's own environment and workflow.
     declare -a object_detectors=("tests/estimators/object_detection/test_tensorflow_faster_rcnn.py")
 
     declare -a speech_recognizers=("tests/estimators/speech_recognition/test_pytorch_deep_speech.py")

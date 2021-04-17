@@ -1,4 +1,4 @@
-name: Continuous Integration
+name: CI MXNet
 on:
   # Run on manual trigger
   workflow_dispatch:
