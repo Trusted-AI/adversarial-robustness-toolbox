@@ -740,7 +740,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         import torch  # lgtm [py/repeated-import]
 
         # Get parameters needed for the transformation
-        sample_rate, window_name, win_length, n_fft, hop_length = self.estimator.get_transformation_params()
+        _, window_name, win_length, n_fft, hop_length = self.estimator.get_transformation_params()
 
         # Get window for the transformation
         if window_name == "hamming":

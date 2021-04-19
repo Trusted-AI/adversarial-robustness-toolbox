@@ -20,9 +20,12 @@ This module implements mixin abstract base class and mixin abstract framework-sp
 recognizers in ART.
 """
 from abc import ABC, abstractmethod
-from typing import Tuple
+from typing import Tuple, TYPE_CHECKING
 
 import numpy as np
+
+if TYPE_CHECKING:
+    import torch
 
 
 class SpeechRecognizerMixin(ABC):
