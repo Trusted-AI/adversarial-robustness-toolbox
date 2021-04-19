@@ -1,0 +1,49 @@
+name: CI PyTorchFasterRCNN
+on:
+  # Run on manual trigger
+  workflow_dispatch:
+
+  # Run on pull requests
+  pull_request:
+    paths-ignore:
+      - '*.md'
+
+  # Run when pushing to main or dev branches
+  push:
+    branches:
+      - main
+      - dev*
+
+  # Run scheduled CI flow daily
+  schedule:
+    - cron: '0 8 * * 0'
+
+jobs:
+  test_pytorch_fasterrcnn:
+    name: PyTorchFasterRCNN
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get -y -q install ffmpeg libavcodec-extra
+          python -m pip install --upgrade pip setuptools wheel
+          pip3 install -q -r requirements.txt
+          pip list
+      - name: Pre-install torch
+        run: |
+          pip install torch==1.6.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
+          pip install torchvision==0.7.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
+          pip install torchaudio==0.6.0 -f https://download.pytorch.org/whl/torch_stable.html
+      - name: Run Test Action
+        run: pytest --cov-report=xml --cov=art --cov-append -q -vv tests/estimators/object_detection/test_pytorch_faster_rcnn.py --framework=pytorch --skip_travis=True --durations=0
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
