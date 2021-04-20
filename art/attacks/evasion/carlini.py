@@ -879,7 +879,7 @@ class CarliniL0Method(CarliniL2Method):
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :type batch_size: `int`
         """
-        super().__init__(estimator=classifier)
+        super().__init__(classifier=classifier)
 
         kwargs = {
             "confidence": confidence,
@@ -1229,3 +1229,49 @@ class CarliniL0Method(CarliniL2Method):
                     fix_feature_index
                 )
             )
+
+    def set_params(self, **kwargs):
+        """Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
+
+        :param confidence: Confidence of adversarial examples: a higher value produces examples that are farther away,
+               from the original input, but classified with higher confidence as the target class.
+        :type confidence: `float`
+        :param targeted: Should the attack target one specific class
+        :type targeted: `bool`
+        :param learning_rate: The learning rate for the attack algorithm. Smaller values produce better results but are
+               slower to converge.
+        :type learning_rate: `float`
+        :param binary_search_steps: number of times to adjust constant with binary search (positive value)
+        :type binary_search_steps: `int`
+        :param max_iter: The maximum number of iterations.
+        :type max_iter: `int`
+        :param initial_const: (optional float, positive) The initial trade-off constant c to use to tune the relative
+               importance of distance and confidence. If binary_search_steps is large,
+               the initial constant is not important. The default value 1e-4 is suggested in Carlini and Wagner (2016).
+        :type initial_const: `float`
+        :param max_halving: Maximum number of halving steps in the line search optimization.
+        :type max_halving: `int`
+        :param max_doubling: Maximum number of doubling steps in the line search optimization.
+        :type max_doubling: `int`
+        :param batch_size: Internal size of batches on which adversarial samples are generated.
+        :type batch_size: `int`
+        """
+        # Save attack-specific parameters
+        super(CarliniL0Method, self).set_params(**kwargs)
+
+        if not isinstance(self.binary_search_steps, (int, np.int)) or self.binary_search_steps < 0:
+            raise ValueError("The number of binary search steps must be a non-negative integer.")
+
+        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter < 0:
+            raise ValueError("The number of iterations must be a non-negative integer.")
+
+        if not isinstance(self.max_halving, (int, np.int)) or self.max_halving < 1:
+            raise ValueError("The number of halving steps must be an integer greater than zero.")
+
+        if not isinstance(self.max_doubling, (int, np.int)) or self.max_doubling < 1:
+            raise ValueError("The number of doubling steps must be an integer greater than zero.")
+
+        if not isinstance(self.batch_size, (int, np.int)) or self.batch_size < 1:
+            raise ValueError("The batch size must be an integer greater than zero.")
+
+        return True
