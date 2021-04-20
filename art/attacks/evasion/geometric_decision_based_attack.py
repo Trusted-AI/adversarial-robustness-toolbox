@@ -66,6 +66,9 @@ class GeoDA(EvasionAttack):
         norm: Union[int, float, str] = 2,
         sub_dim: int = 10,
         max_iter: int = 4000,
+        bin_search_tol: float = 0.1,
+        lambda_param: float = 0.6,
+        sigma: float = 0.0002,
         targeted: bool = False,
         verbose: bool = True,
     ) -> None:
@@ -77,6 +80,12 @@ class GeoDA(EvasionAttack):
         :param norm: The norm of the adversarial perturbation. Possible values: "inf", np.inf, 1 or 2.
         :param sub_dim: dimensionality of 2D frequency space (DCT).
         :param max_iter: Maximum number of iterations.
+        :param bin_search_tol: Maximum remaining L2 perturbation defining binary search convergence. Input images are
+                               normalised by maximal estimator.clip_value[1] if available or maximal value in the input
+                               image.
+        :param lambda_param: The lambda of equation 19 with `lambda_param=0` corresponding to a single iteration and
+                             `lambda_param=1` to a uniform distribution of iterations per step.
+        :param sigma: Variance of the Gaussian perturbation.
         :param targeted: Should the attack target one specific class.
         :param verbose: Show progress bars.
         """
@@ -86,6 +95,9 @@ class GeoDA(EvasionAttack):
         self.norm = norm
         self.sub_dim = sub_dim
         self.max_iter = max_iter
+        self.bin_search_tol = bin_search_tol
+        self.lambda_param = lambda_param
+        self.sigma = sigma
         self._targeted = targeted
 
         self.verbose = verbose
@@ -95,7 +107,6 @@ class GeoDA(EvasionAttack):
         self.nb_calls = 0
         self.clip_min = 0.0
         self.clip_max = 0.0
-        self.bin_search_tol = 0.0001  # binary search tolerance
         if self.estimator.input_shape is None:
             raise ValueError("The `input_shape` of the is required but None.")
         self.nb_channels = (
@@ -103,12 +114,11 @@ class GeoDA(EvasionAttack):
         )
 
         # Optimal number of iterations
-        mu = 0.6
         iteration = round(self.max_iter / 500)
         q_opt_it = int(self.max_iter - iteration * 25)
-        q_opt_iter, iterate = self._opt_query_iteration(q_opt_it, iteration, mu)
+        q_opt_iter, iterate = self._opt_query_iteration(q_opt_it, iteration, self.lambda_param)
         q_opt_it = int(self.max_iter - iterate * 25)
-        self.q_opt_iter, self.iterate = self._opt_query_iteration(q_opt_it, iteration, mu)
+        self.q_opt_iter, self.iterate = self._opt_query_iteration(q_opt_it, iteration, self.lambda_param)
 
     @staticmethod
     def _generate_2d_dct_basis(sub_dim: int, res: int) -> np.ndarray:
@@ -202,12 +212,11 @@ class GeoDA(EvasionAttack):
             logger.info("Binary search example at boundary is adversarial: %r" % self._is_adversarial(x_boundary, y_i))
 
             grad = 0
-            sigma = 0.0002
 
             x_adv_i = x_i
 
             for k in trange(self.iterate, desc="GeoDA - steps", disable=not self.verbose, position=1):
-                grad_oi, ratios = self._black_grad_batch(x_boundary, self.q_opt_iter[k], sigma, self.batch_size, y_i)
+                grad_oi, ratios = self._black_grad_batch(x_boundary, self.q_opt_iter[k], self.batch_size, y_i)
                 grad = grad_oi + grad
                 x_adv_i = self._go_to_boundary(x_i, y_i, grad)
                 x_adv_i = self._binary_search(x_i, y_i, x_adv_i, tol=self.bin_search_tol)
@@ -268,7 +277,12 @@ class GeoDA(EvasionAttack):
         x_adv = x_random
         x_cln = x
 
-        while np.linalg.norm(x_adv.flatten() - x_cln.flatten(), ord=2) >= tol:
+        if self.estimator.clip_values is not None:
+            max_value = self.estimator.clip_values[1]
+        else:
+            max_value = np.max(x)
+
+        while np.linalg.norm((x_adv.flatten() - x_cln.flatten()) / max_value, ord=2) >= tol:
             self.nb_calls += 1
             x_mid = (x_cln + x_adv) / 2.0
             if self._is_adversarial(x_mid, y):
@@ -278,26 +292,25 @@ class GeoDA(EvasionAttack):
 
         return x_adv
 
-    def _opt_query_iteration(self, var_nq: int, var_t: int, eta: float) -> Tuple[List[int], int]:
+    def _opt_query_iteration(self, var_nq: int, var_t: int, lambda_param: float) -> Tuple[List[int], int]:
         """
         Determine optimal distribution of number of queries.
         """
-        coefficients = [eta ** (-2 * i / 3) for i in range(0, var_t)]
-        coefficients[0] = 1 * coefficients[0]
+        coefficients = [lambda_param ** (-2 * i / 3) for i in range(0, var_t)]
         sum_coefficients = sum(coefficients)
         opt_q = [round(var_nq * coefficients[i] / sum_coefficients) for i in range(0, var_t)]
 
         if opt_q[0] > 80:
             var_t = var_t + 1
-            opt_q, var_t = self._opt_query_iteration(var_nq, var_t, eta)
+            opt_q, var_t = self._opt_query_iteration(var_nq, var_t, lambda_param)
         elif opt_q[0] < 50:
             var_t = var_t - 1
-            opt_q, var_t = self._opt_query_iteration(var_nq, var_t, eta)
+            opt_q, var_t = self._opt_query_iteration(var_nq, var_t, lambda_param)
 
         return opt_q, var_t
 
     def _black_grad_batch(
-        self, x_boundary: np.ndarray, q_max: int, sigma: float, batch_size: int, original_label: np.ndarray
+        self, x_boundary: np.ndarray, q_max: int, batch_size: int, original_label: np.ndarray
     ) -> Tuple[np.ndarray, int]:
         """
         Calculate Gradient towards decision boundary.
@@ -313,10 +326,10 @@ class GeoDA(EvasionAttack):
         for j in range(num_batches):
             if j == num_batches - 1:
                 current_batch = self._sub_noise(last_batch, self.sub_basis)
-                noisy_boundary = [x_boundary[0, :, :, :]] * last_batch + sigma * current_batch
+                noisy_boundary = [x_boundary[0, :, :, :]] * last_batch + self.sigma * current_batch
             else:
                 current_batch = self._sub_noise(batch_size, self.sub_basis)
-                noisy_boundary = [x_boundary[0, :, :, :]] * batch_size + sigma * current_batch
+                noisy_boundary = [x_boundary[0, :, :, :]] * batch_size + self.sigma * current_batch
 
             all_noises.append(current_batch)
             predict_labels = np.argmax(self.estimator.predict(noisy_boundary), axis=1).astype(int)
@@ -379,7 +392,22 @@ class GeoDA(EvasionAttack):
         """
         noise = np.random.normal(size=(basis.shape[1], self.nb_channels * num_noises)) * (self.clip_max - self.clip_min)
         sub_noise = np.array(np.matmul(basis, noise).transpose((1, 0)).astype(ART_NUMPY_DTYPE))
-        r_list = sub_noise.reshape((num_noises,) + self.estimator.input_shape)
+
+        if self.estimator.channels_first:
+            subspace_shape = (num_noises,) + self.estimator.input_shape
+        else:
+            subspace_shape = (
+                num_noises,
+                self.estimator.input_shape[2],
+                self.estimator.input_shape[0],
+                self.estimator.input_shape[1],
+            )
+
+        r_list = sub_noise.reshape(subspace_shape)
+
+        if not self.estimator.channels_first:
+            r_list = r_list.transpose((0, 2, 3, 1))
+
         return r_list
 
     def _check_params(self) -> None:
@@ -395,6 +423,15 @@ class GeoDA(EvasionAttack):
 
         if not isinstance(self.max_iter, int) or self.max_iter <= 0:
             raise ValueError("The maximum number of iterations has to be a positive integer.")
+
+        if not isinstance(self.bin_search_tol, float) or self.bin_search_tol <= 0:
+            raise ValueError("The binary search tolerance has to be a positive float.")
+
+        if not isinstance(self.lambda_param, float) or self.lambda_param <= 0:
+            raise ValueError("The lambda parameter has to be a positive float.")
+
+        if not isinstance(self.sigma, float) or self.sigma <= 0:
+            raise ValueError("The sigma has to be a positive float.")
 
         if not isinstance(self.targeted, bool):
             raise ValueError("The argument `targeted` has to be of type bool.")
