@@ -21,7 +21,7 @@ install_requires = [
     "ffmpeg-python",
     "cma",
     "mypy",
-    "numba~=0.52.0"
+    "numba~=0.53.1"
 ]
 
 docs_require = [

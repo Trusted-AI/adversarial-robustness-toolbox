@@ -294,8 +294,6 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
         if isinstance(self.feature_layer, int):
             if not 0 <= self.feature_layer < len(self.estimator.layer_names):
                 raise ValueError("feature_layer is not positive integer")
-        if not isinstance(self.feature_layer, str):
-            raise ValueError("feature_layer has to be either an integer or a string.")
 
         if 1 < self.decay_coeff < 0:
             raise ValueError("Decay coefficient must be between zero and one")
@@ -339,13 +337,10 @@ def loss_from_center(
                     )
             elif net_repeat == 1:
                 if isinstance(feature_layer, list):
-                    poisons_feats = torch.cat(
-                        [
-                            torch.flatten(net.get_activations(poison_batch(), layer=layer, framework=True), 0)
-                            for layer in feature_layer
-                        ],
-                        0,
-                    )
+                    poisons_feats = [
+                        torch.flatten(net.get_activations(poison_batch(), layer=layer, framework=True), 0)
+                        for layer in feature_layer
+                    ]
                 else:
                     poisons_feats = net.get_activations(poison_batch(), layer=feature_layer, framework=True)
             else:
