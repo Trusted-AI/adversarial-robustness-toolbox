@@ -53,7 +53,9 @@ class GeoDA(EvasionAttack):
         "norm",
         "sub_dim",
         "max_iter",
-        "targeted",
+        "bin_search_tol",
+        "lambda_param",
+        "sigma",
         "verbose",
     ]
 
@@ -69,7 +71,6 @@ class GeoDA(EvasionAttack):
         bin_search_tol: float = 0.1,
         lambda_param: float = 0.6,
         sigma: float = 0.0002,
-        targeted: bool = False,
         verbose: bool = True,
     ) -> None:
         """
@@ -98,7 +99,7 @@ class GeoDA(EvasionAttack):
         self.bin_search_tol = bin_search_tol
         self.lambda_param = lambda_param
         self.sigma = sigma
-        self._targeted = targeted
+        self._targeted = False
 
         self.verbose = verbose
         self._check_params()
@@ -313,7 +314,7 @@ class GeoDA(EvasionAttack):
         self, x_boundary: np.ndarray, q_max: int, batch_size: int, original_label: np.ndarray
     ) -> Tuple[np.ndarray, int]:
         """
-        Calculate Gradient towards decision boundary.
+        Calculate gradient towards decision boundary.
         """
         self.nb_calls += q_max
         grad_tmp = []  # estimated gradients in each estimate_batch
