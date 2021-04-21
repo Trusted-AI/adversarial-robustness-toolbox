@@ -117,20 +117,20 @@ class GeoDA(EvasionAttack):
         # Optimal number of iterations
         iteration = round(self.max_iter / 500)
         q_opt_it = int(self.max_iter - iteration * 25)
-        q_opt_iter, iterate = self._opt_query_iteration(q_opt_it, iteration, self.lambda_param)
+        _, iterate = self._opt_query_iteration(q_opt_it, iteration, self.lambda_param)
         q_opt_it = int(self.max_iter - iterate * 25)
         self.q_opt_iter, self.iterate = self._opt_query_iteration(q_opt_it, iteration, self.lambda_param)
 
     @staticmethod
     def _generate_2d_dct_basis(sub_dim: int, res: int) -> np.ndarray:
-        def alpha(a: int, num: int):
+        def alpha(var_a: int, num: int):
             """
             Get alpha.
             """
-            if a == 0:
+            if var_a == 0:
                 return math.sqrt(1.0 / num)
-            else:
-                return math.sqrt(2.0 / num)
+
+            return math.sqrt(2.0 / num)
 
         def dct(i_x: int, i_y: int, i_v: int, i_u: int, num: int) -> float:
             """
@@ -148,12 +148,12 @@ class GeoDA(EvasionAttack):
         v_max = sub_dim
 
         dct_basis = []
-        for u in range(u_max):
-            for v in range(v_max):
+        for i_u in range(u_max):
+            for i_v in range(v_max):
                 basis = np.zeros((res, res))
-                for y in range(res):
-                    for x in range(res):
-                        basis[y, x] = dct(x, y, v, u, max(res, v_max))
+                for i_y in range(res):
+                    for i_x in range(res):
+                        basis[i_y, i_x] = dct(i_x, i_y, i_v, i_u, max(res, v_max))
                 dct_basis.append(basis)
         dct_basis = np.mat(np.reshape(dct_basis, (v_max * u_max, res * res))).transpose()
         return dct_basis
@@ -206,18 +206,18 @@ class GeoDA(EvasionAttack):
 
             # Random search
             x_random = self._find_random_adversarial(x=x_i, y=y_i)
-            logger.info("Random search adversarial example is adversarial: %r" % self._is_adversarial(x_random, y_i))
+            logger.info("Random search adversarial example is adversarial: %r", self._is_adversarial(x_random, y_i))
 
             # Binary search
             x_boundary = self._binary_search(x_i, y_i, x_random, tol=self.bin_search_tol)
-            logger.info("Binary search example at boundary is adversarial: %r" % self._is_adversarial(x_boundary, y_i))
+            logger.info("Binary search example at boundary is adversarial: %r", self._is_adversarial(x_boundary, y_i))
 
             grad = 0
 
             x_adv_i = x_i
 
             for k in trange(self.iterate, desc="GeoDA - steps", disable=not self.verbose, position=1):
-                grad_oi, ratios = self._black_grad_batch(x_boundary, self.q_opt_iter[k], self.batch_size, y_i)
+                grad_oi, _ = self._black_grad_batch(x_boundary, self.q_opt_iter[k], self.batch_size, y_i)
                 grad = grad_oi + grad
                 x_adv_i = self._go_to_boundary(x_i, y_i, grad)
                 x_adv_i = self._binary_search(x_i, y_i, x_adv_i, tol=self.bin_search_tol)
@@ -318,7 +318,7 @@ class GeoDA(EvasionAttack):
         """
         self.nb_calls += q_max
         grad_tmp = []  # estimated gradients in each estimate_batch
-        z = []  # sign of grad_tmp
+        z_list = []  # sign of grad_tmp
         outs = []
         num_batches = math.ceil(q_max / batch_size)
         last_batch = q_max - (num_batches - 1) * batch_size
@@ -341,16 +341,16 @@ class GeoDA(EvasionAttack):
 
         for i, predict_label in enumerate(outs):
             if predict_label == np.argmax(original_label, axis=1)[0]:
-                z.append(1)
+                z_list.append(1)
                 grad_tmp.append(all_noise[i])
             else:
-                z.append(-1)
+                z_list.append(-1)
                 grad_tmp.append(-all_noise[i])
 
-        grad = -(1 / q_max) * sum(grad_tmp)
+        grad: np.ndarray = -(1 / q_max) * sum(grad_tmp)
         grad_f = grad[None, :, :, :]
 
-        return grad_f, sum(z)
+        return grad_f, sum(z_list)
 
     def _go_to_boundary(self, x: np.ndarray, y: np.ndarray, grad: np.ndarray) -> np.ndarray:
         """

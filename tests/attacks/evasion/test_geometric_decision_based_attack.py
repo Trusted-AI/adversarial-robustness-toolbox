@@ -153,7 +153,7 @@ def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator):
         attack = GeoDA(estimator=classifier, sub_dim=5, max_iter=400, verbose=False)
         x_train_mnist_adv = attack.generate(x=x_train_mnist, y=y_train_mnist)
 
-        assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.057965796, abs=0.005)
+        assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.057965796, abs=0.01)
     except ARTTestException as e:
         art_warning(e)
 
