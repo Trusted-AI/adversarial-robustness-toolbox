@@ -89,14 +89,10 @@ def test_is_adversarial(art_warning, image_dl_estimator, fix_get_mnist_subset):
         (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
         classifier, _ = image_dl_estimator(from_logits=True)
-        attack = GeoDA(estimator=classifier, sub_dim=5, max_iter=4000, targeted=False, verbose=False)
+        attack = GeoDA(estimator=classifier, sub_dim=5, max_iter=4000, verbose=False)
 
         assert not attack._is_adversarial(x_adv=x_test_mnist[[0]], y_true=y_test_mnist[[0]])
 
-        classifier, _ = image_dl_estimator(from_logits=True)
-        attack = GeoDA(estimator=classifier, sub_dim=5, max_iter=4000, targeted=True, verbose=False)
-
-        assert attack._is_adversarial(x_adv=x_test_mnist[[0]], y_true=y_test_mnist[[0]])
     except ARTTestException as e:
         art_warning(e)
 
@@ -106,7 +102,7 @@ def test_find_random_adversarial(art_warning, image_dl_estimator, fix_get_mnist_
         (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
         classifier, _ = image_dl_estimator(from_logits=True)
-        attack = GeoDA(estimator=classifier, sub_dim=5, max_iter=4000, targeted=False, verbose=False)
+        attack = GeoDA(estimator=classifier, sub_dim=5, max_iter=4000, verbose=False)
 
         x_adv = attack._find_random_adversarial(x=x_test_mnist[[0]], y=y_test_mnist[[0]])
 
@@ -118,8 +114,8 @@ def test_find_random_adversarial(art_warning, image_dl_estimator, fix_get_mnist_
 def test_opt_query_iteration(art_warning, image_dl_estimator):
     try:
         classifier, _ = image_dl_estimator(from_logits=True)
-        attack = GeoDA(estimator=classifier, sub_dim=5, max_iter=4000, targeted=False, verbose=False)
-        opt_q, var_t = attack._opt_query_iteration(var_nq=3800, var_t=8, eta=0.6)
+        attack = GeoDA(estimator=classifier, sub_dim=5, max_iter=4000, verbose=False)
+        opt_q, var_t = attack._opt_query_iteration(var_nq=3800, var_t=8, lambda_param=0.6)
 
         opt_q_expected = [75, 106, 149, 210, 295, 414, 582, 818, 1150]
         var_t_expected = 9
@@ -135,7 +131,7 @@ def test_sub_noise(art_warning, image_dl_estimator, fix_get_mnist_subset):
         (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
         classifier, _ = image_dl_estimator(from_logits=True)
-        attack = GeoDA(estimator=classifier, sub_dim=5, max_iter=4000, targeted=False, verbose=False)
+        attack = GeoDA(estimator=classifier, sub_dim=5, max_iter=4000, verbose=False)
         c = attack._sub_noise(num_noises=64, basis=np.ones((28 * 28, 25)))
 
         assert c[0].shape == x_train_mnist[0].shape
@@ -148,10 +144,10 @@ def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator):
         (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
         classifier, _ = image_dl_estimator(from_logits=True)
-        attack = GeoDA(estimator=classifier, sub_dim=5, max_iter=400, targeted=False, verbose=False)
+        attack = GeoDA(estimator=classifier, sub_dim=5, max_iter=400, verbose=False)
         x_train_mnist_adv = attack.generate(x=x_train_mnist, y=y_train_mnist)
 
-        assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.008579584, abs=0.005)
+        assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.057965796, abs=0.005)
     except ARTTestException as e:
         art_warning(e)
 
