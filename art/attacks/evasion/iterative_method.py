@@ -53,6 +53,7 @@ class BasicIterativeMethod(ProjectedGradientDescent):
         max_iter: int = 100,
         targeted: bool = False,
         batch_size: int = 32,
+        verbose: bool = True,
     ) -> None:
         """
         Create a :class:`.ProjectedGradientDescent` instance.
@@ -63,6 +64,7 @@ class BasicIterativeMethod(ProjectedGradientDescent):
         :param max_iter: The maximum number of iterations.
         :param targeted: Indicates whether the attack is targeted (True) or untargeted (False).
         :param batch_size: Size of the batch on which adversarial samples are generated.
+        :param verbose: Show progress bars.
         """
         super().__init__(
             estimator=estimator,
@@ -73,4 +75,5 @@ class BasicIterativeMethod(ProjectedGradientDescent):
             targeted=targeted,
             num_random_init=0,
             batch_size=batch_size,
+            verbose=verbose,
         )

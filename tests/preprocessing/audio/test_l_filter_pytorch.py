@@ -50,7 +50,8 @@ def test_audio_filter(fir_filter, art_warning, expected_values):
                 np.array(x1 * 2, dtype=ART_NUMPY_DTYPE),
                 np.array(x2 * 2, dtype=ART_NUMPY_DTYPE),
                 np.array(x3 * 2, dtype=ART_NUMPY_DTYPE),
-            ]
+            ],
+            dtype=object,
         )
 
         # Filter params

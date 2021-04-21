@@ -99,6 +99,7 @@ class TestProvenanceDefence(unittest.TestCase):
             eps=1.0,
             x_val=valid_data,
             y_val=valid_labels,
+            verbose=False,
         )
 
         poisoned_data, _ = svm_attack.poison(all_poison_init, y=poison_labels)

@@ -29,7 +29,7 @@ import requests
 
 from art.data_generators import KerasDataGenerator, MXDataGenerator, PyTorchDataGenerator, TensorFlowDataGenerator
 from art.defences.preprocessor import FeatureSqueezing, JpegCompression, SpatialSmoothing
-from art.estimators.classification import KerasClassifier
+from art.estimators.classification import KerasClassifier, PyTorchClassifier, TensorFlowV2Classifier
 from tests.utils import (
     ARTTestFixtureNotImplemented,
     get_attack_classifier_pt,
@@ -109,19 +109,22 @@ def image_dl_estimator_defended(framework):
                 defenses.append(SpatialSmoothing())
             del kwargs["defenses"]
 
-        if framework == "keras":
-            kr_classifier = get_image_classifier_kr(**kwargs)
-            # Get the ready-trained Keras model
+        if framework == "tensorflow2":
+            classifier, _ = get_image_classifier_tf(**kwargs)
 
-            classifier = KerasClassifier(
-                model=kr_classifier._model, clip_values=(0, 1), preprocessing_defences=defenses
-            )
+        if framework == "keras":
+            classifier = get_image_classifier_kr(**kwargs)
 
         if framework == "kerastf":
-            kr_tf_classifier = get_image_classifier_kr_tf(**kwargs)
-            classifier = KerasClassifier(
-                model=kr_tf_classifier._model, clip_values=(0, 1), preprocessing_defences=defenses
-            )
+            classifier = get_image_classifier_kr_tf(**kwargs)
+
+        if framework == "pytorch":
+            classifier = get_image_classifier_pt(**kwargs)
+            for i, defense in enumerate(defenses):
+                if "channels_first" in defense.params:
+                    defenses[i].channels_first = classifier.channels_first
+
+        classifier.set_params(preprocessing_defences=defenses)
 
         if classifier is None:
             raise ARTTestFixtureNotImplemented(

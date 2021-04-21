@@ -65,6 +65,7 @@ def fix_get_robust_dpatch():
         learning_rate=1.0,
         max_iter=1,
         batch_size=1,
+        verbose=False,
     )
     yield attack
 
