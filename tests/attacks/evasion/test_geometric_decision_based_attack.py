@@ -38,6 +38,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
+@pytest.mark.framework_agnostic
 def test_generate_2d_dct_basis(art_warning, image_dl_estimator):
     try:
         sub_dim = 5
@@ -84,6 +85,7 @@ def test_generate_2d_dct_basis(art_warning, image_dl_estimator):
         art_warning(e)
 
 
+@pytest.mark.framework_agnostic
 def test_is_adversarial(art_warning, image_dl_estimator, fix_get_mnist_subset):
     try:
         (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
@@ -97,6 +99,7 @@ def test_is_adversarial(art_warning, image_dl_estimator, fix_get_mnist_subset):
         art_warning(e)
 
 
+@pytest.mark.framework_agnostic
 def test_find_random_adversarial(art_warning, image_dl_estimator, fix_get_mnist_subset):
     try:
         (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
@@ -111,6 +114,7 @@ def test_find_random_adversarial(art_warning, image_dl_estimator, fix_get_mnist_
         art_warning(e)
 
 
+@pytest.mark.framework_agnostic
 def test_opt_query_iteration(art_warning, image_dl_estimator):
     try:
         classifier, _ = image_dl_estimator(from_logits=True)
@@ -126,6 +130,7 @@ def test_opt_query_iteration(art_warning, image_dl_estimator):
         art_warning(e)
 
 
+@pytest.mark.framework_agnostic
 def test_sub_noise(art_warning, image_dl_estimator, fix_get_mnist_subset):
     try:
         (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
@@ -139,6 +144,7 @@ def test_sub_noise(art_warning, image_dl_estimator, fix_get_mnist_subset):
         art_warning(e)
 
 
+@pytest.mark.framework_agnostic
 def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator):
     try:
         (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
