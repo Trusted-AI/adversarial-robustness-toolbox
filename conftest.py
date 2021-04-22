@@ -124,12 +124,13 @@ def image_dl_estimator_defended(framework):
                 if "channels_first" in defense.params:
                     defenses[i].channels_first = classifier.channels_first
 
-        classifier.set_params(preprocessing_defences=defenses)
-
-        if classifier is None:
+        if classifier is not None:
+            classifier.set_params(preprocessing_defences=defenses)
+        else:
             raise ARTTestFixtureNotImplemented(
                 "no defended image estimator", image_dl_estimator_defended.__name__, framework, {"defenses": defenses}
             )
+
         return classifier, sess
 
     return _image_dl_estimator_defended
