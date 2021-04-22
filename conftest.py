@@ -29,7 +29,7 @@ import requests
 
 from art.data_generators import KerasDataGenerator, MXDataGenerator, PyTorchDataGenerator, TensorFlowDataGenerator
 from art.defences.preprocessor import FeatureSqueezing, JpegCompression, SpatialSmoothing
-from art.estimators.classification import KerasClassifier, PyTorchClassifier, TensorFlowV2Classifier
+from art.estimators.classification import KerasClassifier
 from tests.utils import (
     ARTTestFixtureNotImplemented,
     get_attack_classifier_pt,
