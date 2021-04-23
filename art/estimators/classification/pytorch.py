@@ -695,6 +695,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                 x_grad = x.clone().detach().requires_grad_(True)
             else:
                 x_grad = torch.tensor(x).to(self._device)
+                x_grad.requires_grad = True
             if isinstance(y, torch.Tensor):
                 y_grad = y.clone().detach()
             else:
