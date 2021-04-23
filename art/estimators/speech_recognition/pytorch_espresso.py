@@ -87,7 +87,7 @@ class PyTorchEspresso(SpeechRecognizerMixin, PyTorchEstimator):
         super().__init__(
             model=None,
             clip_values=clip_values,
-            channels_first=None
+            channels_first=None,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
             preprocessing=preprocessing,
