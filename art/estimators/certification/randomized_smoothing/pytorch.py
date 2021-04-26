@@ -111,9 +111,9 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
             alpha=alpha,
         )
 
-    def _predict_classifier(self, x: np.ndarray, batch_size: int) -> np.ndarray:
+    def _predict_classifier(self, x: np.ndarray, batch_size: int, training_mode: bool, **kwargs) -> np.ndarray:
         x = x.astype(ART_NUMPY_DTYPE)
-        return PyTorchClassifier.predict(self, x=x, batch_size=batch_size)
+        return PyTorchClassifier.predict(self, x=x, batch_size=batch_size, training_mode=training_mode, **kwargs)
 
     def _fit_classifier(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
         x = x.astype(ART_NUMPY_DTYPE)
@@ -133,9 +133,9 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         :type kwargs: `dict`
         :return: `None`
         """
-        RandomizedSmoothingMixin.fit(self, x, y, batch_size=128, nb_epochs=10, **kwargs)
+        RandomizedSmoothingMixin.fit(self, x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
-    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
+    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:  # type: ignore
         """
         Perform prediction of the given classifier for a batch of inputs, taking an expectation over transformations.
 
@@ -145,7 +145,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         :type is_abstain: `boolean`
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
-        return RandomizedSmoothingMixin.predict(self, x, batch_size=128, **kwargs)
+        return RandomizedSmoothingMixin.predict(self, x, batch_size=batch_size, training_mode=False, **kwargs)
 
     def loss_gradient(self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs) -> np.ndarray:
         """

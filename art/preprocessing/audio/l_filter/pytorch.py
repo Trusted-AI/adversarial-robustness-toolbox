@@ -29,9 +29,9 @@ import numpy as np
 from tqdm.auto import tqdm
 
 from art.preprocessing.preprocessing import PreprocessorPyTorch
-from art.config import ART_NUMPY_DTYPE
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     import torch
     from art.utils import CLIP_VALUES_TYPE
 
@@ -75,8 +75,8 @@ class LFilterPyTorch(PreprocessorPyTorch):
 
         super().__init__(is_fitted=True, apply_fit=apply_fit, apply_predict=apply_predict)
 
-        self.numerator_coef = numerator_coef.astype(ART_NUMPY_DTYPE)
-        self.denominator_coef = denominator_coef.astype(ART_NUMPY_DTYPE)
+        self.numerator_coef = numerator_coef
+        self.denominator_coef = denominator_coef
         self.clip_values = clip_values
         self.verbose = verbose
         self._check_params()
@@ -99,19 +99,19 @@ class LFilterPyTorch(PreprocessorPyTorch):
         :return: Similar sample.
         """
         import torch  # lgtm [py/repeated-import]
-        from torchaudio.functional import lfilter
+        import torchaudio
 
-        if int(torch.__version__.split(".")[1]) > 5:
-            x_preprocess = lfilter(
-                b_coeffs=torch.tensor(self.numerator_coef, device=self._device),
-                a_coeffs=torch.tensor(self.denominator_coef, device=self._device),
+        if int(torchaudio.__version__.split(".")[1]) > 5:
+            x_preprocess = torchaudio.functional.lfilter(
+                b_coeffs=torch.tensor(self.numerator_coef, device=self._device, dtype=x.dtype),
+                a_coeffs=torch.tensor(self.denominator_coef, device=self._device, dtype=x.dtype),
                 waveform=x,
                 clamp=False,
             )
         else:
-            x_preprocess = lfilter(
-                b_coeffs=torch.tensor(self.numerator_coef, device=self._device),
-                a_coeffs=torch.tensor(self.denominator_coef, device=self._device),
+            x_preprocess = torchaudio.functional.lfilter(
+                b_coeffs=torch.tensor(self.numerator_coef, device=self._device, dtype=x.dtype),
+                a_coeffs=torch.tensor(self.denominator_coef, device=self._device, dtype=x.dtype),
                 waveform=x,
             )
 

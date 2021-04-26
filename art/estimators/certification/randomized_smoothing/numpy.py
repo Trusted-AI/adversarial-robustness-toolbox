@@ -88,15 +88,16 @@ class NumpyRandomizedSmoothing(  # lgtm [py/conflicting-attributes]
     def input_shape(self) -> Tuple[int, ...]:
         return self._input_shape
 
-    def _predict_classifier(self, x: np.ndarray, batch_size: int) -> np.ndarray:
+    def _predict_classifier(self, x: np.ndarray, batch_size: int, training_mode: bool, **kwargs) -> np.ndarray:
         """
         Perform prediction for a batch of inputs.
 
         :param x: Input samples.
         :param batch_size: Size of batches.
+        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
-        return self.classifier.predict(x=x, batch_size=batch_size)
+        return self.classifier.predict(x=x, batch_size=batch_size, training_mode=training_mode, **kwargs)
 
     def _fit_classifier(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
         """
@@ -112,7 +113,9 @@ class NumpyRandomizedSmoothing(  # lgtm [py/conflicting-attributes]
         """
         return self.classifier.fit(x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
-    def loss_gradient(self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs) -> np.ndarray:
+    def loss_gradient(  # pylint: disable=W0221
+        self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs
+    ) -> np.ndarray:
         """
         Compute the gradient of the given classifier's loss function w.r.t. `x` of the original classifier.
         :param x: Sample input with shape as expected by the model.
@@ -122,7 +125,7 @@ class NumpyRandomizedSmoothing(  # lgtm [py/conflicting-attributes]
         """
         return self.classifier.loss_gradient(x=x, y=y, training_mode=training_mode, **kwargs)
 
-    def class_gradient(
+    def class_gradient(  # pylint: disable=W0221
         self, x: np.ndarray, label: Union[int, List[int]] = None, training_mode: bool = False, **kwargs
     ) -> np.ndarray:
         """
@@ -137,4 +140,4 @@ class NumpyRandomizedSmoothing(  # lgtm [py/conflicting-attributes]
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         """
-        return self.classifier.class_gradient(x=x, label=label, training_mode=training_mode, **kwargs)
+        return self.classifier.class_gradient(x=x, label=label, training_mode=training_mode, **kwargs)  # type: ignore

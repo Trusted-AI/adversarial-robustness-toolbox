@@ -29,7 +29,6 @@ from scipy.signal import lfilter
 import numpy as np
 from tqdm.auto import tqdm
 
-from art.config import ART_NUMPY_DTYPE
 from art.preprocessing.preprocessing import Preprocessor
 
 if TYPE_CHECKING:
@@ -101,12 +100,85 @@ class LFilter(Preprocessor):
             x_preprocess[i] = lfilter(
                 b=self.numerator_coef, a=self.denominator_coef, x=x_preprocess_i, axis=self.axis, zi=self.initial_cond
             )
-            x_preprocess[i] = x_preprocess[i].astype(ART_NUMPY_DTYPE)
 
         if self.clip_values is not None:
             np.clip(x_preprocess, self.clip_values[0], self.clip_values[1], out=x_preprocess)
 
         return x_preprocess, y
+
+    def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
+        """
+        Provide an estimate of the gradients of the defence for the backward pass.
+
+        :param x: Input data for which the gradient is estimated. First dimension is the batch size.
+        :param grad: Gradient value so far.
+        :return: The gradient (estimate) of the defence.
+        """
+        if (grad.shape != x.shape) and (
+            (len(grad.shape) != len(x.shape) + 1) or (grad.shape[2:] != x.shape[1:]) or (grad.shape[0] != x.shape[0])
+        ):
+            raise ValueError(
+                "The shape of `grad` {} does not match the shape of input `x` {}".format(grad.shape, x.shape)
+            )
+
+        if self.denominator_coef[0] != 1.0 or np.sum(self.denominator_coef) != 1.0:
+            logger.warning(
+                "Accurate gradient estimation is currently only implemented for finite impulse response filtering, "
+                "the coefficients indicate infinite response filtering, therefore Backward Pass Differentiable "
+                "Approximation (BPDA) is applied instead."
+            )
+            return grad
+
+        # We will compute gradient for one sample at a time
+        x_grad_list = list()
+
+        for i, x_i in enumerate(x):
+            # First compute the gradient matrix
+            grad_matrix = self._compute_gradient_matrix(size=x_i.size)
+
+            # Then combine with the input gradient
+            if grad.shape == x.shape:
+                grad_x_i = np.zeros(x_i.size)
+                for j in range(x_i.size):
+                    grad_x_i[j] = np.sum(grad[i] * grad_matrix[:, j])
+
+            else:
+                grad_x_i = np.zeros_like(grad[i])
+                for j in range(x_i.size):
+                    grad_x_i[:, j] = np.sum(grad[i, :, :] * grad_matrix[:, j], axis=1)
+
+            # And store the result
+            x_grad_list.append(grad_x_i)
+
+        if x.dtype == np.object:
+            x_grad = np.empty(x.shape[0], dtype=object)
+            x_grad[:] = list(x_grad_list)
+
+        else:
+            x_grad = np.array(x_grad_list)
+
+        return x_grad
+
+    def _compute_gradient_matrix(self, size: int) -> np.ndarray:
+        """
+        Compute the gradient of the FIR output with respect to the FIR input. The gradient computation result is stored
+        as a matrix.
+
+        :param size: The size of the FIR input or output.
+        :return: A gradient matrix.
+        """
+        # Initialize gradients redundantly
+        grad_matrix = np.zeros(shape=(size, size + self.numerator_coef.size - 1))
+
+        # Compute gradients
+        flipped_numerator_coef = np.flip(self.numerator_coef)
+        for i in range(size):
+            grad_matrix[i, i : i + self.numerator_coef.size] = flipped_numerator_coef
+
+        # Remove temporary gradients
+        grad_matrix = grad_matrix[:, self.numerator_coef.size - 1 :]
+
+        return grad_matrix
 
     def _check_params(self) -> None:
         if not isinstance(self.denominator_coef, np.ndarray) or self.denominator_coef[0] == 0:

@@ -101,7 +101,7 @@ class PoisoningAttackCleanLabelBackdoor(PoisoningAttackBlackBox):
         )
         self._check_params()
 
-    def poison(
+    def poison(  # pylint: disable=W0221
         self, x: np.ndarray, y: Optional[np.ndarray] = None, broadcast: bool = True, **kwargs
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -133,7 +133,7 @@ class PoisoningAttackCleanLabelBackdoor(PoisoningAttackBlackBox):
         if any(no_change_detected):
             logger.warning("Perturbed input is the same as original data after PGD. Check params.")
             idx_no_change = np.arange(len(no_change_detected))[no_change_detected]
-            logger.warning(f"%d indices without change: %d", len(idx_no_change), idx_no_change)
+            logger.warning("%d indices without change: %d", len(idx_no_change), idx_no_change)
 
         # Add backdoor and poison with the same label
         poisoned_input, _ = self.backdoor.poison(perturbed_input, self.target, broadcast=broadcast)

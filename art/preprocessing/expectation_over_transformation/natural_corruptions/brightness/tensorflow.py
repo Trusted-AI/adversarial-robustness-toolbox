@@ -80,7 +80,8 @@ class EoTBrightnessTensorFlow(EoTTensorFlowV2):
 
     def _check_params(self) -> None:
 
-        if not (isinstance(self.delta, (int, float)) or isinstance(self.delta, tuple)) or (
+        # pylint: disable=R0916
+        if not isinstance(self.delta, (int, float, tuple)) or (
             isinstance(self.delta, tuple)
             and (
                 len(self.delta) != 2
