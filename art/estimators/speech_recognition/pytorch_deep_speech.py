@@ -25,6 +25,7 @@ import logging
 from typing import TYPE_CHECKING, List, Optional, Tuple, Union
 
 import numpy as np
+from deepspeech_pytorch.model import DeepSpeech
 
 from art import config
 from art.estimators.pytorch import PyTorchEstimator
@@ -35,7 +36,6 @@ from art.utils import get_file
 if TYPE_CHECKING:
     # pylint: disable=C0412
     import torch
-    from deepspeech_pytorch.model import DeepSpeech
 
     from art.defences.postprocessor.postprocessor import Postprocessor
     from art.defences.preprocessor.preprocessor import Preprocessor
@@ -47,7 +47,8 @@ logger = logging.getLogger(__name__)
 class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTorchEstimator):
     """
     This class implements a model-specific automatic speech recognizer using the end-to-end speech recognizer
-    DeepSpeech and PyTorch.
+    DeepSpeech and PyTorch. It supports both version 2 and version 3 of DeepSpeech models as released at
+    https://github.com/SeanNaren/deepspeech.pytorch.
 
     | Paper link: https://arxiv.org/abs/1512.02595
     """
@@ -141,6 +142,14 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
             preprocessing=preprocessing,
         )
 
+        # Check DeepSpeech version
+        if str(DeepSpeech.__base__) == "<class 'torch.nn.modules.module.Module'>":
+            self._version = 2
+        elif str(DeepSpeech.__base__) == "<class 'pytorch_lightning.core.lightning.LightningModule'>":
+            self._version = 3
+        else:
+            raise NotImplementedError("Only DeepSpeech version 2 and DeepSpeech version 3 are currently supported.")
+
         self.verbose = verbose
 
         # Check clip values
@@ -166,45 +175,87 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
 
         # Load model
         if model is None:
-            if pretrained_model == "an4":
-                filename, url = (
-                    "an4_pretrained_v2.pth",
-                    "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/v2.0/an4_pretrained_v2.pth",
-                )
+            if self._version == 2:
+                if pretrained_model == "an4":
+                    filename, url = (
+                        "an4_pretrained_v2.pth",
+                        "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/v2.0/an4_pretrained_v2.pth",
+                    )
 
-            elif pretrained_model == "librispeech":
-                filename, url = (
-                    "librispeech_pretrained_v2.pth",
-                    "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/v2.0/"
-                    "librispeech_pretrained_v2.pth",
-                )
-
-            elif pretrained_model == "tedlium":
-                filename, url = (
-                    "ted_pretrained_v2.pth",
-                    "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/v2.0/ted_pretrained_v2.pth",
-                )
-
-            elif pretrained_model is None:
-                # If model is None and no pretrained model is selected, then we need to have parameters filename and
-                # url to download, extract and load the automatic speech recognition model
-                if filename is None or url is None:
+                elif pretrained_model == "librispeech":
                     filename, url = (
                         "librispeech_pretrained_v2.pth",
                         "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/v2.0/"
                         "librispeech_pretrained_v2.pth",
                     )
 
+                elif pretrained_model == "tedlium":
+                    filename, url = (
+                        "ted_pretrained_v2.pth",
+                        "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/v2.0/ted_pretrained_v2.pth",
+                    )
+
+                elif pretrained_model is None:
+                    # If model is None and no pretrained model is selected, then we need to have parameters filename
+                    # and url to download, extract and load the automatic speech recognition model
+                    if filename is None or url is None:
+                        filename, url = (
+                            "librispeech_pretrained_v2.pth",
+                            "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/v2.0/"
+                            "librispeech_pretrained_v2.pth",
+                        )
+
+                else:
+                    raise ValueError("The input pretrained model %s is not supported." % pretrained_model)
+
+                # Download model
+                model_path = get_file(
+                    filename=filename, path=config.ART_DATA_PATH, url=url, extract=False, verbose=self.verbose
+                )
+
+                # Then load model
+                self._model = load_model(device=self._device, model_path=model_path, use_half=use_half)
+
             else:
-                raise ValueError("The input pretrained model %s is not supported." % pretrained_model)
+                if pretrained_model == "an4":
+                    filename, url = (
+                        "an4_pretrained_v3.ckpt",
+                        "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/V3.0/an4_pretrained_v3.ckpt",
+                    )
 
-            # Download model
-            model_path = get_file(
-                filename=filename, path=config.ART_DATA_PATH, url=url, extract=False, verbose=self.verbose
-            )
+                elif pretrained_model == "librispeech":
+                    filename, url = (
+                        "librispeech_pretrained_v3.ckpt",
+                        "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/V3.0/"
+                        "librispeech_pretrained_v3.ckpt",
+                    )
 
-            # Then load model
-            self._model = load_model(device=self._device, model_path=model_path, use_half=use_half)
+                elif pretrained_model == "tedlium":
+                    filename, url = (
+                        "ted_pretrained_v3.ckpt",
+                        "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/V3.0/ted_pretrained_v3.ckpt",
+                    )
+
+                elif pretrained_model is None:
+                    # If model is None and no pretrained model is selected, then we need to have parameters filename and
+                    # url to download, extract and load the automatic speech recognition model
+                    if filename is None or url is None:
+                        filename, url = (
+                            "librispeech_pretrained_v3.ckpt",
+                            "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/V3.0/"
+                            "librispeech_pretrained_v3.ckpt",
+                        )
+
+                else:
+                    raise ValueError("The input pretrained model %s is not supported." % pretrained_model)
+
+                # Download model
+                model_path = get_file(
+                    filename=filename, path=config.ART_DATA_PATH, url=url, extract=False, verbose=self.verbose
+                )
+
+                # Then load model
+                self._model = load_model(device=self._device, model_path=model_path)
 
         else:
             self._model = model
