@@ -30,8 +30,8 @@ logger = logging.getLogger(__name__)
 
 @pytest.mark.skip_module("deepspeech_pytorch")
 @pytest.mark.skip_framework("tensorflow", "tensorflow2v1", "keras", "kerastf", "mxnet", "non_dl_frameworks")
-@pytest.mark.parametrize("use_amp", [False, True])
-@pytest.mark.parametrize("device_type", ["cpu", "gpu"])
+@pytest.mark.parametrize("use_amp", [False])
+@pytest.mark.parametrize("device_type", ["cpu"])
 def test_pytorch_deep_speech(art_warning, expected_values, use_amp, device_type):
     # Only import if deepspeech_pytorch module is available
     import torch
