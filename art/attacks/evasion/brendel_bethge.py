@@ -39,10 +39,15 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements Brendel and Bethge attack.
+"""
+# pylint: disable=C0103,R0201,C0115,C0116,C0144,C0302,W0612,W0613,E1120,R1716,R1705,R1723,R1720
 from typing import Union, Optional, Tuple, TYPE_CHECKING
+import logging
 
 import numpy as np
-import logging
+from numba.experimental import jitclass
 
 from art import config
 from art.utils import get_labels_np_array, check_and_transform_label_format, is_probability
@@ -58,7 +63,8 @@ EPS = 1e-10
 logger = logging.getLogger(__name__)
 
 
-class BFGSB(object):
+@jitclass(spec=[])
+class BFGSB:
     def __init__(self):
         pass
 
@@ -68,7 +74,7 @@ class BFGSB(object):
         if maxiter is None:
             maxiter = N * 200
 
-        l = bounds[:, 0]  # noqa: E741
+        var_l = bounds[:, 0]
         u = bounds[:, 1]
 
         func_calls = 0
@@ -96,7 +102,7 @@ class BFGSB(object):
                 if _gfk[v] < 0:
                     gv = max(qk[v] - u[v], _gfk[v])
                 else:
-                    gv = min(qk[v] - l[v], _gfk[v])
+                    gv = min(qk[v] - var_l[v], _gfk[v])
 
                 if pg_norm < np.abs(gv):
                     pg_norm = np.abs(gv)
@@ -105,13 +111,19 @@ class BFGSB(object):
                 break
 
             # get cauchy point
-            x_cp = self._cauchy_point(qk, l, u, _gfk.copy(), Hk)
-            qk1 = self._subspace_min(qk, l, u, x_cp, _gfk.copy(), Hk)
+            x_cp = self._cauchy_point(qk, var_l, u, _gfk.copy(), Hk)
+            qk1 = self._subspace_min(qk, var_l, u, x_cp, _gfk.copy(), Hk)
             pk = qk1 - qk
 
-            (alpha_k, fc, gc, old_fval, old_old_fval, gfkp1, fnev,) = self._line_search_wolfe(
-                fun_and_jac, qk, pk, _gfk, old_fval, old_old_fval, l, u, args
-            )
+            (
+                alpha_k,
+                fc,
+                gc,
+                old_fval,
+                old_old_fval,
+                gfkp1,
+                fnev,
+            ) = self._line_search_wolfe(fun_and_jac, qk, pk, _gfk, old_fval, old_old_fval, var_l, u, args)
             func_calls += fnev
 
             if alpha_k is None:
@@ -120,7 +132,7 @@ class BFGSB(object):
             if np.abs(old_fval - old_old_fval) <= (ftol + ftol * np.abs(old_fval)):
                 break
 
-            qkp1 = self._project(qk + alpha_k * pk, l, u)
+            qkp1 = self._project(qk + alpha_k * pk, var_l, u)
 
             if gfkp1 is None:
                 _, gfkp1 = fun_and_jac(qkp1, *args)
@@ -164,7 +176,7 @@ class BFGSB(object):
 
         return qk
 
-    def _cauchy_point(self, x, l, u, g, B):  # noqa: E741
+    def _cauchy_point(self, x, var_l, u, g, B):
         # finds the cauchy point for q(x)=x'Gx+x'd s$t. l<=x<=u
         # g=G*x+d #gradient of q(x)
         # converted from r-code: https://github.com/andrewhooker/PopED/blob/master/R/cauchy_point.R
@@ -176,7 +188,7 @@ class BFGSB(object):
             if g[i] < 0:
                 t[i] = (x[i] - u[i]) / g[i]
             elif g[i] > 0:
-                t[i] = (x[i] - l[i]) / g[i]
+                t[i] = (x[i] - var_l[i]) / g[i]
             elif g[i] == 0:
                 t[i] = np.inf
 
@@ -218,11 +230,11 @@ class BFGSB(object):
 
         return x_cp
 
-    def _subspace_min(self, x, l, u, x_cp, d, G):  # noqa: E741
+    def _subspace_min(self, x, var_l, u, x_cp, d, G):
         # converted from r-code: https://github.com/andrewhooker/PopED/blob/master/R/subspace_min.R
         n = x.shape[0]
         Z = np.eye(n)
-        fixed = (x_cp <= l + 1e-8) + (x_cp >= u - 1e8)
+        fixed = (x_cp <= var_l + 1e-8) + (x_cp >= u - 1e8)
 
         if np.all(fixed):
             x = x_cp
@@ -239,7 +251,7 @@ class BFGSB(object):
         for i in np.arange(n)[~fixed]:
             dk = d[i]
             if dk < 0:
-                temp2 = l[i] - x_cp[i]
+                temp2 = var_l[i] - x_cp[i]
                 if temp2 >= 0:
                     temp1 = 0
                 else:
@@ -259,18 +271,33 @@ class BFGSB(object):
 
         return x_cp + alpha * Z.dot(d[~fixed])
 
-    def _project(self, q, l, u):  # noqa: E741
+    def _project(self, q, var_l, u):
         N = q.shape[0]
         for k in range(N):
-            if q[k] < l[k]:
-                q[k] = l[k]
+            if q[k] < var_l[k]:
+                q[k] = var_l[k]
             elif q[k] > u[k]:
                 q[k] = u[k]
 
         return q
 
     def _line_search_armijo(
-        self, fun_and_jac, pt, dpt, func_calls, m, gk, l, u, x0, x, b, min_, max_, c, r,  # noqa: E741
+        self,
+        fun_and_jac,
+        pt,
+        dpt,
+        func_calls,
+        m,
+        gk,
+        var_l,
+        u,
+        x0,
+        x,
+        b,
+        min_,
+        max_,
+        c,
+        r,
     ):
         ls_rho = 0.6
         ls_c = 1e-4
@@ -279,7 +306,7 @@ class BFGSB(object):
         t = m * ls_c
 
         for k2 in range(100):
-            ls_pt = self._project(pt + ls_alpha * dpt, l, u)
+            ls_pt = self._project(pt + ls_alpha * dpt, var_l, u)
 
             gkp1, dgkp1 = fun_and_jac(ls_pt, x0, x, b, min_, max_, c, r)
             func_calls += 1
@@ -291,8 +318,17 @@ class BFGSB(object):
 
         return ls_alpha, ls_pt, gkp1, dgkp1, func_calls
 
-    def _line_search_wolfe(  # noqa: C901
-        self, fun_and_jac, xk, pk, gfk, old_fval, old_old_fval, l, u, args,  # noqa: #E741
+    def _line_search_wolfe(
+        self,
+        fun_and_jac,
+        xk,
+        pk,
+        gfk,
+        old_fval,
+        old_old_fval,
+        var_l,
+        u,
+        args,
     ):
         """Find alpha that satisfies strong Wolfe conditions.
         Uses the line search algorithm to enforce strong Wolfe conditions
@@ -330,7 +366,7 @@ class BFGSB(object):
             old_fval = old_old_fval
             fprime_star = None
 
-        _xkp1 = self._project(xk + alpha1 * pk, l, u)
+        _xkp1 = self._project(xk + alpha1 * pk, var_l, u)
         phi_a1, _ls_ingfk = fun_and_jac(_xkp1, *args)
         _ls_fc += 1
         # derphi_a1 = phiprime(alpha1)  evaluated below
@@ -388,7 +424,7 @@ class BFGSB(object):
                             a_j = a_lo + 0.5 * dalpha
 
                     # Check new value of a_j
-                    _xkp1 = self._project(xk + a_j * pk, l, u)
+                    _xkp1 = self._project(xk + a_j * pk, var_l, u)
                     # if _xkp1[1] < 0:
                     #     _xkp1[1] = 0
                     phi_aj, _ls_ingfk = fun_and_jac(_xkp1, *args)
@@ -439,7 +475,7 @@ class BFGSB(object):
             if i > maxiter:
                 break
 
-            _xkp1 = self._project(xk + alpha1 * pk, l, u)
+            _xkp1 = self._project(xk + alpha1 * pk, var_l, u)
             _, _ls_ingfk = fun_and_jac(_xkp1, *args)
             derphi_a1 = 0
             for v in range(N):
@@ -497,7 +533,7 @@ class BFGSB(object):
                             a_j = a_lo + 0.5 * dalpha
 
                     # Check new value of a_j
-                    _xkp1 = self._project(xk + a_j * pk, l, u)
+                    _xkp1 = self._project(xk + a_j * pk, var_l, u)
                     phi_aj, _ls_ingfk = fun_and_jac(_xkp1, *args)
                     derphi_aj = 0
                     for v in range(N):
@@ -545,7 +581,7 @@ class BFGSB(object):
             alpha0 = alpha1
             alpha1 = alpha2
             phi_a0 = phi_a1
-            _xkp1 = self._project(xk + alpha1 * pk, l, u)
+            _xkp1 = self._project(xk + alpha1 * pk, var_l, u)
             phi_a1, _ls_ingfk = fun_and_jac(_xkp1, *args)
             _ls_fc += 1
             derphi_a0 = derphi_a1
@@ -602,7 +638,7 @@ class BFGSB(object):
         return xmin
 
 
-class Optimizer(object):
+class Optimizer:
     """
     Base class for the trust-region optimization. If feasible, this optimizer solves the problem
 
@@ -839,8 +875,12 @@ class Optimizer(object):
         return _delta
 
 
+spec = [("bfgsb", BFGSB.class_type.instance_type)]  # type: ignore
+
+
+@jitclass(spec=spec)
 class L2Optimizer(Optimizer):
-    def optimize_distance_s_t_boundary_and_trustregion(self, x0, x, b, min_, max_, c, r):  # noqa: C901
+    def optimize_distance_s_t_boundary_and_trustregion(self, x0, x, b, min_, max_, c, r):
         """
         Solves the L2 trust region problem
 
@@ -1029,6 +1069,7 @@ class L2Optimizer(Optimizer):
         return np.linalg.norm(x0 - x) ** 2
 
 
+@jitclass(spec=spec)
 class L1Optimizer(Optimizer):
     def fun_and_jac(self, params, x0, x, b, min_, max_, c, r):
         lam, mu = params
@@ -1172,6 +1213,7 @@ class L1Optimizer(Optimizer):
         return np.abs(x0 - x).sum()
 
 
+@jitclass(spec=spec)
 class LinfOptimizer(Optimizer):
     def optimize_distance_s_t_boundary_and_trustregion(self, x0, x, b, min_, max_, c, r):
         """
@@ -1356,6 +1398,7 @@ class LinfOptimizer(Optimizer):
         return np.abs(x0 - x).max()
 
 
+@jitclass(spec=spec)
 class L0Optimizer(Optimizer):
     def optimize_distance_s_t_boundary_and_trustregion(self, x0, x, b, min_, max_, c, r):
         """
@@ -1369,7 +1412,19 @@ class L0Optimizer(Optimizer):
         return self.minimize(params0, bounds, x0, x, b, min_, max_, c, r)
 
     def minimize(
-        self, q0, bounds, x0, x, b, min_, max_, c, r, ftol=1e-9, xtol=-1e-5, maxiter=1000,
+        self,
+        q0,
+        bounds,
+        x0,
+        x,
+        b,
+        min_,
+        max_,
+        c,
+        r,
+        ftol=1e-9,
+        xtol=-1e-5,
+        maxiter=1000,
     ):
         # First check whether solution can be computed without trust region
         delta, delta_norm = self.minimize_without_trustregion(x0, x, b, c, r, min_, max_)
@@ -1423,7 +1478,17 @@ class L0Optimizer(Optimizer):
         return delta, delta_norm
 
     def _nelder_mead_algorithm(
-        self, q0, bounds, args=(), ρ=1.0, χ=2.0, γ=0.5, σ=0.5, tol_f=1e-8, tol_x=1e-8, max_iter=1000,
+        self,
+        q0,
+        bounds,
+        args=(),
+        ρ=1.0,
+        χ=2.0,
+        γ=0.5,
+        σ=0.5,
+        tol_f=1e-8,
+        tol_x=1e-8,
+        max_iter=1000,
     ):
         """
         Implements the Nelder-Mead algorithm described in Lagarias et al. (1998)
@@ -1993,7 +2058,7 @@ class BrendelBethgeAttack(EvasionAttack):
                 self._loss_fn = logits_difference
                 self._loss_object = logits_difference
 
-            estimator_bb = TensorFlowV2Classifier(
+            estimator_bb: "CLASSIFIER_LOSS_GRADIENTS_TYPE" = TensorFlowV2Classifier(
                 model=estimator.model,
                 nb_classes=estimator.nb_classes,
                 input_shape=estimator.input_shape,
@@ -2054,7 +2119,7 @@ class BrendelBethgeAttack(EvasionAttack):
 
             estimator_bb = PyTorchClassifier(
                 model=estimator.model,
-                loss=self._loss_object,
+                loss=self._loss_object,  # type: ignore
                 input_shape=estimator.input_shape,
                 nb_classes=estimator.nb_classes,
                 optimizer=None,
@@ -2063,11 +2128,16 @@ class BrendelBethgeAttack(EvasionAttack):
                 preprocessing_defences=estimator.preprocessing_defences,
                 postprocessing_defences=estimator.postprocessing_defences,
                 preprocessing=estimator.preprocessing,
-                device_type=estimator._device,
+                device_type=str(estimator._device),
             )
 
         else:
-            estimator_bb = None
+            logger.warning(
+                "The type of the provided estimator is not yet support for automated setting of logits "
+                "difference loss. Therefore, this attack is defaulting to attacking the loss provided by "
+                "the model in the provided estimator."
+            )
+            estimator_bb = estimator
 
         super().__init__(estimator=estimator_bb)
         self.norm = norm
@@ -2093,7 +2163,13 @@ class BrendelBethgeAttack(EvasionAttack):
         elif norm in ["inf", np.inf]:
             self._optimizer = LinfOptimizer()
 
-    def generate(
+        # Set binary search threshold
+        if norm == 2:
+            self.theta = 0.01 / np.sqrt(np.prod(self.estimator.input_shape))
+        else:
+            self.theta = 0.01 / np.prod(self.estimator.input_shape)
+
+    def generate(  # pylint: disable=W0221
         self,
         x: np.ndarray,
         y: Optional[np.ndarray] = None,
@@ -2120,9 +2196,7 @@ class BrendelBethgeAttack(EvasionAttack):
 
             # Use model predictions as correct outputs
             logger.info("Using model predictions as correct labels for FGM.")
-            y = get_labels_np_array(
-                self.estimator.predict(x, batch_size=self.batch_size)  # type: ignore
-            )
+            y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))  # type: ignore
 
         # Prediction from the initial adversarial examples if not None
         x_adv_init = kwargs.get("x_adv_init")
@@ -2269,7 +2343,9 @@ class BrendelBethgeAttack(EvasionAttack):
 
             # we aim to slight overshoot over the boundary to stay within the adversarial region
             corr_logits_diffs = np.where(
-                -logits_diffs < 0, -self.overshoot * logits_diffs, -(2 - self.overshoot) * logits_diffs,
+                -logits_diffs < 0,
+                -self.overshoot * logits_diffs,
+                -(2 - self.overshoot) * logits_diffs,
             )
 
             # employ solver to find optimal step within trust region for each sample
@@ -2286,18 +2362,15 @@ class BrendelBethgeAttack(EvasionAttack):
                     _c = corr_logits_diffs[k]
                     r = region[sample]
 
-                    delta = self._optimizer.solve(  # type: ignore
-                        _x0, _x, _b, bounds[0], bounds[1], _c, r
-                    )
+                    delta = self._optimizer.solve(_x0, _x, _b, bounds[0], bounds[1], _c, r)  # type: ignore
                     deltas.append(delta)
 
                     k += 1  # idx of masked sample
 
-            deltas = np.stack(deltas)
-            deltas = deltas.astype(np.float32)
+            deltas_array = np.stack(deltas).astype(np.float32)
 
             # add step to current perturbation
-            x = (x + deltas).reshape(original_shape)
+            x = (x + deltas_array).reshape(original_shape)
 
         return best_advs.astype(config.ART_NUMPY_DTYPE)
 
@@ -2307,7 +2380,11 @@ class BrendelBethgeAttack(EvasionAttack):
         return norm
 
     def mid_points(
-        self, x0: np.ndarray, x1: np.ndarray, epsilons: np.ndarray, bounds: Tuple[float, float],
+        self,
+        x0: np.ndarray,
+        x1: np.ndarray,
+        epsilons: np.ndarray,
+        bounds: Tuple[float, float],
     ) -> np.ndarray:
         """
         returns a point between x0 and x1 where epsilon = 0 returns x0 and epsilon = 1 returns x1
@@ -2344,7 +2421,14 @@ class BrendelBethgeAttack(EvasionAttack):
         return new_x.astype(config.ART_NUMPY_DTYPE)
 
     def _init_sample(
-        self, x: np.ndarray, y: int, y_p: int, init_pred: int, adv_init: np.ndarray, clip_min: float, clip_max: float,
+        self,
+        x: np.ndarray,
+        y: int,
+        y_p: int,
+        init_pred: int,
+        adv_init: np.ndarray,
+        clip_min: float,
+        clip_max: float,
     ) -> Optional[Union[np.ndarray, Tuple[np.ndarray, int]]]:
         """
         Find initial adversarial example for the attack.
@@ -2374,7 +2458,8 @@ class BrendelBethgeAttack(EvasionAttack):
             for _ in range(self.init_size):
                 random_img = nprd.uniform(clip_min, clip_max, size=x.shape).astype(x.dtype)
                 random_class = np.argmax(
-                    self.estimator.predict(np.array([random_img]), batch_size=self.batch_size), axis=1,
+                    self.estimator.predict(np.array([random_img]), batch_size=self.batch_size),
+                    axis=1,
                 )[0]
 
                 if random_class == y:
@@ -2404,7 +2489,8 @@ class BrendelBethgeAttack(EvasionAttack):
             for _ in range(self.init_size):
                 random_img = nprd.uniform(clip_min, clip_max, size=x.shape).astype(x.dtype)
                 random_class = np.argmax(
-                    self.estimator.predict(np.array([random_img]), batch_size=self.batch_size), axis=1,
+                    self.estimator.predict(np.array([random_img]), batch_size=self.batch_size),
+                    axis=1,
                 )[0]
 
                 if random_class != y_p:
@@ -2470,18 +2556,27 @@ class BrendelBethgeAttack(EvasionAttack):
             # Interpolation point
             alpha = (upper_bound + lower_bound) / 2.0
             interpolated_sample = self._interpolate(
-                current_sample=current_sample, original_sample=original_sample, alpha=alpha, norm=norm,
+                current_sample=current_sample,
+                original_sample=original_sample,
+                alpha=alpha,
+                norm=norm,
             )
 
             # Update upper_bound and lower_bound
             satisfied = self._adversarial_satisfactory(
-                samples=interpolated_sample[None], target=target, clip_min=clip_min, clip_max=clip_max,
+                samples=interpolated_sample[None],
+                target=target,
+                clip_min=clip_min,
+                clip_max=clip_max,
             )[0]
             lower_bound = np.where(satisfied == 0, alpha, lower_bound)
             upper_bound = np.where(satisfied == 1, alpha, upper_bound)
 
         result = self._interpolate(
-            current_sample=current_sample, original_sample=original_sample, alpha=upper_bound, norm=norm,
+            current_sample=current_sample,
+            original_sample=original_sample,
+            alpha=upper_bound,
+            norm=norm,
         )
 
         return result

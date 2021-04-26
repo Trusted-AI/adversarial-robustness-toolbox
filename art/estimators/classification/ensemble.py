@@ -27,7 +27,6 @@ import numpy as np
 
 from art.estimators.classification.classifier import ClassifierNeuralNetwork
 from art.estimators.estimator import NeuralNetworkMixin
-from art.utils import Deprecated, deprecated_keyword_arg
 
 if TYPE_CHECKING:
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
@@ -44,17 +43,20 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
     trained when the ensemble is created and no training procedures are provided through this class.
     """
 
-    @deprecated_keyword_arg("channel_index", end_version="1.6.0", replaced_by="channels_first")
+    estimator_params = ClassifierNeuralNetwork.estimator_params + [
+        "classifiers",
+        "classifier_weights",
+    ]
+
     def __init__(
         self,
         classifiers: List[ClassifierNeuralNetwork],
         classifier_weights: Union[list, np.ndarray, None] = None,
-        channel_index=Deprecated,
         channels_first: bool = False,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
     ) -> None:
         """
         Initialize a :class:`.EnsembleClassifier` object. The data range values and colour channel index have to
@@ -63,8 +65,6 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         :param classifiers: List of :class:`.Classifier` instances to be ensembled together.
         :param classifier_weights: List of weights, one scalar per classifier, to assign to their prediction when
                aggregating results. If `None`, all classifiers are assigned the same weight.
-        :param channel_index: Index of the axis in data containing the color channels or features.
-        :type channel_index: `int`
         :param channels_first: Set channels first or last.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
@@ -80,18 +80,9 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         if preprocessing_defences is not None:
             raise NotImplementedError("Preprocessing is not applicable in this classifier.")
 
-        # Remove in 1.6.0
-        if channel_index == 3:
-            channels_first = False
-        elif channel_index == 1:
-            channels_first = True
-        elif channel_index is not Deprecated:
-            raise ValueError("Not a proper channel_index. Use channels_first.")
-
         super().__init__(
             model=None,
             clip_values=clip_values,
-            channel_index=channel_index,
             channels_first=channels_first,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
@@ -140,7 +131,6 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
                 )
 
         self._classifiers = classifiers
-        self._learning_phase: Optional[bool] = None
 
     @property
     def input_shape(self) -> Tuple[int, ...]:
@@ -151,14 +141,34 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         """
         return self._input_shape  # type: ignore
 
-    def predict(self, x: np.ndarray, batch_size: int = 128, raw: bool = False, **kwargs) -> np.ndarray:
+    @property
+    def classifiers(self) -> List[ClassifierNeuralNetwork]:
+        """
+        Return the Classifier instances that are ensembled together.
+
+        :return: Classifier instances that are ensembled together.
+        """
+        return self._classifiers  # type: ignore
+
+    @property
+    def classifier_weights(self) -> Union[list, np.ndarray, None]:
+        """
+        Return the list of classifier weights to assign to their prediction when aggregating results.
+
+        :return: The list of classifier weights to assign to their prediction when aggregating results.
+        """
+        return self._classifier_weights  # type: ignore
+
+    def predict(  # pylint: disable=W0221
+        self, x: np.ndarray, batch_size: int = 128, raw: bool = False, **kwargs
+    ) -> np.ndarray:
         """
         Perform prediction for a batch of inputs. Predictions from classifiers should only be aggregated if they all
         have the same type of output (e.g., probabilities). Otherwise, use `raw=True` to get predictions from all
         models without aggregation. The same option should be used for logits output, as logits are not comparable
         between models and should not be aggregated.
 
-        :param x: Test set.
+        :param x: Input samples.
         :param batch_size: Size of batches.
         :param raw: Return the individual classifier raw outputs (not aggregated).
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`, or of shape
@@ -231,8 +241,13 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         """
         raise NotImplementedError
 
-    def class_gradient(
-        self, x: np.ndarray, label: Union[int, List[int], None] = None, raw: bool = False, **kwargs
+    def class_gradient(  # pylint: disable=W0221
+        self,
+        x: np.ndarray,
+        label: Union[int, List[int], None] = None,
+        training_mode: bool = False,
+        raw: bool = False,
+        **kwargs
     ) -> np.ndarray:
         """
         Compute per-class derivatives w.r.t. `x`.
@@ -240,6 +255,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         :param x: Sample input with shape as expected by the model.
         :param label: Index of a specific per-class derivative. If `None`, then gradients for all
                       classes will be computed.
+        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
         :param raw: Return the individual classifier raw outputs (not aggregated).
         :return: Array of gradients of input features w.r.t. each class in the form
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
@@ -248,7 +264,8 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         """
         grads = np.array(
             [
-                self._classifier_weights[i] * self._classifiers[i].class_gradient(x, label)
+                self._classifier_weights[i]
+                * self._classifiers[i].class_gradient(x=x, label=label, training_mode=training_mode, **kwargs)
                 for i in range(self._nb_classifiers)
             ]
         )
@@ -257,19 +274,23 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
 
         return np.sum(grads, axis=0)
 
-    def loss_gradient(self, x: np.ndarray, y: np.ndarray, raw: bool = False, **kwargs) -> np.ndarray:
+    def loss_gradient(  # pylint: disable=W0221
+        self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, raw: bool = False, **kwargs
+    ) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
         :param x: Sample input with shape as expected by the model.
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,).
+        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
         :param raw: Return the individual classifier raw outputs (not aggregated).
         :return: Array of gradients of the same shape as `x`. If `raw=True`, shape becomes `[nb_classifiers, x.shape]`.
         """
         grads = np.array(
             [
-                self._classifier_weights[i] * self._classifiers[i].loss_gradient(x, y)
+                self._classifier_weights[i]
+                * self._classifiers[i].loss_gradient(x=x, y=y, training_mode=training_mode, **kwargs)
                 for i in range(self._nb_classifiers)
             ]
         )
@@ -278,26 +299,14 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
 
         return np.sum(grads, axis=0)
 
-    def set_learning_phase(self, train: bool) -> None:
-        """
-        Set the learning phase for the backend framework.
-
-        :param train: True to set the learning phase to training, False to set it to prediction.
-        """
-        if self._learning_phase is not None and isinstance(train, bool):
-            for classifier in self._classifiers:
-                classifier.set_learning_phase(train)
-            self._learning_phase = train
-
     def __repr__(self):
         repr_ = (
-            "%s(classifiers=%r, classifier_weights=%r, channel_index=%r, channels_first=%r, clip_values=%r, "
+            "%s(classifiers=%r, classifier_weights=%r, channels_first=%r, clip_values=%r, "
             "preprocessing_defences=%r, postprocessing_defences=%r, preprocessing=%r)"
             % (
                 self.__module__ + "." + self.__class__.__name__,
                 self._classifiers,
                 self._classifier_weights,
-                self.channel_index,
                 self.channels_first,
                 self.clip_values,
                 self.preprocessing_defences,
@@ -320,7 +329,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         """
         raise NotImplementedError
 
-    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the loss of the neural network for samples `x`.
 

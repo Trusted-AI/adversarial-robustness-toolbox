@@ -24,7 +24,6 @@ import keras.backend as k
 import numpy as np
 
 from art.estimators.classification.ensemble import EnsembleClassifier
-from art.utils import Deprecated
 from tests.utils import TestBase, get_image_classifier_kr
 
 logger = logging.getLogger(__name__)
@@ -254,9 +253,9 @@ class TestEnsembleClassifier(TestBase):
         self.assertIn("art.estimators.classification.ensemble.EnsembleClassifier", repr_)
         self.assertIn("classifier_weights=array([0.5, 0.5])", repr_)
         self.assertIn(
-            f"channel_index={Deprecated}, channels_first=False, clip_values=array([0., 1.], dtype=float32), "
-            "preprocessing_defences=None, postprocessing_defences=None, preprocessing=[StandardisationMeanStd(mean=0, "
-            "std=1, apply_fit=True, apply_predict=True)]",
+            "channels_first=False, clip_values=array([0., 1.], dtype=float32), "
+            "preprocessing_defences=None, postprocessing_defences=None, preprocessing=StandardisationMeanStd(mean=0.0, "
+            "std=1.0, apply_fit=True, apply_predict=True)",
             repr_,
         )
 

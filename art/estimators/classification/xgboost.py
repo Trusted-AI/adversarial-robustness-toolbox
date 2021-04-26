@@ -50,13 +50,17 @@ class XGBoostClassifier(ClassifierDecisionTree):
     Wrapper class for importing XGBoost models.
     """
 
+    estimator_params = ClassifierDecisionTree.estimator_params + [
+        "nb_features",
+    ]
+
     def __init__(
         self,
         model: Union["xgboost.Booster", "xgboost.XGBClassifier", None] = None,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
         nb_features: Optional[int] = None,
         nb_classes: Optional[int] = None,
     ) -> None:
@@ -99,6 +103,15 @@ class XGBoostClassifier(ClassifierDecisionTree):
         """
         return self._input_shape  # type: ignore
 
+    @property
+    def nb_features(self) -> int:
+        """
+        Return the number of features.
+
+        :return: The number of features.
+        """
+        return self._input_shape[0]  # type: ignore
+
     def fit(self, x: np.ndarray, y: np.ndarray, **kwargs) -> None:
         """
         Fit the classifier on the training set `(x, y)`.
@@ -116,7 +129,7 @@ class XGBoostClassifier(ClassifierDecisionTree):
         """
         Perform prediction for a batch of inputs.
 
-        :param x: Test set.
+        :param x: Input samples.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
         import xgboost  # lgtm [py/repeated-import] lgtm [py/import-and-import-from]
@@ -126,8 +139,7 @@ class XGBoostClassifier(ClassifierDecisionTree):
 
         if isinstance(self._model, xgboost.Booster):
             train_data = xgboost.DMatrix(x_preprocessed, label=None)
-            predictions = self._model.predict(train_data)
-            y_prediction = np.asarray([line for line in predictions])
+            y_prediction = self._model.predict(train_data)
             if len(y_prediction.shape) == 1:
                 y_prediction = to_categorical(labels=y_prediction, nb_classes=self.nb_classes)
         elif isinstance(self._model, xgboost.XGBClassifier):
@@ -148,7 +160,7 @@ class XGBoostClassifier(ClassifierDecisionTree):
 
         if isinstance(self._model, Booster):
             try:
-                return int(len(self._model.get_dump(dump_format="json")) / self._model.n_estimators)
+                return int(len(self._model.get_dump(dump_format="json")) / self._model.n_estimators)  # type: ignore
             except AttributeError:
                 if nb_classes is not None:
                     return nb_classes
@@ -202,7 +214,10 @@ class XGBoostClassifier(ClassifierDecisionTree):
 
             tree_json = json.loads(tree_dump)
             trees.append(
-                Tree(class_id=class_label, leaf_nodes=self._get_leaf_nodes(tree_json, i_tree, class_label, box),)
+                Tree(
+                    class_id=class_label,
+                    leaf_nodes=self._get_leaf_nodes(tree_json, i_tree, class_label, box),
+                )
             )
 
         return trees
@@ -241,7 +256,13 @@ class XGBoostClassifier(ClassifierDecisionTree):
 
         if "leaf" in node:
             leaf_nodes.append(
-                LeafNode(tree_id=i_tree, class_label=class_label, node_id=node["nodeid"], box=box, value=node["leaf"],)
+                LeafNode(
+                    tree_id=i_tree,
+                    class_label=class_label,
+                    node_id=node["nodeid"],
+                    box=box,
+                    value=node["leaf"],
+                )
             )
 
         return leaf_nodes

@@ -101,6 +101,8 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
         },
     }
 
+    estimator_params = TensorFlowV2Estimator.estimator_params + ["random_seed", "sess"]
+
     def __init__(
         self,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
@@ -170,9 +172,9 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
         )
 
         # placeholders
-        self._x_padded = tf1.placeholder(tf1.float32, shape=[None, None], name="art_x_padded")
-        self._y_target = tf1.placeholder(tf1.string, name="art_y_target")
-        self._mask_frequency = tf1.placeholder(tf1.float32, shape=[None, None, 80], name="art_mask_frequency")
+        self._x_padded: "Tensor" = tf1.placeholder(tf1.float32, shape=[None, None], name="art_x_padded")
+        self._y_target: "Tensor" = tf1.placeholder(tf1.string, name="art_y_target")
+        self._mask_frequency: "Tensor" = tf1.placeholder(tf1.float32, shape=[None, None, 80], name="art_mask_frequency")
 
         # init Lingvo computation graph
         self._sess: "Session" = tf1.Session() if sess is None else sess
@@ -180,11 +182,13 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
         self._model = model
         self._task = task
         self._cluster = cluster
-        self._metrics = None
+        self._metrics: Optional[Tuple[Union[Dict[str, "Tensor"], Dict[str, Tuple["Tensor", "Tensor"]]], ...]] = None
 
         # add prediction and loss gradient ops to graph
-        self._predict_batch_op = self._predict_batch(self._x_padded, self._y_target, self._mask_frequency)
-        self._loss_gradient_op = self._loss_gradient(self._x_padded, self._y_target, self._mask_frequency)
+        self._predict_batch_op: Dict[str, "Tensor"] = self._predict_batch(
+            self._x_padded, self._y_target, self._mask_frequency
+        )
+        self._loss_gradient_op: "Tensor" = self._loss_gradient(self._x_padded, self._y_target, self._mask_frequency)
 
     @property
     def input_shape(self) -> Tuple[int, ...]:
@@ -236,7 +240,7 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
         import lingvo.tasks.asr.decoder as decoder
         import asr.decoder_patched as decoder_patched
 
-        decoder.AsrDecoderBase._ComputeMetrics = decoder_patched.AsrDecoderBase._ComputeMetrics
+        decoder.AsrDecoderBase._ComputeMetrics = decoder_patched.AsrDecoderBase._ComputeMetrics  # pylint: disable=W0212
 
         # check and download Lingvo ASR vocab
         # vocab_path = self._check_and_download_vocab()
@@ -250,7 +254,7 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
         # register model params
         model_name = "asr.librispeech.Librispeech960Wpm"
         model_imports.ImportParams(model_name)
-        params = model_registry._ModelRegistryHelper.GetParams(model_name, "Test")
+        params = model_registry._ModelRegistryHelper.GetParams(model_name, "Test")  # pylint: disable=W0212
 
         # set random seed parameter
         if self.random_seed is not None:
@@ -298,7 +302,7 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
         source_paddings = 1.0 - mask_frequency[:, :, 0]
 
         # prepare model input target, i.e. transcription target
-        target = self._task.input_generator.StringsToIds(y)
+        target = self._task.input_generator.StringsToIds(y)  # type: ignore
 
         # create decoder input
         decoder_inputs = NestedMap(
@@ -311,7 +315,8 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
         decoder_inputs.tgt["weights"] = 1.0 - decoder_inputs.tgt["paddings"]
         return decoder_inputs
 
-    def _create_log_mel_features(self, x: "Tensor") -> "Tensor":
+    @staticmethod
+    def _create_log_mel_features(x: "Tensor") -> "Tensor":
         """Extract Log-Mel features from audio samples of shape (batch_size, max_length)."""
         from lingvo.core.py_utils import NestedMap
         import tensorflow.compat.v1 as tf1
@@ -348,7 +353,8 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
         features = tf1.reshape(features, features_shape)
         return features
 
-    def _pad_audio_input(self, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    @staticmethod
+    def _pad_audio_input(x: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Apply padding to a batch of audio samples such that it has shape of (batch_size, max_length)."""
         max_length = max(map(len, x))
         batch_size = x.shape[0]
@@ -368,7 +374,7 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
             mask_frequency[i, : frequency_length[i], :] = 1
         return x_padded, x_mask, mask_frequency
 
-    def _predict_batch(self, x: "Tensor", y: "Tensor", mask_frequency: "Tensor") -> "Tensor":
+    def _predict_batch(self, x: "Tensor", y: "Tensor", mask_frequency: "Tensor") -> Dict[str, "Tensor"]:
         """Create prediction operation for a batch of padded inputs."""
         import tensorflow.compat.v1 as tf1
 
@@ -377,9 +383,9 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
 
         # call decoder
         if self._metrics is None:
-            with self._cluster, tf1.device(self._cluster.GetPlacer()):
-                self._metrics = self._task.FPropDefaultTheta(decoder_inputs)
-        predictions = self._task.Decode(decoder_inputs)
+            with self._cluster, tf1.device(self._cluster.GetPlacer()):  # type: ignore
+                self._metrics = self._task.FPropDefaultTheta(decoder_inputs)  # type: ignore
+        predictions = self._task.Decode(decoder_inputs)  # type: ignore
 
         return predictions
 
@@ -402,7 +408,7 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
                 "dimension."
             )
         # if inputs have 32-bit floating point wav format, the preprocessing argument is required
-        is_normalized = max(map(max, np.abs(x))) <= 1.0
+        is_normalized = max(map(max, np.abs(x))) <= 1.0  # type: ignore
         if is_normalized and self.preprocessing is None:
             raise ValueError(
                 "The LingvoASR estimator requires input values in the range [-32768, 32767] or normalized input values"
@@ -446,15 +452,17 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
 
         # call decoder
         if self._metrics is None:
-            with self._cluster, tf1.device(self._cluster.GetPlacer()):
-                self._metrics = self._task.FPropDefaultTheta(decoder_inputs)
+            with self._cluster, tf1.device(self._cluster.GetPlacer()):  # type: ignore
+                self._metrics = self._task.FPropDefaultTheta(decoder_inputs)  # type: ignore
 
         # compute loss gradient
         loss = tf1.get_collection("per_loss")[0]
         loss_gradient = tf1.gradients(loss, [x])[0]
         return loss_gradient
 
-    def loss_gradient(self, x: np.ndarray, y: np.ndarray, batch_mode: bool = False, **kwargs) -> np.ndarray:
+    def loss_gradient(  # pylint: disable=W0221
+        self, x: np.ndarray, y: np.ndarray, batch_mode: bool = False, **kwargs
+    ) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
@@ -467,7 +475,7 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
         :return: Loss gradients of the same shape as `x`.
         """
         # if inputs have 32-bit floating point wav format, the preprocessing argument is required
-        is_normalized = max(map(max, np.abs(x))) <= 1.0
+        is_normalized = max(map(max, np.abs(x))) <= 1.0  # type: ignore
         if is_normalized and self.preprocessing is None:
             raise ValueError(
                 "The LingvoASR estimator requires input values in the range [-32768, 32767] or normalized input values"
@@ -513,7 +521,9 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
             gradient = gradient_padded[:length]
             gradients.append(gradient)
 
-        return np.array(gradients, dtype=object)
+        # for ragged input, use np.object dtype
+        dtype = np.float32 if x.ndim != 1 else np.object
+        return np.array(gradients, dtype=dtype)
 
     def _loss_gradient_per_sequence(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
         """
@@ -536,15 +546,17 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
                 self._mask_frequency: np.expand_dims(mask_frequency_i[:frequency_length], 0),
             }
             # get loss gradient
-            gradient = self._sess.run(self._loss_gradient_op, feed_dict)
+            gradient = self._sess.run(self._loss_gradient_op, feed_dict)  # type: ignore
             gradients.append(np.squeeze(gradient))
 
-        return np.array(gradients, dtype=object)
-
-    def set_learning_phase(self, train: bool) -> None:
-        raise NotImplementedError
+        # for ragged input, use np.object dtype
+        dtype = np.float32 if x.ndim != 1 else np.object
+        return np.array(gradients, dtype=dtype)
 
     def get_activations(
         self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
     ) -> np.ndarray:
+        raise NotImplementedError
+
+    def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         raise NotImplementedError

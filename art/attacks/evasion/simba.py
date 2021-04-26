@@ -29,7 +29,7 @@ import numpy as np
 from scipy.fftpack import idct
 
 from art.attacks.attack import EvasionAttack
-from art.estimators.estimator import BaseEstimator
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
 from art.config import ART_NUMPY_DTYPE
 
@@ -40,6 +40,12 @@ logger = logging.getLogger(__name__)
 
 
 class SimBA(EvasionAttack):
+    """
+    This class implements the black-box attack `SimBA`.
+
+    | Paper link: https://arxiv.org/abs/1905.07121
+    """
+
     attack_params = EvasionAttack.attack_params + [
         "attack",
         "max_iter",
@@ -51,7 +57,7 @@ class SimBA(EvasionAttack):
         "batch_size",
     ]
 
-    _estimator_requirements = (BaseEstimator, ClassifierMixin)
+    _estimator_requirements = (BaseEstimator, ClassifierMixin, NeuralNetworkMixin)
 
     def __init__(
         self,
@@ -101,13 +107,22 @@ class SimBA(EvasionAttack):
         x = x.astype(ART_NUMPY_DTYPE)
         preds = self.estimator.predict(x, batch_size=self.batch_size)
 
+        if divmod(x.shape[2] - self.freq_dim, self.stride)[1] != 0:
+            raise ValueError(
+                "Incompatible value combination in image height/width, freq_dim and stride detected. "
+                "Adapt these parameters to fulfill the following conditions: "
+                "divmod(image_height - freq_dim, stride)[1] == 0 "
+                "and "
+                "divmod(image_width - freq_dim, stride)[1] == 0"
+            )
+
         if y is None:
             if self.targeted:
                 raise ValueError("Target labels `y` need to be provided for a targeted attack.")
-            else:
-                # Use model predictions as correct outputs
-                logger.info("Using the model prediction as the correct label for SimBA.")
-                y_i = np.argmax(preds, axis=1)
+
+            # Use model predictions as correct outputs
+            logger.info("Using the model prediction as the correct label for SimBA.")
+            y_i = np.argmax(preds, axis=1)
         else:
             y_i = np.argmax(y, axis=1)
 
@@ -145,8 +160,8 @@ class SimBA(EvasionAttack):
                 indices = np.hstack((indices, tmp_indices))[: self.max_iter]
                 indices_size = len(indices)
 
-            def trans(z):
-                return self._block_idct(z, block_size=x.shape[2])
+            def trans(var_z):
+                return self._block_idct(var_z, block_size=x.shape[2])
 
         clip_min = -np.inf
         clip_max = np.inf
@@ -293,7 +308,7 @@ class SimBA(EvasionAttack):
         :param initial size: initial size for submatrix.
         :param stride: stride size for expansion.
 
-        :return z: An array holding the block order of DCT attacks.
+        :return order: An array holding the block order of DCT attacks.
         """
         order = np.zeros((channels, img_size, img_size)).astype(ART_NUMPY_DTYPE)
         total_elems = channels * initial_size * initial_size
@@ -306,10 +321,11 @@ class SimBA(EvasionAttack):
             order[:, : (i + stride), i : (i + stride)] = perm[:num_first].reshape((channels, -1, stride))
             order[:, i : (i + stride), :i] = perm[num_first:].reshape((channels, stride, -1))
             total_elems += num_elems
+
         if self.estimator.channels_first:
             return order.reshape(1, -1).squeeze().argsort()
-        else:
-            return order.transpose((1, 2, 0)).reshape(1, -1).squeeze().argsort()
+
+        return order.transpose((1, 2, 0)).reshape(1, -1).squeeze().argsort()
 
     def _block_idct(self, x, block_size=8, masked=False, ratio=0.5):
         """
@@ -321,14 +337,14 @@ class SimBA(EvasionAttack):
         :param ratio: Ratio of the lowest frequency directions in order to make the adversarial perturbation in the low
                       frequency space.
 
-        :return z: An array holding the order of DCT attacks.
+        :return var_z: An array holding the order of DCT attacks.
         """
         if not self.estimator.channels_first:
             x = x.transpose(0, 3, 1, 2)
-        z = np.zeros(x.shape).astype(ART_NUMPY_DTYPE)
+        var_z = np.zeros(x.shape).astype(ART_NUMPY_DTYPE)
         num_blocks = int(x.shape[2] / block_size)
         mask = np.zeros((x.shape[0], x.shape[1], block_size, block_size))
-        if type(ratio) != float:
+        if not isinstance(ratio, float):
             for i in range(x.shape[0]):
                 mask[i, :, : int(block_size * ratio[i]), : int(block_size * ratio[i])] = 1
         else:
@@ -338,14 +354,14 @@ class SimBA(EvasionAttack):
                 submat = x[:, :, (i * block_size) : ((i + 1) * block_size), (j * block_size) : ((j + 1) * block_size)]
                 if masked:
                     submat = submat * mask
-                z[:, :, (i * block_size) : ((i + 1) * block_size), (j * block_size) : ((j + 1) * block_size)] = idct(
-                    idct(submat, axis=3, norm="ortho"), axis=2, norm="ortho"
-                )
+                var_z[
+                    :, :, (i * block_size) : ((i + 1) * block_size), (j * block_size) : ((j + 1) * block_size)
+                ] = idct(idct(submat, axis=3, norm="ortho"), axis=2, norm="ortho")
 
         if self.estimator.channels_first:
-            return z
-        else:
-            return z.transpose((0, 2, 3, 1))
+            return var_z
+
+        return var_z.transpose((0, 2, 3, 1))
 
     def diagonal_order(self, image_size, channels):
         """
@@ -359,14 +375,14 @@ class SimBA(EvasionAttack):
         :param image_size: image size (i.e., width or height)
         :param channels: the number of channels
 
-        :return z: An array holding the diagonal order of pixel attacks.
+        :return order: An array holding the diagonal order of pixel attacks.
         """
         x = np.arange(0, image_size).cumsum()
         order = np.zeros((image_size, image_size)).astype(ART_NUMPY_DTYPE)
         for i in range(image_size):
             order[i, : (image_size - i)] = i + x[i:]
         for i in range(1, image_size):
-            reverse = order[image_size - i - 1].take([i for i in range(i - 1, -1, -1)])
+            reverse = order[image_size - i - 1].take([i for i in range(i - 1, -1, -1)])  # pylint: disable=R1721
             order[i, (image_size - i) :] = image_size * image_size - 1 - reverse
         if channels > 1:
             order_2d = order
@@ -376,5 +392,5 @@ class SimBA(EvasionAttack):
 
         if self.estimator.channels_first:
             return order.reshape(1, -1).squeeze().argsort()
-        else:
-            return order.transpose((1, 2, 0)).reshape(1, -1).squeeze().argsort()
+
+        return order.transpose((1, 2, 0)).reshape(1, -1).squeeze().argsort()

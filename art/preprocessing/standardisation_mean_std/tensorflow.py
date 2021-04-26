@@ -19,17 +19,21 @@
 This module implements the standardisation with mean and standard deviation.
 """
 import logging
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional, Tuple, Union
 
-from art.preprocessing.preprocessing import PreprocessorPyTorch
+import numpy as np
+
+from art.config import ART_NUMPY_DTYPE
+from art.preprocessing.preprocessing import PreprocessorTensorFlowV2
+from art.preprocessing.standardisation_mean_std.utils import broadcastable_mean_std
 
 if TYPE_CHECKING:
-    import torch
+    import tensorflow as tf
 
 logger = logging.getLogger(__name__)
 
 
-class StandardisationMeanStdPyTorch(PreprocessorPyTorch):
+class StandardisationMeanStdTensorFlow(PreprocessorTensorFlowV2):
     """
     Implement the standardisation with mean and standard deviation.
     """
@@ -38,45 +42,42 @@ class StandardisationMeanStdPyTorch(PreprocessorPyTorch):
 
     def __init__(
         self,
-        mean: float = 0.0,
-        std: float = 1.0,
+        mean: Union[float, np.ndarray] = 0.0,
+        std: Union[float, np.ndarray] = 1.0,
         apply_fit: bool = True,
         apply_predict: bool = True,
-        device_type: str = "gpu",
     ):
         """
-        Create an instance of StandardisationMeanStdPyTorch.
+        Create an instance of StandardisationMeanStdTensorFlow.
 
         :param mean: Mean.
         :param std: Standard Deviation.
         """
-        import torch  # lgtm [py/repeated-import]
-
         super().__init__(is_fitted=True, apply_fit=apply_fit, apply_predict=apply_predict)
-        self.mean = mean
-        self.std = std
+        self.mean = np.asarray(mean, dtype=ART_NUMPY_DTYPE)
+        self.std = np.asarray(std, dtype=ART_NUMPY_DTYPE)
         self._check_params()
 
-        # Set device
-        if device_type == "cpu" or not torch.cuda.is_available():
-            self._device = torch.device("cpu")
-        else:
-            cuda_idx = torch.cuda.current_device()
-            self._device = torch.device("cuda:{}".format(cuda_idx))
+        # init broadcastable mean and std for lazy loading
+        self._broadcastable_mean = None
+        self._broadcastable_std = None
 
-    def forward(
-        self, x: "torch.Tensor", y: Optional["torch.Tensor"] = None
-    ) -> Tuple["torch.Tensor", Optional["torch.Tensor"]]:
+    def forward(self, x: "tf.Tensor", y: Optional["tf.Tensor"] = None) -> Tuple["tf.Tensor", Optional["tf.Tensor"]]:
         """
         Apply standardisation with mean and standard deviation to input `x`.
+
+        :param x: Input samples to standardise.
+        :param y: Label data, will not be affected by this preprocessing.
+        :return: Standardised input samples and unmodified labels.
         """
-        import torch  # lgtm [py/repeated-import]
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
-        mean = torch.tensor(self.mean, device=self._device)
-        std = torch.tensor(self.std, device=self._device)
+        if self._broadcastable_mean is None:
+            self._broadcastable_mean, self._broadcastable_std = broadcastable_mean_std(x, self.mean, self.std)
 
-        x_norm = x - mean
-        x_norm = x_norm / std
+        x_norm = x - self._broadcastable_mean
+        x_norm = x_norm / self._broadcastable_std
+        x_norm = tf.cast(x_norm, dtype=ART_NUMPY_DTYPE)  # pylint: disable=E1123,E1120
 
         return x_norm, y
 
@@ -84,6 +85,6 @@ class StandardisationMeanStdPyTorch(PreprocessorPyTorch):
         pass
 
     def __repr__(self):
-        return "StandardisationMeanStdPyTorch(mean={}, std={}, apply_fit={}, apply_predict={}, device={})".format(
-            self.mean, self.std, self.apply_fit, self.apply_predict, self._device
+        return "StandardisationMeanStdTensorFlow(mean={}, std={}, apply_fit={}, apply_predict={})".format(
+            self.mean, self.std, self.apply_fit, self.apply_predict
         )

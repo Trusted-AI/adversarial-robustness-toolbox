@@ -10,13 +10,13 @@ import pytest
 from tensorflow.keras.callbacks import LearningRateScheduler
 
 from art.defences.preprocessor import FeatureSqueezing, JpegCompression, SpatialSmoothing
-from tests.utils import ARTTestException, ARTTestFixtureNotImplemented
+from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.skipMlFramework("non_dl_frameworks", "tensorflow2")
-def test_layers(art_warning, get_default_mnist_subset, framework, image_dl_estimator):
+@pytest.mark.skip_framework("non_dl_frameworks")
+def test_get_activations(art_warning, get_default_mnist_subset, framework, image_dl_estimator):
     try:
         classifier, _ = image_dl_estimator(from_logits=True)
 
@@ -31,7 +31,7 @@ def test_layers(art_warning, get_default_mnist_subset, framework, image_dl_estim
         art_warning(e)
 
 
-@pytest.mark.skipMlFramework("non_dl_frameworks")
+@pytest.mark.skip_framework("non_dl_frameworks")
 def test_loss_gradient_with_wildcard(art_warning, image_dl_estimator):
     try:
         classifier, _ = image_dl_estimator(wildcard=True)
@@ -50,7 +50,7 @@ def test_loss_gradient_with_wildcard(art_warning, image_dl_estimator):
 
 # Note: because mxnet only supports 1 concurrent version of a model if we fit that model, all expected values will
 # change for all other tests using that fitted model
-@pytest.mark.skipMlFramework("mxnet", "non_dl_frameworks")
+@pytest.mark.skip_framework("mxnet", "non_dl_frameworks")
 def test_fit(art_warning, get_default_mnist_subset, default_batch_size, image_dl_estimator):
     try:
         (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
@@ -68,7 +68,7 @@ def test_fit(art_warning, get_default_mnist_subset, default_batch_size, image_dl
         art_warning(e)
 
 
-@pytest.mark.skipMlFramework("non_dl_frameworks")
+@pytest.mark.skip_framework("non_dl_frameworks")
 @pytest.mark.skipif(keras.__version__.startswith("2.2"), reason="requires Keras 2.3.0 or higher")
 def test_predict(
     art_warning, framework, get_default_mnist_subset, image_dl_estimator, expected_values, store_expected_values
@@ -84,7 +84,7 @@ def test_predict(
         art_warning(e)
 
 
-@pytest.mark.skipMlFramework("non_dl_frameworks")
+@pytest.mark.skip_framework("non_dl_frameworks")
 def test_shapes(art_warning, get_default_mnist_subset, image_dl_estimator):
     try:
         (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
@@ -106,7 +106,7 @@ def test_shapes(art_warning, get_default_mnist_subset, image_dl_estimator):
 
 
 # TODO skipping with kerastf because overall tests are taking too long to run - unskip once tests run under limit time
-@pytest.mark.skipMlFramework("kerastf", "non_dl_frameworks")
+@pytest.mark.skip_framework("kerastf", "non_dl_frameworks")
 @pytest.mark.parametrize("from_logits", [True, False])
 @pytest.mark.parametrize(
     "loss_name",
@@ -155,7 +155,7 @@ def test_loss_functions(
         art_warning(e)
 
 
-@pytest.mark.skipMlFramework("non_dl_frameworks")
+@pytest.mark.skip_framework("non_dl_frameworks")
 def test_pickle(art_warning, image_dl_estimator, image_dl_estimator_defended, tmp_path):
     try:
         full_path = os.path.join(tmp_path, "my_classifier.p")
@@ -168,14 +168,14 @@ def test_pickle(art_warning, image_dl_estimator, image_dl_estimator_defended, tm
             loaded = pickle.load(load_file)
 
         assert (classifier._clip_values == loaded._clip_values).all()
-        assert classifier._channel_index == loaded._channel_index
+        assert classifier._channels_first == loaded._channels_first
         assert classifier._use_logits == loaded._use_logits
         assert classifier._input_layer == loaded._input_layer
     except ARTTestException as e:
         art_warning(e)
 
 
-@pytest.mark.skipMlFramework("non_dl_frameworks")
+@pytest.mark.skip_framework("non_dl_frameworks")
 def test_functional_model(art_warning, image_dl_estimator):
     try:
         # Need to update the functional_model code to produce a model with more than one input and output layers...
@@ -190,7 +190,7 @@ def test_functional_model(art_warning, image_dl_estimator):
         art_warning(e)
 
 
-@pytest.mark.skipMlFramework("mxnet", "tensorflow", "pytorch", "non_dl_frameworks")
+@pytest.mark.skip_framework("mxnet", "tensorflow", "pytorch", "non_dl_frameworks")
 def test_fit_kwargs(art_warning, image_dl_estimator, get_default_mnist_subset, default_batch_size):
     try:
         (x_train_mnist, y_train_mnist), (_, _) = get_default_mnist_subset
@@ -214,7 +214,7 @@ def test_fit_kwargs(art_warning, image_dl_estimator, get_default_mnist_subset, d
         art_warning(e)
 
 
-@pytest.mark.skipMlFramework("non_dl_frameworks")
+@pytest.mark.skip_framework("non_dl_frameworks")
 def test_defences_predict(art_warning, get_default_mnist_subset, image_dl_estimator_defended, image_dl_estimator):
     try:
         (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
@@ -247,7 +247,7 @@ def test_defences_predict(art_warning, get_default_mnist_subset, image_dl_estima
 
 # Note: because mxnet only supports 1 concurrent version of a model if we fit that model, all expected values will
 # change for all other tests using that fitted model
-@pytest.mark.skipMlFramework("mxnet", "non_dl_frameworks", "tensorflow2")
+@pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow2")
 def test_fit_image_generator(
     art_warning, framework, image_dl_estimator, image_data_generator, get_default_mnist_subset
 ):
@@ -274,7 +274,7 @@ def test_fit_image_generator(
         art_warning(e)
 
 
-@pytest.mark.skipMlFramework("non_dl_frameworks")
+@pytest.mark.skip_framework("non_dl_frameworks")
 @pytest.mark.skipif(keras.__version__.startswith("2.2"), reason="requires Keras 2.3.0 or higher")
 def test_loss_gradient(
     art_warning,
@@ -301,7 +301,9 @@ def test_loss_gradient(
             sub_gradients = gradients[0, :, 14, 0]
 
         np.testing.assert_array_almost_equal(
-            sub_gradients, expected_gradients_1[0], decimal=expected_gradients_1[1],
+            sub_gradients,
+            expected_gradients_1[0],
+            decimal=expected_gradients_1[1],
         )
 
         if mnist_shape[0] == 1:
@@ -310,13 +312,15 @@ def test_loss_gradient(
             sub_gradients = gradients[0, 14, :, 0]
 
         np.testing.assert_array_almost_equal(
-            sub_gradients, expected_gradients_2[0], decimal=expected_gradients_2[1],
+            sub_gradients,
+            expected_gradients_2[0],
+            decimal=expected_gradients_2[1],
         )
     except ARTTestException as e:
         art_warning(e)
 
 
-@pytest.mark.skipMlFramework("non_dl_frameworks")
+@pytest.mark.skip_framework("non_dl_frameworks")
 def test_nb_classes(art_warning, image_dl_estimator):
     try:
         classifier, _ = image_dl_estimator(from_logits=True)
@@ -325,7 +329,7 @@ def test_nb_classes(art_warning, image_dl_estimator):
         art_warning(e)
 
 
-@pytest.mark.skipMlFramework("non_dl_frameworks")
+@pytest.mark.skip_framework("non_dl_frameworks")
 def test_input_shape(art_warning, image_dl_estimator, mnist_shape):
     try:
         classifier, _ = image_dl_estimator(from_logits=True)
@@ -334,8 +338,8 @@ def test_input_shape(art_warning, image_dl_estimator, mnist_shape):
         art_warning(e)
 
 
-@pytest.mark.skipMlFramework("non_dl_frameworks")
-def test_save(art_warning, image_dl_estimator):
+@pytest.mark.skip_framework("tensorflow2", "non_dl_frameworks")
+def test_save_1(art_warning, image_dl_estimator):
     try:
         classifier, _ = image_dl_estimator(from_logits=True)
         t_file = tempfile.NamedTemporaryFile()
@@ -357,20 +361,8 @@ def test_save(art_warning, image_dl_estimator):
         art_warning(e)
 
 
-@pytest.mark.skipMlFramework("non_dl_frameworks")
-def test_repr(art_warning, image_dl_estimator, framework, expected_values, store_expected_values):
-    try:
-        classifier, _ = image_dl_estimator(from_logits=True)
-        repr_ = repr(classifier)
-        for message in expected_values():
-            assert message in repr_, "{0}: was not contained within repr".format(message)
-
-    except ARTTestException as e:
-        art_warning(e)
-
-
-@pytest.mark.skipMlFramework("tensorflow", "non_dl_frameworks")
-def test_save(art_warning, image_dl_estimator, get_default_mnist_subset, tmp_path):
+@pytest.mark.skip_framework("tensorflow", "non_dl_frameworks")
+def test_save_2(art_warning, image_dl_estimator, get_default_mnist_subset, tmp_path):
     try:
         classifier, _ = image_dl_estimator()
         (x_train_mnist, y_train_mnist), (_, _) = get_default_mnist_subset
@@ -385,7 +377,19 @@ def test_save(art_warning, image_dl_estimator, get_default_mnist_subset, tmp_pat
         art_warning(e)
 
 
-@pytest.mark.skipMlFramework("mxnet", "non_dl_frameworks")
+@pytest.mark.skip_framework("non_dl_frameworks")
+def test_repr(art_warning, image_dl_estimator, framework, expected_values, store_expected_values):
+    try:
+        classifier, _ = image_dl_estimator(from_logits=True)
+        repr_ = repr(classifier)
+        for message in expected_values():
+            assert message in repr_, "{0}: was not contained within repr".format(message)
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework("mxnet", "non_dl_frameworks")
 @pytest.mark.skipif(keras.__version__.startswith("2.2"), reason="requires Keras 2.3.0 or higher")
 def test_class_gradient(
     art_warning,
@@ -441,56 +445,66 @@ def test_class_gradient(
         # Test all gradients label
         gradients = classifier.class_gradient(x_test_mnist)
 
-        new_shape = (x_test_mnist.shape[0], 10,) + mnist_shape
+        new_shape = (
+            x_test_mnist.shape[0],
+            10,
+        ) + mnist_shape
         assert gradients.shape == new_shape
 
         sub_gradients2 = get_gradient2_column(gradients)
         np.testing.assert_array_almost_equal(
-            sub_gradients2, grad_2_all_labels[0], decimal=4,
+            sub_gradients2,
+            grad_2_all_labels[0],
+            decimal=4,
         )
 
         # Test 1 gradient label = 5
         gradients = classifier.class_gradient(x_test_mnist, label=5)
 
-        assert gradients.shape == (x_test_mnist.shape[0], 1,) + mnist_shape
+        assert (
+            gradients.shape
+            == (
+                x_test_mnist.shape[0],
+                1,
+            )
+            + mnist_shape
+        )
 
         sub_gradients2 = get_gradient3_column(gradients)
         np.testing.assert_array_almost_equal(
-            sub_gradients2, grad_1_label5[0], decimal=4,
+            sub_gradients2,
+            grad_1_label5[0],
+            decimal=4,
         )
 
         sub_gradients4 = get_gradient4_column(gradients)
         np.testing.assert_array_almost_equal(
-            sub_gradients4, grad_2_label5[0], decimal=4,
+            sub_gradients4,
+            grad_2_label5[0],
+            decimal=4,
         )
 
         # # Test a set of gradients label = array
         gradients = classifier.class_gradient(x_test_mnist, label=labels)
 
-        new_shape = (x_test_mnist.shape[0], 1,) + mnist_shape
+        new_shape = (
+            x_test_mnist.shape[0],
+            1,
+        ) + mnist_shape
         assert gradients.shape == new_shape
 
         sub_gradients5 = get_gradient3_column(gradients)
         np.testing.assert_array_almost_equal(
-            sub_gradients5, grad_1_labelArray[0], decimal=4,
+            sub_gradients5,
+            grad_1_labelArray[0],
+            decimal=4,
         )
 
         sub_gradients6 = get_gradient4_column(gradients)
         np.testing.assert_array_almost_equal(
-            sub_gradients6, grad_2_labelArray[0], decimal=4,
+            sub_gradients6,
+            grad_2_labelArray[0],
+            decimal=4,
         )
-    except ARTTestException as e:
-        art_warning(e)
-
-
-@pytest.mark.skipMlFramework("tensorflow", "non_dl_frameworks")
-def test_learning_phase(art_warning, image_dl_estimator):
-    try:
-        classifier, _ = image_dl_estimator()
-        classifier.set_learning_phase(False)
-        assert classifier.learning_phase is False
-        classifier.set_learning_phase(True)
-        assert classifier.learning_phase
-        assert hasattr(classifier, "_learning_phase")
     except ARTTestException as e:
         art_warning(e)

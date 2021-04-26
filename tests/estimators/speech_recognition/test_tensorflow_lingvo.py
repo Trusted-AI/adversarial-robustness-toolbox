@@ -21,7 +21,6 @@ import logging
 
 import numpy as np
 import pytest
-import tensorflow as tf
 from numpy.testing import assert_allclose, assert_array_equal
 from scipy.io.wavfile import read
 
@@ -39,32 +38,27 @@ class TestTensorFlowLingvoASR:
     Test the TensorFlowLingvoASR estimator.
     """
 
-    @pytest.mark.skipif(tf.__version__ != "2.1.0", reason="requires TensorFlow 2.1.0")
-    @pytest.mark.skipMlFramework("pytorch", "mxnet", "kerastf", "non_dl_frameworks")
+    @pytest.mark.skip_module("lingvo")
+    @pytest.mark.skip_framework("pytorch", "tensorflow1", "tensorflow2", "mxnet", "kerastf", "non_dl_frameworks")
     def test_is_subclass(self, art_warning):
         try:
             assert issubclass(TensorFlowLingvoASR, (SpeechRecognizerMixin, TensorFlowV2Estimator))
         except ARTTestException as e:
             art_warning(e)
 
-    @pytest.mark.skipif(tf.__version__ != "2.1.0", reason="requires TensorFlow 2.1.0")
-    @pytest.mark.skipMlFramework("pytorch", "mxnet", "kerastf", "non_dl_frameworks")
+    @pytest.mark.skip_module("lingvo")
+    @pytest.mark.skip_framework("pytorch", "tensorflow1", "tensorflow2", "mxnet", "kerastf", "non_dl_frameworks")
     def test_implements_abstract_methods(self, art_warning):
         try:
-            import tensorflow.compat.v1 as tf1
-
-            tf1.reset_default_graph()
             TensorFlowLingvoASR()
         except ARTTestException as e:
             art_warning(e)
 
-    @pytest.mark.skipif(tf.__version__ != "2.1.0", reason="requires TensorFlow 2.1.0")
-    @pytest.mark.skipMlFramework("pytorch", "mxnet", "kerastf", "non_dl_frameworks")
+    @pytest.mark.skip_module("lingvo")
+    @pytest.mark.skip_framework("pytorch", "tensorflow1", "tensorflow2", "mxnet", "kerastf", "non_dl_frameworks")
     def test_load_model(self, art_warning):
         try:
             import tensorflow.compat.v1 as tf1
-
-            tf1.reset_default_graph()
 
             TensorFlowLingvoASR()
             graph = tf1.get_default_graph()
@@ -72,14 +66,10 @@ class TestTensorFlowLingvoASR:
         except ARTTestException as e:
             art_warning(e)
 
-    @pytest.mark.skipif(tf.__version__ != "2.1.0", reason="requires TensorFlow 2.1.0")
-    @pytest.mark.skipMlFramework("pytorch", "mxnet", "kerastf", "non_dl_frameworks")
+    @pytest.mark.skip_module("lingvo")
+    @pytest.mark.skip_framework("pytorch", "tensorflow1", "tensorflow2", "mxnet", "kerastf", "non_dl_frameworks")
     def test_create_decoder_input(self, art_warning, audio_batch_padded):
         try:
-            import tensorflow.compat.v1 as tf1
-
-            tf1.reset_default_graph()
-
             test_input, test_mask_frequency = audio_batch_padded
             test_target_dummy = np.array(["DUMMY"] * test_input.shape[0])
 
@@ -100,14 +90,10 @@ class TestTensorFlowLingvoASR:
         except ARTTestException as e:
             art_warning(e)
 
-    @pytest.mark.skipif(tf.__version__ != "2.1.0", reason="requires TensorFlow 2.1.0")
-    @pytest.mark.skipMlFramework("pytorch", "mxnet", "kerastf", "non_dl_frameworks")
+    @pytest.mark.skip_module("lingvo")
+    @pytest.mark.skip_framework("pytorch", "tensorflow1", "tensorflow2", "mxnet", "kerastf", "non_dl_frameworks")
     def test_create_log_mel_features(self, art_warning, audio_batch_padded):
         try:
-            import tensorflow.compat.v1 as tf1
-
-            tf1.reset_default_graph()
-
             test_input, _ = audio_batch_padded
             lingvo = TensorFlowLingvoASR()
             features_tf = lingvo._create_log_mel_features(lingvo._x_padded)
@@ -118,14 +104,10 @@ class TestTensorFlowLingvoASR:
         except ARTTestException as e:
             art_warning(e)
 
-    @pytest.mark.skipif(tf.__version__ != "2.1.0", reason="requires TensorFlow 2.1.0")
-    @pytest.mark.skipMlFramework("pytorch", "mxnet", "kerastf", "non_dl_frameworks")
+    @pytest.mark.skip_module("lingvo")
+    @pytest.mark.skip_framework("pytorch", "tensorflow1", "tensorflow2", "mxnet", "kerastf", "non_dl_frameworks")
     def test_pad_audio_input(self, art_warning):
         try:
-            import tensorflow.compat.v1 as tf1
-
-            tf1.reset_default_graph()
-
             test_input = np.array([np.array([1]), np.array([2] * 480)], dtype=object)
             test_mask = np.array([[True] + [False] * 479, [True] * 480])
             test_output = np.array([[1] + [0] * 479, [2] * 480])
@@ -137,14 +119,10 @@ class TestTensorFlowLingvoASR:
         except ARTTestException as e:
             art_warning(e)
 
-    @pytest.mark.skipif(tf.__version__ != "2.1.0", reason="requires TensorFlow 2.1.0")
-    @pytest.mark.skipMlFramework("pytorch", "mxnet", "kerastf", "non_dl_frameworks")
+    @pytest.mark.skip_module("lingvo")
+    @pytest.mark.skip_framework("pytorch", "tensorflow1", "tensorflow2", "mxnet", "kerastf", "non_dl_frameworks")
     def test_predict_batch(self, art_warning, audio_batch_padded):
         try:
-            import tensorflow.compat.v1 as tf1
-
-            tf1.reset_default_graph()
-
             test_input, test_mask_frequency = audio_batch_padded
             test_target_dummy = np.array(["DUMMY"] * test_input.shape[0])
 
@@ -174,14 +152,10 @@ class TestTensorFlowLingvoASR:
         except ARTTestException as e:
             art_warning(e)
 
-    @pytest.mark.skipif(tf.__version__ != "2.1.0", reason="requires TensorFlow 2.1.0")
-    @pytest.mark.skipMlFramework("pytorch", "mxnet", "kerastf", "non_dl_frameworks")
+    @pytest.mark.skip_module("lingvo")
+    @pytest.mark.skip_framework("pytorch", "tensorflow1", "tensorflow2", "mxnet", "kerastf", "non_dl_frameworks")
     def test_predict(self, art_warning, audio_data):
         try:
-            import tensorflow.compat.v1 as tf1
-
-            tf1.reset_default_graph()
-
             test_input = audio_data
 
             lingvo = TensorFlowLingvoASR()
@@ -191,14 +165,10 @@ class TestTensorFlowLingvoASR:
         except ARTTestException as e:
             art_warning(e)
 
-    @pytest.mark.skipif(tf.__version__ != "2.1.0", reason="requires TensorFlow 2.1.0")
-    @pytest.mark.skipMlFramework("pytorch", "mxnet", "kerastf", "non_dl_frameworks")
+    @pytest.mark.skip_module("lingvo")
+    @pytest.mark.skip_framework("pytorch", "tensorflow1", "tensorflow2", "mxnet", "kerastf", "non_dl_frameworks")
     def test_loss_gradient_tensor(self, art_warning, audio_batch_padded):
         try:
-            import tensorflow.compat.v1 as tf1
-
-            tf1.reset_default_graph()
-
             test_input, test_mask_frequency = audio_batch_padded
             test_target_dummy = np.array(["DUMMY"] * test_input.shape[0])
 
@@ -214,15 +184,11 @@ class TestTensorFlowLingvoASR:
         except ARTTestException as e:
             art_warning(e)
 
-    @pytest.mark.skipif(tf.__version__ != "2.1.0", reason="requires TensorFlow 2.1.0")
-    @pytest.mark.skipMlFramework("pytorch", "mxnet", "kerastf", "non_dl_frameworks")
+    @pytest.mark.skip_module("lingvo")
+    @pytest.mark.skip_framework("pytorch", "tensorflow1", "tensorflow2", "mxnet", "kerastf", "non_dl_frameworks")
     @pytest.mark.parametrize("batch_mode", [True, False])
     def test_loss_gradient_batch_mode(self, art_warning, batch_mode, audio_data):
         try:
-            import tensorflow.compat.v1 as tf1
-
-            tf1.reset_default_graph()
-
             test_input = audio_data
             test_target = np.array(["This", "is", "a dummy", "a dummy"])
 
@@ -277,14 +243,10 @@ class TestTensorFlowLingvoASRLibriSpeechSamples:
         },
     }
 
-    @pytest.mark.skipif(tf.__version__ != "2.1.0", reason="requires TensorFlow 2.1.0")
-    @pytest.mark.skipMlFramework("pytorch", "mxnet", "kerastf", "non_dl_frameworks")
+    @pytest.mark.skip_module("lingvo")
+    @pytest.mark.skip_framework("pytorch", "tensorflow1", "tensorflow2", "mxnet", "kerastf", "non_dl_frameworks")
     def test_predict(self, art_warning):
         try:
-            import tensorflow.compat.v1 as tf1
-
-            tf1.reset_default_graph()
-
             transcripts = list()
             audios = list()
             for filename, sample in self.samples.items():
@@ -301,15 +263,11 @@ class TestTensorFlowLingvoASRLibriSpeechSamples:
         except ARTTestException as e:
             art_warning(e)
 
-    @pytest.mark.skipif(tf.__version__ != "2.1.0", reason="requires TensorFlow 2.1.0")
-    @pytest.mark.skipMlFramework("pytorch", "mxnet", "kerastf", "non_dl_frameworks")
+    @pytest.mark.skip_module("lingvo")
+    @pytest.mark.skip_framework("pytorch", "tensorflow1", "tensorflow2", "mxnet", "kerastf", "non_dl_frameworks")
     @pytest.mark.xfail(reason="Known issue that needs further investigation")
     def test_loss_gradient(self, art_warning):
         try:
-            import tensorflow.compat.v1 as tf1
-
-            tf1.reset_default_graph()
-
             transcripts = list()
             audios = list()
             for filename, sample in self.samples.items():

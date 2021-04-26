@@ -68,7 +68,7 @@ class NeuralCleanse(Transformer):
         super().__init__(classifier=classifier)
         self._check_params()
 
-    def __call__(
+    def __call__(  # type: ignore
         self,
         transformed_classifier: "CLASSIFIER_TYPE",
         steps: int = 1000,
@@ -123,8 +123,8 @@ class NeuralCleanse(Transformer):
                 batch_size=batch_size,
             )
             return transformed_classifier
-        else:
-            raise NotImplementedError("Only Keras classifiers (v2.2.4) are supported for this defence.")
+
+        raise NotImplementedError("Only Keras classifiers (v2.2.4) are supported for this defence.")
 
     def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> None:
         """

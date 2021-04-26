@@ -54,6 +54,7 @@ class AttributeInferenceWhiteBoxDecisionTree(AttributeInferenceAttack):
         :param attack_feature: The index of the feature to be attacked.
         """
         super().__init__(estimator=classifier, attack_feature=attack_feature)
+        self.attack_feature: int
         self._check_params()
 
     def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
@@ -97,8 +98,8 @@ class AttributeInferenceWhiteBoxDecisionTree(AttributeInferenceAttack):
 
         for i, value in enumerate(values):
             # prepare data with the given value in the attacked feature
-            v = np.full((n_samples, 1), value)
-            x_value = np.concatenate((x[:, : self.attack_feature], v), axis=1)
+            v_full = np.full((n_samples, 1), value)
+            x_value = np.concatenate((x[:, : self.attack_feature], v_full), axis=1)
             x_value = np.concatenate((x_value, x[:, self.attack_feature :]), axis=1)
 
             # Obtain the model's prediction for each possible value of the attacked feature

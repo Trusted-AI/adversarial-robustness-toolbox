@@ -27,6 +27,7 @@ class EstimatorError(TypeError):
     """
 
     def __init__(self, this_class, class_expected_list: List[str], classifier_given) -> None:
+        super().__init__()
         self.this_class = this_class
         self.class_expected_list = class_expected_list
         self.classifier_given = classifier_given

@@ -21,7 +21,7 @@ import logging
 import unittest
 
 import numpy as np
-from sklearn.svm import LinearSVC, NuSVC, SVC
+from sklearn.svm import NuSVC, SVC
 
 from art.attacks.poisoning import PoisoningAttackSVM
 from art.estimators.classification.scikitlearn import SklearnClassifier, ScikitlearnSVC

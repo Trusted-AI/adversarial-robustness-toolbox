@@ -51,7 +51,8 @@ class SecurityCurve(Evaluation):
         self.accuracy_adv_list: List[float] = list()
         self.accuracy: Optional[float] = None
 
-    def evaluate(
+    # pylint: disable=W0221
+    def evaluate(  # type: ignore
         self,
         classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
         x: np.ndarray,
@@ -77,13 +78,16 @@ class SecurityCurve(Evaluation):
 
         # Check type of eps
         if isinstance(self.eps, int):
-            eps_increment = (classifier.clip_values[1] - classifier.clip_values[0]) / self.eps
+            if classifier.clip_values is not None:
+                eps_increment = (classifier.clip_values[1] - classifier.clip_values[0]) / self.eps
+            else:
+                eps_increment = (np.max(x) - np.min(x)) / self.eps
 
             for i in range(1, self.eps + 1):
-                self.eps_list.append(i * eps_increment)
+                self.eps_list.append(float(i * eps_increment))
 
         else:
-            self.eps_list = self.eps.copy()
+            self.eps_list = [float(eps) for eps in self.eps]
 
         # Determine benign accuracy
         y_pred = classifier.predict(x=x, y=y)
@@ -91,7 +95,7 @@ class SecurityCurve(Evaluation):
 
         # Determine adversarial accuracy for each eps
         for eps in self.eps_list:
-            attack_pgd = ProjectedGradientDescent(estimator=classifier, eps=eps, **kwargs)
+            attack_pgd = ProjectedGradientDescent(estimator=classifier, eps=eps, **kwargs)  # type: ignore
 
             x_adv = attack_pgd.generate(x=x, y=y)
 
@@ -132,11 +136,15 @@ class SecurityCurve(Evaluation):
         # Define parameters for Projected Gradient Descent
         max_iter = 100
         kwargs["max_iter"] = max_iter
-        kwargs["eps"] = classifier.clip_values[1]
-        kwargs["eps_step"] = classifier.clip_values[1] / (max_iter / 2)
+        if classifier.clip_values is not None:
+            clip_value_max = classifier.clip_values[1]
+        else:
+            clip_value_max = np.max(x)
+        kwargs["eps"] = float(clip_value_max)
+        kwargs["eps_step"] = float(clip_value_max / (max_iter / 2))
 
         # Create attack
-        attack_pgd = ProjectedGradientDescent(estimator=classifier, **kwargs)
+        attack_pgd = ProjectedGradientDescent(estimator=classifier, **kwargs)  # type: ignore
 
         # Evaluate accuracy with maximal attack budget
         x_adv = attack_pgd.generate(x=x, y=y)
@@ -178,5 +186,8 @@ class SecurityCurve(Evaluation):
         return np.mean(np.argmax(y, axis=1) == np.argmax(y_pred, axis=1)).item()
 
     def __repr__(self):
-        repr_ = "{}(eps={})".format(self.__module__ + "." + self.__class__.__name__, self.eps,)
+        repr_ = "{}(eps={})".format(
+            self.__module__ + "." + self.__class__.__name__,
+            self.eps,
+        )
         return repr_

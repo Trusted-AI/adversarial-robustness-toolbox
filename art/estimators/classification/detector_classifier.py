@@ -45,13 +45,15 @@ class DetectorClassifier(ClassifierNeuralNetwork):
     More details in https://arxiv.org/abs/1705.07263
     """
 
+    estimator_params = ClassifierNeuralNetwork.estimator_params + ["classifier", "detector"]
+
     def __init__(
         self,
         classifier: ClassifierNeuralNetwork,
         detector: ClassifierNeuralNetwork,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
     ) -> None:
         """
         Initialization for the DetectorClassifier.
@@ -72,7 +74,6 @@ class DetectorClassifier(ClassifierNeuralNetwork):
             model=None,
             clip_values=classifier.clip_values,
             preprocessing=preprocessing,
-            channel_index=classifier.channel_index,
             channels_first=classifier.channels_first,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
@@ -82,7 +83,6 @@ class DetectorClassifier(ClassifierNeuralNetwork):
         self.detector = detector
         self._nb_classes = classifier.nb_classes + 1
         self._input_shape = classifier.input_shape
-        self._learning_phase: Optional[bool] = None
 
     @property
     def input_shape(self) -> Tuple[int, ...]:
@@ -97,7 +97,7 @@ class DetectorClassifier(ClassifierNeuralNetwork):
         """
         Perform prediction for a batch of inputs.
 
-        :param x: Test set.
+        :param x: Input samples.
         :param batch_size: Size of batches.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
@@ -139,8 +139,12 @@ class DetectorClassifier(ClassifierNeuralNetwork):
         """
         raise NotImplementedError
 
-    def class_gradient(
-        self, x: np.ndarray, label: Union[int, List[int], np.ndarray, None] = None, **kwargs
+    def class_gradient(  # pylint: disable=W0221
+        self,
+        x: np.ndarray,
+        label: Union[int, List[int], np.ndarray, None] = None,
+        training_mode: bool = False,
+        **kwargs
     ) -> np.ndarray:
         """
         Compute per-class derivatives w.r.t. `x`.
@@ -150,6 +154,7 @@ class DetectorClassifier(ClassifierNeuralNetwork):
                       output is computed for all samples. If multiple values as provided, the first dimension should
                       match the batch size of `x`, and each value will be used as target for its corresponding sample in
                       `x`. If `None`, then gradients for all classes will be computed for each sample.
+        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
         :return: Array of gradients of input features w.r.t. each class in the form
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
@@ -173,14 +178,16 @@ class DetectorClassifier(ClassifierNeuralNetwork):
         elif isinstance(label, (int, np.int)):
             if label < self.nb_classes - 1:
                 # Compute and return from the classifier gradients
-                combined_grads = self.classifier.class_gradient(x=x, label=label)
+                combined_grads = self.classifier.class_gradient(x=x, label=label, training_mode=training_mode, **kwargs)
 
             else:
                 # First compute the classifier gradients
-                classifier_grads = self.classifier.class_gradient(x=x, label=None)
+                classifier_grads = self.classifier.class_gradient(
+                    x=x, label=None, training_mode=training_mode, **kwargs
+                )
 
                 # Then compute the detector gradients
-                detector_grads = self.detector.class_gradient(x=x, label=0)
+                detector_grads = self.detector.class_gradient(x=x, label=0, training_mode=training_mode, **kwargs)
 
                 # Chain the detector gradients for the first component
                 classifier_preds = self.classifier.predict(x=x)
@@ -209,16 +216,20 @@ class DetectorClassifier(ClassifierNeuralNetwork):
             # First compute the classifier gradients for classifier_idx
             if classifier_idx:
                 combined_grads[classifier_idx] = self.classifier.class_gradient(
-                    x=x[classifier_idx], label=label[classifier_idx]
+                    x=x[classifier_idx], label=label[classifier_idx], training_mode=training_mode, **kwargs
                 )
 
             # Then compute the detector gradients for detector_idx
             if detector_idx:
                 # First compute the classifier gradients for detector_idx
-                classifier_grads = self.classifier.class_gradient(x=x[detector_idx], label=None)
+                classifier_grads = self.classifier.class_gradient(
+                    x=x[detector_idx], label=None, training_mode=training_mode, **kwargs
+                )
 
                 # Then compute the detector gradients for detector_idx
-                detector_grads = self.detector.class_gradient(x=x[detector_idx], label=0)
+                detector_grads = self.detector.class_gradient(
+                    x=x[detector_idx], label=0, training_mode=training_mode, **kwargs
+                )
 
                 # Chain the detector gradients for the first component
                 classifier_preds = self.classifier.predict(x=x[detector_idx])
@@ -241,7 +252,7 @@ class DetectorClassifier(ClassifierNeuralNetwork):
 
         return combined_grads
 
-    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the loss of the neural network for samples `x`.
 
@@ -254,13 +265,16 @@ class DetectorClassifier(ClassifierNeuralNetwork):
         """
         raise NotImplementedError
 
-    def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def loss_gradient(  # pylint: disable=W0221
+        self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs
+    ) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
         :param x: Sample input with shape as expected by the model.
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,).
+        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
         :return: Array of gradients of the same shape as `x`.
         :raises `NotImplementedException`: This method is not supported for detector-classifiers.
         """
@@ -293,17 +307,6 @@ class DetectorClassifier(ClassifierNeuralNetwork):
         :raises `NotImplementedException`: This method is not supported for detector-classifiers.
         """
         raise NotImplementedError
-
-    def set_learning_phase(self, train: bool) -> None:
-        """
-        Set the learning phase for the backend framework.
-
-        :param train: True to set the learning phase to training, False to set it to prediction.
-        """
-        if isinstance(train, bool):
-            self._learning_phase = train
-            self.classifier.set_learning_phase(train=train)
-            self.detector.set_learning_phase(train=train)
 
     def save(self, filename: str, path: Optional[str] = None) -> None:
         """

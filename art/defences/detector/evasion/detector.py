@@ -28,7 +28,6 @@ import numpy as np
 
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin, LossGradientsMixin
 from art.estimators.classification.classifier import ClassifierMixin, ClassGradientsMixin
-from art.utils import deprecated
 
 if TYPE_CHECKING:
     from art.utils import CLIP_VALUES_TYPE
@@ -44,6 +43,13 @@ class BinaryInputDetector(ClassGradientsMixin, ClassifierMixin, LossGradientsMix
     the user and trains it on data labeled as clean (label 0) or adversarial (label 1).
     """
 
+    estimator_params = (
+        BaseEstimator.estimator_params
+        + NeuralNetworkMixin.estimator_params
+        + ClassifierMixin.estimator_params
+        + ["detector"]
+    )
+
     def __init__(self, detector: "ClassifierNeuralNetwork") -> None:
         """
         Create a `BinaryInputDetector` instance which performs binary classification on input data.
@@ -53,7 +59,6 @@ class BinaryInputDetector(ClassGradientsMixin, ClassifierMixin, LossGradientsMix
         super().__init__(
             model=None,
             clip_values=detector.clip_values,
-            channel_index=detector.channel_index,
             channels_first=detector.channels_first,
             preprocessing_defences=detector.preprocessing_defences,
             preprocessing=detector.preprocessing,
@@ -92,7 +97,7 @@ class BinaryInputDetector(ClassGradientsMixin, ClassifierMixin, LossGradientsMix
         """
         raise NotImplementedError
 
-    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the loss of the neural network for samples `x`.
 
@@ -117,27 +122,44 @@ class BinaryInputDetector(ClassGradientsMixin, ClassifierMixin, LossGradientsMix
     def clip_values(self) -> Optional["CLIP_VALUES_TYPE"]:
         return self.detector.clip_values
 
-    @property  # type: ignore
-    @deprecated(end_version="1.6.0", replaced_by="channels_first")
-    def channel_index(self) -> Optional[int]:
-        return self.detector.channel_index
-
     @property
-    def channels_first(self) -> Optional[bool]:
+    def channels_first(self) -> bool:
         """
         :return: Boolean to indicate index of the color channels in the sample `x`.
         """
         return self._channels_first
 
-    @property
-    def learning_phase(self) -> Optional[bool]:
-        return self.detector.learning_phase
+    def class_gradient(  # pylint: disable=W0221
+        self, x: np.ndarray, label: Union[int, List[int], None] = None, training_mode: bool = False, **kwargs
+    ) -> np.ndarray:
+        """
+        Compute per-class derivatives w.r.t. `x`.
 
-    def class_gradient(self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs) -> np.ndarray:
-        return self.detector.class_gradient(x, label=label)
+        :param x: Sample input with shape as expected by the model.
+        :param label: Index of a specific per-class derivative. If an integer is provided, the gradient of that class
+                      output is computed for all samples. If multiple values as provided, the first dimension should
+                      match the batch size of `x`, and each value will be used as target for its corresponding sample in
+                      `x`. If `None`, then gradients for all classes will be computed for each sample.
+        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :return: Array of gradients of input features w.r.t. each class in the form
+                 `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
+                 `(batch_size, 1, input_shape)` when `label` parameter is specified.
+        """
+        return self.detector.class_gradient(x, label=label, training_mode=training_mode, **kwargs)
 
-    def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
-        return self.detector.loss_gradient(x, y)
+    def loss_gradient(  # pylint: disable=W0221
+        self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs
+    ) -> np.ndarray:
+        """
+        Compute the gradient of the loss function w.r.t. `x`.
+
+        :param x: Sample input with shape as expected by the model.
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
+                  `(nb_samples,)`.
+        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :return: Array of gradients of the same shape as `x`.
+        """
+        return self.detector.loss_gradient(x=x, y=y, training_mode=training_mode, **kwargs)
 
     def get_activations(
         self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
@@ -151,10 +173,13 @@ class BinaryInputDetector(ClassGradientsMixin, ClassifierMixin, LossGradientsMix
         """
         raise NotImplementedError
 
-    def set_learning_phase(self, train: bool) -> None:
-        self.detector.set_learning_phase(train)
-
     def save(self, filename: str, path: Optional[str] = None) -> None:
+        """
+        Save the detector model.
+
+        param filename: The name of the saved file.
+        param path: The path to the location of the saved file.
+        """
         self.detector.save(filename, path)
 
 
@@ -166,8 +191,15 @@ class BinaryActivationDetector(
     the user and is trained on the values of the activations of a classifier at a given layer.
     """
 
+    estimator_params = (
+        BaseEstimator.estimator_params + NeuralNetworkMixin.estimator_params + ClassifierMixin.estimator_params
+    )
+
     def __init__(
-        self, classifier: "ClassifierNeuralNetwork", detector: "ClassifierNeuralNetwork", layer: Union[int, str],
+        self,
+        classifier: "ClassifierNeuralNetwork",
+        detector: "ClassifierNeuralNetwork",
+        layer: Union[int, str],
     ) -> None:  # lgtm [py/similar-function]
         """
         Create a `BinaryActivationDetector` instance which performs binary classification on activation information.
@@ -180,7 +212,6 @@ class BinaryActivationDetector(
         super().__init__(
             model=None,
             clip_values=detector.clip_values,
-            channel_index=detector.channel_index,
             channels_first=detector.channels_first,
             preprocessing_defences=detector.preprocessing_defences,
             preprocessing=detector.preprocessing,
@@ -236,7 +267,7 @@ class BinaryActivationDetector(
         """
         raise NotImplementedError
 
-    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the loss of the neural network for samples `x`.
 
@@ -261,31 +292,48 @@ class BinaryActivationDetector(
     def clip_values(self) -> Optional["CLIP_VALUES_TYPE"]:
         return self.detector.clip_values
 
-    @property  # type: ignore
-    @deprecated(end_version="1.6.0", replaced_by="channels_first")
-    def channel_index(self) -> Optional[int]:
-        return self.detector.channel_index
-
     @property
-    def channels_first(self) -> Optional[bool]:
+    def channels_first(self) -> bool:
         """
         :return: Boolean to indicate index of the color channels in the sample `x`.
         """
         return self._channels_first
 
     @property
-    def learning_phase(self) -> Optional[bool]:
-        return self.detector.learning_phase
-
-    @property
     def layer_names(self) -> List[str]:
         raise NotImplementedError
 
-    def class_gradient(self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs) -> np.ndarray:
-        return self.detector.class_gradient(x, label=label)
+    def class_gradient(  # pylint: disable=W0221
+        self, x: np.ndarray, label: Union[int, List[int], None] = None, training_mode: bool = False, **kwargs
+    ) -> np.ndarray:
+        """
+        Compute per-class derivatives w.r.t. `x`.
 
-    def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
-        return self.detector.loss_gradient(x, y)
+        :param x: Sample input with shape as expected by the model.
+        :param label: Index of a specific per-class derivative. If an integer is provided, the gradient of that class
+                      output is computed for all samples. If multiple values as provided, the first dimension should
+                      match the batch size of `x`, and each value will be used as target for its corresponding sample in
+                      `x`. If `None`, then gradients for all classes will be computed for each sample.
+        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :return: Array of gradients of input features w.r.t. each class in the form
+                 `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
+                 `(batch_size, 1, input_shape)` when `label` parameter is specified.
+        """
+        return self.detector.class_gradient(x=x, label=label, training_mode=training_mode, **kwargs)
+
+    def loss_gradient(  # pylint: disable=W0221
+        self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs
+    ) -> np.ndarray:
+        """
+        Compute the gradient of the loss function w.r.t. `x`.
+
+        :param x: Sample input with shape as expected by the model.
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
+                  `(nb_samples,)`.
+        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :return: Array of gradients of the same shape as `x`.
+        """
+        return self.detector.loss_gradient(x=x, y=y, training_mode=training_mode, **kwargs)
 
     def get_activations(
         self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
@@ -299,8 +347,11 @@ class BinaryActivationDetector(
         """
         raise NotImplementedError
 
-    def set_learning_phase(self, train: bool) -> None:
-        self.detector.set_learning_phase(train)
-
     def save(self, filename: str, path: Optional[str] = None) -> None:
+        """
+        Save the detector model.
+
+        param filename: The name of the saved file.
+        param path: The path to the location of the saved file.
+        """
         self.detector.save(filename, path)

@@ -29,7 +29,7 @@ from art.estimators.tensorflow import TensorFlowEstimator
 if TYPE_CHECKING:
     # pylint: disable=C0412
     import numpy as np
-    import tensorflow as tf
+    import tensorflow.compat.v1 as tf
 
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor import Preprocessor
@@ -43,6 +43,13 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
     This class implements a GAN with the TensorFlow framework.
     """
 
+    estimator_params = TensorFlowEstimator.estimator_params + [
+        "input_ph",
+        "loss",
+        "sess",
+        "feed_dict",
+    ]
+
     def __init__(
         self,
         input_ph: "tf.Placeholder",
@@ -53,7 +60,7 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
         feed_dict: Optional[Dict[Any, Any]] = None,
     ):
         """
@@ -77,7 +84,7 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
         :param feed_dict: A feed dictionary for the session run evaluating the classifier. This dictionary includes all
                           additionally required placeholders except the placeholders defined in this class.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow.compat.v1 as tf  # lgtm [py/repeated-import]
 
         super().__init__(
             model=model,
@@ -113,18 +120,32 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
         """
         return self._input_shape  # type: ignore
 
-    def loss(self, x: "np.ndarray", y: "np.ndarray", **kwargs) -> "np.ndarray":
+    @property
+    def input_ph(self) -> "tf.Placeholder":
         """
-        Compute the loss of the neural network for samples `x`.
+        Return the input placeholder.
 
-        :param x: Samples of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
-                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
-        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices
-                  of shape `(nb_samples,)`.
-        :return: Loss values.
-        :rtype: Format as expected by the `model`
+        :return: The input placeholder.
         """
-        raise NotImplementedError
+        return self._input_ph  # type: ignore
+
+    @property
+    def loss(self) -> "tf.Tensor":
+        """
+        Return the loss function.
+
+        :return: The loss function.
+        """
+        return self._loss  # type: ignore
+
+    @property
+    def feed_dict(self) -> Dict[Any, Any]:
+        """
+        Return the feed dictionary for the session run evaluating the classifier.
+
+        :return: The feed dictionary for the session run evaluating the classifier.
+        """
+        return self._feed_dict  # type: ignore
 
     def predict(self, x: "np.ndarray", batch_size: int = 128, **kwargs) -> "np.ndarray":
         """
@@ -141,7 +162,7 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
         y = self._sess.run(self._model, feed_dict=feed_dict)
         return y
 
-    def loss_gradient(self, x, y, **kwargs) -> "np.ndarray":
+    def loss_gradient(self, x, y, training_mode: bool = False, **kwargs) -> "np.ndarray":  # pylint: disable=W0221
         raise NotImplementedError
 
     def fit(self, x, y, batch_size=128, nb_epochs=10, **kwargs):
@@ -158,10 +179,7 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
         """
         raise NotImplementedError
 
-    def set_learning_phase(self, train: bool) -> None:
-        """
-        do nothing.
-        """
+    def compute_loss(self, x: "np.ndarray", y: "np.ndarray", **kwargs) -> "np.ndarray":
         raise NotImplementedError
 
     @property
@@ -172,15 +190,6 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
         :return: The generator tensor.
         """
         return self._model
-
-    @property
-    def input_ph(self) -> "tf.Placeholder":
-        """
-        Returns the encoding seed input of the generator of shape `(batch_size, encoding_length)`.
-
-        :return: The encoding seed input of the generator.
-        """
-        return self._input_ph
 
     @property
     def encoding_length(self) -> int:

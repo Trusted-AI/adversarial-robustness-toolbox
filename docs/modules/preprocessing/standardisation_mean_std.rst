@@ -16,6 +16,6 @@ Standardisation Mean and Std - PyTorch
 
 Standardisation Mean and Std - TensorFlow V2
 --------------------------------------------
-.. autoclass:: StandardisationMeanStdTensorFlowV2
+.. autoclass:: StandardisationMeanStdTensorFlow
    :members:
    :special-members:

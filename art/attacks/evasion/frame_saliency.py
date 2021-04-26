@@ -27,7 +27,7 @@ import logging
 from typing import Optional, TYPE_CHECKING
 
 import numpy as np
-from tqdm import trange
+from tqdm.auto import trange
 
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
@@ -112,8 +112,8 @@ class FrameSaliencyAttack(EvasionAttack):
         if self.method == "one_shot":
             if y is None:
                 return self.attacker.generate(x)
-            else:
-                return self.attacker.generate(x, y)
+
+            return self.attacker.generate(x, y)
 
         if y is None:
             # Throw error if attack is targeted, but no targets are provided

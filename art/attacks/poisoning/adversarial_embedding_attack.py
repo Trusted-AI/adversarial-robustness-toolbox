@@ -124,7 +124,7 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
             init_model_output = self.orig_model(model_input)
 
             # Extracting feature tensor
-            if type(self.feature_layer) is int:
+            if isinstance(self.feature_layer, int):
                 feature_layer_tensor = self.orig_model.layers[self.feature_layer].output
             else:
                 feature_layer_tensor = self.orig_model.get_layer(name=feature_layer).output
@@ -149,10 +149,10 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
             model_loss = self.estimator.model.loss
             loss_name = "backdoor_detect"
             loss_type = "binary_crossentropy"
-            if type(model_loss) is str:
+            if isinstance(model_loss, str):
                 losses = {model_name: model_loss, loss_name: loss_type}
                 loss_weights = {model_name: 1.0, loss_name: -self.regularization}
-            elif type(model_loss) is dict:
+            elif isinstance(model_loss, dict):
                 losses = model_loss
                 losses[loss_name] = loss_type
                 loss_weights = self.orig_model.loss_weights
@@ -165,7 +165,7 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
         else:
             raise NotImplementedError("This attack currently only supports Keras.")
 
-    def poison(
+    def poison(  # pylint: disable=W0221
         self, x: np.ndarray, y: Optional[np.ndarray] = None, broadcast=False, **kwargs
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -178,7 +178,7 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
         """
         return self.backdoor.poison(x, y, broadcast=broadcast)
 
-    def poison_estimator(
+    def poison_estimator(  # pylint: disable=W0221
         self, x: np.ndarray, y: np.ndarray, batch_size: int = 64, nb_epochs: int = 10, **kwargs
     ) -> "CLASSIFIER_TYPE":
         """
@@ -196,7 +196,7 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
         selected_indices = np.zeros(len(x)).astype(bool)
 
         if len(self.pp_poison) == 1:
-            if type(self.target) is np.ndarray:
+            if isinstance(self.target, np.ndarray):
                 not_target = np.logical_not(np.all(y == self.target, axis=1))
                 selected_indices[not_target] = np.random.uniform(size=sum(not_target)) < self.pp_poison[0]
             else:
@@ -204,12 +204,12 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
                     all_src = np.all(y == src, axis=1)
                     selected_indices[all_src] = np.random.uniform(size=sum(all_src)) < self.pp_poison[0]
         else:
-            for pp, (src, _) in zip(self.pp_poison, self.target):
+            for p_p, (src, _) in zip(self.pp_poison, self.target):
                 all_src = np.all(y == src, axis=1)
-                selected_indices[all_src] = np.random.uniform(size=sum(all_src)) < pp
+                selected_indices[all_src] = np.random.uniform(size=sum(all_src)) < p_p
 
         # Poison selected indices
-        if type(self.target) is np.ndarray:
+        if isinstance(self.target, np.ndarray):
             to_be_poisoned = train_data[selected_indices]
             poison_data, poison_labels = self.poison(to_be_poisoned, y=self.target, broadcast=True)
 
@@ -243,9 +243,10 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
             )
             params = self.estimator.get_params()
             del params["model"]
+            del params["nb_classes"]
             return KerasClassifier(self.orig_model, **params)
-        else:
-            raise NotImplementedError("Currently only Keras is supported")
+
+        raise NotImplementedError("Currently only Keras is supported")
 
     def get_training_data(self) -> Optional[Tuple[np.ndarray, np.ndarray, np.ndarray]]:
         """
@@ -256,15 +257,15 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
         """
         if self.train_data is not None:
             return self.train_data, self.train_labels, self.is_backdoor
-        else:
-            return None
+
+        return None
 
     def _check_params(self) -> None:
-        if type(self.feature_layer) is str:
-            layer_names = {l.name for l in self.estimator.model.layers}
+        if isinstance(self.feature_layer, str):
+            layer_names = {layer.name for layer in self.estimator.model.layers}
             if self.feature_layer not in layer_names:
                 raise ValueError("Layer {} not found in model".format(self.feature_layer))
-        elif type(self.feature_layer) is int:
+        elif isinstance(self.feature_layer, int):
             num_layers = len(self.estimator.model.layers)
             if num_layers <= int(self.feature_layer) or int(self.feature_layer) < 0:
                 raise ValueError(
@@ -273,7 +274,7 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
                     )
                 )
 
-        if type(self.target) is np.ndarray:
+        if isinstance(self.target, np.ndarray):
             self._check_valid_label_shape(self.target)
         else:
             for source, target in self.target:
@@ -283,12 +284,12 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
         if len(self.pp_poison) == 1:
             _check_pp_poison(self.pp_poison[0])
         else:
-            if type(self.target) is not list:
+            if not isinstance(self.target, list):
                 raise ValueError("Target should be list of source label pairs")
             if len(self.pp_poison) != len(self.target):
                 raise ValueError("pp_poison and target lists should be the same length")
-            for pp in self.pp_poison:
-                _check_pp_poison(pp)
+            for p_p in self.pp_poison:
+                _check_pp_poison(p_p)
 
         if self.regularization <= 0:
             raise ValueError("Regularization constant must be positive")

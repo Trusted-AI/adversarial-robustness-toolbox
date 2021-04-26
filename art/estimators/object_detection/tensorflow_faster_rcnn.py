@@ -30,10 +30,9 @@ from art import config
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
-    import tensorflow as tf
+    import tensorflow.compat.v1 as tf
     from object_detection.meta_architectures.faster_rcnn_meta_arch import FasterRCNNMetaArch
-    from tensorflow.python.framework.ops import Tensor
-    from tensorflow.python.client.session import Session
+    from tensorflow.python.client.session import Session  # pylint: disable=E0611
 
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor.preprocessor import Preprocessor
@@ -47,6 +46,8 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
     This class implements a model-specific object detector using Faster-RCNN and TensorFlow.
     """
 
+    estimator_params = TensorFlowEstimator.estimator_params + ["images", "sess", "is_training", "attack_losses"]
+
     def __init__(
         self,
         images: "tf.Tensor",
@@ -59,7 +60,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         channels_first: bool = False,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
         attack_losses: Tuple[str, ...] = (
             "Loss/RPNLoss/localization_loss",
             "Loss/RPNLoss/objectness_loss",
@@ -100,10 +101,11 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
                               `first_stage_localization_loss`, `first_stage_objectness_loss`,
                               `second_stage_localization_loss`, `second_stage_classification_loss`.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow.compat.v1 as tf  # lgtm [py/repeated-import]
 
         # Super initialization
         super().__init__(
+            model=model,
             clip_values=clip_values,
             channels_first=channels_first,
             preprocessing_defences=preprocessing_defences,
@@ -156,7 +158,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
                     "faster_rcnn_inception_v2_coco_2017_11_08.tar.gz",
                 )
 
-            self._predictions, self._losses, self._detections = self._load_model(
+            self._model, self._predictions, self._losses, self._detections = self._load_model(
                 images=images,
                 filename=filename,
                 url=url,
@@ -168,7 +170,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
             )
 
         else:
-            self._predictions, self._losses, self._detections = self._load_model(
+            self._model, self._predictions, self._losses, self._detections = self._load_model(
                 images=images,
                 filename=None,
                 url=None,
@@ -246,7 +248,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
                               corresponding loss values.
                     - detections: a dictionary containing final detection results.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow.compat.v1 as tf  # lgtm [py/repeated-import]
         from object_detection.utils import variables_helper
 
         if obj_detection_model is None:
@@ -311,7 +313,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         # Initialize from checkpoint
         tf.train.init_from_checkpoint(fine_tune_checkpoint_path, vars_in_ckpt)
 
-        return predictions, losses, detections
+        return obj_detection_model, predictions, losses, detections
 
     def loss_gradient(self, x: np.ndarray, y: List[Dict[str, np.ndarray]], **kwargs) -> np.ndarray:
         """
@@ -330,7 +332,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
                     weights for groundtruth boxes.
         :return: Loss gradients of the same shape as `x`.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow.compat.v1 as tf  # lgtm [py/repeated-import]
 
         # Only do loss_gradient if is_training is False
         if self.is_training:
@@ -350,7 +352,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
                 else:
                     loss = loss + self._losses[loss_name]
 
-            self._loss_grads: Tensor = tf.gradients(loss, self.images)[0]
+            self._loss_grads: tf.Tensor = tf.gradients(loss, self.images)[0]
 
         # Create feed_dict
         feed_dict = {self.images: x_preprocessed}
@@ -371,7 +373,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
 
         return grads
 
-    def predict(
+    def predict(  # pylint: disable=W0221
         self, x: np.ndarray, batch_size: int = 128, standardise_output: bool = False, **kwargs
     ) -> List[Dict[str, np.ndarray]]:
         """
@@ -486,11 +488,13 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         """
         return self._detections
 
-    def fit(self):
+    def fit(self, x: np.ndarray, y, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
         raise NotImplementedError
 
-    def get_activations(self):
+    def get_activations(
+        self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
+    ) -> np.ndarray:
         raise NotImplementedError
 
-    def set_learning_phase(self, train: bool) -> None:
+    def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         raise NotImplementedError

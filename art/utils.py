@@ -18,6 +18,7 @@
 """
 Module providing convenience functions.
 """
+# pylint: disable=C0302
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from functools import wraps
@@ -33,11 +34,14 @@ import warnings
 import zipfile
 
 import numpy as np
-from scipy.special import gammainc
+from scipy.special import gammainc  # pylint: disable=E0611
 import six
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from art import config
+
+if TYPE_CHECKING:
+    import torch
 
 logger = logging.getLogger(__name__)
 
@@ -45,16 +49,19 @@ logger = logging.getLogger(__name__)
 # ------------------------------------------------------------------------------------------------- CONSTANTS AND TYPES
 
 
-DATASET_TYPE = Tuple[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray], float, float]
-CLIP_VALUES_TYPE = Tuple[Union[int, float, np.ndarray], Union[int, float, np.ndarray]]
+DATASET_TYPE = Tuple[  # pylint: disable=C0103
+    Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray], float, float
+]
+CLIP_VALUES_TYPE = Tuple[Union[int, float, np.ndarray], Union[int, float, np.ndarray]]  # pylint: disable=C0103
 
 if TYPE_CHECKING:
-    # pylint: disable=R0401
-
+    # pylint: disable=R0401,C0412
     from art.defences.preprocessor.preprocessor import Preprocessor
 
-    PREPROCESSING_TYPE = Optional[
-        Tuple[Union[int, float, np.ndarray], Union[int, float, np.ndarray]], Preprocessor, Tuple[Preprocessor, ...]
+    PREPROCESSING_TYPE = Optional[  # pylint: disable=C0103
+        Union[
+            Tuple[Union[int, float, np.ndarray], Union[int, float, np.ndarray]], Preprocessor, Tuple[Preprocessor, ...]
+        ]
     ]
 
     from art.estimators.classification.classifier import (
@@ -96,7 +103,7 @@ if TYPE_CHECKING:
     from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
     from art.estimators.speech_recognition.tensorflow_lingvo import TensorFlowLingvoASR
 
-    CLASSIFIER_LOSS_GRADIENTS_TYPE = Union[
+    CLASSIFIER_LOSS_GRADIENTS_TYPE = Union[  # pylint: disable=C0103
         ClassifierLossGradients,
         EnsembleClassifier,
         GPyGaussianProcessClassifier,
@@ -109,7 +116,7 @@ if TYPE_CHECKING:
         TensorFlowV2Classifier,
     ]
 
-    CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE = Union[
+    CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE = Union[  # pylint: disable=C0103
         ClassifierClassLossGradients,
         EnsembleClassifier,
         GPyGaussianProcessClassifier,
@@ -122,7 +129,7 @@ if TYPE_CHECKING:
         TensorFlowV2Classifier,
     ]
 
-    CLASSIFIER_NEURALNETWORK_TYPE = Union[
+    CLASSIFIER_NEURALNETWORK_TYPE = Union[  # pylint: disable=C0103
         ClassifierNeuralNetwork,
         DetectorClassifier,
         EnsembleClassifier,
@@ -133,7 +140,7 @@ if TYPE_CHECKING:
         TensorFlowV2Classifier,
     ]
 
-    CLASSIFIER_DECISION_TREE_TYPE = Union[
+    CLASSIFIER_DECISION_TREE_TYPE = Union[  # pylint: disable=C0103
         ClassifierDecisionTree,
         LightGBMClassifier,
         ScikitlearnDecisionTreeClassifier,
@@ -144,7 +151,7 @@ if TYPE_CHECKING:
         XGBoostClassifier,
     ]
 
-    CLASSIFIER_TYPE = Union[
+    CLASSIFIER_TYPE = Union[  # pylint: disable=C0103
         Classifier,
         BlackBoxClassifier,
         CatBoostARTClassifier,
@@ -172,12 +179,15 @@ if TYPE_CHECKING:
         CLASSIFIER_NEURALNETWORK_TYPE,
     ]
 
-    OBJECT_DETECTOR_TYPE = Union[
-        ObjectDetector, PyTorchFasterRCNN, TensorFlowFasterRCNN,
+    OBJECT_DETECTOR_TYPE = Union[  # pylint: disable=C0103
+        ObjectDetector,
+        PyTorchFasterRCNN,
+        TensorFlowFasterRCNN,
     ]
 
-    SPEECH_RECOGNIZER_TYPE = Union[
-        PyTorchDeepSpeech, TensorFlowLingvoASR,
+    SPEECH_RECOGNIZER_TYPE = Union[  # pylint: disable=C0103
+        PyTorchDeepSpeech,
+        TensorFlowLingvoASR,
     ]
 
 # --------------------------------------------------------------------------------------------------------- DEPRECATION
@@ -229,7 +239,9 @@ def deprecated(end_version: str, *, reason: str = "", replaced_by: str = "") -> 
         def wrapper(*args, **kwargs):
             warnings.simplefilter("always", category=DeprecationWarning)
             warnings.warn(
-                deprecated_msg + replaced_msg + reason_msg, category=DeprecationWarning, stacklevel=2,
+                deprecated_msg + replaced_msg + reason_msg,
+                category=DeprecationWarning,
+                stacklevel=2,
             )
             warnings.simplefilter("default", category=DeprecationWarning)
             return function(*args, **kwargs)
@@ -323,7 +335,8 @@ def projection(values: np.ndarray, eps: Union[int, float, np.ndarray], norm_p: U
             raise NotImplementedError("The parameter `eps` of type `np.ndarray` is not supported to use with norm 1.")
 
         values_tmp = values_tmp * np.expand_dims(
-            np.minimum(1.0, eps / (np.linalg.norm(values_tmp, axis=1, ord=1) + tol)), axis=1,
+            np.minimum(1.0, eps / (np.linalg.norm(values_tmp, axis=1, ord=1) + tol)),
+            axis=1,
         )
 
     elif norm_p in [np.inf, "inf"]:
@@ -344,7 +357,10 @@ def projection(values: np.ndarray, eps: Union[int, float, np.ndarray], norm_p: U
 
 
 def random_sphere(
-    nb_points: int, nb_dims: int, radius: Union[int, float, np.ndarray], norm: Union[int, float, str],
+    nb_points: int,
+    nb_dims: int,
+    radius: Union[int, float, np.ndarray],
+    norm: Union[int, float, str],
 ) -> np.ndarray:
     """
     Generate randomly `m x n`-dimension points with radius `radius` and centered around 0.
@@ -414,7 +430,9 @@ def original_to_tanh(
 
 
 def tanh_to_original(
-    x_tanh: np.ndarray, clip_min: Union[float, np.ndarray], clip_max: Union[float, np.ndarray],
+    x_tanh: np.ndarray,
+    clip_min: Union[float, np.ndarray],
+    clip_max: Union[float, np.ndarray],
 ) -> np.ndarray:
     """
     Transform input from tanh to original space.
@@ -446,15 +464,13 @@ def to_categorical(labels: Union[np.ndarray, List[float]], nb_classes: Optional[
     return categorical
 
 
-def float_to_categorical(labels, nb_classes=None):
+def float_to_categorical(labels: np.ndarray, nb_classes: Optional[int] = None):
     """
     Convert an array of floating point labels to binary class matrix.
 
     :param labels: An array of integer labels of shape `(nb_samples,)`
-    :type labels: `np.ndarray`
     :param nb_classes: The number of classes (possible labels)
-    :type nb_classes: `int`
-    :return: A binary matrix representation of `y` in the shape `(nb_samples, nb_classes)`
+    :return: A binary matrix representation of `labels` in the shape `(nb_samples, nb_classes)`
     :rtype: `np.ndarray`
     """
     labels = np.array(labels)
@@ -466,6 +482,23 @@ def float_to_categorical(labels, nb_classes=None):
     categorical = np.zeros((labels.shape[0], nb_classes), dtype=np.float32)
     categorical[np.arange(labels.shape[0]), np.squeeze(indexes)] = 1
     return categorical
+
+
+def floats_to_one_hot(labels: np.ndarray):
+    """
+    Convert a 2D-array of floating point labels to binary class matrix.
+
+    :param labels: A 2D-array of floating point labels of shape `(nb_samples, nb_classes)`
+    :return: A binary matrix representation of `labels` in the shape `(nb_samples, nb_classes)`
+    :rtype: `np.ndarray`
+    """
+    labels = np.array(labels)
+    for feature in labels.T:  # pylint: disable=E1133
+        unique = np.unique(feature)
+        unique.sort()
+        for index, value in enumerate(unique):
+            feature[feature == value] = index
+    return labels.astype(np.float32)
 
 
 def check_and_transform_label_format(
@@ -545,7 +578,10 @@ def second_most_likely_class(x: np.ndarray, classifier: "CLASSIFIER_TYPE") -> np
     :param classifier: The classifier used for computing predictions.
     :return: Second most likely class predicted by `classifier` for sample `x` in one-hot encoding.
     """
-    return to_categorical(np.argpartition(classifier.predict(x), -2, axis=1)[:, -2], nb_classes=classifier.nb_classes,)
+    return to_categorical(
+        np.argpartition(classifier.predict(x), -2, axis=1)[:, -2],
+        nb_classes=classifier.nb_classes,
+    )
 
 
 def get_label_conf(y_vec: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
@@ -655,7 +691,9 @@ def compute_accuracy(preds: np.ndarray, labels: np.ndarray, abstain: bool = True
 # -------------------------------------------------------------------------------------------------- DATASET OPERATIONS
 
 
-def load_cifar10(raw: bool = False,) -> DATASET_TYPE:
+def load_cifar10(
+    raw: bool = False,
+) -> DATASET_TYPE:
     """
     Loads CIFAR10 dataset from config.CIFAR10_PATH or downloads it if necessary.
 
@@ -721,14 +759,20 @@ def load_cifar10(raw: bool = False,) -> DATASET_TYPE:
     return (x_train, y_train), (x_test, y_test), min_, max_
 
 
-def load_mnist(raw: bool = False,) -> DATASET_TYPE:
+def load_mnist(
+    raw: bool = False,
+) -> DATASET_TYPE:
     """
     Loads MNIST dataset from `config.ART_DATA_PATH` or downloads it if necessary.
 
     :param raw: `True` if no preprocessing should be applied to the data. Otherwise, data is normalized to 1.
     :return: `(x_train, y_train), (x_test, y_test), min, max`.
     """
-    path = get_file("mnist.npz", path=config.ART_DATA_PATH, url="https://s3.amazonaws.com/img-datasets/mnist.npz",)
+    path = get_file(
+        "mnist.npz",
+        path=config.ART_DATA_PATH,
+        url="https://s3.amazonaws.com/img-datasets/mnist.npz",
+    )
 
     dict_mnist = np.load(path)
     x_train = dict_mnist["x_train"]
@@ -821,14 +865,32 @@ def load_iris(raw: bool = False, test_set: float = 0.3) -> DATASET_TYPE:
     # Split training and test sets
     split_index = int((1 - test_set) * len(data) / 3)
     x_train = np.vstack((data[:split_index], data[50 : 50 + split_index], data[100 : 100 + split_index]))
-    y_train = np.vstack((labels[:split_index], labels[50 : 50 + split_index], labels[100 : 100 + split_index],))
+    y_train = np.vstack(
+        (
+            labels[:split_index],
+            labels[50 : 50 + split_index],
+            labels[100 : 100 + split_index],
+        )
+    )
 
     if split_index >= 49:
         x_test, y_test = None, None
     else:
 
-        x_test = np.vstack((data[split_index:50], data[50 + split_index : 100], data[100 + split_index :],))
-        y_test = np.vstack((labels[split_index:50], labels[50 + split_index : 100], labels[100 + split_index :],))
+        x_test = np.vstack(
+            (
+                data[split_index:50],
+                data[50 + split_index : 100],
+                data[100 + split_index :],
+            )
+        )
+        y_test = np.vstack(
+            (
+                labels[split_index:50],
+                labels[50 + split_index : 100],
+                labels[100 + split_index :],
+            )
+        )
         assert len(x_train) + len(x_test) == 150
 
         # Shuffle test set
@@ -867,9 +929,9 @@ def load_nursery(raw: bool = False, test_set: float = 0.2, transform_social: boo
     )
 
     # load data
-    features = ["parents", "has_nurs", "form", "children", "housing", "finance", "social", "health", "label"]
+    features_names = ["parents", "has_nurs", "form", "children", "housing", "finance", "social", "health", "label"]
     categorical_features = ["parents", "has_nurs", "form", "housing", "finance", "social", "health"]
-    data = pd.read_csv(path, sep=",", names=features, engine="python")
+    data = pd.read_csv(path, sep=",", names=features_names, engine="python")
     # remove rows with missing label or too sparse label
     data = data.dropna(subset=["label"])
     data.drop(data.loc[data["label"] == "recommend"].index, axis=0, inplace=True)
@@ -884,14 +946,13 @@ def load_nursery(raw: bool = False, test_set: float = 0.2, transform_social: boo
     def modify_label(value):  # 5 classes
         if value == "not_recom":
             return 0
-        elif value == "very_recom":
+        if value == "very_recom":
             return 1
-        elif value == "priority":
+        if value == "priority":
             return 2
-        elif value == "spec_prior":
+        if value == "spec_prior":
             return 3
-        else:
-            raise Exception("Bad label value: %s" % value)
+        raise Exception("Bad label value: %s" % value)
 
     data["label"] = data["label"].apply(modify_label)
     data["children"] = data["children"].apply(lambda x: 4 if x == "more" else x)
@@ -901,8 +962,7 @@ def load_nursery(raw: bool = False, test_set: float = 0.2, transform_social: boo
         def modify_social(value):
             if value == "problematic":
                 return 1
-            else:
-                return 0
+            return 0
 
         data["social"] = data["social"].apply(modify_social)
         categorical_features.remove("social")
@@ -929,14 +989,13 @@ def load_nursery(raw: bool = False, test_set: float = 0.2, transform_social: boo
         data = pd.concat([label, scaled_features], axis=1, join="inner")
 
     features = data.drop(["label"], axis=1)
-    # print(features.columns)
     min_, max_ = np.amin(features.to_numpy()), np.amax(features.to_numpy())
 
     # Split training and test sets
     stratified = sklearn.model_selection.StratifiedShuffleSplit(n_splits=1, test_size=test_set, random_state=18)
-    for train_set, test_set in stratified.split(data, data["label"]):
-        train = data.iloc[train_set]
-        test = data.iloc[test_set]
+    for train_set_i, test_set_i in stratified.split(data, data["label"]):
+        train = data.iloc[train_set_i]
+        test = data.iloc[test_set_i]
     x_train = train.drop(["label"], axis=1).to_numpy()
     y_train = train.loc[:, "label"].to_numpy()
     x_test = test.drop(["label"], axis=1).to_numpy()
@@ -945,7 +1004,9 @@ def load_nursery(raw: bool = False, test_set: float = 0.2, transform_social: boo
     return (x_train, y_train), (x_test, y_test), min_, max_
 
 
-def load_dataset(name: str,) -> DATASET_TYPE:
+def load_dataset(
+    name: str,
+) -> DATASET_TYPE:
     """
     Loads or downloads the dataset corresponding to `name`. Options are: `mnist`, `cifar10` and `stl10`.
 
@@ -1009,8 +1070,6 @@ def get_file(filename: str, url: str, path: Optional[str] = None, extract: bool 
     :return: Path to the downloaded file.
     """
     if path is None:
-        from art import config
-
         path_ = os.path.expanduser(config.ART_DATA_PATH)
     else:
         path_ = os.path.expanduser(path)
@@ -1041,10 +1100,10 @@ def get_file(filename: str, url: str, path: Optional[str] = None, extract: bool 
                 # [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed (_ssl.c:847)
                 import ssl
 
-                ssl._create_default_https_context = ssl._create_unverified_context
+                ssl._create_default_https_context = ssl._create_unverified_context  # pylint: disable=W0212
 
                 if verbose:
-                    with tqdm() as t:
+                    with tqdm() as t_bar:
                         last_block = [0]
 
                         def progress_bar(blocks: int = 1, block_size: int = 1, total_size: Optional[int] = None):
@@ -1054,8 +1113,8 @@ def get_file(filename: str, url: str, path: Optional[str] = None, extract: bool 
                             :param total_size: Total size (in tqdm units). If [default: None] or -1, remains unchanged.
                             """
                             if total_size not in (None, -1):
-                                t.total = total_size
-                            displayed = t.update((blocks - last_block[0]) * block_size)
+                                t_bar.total = total_size
+                            displayed = t_bar.update((blocks - last_block[0]) * block_size)
                             last_block[0] = blocks
                             return displayed
 
@@ -1112,7 +1171,10 @@ def clip_and_round(x: np.ndarray, clip_values: Optional["CLIP_VALUES_TYPE"], rou
 
 
 def preprocess(
-    x: np.ndarray, y: np.ndarray, nb_classes: int = 10, clip_values: Optional["CLIP_VALUES_TYPE"] = None,
+    x: np.ndarray,
+    y: np.ndarray,
+    nb_classes: int = 10,
+    clip_values: Optional["CLIP_VALUES_TYPE"] = None,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Scales `x` to [0, 1] and converts `y` to class categorical confidences.
@@ -1228,10 +1290,44 @@ def pad_sequence_input(x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     max_length = max(map(len, x))
     batch_size = x.shape[0]
 
-    x_padded = np.zeros((batch_size, max_length))
+    # note: use dtype of inner elements
+    x_padded = np.zeros((batch_size, max_length), dtype=x[0].dtype)
     x_mask = np.zeros((batch_size, max_length), dtype=bool)
 
     for i, x_i in enumerate(x):
         x_padded[i, : len(x_i)] = x_i
         x_mask[i, : len(x_i)] = 1
     return x_padded, x_mask
+
+
+# -------------------------------------------------------------------------------------------------------- CUDA SUPPORT
+
+
+def to_cuda(x: "torch.Tensor") -> "torch.Tensor":
+    """
+    Move the tensor from the CPU to the GPU if a GPU is available.
+
+    :param x: CPU Tensor to move to GPU if available.
+    :return: The CPU Tensor moved to a GPU Tensor.
+    """
+    from torch.cuda import is_available
+
+    use_cuda = is_available()
+    if use_cuda:
+        x = x.cuda()
+    return x
+
+
+def from_cuda(x: "torch.Tensor") -> "torch.Tensor":
+    """
+    Move the tensor from the GPU to the CPU if a GPU is available.
+
+    :param x: GPU Tensor to move to CPU if available.
+    :return: The GPU Tensor moved to a CPU Tensor.
+    """
+    from torch.cuda import is_available
+
+    use_cuda = is_available()
+    if use_cuda:
+        x = x.cpu()
+    return x

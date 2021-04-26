@@ -133,7 +133,7 @@ def test_pickle(art_warning, get_default_mnist_subset, image_dl_estimator):
         with open(full_path, "rb") as f:
             loaded_model = pickle.load(f)
             np.testing.assert_equal(myclassifier_2._clip_values, loaded_model._clip_values)
-            assert myclassifier_2._channel_index == loaded_model._channel_index
+            assert myclassifier_2._channels_first == loaded_model._channels_first
             assert set(myclassifier_2.__dict__.keys()) == set(loaded_model.__dict__.keys())
 
         # Test predict
@@ -146,11 +146,16 @@ def test_pickle(art_warning, get_default_mnist_subset, image_dl_estimator):
         art_warning(e)
 
 
-@pytest.mark.skipModule("apex.amp")
-@pytest.mark.skipMlFramework("tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+@pytest.mark.skip_module("apex.amp")
+@pytest.mark.skip_framework("tensorflow", "tensorflow2v1", "keras", "kerastf", "mxnet", "non_dl_frameworks")
 @pytest.mark.parametrize("device_type", ["cpu", "gpu"])
 def test_loss_gradient_amp(
-    art_warning, get_default_mnist_subset, image_dl_estimator, expected_values, mnist_shape, device_type,
+    art_warning,
+    get_default_mnist_subset,
+    image_dl_estimator,
+    expected_values,
+    mnist_shape,
+    device_type,
 ):
     import torch
     import torch.nn as nn
@@ -191,14 +196,18 @@ def test_loss_gradient_amp(
         sub_gradients = gradients[0, 0, :, 14]
 
         np.testing.assert_array_almost_equal(
-            sub_gradients, expected_gradients_1, decimal=4,
+            sub_gradients,
+            expected_gradients_1,
+            decimal=4,
         )
 
         # Second test of gradients
         sub_gradients = gradients[0, 0, 14, :]
 
         np.testing.assert_array_almost_equal(
-            sub_gradients, expected_gradients_2, decimal=4,
+            sub_gradients,
+            expected_gradients_2,
+            decimal=4,
         )
 
         # Compute loss gradients with framework
@@ -214,14 +223,18 @@ def test_loss_gradient_amp(
         sub_gradients = gradients[0, 0, :, 14]
 
         np.testing.assert_array_almost_equal(
-            sub_gradients, expected_gradients_1, decimal=4,
+            sub_gradients,
+            expected_gradients_1,
+            decimal=4,
         )
 
         # Second test of gradients
         sub_gradients = gradients[0, 0, 14, :]
 
         np.testing.assert_array_almost_equal(
-            sub_gradients, expected_gradients_2, decimal=4,
+            sub_gradients,
+            expected_gradients_2,
+            decimal=4,
         )
 
     except ARTTestException as e:

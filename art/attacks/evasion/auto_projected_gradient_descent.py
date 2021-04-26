@@ -85,6 +85,8 @@ class AutoProjectedGradientDescent(EvasionAttack):
         :param nb_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0
             starting at the original input.
         :param batch_size: Size of the batch on which adversarial samples are generated.
+        :param loss_type: Defines the loss to attack. Available options: None (Use loss defined by estimator),
+            "cross_entropy", or "difference_logits_ratio"
         :param verbose: Show progress bars.
         """
         from art.estimators.classification import TensorFlowClassifier, TensorFlowV2Classifier, PyTorchClassifier
@@ -103,8 +105,8 @@ class AutoProjectedGradientDescent(EvasionAttack):
                     "AutoProjectedGradientDescent is expecting logits as estimator output, the provided "
                     "estimator seems to predict probabilities."
                 )
-            else:
-                estimator_apgd = estimator
+
+            estimator_apgd = estimator
         else:
             if isinstance(estimator, TensorFlowClassifier):
                 import tensorflow as tf
@@ -112,12 +114,12 @@ class AutoProjectedGradientDescent(EvasionAttack):
                 if loss_type == "cross_entropy":
                     if is_probability(estimator.predict(x=np.ones(shape=(1, *estimator.input_shape)))):
                         raise NotImplementedError("Cross-entropy loss is not implemented for probability output.")
-                    else:
-                        self._loss_object = tf.reduce_mean(
-                            tf.keras.losses.categorical_crossentropy(
-                                y_pred=estimator._output, y_true=estimator._labels_ph, from_logits=True
-                            )
+
+                    self._loss_object = tf.reduce_mean(
+                        tf.keras.losses.categorical_crossentropy(
+                            y_pred=estimator._output, y_true=estimator._labels_ph, from_logits=True
                         )
+                    )
 
                 elif loss_type == "difference_logits_ratio":
                     if is_probability(estimator.predict(x=np.ones(shape=(1, *estimator.input_shape)))):
@@ -125,61 +127,60 @@ class AutoProjectedGradientDescent(EvasionAttack):
                             "The provided estimator seems to predict probabilities. "
                             "If loss_type='difference_logits_ratio' the estimator has to to predict logits."
                         )
-                    else:
 
-                        raise ValueError(
-                            "The loss `difference_logits_ratio` has not been validate completely. It seems that the "
-                            "commented implemented below is failing to selected the second largest logit for cases "
-                            "where the largest logit is the true logit. For future work `difference_logits_ratio` and "
-                            "loss_fn should return the same loss value."
-                        )
+                    raise ValueError(
+                        "The loss `difference_logits_ratio` has not been validate completely. It seems that the "
+                        "commented implemented below is failing to selected the second largest logit for cases "
+                        "where the largest logit is the true logit. For future work `difference_logits_ratio` and "
+                        "loss_fn should return the same loss value."
+                    )
 
-                        # def difference_logits_ratio(y_true, y_pred):
-                        #     i_y_true = tf.cast(tf.math.argmax(tf.cast(y_true, tf.int32), axis=1), tf.int32)
-                        #     i_y_pred_arg = tf.argsort(y_pred, axis=1)
-                        #     # Not completely sure if the following line is correct.
-                        #     # `i_y_pred_arg[:, -2], i_y_pred_arg[:, -1]` seems closer to the output of `loss_fn` than
-                        #     # `i_y_pred_arg[:, -1], i_y_pred_arg[:, -2]`
-                        #     i_z_i = tf.where(i_y_pred_arg[:, -1] != i_y_true[:], i_y_pred_arg[:, -2],
-                        #                      i_y_pred_arg[:, -1])
-                        #
-                        #     z_1 = tf.gather(y_pred, i_y_pred_arg[:, -1], axis=1, batch_dims=0)
-                        #     z_3 = tf.gather(y_pred, i_y_pred_arg[:, -3], axis=1, batch_dims=0)
-                        #     z_i = tf.gather(y_pred, i_z_i, axis=1, batch_dims=0)
-                        #     z_y = tf.gather(y_pred, i_y_true, axis=1, batch_dims=0)
-                        #
-                        #     z_1 = tf.linalg.diag_part(z_1)
-                        #     z_3 = tf.linalg.diag_part(z_3)
-                        #     z_i = tf.linalg.diag_part(z_i)
-                        #     z_y = tf.linalg.diag_part(z_y)
-                        #
-                        #     dlr = -(z_y - z_i) / (z_1 - z_3)
-                        #
-                        #     return tf.reduce_mean(dlr)
-                        #
-                        # def loss_fn(y_true, y_pred):
-                        #     i_y_true = np.argmax(y_true, axis=1)
-                        #     i_y_pred_arg = np.argsort(y_pred, axis=1)
-                        #     i_z_i = np.where(i_y_pred_arg[:, -1] != i_y_true[:], i_y_pred_arg[:, -1],
-                        #                      i_y_pred_arg[:, -2])
-                        #
-                        #     z_1 = y_pred[:, i_y_pred_arg[:, -1]]
-                        #     z_3 = y_pred[:, i_y_pred_arg[:, -3]]
-                        #     z_i = y_pred[:, i_z_i]
-                        #     z_y = y_pred[:, i_y_true]
-                        #
-                        #     z_1 = np.diag(z_1)
-                        #     z_3 = np.diag(z_3)
-                        #     z_i = np.diag(z_i)
-                        #     z_y = np.diag(z_y)
-                        #
-                        #     dlr = -(z_y - z_i) / (z_1 - z_3)
-                        #
-                        #     return np.mean(dlr)
-                        #
-                        # self._loss_fn = loss_fn
-                        # self._loss_object = difference_logits_ratio(y_true=estimator._labels_ph,
-                        #                                             y_pred=estimator._output)
+                    # def difference_logits_ratio(y_true, y_pred):
+                    #     i_y_true = tf.cast(tf.math.argmax(tf.cast(y_true, tf.int32), axis=1), tf.int32)
+                    #     i_y_pred_arg = tf.argsort(y_pred, axis=1)
+                    #     # Not completely sure if the following line is correct.
+                    #     # `i_y_pred_arg[:, -2], i_y_pred_arg[:, -1]` seems closer to the output of `loss_fn` than
+                    #     # `i_y_pred_arg[:, -1], i_y_pred_arg[:, -2]`
+                    #     i_z_i = tf.where(i_y_pred_arg[:, -1] != i_y_true[:], i_y_pred_arg[:, -2],
+                    #                      i_y_pred_arg[:, -1])
+                    #
+                    #     z_1 = tf.gather(y_pred, i_y_pred_arg[:, -1], axis=1, batch_dims=0)
+                    #     z_3 = tf.gather(y_pred, i_y_pred_arg[:, -3], axis=1, batch_dims=0)
+                    #     z_i = tf.gather(y_pred, i_z_i, axis=1, batch_dims=0)
+                    #     z_y = tf.gather(y_pred, i_y_true, axis=1, batch_dims=0)
+                    #
+                    #     z_1 = tf.linalg.diag_part(z_1)
+                    #     z_3 = tf.linalg.diag_part(z_3)
+                    #     z_i = tf.linalg.diag_part(z_i)
+                    #     z_y = tf.linalg.diag_part(z_y)
+                    #
+                    #     dlr = -(z_y - z_i) / (z_1 - z_3)
+                    #
+                    #     return tf.reduce_mean(dlr)
+                    #
+                    # def loss_fn(y_true, y_pred):
+                    #     i_y_true = np.argmax(y_true, axis=1)
+                    #     i_y_pred_arg = np.argsort(y_pred, axis=1)
+                    #     i_z_i = np.where(i_y_pred_arg[:, -1] != i_y_true[:], i_y_pred_arg[:, -1],
+                    #                      i_y_pred_arg[:, -2])
+                    #
+                    #     z_1 = y_pred[:, i_y_pred_arg[:, -1]]
+                    #     z_3 = y_pred[:, i_y_pred_arg[:, -3]]
+                    #     z_i = y_pred[:, i_z_i]
+                    #     z_y = y_pred[:, i_y_true]
+                    #
+                    #     z_1 = np.diag(z_1)
+                    #     z_3 = np.diag(z_3)
+                    #     z_i = np.diag(z_i)
+                    #     z_y = np.diag(z_y)
+                    #
+                    #     dlr = -(z_y - z_i) / (z_1 - z_3)
+                    #
+                    #     return np.mean(dlr)
+                    #
+                    # self._loss_fn = loss_fn
+                    # self._loss_object = difference_logits_ratio(y_true=estimator._labels_ph,
+                    #                                             y_pred=estimator._output)
 
                 estimator_apgd = TensorFlowClassifier(
                     input_ph=estimator._input_ph,
@@ -211,41 +212,44 @@ class AutoProjectedGradientDescent(EvasionAttack):
                             "The provided estimator seems to predict probabilities. "
                             "If loss_type='difference_logits_ratio' the estimator has to to predict logits."
                         )
-                    else:
 
-                        class difference_logits_ratio:
-                            def __init__(self):
-                                self.reduction = "mean"
+                    class DifferenceLogitsRatioTensorFlowV2:
+                        """
+                        Callable class for Difference Logits Ratio loss in TensorFlow v2.
+                        """
 
-                            def __call__(self, y_true, y_pred):
-                                i_y_true = tf.cast(tf.math.argmax(tf.cast(y_true, tf.int32), axis=1), tf.int32)
-                                i_y_pred_arg = tf.argsort(y_pred, axis=1)
-                                i_z_i_list = list()
+                        def __init__(self):
+                            self.reduction = "mean"
 
-                                for i in range(y_true.shape[0]):
-                                    if i_y_pred_arg[i, -1] != i_y_true[i]:
-                                        i_z_i_list.append(i_y_pred_arg[i, -1])
-                                    else:
-                                        i_z_i_list.append(i_y_pred_arg[i, -2])
+                        def __call__(self, y_true, y_pred):
+                            i_y_true = tf.cast(tf.math.argmax(tf.cast(y_true, tf.int32), axis=1), tf.int32)
+                            i_y_pred_arg = tf.argsort(y_pred, axis=1)
+                            i_z_i_list = list()
 
-                                i_z_i = tf.stack(i_z_i_list)
+                            for i in range(y_true.shape[0]):
+                                if i_y_pred_arg[i, -1] != i_y_true[i]:
+                                    i_z_i_list.append(i_y_pred_arg[i, -1])
+                                else:
+                                    i_z_i_list.append(i_y_pred_arg[i, -2])
 
-                                z_1 = tf.gather(y_pred, i_y_pred_arg[:, -1], axis=1, batch_dims=0)
-                                z_3 = tf.gather(y_pred, i_y_pred_arg[:, -3], axis=1, batch_dims=0)
-                                z_i = tf.gather(y_pred, i_z_i, axis=1, batch_dims=0)
-                                z_y = tf.gather(y_pred, i_y_true, axis=1, batch_dims=0)
+                            i_z_i = tf.stack(i_z_i_list)
 
-                                z_1 = tf.linalg.diag_part(z_1)
-                                z_3 = tf.linalg.diag_part(z_3)
-                                z_i = tf.linalg.diag_part(z_i)
-                                z_y = tf.linalg.diag_part(z_y)
+                            z_1 = tf.gather(y_pred, i_y_pred_arg[:, -1], axis=1, batch_dims=0)
+                            z_3 = tf.gather(y_pred, i_y_pred_arg[:, -3], axis=1, batch_dims=0)
+                            z_i = tf.gather(y_pred, i_z_i, axis=1, batch_dims=0)
+                            z_y = tf.gather(y_pred, i_y_true, axis=1, batch_dims=0)
 
-                                dlr = -(z_y - z_i) / (z_1 - z_3)
+                            z_1 = tf.linalg.diag_part(z_1)
+                            z_3 = tf.linalg.diag_part(z_3)
+                            z_i = tf.linalg.diag_part(z_i)
+                            z_y = tf.linalg.diag_part(z_y)
 
-                                return tf.reduce_mean(dlr)
+                            dlr = -(z_y - z_i) / (z_1 - z_3)
 
-                        self._loss_fn = difference_logits_ratio()
-                        self._loss_object = difference_logits_ratio()
+                            return tf.reduce_mean(dlr)
+
+                    self._loss_fn = DifferenceLogitsRatioTensorFlowV2()
+                    self._loss_object = DifferenceLogitsRatioTensorFlowV2()
 
                 estimator_apgd = TensorFlowV2Classifier(
                     model=estimator.model,
@@ -270,8 +274,8 @@ class AutoProjectedGradientDescent(EvasionAttack):
                             "The provided estimator seems to predict probabilities. If loss_type='cross_entropy' "
                             "the estimator has to to predict logits."
                         )
-                    else:
-                        self._loss_object = torch.nn.CrossEntropyLoss(reduction="mean")
+
+                    self._loss_object = torch.nn.CrossEntropyLoss(reduction="mean")
                 elif loss_type == "difference_logits_ratio":
                     if is_probability(
                         estimator.predict(x=np.ones(shape=(1, *estimator.input_shape), dtype=ART_NUMPY_DTYPE))
@@ -280,47 +284,50 @@ class AutoProjectedGradientDescent(EvasionAttack):
                             "The provided estimator seems to predict probabilities. "
                             "If loss_type='difference_logits_ratio' the estimator has to to predict logits."
                         )
-                    else:
 
-                        class difference_logits_ratio:
-                            def __init__(self):
-                                self.reduction = "mean"
+                    class DifferenceLogitsRatioPyTorch:
+                        """
+                        Callable class for Difference Logits Ratio loss in PyTorch.
+                        """
 
-                            def __call__(self, y_pred, y_true):  # type: ignore
-                                if isinstance(y_true, np.ndarray):
-                                    y_true = torch.from_numpy(y_true)
-                                if isinstance(y_pred, np.ndarray):
-                                    y_pred = torch.from_numpy(y_pred)
+                        def __init__(self):
+                            self.reduction = "mean"
 
-                                y_true = y_true.float()
+                        def __call__(self, y_pred, y_true):  # type: ignore
+                            if isinstance(y_true, np.ndarray):
+                                y_true = torch.from_numpy(y_true)
+                            if isinstance(y_pred, np.ndarray):
+                                y_pred = torch.from_numpy(y_pred)
 
-                                i_y_true = torch.argmax(y_true, axis=1)
-                                i_y_pred_arg = torch.argsort(y_pred, axis=1)
-                                i_z_i_list = list()
+                            y_true = y_true.float()
 
-                                for i in range(y_true.shape[0]):
-                                    if i_y_pred_arg[i, -1] != i_y_true[i]:
-                                        i_z_i_list.append(i_y_pred_arg[i, -1])
-                                    else:
-                                        i_z_i_list.append(i_y_pred_arg[i, -2])
+                            i_y_true = torch.argmax(y_true, axis=1)
+                            i_y_pred_arg = torch.argsort(y_pred, axis=1)
+                            i_z_i_list = list()
 
-                                i_z_i = torch.stack(i_z_i_list)
+                            for i in range(y_true.shape[0]):
+                                if i_y_pred_arg[i, -1] != i_y_true[i]:
+                                    i_z_i_list.append(i_y_pred_arg[i, -1])
+                                else:
+                                    i_z_i_list.append(i_y_pred_arg[i, -2])
 
-                                z_1 = y_pred[:, i_y_pred_arg[:, -1]]
-                                z_3 = y_pred[:, i_y_pred_arg[:, -3]]
-                                z_i = y_pred[:, i_z_i]
-                                z_y = y_pred[:, i_y_true]
+                            i_z_i = torch.stack(i_z_i_list)
 
-                                z_1 = torch.diagonal(z_1)
-                                z_3 = torch.diagonal(z_3)
-                                z_i = torch.diagonal(z_i)
-                                z_y = torch.diagonal(z_y)
+                            z_1 = y_pred[:, i_y_pred_arg[:, -1]]
+                            z_3 = y_pred[:, i_y_pred_arg[:, -3]]
+                            z_i = y_pred[:, i_z_i]
+                            z_y = y_pred[:, i_y_true]
 
-                                dlr = -(z_y - z_i) / (z_1 - z_3)
+                            z_1 = torch.diagonal(z_1)
+                            z_3 = torch.diagonal(z_3)
+                            z_i = torch.diagonal(z_i)
+                            z_y = torch.diagonal(z_y)
 
-                                return torch.mean(dlr.float())
+                            dlr = -(z_y - z_i) / (z_1 - z_3)
 
-                        self._loss_object = difference_logits_ratio()
+                            return torch.mean(dlr.float())
+
+                    self._loss_object = DifferenceLogitsRatioPyTorch()
 
                 estimator_apgd = PyTorchClassifier(
                     model=estimator.model,
@@ -333,7 +340,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
                     preprocessing_defences=estimator.preprocessing_defences,
                     postprocessing_defences=estimator.postprocessing_defences,
                     preprocessing=estimator.preprocessing,
-                    device_type=estimator._device,
+                    device_type=str(estimator._device),
                 )
 
             else:
@@ -422,15 +429,15 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
                 p_0 = 0
                 p_1 = 0.22
-                W = [p_0, p_1]
+                var_w = [p_0, p_1]
 
                 while True:
-                    p_j_p_1 = W[-1] + max(W[-1] - W[-2] - 0.03, 0.06)
+                    p_j_p_1 = var_w[-1] + max(var_w[-1] - var_w[-2] - 0.03, 0.06)
                     if p_j_p_1 > 1:
                         break
-                    W.append(p_j_p_1)
+                    var_w.append(p_j_p_1)
 
-                W = [math.ceil(p * self.max_iter) for p in W]
+                var_w = [math.ceil(p * self.max_iter) for p in var_w]
 
                 eta = self.eps_step
                 self.count_condition_1 = 0
@@ -471,8 +478,8 @@ class AutoProjectedGradientDescent(EvasionAttack):
                         perturbation = projection(x_1 - x_init_batch, self.eps, self.norm)
                         x_1 = x_init_batch + perturbation
 
-                        f_0 = self.estimator.loss(x=x_k, y=y_batch, reduction="mean")
-                        f_1 = self.estimator.loss(x=x_1, y=y_batch, reduction="mean")
+                        f_0 = self.estimator.compute_loss(x=x_k, y=y_batch, reduction="mean")
+                        f_1 = self.estimator.compute_loss(x=x_1, y=y_batch, reduction="mean")
 
                         self.eta_w_j_m_1 = eta
                         self.f_max_w_j_m_1 = f_0
@@ -506,19 +513,23 @@ class AutoProjectedGradientDescent(EvasionAttack):
                         perturbation = projection(x_k_p_1 - x_init_batch, self.eps, self.norm)
                         x_k_p_1 = x_init_batch + perturbation
 
-                        f_k_p_1 = self.estimator.loss(x=x_k_p_1, y=y_batch, reduction="mean")
+                        f_k_p_1 = self.estimator.compute_loss(x=x_k_p_1, y=y_batch, reduction="mean")
 
-                        if f_k_p_1 > self.f_max:
+                        if f_k_p_1 == 0.0:
+                            x_k = x_k_p_1.copy()
+                            break
+
+                        if (not self.targeted and f_k_p_1 > self.f_max) or (self.targeted and f_k_p_1 < self.f_max):
                             self.count_condition_1 += 1
                             self.x_max = x_k_p_1
                             self.x_max_m_1 = x_k
                             self.f_max = f_k_p_1
 
-                        if k_iter in W:
+                        if k_iter in var_w:
 
                             rho = 0.75
 
-                            condition_1 = self.count_condition_1 < rho * (k_iter - W[W.index(k_iter) - 1])
+                            condition_1 = self.count_condition_1 < rho * (k_iter - var_w[var_w.index(k_iter) - 1])
                             condition_2 = self.eta_w_j_m_1 == eta and self.f_max_w_j_m_1 == self.f_max
 
                             if condition_1 or condition_2:

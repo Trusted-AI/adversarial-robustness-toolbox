@@ -30,7 +30,7 @@ from tests.utils import ARTTestException
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.skipMlFramework("tensorflow1", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+@pytest.mark.skip_framework("tensorflow1", "keras", "kerastf", "mxnet", "non_dl_frameworks")
 @pytest.mark.parametrize("targeted", [True, False])
 @pytest.mark.parametrize("norm", [1, 2, np.inf, "inf"])
 def test_generate(art_warning, get_default_mnist_subset, image_dl_estimator_for_attack, targeted, norm):

@@ -36,7 +36,7 @@ class InputFilter(ABCMeta):
     Metaclass to ensure that inputs are ndarray for all of the subclass generate and extract calls.
     """
 
-    def __init__(cls, name, bases, clsdict):
+    def __init__(cls, name, bases, clsdict):  # pylint: disable=W0231,W0613
         """
         This function overrides any existing generate or extract methods with a new method that
         ensures the input is an ndarray. There is an assumption that the input object has implemented
@@ -74,7 +74,7 @@ class InputFilter(ABCMeta):
             replacement_function.__name__ = "new_" + func_name
             return replacement_function
 
-        replacement_list_no_y = ["predict", "get_activations"]
+        replacement_list_no_y = ["predict"]
         replacement_list_has_y = ["fit"]
 
         for item in replacement_list_no_y:
@@ -92,8 +92,10 @@ class ClassifierMixin(ABC, metaclass=InputFilter):
     Mixin abstract base class defining functionality for classifiers.
     """
 
+    estimator_params = ["nb_classes"]
+
     def __init__(self, **kwargs) -> None:
-        super().__init__(**kwargs)
+        super().__init__(**kwargs)  # type: ignore
         self._nb_classes: int = -1
 
     @property
@@ -136,7 +138,7 @@ class Classifier(ClassifierMixin, BaseEstimator, ABC):
     Typing variable definition.
     """
 
-    pass
+    estimator_params = BaseEstimator.estimator_params + ClassifierMixin.estimator_params
 
 
 class ClassifierLossGradients(ClassifierMixin, LossGradientsMixin, BaseEstimator, ABC):
@@ -144,7 +146,7 @@ class ClassifierLossGradients(ClassifierMixin, LossGradientsMixin, BaseEstimator
     Typing variable definition.
     """
 
-    pass
+    estimator_params = BaseEstimator.estimator_params + ClassifierMixin.estimator_params
 
 
 class ClassifierClassLossGradients(ClassGradientsMixin, ClassifierMixin, LossGradientsMixin, BaseEstimator, ABC):
@@ -152,7 +154,7 @@ class ClassifierClassLossGradients(ClassGradientsMixin, ClassifierMixin, LossGra
     Typing variable definition.
     """
 
-    pass
+    estimator_params = BaseEstimator.estimator_params + ClassifierMixin.estimator_params
 
 
 class ClassifierNeuralNetwork(  # lgtm [py/conflicting-attributes]
@@ -161,6 +163,10 @@ class ClassifierNeuralNetwork(  # lgtm [py/conflicting-attributes]
     """
     Typing variable definition.
     """
+
+    estimator_params = (
+        BaseEstimator.estimator_params + NeuralNetworkMixin.estimator_params + ClassifierMixin.estimator_params
+    )
 
     @abstractmethod
     def save(self, filename: str, path: Optional[str] = None) -> None:
@@ -180,4 +186,4 @@ class ClassifierDecisionTree(DecisionTreeMixin, ClassifierMixin, BaseEstimator, 
     Typing variable definition.
     """
 
-    pass
+    estimator_params = BaseEstimator.estimator_params + ClassifierMixin.estimator_params

@@ -60,7 +60,7 @@ class TestMetrics(unittest.TestCase):
         # Compute minimal perturbations
         params = {"eps_step": 1.0, "eps": 1.0}
         emp_robust = empirical_robustness(classifier, x_train, str("fgsm"), params)
-        self.assertAlmostEqual(emp_robust, 1.000369094488189, 4)
+        self.assertAlmostEqual(emp_robust, 1.000369094488189, 3)
 
         params = {"eps_step": 0.1, "eps": 0.2}
         emp_robust = empirical_robustness(classifier, x_train, str("fgsm"), params)
@@ -74,8 +74,8 @@ class TestMetrics(unittest.TestCase):
         classifier = self._cnn_mnist_k([28, 28, 1])
         classifier.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=2, verbose=0)
 
-        l = loss_sensitivity(classifier, x_train, y_train)
-        self.assertGreaterEqual(l, 0)
+        sensitivity = loss_sensitivity(classifier, x_train, y_train)
+        self.assertGreaterEqual(sensitivity, 0)
 
     # def testNearestNeighborDist(self):
     #     # Get MNIST
@@ -95,13 +95,11 @@ class TestMetrics(unittest.TestCase):
 
         tf_version = [int(v) for v in tf.__version__.split(".")]
         if tf_version[0] == 2 and tf_version[1] >= 3:
-            is_tf23_keras24 = True
             tf.compat.v1.disable_eager_execution()
             from tensorflow import keras
             from tensorflow.keras.models import Sequential
             from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
         else:
-            is_tf23_keras24 = False
             import keras
             from keras.models import Sequential
             from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
@@ -173,7 +171,6 @@ class TestMetrics(unittest.TestCase):
 
         tf_version = [int(v) for v in tf.__version__.split(".")]
         if tf_version[0] == 2 and tf_version[1] >= 3:
-            # is_tf23_keras24 = True
             tf.compat.v1.disable_eager_execution()
             from tensorflow import keras
             from tensorflow.keras.models import Sequential

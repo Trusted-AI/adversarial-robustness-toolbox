@@ -41,6 +41,8 @@ class TensorFlowEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator)
     Estimator class for TensorFlow models.
     """
 
+    estimator_params = BaseEstimator.estimator_params + NeuralNetworkMixin.estimator_params
+
     def __init__(self, **kwargs) -> None:
         """
         Estimator class for TensorFlow models.
@@ -58,7 +60,7 @@ class TensorFlowEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator)
         :return: Predictions.
         :rtype: Format as expected by the `model`
         """
-        return NeuralNetworkMixin.predict(self, x, batch_size=128, **kwargs)
+        return NeuralNetworkMixin.predict(self, x, batch_size=batch_size, **kwargs)
 
     def fit(self, x: np.ndarray, y, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
         """
@@ -71,7 +73,7 @@ class TensorFlowEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator)
         :param batch_size: Batch size.
         :param nb_epochs: Number of training epochs.
         """
-        NeuralNetworkMixin.fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs)
+        NeuralNetworkMixin.fit(self, x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
     @property
     def sess(self) -> "tf.python.client.session.Session":
@@ -82,21 +84,8 @@ class TensorFlowEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator)
         """
         if self._sess is not None:
             return self._sess
-        else:
-            raise NotImplementedError("A valid TensorFlow session is not available.")
 
-    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
-        """
-        Compute the loss of the neural network for samples `x`.
-
-        :param x: Samples of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
-                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
-        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices
-                  of shape `(nb_samples,)`.
-        :return: Loss values.
-        :rtype: Format as expected by the `model`
-        """
-        raise NotImplementedError
+        raise NotImplementedError("A valid TensorFlow session is not available.")
 
 
 class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
@@ -104,23 +93,20 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
     Estimator class for TensorFlow v2 models.
     """
 
+    estimator_params = BaseEstimator.estimator_params + NeuralNetworkMixin.estimator_params
+
     def __init__(self, **kwargs):
         """
         Estimator class for TensorFlow v2 models.
         """
         preprocessing = kwargs.get("preprocessing")
         if isinstance(preprocessing, tuple):
-            from art.preprocessing.standardisation_mean_std.standardisation_mean_std_tensorflow import (
-                StandardisationMeanStdTensorFlowV2,
-            )
+            from art.preprocessing.standardisation_mean_std.tensorflow import StandardisationMeanStdTensorFlow
 
-            kwargs["preprocessing"] = StandardisationMeanStdTensorFlowV2(mean=preprocessing[0], std=preprocessing[1])
+            kwargs["preprocessing"] = StandardisationMeanStdTensorFlow(mean=preprocessing[0], std=preprocessing[1])
 
         super().__init__(**kwargs)
-
-        from art.defences.preprocessor.preprocessor import PreprocessorTensorFlowV2
-
-        self.all_framework_preprocessing = all([isinstance(p, PreprocessorTensorFlowV2) for p in self.preprocessing])
+        TensorFlowV2Estimator._check_params(self)
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs):
         """
@@ -132,7 +118,7 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         :return: Predictions.
         :rtype: Format as expected by the `model`
         """
-        return NeuralNetworkMixin.predict(self, x, batch_size=128, **kwargs)
+        return NeuralNetworkMixin.predict(self, x, batch_size=batch_size, **kwargs)
 
     def fit(self, x: np.ndarray, y, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
         """
@@ -145,20 +131,24 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         :param batch_size: Batch size.
         :param nb_epochs: Number of training epochs.
         """
-        NeuralNetworkMixin.fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs)
+        NeuralNetworkMixin.fit(self, x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
-    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def set_params(self, **kwargs) -> None:
         """
-        Compute the loss of the neural network for samples `x`.
+        Take a dictionary of parameters and apply checks before setting them as attributes.
 
-        :param x: Samples of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
-                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
-        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices
-                  of shape `(nb_samples,)`.
-        :return: Loss values.
-        :rtype: Format as expected by the `model`
+        :param kwargs: A dictionary of attributes.
         """
-        raise NotImplementedError
+        super().set_params(**kwargs)
+        self._check_params()
+
+    def _check_params(self) -> None:
+        from art.defences.preprocessor.preprocessor import PreprocessorTensorFlowV2
+
+        super()._check_params()
+        self.all_framework_preprocessing = all(
+            (isinstance(p, PreprocessorTensorFlowV2) for p in self.preprocessing_operations)
+        )
 
     def _apply_preprocessing(self, x, y, fit: bool = False) -> Tuple[Any, Any]:
         """
@@ -181,18 +171,13 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         :rtype: Format as expected by the `model`
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
-        from art.preprocessing.standardisation_mean_std.standardisation_mean_std import StandardisationMeanStd
-        from art.preprocessing.standardisation_mean_std.standardisation_mean_std_tensorflow import (
-            StandardisationMeanStdTensorFlowV2,
-        )
+        from art.preprocessing.standardisation_mean_std.numpy import StandardisationMeanStd
+        from art.preprocessing.standardisation_mean_std.tensorflow import StandardisationMeanStdTensorFlow
 
-        if not self.preprocessing:
+        if not self.preprocessing_operations:
             return x, y
 
-        if isinstance(x, tf.Tensor):
-            input_is_tensor = True
-        else:
-            input_is_tensor = False
+        input_is_tensor = isinstance(x, tf.Tensor)
 
         if self.all_framework_preprocessing and not (not input_is_tensor and x.dtype == np.object):
             # Convert np arrays to torch tensors.
@@ -201,7 +186,7 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
                 if y is not None:
                     y = tf.convert_to_tensor(y)
 
-            for preprocess in self.preprocessing:
+            for preprocess in self.preprocessing_operations:
                 if fit:
                     if preprocess.apply_fit:
                         x, y = preprocess.forward(x, y)
@@ -215,12 +200,14 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
                 if y is not None:
                     y = y.numpy()
 
-        elif len(self.preprocessing) == 1 or (
-            len(self.preprocessing) == 2
-            and isinstance(self.preprocessing[-1], (StandardisationMeanStd, StandardisationMeanStdTensorFlowV2))
+        elif len(self.preprocessing_operations) == 1 or (
+            len(self.preprocessing_operations) == 2
+            and isinstance(
+                self.preprocessing_operations[-1], (StandardisationMeanStd, StandardisationMeanStdTensorFlow)
+            )
         ):
             # Compatible with non-TensorFlow defences if no chaining.
-            for preprocess in self.preprocessing:
+            for preprocess in self.preprocessing_operations:
                 x, y = preprocess(x, y)
 
         else:
@@ -249,18 +236,13 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         :rtype: Format as expected by the `model`
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
-        from art.preprocessing.standardisation_mean_std.standardisation_mean_std import StandardisationMeanStd
-        from art.preprocessing.standardisation_mean_std.standardisation_mean_std_tensorflow import (
-            StandardisationMeanStdTensorFlowV2,
-        )
+        from art.preprocessing.standardisation_mean_std.numpy import StandardisationMeanStd
+        from art.preprocessing.standardisation_mean_std.tensorflow import StandardisationMeanStdTensorFlow
 
-        if not self.preprocessing:
+        if not self.preprocessing_operations:
             return gradients
 
-        if isinstance(x, tf.Tensor):
-            input_is_tensor = True
-        else:
-            input_is_tensor = False
+        input_is_tensor = isinstance(x, tf.Tensor)
 
         if self.all_framework_preprocessing and not (not input_is_tensor and x.dtype == np.object):
             with tf.GradientTape() as tape:
@@ -270,7 +252,7 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
                 gradients = tf.convert_to_tensor(gradients, dtype=config.ART_NUMPY_DTYPE)
                 x_orig = x
 
-                for preprocess in self.preprocessing:
+                for preprocess in self.preprocessing_operations:
                     if fit:
                         if preprocess.apply_fit:
                             x = preprocess.estimate_forward(x)
@@ -287,13 +269,20 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
                     "The input shape is {} while the gradient shape is {}".format(x.shape, gradients.shape)
                 )
 
-        elif len(self.preprocessing) == 1 or (
-            len(self.preprocessing) == 2
-            and isinstance(self.preprocessing[-1], (StandardisationMeanStd, StandardisationMeanStdTensorFlowV2))
+        elif len(self.preprocessing_operations) == 1 or (
+            len(self.preprocessing_operations) == 2
+            and isinstance(
+                self.preprocessing_operations[-1], (StandardisationMeanStd, StandardisationMeanStdTensorFlow)
+            )
         ):
             # Compatible with non-TensorFlow defences if no chaining.
-            defence = self.preprocessing[0]
-            gradients = defence.estimate_gradient(x, gradients)
+            for preprocess in self.preprocessing_operations[::-1]:
+                if fit:
+                    if preprocess.apply_fit:
+                        gradients = preprocess.estimate_gradient(x, gradients)
+                else:
+                    if preprocess.apply_predict:
+                        gradients = preprocess.estimate_gradient(x, gradients)
 
         else:
             raise NotImplementedError("The current combination of preprocessing types is not supported.")

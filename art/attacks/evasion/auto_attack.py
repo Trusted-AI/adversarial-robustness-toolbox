@@ -157,8 +157,6 @@ class AutoAttack(EvasionAttack):
         :type mask: `np.ndarray`
         :return: An array holding the adversarial examples.
         """
-        mask = kwargs.get("mask")
-
         x_adv = x.astype(ART_NUMPY_DTYPE)
         y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
@@ -180,7 +178,11 @@ class AutoAttack(EvasionAttack):
                 attack.set_params(targeted=False)
 
             x_adv, sample_is_robust = self._run_attack(
-                x=x_adv, y=y, mask=mask, sample_is_robust=sample_is_robust, attack=attack
+                x=x_adv,
+                y=y,
+                sample_is_robust=sample_is_robust,
+                attack=attack,
+                **kwargs,
             )
 
         # Targeted attacks
@@ -207,22 +209,28 @@ class AutoAttack(EvasionAttack):
                         target = check_and_transform_label_format(targeted_labels[:, i], self.estimator.nb_classes)
 
                         x_adv, sample_is_robust = self._run_attack(
-                            x=x_adv, y=target, mask=mask, sample_is_robust=sample_is_robust, attack=attack
+                            x=x_adv,
+                            y=target,
+                            sample_is_robust=sample_is_robust,
+                            attack=attack,
+                            **kwargs,
                         )
 
         return x_adv
 
     def _run_attack(
-        self, x: np.ndarray, y: np.ndarray, mask: np.ndarray, sample_is_robust: np.ndarray, attack: EvasionAttack,
+        self,
+        x: np.ndarray,
+        y: np.ndarray,
+        sample_is_robust: np.ndarray,
+        attack: EvasionAttack,
+        **kwargs,
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Run attack.
 
         :param x: An array of the original inputs.
         :param y: An array of the labels.
-        :param mask: An array with a mask broadcastable to input `x` defining where to apply adversarial perturbations.
-                     Shape needs to be broadcastable to the shape of x and can also be of the same shape as `x`. Any
-                     features for which the mask is zero will not be adversarially perturbed.
         :param sample_is_robust: Store the initial robustness of examples.
         :param attack: Evasion attack to run.
         :return: An array holding the adversarial examples.
@@ -232,7 +240,7 @@ class AutoAttack(EvasionAttack):
         y_robust = y[sample_is_robust]
 
         # Generate adversarial examples
-        x_robust_adv = attack.generate(x=x_robust, y=y_robust, mask=mask)
+        x_robust_adv = attack.generate(x=x_robust, y=y_robust, **kwargs)
         y_pred_robust_adv = self.estimator_orig.predict(x_robust_adv)
 
         # Check and update successful examples

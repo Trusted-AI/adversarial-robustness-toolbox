@@ -36,7 +36,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
-@pytest.mark.skipMlFramework("keras", "pytorch", "scikitlearn", "mxnet", "kerastf")
+@pytest.mark.skip_framework("keras", "pytorch", "scikitlearn", "mxnet", "kerastf")
 def test_inverse_gan(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
         (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
@@ -56,7 +56,9 @@ def test_inverse_gan(art_warning, fix_get_mnist_subset, image_dl_estimator_for_a
         x_test_defended = inverse_gan(x_test_adv, maxiter=1)
 
         np.testing.assert_array_almost_equal(
-            float(np.mean(x_test_defended - x_test_adv)), 0.08818667382001877, decimal=0.01,
+            float(np.mean(x_test_defended - x_test_adv)),
+            0.08818667382001877,
+            decimal=0.01,
         )
     except ARTTestException as e:
         art_warning(e)

@@ -31,7 +31,7 @@ from tqdm.auto import trange
 
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
-from art.estimators.estimator import BaseEstimator
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import check_and_transform_label_format, get_labels_np_array
 
@@ -42,6 +42,11 @@ logger = logging.getLogger(__name__)
 
 
 class SquareAttack(EvasionAttack):
+    """
+    This class implements the `SquareAttack` attack.
+
+    | Paper link: https://arxiv.org/abs/1912.00049
+    """
 
     attack_params = EvasionAttack.attack_params + [
         "norm",
@@ -53,7 +58,7 @@ class SquareAttack(EvasionAttack):
         "verbose",
     ]
 
-    _estimator_requirements = (BaseEstimator, ClassifierMixin)
+    _estimator_requirements = (BaseEstimator, ClassifierMixin, NeuralNetworkMixin)
 
     def __init__(
         self,
@@ -230,24 +235,25 @@ class SquareAttack(EvasionAttack):
 
                 height_tile = height // n_tiles
 
-                def _get_perturbation(h):
-                    delta = np.zeros([h, h])
-                    gaussian_perturbation = np.zeros([h // 2, h])
+                def _get_perturbation(height):
+                    delta = np.zeros([height, height])
+                    gaussian_perturbation = np.zeros([height // 2, height])
 
-                    x_c = h // 4
-                    y_c = h // 2
+                    x_c = height // 4
+                    y_c = height // 2
 
                     for i_y in range(y_c):
                         gaussian_perturbation[
-                            max(x_c, 0) : min(x_c + (2 * i_y + 1), h // 2), max(0, y_c) : min(y_c + (2 * i_y + 1), h)
+                            max(x_c, 0) : min(x_c + (2 * i_y + 1), height // 2),
+                            max(0, y_c) : min(y_c + (2 * i_y + 1), height),
                         ] += 1.0 / ((i_y + 1) ** 2)
                         x_c -= 1
                         y_c -= 1
 
                     gaussian_perturbation /= np.sqrt(np.sum(gaussian_perturbation ** 2))
 
-                    delta[: h // 2] = gaussian_perturbation
-                    delta[h // 2 : h // 2 + gaussian_perturbation.shape[0]] = -gaussian_perturbation
+                    delta[: height // 2] = gaussian_perturbation
+                    delta[height // 2 : height // 2 + gaussian_perturbation.shape[0]] = -gaussian_perturbation
 
                     delta /= np.sqrt(np.sum(delta ** 2))
 
@@ -259,7 +265,7 @@ class SquareAttack(EvasionAttack):
 
                     return delta
 
-                delta_init = np.zeros(x_robust.shape)
+                delta_init = np.zeros(x_robust.shape, dtype=ART_NUMPY_DTYPE)
 
                 height_start = 0
                 for _ in range(n_tiles):
@@ -397,11 +403,11 @@ class SquareAttack(EvasionAttack):
                     if self.estimator.channels_first:
                         new_deltas_size = [x_init.shape[0], channels, height_tile, height_tile]
                         random_choice_size = [x_init.shape[0], channels, 1, 1]
-                        perturbation_size = [1, 1, height_tile, height_tile]
+                        perturbation_size = (1, 1, height_tile, height_tile)
                     else:
                         new_deltas_size = [x_init.shape[0], height_tile, height_tile, channels]
                         random_choice_size = [x_init.shape[0], 1, 1, channels]
-                        perturbation_size = [1, height_tile, height_tile, 1]
+                        perturbation_size = (1, height_tile, height_tile, 1)
 
                     delta_new = (
                         np.ones(new_deltas_size)

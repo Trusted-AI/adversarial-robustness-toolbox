@@ -55,7 +55,6 @@ def backend_check_membership_accuracy(attack, dataset, attack_train_ratio, appro
 
     # infer attacked feature on remainder of data
     kwargs = {
-        "targeted": False,
         "norm": 2,
         "max_iter": 2,
         "max_eval": 4,

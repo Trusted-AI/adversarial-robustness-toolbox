@@ -25,48 +25,69 @@ import pytest
 from art.preprocessing.standardisation_mean_std import (
     StandardisationMeanStd,
     StandardisationMeanStdPyTorch,
-    StandardisationMeanStdTensorFlowV2,
+    StandardisationMeanStdTensorFlow,
 )
-
+from art.preprocessing.standardisation_mean_std.utils import broadcastable_mean_std
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
 
+@pytest.fixture(params=[True, False], ids=["channels_first", "channels_last"])
+def image_batch(request):
+    """
+    Create image fixture of shape NFHWC and NCFHW.
+    """
+    channels_first = request.param
+    test_input = np.ones((2, 3, 32, 32))
+    if not channels_first:
+        test_input = np.transpose(test_input, (0, 2, 3, 1))
+    test_mean = [0] * 3
+    test_std = [1] * 3
+    test_output = test_input.copy()
+    return test_input, test_output, test_mean, test_std
+
+
 @pytest.mark.framework_agnostic
-def test_standardisation_mean_std(art_warning):
+def test_broadcastable_mean_std(art_warning):
     try:
-        x = np.ones(shape=(32, 32, 3)) * 5
-        mean = 2.5
-        std = 1.5
+        mean, std = broadcastable_mean_std(np.ones((1, 3, 20, 20)), np.ones(3), np.ones(3))
+        assert mean.shape == std.shape == (1, 3, 1, 1)
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.framework_agnostic
+def test_standardisation_mean_std(art_warning, image_batch):
+    try:
+        x, x_expected, mean, std = image_batch
         standard = StandardisationMeanStd(mean=mean, std=std)
+
         x_preprocessed, _ = standard(x=x, y=None)
-        np.testing.assert_array_equal(x_preprocessed, np.ones_like(x_preprocessed) * (5 - mean) / std)
+        np.testing.assert_array_equal(x_preprocessed, x_expected)
     except ARTTestException as e:
         art_warning(e)
 
 
 @pytest.mark.only_with_platform("pytorch")
-def test_standardisation_mean_std_pytorch(art_warning):
+def test_standardisation_mean_std_pytorch(art_warning, image_batch):
     try:
-        x = np.ones(shape=(32, 32, 3)) * 5
-        mean = 2.5
-        std = 1.5
+        x, x_expected, mean, std = image_batch
         standard = StandardisationMeanStdPyTorch(mean=mean, std=std)
+
         x_preprocessed, _ = standard(x=x, y=None)
-        np.testing.assert_array_equal(x_preprocessed, np.ones_like(x_preprocessed) * (5 - mean) / std)
+        np.testing.assert_array_equal(x_preprocessed, x_expected)
     except ARTTestException as e:
         art_warning(e)
 
 
 @pytest.mark.only_with_platform("tensorflow2")
-def test_standardisation_mean_std_tensorflow_v2(art_warning):
+def test_standardisation_mean_std_tensorflow_v2(art_warning, image_batch):
     try:
-        x = np.ones(shape=(32, 32, 3)) * 5
-        mean = 2.5
-        std = 1.5
-        standard = StandardisationMeanStdTensorFlowV2(mean=mean, std=std)
+        x, x_expected, mean, std = image_batch
+        standard = StandardisationMeanStdTensorFlow(mean=mean, std=std)
+
         x_preprocessed, _ = standard(x=x, y=None)
-        np.testing.assert_array_equal(x_preprocessed, np.ones_like(x_preprocessed) * (5 - mean) / std)
+        np.testing.assert_array_equal(x_preprocessed, x_expected)
     except ARTTestException as e:
         art_warning(e)

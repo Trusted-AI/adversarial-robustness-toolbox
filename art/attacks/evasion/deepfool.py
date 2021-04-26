@@ -26,7 +26,7 @@ import logging
 from typing import Optional, TYPE_CHECKING
 
 import numpy as np
-from tqdm import trange
+from tqdm.auto import trange
 
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator
@@ -154,7 +154,13 @@ class DeepFool(EvasionAttack):
                 l_var = np.argmin(value, axis=1)
                 absolute1 = abs(f_diff[np.arange(len(f_diff)), l_var])
                 draddiff = grad_diff[np.arange(len(grad_diff)), l_var].reshape(len(grad_diff), -1)
-                pow1 = pow(np.linalg.norm(draddiff, axis=1), 2,) + tol
+                pow1 = (
+                    pow(
+                        np.linalg.norm(draddiff, axis=1),
+                        2,
+                    )
+                    + tol
+                )
                 r_var = absolute1 / pow1
                 r_var = r_var.reshape((-1,) + (1,) * (len(x.shape) - 1))
                 r_var = r_var * grad_diff[np.arange(len(grad_diff)), l_var]

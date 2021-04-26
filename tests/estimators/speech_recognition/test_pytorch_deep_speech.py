@@ -28,8 +28,8 @@ from tests.utils import ARTTestException
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.skipModule("apex.amp", "deepspeech_pytorch")
-@pytest.mark.skipMlFramework("tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+@pytest.mark.skip_module("deepspeech_pytorch")
+@pytest.mark.skip_framework("tensorflow", "tensorflow2v1", "keras", "kerastf", "mxnet", "non_dl_frameworks")
 @pytest.mark.parametrize("use_amp", [False, True])
 @pytest.mark.parametrize("device_type", ["cpu", "gpu"])
 def test_pytorch_deep_speech(art_warning, expected_values, use_amp, device_type):
@@ -39,19 +39,23 @@ def test_pytorch_deep_speech(art_warning, expected_values, use_amp, device_type)
     from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
 
     try:
+        # Skip test if gpu is not available and use_amp is true
+        if use_amp and not torch.cuda.is_available():
+            return
+
         # Load data for testing
         expected_data = expected_values()
 
-        x1 = expected_data[0]
-        x2 = expected_data[1]
-        x3 = expected_data[2]
-        expected_sizes = expected_data[3]
-        expected_transcriptions1 = expected_data[4]
-        expected_transcriptions2 = expected_data[5]
-        expected_probs = expected_data[6]
-        expected_gradients1 = expected_data[7]
-        expected_gradients2 = expected_data[8]
-        expected_gradients3 = expected_data[9]
+        x1 = expected_data["x1"]
+        x2 = expected_data["x2"]
+        x3 = expected_data["x3"]
+        expected_sizes = expected_data["expected_sizes"]
+        expected_transcriptions1 = expected_data["expected_transcriptions1"]
+        expected_transcriptions2 = expected_data["expected_transcriptions2"]
+        expected_probs = expected_data["expected_probs"]
+        expected_gradients1 = expected_data["expected_gradients1"]
+        expected_gradients2 = expected_data["expected_gradients2"]
+        expected_gradients3 = expected_data["expected_gradients3"]
 
         # Create signal data
         x = np.array(
@@ -67,7 +71,7 @@ def test_pytorch_deep_speech(art_warning, expected_values, use_amp, device_type)
 
         # Test probability outputs
         speech_recognizer = PyTorchDeepSpeech(pretrained_model="librispeech", device_type=device_type, use_amp=use_amp)
-        probs, sizes = speech_recognizer.predict(x, batch_size=2)
+        probs, sizes = speech_recognizer.predict(x, batch_size=2, transcription_output=False)
 
         np.testing.assert_array_almost_equal(probs[1][1], expected_probs, decimal=3)
         np.testing.assert_array_almost_equal(sizes, expected_sizes)
@@ -90,9 +94,9 @@ def test_pytorch_deep_speech(art_warning, expected_values, use_amp, device_type)
         assert grads[1].shape == (1500,)
         assert grads[2].shape == (1400,)
 
-        np.testing.assert_array_almost_equal(grads[0][0:20], expected_gradients1, decimal=-2)
-        np.testing.assert_array_almost_equal(grads[1][0:20], expected_gradients2, decimal=-2)
-        np.testing.assert_array_almost_equal(grads[2][0:20], expected_gradients3, decimal=-2)
+        np.testing.assert_array_almost_equal(grads[0][:20], expected_gradients1, decimal=-2)
+        np.testing.assert_array_almost_equal(grads[1][:20], expected_gradients2, decimal=-2)
+        np.testing.assert_array_almost_equal(grads[2][:20], expected_gradients3, decimal=-2)
 
         # Now test fit function
         # Create the optimizer

@@ -30,8 +30,8 @@ from tests.utils import get_tabular_classifier_tf, get_tabular_classifier_kr, ge
 
 logger = logging.getLogger(__name__)
 
-BATCH_SIZE = 100
-NB_EPOCHS = 10
+BATCH_SIZE = 10
+NB_EPOCHS = 30
 
 
 def cross_entropy(prob1, prob2, eps=1e-10):

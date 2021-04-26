@@ -104,7 +104,9 @@ class ClusteringAnalyzer:
         return np.asarray(all_assigned_clean), summary_poison_clusters, report
 
     def analyze_by_distance(
-        self, separated_clusters: List[np.ndarray], separated_activations: List[np.ndarray],
+        self,
+        separated_clusters: List[np.ndarray],
+        separated_activations: List[np.ndarray],
     ) -> Tuple[np.ndarray, List[List[int]], Dict[str, int]]:
         """
         Assigns a cluster as poisonous if its median activation is closer to the median activation for another class
@@ -191,7 +193,10 @@ class ClusteringAnalyzer:
         return all_assigned_clean, summary_poison_clusters, report
 
     def analyze_by_relative_size(
-        self, separated_clusters: List[np.ndarray], size_threshold: float = 0.35, r_size: int = 2,
+        self,
+        separated_clusters: List[np.ndarray],
+        size_threshold: float = 0.35,
+        r_size: int = 2,
     ) -> Tuple[np.ndarray, List[List[int]], Dict[str, int]]:
         """
         Assigns a cluster as poisonous if the smaller one contains less than threshold of the data.
@@ -313,7 +318,9 @@ class ClusteringAnalyzer:
             # Generate report for class
             silhouette_avg = round(silhouette_score(activations, clusters), r_silhouette)
             dict_i: Dict[str, Any] = dict(
-                sizes_clusters=str(bins), ptc_cluster=str(percentages), avg_silhouette_score=str(silhouette_avg),
+                sizes_clusters=str(bins),
+                ptc_cluster=str(percentages),
+                avg_silhouette_score=str(silhouette_avg),
             )
 
             if np.shape(poison_clusters)[1] != 0:

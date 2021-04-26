@@ -26,7 +26,7 @@ import logging
 from typing import Optional, TYPE_CHECKING
 
 import numpy as np
-from tqdm import trange
+from tqdm.auto import trange
 
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import ExtractionAttack
@@ -55,6 +55,7 @@ class KnockoffNets(ExtractionAttack):
         "sampling_strategy",
         "reward",
         "verbose",
+        "use_probability",
     ]
 
     _estimator_requirements = (BaseEstimator, ClassifierMixin)
@@ -69,6 +70,7 @@ class KnockoffNets(ExtractionAttack):
         sampling_strategy: str = "random",
         reward: str = "all",
         verbose: bool = True,
+        use_probability: bool = False,
     ) -> None:
         """
         Create a KnockoffNets attack instance. Note, it is assumed that both the victim classifier and the thieved
@@ -92,6 +94,7 @@ class KnockoffNets(ExtractionAttack):
         self.sampling_strategy = sampling_strategy
         self.reward = reward
         self.verbose = verbose
+        self.use_probability = use_probability
         self._check_params()
 
     def extract(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> "CLASSIFIER_TYPE":
@@ -148,7 +151,11 @@ class KnockoffNets(ExtractionAttack):
 
         # Train the thieved classifier
         thieved_classifier.fit(
-            x=selected_x, y=fake_labels, batch_size=self.batch_size_fit, nb_epochs=self.nb_epochs, verbose=0,
+            x=selected_x,
+            y=fake_labels,
+            batch_size=self.batch_size_fit,
+            nb_epochs=self.nb_epochs,
+            verbose=0,
         )
 
         return thieved_classifier
@@ -173,8 +180,9 @@ class KnockoffNets(ExtractionAttack):
         :return: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)`.
         """
         labels = self.estimator.predict(x=x, batch_size=self.batch_size_query)
-        labels = np.argmax(labels, axis=1)
-        labels = to_categorical(labels=labels, nb_classes=self.estimator.nb_classes)
+        if not self.use_probability:
+            labels = np.argmax(labels, axis=1)
+            labels = to_categorical(labels=labels, nb_classes=self.estimator.nb_classes)
 
         return labels
 
@@ -215,7 +223,7 @@ class KnockoffNets(ExtractionAttack):
         queried_labels = []
 
         avg_reward = 0.0
-        for it in trange(1, self.nb_stolen + 1, desc="Knock-off nets", disable=not self.verbose):
+        for iteration in trange(1, self.nb_stolen + 1, desc="Knock-off nets", disable=not self.verbose):
             # Sample an action
             action = np.random.choice(np.arange(0, nb_actions), p=probs)
 
@@ -231,25 +239,33 @@ class KnockoffNets(ExtractionAttack):
 
             # Train the thieved classifier
             thieved_classifier.fit(
-                x=np.array([sampled_x]), y=fake_label, batch_size=self.batch_size_fit, nb_epochs=1, verbose=0,
+                x=np.array([sampled_x]),
+                y=fake_label,
+                batch_size=self.batch_size_fit,
+                nb_epochs=1,
+                verbose=0,
             )
 
             # Test new labels
             y_hat = thieved_classifier.predict(x=np.array([sampled_x]), batch_size=self.batch_size_query)
 
             # Compute rewards
-            reward = self._reward(y_output, y_hat, it)
-            avg_reward = avg_reward + (1.0 / it) * (reward - avg_reward)
+            reward = self._reward(y_output, y_hat, iteration)
+            avg_reward = avg_reward + (1.0 / iteration) * (reward - avg_reward)
 
             # Update learning rate
             learning_rate[action] += 1
 
             # Update H function
-            for a in range(nb_actions):
-                if a != action:
-                    h_func[a] = h_func[a] - 1.0 / learning_rate[action] * (reward - avg_reward) * probs[a]
+            for i_action in range(nb_actions):
+                if i_action != action:
+                    h_func[i_action] = (
+                        h_func[i_action] - 1.0 / learning_rate[action] * (reward - avg_reward) * probs[i_action]
+                    )
                 else:
-                    h_func[a] = h_func[a] + 1.0 / learning_rate[action] * (reward - avg_reward) * (1 - probs[a])
+                    h_func[i_action] = h_func[i_action] + 1.0 / learning_rate[action] * (reward - avg_reward) * (
+                        1 - probs[i_action]
+                    )
 
             # Update probs
             aux_exp = np.exp(h_func)
@@ -277,14 +293,14 @@ class KnockoffNets(ExtractionAttack):
         :return: An array with one input to the victim classifier.
         """
         if len(y.shape) == 2:
-            y_ = np.argmax(y, axis=1)
+            y_index = np.argmax(y, axis=1)
         else:
-            y_ = y
+            y_index = y
 
-        x_ = x[y_ == action]
-        rnd_idx = np.random.choice(len(x_))
+        x_index = x[y_index == action]
+        rnd_idx = np.random.choice(len(x_index))
 
-        return x_[rnd_idx]
+        return x_index[rnd_idx]
 
     def _reward(self, y_output: np.ndarray, y_hat: np.ndarray, n: int) -> float:
         """
@@ -297,12 +313,11 @@ class KnockoffNets(ExtractionAttack):
         """
         if self.reward == "cert":
             return self._reward_cert(y_output)
-        elif self.reward == "div":
+        if self.reward == "div":
             return self._reward_div(y_output, n)
-        elif self.reward == "loss":
+        if self.reward == "loss":
             return self._reward_loss(y_output, y_hat)
-        else:
-            return self._reward_all(y_output, y_hat, n)
+        return self._reward_all(y_output, y_hat, n)
 
     @staticmethod
     def _reward_cert(y_output: np.ndarray) -> float:
@@ -403,3 +418,5 @@ class KnockoffNets(ExtractionAttack):
 
         if not isinstance(self.verbose, bool):
             raise ValueError("The argument `verbose` has to be of type bool.")
+        if not isinstance(self.use_probability, bool):
+            raise ValueError("The argument `use_probability` has to be of type bool.")

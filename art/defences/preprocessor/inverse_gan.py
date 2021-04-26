@@ -114,7 +114,7 @@ class InverseGAN(Preprocessor):
             iteration_count += 1
             logging.info("Iteration: %d", iteration_count)
             z_i_reshaped = np.reshape(z_i, [batch_size, self.gan.encoding_length])
-            loss = self.loss(z_i_reshaped, x)
+            loss = self.compute_loss(z_i_reshaped, x)
 
             return loss
 
@@ -147,7 +147,7 @@ class InverseGAN(Preprocessor):
 
         return y
 
-    def loss(self, z_encoding: np.ndarray, image_adv: np.ndarray) -> np.ndarray:
+    def compute_loss(self, z_encoding: np.ndarray, image_adv: np.ndarray) -> np.ndarray:
         """
         Given a encoding z, computes the loss between the projected sample and the original sample.
 
@@ -160,18 +160,18 @@ class InverseGAN(Preprocessor):
         loss = self.sess.run(self._loss, feed_dict={self.gan.input_ph: z_encoding, self._image_adv: image_adv})
         return loss
 
-    def estimate_gradient(self, z_encoding: np.ndarray, y: np.ndarray) -> np.ndarray:
+    def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. a `z_encoding` input within a GAN against a
         corresponding adversarial sample.
 
-        :param z_encoding: The encoding z.
-        :param y: Target values of shape `(nb_samples, nb_classes)`.
+        :param x: The encoding z.
+        :param grad: Target values of shape `(nb_samples, nb_classes)`.
         :return: Array of gradients of the same shape as `z_encoding`.
         """
         logging.info("Calculating Gradients")
 
-        gradient = self.sess.run(self._grad, feed_dict={self._image_adv: y, self.gan.input_ph: z_encoding})
+        gradient = self.sess.run(self._grad, feed_dict={self._image_adv: grad, self.gan.input_ph: x})
         return gradient
 
     def _check_params(self) -> None:

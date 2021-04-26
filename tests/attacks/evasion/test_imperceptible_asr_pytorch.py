@@ -28,8 +28,8 @@ from tests.utils import ARTTestException
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.skipModule("apex.amp", "deepspeech_pytorch", "torchaudio")
-@pytest.mark.skipMlFramework("tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+@pytest.mark.skip_module("deepspeech_pytorch", "torchaudio")
+@pytest.mark.skip_framework("tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
 @pytest.mark.parametrize("use_amp", [False, True])
 @pytest.mark.parametrize("device_type", ["cpu", "gpu"])
 def test_imperceptible_asr_pytorch(art_warning, expected_values, use_amp, device_type):
@@ -38,15 +38,19 @@ def test_imperceptible_asr_pytorch(art_warning, expected_values, use_amp, device
 
     from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
     from art.attacks.evasion.imperceptible_asr.imperceptible_asr_pytorch import ImperceptibleASRPyTorch
-    from art.defences.preprocessor import LFilterPyTorch
+    from art.preprocessing.audio import LFilterPyTorch
 
     try:
+        # Skip test if gpu is not available and use_amp is true
+        if use_amp and not torch.cuda.is_available():
+            return
+
         # Load data for testing
         expected_data = expected_values()
 
-        x1 = expected_data[0]
-        x2 = expected_data[1]
-        x3 = expected_data[2]
+        x1 = expected_data["x1"]
+        x2 = expected_data["x2"]
+        x3 = expected_data["x3"]
 
         # Create signal data
         x = np.array(
@@ -61,8 +65,8 @@ def test_imperceptible_asr_pytorch(art_warning, expected_values, use_amp, device
         y = np.array(["S", "I", "GD"])
 
         # Create DeepSpeech estimator with preprocessing
-        numerator_coef = np.array([0.0000001, 0.0000002, -0.0000001, -0.0000002])
-        denominator_coef = np.array([1.0, 0.0, 0.0, 0.0])
+        numerator_coef = np.array([0.0000001, 0.0000002, -0.0000001, -0.0000002], dtype=ART_NUMPY_DTYPE)
+        denominator_coef = np.array([1.0, 0.0, 0.0, 0.0], dtype=ART_NUMPY_DTYPE)
         audio_filter = LFilterPyTorch(
             numerator_coef=numerator_coef, denominator_coef=denominator_coef, device_type=device_type
         )
@@ -77,18 +81,18 @@ def test_imperceptible_asr_pytorch(art_warning, expected_values, use_amp, device
         # Create attack
         asr_attack = ImperceptibleASRPyTorch(
             estimator=speech_recognizer,
-            initial_eps=0.001,
-            max_iter_1st_stage=5,
-            max_iter_2nd_stage=5,
-            learning_rate_1st_stage=0.00001,
-            learning_rate_2nd_stage=0.001,
-            optimizer_1st_stage=torch.optim.SGD,
-            optimizer_2nd_stage=torch.optim.SGD,
+            eps=0.001,
+            max_iter_1=5,
+            max_iter_2=5,
+            learning_rate_1=0.00001,
+            learning_rate_2=0.001,
+            optimizer_1=torch.optim.Adam,
+            optimizer_2=torch.optim.Adam,
             global_max_length=2000,
             initial_rescale=1.0,
-            rescale_factor=0.8,
-            num_iter_adjust_rescale=5,
-            initial_alpha=0.01,
+            decrease_factor_eps=0.8,
+            num_iter_decrease_eps=5,
+            alpha=0.01,
             increase_factor_alpha=1.2,
             num_iter_increase_alpha=5,
             decrease_factor_alpha=0.8,
