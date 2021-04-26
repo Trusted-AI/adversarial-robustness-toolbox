@@ -66,14 +66,11 @@ then
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed metrics/privacy tests"; fi
 else
     declare -a attacks=("tests/attacks/test_adversarial_patch.py" \
-                        "tests/attacks/test_adversarial_embedding.py" \
-                        "tests/attacks/test_backdoor_attack.py" \
                         "tests/attacks/test_carlini.py" \
                         "tests/attacks/test_copycat_cnn.py" \
                         "tests/attacks/test_decision_tree_attack.py" \
                         "tests/attacks/test_deepfool.py" \
                         "tests/attacks/test_elastic_net.py" \
-                        "tests/attacks/test_feature_collision.py" \
                         "tests/attacks/test_functionally_equivalent_extraction.py" \
                         "tests/attacks/test_hclu.py" \
                         "tests/attacks/test_input_filter.py" \
@@ -81,7 +78,6 @@ else
                         "tests/attacks/test_iterative_method.py" \
                         "tests/attacks/test_knockoff_nets.py" \
                         "tests/attacks/test_newtonfool.py" \
-                        "tests/attacks/test_poisoning_attack_svm.py" \
                         "tests/attacks/test_projected_gradient_descent.py" \
                         "tests/attacks/test_saliency_map.py" \
                         "tests/attacks/test_spatial_transformation.py" \
