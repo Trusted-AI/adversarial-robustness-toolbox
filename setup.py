@@ -10,7 +10,7 @@ install_requires = [
     "numpy>=1.18.0",
     "scipy>=1.4.1",
     "matplotlib",
-    "scikit-learn>=0.22.2,==0.23.*",
+    "scikit-learn>=0.22.2,<=0.24.1",
     "six",
     "setuptools",
     "Pillow",
@@ -21,7 +21,7 @@ install_requires = [
     "ffmpeg-python",
     "cma",
     "mypy",
-    "numba~=0.52.0"
+    "numba~=0.53.1"
 ]
 
 docs_require = [
@@ -33,7 +33,7 @@ docs_require = [
     "numpy",
     "scipy>=1.4.1",
     "six>=1.13.0",
-    "scikit-learn>=0.22.2,==0.23.*",
+    "scikit-learn>=0.22.2,<=0.24.1",
     "Pillow>=6.0.0",
 ]
 

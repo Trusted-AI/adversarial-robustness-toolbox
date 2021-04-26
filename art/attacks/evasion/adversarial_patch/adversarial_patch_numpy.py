@@ -197,7 +197,7 @@ class AdversarialPatchNumpy(EvasionAttack):
             )
 
         if kwargs.get("reset_patch"):
-            self._reset_patch()
+            self.reset_patch(self.mean_value)
 
         y_target = check_and_transform_label_format(labels=y, nb_classes=self.estimator.nb_classes)
 
@@ -214,12 +214,15 @@ class AdversarialPatchNumpy(EvasionAttack):
                 i_batch_end = (i_batch + 1) * self.batch_size
 
                 gradients = self.estimator.loss_gradient(
-                    patched_images[i_batch_start:i_batch_end], y_target[i_batch_start:i_batch_end],
+                    patched_images[i_batch_start:i_batch_end],
+                    y_target[i_batch_start:i_batch_end],
                 )
 
                 for i_image in range(gradients.shape[0]):
                     patch_gradients_i = self._reverse_transformation(
-                        gradients[i_image, :, :, :], patch_mask_transformed[i_image, :, :, :], transforms[i_image],
+                        gradients[i_image, :, :, :],
+                        patch_mask_transformed[i_image, :, :, :],
+                        transforms[i_image],
                     )
                     if self.nb_dims == 4:
                         patch_gradients_i = np.mean(patch_gradients_i, axis=0)
@@ -227,7 +230,11 @@ class AdversarialPatchNumpy(EvasionAttack):
 
             # patch_gradients = patch_gradients / (num_batches * self.batch_size)
             self.patch -= patch_gradients * self.learning_rate
-            self.patch = np.clip(self.patch, a_min=self.estimator.clip_values[0], a_max=self.estimator.clip_values[1],)
+            self.patch = np.clip(
+                self.patch,
+                a_min=self.estimator.clip_values[0],
+                a_max=self.estimator.clip_values[1],
+            )
 
         return self.patch, self._get_circular_patch_mask()
 
@@ -329,9 +336,11 @@ class AdversarialPatchNumpy(EvasionAttack):
             else:
                 mask_2d = mask
 
-            (patch_transformed, patch_mask_transformed, transformation,) = self._random_transformation(
-                patch, scale, mask_2d
-            )
+            (
+                patch_transformed,
+                patch_mask_transformed,
+                transformation,
+            ) = self._random_transformation(patch, scale, mask_2d)
 
             inverted_patch_mask_transformed = 1 - patch_mask_transformed
 
@@ -486,8 +495,18 @@ class AdversarialPatchNumpy(EvasionAttack):
         transformation["pad_h_before"] = pad_h_before
         transformation["pad_w_before"] = pad_w_before
 
-        patch = np.pad(patch, pad_width=pad_width, mode="constant", constant_values=(0, 0),)
-        patch_mask = np.pad(patch_mask, pad_width=pad_width, mode="constant", constant_values=(0, 0),)
+        patch = np.pad(
+            patch,
+            pad_width=pad_width,
+            mode="constant",
+            constant_values=(0, 0),
+        )
+        patch_mask = np.pad(
+            patch_mask,
+            pad_width=pad_width,
+            mode="constant",
+            constant_values=(0, 0),
+        )
 
         # shift
         if mask_2d is None:
@@ -575,7 +594,7 @@ class AdversarialPatchNumpy(EvasionAttack):
             self.patch = np.ones(shape=self.patch_shape).astype(np.float32) * self.mean_value
         elif isinstance(initial_patch_value, float):
             self.patch = np.ones(shape=self.patch_shape).astype(np.float32) * initial_patch_value
-        elif self.patch.shape == initial_patch_value.shape:
+        elif self.patch is not None and self.patch.shape == initial_patch_value.shape:
             self.patch = initial_patch_value
         else:
             raise ValueError("Unexpected value for initial_patch_value.")

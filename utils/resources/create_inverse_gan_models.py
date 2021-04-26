@@ -275,7 +275,7 @@ def main():
 
     batch_size = 100
 
-    (x_train, y_train) = (x_train_original[:batch_size], y_train_original[:batch_size])
+    (x_train, _) = (x_train_original[:batch_size], y_train_original[:batch_size])
 
     lr = 0.0002
     latent_enc_len = 100

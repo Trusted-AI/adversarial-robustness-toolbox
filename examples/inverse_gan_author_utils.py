@@ -104,23 +104,23 @@ INPUT_TRANSFORM_DICT = {
 }
 
 
-def model_a(nb_filters=64, nb_classes=10, input_shape=(None, 28, 28, 1)):
-    layers = [
-        Conv2D(nb_filters, (5, 5), (1, 1), "SAME", use_bias=True),
-        ReLU(),
-        Conv2D(nb_filters, (5, 5), (2, 2), "VALID", use_bias=True),
-        ReLU(),
-        Flatten(),
-        Dropout(0.25),
-        Linear(128),
-        ReLU(),
-        Dropout(0.5),
-        Linear(nb_classes),
-        Softmax(),
-    ]
-
-    model = DefenseMLP(layers, input_shape, feature_layer="ReLU7")
-    return model
+# def model_a(nb_filters=64, nb_classes=10, input_shape=(None, 28, 28, 1)):
+#     layers = [
+#         Conv2D(nb_filters, (5, 5), (1, 1), "SAME", use_bias=True),
+#         ReLU(),
+#         Conv2D(nb_filters, (5, 5), (2, 2), "VALID", use_bias=True),
+#         ReLU(),
+#         Flatten(),
+#         Dropout(0.25),
+#         Linear(128),
+#         ReLU(),
+#         Dropout(0.5),
+#         Linear(nb_classes),
+#         Softmax(),
+#     ]
+#
+#     model = DefenseMLP(layers, input_shape, feature_layer="ReLU7")
+#     return model
 
 
 def generator_loss(loss_func, fake):
@@ -130,7 +130,11 @@ def generator_loss(loss_func, fake):
         fake_loss = -tf.reduce_mean(fake)
 
     if loss_func == "dcgan":
-        fake_loss = tf.losses.sigmoid_cross_entropy(fake, tf.ones_like(fake), reduction=Reduction.MEAN,)
+        fake_loss = tf.losses.sigmoid_cross_entropy(
+            fake,
+            tf.ones_like(fake),
+            reduction=Reduction.MEAN,
+        )
 
     if loss_func == "hingegan":
         fake_loss = -tf.reduce_mean(fake)
@@ -147,8 +151,16 @@ def discriminator_loss(loss_func, real, fake):
         fake_loss = tf.reduce_mean(fake)
 
     if loss_func == "dcgan":
-        real_loss = tf.losses.sigmoid_cross_entropy(tf.ones_like(real), real, reduction=Reduction.MEAN,)
-        fake_loss = tf.losses.sigmoid_cross_entropy(tf.zeros_like(fake), fake, reduction=Reduction.MEAN,)
+        real_loss = tf.losses.sigmoid_cross_entropy(
+            tf.ones_like(real),
+            real,
+            reduction=Reduction.MEAN,
+        )
+        fake_loss = tf.losses.sigmoid_cross_entropy(
+            tf.zeros_like(fake),
+            fake,
+            reduction=Reduction.MEAN,
+        )
 
     if loss_func == "hingegan":
         real_loss = tf.reduce_mean(relu(1 - real))
@@ -264,9 +276,9 @@ class Dataset(object):
     def __init__(self, name, data_dir=path_locations["data"]):
         """The datasaet default constructor.
 
-            Args:
-                name: A string, name of the dataset.
-                data_dir (optional): The path of the datasets on disk.
+        Args:
+            name: A string, name of the dataset.
+            data_dir (optional): The path of the datasets on disk.
         """
 
         self.data_dir = os.path.join(data_dir, name)
@@ -498,10 +510,16 @@ def gan_from_config(batch_size, test_mode):
 
     # from config.py
     if cfg["TYPE"] == "v2":
-        gan = DefenseGANv2(get_generator_fn(cfg["DATASET_NAME"], cfg["USE_RESBLOCK"]), cfg=cfg, test_mode=test_mode,)
+        gan = DefenseGANv2(
+            get_generator_fn(cfg["DATASET_NAME"], cfg["USE_RESBLOCK"]),
+            cfg=cfg,
+            test_mode=test_mode,
+        )
     elif cfg["TYPE"] == "inv":
         gan = InvertorDefenseGAN(
-            get_generator_fn(cfg["DATASET_NAME"], cfg["USE_RESBLOCK"]), cfg=cfg, test_mode=test_mode,
+            get_generator_fn(cfg["DATASET_NAME"], cfg["USE_RESBLOCK"]),
+            cfg=cfg,
+            test_mode=test_mode,
         )
 
     return gan
@@ -806,7 +824,7 @@ class AbstractModel(object):
         if not os.path.isdir(checkpoint_dir):
             try:
                 saver.restore(self.sess, checkpoint_dir)
-            except Exception as e:
+            except Exception:
                 print(" [!] Failed to find a checkpoint at {}".format(checkpoint_dir))
         else:
             print(" [-] Reading checkpoints... {} ".format(checkpoint_dir))
@@ -845,7 +863,9 @@ class AbstractModel(object):
         self.real_data = self.input_transform(self.real_data_pl)
         self.real_data_test = self.input_transform(self.real_data_test_pl)
 
-    def initialize_uninitialized(self,):
+    def initialize_uninitialized(
+        self,
+    ):
         """Only initializes the variables of a TensorFlow session that were not
         already initialized.
         """
@@ -1012,9 +1032,14 @@ class DefenseGANv2(AbstractModel):
 
     def _load_dataset(self):
         """Loads the dataset."""
-        self.train_data_gen, self.dev_gen, _ = get_generators(self.dataset_name, self.batch_size,)
+        self.train_data_gen, self.dev_gen, _ = get_generators(
+            self.dataset_name,
+            self.batch_size,
+        )
         self.train_gen_test, self.dev_gen_test, self.test_gen_test = get_generators(
-            self.dataset_name, self.test_batch_size, randomize=False,
+            self.dataset_name,
+            self.test_batch_size,
+            randomize=False,
         )
 
     def _build(self):
@@ -1026,19 +1051,34 @@ class DefenseGANv2(AbstractModel):
         self.encoder_training = tf.placeholder(tf.bool)
 
         if self.discriminator_fn is None:
-            self.discriminator_fn = get_discriminator_fn(self.dataset_name, use_resblock=True,)
+            self.discriminator_fn = get_discriminator_fn(
+                self.dataset_name,
+                use_resblock=True,
+            )
 
         if self.encoder_fn is None:
-            self.encoder_fn = get_encoder_fn(self.dataset_name, use_resblock=True,)
+            self.encoder_fn = get_encoder_fn(
+                self.dataset_name,
+                use_resblock=True,
+            )
 
         self.test_batch_size = self.batch_size
 
         # Defining batch_size in input placeholders is inevitable at least
         # for now, because the z vectors are TensorFlow variables.
-        self.real_data_pl = tf.placeholder(tf.float32, shape=[self.batch_size] + self.image_dim,)
-        self.real_data_test_pl = tf.placeholder(tf.float32, shape=[self.test_batch_size] + self.image_dim,)
+        self.real_data_pl = tf.placeholder(
+            tf.float32,
+            shape=[self.batch_size] + self.image_dim,
+        )
+        self.real_data_test_pl = tf.placeholder(
+            tf.float32,
+            shape=[self.test_batch_size] + self.image_dim,
+        )
 
-        self.random_z = tf.constant(np.random.randn(self.batch_size, self.latent_dim), tf.float32,)
+        self.random_z = tf.constant(
+            np.random.randn(self.batch_size, self.latent_dim),
+            tf.float32,
+        )
 
         self.input_pl_transform()
 
@@ -1054,10 +1094,16 @@ class DefenseGANv2(AbstractModel):
         self.x_hat_sample = self.generator_fn(self.random_z, is_training=False)
 
         if self.discriminator_fn is not None:
-            self.disc_real = self.discriminator_fn(self.real_data, is_training=self.discriminator_training,)
+            self.disc_real = self.discriminator_fn(
+                self.real_data,
+                is_training=self.discriminator_training,
+            )
             tf.summary.histogram("disc/real", tf.nn.sigmoid(self.disc_real))
 
-            self.disc_enc_rec = self.discriminator_fn(self.enc_reconstruction, is_training=self.discriminator_training,)
+            self.disc_enc_rec = self.discriminator_fn(
+                self.enc_reconstruction,
+                is_training=self.discriminator_training,
+            )
             tf.summary.histogram("disc/enc_rec", tf.nn.sigmoid(self.disc_enc_rec))
 
     def _loss(self):
@@ -1065,17 +1111,25 @@ class DefenseGANv2(AbstractModel):
         # Loss terms
 
         raw_reconstruction_error = slim.flatten(
-            tf.reduce_mean(tf.abs(self.enc_reconstruction - self.real_data), axis=1,)
+            tf.reduce_mean(
+                tf.abs(self.enc_reconstruction - self.real_data),
+                axis=1,
+            )
         )
         tf.summary.histogram("raw reconstruction error", raw_reconstruction_error)
 
         img_rec_loss = self.rec_loss_scale * tf.reduce_mean(tf.nn.relu(raw_reconstruction_error - self.rec_margin))
         tf.summary.scalar("losses/margin_rec", img_rec_loss)
 
-        self.enc_rec_faking_loss = generator_loss("dcgan", self.disc_enc_rec,)
+        self.enc_rec_faking_loss = generator_loss(
+            "dcgan",
+            self.disc_enc_rec,
+        )
 
         self.enc_rec_disc_loss = self.rec_disc_loss_scale * discriminator_loss(
-            "dcgan", self.disc_real, self.disc_enc_rec,
+            "dcgan",
+            self.disc_real,
+            self.disc_enc_rec,
         )
 
         tf.summary.scalar("losses/enc_recon_faking_disc", self.enc_rec_faking_loss)
@@ -1100,13 +1154,18 @@ class DefenseGANv2(AbstractModel):
             self.discriminator_loss, var_list=self.discriminator_vars
         )
 
-        self.encoder_recon_train_op = tf.train.AdamOptimizer(learning_rate=self.encoder_lr, beta1=0.5,).minimize(
-            self.enc_cost, var_list=self.encoder_vars
-        )
+        self.encoder_recon_train_op = tf.train.AdamOptimizer(
+            learning_rate=self.encoder_lr,
+            beta1=0.5,
+        ).minimize(self.enc_cost, var_list=self.encoder_vars)
         #
         self.encoder_disc_fooling_train_op = tf.train.AdamOptimizer(
-            learning_rate=self.enc_disc_lr, beta1=0.5,
-        ).minimize(self.enc_rec_faking_loss + self.latent_reg_loss, var_list=self.encoder_vars,)
+            learning_rate=self.enc_disc_lr,
+            beta1=0.5,
+        ).minimize(
+            self.enc_rec_faking_loss + self.latent_reg_loss,
+            var_list=self.encoder_vars,
+        )
 
     def _inf_train_gen(self):
         """A generator function for input training data."""
@@ -1136,7 +1195,8 @@ class DefenseGANv2(AbstractModel):
 
         # sanity check for the generator
         samples = self.sess.run(
-            self.x_hat_sample, feed_dict={self.encoder_training: False, self.discriminator_training: False},
+            self.x_hat_sample,
+            feed_dict={self.encoder_training: False, self.discriminator_training: False},
         )
         self.save_image(samples, "sanity_check.png")
 
@@ -1188,7 +1248,8 @@ class DefenseGANv2(AbstractModel):
                     },
                 )
                 self.summary_writer.add_summary(
-                    summaries, global_step=iteration,
+                    summaries,
+                    global_step=iteration,
                 )
 
             if iteration % 1000 == 999:
@@ -1207,7 +1268,7 @@ class DefenseGANv2(AbstractModel):
         self.save(checkpoint_dir=ckpt_dir, global_step=global_step)
 
     def autoencode(self, images, batch_size=None):
-        """ Creates op for autoencoding images.
+        """Creates op for autoencoding images.
         reconstruct method without GD
         """
         images.set_shape((batch_size, images.shape[1], images.shape[2], images.shape[3]))
@@ -1238,31 +1299,6 @@ class DefenseGANv2(AbstractModel):
         self.initialized = True
 
 
-def discriminator_loss(loss_func, real, fake):
-    real_loss = 0
-    fake_loss = 0
-
-    if loss_func.__contains__("wgan"):
-        real_loss = -tf.reduce_mean(real)
-        fake_loss = tf.reduce_mean(fake)
-
-    if loss_func == "dcgan":
-        real_loss = tf.losses.sigmoid_cross_entropy(tf.ones_like(real), real, reduction=Reduction.MEAN,)
-        fake_loss = tf.losses.sigmoid_cross_entropy(tf.zeros_like(fake), fake, reduction=Reduction.MEAN,)
-
-    if loss_func == "hingegan":
-        real_loss = tf.reduce_mean(relu(1 - real))
-        fake_loss = tf.reduce_mean(relu(1 + fake))
-
-    if loss_func == "ragan":
-        real_loss = tf.reduce_mean(tf.nn.softplus(-(real - tf.reduce_mean(fake))))
-        fake_loss = tf.reduce_mean(tf.nn.softplus(fake - tf.reduce_mean(real)))
-
-    loss = real_loss + fake_loss
-
-    return loss
-
-
 class InvertorDefenseGAN(DefenseGANv2):
     @property
     def default_properties(self):
@@ -1287,34 +1323,51 @@ class InvertorDefenseGAN(DefenseGANv2):
         self.z_samples = tf.random_normal([self.batch_size // 2, self.latent_dim])
 
         # Generate the zs
-        self.generator_samples = self.generator_fn(self.z_samples, is_training=False,)
+        self.generator_samples = self.generator_fn(
+            self.z_samples,
+            is_training=False,
+        )
         tf.summary.image(
-            "generator_samples", self.generator_samples, max_outputs=10,
+            "generator_samples",
+            self.generator_samples,
+            max_outputs=10,
         )
 
         # Pass the generated samples through the encoding
-        self.generator_samples_latents = self.encoder_fn(self.generator_samples, is_training=self.encoder_training,)[0]
+        self.generator_samples_latents = self.encoder_fn(
+            self.generator_samples,
+            is_training=self.encoder_training,
+        )[0]
 
         # Cycle the generated images through the encoding
-        self.cycled_back_generator = self.generator_fn(self.generator_samples_latents, is_training=False,)
+        self.cycled_back_generator = self.generator_fn(
+            self.generator_samples_latents,
+            is_training=False,
+        )
         tf.summary.image(
-            "cycled_generator_samples", self.cycled_back_generator, max_outputs=10,
+            "cycled_generator_samples",
+            self.cycled_back_generator,
+            max_outputs=10,
         )
 
         # Pass all the fake examples through the discriminator
         with tf.variable_scope("Discriminator_gen"):
             self.gen_cycled_disc = self.discriminator_fn(
-                self.cycled_back_generator, is_training=self.discriminator_training,
+                self.cycled_back_generator,
+                is_training=self.discriminator_training,
             )
             self.gen_samples_disc = self.discriminator_fn(
-                self.generator_samples, is_training=self.discriminator_training,
+                self.generator_samples,
+                is_training=self.discriminator_training,
             )
 
         tf.summary.histogram(
-            "sample disc", tf.nn.sigmoid(self.gen_samples_disc),
+            "sample disc",
+            tf.nn.sigmoid(self.gen_samples_disc),
         )
         tf.summary.histogram(
-            "cycled disc", tf.nn.sigmoid(self.gen_cycled_disc),
+            "cycled disc",
+            tf.nn.sigmoid(self.gen_cycled_disc),
         )
 
     def _loss(self):
@@ -1327,23 +1380,31 @@ class InvertorDefenseGAN(DefenseGANv2):
 
         # Fake samples should fool the discriminator
         self.gen_samples_faking_loss = self.gen_samples_faking_loss_scale * generator_loss(
-            "dcgan", self.gen_cycled_disc,
+            "dcgan",
+            self.gen_cycled_disc,
         )
 
         # The latents of the encoded samples should be close to the zs
         self.latents_to_sample_zs = self.latents_to_z_loss_scale * tf.losses.mean_squared_error(
-            self.z_samples, self.generator_samples_latents, reduction=Reduction.MEAN,
+            self.z_samples,
+            self.generator_samples_latents,
+            reduction=Reduction.MEAN,
         )
         tf.summary.scalar(
-            "losses/latents to zs loss", self.latents_to_sample_zs,
+            "losses/latents to zs loss",
+            self.latents_to_sample_zs,
         )
 
         # The cycled back reconstructions
         raw_cycled_reconstruction_error = slim.flatten(
-            tf.reduce_mean(tf.abs(self.cycled_back_generator - self.generator_samples), axis=1,)
+            tf.reduce_mean(
+                tf.abs(self.cycled_back_generator - self.generator_samples),
+                axis=1,
+            )
         )
         tf.summary.histogram(
-            "raw cycled reconstruction error", raw_cycled_reconstruction_error,
+            "raw cycled reconstruction error",
+            raw_cycled_reconstruction_error,
         )
 
         self.cycled_reconstruction_loss = self.rec_cycled_loss_scale * tf.reduce_mean(
@@ -1355,13 +1416,17 @@ class InvertorDefenseGAN(DefenseGANv2):
 
         # Discriminator loss
         self.gen_samples_disc_loss = self.gen_samples_disc_loss_scale * discriminator_loss(
-            "dcgan", self.gen_samples_disc, self.gen_cycled_disc,
+            "dcgan",
+            self.gen_samples_disc,
+            self.gen_cycled_disc,
         )
         tf.summary.scalar(
-            "losses/gen_samples_disc_loss", self.gen_samples_disc_loss,
+            "losses/gen_samples_disc_loss",
+            self.gen_samples_disc_loss,
         )
         tf.summary.scalar(
-            "losses/gen_samples_faking_loss", self.gen_samples_faking_loss,
+            "losses/gen_samples_faking_loss",
+            self.gen_samples_faking_loss,
         )
         self.discriminator_loss += self.gen_samples_disc_loss
 
@@ -1373,14 +1438,19 @@ class InvertorDefenseGAN(DefenseGANv2):
             self.discriminator_loss, var_list=self.discriminator_vars
         )
 
-        self.encoder_recon_train_op = tf.train.AdamOptimizer(learning_rate=self.encoder_lr, beta1=0.5,).minimize(
-            self.enc_cost, var_list=self.encoder_vars
-        )
+        self.encoder_recon_train_op = tf.train.AdamOptimizer(
+            learning_rate=self.encoder_lr,
+            beta1=0.5,
+        ).minimize(self.enc_cost, var_list=self.encoder_vars)
 
         if not self.no_training_images:
             self.encoder_disc_fooling_train_op = tf.train.AdamOptimizer(
-                learning_rate=self.enc_disc_lr, beta1=0.5,
-            ).minimize(self.enc_rec_faking_loss + self.latent_reg_loss, var_list=self.encoder_vars,)
+                learning_rate=self.enc_disc_lr,
+                beta1=0.5,
+            ).minimize(
+                self.enc_rec_faking_loss + self.latent_reg_loss,
+                var_list=self.encoder_vars,
+            )
 
     def _gather_variables(self):
         self.generator_vars = slim.get_variables(self.generator_var_prefix)
@@ -1458,11 +1528,7 @@ class EncoderReconstructor(object):
         print("Reconstruction module initialzied...\n")
 
     def generate_z_extrapolated_k(self):
-        # config = tf.ConfigProto()
-        # config.gpu_options.allow_growth = True
-
         x_shape = [28, 28, 1]
-        classes = 10  # lgtm [py/unused-local-variable]
 
         # TODO use as TS1Encoder Input
         images_tensor = tf.placeholder(tf.float32, shape=[None] + x_shape)

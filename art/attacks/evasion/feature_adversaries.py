@@ -146,10 +146,18 @@ class FeatureAdversaries(EvasionAttack):
 
         def func(x_i):
             source_representation = self.estimator.get_activations(
-                x=x_i.reshape(-1, *self.estimator.input_shape), layer=self.layer, batch_size=self.batch_size,
+                x=x_i.reshape(-1, *self.estimator.input_shape),
+                layer=self.layer,
+                batch_size=self.batch_size,
             )
 
-            n = norm(source_representation.flatten() - guide_representation.flatten(), ord=2,) ** 2
+            n = (
+                norm(
+                    source_representation.flatten() - guide_representation.flatten(),
+                    ord=2,
+                )
+                ** 2
+            )
 
             return n
 

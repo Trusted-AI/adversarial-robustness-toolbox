@@ -68,7 +68,7 @@ class NeuralCleanse(Transformer):
         super().__init__(classifier=classifier)
         self._check_params()
 
-    def __call__(
+    def __call__(  # type: ignore
         self,
         transformed_classifier: "CLASSIFIER_TYPE",
         steps: int = 1000,

@@ -58,7 +58,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-KERAS_MODEL_TYPE = Union["keras.models.Model", "tf.keras.models.Model"]
+KERAS_MODEL_TYPE = Union["keras.models.Model", "tf.keras.models.Model"]  # pylint: disable=C0103
 
 
 class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
@@ -129,7 +129,11 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         self._initialize_params(model, use_logits, input_layer, output_layer)
 
     def _initialize_params(
-        self, model: KERAS_MODEL_TYPE, use_logits: bool, input_layer: int, output_layer: int,
+        self,
+        model: KERAS_MODEL_TYPE,
+        use_logits: bool,
+        input_layer: int,
+        output_layer: int,
     ):
         """
         Initialize most parameters of the classifier. This is a convenience function called by `__init__` and
@@ -176,7 +180,9 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         _, self._nb_classes = k.int_shape(self._output)
         self._input_shape = k.int_shape(self._input)[1:]
         logger.debug(
-            "Inferred %i classes and %s as input shape for Keras classifier.", self.nb_classes, str(self.input_shape),
+            "Inferred %i classes and %s as input shape for Keras classifier.",
+            self.nb_classes,
+            str(self.input_shape),
         )
 
         self._use_logits = use_logits
@@ -238,7 +244,12 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         if (
             "__name__" in dir(loss_function)
             and loss_function.__name__
-            in ["categorical_hinge", "categorical_crossentropy", "binary_crossentropy", "kullback_leibler_divergence",]
+            in [
+                "categorical_hinge",
+                "categorical_crossentropy",
+                "binary_crossentropy",
+                "kullback_leibler_divergence",
+            ]
         ) or flag_is_instance:
             self._reduce_labels = False
             label_ph = k.placeholder(shape=self._output.shape)
@@ -246,7 +257,11 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             "__name__" in dir(loss_function) and loss_function.__name__ in ["sparse_categorical_crossentropy"]
         ) or isinstance(loss_function, keras.losses.SparseCategoricalCrossentropy):
             self._reduce_labels = True
-            label_ph = k.placeholder(shape=[None,])
+            label_ph = k.placeholder(
+                shape=[
+                    None,
+                ]
+            )
         else:
             raise ValueError("Loss function not recognised.")
 
@@ -331,7 +346,9 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         """
         return self._output_layer  # type: ignore
 
-    def compute_loss(self, x: np.ndarray, y: np.ndarray, reduction: str = "none", **kwargs) -> np.ndarray:
+    def compute_loss(  # pylint: disable=W0221
+        self, x: np.ndarray, y: np.ndarray, reduction: str = "none", **kwargs
+    ) -> np.ndarray:
         """
         Compute the loss of the neural network for samples `x`.
 
@@ -395,7 +412,9 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
         return loss_value
 
-    def loss_gradient(self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs) -> np.ndarray:
+    def loss_gradient(  # pylint: disable=W0221
+        self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs
+    ) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
@@ -427,7 +446,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
         return gradients
 
-    def class_gradient(
+    def class_gradient(  # pylint: disable=W0221
         self, x: np.ndarray, label: Optional[Union[int, List[int]]] = None, training_mode: bool = False, **kwargs
     ) -> np.ndarray:
         """
@@ -474,17 +493,24 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
         elif isinstance(label, (int, np.integer)):
             # Compute the gradients only w.r.t. the provided label
-            gradients = np.swapaxes(
-                np.array(self._class_gradients_idx[label]([x_preprocessed, int(training_mode)])), axis1=0, axis2=1
-            )  # type: ignore
+            grad_fn = self._class_gradients_idx[label]
+            if grad_fn is not None:
+                gradients = np.swapaxes(np.array(grad_fn([x_preprocessed, int(training_mode)])), axis1=0, axis2=1)
+            else:
+                raise ValueError("Class gradient operation is not defined.")
             assert gradients.shape == (x_preprocessed.shape[0], 1) + x_preprocessed.shape[1:]
 
         else:
             # For each sample, compute the gradients w.r.t. the indicated target class (possibly distinct)
             unique_label = list(np.unique(label))
-            gradients = np.array(
-                [self._class_gradients_idx[l]([x_preprocessed, int(training_mode)]) for l in unique_label]
-            )
+            gradients_list = list()
+            for u_l in unique_label:
+                grad_fn = self._class_gradients_idx[u_l]
+                if grad_fn is not None:
+                    gradients_list.append(grad_fn([x_preprocessed, int(training_mode)]))
+                else:
+                    raise ValueError("Class gradient operation is not defined.")
+            gradients = np.array(gradients_list)
             gradients = np.swapaxes(np.squeeze(gradients, axis=1), 0, 1)
             lst = [unique_label.index(i) for i in label]
             gradients = np.expand_dims(gradients[np.arange(len(gradients)), lst], axis=1)
@@ -493,7 +519,9 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
         return gradients
 
-    def predict(self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs) -> np.ndarray:
+    def predict(  # pylint: disable=W0221
+        self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs
+    ) -> np.ndarray:
         """
         Perform prediction for a batch of inputs.
 
@@ -570,7 +598,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             super().fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
 
     def get_activations(
-        self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
+        self, x: np.ndarray, layer: Union[int, str], batch_size: int = 128, framework: bool = False
     ) -> np.ndarray:
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and

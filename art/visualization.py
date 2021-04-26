@@ -108,7 +108,11 @@ def save_image(image_array: np.ndarray, f_name: str) -> None:
 
 
 def plot_3d(
-    points: np.ndarray, labels: List[int], colors: Optional[List[str]] = None, save: bool = True, f_name: str = "",
+    points: np.ndarray,
+    labels: List[int],
+    colors: Optional[List[str]] = None,
+    save: bool = True,
+    f_name: str = "",
 ) -> "matplotlib.figure.Figure":
     """
     Generates a 3-D plot in of the provided points where the labels define the color that will be used to color each
@@ -124,41 +128,39 @@ def plot_3d(
     :param f_name: Name used to save the file when save is set to True.
     :return: A figure object.
     """
-    try:
-        # Disable warnings of unused import because all imports in this block are required
-        # pylint: disable=W0611
-        import matplotlib  # lgtm [py/repeated-import]
-        import matplotlib.pyplot as plt  # lgtm [py/repeated-import]
-        from mpl_toolkits import mplot3d
+    # Disable warnings of unused import because all imports in this block are required
+    # pylint: disable=W0611
+    # import matplotlib  # lgtm [py/repeated-import]
+    import matplotlib.pyplot as plt  # lgtm [py/repeated-import]
 
-        if colors is None:
-            colors = []
-            for i in range(len(np.unique(labels))):
-                colors.append("C" + str(i))
-        else:
-            if len(colors) != len(np.unique(labels)):
-                raise ValueError("The amount of provided colors should match the number of labels in the 3pd plot.")
+    # from mpl_toolkits import mplot3d
 
-        fig = plt.figure()
-        axis = plt.axes(projection="3d")
+    if colors is None:
+        colors = []
+        for i in range(len(np.unique(labels))):
+            colors.append("C" + str(i))
+    else:
+        if len(colors) != len(np.unique(labels)):
+            raise ValueError("The amount of provided colors should match the number of labels in the 3pd plot.")
 
-        for i, coord in enumerate(points):
-            try:
-                color_point = labels[i]
-                axis.scatter3D(coord[0], coord[1], coord[2], color=colors[color_point])
-            except IndexError:
-                raise ValueError(
-                    "Labels outside the range. Should start from zero and be sequential there after"
-                ) from IndexError
-        if save:
-            file_name = os.path.realpath(os.path.join(config.ART_DATA_PATH, f_name))
-            folder = os.path.split(file_name)[0]
+    fig = plt.figure()
+    axis = plt.axes(projection="3d")
 
-            if not os.path.exists(folder):
-                os.makedirs(folder)
-            fig.savefig(file_name, bbox_inches="tight")
-            logger.info("3d-plot saved to %s.", file_name)
+    for i, coord in enumerate(points):
+        try:
+            color_point = labels[i]
+            axis.scatter3D(coord[0], coord[1], coord[2], color=colors[color_point])
+        except IndexError:
+            raise ValueError(
+                "Labels outside the range. Should start from zero and be sequential there after"
+            ) from IndexError
+    if save:
+        file_name = os.path.realpath(os.path.join(config.ART_DATA_PATH, f_name))
+        folder = os.path.split(file_name)[0]
 
-        return fig
-    except ImportError:
-        logger.warning("matplotlib not installed. For this reason, cluster visualization was not displayed.")
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+        fig.savefig(file_name, bbox_inches="tight")
+        logger.info("3d-plot saved to %s.", file_name)
+
+    return fig

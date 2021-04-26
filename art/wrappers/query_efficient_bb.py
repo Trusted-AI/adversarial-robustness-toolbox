@@ -78,7 +78,7 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierClassLossG
         """
         return self._input_shape  # type: ignore
 
-    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
+    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:  # pylint: disable=W0221
         """
         Perform prediction of the classifier for input `x`.
 
@@ -110,9 +110,15 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierClassLossG
         :return: Two arrays of new input samples to approximate gradient.
         """
         minus = clip_and_round(
-            np.repeat(x, self.num_basis, axis=0) - epsilon_map, self.clip_values, self.round_samples,
+            np.repeat(x, self.num_basis, axis=0) - epsilon_map,
+            self.clip_values,
+            self.round_samples,
         )
-        plus = clip_and_round(np.repeat(x, self.num_basis, axis=0) + epsilon_map, self.clip_values, self.round_samples,)
+        plus = clip_and_round(
+            np.repeat(x, self.num_basis, axis=0) + epsilon_map,
+            self.clip_values,
+            self.round_samples,
+        )
         return minus, plus
 
     def class_gradient(self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs) -> np.ndarray:

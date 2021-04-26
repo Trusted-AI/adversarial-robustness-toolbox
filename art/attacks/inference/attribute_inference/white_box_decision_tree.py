@@ -54,6 +54,7 @@ class AttributeInferenceWhiteBoxDecisionTree(AttributeInferenceAttack):
         :param attack_feature: The index of the feature to be attacked.
         """
         super().__init__(estimator=classifier, attack_feature=attack_feature)
+        self.attack_feature: int
         self._check_params()
 
     def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:

@@ -54,12 +54,12 @@ def test_audio_filter(fir_filter, art_warning, expected_values):
         )
 
         # Filter params
-        numerator_coef = np.array([0.1, 0.2, -0.1, -0.2])
+        numerator_coef = np.array([0.1, 0.2, -0.1, -0.2], dtype=ART_NUMPY_DTYPE)
 
         if fir_filter:
-            denominator_coef = np.array([1.0, 0.0, 0.0, 0.0])
+            denominator_coef = np.array([1.0, 0.0, 0.0, 0.0], dtype=ART_NUMPY_DTYPE)
         else:
-            denominator_coef = np.array([1.0, 0.1, 0.3, 0.4])
+            denominator_coef = np.array([1.0, 0.1, 0.3, 0.4], dtype=ART_NUMPY_DTYPE)
 
         # Create filter
         audio_filter = LFilterPyTorch(numerator_coef=numerator_coef, denominator_coef=denominator_coef)

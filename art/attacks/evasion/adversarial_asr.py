@@ -76,7 +76,7 @@ class CarliniWagnerASR(ImperceptibleASR):
 
         # re-implement init such that inherited methods work
         EvasionAttack.__init__(self, estimator=estimator)  # pylint: disable=W0233
-        self.masker = None
+        self.masker = None  # type: ignore
         self.eps = eps
         self.learning_rate_1 = learning_rate
         self.max_iter_1 = max_iter
