@@ -126,7 +126,7 @@ def insert_image(
 
     data = np.copy(x)
     if channels_first:
-        data = data.transpose([2, 0, 1])
+        data = data.transpose([1, 2, 0])
 
     width, height, num_channels = x.shape
 

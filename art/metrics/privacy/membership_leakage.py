@@ -30,7 +30,7 @@ if TYPE_CHECKING:
     from art.estimators.classification.classifier import Classifier
 
 
-def PDTP(
+def PDTP(  # pylint: disable=C0103
     target_estimator: "Classifier",
     extra_estimator: "Classifier",
     x: np.ndarray,
@@ -39,20 +39,20 @@ def PDTP(
     num_iter: Optional[int] = 10,
 ) -> np.ndarray:
     """
-        Compute the pointwise differential training privacy metric for the given classifier and training set.
-        | Paper link: https://arxiv.org/abs/1712.09136
+    Compute the pointwise differential training privacy metric for the given classifier and training set.
+    | Paper link: https://arxiv.org/abs/1712.09136
 
-        :param target_estimator: The classifier to be analyzed.
-        :param extra_estimator: Another classifier of the same type as the target classifier, but not yet fit.
-        :param x: The training data of the classifier.
-        :param y: Target values (class labels) of `x`, one-hot-encoded of shape (nb_samples, nb_classes) or indices of
-                  shape (nb_samples,).
-        :param indexes: the subset of indexes of `x` to compute the PDTP metric on. If not supplied, PDTP will be
-                        computed for all samples in `x`.
-        :param num_iter: the number of iterations of PDTP computation to run for each sample. If not supplied,
-                         defaults to 10. The result is the average across iterations.
-        :return: an array containing the average PDTP value for each sample in the training set. The higher the value,
-                 the higher the privacy leakage for that sample.
+    :param target_estimator: The classifier to be analyzed.
+    :param extra_estimator: Another classifier of the same type as the target classifier, but not yet fit.
+    :param x: The training data of the classifier.
+    :param y: Target values (class labels) of `x`, one-hot-encoded of shape (nb_samples, nb_classes) or indices of
+              shape (nb_samples,).
+    :param indexes: the subset of indexes of `x` to compute the PDTP metric on. If not supplied, PDTP will be
+                    computed for all samples in `x`.
+    :param num_iter: the number of iterations of PDTP computation to run for each sample. If not supplied,
+                     defaults to 10. The result is the average across iterations.
+    :return: an array containing the average PDTP value for each sample in the training set. The higher the value,
+             the higher the privacy leakage for that sample.
     """
     from art.estimators.classification.pytorch import PyTorchClassifier
     from art.estimators.classification.tensorflow import TensorFlowV2Classifier
@@ -79,8 +79,8 @@ def PDTP(
         if not is_probability(pred):
             try:
                 pred = scipy.special.softmax(pred, axis=1)
-            except:
-                raise ValueError("PDTP metric only supports classifiers that output logits or probabilities.")
+            except Exception as exc:
+                raise ValueError("PDTP metric only supports classifiers that output logits or probabilities.") from exc
         # divide into 100 bins and return center of bin
         bins = np.array(np.arange(0.0, 1.01, 0.01).round(decimals=2))
         pred_bin_indexes = np.digitize(pred, bins)
@@ -94,10 +94,10 @@ def PDTP(
             alt_y = np.delete(y, row, 0)
             try:
                 extra_estimator.reset()
-            except NotImplementedError as e:
+            except NotImplementedError as exc:
                 raise ValueError(
                     "PDTP metric can only be applied to classifiers that implement the reset method."
-                ) from e
+                ) from exc
             extra_estimator.fit(alt_x, alt_y)
             # get probabilities from new model
             alt_pred = extra_estimator.predict(x)
@@ -116,7 +116,7 @@ def PDTP(
     # get average of iterations for each sample
     # We now have a list of list, internal lists represent an iteration. We need to transpose and get averages.
     per_sample = list(map(list, zip(*results)))
-    avg_per_sample = np.array([sum(l) / len(l) for l in per_sample])
+    avg_per_sample = np.array([sum(val) / len(val) for val in per_sample])
 
     # return leakage per sample
     return avg_per_sample

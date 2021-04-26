@@ -21,7 +21,7 @@ import logging
 
 import numpy as np
 from sklearn.naive_bayes import GaussianNB
-from sklearn.linear_model.logistic import LogisticRegression
+from sklearn.linear_model import LogisticRegression
 
 from art.attacks.inference.reconstruction import DatabaseReconstruction
 from art.estimators.classification.scikitlearn import ScikitlearnGaussianNB, ScikitlearnLogisticRegression

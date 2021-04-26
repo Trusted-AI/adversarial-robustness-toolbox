@@ -48,7 +48,7 @@ from tests.utils import (
 logger = logging.getLogger(__name__)
 
 NB_EPOCHS = 20
-NB_STOLEN = 1000
+NB_STOLEN = 100
 
 
 class TestCopycatCNN(TestBase):

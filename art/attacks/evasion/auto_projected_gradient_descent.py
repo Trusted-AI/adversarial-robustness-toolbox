@@ -213,7 +213,11 @@ class AutoProjectedGradientDescent(EvasionAttack):
                             "If loss_type='difference_logits_ratio' the estimator has to to predict logits."
                         )
 
-                    class difference_logits_ratio:
+                    class DifferenceLogitsRatioTensorFlowV2:
+                        """
+                        Callable class for Difference Logits Ratio loss in TensorFlow v2.
+                        """
+
                         def __init__(self):
                             self.reduction = "mean"
 
@@ -244,8 +248,8 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
                             return tf.reduce_mean(dlr)
 
-                    self._loss_fn = difference_logits_ratio()
-                    self._loss_object = difference_logits_ratio()
+                    self._loss_fn = DifferenceLogitsRatioTensorFlowV2()
+                    self._loss_object = DifferenceLogitsRatioTensorFlowV2()
 
                 estimator_apgd = TensorFlowV2Classifier(
                     model=estimator.model,
@@ -281,7 +285,11 @@ class AutoProjectedGradientDescent(EvasionAttack):
                             "If loss_type='difference_logits_ratio' the estimator has to to predict logits."
                         )
 
-                    class difference_logits_ratio:
+                    class DifferenceLogitsRatioPyTorch:
+                        """
+                        Callable class for Difference Logits Ratio loss in PyTorch.
+                        """
+
                         def __init__(self):
                             self.reduction = "mean"
 
@@ -319,7 +327,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
                             return torch.mean(dlr.float())
 
-                    self._loss_object = difference_logits_ratio()
+                    self._loss_object = DifferenceLogitsRatioPyTorch()
 
                 estimator_apgd = PyTorchClassifier(
                     model=estimator.model,
@@ -332,7 +340,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
                     preprocessing_defences=estimator.preprocessing_defences,
                     postprocessing_defences=estimator.postprocessing_defences,
                     preprocessing=estimator.preprocessing,
-                    device_type=estimator._device,
+                    device_type=str(estimator._device),
                 )
 
             else:
@@ -421,15 +429,15 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
                 p_0 = 0
                 p_1 = 0.22
-                W = [p_0, p_1]
+                var_w = [p_0, p_1]
 
                 while True:
-                    p_j_p_1 = W[-1] + max(W[-1] - W[-2] - 0.03, 0.06)
+                    p_j_p_1 = var_w[-1] + max(var_w[-1] - var_w[-2] - 0.03, 0.06)
                     if p_j_p_1 > 1:
                         break
-                    W.append(p_j_p_1)
+                    var_w.append(p_j_p_1)
 
-                W = [math.ceil(p * self.max_iter) for p in W]
+                var_w = [math.ceil(p * self.max_iter) for p in var_w]
 
                 eta = self.eps_step
                 self.count_condition_1 = 0
@@ -517,11 +525,11 @@ class AutoProjectedGradientDescent(EvasionAttack):
                             self.x_max_m_1 = x_k
                             self.f_max = f_k_p_1
 
-                        if k_iter in W:
+                        if k_iter in var_w:
 
                             rho = 0.75
 
-                            condition_1 = self.count_condition_1 < rho * (k_iter - W[W.index(k_iter) - 1])
+                            condition_1 = self.count_condition_1 < rho * (k_iter - var_w[var_w.index(k_iter) - 1])
                             condition_2 = self.eta_w_j_m_1 == eta and self.f_max_w_j_m_1 == self.f_max
 
                             if condition_1 or condition_2:

@@ -25,6 +25,7 @@ The Pixel Attack is a generalisation of One Pixel Attack.
 | Pixel and Threshold Attack Paper link:
     https://arxiv.org/abs/1906.06026
 """
+# pylint: disable=C0302
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -91,8 +92,8 @@ class PixelThreshold(EvasionAttack):
 
         self._project = True
         self.type_attack = -1
-        self.th = th
-        self.es = es
+        self.th = th  # pylint: disable=C0103
+        self.es = es  # pylint: disable=C0103
         self._targeted = targeted
         self.verbose = verbose
         PixelThreshold._check_params(self)
@@ -123,7 +124,9 @@ class PixelThreshold(EvasionAttack):
         if not isinstance(self.verbose, bool):
             raise ValueError("The argument `verbose` has to be of type bool.")
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, max_iter: int = 100, **kwargs) -> np.ndarray:
+    def generate(  # pylint: disable=W0221
+        self, x: np.ndarray, y: Optional[np.ndarray] = None, max_iter: int = 100, **kwargs
+    ) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
@@ -148,10 +151,7 @@ class PixelThreshold(EvasionAttack):
         if self.th is None:
             logger.info("Performing minimal perturbation Attack.")
 
-        if np.max(x) <= 1:
-            scale_input = True
-        else:
-            scale_input = False
+        scale_input = bool(np.max(x) <= 1)
 
         if scale_input:
             x = x * 255.0
@@ -182,18 +182,19 @@ class PixelThreshold(EvasionAttack):
                 success, image_result = self._attack(image, target_class, self.th, max_iter)
             adv_x_best += [image_result]
 
-        adv_x_best = np.array(adv_x_best)
+        adv_x_best_array = np.array(adv_x_best)
 
         if scale_input:
-            adv_x_best = adv_x_best / 255.0
+            adv_x_best_array = adv_x_best_array / 255.0
 
         if y is not None:
             y = to_categorical(y, self.estimator.nb_classes)
 
         logger.info(
-            "Success rate of Attack: %.2f%%", 100 * compute_success(self.estimator, x, y, adv_x_best, self.targeted, 1),
+            "Success rate of Attack: %.2f%%",
+            100 * compute_success(self.estimator, x, y, adv_x_best_array, self.targeted, 1),
         )
-        return adv_x_best
+        return adv_x_best_array
 
     def _get_bounds(self, img: np.ndarray, limit) -> Tuple[List[list], list]:
         """
@@ -219,7 +220,7 @@ class PixelThreshold(EvasionAttack):
 
         return bounds, initial
 
-    def _perturb_image(self, x: np.ndarray, img: np.ndarray) -> np.ndarray:
+    def _perturb_image(self, x: np.ndarray, img: np.ndarray) -> np.ndarray:  # pylint: disable=W0613,R0201
         """
         Perturbs the given image `img` with the given perturbation `x`.
         """
@@ -248,7 +249,7 @@ class PixelThreshold(EvasionAttack):
             predictions = self.estimator.predict(self._perturb_image(x, image))[:, target_class]
             return predictions if not self.targeted else 1 - predictions
 
-        def callback_fn(x, convergence=None):
+        def callback_fn(x, convergence=None):  # pylint: disable=R1710,W0613
             if self.es == 0:
                 if self._attack_success(x.result[0], image, target_class):
                     raise Exception("Attack Completed :) Earlier than expected")
@@ -283,9 +284,8 @@ class PixelThreshold(EvasionAttack):
                     callback=callback_fn,
                     iterations=max_iter,
                 )
-            except Exception as exception:
-                if self.verbose:
-                    print(exception)
+            except Exception as exception:  # pylint: disable=W0703
+                logger.info(exception)
 
             adv_x = strategy.result[0]
         else:
@@ -304,8 +304,8 @@ class PixelThreshold(EvasionAttack):
 
         if self._attack_success(adv_x, image, target_class):
             return True, self._perturb_image(adv_x, image)[0]
-        else:
-            return False, image
+
+        return False, image
 
 
 class PixelAttack(PixelThreshold):
@@ -374,8 +374,7 @@ class PixelAttack(PixelThreshold):
 
                 if count == limit - 1:
                     break
-                else:
-                    continue
+
             min_bounds = [0, 0]
             for _ in range(self.img_channels):
                 min_bounds += [0]
@@ -431,7 +430,11 @@ class ThresholdAttack(PixelThreshold):
         x = x.astype(int)
         for adv, image in zip(x, imgs):
             for count, (i, j, k) in enumerate(
-                product(range(image.shape[-3]), range(image.shape[-2]), range(image.shape[-1]),)
+                product(
+                    range(image.shape[-3]),
+                    range(image.shape[-2]),
+                    range(image.shape[-1]),
+                )
             ):
                 image[i, j, k] = adv[count]
         return imgs
@@ -439,7 +442,7 @@ class ThresholdAttack(PixelThreshold):
 
 # TODO: Make the attack compatible with current version of SciPy Optimize
 # Differential Evolution
-
+# pylint: disable=W0105
 """
 A slight modification to Scipy's implementation of differential evolution.
 To speed up predictions, the entire parameters array is passed to `self.func`,
@@ -1162,11 +1165,14 @@ class DifferentialEvolutionSolver:
 
             if (
                 self.callback
-                and self.callback(self._scale_parameters(self.population[0]), convergence=self.tol / convergence,)
+                and self.callback(
+                    self._scale_parameters(self.population[0]),
+                    convergence=self.tol / convergence,
+                )
                 is True
             ):
                 warning_flag = True
-                status_message = "callback function requested stop early " "by returning True"
+                status_message = "callback function requested stop early by returning True"
                 break
 
             intol = np.std(self.population_energies) <= self.atol + self.tol * np.abs(np.mean(self.population_energies))
@@ -1187,7 +1193,13 @@ class DifferentialEvolutionSolver:
         )
 
         if self.polish:
-            result = minimize(self.func, np.copy(de_result.x), method="L-BFGS-B", bounds=self.limits.T, args=self.args,)
+            result = minimize(
+                self.func,
+                np.copy(de_result.x),
+                method="L-BFGS-B",
+                bounds=self.limits.T,
+                args=self.args,
+            )
 
             self._nfev += result.nfev
             de_result.nfev = self._nfev
@@ -1352,7 +1364,7 @@ class DifferentialEvolutionSolver:
         for index in np.where((trial < 0) | (trial > 1))[0]:
             trial[index] = self.random_number_generator.rand()
 
-    def _mutate(self, candidate):
+    def _mutate(self, candidate):  # pylint: disable=R1710
         """
         create a trial vector based on a mutation strategy
         """
@@ -1378,7 +1390,7 @@ class DifferentialEvolutionSolver:
             trial = np.where(crossovers, bprime, trial)
             return trial
 
-        elif self.strategy in self._exponential:
+        if self.strategy in self._exponential:
             i = 0
             while i < self.parameter_count and rng.rand() < self.cross_over_probability:
                 trial[fill_point] = bprime[fill_point]

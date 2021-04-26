@@ -138,22 +138,30 @@ class Scanner:
                 prob = np.random.uniform(0, 1)
                 if image_to_node:
                     indices_of_seeds = np.random.choice(
-                        np.arange(pvalues.shape[0]), int(pvalues.shape[0] * prob), replace=False,
+                        np.arange(pvalues.shape[0]),
+                        int(pvalues.shape[0] * prob),
+                        replace=False,
                     )
                 else:
                     indices_of_seeds = np.random.choice(
-                        np.arange(pvalues.shape[1]), int(pvalues.shape[1] * prob), replace=False,
+                        np.arange(pvalues.shape[1]),
+                        int(pvalues.shape[1] * prob),
+                        replace=False,
                     )
                 while indices_of_seeds.size == 0:
                     # eventually will make non zero
                     prob = np.random.uniform(0, 1)
                     if image_to_node:
                         indices_of_seeds = np.random.choice(
-                            np.arange(pvalues.shape[0]), int(pvalues.shape[0] * prob), replace=False,
+                            np.arange(pvalues.shape[0]),
+                            int(pvalues.shape[0] * prob),
+                            replace=False,
                         )
                     else:
                         indices_of_seeds = np.random.choice(
-                            np.arange(pvalues.shape[1]), int(pvalues.shape[1] * prob), replace=False,
+                            np.arange(pvalues.shape[1]),
+                            int(pvalues.shape[1] * prob),
+                            replace=False,
                         )
 
                 indices_of_seeds.astype(int)
