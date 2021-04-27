@@ -263,6 +263,14 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
             # Push model to the corresponding device
             self._model.to(self._device)
 
+        # Set the loss function
+        if self._version == 2:
+            from warpctc_pytorch import CTCLoss
+
+            self.criterion = CTCLoss()
+        else:
+            self.criterion = self._model.criterion
+
         # Save first version of the optimizer
         self._optimizer = optimizer
         self._use_amp = use_amp
@@ -428,8 +436,6 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
                   lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`.
         :return: Loss gradients of the same shape as `x`.
         """
-        from warpctc_pytorch import CTCLoss
-
         x_in = np.empty(len(x), dtype=object)
         x_in[:] = list(x)
 
@@ -452,12 +458,18 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         # Call to DeepSpeech model for prediction
         outputs, output_sizes = self._model(inputs.to(self._device), input_sizes.to(self._device))
         outputs = outputs.transpose(0, 1)
-        float_outputs = outputs.float()
 
-        # Loss function
-        criterion = CTCLoss()
-        loss = criterion(float_outputs, targets, output_sizes, target_sizes).to(self._device)
-        loss = loss / inputs.size(0)
+        if self._version == 2:
+            outputs = outputs.float()
+        else:
+            outputs = outputs.log_softmax(-1)
+
+        # Compute the loss
+        loss = self.criterion(outputs, targets, output_sizes, target_sizes).to(self._device)
+
+        # Average the loss by mini batch if version 2 of DeepSpeech is used
+        if self._version == 2:
+            loss = loss / inputs.size(0)
 
         # Compute gradients
         if self._use_amp:
@@ -489,6 +501,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
 
         # Unfreeze batch norm layers again
         self.set_batchnorm(train=True)
+
         return results
 
     def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, **kwargs) -> None:
@@ -507,8 +520,6 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         """
         import random
 
-        from warpctc_pytorch import CTCLoss
-
         x_in = np.empty(len(x), dtype=object)
         x_in[:] = list(x)
 
@@ -524,9 +535,6 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         # Train with batch processing
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         ind = np.arange(len(x_preprocessed))
-
-        # Loss function
-        criterion = CTCLoss()
 
         # Start training
         for _ in range(nb_epochs):
@@ -560,11 +568,18 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
                 # Call to DeepSpeech model for prediction
                 outputs, output_sizes = self._model(inputs.to(self._device), input_sizes.to(self._device))
                 outputs = outputs.transpose(0, 1)
-                float_outputs = outputs.float()
 
-                # Form the loss
-                loss = criterion(float_outputs, targets, output_sizes, target_sizes).to(self._device)
-                loss = loss / inputs.size(0)
+                if self._version == 2:
+                    outputs = outputs.float()
+                else:
+                    outputs = outputs.log_softmax(-1)
+
+                # Compute the loss
+                loss = self.criterion(outputs, targets, output_sizes, target_sizes).to(self._device)
+
+                # Average the loss by mini batch if version 2 of DeepSpeech is used
+                if self._version == 2:
+                    loss = loss / inputs.size(0)
 
                 # Actual training
                 if self._use_amp:
@@ -591,8 +606,6 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         :param real_lengths: Real lengths of original sequences.
         :return: The loss and the decoded output.
         """
-        from warpctc_pytorch import CTCLoss
-
         # This estimator needs to have real lengths for loss computation
         real_lengths = kwargs.get("real_lengths")
         if real_lengths is None:
@@ -614,12 +627,18 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         # Call to DeepSpeech model for prediction
         outputs, output_sizes = self.model(inputs.to(self.device), input_sizes.to(self.device))
         outputs_ = outputs.transpose(0, 1)
-        float_outputs = outputs_.float()
 
-        # Loss function
-        criterion = CTCLoss()
-        loss = criterion(float_outputs, targets, output_sizes, target_sizes).to(self.device)
-        loss = loss / inputs.size(0)
+        if self._version == 2:
+            outputs_ = outputs_.float()
+        else:
+            outputs_ = outputs_.log_softmax(-1)
+
+        # Compute the loss
+        loss = self.criterion(outputs_, targets, output_sizes, target_sizes).to(self._device)
+
+        # Average the loss by mini batch if version 2 of DeepSpeech is used
+        if self._version == 2:
+            loss = loss / inputs.size(0)
 
         # Compute transcription
         decoded_output, _ = self.decoder.decode(outputs, output_sizes)
