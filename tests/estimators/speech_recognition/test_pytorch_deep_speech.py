@@ -115,6 +115,7 @@ def test_pytorch_deep_speech(art_warning, expected_values, use_amp, device_type)
         transcriptions2 = speech_recognizer.predict(x, batch_size=2, transcription_output=True)
 
         assert not ((transcriptions1 == transcriptions2).all())
+        assert False
 
     except ARTTestException as e:
         art_warning(e)
