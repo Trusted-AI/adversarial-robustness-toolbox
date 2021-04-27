@@ -242,6 +242,57 @@ class RobustDPatch(EvasionAttack):
 
         transformations.update({"rot90": rot90})
 
+        if y is not None:
+
+            y_copy: List[Dict[str, np.ndarray]] = list()
+
+            for i_image in range(x_copy.shape[0]):
+                y_b = y[i_image]["boxes"].copy()
+                image_width = x.shape[2]
+                image_height = x.shape[1]
+                x_1_arr = y_b[:, 0]
+                y_1_arr = y_b[:, 1]
+                x_2_arr = y_b[:, 2]
+                y_2_arr = y_b[:, 3]
+                box_width = x_2_arr - x_1_arr
+                box_height = y_2_arr - y_1_arr
+
+                if rot90 == 0:
+                    x_1_new = x_1_arr
+                    y_1_new = y_1_arr
+                    x_2_new = x_2_arr
+                    y_2_new = y_2_arr
+
+                if rot90 == 1:
+                    x_1_new = y_1_arr
+                    y_1_new = image_width - x_1_arr - box_width
+                    x_2_new = y_1_arr + box_height
+                    y_2_new = image_width - x_1_arr
+
+                if rot90 == 2:
+                    x_1_new = image_width - x_2_arr
+                    y_1_new = image_height - y_2_arr
+                    x_2_new = x_1_new + box_width
+                    y_2_new = y_1_new + box_height
+
+                if rot90 == 3:
+                    x_1_new = image_height - y_1_arr - box_height
+                    y_1_new = x_1_arr
+                    x_2_new = image_height - y_1_arr
+                    y_2_new = x_1_arr + box_width
+
+                y_i = dict()
+                y_i["boxes"] = np.zeros_like(y[i_image]["boxes"])
+                y_i["boxes"][:, 0] = x_1_new
+                y_i["boxes"][:, 1] = y_1_new
+                y_i["boxes"][:, 2] = x_2_new
+                y_i["boxes"][:, 3] = y_2_new
+
+                y_i["labels"] = y[i_image]["labels"]
+                y_i["scores"] = y[i_image]["scores"]
+
+                y_copy.append(y_i)
+
         # 3) adjust brightness:
         brightness = random.uniform(*self.brightness_range)
         x_copy = np.round(brightness * x_copy)
