@@ -787,10 +787,17 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
                     - hop_length: number audio of frames between STFT columns.
         """
         # These parameters are needed for audio transformation
-        window_name = self.model.audio_conf.window.value
-        sample_rate = self.model.audio_conf.sample_rate
-        window_size = self.model.audio_conf.window_size
-        window_stride = self.model.audio_conf.window_stride
+        if self._version == 2:
+            window_name = self.model.audio_conf.window.value
+            sample_rate = self.model.audio_conf.sample_rate
+            window_size = self.model.audio_conf.window_size
+            window_stride = self.model.audio_conf.window_stride
+
+        else:
+            window_name = self.model.spect_cfg["window"].value
+            sample_rate = self.model.spect_cfg["sample_rate"]
+            window_size = self.model.spect_cfg["window_size"]
+            window_stride = self.model.spect_cfg["window_stride"]
 
         n_fft = int(sample_rate * window_size)
         hop_length = int(sample_rate * window_stride)
