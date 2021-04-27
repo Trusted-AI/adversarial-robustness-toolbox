@@ -153,7 +153,7 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip setuptools wheel
-          pip install -q pylint pycodestyle
+          pip install -q pylint==2.7.4 pycodestyle==2.7.0
           pip install -q -r requirements.txt
           pip list
       - name: pycodestyle
