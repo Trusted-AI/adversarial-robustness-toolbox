@@ -273,38 +273,38 @@ class RobustDPatch(EvasionAttack):
 
             for i_image in range(x_copy.shape[0]):
                 y_b = y[i_image]["boxes"].copy()
-                W = x.shape[2]
-                H = x.shape[1]
-                x_1 = y_b[:, 0]
-                y_1 = y_b[:, 1]
-                x_2 = y_b[:, 2]
-                y_2 = y_b[:, 3]
-                w = x_2 - x_1
-                h = y_2 - y_1
+                image_width = x.shape[2]
+                image_height = x.shape[1]
+                x_1_arr = y_b[:, 0]
+                y_1_arr = y_b[:, 1]
+                x_2_arr = y_b[:, 2]
+                y_2_arr = y_b[:, 3]
+                box_width = x_2_arr - x_1_arr
+                box_height = y_2_arr - y_1_arr
 
                 if rot90 == 0:
-                    x_1_new = x_1.copy()
-                    y_1_new = y_1.copy()
-                    x_2_new = x_2.copy()
-                    y_2_new = y_2.copy()
+                    x_1_new = x_1_arr
+                    y_1_new = y_1_arr
+                    x_2_new = x_2_arr
+                    y_2_new = y_2_arr
 
                 if rot90 == 1:
-                    x_1_new = y_1.copy()
-                    y_1_new = W - x_1 - w
-                    x_2_new = y_1 + h
-                    y_2_new = W - x_1
+                    x_1_new = y_1_arr
+                    y_1_new = image_width - x_1_arr - box_width
+                    x_2_new = y_1_arr + box_height
+                    y_2_new = image_width - x_1_arr
 
                 if rot90 == 2:
-                    x_1_new = W - x_2
-                    y_1_new = H - y_2
-                    x_2_new = x_1_new + w
-                    y_2_new = y_1_new + h
+                    x_1_new = image_width - x_2_arr
+                    y_1_new = image_height - y_2_arr
+                    x_2_new = x_1_new + box_width
+                    y_2_new = y_1_new + box_height
 
                 if rot90 == 3:
-                    x_1_new = H - y_1 - h
-                    y_1_new = x_1.copy()
-                    x_2_new = H - y_1
-                    y_2_new = x_1 + w
+                    x_1_new = image_height - y_1_arr - box_height
+                    y_1_new = x_1_arr
+                    x_2_new = image_height - y_1_arr
+                    y_2_new = x_1_arr + box_width
 
                 y_i = dict()
                 y_i["boxes"] = np.zeros_like(y[i_image]["boxes"])
