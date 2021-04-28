@@ -103,6 +103,8 @@ class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):  # lgtm [py/
     Wrapper class for scikit-learn classifier models.
     """
 
+    estimator_params = ClassifierMixin.estimator_params + ScikitlearnEstimator.estimator_params + ["use_logits"]
+
     def __init__(
         self,
         model: "sklearn.base.BaseEstimator",
