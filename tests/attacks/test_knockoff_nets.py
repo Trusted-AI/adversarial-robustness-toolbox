@@ -72,6 +72,7 @@ class TestKnockoffNets(TestBase):
             nb_epochs=NB_EPOCHS,
             nb_stolen=NB_STOLEN,
             sampling_strategy="random",
+            verbose=False,
         )
         thieved_tfc = attack.extract(x=self.x_train_mnist, thieved_classifier=thieved_tfc)
 
@@ -90,6 +91,7 @@ class TestKnockoffNets(TestBase):
             nb_stolen=NB_STOLEN,
             sampling_strategy="adaptive",
             reward="all",
+            verbose=False,
         )
         thieved_tfc = attack.extract(x=self.x_train_mnist, y=self.y_train_mnist, thieved_classifier=thieved_tfc)
 
@@ -122,6 +124,7 @@ class TestKnockoffNets(TestBase):
             nb_epochs=NB_EPOCHS,
             nb_stolen=NB_STOLEN,
             sampling_strategy="random",
+            verbose=False,
         )
         thieved_krc = attack.extract(x=self.x_train_mnist, thieved_classifier=thieved_krc)
 
@@ -140,6 +143,7 @@ class TestKnockoffNets(TestBase):
             nb_stolen=NB_STOLEN,
             sampling_strategy="adaptive",
             reward="all",
+            verbose=False,
         )
         thieved_krc = attack.extract(x=self.x_train_mnist, y=self.y_train_mnist, thieved_classifier=thieved_krc)
 
@@ -173,6 +177,7 @@ class TestKnockoffNets(TestBase):
             nb_epochs=NB_EPOCHS,
             nb_stolen=NB_STOLEN,
             sampling_strategy="random",
+            verbose=False,
         )
 
         thieved_ptc = attack.extract(x=self.x_train_mnist, thieved_classifier=thieved_ptc)
@@ -192,6 +197,7 @@ class TestKnockoffNets(TestBase):
             nb_stolen=NB_STOLEN,
             sampling_strategy="adaptive",
             reward="all",
+            verbose=False,
         )
         thieved_ptc = attack.extract(x=self.x_train_mnist, y=self.y_train_mnist, thieved_classifier=thieved_ptc)
 
@@ -225,6 +231,7 @@ class TestKnockoffNets(TestBase):
             nb_epochs=NB_EPOCHS,
             nb_stolen=NB_STOLEN,
             sampling_strategy="random",
+            verbose=False,
         )
         thieved_tfc = attack.extract(x=self.x_train_iris, thieved_classifier=thieved_tfc)
 
@@ -243,6 +250,7 @@ class TestKnockoffNets(TestBase):
             nb_stolen=NB_STOLEN,
             sampling_strategy="adaptive",
             reward="all",
+            verbose=False,
         )
         thieved_tfc = attack.extract(x=self.x_train_iris, y=self.y_train_iris, thieved_classifier=thieved_tfc)
 
@@ -275,6 +283,7 @@ class TestKnockoffNets(TestBase):
             nb_epochs=NB_EPOCHS,
             nb_stolen=NB_STOLEN,
             sampling_strategy="random",
+            verbose=False,
         )
         thieved_krc = attack.extract(x=self.x_train_iris, thieved_classifier=thieved_krc)
 
@@ -293,6 +302,7 @@ class TestKnockoffNets(TestBase):
             nb_stolen=NB_STOLEN,
             sampling_strategy="adaptive",
             reward="all",
+            verbose=False,
         )
         thieved_krc = attack.extract(x=self.x_train_iris, y=self.y_train_iris, thieved_classifier=thieved_krc)
 
@@ -324,6 +334,7 @@ class TestKnockoffNets(TestBase):
             nb_epochs=NB_EPOCHS,
             nb_stolen=NB_STOLEN,
             sampling_strategy="random",
+            verbose=False,
         )
         thieved_ptc = attack.extract(x=self.x_train_iris, thieved_classifier=thieved_ptc)
 
@@ -342,6 +353,7 @@ class TestKnockoffNets(TestBase):
             nb_stolen=NB_STOLEN,
             sampling_strategy="adaptive",
             reward="all",
+            verbose=False,
         )
         thieved_ptc = attack.extract(x=self.x_train_iris, y=self.y_train_iris, thieved_classifier=thieved_ptc)
 

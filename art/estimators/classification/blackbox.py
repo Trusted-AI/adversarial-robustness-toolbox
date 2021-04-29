@@ -157,6 +157,13 @@ class BlackBoxClassifierNeuralNetwork(NeuralNetworkMixin, ClassifierMixin, BaseE
     Wrapper class for black-box neural network classifiers.
     """
 
+    estimator_params = (
+        NeuralNetworkMixin.estimator_params
+        + ClassifierMixin.estimator_params
+        + BaseEstimator.estimator_params
+        + ["nb_classes", "input_shape", "predict"]
+    )
+
     def __init__(
         self,
         predict: Callable,

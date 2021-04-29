@@ -67,7 +67,9 @@ class TestUniversalPerturbation(TestBase):
         tfc, sess = get_image_classifier_tf()
 
         # Attack
-        up = UniversalPerturbation(tfc, max_iter=1, attacker="newtonfool", attacker_params={"max_iter": 5})
+        up = UniversalPerturbation(
+            tfc, max_iter=1, attacker="newtonfool", attacker_params={"max_iter": 5, "verbose": False}, verbose=False
+        )
         x_train_adv = up.generate(self.x_train_mnist)
         self.assertTrue((up.fooling_rate >= 0.2) or not up.converged)
 
@@ -93,7 +95,13 @@ class TestUniversalPerturbation(TestBase):
         krc = get_image_classifier_kr()
 
         # Attack
-        up = UniversalPerturbation(krc, max_iter=1, attacker="ead", attacker_params={"max_iter": 2, "targeted": False})
+        up = UniversalPerturbation(
+            krc,
+            max_iter=1,
+            attacker="ead",
+            attacker_params={"max_iter": 2, "targeted": False, "verbose": False},
+            verbose=False,
+        )
         x_train_adv = up.generate(self.x_train_mnist)
         self.assertTrue((up.fooling_rate >= 0.2) or not up.converged)
 
@@ -121,7 +129,9 @@ class TestUniversalPerturbation(TestBase):
         ptc = get_image_classifier_pt()
 
         # Attack
-        up = UniversalPerturbation(ptc, max_iter=1, attacker="newtonfool", attacker_params={"max_iter": 5})
+        up = UniversalPerturbation(
+            ptc, max_iter=1, attacker="newtonfool", attacker_params={"max_iter": 5, "verbose": False}, verbose=False
+        )
         x_train_mnist_adv = up.generate(x_train_mnist)
         self.assertTrue((up.fooling_rate >= 0.2) or not up.converged)
 
@@ -140,8 +150,8 @@ class TestUniversalPerturbation(TestBase):
         classifier = get_tabular_classifier_kr()
 
         # Test untargeted attack
-        attack_params = {"max_iter": 1, "attacker": "newtonfool", "attacker_params": {"max_iter": 5}}
-        attack = UniversalPerturbation(classifier)
+        attack_params = {"max_iter": 1, "attacker": "newtonfool", "attacker_params": {"max_iter": 5, "verbose": False}}
+        attack = UniversalPerturbation(classifier, verbose=False)
         attack.set_params(**attack_params)
         x_test_iris_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_iris_adv).all())
@@ -158,8 +168,8 @@ class TestUniversalPerturbation(TestBase):
 
         # Recreate a classifier without clip values
         classifier = KerasClassifier(model=classifier._model, use_logits=False, channels_first=True)
-        attack_params = {"max_iter": 1, "attacker": "newtonfool", "attacker_params": {"max_iter": 5}}
-        attack = UniversalPerturbation(classifier)
+        attack_params = {"max_iter": 1, "attacker": "newtonfool", "attacker_params": {"max_iter": 5, "verbose": False}}
+        attack = UniversalPerturbation(classifier, verbose=False)
         attack.set_params(**attack_params)
         x_test_iris_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_iris_adv).all())
@@ -173,8 +183,12 @@ class TestUniversalPerturbation(TestBase):
         classifier, _ = get_tabular_classifier_tf()
 
         # Test untargeted attack
-        attack_params = {"max_iter": 1, "attacker": "ead", "attacker_params": {"max_iter": 5, "targeted": False}}
-        attack = UniversalPerturbation(classifier)
+        attack_params = {
+            "max_iter": 1,
+            "attacker": "ead",
+            "attacker_params": {"max_iter": 5, "targeted": False, "verbose": False},
+        }
+        attack = UniversalPerturbation(classifier, verbose=False)
         attack.set_params(**attack_params)
         x_test_iris_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_iris_adv).all())
@@ -189,8 +203,12 @@ class TestUniversalPerturbation(TestBase):
     def test_4_pytorch_iris(self):
         classifier = get_tabular_classifier_pt()
 
-        attack_params = {"max_iter": 1, "attacker": "ead", "attacker_params": {"max_iter": 5, "targeted": False}}
-        attack = UniversalPerturbation(classifier)
+        attack_params = {
+            "max_iter": 1,
+            "attacker": "ead",
+            "attacker_params": {"max_iter": 5, "targeted": False, "verbose": False},
+        }
+        attack = UniversalPerturbation(classifier, verbose=False)
         attack.set_params(**attack_params)
         x_test_iris_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_iris_adv).all())
