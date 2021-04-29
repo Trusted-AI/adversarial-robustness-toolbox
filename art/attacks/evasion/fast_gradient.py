@@ -92,8 +92,8 @@ class FastGradientMethod(EvasionAttack):
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :param minimal: Indicates if computing the minimal perturbation (True). If True, also define `eps_step` for
                         the step size and eps for the maximum perturbation.
-        :param tensor_board: Activate summary writer for TensorBoard: Default is `False` and deactivated summary writer. If
-                             `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory. Provide `path` in type
+        :param tensor_board: Activate summary writer for TensorBoard: Default is `False` and deactivated summary writer.
+                             If `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory. Provide `path` in type
                              `str` to save in path/CURRENT_DATETIME_HOSTNAME.
                              Use hierarchical folder structure to compare between runs easily. e.g. pass in ‘runs/exp1’,
                              ‘runs/exp2’, etc. for each new experiment to compare across them.
