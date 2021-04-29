@@ -18,6 +18,7 @@
 """
 Module providing convenience functions.
 """
+# pylint: disable=C0302
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from functools import wraps
@@ -33,7 +34,7 @@ import warnings
 import zipfile
 
 import numpy as np
-from scipy.special import gammainc
+from scipy.special import gammainc  # pylint: disable=E0611
 import six
 from tqdm.auto import tqdm
 
@@ -48,14 +49,16 @@ logger = logging.getLogger(__name__)
 # ------------------------------------------------------------------------------------------------- CONSTANTS AND TYPES
 
 
-DATASET_TYPE = Tuple[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray], float, float]
-CLIP_VALUES_TYPE = Tuple[Union[int, float, np.ndarray], Union[int, float, np.ndarray]]
+DATASET_TYPE = Tuple[  # pylint: disable=C0103
+    Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray], float, float
+]
+CLIP_VALUES_TYPE = Tuple[Union[int, float, np.ndarray], Union[int, float, np.ndarray]]  # pylint: disable=C0103
 
 if TYPE_CHECKING:
-    # pylint: disable=R0401
+    # pylint: disable=R0401,C0412
     from art.defences.preprocessor.preprocessor import Preprocessor
 
-    PREPROCESSING_TYPE = Optional[
+    PREPROCESSING_TYPE = Optional[  # pylint: disable=C0103
         Union[
             Tuple[Union[int, float, np.ndarray], Union[int, float, np.ndarray]], Preprocessor, Tuple[Preprocessor, ...]
         ]
@@ -100,7 +103,7 @@ if TYPE_CHECKING:
     from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
     from art.estimators.speech_recognition.tensorflow_lingvo import TensorFlowLingvoASR
 
-    CLASSIFIER_LOSS_GRADIENTS_TYPE = Union[
+    CLASSIFIER_LOSS_GRADIENTS_TYPE = Union[  # pylint: disable=C0103
         ClassifierLossGradients,
         EnsembleClassifier,
         GPyGaussianProcessClassifier,
@@ -113,7 +116,7 @@ if TYPE_CHECKING:
         TensorFlowV2Classifier,
     ]
 
-    CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE = Union[
+    CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE = Union[  # pylint: disable=C0103
         ClassifierClassLossGradients,
         EnsembleClassifier,
         GPyGaussianProcessClassifier,
@@ -126,7 +129,7 @@ if TYPE_CHECKING:
         TensorFlowV2Classifier,
     ]
 
-    CLASSIFIER_NEURALNETWORK_TYPE = Union[
+    CLASSIFIER_NEURALNETWORK_TYPE = Union[  # pylint: disable=C0103
         ClassifierNeuralNetwork,
         DetectorClassifier,
         EnsembleClassifier,
@@ -137,7 +140,7 @@ if TYPE_CHECKING:
         TensorFlowV2Classifier,
     ]
 
-    CLASSIFIER_DECISION_TREE_TYPE = Union[
+    CLASSIFIER_DECISION_TREE_TYPE = Union[  # pylint: disable=C0103
         ClassifierDecisionTree,
         LightGBMClassifier,
         ScikitlearnDecisionTreeClassifier,
@@ -148,7 +151,7 @@ if TYPE_CHECKING:
         XGBoostClassifier,
     ]
 
-    CLASSIFIER_TYPE = Union[
+    CLASSIFIER_TYPE = Union[  # pylint: disable=C0103
         Classifier,
         BlackBoxClassifier,
         CatBoostARTClassifier,
@@ -176,13 +179,13 @@ if TYPE_CHECKING:
         CLASSIFIER_NEURALNETWORK_TYPE,
     ]
 
-    OBJECT_DETECTOR_TYPE = Union[
+    OBJECT_DETECTOR_TYPE = Union[  # pylint: disable=C0103
         ObjectDetector,
         PyTorchFasterRCNN,
         TensorFlowFasterRCNN,
     ]
 
-    SPEECH_RECOGNIZER_TYPE = Union[
+    SPEECH_RECOGNIZER_TYPE = Union[  # pylint: disable=C0103
         PyTorchDeepSpeech,
         TensorFlowLingvoASR,
     ]
@@ -490,7 +493,7 @@ def floats_to_one_hot(labels: np.ndarray):
     :rtype: `np.ndarray`
     """
     labels = np.array(labels)
-    for feature in labels.T:
+    for feature in labels.T:  # pylint: disable=E1133
         unique = np.unique(feature)
         unique.sort()
         for index, value in enumerate(unique):
@@ -926,9 +929,9 @@ def load_nursery(raw: bool = False, test_set: float = 0.2, transform_social: boo
     )
 
     # load data
-    features = ["parents", "has_nurs", "form", "children", "housing", "finance", "social", "health", "label"]
+    features_names = ["parents", "has_nurs", "form", "children", "housing", "finance", "social", "health", "label"]
     categorical_features = ["parents", "has_nurs", "form", "housing", "finance", "social", "health"]
-    data = pd.read_csv(path, sep=",", names=features, engine="python")
+    data = pd.read_csv(path, sep=",", names=features_names, engine="python")
     # remove rows with missing label or too sparse label
     data = data.dropna(subset=["label"])
     data.drop(data.loc[data["label"] == "recommend"].index, axis=0, inplace=True)
@@ -990,9 +993,9 @@ def load_nursery(raw: bool = False, test_set: float = 0.2, transform_social: boo
 
     # Split training and test sets
     stratified = sklearn.model_selection.StratifiedShuffleSplit(n_splits=1, test_size=test_set, random_state=18)
-    for train_set, test_set in stratified.split(data, data["label"]):
-        train = data.iloc[train_set]
-        test = data.iloc[test_set]
+    for train_set_i, test_set_i in stratified.split(data, data["label"]):
+        train = data.iloc[train_set_i]
+        test = data.iloc[test_set_i]
     x_train = train.drop(["label"], axis=1).to_numpy()
     y_train = train.loc[:, "label"].to_numpy()
     x_test = test.drop(["label"], axis=1).to_numpy()
@@ -1097,7 +1100,7 @@ def get_file(filename: str, url: str, path: Optional[str] = None, extract: bool 
                 # [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed (_ssl.c:847)
                 import ssl
 
-                ssl._create_default_https_context = ssl._create_unverified_context
+                ssl._create_default_https_context = ssl._create_unverified_context  # pylint: disable=W0212
 
                 if verbose:
                     with tqdm() as t_bar:

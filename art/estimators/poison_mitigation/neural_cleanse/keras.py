@@ -309,9 +309,11 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
 
         return mask_best, pattern_best
 
-    def _predict_classifier(self, x: np.ndarray) -> np.ndarray:
+    def _predict_classifier(
+        self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs
+    ) -> np.ndarray:
         x = x.astype(ART_NUMPY_DTYPE)
-        return KerasClassifier.predict(self, x=x, batch_size=self.batch_size)
+        return KerasClassifier.predict(self, x=x, batch_size=batch_size, training_mode=training_mode, **kwargs)
 
     def _fit_classifier(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
         x = x.astype(ART_NUMPY_DTYPE)
@@ -345,15 +347,16 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
         biases[index] = 0
         layer.set_weights([weights, biases])
 
-    def predict(self, x: np.ndarray, batch_size: int = 128) -> np.ndarray:
+    def predict(self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs) -> np.ndarray:
         """
         Perform prediction of the given classifier for a batch of inputs, potentially filtering suspicious input
 
         :param x: Input data to predict.
         :param batch_size: Batch size.
+        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
-        return NeuralCleanseMixin.predict(self, x, batch_size=batch_size)
+        return NeuralCleanseMixin.predict(self, x, batch_size=batch_size, training_mode=training_mode, **kwargs)
 
     def mitigate(self, x_val: np.ndarray, y_val: np.ndarray, mitigation_types: List[str]) -> None:
         """

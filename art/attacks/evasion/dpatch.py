@@ -93,9 +93,9 @@ class DPatch(EvasionAttack):
         self.verbose = verbose
         self._check_params()
 
-        self.target_label = []
+        self.target_label: Optional[Union[int, np.ndarray, List[int]]] = list()
 
-    def generate(
+    def generate(  # pylint: disable=W0221
         self,
         x: np.ndarray,
         y: Optional[np.ndarray] = None,
@@ -117,9 +117,8 @@ class DPatch(EvasionAttack):
         mask = kwargs.get("mask")
         if mask is not None:
             mask = mask.copy()
-        if (
-            mask is not None
-            and (mask.dtype != np.bool)
+        if mask is not None and (
+            mask.dtype != np.bool
             or not (mask.shape[0] == 1 or mask.shape[0] == x.shape[0])
             or not (
                 (mask.shape[1] == x.shape[1] and mask.shape[2] == x.shape[2])
@@ -151,13 +150,23 @@ class DPatch(EvasionAttack):
                 self.target_label = target_label
 
         patched_images, transforms = self._augment_images_with_patch(
-            x, self._patch, random_location=True, channels_first=self.estimator.channels_first, mask=mask
+            x,
+            self._patch,
+            random_location=True,
+            channels_first=self.estimator.channels_first,
+            mask=mask,
+            transforms=None,
         )
         patch_target: List[Dict[str, np.ndarray]] = list()
 
         if self.target_label:
 
             for i_image in range(patched_images.shape[0]):
+                if isinstance(self.target_label, int):
+                    t_l = self.target_label
+                else:
+                    t_l = self.target_label[i_image]
+
                 i_x_1 = transforms[i_image]["i_x_1"]
                 i_x_2 = transforms[i_image]["i_x_2"]
                 i_y_1 = transforms[i_image]["i_y_1"]
@@ -167,7 +176,7 @@ class DPatch(EvasionAttack):
                 target_dict["boxes"] = np.asarray([[i_x_1, i_y_1, i_x_2, i_y_2]])
                 target_dict["labels"] = np.asarray(
                     [
-                        self.target_label[i_image],
+                        t_l,
                     ]
                 )
                 target_dict["scores"] = np.asarray(
@@ -232,6 +241,15 @@ class DPatch(EvasionAttack):
                     a_max=self.estimator.clip_values[1],
                 )
 
+            patched_images, _ = self._augment_images_with_patch(
+                x,
+                self._patch,
+                random_location=False,
+                channels_first=self.estimator.channels_first,
+                mask=None,
+                transforms=transforms,
+            )
+
         return self._patch
 
     @staticmethod
@@ -241,6 +259,7 @@ class DPatch(EvasionAttack):
         random_location: bool,
         channels_first: bool,
         mask: Optional[np.ndarray] = None,
+        transforms: List[Dict[str, int]] = None,
     ) -> Tuple[np.ndarray, List[Dict[str, int]]]:
         """
         Augment images with patch.
@@ -253,9 +272,16 @@ class DPatch(EvasionAttack):
         :param mask: An boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
                      (N, H, W) without their channel dimensions. Any features for which the mask is True can be the
                      center location of the patch during sampling.
+        :param transforms: Patch transforms, requires `random_location=False`, and `mask=None`.
         :type mask: `np.ndarray`
         """
-        transformations = list()
+        if transforms is not None:
+            if random_location or mask is not None:
+                raise ValueError(
+                    "Definition of patch locations in `locations` requires `random_location=False`, and `mask=None`."
+                )
+
+        random_transformations = list()
         x_copy = x.copy()
         patch_copy = patch.copy()
 
@@ -265,48 +291,56 @@ class DPatch(EvasionAttack):
 
         for i_image in range(x.shape[0]):
 
-            if random_location:
-                if mask is None:
-                    i_x_1 = random.randint(0, x_copy.shape[1] - 1 - patch_copy.shape[0])
-                    i_y_1 = random.randint(0, x_copy.shape[2] - 1 - patch_copy.shape[1])
-                else:
+            if transforms is None:
 
-                    if mask.shape[0] == 1:
-                        mask_2d = mask[0, :, :]
+                if random_location:
+                    if mask is None:
+                        i_x_1 = random.randint(0, x_copy.shape[1] - 1 - patch_copy.shape[0])
+                        i_y_1 = random.randint(0, x_copy.shape[2] - 1 - patch_copy.shape[1])
                     else:
-                        mask_2d = mask[i_image, :, :]
 
-                    edge_x_0 = patch_copy.shape[0] // 2
-                    edge_x_1 = patch_copy.shape[0] - edge_x_0
-                    edge_y_0 = patch_copy.shape[1] // 2
-                    edge_y_1 = patch_copy.shape[1] - edge_y_0
+                        if mask.shape[0] == 1:
+                            mask_2d = mask[0, :, :]
+                        else:
+                            mask_2d = mask[i_image, :, :]
 
-                    mask_2d[0:edge_x_0, :] = False
-                    mask_2d[-edge_x_1:, :] = False
-                    mask_2d[:, 0:edge_y_0] = False
-                    mask_2d[:, -edge_y_1:] = False
+                        edge_x_0 = patch_copy.shape[0] // 2
+                        edge_x_1 = patch_copy.shape[0] - edge_x_0
+                        edge_y_0 = patch_copy.shape[1] // 2
+                        edge_y_1 = patch_copy.shape[1] - edge_y_0
 
-                    num_pos = np.argwhere(mask_2d).shape[0]
-                    pos_id = np.random.choice(num_pos, size=1)
-                    pos = np.argwhere(mask_2d > 0)[pos_id[0]]
-                    i_x_1 = pos[0] - edge_x_0
-                    i_y_1 = pos[1] - edge_y_0
+                        mask_2d[0:edge_x_0, :] = False
+                        mask_2d[-edge_x_1:, :] = False
+                        mask_2d[:, 0:edge_y_0] = False
+                        mask_2d[:, -edge_y_1:] = False
+
+                        num_pos = np.argwhere(mask_2d).shape[0]
+                        pos_id = np.random.choice(num_pos, size=1)
+                        pos = np.argwhere(mask_2d > 0)[pos_id[0]]
+                        i_x_1 = pos[0] - edge_x_0
+                        i_y_1 = pos[1] - edge_y_0
+
+                else:
+                    i_x_1 = 0
+                    i_y_1 = 0
+
+                i_x_2 = i_x_1 + patch_copy.shape[0]
+                i_y_2 = i_y_1 + patch_copy.shape[1]
+
+                random_transformations.append({"i_x_1": i_x_1, "i_y_1": i_y_1, "i_x_2": i_x_2, "i_y_2": i_y_2})
 
             else:
-                i_x_1 = 0
-                i_y_1 = 0
-
-            i_x_2 = i_x_1 + patch_copy.shape[0]
-            i_y_2 = i_y_1 + patch_copy.shape[1]
-
-            transformations.append({"i_x_1": i_x_1, "i_y_1": i_y_1, "i_x_2": i_x_2, "i_y_2": i_y_2})
+                i_x_1 = transforms[i_image]["i_x_1"]
+                i_x_2 = transforms[i_image]["i_x_2"]
+                i_y_1 = transforms[i_image]["i_y_1"]
+                i_y_2 = transforms[i_image]["i_y_2"]
 
             x_copy[i_image, i_x_1:i_x_2, i_y_1:i_y_2, :] = patch_copy
 
         if channels_first:
             x_copy = np.transpose(x_copy, (0, 3, 1, 2))
 
-        return x_copy, transformations
+        return x_copy, random_transformations
 
     def apply_patch(
         self,

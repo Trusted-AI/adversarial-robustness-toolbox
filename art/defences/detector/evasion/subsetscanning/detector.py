@@ -158,7 +158,7 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
                     best_score, _, _, _ = Scanner.fgss_individ_for_nets(c_p)
                     clean_scores.append(best_score)
                     pbar.update(1)
-                for j, a_p in enumerate(adv_pvalranges):
+                for _, a_p in enumerate(adv_pvalranges):
                     best_score, _, _, _ = Scanner.fgss_individ_for_nets(a_p)
                     adv_scores.append(best_score)
                     pbar.update(1)
@@ -247,10 +247,13 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
         return self.channels_first
 
     @property
-    def classifier(self) -> int:
+    def classifier(self) -> ClassifierNeuralNetwork:
+        """
+        :return: Classifier.
+        """
         return self.detector
 
-    def class_gradient(
+    def class_gradient(  # pylint: disable=W0221
         self, x: np.ndarray, label: Union[int, List[int], None] = None, training_mode: bool = False, **kwargs
     ) -> np.ndarray:
         """
@@ -268,7 +271,9 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
         """
         return self.detector.class_gradient(x=x, label=label, training_mode=training_mode, **kwargs)
 
-    def loss_gradient(self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs) -> np.ndarray:
+    def loss_gradient(  # pylint: disable=W0221
+        self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs
+    ) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 

@@ -67,7 +67,7 @@ class ExpectationOverTransformations(ClassifierWrapper, ClassifierClassLossGradi
         """
         return self._input_shape  # type: ignore
 
-    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
+    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:  # pylint: disable=W0221
         """
         Perform prediction of the given classifier for a batch of inputs, taking an expectation over transformations.
 
@@ -81,7 +81,9 @@ class ExpectationOverTransformations(ClassifierWrapper, ClassifierClassLossGradi
             prediction += self._predict(next(self.transformation())(x), **{"batch_size": batch_size})
         return prediction / self.sample_size
 
-    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
+    def fit(  # pylint: disable=W0221
+        self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 20, **kwargs
+    ) -> None:
         """
         Fit the classifier using the training data `(x, y)`.
 
@@ -95,7 +97,14 @@ class ExpectationOverTransformations(ClassifierWrapper, ClassifierClassLossGradi
         """
         raise NotImplementedError
 
-    def loss_gradient(self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs) -> np.ndarray:
+    def loss_gradient(
+        self,
+        x: np.ndarray,
+        y: np.ndarray,
+        training_mode: bool = False,
+        **kwargs
+        # pylint: disable=W0221
+    ) -> np.ndarray:
         """
         Compute the gradient of the given classifier's loss function w.r.t. `x`, taking an expectation
         over transformations.
@@ -114,7 +123,7 @@ class ExpectationOverTransformations(ClassifierWrapper, ClassifierClassLossGradi
             )
         return loss_gradient / self.sample_size
 
-    def class_gradient(
+    def class_gradient(  # pylint: disable=W0221
         self, x: np.ndarray, label: Union[int, List[int], None] = None, training_mode: bool = False, **kwargs
     ) -> np.ndarray:
         """

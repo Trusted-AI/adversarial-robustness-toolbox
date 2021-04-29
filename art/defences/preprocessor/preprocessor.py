@@ -100,7 +100,7 @@ class Preprocessor(abc.ABC):
         """
         pass
 
-    def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
+    def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:  # pylint: disable=W0613,R0201
         """
         Provide an estimate of the gradients of the defence for the backward pass. If the defence is not differentiable,
         this is an estimate of the gradient, most often replacing the computation performed by the defence with the

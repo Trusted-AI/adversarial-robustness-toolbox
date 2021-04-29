@@ -48,9 +48,9 @@ def test_imperceptible_asr_pytorch(art_warning, expected_values, use_amp, device
         # Load data for testing
         expected_data = expected_values()
 
-        x1 = expected_data[0]
-        x2 = expected_data[1]
-        x3 = expected_data[2]
+        x1 = expected_data["x1"]
+        x2 = expected_data["x2"]
+        x3 = expected_data["x3"]
 
         # Create signal data
         x = np.array(

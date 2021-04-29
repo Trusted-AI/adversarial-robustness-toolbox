@@ -1,4 +1,4 @@
-name: Continuous Integration
+name: CI General
 on:
   # Run on manual trigger
   workflow_dispatch:
@@ -62,9 +62,9 @@ jobs:
           - name: PyTorch (Python 3.7)
             framework: pytorch
             python: 3.7
-            torch: 1.7.1+cpu
-            torchvision: 0.8.2+cpu
-            torchaudio: 0.7.2
+            torch: 1.8.1+cpu
+            torchvision: 0.9.1+cpu
+            torchaudio: 0.8.1
           - name: scikit-learn 0.22.2 (Python 3.7)
             framework: scikitlearn
             scikit-learn: 0.22.2
@@ -77,36 +77,8 @@ jobs:
             framework: scikitlearn
             scikit-learn: 0.24.1
             python: 3.8
-          - name: TensorFlow+Lingvo 2.1.0v1 (Keras 2.3.1 Python 3.6)
-            framework: tensorflow2v1
-            python: 3.6
-            tensorflow: 2.1.0
-            tf_version: v2
-            keras: 2.3.1
-            lingvo: 0.6.4
-#          - name: mxnet (Python 3.7)
-#            framework: mxnet
-#            python: 3.7
-#          - name: legacy (TensorFlow 2.3.2 Keras 2.4.3  PyTorch 1.7.1 scikit-learn 0.22.2 Python 3.7)
-#            framework: legacy
-#            python: 3.7
-#            tensorflow: 2.3.2
-#            keras: 2.4.3
-#            scikit-learn: 0.22.2
-#            torch: 1.7.1+cpu
-#            torchvision: 0.8.2+cpu
-#            torchaudio: 0.7.2
-#          - name: legacy (TensorFlow 2.4.1 Keras 2.4.3 PyTorch 1.7.1 scikit-learn 0.23.2 Python 3.7)
-#            framework: legacy
-#            python: 3.7
-#            tensorflow: 2.4.1
-#            keras: 2.4.3
-#            torch: 1.7.1+cpu
-#            torchvision: 0.8.2+cpu
-#            torchaudio: 0.7.2
-#            scikit-learn: 0.23.2
 
-    name: Run ${{ matrix.name }} Tests
+    name: ${{ matrix.name }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v2
@@ -158,7 +130,7 @@ jobs:
           pip install tensorflow-addons==0.9.1
           pip install model-pruning-google-research==0.0.3
           pip list
-      - name: Run ${{ matrix.name }} Tests
+      - name: Run Tests
         run: ./run_tests.sh ${{ matrix.framework }}
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
@@ -176,19 +148,22 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get -y -q install ffmpeg libavcodec-extra
-          pip install tensorflow==2.2.2
-          pip install keras==2.3.1
+          pip install tensorflow==2.4.1
+          pip install keras==2.4.3
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip setuptools wheel
-          pip install -q pylint pycodestyle
+          pip install -q pylint==2.7.4 pycodestyle==2.7.0
           pip install -q -r requirements.txt
           pip list
       - name: pycodestyle
-        run: (pycodestyle --ignore=C0330,C0415,E203,E231,W503 --max-line-length=120 art || exit 0)
+        run: pycodestyle --ignore=C0330,C0415,E203,E231,W503 --max-line-length=120 art
       - name: pylint
-        run: (pylint --disable=C0330,C0415,E203,E1136 -rn art || exit 0)
-      - name: Check Types (mypy)
-        run: (mypy art || exit 0)
-      - name: pytest
-        run: py.test --pep8 -m pep8
+        if: ${{ always() }}
+        run: pylint --disable=C0330,C0415,E203,E1136,E0401,E1102 -rn art
+      - name: mypy
+        if: ${{ always() }}
+        run: mypy art
+      - name: pytest-flake8
+        if: ${{ always() }}
+        run: pytest --flake8 -v -m flake8

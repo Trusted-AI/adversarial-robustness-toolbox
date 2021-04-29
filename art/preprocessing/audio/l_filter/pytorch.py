@@ -31,6 +31,7 @@ from tqdm.auto import tqdm
 from art.preprocessing.preprocessing import PreprocessorPyTorch
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     import torch
     from art.utils import CLIP_VALUES_TYPE
 
