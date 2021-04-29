@@ -69,7 +69,7 @@ class TestDeepFool(TestBase):
         scores = classifier._model.evaluate(self.x_test_mnist, self.y_test_mnist)
         logger.info("[Keras, MNIST] Accuracy on test set: %.2f%%", (scores[1] * 100))
 
-        attack = DeepFool(classifier, max_iter=5, batch_size=11)
+        attack = DeepFool(classifier, max_iter=5, batch_size=11, verbose=False)
         x_train_adv = attack.generate(self.x_train_mnist)
         x_test_adv = attack.generate(self.x_test_mnist)
 
@@ -109,7 +109,7 @@ class TestDeepFool(TestBase):
         accuracy = sum3 / self.y_test_mnist.shape[0]
         logger.info("[TF, MNIST] Accuracy on test set: %.2f%%", (accuracy * 100))
 
-        attack = DeepFool(classifier, max_iter=5, batch_size=11)
+        attack = DeepFool(classifier, max_iter=5, batch_size=11, verbose=False)
         x_train_adv = attack.generate(self.x_train_mnist)
         x_test_adv = attack.generate(self.x_test_mnist)
 
@@ -151,7 +151,7 @@ class TestDeepFool(TestBase):
         accuracy = sum7 / self.y_test_mnist.shape[0]
         logger.info("[PyTorch, MNIST] Accuracy on test set: %.2f%%", (accuracy * 100))
 
-        attack = DeepFool(classifier, max_iter=5, batch_size=11)
+        attack = DeepFool(classifier, max_iter=5, batch_size=11, verbose=False)
         x_train_adv = attack.generate(x_train)
         x_test_adv = attack.generate(x_test)
 
@@ -181,7 +181,7 @@ class TestDeepFool(TestBase):
     )
     def test_9_keras_mnist_partial_grads(self):
         classifier = get_image_classifier_kr(from_logits=True)
-        attack = DeepFool(classifier, max_iter=2, nb_grads=3)
+        attack = DeepFool(classifier, max_iter=2, nb_grads=3, verbose=False)
         x_test_adv = attack.generate(self.x_test_mnist)
         self.assertFalse((self.x_test_mnist == x_test_adv).all())
 
@@ -197,7 +197,7 @@ class TestDeepFool(TestBase):
     def test_6_keras_iris_clipped(self):
         classifier = get_tabular_classifier_kr()
 
-        attack = DeepFool(classifier, max_iter=5)
+        attack = DeepFool(classifier, max_iter=5, verbose=False)
         x_test_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
@@ -213,7 +213,7 @@ class TestDeepFool(TestBase):
 
         # Recreate a classifier without clip values
         classifier = KerasClassifier(model=classifier._model, use_logits=False, channels_first=True)
-        attack = DeepFool(classifier, max_iter=5, batch_size=128)
+        attack = DeepFool(classifier, max_iter=5, batch_size=128, verbose=False)
         x_test_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_adv).all())
 
@@ -225,7 +225,7 @@ class TestDeepFool(TestBase):
     def test_2_tensorflow_iris(self):
         classifier, _ = get_tabular_classifier_tf()
 
-        attack = DeepFool(classifier, max_iter=5, batch_size=128)
+        attack = DeepFool(classifier, max_iter=5, batch_size=128, verbose=False)
         x_test_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
@@ -239,7 +239,7 @@ class TestDeepFool(TestBase):
     def test_4_pytorch_iris(self):
         classifier = get_tabular_classifier_pt()
 
-        attack = DeepFool(classifier, max_iter=5, batch_size=128)
+        attack = DeepFool(classifier, max_iter=5, batch_size=128, verbose=False)
         x_test_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertLessEqual(np.amax(x_test_adv), 1.0)

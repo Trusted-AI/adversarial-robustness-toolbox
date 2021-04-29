@@ -113,6 +113,7 @@ class TestWasserstein(TestBase):
             eps_step=0.1,
             kernel_size=5,
             batch_size=batch_size,
+            verbose=False,
         )
 
         x_train_adv = attack.generate(x_train)
@@ -151,6 +152,7 @@ class TestWasserstein(TestBase):
         #     eps_step=0.1,
         #     kernel_size=5,
         #     batch_size=batch_size,
+        #     verbose = False,
         # )
         #
         # x_train_adv = attack.generate(x_train)
@@ -187,6 +189,7 @@ class TestWasserstein(TestBase):
         #     eps_step=0.1,
         #     kernel_size=5,
         #     batch_size=batch_size,
+        #     verbose = False,
         # )
         #
         # x_train_adv = attack.generate(x_train)
@@ -223,6 +226,7 @@ class TestWasserstein(TestBase):
         #     eps_step=0.1,
         #     kernel_size=5,
         #     batch_size=batch_size,
+        #     verbose = False,
         # )
         #
         # x_train_adv = attack.generate(x_train)
@@ -259,6 +263,7 @@ class TestWasserstein(TestBase):
         #     eps_step=0.05,
         #     kernel_size=5,
         #     batch_size=batch_size,
+        #     verbose = False,
         # )
         #
         # x_train_adv = attack.generate(x_train)
@@ -295,6 +300,7 @@ class TestWasserstein(TestBase):
         #     eps_step=0.1,
         #     kernel_size=5,
         #     batch_size=batch_size,
+        #     verbose = False,
         # )
         #
         # x_train_adv = attack.generate(x_train)
@@ -331,6 +337,7 @@ class TestWasserstein(TestBase):
         #     eps_step=0.1,
         #     kernel_size=5,
         #     batch_size=batch_size,
+        #     verbose = False,
         # )
         #
         # x_train_adv = attack.generate(x_train)
@@ -368,6 +375,7 @@ class TestWasserstein(TestBase):
         #     eps_step=0.1,
         #     kernel_size=5,
         #     batch_size=batch_size,
+        #     verbose = False,
         # )
         #
         # train_y_rand = random_targets(y_train, nb_classes=10)
@@ -404,6 +412,7 @@ class TestWasserstein(TestBase):
         #     eps_step=0.1,
         #     kernel_size=3,
         #     batch_size=batch_size,
+        #     verbose = False,
         # )
         #
         # x_train_adv = attack.generate(x_train)

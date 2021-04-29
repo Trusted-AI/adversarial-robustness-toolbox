@@ -103,6 +103,8 @@ class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):  # lgtm [py/
     Wrapper class for scikit-learn classifier models.
     """
 
+    estimator_params = ClassifierMixin.estimator_params + ScikitlearnEstimator.estimator_params + ["use_logits"]
+
     def __init__(
         self,
         model: "sklearn.base.BaseEstimator",
@@ -974,9 +976,6 @@ class ScikitlearnLogisticRegression(ClassGradientsMixin, LossGradientsMixin, Sci
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
-        | Paper link: http://cs229.stanford.edu/proj2016/report/ItkinaWu-AdversarialAttacksonImageRecognition-report.pdf
-        | Typo in https://arxiv.org/abs/1605.07277 (equation 6)
-
         :param x: Sample input with shape as expected by the model.
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
                   `(nb_samples,)`.
@@ -995,9 +994,6 @@ class ScikitlearnLogisticRegression(ClassGradientsMixin, LossGradientsMixin, Sci
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
 
-        num_samples, _ = x_preprocessed.shape
-        gradients = np.zeros(x_preprocessed.shape)
-
         y_index = np.argmax(y_preprocessed, axis=1)
         if self.model.class_weight is None or self.model.class_weight == "balanced":
             class_weight = np.ones(self.nb_classes)
@@ -1008,28 +1004,18 @@ class ScikitlearnLogisticRegression(ClassGradientsMixin, LossGradientsMixin, Sci
                 y=y_index,
             )
 
-        y_pred = self.model.predict_proba(X=x_preprocessed)
+        y_pred = self.predict(x=x_preprocessed)
         weights = self.model.coef_
 
-        # Consider the special case of a binary logistic regression model:
-        if self.nb_classes == 2:
-            for i_sample in range(num_samples):
-                gradients[i_sample, :] += (
-                    class_weight[1] * (1.0 - y_preprocessed[i_sample, 1])
-                    - class_weight[0] * (1.0 - y_preprocessed[i_sample, 0])
-                ) * (y_pred[i_sample, 0] * y_pred[i_sample, 1] * weights[0, :])
-        else:
-            w_weighted = np.matmul(y_pred, weights)
+        errors = class_weight * (y_pred - y)
 
-            for i_sample in range(num_samples):
-                for i_class in range(self.nb_classes):  # type: ignore
-                    gradients[i_sample, :] += (
-                        class_weight[i_class]
-                        * (1.0 - y_preprocessed[i_sample, i_class])
-                        * (weights[i_class, :] - w_weighted[i_sample, :])
-                    )
+        if weights.shape[0] == 1:
+            weights = np.append(-weights, weights, axis=0)
+
+        gradients = (errors @ weights) / self.model.classes_.size
 
         gradients = self._apply_preprocessing_gradient(x, gradients)
+
         return gradients
 
     @staticmethod

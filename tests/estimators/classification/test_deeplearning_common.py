@@ -219,28 +219,39 @@ def test_defences_predict(art_warning, get_default_mnist_subset, image_dl_estima
     try:
         (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
-        classifier, _ = image_dl_estimator_defended(
-            defenses=["FeatureSqueezing", "JpegCompression", "SpatialSmoothing"]
-        )
-        assert len(classifier.preprocessing_defences) == 3
-
-        predictions_classifier = classifier.predict(x_test_mnist)
-
-        # Apply the same defences by hand
-        x_test_defense = x_test_mnist
-        clip_values = (0, 1)
-        fs = FeatureSqueezing(clip_values=clip_values, bit_depth=2)
-        x_test_defense, _ = fs(x_test_defense, y_test_mnist)
-        jpeg = JpegCompression(clip_values=clip_values, apply_predict=True)
-        x_test_defense, _ = jpeg(x_test_defense, y_test_mnist)
-        smooth = SpatialSmoothing()
-        x_test_defense, _ = smooth(x_test_defense, y_test_mnist)
-        # classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
         classifier, _ = image_dl_estimator()
-        predictions_check = classifier._model.predict(x_test_defense)
+        y_check_clean = classifier.predict(x_test_mnist)
+        clip_values = (0, 1)
 
-        # Check that the prediction results match
-        np.testing.assert_array_almost_equal(predictions_classifier, predictions_check, decimal=4)
+        classifier_defended, _ = image_dl_estimator_defended(defenses=["FeatureSqueezing"])
+        assert len(classifier_defended.preprocessing_defences) == 1
+        y_defended = classifier_defended.predict(x_test_mnist)
+        fs = FeatureSqueezing(clip_values=clip_values, bit_depth=2)
+        x_test_defense, _ = fs(x_test_mnist, y_test_mnist)
+        y_check = classifier.predict(x_test_defense)
+        np.testing.assert_array_almost_equal(y_defended, y_check, decimal=4)
+        np.testing.assert_raises(AssertionError, np.testing.assert_array_equal, y_check, y_check_clean)
+
+        classifier_defended, _ = image_dl_estimator_defended(defenses=["JpegCompression"])
+        assert len(classifier_defended.preprocessing_defences) == 1
+        y_defended = classifier_defended.predict(x_test_mnist)
+        jpeg = JpegCompression(
+            clip_values=clip_values, apply_predict=True, channels_first=classifier_defended.channels_first
+        )
+        x_test_defense, _ = jpeg(x_test_mnist, y_test_mnist)
+        y_check = classifier.predict(x_test_defense)
+        np.testing.assert_array_almost_equal(y_defended, y_check, decimal=4)
+        np.testing.assert_raises(AssertionError, np.testing.assert_array_equal, y_check, y_check_clean)
+
+        classifier_defended, _ = image_dl_estimator_defended(defenses=["SpatialSmoothing"])
+        assert len(classifier_defended.preprocessing_defences) == 1
+        y_defended = classifier_defended.predict(x_test_mnist)
+        smooth = SpatialSmoothing(channels_first=classifier_defended.channels_first)
+        x_test_defense, _ = smooth(x_test_mnist, y_test_mnist)
+        y_check = classifier.predict(x_test_defense)
+        np.testing.assert_array_almost_equal(y_defended, y_check, decimal=4)
+        np.testing.assert_raises(AssertionError, np.testing.assert_array_equal, y_check, y_check_clean)
+
     except ARTTestException as e:
         art_warning(e)
 
