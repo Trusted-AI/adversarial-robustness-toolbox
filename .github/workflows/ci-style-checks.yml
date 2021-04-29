@@ -53,8 +53,8 @@ jobs:
         if: ${{ always() }}
         run: pytest --flake8 -v -m flake8
       - name: black
-          if: ${{ always() }}
-          run: |
-            black --line-length 120 --check art/
-            black --line-length 120 --check tests/
-            black --line-length 120 --check examples/
+        if: ${{ always() }}
+        run: |
+          black --line-length 120 --check art/
+          black --line-length 120 --check tests/
+          black --line-length 120 --check examples/
