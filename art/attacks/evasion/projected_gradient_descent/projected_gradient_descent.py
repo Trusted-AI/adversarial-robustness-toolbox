@@ -68,7 +68,7 @@ class ProjectedGradientDescent(EvasionAttack):
         "batch_size",
         "max_iter",
         "random_eps",
-        "verbose",
+        "tensor_board" "verbose",
     ]
 
     _estimator_requirements = (BaseEstimator, LossGradientsMixin)
@@ -84,6 +84,7 @@ class ProjectedGradientDescent(EvasionAttack):
         num_random_init: int = 0,
         batch_size: int = 32,
         random_eps: bool = False,
+        tensor_board: Union[str, bool] = False,
         verbose: bool = True,
     ):
         """
@@ -102,6 +103,11 @@ class ProjectedGradientDescent(EvasionAttack):
         :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0 starting
                                 at the original input.
         :param batch_size: Size of the batch on which adversarial samples are generated.
+        :param tensor_board: Summary writer for TensorBoard: Default is `False` and deactivated summary writer. If
+                             `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory. Provide `path` in type
+                             `str` to save in path/CURRENT_DATETIME_HOSTNAME.
+                             Use hierarchical folder structure to compare between runs easily. e.g. pass in ‘runs/exp1’,
+                             ‘runs/exp2’, etc. for each new experiment to compare across them.
         :param verbose: Show progress bars.
         """
         super().__init__(estimator=estimator)
@@ -115,6 +121,7 @@ class ProjectedGradientDescent(EvasionAttack):
         self.batch_size = batch_size
         self.random_eps = random_eps
         self.verbose = verbose
+        self.tensor_board = tensor_board
         ProjectedGradientDescent._check_params(self)
 
         self._attack: Union[
@@ -131,6 +138,7 @@ class ProjectedGradientDescent(EvasionAttack):
                 num_random_init=num_random_init,
                 batch_size=batch_size,
                 random_eps=random_eps,
+                tensor_board=tensor_board,
                 verbose=verbose,
             )
 
@@ -159,6 +167,7 @@ class ProjectedGradientDescent(EvasionAttack):
                 num_random_init=num_random_init,
                 batch_size=batch_size,
                 random_eps=random_eps,
+                tensor_board=tensor_board,
                 verbose=verbose,
             )
 
