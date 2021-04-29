@@ -73,9 +73,9 @@ jobs:
             framework: scikitlearn
             scikit-learn: 0.23.2
             python: 3.8
-          - name: scikit-learn 0.24.1 (Python 3.8)
+          - name: scikit-learn 0.24.2 (Python 3.8)
             framework: scikitlearn
-            scikit-learn: 0.24.1
+            scikit-learn: 0.24.2
             python: 3.8
 
     name: ${{ matrix.name }}
