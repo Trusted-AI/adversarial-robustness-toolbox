@@ -104,7 +104,7 @@ class ProjectedGradientDescent(EvasionAttack):
         :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0 starting
                                 at the original input.
         :param batch_size: Size of the batch on which adversarial samples are generated.
-        :param tensor_board: Summary writer for TensorBoard: Default is `False` and deactivated summary writer. If
+        :param tensor_board: Activate summary writer for TensorBoard: Default is `False` and deactivated summary writer. If
                              `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory. Provide `path` in type
                              `str` to save in path/CURRENT_DATETIME_HOSTNAME.
                              Use hierarchical folder structure to compare between runs easily. e.g. pass in ‘runs/exp1’,
@@ -247,3 +247,6 @@ class ProjectedGradientDescent(EvasionAttack):
 
         if not isinstance(self.verbose, bool):
             raise ValueError("The verbose has to be a Boolean.")
+
+        if not isinstance(self.tensor_board, (bool, str)):
+            raise ValueError("The argument `tensor_board` has to be either of type bool or str.")

@@ -92,7 +92,7 @@ class FastGradientMethod(EvasionAttack):
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :param minimal: Indicates if computing the minimal perturbation (True). If True, also define `eps_step` for
                         the step size and eps for the maximum perturbation.
-        :param tensor_board: Summary writer for TensorBoard: Default is `False` and deactivated summary writer. If
+        :param tensor_board: Activate summary writer for TensorBoard: Default is `False` and deactivated summary writer. If
                              `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory. Provide `path` in type
                              `str` to save in path/CURRENT_DATETIME_HOSTNAME.
                              Use hierarchical folder structure to compare between runs easily. e.g. pass in ‘runs/exp1’,
@@ -113,13 +113,15 @@ class FastGradientMethod(EvasionAttack):
         self._batch_id = 0
         self._i_max_iter = 0
 
-        self.tensor_board = tensor_board
         if tensor_board:
             from tensorboardX import SummaryWriter
 
-            self.sw = SummaryWriter()
+            if isinstance(tensor_board, str):
+                self.summary_writer = SummaryWriter(tensor_board)
+            else:
+                self.summary_writer = SummaryWriter()
         else:
-            self.sw = None
+            self.summary_writer = None
 
     def _check_compatibility_input_and_eps(self, x: np.ndarray):
         """
@@ -378,6 +380,9 @@ class FastGradientMethod(EvasionAttack):
         if not isinstance(self.minimal, bool):
             raise ValueError("The flag `minimal` has to be of type bool.")
 
+        if not isinstance(self.tensor_board, (bool, str)):
+            raise ValueError("The argument `tensor_board` has to be either of type bool or str.")
+
     def _compute_perturbation(
         self, batch: np.ndarray, batch_labels: np.ndarray, mask: Optional[np.ndarray]
     ) -> np.ndarray:
@@ -388,18 +393,18 @@ class FastGradientMethod(EvasionAttack):
         grad = self.estimator.loss_gradient(batch, batch_labels) * (1 - 2 * int(self.targeted))
 
         # Write summary
-        if self.sw is not None:
-            self.sw.add_scalar(
+        if self.summary_writer is not None:
+            self.summary_writer.add_scalar(
                 "gradients/norm-L1/batch-{}".format(self._batch_id),
                 np.linalg.norm(grad.flatten(), ord=1),
                 global_step=self._i_max_iter,
             )
-            self.sw.add_scalar(
+            self.summary_writer.add_scalar(
                 "gradients/norm-L2/batch-{}".format(self._batch_id),
                 np.linalg.norm(grad.flatten(), ord=2),
                 global_step=self._i_max_iter,
             )
-            self.sw.add_scalar(
+            self.summary_writer.add_scalar(
                 "gradients/norm-Linf/batch-{}".format(self._batch_id),
                 np.linalg.norm(grad.flatten(), ord=np.inf),
                 global_step=self._i_max_iter,
@@ -409,7 +414,7 @@ class FastGradientMethod(EvasionAttack):
                 losses = self.estimator.compute_losses(x=batch, y=batch_labels)
 
                 for key, value in losses.items():
-                    self.sw.add_scalar(
+                    self.summary_writer.add_scalar(
                         "loss/{}/batch-{}".format(key, self._batch_id),
                         np.mean(value.detach().cpu().numpy()),
                         global_step=self._i_max_iter,

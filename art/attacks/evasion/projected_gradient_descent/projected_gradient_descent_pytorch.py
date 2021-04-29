@@ -88,7 +88,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0 starting
                                 at the original input.
         :param batch_size: Size of the batch on which adversarial samples are generated.
-        :param tensor_board: Summary writer for TensorBoard: Default is `False` and deactivated summary writer. If
+        :param tensor_board: Activate summary writer for TensorBoard: Default is `False` and deactivated summary writer. If
                              `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory. Provide `path` in type
                              `str` to save in path/CURRENT_DATETIME_HOSTNAME.
                              Use hierarchical folder structure to compare between runs easily. e.g. pass in ‘runs/exp1’,
@@ -111,18 +111,21 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
             batch_size=batch_size,
             random_eps=random_eps,
             verbose=verbose,
+            tensor_board=tensor_board,
         )
 
         self._batch_id = 0
         self._i_max_iter = 0
 
-        self.tensor_board = tensor_board
         if tensor_board:
             from tensorboardX import SummaryWriter
 
-            self.sw = SummaryWriter()
+            if isinstance(tensor_board, str):
+                self.summary_writer = SummaryWriter(tensor_board)
+            else:
+                self.summary_writer = SummaryWriter()
         else:
-            self.sw = None
+            self.summary_writer = None
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
@@ -308,18 +311,18 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         grad = self.estimator.loss_gradient(x=x, y=y) * (1 - 2 * int(self.targeted))
 
         # Write summary
-        if self.sw is not None:
-            self.sw.add_scalar(
+        if self.summary_writer is not None:
+            self.summary_writer.add_scalar(
                 "gradients/norm-L1/batch-{}".format(self._batch_id),
                 np.linalg.norm(grad.flatten(), ord=1),
                 global_step=self._i_max_iter,
             )
-            self.sw.add_scalar(
+            self.summary_writer.add_scalar(
                 "gradients/norm-L2/batch-{}".format(self._batch_id),
                 np.linalg.norm(grad.flatten(), ord=2),
                 global_step=self._i_max_iter,
             )
-            self.sw.add_scalar(
+            self.summary_writer.add_scalar(
                 "gradients/norm-Linf/batch-{}".format(self._batch_id),
                 np.linalg.norm(grad.flatten(), ord=np.inf),
                 global_step=self._i_max_iter,
@@ -329,7 +332,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
                 losses = self.estimator.compute_losses(x=x, y=y)
 
                 for key, value in losses.items():
-                    self.sw.add_scalar(
+                    self.summary_writer.add_scalar(
                         "loss/{}/batch-{}".format(key, self._batch_id),
                         np.mean(value.detach().cpu().numpy()),
                         global_step=self._i_max_iter,

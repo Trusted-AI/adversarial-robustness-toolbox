@@ -149,7 +149,22 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         """
         return self._device
 
-    def _get_losses(self, x: np.ndarray, y: Union[List[Dict[str, np.ndarray]], List[Dict[str, "torch.Tensor"]]]):
+    def _get_losses(
+        self, x: np.ndarray, y: Union[List[Dict[str, np.ndarray]], List[Dict[str, "torch.Tensor"]]]
+    ) -> Tuple[Dict[str, "torch.Tensor"], List["torch.Tensor"], List["torch.Tensor"]]:
+        """
+        Get the loss tensor output of the model including all preprocessing.
+
+        :param x: Samples of shape (nb_samples, height, width, nb_channels).
+        :param y: Target values of format `List[Dict[Tensor]]`, one for each input image. The
+                  fields of the Dict are as follows:
+
+                  - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values \
+                    between 0 and H and 0 and W
+                  - labels (Int64Tensor[N]): the predicted labels for each image
+                  - scores (Tensor[N]): the scores or each prediction.
+        :return: Dictionary of loss tensors, list of input tensors, list of tensors requiring loss gradients
+        """
         import torch  # lgtm [py/repeated-import]
         import torchvision  # lgtm [py/repeated-import]
 
@@ -229,7 +244,7 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
 
         return output, inputs_t, image_tensor_list_grad
 
-    def loss_gradient(
+    def loss_gradient(  # pylint: disable=W0613
         self, x: np.ndarray, y: Union[List[Dict[str, np.ndarray]], List[Dict[str, "torch.Tensor"]]], **kwargs
     ) -> np.ndarray:
         """
@@ -245,6 +260,8 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
                   - scores (Tensor[N]): the scores or each prediction.
         :return: Loss gradients of the same shape as `x`.
         """
+        import torch  # lgtm [py/repeated-import]
+
         output, inputs_t, image_tensor_list_grad = self._get_losses(x=x, y=y)
 
         # Compute the gradient and return
@@ -332,15 +349,15 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
     ) -> np.ndarray:
         raise NotImplementedError
 
-    def compute_losses(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def compute_losses(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
         """
-        Compute the losses of the neural network for samples `x`.
+        Compute all loss components.
 
         :param x: Samples of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
                   nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices
                   of shape `(nb_samples,)`.
-        :return: Loss values.
+        :return: Dictionary of loss components.
         """
         output, _, _ = self._get_losses(x=x, y=y)
         return output
@@ -356,7 +373,9 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         :return: Loss values.
         :rtype: Format as expected by the `model`
         """
-        output, inputs_t, image_tensor_list_grad = self._get_losses(x=x, y=y)
+        import torch  # lgtm [py/repeated-import]
+
+        output, _, _ = self._get_losses(x=x, y=y)
 
         # Compute the gradient and return
         loss = None
@@ -370,5 +389,5 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
 
         if isinstance(x, torch.Tensor):
             return loss
-        else:
-            return loss.detach().cpu().numpy()
+
+        return loss.detach().cpu().numpy()

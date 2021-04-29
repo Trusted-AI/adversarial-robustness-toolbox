@@ -18,6 +18,7 @@
 """
 This module implements the classifier `PyTorchClassifier` for PyTorch models.
 """
+# pylint: disable=C0302
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import copy
@@ -659,18 +660,17 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         if isinstance(x, torch.Tensor):
             return loss
-        else:
-            return loss.detach().cpu().numpy()
+
+        return loss.detach().cpu().numpy()
 
     def compute_losses(
         self,
         x: Union[np.ndarray, "torch.Tensor"],
         y: Union[np.ndarray, "torch.Tensor"],
         reduction: str = "none",
-        **kwargs
     ) -> Dict[str, Union[np.ndarray, "torch.Tensor"]]:
         """
-        Compute the losses.
+        Compute all loss components.
 
         :param x: Sample input with shape as expected by the model.
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices
@@ -679,9 +679,9 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                    'none': no reduction will be applied
                    'mean': the sum of the output will be divided by the number of elements in the output,
                    'sum': the output will be summed.
-        :return: Dictionary of losses.
+        :return: Dictionary of loss components.
         """
-        return {"total": self.compute_loss(x=x, y=y, reduction=reduction, **kwargs)}
+        return {"total": self.compute_loss(x=x, y=y, reduction=reduction)}
 
     def loss_gradient(  # pylint: disable=W0221
         self,
