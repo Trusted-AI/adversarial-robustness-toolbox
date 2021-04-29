@@ -53,7 +53,7 @@ class TestGradientCheck(TestBase):
         weights = classifier._model.layers[0].get_weights()
         new_weights = [np.zeros(w.shape) for w in weights]
         classifier._model.layers[0].set_weights(new_weights)
-        is_bad = loss_gradient_check(classifier, x_test, y_test)
+        is_bad = loss_gradient_check(classifier, x_test, y_test, verbose=False)
 
         self.assertTrue(np.all(np.any(is_bad, 1)))
 
@@ -63,7 +63,7 @@ class TestGradientCheck(TestBase):
         for i in range(len(new_weights)):
             new_weights[i][:] = np.nan
         classifier._model.layers[0].set_weights(new_weights)
-        is_bad = loss_gradient_check(classifier, x_test, y_test)
+        is_bad = loss_gradient_check(classifier, x_test, y_test, verbose=False)
 
         self.assertTrue(np.all(np.any(is_bad, 1)))
 

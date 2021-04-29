@@ -60,7 +60,7 @@ class TestNewtonFool(TestBase):
         tfc, sess = get_image_classifier_tf()
 
         # Attack
-        nf = NewtonFool(tfc, max_iter=5, batch_size=100)
+        nf = NewtonFool(tfc, max_iter=5, batch_size=100, verbose=False)
         x_test_adv = nf.generate(self.x_test_mnist)
 
         self.assertFalse((self.x_test_mnist == x_test_adv).all())
@@ -86,7 +86,7 @@ class TestNewtonFool(TestBase):
         krc = get_image_classifier_kr()
 
         # Attack
-        nf = NewtonFool(krc, max_iter=5, batch_size=100)
+        nf = NewtonFool(krc, max_iter=5, batch_size=100, verbose=False)
         x_test_adv = nf.generate(self.x_test_mnist)
 
         self.assertFalse((self.x_test_mnist == x_test_adv).all())
@@ -113,7 +113,7 @@ class TestNewtonFool(TestBase):
         ptc = get_image_classifier_pt()
 
         # Attack
-        nf = NewtonFool(ptc, max_iter=5, batch_size=100)
+        nf = NewtonFool(ptc, max_iter=5, batch_size=100, verbose=False)
         x_test_adv = nf.generate(x_test)
 
         self.assertFalse((x_test == x_test_adv).all())
@@ -131,7 +131,7 @@ class TestNewtonFool(TestBase):
     def test_7_keras_iris_clipped(self):
         classifier = get_tabular_classifier_kr()
 
-        attack = NewtonFool(classifier, max_iter=5)
+        attack = NewtonFool(classifier, max_iter=5, verbose=False)
         x_test_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -147,7 +147,7 @@ class TestNewtonFool(TestBase):
 
         # Recreate a classifier without clip values
         classifier = KerasClassifier(model=classifier._model, use_logits=False, channels_first=True)
-        attack = NewtonFool(classifier, max_iter=5, batch_size=128)
+        attack = NewtonFool(classifier, max_iter=5, batch_size=128, verbose=False)
         x_test_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_adv).all())
 
@@ -159,7 +159,7 @@ class TestNewtonFool(TestBase):
     def test_2_tensorflow_iris(self):
         classifier, _ = get_tabular_classifier_tf()
 
-        attack = NewtonFool(classifier, max_iter=5, batch_size=128)
+        attack = NewtonFool(classifier, max_iter=5, batch_size=128, verbose=False)
         x_test_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -173,7 +173,7 @@ class TestNewtonFool(TestBase):
     def test_4_pytorch_iris(self):
         classifier = get_tabular_classifier_pt()
 
-        attack = NewtonFool(classifier, max_iter=5, batch_size=128)
+        attack = NewtonFool(classifier, max_iter=5, batch_size=128, verbose=False)
         x_test_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -202,7 +202,7 @@ class TestNewtonFool(TestBase):
             classifier = SklearnClassifier(model=model, clip_values=(0, 1))
             classifier.fit(x=self.x_test_iris, y=self.y_test_iris)
 
-            attack = NewtonFool(classifier, max_iter=5, batch_size=128)
+            attack = NewtonFool(classifier, max_iter=5, batch_size=128, verbose=False)
             x_test_adv = attack.generate(self.x_test_iris)
             self.assertFalse((self.x_test_iris == x_test_adv).all())
             self.assertTrue((x_test_adv <= 1).all())
