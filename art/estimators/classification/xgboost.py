@@ -37,6 +37,7 @@ if TYPE_CHECKING:
     # pylint: disable=C0412
     import xgboost  # lgtm [py/import-and-import-from]
 
+
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor

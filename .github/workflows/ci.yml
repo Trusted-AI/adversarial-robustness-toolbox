@@ -153,7 +153,7 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip setuptools wheel
-          pip install -q pylint==2.7.4 pycodestyle==2.7.0
+          pip install -q pylint==2.7.4 pycodestyle==2.7.0 black==20.8b1
           pip install -q -r requirements.txt
           pip list
       - name: pycodestyle
@@ -167,3 +167,9 @@ jobs:
       - name: pytest-flake8
         if: ${{ always() }}
         run: pytest --flake8 -v -m flake8
+      - name: black
+          if: ${{ always() }}
+          run: |
+            black --line-length 120 --check art/
+            black --line-length 120 --check tests/
+            black --line-length 120 --check examples/
