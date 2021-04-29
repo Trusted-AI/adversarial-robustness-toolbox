@@ -611,7 +611,11 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         return grads
 
     def compute_loss(  # pylint: disable=W0221
-        self, x: Union[np.ndarray, "torch.Tensor"], y: [np.ndarray, "torch.Tensor"], reduction: str = "none", **kwargs
+        self,
+        x: Union[np.ndarray, "torch.Tensor"],
+        y: Union[np.ndarray, "torch.Tensor"],
+        reduction: str = "none",
+        **kwargs
     ) -> Union[np.ndarray, "torch.Tensor"]:
         """
         Compute the loss function w.r.t. `x`.
@@ -659,7 +663,11 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             return loss.detach().cpu().numpy()
 
     def compute_losses(
-        self, x: Union[np.ndarray, "torch.Tensor"], y: [np.ndarray, "torch.Tensor"], reduction: str = "none", **kwargs
+        self,
+        x: Union[np.ndarray, "torch.Tensor"],
+        y: Union[np.ndarray, "torch.Tensor"],
+        reduction: str = "none",
+        **kwargs
     ) -> Dict[str, Union[np.ndarray, "torch.Tensor"]]:
         """
         Compute the losses.

@@ -68,7 +68,8 @@ class ProjectedGradientDescent(EvasionAttack):
         "batch_size",
         "max_iter",
         "random_eps",
-        "tensor_board" "verbose",
+        "tensor_board",
+        "verbose",
     ]
 
     _estimator_requirements = (BaseEstimator, LossGradientsMixin)

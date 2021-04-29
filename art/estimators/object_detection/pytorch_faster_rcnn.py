@@ -366,6 +366,8 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
             else:
                 loss = loss + output[loss_name]
 
+        assert loss is not None
+
         if isinstance(x, torch.Tensor):
             return loss
         else:
