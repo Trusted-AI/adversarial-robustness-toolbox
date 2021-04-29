@@ -75,7 +75,7 @@ def test_imperceptible_asr_pytorch(art_warning, expected_values, use_amp, device
             pretrained_model="librispeech",
             device_type=device_type,
             use_amp=use_amp,
-            #preprocessing_defences=audio_filter,
+            preprocessing_defences=audio_filter,
         )
 
         # Create attack
