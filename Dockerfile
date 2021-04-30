@@ -31,6 +31,8 @@ RUN pip3 install lightgbm==2.3.1
 RUN pip3 install xgboost==1.1.1
 RUN pip3 install kornia==0.3.1
 
+RUN pip3 install lief==0.11.4
+
 RUN pip3 install pytest==5.4.1 pytest-pep8==1.0.6 pytest-mock==3.2.0 codecov==2.1.8 requests==2.24.0
 
 RUN mkdir /project; mkdir /project/TMP
