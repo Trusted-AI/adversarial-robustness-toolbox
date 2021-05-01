@@ -15,28 +15,25 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from art.estimators.classification import PyTorchClassifier
-from sklearn.preprocessing import StandardScaler
-
-import torch
-import torch.nn as nn
-from torch.autograd import Variable
-
-from sklearn import datasets
-import numpy as np
-import pandas as pd
 import logging
 import unittest
 
+import numpy as np
+import pandas as pd
+import torch
+import torch.nn as nn
+from torch import optim
+from torch.autograd import Variable
+from sklearn import datasets
+from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from scipy.stats import pearsonr
-from art.attacks.evasion import LowProFool
 
-from art.estimators.estimator import LossGradientsMixin
-from art.estimators.estimator import BaseEstimator
-from art.estimators.classification.classifier import ClassifierMixin
+from art.attacks.evasion import LowProFool
+from art.estimators.classification.scikitlearn import ScikitlearnLogisticRegression
+from art.estimators.classification import PyTorchClassifier
 from art.estimators.classification.scikitlearn import ScikitlearnSVC
 
 logger = logging.getLogger(__name__)
@@ -98,57 +95,6 @@ def get_breast_cancers():
     return get_train_and_valid(design_matrix_cancer_scaled, labels_cancer), clip_values
 
 
-class SklearnLogisticRegression(BaseEstimator, LossGradientsMixin, ClassifierMixin):
-    def __init__(self, **kwargs) -> None:
-        super().__init__(**kwargs)
-        self._nb_classes = self.model.classes_.shape[0]
-
-    def fit(self, x: np.ndarray, y: np.array, **kwargs):
-        # Error-silencer only. Not used here.
-        raise NotImplementedError(
-            "Method `fit` of SklearnLogisticRegression class is a placeholder.")
-
-    @property
-    def input_shape(self):
-        """
-        Return the shape of one input sample.
-
-        :return: Shape of one input sample.
-        """
-        if len(self.model.coef_.shape) == 1:
-            return self.model.coef_.shape[0],
-        else:
-            return self.model.coef_.shape[1],
-
-    def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
-        """
-        Compute the gradient of the loss function w.r.t. `x`.
-
-        :param x: Sample input with shape as expected by the model.
-        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)`.
-        :param kwargs:
-        :return: Array of gradients of the same shape as `x`.
-        """
-        x_probas = self.model.predict_proba(x)
-        errors = x_probas - y
-        thetas = self.model.coef_
-
-        if thetas.shape[0] == 1:
-            thetas = np.append(thetas * (-1), thetas, axis=0)
-
-        return (errors @ thetas) / self.model.classes_.size
-
-    def predict(self, x: np.ndarray, **kwargs) -> np.ndarray:
-        """
-        Perform prediction of the estimator for input `x`.
-
-        :param x: Samples.
-        :param kwargs:
-        :return: Predictions by the model.
-        """
-        return self.model.predict_proba(x)
-
-
 class NeuralNetwork:
     def __init__(self):
         self.loss_fn = torch.nn.MSELoss(reduction='sum')
@@ -163,14 +109,15 @@ class NeuralNetwork:
         )
 
     def train_nn(self, nn_model, x, y, learning_rate, epochs):
+        optimizer = optim.SGD(nn_model.parameters(), lr=learning_rate)
+
         for _ in range(epochs):
             y_pred = nn_model.forward(x)
             loss = self.loss_fn(y_pred, y)
             nn_model.zero_grad()
             loss.backward()
-            with torch.no_grad():
-                for param in nn_model.parameters():
-                    param.data -= learning_rate * param.grad
+
+            optimizer.step()
 
 
 class TestLowProFool(unittest.TestCase):
@@ -205,7 +152,7 @@ class TestLowProFool(unittest.TestCase):
         # setup classifier
         lr_clf = LogisticRegression(penalty='none')
         lr_clf.fit(self.x_train_iris, self.y_train_iris)
-        clf_slr = SklearnLogisticRegression(
+        clf_slr = ScikitlearnLogisticRegression(
             model=lr_clf,
             clip_values=self.clip_values_iris
         )
@@ -226,7 +173,7 @@ class TestLowProFool(unittest.TestCase):
         success_rate = np.sum(correct) / correct.shape[0]
         expected = 0.75
         logger.info("[Irises, Logistic Regression (custom)] success rate of adversarial attack (expected >{:.2f}): "
-                    "{:.2f}%".format(expected*100, success_rate * 100))
+                    "{:.2f}%".format(expected * 100, success_rate * 100))
 
         print("===== T E S T =====")
         print("Test name:           {}".format(self.id()))
@@ -237,7 +184,7 @@ class TestLowProFool(unittest.TestCase):
         print()
         self.assertTrue(
             success_rate > expected,
-            msg="Failed to achieve {}% accuracy with logistic regression and iris flower dataset".format(expected*100)
+            msg="Failed to achieve {}% accuracy with logistic regression and iris flower dataset".format(expected * 100)
         )
 
     def test_general_wines_lr(self):
@@ -248,7 +195,7 @@ class TestLowProFool(unittest.TestCase):
         # setup classifier
         lr_clf = LogisticRegression(penalty='none', solver='lbfgs', max_iter=1000)
         lr_clf.fit(self.x_train_wines, self.y_train_wines)
-        clf_slr = SklearnLogisticRegression(
+        clf_slr = ScikitlearnLogisticRegression(
             model=lr_clf,
             clip_values=self.clip_values_wines
         )
@@ -269,7 +216,7 @@ class TestLowProFool(unittest.TestCase):
         success_rate = np.sum(correct) / correct.shape[0]
         expected = 0.75
         logger.info("[Wines, Logistic Regression (custom)] success rate of adversarial attack (expected >{:.2f}):"
-                    " {:.2f}%".format(expected*100, success_rate * 100))
+                    " {:.2f}%".format(expected * 100, success_rate * 100))
 
         print("===== T E S T =====")
         print("Test name:           {}".format(self.id()))
@@ -280,7 +227,7 @@ class TestLowProFool(unittest.TestCase):
         print()
         self.assertTrue(
             success_rate > expected,
-            msg="Failed to achieve {}% accuracy with logistic regression and wines dataset".format(expected*100)
+            msg="Failed to achieve {}% accuracy with logistic regression and wines dataset".format(expected * 100)
         )
 
     def test_general_cancer_lr(self):
@@ -291,7 +238,7 @@ class TestLowProFool(unittest.TestCase):
         # setup classifier
         lr_clf = LogisticRegression(penalty='none', solver='lbfgs', max_iter=100000)
         lr_clf.fit(self.x_train_breast_cancer, self.y_train_breast_cancer)
-        clf_slr = SklearnLogisticRegression(
+        clf_slr = ScikitlearnLogisticRegression(
             model=lr_clf,
             clip_values=self.clip_values_breast_cancer
         )
@@ -313,7 +260,7 @@ class TestLowProFool(unittest.TestCase):
         expected = 0.75
         logger.info(
             "[Breast cancer, Logistic Regression (custom)] success rate of adversarial attack (expected >{:.2f}): "
-            "{:.2f}%".format(expected*100, success_rate * 100)
+            "{:.2f}%".format(expected * 100, success_rate * 100)
         )
 
         print("===== T E S T =====")
@@ -326,7 +273,7 @@ class TestLowProFool(unittest.TestCase):
         self.assertTrue(
             success_rate > expected,
             msg="Failed to achieve {}% accuracy with logistic regression and breast cancer wisconsin dataset"
-                .format(expected*100)
+                .format(expected * 100)
         )
 
     def test_general_iris_nn(self):
@@ -365,7 +312,7 @@ class TestLowProFool(unittest.TestCase):
         expected = 0.75
         logger.info(
             "[Irises, PyTorch neural network] success rate of adversarial attack (expected >{:.2f}): "
-            "{:.2f}%".format(expected*100, success_rate * 100)
+            "{:.2f}%".format(expected * 100, success_rate * 100)
         )
 
         print("===== T E S T =====")
@@ -377,7 +324,7 @@ class TestLowProFool(unittest.TestCase):
         print()
         self.assertTrue(
             success_rate > expected,
-            msg="Failed to achieve {}% accuracy with neural network and Iris flower dataset".format(expected*100)
+            msg="Failed to achieve {}% accuracy with neural network and Iris flower dataset".format(expected * 100)
         )
 
     def test_general_cancer_svc(self):
@@ -416,7 +363,7 @@ class TestLowProFool(unittest.TestCase):
         expected = 0.75
         logger.info(
             "[Breast cancer, Sklearn SVC] success rate of adversarial attack (expected >{:.2f}): "
-            "{:.2f}%".format(expected*100, success_rate * 100)
+            "{:.2f}%".format(expected * 100, success_rate * 100)
         )
 
         print("===== T E S T =====")
@@ -429,7 +376,7 @@ class TestLowProFool(unittest.TestCase):
 
         self.assertTrue(
             success_rate > expected,
-            msg="Failed to achieve {}% accuracy with SVC and breast cancer wisconsin dataset".format(expected*100)
+            msg="Failed to achieve {}% accuracy with SVC and breast cancer wisconsin dataset".format(expected * 100)
         )
 
     def test_fit_importances(self):
@@ -446,7 +393,7 @@ class TestLowProFool(unittest.TestCase):
         # setup classifier
         lr_clf = LogisticRegression(penalty='none')
         lr_clf.fit(self.x_train_iris, self.y_train_iris)
-        clf_slr = SklearnLogisticRegression(
+        clf_slr = ScikitlearnLogisticRegression(
             model=lr_clf,
             clip_values=self.clip_values_iris
         )
@@ -519,15 +466,15 @@ class TestLowProFool(unittest.TestCase):
 
         # dataset min-max clipp values
         bottom_min, top_max = self.clip_values_iris
-        clf_slr_min_max = SklearnLogisticRegression(
+        clf_slr_min_max = ScikitlearnLogisticRegression(
             model=lr_clf,
             clip_values=(bottom_min, top_max)
         )
 
-        # custom (redable) clip values
+        # clip values
         bottom_custom = -3
         top_custom = 3
-        clf_slr_custom = SklearnLogisticRegression(
+        clf_slr_custom = ScikitlearnLogisticRegression(
             model=lr_clf,
             clip_values=(bottom_custom, top_custom)
         )

@@ -28,15 +28,17 @@ where the weights determine each feature's importance.
 | Paper link: https://arxiv.org/abs/1911.03274
 """
 import logging
+from typing import Callable, Optional, Union, TYPE_CHECKING
+
 import numpy as np
 from scipy.stats import pearsonr
 from tqdm.auto import trange
+from sklearn.metrics import log_loss
 
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import LossGradientsMixin
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union, Type, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE
@@ -50,6 +52,7 @@ class LowProFool(EvasionAttack):
 
     | Paper link: https://arxiv.org/abs/1911.03274
     """
+
     attack_params = EvasionAttack.attack_params + [
         "n_steps",
         "threshold",
@@ -57,7 +60,7 @@ class LowProFool(EvasionAttack):
         "eta",
         "eta_decay",
         "eta_min",
-        "p",
+        "norm",
         "importance",
         "verbose",
     ]
@@ -66,15 +69,15 @@ class LowProFool(EvasionAttack):
     def __init__(
             self,
             classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
-            n_steps: Optional[Optional[int]] = 100,
-            threshold: Optional[Optional[Union[float, None]]] = 0.5,
-            lambd: Optional[float] = 1.5,
-            eta: Optional[float] = 0.2,
-            eta_decay: Optional[float] = 0.98,
-            eta_min: Optional[float] = 1e-7,
-            p: Optional[Union[int, float, str]] = 2,
-            importance: Optional[Union[Callable, str, np.ndarray]] = 'pearson',
-            verbose: Optional[bool] = False
+            n_steps: int = 100,
+            threshold: Union[float, None] = 0.5,
+            lambd: float = 1.5,
+            eta: float = 0.2,
+            eta_decay: float = 0.98,
+            eta_min: float = 1e-7,
+            norm: Union[int, float, str] = 2,
+            importance: Union[Callable, str, np.ndarray] = 'pearson',
+            verbose: bool = False
     ) -> None:
         """
         Create a LowProFool instance.
@@ -86,7 +89,7 @@ class LowProFool(EvasionAttack):
         :param eta: Rate of updating the perturbation vectors
         :param eta_decay: Step-by-step decrease of eta
         :param eta_min: Minimal eta value
-        :param p: Parameter `p` for Lp-space norm (p=2 - euclidean norm)
+        :param norm: Parameter `p` for Lp-space norm (norm=2 - euclidean norm)
         :param importance: Function to calculate feature importance with
             or vector of those precomputed; possibilities:
             > 'pearson' - Pearson correlation (string)
@@ -102,7 +105,7 @@ class LowProFool(EvasionAttack):
         self.eta = eta
         self.eta_decay = eta_decay
         self.eta_min = eta_min
-        self.p = p
+        self.norm = norm
         self.importance = importance
         self.verbose = verbose
 
@@ -127,29 +130,9 @@ class LowProFool(EvasionAttack):
             if steps_before_min_eta_reached / self.n_steps < 0.8:
                 logger.warning(
                     "The given combination of 'n_steps', 'eta', 'eta_decay' and 'eta_min' effectively sets learning "
-                    "rate to its minimal value after about {} steps out of all {}.".format(
-                        steps_before_min_eta_reached, self.n_steps
-                    )
+                    "rate to its minimal value after about %d steps out of all %d.",
+                    steps_before_min_eta_reached, self.n_steps
                 )
-
-    @staticmethod
-    def logistic_loss(
-            true: np.ndarray,
-            predicted: np.ndarray
-    ) -> np.ndarray:
-        """
-        Logistic loss function. Produces average cross-entropy in the sample.
-
-        :param true: Ground truth (correct) labels for samples.
-        :param predicted: Predicted probabilities.
-        :return: Mean cross entropy.
-        """
-        p = np.array([1 - true, true])
-        q = np.array([1 - predicted, predicted])
-
-        return np.mean(
-            -1 * np.sum(p * np.log(q + 1e-13), axis=0), axis=1
-        ).reshape(-1, 1)
 
     def __weighted_lp_norm(
             self,
@@ -163,29 +146,8 @@ class LowProFool(EvasionAttack):
         """
         return self.lambd * np.linalg.norm(
             self.importance_vec * perturbations, axis=1,
-            ord=(np.inf if self.p == "inf" else self.p)
+            ord=(np.inf if self.norm == "inf" else self.norm)
         ).reshape(-1, 1)
-
-    def __classification_loss_gradient(
-            self,
-            samples: np.ndarray,
-            perturbations: np.ndarray,
-            y_probas: np.ndarray,
-            targets: np.ndarray
-    ) -> np.ndarray:
-        """
-        Obtain the loss gradients of the underlying classifier with regards to the data vectors.
-
-        :param samples: Base design matrix.
-        :param perturbations: Perturbations of samples towards being adversarial.
-        :param y_probas: Class-wise prediction probabilities.
-        :param targets: The target labels for the attack.
-        :return: Array of classification loss gradients.
-        """
-        return self.estimator.loss_gradient(
-            (samples + perturbations).astype(np.float32),
-            (targets).astype(np.float32)
-        )
 
     def __weighted_lp_norm_gradient(
             self,
@@ -197,28 +159,27 @@ class LowProFool(EvasionAttack):
         :param perturbations: Perturbations of samples towards being adversarial.
         :return: Weighted Lp-norm gradients array.
         """
-        p = self.p
-        v = self.importance_vec
-        x = perturbations
+        norm = self.norm
 
-        if p in ["inf", np.inf]:
-            numerator = np.array(v * x)
-            optimum = np.max(np.abs(numerator))
-            return np.where(abs(numerator) == optimum, np.sign(numerator), 0)
+        if isinstance(norm, (int, float)) and norm < np.inf and self.importance_vec is not None:
+            numerator = self.importance_vec * self.importance_vec * perturbations\
+                * np.power(np.abs(perturbations), norm - 2)
+            denominator = np.power(np.sum(np.power(self.importance_vec * perturbations, norm)), (norm - 1) / norm)
 
-        else:
-            numerator = v * v * x * np.power(np.abs(x), p - 2)
-            denominator = np.power(np.sum(np.power(v * x, p)), (p - 1) / p)
-            return (
-                np.where(denominator > 1e-10, numerator, np.zeros(numerator.shape[1])) /
-                np.where(denominator <= 1e-10, 1., denominator)
-            )
+            numerator = np.where(denominator > 1e-10, numerator, np.zeros(numerator.shape[1]))
+            denominator = np.where(denominator <= 1e-10, 1., denominator)
+
+            return numerator / denominator
+
+        # L-infinity norm (norm in ["inf", np.inf]).
+        numerator = np.array(self.importance_vec * perturbations)
+        optimum = np.max(np.abs(numerator))
+        return np.where(abs(numerator) == optimum, np.sign(numerator), 0)
 
     def __get_gradients(
             self,
             samples: np.ndarray,
             perturbations: np.ndarray,
-            y_probas: np.ndarray,
             targets: np.ndarray
     ) -> np.ndarray:
         """
@@ -227,11 +188,13 @@ class LowProFool(EvasionAttack):
 
         :param samples: Base design matrix.
         :param perturbations: Perturbations of samples towards being adversarial.
-        :param y_probas: Class-wise prediction probabilities.
         :param targets: The target labels for the attack.
         :return: Aggregate gradient of objective function.
         """
-        clf_loss_grad = self.__classification_loss_gradient(samples, perturbations, y_probas, targets)
+        clf_loss_grad = self.estimator.loss_gradient(
+            (samples + perturbations).astype(np.float32),
+            targets.astype(np.float32)
+        )
         norm_grad = self.lambd * self.__weighted_lp_norm_gradient(perturbations)
 
         return clf_loss_grad + norm_grad
@@ -252,7 +215,7 @@ class LowProFool(EvasionAttack):
         :param targets: The target labels for the attack.
         :return: Aggregate loss score.
         """
-        clf_loss_part = LowProFool.logistic_loss(y_probas, targets)
+        clf_loss_part = log_loss(y_probas, targets)
         norm_part = self.__weighted_lp_norm(perturbations)
 
         return clf_loss_part + self.lambd * norm_part
@@ -302,14 +265,14 @@ class LowProFool(EvasionAttack):
             # Apply a custom function to call on the provided data.
             try:
                 self.importance_vec = np.array(self.importance(x, y))
-            except Exception as e:
+            except Exception as exception:
                 logger.exception("Provided importance function has failed.")
-                raise e
+                raise exception
 
             if not isinstance(self.importance_vec, np.ndarray):
                 self.importance_vec = None
                 raise TypeError("Feature importance vector should be of type np.ndarray or any convertible to that.")
-            elif self.importance_vec.shape != (self.n_features,):
+            if self.importance_vec.shape != (self.n_features,):
                 self.importance_vec = None
                 raise ValueError("Feature has to be one-dimensional array of size (n_features, ).")
 
@@ -333,7 +296,7 @@ class LowProFool(EvasionAttack):
         :param normalize: Assure that feature importance values sum to 1.
         :return: LowProFool instance itself.
         """
-        if not (importance_array is None):
+        if importance_array is not None:
             # Use a pre-calculated vector of feature importances.
             if np.array(importance_array).shape == (self.n_features, ):
                 self.importance_vec = np.array(importance_array)
@@ -392,21 +355,19 @@ class LowProFool(EvasionAttack):
         best_norm_losses = np.inf * np.ones(samples.shape[0], dtype=np.float64)
         best_perturbations = perturbations.copy()
 
-        # Calculate class-wise probabilities.
-        y_probas = self.estimator.predict((samples + perturbations).astype(np.float32))
+        # Success indicators per sample.
         success_indicators = np.zeros(samples.shape[0], dtype=np.float64)
 
-        # Predicate used to determine whether the target was met based on the given probabilities
-        def met_target(y_probas, target_class):
+        # Predicate used to determine whether the target was met based on the given probabilities.
+        def met_target(probas, target_class):
             if self.threshold is None:
-                return np.argmax(y_probas) == target_class
-            else:
-                return y_probas[target_class] > self.threshold
+                return np.argmax(probas) == target_class
+            return probas[target_class] > self.threshold
 
         # Main loop.
-        for i in trange(self.n_steps, desc="LowProFool", disable=not(self.verbose)):
+        for _ in trange(self.n_steps, desc="LowProFool", disable=not self.verbose):
             # Calculate gradients, apply them to perturbations and clip if needed.
-            grad = self.__get_gradients(samples, perturbations, y_probas, targets)
+            grad = self.__get_gradients(samples, perturbations, targets)
             perturbations -= eta * grad
             perturbations = self.__apply_clipping(samples, perturbations)
 
@@ -422,7 +383,7 @@ class LowProFool(EvasionAttack):
                 if met_target(y_probas[j], target_int):
                     success_indicators[j] = 1.
                     # Calculate weighted Lp-norm loss.
-                    norm_loss = self.__weighted_lp_norm(perturbations[j:j+1])[0, 0]
+                    norm_loss = self.__weighted_lp_norm(perturbations[j:j + 1])[0, 0]
 
                     # Note it, if the adversary improves.
                     if norm_loss < best_norm_losses[j]:
@@ -452,8 +413,8 @@ class LowProFool(EvasionAttack):
             raise ValueError('The argument `n_steps` (number of iterations) has to be positive integer.')
 
         if not(
-            (isinstance(self.threshold, float) and 0 < self.threshold < 1) or
-            self.threshold is None
+            (isinstance(self.threshold, float) and 0 < self.threshold < 1)
+            or self.threshold is None
         ):
             raise ValueError('The argument `threshold` has to be either float in range (0, 1) or None.')
 
@@ -470,18 +431,18 @@ class LowProFool(EvasionAttack):
             raise ValueError('The argument `eta_min` has to be non-negative float or integer.')
 
         if not(
-            (isinstance(self.p, (float, int)) and self.p > 0) or
-            (isinstance(self.p, str) and self.p == "inf") or
-            self.p == np.inf
+            (isinstance(self.norm, (float, int)) and self.norm > 0)
+            or (isinstance(self.norm, str) and self.norm == "inf")
+            or self.norm == np.inf
         ):
-            raise ValueError('The argument `p` has to be either positive-valued float or integer, np.inf, or "inf".')
+            raise ValueError('The argument `norm` has to be either positive-valued float or integer, np.inf, or "inf".')
 
         if not(
-            isinstance(self.importance, (str, Callable)) or
-            (isinstance(self.importance, np.ndarray) and self.importance.shape == (self.n_features, ))
+            isinstance(self.importance, str) or callable(self.importance)
+            or (isinstance(self.importance, np.ndarray) and self.importance.shape == (self.n_features, ))
         ):
-            raise ValueError('The argument `importance` has to be either string, ' +
-                             'callable or np.ndarray of the shape (n_features, ).')
+            raise ValueError('The argument `importance` has to be either string, '
+                             + 'callable or np.ndarray of the shape (n_features, ).')
 
         if not isinstance(self.verbose, bool):
             raise ValueError('The argument `verbose` has to be of type bool.')
