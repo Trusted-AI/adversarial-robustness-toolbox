@@ -50,20 +50,17 @@ logger = logging.getLogger(__name__)
 
 
 class OverTheAirPyTorch(EvasionAttack):
-    attack_params = EvasionAttack.attack_params + [
-        "regularization_param",
-        "beta_1",
-        "beta_2"
-        "m"
-    ]
+    attack_params = EvasionAttack.attack_params + ["regularization_param", "beta_1", "beta_2" "m"]
     _estimator_requirements = (BaseEstimator, ClassGradientsMixin)
 
-    def __init__(self,
-                 classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
-                 regularization_param: float,
-                 beta_1: float,
-                 beta_2: float,
-                 m: float):
+    def __init__(
+        self,
+        classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
+        regularization_param: float,
+        beta_1: float,
+        beta_2: float,
+        m: float,
+    ):
         super(OverTheAirPyTorch, self).__init__(estimator=classifier)
 
         self.regularization_param = regularization_param
@@ -72,18 +69,13 @@ class OverTheAirPyTorch(EvasionAttack):
         self.m = m
         self._check_params()
 
-    def generate(self,
-                 X: torch.Tensor,
-                 labels: Optional[torch.Tensor] = None,
-                 **kwargs) -> torch.Tensor:
+    def generate(self, X: torch.Tensor, labels: Optional[torch.Tensor] = None, **kwargs) -> torch.Tensor:
 
         num_epochs = 200
         epoch_print_str = f"{num_epochs}:"
 
         delta = nn.parameter.Parameter(
-            torch.zeros(X[0].shape[1], 3, 1, 1).normal_(mean=0., std=.2).to(
-                torch.device('cuda')),
-            requires_grad=True
+            torch.zeros(X[0].shape[1], 3, 1, 1).normal_(mean=0.0, std=0.2).to(torch.device("cuda")), requires_grad=True
         )
 
         # All values of delta needs to be within [V_min, V_max], so we get those
@@ -110,7 +102,7 @@ class OverTheAirPyTorch(EvasionAttack):
                 for video in X:
                     preds.append(expit(self.estimator(video + delta, return_loss=False)))
 
-            preds = torch.tensor(preds).to(torch.device('cuda')).squeeze(1)
+            preds = torch.tensor(preds).to(torch.device("cuda")).squeeze(1)
 
             # Calculate the adversarial loss
             loss = self.objective(
@@ -127,26 +119,22 @@ class OverTheAirPyTorch(EvasionAttack):
 
         return delta
 
-    def objective(self,
-                  delta: torch.Tensor,
-                  predictions: torch.Tensor,
-                  labels: Optional[torch.Tensor] = None):
+    def objective(self, delta: torch.Tensor, predictions: torch.Tensor, labels: Optional[torch.Tensor] = None):
         """
-            Equation (1): The objective function. Does NOT include the argmin nor constraints from
-            equation (2).
-            :param predictions:
-            :param labels:
-            :param delta:
-            :param regularization_param:
-            :param beta_1:
-            :param beta_2:
-            :return:
-            """
+        Equation (1): The objective function. Does NOT include the argmin nor constraints from
+        equation (2).
+        :param predictions:
+        :param labels:
+        :param delta:
+        :param regularization_param:
+        :param beta_1:
+        :param beta_2:
+        :return:
+        """
         T = delta.shape[0]
         # The first summation from equation (1)
         regularization_term = self.regularization_param * (
-                self.beta_1 * self.thicknessRegularization(delta, T)
-                + self.beta_2 * self.roughnessRegularization(delta, T)
+            self.beta_1 * self.thicknessRegularization(delta, T) + self.beta_2 * self.roughnessRegularization(delta, T)
         )
 
         return regularization_term + torch.mean(self.adversarialLoss(predictions, labels, self.m))
@@ -184,11 +172,7 @@ class OverTheAirPyTorch(EvasionAttack):
         # Use dims to ensure that it is only shifted on the first dimensions.
         # Per the paper, we roll x_1,...,x_T in X. Since T is the first
         # dimension of X, we use dim=0.
-        return (
-                torch.roll(X, -1, dims=0)
-                - 2 * torch.roll(X, 0, dims=0)
-                - torch.roll(X, 1, dims=0)
-        )
+        return torch.roll(X, -1, dims=0) - 2 * torch.roll(X, 0, dims=0) - torch.roll(X, 1, dims=0)
 
     def roughnessRegularization(self, delta: torch.Tensor, T: int) -> torch.Tensor:
         """
@@ -199,9 +183,13 @@ class OverTheAirPyTorch(EvasionAttack):
         :return:
             Rough.
         """
-        return 1 / (3 * T) * (
+        return (
+            1
+            / (3 * T)
+            * (
                 torch.pow(torch.norm(self.firstTemporalDerivative(delta), 2), 2)
                 + torch.pow(torch.norm(self.secondTemporalDerivative(delta), 2), 2)
+            )
         )
 
     # TODO: Also, get rid of the garbage I call most of these comments.
@@ -241,11 +229,10 @@ class OverTheAirPyTorch(EvasionAttack):
         #   torch.max(predictions[pred_mask == True].view(samples,m-1), dim=-1)[0]:
         #       Get the max logit for each row that is not the true class.
         l_m = (
-                predictions[pred_mask == False]
-                - torch.max(predictions[pred_mask == True].view(samples, n - 1), dim=-1)[0]
-                + m
+            predictions[pred_mask == False]
+            - torch.max(predictions[pred_mask == True].view(samples, n - 1), dim=-1)[0]
+            + m
         )
 
         # Equation 3
-        return torch.max(torch.zeros(labels.shape).to(predictions.device),
-                         torch.min(1 / m * torch.pow(l_m, 2), l_m))
+        return torch.max(torch.zeros(labels.shape).to(predictions.device), torch.min(1 / m * torch.pow(l_m, 2), l_m))

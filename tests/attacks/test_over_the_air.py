@@ -1,13 +1,21 @@
 import pytest
 import torch
+
 # Need random seed for Objective Func
 import random
+
 # Need numpy arrays to check values inside torch tensors
 import numpy
 
 # import all functions that need to be tested
-from over_the_air.paper_equations import (firstTemporalDerivative, secondTemporalDerivative, objectiveFunc, adversarialLoss,
-    thicknessRegularization, roughnessRegularization)
+from over_the_air.paper_equations import (
+    firstTemporalDerivative,
+    secondTemporalDerivative,
+    objectiveFunc,
+    adversarialLoss,
+    thicknessRegularization,
+    roughnessRegularization,
+)
 
 
 # $ pytest -k Test Derivative
@@ -36,6 +44,7 @@ class TestDerivative:
         assert secondTemporalDerivative(self.ZeroesInput).numpy().all() == 0.0
         assert secondTemporalDerivative(self.OnesInput).numpy().all() == True
 
+
 # $ pytest -k TestRegularization
 
 # Regularization Tests
@@ -61,7 +70,9 @@ class TestRegularization:
         assert roughnessRegularization(self.ZeroesInput, 1).item() == 0.0
         assert roughnessRegularization(self.OnesInput, 1).item() == 144.0
 
+
 # $ pytest -k TestAdversarialLoss
+
 
 class TestAdversarialLoss:
     # Labels dimension: same first dimension as predictions
@@ -76,9 +87,11 @@ class TestAdversarialLoss:
         print(self.Label.shape)
         loss = adversarialLoss(self.Pred, self.Label, 1)
         print(loss)
-        assert torch.norm(loss, 1).item() == 20.
+        assert torch.norm(loss, 1).item() == 20.0
+
 
 # $ pytest -k TestObjectiveFunc
+
 
 class TestObjectiveFunc:
     # Random Seed
@@ -104,7 +117,7 @@ class TestObjectiveFunc:
         assert loss.size() == torch.Size([])
 
         # Check if gradient and backward exist
-        assert hasattr(loss, 'grad_fn')
+        assert hasattr(loss, "grad_fn")
 
         # Check if gradient and backward are callable
         assert callable(loss.grad_fn)
@@ -117,7 +130,4 @@ class TestObjectiveFunc:
 
         # Confirm the Output
         # Float Precision Issues This was the quick fix
-        assert 1.7400<loss.item()<1.7401
-
-
-
+        assert 1.7400 < loss.item() < 1.7401
