@@ -1213,7 +1213,7 @@ class CarliniL0Method(CarliniL2Method):
             objective_reduction = np.abs(objective_loss_gradient) * perturbation_l1_norm
 
             # Assign infinity as the objective_reduction value for fixed feature (in order not to select them again)
-            objective_reduction += np.array(np.where(activation != 0, np.inf, activation))
+            objective_reduction += np.array(np.where(activation == 0, np.inf, activation))
 
             # Fix the feature with the lowest objective_reduction value (only for the examples that succeeded)
             fix_feature_index = np.argmin(objective_reduction, axis=1)
