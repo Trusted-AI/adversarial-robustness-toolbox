@@ -120,7 +120,7 @@ class STRIPMixin(AbstainPredictorMixin):
 
         # Set threshold to FAR percentile
         self.entropy_threshold = norm.ppf(self.false_acceptance_rate, loc=mean_entropy, scale=std_entropy)
-        if self.entropy_threshold < 0:
+        if self.entropy_threshold is not None and self.entropy_threshold < 0:
             logger.warning("Entropy value is negative. Increase FAR for reasonable performance.")
 
 

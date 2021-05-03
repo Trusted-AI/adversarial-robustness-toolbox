@@ -146,7 +146,7 @@ class FastGradientMethod(EvasionAttack):
             # Get current predictions
             active_indices = np.arange(len(batch))
 
-            if isinstance(self.eps, np.ndarray):
+            if isinstance(self.eps, np.ndarray) and isinstance(self.eps_step, np.ndarray):
                 if len(self.eps.shape) == len(x.shape) and self.eps.shape[0] == x.shape[0]:
                     current_eps = self.eps_step[batch_index_1:batch_index_2]
                     partial_stop_condition = (current_eps <= self.eps[batch_index_1:batch_index_2]).all()
@@ -174,7 +174,7 @@ class FastGradientMethod(EvasionAttack):
                     active_indices = np.where(np.argmax(batch_labels, axis=1) == np.argmax(adv_preds, axis=1))[0]
 
                 # Update current eps and check the stop condition
-                if isinstance(self.eps, np.ndarray):
+                if isinstance(self.eps, np.ndarray) and isinstance(self.eps_step, np.ndarray):
                     if len(self.eps.shape) == len(x.shape) and self.eps.shape[0] == x.shape[0]:
                         current_eps = current_eps + self.eps_step[batch_index_1:batch_index_2]
                         partial_stop_condition = (current_eps <= self.eps[batch_index_1:batch_index_2]).all()
@@ -229,7 +229,7 @@ class FastGradientMethod(EvasionAttack):
                 logger.info("Performing minimal perturbation FGM.")
                 adv_x_best = self._minimal_perturbation(x, y, mask)
                 rate_best = 100 * compute_success(
-                    self.estimator,
+                    self.estimator,  # type: ignore
                     x,
                     y,
                     adv_x_best,
@@ -254,7 +254,7 @@ class FastGradientMethod(EvasionAttack):
 
                     if self.num_random_init > 1:
                         rate = 100 * compute_success(
-                            self.estimator,
+                            self.estimator,  # type: ignore
                             x,
                             y,
                             adv_x,
@@ -468,7 +468,7 @@ class FastGradientMethod(EvasionAttack):
             perturbation = self._compute_perturbation(batch, batch_labels, mask_batch)
 
             # Compute batch_eps and batch_eps_step
-            if isinstance(eps, np.ndarray):
+            if isinstance(eps, np.ndarray) and isinstance(eps_step, np.ndarray):
                 if len(eps.shape) == len(x.shape) and eps.shape[0] == x.shape[0]:
                     batch_eps = eps[batch_index_1:batch_index_2]
                     batch_eps_step = eps_step[batch_index_1:batch_index_2]

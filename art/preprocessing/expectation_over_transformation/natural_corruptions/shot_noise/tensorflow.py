@@ -76,12 +76,14 @@ class EoTShotNoiseTensorFlow(EoTTensorFlowV2):
         import tensorflow as tf  # lgtm [py/repeated-import]
 
         lam_i = np.random.uniform(low=self.lam_range[0], high=self.lam_range[1])
+        # pylint: disable=E1123,E1120
         delta_i = tf.random.poisson(shape=x.shape, lam=lam_i, seed=None) / lam_i * self.clip_values[1]
         return tf.clip_by_value(x + delta_i, clip_value_min=self.clip_values[0], clip_value_max=self.clip_values[1]), y
 
     def _check_params(self) -> None:
 
-        if not (isinstance(self.lam, (int, float)) or isinstance(self.lam, tuple)) or (
+        # pylint: disable=R0916
+        if not isinstance(self.lam, (int, float, tuple)) or (
             isinstance(self.lam, tuple)
             and (
                 len(self.lam) != 2

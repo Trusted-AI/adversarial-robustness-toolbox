@@ -1,0 +1,63 @@
+name: CI Lingvo
+on:
+  # Run on manual trigger
+  workflow_dispatch:
+
+  # Run on pull requests
+  pull_request:
+    paths-ignore:
+      - '*.md'
+
+  # Run when pushing to main or dev branches
+  push:
+    branches:
+      - main
+      - dev*
+
+  # Run scheduled CI flow daily
+  schedule:
+    - cron: '0 8 * * 0'
+
+jobs:
+  test:
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: TensorFlow+Lingvo 2.1.0v1 (Keras 2.3.1 Python 3.6)
+            framework: tensorflow2v1
+            python: 3.6
+            tensorflow: 2.1.0
+            tf_version: v2
+            keras: 2.3.1
+            lingvo: 0.6.4
+
+    name: Run ${{ matrix.name }} Tests
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Pre-install Lingvo ASR
+        # scipy beyond 1.6.0 is not available on Python 3.6, therefore we adapt the installation of requirements.txt
+        run: |
+          sudo apt-get update
+          sudo apt-get -y -q install ffmpeg libavcodec-extra
+          python -m pip install --upgrade pip setuptools wheel
+          pip install -q -r <(sed '/^scipy/d;/^matplotlib/d;/^pandas/d' requirements.txt)
+          pip install scipy==1.5.4
+          pip install matplotlib==3.3.4
+          pip install pandas==1.1.5
+          pip install tensorflow==${{ matrix.tensorflow }}
+          pip install keras==${{ matrix.keras }}
+          pip install lingvo==${{ matrix.lingvo }}
+          pip install tensorflow-addons==0.9.1
+          pip install model-pruning-google-research==0.0.3
+          pip list
+      - name: Run ${{ matrix.name }} Tests
+        run: ./run_tests.sh ${{ matrix.framework }}
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1

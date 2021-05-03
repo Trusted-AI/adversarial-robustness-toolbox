@@ -159,7 +159,9 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         """
         return self._classifier_weights  # type: ignore
 
-    def predict(self, x: np.ndarray, batch_size: int = 128, raw: bool = False, **kwargs) -> np.ndarray:
+    def predict(  # pylint: disable=W0221
+        self, x: np.ndarray, batch_size: int = 128, raw: bool = False, **kwargs
+    ) -> np.ndarray:
         """
         Perform prediction for a batch of inputs. Predictions from classifiers should only be aggregated if they all
         have the same type of output (e.g., probabilities). Otherwise, use `raw=True` to get predictions from all
@@ -239,7 +241,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         """
         raise NotImplementedError
 
-    def class_gradient(
+    def class_gradient(  # pylint: disable=W0221
         self,
         x: np.ndarray,
         label: Union[int, List[int], None] = None,
@@ -272,7 +274,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
 
         return np.sum(grads, axis=0)
 
-    def loss_gradient(
+    def loss_gradient(  # pylint: disable=W0221
         self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, raw: bool = False, **kwargs
     ) -> np.ndarray:
         """

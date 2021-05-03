@@ -107,6 +107,15 @@ class SimBA(EvasionAttack):
         x = x.astype(ART_NUMPY_DTYPE)
         preds = self.estimator.predict(x, batch_size=self.batch_size)
 
+        if divmod(x.shape[2] - self.freq_dim, self.stride)[1] != 0:
+            raise ValueError(
+                "Incompatible value combination in image height/width, freq_dim and stride detected. "
+                "Adapt these parameters to fulfill the following conditions: "
+                "divmod(image_height - freq_dim, stride)[1] == 0 "
+                "and "
+                "divmod(image_width - freq_dim, stride)[1] == 0"
+            )
+
         if y is None:
             if self.targeted:
                 raise ValueError("Target labels `y` need to be provided for a targeted attack.")
@@ -151,8 +160,8 @@ class SimBA(EvasionAttack):
                 indices = np.hstack((indices, tmp_indices))[: self.max_iter]
                 indices_size = len(indices)
 
-            def trans(z):
-                return self._block_idct(z, block_size=x.shape[2])
+            def trans(var_z):
+                return self._block_idct(var_z, block_size=x.shape[2])
 
         clip_min = -np.inf
         clip_max = np.inf
@@ -299,7 +308,7 @@ class SimBA(EvasionAttack):
         :param initial size: initial size for submatrix.
         :param stride: stride size for expansion.
 
-        :return z: An array holding the block order of DCT attacks.
+        :return order: An array holding the block order of DCT attacks.
         """
         order = np.zeros((channels, img_size, img_size)).astype(ART_NUMPY_DTYPE)
         total_elems = channels * initial_size * initial_size
@@ -328,11 +337,11 @@ class SimBA(EvasionAttack):
         :param ratio: Ratio of the lowest frequency directions in order to make the adversarial perturbation in the low
                       frequency space.
 
-        :return z: An array holding the order of DCT attacks.
+        :return var_z: An array holding the order of DCT attacks.
         """
         if not self.estimator.channels_first:
             x = x.transpose(0, 3, 1, 2)
-        z = np.zeros(x.shape).astype(ART_NUMPY_DTYPE)
+        var_z = np.zeros(x.shape).astype(ART_NUMPY_DTYPE)
         num_blocks = int(x.shape[2] / block_size)
         mask = np.zeros((x.shape[0], x.shape[1], block_size, block_size))
         if not isinstance(ratio, float):
@@ -345,14 +354,14 @@ class SimBA(EvasionAttack):
                 submat = x[:, :, (i * block_size) : ((i + 1) * block_size), (j * block_size) : ((j + 1) * block_size)]
                 if masked:
                     submat = submat * mask
-                z[:, :, (i * block_size) : ((i + 1) * block_size), (j * block_size) : ((j + 1) * block_size)] = idct(
-                    idct(submat, axis=3, norm="ortho"), axis=2, norm="ortho"
-                )
+                var_z[
+                    :, :, (i * block_size) : ((i + 1) * block_size), (j * block_size) : ((j + 1) * block_size)
+                ] = idct(idct(submat, axis=3, norm="ortho"), axis=2, norm="ortho")
 
         if self.estimator.channels_first:
-            return z
+            return var_z
 
-        return z.transpose((0, 2, 3, 1))
+        return var_z.transpose((0, 2, 3, 1))
 
     def diagonal_order(self, image_size, channels):
         """
@@ -366,14 +375,14 @@ class SimBA(EvasionAttack):
         :param image_size: image size (i.e., width or height)
         :param channels: the number of channels
 
-        :return z: An array holding the diagonal order of pixel attacks.
+        :return order: An array holding the diagonal order of pixel attacks.
         """
         x = np.arange(0, image_size).cumsum()
         order = np.zeros((image_size, image_size)).astype(ART_NUMPY_DTYPE)
         for i in range(image_size):
             order[i, : (image_size - i)] = i + x[i:]
         for i in range(1, image_size):
-            reverse = order[image_size - i - 1].take([i for i in range(i - 1, -1, -1)])
+            reverse = order[image_size - i - 1].take([i for i in range(i - 1, -1, -1)])  # pylint: disable=R1721
             order[i, (image_size - i) :] = image_size * image_size - 1 - reverse
         if channels > 1:
             order_2d = order

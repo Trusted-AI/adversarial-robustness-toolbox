@@ -25,7 +25,7 @@ specifically for PyTorch.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING, Optional, Tuple, List
 
 import numpy as np
 import scipy
@@ -168,11 +168,13 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         # Create the main variable to optimize
         if self.estimator.device.type == "cpu":
             self.global_optimal_delta = Variable(
-                torch.zeros(self.batch_size, self.global_max_length).type(torch.FloatTensor), requires_grad=True
+                torch.zeros(self.batch_size, self.global_max_length).type(torch.FloatTensor),  # type: ignore
+                requires_grad=True,
             )
         else:
             self.global_optimal_delta = Variable(
-                torch.zeros(self.batch_size, self.global_max_length).type(torch.cuda.FloatTensor), requires_grad=True
+                torch.zeros(self.batch_size, self.global_max_length).type(torch.cuda.FloatTensor),  # type: ignore
+                requires_grad=True,
             )
 
         self.global_optimal_delta.to(self.estimator.device)
@@ -182,17 +184,21 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         if self._optimizer_arg_1 is None:
             self.optimizer_1 = torch.optim.Adam(params=[self.global_optimal_delta], lr=self.learning_rate_1)
         else:
-            self.optimizer_1 = self._optimizer_arg_1(params=[self.global_optimal_delta], lr=self.learning_rate_1)
+            self.optimizer_1 = self._optimizer_arg_1(  # type: ignore
+                params=[self.global_optimal_delta], lr=self.learning_rate_1
+            )
 
         self._optimizer_arg_2 = optimizer_2
         if self._optimizer_arg_2 is None:
             self.optimizer_2 = torch.optim.Adam(params=[self.global_optimal_delta], lr=self.learning_rate_2)
         else:
-            self.optimizer_2 = self._optimizer_arg_2(params=[self.global_optimal_delta], lr=self.learning_rate_2)
+            self.optimizer_2 = self._optimizer_arg_2(  # type: ignore
+                params=[self.global_optimal_delta], lr=self.learning_rate_2
+            )
 
         # Setup for AMP use
         if self._use_amp:
-            from apex import amp
+            from apex import amp  # pylint: disable=E0611
 
             if self.estimator.device.type == "cpu":
                 enabled = False
@@ -230,14 +236,8 @@ class ImperceptibleASRPyTorch(EvasionAttack):
                 "labels `y`. Currently `y` is set to `None`."
             )
 
-        # Start to compute adversarial examples
-        dtype = x.dtype
-
         # Cast to type float64 to avoid overflow
-        if dtype.type == np.float64:
-            adv_x = x.copy()
-        else:
-            adv_x = x.copy().astype(np.float64)
+        adv_x = np.array([x_i.copy().astype(np.float64) for x_i in x])
 
         # Put the estimator in the training mode, otherwise CUDA can't backpropagate through the model.
         # However, estimator uses batch norm layers which need to be frozen
@@ -258,12 +258,16 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             if self._optimizer_arg_1 is None:
                 self.optimizer_1 = torch.optim.Adam(params=[self.global_optimal_delta], lr=self.learning_rate_1)
             else:
-                self.optimizer_1 = self._optimizer_arg_1(params=[self.global_optimal_delta], lr=self.learning_rate_1)
+                self.optimizer_1 = self._optimizer_arg_1(  # type: ignore
+                    params=[self.global_optimal_delta], lr=self.learning_rate_1
+                )
 
             if self._optimizer_arg_2 is None:
                 self.optimizer_2 = torch.optim.Adam(params=[self.global_optimal_delta], lr=self.learning_rate_2)
             else:
-                self.optimizer_2 = self._optimizer_arg_2(params=[self.global_optimal_delta], lr=self.learning_rate_2)
+                self.optimizer_2 = self._optimizer_arg_2(  # type: ignore
+                    params=[self.global_optimal_delta], lr=self.learning_rate_2
+                )
 
             # Then compute the batch
             adv_x_batch = self._generate_batch(adv_x[batch_index_1:batch_index_2], y[batch_index_1:batch_index_2])
@@ -274,9 +278,8 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         # Unfreeze batch norm layers again
         self.estimator.set_batchnorm(train=True)
 
-        # Recast to the original type if needed
-        if dtype.type == np.float32:
-            adv_x = adv_x.astype(dtype)
+        # Recast to the original type
+        adv_x = np.array([adv_x[i].astype(x[i].dtype) for i in range(len(adv_x))])
 
         return adv_x
 
@@ -362,7 +365,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             original_input[local_batch_size_idx, : len(x[local_batch_size_idx])] = x[local_batch_size_idx]
 
         # Optimization loop
-        successful_adv_input = [None] * local_batch_size
+        successful_adv_input: List[Optional["torch.Tensor"]] = [None] * local_batch_size
         trans = [None] * local_batch_size
 
         for iter_1st_stage_idx in range(self.max_iter_1):
@@ -382,7 +385,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
 
             # Actual training
             if self._use_amp:
-                from apex import amp
+                from apex import amp  # pylint: disable=E0611
 
                 with amp.scale_loss(loss, self.optimizer_1) as scaled_loss:
                     scaled_loss.backward()
@@ -418,7 +421,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
                         successful_adv_input[local_batch_size_idx] = masked_adv_input[local_batch_size_idx]
                         trans[local_batch_size_idx] = decoded_output[local_batch_size_idx]
 
-        result = torch.stack(successful_adv_input)
+        result = torch.stack(successful_adv_input)  # type: ignore
 
         return result, original_input
 
@@ -531,7 +534,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             original_input[local_batch_size_idx, : len(x[local_batch_size_idx])] = x[local_batch_size_idx]
 
         # Optimization loop
-        successful_adv_input = [None] * local_batch_size
+        successful_adv_input: List[Optional["torch.Tensor"]] = [None] * local_batch_size
         best_loss_2nd_stage = [np.inf] * local_batch_size
         trans = [None] * local_batch_size
 
@@ -563,7 +566,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
 
             # Actual training
             if self._use_amp:
-                from apex import amp
+                from apex import amp  # pylint: disable=E0611
 
                 with amp.scale_loss(loss, self.optimizer_2) as scaled_loss:
                     scaled_loss.backward()
@@ -601,7 +604,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
                         successful_adv_input[local_batch_size_idx] = masked_adv_input[local_batch_size_idx]
                         trans[local_batch_size_idx] = decoded_output[local_batch_size_idx]
 
-        result = torch.stack(successful_adv_input)
+        result = torch.stack(successful_adv_input)  # type: ignore
 
         return result
 
@@ -633,9 +636,9 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             loss = torch.mean(relu(psd_transform_delta - torch.tensor(theta_batch[i]).to(self.estimator.device)))
             losses.append(loss)
 
-        losses = torch.stack(losses)
+        losses_stack = torch.stack(losses)
 
-        return losses
+        return losses_stack
 
     def _compute_masking_threshold(self, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -745,9 +748,9 @@ class ImperceptibleASRPyTorch(EvasionAttack):
                 s_f[zero_idx:] = (-27 + 0.37 * max(barks_psd[m, 1] - 40, 0)) * d_z[zero_idx:]
                 t_s.append(barks_psd[m, 1] + delta[m] + s_f)
 
-            t_s = np.array(t_s)
+            t_s_array = np.array(t_s)
 
-            theta.append(np.sum(pow(10, t_s / 10.0), axis=0) + pow(10, ath / 10.0))
+            theta.append(np.sum(pow(10, t_s_array / 10.0), axis=0) + pow(10, ath / 10.0))
 
         theta = np.array(theta)
 
@@ -775,13 +778,13 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         window = self.estimator.model.audio_conf.window.value
 
         if window == "hamming":
-            window_fn = torch.hamming_window
+            window_fn = torch.hamming_window  # type: ignore
         elif window == "hann":
-            window_fn = torch.hann_window
+            window_fn = torch.hann_window  # type: ignore
         elif window == "blackman":
-            window_fn = torch.blackman_window
+            window_fn = torch.blackman_window  # type: ignore
         elif window == "bartlett":
-            window_fn = torch.bartlett_window
+            window_fn = torch.bartlett_window  # type: ignore
         else:
             raise NotImplementedError("Spectrogram window %s not supported." % window)
 

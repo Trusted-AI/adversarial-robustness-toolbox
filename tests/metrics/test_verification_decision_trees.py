@@ -61,7 +61,7 @@ class TestMetricsTrees(unittest.TestCase):
         master_seed(seed=42)
 
     def test_XGBoost(self):
-        model = XGBClassifier(n_estimators=4, max_depth=6)
+        model = XGBClassifier(n_estimators=4, max_depth=6, objective="multi:softprob", eval_metric="merror")
         model.fit(self.x_train, np.argmax(self.y_train, axis=1))
 
         classifier = XGBoostClassifier(model=model, nb_features=self.n_features, nb_classes=self.n_classes)
@@ -71,8 +71,8 @@ class TestMetricsTrees(unittest.TestCase):
             x=self.x_test, y=self.y_test, eps_init=0.3, nb_search_steps=10, max_clique=2, max_level=2
         )
 
-        self.assertEqual(average_bound, 0.03186914062500001)
-        self.assertEqual(verified_error, 0.99)
+        self.assertEqual(average_bound, 0.0011425781249999997)
+        self.assertEqual(verified_error, 1.0)
 
     def test_LightGBM(self):
         train_data = lightgbm.Dataset(self.x_train, label=np.argmax(self.y_train, axis=1))

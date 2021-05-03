@@ -40,6 +40,7 @@ from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_n
 from art.utils import compute_success, random_sphere, compute_success_array
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     import tensorflow as tf
     from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 
@@ -55,7 +56,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
     | Paper link: https://arxiv.org/abs/1706.06083
     """
 
-    _estimator_requirements = (BaseEstimator, LossGradientsMixin, ClassifierMixin)
+    _estimator_requirements = (BaseEstimator, LossGradientsMixin, ClassifierMixin)  # type: ignore
 
     def __init__(
         self,
@@ -180,7 +181,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
 
             # Compute batch_eps and batch_eps_step
-            if isinstance(self.eps, np.ndarray):
+            if isinstance(self.eps, np.ndarray) and isinstance(self.eps_step, np.ndarray):
                 if len(self.eps.shape) == len(x.shape) and self.eps.shape[0] == x.shape[0]:
                     batch_eps = self.eps[batch_index_1:batch_index_2]
                     batch_eps_step = self.eps_step[batch_index_1:batch_index_2]
@@ -258,7 +259,9 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
         return adv_x
 
-    def _compute_perturbation(self, x: "tf.Tensor", y: "tf.Tensor", mask: Optional["tf.Tensor"]) -> "tf.Tensor":
+    def _compute_perturbation(  # pylint: disable=W0221
+        self, x: "tf.Tensor", y: "tf.Tensor", mask: Optional["tf.Tensor"]
+    ) -> "tf.Tensor":
         """
         Compute perturbations.
 
@@ -309,7 +312,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
         return grad
 
-    def _apply_perturbation(
+    def _apply_perturbation(  # pylint: disable=W0221
         self, x: "tf.Tensor", perturbation: "tf.Tensor", eps_step: Union[int, float, np.ndarray]
     ) -> "tf.Tensor":
         """

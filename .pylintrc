@@ -189,7 +189,7 @@ score=yes
 [REFACTORING]
 
 # Maximum number of nested blocks for function / method body
-max-nested-blocks=5
+max-nested-blocks=7
 
 # Complete name of functions that never returns. When checking for
 # inconsistent-return-statements if a never returning function is called then
@@ -531,7 +531,7 @@ max-branches=12
 max-locals=15
 
 # Maximum number of parents for a class (see R0901).
-max-parents=7
+max-parents=11
 
 # Maximum number of public methods for a class (see R0904).
 max-public-methods=20

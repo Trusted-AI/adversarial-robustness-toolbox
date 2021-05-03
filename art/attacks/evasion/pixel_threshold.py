@@ -24,6 +24,7 @@ The Pixel Attack is a generalisation of One Pixel Attack.
 | Pixel and Threshold Attack Paper link:
     https://arxiv.org/abs/1906.06026
 """
+# pylint: disable=C0302
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -194,16 +195,16 @@ class PixelThreshold(EvasionAttack):
 
             adv_x_best += [image_result]
 
-        adv_x_best = np.array(adv_x_best)
+        adv_x_best_array = np.array(adv_x_best)
 
         if y is not None:
             y = to_categorical(y, self.estimator.nb_classes)
 
         logger.info(
             "Success rate of Attack: %.2f%%",
-            100 * compute_success(self.estimator, x, y, adv_x_best, self.targeted, 1),
+            100 * compute_success(self.estimator, x, y, adv_x_best_array, self.targeted, 1),
         )
-        return adv_x_best
+        return adv_x_best_array
 
     def _get_bounds(self, img: np.ndarray, limit) -> Tuple[List[list], list]:
         """
@@ -229,7 +230,7 @@ class PixelThreshold(EvasionAttack):
 
         return bounds, initial
 
-    def _perturb_image(self, x: np.ndarray, img: np.ndarray) -> np.ndarray:
+    def _perturb_image(self, x: np.ndarray, img: np.ndarray) -> np.ndarray:  # pylint: disable=W0613,R0201
         """
         Perturbs the given image `img` with the given perturbation `x`.
         """
@@ -256,7 +257,7 @@ class PixelThreshold(EvasionAttack):
             predictions = self.estimator.predict(self._perturb_image(x, image))[:, target_class]
             return predictions if not self.targeted else 1 - predictions
 
-        def callback_fn(x, convergence=None):
+        def callback_fn(x, convergence=None):  # pylint: disable=R1710,W0613
             if self.es == 0:
                 if self._attack_success(x.result[0], image, target_class):
                     raise Exception("Attack Completed :) Earlier than expected")
@@ -312,8 +313,8 @@ class PixelThreshold(EvasionAttack):
 
         if self._attack_success(adv_x, image, target_class):
             return True, self._perturb_image(adv_x, image)[0]
-        else:
-            return False, image
+
+        return False, image
 
 
 class PixelAttack(PixelThreshold):
@@ -382,8 +383,7 @@ class PixelAttack(PixelThreshold):
 
                 if count == limit - 1:
                     break
-                else:
-                    continue
+
             min_bounds = [0, 0]
             for _ in range(self.img_channels):
                 min_bounds += [0]
@@ -451,7 +451,7 @@ class ThresholdAttack(PixelThreshold):
 
 # TODO: Make the attack compatible with current version of SciPy Optimize
 # Differential Evolution
-
+# pylint: disable=W0105
 """
 A slight modification to Scipy's implementation of differential evolution.
 To speed up predictions, the entire parameters array is passed to `self.func`,
@@ -1179,7 +1179,7 @@ class DifferentialEvolutionSolver:
                 is True
             ):
                 warning_flag = True
-                status_message = "callback function requested stop early " "by returning True"
+                status_message = "callback function requested stop early by returning True"
                 break
 
             intol = np.std(self.population_energies) <= self.atol + self.tol * np.abs(np.mean(self.population_energies))
@@ -1371,7 +1371,7 @@ class DifferentialEvolutionSolver:
         for index in np.where((trial < 0) | (trial > 1))[0]:
             trial[index] = self.random_number_generator.rand()
 
-    def _mutate(self, candidate):
+    def _mutate(self, candidate):  # pylint: disable=R1710
         """
         create a trial vector based on a mutation strategy
         """
@@ -1397,7 +1397,7 @@ class DifferentialEvolutionSolver:
             trial = np.where(crossovers, bprime, trial)
             return trial
 
-        elif self.strategy in self._exponential:
+        if self.strategy in self._exponential:
             i = 0
             while i < self.parameter_count and rng.rand() < self.cross_over_probability:
                 trial[fill_point] = bprime[fill_point]

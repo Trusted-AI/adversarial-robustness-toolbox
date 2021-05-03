@@ -30,7 +30,7 @@ if TYPE_CHECKING:
     from art.estimators.classification.classifier import Classifier
 
 
-def PDTP(
+def PDTP(  # pylint: disable=C0103
     target_estimator: "Classifier",
     extra_estimator: "Classifier",
     x: np.ndarray,
@@ -79,8 +79,8 @@ def PDTP(
         if not is_probability(pred):
             try:
                 pred = scipy.special.softmax(pred, axis=1)
-            except:
-                raise ValueError("PDTP metric only supports classifiers that output logits or probabilities.")
+            except Exception as exc:
+                raise ValueError("PDTP metric only supports classifiers that output logits or probabilities.") from exc
         # divide into 100 bins and return center of bin
         bins = np.array(np.arange(0.0, 1.01, 0.01).round(decimals=2))
         pred_bin_indexes = np.digitize(pred, bins)
@@ -94,10 +94,10 @@ def PDTP(
             alt_y = np.delete(y, row, 0)
             try:
                 extra_estimator.reset()
-            except NotImplementedError as e:
+            except NotImplementedError as exc:
                 raise ValueError(
                     "PDTP metric can only be applied to classifiers that implement the reset method."
-                ) from e
+                ) from exc
             extra_estimator.fit(alt_x, alt_y)
             # get probabilities from new model
             alt_pred = extra_estimator.predict(x)
@@ -116,7 +116,7 @@ def PDTP(
     # get average of iterations for each sample
     # We now have a list of list, internal lists represent an iteration. We need to transpose and get averages.
     per_sample = list(map(list, zip(*results)))
-    avg_per_sample = np.array([sum(l) / len(l) for l in per_sample])
+    avg_per_sample = np.array([sum(val) / len(val) for val in per_sample])
 
     # return leakage per sample
     return avg_per_sample
