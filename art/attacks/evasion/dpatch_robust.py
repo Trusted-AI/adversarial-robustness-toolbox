@@ -275,6 +275,9 @@ class RobustDPatch(EvasionAttack):
                 y_b = y[i_image]["boxes"].copy()
                 image_width = x.shape[2]
                 image_height = x.shape[1]
+                # TODO: fix. This assumes y_b is in Pytorch box format [xmin,ymin,xmax,ymax],
+                # where 0 <= x < W and 0 <= y < H. Tensorflow box format [ymin,xmin,ymax,xmax],
+                # where 0 <= x < 1 and 0 <= y < 1, is not supported
                 x_1_arr = y_b[:, 0]
                 y_1_arr = y_b[:, 1]
                 x_2_arr = y_b[:, 2]
@@ -320,8 +323,10 @@ class RobustDPatch(EvasionAttack):
 
         # 3) adjust brightness:
         brightness = random.uniform(*self.brightness_range)
-        x_copy = np.round(brightness * x_copy)
-        x_patch = np.round(brightness * x_patch)
+        # x_copy = np.round(brightness * x_copy)
+        # x_patch = np.round(brightness * x_patch)
+        x_copy = brightness * x_copy # x and patch are between [0,1]
+        x_patch = brightness * x_patch
 
         transformations.update({"brightness": brightness})
 
@@ -466,8 +471,10 @@ class RobustDPatch(EvasionAttack):
         if len(self.brightness_range) != 2:
             raise ValueError("The length of brightness range must be 2.")
 
-        if self.brightness_range[0] < 0.0 or self.brightness_range[1] > 1.0:
-            raise ValueError("The brightness range must be between 0.0 and 1.0.")
+        # Why is the constraint self.brightness_range[1] <= 1.0 needed?
+        # if self.brightness_range[0] < 0.0 or self.brightness_range[1] > 1.0:
+        if self.brightness_range[0] < 0.0:
+            raise ValueError("The brightness range must be >= 0.0.")
 
         if self.brightness_range[0] > self.brightness_range[1]:
             raise ValueError("The first element of the brightness range must be less or equal to the second one.")
