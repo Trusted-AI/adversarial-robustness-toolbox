@@ -3,26 +3,19 @@
 # Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2021
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software
-# and associated
-# documentation files (the "Software"), to deal in the Software without restriction, including
-# without limitation the
-# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
-# Software, and to permit
-# persons to whom the Software is furnished to do so, subject to the following conditions:
+# and associated documentation files (the "Software"), to deal in the Software without
+# restriction, including without limitation the rights to use, copy, modify, merge, publish,
+# distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
 #
 # The above copyright notice and this permission notice shall be included in all copies or
-# substantial portions of the
-# Software.
+# substantial portions of the Software.
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
-# BUT NOT LIMITED TO THE
-# WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO
-# EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
-# ACTION OF CONTRACT,
-# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-# DEALINGS IN THE
-# SOFTWARE.
+# BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+# DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
 This module contains an implementation of the Over-the-Air Adversarial
@@ -55,12 +48,12 @@ class OverTheAirFlickeringTorch(EvasionAttack):
     _estimator_requirements = (BaseEstimator, ClassGradientsMixin)
 
     def __init__(
-        self,
-        classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
-        regularization_param: float,
-        beta_1: float,
-        beta_2: float,
-        margin: float,
+            self,
+            classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
+            regularization_param: float,
+            beta_1: float,
+            beta_2: float,
+            margin: float,
     ):
         """
         Initialize the `OverTheAirFlickeringTorch` attack. Besides the
@@ -114,7 +107,8 @@ class OverTheAirFlickeringTorch(EvasionAttack):
         epoch_print_str = f"{num_epochs}:"
 
         delta = torch.nn.parameter.Parameter(
-            torch.zeros(x[0].shape[1], 3, 1, 1).normal_(mean=0.0, std=0.2).to(torch.device("cuda")), requires_grad=True
+            torch.zeros(x[0].shape[1], 3, 1, 1).normal_(mean=0.0, std=0.2).to(torch.device("cuda")),
+            requires_grad=True
         )
 
         # All values of delta needs to be within [V_min, V_max], so we get those
@@ -158,7 +152,8 @@ class OverTheAirFlickeringTorch(EvasionAttack):
 
         return x + delta.detach().cpu().numpy()
 
-    def _objective(self, delta: "torch.Tensor", predictions: "torch.Tensor", y: Optional["torch.Tensor"] = None):
+    def _objective(self, delta: "torch.Tensor", predictions: "torch.Tensor",
+                   y: Optional["torch.Tensor"] = None):
         """
         Equation (1): The objective function. Does NOT include the argmin nor constraints from
         equation (2).
@@ -182,8 +177,8 @@ class OverTheAirFlickeringTorch(EvasionAttack):
         T = delta.shape[0]
         # The first summation from equation (1)
         regularization_term = self.regularization_param * (
-            self.beta_1 * self._thickness_regularization(delta, T)
-            + self.beta_2 * self._roughness_regularization(delta, T)
+                self.beta_1 * self._thickness_regularization(delta, T)
+                + self.beta_2 * self._roughness_regularization(delta, T)
         )
 
         return regularization_term + torch.mean(self._adversarial_loss(predictions, y))
@@ -238,12 +233,12 @@ class OverTheAirFlickeringTorch(EvasionAttack):
         import torch
 
         return (
-            1
-            / (3 * T)
-            * (
-                torch.pow(torch.norm(self._first_temporal_derivative(delta), 2), 2)
-                + torch.pow(torch.norm(self._second_temporal_derivative(delta), 2), 2)
-            )
+                1
+                / (3 * T)
+                * (
+                        torch.pow(torch.norm(self._first_temporal_derivative(delta), 2), 2)
+                        + torch.pow(torch.norm(self._second_temporal_derivative(delta), 2), 2)
+                )
         )
 
     @staticmethod
@@ -290,12 +285,13 @@ class OverTheAirFlickeringTorch(EvasionAttack):
         #   torch.max(predictions[pred_mask == True].view(samples,m-1), dim=-1)[0]:
         #       Get the max logit for each row that is not the true class.
         l_m = (
-            predictions[pred_mask == False]
-            - torch.max(predictions[pred_mask == True].view(samples, n - 1), dim=-1)[0]
-            + self.margin
+                predictions[pred_mask == False]
+                - torch.max(predictions[pred_mask == True].view(samples, n - 1), dim=-1)[0]
+                + self.margin
         )
 
         # Equation 3
         return torch.max(
-            torch.zeros(y.shape).to(predictions.device), torch.min(1 / self.margin * torch.pow(l_m, 2), l_m)
+            torch.zeros(y.shape).to(predictions.device),
+            torch.min(1 / self.margin * torch.pow(l_m, 2), l_m)
         )
