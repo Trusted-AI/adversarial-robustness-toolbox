@@ -45,6 +45,7 @@ from art.attacks.attack import EvasionAttack
 from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
+    import torch
     from art.utils import CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE
 logger = logging.getLogger(__name__)
 
@@ -54,14 +55,25 @@ class OverTheAirFlickeringTorch(EvasionAttack):
     _estimator_requirements = (BaseEstimator, ClassGradientsMixin)
 
     def __init__(
-            self,
-            classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
-            regularization_param: float,
-            beta_1: float,
-            beta_2: float,
-            margin: float,
+        self,
+        classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
+        regularization_param: float,
+        beta_1: float,
+        beta_2: float,
+        margin: float,
     ):
-        super(OverTheAirFlickeringTorch, self).__init__(estimator=classifier)
+        """
+        Initialize the `OverTheAirFlickeringTorch` attack. Besides the
+        `classifier` argument, the rest are hyperparameters from the paper.
+
+        :param classifier: The classifier model.
+        :param regularization_param: The hyperparameter `lambda` term in
+            equation (1).
+        :param beta_1: The hyperparameter `beta_1` term in equation (1).
+        :param beta_2: The hyperparameter `beta_2` term in equation (1).
+        :param margin: The hyperparameter `m` term in the paper.
+        """
+        super().__init__(estimator=classifier)
 
         self.regularization_param = regularization_param
         self.beta_1 = beta_1
@@ -69,8 +81,7 @@ class OverTheAirFlickeringTorch(EvasionAttack):
         self.margin = margin
         self._check_params()
 
-    def generate(self, x: "torch.Tensor", y: Optional["torch.Tensor"] = None,
-                 **kwargs) -> "torch.Tensor":
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> "torch.Tensor":
         """
 
         :param x: Input videos. Can be any dimensions, but per the paper it
@@ -93,6 +104,7 @@ class OverTheAirFlickeringTorch(EvasionAttack):
             (N Samples, T consecutive frames, H rows, W columns, C color channels).
         """
         import torch
+
         y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
         x = torch.tensor(x, device=self.estimator.device)
@@ -102,8 +114,7 @@ class OverTheAirFlickeringTorch(EvasionAttack):
         epoch_print_str = f"{num_epochs}:"
 
         delta = torch.nn.parameter.Parameter(
-            torch.zeros(x[0].shape[1], 3, 1, 1).normal_(mean=0.0, std=0.2).to(torch.device("cuda")),
-            requires_grad=True
+            torch.zeros(x[0].shape[1], 3, 1, 1).normal_(mean=0.0, std=0.2).to(torch.device("cuda")), requires_grad=True
         )
 
         # All values of delta needs to be within [V_min, V_max], so we get those
@@ -128,7 +139,7 @@ class OverTheAirFlickeringTorch(EvasionAttack):
             with torch.no_grad():
                 # TODO: Add in Batching
                 for video in x:
-                    preds.append(expit(self.estimator(video + delta, return_loss=False)))
+                    preds.append(expit(self.estimator.model(video + delta, return_loss=False)))
 
             preds = torch.Tensor(preds).to(self.estimator.device).squeeze(1)
 
@@ -147,8 +158,7 @@ class OverTheAirFlickeringTorch(EvasionAttack):
 
         return x + delta.detach().cpu().numpy()
 
-    def _objective(self, delta: "torch.Tensor", predictions: "torch.Tensor",
-                   y: Optional["torch.Tensor"] = None):
+    def _objective(self, delta: "torch.Tensor", predictions: "torch.Tensor", y: Optional["torch.Tensor"] = None):
         """
         Equation (1): The objective function. Does NOT include the argmin nor constraints from
         equation (2).
@@ -172,10 +182,8 @@ class OverTheAirFlickeringTorch(EvasionAttack):
         T = delta.shape[0]
         # The first summation from equation (1)
         regularization_term = self.regularization_param * (
-                self.beta_1
-                * self._thickness_regularization(delta, T)
-                + self.beta_2
-                * self._roughness_regularization(delta, T)
+            self.beta_1 * self._thickness_regularization(delta, T)
+            + self.beta_2 * self._roughness_regularization(delta, T)
         )
 
         return regularization_term + torch.mean(self._adversarial_loss(predictions, y))
@@ -184,15 +192,16 @@ class OverTheAirFlickeringTorch(EvasionAttack):
     def _first_temporal_derivative(x: "torch.Tensor") -> "torch.Tensor":
         """
         Equation 7 from the paper.
-        :param x: `"torch.Tensor"`
-            Input tensor. Can be any dimensions, but per the paper it should be
-            a 4-dimensional Tensor with dimensions
+        :param x: Input tensor. Can be any dimensions, but per the paper it
+            should be a 4-dimensional Tensor with dimensions
+
             (T consecutive frames, H rows, W columns, C color channels).
-        :return: `"torch.Tensor"`
-            The first order temporal derivative with dimensions
+        :return: The first order temporal derivative with dimensions
+
             (T consecutive frames, H rows, W columns, C color channels).
         """
         import torch
+
         # Use dims to ensure that it is only shifted on the first dimensions.
         # Per the paper, we roll x_1,...,x_T in X. Since T is the first
         # dimension of X, we use dim=0.
@@ -203,15 +212,17 @@ class OverTheAirFlickeringTorch(EvasionAttack):
         """
         Equation 8 from the paper. Defined as:
             Roll(X,-1) - 2*Roll(X, 0) + Roll(X,1)
-        :param X: `"torch.Tensor"`
-            Input tensor. Can be any dimensions, but per the paper it should be
-            a 4-dimensional Tensor with dimensions
+
+        :param X: Input tensor. Can be any dimensions, but per the paper it
+            should be a 4-dimensional Tensor with dimensions
+
             (T consecutive frames, H rows, W columns, C color channels).
-        :return: `"torch.Tensor"`
-            The first order temporal derivative with dimensions
+
+        :return: The first order temporal derivative with dimensions
             (T consecutive frames, H rows, W columns, C color channels).
         """
         import torch
+
         # Use dims to ensure that it is only shifted on the first dimensions.
         # Per the paper, we roll x_1,...,x_T in X. Since T is the first
         # dimension of X, we use dim=0.
@@ -225,13 +236,14 @@ class OverTheAirFlickeringTorch(EvasionAttack):
         :return: Roughness regularization parameter.
         """
         import torch
+
         return (
-                1
-                / (3 * T)
-                * (
-                        torch.pow(torch.norm(self._first_temporal_derivative(delta), 2), 2)
-                        + torch.pow(torch.norm(self._second_temporal_derivative(delta), 2), 2)
-                )
+            1
+            / (3 * T)
+            * (
+                torch.pow(torch.norm(self._first_temporal_derivative(delta), 2), 2)
+                + torch.pow(torch.norm(self._second_temporal_derivative(delta), 2), 2)
+            )
         )
 
     @staticmethod
@@ -243,6 +255,7 @@ class OverTheAirFlickeringTorch(EvasionAttack):
         :return: The thickness. Like oatmeal * oatmeal=oatmeal^2
         """
         import torch
+
         return torch.pow(torch.norm(delta, 2), 2) / (3 * T)
 
     def _adversarial_loss(self, predictions: "torch.Tensor", y: "torch.Tensor") -> "torch.Tensor":
@@ -262,6 +275,7 @@ class OverTheAirFlickeringTorch(EvasionAttack):
         """
 
         import torch
+
         # Number of samples x Number of Labels
         samples, n = predictions.shape
         pred_mask = torch.ones(samples, n).type(torch.bool)
@@ -276,11 +290,12 @@ class OverTheAirFlickeringTorch(EvasionAttack):
         #   torch.max(predictions[pred_mask == True].view(samples,m-1), dim=-1)[0]:
         #       Get the max logit for each row that is not the true class.
         l_m = (
-                predictions[pred_mask == False]
-                - torch.max(predictions[pred_mask == True].view(samples, n - 1), dim=-1)[0]
-                + self.margin
+            predictions[pred_mask == False]
+            - torch.max(predictions[pred_mask == True].view(samples, n - 1), dim=-1)[0]
+            + self.margin
         )
 
         # Equation 3
-        return torch.max(torch.zeros(y.shape).to(predictions.device),
-                         torch.min(1 / self.margin * torch.pow(l_m, 2), l_m))
+        return torch.max(
+            torch.zeros(y.shape).to(predictions.device), torch.min(1 / self.margin * torch.pow(l_m, 2), l_m)
+        )
