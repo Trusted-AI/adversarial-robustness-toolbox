@@ -27,7 +27,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 from typing import Optional, TYPE_CHECKING
-
+import numpy as np
 from scipy.special import expit
 from tqdm.auto import trange
 
