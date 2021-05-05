@@ -42,6 +42,7 @@ if TYPE_CHECKING:
     from art.utils import CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE
 logger = logging.getLogger(__name__)
 
+import numpy as np
 
 class OverTheAirFlickeringTorch(EvasionAttack):
     attack_params = EvasionAttack.attack_params + ["regularization_param", "beta_1", "beta_2" "margin"]

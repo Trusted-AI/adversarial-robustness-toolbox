@@ -7,61 +7,49 @@ import random
 # Need numpy arrays to check values inside torch tensors
 import numpy
 
-# import all functions that need to be tested
-from over_the_air.paper_equations import (
-    firstTemporalDerivative,
-    secondTemporalDerivative,
-    objectiveFunc,
-    adversarialLoss,
-    thicknessRegularization,
-    roughnessRegularization,
-)
+import art.estimators
+from tests.utils import TestBase, master_seed
 
+# import Attack
+from  art.attacks.evasion.over_the_air_flickering import OverTheAirFlickeringTorch
 
-# $ pytest -k Test Derivative
-
-# Derivative Tests
-class TestDerivative:
-    # tensor of ones and zeros
+class TestOverTheAirFlickeringTorch(TestBase):
     OnesInput = torch.ones(4, 3, 3, 3)
     ZeroesInput = torch.zeros(4, 3, 3, 3)
+    
+    X = OverTheAirFlickeringTorch(classifier=art.estimators.estimator.LossGradientsMixin,
+                              regularization_param=0.0,
+                              beta_1=0.0,
+                              beta_2=0.0,
+                              margin=0.0)
 
     def test_firstTemporalDerivative(self):
-        # Dimension Check
-        assert firstTemporalDerivative(self.ZeroesInput).size() == torch.Size([4, 3, 3, 3])
-        assert firstTemporalDerivative(self.OnesInput).size() == torch.Size([4, 3, 3, 3])
-        # Output Check
-        # Should Output 4 * 3 * 3 * 3 tensor of zeroes
-        assert firstTemporalDerivative(self.OnesInput).numpy().all() == 0.0
-        assert firstTemporalDerivative(self.ZeroesInput).numpy().all() == 0.0
+        assert OverTheAirFlickeringTorch._first_temporal_derivative(self.ZeroesInput).size() == torch.Size([4, 3, 3, 3])
+        assert OverTheAirFlickeringTorch._first_temporal_derivative(self.OnesInput).size() == torch.Size([4, 3, 3, 3])
+        assert OverTheAirFlickeringTorch._first_temporal_derivative(self.ZeroesInput).numpy().all() == 0.0
+        assert OverTheAirFlickeringTorch._first_temporal_derivative(self.OnesInput).numpy().all() == 0.0
 
     def test_secondTemporalDerivative(self):
-        # Dimension Check
-        assert secondTemporalDerivative(self.OnesInput).size() == torch.Size([4, 3, 3, 3])
-        assert secondTemporalDerivative(self.ZeroesInput).size() == torch.Size([4, 3, 3, 3])
-        # Output Check
-        # Should Output 4 * 3 * 3 * 3 tensor of zeroes
-        assert secondTemporalDerivative(self.ZeroesInput).numpy().all() == 0.0
-        assert secondTemporalDerivative(self.OnesInput).numpy().all() == True
+        assert OverTheAirFlickeringTorch._second_temporal_derivative(self.ZeroesInput).size() == torch.Size([4, 3, 3, 3])
+        assert OverTheAirFlickeringTorch._second_temporal_derivative(self.OnesInput).size() == torch.Size([4, 3, 3, 3])
+        assert OverTheAirFlickeringTorch._second_temporal_derivative(self.ZeroesInput).numpy().all() == 0.0
+        assert OverTheAirFlickeringTorch._second_temporal_derivative(self.OnesInput).numpy().all() == True
 
-
-# $ pytest -k TestRegularization
-
-# Regularization Tests
-class TestRegularization:
-    OnesInput = torch.ones(4, 3, 3, 3)
-    ZeroesInput = torch.zeros(4, 3, 3, 3)
-
-    def test_thicknessRegularization(self):
-        # Dimension Check
-        assert thicknessRegularization(self.OnesInput, 1).size() == torch.Size([])
-        assert thicknessRegularization(self.ZeroesInput, 1).size() == torch.Size([])
-        # Output Check
+    def test_thickness_regularization(self):
+        assert OverTheAirFlickeringTorch._thickness_regularization(self.ZeroesInput, 1).size() == torch.Size([])
+        assert OverTheAirFlickeringTorch._thickness_regularization(self.OnesInput, 1).size() == torch.Size([])
         # Float Precision Error
-        # This was the quick fix
-        assert 35.99999 < thicknessRegularization(self.OnesInput, 1).item() < 36.0000
-        assert thicknessRegularization(self.ZeroesInput, 1).item() == 0.0
+        # Quick Fix
+        assert OverTheAirFlickeringTorch._thickness_regularization(self.ZeroesInput, 1).item() == 0.0
+        assert 35.99999 < OverTheAirFlickeringTorch._thickness_regularization(self.OnesInput, 1).item() < 36.00000
 
+    def test_roughness_regularization(self):
+        print(OverTheAirFlickeringTorch._roughness_regularization(0, self.ZeroesInput, 1).size())
+        assert OverTheAirFlickeringTorch._roughness_regularization(self, self.ZeroesInput, 1).size() == torch.Size([])
+        assert OverTheAirFlickeringTorch._roughness_regularization(self, self.OnesInput, 1).size() == torch.Size([])
+        assert OverTheAirFlickeringTorch._roughness_regularization(self, self.ZeroesInput, 1).item() == 0.0
+        assert OverTheAirFlickeringTorch._roughness_regularization(self, self.OnesInput, 1).item() == 144.0
+'''
     def test_roughnessRegularizaiton(self):
         # Dimension Check
         assert roughnessRegularization(self.OnesInput, 1).size() == torch.Size([])
@@ -131,3 +119,5 @@ class TestObjectiveFunc:
         # Confirm the Output
         # Float Precision Issues This was the quick fix
         assert 1.7400 < loss.item() < 1.7401
+
+'''
