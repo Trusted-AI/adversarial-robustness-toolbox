@@ -41,7 +41,7 @@ kornia~=0.5.1
 #lingvo==0.6.4
 
 # other
-pytest~=6.2.3
+pytest~=6.2.4
 pytest-flake8~=1.0.7
 pytest-mock~=3.6.0
 pytest-cov~=2.11.1
