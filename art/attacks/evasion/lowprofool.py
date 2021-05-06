@@ -67,17 +67,17 @@ class LowProFool(EvasionAttack):
     _estimator_requirements = (BaseEstimator, LossGradientsMixin, ClassifierMixin)
 
     def __init__(
-            self,
-            classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
-            n_steps: int = 100,
-            threshold: Union[float, None] = 0.5,
-            lambd: float = 1.5,
-            eta: float = 0.2,
-            eta_decay: float = 0.98,
-            eta_min: float = 1e-7,
-            norm: Union[int, float, str] = 2,
-            importance: Union[Callable, str, np.ndarray] = 'pearson',
-            verbose: bool = False
+        self,
+        classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
+        n_steps: int = 100,
+        threshold: Union[float, None] = 0.5,
+        lambd: float = 1.5,
+        eta: float = 0.2,
+        eta_decay: float = 0.98,
+        eta_min: float = 1e-7,
+        norm: Union[int, float, str] = 2,
+        importance: Union[Callable, str, np.ndarray] = "pearson",
+        verbose: bool = False,
     ) -> None:
         """
         Create a LowProFool instance.
@@ -131,13 +131,11 @@ class LowProFool(EvasionAttack):
                 logger.warning(
                     "The given combination of 'n_steps', 'eta', 'eta_decay' and 'eta_min' effectively sets learning "
                     "rate to its minimal value after about %d steps out of all %d.",
-                    steps_before_min_eta_reached, self.n_steps
+                    steps_before_min_eta_reached,
+                    self.n_steps,
                 )
 
-    def __weighted_lp_norm(
-            self,
-            perturbations: np.ndarray
-    ) -> np.ndarray:
+    def __weighted_lp_norm(self, perturbations: np.ndarray) -> np.ndarray:
         """
         Lp-norm of perturbation vectors weighted by feature importance.
 
@@ -145,14 +143,10 @@ class LowProFool(EvasionAttack):
         :return: Array with weighted Lp-norm of perturbations.
         """
         return self.lambd * np.linalg.norm(
-            self.importance_vec * perturbations, axis=1,
-            ord=(np.inf if self.norm == "inf" else self.norm)
+            self.importance_vec * perturbations, axis=1, ord=(np.inf if self.norm == "inf" else self.norm)
         ).reshape(-1, 1)
 
-    def __weighted_lp_norm_gradient(
-            self,
-            perturbations: np.ndarray
-    ) -> np.ndarray:
+    def __weighted_lp_norm_gradient(self, perturbations: np.ndarray) -> np.ndarray:
         """
         Gradient of the weighted Lp-space norm with regards to the data vector.
 
@@ -162,12 +156,13 @@ class LowProFool(EvasionAttack):
         norm = self.norm
 
         if isinstance(norm, (int, float)) and norm < np.inf and self.importance_vec is not None:
-            numerator = self.importance_vec * self.importance_vec * perturbations\
-                * np.power(np.abs(perturbations), norm - 2)
+            numerator = (
+                self.importance_vec * self.importance_vec * perturbations * np.power(np.abs(perturbations), norm - 2)
+            )
             denominator = np.power(np.sum(np.power(self.importance_vec * perturbations, norm)), (norm - 1) / norm)
 
             numerator = np.where(denominator > 1e-10, numerator, np.zeros(numerator.shape[1]))
-            denominator = np.where(denominator <= 1e-10, 1., denominator)
+            denominator = np.where(denominator <= 1e-10, 1.0, denominator)
 
             return numerator / denominator
 
@@ -176,12 +171,7 @@ class LowProFool(EvasionAttack):
         optimum = np.max(np.abs(numerator))
         return np.where(abs(numerator) == optimum, np.sign(numerator), 0)
 
-    def __get_gradients(
-            self,
-            samples: np.ndarray,
-            perturbations: np.ndarray,
-            targets: np.ndarray
-    ) -> np.ndarray:
+    def __get_gradients(self, samples: np.ndarray, perturbations: np.ndarray, targets: np.ndarray) -> np.ndarray:
         """
         Gradient of the objective function with regards to the data vector, i.e. sum of the classifier's loss gradient
         and weighted lp-space norm gradient, both with regards to data vector.
@@ -192,19 +182,13 @@ class LowProFool(EvasionAttack):
         :return: Aggregate gradient of objective function.
         """
         clf_loss_grad = self.estimator.loss_gradient(
-            (samples + perturbations).astype(np.float32),
-            targets.astype(np.float32)
+            (samples + perturbations).astype(np.float32), targets.astype(np.float32)
         )
         norm_grad = self.lambd * self.__weighted_lp_norm_gradient(perturbations)
 
         return clf_loss_grad + norm_grad
 
-    def __loss_function(
-            self,
-            y_probas: np.ndarray,
-            perturbations: np.ndarray,
-            targets: np.ndarray
-    ) -> np.ndarray:
+    def __loss_function(self, y_probas: np.ndarray, perturbations: np.ndarray, targets: np.ndarray) -> np.ndarray:
         """
         Complete loss function to optimize, where the adversary loss is given by the sum of logistic loss of
         classification and weighted Lp-norm of the perturbation vectors. Do keep in mind that not all classifiers
@@ -220,11 +204,7 @@ class LowProFool(EvasionAttack):
 
         return clf_loss_part + self.lambd * norm_part
 
-    def __apply_clipping(
-            self,
-            samples: np.ndarray,
-            perturbations: np.ndarray
-    ) -> np.ndarray:
+    def __apply_clipping(self, samples: np.ndarray, perturbations: np.ndarray) -> np.ndarray:
         """
         Function for clipping perturbation vectors to forbid the adversary vectors to go beyond the allowed ranges of
         values.
@@ -242,11 +222,7 @@ class LowProFool(EvasionAttack):
         np.clip(perturbations, mins - samples, maxs - samples, perturbations)
         return perturbations
 
-    def __calculate_feature_importances(
-            self,
-            x: np.ndarray,
-            y: np.ndarray
-    ) -> None:
+    def __calculate_feature_importances(self, x: np.ndarray, y: np.ndarray) -> None:
         """
         This function calculates feature importances using a specified built-in function or applies a provided custom
         function (callable object). It calculates those values on the passed training data.
@@ -255,7 +231,7 @@ class LowProFool(EvasionAttack):
         :param y: Labels of the dataset used to train the classifier.
         :return: None.
         """
-        if self.importance == 'pearson':
+        if self.importance == "pearson":
             # Apply a simple Pearson correlation calculation.
             pearson_correlations = [pearsonr(x[:, col], y)[0] for col in range(x.shape[1])]
             absolutes = np.abs(np.array(pearson_correlations))
@@ -280,11 +256,11 @@ class LowProFool(EvasionAttack):
             raise TypeError("Unrecognized feature importance function: {}".format(self.importance))
 
     def fit_importances(
-            self,
-            x: Optional[np.ndarray] = None,
-            y: Optional[np.ndarray] = None,
-            importance_array: Optional[np.ndarray] = None,
-            normalize: Optional[bool] = True
+        self,
+        x: Optional[np.ndarray] = None,
+        y: Optional[np.ndarray] = None,
+        importance_array: Optional[np.ndarray] = None,
+        normalize: Optional[bool] = True,
     ):
         """
         This function allows one to easily calculate the feature importance vector using the pre-specified function,
@@ -298,7 +274,7 @@ class LowProFool(EvasionAttack):
         """
         if importance_array is not None:
             # Use a pre-calculated vector of feature importances.
-            if np.array(importance_array).shape == (self.n_features, ):
+            if np.array(importance_array).shape == (self.n_features,):
                 self.importance_vec = np.array(importance_array)
             else:
                 raise ValueError("Feature has to be one-dimensional array of size (n_features, ).")
@@ -313,12 +289,7 @@ class LowProFool(EvasionAttack):
 
         return self
 
-    def generate(
-            self,
-            x: np.ndarray,
-            y: Optional[np.ndarray] = None,
-            **kwargs
-    ) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversaries for the samples passed in the `x` data matrix, whose targets are specified in `y`,
         one-hot-encoded target matrix. This procedure makes use of the LowProFool algorithm. In the case of failure,
@@ -381,18 +352,20 @@ class LowProFool(EvasionAttack):
             for j, target_int in enumerate(targets_integer):
                 # Check for every sample whether the threshold probability is reached.
                 if met_target(y_probas[j], target_int):
-                    success_indicators[j] = 1.
+                    success_indicators[j] = 1.0
                     # Calculate weighted Lp-norm loss.
-                    norm_loss = self.__weighted_lp_norm(perturbations[j:j + 1])[0, 0]
+                    norm_loss = self.__weighted_lp_norm(perturbations[j : j + 1])[0, 0]
 
                     # Note it, if the adversary improves.
                     if norm_loss < best_norm_losses[j]:
                         best_norm_losses[j] = norm_loss
                         best_perturbations[j] = perturbations[j].copy()
 
-        logger.info("Success rate of LowProFool attack: {:.2f}%".format(
-            100 * np.sum(success_indicators) / success_indicators.size
-        ))
+        logger.info(
+            "Success rate of LowProFool attack: {:.2f}%".format(
+                100 * np.sum(success_indicators) / success_indicators.size
+            )
+        )
 
         # The generated adversaries are a sum of initial samples and best perturbation vectors found by the algorithm.
         return samples + best_perturbations
@@ -403,46 +376,46 @@ class LowProFool(EvasionAttack):
 
         :return: None.
         """
-        if not(isinstance(self.n_classes, int) and self.n_classes > 0):
-            raise ValueError('The argument `n_classes` has to be positive integer.')
+        if not (isinstance(self.n_classes, int) and self.n_classes > 0):
+            raise ValueError("The argument `n_classes` has to be positive integer.")
 
-        if not(isinstance(self.n_features, int) and self.n_classes > 0):
-            raise ValueError('The argument `n_features` has to be positive integer.')
+        if not (isinstance(self.n_features, int) and self.n_classes > 0):
+            raise ValueError("The argument `n_features` has to be positive integer.")
 
-        if not(isinstance(self.n_steps, int) and self.n_steps > 0):
-            raise ValueError('The argument `n_steps` (number of iterations) has to be positive integer.')
+        if not (isinstance(self.n_steps, int) and self.n_steps > 0):
+            raise ValueError("The argument `n_steps` (number of iterations) has to be positive integer.")
 
-        if not(
-            (isinstance(self.threshold, float) and 0 < self.threshold < 1)
-            or self.threshold is None
-        ):
-            raise ValueError('The argument `threshold` has to be either float in range (0, 1) or None.')
+        if not ((isinstance(self.threshold, float) and 0 < self.threshold < 1) or self.threshold is None):
+            raise ValueError("The argument `threshold` has to be either float in range (0, 1) or None.")
 
-        if not(isinstance(self.lambd, (float, int)) and self.lambd >= 0):
-            raise ValueError('The argument `lambd` has to be non-negative float or integer.')
+        if not (isinstance(self.lambd, (float, int)) and self.lambd >= 0):
+            raise ValueError("The argument `lambd` has to be non-negative float or integer.")
 
-        if not(isinstance(self.eta, (float, int)) and self.eta > 0):
-            raise ValueError('The argument `eta` has to be positive float or integer.')
+        if not (isinstance(self.eta, (float, int)) and self.eta > 0):
+            raise ValueError("The argument `eta` has to be positive float or integer.")
 
-        if not(isinstance(self.eta_decay, (float, int)) and 0 < self.eta_decay <= 1):
-            raise ValueError('The argument `eta_decay` has to be float or integer in range (0, 1].')
+        if not (isinstance(self.eta_decay, (float, int)) and 0 < self.eta_decay <= 1):
+            raise ValueError("The argument `eta_decay` has to be float or integer in range (0, 1].")
 
-        if not(isinstance(self.eta_min, (float, int)) and self.eta_min >= 0):
-            raise ValueError('The argument `eta_min` has to be non-negative float or integer.')
+        if not (isinstance(self.eta_min, (float, int)) and self.eta_min >= 0):
+            raise ValueError("The argument `eta_min` has to be non-negative float or integer.")
 
-        if not(
+        if not (
             (isinstance(self.norm, (float, int)) and self.norm > 0)
             or (isinstance(self.norm, str) and self.norm == "inf")
             or self.norm == np.inf
         ):
             raise ValueError('The argument `norm` has to be either positive-valued float or integer, np.inf, or "inf".')
 
-        if not(
-            isinstance(self.importance, str) or callable(self.importance)
-            or (isinstance(self.importance, np.ndarray) and self.importance.shape == (self.n_features, ))
+        if not (
+            isinstance(self.importance, str)
+            or callable(self.importance)
+            or (isinstance(self.importance, np.ndarray) and self.importance.shape == (self.n_features,))
         ):
-            raise ValueError('The argument `importance` has to be either string, '
-                             + 'callable or np.ndarray of the shape (n_features, ).')
+            raise ValueError(
+                "The argument `importance` has to be either string, "
+                + "callable or np.ndarray of the shape (n_features, )."
+            )
 
         if not isinstance(self.verbose, bool):
-            raise ValueError('The argument `verbose` has to be of type bool.')
+            raise ValueError("The argument `verbose` has to be of type bool.")
