@@ -108,17 +108,16 @@ class OverTheAirFlickeringTorch(EvasionAttack):
         epoch_print_str = f"{num_epochs}:"
 
         delta = torch.nn.parameter.Parameter(
-            torch.zeros(x[0].shape[1], 3, 1, 1).normal_(mean=0.0, std=0.2).to(torch.device("cuda")), requires_grad=True
+            torch.zeros(x[0].shape[1], 3, 1, 1, requires_grad=True).normal_(mean=0.0, std=0.2).to(self.estimator.device),requires_grad=True
         )
 
         # All values of delta needs to be within [V_min, V_max], so we get those
         # values here.
         v_min = torch.min(x).item()
         v_max = torch.max(x).item()
-        delta = torch.clamp(delta, v_min, v_max)
 
         # Learning rate from the paper.
-        optimizer = torch.optim.Adam([delta], lr=1e-3)
+        optimizer = torch.optim.AdamW([delta], lr=1e-3)
 
         # They did not specify a learning rate scheduler or patience.
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=5)
