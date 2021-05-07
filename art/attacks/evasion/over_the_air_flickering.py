@@ -108,7 +108,7 @@ class OverTheAirFlickeringTorch(EvasionAttack):
         epoch_print_str = f"{num_epochs}:"
 
         delta = torch.nn.parameter.Parameter(
-            torch.zeros(x[0].shape[1], 3, 1, 1).normal_(mean=0.0, std=0.2).to(self.estimator.device), requires_grad=True
+            torch.zeros(1, 3, 1, 1).normal_(mean=0.0, std=0.2).to(self.estimator.device), requires_grad=True
         )
 
         # All values of delta needs to be within [V_min, V_max], so we get those
