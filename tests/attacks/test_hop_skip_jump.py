@@ -69,7 +69,7 @@ class TestHopSkipJump(TestBase):
         tfc, sess = get_image_classifier_tf()
 
         # First targeted attack and norm=2
-        hsj = HopSkipJump(classifier=tfc, targeted=True, max_iter=20, max_eval=100, init_eval=10)
+        hsj = HopSkipJump(classifier=tfc, targeted=True, max_iter=20, max_eval=100, init_eval=10, verbose=False)
         params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes)}
         x_test_adv = hsj.generate(self.x_test_mnist, **params)
 
@@ -106,7 +106,9 @@ class TestHopSkipJump(TestBase):
         self.assertGreater(float(np.sum(np.abs(unmask_diff))), 0.0)
 
         # First targeted attack and norm=np.inf
-        hsj = HopSkipJump(classifier=tfc, targeted=True, max_iter=20, max_eval=100, init_eval=10, norm=np.Inf)
+        hsj = HopSkipJump(
+            classifier=tfc, targeted=True, max_iter=20, max_eval=100, init_eval=10, norm=np.Inf, verbose=False
+        )
         params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes)}
         x_test_adv = hsj.generate(self.x_test_mnist, **params)
 
@@ -143,7 +145,7 @@ class TestHopSkipJump(TestBase):
         self.assertGreater(float(np.sum(np.abs(unmask_diff))), 0.0)
 
         # Second untargeted attack and norm=2
-        hsj = HopSkipJump(classifier=tfc, targeted=False, max_iter=20, max_eval=100, init_eval=10)
+        hsj = HopSkipJump(classifier=tfc, targeted=False, max_iter=20, max_eval=100, init_eval=10, verbose=False)
         x_test_adv = hsj.generate(self.x_test_mnist)
 
         self.assertFalse((self.x_test_mnist == x_test_adv).all())
@@ -177,7 +179,9 @@ class TestHopSkipJump(TestBase):
         self.assertGreater(float(np.sum(np.abs(unmask_diff))), 0.0)
 
         # Second untargeted attack and norm=np.inf
-        hsj = HopSkipJump(classifier=tfc, targeted=False, max_iter=20, max_eval=100, init_eval=10, norm=np.Inf)
+        hsj = HopSkipJump(
+            classifier=tfc, targeted=False, max_iter=20, max_eval=100, init_eval=10, norm=np.Inf, verbose=False
+        )
         x_test_adv = hsj.generate(self.x_test_mnist)
 
         self.assertFalse((self.x_test_mnist == x_test_adv).all())
@@ -228,7 +232,7 @@ class TestHopSkipJump(TestBase):
         krc = get_image_classifier_kr()
 
         # First targeted attack and norm=2
-        hsj = HopSkipJump(classifier=krc, targeted=True, max_iter=20, max_eval=100, init_eval=10)
+        hsj = HopSkipJump(classifier=krc, targeted=True, max_iter=20, max_eval=100, init_eval=10, verbose=False)
         params = {"y": random_targets(self.y_test_mnist, krc.nb_classes)}
         x_test_adv = hsj.generate(self.x_test_mnist, **params)
 
@@ -265,7 +269,9 @@ class TestHopSkipJump(TestBase):
         self.assertGreater(float(np.sum(np.abs(unmask_diff))), 0.0)
 
         # First targeted attack and norm=np.inf
-        hsj = HopSkipJump(classifier=krc, targeted=True, max_iter=20, max_eval=100, init_eval=10, norm=np.Inf)
+        hsj = HopSkipJump(
+            classifier=krc, targeted=True, max_iter=20, max_eval=100, init_eval=10, norm=np.Inf, verbose=False
+        )
         params = {"y": random_targets(self.y_test_mnist, krc.nb_classes)}
         x_test_adv = hsj.generate(self.x_test_mnist, **params)
 
@@ -302,7 +308,7 @@ class TestHopSkipJump(TestBase):
         self.assertGreater(float(np.sum(np.abs(unmask_diff))), 0.0)
 
         # Second untargeted attack and norm=2
-        hsj = HopSkipJump(classifier=krc, targeted=False, max_iter=20, max_eval=100, init_eval=10)
+        hsj = HopSkipJump(classifier=krc, targeted=False, max_iter=20, max_eval=100, init_eval=10, verbose=False)
         x_test_adv = hsj.generate(self.x_test_mnist)
 
         self.assertFalse((self.x_test_mnist == x_test_adv).all())
@@ -336,7 +342,9 @@ class TestHopSkipJump(TestBase):
         self.assertGreater(float(np.sum(np.abs(unmask_diff))), 0.0)
 
         # Second untargeted attack and norm=np.inf
-        hsj = HopSkipJump(classifier=krc, targeted=False, max_iter=20, max_eval=100, init_eval=10, norm=np.Inf)
+        hsj = HopSkipJump(
+            classifier=krc, targeted=False, max_iter=20, max_eval=100, init_eval=10, norm=np.Inf, verbose=False
+        )
         x_test_adv = hsj.generate(self.x_test_mnist)
 
         self.assertFalse((self.x_test_mnist == x_test_adv).all())
@@ -387,7 +395,7 @@ class TestHopSkipJump(TestBase):
     #     ptc = get_image_classifier_pt()
     #
     #     # First targeted attack and norm=2
-    #     hsj = HopSkipJump(classifier=ptc, targeted=True, max_iter=20, max_eval=100, init_eval=10)
+    #     hsj = HopSkipJump(classifier=ptc, targeted=True, max_iter=20, max_eval=100, init_eval=10, verbose=False)
     #     params = {"y": random_targets(self.y_test_mnist, ptc.nb_classes)}
     #     x_test_adv = hsj.generate(x_test, **params)
     #
@@ -424,7 +432,8 @@ class TestHopSkipJump(TestBase):
     #     self.assertGreater(float(np.sum(np.abs(unmask_diff))), 0.0)
     #
     #     # First targeted attack and norm=np.inf
-    #     hsj = HopSkipJump(classifier=ptc, targeted=True, max_iter=5, max_eval=100, init_eval=10, norm=np.Inf)
+    #     hsj = HopSkipJump(classifier=ptc, targeted=True, max_iter=5, max_eval=100, init_eval=10, norm=np.Inf,
+    #     verbose=False)
     #     params = {"y": random_targets(self.y_test_mnist, ptc.nb_classes)}
     #     x_test_adv = hsj.generate(x_test, **params)
     #
@@ -461,7 +470,7 @@ class TestHopSkipJump(TestBase):
     #     # self.assertGreater(float(np.sum(np.abs(unmask_diff))), 0.0)
     #
     #     # Second untargeted attack and norm=2
-    #     hsj = HopSkipJump(classifier=ptc, targeted=False, max_iter=20, max_eval=100, init_eval=10)
+    #     hsj = HopSkipJump(classifier=ptc, targeted=False, max_iter=20, max_eval=100, init_eval=10, verbose=False)
     #     x_test_adv = hsj.generate(x_test)
     #
     #     self.assertFalse((x_test == x_test_adv).all())
@@ -495,7 +504,8 @@ class TestHopSkipJump(TestBase):
     #     self.assertGreater(float(np.sum(np.abs(unmask_diff))), 0.0)
     #
     #     # Second untargeted attack and norm=np.inf
-    #     hsj = HopSkipJump(classifier=ptc, targeted=False, max_iter=20, max_eval=100, init_eval=10, norm=np.Inf)
+    #     hsj = HopSkipJump(classifier=ptc, targeted=False, max_iter=20, max_eval=100, init_eval=10, norm=np.Inf,
+    #     verbose=False)
     #     x_test_adv = hsj.generate(x_test)
     #
     #     self.assertFalse((x_test == x_test_adv).all())
@@ -538,7 +548,7 @@ class TestHopSkipJump(TestBase):
         ptc = get_image_classifier_pt()
 
         # HSJ attack
-        hsj = HopSkipJump(classifier=ptc, targeted=True, max_iter=10, max_eval=100, init_eval=10)
+        hsj = HopSkipJump(classifier=ptc, targeted=True, max_iter=10, max_eval=100, init_eval=10, verbose=False)
 
         params = {"y": self.y_test_mnist[2:3], "x_adv_init": x_test[2:3]}
         x_test_adv1 = hsj.generate(x_test[0:1], **params)
@@ -556,7 +566,7 @@ class TestHopSkipJump(TestBase):
         classifier = get_tabular_classifier_kr()
 
         # Norm=2
-        attack = HopSkipJump(classifier, targeted=False, max_iter=20, max_eval=100, init_eval=10)
+        attack = HopSkipJump(classifier, targeted=False, max_iter=20, max_eval=100, init_eval=10, verbose=False)
         x_test_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -568,7 +578,9 @@ class TestHopSkipJump(TestBase):
         logger.info("Accuracy on Iris with HopSkipJump adversarial examples: %.2f%%", (acc * 100))
 
         # Norm=np.inf
-        attack = HopSkipJump(classifier, targeted=False, max_iter=20, max_eval=100, init_eval=10, norm=np.Inf)
+        attack = HopSkipJump(
+            classifier, targeted=False, max_iter=20, max_eval=100, init_eval=10, norm=np.Inf, verbose=False
+        )
         x_test_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -589,7 +601,7 @@ class TestHopSkipJump(TestBase):
         classifier = KerasClassifier(model=classifier._model, use_logits=False, channels_first=True)
 
         # Norm=2
-        attack = HopSkipJump(classifier, targeted=False, max_iter=20, max_eval=100, init_eval=10)
+        attack = HopSkipJump(classifier, targeted=False, max_iter=20, max_eval=100, init_eval=10, verbose=False)
         x_test_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_adv).all())
 
@@ -599,7 +611,9 @@ class TestHopSkipJump(TestBase):
         logger.info("Accuracy on Iris with HopSkipJump adversarial examples: %.2f%%", (acc * 100))
 
         # Norm=np.inf
-        attack = HopSkipJump(classifier, targeted=False, max_iter=20, max_eval=100, init_eval=10, norm=np.Inf)
+        attack = HopSkipJump(
+            classifier, targeted=False, max_iter=20, max_eval=100, init_eval=10, norm=np.Inf, verbose=False
+        )
         x_test_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_adv).all())
 
@@ -615,7 +629,7 @@ class TestHopSkipJump(TestBase):
         classifier, sess = get_tabular_classifier_tf()
 
         # Test untargeted attack and norm=2
-        attack = HopSkipJump(classifier, targeted=False, max_iter=20, max_eval=100, init_eval=10)
+        attack = HopSkipJump(classifier, targeted=False, max_iter=20, max_eval=100, init_eval=10, verbose=False)
         x_test_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -627,7 +641,9 @@ class TestHopSkipJump(TestBase):
         logger.info("Accuracy on Iris with HopSkipJump adversarial examples: %.2f%%", (acc * 100))
 
         # Test untargeted attack and norm=np.inf
-        attack = HopSkipJump(classifier, targeted=False, max_iter=20, max_eval=100, init_eval=10, norm=np.Inf)
+        attack = HopSkipJump(
+            classifier, targeted=False, max_iter=20, max_eval=100, init_eval=10, norm=np.Inf, verbose=False
+        )
         x_test_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -640,7 +656,7 @@ class TestHopSkipJump(TestBase):
 
         # Test targeted attack and norm=2
         targets = random_targets(self.y_test_iris, nb_classes=3)
-        attack = HopSkipJump(classifier, targeted=True, max_iter=20, max_eval=100, init_eval=10)
+        attack = HopSkipJump(classifier, targeted=True, max_iter=20, max_eval=100, init_eval=10, verbose=False)
         x_test_adv = attack.generate(self.x_test_iris, **{"y": targets})
         self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -653,7 +669,9 @@ class TestHopSkipJump(TestBase):
 
         # Test targeted attack and norm=np.inf
         targets = random_targets(self.y_test_iris, nb_classes=3)
-        attack = HopSkipJump(classifier, targeted=True, max_iter=20, max_eval=100, init_eval=10, norm=np.Inf)
+        attack = HopSkipJump(
+            classifier, targeted=True, max_iter=20, max_eval=100, init_eval=10, norm=np.Inf, verbose=False
+        )
         x_test_adv = attack.generate(self.x_test_iris, **{"y": targets})
         self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -673,7 +691,7 @@ class TestHopSkipJump(TestBase):
         x_test = self.x_test_iris.astype(np.float32)
 
         # Norm=2
-        attack = HopSkipJump(classifier, targeted=False, max_iter=20, max_eval=100, init_eval=10)
+        attack = HopSkipJump(classifier, targeted=False, max_iter=20, max_eval=100, init_eval=10, verbose=False)
         x_test_adv = attack.generate(x_test)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -685,7 +703,9 @@ class TestHopSkipJump(TestBase):
         logger.info("Accuracy on Iris with HopSkipJump adversarial examples: %.2f%%", (acc * 100))
 
         # Norm=np.inf
-        attack = HopSkipJump(classifier, targeted=False, max_iter=20, max_eval=100, init_eval=10, norm=np.Inf)
+        attack = HopSkipJump(
+            classifier, targeted=False, max_iter=20, max_eval=100, init_eval=10, norm=np.Inf, verbose=False
+        )
         x_test_adv = attack.generate(x_test)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -725,7 +745,7 @@ class TestHopSkipJump(TestBase):
             classifier.fit(x=self.x_test_iris, y=self.y_test_iris)
 
             # Norm=2
-            attack = HopSkipJump(classifier, targeted=False, max_iter=20, max_eval=100, init_eval=10)
+            attack = HopSkipJump(classifier, targeted=False, max_iter=20, max_eval=100, init_eval=10, verbose=False)
             x_test_adv = attack.generate(self.x_test_iris)
             self.assertFalse((self.x_test_iris == x_test_adv).all())
             self.assertTrue((x_test_adv <= 1).all())
@@ -741,7 +761,9 @@ class TestHopSkipJump(TestBase):
             )
 
             # Norm=np.inf
-            attack = HopSkipJump(classifier, targeted=False, max_iter=20, max_eval=100, init_eval=10, norm=np.Inf)
+            attack = HopSkipJump(
+                classifier, targeted=False, max_iter=20, max_eval=100, init_eval=10, norm=np.Inf, verbose=False
+            )
             x_test_adv = attack.generate(self.x_test_iris)
             self.assertFalse((self.x_test_iris == x_test_adv).all())
             self.assertTrue((x_test_adv <= 1).all())

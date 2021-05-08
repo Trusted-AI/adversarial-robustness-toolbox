@@ -62,7 +62,7 @@ class TestSpatialTransformation(TestBase):
 
         # Attack
         attack_st = SpatialTransformation(
-            tfc, max_translation=10.0, num_translations=3, max_rotation=30.0, num_rotations=3
+            tfc, max_translation=10.0, num_translations=3, max_rotation=30.0, num_rotations=3, verbose=False
         )
         x_train_adv = attack_st.generate(self.x_train_mnist)
 
@@ -95,7 +95,7 @@ class TestSpatialTransformation(TestBase):
 
         # Attack
         attack_st = SpatialTransformation(
-            krc, max_translation=10.0, num_translations=3, max_rotation=30.0, num_rotations=3
+            krc, max_translation=10.0, num_translations=3, max_rotation=30.0, num_rotations=3, verbose=False
         )
         x_train_adv = attack_st.generate(self.x_train_mnist)
 
@@ -129,7 +129,7 @@ class TestSpatialTransformation(TestBase):
 
         # Attack
         attack_st = SpatialTransformation(
-            ptc, max_translation=10.0, num_translations=3, max_rotation=30.0, num_rotations=3
+            ptc, max_translation=10.0, num_translations=3, max_rotation=30.0, num_rotations=3, verbose=False
         )
         x_train__mnistadv = attack_st.generate(x_train_mnist)
 
@@ -150,7 +150,7 @@ class TestSpatialTransformation(TestBase):
     def test_5_failure_feature_vectors(self):
         attack_params = {"max_translation": 10.0, "num_translations": 3, "max_rotation": 30.0, "num_rotations": 3}
         classifier = get_tabular_classifier_kr()
-        attack = SpatialTransformation(classifier=classifier)
+        attack = SpatialTransformation(classifier=classifier, verbose=False)
         attack.set_params(**attack_params)
         data = np.random.rand(10, 4)
 

@@ -41,7 +41,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
-# currently NOT setting this test as framework_agnostic since no tensorflow implementation
+# currently NOT setting this test as framework_agnostic since no TensorFlow implementation
 # of the defended classifier exists
 def test_classifier_defended_images(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:

@@ -88,7 +88,9 @@ class EoTZoomBlurPyTorch(EoTPyTorch):
 
         for zoom in zooms:
             size = [int(a * zoom) for a in x.shape[0:2]]
-            x_resized = torchvision.transforms.functional.resize(img=x_chw, size=size, interpolation=2).permute(1, 2, 0)
+            x_resized = torchvision.transforms.functional.resize(
+                img=x_chw, size=size, interpolation=torchvision.transforms.InterpolationMode.BILINEAR
+            ).permute(1, 2, 0)
 
             trim_top = (x_resized.shape[0] - height) // 2
             trim_left = (x_resized.shape[0] - width) // 2
