@@ -497,4 +497,77 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         raise NotImplementedError
 
     def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
-        raise NotImplementedError
+        """
+        Compute the loss.
+
+        :param x: Sample input with shape as expected by the model.
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices
+                  of shape `(nb_samples,)`.
+        :return: Array of losses of the same shape as `x`.
+        """
+        # Apply preprocessing
+        x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
+
+        # Get the losses graph
+        if not hasattr(self, "_loss_total"):
+            loss = None
+            for loss_name in self.attack_losses:
+                if loss is None:
+                    loss = self._losses[loss_name]
+                else:
+                    loss = loss + self._losses[loss_name]
+            self._loss_total = loss
+
+        # Create feed_dict
+        feed_dict = {self.images: x_preprocessed}
+
+        for (placeholder, value) in zip(self._groundtruth_boxes_list, y):
+            feed_dict[placeholder] = value["boxes"]
+
+        for (placeholder, value) in zip(self._groundtruth_classes_list, y):
+            feed_dict[placeholder] = value["labels"]
+
+        for (placeholder, value) in zip(self._groundtruth_weights_list, y):
+            feed_dict[placeholder] = value["scores"]
+
+        loss_values = self._sess.run(self._loss_total, feed_dict=feed_dict)
+
+        return loss_values
+
+    def compute_losses(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
+        """
+        Compute all loss components.
+
+        :param x: Samples of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
+                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices
+                  of shape `(nb_samples,)`.
+        :return: Dictionary of loss components.
+        """
+        # Apply preprocessing
+        x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
+
+        # Create feed_dict
+        feed_dict = {self.images: x_preprocessed}
+
+        for (placeholder, value) in zip(self._groundtruth_boxes_list, y):
+            feed_dict[placeholder] = value["boxes"]
+
+        for (placeholder, value) in zip(self._groundtruth_classes_list, y):
+            feed_dict[placeholder] = value["labels"]
+
+        for (placeholder, value) in zip(self._groundtruth_weights_list, y):
+            feed_dict[placeholder] = value["scores"]
+
+        # Get the losses graph
+        if not hasattr(self, "_losses_dict"):
+            self._losses_dict = dict()
+            for loss_name in self.attack_losses:
+                self._losses_dict[loss_name] = self._losses[loss_name]
+
+        losses = dict()
+        for loss_name in self.attack_losses:
+            loss_value = self._sess.run(self._losses_dict[loss_name], feed_dict=feed_dict)
+            losses[loss_name] = loss_value
+
+        return losses

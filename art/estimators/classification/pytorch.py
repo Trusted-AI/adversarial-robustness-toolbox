@@ -619,7 +619,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         **kwargs
     ) -> Union[np.ndarray, "torch.Tensor"]:
         """
-        Compute the loss function w.r.t. `x`.
+        Compute the loss.
 
         :param x: Sample input with shape as expected by the model.
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices

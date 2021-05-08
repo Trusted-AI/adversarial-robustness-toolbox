@@ -1075,10 +1075,15 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         return gradients
 
     def compute_loss(  # pylint: disable=W0221
-        self, x: np.ndarray, y: np.ndarray, reduction: str = "none", training_mode: bool = False, **kwargs
+        self,
+        x: Union[np.ndarray, "tf.Tensor"],
+        y: Union[np.ndarray, "tf.Tensor"],
+        reduction: str = "none",
+        training_mode: bool = False,
+        **kwargs
     ) -> np.ndarray:
         """
-        Compute the loss function w.r.t. `x`.
+        Compute the loss.
 
         :param x: Sample input with shape as expected by the model.
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices
@@ -1117,6 +1122,25 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
         self._loss_object.reduction = prev_reduction
         return loss.numpy()
+
+    def compute_losses(
+        self,
+        x: Union[np.ndarray, "tf.Tensor"],
+        y: Union[np.ndarray, "tf.Tensor"],
+        reduction: str = "none",
+    ) -> Dict[str, Union[np.ndarray, "tf.Tensor"]]:
+        """
+        Compute all loss components.
+        :param x: Sample input with shape as expected by the model.
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices
+                  of shape `(nb_samples,)`.
+        :param reduction: Specifies the reduction to apply to the output: 'none' | 'mean' | 'sum'.
+                   'none': no reduction will be applied
+                   'mean': the sum of the output will be divided by the number of elements in the output,
+                   'sum': the output will be summed.
+        :return: Dictionary of loss components.
+        """
+        return {"total": self.compute_loss(x=x, y=y, reduction=reduction)}
 
     def loss_gradient(  # pylint: disable=W0221
         self,

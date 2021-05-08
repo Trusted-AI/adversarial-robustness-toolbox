@@ -98,7 +98,7 @@ class FastGradientMethod(EvasionAttack):
                              Use hierarchical folder structure to compare between runs easily. e.g. pass in ‘runs/exp1’,
                              ‘runs/exp2’, etc. for each new experiment to compare across them.
         """
-        super().__init__(estimator=estimator)
+        super().__init__(estimator=estimator, tensor_board=tensor_board)
         self.norm = norm
         self.eps = eps
         self.eps_step = eps_step
@@ -107,21 +107,10 @@ class FastGradientMethod(EvasionAttack):
         self.batch_size = batch_size
         self.minimal = minimal
         self._project = True
-        self.tensor_board = tensor_board
         FastGradientMethod._check_params(self)
 
         self._batch_id = 0
         self._i_max_iter = 0
-
-        if tensor_board:
-            from tensorboardX import SummaryWriter
-
-            if isinstance(tensor_board, str):
-                self.summary_writer = SummaryWriter(tensor_board)
-            else:
-                self.summary_writer = SummaryWriter()
-        else:
-            self.summary_writer = None
 
     def _check_compatibility_input_and_eps(self, x: np.ndarray):
         """
@@ -379,9 +368,6 @@ class FastGradientMethod(EvasionAttack):
 
         if not isinstance(self.minimal, bool):
             raise ValueError("The flag `minimal` has to be of type bool.")
-
-        if not isinstance(self.tensor_board, (bool, str)):
-            raise ValueError("The argument `tensor_board` has to be either of type bool or str.")
 
     def _compute_perturbation(
         self, batch: np.ndarray, batch_labels: np.ndarray, mask: Optional[np.ndarray]

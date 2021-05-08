@@ -219,9 +219,6 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
         if not isinstance(self.verbose, bool):
             raise ValueError("The verbose has to be a Boolean.")
 
-        if not isinstance(self.tensor_board, (bool, str)):
-            raise ValueError("The argument `tensor_board` has to be either of type bool or str.")
-
 
 class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
     """

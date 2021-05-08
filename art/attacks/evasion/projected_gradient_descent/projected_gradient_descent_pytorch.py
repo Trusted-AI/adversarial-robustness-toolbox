@@ -117,16 +117,6 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         self._batch_id = 0
         self._i_max_iter = 0
 
-        if tensor_board:
-            from tensorboardX import SummaryWriter
-
-            if isinstance(tensor_board, str):
-                self.summary_writer = SummaryWriter(tensor_board)
-            else:
-                self.summary_writer = SummaryWriter()
-        else:
-            self.summary_writer = None
-
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
