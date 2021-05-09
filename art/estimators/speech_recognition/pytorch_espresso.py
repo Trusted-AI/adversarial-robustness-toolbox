@@ -24,14 +24,14 @@ from typing import List, Optional, TYPE_CHECKING, Union
 
 import numpy as np
 
-from art.config import ART_NUMPY_DTYPE
+from art import config
 from art.estimators.pytorch import PyTorchEstimator
 from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizerMixin
-
-from pathlib import Path
+from art.utils import get_file
 
 if TYPE_CHECKING:
     import torch
+    from espresso.models import SpeechTransformerModel
     
     from art.defences.preprocessor.preprocessor import Preprocessor
     from art.defences.postprocessor.postprocessor import Postprocessor
@@ -50,20 +50,23 @@ class PyTorchEspresso(SpeechRecognizerMixin, PyTorchEstimator):
     | Paper link: https://arxiv.org/abs/1909.08723
     """
 
-    estimator_params = PyTorchEstimator.estimator_params
+    estimator_params = PyTorchEstimator.estimator_params + ["espresso_config_filepath", "verbose"]
 
     def __init__(
         self,
-        espresso_config_filepath: str,
+        espresso_config_filepath: Optional[str] = None,
+        pretrained_model: Optional[str] = None,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
         preprocessing: "PREPROCESSING_TYPE" = None,
         device_type: str = "gpu",
+        verbose: bool = True,
     ):
         """
         Initialization of an instance PyTorchEspresso
         :param espresso_config_filepath: The path of the espresso config file (yaml) # TODO: the config file is not automatically generated in Espresso. It was manually created by us.
+        :param pretrain_model: The choice of pretrained model if a pretrained model is required.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
@@ -92,7 +95,8 @@ class PyTorchEspresso(SpeechRecognizerMixin, PyTorchEstimator):
             postprocessing_defences=postprocessing_defences,
             preprocessing=preprocessing,
         )
-
+        self.verbose = verbose
+        
         # Check clip values
         if self.clip_values is not None:
             if not np.all(self.clip_values[0] == -1):
@@ -115,10 +119,47 @@ class PyTorchEspresso(SpeechRecognizerMixin, PyTorchEstimator):
             cuda_idx = torch.cuda.current_device()
             self._device = torch.device("cuda:{}".format(cuda_idx)) 
 
-        # construct args
-        with open(config_filepath) as file:
+        # Load config/model
+        if espresso_config_filepath is None:
+            if pretrained_model == 'librispeech_transformer':
+                config_filename, config_url = (
+                    "",
+                    "",
+                )
+                model_filename, model_url = (
+                    "",
+                    "",
+                )
+                sp_filename, sp_url = (
+                    "",
+                    "",
+                )
+                dict_filename, dict_url = (
+                    "",
+                    "",
+                )
+            # Download files
+            config_path = get_file(
+                filename=config_filename, path=config.ART_DATA_PATH, url=config_url, extract=False, verbose=self.verbose
+            )
+            model_path = get_file(
+                filename=model_filename, path=config.ART_DATA_PATH, url=model_url, extract=False, verbose=self.verbose
+            )
+            sp_path = get_file(
+                filename=sp_filename, path=config.ART_DATA_PATH, url=sp_url, extract=False, verbose=self.verbose
+            )
+            dict_path = get_file(
+                filename=dict_filename, path=config.ART_DATA_PATH, url=dict_url, extract=False, verbose=self.verbose
+            )
+            
+        # construct espresso args
+        with open(config_path) as file:
             esp_args_dict = yaml.load(file, Loader=yaml.FullLoader)
             esp_args = Namespace(**esp_args_dict)
+            if pretrained_model:
+                esp_args.path = model_path
+                esp_args.sentencepiece_model = sp_path
+                esp_args.dict = dict_path
         self.esp_args = esp_args
 
         # setup espresso/fairseq task
@@ -181,7 +222,7 @@ class PyTorchEspresso(SpeechRecognizerMixin, PyTorchEstimator):
 
             # Transform x into the model input space
             # Note that batch is re-ordered during transformation
-            batch, batch_idx = self.transform_model_input(
+            batch, batch_idx = self._transform_model_input(
                 x=x_preprocessed[begin:end])
 
             hypos = self.task.inference_step(
@@ -223,7 +264,7 @@ class PyTorchEspresso(SpeechRecognizerMixin, PyTorchEstimator):
         self.set_batchnorm(train=False)
         
         # Transform data into the model input space
-        batch, batch_idx = self.transform_model_input(
+        batch, batch_idx = self._transform_model_input(
             x=x_preprocessed, y=y_preprocessed, compute_gradient=True)
 
         loss, sample_size, log_output = self.criterion(self._model, batch)
@@ -240,12 +281,29 @@ class PyTorchEspresso(SpeechRecognizerMixin, PyTorchEstimator):
         self.set_batchnorm(train=True)
         return results
 
-    def transform_model_input(
-            self,
-            x: Union[np.ndarray, "torch.Tensor"],
-            y: Optional[np.ndarray] = None,
-            compute_gradient: bool = False,
-            tensor_input: bool = False,
+    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, **kwargs) -> None:
+        """
+        Fit the estimator on the training set `(x, y)`.
+
+        :param x: Samples of shape (nb_samples, seq_length). Note that, it is allowable that sequences in the batch
+                  could have different lengths. A possible example of `x` could be:
+                  `x = np.array([np.array([0.1, 0.2, 0.1, 0.4]), np.array([0.3, 0.1])])`.
+        :param y: Target values of shape (nb_samples). Each sample in `y` is a string and it may possess different
+                  lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`.
+        :param batch_size: Size of batches.
+        :param nb_epochs: Number of epochs to use for training.
+        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
+               and providing it takes no effect.
+        """
+        raise NotImplementedError
+    
+
+    def _transform_model_input(
+        self,
+        x: Union[np.ndarray, "torch.Tensor"],
+        y: Optional[np.ndarray] = None,
+        compute_gradient: bool = False,
+        tensor_input: bool = False,
     ) -> Tuple[dict, List]:
         """
         Transform the user input space into the model input space.
@@ -331,7 +389,7 @@ class PyTorchEspresso(SpeechRecognizerMixin, PyTorchEstimator):
 
             # Push the sequence to device
             if not tensor_input:
-                x[i] = x[i].astype(ART_NUMPY_DTYPE)
+                x[i] = x[i].astype(config.ART_NUMPY_DTYPE)
                 x[i] = torch.tensor(x[i]).to(self._device)
 
             # Set gradient computation permission
@@ -363,7 +421,7 @@ class PyTorchEspresso(SpeechRecognizerMixin, PyTorchEstimator):
         return self._input_shape  # type: ignore
 
     @property
-    def model(self) -> "DeepSpeech":
+    def model(self) -> "SpeechTransformerModel":
         """
         Get current model.
 
