@@ -600,11 +600,14 @@ def get_label_conf(y_vec: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
 def get_labels_np_array(preds: np.ndarray) -> np.ndarray:
     """
     Returns the label of the most probable class given a array of class confidences.
-
+    Added shape check for binary case
     :param preds: Array of class confidences, nb of instances as first dimension.
     :return: Labels.
     """
-    preds_max = np.amax(preds, axis=1, keepdims=True)
+    if len(preds.shape)>=2:
+        preds_max = np.amax(preds, axis=1, keepdims=True)
+    else:
+        preds_max = np.round(preds)
     y = preds == preds_max
     y = y.astype(np.uint8)
     return y
@@ -620,6 +623,7 @@ def compute_success_array(
 ) -> float:
     """
     Compute the success rate of an attack based on clean samples, adversarial samples and targets or correct labels.
+    Added shape check for binary case
 
     :param classifier: Classifier used for prediction.
     :param x_clean: Original clean samples.
@@ -630,12 +634,18 @@ def compute_success_array(
     :param batch_size: Batch size.
     :return: Percentage of successful adversarial samples.
     """
-    adv_preds = np.argmax(classifier.predict(x_adv, batch_size=batch_size), axis=1)
+    preds = classifier.predict(x_clean, batch_size=batch_size)
+    adv_preds = classifier.predict(x_adv, batch_size=batch_size)
+    if len(preds.shape)>=2:
+        adv_preds = np.argmax(adv_preds, axis=1)
+        preds = np.argmax(preds, axis=1)
+    else:
+        adv_preds = np.round(adv_preds)
+        preds = np.round(preds)
     if targeted:
         attack_success = adv_preds == np.argmax(labels, axis=1)
-    else:
-        preds = np.argmax(classifier.predict(x_clean, batch_size=batch_size), axis=1)
-        attack_success = adv_preds != preds
+    #preds = np.argmax(classifier.predict(x_clean, batch_size=batch_size), axis=1)
+    attack_success = adv_preds != preds
 
     return attack_success
 

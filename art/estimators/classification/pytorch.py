@@ -64,8 +64,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             "optimizer",
             "use_amp",
             "opt_level",
-            "loss_scale",
-        ]
+            "loss_scale",]
     )
 
     def __init__(
@@ -138,26 +137,21 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         # Check if model is RNN-like to decide if freezing batch-norm and dropout layers might be required for loss and
         # class gradient calculation
-        self.is_rnn = any((isinstance(m, torch.nn.modules.RNNBase) for m in self._model.modules()))
+        self.is_rnn = any([isinstance(m, torch.nn.modules.RNNBase) for m in self._model.modules()])
 
         # Get the internal layers
-        self._layer_names: List[str] = self._model.get_layers  # type: ignore
+        self._layer_names = self._model.get_layers
 
         self._model.to(self._device)
 
         # Index of layer at which the class gradients should be calculated
         self._layer_idx_gradients = -1
 
-        if isinstance(
-            self._loss,
-            (torch.nn.CrossEntropyLoss, torch.nn.NLLLoss, torch.nn.MultiMarginLoss),
-        ):
+        if isinstance(self._loss, 
+            (torch.nn.CrossEntropyLoss, torch.nn.NLLLoss, torch.nn.MultiMarginLoss),):
             self._reduce_labels = True
             self._int_labels = True
-        elif isinstance(
-            self._loss,
-            (torch.nn.BCELoss),
-        ):
+        elif isinstance(self._loss, (torch.nn.BCELoss),):
             self._reduce_labels = True
             self._int_labels = False
         else:
@@ -166,7 +160,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         # Setup for AMP use
         if self._use_amp:
-            from apex import amp  # pylint: disable=E0611
+            from apex import amp
 
             if self._optimizer is None:
                 logger.warning(
@@ -202,7 +196,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
     @property
     def model(self) -> "torch.nn.Module":
-        return self._model._model  # pylint: disable=W0212
+        return self._model._model
 
     @property
     def input_shape(self) -> Tuple[int, ...]:
@@ -263,27 +257,27 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
     def reduce_labels(self, y: Union[np.ndarray, "torch.Tensor"]) -> Union[np.ndarray, "torch.Tensor"]:
         """
         Reduce labels from one-hot encoded to index labels.
+        Added Support for Binary Classification
         """
         import torch  # lgtm [py/repeated-import]
 
         # Check if the loss function requires as input index labels instead of one-hot-encoded labels
-        if self._reduce_labels and self._int_labels:
-            if isinstance(y, torch.Tensor):
-                return torch.argmax(y, dim=1)
-            return np.argmax(y, axis=1)
+        # Checking for exactly 2 classes to support binary classification
+        if self.nb_classes!=2:
+            if self._reduce_labels and self._int_labels:
+                if isinstance(y, torch.Tensor):
+                    return torch.argmax(y, dim=1)
+                return np.argmax(y, axis=1)
+            elif self._reduce_labels:  # float labels
+                if isinstance(y, torch.Tensor):
+                    return torch.argmax(y, dim=1).type("torch.FloatTensor")
+                y_index = np.argmax(y, axis=1).astype(np.float32)
+                y_index = np.expand_dims(y_index, axis=1)
+                return y_index
+        else:
+            return y
 
-        if self._reduce_labels:  # float labels
-            if isinstance(y, torch.Tensor):
-                return torch.argmax(y, dim=1).type("torch.FloatTensor")
-            y_index = np.argmax(y, axis=1).astype(np.float32)
-            y_index = np.expand_dims(y_index, axis=1)
-            return y_index
-
-        return y
-
-    def predict(  # pylint: disable=W0221
-        self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs
-    ) -> np.ndarray:
+    def predict(self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs) -> np.ndarray:
         """
         Perform prediction for a batch of inputs.
 
@@ -301,7 +295,10 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Run prediction with batch processing
-        results = np.zeros((x_preprocessed.shape[0], self.nb_classes), dtype=np.float32)
+        if self.nb_classes>2:
+            results = np.zeros((x_preprocessed.shape[0], self.nb_classes), dtype=np.float32)
+        else:
+            results = np.zeros((x_preprocessed.shape[0]), dtype=np.float32)
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         for m in range(num_batch):
             # Batch indexes
@@ -311,7 +308,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             )
 
             with torch.no_grad():
-                model_outputs = self._model(torch.from_numpy(x_preprocessed[begin:end]).to(self._device))
+                model_outputs = self._model(torch.from_numpy(x_preprocessed[begin:end]).float().to(self._device))
             output = model_outputs[-1]
             results[begin:end] = output.detach().cpu().numpy()
 
@@ -320,7 +317,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         return predictions
 
-    def _predict_framework(self, x: "torch.Tensor") -> "torch.Tensor":
+    def _predict_framework(self, x: "torch.Tensor", **kwargs) -> "torch.Tensor":
         """
         Perform prediction for a batch of inputs.
 
@@ -364,7 +361,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
 
         # Check label shape
-        y_preprocessed = self.reduce_labels(y_preprocessed)
+        if self._nb_classes > 2:
+            y_preprocessed = self.reduce_labels(y_preprocessed)
 
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         ind = np.arange(len(x_preprocessed))
@@ -376,7 +374,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
             # Train for one epoch
             for m in range(num_batch):
-                i_batch = torch.from_numpy(x_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]).to(self._device)
+                i_batch = torch.from_numpy(x_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]).float().to(self._device)
                 o_batch = torch.from_numpy(y_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]).to(self._device)
 
                 # Zero the parameter gradients
@@ -384,13 +382,17 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
                 # Perform prediction
                 model_outputs = self._model(i_batch)
-
-                # Form the loss function
-                loss = self._loss(model_outputs[-1], o_batch)  # lgtm [py/call-to-non-callable]
+                if self.nb_classes == 2:
+                    model_outs = model_outputs[-1]
+                    o_batch = np.argmax(o_batch, axis=-1).float()
+                    loss = self._loss(model_outs, o_batch)
+                    # Form the loss function
+                else:
+                    loss = self._loss(model_outputs[-1], o_batch)  # lgtm [py/call-to-non-callable]
 
                 # Do training
                 if self._use_amp:
-                    from apex import amp  # pylint: disable=E0611
+                    from apex import amp
 
                     with amp.scale_loss(loss, self._optimizer) as scaled_loss:
                         scaled_loss.backward()
@@ -443,7 +445,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
                     # Do training
                     if self._use_amp:
-                        from apex import amp  # pylint: disable=E0611
+                        from apex import amp
 
                         with amp.scale_loss(loss, self._optimizer) as scaled_loss:
                             scaled_loss.backward()
@@ -486,7 +488,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         self.model.apply(weight_reset)
 
-    def class_gradient(  # pylint: disable=W0221
+    def class_gradient(
         self, x: np.ndarray, label: Union[int, List[int], None] = None, training_mode: bool = False, **kwargs
     ) -> np.ndarray:
         """
@@ -577,24 +579,18 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         if label is None:
             for i in range(self.nb_classes):
                 torch.autograd.backward(
-                    preds[:, i],
-                    torch.tensor([1.0] * len(preds[:, 0])).to(self._device),
-                    retain_graph=True,
+                    preds[:, i], torch.tensor([1.0] * len(preds[:, 0])).to(self._device), retain_graph=True,
                 )
 
         elif isinstance(label, (int, np.integer)):
             torch.autograd.backward(
-                preds[:, label],
-                torch.tensor([1.0] * len(preds[:, 0])).to(self._device),
-                retain_graph=True,
+                preds[:, label], torch.tensor([1.0] * len(preds[:, 0])).to(self._device), retain_graph=True,
             )
         else:
             unique_label = list(np.unique(label))
             for i in unique_label:
                 torch.autograd.backward(
-                    preds[:, i],
-                    torch.tensor([1.0] * len(preds[:, 0])).to(self._device),
-                    retain_graph=True,
+                    preds[:, i], torch.tensor([1.0] * len(preds[:, 0])).to(self._device), retain_graph=True,
                 )
 
             grads = np.swapaxes(np.array(grads), 0, 1)
@@ -609,9 +605,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         return grads
 
-    def compute_loss(  # pylint: disable=W0221
-        self, x: np.ndarray, y: np.ndarray, reduction: str = "none", **kwargs
-    ) -> np.ndarray:
+    def compute_loss(self, x: np.ndarray, y: np.ndarray, reduction: str = "none", **kwargs) -> np.ndarray:
         """
         Compute the loss function w.r.t. `x`.
 
@@ -632,10 +626,11 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
 
         # Check label shape
-        y_preprocessed = self.reduce_labels(y_preprocessed)
+        if self._nb_classes > 2:
+            y_preprocessed = self.reduce_labels(y_preprocessed)
 
         # Convert the inputs to Tensors
-        inputs_t = torch.from_numpy(x_preprocessed).to(self._device)
+        inputs_t = torch.from_numpy(x_preprocessed).float().to(self._device)
 
         # Convert the labels to Tensors
         labels_t = torch.from_numpy(y_preprocessed).to(self._device)
@@ -646,12 +641,15 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         # Return individual loss values
         self._loss.reduction = reduction
-        loss = self._loss(model_outputs[-1], labels_t)
+        if self._nb_classes ==2:
+            loss = self._loss(model_outputs[-1], labels_t.float())
+        else:
+            loss = self._loss(model_outputs[-1], labels_t)
         self._loss.reduction = prev_reduction
 
         return loss.detach().cpu().numpy()
 
-    def loss_gradient(  # pylint: disable=W0221
+    def loss_gradient(
         self,
         x: Union[np.ndarray, "torch.Tensor"],
         y: Union[np.ndarray, "torch.Tensor"],
@@ -691,15 +689,9 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         # Apply preprocessing
         if self.all_framework_preprocessing:
-            if isinstance(x, torch.Tensor):
-                x_grad = x.clone().detach().requires_grad_(True)
-            else:
-                x_grad = torch.tensor(x).to(self._device)
-                x_grad.requires_grad = True
-            if isinstance(y, torch.Tensor):
-                y_grad = y.clone().detach()
-            else:
-                y_grad = torch.tensor(y).to(self._device)
+            x_grad = torch.tensor(x).to(self._device)
+            y_grad = torch.tensor(y).to(self._device)
+            x_grad.requires_grad = True
             inputs_t, y_preprocessed = self._apply_preprocessing(x_grad, y=y_grad, fit=False, no_grad=False)
         elif isinstance(x, np.ndarray):
             x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y=y, fit=False, no_grad=True)
@@ -719,14 +711,14 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         # Compute the gradient and return
         model_outputs = self._model(inputs_t)
-        loss = self._loss(model_outputs[-1], labels_t)  # lgtm [py/call-to-non-callable]
+        loss = self._loss(model_outputs[-1], labels_t.float())  # lgtm [py/call-to-non-callable]
 
         # Clean gradients
         self._model.zero_grad()
 
         # Compute gradients
         if self._use_amp:
-            from apex import amp  # pylint: disable=E0611
+            from apex import amp
 
             with amp.scale_loss(loss, self._optimizer) as scaled_loss:
                 scaled_loss.backward()
@@ -903,6 +895,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
     def _make_model_wrapper(self, model: "torch.nn.Module") -> "torch.nn.Module":
         # Try to import PyTorch and create an internal class that acts like a model wrapper extending torch.nn.Module
+        nb_classes = self.nb_classes
         try:
             import torch.nn as nn
 
@@ -916,7 +909,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
                     import torch  # lgtm [py/repeated-import]
 
-                    def __init__(self, model: torch.nn.Module):
+                    def __init__(self, model: torch.nn.Module, nb_classes=nb_classes):
                         """
                         Initialization by storing the input model.
 
@@ -924,6 +917,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                         """
                         super().__init__()
                         self._model = model
+                        self.nb_classes=nb_classes
 
                     # pylint: disable=W0221
                     # disable pylint because of API requirements for function
@@ -943,11 +937,13 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                         result = []
                         if isinstance(self._model, nn.Sequential):
                             for _, module_ in self._model._modules.items():
-                                x = module_(x)
+                                x = module_(x.float())
                                 result.append(x)
 
                         elif isinstance(self._model, nn.Module):
-                            x = self._model(x)
+                            x = self._model(x.float())
+                            if len(x.shape)>1 and self.nb_classes==2:
+                                x = x.squeeze(dim=1)
                             result.append(x)
 
                         else:
@@ -984,8 +980,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                         else:
                             raise TypeError("The input model must inherit from `nn.Module`.")
                         logger.info(
-                            "Inferred %i hidden layers on PyTorch classifier.",
-                            len(result),
+                            "Inferred %i hidden layers on PyTorch classifier.", len(result),
                         )
 
                         return result
