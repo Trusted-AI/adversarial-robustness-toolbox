@@ -540,7 +540,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             )
 
             # Total loss
-            loss = loss_1st_stage + torch.tensor(alpha).to(self.estimator.device) * loss_2nd_stage
+            loss = loss_1st_stage.type(torch.float64) + torch.tensor(alpha).to(self.estimator.device) * loss_2nd_stage
             loss = torch.mean(loss)
 
             # Actual training
@@ -771,9 +771,11 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         psd = (8.0 / 3.0) * transformed_delta / win_length
         psd = psd ** 2
         psd = (
-            torch.pow(torch.tensor(10.0), torch.tensor(9.6)).to(self.estimator.device)
+            torch.pow(torch.tensor(10.0).type(torch.float64), torch.tensor(9.6).type(torch.float64)).to(
+                self.estimator.device
+            )
             / torch.reshape(torch.tensor(original_max_psd).to(self.estimator.device), [-1, 1, 1])
-            * psd
+            * psd.type(torch.float64)
         )
 
         return psd
