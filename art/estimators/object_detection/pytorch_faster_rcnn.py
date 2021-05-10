@@ -42,9 +42,8 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
     """
     This class implements a model-specific object detector using Faster-RCNN and PyTorch.
     """
-    estimator_params = PyTorchEstimator.estimator_params + [
-        "attack_losses"
-    ]
+
+    estimator_params = PyTorchEstimator.estimator_params + ["attack_losses"]
 
     def __init__(
         self,
@@ -54,7 +53,12 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
         preprocessing: "PREPROCESSING_TYPE" = None,
-        attack_losses: Tuple[str, ...] = ("loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg",),
+        attack_losses: Tuple[str, ...] = (
+            "loss_classifier",
+            "loss_box_reg",
+            "loss_objectness",
+            "loss_rpn_box_reg",
+        ),
         device_type: str = "gpu",
     ):
         """
@@ -170,41 +174,50 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         if self.all_framework_preprocessing:
             if isinstance(x, torch.Tensor):
                 raise NotImplementedError
+
+            if y is not None and isinstance(y[0]["boxes"], np.ndarray):
+                y_tensor = list()
+                for i, y_i in enumerate(y):
+                    y_t = dict()
+                    y_t["boxes"] = torch.from_numpy(y_i["boxes"]).type(torch.float).to(self._device)
+                    y_t["labels"] = torch.from_numpy(y_i["labels"]).type(torch.int64).to(self._device)
+                    y_t["scores"] = torch.from_numpy(y_i["scores"]).to(self._device)
+                    y_tensor.append(y_t)
             else:
-                if y is not None and isinstance(y[0]["boxes"], np.ndarray):
-                    for i, y_i in enumerate(y):
-                        y[i]["boxes"] = torch.from_numpy(y_i["boxes"]).type(torch.float).to(self._device)
-                        y[i]["labels"] = torch.from_numpy(y_i["labels"]).type(torch.int64).to(self._device)
-                        y[i]["scores"] = torch.from_numpy(y_i["scores"]).to(self._device)
+                y_tensor = y
 
-                transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
-                image_tensor_list_grad = list()
-                y_preprocessed = list()
-                inputs_t = list()
+            transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
+            image_tensor_list_grad = list()
+            y_preprocessed = list()
+            inputs_t = list()
 
-                for i in range(x.shape[0]):
-                    if self.clip_values is not None:
-                        x_grad = transform(x[i] / self.clip_values[1]).to(self._device)
-                    else:
-                        x_grad = transform(x[i]).to(self._device)
-                    x_grad.requires_grad = True
-                    image_tensor_list_grad.append(x_grad)
-                    x_grad_1 = torch.unsqueeze(x_grad, dim=0)
-                    x_preprocessed_i, y_preprocessed_i = self._apply_preprocessing(
-                        x_grad_1, y=[y[i]], fit=False, no_grad=False
-                    )
-                    x_preprocessed_i = torch.squeeze(x_preprocessed_i)
-                    y_preprocessed.append(y_preprocessed_i[0])
-                    inputs_t.append(x_preprocessed_i)
+            for i in range(x.shape[0]):
+                if self.clip_values is not None:
+                    x_grad = transform(x[i] / self.clip_values[1]).to(self._device)
+                else:
+                    x_grad = transform(x[i]).to(self._device)
+                x_grad.requires_grad = True
+                image_tensor_list_grad.append(x_grad)
+                x_grad_1 = torch.unsqueeze(x_grad, dim=0)
+                x_preprocessed_i, y_preprocessed_i = self._apply_preprocessing(
+                    x_grad_1, y=[y_tensor[i]], fit=False, no_grad=False
+                )
+                x_preprocessed_i = torch.squeeze(x_preprocessed_i)
+                y_preprocessed.append(y_preprocessed_i[0])
+                inputs_t.append(x_preprocessed_i)
 
         elif isinstance(x, np.ndarray):
             x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y=y, fit=False, no_grad=True)
 
             if y_preprocessed is not None and isinstance(y_preprocessed[0]["boxes"], np.ndarray):
+                y_preprocessed_tensor = list()
                 for i, y_i in enumerate(y_preprocessed):
-                    y_preprocessed[i]["boxes"] = torch.from_numpy(y_i["boxes"]).type(torch.float).to(self._device)
-                    y_preprocessed[i]["labels"] = torch.from_numpy(y_i["labels"]).type(torch.int64).to(self._device)
-                    y_preprocessed[i]["scores"] = torch.from_numpy(y_i["scores"]).to(self._device)
+                    y_preprocessed_t = dict()
+                    y_preprocessed_t["boxes"] = torch.from_numpy(y_i["boxes"]).type(torch.float).to(self._device)
+                    y_preprocessed_t["labels"] = torch.from_numpy(y_i["labels"]).type(torch.int64).to(self._device)
+                    y_preprocessed_t["scores"] = torch.from_numpy(y_i["scores"]).to(self._device)
+                    y_preprocessed_tensor.append(y_preprocessed_t)
+                y_preprocessed = y_preprocessed_tensor
 
             transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
             image_tensor_list_grad = list()
@@ -223,9 +236,9 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
             raise NotImplementedError("Combination of inputs and preprocessing not supported.")
 
         if isinstance(y_preprocessed, np.ndarray):
-            labels_t = torch.from_numpy(y_preprocessed).to(self._device)
+            labels_t = torch.from_numpy(y_preprocessed).to(self._device)  # type: ignore
         else:
-            labels_t = y_preprocessed
+            labels_t = y_preprocessed  # type: ignore
 
         output = self._model(inputs_t, labels_t)
 
@@ -299,7 +312,7 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
             image_tensor_list.append(transform(x[i] / norm_factor).to(self._device))
         predictions = self._model(image_tensor_list)
 
-        for i_prediction in range(len(predictions)):
+        for i_prediction, _ in enumerate(predictions):
             predictions[i_prediction]["boxes"] = predictions[i_prediction]["boxes"].detach().cpu().numpy()
             predictions[i_prediction]["labels"] = predictions[i_prediction]["labels"].detach().cpu().numpy()
             predictions[i_prediction]["scores"] = predictions[i_prediction]["scores"].detach().cpu().numpy()
@@ -312,9 +325,6 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
     def get_activations(
         self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
     ) -> np.ndarray:
-        raise NotImplementedError
-
-    def set_learning_phase(self, train: bool) -> None:
         raise NotImplementedError
 
     def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:

@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.mark.skip_module("torchaudio")
-@pytest.mark.skipMlFramework("tensorflow", "tensorflow2v1", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+@pytest.mark.skip_framework("tensorflow", "tensorflow2v1", "keras", "kerastf", "mxnet", "non_dl_frameworks")
 @pytest.mark.parametrize("fir_filter", [False, True])
 def test_audio_filter(fir_filter, art_warning, expected_values):
     try:
@@ -50,16 +50,17 @@ def test_audio_filter(fir_filter, art_warning, expected_values):
                 np.array(x1 * 2, dtype=ART_NUMPY_DTYPE),
                 np.array(x2 * 2, dtype=ART_NUMPY_DTYPE),
                 np.array(x3 * 2, dtype=ART_NUMPY_DTYPE),
-            ]
+            ],
+            dtype=object,
         )
 
         # Filter params
-        numerator_coef = np.array([0.1, 0.2, -0.1, -0.2])
+        numerator_coef = np.array([0.1, 0.2, -0.1, -0.2], dtype=ART_NUMPY_DTYPE)
 
         if fir_filter:
-            denominator_coef = np.array([1.0, 0.0, 0.0, 0.0])
+            denominator_coef = np.array([1.0, 0.0, 0.0, 0.0], dtype=ART_NUMPY_DTYPE)
         else:
-            denominator_coef = np.array([1.0, 0.1, 0.3, 0.4])
+            denominator_coef = np.array([1.0, 0.1, 0.3, 0.4], dtype=ART_NUMPY_DTYPE)
 
         # Create filter
         audio_filter = LFilterPyTorch(numerator_coef=numerator_coef, denominator_coef=denominator_coef)
@@ -78,7 +79,7 @@ def test_audio_filter(fir_filter, art_warning, expected_values):
 
 
 @pytest.mark.skip_module("torchaudio")
-@pytest.mark.skipMlFramework("tensorflow", "tensorflow2v1", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+@pytest.mark.skip_framework("tensorflow", "tensorflow2v1", "keras", "kerastf", "mxnet", "non_dl_frameworks")
 def test_default(art_warning):
     try:
         # Small data for testing
@@ -99,7 +100,7 @@ def test_default(art_warning):
 
 
 @pytest.mark.skip_module("torchaudio")
-@pytest.mark.skipMlFramework("tensorflow", "tensorflow2v1", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+@pytest.mark.skip_framework("tensorflow", "tensorflow2v1", "keras", "kerastf", "mxnet", "non_dl_frameworks")
 def test_triple_clip_values_error(art_warning):
     try:
         exc_msg = "`clip_values` should be a tuple of 2 floats containing the allowed data range."
@@ -115,7 +116,7 @@ def test_triple_clip_values_error(art_warning):
 
 
 @pytest.mark.skip_module("torchaudio")
-@pytest.mark.skipMlFramework("tensorflow", "tensorflow2v1", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+@pytest.mark.skip_framework("tensorflow", "tensorflow2v1", "keras", "kerastf", "mxnet", "non_dl_frameworks")
 def test_relation_clip_values_error(art_warning):
     try:
         exc_msg = "Invalid `clip_values`: min >= max."

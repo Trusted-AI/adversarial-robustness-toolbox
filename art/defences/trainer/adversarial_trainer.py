@@ -112,6 +112,8 @@ class AdversarialTrainer(Trainer):
         """
         logger.info("Performing adversarial training using %i attacks.", len(self.attacks))
         size = generator.size
+        if size is None:
+            raise ValueError("Generator size is required and cannot be None.")
         batch_size = generator.batch_size
         nb_batches = int(np.ceil(size / batch_size))  # type: ignore
         ind = np.arange(generator.size)
@@ -176,7 +178,9 @@ class AdversarialTrainer(Trainer):
                 self._classifier.fit(x_batch, y_batch, nb_epochs=1, batch_size=x_batch.shape[0], verbose=0, **kwargs)
                 attack_id = (attack_id + 1) % len(self.attacks)
 
-    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
+    def fit(  # pylint: disable=W0221
+        self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 20, **kwargs
+    ) -> None:
         """
         Train a model adversarially. See class documentation for more information on the exact procedure.
 
@@ -245,7 +249,7 @@ class AdversarialTrainer(Trainer):
         """
         Perform prediction using the adversarially trained classifier.
 
-        :param x: Test set.
+        :param x: Input samples.
         :param kwargs: Other parameters to be passed on to the `predict` function of the classifier.
         :return: Predictions for test set.
         """

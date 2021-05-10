@@ -40,11 +40,8 @@ class BlackBoxClassifier(ClassifierMixin, BaseEstimator):
     """
     Wrapper class for black-box classifiers.
     """
-    estimator_params = Classifier.estimator_params + [
-        "nb_classes",
-        "input_shape",
-        "predict"
-    ]
+
+    estimator_params = Classifier.estimator_params + ["nb_classes", "input_shape", "predict"]
 
     def __init__(
         self,
@@ -54,7 +51,7 @@ class BlackBoxClassifier(ClassifierMixin, BaseEstimator):
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
     ):
         """
         Create a `Classifier` instance for a black-box model.
@@ -107,7 +104,7 @@ class BlackBoxClassifier(ClassifierMixin, BaseEstimator):
         """
         Perform prediction for a batch of inputs.
 
-        :param x: Test set.
+        :param x: Input samples.
         :param batch_size: Size of batches.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
@@ -159,6 +156,13 @@ class BlackBoxClassifierNeuralNetwork(NeuralNetworkMixin, ClassifierMixin, BaseE
     """
     Wrapper class for black-box neural network classifiers.
     """
+
+    estimator_params = (
+        NeuralNetworkMixin.estimator_params
+        + ClassifierMixin.estimator_params
+        + BaseEstimator.estimator_params
+        + ["nb_classes", "input_shape", "predict"]
+    )
 
     def __init__(
         self,
@@ -268,14 +272,6 @@ class BlackBoxClassifierNeuralNetwork(NeuralNetworkMixin, ClassifierMixin, BaseE
         """
         raise NotImplementedError
 
-    def set_learning_phase(self, train: bool) -> None:
-        """
-        Set the learning phase for the backend framework.
-
-        :param train: `True` if the learning phase is training, otherwise `False`.
-        """
-        raise NotImplementedError
-
     def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the loss of the neural network for samples `x`.
@@ -287,4 +283,7 @@ class BlackBoxClassifierNeuralNetwork(NeuralNetworkMixin, ClassifierMixin, BaseE
         :return: Loss values.
         :rtype: Format as expected by the `model`
         """
+        raise NotImplementedError
+
+    def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         raise NotImplementedError

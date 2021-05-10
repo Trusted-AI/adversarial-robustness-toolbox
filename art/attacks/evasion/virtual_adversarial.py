@@ -127,7 +127,8 @@ class VirtualAdversarialMethod(EvasionAttack):
                 from scipy.stats import entropy
 
                 kl_div1 = entropy(
-                    np.transpose(preds_rescaled[batch_index_1:batch_index_2]), np.transpose(preds_new_rescaled),
+                    np.transpose(preds_rescaled[batch_index_1:batch_index_2]),
+                    np.transpose(preds_new_rescaled),
                 )
 
                 var_d_new = np.zeros(var_d.shape).astype(ART_NUMPY_DTYPE)
@@ -143,7 +144,8 @@ class VirtualAdversarialMethod(EvasionAttack):
                     preds_new_rescaled = preds_new
 
                     kl_div2 = entropy(
-                        np.transpose(preds_rescaled[batch_index_1:batch_index_2]), np.transpose(preds_new_rescaled),
+                        np.transpose(preds_rescaled[batch_index_1:batch_index_2]),
+                        np.transpose(preds_new_rescaled),
                     )
                     var_d_new[:, current_index] = (kl_div2 - kl_div1) / self.finite_diff
                     var_d[:, current_index] -= self.finite_diff

@@ -20,9 +20,9 @@ This module implements ShapeShifter, a robust physical adversarial attack on Fas
 
 | Paper link: https://arxiv.org/abs/1804.05810
 """
+# pylint: disable=C0302
 import logging
 from typing import List, Dict, Optional, Tuple, TYPE_CHECKING
-from collections import Callable
 
 import numpy as np
 
@@ -30,6 +30,9 @@ from art.attacks.attack import EvasionAttack
 from art.estimators.object_detection.tensorflow_faster_rcnn import TensorFlowFasterRCNN
 
 if TYPE_CHECKING:
+    # pylint: disable=C0302,E0611
+    from collections import Callable
+
     from tensorflow.python.framework.ops import Tensor
     from tensorflow.python.training.optimizer import Optimizer
 
@@ -217,7 +220,7 @@ class ShapeShifter(EvasionAttack):
         assert list(x.shape[1:]) == self.estimator.input_shape
 
         # Check if label is provided
-        label = kwargs.get("label")
+        label: Optional[Dict[str, List[np.ndarray]]] = kwargs.get("label")
         if label is None and not self.texture_as_input:
             raise ValueError("Need the target labels for image as input.")
 
@@ -282,7 +285,9 @@ class ShapeShifter(EvasionAttack):
         if not isinstance(target_class, int):
             raise TypeError("Target class must be of type `int`.")
 
-        # Do attack
+        # Run attack
+        if label is None:
+            raise ValueError("Labels cannot be None.")
         result = self._attack_training(
             x=x,
             y=label,
@@ -392,16 +397,16 @@ class ShapeShifter(EvasionAttack):
             for _ in range(self.random_size):
                 if self.texture_as_input:
                     # Random transformation
-                    background, image_frame, y_ = self.random_transform(x)
+                    background, image_frame, y_transform = self.random_transform(x)
 
                     # Add more to feed_dict
                     feed_dict["background_phd:0"] = background
                     feed_dict["image_frame_phd:0"] = image_frame
 
                     for i in range(x.shape[0]):
-                        feed_dict["groundtruth_boxes_{}:0".format(i)] = y_["groundtruth_boxes_list"][i]
-                        feed_dict["groundtruth_classes_{}:0".format(i)] = y_["groundtruth_classes_list"][i]
-                        feed_dict["groundtruth_weights_{}:0".format(i)] = y_["groundtruth_weights_list"][i]
+                        feed_dict["groundtruth_boxes_{}:0".format(i)] = y_transform["groundtruth_boxes_list"][i]
+                        feed_dict["groundtruth_classes_{}:0".format(i)] = y_transform["groundtruth_classes_list"][i]
+                        feed_dict["groundtruth_weights_{}:0".format(i)] = y_transform["groundtruth_weights_list"][i]
 
                 else:
                     # Random transformation
@@ -553,7 +558,7 @@ class ShapeShifter(EvasionAttack):
 
         # Create variables to store gradients
         if self.texture_as_input:
-            sum_gradients = tf.Variable(
+            sum_gradients = tf.Variable(  # pylint: disable=E1123
                 initial_value=np.zeros(current_texture_variable.shape.as_list()),
                 trainable=False,
                 name="sum_gradients",
@@ -562,7 +567,7 @@ class ShapeShifter(EvasionAttack):
             )
 
         else:
-            sum_gradients = tf.Variable(
+            sum_gradients = tf.Variable(  # pylint: disable=E1123
                 initial_value=np.zeros(current_image_variable.shape.as_list()),
                 trainable=False,
                 name="sum_gradients",
@@ -570,7 +575,7 @@ class ShapeShifter(EvasionAttack):
                 collections=[tf.GraphKeys.GLOBAL_VARIABLES, tf.GraphKeys.LOCAL_VARIABLES],
             )
 
-        num_gradients = tf.Variable(
+        num_gradients = tf.Variable(  # pylint: disable=E1123
             initial_value=0.0,
             trainable=False,
             name="count_gradients",
@@ -610,20 +615,19 @@ class ShapeShifter(EvasionAttack):
                 current_texture,
             )
 
-        else:
-            # Create final attack optimization operator
-            final_attack_optimization_op = optimizer.apply_gradients(
-                grads_and_vars=[(final_gradients, current_image_variable)], name="final_attack_optimization_op"
-            )
+        # Create final attack optimization operator
+        final_attack_optimization_op = optimizer.apply_gradients(
+            grads_and_vars=[(final_gradients, current_image_variable)], name="final_attack_optimization_op"
+        )
 
-            return (
-                project_texture_op,
-                current_image_assign_to_input_image_op,
-                accumulated_gradients_op,
-                final_attack_optimization_op,
-                current_image_variable,
-                current_image,
-            )
+        return (
+            project_texture_op,
+            current_image_assign_to_input_image_op,
+            accumulated_gradients_op,
+            final_attack_optimization_op,
+            current_image_variable,
+            current_image,
+        )
 
     def _create_optimizer(self) -> "Optimizer":
         """
@@ -659,7 +663,10 @@ class ShapeShifter(EvasionAttack):
         return optimizer
 
     def _create_attack_loss(
-        self, initial_input: "Tensor", current_value: "Tensor", custom_loss: Optional["Tensor"] = None,
+        self,
+        initial_input: "Tensor",
+        current_value: "Tensor",
+        custom_loss: Optional["Tensor"] = None,
     ) -> "Tensor":
         """
         Create the loss tensor of this attack.
@@ -772,12 +779,13 @@ class ShapeShifter(EvasionAttack):
         class_predictions_with_background = class_predictions_with_background[:, 1:]
 
         # Convert to 1-hot
+        # pylint: disable=E1120
         target_class_one_hot = tf.one_hot([target_class_phd - 1], class_predictions_with_background.shape[-1])
         victim_class_one_hot = tf.one_hot([victim_class_phd - 1], class_predictions_with_background.shape[-1])
 
         box_iou_tensor = default_graph.get_tensor_by_name("Loss/BoxClassifierLoss/Compare/IOU/Select:0")
         box_iou_tensor = tf.reshape(box_iou_tensor, (-1,))
-        box_target = tf.cast(box_iou_tensor >= box_iou_threshold, dtype=tf.float32)
+        box_target = tf.cast(box_iou_tensor >= box_iou_threshold, dtype=tf.float32)  # pylint: disable=E1123
 
         # Compute box target loss
         box_target_weight = tf.placeholder(dtype=tf.float32, shape=[], name="box_target_weight")
@@ -854,7 +862,7 @@ class ShapeShifter(EvasionAttack):
         )
         rpn_iou_tensor = default_graph.get_tensor_by_name("Loss/RPNLoss/Compare/IOU/Select:0")
         rpn_iou_tensor = tf.reshape(rpn_iou_tensor, (-1,))
-        rpn_target = tf.cast(rpn_iou_tensor >= rpn_iou_threshold, dtype=tf.float32)
+        rpn_target = tf.cast(rpn_iou_tensor >= rpn_iou_threshold, dtype=tf.float32)  # pylint: disable=E1123,E1120
 
         # Compute RPN background loss
         rpn_background_weight = tf.placeholder(dtype=tf.float32, shape=[], name="rpn_background_weight")
@@ -887,7 +895,12 @@ class ShapeShifter(EvasionAttack):
 
         # Compute partial loss
         partial_loss = tf.add_n(
-            [weight_rpn_background_loss, weight_rpn_foreground_loss, weight_rpn_cw_loss,], name="partial_rpn_loss"
+            [
+                weight_rpn_background_loss,
+                weight_rpn_foreground_loss,
+                weight_rpn_cw_loss,
+            ],
+            name="partial_rpn_loss",
         )
 
         return partial_loss
@@ -916,7 +929,7 @@ class ShapeShifter(EvasionAttack):
         """
         Apply attack-specific checks.
         """
-        if not isinstance(self.random_transform, Callable):
+        if not hasattr(self.random_transform, "__call__"):
             raise ValueError("The applied random transformation function must be of type Callable.")
 
         if not isinstance(self.box_classifier_weight, float):

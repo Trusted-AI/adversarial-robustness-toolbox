@@ -19,15 +19,14 @@
 This module implements the abstract estimator `PyTorchEstimator` for PyTorch models.
 """
 import logging
-from typing import Any, Tuple
+from typing import TYPE_CHECKING, Any, List, Tuple
 
 import numpy as np
 
-from art.estimators.estimator import (
-    BaseEstimator,
-    LossGradientsMixin,
-    NeuralNetworkMixin,
-)
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNetworkMixin
+
+if TYPE_CHECKING:
+    import torch
 
 logger = logging.getLogger(__name__)
 
@@ -36,9 +35,14 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
     """
     Estimator class for PyTorch models.
     """
-    estimator_params = BaseEstimator.estimator_params + NeuralNetworkMixin.estimator_params + [
-        "device_type",
-    ]
+
+    estimator_params = (
+        BaseEstimator.estimator_params
+        + NeuralNetworkMixin.estimator_params
+        + [
+            "device_type",
+        ]
+    )
 
     def __init__(self, device_type: str = "gpu", **kwargs) -> None:
         """
@@ -56,13 +60,11 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
                be divided by the second one.
         :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
         """
-        import torch
+        import torch  # lgtm [py/repeated-import]
 
         preprocessing = kwargs.get("preprocessing")
         if isinstance(preprocessing, tuple):
-            from art.preprocessing.standardisation_mean_std.standardisation_mean_std_pytorch import (
-                StandardisationMeanStdPyTorch,
-            )
+            from art.preprocessing.standardisation_mean_std.pytorch import StandardisationMeanStdPyTorch
 
             kwargs["preprocessing"] = StandardisationMeanStdPyTorch(mean=preprocessing[0], std=preprocessing[1])
 
@@ -98,7 +100,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         :return: Predictions.
         :rtype: Format as expected by the `model`
         """
-        return NeuralNetworkMixin.predict(self, x, batch_size=128, **kwargs)
+        return NeuralNetworkMixin.predict(self, x, batch_size=batch_size, **kwargs)
 
     def fit(self, x: np.ndarray, y, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
         """
@@ -111,20 +113,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         :param batch_size: Batch size.
         :param nb_epochs: Number of training epochs.
         """
-        NeuralNetworkMixin.fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs)
-
-    def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
-        """
-        Compute the loss of the neural network for samples `x`.
-
-        :param x: Samples of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
-                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
-        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices
-                  of shape `(nb_samples,)`.
-        :return: Loss values.
-        :rtype: Format as expected by the `model`
-        """
-        raise NotImplementedError
+        NeuralNetworkMixin.fit(self, x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
     def set_params(self, **kwargs) -> None:
         """
@@ -140,10 +129,10 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
 
         super()._check_params()
         self.all_framework_preprocessing = all(
-            [isinstance(p, PreprocessorPyTorch) for p in self.preprocessing_operations]
+            (isinstance(p, PreprocessorPyTorch) for p in self.preprocessing_operations)
         )
 
-    def _apply_preprocessing(self, x, y, fit: bool = False, no_grad=True) -> Tuple[Any, Any]:
+    def _apply_preprocessing(self, x, y, fit: bool = False, no_grad=True) -> Tuple[Any, Any]:  # pylint: disable=W0221
         """
         Apply all preprocessing defences of the estimator on the raw inputs `x` and `y`. This function is should
         only be called from function `_apply_preprocessing`.
@@ -165,19 +154,15 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         :return: Tuple of `x` and `y` after applying the defences and standardisation.
         :rtype: Format as expected by the `model`
         """
-        import torch
-        from art.preprocessing.standardisation_mean_std.standardisation_mean_std import StandardisationMeanStd
-        from art.preprocessing.standardisation_mean_std.standardisation_mean_std_pytorch import (
-            StandardisationMeanStdPyTorch,
-        )
+        import torch  # lgtm [py/repeated-import]
+
+        from art.preprocessing.standardisation_mean_std.numpy import StandardisationMeanStd
+        from art.preprocessing.standardisation_mean_std.pytorch import StandardisationMeanStdPyTorch
 
         if not self.preprocessing_operations:
             return x, y
 
-        if isinstance(x, torch.Tensor):
-            input_is_tensor = True
-        else:
-            input_is_tensor = False
+        input_is_tensor = isinstance(x, torch.Tensor)
 
         if self.all_framework_preprocessing and not (not input_is_tensor and x.dtype == np.object):
             if not input_is_tensor:
@@ -241,19 +226,15 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         :return: Gradients after backward pass through preprocessing defences.
         :rtype: Format as expected by the `model`
         """
-        import torch
-        from art.preprocessing.standardisation_mean_std.standardisation_mean_std import StandardisationMeanStd
-        from art.preprocessing.standardisation_mean_std.standardisation_mean_std_pytorch import (
-            StandardisationMeanStdPyTorch,
-        )
+        import torch  # lgtm [py/repeated-import]
+
+        from art.preprocessing.standardisation_mean_std.numpy import StandardisationMeanStd
+        from art.preprocessing.standardisation_mean_std.pytorch import StandardisationMeanStdPyTorch
 
         if not self.preprocessing_operations:
             return gradients
 
-        if isinstance(x, torch.Tensor):
-            input_is_tensor = True
-        else:
-            input_is_tensor = False
+        input_is_tensor = isinstance(x, torch.Tensor)
 
         if self.all_framework_preprocessing and not (not input_is_tensor and x.dtype == np.object):
             # Convert np arrays to torch tensors.
@@ -295,3 +276,51 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
             raise NotImplementedError("The current combination of preprocessing types is not supported.")
 
         return gradients
+
+    def _set_layer(self, train: bool, layerinfo: List["torch.nn.modules.Module"]) -> None:
+        """
+        Set all layers that are an instance of `layerinfo` into training or evaluation mode.
+
+        :param train: False for evaluation mode.
+        :param layerinfo: List of module types.
+        """
+        import torch  # lgtm [py/repeated-import]
+
+        assert all((issubclass(layer, torch.nn.modules.Module) for layer in layerinfo))  # type: ignore
+
+        def set_train(layer, layerinfo=layerinfo):
+            "Set layer into training mode if instance of `layerinfo`."
+            if isinstance(layer, tuple(layerinfo)):
+                layer.train()
+
+        def set_eval(layer, layerinfo=layerinfo):
+            "Set layer into evaluation mode if instance of `layerinfo`."
+            if isinstance(layer, tuple(layerinfo)):
+                layer.eval()
+
+        if train:
+            self._model.apply(set_train)
+        else:
+            self._model.apply(set_eval)
+
+    def set_dropout(self, train: bool) -> None:
+        """
+        Set all dropout layers into train or eval mode.
+
+        :param train: False for evaluation mode.
+        """
+        import torch  # lgtm [py/repeated-import]
+
+        # pylint: disable=W0212
+        self._set_layer(train=train, layerinfo=[torch.nn.modules.dropout._DropoutNd])  # type: ignore
+
+    def set_batchnorm(self, train: bool) -> None:
+        """
+        Set all batch normalization layers into train or eval mode.
+
+        :param train: False for evaluation mode.
+        """
+        import torch  # lgtm [py/repeated-import]
+
+        # pylint: disable=W0212
+        self._set_layer(train=train, layerinfo=[torch.nn.modules.batchnorm._BatchNorm])  # type: ignore

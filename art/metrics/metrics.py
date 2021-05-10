@@ -47,7 +47,15 @@ SUPPORTED_METHODS: Dict[str, Dict[str, Any]] = {
         "class": FastGradientMethod,
         "params": {"eps_step": 0.1, "eps_max": 1.0, "clip_min": 0.0, "clip_max": 1.0},
     },
-    "hsj": {"class": HopSkipJump, "params": {"max_iter": 50, "max_eval": 10000, "init_eval": 100, "init_size": 100,},},
+    "hsj": {
+        "class": HopSkipJump,
+        "params": {
+            "max_iter": 50,
+            "max_eval": 10000,
+            "init_eval": 100,
+            "init_size": 100,
+        },
+    },
 }
 
 
@@ -72,7 +80,10 @@ def get_crafter(classifier: "CLASSIFIER_TYPE", attack: str, params: Optional[Dic
 
 
 def empirical_robustness(
-    classifier: "CLASSIFIER_TYPE", x: np.ndarray, attack_name: str, attack_params: Optional[Dict[str, Any]] = None,
+    classifier: "CLASSIFIER_TYPE",
+    x: np.ndarray,
+    attack_name: str,
+    attack_params: Optional[Dict[str, Any]] = None,
 ) -> Union[float, np.ndarray]:
     """
     Compute the Empirical Robustness of a classifier object over the sample `x` for a given adversarial crafting
@@ -177,6 +188,7 @@ def clever(
     target_sort: bool = False,
     c_init: float = 1.0,
     pool_factor: int = 10,
+    verbose: bool = True,
 ) -> Optional[np.ndarray]:
     """
     Compute CLEVER score for an untargeted attack.
@@ -194,6 +206,7 @@ def clever(
            sort results.
     :param c_init: initialization of Weibull distribution.
     :param pool_factor: The factor to create a pool of random samples with size pool_factor x n_s.
+    :param verbose: Show progress bars.
     :return: CLEVER score.
     """
     # Find the predicted class first
@@ -211,7 +224,7 @@ def clever(
         # Assume it's iterable
         target_classes = target
     score_list: List[Optional[float]] = []
-    for j in tqdm(target_classes, desc="CLEVER untargeted"):
+    for j in tqdm(target_classes, desc="CLEVER untargeted", disable=not verbose):
         if j == pred_class:
             score_list.append(None)
             continue
@@ -229,6 +242,7 @@ def clever_u(
     norm: int,
     c_init: float = 1.0,
     pool_factor: int = 10,
+    verbose: bool = True,
 ) -> float:
     """
     Compute CLEVER score for an untargeted attack.
@@ -243,6 +257,7 @@ def clever_u(
     :param norm: Current support: 1, 2, np.inf.
     :param c_init: initialization of Weibull distribution.
     :param pool_factor: The factor to create a pool of random samples with size pool_factor x n_s.
+    :param verbose: Show progress bars.
     :return: CLEVER score.
     """
     # Get a list of untargeted classes
@@ -252,7 +267,7 @@ def clever_u(
 
     # Compute CLEVER score for each untargeted class
     score_list = []
-    for j in tqdm(untarget_classes, desc="CLEVER untargeted"):
+    for j in tqdm(untarget_classes, desc="CLEVER untargeted", disable=not verbose):
         score = clever_t(classifier, x, j, nb_batches, batch_size, radius, norm, c_init, pool_factor)
         score_list.append(score)
 
@@ -305,7 +320,8 @@ def clever_t(
 
     # Generate a pool of samples
     rand_pool = np.reshape(
-        random_sphere(nb_points=pool_factor * batch_size, nb_dims=dim, radius=radius, norm=norm), shape,
+        random_sphere(nb_points=pool_factor * batch_size, nb_dims=dim, radius=radius, norm=norm),
+        shape,
     )
     rand_pool += np.repeat(np.array([x]), pool_factor * batch_size, 0)
     rand_pool = rand_pool.astype(ART_NUMPY_DTYPE)
@@ -322,7 +338,7 @@ def clever_t(
 
     # Compute gradients for all samples in rand_pool
     for i in range(batch_size):
-        rand_pool_batch = rand_pool[i * pool_factor:(i + 1) * pool_factor]
+        rand_pool_batch = rand_pool[i * pool_factor : (i + 1) * pool_factor]
 
         # Compute gradients
         grad_pred_class = classifier.class_gradient(rand_pool_batch, label=pred_class)

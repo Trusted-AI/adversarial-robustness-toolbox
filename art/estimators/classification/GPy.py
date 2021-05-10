@@ -18,6 +18,7 @@
 """
 This module implements a wrapper class for GPy Gaussian Process classification models.
 """
+# pylint: disable=C0103
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -52,7 +53,7 @@ class GPyGaussianProcessClassifier(ClassifierClassLossGradients):
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
     ) -> None:
         """
         Create a `Classifier` instance GPY Gaussian Process classification models.
@@ -91,7 +92,7 @@ class GPyGaussianProcessClassifier(ClassifierClassLossGradients):
 
     # pylint: disable=W0221
     def class_gradient(  # type: ignore
-        self, x: np.ndarray, label: Union[int, List[int], None] = None, eps: float = 0.0001,
+        self, x: np.ndarray, label: Union[int, List[int], None] = None, eps: float = 0.0001, **kwargs
     ) -> np.ndarray:
         """
         Compute per-class derivatives w.r.t. `x`.
@@ -162,7 +163,7 @@ class GPyGaussianProcessClassifier(ClassifierClassLossGradients):
         """
         Perform prediction for a batch of inputs.
 
-        :param x: Test set.
+        :param x: Input samples.
         :param logits: `True` if the prediction should be done without squashing function.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
@@ -189,7 +190,7 @@ class GPyGaussianProcessClassifier(ClassifierClassLossGradients):
         """
         Perform uncertainty prediction for a batch of inputs.
 
-        :param x: Test set.
+        :param x: Input samples.
         :return: Array of uncertainty predictions of shape `(nb_inputs)`.
         """
         # Apply preprocessing

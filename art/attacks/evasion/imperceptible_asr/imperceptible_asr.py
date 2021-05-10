@@ -37,6 +37,7 @@ from art.estimators.tensorflow import TensorFlowV2Estimator
 from art.utils import pad_sequence_input
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     from tensorflow.compat.v1 import Tensor
     from torch import Tensor as PTensor
 
@@ -61,6 +62,13 @@ class ImperceptibleASR(EvasionAttack):
         "learning_rate_2",
         "max_iter_2",
         "batch_size",
+        "loss_theta_min",
+        "decrease_factor_eps",
+        "num_iter_decrease_eps",
+        "increase_factor_alpha",
+        "num_iter_increase_alpha",
+        "decrease_factor_alpha",
+        "num_iter_decrease_alpha",
     ]
 
     _estimator_requirements = (NeuralNetworkMixin, LossGradientsMixin, BaseEstimator, SpeechRecognizerMixin)
@@ -68,17 +76,27 @@ class ImperceptibleASR(EvasionAttack):
     def __init__(
         self,
         estimator: "SPEECH_RECOGNIZER_TYPE",
-        masker: Optional["PsychoacousticMasker"],
+        masker: "PsychoacousticMasker",
         eps: float = 2000.0,
         learning_rate_1: float = 100.0,
         max_iter_1: int = 1000,
         alpha: float = 0.05,
         learning_rate_2: float = 1.0,
         max_iter_2: int = 4000,
-        batch_size: int = 16,
+        loss_theta_min: float = 0.05,
+        decrease_factor_eps: float = 0.8,
+        num_iter_decrease_eps: int = 10,
+        increase_factor_alpha: float = 1.2,
+        num_iter_increase_alpha: int = 20,
+        decrease_factor_alpha: float = 0.8,
+        num_iter_decrease_alpha: int = 50,
+        batch_size: int = 1,
     ) -> None:
         """
         Create an instance of the :class:`.ImperceptibleASR`.
+
+        The default parameters assume that audio input is in `int16` range. If using normalized audio input, parameters
+        `eps` and `learning_rate_{1,2}` need to be scaled with a factor `2^-15`
 
         :param estimator: A trained speech recognition estimator.
         :param masker: A Psychoacoustic masker.
@@ -88,6 +106,13 @@ class ImperceptibleASR(EvasionAttack):
         :param alpha: Initial alpha value for balancing stage 2 loss.
         :param learning_rate_2: Learning rate for stage 2 of attack.
         :param max_iter_2: Number of iterations for stage 2 of attack.
+        :param loss_theta_min: If imperceptible loss reaches minimum, stop early. Works best with `batch_size=1`.
+        :param decrease_factor_eps: Decrease factor for epsilon (Paper default: 0.8).
+        :param num_iter_decrease_eps: Iterations after which to decrease epsilon if attack succeeds (Paper default: 10).
+        :param increase_factor_alpha: Increase factor for alpha (Paper default: 1.2).
+        :param num_iter_increase_alpha: Iterations after which to increase alpha if attack succeeds (Paper default: 20).
+        :param decrease_factor_alpha: Decrease factor for alpha (Paper default: 0.8).
+        :param num_iter_decrease_alpha: Iterations after which to decrease alpha if attack fails (Paper default: 50).
         :param batch_size: Batch size.
         """
 
@@ -102,12 +127,21 @@ class ImperceptibleASR(EvasionAttack):
         self.max_iter_2 = max_iter_2
         self._targeted = True
         self.batch_size = batch_size
+        self.loss_theta_min = loss_theta_min
+        self.decrease_factor_eps = decrease_factor_eps
+        self.num_iter_decrease_eps = num_iter_decrease_eps
+        self.increase_factor_alpha = increase_factor_alpha
+        self.num_iter_increase_alpha = num_iter_increase_alpha
+        self.decrease_factor_alpha = decrease_factor_alpha
+        self.num_iter_decrease_alpha = num_iter_decrease_alpha
         self._check_params()
 
         # init some aliases
         self._window_size = masker.window_size
         self._hop_size = masker.hop_size
         self._sample_rate = masker.sample_rate
+
+        self._framework: Optional[str] = None
 
         if isinstance(self.estimator, TensorFlowV2Estimator):
             import tensorflow.compat.v1 as tf1
@@ -120,9 +154,7 @@ class ImperceptibleASR(EvasionAttack):
 
             # TensorFlow placeholders
             self._delta = tf1.placeholder(tf1.float32, shape=[None, None], name="art_delta")
-            self._power_spectral_density_maximum_tf = tf1.placeholder(
-                tf1.float32, shape=[None, None], name="art_psd_max"
-            )
+            self._power_spectral_density_maximum_tf = tf1.placeholder(tf1.float32, shape=[None], name="art_psd_max")
             self._masking_threshold_tf = tf1.placeholder(
                 tf1.float32, shape=[None, None, None], name="art_masking_threshold"
             )
@@ -134,11 +166,8 @@ class ImperceptibleASR(EvasionAttack):
         elif isinstance(self.estimator, PyTorchEstimator):
             # set framework attribute
             self._framework = "pytorch"
-        else:
-            # set framework attribute
-            self._framework = None
 
-    def generate(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate imperceptible, adversarial examples.
 
@@ -147,6 +176,9 @@ class ImperceptibleASR(EvasionAttack):
             lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`.
         :return: An array holding the adversarial examples.
         """
+        if y is None:
+            raise ValueError("The target values `y` cannot be None. Please provide a `np.ndarray` of target labels.")
+
         nb_samples = x.shape[0]
 
         x_imperceptible = [None] * nb_samples
@@ -158,7 +190,10 @@ class ImperceptibleASR(EvasionAttack):
 
             # create batch of adversarial examples
             x_imperceptible[begin:end] = self._generate_batch(x[begin:end], y[begin:end])
-        return np.array(x_imperceptible, dtype=object)
+
+        # for ragged input, use np.object dtype
+        dtype = np.float32 if x.ndim != 1 else np.object
+        return np.array(x_imperceptible, dtype=dtype)
 
     def _generate_batch(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
         """
@@ -169,6 +204,8 @@ class ImperceptibleASR(EvasionAttack):
         """
         # create adversarial example
         x_adversarial = self._create_adversarial(x, y)
+        if self.max_iter_2 == 0:
+            return x_adversarial
 
         # make adversarial example imperceptible
         x_imperceptible = self._create_imperceptible(x, x_adversarial, y)
@@ -190,24 +227,27 @@ class ImperceptibleASR(EvasionAttack):
         """
         batch_size = x.shape[0]
 
+        # for ragged input, use np.object dtype
+        dtype = np.float32 if x.ndim != 1 else np.object
+
         epsilon = [self.eps] * batch_size
         x_adversarial = [None] * batch_size
 
         x_perturbed = x.copy()
 
-        for i in range(self.max_iter_1):
+        for i in range(1, self.max_iter_1 + 1):
             # perform FGSM step for x
             gradients = self.estimator.loss_gradient(x_perturbed, y, batch_mode=True)
-            x_perturbed = x_perturbed - self.learning_rate_1 * np.array([np.sign(g) for g in gradients], dtype=object)
+            x_perturbed = x_perturbed - self.learning_rate_1 * np.array([np.sign(g) for g in gradients], dtype=dtype)
 
             # clip perturbation
             perturbation = x_perturbed - x
-            perturbation = np.array([np.clip(p, -e, e) for p, e in zip(perturbation, epsilon)], dtype=object)
+            perturbation = np.array([np.clip(p, -e, e) for p, e in zip(perturbation, epsilon)], dtype=dtype)
 
             # re-apply clipped perturbation to x
             x_perturbed = x + perturbation
 
-            if i % 10 == 0:
+            if i % self.num_iter_decrease_eps == 0:
                 prediction = self.estimator.predict(x_perturbed, batch_size=batch_size)
                 for j in range(batch_size):
                     # validate adversarial target, i.e. f(x_perturbed)=y
@@ -216,7 +256,7 @@ class ImperceptibleASR(EvasionAttack):
                         perturbation_norm = np.max(np.abs(perturbation[j]))
                         if epsilon[j] > perturbation_norm:
                             epsilon[j] = perturbation_norm
-                        epsilon[j] *= 0.8
+                        epsilon[j] *= self.decrease_factor_eps
                         # save current best adversarial example
                         x_adversarial[j] = x_perturbed[j]
                 logger.info("Current iteration %s, epsilon %s", i, epsilon)
@@ -227,7 +267,7 @@ class ImperceptibleASR(EvasionAttack):
                 logger.critical("Adversarial attack stage 1 for x_%s was not successful", j)
                 x_adversarial[j] = x_perturbed[j]
 
-        return np.array(x_adversarial, dtype=object)
+        return np.array(x_adversarial, dtype=dtype)
 
     def _create_imperceptible(self, x: np.ndarray, x_adversarial: np.ndarray, y: np.ndarray) -> np.ndarray:
         """
@@ -246,43 +286,68 @@ class ImperceptibleASR(EvasionAttack):
         batch_size = x.shape[0]
         alpha_min = 0.0005
 
-        alpha = np.array([self.alpha] * batch_size)
+        # for ragged input, use np.object dtype
+        dtype = np.float32 if x.ndim != 1 else np.object
+
+        early_stop = [False] * batch_size
+
+        alpha = np.array([self.alpha] * batch_size, dtype=np.float32)
         loss_theta_previous = [np.inf] * batch_size
         x_imperceptible = [None] * batch_size
         # if inputs are *not* ragged, we can't multiply alpha * gradients_theta
         if x.ndim != 1:
             alpha = np.expand_dims(alpha, axis=-1)
 
+        masking_threshold, psd_maximum = self._stabilized_threshold_and_psd_maximum(x)
+
         x_perturbed = x_adversarial.copy()
 
-        for i in range(self.max_iter_2):
+        for i in range(1, self.max_iter_2 + 1):
             # get perturbation
             perturbation = x_perturbed - x
 
             # get loss gradients of both losses
             gradients_net = self.estimator.loss_gradient(x_perturbed, y, batch_mode=True)
-            gradients_theta, loss_theta = self._loss_gradient_masking_threshold(perturbation, x)
+            gradients_theta, loss_theta = self._loss_gradient_masking_threshold(
+                perturbation, x, masking_threshold, psd_maximum
+            )
+
+            # check shapes match, otherwise unexpected errors can occur
+            assert gradients_net.shape == gradients_theta.shape
 
             # perform gradient descent steps
             x_perturbed = x_perturbed - self.learning_rate_2 * (gradients_net + alpha * gradients_theta)
 
-            if i % 20 == 0 or i % 50 == 0:
+            if i % self.num_iter_increase_alpha == 0 or i % self.num_iter_decrease_alpha == 0:
                 prediction = self.estimator.predict(x_perturbed, batch_size=batch_size)
                 for j in range(batch_size):
                     # validate if adversarial target succeeds, i.e. f(x_perturbed)=y
-                    if i % 20 == 0 and prediction[j] == y[j].upper():
+                    if i % self.num_iter_increase_alpha == 0 and prediction[j] == y[j].upper():
                         # increase alpha
-                        alpha[j] *= 1.2
+                        alpha[j] *= self.increase_factor_alpha
                         # save current best imperceptible, adversarial example
                         if loss_theta[j] < loss_theta_previous[j]:
                             x_imperceptible[j] = x_perturbed[j]
                             loss_theta_previous[j] = loss_theta[j]
 
                     # validate if adversarial target fails, i.e. f(x_perturbed)!=y
-                    if i % 50 == 0 and prediction[j] != y[j].upper():
+                    if i % self.num_iter_decrease_alpha == 0 and prediction[j] != y[j].upper():
                         # decrease alpha
-                        alpha[j] = max(alpha[j] * 0.8, alpha_min)
+                        alpha[j] = max(alpha[j] * self.decrease_factor_alpha, alpha_min)
                 logger.info("Current iteration %s, alpha %s, loss theta %s", i, alpha, loss_theta)
+
+            # note: avoids nan values in loss theta, which can occur when loss converges to zero.
+            for j in range(batch_size):
+                if loss_theta[j] < self.loss_theta_min and not early_stop[j]:
+                    logger.warning(
+                        "Batch sample %s reached minimum threshold of %s for theta loss.", j, self.loss_theta_min
+                    )
+                    early_stop[j] = True
+            if all(early_stop):
+                logger.warning(
+                    "All batch samples reached minimum threshold for theta loss. Stopping early at iteration %s.", i
+                )
+                break
 
         # return perturbed x if no adversarial example found
         for j in range(batch_size):
@@ -290,10 +355,35 @@ class ImperceptibleASR(EvasionAttack):
                 logger.critical("Adversarial attack stage 2 for x_%s was not successful", j)
                 x_imperceptible[j] = x_perturbed[j]
 
-        return np.array(x_imperceptible, dtype=object)
+        return np.array(x_imperceptible, dtype=dtype)
+
+    def _stabilized_threshold_and_psd_maximum(self, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Return batch of stabilized masking thresholds and PSD maxima.
+
+        :param x: An array with the original inputs to be attacked.
+        :return: Tuple consisting of stabilized masking thresholds and PSD maxima.
+        """
+        masking_threshold = []
+        psd_maximum = []
+        x_padded, _ = pad_sequence_input(x)
+
+        for x_i in x_padded:
+            m_t, p_m = self.masker.calculate_threshold_and_psd_maximum(x_i)
+            masking_threshold.append(m_t)
+            psd_maximum.append(p_m)
+        # stabilize imperceptible loss by canceling out the "10*log" term in power spectral density maximum and
+        # masking threshold
+        masking_threshold_stabilized = 10 ** (np.array(masking_threshold) * 0.1)
+        psd_maximum_stabilized = 10 ** (np.array(psd_maximum) * 0.1)
+        return masking_threshold_stabilized, psd_maximum_stabilized
 
     def _loss_gradient_masking_threshold(
-        self, perturbation: np.ndarray, x: np.ndarray
+        self,
+        perturbation: np.ndarray,
+        x: np.ndarray,
+        masking_threshold_stabilized: np.ndarray,
+        psd_maximum_stabilized: np.ndarray,
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Compute loss gradient of the global masking threshold w.r.t. the PSD approximate of the perturbation.
@@ -304,26 +394,13 @@ class ImperceptibleASR(EvasionAttack):
 
         :param perturbation: Adversarial perturbation.
         :param x: An array with the original inputs to be attacked.
+        :param masking_threshold_stabilized: Stabilized masking threshold for the original input `x`.
+        :param psd_maximum_stabilized: Stabilized maximum across frames, i.e. shape is `(batch_size, frame_length)`, of
+            the original unnormalized PSD of `x`.
         :return: Tuple consisting of the loss gradient, which has same shape as `perturbation`, and loss value.
         """
         # pad input
         perturbation_padded, delta_mask = pad_sequence_input(perturbation)
-        x_padded, _ = pad_sequence_input(x)
-
-        # calculate masking threshold and PSD maximum
-        masking_threshold = []
-        psd_maximum = []
-        for x_i in x_padded:
-            mt, pm = self.masker.calculate_threshold_and_psd_maximum(x_i)
-            masking_threshold.append(mt)
-            psd_maximum.append(pm)
-        masking_threshold = np.array(masking_threshold)
-        psd_maximum = np.array(psd_maximum)
-
-        # stabilize masking threshold loss by canceling out the "10*log" term in power spectral density and masking
-        # threshold
-        masking_threshold_stabilized = 10 ** (masking_threshold * 0.1)
-        psd_maximum_stabilized = 10 ** (psd_maximum * 0.1)
 
         if self._framework == "tensorflow":
             # get loss gradients (TensorFlow)
@@ -332,6 +409,7 @@ class ImperceptibleASR(EvasionAttack):
                 self._power_spectral_density_maximum_tf: psd_maximum_stabilized,
                 self._masking_threshold_tf: masking_threshold_stabilized,
             }
+            # pylint: disable=W0212
             gradients_padded, loss = self.estimator._sess.run(self._loss_gradient_masking_threshold_op_tf, feed_dict)
         elif self._framework == "pytorch":
             # get loss gradients (TensorFlow)
@@ -348,7 +426,9 @@ class ImperceptibleASR(EvasionAttack):
             gradient = gradient_padded[:length]
             gradients.append(gradient)
 
-        return np.array(gradients, dtype=object), loss
+        # for ragged input, use np.object dtype
+        dtype = np.float32 if x.ndim != 1 else np.object
+        return np.array(gradients, dtype=dtype), loss
 
     def _loss_gradient_masking_threshold_tf(
         self, perturbation: "Tensor", psd_maximum_stabilized: "Tensor", masking_threshold_stabilized: "Tensor"
@@ -390,6 +470,7 @@ class ImperceptibleASR(EvasionAttack):
         import torch  # lgtm [py/import-and-import-from]
 
         # define tensors
+        # pylint: disable=W0212
         perturbation_torch = torch.from_numpy(perturbation).to(self.estimator._device)
         masking_threshold_stabilized_torch = torch.from_numpy(masking_threshold_stabilized).to(self.estimator._device)
         psd_maximum_stabilized_torch = torch.from_numpy(psd_maximum_stabilized).to(self.estimator._device)
@@ -403,7 +484,7 @@ class ImperceptibleASR(EvasionAttack):
         )
 
         # calculate hinge loss
-        loss = torch.mean(
+        loss = torch.mean(  # type: ignore
             torch.nn.functional.relu(psd_perturbation - masking_threshold_stabilized_torch), dim=(1, 2), keepdims=False
         )
 
@@ -435,11 +516,11 @@ class ImperceptibleASR(EvasionAttack):
 
         # compute power spectral density (PSD)
         # note: fixes implementation of Qin et al. by also considering the square root of gain_factor
-        gain_factor = 8.0 / 3.0
-        psd_matrix = gain_factor * tf1.square(tf1.abs(stft_matrix / self._window_size))
+        gain_factor = np.sqrt(8.0 / 3.0)
+        psd_matrix = tf1.square(tf1.abs(gain_factor * stft_matrix / self._window_size))
 
         # approximate normalized psd: psd_matrix_approximated = 10^((96.0 - psd_matrix_max + psd_matrix)/10)
-        psd_matrix_approximated = tf1.pow(10.0, 9.6) / tf1.expand_dims(psd_maximum_stabilized, -1) * psd_matrix
+        psd_matrix_approximated = tf1.pow(10.0, 9.6) / tf1.reshape(psd_maximum_stabilized, [-1, 1, 1]) * psd_matrix
 
         # return PSD matrix such that shape is (batch_size, window_size // 2 + 1, frame_length)
         return tf1.transpose(psd_matrix_approximated, [0, 2, 1])
@@ -455,6 +536,7 @@ class ImperceptibleASR(EvasionAttack):
         import torch  # lgtm [py/import-and-import-from]
 
         # compute short-time Fourier transform (STFT)
+        # pylint: disable=W0212
         stft_matrix = torch.stft(
             perturbation,
             n_fft=self._window_size,
@@ -463,15 +545,15 @@ class ImperceptibleASR(EvasionAttack):
             center=False,
             window=torch.hann_window(self._window_size).to(self.estimator._device),
         ).to(self.estimator._device)
-        stft_matrix_abs = torch.sqrt(torch.sum(torch.square(stft_matrix), -1))
 
         # compute power spectral density (PSD)
         # note: fixes implementation of Qin et al. by also considering the square root of gain_factor
-        gain_factor = 8.0 / 3.0
-        psd_matrix = gain_factor * torch.square(stft_matrix_abs / self._window_size)
+        gain_factor = np.sqrt(8.0 / 3.0)
+        stft_matrix_abs = torch.sqrt(torch.sum(torch.square(gain_factor * stft_matrix / self._window_size), -1))
+        psd_matrix = torch.square(stft_matrix_abs)
 
         # approximate normalized psd: psd_matrix_approximated = 10^((96.0 - psd_matrix_max + psd_matrix)/10)
-        psd_matrix_approximated = pow(10.0, 9.6) / torch.unsqueeze(psd_maximum_stabilized, 1) * psd_matrix
+        psd_matrix_approximated = pow(10.0, 9.6) / psd_maximum_stabilized.reshape(-1, 1, 1) * psd_matrix
 
         # return PSD matrix such that shape is (batch_size, window_size // 2 + 1, frame_length)
         return psd_matrix_approximated
@@ -508,6 +590,39 @@ class ImperceptibleASR(EvasionAttack):
         if self.learning_rate_2 <= 0.0:
             raise ValueError("The learning rate for stage 2 must be greater than 0.0.")
 
+        if not isinstance(self.loss_theta_min, float):
+            raise ValueError("The loss_theta_min threshold must be of type float.")
+
+        if not isinstance(self.decrease_factor_eps, float):
+            raise ValueError("The factor to decrease eps must be of type float.")
+        if self.decrease_factor_eps <= 0.0:
+            raise ValueError("The factor to decrease eps must be greater than 0.0.")
+
+        if not isinstance(self.num_iter_decrease_alpha, int):
+            raise ValueError("The number of iterations must be of type int.")
+        if self.num_iter_decrease_alpha <= 0:
+            raise ValueError("The number of iterations must be greater than 0.")
+
+        if not isinstance(self.increase_factor_alpha, float):
+            raise ValueError("The factor to increase alpha must be of type float.")
+        if self.increase_factor_alpha <= 0.0:
+            raise ValueError("The factor to increase alpha must be greater than 0.0.")
+
+        if not isinstance(self.num_iter_increase_alpha, int):
+            raise ValueError("The number of iterations must be of type int.")
+        if self.num_iter_increase_alpha <= 0:
+            raise ValueError("The number of iterations must be greater than 0.")
+
+        if not isinstance(self.decrease_factor_alpha, float):
+            raise ValueError("The factor to decrease alpha must be of type float.")
+        if self.decrease_factor_alpha <= 0.0:
+            raise ValueError("The factor to decrease alpha must be greater than 0.0.")
+
+        if not isinstance(self.num_iter_decrease_alpha, int):
+            raise ValueError("The number of iterations must be of type int.")
+        if self.num_iter_decrease_alpha <= 0:
+            raise ValueError("The number of iterations must be greater than 0.")
+
         if self.batch_size <= 0:
             raise ValueError("The batch size `batch_size` has to be positive.")
 
@@ -535,7 +650,7 @@ class PsychoacousticMasker:
         # init some private properties for lazy loading
         self._fft_frequencies = None
         self._bark = None
-        self._absolute_threshold_hearing = None
+        self._absolute_threshold_hearing: Optional[np.ndarray] = None
 
     def calculate_threshold_and_psd_maximum(self, audio: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -555,7 +670,7 @@ class PsychoacousticMasker:
             frame of shape `(frame_length)`.
         """
         psd_matrix, psd_max = self.power_spectral_density(audio)
-        threshold = np.zeros(psd_matrix.shape)
+        threshold = np.zeros_like(psd_matrix)
         for frame in range(psd_matrix.shape[1]):
             # apply methods for finding and filtering maskers
             maskers, masker_idx = self.filter_maskers(*self.find_maskers(psd_matrix[:, frame]))
@@ -617,8 +732,11 @@ class PsychoacousticMasker:
             valid_domain = np.logical_and(20 <= self.fft_frequencies, self.fft_frequencies <= 2e4)
             freq = self.fft_frequencies[valid_domain] * 0.001
 
-            # outside valid ATH domain, set values to np.inf
-            self._absolute_threshold_hearing = np.ones(valid_domain.shape) * np.inf
+            # outside valid ATH domain, set values to -np.inf
+            # note: This ensures that every possible masker in the bins <=20Hz is valid. As a consequence, the global
+            # masking threshold formula will always return a value different to np.inf
+            self._absolute_threshold_hearing = np.ones(valid_domain.shape) * -np.inf
+
             self._absolute_threshold_hearing[valid_domain] = (
                 3.64 * pow(freq, -0.8) - 6.5 * np.exp(-0.6 * np.square(freq - 3.3)) + 0.001 * pow(freq, 4) - 12
             )
@@ -632,29 +750,27 @@ class PsychoacousticMasker:
         :return: PSD matrix of shape `(window_size // 2 + 1, frame_length)` and maximum vector of shape
         `(frame_length)`.
         """
-        # compute short-time Fourier transform (STFT)
-        stft_params = {
-            "fs": self.sample_rate,
-            "window": ss.get_window("hann", self.window_size, fftbins=True),
-            "nperseg": self.window_size,
-            "nfft": self.window_size,
-            "noverlap": self.window_size - self.hop_size,
-            "boundary": None,
-            "padded": False,
-        }
-        _, _, stft_matrix = ss.stft(audio, **stft_params)
+        import librosa
 
-        # undo SciPy's hard-coded normalization
-        # https://github.com/scipy/scipy/blob/01d8bfb6f239df4ce70c799b9b485b53733c9911/scipy/signal/spectral.py#L1802
-        stft_matrix *= stft_params["window"].sum()
+        # compute short-time Fourier transform (STFT)
+        audio_float = audio.astype(np.float32)
+        stft_params = {
+            "n_fft": self.window_size,
+            "hop_length": self.hop_size,
+            "win_length": self.window_size,
+            "window": ss.get_window("hann", self.window_size, fftbins=True),
+            "center": False,
+        }
+        stft_matrix = librosa.core.stft(audio_float, **stft_params)
 
         # compute power spectral density (PSD)
-        gain_factor = np.sqrt(8.0 / 3.0)
-        psd_matrix = 10 * np.log10(np.abs(gain_factor * stft_matrix / self.window_size) ** 2 + np.finfo(np.float32).eps)
+        with np.errstate(divide="ignore"):
+            gain_factor = np.sqrt(8.0 / 3.0)
+            psd_matrix = 20 * np.log10(np.abs(gain_factor * stft_matrix / self.window_size))
+            psd_matrix = psd_matrix.clip(min=-200)
 
         # normalize PSD at 96dB
-        # note: deviates from Qin et al. implementation by taking maximum across frames
-        psd_matrix_max = np.max(psd_matrix, axis=0)
+        psd_matrix_max = np.max(psd_matrix)
         psd_matrix_normalized = 96.0 - psd_matrix_max + psd_matrix
 
         return psd_matrix_normalized, psd_matrix_max
@@ -745,6 +861,7 @@ class PsychoacousticMasker:
         """
         # note: deviates from Qin et al. implementation by taking the log of the summation, which they do for numerical
         #       stability of the stage 2 optimization. We stabilize the optimization in the loss itself.
-        return 10 * np.log10(
-            np.sum(10 ** (individual_threshold / 10), axis=0) + 10 ** (self.absolute_threshold_hearing / 10)
-        )
+        with np.errstate(divide="ignore"):
+            return 10 * np.log10(
+                np.sum(10 ** (individual_threshold / 10), axis=0) + 10 ** (self.absolute_threshold_hearing / 10)
+            )

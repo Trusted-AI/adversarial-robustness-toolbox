@@ -55,7 +55,7 @@ class BaseEstimator(ABC):
         clip_values: Optional["CLIP_VALUES_TYPE"],
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: Union["PREPROCESSING_TYPE", "Preprocessor"] = (0, 1),
+        preprocessing: Union["PREPROCESSING_TYPE", "Preprocessor"] = (0.0, 1.0),
     ):
         """
         Initialize a `BaseEstimator` object.
@@ -71,8 +71,6 @@ class BaseEstimator(ABC):
                used for data preprocessing. The first value will be subtracted from the input and the results will be
                divided by the second value.
         """
-        from art.defences.preprocessor.preprocessor import Preprocessor
-
         self._model = model
         self._clip_values = clip_values
 
@@ -98,7 +96,7 @@ class BaseEstimator(ABC):
         if self.preprocessing is None:
             pass
         elif isinstance(self.preprocessing, tuple):
-            from art.preprocessing.standardisation_mean_std.standardisation_mean_std import StandardisationMeanStd
+            from art.preprocessing.standardisation_mean_std.numpy import StandardisationMeanStd
 
             self.preprocessing_operations.append(
                 StandardisationMeanStd(mean=self.preprocessing[0], std=self.preprocessing[1])
@@ -109,19 +107,21 @@ class BaseEstimator(ABC):
             raise ValueError("Preprocessing argument not recognised.")
 
     @staticmethod
-    def _set_preprocessing(preprocessing: Union["PREPROCESSING_TYPE", "Preprocessor"]) -> "Preprocessor":
+    def _set_preprocessing(
+        preprocessing: Optional[Union["PREPROCESSING_TYPE", "Preprocessor"]]
+    ) -> Optional["Preprocessor"]:
         from art.defences.preprocessor.preprocessor import Preprocessor
 
         if preprocessing is None:
             return None
-        elif isinstance(preprocessing, tuple):
-            from art.preprocessing.standardisation_mean_std.standardisation_mean_std import StandardisationMeanStd
+        if isinstance(preprocessing, tuple):
+            from art.preprocessing.standardisation_mean_std.numpy import StandardisationMeanStd
 
             return StandardisationMeanStd(mean=preprocessing[0], std=preprocessing[1])
-        elif isinstance(preprocessing, Preprocessor):
+        if isinstance(preprocessing, Preprocessor):
             return preprocessing
-        else:
-            raise ValueError("Preprocessing argument not recognised.")
+
+        raise ValueError("Preprocessing argument not recognised.")
 
     @staticmethod
     def _set_preprocessing_defences(
@@ -131,8 +131,8 @@ class BaseEstimator(ABC):
 
         if isinstance(preprocessing_defences, Preprocessor):
             return [preprocessing_defences]
-        else:
-            return preprocessing_defences
+
+        return preprocessing_defences
 
     @staticmethod
     def _set_postprocessing_defences(
@@ -142,8 +142,8 @@ class BaseEstimator(ABC):
 
         if isinstance(postprocessing_defences, Postprocessor):
             return [postprocessing_defences]
-        else:
-            return postprocessing_defences
+
+        return postprocessing_defences
 
     def set_params(self, **kwargs) -> None:
         """
@@ -325,9 +325,9 @@ class BaseEstimator(ABC):
     def __repr__(self):
         class_name = self.__class__.__name__
         attributes = {}
-        for k, v in self.__dict__.items():
+        for k, value in self.__dict__.items():
             k = k[1:] if k[0] == "_" else k
-            attributes[k] = v
+            attributes[k] = value
         attributes = ["{}={}".format(k, v) for k, v in attributes.items()]
         repr_string = class_name + "(" + ", ".join(attributes) + ")"
         return repr_string
@@ -384,24 +384,24 @@ class NeuralNetworkMixin(ABC):
     Mixin abstract base class defining additional functionality required for neural network estimators. This base class
     has to be mixed in with class `BaseEstimator`.
     """
+
     estimator_params = ["channels_first"]
 
-    def __init__(self, channels_first: Optional[bool], **kwargs) -> None:
+    def __init__(self, channels_first: bool, **kwargs) -> None:
         """
         Initialize a neural network attributes.
 
         :param channels_first: Set channels first or last.
         """
-        self._channels_first: Optional[bool] = channels_first
-        super().__init__(**kwargs)
+        self._channels_first: bool = channels_first
+        super().__init__(**kwargs)  # type: ignore
 
     @abstractmethod
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs):
         """
         Perform prediction of the neural network for samples `x`.
 
-        :param x: Samples of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
-                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
+        :param x: Input samples.
         :param batch_size: Batch size.
         :return: Predictions.
         :rtype: Format as expected by the `model`
@@ -467,15 +467,6 @@ class NeuralNetworkMixin(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def set_learning_phase(self, train: bool) -> None:
-        """
-        Set the learning phase for the backend framework.
-
-        :param train: `True` if the learning phase is training, otherwise `False`.
-        """
-        raise NotImplementedError
-
-    @abstractmethod
     def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the loss of the neural network for samples `x`.
@@ -490,23 +481,11 @@ class NeuralNetworkMixin(ABC):
         raise NotImplementedError
 
     @property
-    def channels_first(self) -> Optional[bool]:
+    def channels_first(self) -> bool:
         """
         :return: Boolean to indicate index of the color channels in the sample `x`.
         """
         return self._channels_first
-
-    @property
-    def learning_phase(self) -> Optional[bool]:
-        """
-        The learning phase set by the user. Possible values are `True` for training or `False` for prediction and
-        `None` if it has not been set by the library. In the latter case, the library does not do any explicit learning
-        phase manipulation and the current value of the backend framework is used. If a value has been set by the user
-        for this property, it will impact all following computations for model fitting, prediction and gradients.
-
-        :return: Learning phase.
-        """
-        return self._learning_phase  # type: ignore
 
     @property
     def layer_names(self) -> Optional[List[str]]:
@@ -526,9 +505,9 @@ class NeuralNetworkMixin(ABC):
         name = self.__class__.__name__
 
         attributes = {}
-        for k, v in self.__dict__.items():
+        for k, value in self.__dict__.items():
             k = k[1:] if k[0] == "_" else k
-            attributes[k] = v
+            attributes[k] = value
         attrs = ["{}={}".format(k, v) for k, v in attributes.items()]
         repr_ = name + "(" + ", ".join(attrs) + ")"
 

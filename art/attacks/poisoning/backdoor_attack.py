@@ -53,7 +53,7 @@ class PoisoningAttackBackdoor(PoisoningAttackBlackBox):
         self.perturbation = perturbation
         self._check_params()
 
-    def poison(
+    def poison(  # pylint: disable=W0221
         self, x: np.ndarray, y: Optional[np.ndarray] = None, broadcast=False, **kwargs
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -66,11 +66,11 @@ class PoisoningAttackBackdoor(PoisoningAttackBlackBox):
         """
         if y is None:
             raise ValueError("Target labels `y` need to be provided for a targeted attack.")
+
+        if broadcast:
+            y_attack = np.broadcast_to(y, (x.shape[0], y.shape[0]))
         else:
-            if broadcast:
-                y_attack = np.broadcast_to(y, (x.shape[0], y.shape[0]))
-            else:
-                y_attack = np.copy(y)
+            y_attack = np.copy(y)
 
         num_poison = len(x)
         if num_poison == 0:

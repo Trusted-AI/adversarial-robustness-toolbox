@@ -170,7 +170,10 @@ class RobustDPatch(EvasionAttack):
                         x[i_batch_start:i_batch_end], self._patch, channels_first=self.estimator.channels_first
                     )
 
-                    gradients = self.estimator.loss_gradient(x=patched_images, y=patch_target,)
+                    gradients = self.estimator.loss_gradient(
+                        x=patched_images,
+                        y=patch_target,
+                    )
 
                     gradients = self._untransform_gradients(
                         gradients, transforms, channels_first=self.estimator.channels_first
@@ -188,7 +191,9 @@ class RobustDPatch(EvasionAttack):
 
             if self.estimator.clip_values is not None:
                 self._patch = np.clip(
-                    self._patch, a_min=self.estimator.clip_values[0], a_max=self.estimator.clip_values[1],
+                    self._patch,
+                    a_min=self.estimator.clip_values[0],
+                    a_max=self.estimator.clip_values[1],
                 )
 
         return self._patch
@@ -262,7 +267,10 @@ class RobustDPatch(EvasionAttack):
         return x_patch, patch_target, transformations
 
     def _untransform_gradients(
-        self, gradients: np.ndarray, transforms: Dict[str, Union[int, float]], channels_first: bool,
+        self,
+        gradients: np.ndarray,
+        transforms: Dict[str, Union[int, float]],
+        channels_first: bool,
     ) -> np.ndarray:
         """
         Revert transformation on gradients.
@@ -384,7 +392,7 @@ class RobustDPatch(EvasionAttack):
             raise ValueError("The first element of the brightness range must be less or equal to the second one.")
 
         if not isinstance(self.rotation_weights, (tuple, list)) or not all(
-            isinstance(s, float) or isinstance(s, int) for s in self.rotation_weights
+            isinstance(s, (float, int)) for s in self.rotation_weights
         ):
             raise ValueError("The rotation sampling weights must be provided as tuple or list of float or int values.")
         if len(self.rotation_weights) != 4:

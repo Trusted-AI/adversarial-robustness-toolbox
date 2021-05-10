@@ -90,9 +90,6 @@ class ClassifierNeuralNetworkInstance(
     def layer_names(self):
         pass
 
-    def set_learning_phase(self, train):
-        pass
-
     def input_shape(self):
         pass
 
@@ -123,7 +120,7 @@ class TestClassifier(TestBase):
         self.assertIn("clip_values=None", repr_)
         self.assertIn("defences=None", repr_)
         self.assertIn(
-            "preprocessing=StandardisationMeanStd(mean=0, std=1, apply_fit=True, apply_predict=True)", repr_
+            "preprocessing=StandardisationMeanStd(mean=0.0, std=1.0, apply_fit=True, apply_predict=True)", repr_
         )
 
 
@@ -148,11 +145,11 @@ class TestClassifierNeuralNetwork(TestBase):
         classifier = ClassifierNeuralNetworkInstance((0, 1))
         repr_ = repr(classifier)
         self.assertIn("ClassifierNeuralNetworkInstance", repr_)
-        self.assertIn(f"channels_first=True", repr_)
+        self.assertIn("channels_first=True", repr_)
         self.assertIn("clip_values=[0. 1.]", repr_)
         self.assertIn("defences=None", repr_)
         self.assertIn(
-            "preprocessing=StandardisationMeanStd(mean=0, std=1, apply_fit=True, apply_predict=True)", repr_
+            "preprocessing=StandardisationMeanStd(mean=0.0, std=1.0, apply_fit=True, apply_predict=True)", repr_
         )
 
 

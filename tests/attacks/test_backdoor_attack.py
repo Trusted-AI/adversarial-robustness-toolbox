@@ -90,25 +90,16 @@ class TestBackdoorAttack(TestBase):
         return np.expand_dims(add_single_bd(x.squeeze(3), pixel_value=max_val), axis=3)
 
     def poison_func_3(self, x):
-        return np.expand_dims(
-            insert_image(
-                x.squeeze(3), backdoor_path=self.backdoor_path, size=(5, 5), random=False, x_shift=3, y_shift=3
-            ),
-            axis=3,
-        )
+        return insert_image(x, backdoor_path=self.backdoor_path, size=(5, 5), random=False, x_shift=3, y_shift=3)
 
     def poison_func_4(self, x):
-        return np.expand_dims(
-            insert_image(x.squeeze(3), backdoor_path=self.backdoor_path, size=(5, 5), random=True), axis=3
-        )
+        return insert_image(x, backdoor_path=self.backdoor_path, size=(5, 5), random=True)
 
     def poison_func_5(self, x):
-        return np.expand_dims(
-            insert_image(x.squeeze(3), backdoor_path=self.backdoor_path, random=True, size=(100, 100)), axis=3
-        )
+        return insert_image(x, backdoor_path=self.backdoor_path, random=True, size=(100, 100))
 
     def poison_func_6(self, x):
-        return np.expand_dims(insert_image(x, backdoor_path=self.backdoor_path, random=True, size=(100, 100)), axis=3)
+        return insert_image(x, backdoor_path=self.backdoor_path, random=True, size=(100, 100))
 
     def test_backdoor_pattern(self):
         """

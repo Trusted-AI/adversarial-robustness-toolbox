@@ -74,10 +74,10 @@ def get_default_framework():
 
 def pytest_addoption(parser):
     parser.addoption(
-        "--mlFramework",
+        "--framework",
         action="store",
         default=get_default_framework(),
-        help="ART tests allow you to specify which mlFramework to use. The default mlFramework used is `tensorflow`. "
+        help="ART tests allow you to specify which framework to use. The default framework used is `tensorflow`. "
         "Other options available are {0}".format(art_supported_frameworks),
     )
     parser.addoption(
@@ -109,24 +109,28 @@ def image_dl_estimator_defended(framework):
                 defenses.append(SpatialSmoothing())
             del kwargs["defenses"]
 
-        if framework == "keras":
-            kr_classifier = get_image_classifier_kr(**kwargs)
-            # Get the ready-trained Keras model
+        if framework == "tensorflow2":
+            classifier, _ = get_image_classifier_tf(**kwargs)
 
-            classifier = KerasClassifier(
-                model=kr_classifier._model, clip_values=(0, 1), preprocessing_defences=defenses
-            )
+        if framework == "keras":
+            classifier = get_image_classifier_kr(**kwargs)
 
         if framework == "kerastf":
-            kr_tf_classifier = get_image_classifier_kr_tf(**kwargs)
-            classifier = KerasClassifier(
-                model=kr_tf_classifier._model, clip_values=(0, 1), preprocessing_defences=defenses
-            )
+            classifier = get_image_classifier_kr_tf(**kwargs)
 
-        if classifier is None:
+        if framework == "pytorch":
+            classifier = get_image_classifier_pt(**kwargs)
+            for i, defense in enumerate(defenses):
+                if "channels_first" in defense.params:
+                    defenses[i].channels_first = classifier.channels_first
+
+        if classifier is not None:
+            classifier.set_params(preprocessing_defences=defenses)
+        else:
             raise ARTTestFixtureNotImplemented(
                 "no defended image estimator", image_dl_estimator_defended.__name__, framework, {"defenses": defenses}
             )
+
         return classifier, sess
 
     return _image_dl_estimator_defended
@@ -297,7 +301,7 @@ def store_expected_values(request):
     def _store_expected_values(values_to_store, framework=""):
 
         framework_name = framework
-        if framework_name is not "":
+        if framework_name:
             framework_name = "_" + framework_name
 
         file_name = request.node.location[0].split("/")[-1][:-3] + ".json"
@@ -332,7 +336,7 @@ def expected_values(framework, request):
     file_name = request.node.location[0].split("/")[-1][:-3] + ".json"
 
     framework_name = framework
-    if framework_name is not "":
+    if framework_name:
         framework_name = "_" + framework_name
 
     def _expected_values():
@@ -421,7 +425,7 @@ def get_image_classifier_mx_instance(get_image_classifier_mx_model, mnist_shape)
             clip_values=(0, 1),
             preprocessing_defences=None,
             postprocessing_defences=None,
-            preprocessing=(0, 1),
+            preprocessing=(0.0, 1.0),
         )
 
         return mxc
@@ -643,7 +647,7 @@ def create_test_image(create_test_dir):
 
 @pytest.fixture(scope="session")
 def framework(request):
-    ml_framework = request.config.getoption("--mlFramework")
+    ml_framework = request.config.getoption("--framework")
     if ml_framework == "tensorflow":
         import tensorflow as tf
 
@@ -654,12 +658,12 @@ def framework(request):
 
     if ml_framework not in art_supported_frameworks:
         raise Exception(
-            "mlFramework value {0} is unsupported. Please use one of these valid values: {1}".format(
+            "framework value {0} is unsupported. Please use one of these valid values: {1}".format(
                 ml_framework, " ".join(art_supported_frameworks)
             )
         )
-    # if utils_test.is_valid_framework(mlFramework):
-    #     raise Exception("The mlFramework specified was incorrect. Valid options available
+    # if utils_test.is_valid_framework(framework):
+    #     raise Exception("The framework specified was incorrect. Valid options available
     #     are {0}".format(art_supported_frameworks))
     return ml_framework
 
@@ -755,7 +759,7 @@ def get_mnist_dataset(load_mnist_dataset, mnist_shape):
     np.testing.assert_array_almost_equal(y_test_mnist_original, y_test_mnist, decimal=3)
 
 
-# ART test fixture to skip test for specific mlFramework values
+# ART test fixture to skip test for specific framework values
 # eg: @pytest.mark.only_with_platform("tensorflow")
 @pytest.fixture(autouse=True)
 def only_with_platform(request, framework):
@@ -764,13 +768,13 @@ def only_with_platform(request, framework):
             pytest.skip("skipped on this platform: {}".format(framework))
 
 
-# ART test fixture to skip test for specific mlFramework values
-# eg: @pytest.mark.skipMlFramework("tensorflow", "keras", "pytorch", "scikitlearn",
+# ART test fixture to skip test for specific framework values
+# eg: @pytest.mark.skip_framework("tensorflow", "keras", "pytorch", "scikitlearn",
 # "mxnet", "kerastf", "non_dl_frameworks", "dl_frameworks")
 @pytest.fixture(autouse=True)
 def skip_by_framework(request, framework):
-    if request.node.get_closest_marker("skipMlFramework"):
-        framework_to_skip_list = list(request.node.get_closest_marker("skipMlFramework").args)
+    if request.node.get_closest_marker("skip_framework"):
+        framework_to_skip_list = list(request.node.get_closest_marker("skip_framework").args)
         if "dl_frameworks" in framework_to_skip_list:
             framework_to_skip_list.extend(deep_learning_frameworks)
 

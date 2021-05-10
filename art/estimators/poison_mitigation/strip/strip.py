@@ -66,7 +66,7 @@ class STRIPMixin(AbstainPredictorMixin):
         """
         Perform prediction of the given classifier for a batch of inputs, potentially filtering suspicious input
 
-        :param x: Test set.
+        :param x: Input samples.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
         raw_predictions = self.predict_fn(x)
@@ -109,7 +109,7 @@ class STRIPMixin(AbstainPredictorMixin):
         entropies = []
 
         # Find normal entropy distribution
-        for i, img in enumerate(tqdm(x_val)):
+        for _, img in enumerate(tqdm(x_val)):
             selected_indices = np.random.choice(np.arange(len(x_val)), self.num_samples)
             perturbed_images = np.array([combine_images(img, x_val[idx]) for idx in selected_indices])
             perturbed_predictions = self.predict_fn(perturbed_images)
@@ -120,7 +120,7 @@ class STRIPMixin(AbstainPredictorMixin):
 
         # Set threshold to FAR percentile
         self.entropy_threshold = norm.ppf(self.false_acceptance_rate, loc=mean_entropy, scale=std_entropy)
-        if self.entropy_threshold < 0:
+        if self.entropy_threshold is not None and self.entropy_threshold < 0:
             logger.warning("Entropy value is negative. Increase FAR for reasonable performance.")
 
 

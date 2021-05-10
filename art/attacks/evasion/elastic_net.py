@@ -130,7 +130,11 @@ class ElasticNet(EvasionAttack):
         return np.argmax(predictions, axis=1), l1dist, l2dist, endist
 
     def _gradient_of_loss(
-        self, target: np.ndarray, x: np.ndarray, x_adv: np.ndarray, c_weight: np.ndarray,
+        self,
+        target: np.ndarray,
+        x: np.ndarray,
+        x_adv: np.ndarray,
+        c_weight: np.ndarray,
     ) -> np.ndarray:
         """
         Compute the gradient of the loss function.
@@ -147,12 +151,14 @@ class ElasticNet(EvasionAttack):
         if self.targeted:
             i_sub = np.argmax(target, axis=1)
             i_add = np.argmax(
-                predictions * (1 - target) + (np.min(predictions, axis=1) - 1)[:, np.newaxis] * target, axis=1,
+                predictions * (1 - target) + (np.min(predictions, axis=1) - 1)[:, np.newaxis] * target,
+                axis=1,
             )
         else:
             i_add = np.argmax(target, axis=1)
             i_sub = np.argmax(
-                predictions * (1 - target) + (np.min(predictions, axis=1) - 1)[:, np.newaxis] * target, axis=1,
+                predictions * (1 - target) + (np.min(predictions, axis=1) - 1)[:, np.newaxis] * target,
+                axis=1,
             )
 
         loss_gradient = self.estimator.class_gradient(x_adv, label=i_add)
@@ -165,6 +171,12 @@ class ElasticNet(EvasionAttack):
 
         loss_gradient *= c_mult
         loss_gradient += 2 * (x_adv - x)
+
+        # Set gradients where loss is constant to zero
+        cond = (
+            predictions[np.arange(x.shape[0]), i_add] - predictions[np.arange(x.shape[0]), i_sub] + self.confidence
+        ) < 0
+        loss_gradient[cond] = 0.0
 
         return loss_gradient
 
@@ -243,7 +255,10 @@ class ElasticNet(EvasionAttack):
         # Start with a binary search
         for bss in range(self.binary_search_steps):
             logger.debug(
-                "Binary search step %i out of %i (c_mean==%f)", bss, self.binary_search_steps, np.mean(c_current),
+                "Binary search step %i out of %i (c_mean==%f)",
+                bss,
+                self.binary_search_steps,
+                np.mean(c_current),
             )
 
             # Run with 1 specific binary search step

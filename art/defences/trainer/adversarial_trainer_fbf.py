@@ -46,7 +46,9 @@ class AdversarialTrainerFBF(Trainer, abc.ABC):
     """
 
     def __init__(
-        self, classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE", eps: Union[int, float] = 8,
+        self,
+        classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
+        eps: Union[int, float] = 8,
     ):
         """
         Create an :class:`.AdversarialTrainerFBF` instance.
@@ -58,7 +60,7 @@ class AdversarialTrainerFBF(Trainer, abc.ABC):
         super().__init__(classifier)
 
     @abc.abstractmethod
-    def fit(
+    def fit(  # pylint: disable=W0221
         self,
         x: np.ndarray,
         y: np.ndarray,
@@ -97,7 +99,7 @@ class AdversarialTrainerFBF(Trainer, abc.ABC):
         """
         Perform prediction using the adversarially trained classifier.
 
-        :param x: Test set.
+        :param x: Input samples.
         :param kwargs: Other parameters to be passed on to the `predict` function of the classifier.
         :return: Predictions for test set.
         """

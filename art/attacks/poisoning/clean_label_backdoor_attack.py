@@ -21,9 +21,9 @@ This module implements Backdoor Attacks to poison data used in ML models.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-import numpy as np
-
 from typing import Optional, Tuple, TYPE_CHECKING, Union
+
+import numpy as np
 
 from art.attacks.attack import PoisoningAttackBlackBox
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
@@ -101,8 +101,8 @@ class PoisoningAttackCleanLabelBackdoor(PoisoningAttackBlackBox):
         )
         self._check_params()
 
-    def poison(
-        self, x: np.ndarray, y: Optional[np.ndarray] = None, broadcast=False, **kwargs
+    def poison(  # pylint: disable=W0221
+        self, x: np.ndarray, y: Optional[np.ndarray] = None, broadcast: bool = True, **kwargs
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Calls perturbation function on input x and returns the perturbed input and poison labels for the data.
@@ -123,9 +123,20 @@ class PoisoningAttackCleanLabelBackdoor(PoisoningAttackBlackBox):
 
         # Run untargeted PGD on selected points, making it hard to classify correctly
         perturbed_input = self.attack.generate(data[selected_indices])
+        no_change_detected = np.array(
+            [
+                np.all(data[selected_indices][poison_idx] == perturbed_input[poison_idx])
+                for poison_idx in range(len(perturbed_input))
+            ]
+        )
+
+        if any(no_change_detected):
+            logger.warning("Perturbed input is the same as original data after PGD. Check params.")
+            idx_no_change = np.arange(len(no_change_detected))[no_change_detected]
+            logger.warning("%d indices without change: %d", len(idx_no_change), idx_no_change)
 
         # Add backdoor and poison with the same label
-        poisoned_input, _ = self.backdoor.poison(perturbed_input, self.target, broadcast=True)
+        poisoned_input, _ = self.backdoor.poison(perturbed_input, self.target, broadcast=broadcast)
         data[selected_indices] = poisoned_input
 
         return data, estimated_labels

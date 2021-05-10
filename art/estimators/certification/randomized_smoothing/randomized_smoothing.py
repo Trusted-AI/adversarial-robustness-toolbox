@@ -44,7 +44,14 @@ class RandomizedSmoothingMixin(ABC):
     | Paper link: https://arxiv.org/abs/1902.02918
     """
 
-    def __init__(self, sample_size: int, *args, scale: float = 0.1, alpha: float = 0.001, **kwargs,) -> None:
+    def __init__(
+        self,
+        sample_size: int,
+        *args,
+        scale: float = 0.1,
+        alpha: float = 0.001,
+        **kwargs,
+    ) -> None:
         """
         Create a randomized smoothing wrapper.
 
@@ -57,12 +64,13 @@ class RandomizedSmoothingMixin(ABC):
         self.scale = scale
         self.alpha = alpha
 
-    def _predict_classifier(self, x: np.ndarray, batch_size: int) -> np.ndarray:
+    def _predict_classifier(self, x: np.ndarray, batch_size: int, training_mode: bool, **kwargs) -> np.ndarray:
         """
         Perform prediction for a batch of inputs.
 
-        :param x: Test set.
+        :param x: Input samples.
         :param batch_size: Size of batches.
+        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
         raise NotImplementedError
@@ -71,7 +79,7 @@ class RandomizedSmoothingMixin(ABC):
         """
         Perform prediction of the given classifier for a batch of inputs, taking an expectation over transformations.
 
-        :param x: Test set.
+        :param x: Input samples.
         :param batch_size: Batch size.
         :param is_abstain: True if function will abstain from prediction and return 0s. Default: True
         :type is_abstain: `boolean`
@@ -200,7 +208,7 @@ class RandomizedSmoothingMixin(ABC):
         """
         # sample and predict
         x_new = self._noisy_samples(x, n=n)
-        predictions = self._predict_classifier(x=x_new, batch_size=batch_size)
+        predictions = self._predict_classifier(x=x_new, batch_size=batch_size, training_mode=False)
 
         # convert to binary predictions
         idx = np.argmax(predictions, axis=-1)

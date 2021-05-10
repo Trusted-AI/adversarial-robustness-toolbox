@@ -18,6 +18,7 @@
 """
 This module implements the classifiers for scikit-learn models.
 """
+# pylint: disable=C0302
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from copy import deepcopy
@@ -56,7 +57,7 @@ def SklearnClassifier(
     clip_values: Optional["CLIP_VALUES_TYPE"] = None,
     preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
     postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-    preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+    preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
     use_logits: bool = False,
 ) -> "ScikitlearnClassifier":
     """
@@ -88,7 +89,13 @@ def SklearnClassifier(
 
     # This basic class at least generically handles `fit`, `predict` and `save`
     return ScikitlearnClassifier(
-        model, clip_values, preprocessing_defences, postprocessing_defences, preprocessing, use_logits,)
+        model,
+        clip_values,
+        preprocessing_defences,
+        postprocessing_defences,
+        preprocessing,
+        use_logits,
+    )
 
 
 class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):  # lgtm [py/missing-call-to-init]
@@ -96,13 +103,15 @@ class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):  # lgtm [py/
     Wrapper class for scikit-learn classifier models.
     """
 
+    estimator_params = ClassifierMixin.estimator_params + ScikitlearnEstimator.estimator_params + ["use_logits"]
+
     def __init__(
         self,
         model: "sklearn.base.BaseEstimator",
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
         use_logits: bool = False,
     ) -> None:
         """
@@ -160,7 +169,7 @@ class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):  # lgtm [py/
         """
         Perform prediction for a batch of inputs.
 
-        :param x: Test set.
+        :param x: Input samples.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         :raises `ValueError`: If the classifier does not have methods `predict` or `predict_proba`.
         """
@@ -209,10 +218,34 @@ class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):  # lgtm [py/
         with open(full_path + ".pickle", "wb") as file_pickle:
             pickle.dump(self.model, file=file_pickle)
 
+    def clone_for_refitting(self) -> "ScikitlearnClassifier":  # lgtm [py/inheritance/incorrect-overridden-signature]
+        """
+        Create a copy of the classifier that can be refit from scratch.
+
+        :return: new estimator
+        """
+        import sklearn  # lgtm [py/repeated-import]
+
+        clone = type(self)(sklearn.base.clone(self.model))
+        params = self.get_params()
+        del params["model"]
+        clone.set_params(**params)
+        return clone
+
+    def reset(self) -> None:
+        """
+        Resets the weights of the classifier so that it can be refit from scratch.
+
+        """
+        # No need to do anything since scikitlearn models start from scratch each time fit() is called
+        pass
+
     def _get_input_shape(self, model) -> Optional[Tuple[int, ...]]:
         _input_shape: Optional[Tuple[int, ...]]
         if hasattr(model, "n_features_"):
             _input_shape = (model.n_features_,)
+        elif hasattr(model, "n_features_in_"):
+            _input_shape = (model.n_features_in_,)
         elif hasattr(model, "feature_importances_"):
             _input_shape = (len(model.feature_importances_),)
         elif hasattr(model, "coef_"):
@@ -251,7 +284,7 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
     ) -> None:
         """
         Create a `Classifier` instance from a scikit-learn Decision Tree Classifier model.
@@ -397,7 +430,7 @@ class ScikitlearnDecisionTreeRegressor(ScikitlearnDecisionTreeClassifier):
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
     ) -> None:
         """
         Create a `Regressor` instance from a scikit-learn Decision Tree Regressor model.
@@ -487,7 +520,7 @@ class ScikitlearnExtraTreeClassifier(ScikitlearnDecisionTreeClassifier):
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
     ) -> None:
         """
         Create a `Classifier` instance from a scikit-learn Extra TreeClassifier Classifier model.
@@ -526,7 +559,7 @@ class ScikitlearnAdaBoostClassifier(ScikitlearnClassifier):
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
     ) -> None:
         """
         Create a `Classifier` instance from a scikit-learn AdaBoost Classifier model.
@@ -565,7 +598,7 @@ class ScikitlearnBaggingClassifier(ScikitlearnClassifier):
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
     ) -> None:
         """
         Create a `Classifier` instance from a scikit-learn Bagging Classifier model.
@@ -605,7 +638,7 @@ class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier, DecisionTreeMixin):
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
     ):
         """
         Create a `Classifier` instance from a scikit-learn Extra Trees Classifier model.
@@ -678,7 +711,7 @@ class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier, DecisionTreeM
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
     ) -> None:
         """
         Create a `Classifier` instance from a scikit-learn Gradient Boosting Classifier model.
@@ -752,7 +785,7 @@ class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
     ) -> None:
         """
         Create a `Classifier` instance from a scikit-learn Random Forest Classifier model.
@@ -825,7 +858,7 @@ class ScikitlearnLogisticRegression(ClassGradientsMixin, LossGradientsMixin, Sci
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
     ) -> None:
         """
         Create a `Classifier` instance from a scikit-learn Logistic Regression model.
@@ -943,9 +976,6 @@ class ScikitlearnLogisticRegression(ClassGradientsMixin, LossGradientsMixin, Sci
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
-        | Paper link: http://cs229.stanford.edu/proj2016/report/ItkinaWu-AdversarialAttacksonImageRecognition-report.pdf
-        | Typo in https://arxiv.org/abs/1605.07277 (equation 6)
-
         :param x: Sample input with shape as expected by the model.
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
                   `(nb_samples,)`.
@@ -964,39 +994,28 @@ class ScikitlearnLogisticRegression(ClassGradientsMixin, LossGradientsMixin, Sci
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
 
-        num_samples, _ = x_preprocessed.shape
-        gradients = np.zeros(x_preprocessed.shape)
-
         y_index = np.argmax(y_preprocessed, axis=1)
         if self.model.class_weight is None or self.model.class_weight == "balanced":
             class_weight = np.ones(self.nb_classes)
         else:
             class_weight = compute_class_weight(
-                class_weight=self.model.class_weight, classes=self.model.classes_, y=y_index,
+                class_weight=self.model.class_weight,
+                classes=self.model.classes_,
+                y=y_index,
             )
 
-        y_pred = self.model.predict_proba(X=x_preprocessed)
+        y_pred = self.predict(x=x_preprocessed)
         weights = self.model.coef_
 
-        # Consider the special case of a binary logistic regression model:
-        if self.nb_classes == 2:
-            for i_sample in range(num_samples):
-                gradients[i_sample, :] += (
-                    class_weight[1] * (1.0 - y_preprocessed[i_sample, 1])
-                    - class_weight[0] * (1.0 - y_preprocessed[i_sample, 0])
-                ) * (y_pred[i_sample, 0] * y_pred[i_sample, 1] * weights[0, :])
-        else:
-            w_weighted = np.matmul(y_pred, weights)
+        errors = class_weight * (y_pred - y)
 
-            for i_sample in range(num_samples):
-                for i_class in range(self.nb_classes):  # type: ignore
-                    gradients[i_sample, :] += (
-                        class_weight[i_class]
-                        * (1.0 - y_preprocessed[i_sample, i_class])
-                        * (weights[i_class, :] - w_weighted[i_sample, :])
-                    )
+        if weights.shape[0] == 1:
+            weights = np.append(-weights, weights, axis=0)
+
+        gradients = (errors @ weights) / self.model.classes_.size
 
         gradients = self._apply_preprocessing_gradient(x, gradients)
+
         return gradients
 
     @staticmethod
@@ -1020,7 +1039,7 @@ class ScikitlearnGaussianNB(ScikitlearnClassifier):
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
     ) -> None:
         """
         Create a `Classifier` instance from a scikit-learn Gaussian Naive Bayes (GaussianNB) model.
@@ -1069,7 +1088,7 @@ class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassif
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
     ) -> None:
         """
         Create a `Classifier` instance from a scikit-learn C-Support Vector Classification model.
@@ -1133,7 +1152,13 @@ class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassif
                 sign_multiplier = 1
 
             if label is None:
-                gradients = np.zeros((x_preprocessed.shape[0], self.nb_classes, x_preprocessed.shape[1],))
+                gradients = np.zeros(
+                    (
+                        x_preprocessed.shape[0],
+                        self.nb_classes,
+                        x_preprocessed.shape[1],
+                    )
+                )
 
                 for i_label in range(self.nb_classes):  # type: ignore
                     for i_sample in range(num_samples):
@@ -1144,16 +1169,24 @@ class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassif
                                 else:
                                     label_multiplier = 1
 
-                                for label_sv in range(support_indices[i_label], support_indices[i_label + 1],):
+                                for label_sv in range(
+                                    support_indices[i_label],
+                                    support_indices[i_label + 1],
+                                ):
                                     alpha_i_k_y_i = self.model.dual_coef_[
-                                        not_label if not_label < i_label else not_label - 1, label_sv,
+                                        not_label if not_label < i_label else not_label - 1,
+                                        label_sv,
                                     ]
                                     grad_kernel = self._get_kernel_gradient_sv(label_sv, x_preprocessed[i_sample])
                                     gradients[i_sample, i_label] += label_multiplier * alpha_i_k_y_i * grad_kernel
 
-                                for not_label_sv in range(support_indices[not_label], support_indices[not_label + 1],):
+                                for not_label_sv in range(
+                                    support_indices[not_label],
+                                    support_indices[not_label + 1],
+                                ):
                                     alpha_i_k_y_i = self.model.dual_coef_[
-                                        i_label if i_label < not_label else i_label - 1, not_label_sv,
+                                        i_label if i_label < not_label else i_label - 1,
+                                        not_label_sv,
                                     ]
                                     grad_kernel = self._get_kernel_gradient_sv(not_label_sv, x_preprocessed[i_sample])
                                     gradients[i_sample, i_label] += label_multiplier * alpha_i_k_y_i * grad_kernel
@@ -1171,14 +1204,19 @@ class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassif
 
                             for label_sv in range(support_indices[label], support_indices[label + 1]):
                                 alpha_i_k_y_i = self.model.dual_coef_[
-                                    not_label if not_label < label else not_label - 1, label_sv,
+                                    not_label if not_label < label else not_label - 1,
+                                    label_sv,
                                 ]
                                 grad_kernel = self._get_kernel_gradient_sv(label_sv, x_preprocessed[i_sample])
                                 gradients[i_sample, 0] += label_multiplier * alpha_i_k_y_i * grad_kernel
 
-                            for not_label_sv in range(support_indices[not_label], support_indices[not_label + 1],):
+                            for not_label_sv in range(
+                                support_indices[not_label],
+                                support_indices[not_label + 1],
+                            ):
                                 alpha_i_k_y_i = self.model.dual_coef_[
-                                    label if label < not_label else label - 1, not_label_sv,
+                                    label if label < not_label else label - 1,
+                                    not_label_sv,
                                 ]
                                 grad_kernel = self._get_kernel_gradient_sv(not_label_sv, x_preprocessed[i_sample])
                                 gradients[i_sample, 0] += label_multiplier * alpha_i_k_y_i * grad_kernel
@@ -1199,15 +1237,20 @@ class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassif
                                 label_multiplier = 1
 
                             for label_sv in range(
-                                support_indices[label[i_sample]], support_indices[label[i_sample] + 1],
+                                support_indices[label[i_sample]],
+                                support_indices[label[i_sample] + 1],
                             ):
                                 alpha_i_k_y_i = self.model.dual_coef_[
-                                    not_label if not_label < label[i_sample] else not_label - 1, label_sv,
+                                    not_label if not_label < label[i_sample] else not_label - 1,
+                                    label_sv,
                                 ]
                                 grad_kernel = self._get_kernel_gradient_sv(label_sv, x_preprocessed[i_sample])
                                 gradients[i_sample, 0] += label_multiplier * alpha_i_k_y_i * grad_kernel
 
-                            for not_label_sv in range(support_indices[not_label], support_indices[not_label + 1],):
+                            for not_label_sv in range(
+                                support_indices[not_label],
+                                support_indices[not_label + 1],
+                            ):
                                 alpha_i_k_y_i = self.model.dual_coef_[
                                     label[i_sample] if label[i_sample] < not_label else label[i_sample] - 1,
                                     not_label_sv,
@@ -1222,7 +1265,13 @@ class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassif
 
         elif isinstance(self.model, sklearn.svm.LinearSVC):
             if label is None:
-                gradients = np.zeros((x_preprocessed.shape[0], self.nb_classes, x_preprocessed.shape[1],))
+                gradients = np.zeros(
+                    (
+                        x_preprocessed.shape[0],
+                        self.nb_classes,
+                        x_preprocessed.shape[1],
+                    )
+                )
 
                 for i in range(self.nb_classes):  # type: ignore
                     for i_sample in range(num_samples):
@@ -1282,7 +1331,7 @@ class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassif
                 2
                 * self.model._gamma
                 * (-1)
-                * np.exp(-self.model._gamma * np.linalg.norm(x_sample - sv, ord=2))
+                * np.exp(-self.model._gamma * np.linalg.norm(x_sample - sv, ord=2) ** 2)
                 * (x_sample - sv)
             )
         elif self.model.kernel == "sigmoid":
@@ -1355,7 +1404,10 @@ class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassif
                             grad_kernel = self._get_kernel_gradient_sv(i_label_sv, x_preprocessed[i_sample])
                             gradients[i_sample, :] += sign_multiplier * alpha_i_k_y_i * grad_kernel
 
-                        for i_not_label_sv in range(support_indices[i_not_label], support_indices[i_not_label + 1],):
+                        for i_not_label_sv in range(
+                            support_indices[i_not_label],
+                            support_indices[i_not_label + 1],
+                        ):
                             alpha_i_k_y_i = self.model.dual_coef_[i_not_label_i, i_not_label_sv] * label_multiplier
                             grad_kernel = self._get_kernel_gradient_sv(i_not_label_sv, x_preprocessed[i_sample])
                             gradients[i_sample, :] += sign_multiplier * alpha_i_k_y_i * grad_kernel
@@ -1440,7 +1492,7 @@ class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassif
         """
         Perform prediction for a batch of inputs.
 
-        :param x: Test set.
+        :param x: Input samples.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
         # pylint: disable=E0001

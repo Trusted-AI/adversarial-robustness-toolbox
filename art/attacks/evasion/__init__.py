@@ -4,6 +4,7 @@ Module providing evasion attacks under a common interface.
 from art.attacks.evasion.adversarial_patch.adversarial_patch import AdversarialPatch
 from art.attacks.evasion.adversarial_patch.adversarial_patch_numpy import AdversarialPatchNumpy
 from art.attacks.evasion.adversarial_patch.adversarial_patch_tensorflow import AdversarialPatchTensorFlowV2
+from art.attacks.evasion.adversarial_patch.adversarial_patch_pytorch import AdversarialPatchPyTorch
 from art.attacks.evasion.adversarial_asr import CarliniWagnerASR
 from art.attacks.evasion.auto_attack import AutoAttack
 from art.attacks.evasion.auto_projected_gradient_descent import AutoProjectedGradientDescent
@@ -23,6 +24,7 @@ from art.attacks.evasion.hop_skip_jump import HopSkipJump
 from art.attacks.evasion.imperceptible_asr.imperceptible_asr import ImperceptibleASR
 from art.attacks.evasion.imperceptible_asr.imperceptible_asr_pytorch import ImperceptibleASRPyTorch
 from art.attacks.evasion.iterative_method import BasicIterativeMethod
+from art.attacks.evasion.lowprofool import LowProFool
 from art.attacks.evasion.newtonfool import NewtonFool
 from art.attacks.evasion.pixel_threshold import PixelAttack
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent

@@ -42,8 +42,8 @@ class Net(nn.Module):
 
 # Step 1a: Swap axes to PyTorch's NCHW format
 
-x_train = np.swapaxes(x_train, 1, 3).astype(np.float32)
-x_test = np.swapaxes(x_test, 1, 3).astype(np.float32)
+x_train = np.transpose(x_train, (0, 3, 1, 2)).astype(np.float32)
+x_test = np.transpose(x_test, (0, 3, 1, 2)).astype(np.float32)
 
 # Step 2: Create the model
 

@@ -1,3 +1,6 @@
+"""
+This module contains the Estimator API.
+"""
 from art.estimators.estimator import (
     BaseEstimator,
     LossGradientsMixin,

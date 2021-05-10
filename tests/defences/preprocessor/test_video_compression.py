@@ -43,7 +43,7 @@ def video_batch(channels_first):
 
 
 @pytest.mark.parametrize("channels_first", [True, False])
-@pytest.mark.skipMlFramework("keras", "pytorch", "scikitlearn", "mxnet")
+@pytest.mark.skip_framework("keras", "pytorch", "scikitlearn", "mxnet")
 def test_video_compresssion(art_warning, video_batch, channels_first):
     try:
         test_input, test_output = video_batch
@@ -54,7 +54,7 @@ def test_video_compresssion(art_warning, video_batch, channels_first):
         art_warning(e)
 
 
-@pytest.mark.skipMlFramework("keras", "pytorch", "scikitlearn", "mxnet")
+@pytest.mark.skip_framework("keras", "pytorch", "scikitlearn", "mxnet")
 def test_compress_video_call(art_warning):
     try:
         test_input = np.arange(12).reshape((1, 3, 1, 2, 2))

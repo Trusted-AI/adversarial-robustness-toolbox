@@ -31,11 +31,13 @@ import numpy as np
 from tqdm.auto import trange
 
 from art.attacks.attack import EvasionAttack
+from art.attacks.evasion.adversarial_patch.utils import insert_transformed_patch
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import check_and_transform_label_format, is_probability
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     import tensorflow as tf
 
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
@@ -111,7 +113,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         if self.estimator.channels_first:
             raise ValueError("Color channel needs to be in last dimension.")
 
-        self.use_logits = None
+        self.use_logits: Optional[bool] = None
 
         self.i_h_patch = 0
         self.i_w_patch = 1
@@ -178,10 +180,12 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         patched_input = self._random_overlay(images, self._patch, mask=mask)
 
         patched_input = tf.clip_by_value(
-            patched_input, clip_value_min=self.estimator.clip_values[0], clip_value_max=self.estimator.clip_values[1],
+            patched_input,
+            clip_value_min=self.estimator.clip_values[0],
+            clip_value_max=self.estimator.clip_values[1],
         )
 
-        predictions = self.estimator._predict_framework(patched_input)
+        predictions = self.estimator._predict_framework(patched_input)  # pylint: disable=W0212
 
         return predictions
 
@@ -249,7 +253,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         pad_w_before = int((self.image_shape[self.i_w] - image_mask.shape[self.i_w_patch + 1]) / 2)
         pad_w_after = int(self.image_shape[self.i_w] - pad_w_before - image_mask.shape[self.i_w_patch + 1])
 
-        image_mask = tf.pad(
+        image_mask = tf.pad(  # pylint: disable=E1123
             image_mask,
             paddings=tf.constant([[0, 0], [pad_h_before, pad_h_after], [pad_w_before, pad_w_after], [0, 0]]),
             mode="CONSTANT",
@@ -271,7 +275,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             name=None,
         )
 
-        padded_patch = tf.pad(
+        padded_patch = tf.pad(  # pylint: disable=E1123
             padded_patch,
             paddings=tf.constant([[0, 0], [pad_h_before, pad_h_after], [pad_w_before, pad_w_after], [0, 0]]),
             mode="CONSTANT",
@@ -324,7 +328,10 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
             # Rotation
             rotation_matrix = np.array(
-                [[math.cos(-phi_rotate), -math.sin(-phi_rotate)], [math.sin(-phi_rotate), math.cos(-phi_rotate)],]
+                [
+                    [math.cos(-phi_rotate), -math.sin(-phi_rotate)],
+                    [math.sin(-phi_rotate), math.cos(-phi_rotate)],
+                ]
             )
 
             # Scale
@@ -344,11 +351,27 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             transform_vectors.append([a_0, a_1, x_origin_delta, b_0, b_1, y_origin_delta, 0, 0])
             translation_vectors.append([1, 0, -x_shift, 0, 1, -y_shift, 0, 0])
 
-        image_mask = tfa.image.transform(image_mask, transform_vectors, "BILINEAR",)
-        padded_patch = tfa.image.transform(padded_patch, transform_vectors, "BILINEAR",)
+        image_mask = tfa.image.transform(
+            image_mask,
+            transform_vectors,
+            "BILINEAR",
+        )
+        padded_patch = tfa.image.transform(
+            padded_patch,
+            transform_vectors,
+            "BILINEAR",
+        )
 
-        image_mask = tfa.image.transform(image_mask, translation_vectors, "BILINEAR",)
-        padded_patch = tfa.image.transform(padded_patch, translation_vectors, "BILINEAR",)
+        image_mask = tfa.image.transform(
+            image_mask,
+            translation_vectors,
+            "BILINEAR",
+        )
+        padded_patch = tfa.image.transform(
+            padded_patch,
+            translation_vectors,
+            "BILINEAR",
+        )
 
         if self.nb_dims == 4:
             image_mask = tf.stack([image_mask] * images.shape[1], axis=1)
@@ -495,3 +518,17 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             self._patch.assign(initial_patch_value)
         else:
             raise ValueError("Unexpected value for initial_patch_value.")
+
+    @staticmethod
+    def insert_transformed_patch(x: np.ndarray, patch: np.ndarray, image_coords: np.ndarray):
+        """
+        Insert patch to image based on given or selected coordinates.
+
+        :param x: The image to insert the patch.
+        :param patch: The patch to be transformed and inserted.
+        :param image_coords: The coordinates of the 4 corners of the transformed, inserted patch of shape
+            [[x1, y1], [x2, y2], [x3, y3], [x4, y4]] in pixel units going in clockwise direction, starting with upper
+            left corner.
+        :return: The input `x` with the patch inserted.
+        """
+        return insert_transformed_patch(x, patch, image_coords)

@@ -48,6 +48,7 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
 
     | Paper link: https://people.cs.uchicago.edu/~ravenben/publications/pdf/backdoor-sp19.pdf
     """
+
     estimator_params = KerasClassifier.estimator_params + [
         "steps",
         "init_cost",
@@ -60,7 +61,7 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
         "early_stop_patience",
         "cost_multiplier_up",
         "cost_multiplier_down",
-        "batch_size"
+        "batch_size",
     ]
 
     def __init__(
@@ -71,7 +72,7 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
         input_layer: int = 0,
         output_layer: int = 0,
         steps: int = 1000,
@@ -244,7 +245,7 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
             for _ in range(mini_batch_size):
                 x_batch, _ = gen.next()
                 y_batch = [y_target] * x_batch.shape[0]
-                batch_loss_ce, batch_loss_reg, batch_loss, batch_loss_acc = self.train([x_batch, y_batch])
+                _, batch_loss_reg, _, batch_loss_acc = self.train([x_batch, y_batch])
 
                 loss_reg_list.extend(list(batch_loss_reg.flatten()))
                 loss_acc_list.extend(list(batch_loss_acc.flatten()))
@@ -308,9 +309,11 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
 
         return mask_best, pattern_best
 
-    def _predict_classifier(self, x: np.ndarray) -> np.ndarray:
+    def _predict_classifier(
+        self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs
+    ) -> np.ndarray:
         x = x.astype(ART_NUMPY_DTYPE)
-        return KerasClassifier.predict(self, x=x, batch_size=self.batch_size)
+        return KerasClassifier.predict(self, x=x, batch_size=batch_size, training_mode=training_mode, **kwargs)
 
     def _fit_classifier(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
         x = x.astype(ART_NUMPY_DTYPE)
@@ -344,15 +347,16 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
         biases[index] = 0
         layer.set_weights([weights, biases])
 
-    def predict(self, x: np.ndarray, batch_size: int = 128) -> np.ndarray:
+    def predict(self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs) -> np.ndarray:
         """
         Perform prediction of the given classifier for a batch of inputs, potentially filtering suspicious input
 
         :param x: Input data to predict.
         :param batch_size: Batch size.
+        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
-        return NeuralCleanseMixin.predict(self, x, batch_size=batch_size)
+        return NeuralCleanseMixin.predict(self, x, batch_size=batch_size, training_mode=training_mode, **kwargs)
 
     def mitigate(self, x_val: np.ndarray, y_val: np.ndarray, mitigation_types: List[str]) -> None:
         """
@@ -365,18 +369,21 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
         """
         return NeuralCleanseMixin.mitigate(self, x_val, y_val, mitigation_types)
 
-    def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def loss_gradient(self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
         :param x: Sample input with shape as expected by the model.
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,).
+        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
         :return: Array of gradients of the same shape as `x`.
         """
-        return self.loss_gradient(x, y, **kwargs)
+        return self.loss_gradient(x=x, y=y, training_mode=training_mode, **kwargs)
 
-    def class_gradient(self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs) -> np.ndarray:
+    def class_gradient(
+        self, x: np.ndarray, label: Union[int, List[int], None] = None, training_mode: bool = False, **kwargs
+    ) -> np.ndarray:
         """
         Compute per-class derivatives of the given classifier w.r.t. `x` of original classifier.
 
@@ -385,8 +392,9 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
                       output is computed for all samples. If multiple values as provided, the first dimension should
                       match the batch size of `x`, and each value will be used as target for its corresponding sample in
                       `x`. If `None`, then gradients for all classes will be computed for each sample.
+        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
         :return: Array of gradients of input features w.r.t. each class in the form
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         """
-        return self.class_gradient(x, label, **kwargs)
+        return self.class_gradient(x=x, label=label, training_mode=training_mode, **kwargs)

@@ -74,8 +74,8 @@ class TestMetrics(unittest.TestCase):
         classifier = self._cnn_mnist_k([28, 28, 1])
         classifier.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=2, verbose=0)
 
-        l = loss_sensitivity(classifier, x_train, y_train)
-        self.assertGreaterEqual(l, 0)
+        sensitivity = loss_sensitivity(classifier, x_train, y_train)
+        self.assertGreaterEqual(sensitivity, 0)
 
     # def testNearestNeighborDist(self):
     #     # Get MNIST
@@ -95,13 +95,11 @@ class TestMetrics(unittest.TestCase):
 
         tf_version = [int(v) for v in tf.__version__.split(".")]
         if tf_version[0] == 2 and tf_version[1] >= 3:
-            is_tf23_keras24 = True
             tf.compat.v1.disable_eager_execution()
             from tensorflow import keras
             from tensorflow.keras.models import Sequential
             from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
         else:
-            is_tf23_keras24 = False
             import keras
             from keras.models import Sequential
             from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
@@ -173,7 +171,6 @@ class TestMetrics(unittest.TestCase):
 
         tf_version = [int(v) for v in tf.__version__.split(".")]
         if tf_version[0] == 2 and tf_version[1] >= 3:
-            # is_tf23_keras24 = True
             tf.compat.v1.disable_eager_execution()
             from tensorflow import keras
             from tensorflow.keras.models import Sequential
@@ -261,9 +258,9 @@ class TestMetrics(unittest.TestCase):
         self.assertNotEqual(res2, res0)
 
         # Test untargeted clever
-        res0 = clever_u(tfc, x_test[-1], 10, 5, R_L1, norm=1, pool_factor=3)
-        res1 = clever_u(tfc, x_test[-1], 10, 5, R_L2, norm=2, pool_factor=3)
-        res2 = clever_u(tfc, x_test[-1], 10, 5, R_LI, norm=np.inf, pool_factor=3)
+        res0 = clever_u(tfc, x_test[-1], 10, 5, R_L1, norm=1, pool_factor=3, verbose=False)
+        res1 = clever_u(tfc, x_test[-1], 10, 5, R_L2, norm=2, pool_factor=3, verbose=False)
+        res2 = clever_u(tfc, x_test[-1], 10, 5, R_LI, norm=np.inf, pool_factor=3, verbose=False)
         logger.info("Untargeted TensorFlow: %f %f %f", res0, res1, res2)
         self.assertNotEqual(res0, res1)
         self.assertNotEqual(res1, res2)
@@ -294,9 +291,9 @@ class TestMetrics(unittest.TestCase):
         self.assertNotEqual(res2, res0)
 
         # Test untargeted clever
-        res0 = clever_u(krc, x_test[-1], 10, 5, R_L1, norm=1, pool_factor=3)
-        res1 = clever_u(krc, x_test[-1], 10, 5, R_L2, norm=2, pool_factor=3)
-        res2 = clever_u(krc, x_test[-1], 10, 5, R_LI, norm=np.inf, pool_factor=3)
+        res0 = clever_u(krc, x_test[-1], 10, 5, R_L1, norm=1, pool_factor=3, verbose=False)
+        res1 = clever_u(krc, x_test[-1], 10, 5, R_L2, norm=2, pool_factor=3, verbose=False)
+        res2 = clever_u(krc, x_test[-1], 10, 5, R_LI, norm=np.inf, pool_factor=3, verbose=False)
         logger.info("Untargeted Keras: %f %f %f", res0, res1, res2)
         self.assertNotEqual(res0, res1)
         self.assertNotEqual(res1, res2)
@@ -329,9 +326,9 @@ class TestMetrics(unittest.TestCase):
         self.assertNotEqual(res2, res0)
 
         # Test untargeted clever
-        res0 = clever_u(ptc, x_test[-1], 10, 5, R_L1, norm=1, pool_factor=3)
-        res1 = clever_u(ptc, x_test[-1], 10, 5, R_L2, norm=2, pool_factor=3)
-        res2 = clever_u(ptc, x_test[-1], 10, 5, R_LI, norm=np.inf, pool_factor=3)
+        res0 = clever_u(ptc, x_test[-1], 10, 5, R_L1, norm=1, pool_factor=3, verbose=False)
+        res1 = clever_u(ptc, x_test[-1], 10, 5, R_L2, norm=2, pool_factor=3, verbose=False)
+        res2 = clever_u(ptc, x_test[-1], 10, 5, R_LI, norm=np.inf, pool_factor=3, verbose=False)
         logger.info("Untargeted PyTorch: %f %f %f", res0, res1, res2)
         self.assertNotEqual(res0, res1)
         self.assertNotEqual(res1, res2)
@@ -345,7 +342,7 @@ class TestMetrics(unittest.TestCase):
         krc = self._create_krclassifier()
         krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2, verbose=0)
 
-        scores = clever(krc, x_test[0], 5, 5, 3, 2, target=None, c_init=1, pool_factor=10)
+        scores = clever(krc, x_test[0], 5, 5, 3, 2, target=None, c_init=1, pool_factor=10, verbose=False)
         logger.info("Clever scores for n-1 classes: %s %s", str(scores), str(scores.shape))
         self.assertEqual(scores.shape, (krc.nb_classes - 1,))
 
@@ -357,7 +354,9 @@ class TestMetrics(unittest.TestCase):
         krc = self._create_krclassifier()
         krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2, verbose=0)
 
-        scores = clever(krc, x_test[0], 5, 5, 3, 2, target=None, target_sort=True, c_init=1, pool_factor=10)
+        scores = clever(
+            krc, x_test[0], 5, 5, 3, 2, target=None, target_sort=True, c_init=1, pool_factor=10, verbose=False
+        )
         logger.info("Clever scores for n-1 classes: %s %s", str(scores), str(scores.shape))
         # Should approx. be in decreasing value
         self.assertEqual(scores.shape, (krc.nb_classes - 1,))
@@ -370,7 +369,18 @@ class TestMetrics(unittest.TestCase):
         krc = self._create_krclassifier()
         krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2, verbose=0)
 
-        scores = clever(krc, x_test[0], 5, 5, 3, 2, target=np.argmax(krc.predict(x_test[:1])), c_init=1, pool_factor=10)
+        scores = clever(
+            krc,
+            x_test[0],
+            5,
+            5,
+            3,
+            2,
+            target=np.argmax(krc.predict(x_test[:1])),
+            c_init=1,
+            pool_factor=10,
+            verbose=False,
+        )
         self.assertIsNone(scores[0], msg="Clever scores for the predicted class should be `None`.")
 
     def test_1_wasserstein_distance(self):

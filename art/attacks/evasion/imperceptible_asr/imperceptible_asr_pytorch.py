@@ -25,8 +25,7 @@ specifically for PyTorch.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-
-from typing import Tuple, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional, Tuple, List
 
 import numpy as np
 import scipy
@@ -34,9 +33,8 @@ import scipy
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNetworkMixin
 from art.estimators.pytorch import PyTorchEstimator
-from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizerMixin
 from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
-from art.config import ART_NUMPY_DTYPE
+from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizerMixin
 
 if TYPE_CHECKING:
     import torch
@@ -54,18 +52,18 @@ class ImperceptibleASRPyTorch(EvasionAttack):
     """
 
     attack_params = EvasionAttack.attack_params + [
-        "initial_eps",
-        "max_iter_1st_stage",
-        "max_iter_2nd_stage",
-        "learning_rate_1st_stage",
-        "learning_rate_2nd_stage",
-        "optimizer_1st_stage",
-        "optimizer_2nd_stage",
+        "eps",
+        "max_iter_1",
+        "max_iter_2",
+        "learning_rate_1",
+        "learning_rate_2",
+        "optimizer_1",
+        "optimizer_2",
         "global_max_length",
         "initial_rescale",
-        "rescale_factor",
-        "num_iter_adjust_rescale",
-        "initial_alpha",
+        "decrease_factor_eps",
+        "num_iter_decrease_eps",
+        "alpha",
         "increase_factor_alpha",
         "num_iter_increase_alpha",
         "decrease_factor_alpha",
@@ -87,22 +85,22 @@ class ImperceptibleASRPyTorch(EvasionAttack):
     def __init__(
         self,
         estimator: PyTorchDeepSpeech,
-        initial_eps: float = 0.001,
-        max_iter_1st_stage: int = 1000,
-        max_iter_2nd_stage: int = 4000,
-        learning_rate_1st_stage: float = 0.1,
-        learning_rate_2nd_stage: float = 0.001,
-        optimizer_1st_stage: Optional["torch.optim.Optimizer"] = None,
-        optimizer_2nd_stage: Optional["torch.optim.Optimizer"] = None,
-        global_max_length: int = 10000,
+        eps: float = 0.05,
+        max_iter_1: int = 10,
+        max_iter_2: int = 4000,
+        learning_rate_1: float = 0.001,
+        learning_rate_2: float = 5e-4,
+        optimizer_1: Optional["torch.optim.Optimizer"] = None,
+        optimizer_2: Optional["torch.optim.Optimizer"] = None,
+        global_max_length: int = 200000,
         initial_rescale: float = 1.0,
-        rescale_factor: float = 0.8,
-        num_iter_adjust_rescale: int = 10,
-        initial_alpha: float = 0.05,
+        decrease_factor_eps: float = 0.8,
+        num_iter_decrease_eps: int = 1,
+        alpha: float = 1.2,
         increase_factor_alpha: float = 1.2,
         num_iter_increase_alpha: int = 20,
         decrease_factor_alpha: float = 0.8,
-        num_iter_decrease_alpha: int = 50,
+        num_iter_decrease_alpha: int = 20,
         batch_size: int = 32,
         use_amp: bool = False,
         opt_level: str = "O1",
@@ -111,27 +109,25 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         Create a :class:`.ImperceptibleASRPyTorch` instance.
 
         :param estimator: A trained estimator.
-        :param initial_eps: Initial maximum perturbation that the attacker can introduce.
-        :param max_iter_1st_stage: The maximum number of iterations applied for the first stage of the optimization of
-                                   the attack.
-        :param max_iter_2nd_stage: The maximum number of iterations applied for the second stage of the optimization of
-                                   the attack.
-        :param learning_rate_1st_stage: The initial learning rate applied for the first stage of the optimization of
-                                        the attack.
-        :param learning_rate_2nd_stage: The initial learning rate applied for the second stage of the optimization of
-                                        the attack.
-        :param optimizer_1st_stage: The optimizer applied for the first stage of the optimization of the attack. If
-                                    `None` attack will use `torch.optim.SGD`.
-        :param optimizer_2nd_stage: The optimizer applied for the second stage of the optimization of the attack. If
-                                    `None` attack will use `torch.optim.SGD`.
+        :param eps: Maximum perturbation that the attacker can introduce.
+        :param max_iter_1: The maximum number of iterations applied for the first stage of the optimization of the
+                           attack.
+        :param max_iter_2: The maximum number of iterations applied for the second stage of the optimization of the
+                           attack.
+        :param learning_rate_1: The learning rate applied for the first stage of the optimization of the attack.
+        :param learning_rate_2: The learning rate applied for the second stage of the optimization of the attack.
+        :param optimizer_1: The optimizer applied for the first stage of the optimization of the attack. If `None`
+                            attack will use `torch.optim.Adam`.
+        :param optimizer_2: The optimizer applied for the second stage of the optimization of the attack. If `None`
+                            attack will use `torch.optim.Adam`.
         :param global_max_length: The length of the longest audio signal allowed by this attack.
         :param initial_rescale: Initial rescale coefficient to speedup the decrease of the perturbation size during
                                 the first stage of the optimization of the attack.
-        :param rescale_factor: The factor to adjust the rescale coefficient during the first stage of the optimization
-                               of the attack.
-        :param num_iter_adjust_rescale: Number of iterations to adjust the rescale coefficient.
-        :param initial_alpha: The initial value of the alpha coefficient used in the second stage of the optimization
-                              of the attack.
+        :param decrease_factor_eps: The factor to adjust the rescale coefficient during the first stage of the
+                                    optimization of the attack.
+        :param num_iter_decrease_eps: Number of iterations to adjust the rescale coefficient, and therefore adjust the
+                                      perturbation size.
+        :param alpha: Value of the alpha coefficient used in the second stage of the optimization of the attack.
         :param increase_factor_alpha: The factor to increase the alpha coefficient used in the second stage of the
                                       optimization of the attack.
         :param num_iter_increase_alpha: Number of iterations to increase alpha.
@@ -152,16 +148,16 @@ class ImperceptibleASRPyTorch(EvasionAttack):
 
         # Set attack attributes
         self._targeted = True
-        self.initial_eps = initial_eps
-        self.max_iter_1st_stage = max_iter_1st_stage
-        self.max_iter_2nd_stage = max_iter_2nd_stage
-        self.learning_rate_1st_stage = learning_rate_1st_stage
-        self.learning_rate_2nd_stage = learning_rate_2nd_stage
+        self.eps = eps
+        self.max_iter_1 = max_iter_1
+        self.max_iter_2 = max_iter_2
+        self.learning_rate_1 = learning_rate_1
+        self.learning_rate_2 = learning_rate_2
         self.global_max_length = global_max_length
         self.initial_rescale = initial_rescale
-        self.rescale_factor = rescale_factor
-        self.num_iter_adjust_rescale = num_iter_adjust_rescale
-        self.initial_alpha = initial_alpha
+        self.decrease_factor_eps = decrease_factor_eps
+        self.num_iter_decrease_eps = num_iter_decrease_eps
+        self.alpha = alpha
         self.increase_factor_alpha = increase_factor_alpha
         self.num_iter_increase_alpha = num_iter_increase_alpha
         self.decrease_factor_alpha = decrease_factor_alpha
@@ -172,46 +168,46 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         # Create the main variable to optimize
         if self.estimator.device.type == "cpu":
             self.global_optimal_delta = Variable(
-                torch.zeros(self.batch_size, self.global_max_length).type(torch.FloatTensor), requires_grad=True
+                torch.zeros(self.batch_size, self.global_max_length).type(torch.FloatTensor),  # type: ignore
+                requires_grad=True,
             )
         else:
             self.global_optimal_delta = Variable(
-                torch.zeros(self.batch_size, self.global_max_length).type(torch.cuda.FloatTensor), requires_grad=True
+                torch.zeros(self.batch_size, self.global_max_length).type(torch.cuda.FloatTensor),  # type: ignore
+                requires_grad=True,
             )
 
         self.global_optimal_delta.to(self.estimator.device)
 
         # Create the optimizers
-        if optimizer_1st_stage is None:
-            self.optimizer_1st_stage = torch.optim.SGD(
-                params=[self.global_optimal_delta], lr=self.learning_rate_1st_stage
-            )
+        self._optimizer_arg_1 = optimizer_1
+        if self._optimizer_arg_1 is None:
+            self.optimizer_1 = torch.optim.Adam(params=[self.global_optimal_delta], lr=self.learning_rate_1)
         else:
-            self.optimizer_1st_stage = optimizer_1st_stage(
-                params=[self.global_optimal_delta], lr=self.learning_rate_1st_stage
+            self.optimizer_1 = self._optimizer_arg_1(  # type: ignore
+                params=[self.global_optimal_delta], lr=self.learning_rate_1
             )
 
-        if optimizer_2nd_stage is None:
-            self.optimizer_2nd_stage = torch.optim.SGD(
-                params=[self.global_optimal_delta], lr=self.learning_rate_2nd_stage
-            )
+        self._optimizer_arg_2 = optimizer_2
+        if self._optimizer_arg_2 is None:
+            self.optimizer_2 = torch.optim.Adam(params=[self.global_optimal_delta], lr=self.learning_rate_2)
         else:
-            self.optimizer_2nd_stage = optimizer_2nd_stage(
-                params=[self.global_optimal_delta], lr=self.learning_rate_2nd_stage
+            self.optimizer_2 = self._optimizer_arg_2(  # type: ignore
+                params=[self.global_optimal_delta], lr=self.learning_rate_2
             )
 
         # Setup for AMP use
         if self._use_amp:
-            from apex import amp
+            from apex import amp  # pylint: disable=E0611
 
             if self.estimator.device.type == "cpu":
                 enabled = False
             else:
                 enabled = True
 
-            self.estimator._model, [self.optimizer_1st_stage, self.optimizer_2nd_stage] = amp.initialize(
+            self.estimator._model, [self.optimizer_1, self.optimizer_2] = amp.initialize(
                 models=self.estimator._model,
-                optimizers=[self.optimizer_1st_stage, self.optimizer_2nd_stage],
+                optimizers=[self.optimizer_1, self.optimizer_2],
                 enabled=enabled,
                 opt_level=opt_level,
                 loss_scale=1.0,
@@ -240,30 +236,50 @@ class ImperceptibleASRPyTorch(EvasionAttack):
                 "labels `y`. Currently `y` is set to `None`."
             )
 
-        # Start to compute adversarial examples
-        adv_x = x.copy()
+        # Cast to type float64 to avoid overflow
+        adv_x = np.array([x_i.copy().astype(np.float64) for x_i in x])
 
-        # Put the estimator in the training mode
+        # Put the estimator in the training mode, otherwise CUDA can't backpropagate through the model.
+        # However, estimator uses batch norm layers which need to be frozen
         self.estimator.model.train()
+        self.estimator.set_batchnorm(train=False)
 
         # Compute perturbation with batching
         num_batch = int(np.ceil(len(x) / float(self.batch_size)))
 
         for m in range(num_batch):
             # Batch indexes
-            batch_index_1, batch_index_2 = (
-                m * self.batch_size,
-                min((m + 1) * self.batch_size, len(x)),
-            )
+            batch_index_1, batch_index_2 = (m * self.batch_size, min((m + 1) * self.batch_size, len(x)))
 
             # First reset delta
-            self.global_optimal_delta.data = torch.zeros(self.batch_size, self.global_max_length).type(torch.float32)
+            self.global_optimal_delta.data = torch.zeros(self.batch_size, self.global_max_length).type(torch.float64)
+
+            # Next, reset optimizers
+            if self._optimizer_arg_1 is None:
+                self.optimizer_1 = torch.optim.Adam(params=[self.global_optimal_delta], lr=self.learning_rate_1)
+            else:
+                self.optimizer_1 = self._optimizer_arg_1(  # type: ignore
+                    params=[self.global_optimal_delta], lr=self.learning_rate_1
+                )
+
+            if self._optimizer_arg_2 is None:
+                self.optimizer_2 = torch.optim.Adam(params=[self.global_optimal_delta], lr=self.learning_rate_2)
+            else:
+                self.optimizer_2 = self._optimizer_arg_2(  # type: ignore
+                    params=[self.global_optimal_delta], lr=self.learning_rate_2
+                )
 
             # Then compute the batch
             adv_x_batch = self._generate_batch(adv_x[batch_index_1:batch_index_2], y[batch_index_1:batch_index_2])
 
             for i in range(len(adv_x_batch)):
                 adv_x[batch_index_1 + i] = adv_x_batch[i, : len(adv_x[batch_index_1 + i])]
+
+        # Unfreeze batch norm layers again
+        self.estimator.set_batchnorm(train=True)
+
+        # Recast to the original type
+        adv_x = np.array([adv_x[i].astype(x[i].dtype) for i in range(len(adv_x))])
 
         return adv_x
 
@@ -302,7 +318,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
 
         # Reset delta with new result
         local_batch_shape = successful_adv_input_1st_stage.shape
-        self.global_optimal_delta.data = torch.zeros(self.batch_size, self.global_max_length).type(torch.float32)
+        self.global_optimal_delta.data = torch.zeros(self.batch_size, self.global_max_length).type(torch.float64)
         self.global_optimal_delta.data[
             : local_batch_shape[0], : local_batch_shape[1]
         ] = successful_perturbation_1st_stage
@@ -338,23 +354,23 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         local_max_length = np.max(real_lengths)
 
         # Initialize rescale
-        rescale = np.ones([local_batch_size, local_max_length], dtype=ART_NUMPY_DTYPE) * self.initial_rescale
+        rescale = np.ones([local_batch_size, local_max_length], dtype=np.float64) * self.initial_rescale
 
         # Reformat input
-        input_mask = np.zeros([local_batch_size, local_max_length], dtype=ART_NUMPY_DTYPE)
-        original_input = np.zeros([local_batch_size, local_max_length], dtype=ART_NUMPY_DTYPE)
+        input_mask = np.zeros([local_batch_size, local_max_length], dtype=np.float64)
+        original_input = np.zeros([local_batch_size, local_max_length], dtype=np.float64)
 
         for local_batch_size_idx in range(local_batch_size):
             input_mask[local_batch_size_idx, : len(x[local_batch_size_idx])] = 1
             original_input[local_batch_size_idx, : len(x[local_batch_size_idx])] = x[local_batch_size_idx]
 
         # Optimization loop
-        successful_adv_input = [None] * local_batch_size
+        successful_adv_input: List[Optional["torch.Tensor"]] = [None] * local_batch_size
         trans = [None] * local_batch_size
 
-        for iter_1st_stage_idx in range(self.max_iter_1st_stage):
+        for iter_1st_stage_idx in range(self.max_iter_1):
             # Zero the parameter gradients
-            self.optimizer_1st_stage.zero_grad()
+            self.optimizer_1.zero_grad()
 
             # Call to forward pass
             loss, local_delta, decoded_output, masked_adv_input, _ = self._forward_1st_stage(
@@ -369,9 +385,9 @@ class ImperceptibleASRPyTorch(EvasionAttack):
 
             # Actual training
             if self._use_amp:
-                from apex import amp
+                from apex import amp  # pylint: disable=E0611
 
-                with amp.scale_loss(loss, self.optimizer_1st_stage) as scaled_loss:
+                with amp.scale_loss(loss, self.optimizer_1) as scaled_loss:
                     scaled_loss.backward()
 
             else:
@@ -381,31 +397,31 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             self.global_optimal_delta.grad = torch.sign(self.global_optimal_delta.grad)
 
             # Do optimization
-            self.optimizer_1st_stage.step()
+            self.optimizer_1.step()
 
             # Save the best adversarial example and adjust the rescale coefficient if successful
-            if iter_1st_stage_idx % self.num_iter_adjust_rescale == 0:
+            if iter_1st_stage_idx % self.num_iter_decrease_eps == 0:
                 for local_batch_size_idx in range(local_batch_size):
                     if decoded_output[local_batch_size_idx] == y[local_batch_size_idx]:
                         # Adjust the rescale coefficient
                         max_local_delta = np.max(np.abs(local_delta[local_batch_size_idx].detach().numpy()))
 
-                        if rescale[local_batch_size_idx][0] * self.initial_eps > max_local_delta:
-                            rescale[local_batch_size_idx] = max_local_delta / self.initial_eps
-                        rescale[local_batch_size_idx] *= self.rescale_factor
+                        if rescale[local_batch_size_idx][0] * self.eps > max_local_delta:
+                            rescale[local_batch_size_idx] = max_local_delta / self.eps
+                        rescale[local_batch_size_idx] *= self.decrease_factor_eps
 
                         # Save the best adversarial example
                         successful_adv_input[local_batch_size_idx] = masked_adv_input[local_batch_size_idx]
                         trans[local_batch_size_idx] = decoded_output[local_batch_size_idx]
 
             # If attack is unsuccessful
-            if iter_1st_stage_idx == self.max_iter_1st_stage - 1:
+            if iter_1st_stage_idx == self.max_iter_1 - 1:
                 for local_batch_size_idx in range(local_batch_size):
                     if successful_adv_input[local_batch_size_idx] is None:
                         successful_adv_input[local_batch_size_idx] = masked_adv_input[local_batch_size_idx]
                         trans[local_batch_size_idx] = decoded_output[local_batch_size_idx]
 
-        result = torch.stack(successful_adv_input)
+        result = torch.stack(successful_adv_input)  # type: ignore
 
         return result, original_input
 
@@ -444,14 +460,16 @@ class ImperceptibleASRPyTorch(EvasionAttack):
 
         # Compute perturbed inputs
         local_delta = self.global_optimal_delta[:local_batch_size, :local_max_length]
-        local_delta_rescale = torch.clamp(local_delta, -self.initial_eps, self.initial_eps).to(self.estimator.device)
+        local_delta_rescale = torch.clamp(local_delta, -self.eps, self.eps).to(self.estimator.device)
         local_delta_rescale *= torch.tensor(rescale).to(self.estimator.device)
         adv_input = local_delta_rescale + torch.tensor(original_input).to(self.estimator.device)
         masked_adv_input = adv_input * torch.tensor(input_mask).to(self.estimator.device)
 
         # Transform data into the model input space
         inputs, targets, input_rates, target_sizes, batch_idx = self.estimator.preprocess_transform_model_input(
-            x=masked_adv_input.to(self.estimator.device), y=original_output, real_lengths=real_lengths,
+            x=masked_adv_input.to(self.estimator.device),
+            y=original_output,
+            real_lengths=real_lengths,
         )
 
         # Compute real input sizes
@@ -504,25 +522,25 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         local_max_length = np.max(real_lengths)
 
         # Initialize alpha and rescale
-        alpha = np.array([self.initial_alpha] * local_batch_size, dtype=ART_NUMPY_DTYPE)
-        rescale = np.ones([local_batch_size, local_max_length], dtype=ART_NUMPY_DTYPE) * self.initial_rescale
+        alpha = np.array([self.alpha] * local_batch_size, dtype=np.float64)
+        rescale = np.ones([local_batch_size, local_max_length], dtype=np.float64) * self.initial_rescale
 
         # Reformat input
-        input_mask = np.zeros([local_batch_size, local_max_length], dtype=ART_NUMPY_DTYPE)
-        original_input = np.zeros([local_batch_size, local_max_length], dtype=ART_NUMPY_DTYPE)
+        input_mask = np.zeros([local_batch_size, local_max_length], dtype=np.float64)
+        original_input = np.zeros([local_batch_size, local_max_length], dtype=np.float64)
 
         for local_batch_size_idx in range(local_batch_size):
             input_mask[local_batch_size_idx, : len(x[local_batch_size_idx])] = 1
             original_input[local_batch_size_idx, : len(x[local_batch_size_idx])] = x[local_batch_size_idx]
 
         # Optimization loop
-        successful_adv_input = [None] * local_batch_size
+        successful_adv_input: List[Optional["torch.Tensor"]] = [None] * local_batch_size
         best_loss_2nd_stage = [np.inf] * local_batch_size
         trans = [None] * local_batch_size
 
-        for iter_2nd_stage_idx in range(self.max_iter_2nd_stage):
+        for iter_2nd_stage_idx in range(self.max_iter_2):
             # Zero the parameter gradients
-            self.optimizer_2nd_stage.zero_grad()
+            self.optimizer_2.zero_grad()
 
             # Call to forward pass of the first stage
             loss_1st_stage, _, decoded_output, masked_adv_input, local_delta_rescale = self._forward_1st_stage(
@@ -548,16 +566,16 @@ class ImperceptibleASRPyTorch(EvasionAttack):
 
             # Actual training
             if self._use_amp:
-                from apex import amp
+                from apex import amp  # pylint: disable=E0611
 
-                with amp.scale_loss(loss, self.optimizer_2nd_stage) as scaled_loss:
+                with amp.scale_loss(loss, self.optimizer_2) as scaled_loss:
                     scaled_loss.backward()
 
             else:
                 loss.backward()
 
             # Do optimization
-            self.optimizer_2nd_stage.step()
+            self.optimizer_2.step()
 
             # Save the best adversarial example and adjust the alpha coefficient
             for local_batch_size_idx in range(local_batch_size):
@@ -580,18 +598,21 @@ class ImperceptibleASRPyTorch(EvasionAttack):
                     alpha[local_batch_size_idx] = max(alpha[local_batch_size_idx], 0.0005)
 
             # If attack is unsuccessful
-            if iter_2nd_stage_idx == self.max_iter_2nd_stage - 1:
+            if iter_2nd_stage_idx == self.max_iter_2 - 1:
                 for local_batch_size_idx in range(local_batch_size):
                     if successful_adv_input[local_batch_size_idx] is None:
                         successful_adv_input[local_batch_size_idx] = masked_adv_input[local_batch_size_idx]
                         trans[local_batch_size_idx] = decoded_output[local_batch_size_idx]
 
-        result = torch.stack(successful_adv_input)
+        result = torch.stack(successful_adv_input)  # type: ignore
 
         return result
 
     def _forward_2nd_stage(
-        self, local_delta_rescale: "torch.Tensor", theta_batch: np.ndarray, original_max_psd_batch: np.ndarray,
+        self,
+        local_delta_rescale: "torch.Tensor",
+        theta_batch: np.ndarray,
+        original_max_psd_batch: np.ndarray,
     ) -> "torch.Tensor":
         """
         The forward pass of the second stage of the attack.
@@ -607,7 +628,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         losses = []
         relu = torch.nn.ReLU()
 
-        for i in range(len(theta_batch)):
+        for i, _ in enumerate(theta_batch):
             psd_transform_delta = self._psd_transform(
                 delta=local_delta_rescale[i, :], original_max_psd=original_max_psd_batch[i]
             )
@@ -615,9 +636,9 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             loss = torch.mean(relu(psd_transform_delta - torch.tensor(theta_batch[i]).to(self.estimator.device)))
             losses.append(loss)
 
-        losses = torch.stack(losses)
+        losses_stack = torch.stack(losses)
 
-        return losses
+        return losses_stack
 
     def _compute_masking_threshold(self, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -638,27 +659,19 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         hop_length = int(sample_rate * window_stride)
         win_length = n_fft
 
-        window = self.estimator.model.audio_conf.window.value
+        window_name = self.estimator.model.audio_conf.window.value
 
-        if window == "hamming":
-            window_fn = scipy.signal.windows.hamming
-        elif window == "hann":
-            window_fn = scipy.signal.windows.hann
-        elif window == "blackman":
-            window_fn = scipy.signal.windows.blackman
-        elif window == "bartlett":
-            window_fn = scipy.signal.windows.bartlett
-        else:
-            raise NotImplementedError("Spectrogram window %s not supported." % window)
+        window = scipy.signal.get_window(window_name, win_length, fftbins=True)
 
         transformed_x = librosa.core.stft(
-            y=x, n_fft=n_fft, hop_length=hop_length, win_length=win_length, window=window_fn, center=False
+            y=x, n_fft=n_fft, hop_length=hop_length, win_length=win_length, window=window, center=False
         )
         transformed_x *= np.sqrt(8.0 / 3.0)
 
         psd = abs(transformed_x / win_length)
         original_max_psd = np.max(psd * psd)
-        psd = 10 * np.log10(psd * psd + 10e-20)
+        with np.errstate(divide="ignore"):
+            psd = (20 * np.log10(psd)).clip(min=-200)
         psd = 96 - np.max(psd) + psd
 
         # Compute freqs and barks
@@ -666,7 +679,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         barks = 13 * np.arctan(0.00076 * freqs) + 3.5 * np.arctan(pow(freqs / 7500.0, 2))
 
         # Compute quiet threshold
-        ath = np.zeros(len(barks), dtype=ART_NUMPY_DTYPE) - np.inf
+        ath = np.zeros(len(barks), dtype=np.float64) - np.inf
         bark_idx = np.argmax(barks > 1)
         ath[bark_idx:] = (
             3.64 * pow(freqs[bark_idx:] * 0.001, -0.8)
@@ -688,7 +701,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             if len(psd[:, i]) - 1 in masker_idx:
                 masker_idx = np.delete(masker_idx, len(psd[:, i]) - 1)
 
-            barks_psd = np.zeros([len(masker_idx), 3], dtype=ART_NUMPY_DTYPE)
+            barks_psd = np.zeros([len(masker_idx), 3], dtype=np.float64)
             barks_psd[:, 0] = barks[masker_idx]
             barks_psd[:, 1] = 10 * np.log10(
                 pow(10, psd[:, i][masker_idx - 1] / 10.0)
@@ -730,14 +743,14 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             for m in range(barks_psd.shape[0]):
                 d_z = barks - barks_psd[m, 0]
                 zero_idx = np.argmax(d_z > 0)
-                s_f = np.zeros(len(d_z), dtype=ART_NUMPY_DTYPE)
+                s_f = np.zeros(len(d_z), dtype=np.float64)
                 s_f[:zero_idx] = 27 * d_z[:zero_idx]
                 s_f[zero_idx:] = (-27 + 0.37 * max(barks_psd[m, 1] - 40, 0)) * d_z[zero_idx:]
                 t_s.append(barks_psd[m, 1] + delta[m] + s_f)
 
-            t_s = np.array(t_s)
+            t_s_array = np.array(t_s)
 
-            theta.append(np.sum(pow(10, t_s / 10.0), axis=0) + pow(10, ath / 10.0))
+            theta.append(np.sum(pow(10, t_s_array / 10.0), axis=0) + pow(10, ath / 10.0))
 
         theta = np.array(theta)
 
@@ -752,7 +765,6 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         :return: The psd matrix.
         """
         import torch  # lgtm [py/repeated-import]
-        import torchaudio
 
         # These parameters are needed for the transformation
         sample_rate = self.estimator.model.audio_conf.sample_rate
@@ -766,30 +778,31 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         window = self.estimator.model.audio_conf.window.value
 
         if window == "hamming":
-            window_fn = torch.hamming_window
+            window_fn = torch.hamming_window  # type: ignore
         elif window == "hann":
-            window_fn = torch.hann_window
+            window_fn = torch.hann_window  # type: ignore
         elif window == "blackman":
-            window_fn = torch.blackman_window
+            window_fn = torch.blackman_window  # type: ignore
         elif window == "bartlett":
-            window_fn = torch.bartlett_window
+            window_fn = torch.bartlett_window  # type: ignore
         else:
             raise NotImplementedError("Spectrogram window %s not supported." % window)
 
-        # Create a transformer to transform between the two spaces
-        transformer = torchaudio.transforms.Spectrogram(
-            n_fft=n_fft, hop_length=hop_length, win_length=win_length, window_fn=window_fn, power=None
-        )
-        transformer.to(self.estimator.device)
+        # Return STFT of delta
+        delta_stft = torch.stft(
+            delta,
+            n_fft=n_fft,
+            hop_length=hop_length,
+            win_length=win_length,
+            center=False,
+            window=window_fn(win_length).to(self.estimator.device),
+        ).to(self.estimator.device)
 
-        # Transform the perturbation into the frequency space
-        transformed_delta = transformer(delta)
-
-        # To get the center
-        transformed_delta = transformed_delta[:, 1:-1, 0]
+        # Take abs of complex STFT results
+        transformed_delta = torch.sqrt(torch.sum(torch.square(delta_stft), -1))
 
         # Compute the psd matrix
-        psd = (8.0 / 3.0) * torch.abs(transformed_delta / win_length)
+        psd = (8.0 / 3.0) * transformed_delta / win_length
         psd = psd ** 2
         psd = (
             torch.pow(torch.tensor(10.0), torch.tensor(9.6)).to(self.estimator.device)
@@ -803,72 +816,72 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         """
         Apply attack-specific checks.
         """
-        if self.initial_eps <= 0:
-            raise ValueError("The perturbation size `initial_eps` has to be positive.")
+        if self.eps <= 0:
+            raise ValueError("The perturbation size `eps` has to be positive.")
 
-        if not isinstance(self.max_iter_1st_stage, int):
+        if not isinstance(self.max_iter_1, int):
             raise ValueError("The maximum number of iterations must be of type int.")
-        if not self.max_iter_1st_stage > 0:
+        if self.max_iter_1 <= 0:
             raise ValueError("The maximum number of iterations must be greater than 0.")
 
-        if not isinstance(self.max_iter_2nd_stage, int):
+        if not isinstance(self.max_iter_2, int):
             raise ValueError("The maximum number of iterations must be of type int.")
-        if not self.max_iter_2nd_stage > 0:
+        if self.max_iter_2 <= 0:
             raise ValueError("The maximum number of iterations must be greater than 0.")
 
-        if not isinstance(self.learning_rate_1st_stage, float):
+        if not isinstance(self.learning_rate_1, float):
             raise ValueError("The learning rate must be of type float.")
-        if not self.learning_rate_1st_stage > 0.0:
+        if self.learning_rate_1 <= 0.0:
             raise ValueError("The learning rate must be greater than 0.0.")
 
-        if not isinstance(self.learning_rate_2nd_stage, float):
+        if not isinstance(self.learning_rate_2, float):
             raise ValueError("The learning rate must be of type float.")
-        if not self.learning_rate_2nd_stage > 0.0:
+        if self.learning_rate_2 <= 0.0:
             raise ValueError("The learning rate must be greater than 0.0.")
 
         if not isinstance(self.global_max_length, int):
             raise ValueError("The length of the longest audio signal must be of type int.")
-        if not self.global_max_length > 0:
+        if self.global_max_length <= 0:
             raise ValueError("The length of the longest audio signal must be greater than 0.")
 
         if not isinstance(self.initial_rescale, float):
             raise ValueError("The initial rescale coefficient must be of type float.")
-        if not self.initial_rescale > 0.0:
+        if self.initial_rescale <= 0.0:
             raise ValueError("The initial rescale coefficient must be greater than 0.0.")
 
-        if not isinstance(self.rescale_factor, float):
-            raise ValueError("The rescale factor must be of type float.")
-        if not self.rescale_factor > 0.0:
-            raise ValueError("The rescale factor must be greater than 0.0.")
+        if not isinstance(self.decrease_factor_eps, float):
+            raise ValueError("The rescale factor of `eps` must be of type float.")
+        if self.decrease_factor_eps <= 0.0:
+            raise ValueError("The rescale factor of `eps` must be greater than 0.0.")
 
-        if not isinstance(self.num_iter_adjust_rescale, int):
+        if not isinstance(self.num_iter_decrease_eps, int):
             raise ValueError("The number of iterations must be of type int.")
-        if not self.num_iter_adjust_rescale > 0:
+        if self.num_iter_decrease_eps <= 0:
             raise ValueError("The number of iterations must be greater than 0.")
 
-        if not isinstance(self.initial_alpha, float):
-            raise ValueError("The initial alpha must be of type float.")
-        if not self.initial_alpha > 0.0:
-            raise ValueError("The initial alpha must be greater than 0.0.")
+        if not isinstance(self.alpha, float):
+            raise ValueError("The value of alpha must be of type float.")
+        if self.alpha <= 0.0:
+            raise ValueError("The value of alpha must be greater than 0.0.")
 
         if not isinstance(self.increase_factor_alpha, float):
             raise ValueError("The factor to increase alpha must be of type float.")
-        if not self.increase_factor_alpha > 0.0:
+        if self.increase_factor_alpha <= 0.0:
             raise ValueError("The factor to increase alpha must be greater than 0.0.")
 
         if not isinstance(self.num_iter_increase_alpha, int):
             raise ValueError("The number of iterations must be of type int.")
-        if not self.num_iter_increase_alpha > 0:
+        if self.num_iter_increase_alpha <= 0:
             raise ValueError("The number of iterations must be greater than 0.")
 
         if not isinstance(self.decrease_factor_alpha, float):
             raise ValueError("The factor to decrease alpha must be of type float.")
-        if not self.decrease_factor_alpha > 0.0:
+        if self.decrease_factor_alpha <= 0.0:
             raise ValueError("The factor to decrease alpha must be greater than 0.0.")
 
         if not isinstance(self.num_iter_decrease_alpha, int):
             raise ValueError("The number of iterations must be of type int.")
-        if not self.num_iter_decrease_alpha > 0:
+        if self.num_iter_decrease_alpha <= 0:
             raise ValueError("The number of iterations must be greater than 0.")
 
         if self.batch_size <= 0:

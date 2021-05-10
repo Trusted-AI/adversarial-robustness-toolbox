@@ -43,7 +43,7 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
 
     def __init__(
         self,
-        steps: int = 1000,
+        steps: int,
         *args,
         init_cost: float = 1e-3,
         norm: Union[int, float] = 2,
@@ -86,14 +86,18 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
         self.cost_multiplier_up = cost_multiplier
         self.cost_multiplier_down = cost_multiplier ** 1.5
         self.batch_size = batch_size
-        self.top_indices = []
+        self.top_indices: List[int] = []
         self.activation_threshold = 0
 
-    def _predict_classifier(self, x: np.ndarray) -> np.ndarray:
+    def _predict_classifier(
+        self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs
+    ) -> np.ndarray:
         """
         Perform prediction for a batch of inputs.
 
-        :param x: Test set.
+        :param x: Input samples.
+        :param batch_size: Size of batches.
+        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
         raise NotImplementedError
@@ -118,15 +122,15 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
         """
         raise NotImplementedError
 
-    def predict(self, x: np.ndarray, batch_size: int = 128) -> np.ndarray:
+    def predict(self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs) -> np.ndarray:
         """
         Perform prediction of the given classifier for a batch of inputs, potentially filtering suspicious input
 
-        :param x: Test set.
+        :param x: Input samples.
         :param batch_size: Batch size.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
-        predictions = self._predict_classifier(x)
+        predictions = self._predict_classifier(x=x, batch_size=batch_size, training_mode=training_mode, **kwargs)
 
         if len(self.top_indices) == 0:
             logger.warning("Filtering mitigation not activated, suspected backdoors may be triggered")
@@ -188,7 +192,7 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
                     self._prune_neuron_at_index(ranked_indices[num_neurons_pruned])
                     num_neurons_pruned += 1
                     backdoor_effective = self.check_backdoor_effective(backdoor_data, backdoor_labels)
-                logger.info("Pruning complete. Pruned {} neurons".format(num_neurons_pruned))
+                logger.info("Pruning complete. Pruned %d neurons", num_neurons_pruned)
 
             elif mitigation_type == "filtering":
                 # using top 1% of ranked neurons by activation difference to adv vs. clean inputs
@@ -237,7 +241,7 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
             labels_for_class = np.copy(y_val[np.argmax(y_val, axis=1) == backdoored_label])
 
             if len(data_for_class) == 0:
-                logger.warning("No validation data exists for infected class: " + str(backdoored_label))
+                logger.warning("No validation data exists for infected class: %s", str(backdoored_label))
 
             clean_data.append(np.copy(data_for_class))
             data_for_class = (1 - mask) * data_for_class + mask * pattern
@@ -292,7 +296,7 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
             # Points with anomaly_index > 2 have 95% probability of being an outlier
             # Backdoor outliers show up as masks with small l1 norms
             if l1_norms[class_idx] <= median and anomaly_index > 2:
-                logger.warning("Detected potential backdoor in class: " + str(class_idx))
+                logger.warning("Detected potential backdoor in class: %s", str(class_idx))
                 flagged_labels.append(class_idx)
 
         return [(label, masks[label], patterns[label]) for label in flagged_labels]
