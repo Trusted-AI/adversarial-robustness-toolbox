@@ -69,6 +69,10 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         "num_iter_increase_alpha",
         "decrease_factor_alpha",
         "num_iter_decrease_alpha",
+        "sample_rate",
+        "win_length",
+        "hop_length",
+        "n_fft",
         "batch_size",
         "use_amp",
         "opt_level",
@@ -103,6 +107,10 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         num_iter_increase_alpha: int = 20,
         decrease_factor_alpha: float = 0.8,
         num_iter_decrease_alpha: int = 20,
+        sample_rate: int = 16000,
+        win_length: int = 2048,
+        hop_length: int = 512,
+        n_fft: int = 2048,
         batch_size: int = 32,
         use_amp: bool = False,
         opt_level: str = "O1",
@@ -136,6 +144,10 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         :param decrease_factor_alpha: The factor to decrease the alpha coefficient used in the second stage of the
                                       optimization of the attack.
         :param num_iter_decrease_alpha: Number of iterations to decrease alpha.
+        :param sample_rate: Sampling frequency of audio inputs.
+        :param win_length: Length of the window. The number of STFT rows is `(win_length // 2 + 1)`.
+        :param hop_length: Number of audio samples between adjacent STFT columns.
+        :param n_fft: FFT window size.
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :param use_amp: Whether to use the automatic mixed precision tool to enable mixed precision training or
                         gradient computation, e.g. with loss gradient computation. When set to True, this option is
@@ -164,6 +176,10 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         self.num_iter_increase_alpha = num_iter_increase_alpha
         self.decrease_factor_alpha = decrease_factor_alpha
         self.num_iter_decrease_alpha = num_iter_decrease_alpha
+        self.sample_rate = sample_rate
+        self.win_length = win_length
+        self.hop_length = hop_length
+        self.n_fft = n_fft
         self.batch_size = batch_size
         self._use_amp = use_amp
 
@@ -849,6 +865,29 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             raise ValueError("The number of iterations must be of type int.")
         if self.num_iter_decrease_alpha <= 0:
             raise ValueError("The number of iterations must be greater than 0.")
+
+        if not isinstance(self.sample_rate, int):
+            raise ValueError("The sampling frequency must be of type int.")
+        if self.sample_rate <= 0:
+            raise ValueError("The sampling frequency must be greater than 0.")
+
+        if not isinstance(self.win_length, int):
+            raise ValueError("Length of the window must be of type int.")
+        if self.win_length <= 0:
+            raise ValueError("Length of the window must be greater than 0.")
+
+        if not isinstance(self.hop_length, int):
+            raise ValueError("Number of audio samples between adjacent STFT columns must be of type int.")
+        if self.hop_length <= 0:
+            raise ValueError("Number of audio samples between adjacent STFT columns must be greater than 0.")
+
+        if not isinstance(self.n_fft, int):
+            raise ValueError("FFT window size must be of type int.")
+        if self.n_fft <= 0:
+            raise ValueError("FFT window size must be greater than 0.")
+
+        if self.win_length > self.n_fft:
+            raise ValueError("Length of the window must be smaller than or equal to FFT window size.")
 
         if self.batch_size <= 0:
             raise ValueError("The batch size `batch_size` has to be positive.")
