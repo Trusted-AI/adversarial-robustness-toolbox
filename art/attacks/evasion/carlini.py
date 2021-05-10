@@ -1060,8 +1060,9 @@ class CarliniL0Method(CarliniL2Method):
                             len(attack_success),
                         )
 
-                        l0dist = np.sum((np.abs(x_batch - x_adv_batch) > self._perturbation_threshold).astype(int),
-                                        axis=1)
+                        l0dist = np.sum((
+                            np.abs(x_batch - x_adv_batch) > self._perturbation_threshold).astype(int), axis=1
+                        )
                         improved_adv = attack_success & (l0dist < best_l0dist_batch)
                         logger.debug("Number of improved L0 distances: %i", int(np.sum(improved_adv)))
                         if np.sum(improved_adv) > 0:
