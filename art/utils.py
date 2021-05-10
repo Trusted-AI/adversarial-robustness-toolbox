@@ -875,7 +875,7 @@ def load_iris(raw: bool = False, test_set: float = 0.3) -> DATASET_TYPE:
                 data[50 + split_index : 100],
                 data[100 + split_index :],
             )
-        )
+        ).astype(np.float32)
         y_test = np.vstack(
             (
                 labels[split_index:50],
@@ -891,7 +891,7 @@ def load_iris(raw: bool = False, test_set: float = 0.3) -> DATASET_TYPE:
 
     # Shuffle training set
     random_indices = np.random.permutation(len(y_train))
-    x_train, y_train = x_train[random_indices], y_train[random_indices]
+    x_train, y_train = x_train[random_indices].astype(np.float32), y_train[random_indices]
 
     return (x_train, y_train), (x_test, y_test), min_, max_
 
