@@ -28,7 +28,7 @@ from typing import Any, Optional, Union, TYPE_CHECKING
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 
-from art.attacks.attack import InferenceAttack
+from art.attacks.attack import MembershipInferenceAttack
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import check_and_transform_label_format
@@ -39,7 +39,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class MembershipInferenceBlackBox(InferenceAttack):
+class MembershipInferenceBlackBox(MembershipInferenceAttack):
     """
     Implementation of a learned black-box membership inference attack.
 
@@ -47,7 +47,7 @@ class MembershipInferenceBlackBox(InferenceAttack):
     depending on the type of model and provided configuration.
     """
 
-    attack_params = InferenceAttack.attack_params + [
+    attack_params = MembershipInferenceAttack.attack_params + [
         "input_type",
         "attack_model_type",
         "attack_model",
@@ -74,7 +74,7 @@ class MembershipInferenceBlackBox(InferenceAttack):
         :param attack_model: The attack model to train, optional. If none is provided, a default model will be created.
         """
 
-        super().__init__(estimator=classifier)
+        super().__init__(classifier=classifier)
         self.input_type = input_type
         self.attack_model_type = attack_model_type
         self.attack_model = attack_model
@@ -237,12 +237,15 @@ class MembershipInferenceBlackBox(InferenceAttack):
                 y_ready = check_and_transform_label_format(y_new, len(np.unique(y_new)), return_one_hot=True)
             self.attack_model.fit(np.c_[x_1, x_2], y_ready)  # type: ignore
 
-    def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, probabilities: Optional[bool] = False, **kwargs) -> \
+            np.ndarray:
         """
         Infer membership in the training set of the target estimator.
 
         :param x: Input records to attack.
         :param y: True labels for `x`.
+        :param probabilities: a boolean indicating whether to return the predicted probabilities per class, or just
+                              the predicted class
         :return: An array holding the inferred membership status, 1 indicates a member and 0 indicates non-member.
         """
         if y is None:
@@ -274,7 +277,10 @@ class MembershipInferenceBlackBox(InferenceAttack):
             for input1, input2, _ in test_loader:
                 input1, input2 = to_cuda(input1), to_cuda(input2)
                 outputs = self.attack_model(input1, input2)  # type: ignore
-                predicted = torch.round(outputs)
+                if not probabilities:
+                    predicted = torch.round(outputs)
+                else:
+                    predicted = outputs
                 predicted = from_cuda(predicted)
 
                 if inferred is None:
@@ -283,12 +289,20 @@ class MembershipInferenceBlackBox(InferenceAttack):
                     inferred = np.vstack((inferred, predicted.detach().numpy()))
 
             if inferred is not None:
-                inferred_return = inferred.reshape(-1).astype(np.int)
+                if not probabilities:
+                    inferred_return = inferred.reshape(-1).astype(np.int)
+                else:
+                    inferred = inferred.reshape(-1)
+                    prob_0 = np.ones_like(inferred) - inferred
+                    inferred_return = np.stack((prob_0, inferred), axis=1)
             else:
                 raise ValueError("No data available.")
         else:
             pred = self.attack_model.predict(np.c_[features, y])  # type: ignore
-            inferred_return = np.array([np.argmax(arr) for arr in pred])
+            if probabilities:
+                inferred_return = pred
+            else:
+                inferred_return = np.array([np.argmax(arr) for arr in pred])
 
         return inferred_return
 
