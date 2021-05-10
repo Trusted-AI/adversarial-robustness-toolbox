@@ -327,8 +327,8 @@ class TestUtils(unittest.TestCase):
     def test_iris(self):
         (x_train, y_train), (x_test, y_test), min_, max_ = load_iris()
 
-        self.assertTrue((min_ == 0).all())
-        self.assertTrue((max_ == 1).all())
+        self.assertAlmostEqual(min_, 0.012658227848101266, places=6)
+        self.assertEqual(max_, 1.0)
         self.assertEqual(x_train.shape[0], y_train.shape[0])
         self.assertEqual(x_test.shape[0], y_test.shape[0])
         train_labels = np.argmax(y_train, axis=1)
