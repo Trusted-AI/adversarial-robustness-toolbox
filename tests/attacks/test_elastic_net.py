@@ -416,7 +416,7 @@ class TestElasticNet(TestBase):
         classifier = get_tabular_classifier_kr()
         attack = ElasticNet(classifier, targeted=False, max_iter=10)
         x_test_adv = attack.generate(self.x_test_iris)
-        expected_x_test_adv = np.asarray([0.85931635, 0.44633555, 0.65658355, 0.23840423])
+        expected_x_test_adv = np.asarray([0.860373, 0.455002, 0.654925, 0.240258])
         np.testing.assert_array_almost_equal(x_test_adv[0, :], expected_x_test_adv, decimal=6)
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
         self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
@@ -464,7 +464,7 @@ class TestElasticNet(TestBase):
                     1,
                     1,
                     2,
-                    0,
+                    2,
                     2,
                     2,
                     1,
@@ -485,7 +485,7 @@ class TestElasticNet(TestBase):
         classifier = KerasClassifier(model=classifier._model, use_logits=False, channels_first=True)
         attack = ElasticNet(classifier, targeted=False, max_iter=10)
         x_test_adv = attack.generate(self.x_test_iris)
-        expected_x_test_adv = np.asarray([0.85931635, 0.44633555, 0.65658355, 0.23840423])
+        expected_x_test_adv = np.asarray([0.860373, 0.455002, 0.654925, 0.240258])
         np.testing.assert_array_almost_equal(x_test_adv[0, :], expected_x_test_adv, decimal=6)
         predictions_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         np.testing.assert_array_equal(
@@ -531,7 +531,7 @@ class TestElasticNet(TestBase):
                     1,
                     1,
                     2,
-                    0,
+                    2,
                     2,
                     2,
                     1,
@@ -551,7 +551,7 @@ class TestElasticNet(TestBase):
         # Test untargeted attack
         attack = ElasticNet(classifier, targeted=False, max_iter=10)
         x_test_adv = attack.generate(self.x_test_iris)
-        expected_x_test_adv = np.asarray([0.8479195, 0.42525578, 0.70166135, 0.28664514])
+        expected_x_test_adv = np.asarray([0.852286, 0.434626, 0.703376, 0.293738])
         np.testing.assert_array_almost_equal(x_test_adv[0, :], expected_x_test_adv, decimal=6)
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
         self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
@@ -590,13 +590,13 @@ class TestElasticNet(TestBase):
                     2,
                     2,
                     2,
-                    2,
+                    1,
                     2,
                     1,
                     2,
                     1,
                     0,
-                    2,
+                    1,
                     2,
                     1,
                     2,
@@ -616,7 +616,7 @@ class TestElasticNet(TestBase):
         targets = random_targets(self.y_test_iris, nb_classes=3)
         attack = ElasticNet(classifier, targeted=True, max_iter=10)
         x_test_adv = attack.generate(self.x_test_iris, **{"y": targets})
-        expected_x_test_adv = np.asarray([0.885649, 0.51815695, 0.5026782, 0.0558902])
+        expected_x_test_adv = np.asarray([0.892806, 0.531875, 0.501707, 0.059951])
         np.testing.assert_array_almost_equal(x_test_adv[0, :], expected_x_test_adv, decimal=6)
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
         self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
@@ -686,7 +686,7 @@ class TestElasticNet(TestBase):
         classifier = get_tabular_classifier_pt()
         attack = ElasticNet(classifier, targeted=False, max_iter=10)
         x_test_adv = attack.generate(self.x_test_iris.astype(np.float32))
-        expected_x_test_adv = np.asarray([0.8479194, 0.42525578, 0.70166135, 0.28664517])
+        expected_x_test_adv = np.asarray([0.852286, 0.434626, 0.703376, 0.293738])
         np.testing.assert_array_almost_equal(x_test_adv[0, :], expected_x_test_adv, decimal=6)
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
         self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
@@ -725,13 +725,13 @@ class TestElasticNet(TestBase):
                     2,
                     2,
                     2,
-                    2,
+                    1,
                     2,
                     1,
                     2,
                     1,
                     0,
-                    2,
+                    1,
                     2,
                     1,
                     2,
