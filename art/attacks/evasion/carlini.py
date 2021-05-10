@@ -799,6 +799,7 @@ class CarliniLInfMethod(EvasionAttack):
             raise ValueError("The batch size must be an integer greater than zero.")
 
 
+# pylint: disable=C0302
 class CarliniL0Method(CarliniL2Method):
     """
     The L_0 distance metric is non-differentiable and therefore is ill-suited for standard gradient descent.
@@ -1070,10 +1071,9 @@ class CarliniL0Method(CarliniL2Method):
                                 lr_mult = lr_mult[:, np.newaxis]
 
                             x_adv1 = x_adv_batch_tanh[active_and_do_halving]
-                            new_x_adv_batch_tanh = \
-                                x_adv1 + lr_mult * \
-                                perturbation_tanh[do_halving] * \
-                                activation_batch[do_halving]
+                            new_x_adv_batch_tanh = (
+                                x_adv1 + lr_mult * perturbation_tanh[do_halving] * activation_batch[do_halving]
+                            )
                             new_x_adv_batch = tanh_to_original(new_x_adv_batch_tanh, clip_min, clip_max)
                             _, l2dist[active_and_do_halving], loss[active_and_do_halving] = self._loss(
                                 x_batch[active_and_do_halving],
@@ -1109,10 +1109,9 @@ class CarliniL0Method(CarliniL2Method):
                                 lr_mult = lr_mult[:, np.newaxis]
 
                             x_adv2 = x_adv_batch_tanh[active_and_do_doubling]
-                            new_x_adv_batch_tanh = \
-                                x_adv2 + lr_mult * \
-                                perturbation_tanh[do_doubling] * \
-                                activation_batch[do_doubling]
+                            new_x_adv_batch_tanh = (
+                                x_adv2 + lr_mult * perturbation_tanh[do_doubling] * activation_batch[do_doubling]
+                            )
                             new_x_adv_batch = tanh_to_original(new_x_adv_batch_tanh, clip_min, clip_max)
                             _, l2dist[active_and_do_doubling], loss[active_and_do_doubling] = self._loss(
                                 x_batch[active_and_do_doubling],
@@ -1140,9 +1139,9 @@ class CarliniL0Method(CarliniL2Method):
 
                             x_adv4 = x_adv_batch_tanh[active_and_update_adv]
                             best_lr1 = best_lr_mult * perturbation_tanh[update_adv]
-                            x_adv_batch_tanh[active_and_update_adv] = \
-                                x_adv4 + best_lr1 * \
-                                activation_batch[active_and_update_adv]
+                            x_adv_batch_tanh[active_and_update_adv] = (
+                                x_adv4 + best_lr1 * activation_batch[active_and_update_adv]
+                            )
 
                             x_adv6 = x_adv_batch_tanh[active_and_update_adv]
                             x_adv_batch[active_and_update_adv] = tanh_to_original(x_adv6, clip_min, clip_max)
@@ -1221,12 +1220,11 @@ class CarliniL0Method(CarliniL2Method):
             fix_feature[np.arange(fix_feature_index.size), fix_feature_index] = 0
             old_activation[improved_adv] = activation.copy()[improved_adv]
             activation[improved_adv] *= fix_feature[improved_adv]
-            print(
-                "L0 norm before fixing :\n{}\nNumber active features :\n{}\nIndex of fixed feature :\n{}"
-                .format(
+            logger.info(
+                "L0 norm before fixing :\n{}\nNumber active features :\n{}\nIndex of fixed feature :\n{}".format(
                     np.sum((perturbation_l1_norm > self._perturbation_threshold).astype(int), axis=1),
                     np.sum(activation, axis=1),
-                    fix_feature_index
+                    fix_feature_index,
                 )
             )
 
@@ -1257,7 +1255,7 @@ class CarliniL0Method(CarliniL2Method):
         :type batch_size: `int`
         """
         # Save attack-specific parameters
-        super(CarliniL0Method, self).set_params(**kwargs)
+        super().set_params(**kwargs)
 
         if not isinstance(self.binary_search_steps, (int, np.int)) or self.binary_search_steps < 0:
             raise ValueError("The number of binary search steps must be a non-negative integer.")
