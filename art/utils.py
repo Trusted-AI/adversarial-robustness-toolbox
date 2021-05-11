@@ -844,22 +844,14 @@ def load_iris(raw: bool = False, test_set: float = 0.3) -> DATASET_TYPE:
     :param test_set: Proportion of the data to use as validation split. The value should be between 0 and 1.
     :return: Entire dataset and labels.
     """
-    # Download data if needed
-    path = get_file(
-        "iris.data",
-        path=config.ART_DATA_PATH,
-        extract=False,
-        url="https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data",
-    )
+    from sklearn.datasets import load_iris as load_iris_sk
 
-    data = np.loadtxt(path, delimiter=",", usecols=(0, 1, 2, 3), dtype=config.ART_NUMPY_DTYPE)
-    labels = np.loadtxt(path, delimiter=",", usecols=4, dtype=str)
-
-    # Preprocess
+    iris = load_iris_sk()
+    data = iris.data
     if not raw:
-        label_map = {"Iris-setosa": 0, "Iris-versicolor": 1, "Iris-virginica": 2}
-        labels = np.array([label_map[labels[i]] for i in range(labels.size)], dtype=np.int32)
-        data, labels = preprocess(data, labels, nb_classes=3)
+        data /= np.amax(data)
+    labels = to_categorical(iris.target, 3)
+
     min_, max_ = np.amin(data), np.amax(data)
 
     # Split training and test sets
@@ -883,7 +875,7 @@ def load_iris(raw: bool = False, test_set: float = 0.3) -> DATASET_TYPE:
                 data[50 + split_index : 100],
                 data[100 + split_index :],
             )
-        )
+        ).astype(np.float32)
         y_test = np.vstack(
             (
                 labels[split_index:50],
@@ -899,7 +891,7 @@ def load_iris(raw: bool = False, test_set: float = 0.3) -> DATASET_TYPE:
 
     # Shuffle training set
     random_indices = np.random.permutation(len(y_train))
-    x_train, y_train = x_train[random_indices], y_train[random_indices]
+    x_train, y_train = x_train[random_indices].astype(np.float32), y_train[random_indices]
 
     return (x_train, y_train), (x_test, y_test), min_, max_
 
