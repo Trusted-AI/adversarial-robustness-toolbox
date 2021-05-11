@@ -69,7 +69,6 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         "num_iter_increase_alpha",
         "decrease_factor_alpha",
         "num_iter_decrease_alpha",
-        "sample_rate",
         "win_length",
         "hop_length",
         "n_fft",
@@ -107,7 +106,6 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         num_iter_increase_alpha: int = 20,
         decrease_factor_alpha: float = 0.8,
         num_iter_decrease_alpha: int = 20,
-        sample_rate: int = 16000,
         win_length: int = 2048,
         hop_length: int = 512,
         n_fft: int = 2048,
@@ -144,7 +142,6 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         :param decrease_factor_alpha: The factor to decrease the alpha coefficient used in the second stage of the
                                       optimization of the attack.
         :param num_iter_decrease_alpha: Number of iterations to decrease alpha.
-        :param sample_rate: Sampling frequency of audio inputs.
         :param win_length: Length of the window. The number of STFT rows is `(win_length // 2 + 1)`.
         :param hop_length: Number of audio samples between adjacent STFT columns.
         :param n_fft: FFT window size.
@@ -176,7 +173,6 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         self.num_iter_increase_alpha = num_iter_increase_alpha
         self.decrease_factor_alpha = decrease_factor_alpha
         self.num_iter_decrease_alpha = num_iter_decrease_alpha
-        self.sample_rate = sample_rate
         self.win_length = win_length
         self.hop_length = hop_length
         self.n_fft = n_fft
@@ -645,26 +641,23 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         import librosa
 
         # First compute the psd matrix
-        # Get parameters needed for the transformation
-        sample_rate, window_name, win_length, n_fft, hop_length = self.estimator.get_transformation_params()
-
         # Get window for the transformation
-        window = scipy.signal.get_window(window_name, win_length, fftbins=True)
+        window = scipy.signal.get_window('hann', self.win_length, fftbins=True)
 
         # Do transformation
         transformed_x = librosa.core.stft(
-            y=x, n_fft=n_fft, hop_length=hop_length, win_length=win_length, window=window, center=False
+            y=x, n_fft=self.n_fft, hop_length=self.hop_length, win_length=self.win_length, window=window, center=False
         )
         transformed_x *= np.sqrt(8.0 / 3.0)
 
-        psd = abs(transformed_x / win_length)
+        psd = abs(transformed_x / self.win_length)
         original_max_psd = np.max(psd * psd)
         with np.errstate(divide="ignore"):
             psd = (20 * np.log10(psd)).clip(min=-200)
         psd = 96 - np.max(psd) + psd
 
         # Compute freqs and barks
-        freqs = librosa.core.fft_frequencies(sr=sample_rate, n_fft=n_fft)
+        freqs = librosa.core.fft_frequencies(sr=self.estimator.sample_rate, n_fft=self.n_fft)
         barks = 13 * np.arctan(0.00076 * freqs) + 3.5 * np.arctan(pow(freqs / 7500.0, 2))
 
         # Compute quiet threshold
@@ -755,36 +748,24 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         """
         import torch  # lgtm [py/repeated-import]
 
-        # Get parameters needed for the transformation
-        _, window_name, win_length, n_fft, hop_length = self.estimator.get_transformation_params()
-
         # Get window for the transformation
-        if window_name == "hamming":
-            window_fn = torch.hamming_window  # type: ignore
-        elif window_name == "hann":
-            window_fn = torch.hann_window  # type: ignore
-        elif window_name == "blackman":
-            window_fn = torch.blackman_window  # type: ignore
-        elif window_name == "bartlett":
-            window_fn = torch.bartlett_window  # type: ignore
-        else:
-            raise NotImplementedError("Spectrogram window %s not supported." % window_name)
+        window_fn = torch.hann_window  # type: ignore
 
         # Return STFT of delta
         delta_stft = torch.stft(
             delta,
-            n_fft=n_fft,
-            hop_length=hop_length,
-            win_length=win_length,
+            n_fft=self.n_fft,
+            hop_length=self.hop_length,
+            win_length=self.win_length,
             center=False,
-            window=window_fn(win_length).to(self.estimator.device),
+            window=window_fn(self.win_length).to(self.estimator.device),
         ).to(self.estimator.device)
 
         # Take abs of complex STFT results
         transformed_delta = torch.sqrt(torch.sum(torch.square(delta_stft), -1))
 
         # Compute the psd matrix
-        psd = (8.0 / 3.0) * transformed_delta / win_length
+        psd = (8.0 / 3.0) * transformed_delta / self.win_length
         psd = psd ** 2
         psd = (
             torch.pow(torch.tensor(10.0), torch.tensor(9.6)).to(self.estimator.device)
@@ -865,11 +846,6 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             raise ValueError("The number of iterations must be of type int.")
         if self.num_iter_decrease_alpha <= 0:
             raise ValueError("The number of iterations must be greater than 0.")
-
-        if not isinstance(self.sample_rate, int):
-            raise ValueError("The sampling frequency must be of type int.")
-        if self.sample_rate <= 0:
-            raise ValueError("The sampling frequency must be greater than 0.")
 
         if not isinstance(self.win_length, int):
             raise ValueError("Length of the window must be of type int.")
