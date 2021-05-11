@@ -175,7 +175,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
             elif pretrained_model == "librispeech":
                 filename, url = (
                     "librispeech_pretrained_v2.pth",
-                    "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/v2.0/" 
+                    "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/v2.0/"
                     "librispeech_pretrained_v2.pth",
                 )
 
