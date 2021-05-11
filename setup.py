@@ -9,18 +9,10 @@ with open("README.md", "r") as fh:
 install_requires = [
     "numpy>=1.18.0",
     "scipy>=1.4.1",
-    "matplotlib",
     "scikit-learn>=0.22.2,<=0.24.1",
     "six",
     "setuptools",
-    "Pillow",
     "tqdm",
-    "statsmodels",
-    "pydub",
-    "resampy",
-    "ffmpeg-python",
-    "cma",
-    "mypy",
     "numba~=0.53.1"
 ]
 
