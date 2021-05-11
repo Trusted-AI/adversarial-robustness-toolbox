@@ -657,7 +657,14 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         from deepspeech_pytorch.loader.data_loader import _collate_fn
 
         # Get parameters needed for the transformation
-        _, window_name, win_length, n_fft, hop_length = self.get_transformation_params()
+        window_name = self.model.audio_conf.window.value
+        sample_rate = self.model.audio_conf.sample_rate
+        window_size = self.model.audio_conf.window_size
+        window_stride = self.model.audio_conf.window_stride
+
+        n_fft = int(sample_rate * window_size)
+        hop_length = int(sample_rate * window_stride)
+        win_length = n_fft
 
         # Get window for the transformation
         if window_name == "hamming":
