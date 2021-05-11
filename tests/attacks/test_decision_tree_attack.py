@@ -54,7 +54,7 @@ class TestDecisionTreeAttack(TestBase):
         x_original = self.X.copy()
         clf.fit(self.X, self.y)
         clf_art = SklearnClassifier(clf)
-        attack = DecisionTreeAttack(clf_art)
+        attack = DecisionTreeAttack(clf_art, verbose=False)
         adv = attack.generate(self.X[:25])
         # all crafting should succeed
         self.assertTrue(np.sum(clf.predict(adv) == clf.predict(self.X[:25])) == 0)

@@ -53,6 +53,7 @@ def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator_for_atta
             nb_random_init=1,
             batch_size=32,
             loss_type="cross_entropy",
+            verbose=False,
         )
 
         (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset

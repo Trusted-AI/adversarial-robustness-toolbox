@@ -95,7 +95,7 @@ class GroundTruthEvaluator:
             dic_json.update({key_i: matrix_i})
             all_errors_by_class.append(errors)
 
-        all_errors_by_class = np.asarray(all_errors_by_class)
+        all_errors_by_class = np.asarray(all_errors_by_class, dtype=object)
         conf_matrix_json = json.dumps(dic_json)
 
         return all_errors_by_class, conf_matrix_json

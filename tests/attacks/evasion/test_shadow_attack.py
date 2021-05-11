@@ -52,6 +52,7 @@ def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator_for_atta
             lambda_s=0.5,
             batch_size=32,
             targeted=True,
+            verbose=False,
         )
 
         (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
@@ -78,6 +79,7 @@ def test_get_regularisation_loss_gradients(art_warning, fix_get_mnist_subset, im
             lambda_s=0.5,
             batch_size=32,
             targeted=True,
+            verbose=False,
         )
 
         (x_train_mnist, _, _, _) = fix_get_mnist_subset
