@@ -71,16 +71,12 @@ class PytorchSpeechRecognizerMixin(ABC):
         """
         raise NotImplementedError
 
+    @property
     @abstractmethod
-    def get_transformation_params(self) -> Tuple[int, str, int, int, int]:
+    def sample_rate(self) -> int:
         """
-        Get parameters needed for audio transformation.
+        Get the sampling rate.
 
-        :return: A tuple of (sample_rate, window_name, win_length, n_fft, hop_length)
-                    - sample_rate: audio sampling rate.
-                    - window_name: the type of window to create.
-                    - win_length: the number of samples in the window.
-                    - n_fft: FFT window size.
-                    - hop_length: number audio of frames between STFT columns.
+        :return: The audio sampling rate.
         """
         raise NotImplementedError

@@ -328,9 +328,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
                 loss_scale=1.0,
             )
 
-    def predict(
-        self, x: np.ndarray, batch_size: int = 128, **kwargs
-    ) -> Union[Tuple[np.ndarray, np.ndarray], np.ndarray]:
+    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> Union[Tuple[np.ndarray, np.ndarray], np.ndarray]:
         """
         Perform prediction for a batch of inputs.
 
@@ -380,9 +378,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
 
             # Call to DeepSpeech model for prediction
             with torch.no_grad():
-                outputs, output_sizes = self._model(
-                    inputs[begin:end].to(self._device), input_sizes[begin:end].to(self._device)
-                )
+                outputs, output_sizes = self._model(inputs[begin:end].to(self._device), input_sizes[begin:end].to(self._device))
 
             results.append(outputs)
             result_output_sizes[begin:end] = output_sizes.detach().cpu().numpy()
@@ -727,7 +723,21 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         from deepspeech_pytorch.loader.data_loader import _collate_fn
 
         # Get parameters needed for the transformation
-        _, window_name, win_length, n_fft, hop_length = self.get_transformation_params()
+        if self._version == 2:
+            window_name = self.model.audio_conf.window.value
+            sample_rate = self.model.audio_conf.sample_rate
+            window_size = self.model.audio_conf.window_size
+            window_stride = self.model.audio_conf.window_stride
+
+        else:
+            window_name = self.model.spect_cfg["window"].value
+            sample_rate = self.model.spect_cfg["sample_rate"]
+            window_size = self.model.spect_cfg["window_size"]
+            window_stride = self.model.spect_cfg["window_stride"]
+
+        n_fft = int(sample_rate * window_size)
+        hop_length = int(sample_rate * window_stride)
+        win_length = n_fft
 
         # Get window for the transformation
         if window_name == "hamming":
@@ -794,36 +804,6 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
 
         return inputs, targets, input_percentages, target_sizes, batch_idx
 
-    def get_transformation_params(self) -> Tuple[int, str, int, int, int]:
-        """
-        Get parameters needed for audio transformation.
-
-        :return: A tuple of (sample_rate, window_name, win_length, n_fft, hop_length)
-                    - sample_rate: audio sampling rate.
-                    - window_name: the type of window to create.
-                    - win_length: the number of samples in the window.
-                    - n_fft: FFT window size.
-                    - hop_length: number audio of frames between STFT columns.
-        """
-        # These parameters are needed for audio transformation
-        if self._version == 2:
-            window_name = self.model.audio_conf.window.value
-            sample_rate = self.model.audio_conf.sample_rate
-            window_size = self.model.audio_conf.window_size
-            window_stride = self.model.audio_conf.window_stride
-
-        else:
-            window_name = self.model.spect_cfg["window"].value
-            sample_rate = self.model.spect_cfg["sample_rate"]
-            window_size = self.model.spect_cfg["window_size"]
-            window_stride = self.model.spect_cfg["window_stride"]
-
-        n_fft = int(sample_rate * window_size)
-        hop_length = int(sample_rate * window_stride)
-        win_length = n_fft
-
-        return sample_rate, window_name, win_length, n_fft, hop_length
-
     def to_training_mode(self) -> None:
         """
         Put the estimator in the training mode.
@@ -837,6 +817,20 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         :param train: False for evaluation mode.
         """
         self.set_batchnorm(train=train)
+
+    @property
+    def sample_rate(self) -> int:
+        """
+        Get the sampling rate.
+
+        :return: The audio sampling rate.
+        """
+        if self._version == 2:
+            sample_rate = self.model.audio_conf.sample_rate
+        else:
+            sample_rate = self.model.spect_cfg["sample_rate"]
+
+        return sample_rate
 
     @property
     def input_shape(self) -> Tuple[int, ...]:
@@ -893,9 +887,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         """
         return self._opt_level  # type: ignore
 
-    def get_activations(
-        self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
-    ) -> np.ndarray:
+    def get_activations(self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False) -> np.ndarray:
         raise NotImplementedError
 
     def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
