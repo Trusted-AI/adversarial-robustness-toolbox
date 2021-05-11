@@ -81,8 +81,8 @@ def test_black_box(art_warning, decision_tree_estimator, get_iris_dataset):
         # check accuracy
         train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
         test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
-        assert train_acc == pytest.approx(0.8285, abs=0.09)
-        assert test_acc == pytest.approx(0.8888, abs=0.09)
+        assert train_acc == pytest.approx(0.8285, abs=0.12)
+        assert test_acc == pytest.approx(0.8888, abs=0.12)
 
     except ARTTestException as e:
         art_warning(e)
@@ -202,8 +202,8 @@ def test_black_box_one_hot(art_warning, get_iris_dataset):
         # check accuracy
         train_acc = np.sum(np.all(inferred_train == train_one_hot, axis=1)) / len(inferred_train)
         test_acc = np.sum(np.all(inferred_test == test_one_hot, axis=1)) / len(inferred_test)
-        assert pytest.approx(0.9145, abs=0.03) == train_acc
-        assert pytest.approx(0.9333, abs=0.03) == test_acc
+        assert pytest.approx(0.8666, abs=0.03) == train_acc
+        assert pytest.approx(0.8888, abs=0.03) == test_acc
 
     except ARTTestException as e:
         art_warning(e)
@@ -270,7 +270,7 @@ def test_black_box_one_hot_float(art_warning, get_iris_dataset):
         # train attack model
         attack.fit(x_train)
         # infer attacked feature
-        values = [[-0.6324555, 1.5811388], [-0.4395245, 2.2751858], [-1.1108746, 0.9001915]]
+        values = [[-0.559017, 1.7888544], [-0.47003216, 2.127514], [-1.1774395, 0.84930056]]
         inferred_train = attack.infer(x_train_for_attack, x_train_predictions, values=values)
         inferred_test = attack.infer(x_test_for_attack, x_test_predictions, values=values)
         # check accuracy
@@ -280,8 +280,8 @@ def test_black_box_one_hot_float(art_warning, get_iris_dataset):
         test_acc = np.sum(
             np.all(np.around(inferred_test, decimals=3) == np.around(test_one_hot, decimals=3), axis=1)
         ) / len(inferred_test)
-        assert pytest.approx(0.9145, abs=0.03) == train_acc
-        assert pytest.approx(0.9333, abs=0.03) == test_acc
+        assert pytest.approx(0.8666, abs=0.05) == train_acc
+        assert pytest.approx(0.8666, abs=0.05) == test_acc
 
     except ARTTestException as e:
         art_warning(e)
