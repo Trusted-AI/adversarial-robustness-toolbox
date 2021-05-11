@@ -759,7 +759,7 @@ class TestPGD(TestBase):
                 return x
 
 
-        device = "cpu"
+        device = "cuda"
         x, y = sklearn.datasets.make_classification(n_samples=10000, n_features=20, n_informative=5, n_redundant=2,
                                                     n_repeated=0, n_classes=2)
 

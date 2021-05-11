@@ -604,7 +604,7 @@ def get_labels_np_array(preds: np.ndarray) -> np.ndarray:
     :param preds: Array of class confidences, nb of instances as first dimension.
     :return: Labels.
     """
-    if len(preds.shape)>=2:
+    if len(preds.shape) >= 2:
         preds_max = np.amax(preds, axis=1, keepdims=True)
     else:
         preds_max = np.round(preds)
@@ -636,7 +636,7 @@ def compute_success_array(
     """
     preds = classifier.predict(x_clean, batch_size=batch_size)
     adv_preds = classifier.predict(x_adv, batch_size=batch_size)
-    if len(preds.shape)>=2:
+    if len(preds.shape) >= 2:
         adv_preds = np.argmax(adv_preds, axis=1)
         preds = np.argmax(preds, axis=1)
     else:
@@ -644,7 +644,7 @@ def compute_success_array(
         preds = np.round(preds)
     if targeted:
         attack_success = adv_preds == np.argmax(labels, axis=1)
-    #preds = np.argmax(classifier.predict(x_clean, batch_size=batch_size), axis=1)
+    # preds = np.argmax(classifier.predict(x_clean, batch_size=batch_size), axis=1)
     attack_success = adv_preds != preds
 
     return attack_success
