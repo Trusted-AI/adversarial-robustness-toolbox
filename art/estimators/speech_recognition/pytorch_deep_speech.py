@@ -724,29 +724,6 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
 
         return inputs, targets, input_percentages, target_sizes, batch_idx
 
-    def get_transformation_params(self) -> Tuple[int, str, int, int, int]:
-        """
-        Get parameters needed for audio transformation.
-
-        :return: A tuple of (sample_rate, window_name, win_length, n_fft, hop_length)
-                    - sample_rate: audio sampling rate.
-                    - window_name: the type of window to create.
-                    - win_length: the number of samples in the window.
-                    - n_fft: FFT window size.
-                    - hop_length: number audio of frames between STFT columns.
-        """
-        # These parameters are needed for audio transformation
-        window_name = self.model.audio_conf.window.value
-        sample_rate = self.model.audio_conf.sample_rate
-        window_size = self.model.audio_conf.window_size
-        window_stride = self.model.audio_conf.window_stride
-
-        n_fft = int(sample_rate * window_size)
-        hop_length = int(sample_rate * window_stride)
-        win_length = n_fft
-
-        return sample_rate, window_name, win_length, n_fft, hop_length
-
     def to_training_mode(self) -> None:
         """
         Put the estimator in the training mode.
@@ -760,6 +737,15 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         :param train: False for evaluation mode.
         """
         self.set_batchnorm(train=train)
+
+    @property
+    def sample_rate(self) -> int:
+        """
+        Get the sampling rate.
+
+        :return: The audio sampling rate.
+        """
+        return self.model.audio_conf.sample_rate
 
     @property
     def input_shape(self) -> Tuple[int, ...]:
