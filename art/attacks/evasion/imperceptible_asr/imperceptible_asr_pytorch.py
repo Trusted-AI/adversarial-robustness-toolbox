@@ -198,13 +198,17 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         if self._optimizer_arg_1 is None:
             self.optimizer_1 = torch.optim.Adam(params=[self.global_optimal_delta], lr=self.learning_rate_1)
         else:
-            self.optimizer_1 = self._optimizer_arg_1(params=[self.global_optimal_delta], lr=self.learning_rate_1)  # type: ignore
+            self.optimizer_1 = self._optimizer_arg_1(  # type: ignore
+                params=[self.global_optimal_delta], lr=self.learning_rate_1
+            )
 
         self._optimizer_arg_2 = optimizer_2
         if self._optimizer_arg_2 is None:
             self.optimizer_2 = torch.optim.Adam(params=[self.global_optimal_delta], lr=self.learning_rate_2)
         else:
-            self.optimizer_2 = self._optimizer_arg_2(params=[self.global_optimal_delta], lr=self.learning_rate_2)  # type: ignore
+            self.optimizer_2 = self._optimizer_arg_2(  # type: ignore
+                params=[self.global_optimal_delta], lr=self.learning_rate_2
+            )
 
         # Setup for AMP use
         if self._use_amp:
@@ -330,7 +334,9 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         # Reset delta with new result
         local_batch_shape = successful_adv_input_1st_stage.shape
         self.global_optimal_delta.data = torch.zeros(self.batch_size, self.global_max_length).type(torch.float64)
-        self.global_optimal_delta.data[: local_batch_shape[0], : local_batch_shape[1]] = successful_perturbation_1st_stage
+        self.global_optimal_delta.data[
+            : local_batch_shape[0], : local_batch_shape[1]
+        ] = successful_perturbation_1st_stage
 
         # Second stage of attack
         successful_adv_input_2nd_stage = self._attack_2nd_stage(
@@ -546,7 +552,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             )
 
             # Total loss
-            loss = loss_1st_stage + torch.tensor(alpha).to(self.estimator.device) * loss_2nd_stage
+            loss = loss_1st_stage.type(torch.float64) + torch.tensor(alpha).to(self.estimator.device) * loss_2nd_stage
             loss = torch.mean(loss)
 
             # Actual training
@@ -762,9 +768,11 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         psd = (8.0 / 3.0) * transformed_delta / self.win_length
         psd = psd ** 2
         psd = (
-            torch.pow(torch.tensor(10.0), torch.tensor(9.6)).to(self.estimator.device)
+            torch.pow(torch.tensor(10.0).type(torch.float64), torch.tensor(9.6).type(torch.float64)).to(
+                self.estimator.device
+            )
             / torch.reshape(torch.tensor(original_max_psd).to(self.estimator.device), [-1, 1, 1])
-            * psd
+            * psd.type(torch.float64)
         )
 
         return psd

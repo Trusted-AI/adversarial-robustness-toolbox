@@ -175,7 +175,8 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
             elif pretrained_model == "librispeech":
                 filename, url = (
                     "librispeech_pretrained_v2.pth",
-                    "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/v2.0/" "librispeech_pretrained_v2.pth",
+                    "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/v2.0/" 
+                    "librispeech_pretrained_v2.pth",
                 )
 
             elif pretrained_model == "tedlium":
@@ -198,7 +199,9 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
                 raise ValueError("The input pretrained model %s is not supported." % pretrained_model)
 
             # Download model
-            model_path = get_file(filename=filename, path=config.ART_DATA_PATH, url=url, extract=False, verbose=self.verbose)
+            model_path = get_file(
+                filename=filename, path=config.ART_DATA_PATH, url=url, extract=False, verbose=self.verbose
+            )
 
             # Then load model
             self._model = load_model(device=self._device, model_path=model_path, use_half=use_half)
@@ -266,7 +269,9 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
                 loss_scale=1.0,
             )
 
-    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> Union[Tuple[np.ndarray, np.ndarray], np.ndarray]:
+    def predict(
+        self, x: np.ndarray, batch_size: int = 128, **kwargs
+    ) -> Union[Tuple[np.ndarray, np.ndarray], np.ndarray]:
         """
         Perform prediction for a batch of inputs.
 
@@ -316,7 +321,9 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
 
             # Call to DeepSpeech model for prediction
             with torch.no_grad():
-                outputs, output_sizes = self._model(inputs[begin:end].to(self._device), input_sizes[begin:end].to(self._device))
+                outputs, output_sizes = self._model(
+                    inputs[begin:end].to(self._device), input_sizes[begin:end].to(self._device)
+                )
 
             results.append(outputs)
             result_output_sizes[begin:end] = output_sizes.detach().cpu().numpy()
@@ -802,7 +809,9 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         """
         return self._opt_level  # type: ignore
 
-    def get_activations(self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False) -> np.ndarray:
+    def get_activations(
+        self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
+    ) -> np.ndarray:
         raise NotImplementedError
 
     def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
