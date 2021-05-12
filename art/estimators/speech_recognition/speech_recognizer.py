@@ -62,15 +62,6 @@ class PytorchSpeechRecognizerMixin(ABC):
         """
         raise NotImplementedError
 
-    @abstractmethod
-    def batch_norm(self, train: bool) -> None:
-        """
-        Set all batch normalization layers into train or eval mode.
-
-        :param train: False for evaluation mode.
-        """
-        raise NotImplementedError
-
     @property
     @abstractmethod
     def sample_rate(self) -> int:
