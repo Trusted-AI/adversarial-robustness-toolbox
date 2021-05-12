@@ -167,13 +167,15 @@ class RobustnessVerificationTreeModelsCliqueMethod:
     | Paper link: https://arxiv.org/abs/1906.03849
     """
 
-    def __init__(self, classifier: "ClassifierDecisionTree") -> None:
+    def __init__(self, classifier: "ClassifierDecisionTree", verbose: bool = True) -> None:
         """
         Create robustness verification for a decision-tree-based classifier.
 
         :param classifier: A trained decision-tree-based classifier.
+        :param verbose: Show progress bars.
         """
         self._classifier = classifier
+        self.verbose = verbose
         self._trees = self._classifier.get_trees()
 
     def verify(
@@ -208,7 +210,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
         num_samples: int = x.shape[0]
 
         # pylint: disable=R1702
-        pbar = trange(num_samples, desc="Decision tree verification")
+        pbar = trange(num_samples, desc="Decision tree verification", disable=not self.verbose)
         for i_sample in pbar:
 
             eps: float = eps_init
