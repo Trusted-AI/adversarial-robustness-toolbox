@@ -29,6 +29,7 @@ import numpy as np
 from art import config
 from art.estimators.pytorch import PyTorchEstimator
 from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizerMixin
+from art.estimators.speech_recognition.speech_recognizer import PytorchSpeechRecognizerMixin
 from art.utils import get_file
 
 if TYPE_CHECKING:
@@ -43,7 +44,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
+class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTorchEstimator):
     """
     This class implements a model-specific automatic speech recognizer using the end-to-end speech recognizer
     DeepSpeech and PyTorch.
@@ -526,7 +527,61 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
 
                 self._optimizer.step()
 
-    def preprocess_transform_model_input(
+    def compute_loss_and_decoded_output(
+        self, masked_adv_input: "torch.Tensor", original_output: np.ndarray, **kwargs
+    ) -> Tuple["torch.Tensor", np.ndarray]:
+        """
+        Compute loss function and decoded output.
+
+        :param masked_adv_input: The perturbed inputs.
+        :param original_output: Target values of shape (nb_samples). Each sample in `original_output` is a string and
+                                it may possess different lengths. A possible example of `original_output` could be:
+                                `original_output = np.array(['SIXTY ONE', 'HELLO'])`.
+        :param real_lengths: Real lengths of original sequences.
+        :return: The loss and the decoded output.
+        """
+        from warpctc_pytorch import CTCLoss
+
+        # This estimator needs to have real lengths for loss computation
+        real_lengths = kwargs.get("real_lengths")
+        if real_lengths is None:
+            raise ValueError(
+                "The PyTorchDeepSpeech estimator needs information about the real lengths of input sequences to "
+                "compute loss and decoded output."
+            )
+
+        # Transform data into the model input space
+        inputs, targets, input_rates, target_sizes, batch_idx = self._preprocess_transform_model_input(
+            x=masked_adv_input.to(self.device),
+            y=original_output,
+            real_lengths=real_lengths,
+        )
+
+        # Compute real input sizes
+        input_sizes = input_rates.mul_(inputs.size()[-1]).int()
+
+        # Call to DeepSpeech model for prediction
+        outputs, output_sizes = self.model(inputs.to(self.device), input_sizes.to(self.device))
+        outputs_ = outputs.transpose(0, 1)
+        float_outputs = outputs_.float()
+
+        # Loss function
+        criterion = CTCLoss()
+        loss = criterion(float_outputs, targets, output_sizes, target_sizes).to(self.device)
+        loss = loss / inputs.size(0)
+
+        # Compute transcription
+        decoded_output, _ = self.decoder.decode(outputs, output_sizes)
+        decoded_output = [do[0] for do in decoded_output]
+        decoded_output = np.array(decoded_output)
+
+        # Rearrange to the original order
+        decoded_output_ = decoded_output.copy()
+        decoded_output[batch_idx] = decoded_output_
+
+        return loss, decoded_output
+
+    def _preprocess_transform_model_input(
         self,
         x: "torch.Tensor",
         y: np.ndarray,
@@ -601,27 +656,27 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         import torchaudio
         from deepspeech_pytorch.loader.data_loader import _collate_fn
 
-        # These parameters are needed for the transformation
-        sample_rate = self._model.audio_conf.sample_rate
-        window_size = self._model.audio_conf.window_size
-        window_stride = self._model.audio_conf.window_stride
+        # Get parameters needed for the transformation
+        window_name = self.model.audio_conf.window.value
+        sample_rate = self.model.audio_conf.sample_rate
+        window_size = self.model.audio_conf.window_size
+        window_stride = self.model.audio_conf.window_stride
 
         n_fft = int(sample_rate * window_size)
         hop_length = int(sample_rate * window_stride)
         win_length = n_fft
 
-        window = self._model.audio_conf.window.value
-
-        if window == "hamming":
+        # Get window for the transformation
+        if window_name == "hamming":
             window_fn = torch.hamming_window  # type: ignore
-        elif window == "hann":
+        elif window_name == "hann":
             window_fn = torch.hann_window  # type: ignore
-        elif window == "blackman":
+        elif window_name == "blackman":
             window_fn = torch.blackman_window  # type: ignore
-        elif window == "bartlett":
+        elif window_name == "bartlett":
             window_fn = torch.bartlett_window  # type: ignore
         else:
-            raise NotImplementedError("Spectrogram window %s not supported." % window)
+            raise NotImplementedError("Spectrogram window %s not supported." % window_name)
 
         # Create a transformer to transform between the two spaces
         transformer = torchaudio.transforms.Spectrogram(
@@ -675,6 +730,21 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         inputs, targets, input_percentages, target_sizes = _collate_fn(batch)
 
         return inputs, targets, input_percentages, target_sizes, batch_idx
+
+    def to_training_mode(self) -> None:
+        """
+        Put the estimator in the training mode.
+        """
+        self.model.train()
+
+    @property
+    def sample_rate(self) -> int:
+        """
+        Get the sampling rate.
+
+        :return: The audio sampling rate.
+        """
+        return self.model.audio_conf.sample_rate
 
     @property
     def input_shape(self) -> Tuple[int, ...]:
