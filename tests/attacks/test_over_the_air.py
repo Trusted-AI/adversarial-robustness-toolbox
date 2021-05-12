@@ -1,20 +1,29 @@
-import pytest
-import torch
-
-# Need random seed for Objective Func
+# MIT License
+#
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2021
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+# documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+# persons to whom the Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+# Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+# WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 import random
 
-# Need numpy arrays to check values inside torch tensors
-import numpy
+import torch
 
-import art.estimators
-from tests.utils import TestBase, master_seed
-
-# import Attack
-from art.attacks.evasion.over_the_air_flickering import OverTheAirFlickeringTorch
+from art.attacks.evasion.over_the_air_flickering import OverTheAirFlickeringPyTorch
+from tests.utils import TestBase
 
 
-class TestOverTheAirFlickeringTorch(TestBase):
+class TestOverTheAirFlickeringPyTorch(TestBase):
     OnesInput = torch.ones(4, 3, 3, 3)
     ZeroesInput = torch.zeros(4, 3, 3, 3)
 
@@ -25,36 +34,44 @@ class TestOverTheAirFlickeringTorch(TestBase):
     X = torch.rand(4, 3, 3, 3, requires_grad=True)
 
     def test_firstTemporalDerivative(self):
-        assert OverTheAirFlickeringTorch._first_temporal_derivative(self.ZeroesInput).size() == torch.Size([4, 3, 3, 3])
-        assert OverTheAirFlickeringTorch._first_temporal_derivative(self.OnesInput).size() == torch.Size([4, 3, 3, 3])
-        assert OverTheAirFlickeringTorch._first_temporal_derivative(self.ZeroesInput).numpy().all() == 0.0
-        assert OverTheAirFlickeringTorch._first_temporal_derivative(self.OnesInput).numpy().all() == 0.0
-
-    def test_secondTemporalDerivative(self):
-        assert OverTheAirFlickeringTorch._second_temporal_derivative(self.ZeroesInput).size() == torch.Size(
+        assert OverTheAirFlickeringPyTorch._first_temporal_derivative(self.ZeroesInput).size() == torch.Size(
             [4, 3, 3, 3]
         )
-        assert OverTheAirFlickeringTorch._second_temporal_derivative(self.OnesInput).size() == torch.Size([4, 3, 3, 3])
-        assert OverTheAirFlickeringTorch._second_temporal_derivative(self.ZeroesInput).numpy().all() == 0.0
-        assert OverTheAirFlickeringTorch._second_temporal_derivative(self.OnesInput).numpy().all() == True
+        assert OverTheAirFlickeringPyTorch._first_temporal_derivative(self.OnesInput).size() == torch.Size([4, 3, 3, 3])
+        assert OverTheAirFlickeringPyTorch._first_temporal_derivative(self.ZeroesInput).numpy().all() == 0.0
+        assert OverTheAirFlickeringPyTorch._first_temporal_derivative(self.OnesInput).numpy().all() == 0.0
+
+    def test_secondTemporalDerivative(self):
+        assert OverTheAirFlickeringPyTorch._second_temporal_derivative(self.ZeroesInput).size() == torch.Size(
+            [4, 3, 3, 3]
+        )
+        assert OverTheAirFlickeringPyTorch._second_temporal_derivative(self.OnesInput).size() == torch.Size(
+            [4, 3, 3, 3]
+        )
+        assert OverTheAirFlickeringPyTorch._second_temporal_derivative(self.ZeroesInput).numpy().all() == 0.0
+        assert OverTheAirFlickeringPyTorch._second_temporal_derivative(self.OnesInput).numpy().all()
 
     def test_thickness_regularization(self):
-        assert OverTheAirFlickeringTorch._thickness_regularization(self.ZeroesInput, 1).size() == torch.Size([])
-        assert OverTheAirFlickeringTorch._thickness_regularization(self.OnesInput, 1).size() == torch.Size([])
+        assert OverTheAirFlickeringPyTorch._thickness_regularization(self.ZeroesInput, 1).size() == torch.Size([])
+        assert OverTheAirFlickeringPyTorch._thickness_regularization(self.OnesInput, 1).size() == torch.Size([])
         # Float Precision Error
-        # Quick Fix
-        assert OverTheAirFlickeringTorch._thickness_regularization(self.ZeroesInput, 1).item() == 0.0
-        assert 35.99999 < OverTheAirFlickeringTorch._thickness_regularization(self.OnesInput, 1).item() < 36.00000
+        assert OverTheAirFlickeringPyTorch._thickness_regularization(self.ZeroesInput, 1).item() == 0.0
+        assert 35.99999 < OverTheAirFlickeringPyTorch._thickness_regularization(self.OnesInput, 1).item() < 36.00000
 
     """
     def test_roughness_regularization(self):
-        assert OverTheAirFlickeringTorch._roughness_regularization(OverTheAirFlickeringTorch, self.ZeroesInput, 1).size() == torch.Size([])
-        assert OverTheAirFlickeringTorch._roughness_regularization(OverTheAirFlickeringTorch, self.OnesInput, 1).size() == torch.Size([])
-        assert OverTheAirFlickeringTorch._roughness_regularization(OverTheAirFlickeringTorch, self.ZeroesInput, 1).item() == 0.0
-        assert OverTheAirFlickeringTorch._roughness_regularization(OverTheAirFlickeringTorch, self.OnesInput, 1).item() == 144.0
+        assert OverTheAirFlickeringPyTorch._roughness_regularization(OverTheAirFlickeringPyTorch,
+               self.ZeroesInput, 1).size() == torch.Size([])
+        assert OverTheAirFlickeringPyTorch._roughness_regularization(OverTheAirFlickeringPyTorch,
+               self.OnesInput, 1).size() == torch.Size([])
+        assert OverTheAirFlickeringPyTorch._roughness_regularization(OverTheAirFlickeringPyTorch,
+               self.ZeroesInput, 1).item() == 0.0
+        assert OverTheAirFlickeringPyTorch._roughness_regularization(OverTheAirFlickeringPyTorch,
+               self.OnesInput, 1).item() == 144.0
 
     def test_objective(self):
-        loss = OverTheAirFlickeringTorch._objective(OverTheAirFlickeringTorch, self.predictions, self.labels, self.X)
+        loss = OverTheAirFlickeringPyTorch._objective(OverTheAirFlickeringPyTorch, self.predictions,
+               self.labels, self.X)
 
         print("\nLoss: %20.15f" % loss.item())
         # Ensure X is created correclty
