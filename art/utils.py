@@ -513,7 +513,9 @@ def check_and_transform_label_format(
     :return: Labels with shape `(nb_samples, nb_classes)` (one-hot) or `(nb_samples,)` (index).
     """
     if labels is not None:
-        if len(labels.shape) == 2 and labels.shape[1] > 1:
+        if nb_classes == 1:
+            labels = labels
+        elif len(labels.shape) == 2 and labels.shape[1] > 1:
             if not return_one_hot:
                 labels = np.argmax(labels, axis=1)
         elif len(labels.shape) == 2 and labels.shape[1] == 1:
