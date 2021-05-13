@@ -89,7 +89,7 @@ class CarliniL2Method(EvasionAttack):
         verbose: bool = True,
     ) -> None:
         """
-        Create a Carlini L_2 attack instance.
+        Create a Carlini&Wagner L_2 attack instance.
 
         :param classifier: A trained classifier.
         :param confidence: Confidence of adversarial examples: a higher value produces examples that are farther away,
@@ -531,7 +531,7 @@ class CarliniLInfMethod(EvasionAttack):
         verbose: bool = True,
     ) -> None:
         """
-        Create a Carlini L_Inf attack instance.
+        Create a Carlini&Wagner L_Inf attack instance.
 
         :param classifier: A trained classifier.
         :param confidence: Confidence of adversarial examples: a higher value produces examples that are farther away,
@@ -871,72 +871,58 @@ class CarliniL0Method(CarliniL2Method):
 
     def __init__(
         self,
-        classifier,
-        confidence=0.0,
-        targeted=False,
-        learning_rate=0.01,
-        binary_search_steps=10,
-        max_iter=10,
-        initial_const=0.01,
-        mask=None,
-        warm_start=True,
-        max_halving=5,
-        max_doubling=5,
-        batch_size=1,
-    ) -> None:
+        classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
+        confidence: float = 0.0,
+        targeted: bool = False,
+        learning_rate: float = 0.01,
+        binary_search_steps: int = 10,
+        max_iter: int = 10,
+        initial_const: float = 0.01,
+        mask: Optional[np.ndarray] = None,
+        warm_start: bool = True,
+        max_halving: int = 5,
+        max_doubling: int = 5,
+        batch_size: int = 1,
+    ):
         """
-        Create a Carlini L_0 attack instance.
+        Create a Carlini&Wagner L_0 attack instance.
 
         :param classifier: A trained classifier.
-        :type classifier: :class:`.Classifier`
         :param confidence: Confidence of adversarial examples: a higher value produces examples that are farther away,
-                from the original input, but classified with higher confidence as the target class.
-        :type confidence: `float`
+                           from the original input, but classified with higher confidence as the target class.
         :param targeted: Should the attack target one specific class.
-        :type targeted: `bool`
         :param learning_rate: The initial learning rate for the attack algorithm. Smaller values produce better results
-                but are slower to converge.
-        :type learning_rate: `float`
+                              but are slower to converge.
         :param binary_search_steps: Number of times to adjust constant with binary search (positive value). If
                                     `binary_search_steps` is large, then the algorithm is not very sensitive to the
                                     value of `initial_const`. Note that the values gamma=0.999999 and c_upper=10e10 are
                                     hardcoded with the same values used by the authors of the method.
-        :type binary_search_steps: `int`
         :param max_iter: The maximum number of iterations.
-        :type max_iter: `int`
         :param initial_const: The initial trade-off constant `c` to use to tune the relative importance of distance and
-                confidence. If `binary_search_steps` is large, the initial constant is not important, as discussed in
-                Carlini and Wagner (2016).
-        :type initial_const: `float`
+                              confidence. If `binary_search_steps` is large, the initial constant is not important, as
+                              discussed in Carlini and Wagner (2016).
         :param mask: The initial features that can be modified by the algorithm. If not specified, the
-                algorithm uses the full feature set.
-        :type mask: `np.ndarray`
-        :param warm_start: Instead of starting gradien descent in each iteration from the initial image. we start the
-                gradient descent from the solution found on the previous iteration.
-        :type warm_start: `boolean`
+                     algorithm uses the full feature set.
+        :param warm_start: Instead of starting gradient descent in each iteration from the initial image. we start the
+                           gradient descent from the solution found on the previous iteration.
         :param max_halving: Maximum number of halving steps in the line search optimization.
-        :type max_halving: `int`
         :param max_doubling: Maximum number of doubling steps in the line search optimization.
-        :type max_doubling: `int`
         :param batch_size: Size of the batch on which adversarial samples are generated.
-        :type batch_size: `int`
         """
         super().__init__(classifier=classifier)
 
-        kwargs = {
-            "confidence": confidence,
-            "targeted": targeted,
-            "learning_rate": learning_rate,
-            "binary_search_steps": binary_search_steps,
-            "max_iter": max_iter,
-            "initial_const": initial_const,
-            "mask": mask,
-            "warm_start": warm_start,
-            "max_halving": max_halving,
-            "max_doubling": max_doubling,
-            "batch_size": batch_size,
-        }
-        assert self.set_params(**kwargs)
+        self.confidence = confidence
+        self.targeted = targeted
+        self.learning_rate = learning_rate
+        self.binary_search_steps = binary_search_steps
+        self.max_iter = max_iter
+        self.initial_const = initial_const
+        self.mask = mask
+        self.warm_start = warm_start
+        self.max_halving: int = max_halving
+        self.max_doubling: int = max_doubling
+        self.batch_size: int = batch_size
+        self._check_params()
 
         # There are internal hyperparameters:
         # Abort binary search for c if it exceeds this threshold (suggested in Carlini and Wagner (2016)):
@@ -947,23 +933,21 @@ class CarliniL0Method(CarliniL2Method):
         # clear how their proposed trick ("instead of scaling by 1/2 we scale by 1/2 + eps") works in detail.
         self._tanh_smoother = 0.999999
 
-        # The tanh transformation does not always map inputs back to their original values event if they're unmodified
-        # To overcom this problem, we set a threshold of minimal diffrence considered as perturbation
-        # Below this threshold, a diffrence between values is considered as tanh transformation diffrence
+        # The tanh transformation does not always map inputs back to their original values event if they are unmodified
+        # To overcome this problem, we set a threshold of minimal difference considered as perturbation
+        # Below this threshold, a difference between values is considered as tanh transformation difference.
         self._perturbation_threshold = 1e-06
 
-    def generate(self, x, y=None, **kwargs):
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
         :param x: An array with the original inputs to be attacked.
-        :type x: `np.ndarray`
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,). If `self.targeted` is true, then `y` represents the target labels. If `self.targeted`
                   is true, then `y_val` represents the target labels. Otherwise, the targets are the original class
                   labels.
         :return: An array holding the adversarial examples.
-        :rtype: `np.ndarray`
         """
         y = check_and_transform_label_format(y, self.estimator.nb_classes)
         x_adv = x.astype(ART_NUMPY_DTYPE)
@@ -1060,8 +1044,8 @@ class CarliniL0Method(CarliniL2Method):
                             len(attack_success),
                         )
 
-                        l0dist = np.sum((
-                            np.abs(x_batch - x_adv_batch) > self._perturbation_threshold).astype(int), axis=1
+                        l0dist = np.sum(
+                            (np.abs(x_batch - x_adv_batch) > self._perturbation_threshold).astype(int), axis=1
                         )
                         improved_adv = attack_success & (l0dist < best_l0dist_batch)
                         logger.debug("Number of improved L0 distances: %i", int(np.sum(improved_adv)))
@@ -1263,41 +1247,13 @@ class CarliniL0Method(CarliniL2Method):
             old_activation[improved_adv] = activation.copy()[improved_adv]
             activation[improved_adv] *= fix_feature[improved_adv]
             logger.info(
-                "L0 norm before fixing :\n{}\nNumber active features :\n{}\nIndex of fixed feature :\n{}".format(
-                    np.sum((perturbation_l1_norm > self._perturbation_threshold).astype(int), axis=1),
-                    np.sum(activation, axis=1),
-                    fix_feature_index,
-                )
+                "L0 norm before fixing :\n%f\nNumber active features :\n%f\nIndex of fixed feature :\n%d",
+                np.sum((perturbation_l1_norm > self._perturbation_threshold).astype(int), axis=1),
+                np.sum(activation, axis=1),
+                fix_feature_index,
             )
 
-    def set_params(self, **kwargs):
-        """Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
-
-        :param confidence: Confidence of adversarial examples: a higher value produces examples that are farther away,
-               from the original input, but classified with higher confidence as the target class.
-        :type confidence: `float`
-        :param targeted: Should the attack target one specific class
-        :type targeted: `bool`
-        :param learning_rate: The learning rate for the attack algorithm. Smaller values produce better results but are
-               slower to converge.
-        :type learning_rate: `float`
-        :param binary_search_steps: number of times to adjust constant with binary search (positive value)
-        :type binary_search_steps: `int`
-        :param max_iter: The maximum number of iterations.
-        :type max_iter: `int`
-        :param initial_const: (optional float, positive) The initial trade-off constant c to use to tune the relative
-               importance of distance and confidence. If binary_search_steps is large,
-               the initial constant is not important. The default value 1e-4 is suggested in Carlini and Wagner (2016).
-        :type initial_const: `float`
-        :param max_halving: Maximum number of halving steps in the line search optimization.
-        :type max_halving: `int`
-        :param max_doubling: Maximum number of doubling steps in the line search optimization.
-        :type max_doubling: `int`
-        :param batch_size: Internal size of batches on which adversarial samples are generated.
-        :type batch_size: `int`
-        """
-        # Save attack-specific parameters
-        super().set_params(**kwargs)
+    def _check_params(self):
 
         if not isinstance(self.binary_search_steps, (int, np.int)) or self.binary_search_steps < 0:
             raise ValueError("The number of binary search steps must be a non-negative integer.")
@@ -1313,5 +1269,3 @@ class CarliniL0Method(CarliniL2Method):
 
         if not isinstance(self.batch_size, (int, np.int)) or self.batch_size < 1:
             raise ValueError("The batch size must be an integer greater than zero.")
-
-        return True
