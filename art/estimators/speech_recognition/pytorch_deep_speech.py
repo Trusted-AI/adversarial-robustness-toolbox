@@ -814,14 +814,6 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         """
         self.model.train()
 
-    def batch_norm(self, train: bool) -> None:
-        """
-        Set all batch normalization layers into train or eval mode.
-
-        :param train: False for evaluation mode.
-        """
-        self.set_batchnorm(train=train)
-
     @property
     def sample_rate(self) -> int:
         """
