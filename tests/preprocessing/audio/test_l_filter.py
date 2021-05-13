@@ -43,7 +43,7 @@ def test_audio_filter(fir_filter, art_warning, expected_values):
         result_2 = expected_data[5]
 
         # Create signal data
-        x = np.array([np.array(x1 * 2), np.array(x2 * 2), np.array(x3 * 2)])
+        x = np.array([np.array(x1 * 2), np.array(x2 * 2), np.array(x3 * 2)], dtype=object)
 
         # Filter params
         numerator_coef = np.array([0.1, 0.2, -0.1, -0.2])
@@ -138,10 +138,10 @@ def test_estimate_gradient(fir_filter, art_warning, expected_values):
         result2 = expected_data[8]
 
         # Create signal data
-        x = np.array([np.array(x1 * 2), np.array(x2 * 2), np.array(x3 * 2)])
+        x = np.array([np.array(x1 * 2), np.array(x2 * 2), np.array(x3 * 2)], dtype=object)
 
         # Create input gradient
-        grad = np.array([np.array(grad0), np.array(grad1), np.array(grad2)])
+        grad = np.array([np.array(grad0), np.array(grad1), np.array(grad2)], dtype=object)
 
         # Filter params
         numerator_coef = np.array([0.1, 0.2, -0.1, -0.2])

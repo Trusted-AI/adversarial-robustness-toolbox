@@ -100,7 +100,7 @@ class TestInputFilter(unittest.TestCase):
         x_test_original = x_test.copy()
 
         # Test PGD with np.inf norm
-        attack = ProjectedGradientDescent(classifier, eps=1, eps_step=0.1, max_iter=5)
+        attack = ProjectedGradientDescent(classifier, eps=1, eps_step=0.1, max_iter=5, verbose=False)
         x_train_adv = attack.generate(x_train)
         x_test_adv = attack.generate(x_test)
 
@@ -120,7 +120,7 @@ class TestInputFilter(unittest.TestCase):
         logger.info("Accuracy on adversarial test examples: %.2f%%", acc * 100)
 
         # Test PGD with 3 random initialisations
-        attack = ProjectedGradientDescent(classifier, num_random_init=3, max_iter=5)
+        attack = ProjectedGradientDescent(classifier, num_random_init=3, max_iter=5, verbose=False)
         x_train_adv = attack.generate(x_train)
         x_test_adv = attack.generate(x_test)
 
@@ -150,7 +150,7 @@ class TestInputFilter(unittest.TestCase):
         classifier = get_tabular_classifier_kr()
 
         # Test untargeted attack
-        attack = ProjectedGradientDescent(classifier, eps=1, eps_step=0.1, max_iter=5)
+        attack = ProjectedGradientDescent(classifier, eps=1, eps_step=0.1, max_iter=5, verbose=False)
         x_test_adv = attack.generate(x_test)
         self.assertFalse((np.array(x_test) == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -167,7 +167,7 @@ class TestInputFilter(unittest.TestCase):
 
         # Recreate a classifier without clip values
         classifier = KerasClassifier(model=classifier._model, use_logits=False, channels_first=True)
-        attack = ProjectedGradientDescent(classifier, eps=1, eps_step=0.2, max_iter=5)
+        attack = ProjectedGradientDescent(classifier, eps=1, eps_step=0.2, max_iter=5, verbose=False)
         x_test_adv = attack.generate(x_test)
         self.assertFalse((np.array(x_test) == x_test_adv).all())
         self.assertTrue((x_test_adv > 1).any())
@@ -183,7 +183,7 @@ class TestInputFilter(unittest.TestCase):
         classifier, _ = get_tabular_classifier_tf()
 
         # Test untargeted attack
-        attack = ProjectedGradientDescent(classifier, eps=1, eps_step=0.1, max_iter=5)
+        attack = ProjectedGradientDescent(classifier, eps=1, eps_step=0.1, max_iter=5, verbose=False)
         x_test_adv = attack.generate(x_test)
         self.assertFalse((np.array(x_test) == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -199,7 +199,7 @@ class TestInputFilter(unittest.TestCase):
         classifier = get_tabular_classifier_pt()
 
         # Test untargeted attack
-        attack = ProjectedGradientDescent(classifier, eps=1, eps_step=0.1, max_iter=5)
+        attack = ProjectedGradientDescent(classifier, eps=1, eps_step=0.1, max_iter=5, verbose=False)
         x_test_adv = attack.generate(x_test)
         self.assertFalse((np.array(x_test) == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -230,7 +230,7 @@ class TestInputFilter(unittest.TestCase):
             classifier.fit(x=x_test, y=y_test)
 
             # Test untargeted attack
-            attack = ProjectedGradientDescent(classifier, eps=1, eps_step=0.1, max_iter=5)
+            attack = ProjectedGradientDescent(classifier, eps=1, eps_step=0.1, max_iter=5, verbose=False)
             x_test_adv = attack.generate(x_test)
             self.assertFalse((np.array(x_test) == x_test_adv).all())
             self.assertTrue((x_test_adv <= 1).all())
