@@ -161,7 +161,7 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
         y = y.to(self.estimator.device)
         x_adv = torch.clone(x)
 
-        for i_max_iter in range(self.max_iter):
+        for _ in range(self.max_iter):
             x_adv = self._compute_torch(
                 x_adv,
                 x,
@@ -231,7 +231,7 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
         """
         import torch  # lgtm [py/repeated-import]
 
-        sm = torch.nn.Softmax(dim=1).to(self.estimator.device)
+        softmax = torch.nn.Softmax(dim=1).to(self.estimator.device)
 
         grads_batch = []
 
@@ -242,10 +242,10 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
             )
             x_in = x[[i]] + torch.repeat_interleave(torch.repeat_interleave(eps, x.shape[2], dim=2), x.shape[3], dim=3)
             x_in = self._clip_and_round_pytorch(x_in)
-            preds = self.estimator._predict_framework(x=x_in)
+            preds = self.estimator._predict_framework(x=x_in)  # pylint: disable=W0212
 
             # calculate adversarial loss
-            y_preds = sm(preds)[0]
+            y_preds = softmax(preds)[0]
             y_mask = y[i].eq(1)
             label_prob = torch.masked_select(y_preds, y_mask)
             max_non_label_prob = torch.max(y_preds - y[i], dim=0)[0]
@@ -284,9 +284,9 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
             grads = eps.grad
             grads_batch.append(grads[0, ...])
 
-        grads_batch = torch.stack(grads_batch)
+        grads_batch_tensor = torch.stack(grads_batch)
 
-        return grads_batch
+        return grads_batch_tensor
 
     def _clip_and_round_pytorch(self, x: "torch.Tensor") -> "torch.Tensor":
         """
