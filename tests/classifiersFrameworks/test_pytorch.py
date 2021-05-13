@@ -221,3 +221,67 @@ def test_fgsm_defences(art_warning, fix_get_mnist_subset, image_dl_estimator, de
         backend_test_defended_images(attack, fix_get_mnist_subset)
     except ARTTestException as e:
         art_warning(e)
+
+# @pytest.mark.only_with_platform("pytorch")
+def test_pytorch_binary(art_warning):
+    '''
+    This test instantiates a binary classification Pytorch model, then attacks it using PGD
+
+    '''
+    import torch
+    import torch.nn.functional as F
+    import torch.nn as nn
+    import torch.optim as optim
+    import art.estimators.classification
+    import sklearn.datasets
+
+
+    class BasicModel(nn.Module):
+        def __init__(self):
+            super(BasicModel, self).__init__()
+            self.layer_1 = nn.Linear(20, 32)
+            self.layer_2 = nn.Linear(32,1)
+        def forward(self, x):
+            x = F.relu(self.layer_1(x))
+            x= torch.sigmoid(self.layer_2(x))
+
+            return x
+
+
+    try:
+        device = "cpu"
+        x, y = sklearn.datasets.make_classification(n_samples=10000, n_features=20, n_informative=5, n_redundant=2,
+                                                    n_repeated=0, n_classes=2)
+
+        train_x, test_x, train_y, test_y = sklearn.model_selection.train_test_split(x,y, test_size=0.2)
+        rand_inp = torch.randn((1, 20))
+        model = BasicModel()
+        loss_func = nn.BCELoss()
+        model.to(device)
+        opt = optim.Adam(model.parameters(), lr=0.001)
+
+        classifier = art.estimators.classification.PyTorchClassifier(
+            model=model,
+            loss=loss_func,
+            optimizer=opt,
+            input_shape=(1, 28, 28),
+            nb_classes=2,
+        )
+        
+        type_of = type(x)
+
+        test_x_batch = test_x[0:16]
+        test_y_batch = test_y[0:16] 
+        test_loss = classifier.compute_loss(test_x_batch, test_y_batch)
+
+        preds = classifier.predict(test_x_batch)
+        grads = classifier.loss_gradient(test_x_batch, test_y_batch)
+
+        attacker = art.attacks.evasion.ProjectedGradientDescent(classifier)
+
+        generated = attacker.generate(test_x_batch)
+        
+        assert generated is not None
+    except ARTTestException as e:
+        art_warning(e)
+
