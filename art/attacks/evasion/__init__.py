@@ -37,6 +37,7 @@ from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_p
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_tensorflow_v2 import (
     ProjectedGradientDescentTensorFlowV2,
 )
+from art.attacks.evasion.over_the_air_flickering.over_the_air_flickering_pytorch import OverTheAirFlickeringPyTorch
 from art.attacks.evasion.saliency_map import SaliencyMapMethod
 from art.attacks.evasion.shadow_attack import ShadowAttack
 from art.attacks.evasion.shapeshifter import ShapeShifter
