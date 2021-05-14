@@ -136,7 +136,7 @@ class TestPixelAttack(TestBase):
             targets = y_test
 
         for es in [1]:  # Option 0 is not easy to reproduce reliably, we should consider it at a later time
-            df = PixelAttack(classifier, th=64, es=es, targeted=targeted)
+            df = PixelAttack(classifier, th=64, es=es, targeted=targeted, verbose=False)
             x_test_adv = df.generate(x_test_original, targets, max_iter=10)
 
             np.testing.assert_raises(AssertionError, np.testing.assert_array_equal, x_test, x_test_adv)

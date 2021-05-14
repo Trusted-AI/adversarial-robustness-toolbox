@@ -74,6 +74,7 @@ class TestAdversarialPatch(TestBase):
             learning_rate=5.0,
             batch_size=10,
             max_iter=5,
+            verbose=False,
         )
 
         target = np.zeros(self.x_train_mnist.shape[0])
@@ -147,6 +148,7 @@ class TestAdversarialPatch(TestBase):
             batch_size=10,
             max_iter=10,
             patch_shape=(28, 28, 1),
+            verbose=False,
         )
 
         target = np.zeros(self.x_train_mnist.shape[0])
@@ -207,7 +209,14 @@ class TestAdversarialPatch(TestBase):
         krc = get_image_classifier_kr(from_logits=True)
 
         attack_ap = AdversarialPatch(
-            krc, rotation_max=0.5, scale_min=0.4, scale_max=0.41, learning_rate=5.0, batch_size=10, max_iter=5
+            krc,
+            rotation_max=0.5,
+            scale_min=0.4,
+            scale_max=0.41,
+            learning_rate=5.0,
+            batch_size=10,
+            max_iter=5,
+            verbose=False,
         )
 
         target = np.zeros(self.x_train_mnist.shape[0])
@@ -266,7 +275,14 @@ class TestAdversarialPatch(TestBase):
         x_train = np.reshape(self.x_train_mnist, (self.n_train, 1, 28, 28)).astype(np.float32)
 
         attack_ap = AdversarialPatch(
-            ptc, rotation_max=0.5, scale_min=0.4, scale_max=0.41, learning_rate=5.0, batch_size=10, max_iter=5
+            ptc,
+            rotation_max=0.5,
+            scale_min=0.4,
+            scale_max=0.41,
+            learning_rate=5.0,
+            batch_size=10,
+            max_iter=5,
+            verbose=False,
         )
 
         target = np.zeros(self.x_train_mnist.shape[0])

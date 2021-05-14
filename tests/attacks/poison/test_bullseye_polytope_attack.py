@@ -74,17 +74,13 @@ def test_failure_modes(art_warning, get_default_mnist_subset, image_dl_estimator
         classifier, _ = image_dl_estimator(functional=True)
         target = np.expand_dims(x_train[3], 0)
         with pytest.raises(ValueError):
-            _ = BullseyePolytopeAttackPyTorch(
-                classifier, target, len(classifier.layer_names) - 2, learning_rate=-1
-            )
+            _ = BullseyePolytopeAttackPyTorch(classifier, target, len(classifier.layer_names) - 2, learning_rate=-1)
         with pytest.raises(ValueError):
             _ = BullseyePolytopeAttackPyTorch(classifier, target, len(classifier.layer_names) - 2, max_iter=-1)
         with pytest.raises(TypeError):
             _ = BullseyePolytopeAttackPyTorch(classifier, target, 2.5)
         with pytest.raises(ValueError):
-            _ = BullseyePolytopeAttackPyTorch(
-                classifier, target, len(classifier.layer_names) - 2, opt="new optimizer"
-            )
+            _ = BullseyePolytopeAttackPyTorch(classifier, target, len(classifier.layer_names) - 2, opt="new optimizer")
         with pytest.raises(ValueError):
             _ = BullseyePolytopeAttackPyTorch(classifier, target, len(classifier.layer_names) - 2, momentum=1.2)
         with pytest.raises(ValueError):
