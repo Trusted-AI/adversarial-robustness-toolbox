@@ -1,9 +1,9 @@
 # base
 numpy>=1.18.0
-scipy==1.6.2
-matplotlib==3.4.1
-scikit-learn>=0.22.2,<=0.24.1
-six==1.15.0
+scipy==1.6.3
+matplotlib==3.4.2
+scikit-learn>=0.22.2,<0.24.3
+six==1.16.0
 Pillow==8.2.0
 tqdm==4.60.0
 statsmodels==0.12.2
@@ -29,10 +29,10 @@ torch==1.8.1+cpu -f https://download.pytorch.org/whl/torch_stable.html
 torchaudio==0.8.1 -f https://download.pytorch.org/whl/torch_stable.html
 torchvision==0.9.1 -f https://download.pytorch.org/whl/torch_stable.html
 catboost==0.25.1
-GPy==1.9.9
+GPy==1.10.0
 lightgbm==3.2.1
-xgboost==1.4.1
-kornia~=0.5.0
+xgboost==1.4.2
+kornia~=0.5.1
 
 # Lingvo ASR dependencies
 # supported versions: (lingvo==0.6.4 with tensorflow-gpu==2.1.0)
@@ -41,9 +41,9 @@ kornia~=0.5.0
 #lingvo==0.6.4
 
 # other
-pytest~=6.2.3
+pytest~=6.2.4
 pytest-flake8~=1.0.7
-pytest-mock~=3.5.1
+pytest-mock~=3.6.1
 pytest-cov~=2.11.1
 codecov~=2.1.11
 requests~=2.25.1
