@@ -47,7 +47,8 @@ logger = logging.getLogger(__name__)
 class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTorchEstimator):
     """
     This class implements a model-specific automatic speech recognizer using the end-to-end speech recognizer
-    DeepSpeech and PyTorch.
+    DeepSpeech and PyTorch. It supports both version 2 and version 3 of DeepSpeech models as released at
+    https://github.com/SeanNaren/deepspeech.pytorch.
 
     | Paper link: https://arxiv.org/abs/1512.02595
     """
@@ -127,6 +128,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
                             if available otherwise run on CPU.
         """
         import torch  # lgtm [py/repeated-import]
+        from deepspeech_pytorch.model import DeepSpeech
         from deepspeech_pytorch.configs.inference_config import LMConfig
         from deepspeech_pytorch.enums import DecoderType
         from deepspeech_pytorch.utils import load_decoder, load_model
@@ -140,6 +142,14 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
             postprocessing_defences=postprocessing_defences,
             preprocessing=preprocessing,
         )
+
+        # Check DeepSpeech version
+        if str(DeepSpeech.__base__) == "<class 'torch.nn.modules.module.Module'>":
+            self._version = 2
+        elif str(DeepSpeech.__base__) == "<class 'pytorch_lightning.core.lightning.LightningModule'>":
+            self._version = 3
+        else:
+            raise NotImplementedError("Only DeepSpeech version 2 and DeepSpeech version 3 are currently supported.")
 
         self.verbose = verbose
 
@@ -166,51 +176,101 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
 
         # Load model
         if model is None:
-            if pretrained_model == "an4":
-                filename, url = (
-                    "an4_pretrained_v2.pth",
-                    "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/v2.0/an4_pretrained_v2.pth",
-                )
+            if self._version == 2:
+                if pretrained_model == "an4":
+                    filename, url = (
+                        "an4_pretrained_v2.pth",
+                        "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/v2.0/an4_pretrained_v2.pth",
+                    )
 
-            elif pretrained_model == "librispeech":
-                filename, url = (
-                    "librispeech_pretrained_v2.pth",
-                    "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/v2.0/"
-                    "librispeech_pretrained_v2.pth",
-                )
-
-            elif pretrained_model == "tedlium":
-                filename, url = (
-                    "ted_pretrained_v2.pth",
-                    "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/v2.0/ted_pretrained_v2.pth",
-                )
-
-            elif pretrained_model is None:
-                # If model is None and no pretrained model is selected, then we need to have parameters filename and
-                # url to download, extract and load the automatic speech recognition model
-                if filename is None or url is None:
+                elif pretrained_model == "librispeech":
                     filename, url = (
                         "librispeech_pretrained_v2.pth",
                         "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/v2.0/"
                         "librispeech_pretrained_v2.pth",
                     )
 
+                elif pretrained_model == "tedlium":
+                    filename, url = (
+                        "ted_pretrained_v2.pth",
+                        "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/v2.0/ted_pretrained_v2.pth",
+                    )
+
+                elif pretrained_model is None:
+                    # If model is None and no pretrained model is selected, then we need to have parameters filename
+                    # and url to download, extract and load the automatic speech recognition model
+                    if filename is None or url is None:
+                        filename, url = (
+                            "librispeech_pretrained_v2.pth",
+                            "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/v2.0/"
+                            "librispeech_pretrained_v2.pth",
+                        )
+
+                else:
+                    raise ValueError("The input pretrained model %s is not supported." % pretrained_model)
+
+                # Download model
+                model_path = get_file(
+                    filename=filename, path=config.ART_DATA_PATH, url=url, extract=False, verbose=self.verbose
+                )
+
+                # Then load model
+                self._model = load_model(device=self._device, model_path=model_path, use_half=use_half)
+
             else:
-                raise ValueError("The input pretrained model %s is not supported." % pretrained_model)
+                if pretrained_model == "an4":
+                    filename, url = (
+                        "an4_pretrained_v3.ckpt",
+                        "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/V3.0/an4_pretrained_v3.ckpt",
+                    )
 
-            # Download model
-            model_path = get_file(
-                filename=filename, path=config.ART_DATA_PATH, url=url, extract=False, verbose=self.verbose
-            )
+                elif pretrained_model == "librispeech":
+                    filename, url = (
+                        "librispeech_pretrained_v3.ckpt",
+                        "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/V3.0/"
+                        "librispeech_pretrained_v3.ckpt",
+                    )
 
-            # Then load model
-            self._model = load_model(device=self._device, model_path=model_path, use_half=use_half)
+                elif pretrained_model == "tedlium":
+                    filename, url = (
+                        "ted_pretrained_v3.ckpt",
+                        "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/V3.0/ted_pretrained_v3.ckpt",
+                    )
+
+                elif pretrained_model is None:
+                    # If model is None and no pretrained model is selected, then we need to have parameters filename and
+                    # url to download, extract and load the automatic speech recognition model
+                    if filename is None or url is None:
+                        filename, url = (
+                            "librispeech_pretrained_v3.ckpt",
+                            "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/V3.0/"
+                            "librispeech_pretrained_v3.ckpt",
+                        )
+
+                else:
+                    raise ValueError("The input pretrained model %s is not supported." % pretrained_model)
+
+                # Download model
+                model_path = get_file(
+                    filename=filename, path=config.ART_DATA_PATH, url=url, extract=False, verbose=self.verbose
+                )
+
+                # Then load model
+                self._model = load_model(device=self._device, model_path=model_path)
 
         else:
             self._model = model
 
             # Push model to the corresponding device
             self._model.to(self._device)
+
+        # Set the loss function
+        if self._version == 2:
+            from warpctc_pytorch import CTCLoss
+
+            self.criterion = CTCLoss()
+        else:
+            self.criterion = self._model.criterion
 
         # Save first version of the optimizer
         self._optimizer = optimizer
@@ -377,8 +437,6 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
                   lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`.
         :return: Loss gradients of the same shape as `x`.
         """
-        from warpctc_pytorch import CTCLoss
-
         x_in = np.empty(len(x), dtype=object)
         x_in[:] = list(x)
 
@@ -401,12 +459,18 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         # Call to DeepSpeech model for prediction
         outputs, output_sizes = self._model(inputs.to(self._device), input_sizes.to(self._device))
         outputs = outputs.transpose(0, 1)
-        float_outputs = outputs.float()
 
-        # Loss function
-        criterion = CTCLoss()
-        loss = criterion(float_outputs, targets, output_sizes, target_sizes).to(self._device)
-        loss = loss / inputs.size(0)
+        if self._version == 2:
+            outputs = outputs.float()
+        else:
+            outputs = outputs.log_softmax(-1)
+
+        # Compute the loss
+        loss = self.criterion(outputs, targets, output_sizes, target_sizes).to(self._device)
+
+        # Average the loss by mini batch if version 2 of DeepSpeech is used
+        if self._version == 2:
+            loss = loss / inputs.size(0)
 
         # Compute gradients
         if self._use_amp:
@@ -438,6 +502,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
 
         # Unfreeze batch norm layers again
         self.set_batchnorm(train=True)
+
         return results
 
     def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, **kwargs) -> None:
@@ -456,8 +521,6 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         """
         import random
 
-        from warpctc_pytorch import CTCLoss
-
         x_in = np.empty(len(x), dtype=object)
         x_in[:] = list(x)
 
@@ -473,9 +536,6 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         # Train with batch processing
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         ind = np.arange(len(x_preprocessed))
-
-        # Loss function
-        criterion = CTCLoss()
 
         # Start training
         for _ in range(nb_epochs):
@@ -509,11 +569,18 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
                 # Call to DeepSpeech model for prediction
                 outputs, output_sizes = self._model(inputs.to(self._device), input_sizes.to(self._device))
                 outputs = outputs.transpose(0, 1)
-                float_outputs = outputs.float()
 
-                # Form the loss
-                loss = criterion(float_outputs, targets, output_sizes, target_sizes).to(self._device)
-                loss = loss / inputs.size(0)
+                if self._version == 2:
+                    outputs = outputs.float()
+                else:
+                    outputs = outputs.log_softmax(-1)
+
+                # Compute the loss
+                loss = self.criterion(outputs, targets, output_sizes, target_sizes).to(self._device)
+
+                # Average the loss by mini batch if version 2 of DeepSpeech is used
+                if self._version == 2:
+                    loss = loss / inputs.size(0)
 
                 # Actual training
                 if self._use_amp:
@@ -540,8 +607,6 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         :param real_lengths: Real lengths of original sequences.
         :return: The loss and the decoded output.
         """
-        from warpctc_pytorch import CTCLoss
-
         # This estimator needs to have real lengths for loss computation
         real_lengths = kwargs.get("real_lengths")
         if real_lengths is None:
@@ -563,12 +628,18 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         # Call to DeepSpeech model for prediction
         outputs, output_sizes = self.model(inputs.to(self.device), input_sizes.to(self.device))
         outputs_ = outputs.transpose(0, 1)
-        float_outputs = outputs_.float()
 
-        # Loss function
-        criterion = CTCLoss()
-        loss = criterion(float_outputs, targets, output_sizes, target_sizes).to(self.device)
-        loss = loss / inputs.size(0)
+        if self._version == 2:
+            outputs_ = outputs_.float()
+        else:
+            outputs_ = outputs_.log_softmax(-1)
+
+        # Compute the loss
+        loss = self.criterion(outputs_, targets, output_sizes, target_sizes).to(self._device)
+
+        # Average the loss by mini batch if version 2 of DeepSpeech is used
+        if self._version == 2:
+            loss = loss / inputs.size(0)
 
         # Compute transcription
         decoded_output, _ = self.decoder.decode(outputs, output_sizes)
@@ -657,10 +728,17 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         from deepspeech_pytorch.loader.data_loader import _collate_fn
 
         # Get parameters needed for the transformation
-        window_name = self.model.audio_conf.window.value
-        sample_rate = self.model.audio_conf.sample_rate
-        window_size = self.model.audio_conf.window_size
-        window_stride = self.model.audio_conf.window_stride
+        if self._version == 2:
+            window_name = self.model.audio_conf.window.value
+            sample_rate = self.model.audio_conf.sample_rate
+            window_size = self.model.audio_conf.window_size
+            window_stride = self.model.audio_conf.window_stride
+
+        else:
+            window_name = self.model.spect_cfg["window"].value
+            sample_rate = self.model.spect_cfg["sample_rate"]
+            window_size = self.model.spect_cfg["window_size"]
+            window_stride = self.model.spect_cfg["window_stride"]
 
         n_fft = int(sample_rate * window_size)
         hop_length = int(sample_rate * window_stride)
@@ -744,7 +822,12 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
 
         :return: The audio sampling rate.
         """
-        return self.model.audio_conf.sample_rate
+        if self._version == 2:
+            sample_rate = self.model.audio_conf.sample_rate
+        else:
+            sample_rate = self.model.spect_cfg["sample_rate"]
+
+        return sample_rate
 
     @property
     def input_shape(self) -> Tuple[int, ...]:
