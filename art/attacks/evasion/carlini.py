@@ -24,6 +24,7 @@ attack objective.
 
 | Paper link: https://arxiv.org/abs/1608.04644
 """
+# pylint: disable=C0302
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -122,7 +123,7 @@ class CarliniL2Method(EvasionAttack):
         self.max_doubling = max_doubling
         self.batch_size = batch_size
         self.verbose = verbose
-        self._check_params()
+        CarliniL2Method._check_params(self)
 
         # There are internal hyperparameters:
         # Abort binary search for c if it exceeds this threshold (suggested in Carlini and Wagner (2016)):
@@ -840,7 +841,6 @@ class CarliniLInfMethod(EvasionAttack):
             raise ValueError("The batch size must be an integer greater than zero.")
 
 
-# pylint: disable=C0302
 class CarliniL0Method(CarliniL2Method):
     """
     The L_0 distance metric is non-differentiable and therefore is ill-suited for standard gradient descent.
@@ -865,6 +865,7 @@ class CarliniL0Method(CarliniL2Method):
         "max_halving",
         "max_doubling",
         "batch_size",
+        "verbose",
     ]
 
     _estimator_requirements = (BaseEstimator, ClassGradientsMixin)
@@ -883,6 +884,7 @@ class CarliniL0Method(CarliniL2Method):
         max_halving: int = 5,
         max_doubling: int = 5,
         batch_size: int = 1,
+        verbose: bool = True,
     ):
         """
         Create a Carlini&Wagner L_0 attack instance.
@@ -908,20 +910,24 @@ class CarliniL0Method(CarliniL2Method):
         :param max_halving: Maximum number of halving steps in the line search optimization.
         :param max_doubling: Maximum number of doubling steps in the line search optimization.
         :param batch_size: Size of the batch on which adversarial samples are generated.
+        :param verbose: Show progress bars.
         """
-        super().__init__(classifier=classifier)
+        super().__init__(
+            classifier=classifier,
+            confidence=confidence,
+            targeted=targeted,
+            learning_rate=learning_rate,
+            max_iter=max_iter,
+            warm_start=warm_start,
+            max_halving=max_halving,
+            max_doubling=max_doubling,
+            batch_size=batch_size,
+            verbose=verbose,
+        )
 
-        self.confidence = confidence
-        self.targeted = targeted
-        self.learning_rate = learning_rate
         self.binary_search_steps = binary_search_steps
-        self.max_iter = max_iter
         self.initial_const = initial_const
         self.mask = mask
-        self.warm_start = warm_start
-        self.max_halving: int = max_halving
-        self.max_doubling: int = max_doubling
-        self.batch_size: int = batch_size
         self._check_params()
 
         # There are internal hyperparameters:
