@@ -25,7 +25,6 @@ import logging
 from typing import TYPE_CHECKING, List, Optional, Tuple, Union
 
 import numpy as np
-from deepspeech_pytorch.model import DeepSpeech
 
 from art import config
 from art.estimators.pytorch import PyTorchEstimator
@@ -36,6 +35,7 @@ from art.utils import get_file
 if TYPE_CHECKING:
     # pylint: disable=C0412
     import torch
+    from deepspeech_pytorch.model import DeepSpeech
 
     from art.defences.postprocessor.postprocessor import Postprocessor
     from art.defences.preprocessor.preprocessor import Preprocessor
@@ -128,6 +128,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
                             if available otherwise run on CPU.
         """
         import torch  # lgtm [py/repeated-import]
+        from deepspeech_pytorch.model import DeepSpeech
         from deepspeech_pytorch.configs.inference_config import LMConfig
         from deepspeech_pytorch.enums import DecoderType
         from deepspeech_pytorch.utils import load_decoder, load_model
