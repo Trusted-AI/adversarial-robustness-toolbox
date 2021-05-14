@@ -918,7 +918,6 @@ class CarliniL0Method(CarliniL2Method):
             targeted=targeted,
             learning_rate=learning_rate,
             max_iter=max_iter,
-            warm_start=warm_start,
             max_halving=max_halving,
             max_doubling=max_doubling,
             batch_size=batch_size,
@@ -928,6 +927,7 @@ class CarliniL0Method(CarliniL2Method):
         self.binary_search_steps = binary_search_steps
         self.initial_const = initial_const
         self.mask = mask
+        self.warm_start = warm_start
         self._check_params()
 
         # There are internal hyperparameters:
