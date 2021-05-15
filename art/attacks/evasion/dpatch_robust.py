@@ -144,6 +144,24 @@ class RobustDPatch(EvasionAttack):
         else:
             image_height, image_width = x.shape[1:3]
 
+        if not self.estimator.native_label_is_pytorch_format and y is not None:
+            from art.estimators.object_detection.utils import convert_tf_to_pt
+
+            y = convert_tf_to_pt(y=y, height=x.shape[1], width=x.shape[2])
+
+        if y is not None:
+            for i_image in range(x.shape[0]):
+                y_i = y[i_image]["boxes"]
+                for i_box in range(y_i.shape[0]):
+                    x_1, y_1, x_2, y_2 = y_i[i_box]
+                    if (
+                        x_1 < self.crop_range[1]
+                        or y_1 < self.crop_range[0]
+                        or x_2 > image_width - self.crop_range[1] + 1
+                        or y_2 > image_height - self.crop_range[0] + 1
+                    ):
+                        raise ValueError("Cropping is intersecting with at least one box, reduce `crop_range`.")
+
         if (
             self.patch_location[0] + self.patch_shape[0] > image_height - self.crop_range[0]
             or self.patch_location[1] + self.patch_shape[1] > image_width - self.crop_range[1]
@@ -173,6 +191,7 @@ class RobustDPatch(EvasionAttack):
                     gradients = self.estimator.loss_gradient(
                         x=patched_images,
                         y=patch_target,
+                        standardise_output=True,
                     )
 
                     gradients = self._untransform_gradients(
@@ -298,17 +317,20 @@ class RobustDPatch(EvasionAttack):
 
         # 3) adjust brightness:
         brightness = random.uniform(*self.brightness_range)
-        # x_copy = np.round(brightness * x_copy)
-        # x_patch = np.round(brightness * x_patch)
-        x_copy = brightness * x_copy # x and patch are between [0,1]
-        x_patch = brightness * x_patch
+        x_copy = np.round(brightness * x_copy / self.learning_rate) * self.learning_rate
+        x_patch = np.round(brightness * x_patch / self.learning_rate) * self.learning_rate
 
         transformations.update({"brightness": brightness})
 
         logger.debug("Transformations: %s", str(transformations))
 
         patch_target: List[Dict[str, np.ndarray]] = list()
-        predictions = self.estimator.predict(x=x_copy)
+
+        if self.targeted:
+            predictions = y_copy
+        else:
+            predictions = self.estimator.predict(x=x_copy, standardise_output=True)
+
         for i_image in range(x_copy.shape[0]):
             target_dict = dict()
             target_dict["boxes"] = predictions[i_image]["boxes"]
@@ -441,8 +463,6 @@ class RobustDPatch(EvasionAttack):
         if len(self.brightness_range) != 2:
             raise ValueError("The length of brightness range must be 2.")
 
-        # Why is the constraint self.brightness_range[1] <= 1.0 needed?
-        # if self.brightness_range[0] < 0.0 or self.brightness_range[1] > 1.0:
         if self.brightness_range[0] < 0.0:
             raise ValueError("The brightness range must be >= 0.0.")
 
