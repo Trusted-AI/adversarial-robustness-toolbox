@@ -50,6 +50,10 @@ def fix_get_robust_dpatch():
             return [{"boxes": [], "labels": [], "scores": []}]
 
         @property
+        def native_label_is_pytorch_format(self):
+            return True
+
+        @property
         def input_shape(self):
             return self._input_shape
 
