@@ -59,12 +59,13 @@ class RobustDPatch(EvasionAttack):
         "learning_rate",
         "max_iter",
         "batch_size",
-        "verbose",
         "patch_location",
         "crop_range",
         "brightness_range",
         "rotation_weights",
         "sample_size",
+        "targeted",
+        "verbose",
     ]
 
     _estimator_requirements = (BaseEstimator, LossGradientsMixin, ObjectDetectorMixin)
@@ -81,6 +82,7 @@ class RobustDPatch(EvasionAttack):
         learning_rate: float = 5.0,
         max_iter: int = 500,
         batch_size: int = 16,
+        targeted: bool = False,
         verbose: bool = True,
     ):
         """
@@ -96,6 +98,7 @@ class RobustDPatch(EvasionAttack):
         :param learning_rate: The learning rate of the optimization.
         :param max_iter: The number of optimization steps.
         :param batch_size: The size of the training batch.
+        :param targeted: Indicates whether the attack is targeted (True) or untargeted (False).
         :param verbose: Show progress bars.
         """
 
@@ -120,9 +123,10 @@ class RobustDPatch(EvasionAttack):
         self.brightness_range = brightness_range
         self.rotation_weights = rotation_weights
         self.sample_size = sample_size
+        self._targeted = targeted
         self._check_params()
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: Optional[List[Dict[str, np.ndarray]]] = None, **kwargs) -> np.ndarray:
         """
         Generate RobustDPatch.
 
@@ -133,7 +137,9 @@ class RobustDPatch(EvasionAttack):
         channel_index = 1 if self.estimator.channels_first else x.ndim - 1
         if x.shape[channel_index] != self.patch_shape[channel_index - 1]:
             raise ValueError("The color channel index of the images and the patch have to be identical.")
-        if y is not None:
+        if y is None and self.targeted:
+            raise ValueError("The targeted version of RobustDPatch attack requires target labels provided to `y`.")
+        if y is not None and not self.targeted:
             raise ValueError("The RobustDPatch attack does not use target labels.")
         if x.ndim != 4:
             raise ValueError("The adversarial patch can only be applied to images.")
@@ -183,9 +189,14 @@ class RobustDPatch(EvasionAttack):
                     i_batch_start = i_batch * self.batch_size
                     i_batch_end = min((i_batch + 1) * self.batch_size, x.shape[0])
 
+                    if y is None:
+                        y_batch = y
+                    else:
+                        y_batch = y[i_batch_start:i_batch_end]
+
                     # Sample and apply the random transformations:
                     patched_images, patch_target, transforms = self._augment_images_with_patch(
-                        x[i_batch_start:i_batch_end], self._patch, channels_first=self.estimator.channels_first
+                        x[i_batch_start:i_batch_end], y_batch, self._patch, channels_first=self.estimator.channels_first
                     )
 
                     gradients = self.estimator.loss_gradient(
@@ -206,7 +217,7 @@ class RobustDPatch(EvasionAttack):
 
                     patch_gradients_old = patch_gradients
 
-            self._patch = self._patch + np.sign(patch_gradients) * self.learning_rate
+            self._patch = self._patch + np.sign(patch_gradients) * (1 - 2 * int(self.targeted)) * self.learning_rate
 
             if self.estimator.clip_values is not None:
                 self._patch = np.clip(
@@ -218,12 +229,13 @@ class RobustDPatch(EvasionAttack):
         return self._patch
 
     def _augment_images_with_patch(
-        self, x: np.ndarray, patch: np.ndarray, channels_first: bool
+        self, x: np.ndarray, y: Optional[List[Dict[str, np.ndarray]]], patch: np.ndarray, channels_first: bool
     ) -> Tuple[np.ndarray, List[Dict[str, np.ndarray]], Dict[str, Union[int, float]]]:
         """
         Augment images with patch.
 
         :param x: Sample images.
+        :param y: Target labels.
         :param patch: The patch to be applied.
         :param channels_first: Set channels first or last.
         """
@@ -269,9 +281,6 @@ class RobustDPatch(EvasionAttack):
                 y_b = y[i_image]["boxes"].copy()
                 image_width = x.shape[2]
                 image_height = x.shape[1]
-                # TODO: fix. This assumes y_b is in Pytorch box format [xmin,ymin,xmax,ymax],
-                # where 0 <= x < W and 0 <= y < H. Tensorflow box format [ymin,xmin,ymax,xmax],
-                # where 0 <= x < 1 and 0 <= y < 1, is not supported
                 x_1_arr = y_b[:, 0]
                 y_1_arr = y_b[:, 1]
                 x_2_arr = y_b[:, 2]
@@ -486,3 +495,6 @@ class RobustDPatch(EvasionAttack):
             raise ValueError("The EOT sample size must be of type int.")
         if self.sample_size <= 0:
             raise ValueError("The EOT sample size must be greater than 0.")
+
+        if not isinstance(self.targeted, bool):
+            raise ValueError("The argument `targeted` has to be of type bool.")
