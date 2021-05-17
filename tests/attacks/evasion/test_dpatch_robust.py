@@ -90,7 +90,7 @@ def test_augment_images_with_patch(art_warning, image_format, fix_get_robust_dpa
             channels_first = True
 
         patched_images, _, transformations = attack._augment_images_with_patch(
-            x=x, patch=patch, channels_first=channels_first
+            x=x, y=None, patch=patch, channels_first=channels_first
         )
 
         transformation_expected = {"crop_x": 0, "crop_y": 0, "rot90": 0, "brightness": 1.0}
