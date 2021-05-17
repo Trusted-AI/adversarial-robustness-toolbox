@@ -725,9 +725,12 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         else:
             labels_t = y_preprocessed
 
+        # if labels_t is None:
+        #     labels_t = y
+
         # Compute the gradient and return
         model_outputs = self._model(inputs_t)
-        loss = self._loss(model_outputs[-1], labels_t.float())  # lgtm [py/call-to-non-callable]
+        loss = self._loss(model_outputs[-1], labels_t)  # lgtm [py/call-to-non-callable]
 
         # Clean gradients
         self._model.zero_grad()
