@@ -25,7 +25,7 @@ specifically for PyTorch.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import TYPE_CHECKING, Optional, Tuple, List, Union
+from typing import TYPE_CHECKING, Optional, Tuple, List
 
 import numpy as np
 import scipy
@@ -34,8 +34,7 @@ from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNetworkMixin
 from art.estimators.pytorch import PyTorchEstimator
 from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
-from art.estimators.speech_recognition.pytorch_espresso import PyTorchEspresso
-from art.estimators.speech_recognition.speech_recognizer import BaseSpeechRecognizer
+from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizerMixin
 from art.estimators.speech_recognition.speech_recognizer import PytorchSpeechRecognizerMixin
 
 if TYPE_CHECKING:
@@ -70,6 +69,9 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         "num_iter_increase_alpha",
         "decrease_factor_alpha",
         "num_iter_decrease_alpha",
+        "win_length",
+        "hop_length",
+        "n_fft",
         "batch_size",
         "use_amp",
         "opt_level",
@@ -79,16 +81,15 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         BaseEstimator,
         LossGradientsMixin,
         NeuralNetworkMixin,
-        BaseSpeechRecognizer,
+        SpeechRecognizerMixin,
         PytorchSpeechRecognizerMixin,
         PyTorchEstimator,
         PyTorchDeepSpeech,
-        PyTorchEspresso,
     )
 
     def __init__(
         self,
-        estimator: Union[PyTorchDeepSpeech, PyTorchEspresso],
+        estimator: PyTorchDeepSpeech,
         eps: float = 0.05,
         max_iter_1: int = 10,
         max_iter_2: int = 4000,
@@ -105,6 +106,9 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         num_iter_increase_alpha: int = 20,
         decrease_factor_alpha: float = 0.8,
         num_iter_decrease_alpha: int = 20,
+        win_length: int = 2048,
+        hop_length: int = 512,
+        n_fft: int = 2048,
         batch_size: int = 32,
         use_amp: bool = False,
         opt_level: str = "O1",
@@ -138,6 +142,9 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         :param decrease_factor_alpha: The factor to decrease the alpha coefficient used in the second stage of the
                                       optimization of the attack.
         :param num_iter_decrease_alpha: Number of iterations to decrease alpha.
+        :param win_length: Length of the window. The number of STFT rows is `(win_length // 2 + 1)`.
+        :param hop_length: Number of audio samples between adjacent STFT columns.
+        :param n_fft: FFT window size.
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :param use_amp: Whether to use the automatic mixed precision tool to enable mixed precision training or
                         gradient computation, e.g. with loss gradient computation. When set to True, this option is
@@ -166,6 +173,9 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         self.num_iter_increase_alpha = num_iter_increase_alpha
         self.decrease_factor_alpha = decrease_factor_alpha
         self.num_iter_decrease_alpha = num_iter_decrease_alpha
+        self.win_length = win_length
+        self.hop_length = hop_length
+        self.n_fft = n_fft
         self.batch_size = batch_size
         self._use_amp = use_amp
 
@@ -247,7 +257,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         # case a PyTorchDeepSpeech estimator is used. However, the PyTorchDeepSpeech estimator uses batch norm layers
         # which need to be frozen
         self.estimator.to_training_mode()
-        self.estimator.batch_norm(train=False)
+        self.estimator.set_batchnorm(train=False)
 
         # Compute perturbation with batching
         num_batch = int(np.ceil(len(x) / float(self.batch_size)))
@@ -281,7 +291,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
                 adv_x[batch_index_1 + i] = adv_x_batch[i, : len(adv_x[batch_index_1 + i])]
 
         # Unfreeze batch norm layers again, needed in case of PyTorchDeepSpeech
-        self.estimator.batch_norm(train=True)
+        self.estimator.set_batchnorm(train=True)
 
         # Recast to the original type
         adv_x = np.array([adv_x[i].astype(x[i].dtype) for i in range(len(adv_x))])
@@ -472,7 +482,9 @@ class ImperceptibleASRPyTorch(EvasionAttack):
 
         # Compute loss and decoded output
         loss, decoded_output = self.estimator.compute_loss_and_decoded_output(
-            masked_adv_input=masked_adv_input, original_output=original_output, real_lengths=real_lengths,
+            masked_adv_input=masked_adv_input,
+            original_output=original_output,
+            real_lengths=real_lengths,
         )
 
         return loss, local_delta, decoded_output, masked_adv_input, local_delta_rescale
@@ -540,7 +552,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             )
 
             # Total loss
-            loss = loss_1st_stage + torch.tensor(alpha).to(self.estimator.device) * loss_2nd_stage
+            loss = loss_1st_stage.type(torch.float64) + torch.tensor(alpha).to(self.estimator.device) * loss_2nd_stage
             loss = torch.mean(loss)
 
             # Actual training
@@ -629,26 +641,23 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         import librosa
 
         # First compute the psd matrix
-        # Get parameters needed for the transformation
-        sample_rate, window_name, win_length, n_fft, hop_length = self.estimator.get_transformation_params()
-
         # Get window for the transformation
-        window = scipy.signal.get_window(window_name, win_length, fftbins=True)
+        window = scipy.signal.get_window("hann", self.win_length, fftbins=True)
 
         # Do transformation
         transformed_x = librosa.core.stft(
-            y=x, n_fft=n_fft, hop_length=hop_length, win_length=win_length, window=window, center=False
+            y=x, n_fft=self.n_fft, hop_length=self.hop_length, win_length=self.win_length, window=window, center=False
         )
         transformed_x *= np.sqrt(8.0 / 3.0)
 
-        psd = abs(transformed_x / win_length)
+        psd = abs(transformed_x / self.win_length)
         original_max_psd = np.max(psd * psd)
         with np.errstate(divide="ignore"):
             psd = (20 * np.log10(psd)).clip(min=-200)
         psd = 96 - np.max(psd) + psd
 
         # Compute freqs and barks
-        freqs = librosa.core.fft_frequencies(sr=sample_rate, n_fft=n_fft)
+        freqs = librosa.core.fft_frequencies(sr=self.estimator.sample_rate, n_fft=self.n_fft)
         barks = 13 * np.arctan(0.00076 * freqs) + 3.5 * np.arctan(pow(freqs / 7500.0, 2))
 
         # Compute quiet threshold
@@ -739,40 +748,31 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         """
         import torch  # lgtm [py/repeated-import]
 
-        # Get parameters needed for the transformation
-        sample_rate, window_name, win_length, n_fft, hop_length = self.estimator.get_transformation_params()
-
-        if window == "hamming":
-            window_fn = torch.hamming_window  # type: ignore
-        elif window == "hann":
-            window_fn = torch.hann_window  # type: ignore
-        elif window == "blackman":
-            window_fn = torch.blackman_window  # type: ignore
-        elif window == "bartlett":
-            window_fn = torch.bartlett_window  # type: ignore
-        else:
-            raise NotImplementedError("Spectrogram window %s not supported." % window_name)
+        # Get window for the transformation
+        window_fn = torch.hann_window  # type: ignore
 
         # Return STFT of delta
         delta_stft = torch.stft(
             delta,
-            n_fft=n_fft,
-            hop_length=hop_length,
-            win_length=win_length,
+            n_fft=self.n_fft,
+            hop_length=self.hop_length,
+            win_length=self.win_length,
             center=False,
-            window=window_fn(win_length).to(self.estimator.device),
+            window=window_fn(self.win_length).to(self.estimator.device),
         ).to(self.estimator.device)
 
         # Take abs of complex STFT results
         transformed_delta = torch.sqrt(torch.sum(torch.square(delta_stft), -1))
 
         # Compute the psd matrix
-        psd = (8.0 / 3.0) * transformed_delta / win_length
+        psd = (8.0 / 3.0) * transformed_delta / self.win_length
         psd = psd ** 2
         psd = (
-            torch.pow(torch.tensor(10.0), torch.tensor(9.6)).to(self.estimator.device)
+            torch.pow(torch.tensor(10.0).type(torch.float64), torch.tensor(9.6).type(torch.float64)).to(
+                self.estimator.device
+            )
             / torch.reshape(torch.tensor(original_max_psd).to(self.estimator.device), [-1, 1, 1])
-            * psd
+            * psd.type(torch.float64)
         )
 
         return psd
@@ -848,6 +848,24 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             raise ValueError("The number of iterations must be of type int.")
         if self.num_iter_decrease_alpha <= 0:
             raise ValueError("The number of iterations must be greater than 0.")
+
+        if not isinstance(self.win_length, int):
+            raise ValueError("Length of the window must be of type int.")
+        if self.win_length <= 0:
+            raise ValueError("Length of the window must be greater than 0.")
+
+        if not isinstance(self.hop_length, int):
+            raise ValueError("Number of audio samples between adjacent STFT columns must be of type int.")
+        if self.hop_length <= 0:
+            raise ValueError("Number of audio samples between adjacent STFT columns must be greater than 0.")
+
+        if not isinstance(self.n_fft, int):
+            raise ValueError("FFT window size must be of type int.")
+        if self.n_fft <= 0:
+            raise ValueError("FFT window size must be greater than 0.")
+
+        if self.win_length > self.n_fft:
+            raise ValueError("Length of the window must be smaller than or equal to FFT window size.")
 
         if self.batch_size <= 0:
             raise ValueError("The batch size `batch_size` has to be positive.")

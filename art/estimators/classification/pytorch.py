@@ -280,6 +280,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                 y_index = np.argmax(y, axis=1).astype(np.float32)
                 y_index = np.expand_dims(y_index, axis=1)
                 return y_index
+            else:
+                return y
         else:
             return y
 

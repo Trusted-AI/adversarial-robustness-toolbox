@@ -20,14 +20,17 @@ This module implements mixin abstract base class and mixin abstract framework-sp
 recognizers in ART.
 """
 from abc import ABC, abstractmethod
-from typing import Tuple
+from typing import Tuple, TYPE_CHECKING
 
 import numpy as np
 
+if TYPE_CHECKING:
+    import torch
 
-class BaseSpeechRecognizer(ABC):
+
+class SpeechRecognizerMixin(ABC):
     """
-    Base class for ART speech recognizers.
+    Mix-in base class for ART speech recognizers.
     """
 
 
@@ -59,11 +62,12 @@ class PytorchSpeechRecognizerMixin(ABC):
         """
         raise NotImplementedError
 
+    @property
     @abstractmethod
-    def batch_norm(self, train: bool) -> None:
+    def sample_rate(self) -> int:
         """
-        Set all batch normalization layers into train or eval mode.
+        Get the sampling rate.
 
-        :param train: False for evaluation mode.
+        :return: The audio sampling rate.
         """
         raise NotImplementedError

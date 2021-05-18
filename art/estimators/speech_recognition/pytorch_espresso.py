@@ -37,8 +37,7 @@ logger = logging.getLogger(__name__)
 
 
 class PyTorchEspresso(PytorchSpeechRecognizerMixin, BaseSpeechRecognizer, PyTorchEstimator):
-    """
-    """
+    """ """
 
     estimator_params = PyTorchEstimator.estimator_params + []
 

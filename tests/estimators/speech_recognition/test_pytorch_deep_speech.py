@@ -43,6 +43,12 @@ def test_pytorch_deep_speech(art_warning, expected_values, use_amp, device_type)
         if use_amp and not torch.cuda.is_available():
             return
 
+        # Initialize a speech recognizer
+        speech_recognizer = PyTorchDeepSpeech(pretrained_model="librispeech", device_type=device_type, use_amp=use_amp)
+
+        # Get version of DeepSpeech
+        version = "v{}".format(speech_recognizer._version)
+
         # Load data for testing
         expected_data = expected_values()
 
@@ -52,10 +58,10 @@ def test_pytorch_deep_speech(art_warning, expected_values, use_amp, device_type)
         expected_sizes = expected_data["expected_sizes"]
         expected_transcriptions1 = expected_data["expected_transcriptions1"]
         expected_transcriptions2 = expected_data["expected_transcriptions2"]
-        expected_probs = expected_data["expected_probs"]
-        expected_gradients1 = expected_data["expected_gradients1"]
-        expected_gradients2 = expected_data["expected_gradients2"]
-        expected_gradients3 = expected_data["expected_gradients3"]
+        expected_probs = expected_data["expected_probs"][version]
+        expected_gradients1 = expected_data["expected_gradients1"][version]
+        expected_gradients2 = expected_data["expected_gradients2"][version]
+        expected_gradients3 = expected_data["expected_gradients3"][version]
 
         # Create signal data
         x = np.array(
@@ -70,7 +76,6 @@ def test_pytorch_deep_speech(art_warning, expected_values, use_amp, device_type)
         y = np.array(["SIX", "HI", "GOOD"])
 
         # Test probability outputs
-        speech_recognizer = PyTorchDeepSpeech(pretrained_model="librispeech", device_type=device_type, use_amp=use_amp)
         probs, sizes = speech_recognizer.predict(x, batch_size=2, transcription_output=False)
 
         np.testing.assert_array_almost_equal(probs[1][1], expected_probs, decimal=3)

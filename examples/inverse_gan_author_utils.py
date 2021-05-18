@@ -296,7 +296,7 @@ class Dataset(object):
         return len(self.images)
 
     def load(self, split, lazy=True, randomize=True):
-        """ Abstract function specific to each dataset."""
+        """Abstract function specific to each dataset."""
         pass
 
 
@@ -784,7 +784,7 @@ class AbstractModel(object):
             self.saver = tf.train.Saver(saved_vars, max_to_keep=max_to_keep)
 
     def set_session(self, sess):
-        """"""
+        """ """
         if self.active_sess is None:
             self.active_sess = sess
         else:
