@@ -65,7 +65,7 @@ setup(
         "lightgbm": ["lightgbm"],
         "mxnet": ["mxnet"],
         "tensorflow": ["tensorflow", "tensorflow_addons", "h5py"],
-        "tensorflow_image": ["tensorflow", "tensorflow_addons", "Pillow", "ffmpeg-python"],
+        "tensorflow_image": ["tensorflow", "tensorflow_addons", "h5py", "Pillow", "ffmpeg-python"],
         "tensorflow_audio": ["tensorflow", "tensorflow_addons", "h5py"],
         "pytorch": ["torch", "torchvision"],
         "pytorch_image": ["torch", "torchvision", "kornia", "Pillow", "ffmpeg-python"],
