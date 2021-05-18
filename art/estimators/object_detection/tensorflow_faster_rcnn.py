@@ -332,9 +332,11 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         :param y: Targets of format `List[Dict[str, np.ndarray]]`, one for each input image. The fields of the Dict are
                   as follows:
 
-                 - boxes [N, 4]: the boxes in [y1, x1, y2, x2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
-                                 Can be changed to PyTorch format with `standardise_output=True`.
-                 - labels [N]: the labels for each image
+                 - boxes [N, 4]: the boxes in [y1, x1, y2, x2] in scale [0, 1] (`standardise_output=False`) or
+                                 [x1, y1, x2, y2] in image scale (`standardise_output=True`) format,
+                                 with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
+                 - labels [N]: the labels for each image in TensorFlow (`standardise_output=False`) or PyTorch
+                               (`standardise_output=True`) format
                  - scores [N]: the scores or each prediction.
 
         :param standardise_output: True if `y` is provided in standardised PyTorch format. Box coordinates will be
@@ -401,14 +403,14 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
                                    scaled from [0, 1] to image dimensions, label index will be increased by 1 to adhere
                                    to COCO categories and the boxes will be changed to [x1, y1, x2, y2] format, with
                                    0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
-        :return: A dictionary containing the following fields:
 
         :return: Predictions of format `List[Dict[str, np.ndarray]]`, one for each input image. The
                  fields of the Dict are as follows:
 
                  - boxes [N, 4]: the boxes in [y1, x1, y2, x2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
                                  Can be changed to PyTorch format with `standardise_output=True`.
-                 - labels [N]: the labels for each image
+                 - labels [N]: the labels for each image in TensorFlow format. Can be changed to PyTorch format with
+                               `standardise_output=True`.
                  - scores [N]: the scores or each prediction.
         """
         # Only do prediction if is_training is False

@@ -71,7 +71,7 @@ def convert_pt_to_tf(y: List[Dict[str, np.ndarray]], height: int, width: int) ->
     :return: Target values of format `List[Dict[Tensor]]`, one for each input image. The fields of the Dict are as
              follows:
 
-             - boxes (FloatTensor[N, 4]): the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and
+             - boxes (FloatTensor[N, 4]): the boxes in [y1, x1, y2, x2] format, with 0 <= x1 < x2 <= W and
                                           0 <= y1 < y2 <= H in scale [0, 1].
              - labels (Int64Tensor[N]): the labels for each image
              - scores (Tensor[N]): the scores or each prediction.
