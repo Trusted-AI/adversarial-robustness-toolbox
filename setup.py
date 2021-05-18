@@ -9,7 +9,6 @@ with open("README.md", "r") as fh:
 install_requires = [
     "numpy>=1.18.0",
     "scipy>=1.4.1",
-    "scikit-learn>=0.22.2,<=0.24.1",
     "scikit-learn>=0.22.2,<0.24.3",
     "six",
     "setuptools",
