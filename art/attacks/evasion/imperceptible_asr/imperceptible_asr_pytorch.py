@@ -35,6 +35,7 @@ from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNe
 from art.estimators.pytorch import PyTorchEstimator
 from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
 from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizerMixin
+from art.estimators.speech_recognition.speech_recognizer import PytorchSpeechRecognizerMixin
 
 if TYPE_CHECKING:
     import torch
@@ -68,6 +69,9 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         "num_iter_increase_alpha",
         "decrease_factor_alpha",
         "num_iter_decrease_alpha",
+        "win_length",
+        "hop_length",
+        "n_fft",
         "batch_size",
         "use_amp",
         "opt_level",
@@ -78,6 +82,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         LossGradientsMixin,
         NeuralNetworkMixin,
         SpeechRecognizerMixin,
+        PytorchSpeechRecognizerMixin,
         PyTorchEstimator,
         PyTorchDeepSpeech,
     )
@@ -101,6 +106,9 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         num_iter_increase_alpha: int = 20,
         decrease_factor_alpha: float = 0.8,
         num_iter_decrease_alpha: int = 20,
+        win_length: int = 2048,
+        hop_length: int = 512,
+        n_fft: int = 2048,
         batch_size: int = 32,
         use_amp: bool = False,
         opt_level: str = "O1",
@@ -134,6 +142,9 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         :param decrease_factor_alpha: The factor to decrease the alpha coefficient used in the second stage of the
                                       optimization of the attack.
         :param num_iter_decrease_alpha: Number of iterations to decrease alpha.
+        :param win_length: Length of the window. The number of STFT rows is `(win_length // 2 + 1)`.
+        :param hop_length: Number of audio samples between adjacent STFT columns.
+        :param n_fft: FFT window size.
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :param use_amp: Whether to use the automatic mixed precision tool to enable mixed precision training or
                         gradient computation, e.g. with loss gradient computation. When set to True, this option is
@@ -162,6 +173,9 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         self.num_iter_increase_alpha = num_iter_increase_alpha
         self.decrease_factor_alpha = decrease_factor_alpha
         self.num_iter_decrease_alpha = num_iter_decrease_alpha
+        self.win_length = win_length
+        self.hop_length = hop_length
+        self.n_fft = n_fft
         self.batch_size = batch_size
         self._use_amp = use_amp
 
@@ -239,9 +253,10 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         # Cast to type float64 to avoid overflow
         adv_x = np.array([x_i.copy().astype(np.float64) for x_i in x])
 
-        # Put the estimator in the training mode, otherwise CUDA can't backpropagate through the model.
-        # However, estimator uses batch norm layers which need to be frozen
-        self.estimator.model.train()
+        # Put the estimator in the training mode, otherwise CUDA may not be able to backpropagate through the model in
+        # case a PyTorchDeepSpeech estimator is used. However, the PyTorchDeepSpeech estimator uses batch norm layers
+        # which need to be frozen
+        self.estimator.to_training_mode()
         self.estimator.set_batchnorm(train=False)
 
         # Compute perturbation with batching
@@ -275,7 +290,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             for i in range(len(adv_x_batch)):
                 adv_x[batch_index_1 + i] = adv_x_batch[i, : len(adv_x[batch_index_1 + i])]
 
-        # Unfreeze batch norm layers again
+        # Unfreeze batch norm layers again, needed in case of PyTorchDeepSpeech
         self.estimator.set_batchnorm(train=True)
 
         # Recast to the original type
@@ -449,14 +464,14 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         :param rescale: Current rescale coefficients.
         :param input_mask: Masks of true inputs.
         :param real_lengths: Real lengths of original sequences.
-        :return: A tuple of (loss, local_delta, decoded_output, masked_adv_input)
+        :return: A tuple of (loss, local_delta, decoded_output, masked_adv_input, local_delta_rescale)
                     - loss: The loss tensor of the first stage of the attack.
                     - local_delta: The delta of the current batch.
                     - decoded_output: Transcription output.
                     - masked_adv_input: Perturbed inputs.
+                    - local_delta_rescale: The rescaled delta.
         """
         import torch  # lgtm [py/repeated-import]
-        from warpctc_pytorch import CTCLoss
 
         # Compute perturbed inputs
         local_delta = self.global_optimal_delta[:local_batch_size, :local_max_length]
@@ -465,36 +480,12 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         adv_input = local_delta_rescale + torch.tensor(original_input).to(self.estimator.device)
         masked_adv_input = adv_input * torch.tensor(input_mask).to(self.estimator.device)
 
-        # Transform data into the model input space
-        inputs, targets, input_rates, target_sizes, batch_idx = self.estimator.preprocess_transform_model_input(
-            x=masked_adv_input.to(self.estimator.device),
-            y=original_output,
+        # Compute loss and decoded output
+        loss, decoded_output = self.estimator.compute_loss_and_decoded_output(
+            masked_adv_input=masked_adv_input,
+            original_output=original_output,
             real_lengths=real_lengths,
         )
-
-        # Compute real input sizes
-        input_sizes = input_rates.mul_(inputs.size()[-1]).int()
-
-        # Call to DeepSpeech model for prediction
-        outputs, output_sizes = self.estimator.model(
-            inputs.to(self.estimator.device), input_sizes.to(self.estimator.device)
-        )
-        outputs_ = outputs.transpose(0, 1)
-        float_outputs = outputs_.float()
-
-        # Loss function
-        criterion = CTCLoss()
-        loss = criterion(float_outputs, targets, output_sizes, target_sizes).to(self.estimator.device)
-        loss = loss / inputs.size(0)
-
-        # Compute transcription
-        decoded_output, _ = self.estimator.decoder.decode(outputs, output_sizes)
-        decoded_output = [do[0] for do in decoded_output]
-        decoded_output = np.array(decoded_output)
-
-        # Rearrange to the original order
-        decoded_output_ = decoded_output.copy()
-        decoded_output[batch_idx] = decoded_output_
 
         return loss, local_delta, decoded_output, masked_adv_input, local_delta_rescale
 
@@ -561,7 +552,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             )
 
             # Total loss
-            loss = loss_1st_stage + torch.tensor(alpha).to(self.estimator.device) * loss_2nd_stage
+            loss = loss_1st_stage.type(torch.float64) + torch.tensor(alpha).to(self.estimator.device) * loss_2nd_stage
             loss = torch.mean(loss)
 
             # Actual training
@@ -650,32 +641,23 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         import librosa
 
         # First compute the psd matrix
-        # These parameters are needed for the transformation
-        sample_rate = self.estimator.model.audio_conf.sample_rate
-        window_size = self.estimator.model.audio_conf.window_size
-        window_stride = self.estimator.model.audio_conf.window_stride
+        # Get window for the transformation
+        window = scipy.signal.get_window("hann", self.win_length, fftbins=True)
 
-        n_fft = int(sample_rate * window_size)
-        hop_length = int(sample_rate * window_stride)
-        win_length = n_fft
-
-        window_name = self.estimator.model.audio_conf.window.value
-
-        window = scipy.signal.get_window(window_name, win_length, fftbins=True)
-
+        # Do transformation
         transformed_x = librosa.core.stft(
-            y=x, n_fft=n_fft, hop_length=hop_length, win_length=win_length, window=window, center=False
+            y=x, n_fft=self.n_fft, hop_length=self.hop_length, win_length=self.win_length, window=window, center=False
         )
         transformed_x *= np.sqrt(8.0 / 3.0)
 
-        psd = abs(transformed_x / win_length)
+        psd = abs(transformed_x / self.win_length)
         original_max_psd = np.max(psd * psd)
         with np.errstate(divide="ignore"):
             psd = (20 * np.log10(psd)).clip(min=-200)
         psd = 96 - np.max(psd) + psd
 
         # Compute freqs and barks
-        freqs = librosa.core.fft_frequencies(sample_rate, win_length)
+        freqs = librosa.core.fft_frequencies(sr=self.estimator.sample_rate, n_fft=self.n_fft)
         barks = 13 * np.arctan(0.00076 * freqs) + 3.5 * np.arctan(pow(freqs / 7500.0, 2))
 
         # Compute quiet threshold
@@ -766,48 +748,31 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         """
         import torch  # lgtm [py/repeated-import]
 
-        # These parameters are needed for the transformation
-        sample_rate = self.estimator.model.audio_conf.sample_rate
-        window_size = self.estimator.model.audio_conf.window_size
-        window_stride = self.estimator.model.audio_conf.window_stride
-
-        n_fft = int(sample_rate * window_size)
-        hop_length = int(sample_rate * window_stride)
-        win_length = n_fft
-
-        window = self.estimator.model.audio_conf.window.value
-
-        if window == "hamming":
-            window_fn = torch.hamming_window  # type: ignore
-        elif window == "hann":
-            window_fn = torch.hann_window  # type: ignore
-        elif window == "blackman":
-            window_fn = torch.blackman_window  # type: ignore
-        elif window == "bartlett":
-            window_fn = torch.bartlett_window  # type: ignore
-        else:
-            raise NotImplementedError("Spectrogram window %s not supported." % window)
+        # Get window for the transformation
+        window_fn = torch.hann_window  # type: ignore
 
         # Return STFT of delta
         delta_stft = torch.stft(
             delta,
-            n_fft=n_fft,
-            hop_length=hop_length,
-            win_length=win_length,
+            n_fft=self.n_fft,
+            hop_length=self.hop_length,
+            win_length=self.win_length,
             center=False,
-            window=window_fn(win_length).to(self.estimator.device),
+            window=window_fn(self.win_length).to(self.estimator.device),
         ).to(self.estimator.device)
 
         # Take abs of complex STFT results
         transformed_delta = torch.sqrt(torch.sum(torch.square(delta_stft), -1))
 
         # Compute the psd matrix
-        psd = (8.0 / 3.0) * transformed_delta / win_length
+        psd = (8.0 / 3.0) * transformed_delta / self.win_length
         psd = psd ** 2
         psd = (
-            torch.pow(torch.tensor(10.0), torch.tensor(9.6)).to(self.estimator.device)
+            torch.pow(torch.tensor(10.0).type(torch.float64), torch.tensor(9.6).type(torch.float64)).to(
+                self.estimator.device
+            )
             / torch.reshape(torch.tensor(original_max_psd).to(self.estimator.device), [-1, 1, 1])
-            * psd
+            * psd.type(torch.float64)
         )
 
         return psd
@@ -883,6 +848,24 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             raise ValueError("The number of iterations must be of type int.")
         if self.num_iter_decrease_alpha <= 0:
             raise ValueError("The number of iterations must be greater than 0.")
+
+        if not isinstance(self.win_length, int):
+            raise ValueError("Length of the window must be of type int.")
+        if self.win_length <= 0:
+            raise ValueError("Length of the window must be greater than 0.")
+
+        if not isinstance(self.hop_length, int):
+            raise ValueError("Number of audio samples between adjacent STFT columns must be of type int.")
+        if self.hop_length <= 0:
+            raise ValueError("Number of audio samples between adjacent STFT columns must be greater than 0.")
+
+        if not isinstance(self.n_fft, int):
+            raise ValueError("FFT window size must be of type int.")
+        if self.n_fft <= 0:
+            raise ValueError("FFT window size must be greater than 0.")
+
+        if self.win_length > self.n_fft:
+            raise ValueError("Length of the window must be smaller than or equal to FFT window size.")
 
         if self.batch_size <= 0:
             raise ValueError("The batch size `batch_size` has to be positive.")
