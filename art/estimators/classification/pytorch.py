@@ -269,7 +269,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         # Check if the loss function requires as input index labels instead of one-hot-encoded labels
         # Checking for exactly 2 classes to support binary classification
-        if self.nb_classes != 2:
+        if self.nb_classes > 2 or self.nb_classes == 1:
             if self._reduce_labels and self._int_labels:
                 if isinstance(y, torch.Tensor):
                     return torch.argmax(y, dim=1)
@@ -280,8 +280,6 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                 y_index = np.argmax(y, axis=1).astype(np.float32)
                 y_index = np.expand_dims(y_index, axis=1)
                 return y_index
-            else:
-                return y
         else:
             return y
 
@@ -303,10 +301,10 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Run prediction with batch processing
-        if self.nb_classes > 2:
-            results = np.zeros((x_preprocessed.shape[0], self.nb_classes), dtype=np.float32)
-        else:
+        if self.nb_classes == 2:
             results = np.zeros((x_preprocessed.shape[0]), dtype=np.float32)
+        else:
+            results = np.zeros((x_preprocessed.shape[0], self.nb_classes), dtype=np.float32)
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         for m in range(num_batch):
             # Batch indexes
@@ -368,9 +366,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
 
-        # Check label shape
-        if self._nb_classes > 2:
-            y_preprocessed = self.reduce_labels(y_preprocessed)
+        # Check label shape if nb_classes > 2, otherwise return y.
+        y_preprocessed = self.reduce_labels(y_preprocessed)
 
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         ind = np.arange(len(x_preprocessed))
