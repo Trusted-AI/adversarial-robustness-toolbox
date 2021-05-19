@@ -337,7 +337,6 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
                                  with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
                  - labels [N]: the labels for each image in TensorFlow (`standardise_output=False`) or PyTorch
                                (`standardise_output=True`) format
-                 - scores [N]: the scores or each prediction.
 
         :param standardise_output: True if `y` is provided in standardised PyTorch format. Box coordinates will be
                                    scaled back to [0, 1], label index will be decreased by 1 and the boxes will be
@@ -382,7 +381,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
             feed_dict[placeholder] = value["labels"]
 
         for (placeholder, value) in zip(self._groundtruth_weights_list, y):
-            feed_dict[placeholder] = value["scores"]
+            feed_dict[placeholder] = [1.0] * len(value["labels"])
 
         # Compute gradients
         grads = self._sess.run(self._loss_grads, feed_dict=feed_dict)

@@ -169,7 +169,6 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
                   - boxes (FloatTensor[N, 4]): the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and
                                                0 <= y1 < y2 <= H.
                   - labels (Int64Tensor[N]): the labels for each image
-                  - scores (Tensor[N]): the scores or each prediction.
         :return: Loss gradients of the same shape as `x`.
         """
         import torch  # lgtm [py/repeated-import]
@@ -188,7 +187,6 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
                     y_t = dict()
                     y_t["boxes"] = torch.from_numpy(y_i["boxes"]).type(torch.float).to(self._device)
                     y_t["labels"] = torch.from_numpy(y_i["labels"]).type(torch.int64).to(self._device)
-                    y_t["scores"] = torch.from_numpy(y_i["scores"]).to(self._device)
                     y_tensor.append(y_t)
             else:
                 y_tensor = y
@@ -222,7 +220,6 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
                     y_preprocessed_t = dict()
                     y_preprocessed_t["boxes"] = torch.from_numpy(y_i["boxes"]).type(torch.float).to(self._device)
                     y_preprocessed_t["labels"] = torch.from_numpy(y_i["labels"]).type(torch.int64).to(self._device)
-                    y_preprocessed_t["scores"] = torch.from_numpy(y_i["scores"]).to(self._device)
                     y_preprocessed_tensor.append(y_preprocessed_t)
                 y_preprocessed = y_preprocessed_tensor
 
