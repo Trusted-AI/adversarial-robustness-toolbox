@@ -267,23 +267,24 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         import torch  # lgtm [py/repeated-import]
 
         # Check if the loss function requires as input index labels instead of one-hot-encoded labels
-        if self._reduce_labels and self._int_labels:
-            if isinstance(y, torch.Tensor):
-                return torch.argmax(y, dim=1)
-            return np.argmax(y, axis=1)
+        # Checking for exactly 2 classes to support binary classification
+        if self.nb_classes > 2 or self.nb_classes == 1:
+            if self._reduce_labels and self._int_labels:
+                if isinstance(y, torch.Tensor):
+                    return torch.argmax(y, dim=1)
+                return np.argmax(y, axis=1)
+            elif self._reduce_labels:  # float labels
+                if isinstance(y, torch.Tensor):
+                    return torch.argmax(y, dim=1).type("torch.FloatTensor")
+                y_index = np.argmax(y, axis=1).astype(np.float32)
+                y_index = np.expand_dims(y_index, axis=1)
+                return y_index
+            else:
+                return y
+        else:
+            return y
 
-        if self._reduce_labels:  # float labels
-            if isinstance(y, torch.Tensor):
-                return torch.argmax(y, dim=1).type("torch.FloatTensor")
-            y_index = np.argmax(y, axis=1).astype(np.float32)
-            y_index = np.expand_dims(y_index, axis=1)
-            return y_index
-
-        return y
-
-    def predict(  # pylint: disable=W0221
-        self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs
-    ) -> np.ndarray:
+    def predict(self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs) -> np.ndarray:
         """
         Perform prediction for a batch of inputs.
 
@@ -301,7 +302,12 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Run prediction with batch processing
-        results = np.zeros((x_preprocessed.shape[0], self.nb_classes), dtype=np.float32)
+
+        if self.nb_classes == 2:
+            results = np.zeros((x_preprocessed.shape[0]), dtype=np.float32)
+        else:
+            results = np.zeros((x_preprocessed.shape[0], self.nb_classes), dtype=np.float32)
+
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         for m in range(num_batch):
             # Batch indexes
