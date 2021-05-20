@@ -199,6 +199,13 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         self._sess.run(tf.local_variables_initializer())
 
     @property
+    def native_label_is_pytorch_format(self) -> bool:
+        """
+        Are the native labels in PyTorch format [x1, y1, x2, y2]?
+        """
+        return False
+
+    @property
     def input_shape(self) -> Tuple[int, ...]:
         """
         Return the shape of one input sample.
@@ -315,21 +322,26 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
 
         return obj_detection_model, predictions, losses, detections
 
-    def loss_gradient(self, x: np.ndarray, y: List[Dict[str, np.ndarray]], **kwargs) -> np.ndarray:
+    def loss_gradient(  # pylint: disable=W0221
+        self, x: np.ndarray, y: List[Dict[str, np.ndarray]], standardise_output: bool = False, **kwargs
+    ) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
         :param x: Samples of shape (nb_samples, height, width, nb_channels).
-        :param y: A dictionary of target values. The fields of the dictionary are as follows:
+        :param y: Targets of format `List[Dict[str, np.ndarray]]`, one for each input image. The fields of the Dict are
+                  as follows:
 
-                  - `boxes`: A list of `nb_samples` size of 2-D tf.float32 tensors of shape [num_boxes, 4] containing
-                    coordinates of the groundtruth boxes. Groundtruth boxes are provided in [y_min, x_min, y_max, x_max]
-                    format and also assumed to be normalized as well as clipped relative to the image window with
-                    conditions y_min <= y_max and x_min <= x_max.
-                  - `labels`: A list of `nb_samples` size of 1-D tf.float32 tensors of shape [num_boxes] containing
-                    the class targets with the zero index assumed to map to the first non-background class.
-                  - `scores`: A list of `nb_samples` size of 1-D tf.float32 tensors of shape [num_boxes] containing
-                    weights for groundtruth boxes.
+                 - boxes [N, 4]: the boxes in [y1, x1, y2, x2] in scale [0, 1] (`standardise_output=False`) or
+                                 [x1, y1, x2, y2] in image scale (`standardise_output=True`) format,
+                                 with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
+                 - labels [N]: the labels for each image in TensorFlow (`standardise_output=False`) or PyTorch
+                               (`standardise_output=True`) format
+
+        :param standardise_output: True if `y` is provided in standardised PyTorch format. Box coordinates will be
+                                   scaled back to [0, 1], label index will be decreased by 1 and the boxes will be
+                                   changed from [x1, y1, x2, y2] to [y1, x1, y2, x2] format, with
+                                   0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
         :return: Loss gradients of the same shape as `x`.
         """
         import tensorflow.compat.v1 as tf  # lgtm [py/repeated-import]
@@ -339,6 +351,11 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
             raise NotImplementedError(
                 "This object detector was loaded in training mode and therefore not support loss_gradient."
             )
+
+        if standardise_output:
+            from art.estimators.object_detection.utils import convert_pt_to_tf
+
+            y = convert_pt_to_tf(y=y, height=x.shape[1], width=x.shape[2])
 
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
@@ -364,7 +381,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
             feed_dict[placeholder] = value["labels"]
 
         for (placeholder, value) in zip(self._groundtruth_weights_list, y):
-            feed_dict[placeholder] = value["scores"]
+            feed_dict[placeholder] = [1.0] * len(value["labels"])
 
         # Compute gradients
         grads = self._sess.run(self._loss_grads, feed_dict=feed_dict)
@@ -381,16 +398,18 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
 
         :param x: Samples of shape (nb_samples, height, width, nb_channels).
         :param batch_size: Batch size.
-        :param standardise_output: True if output should be standardised. Box coordinates will be normalised to [0, 1]
-                                   and label index will be decreased by 1 to adhere to COCO categories.
-        :return: A dictionary containing the following fields:
+        :param standardise_output: True if output should be standardised to PyTorch format. Box coordinates will be
+                                   scaled from [0, 1] to image dimensions, label index will be increased by 1 to adhere
+                                   to COCO categories and the boxes will be changed to [x1, y1, x2, y2] format, with
+                                   0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
 
         :return: Predictions of format `List[Dict[str, np.ndarray]]`, one for each input image. The
                  fields of the Dict are as follows:
 
-                 - boxes [N, 4]: the predicted boxes in [x1, y1, x2, y2] format, with values \
-                   between 0 and H and 0 and W
-                 - labels [N]: the predicted labels for each image
+                 - boxes [N, 4]: the boxes in [y1, x1, y2, x2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
+                                 Can be changed to PyTorch format with `standardise_output=True`.
+                 - labels [N]: the labels for each image in TensorFlow format. Can be changed to PyTorch format with
+                               `standardise_output=True`.
                  - scores [N]: the scores or each prediction.
         """
         # Only do prediction if is_training is False
@@ -432,17 +451,9 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
                 d_sample["labels"] = batch_results["detection_classes"][i].astype(np.int32)
 
                 if standardise_output:
-                    height = x.shape[1]
-                    width = x.shape[2]
+                    from art.estimators.object_detection.utils import convert_tf_to_pt
 
-                    d_sample["boxes"][:, 0] *= height
-                    d_sample["boxes"][:, 1] *= width
-                    d_sample["boxes"][:, 2] *= height
-                    d_sample["boxes"][:, 3] *= width
-
-                    d_sample["boxes"] = d_sample["boxes"][:, [1, 0, 3, 2]]
-
-                    d_sample["labels"] = d_sample["labels"] + 1
+                    d_sample = convert_tf_to_pt(y=[d_sample], height=x.shape[1], width=x.shape[2])[0]
 
                 d_sample["scores"] = batch_results["detection_scores"][i]
 
