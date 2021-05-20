@@ -912,6 +912,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
     def _make_model_wrapper(self, model: "torch.nn.Module") -> "torch.nn.Module":
         # Try to import PyTorch and create an internal class that acts like a model wrapper extending torch.nn.Module
+        nb_classes = self.nb_classes
         try:
             import torch.nn as nn
 
@@ -925,7 +926,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
                     import torch  # lgtm [py/repeated-import]
 
-                    def __init__(self, model: torch.nn.Module):
+                    def __init__(self, model: torch.nn.Module, nb_classes=nb_classes):
                         """
                         Initialization by storing the input model.
 
@@ -933,6 +934,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                         """
                         super().__init__()
                         self._model = model
+                        self.nb_classes = nb_classes
 
                     # pylint: disable=W0221
                     # disable pylint because of API requirements for function
@@ -952,11 +954,13 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                         result = []
                         if isinstance(self._model, nn.Sequential):
                             for _, module_ in self._model._modules.items():
-                                x = module_(x)
+                                x = module_(x.float())
                                 result.append(x)
 
                         elif isinstance(self._model, nn.Module):
-                            x = self._model(x)
+                            x = self._model(x.float())
+                            if len(x.shape) > 1 and self.nb_classes == 2:
+                                x = x.squeeze(dim=1)
                             result.append(x)
 
                         else:
