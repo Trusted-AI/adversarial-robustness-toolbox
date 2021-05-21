@@ -23,7 +23,6 @@ Examples of Security Curves can be found in Figure 6 of Madry et al., 2017 (http
 from typing import List, Optional, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
-from matplotlib import pyplot as plt
 
 from art.evaluations.evaluation import Evaluation
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
@@ -162,6 +161,8 @@ class SecurityCurve(Evaluation):
         Plot the Security Curve of adversarial accuracy as function opf attack budget `eps` together with the accuracy
         on benign samples.
         """
+        from matplotlib import pyplot as plt
+
         plt.plot(self.eps_list, self.accuracy_adv_list, label="adversarial", marker="o")
         plt.plot([self.eps_list[0], self.eps_list[-1]], [self.accuracy, self.accuracy], linestyle="--", label="benign")
         plt.legend()

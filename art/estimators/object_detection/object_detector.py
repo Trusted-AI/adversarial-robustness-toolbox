@@ -19,7 +19,7 @@
 This module implements mixin abstract base class for all object detectors in ART.
 """
 
-from abc import ABC
+from abc import ABC, abstractmethod
 
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import LossGradientsMixin
@@ -29,6 +29,14 @@ class ObjectDetectorMixin(ABC):
     """
     Mix-in Base class for ART object detectors.
     """
+
+    @property
+    @abstractmethod
+    def native_label_is_pytorch_format(self) -> bool:
+        """
+        Are the native labels in PyTorch format [x1, y1, x2, y2]?
+        """
+        raise NotImplementedError
 
 
 class ObjectDetector(ObjectDetectorMixin, LossGradientsMixin, BaseEstimator, ABC):
