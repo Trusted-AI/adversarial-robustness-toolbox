@@ -132,6 +132,13 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         self.attack_losses: Tuple[str, ...] = attack_losses
 
     @property
+    def native_label_is_pytorch_format(self) -> bool:
+        """
+        Are the native labels in PyTorch format [x1, y1, x2, y2]?
+        """
+        return True
+
+    @property
     def input_shape(self) -> Tuple[int, ...]:
         """
         Return the shape of one input sample.
@@ -156,13 +163,12 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         Compute the gradient of the loss function w.r.t. `x`.
 
         :param x: Samples of shape (nb_samples, height, width, nb_channels).
-        :param y: Target values of format `List[Dict[Tensor]]`, one for each input image. The
-                  fields of the Dict are as follows:
+        :param y: Target values of format `List[Dict[Tensor]]`, one for each input image. The fields of the Dict are as
+                  follows:
 
-                  - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values \
-                    between 0 and H and 0 and W
-                  - labels (Int64Tensor[N]): the predicted labels for each image
-                  - scores (Tensor[N]): the scores or each prediction.
+                  - boxes (FloatTensor[N, 4]): the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and
+                                               0 <= y1 < y2 <= H.
+                  - labels (Int64Tensor[N]): the labels for each image
         :return: Loss gradients of the same shape as `x`.
         """
         import torch  # lgtm [py/repeated-import]
@@ -181,7 +187,6 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
                     y_t = dict()
                     y_t["boxes"] = torch.from_numpy(y_i["boxes"]).type(torch.float).to(self._device)
                     y_t["labels"] = torch.from_numpy(y_i["labels"]).type(torch.int64).to(self._device)
-                    y_t["scores"] = torch.from_numpy(y_i["scores"]).to(self._device)
                     y_tensor.append(y_t)
             else:
                 y_tensor = y
@@ -215,7 +220,6 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
                     y_preprocessed_t = dict()
                     y_preprocessed_t["boxes"] = torch.from_numpy(y_i["boxes"]).type(torch.float).to(self._device)
                     y_preprocessed_t["labels"] = torch.from_numpy(y_i["labels"]).type(torch.int64).to(self._device)
-                    y_preprocessed_t["scores"] = torch.from_numpy(y_i["scores"]).to(self._device)
                     y_preprocessed_tensor.append(y_preprocessed_t)
                 y_preprocessed = y_preprocessed_tensor
 
@@ -286,12 +290,11 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
 
         :param x: Samples of shape (nb_samples, height, width, nb_channels).
         :param batch_size: Batch size.
-        :return: Predictions of format `List[Dict[str, np.ndarray]]`, one for each input image. The
-                 fields of the Dict are as follows:
+        :return: Predictions of format `List[Dict[str, np.ndarray]]`, one for each input image. The fields of the Dict
+                 are as follows:
 
-                 - boxes [N, 4]: the predicted boxes in [x1, y1, x2, y2] format, with values \
-                   between 0 and H and 0 and W
-                 - labels [N]: the predicted labels for each image
+                 - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
+                 - labels [N]: the labels for each image
                  - scores [N]: the scores or each prediction.
         """
         import torchvision  # lgtm [py/repeated-import]
@@ -330,12 +333,5 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
     def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the loss of the neural network for samples `x`.
-
-        :param x: Samples of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
-                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
-        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices
-                  of shape `(nb_samples,)`.
-        :return: Loss values.
-        :rtype: Format as expected by the `model`
         """
         raise NotImplementedError
