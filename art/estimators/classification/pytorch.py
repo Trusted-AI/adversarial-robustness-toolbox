@@ -279,10 +279,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                 y_index = np.argmax(y, axis=1).astype(np.float32)
                 y_index = np.expand_dims(y_index, axis=1)
                 return y_index
-            else:
-                return y
-        else:
-            return y
+
+        return y
 
     def predict(self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs) -> np.ndarray:
         """
