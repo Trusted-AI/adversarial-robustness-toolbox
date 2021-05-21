@@ -25,6 +25,7 @@ from art.attacks.evasion.imperceptible_asr.imperceptible_asr import Imperceptibl
 from art.attacks.evasion.imperceptible_asr.imperceptible_asr_pytorch import ImperceptibleASRPyTorch
 from art.attacks.evasion.iterative_method import BasicIterativeMethod
 from art.attacks.evasion.newtonfool import NewtonFool
+from art.attacks.evasion.pe_malware_attack import MalwareGDTensorFlow
 from art.attacks.evasion.pixel_threshold import PixelAttack
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_numpy import (
@@ -48,4 +49,3 @@ from art.attacks.evasion.targeted_universal_perturbation import TargetedUniversa
 from art.attacks.evasion.virtual_adversarial import VirtualAdversarialMethod
 from art.attacks.evasion.wasserstein import Wasserstein
 from art.attacks.evasion.zoo import ZooAttack
-from art.attacks.evasion.pe_malware_attack import MalwareGD
