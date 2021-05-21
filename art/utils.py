@@ -514,7 +514,7 @@ def check_and_transform_label_format(
     """
     if labels is not None:
         if nb_classes == 1:
-            labels = labels
+            pass
         elif len(labels.shape) == 2 and labels.shape[1] > 1:
             if not return_one_hot:
                 labels = np.argmax(labels, axis=1)
