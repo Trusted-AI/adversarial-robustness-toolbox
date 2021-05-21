@@ -17,9 +17,6 @@
 # SOFTWARE.
 import numpy as np
 import pytest
-from tensorflow.python.keras.backend_config import epsilon
-import torch
-import torch.nn as nn
 
 from art.estimators.classification.pytorch import PyTorchClassifier
 from art.defences.preprocessor.spatial_smoothing import SpatialSmoothing

@@ -273,7 +273,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                 if isinstance(y, torch.Tensor):
                     return torch.argmax(y, dim=1)
                 return np.argmax(y, axis=1)
-            elif self._reduce_labels:  # float labels
+            if self._reduce_labels:  # float labels
                 if isinstance(y, torch.Tensor):
                     return torch.argmax(y, dim=1).type("torch.FloatTensor")
                 y_index = np.argmax(y, axis=1).astype(np.float32)
