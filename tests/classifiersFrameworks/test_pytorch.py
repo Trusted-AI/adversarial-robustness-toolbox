@@ -230,12 +230,14 @@ def test_fgsm_defences(art_warning, fix_get_mnist_subset, image_dl_estimator, de
     except ARTTestException as e:
         art_warning(e)
 
+
 @pytest.mark.only_with_platform("pytorch")
 def test_pytorch_binary_PGD(art_warning):
     """
     This test instantiates a binary classification Pytorch model, then attacks it using PGD
 
     """
+
     class BasicModel(nn.Module):
         def __init__(self):
             super(BasicModel, self).__init__()
@@ -247,6 +249,7 @@ def test_pytorch_binary_PGD(art_warning):
             x = torch.sigmoid(self.layer_2(x))
 
             return x
+
     try:
         device = "cpu"
         x, y = sklearn.datasets.make_classification(
@@ -272,6 +275,7 @@ def test_pytorch_binary_PGD(art_warning):
         assert (adv_predicted != preds).all()
     except ARTTestException as e:
         art_warning(e)
+
 
 # # @pytest.mark.only_with_platform("pytorch")
 # def test_pytorch_binary_FGSM(art_warning):

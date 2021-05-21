@@ -221,6 +221,7 @@ def test_fgsm_defences(art_warning, fix_get_mnist_subset, image_dl_estimator):
     except ARTTestException as e:
         art_warning(e)
 
+
 @pytest.mark.only_with_platform("tensorflow2")
 def test_binary_instantiation_and_attack_PGD(art_warning):
     tf.compat.v1.disable_eager_execution()
@@ -231,12 +232,12 @@ def test_binary_instantiation_and_attack_PGD(art_warning):
         train_x, test_x, train_y, test_y = sklearn.model_selection.train_test_split(x, y, test_size=0.2)
         model = tf.keras.models.Sequential(
             [
-                tf.keras.layers.Dense(128, activation=tf.nn.relu, input_shape = (20, )),
-                tf.keras.layers.Dense(1, activation=tf.nn.sigmoid)
+                tf.keras.layers.Dense(128, activation=tf.nn.relu, input_shape=(20,)),
+                tf.keras.layers.Dense(1, activation=tf.nn.sigmoid),
             ]
         )
         model.summary()
-        model.compile(optimizer = tf.optimizers.Adam(), loss = 'binary_crossentropy', metrics=['accuracy'])
+        model.compile(optimizer=tf.optimizers.Adam(), loss="binary_crossentropy", metrics=["accuracy"])
         classifier = art.estimators.classification.KerasClassifier(model=model)
         classifier.fit(train_x, train_y, nb_epochs=5)
         pred = classifier.predict(test_x)
@@ -258,12 +259,12 @@ def test_binary_instantiation_and_attack_FGSM(art_warning):
         train_x, test_x, train_y, test_y = sklearn.model_selection.train_test_split(x, y, test_size=0.2)
         model = tf.keras.models.Sequential(
             [
-                tf.keras.layers.Dense(128, activation=tf.nn.relu, input_shape = (20, )),
-                tf.keras.layers.Dense(1, activation=tf.nn.sigmoid)
+                tf.keras.layers.Dense(128, activation=tf.nn.relu, input_shape=(20,)),
+                tf.keras.layers.Dense(1, activation=tf.nn.sigmoid),
             ]
         )
         model.summary()
-        model.compile(optimizer = tf.optimizers.Adam(), loss = 'binary_crossentropy', metrics=['accuracy'])
+        model.compile(optimizer=tf.optimizers.Adam(), loss="binary_crossentropy", metrics=["accuracy"])
         classifier = art.estimators.classification.KerasClassifier(model=model)
         classifier.fit(train_x, train_y, nb_epochs=5)
         pred = classifier.predict(test_x)
