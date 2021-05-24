@@ -443,6 +443,10 @@ class HopSkipJump(EvasionAttack):
             # Update current iteration
             self.curr_iter += 1
 
+            # If attack failed. return original sample
+            if np.isnan(current_sample).any():
+                return original_sample
+
         return current_sample
 
     def _binary_search(
