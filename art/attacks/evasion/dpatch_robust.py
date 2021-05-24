@@ -59,12 +59,13 @@ class RobustDPatch(EvasionAttack):
         "learning_rate",
         "max_iter",
         "batch_size",
-        "verbose",
         "patch_location",
         "crop_range",
         "brightness_range",
         "rotation_weights",
         "sample_size",
+        "targeted",
+        "verbose",
     ]
 
     _estimator_requirements = (BaseEstimator, LossGradientsMixin, ObjectDetectorMixin)
@@ -81,6 +82,7 @@ class RobustDPatch(EvasionAttack):
         learning_rate: float = 5.0,
         max_iter: int = 500,
         batch_size: int = 16,
+        targeted: bool = False,
         verbose: bool = True,
     ):
         """
@@ -96,6 +98,7 @@ class RobustDPatch(EvasionAttack):
         :param learning_rate: The learning rate of the optimization.
         :param max_iter: The number of optimization steps.
         :param batch_size: The size of the training batch.
+        :param targeted: Indicates whether the attack is targeted (True) or untargeted (False).
         :param verbose: Show progress bars.
         """
 
@@ -120,9 +123,10 @@ class RobustDPatch(EvasionAttack):
         self.brightness_range = brightness_range
         self.rotation_weights = rotation_weights
         self.sample_size = sample_size
+        self._targeted = targeted
         self._check_params()
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: Optional[List[Dict[str, np.ndarray]]] = None, **kwargs) -> np.ndarray:
         """
         Generate RobustDPatch.
 
@@ -133,7 +137,9 @@ class RobustDPatch(EvasionAttack):
         channel_index = 1 if self.estimator.channels_first else x.ndim - 1
         if x.shape[channel_index] != self.patch_shape[channel_index - 1]:
             raise ValueError("The color channel index of the images and the patch have to be identical.")
-        if y is not None:
+        if y is None and self.targeted:
+            raise ValueError("The targeted version of RobustDPatch attack requires target labels provided to `y`.")
+        if y is not None and not self.targeted:
             raise ValueError("The RobustDPatch attack does not use target labels.")
         if x.ndim != 4:
             raise ValueError("The adversarial patch can only be applied to images.")
@@ -143,6 +149,24 @@ class RobustDPatch(EvasionAttack):
             image_height, image_width = x.shape[2:4]
         else:
             image_height, image_width = x.shape[1:3]
+
+        if not self.estimator.native_label_is_pytorch_format and y is not None:
+            from art.estimators.object_detection.utils import convert_tf_to_pt
+
+            y = convert_tf_to_pt(y=y, height=x.shape[1], width=x.shape[2])
+
+        if y is not None:
+            for i_image in range(x.shape[0]):
+                y_i = y[i_image]["boxes"]
+                for i_box in range(y_i.shape[0]):
+                    x_1, y_1, x_2, y_2 = y_i[i_box]
+                    if (
+                        x_1 < self.crop_range[1]
+                        or y_1 < self.crop_range[0]
+                        or x_2 > image_width - self.crop_range[1] + 1
+                        or y_2 > image_height - self.crop_range[0] + 1
+                    ):
+                        raise ValueError("Cropping is intersecting with at least one box, reduce `crop_range`.")
 
         if (
             self.patch_location[0] + self.patch_shape[0] > image_height - self.crop_range[0]
@@ -165,14 +189,20 @@ class RobustDPatch(EvasionAttack):
                     i_batch_start = i_batch * self.batch_size
                     i_batch_end = min((i_batch + 1) * self.batch_size, x.shape[0])
 
+                    if y is None:
+                        y_batch = y
+                    else:
+                        y_batch = y[i_batch_start:i_batch_end]
+
                     # Sample and apply the random transformations:
                     patched_images, patch_target, transforms = self._augment_images_with_patch(
-                        x[i_batch_start:i_batch_end], self._patch, channels_first=self.estimator.channels_first
+                        x[i_batch_start:i_batch_end], y_batch, self._patch, channels_first=self.estimator.channels_first
                     )
 
                     gradients = self.estimator.loss_gradient(
                         x=patched_images,
                         y=patch_target,
+                        standardise_output=True,
                     )
 
                     gradients = self._untransform_gradients(
@@ -187,7 +217,7 @@ class RobustDPatch(EvasionAttack):
 
                     patch_gradients_old = patch_gradients
 
-            self._patch = self._patch + np.sign(patch_gradients) * self.learning_rate
+            self._patch = self._patch + np.sign(patch_gradients) * (1 - 2 * int(self.targeted)) * self.learning_rate
 
             if self.estimator.clip_values is not None:
                 self._patch = np.clip(
@@ -199,12 +229,13 @@ class RobustDPatch(EvasionAttack):
         return self._patch
 
     def _augment_images_with_patch(
-        self, x: np.ndarray, patch: np.ndarray, channels_first: bool
+        self, x: np.ndarray, y: Optional[List[Dict[str, np.ndarray]]], patch: np.ndarray, channels_first: bool
     ) -> Tuple[np.ndarray, List[Dict[str, np.ndarray]], Dict[str, Union[int, float]]]:
         """
         Augment images with patch.
 
         :param x: Sample images.
+        :param y: Target labels.
         :param patch: The patch to be applied.
         :param channels_first: Set channels first or last.
         """
@@ -242,17 +273,73 @@ class RobustDPatch(EvasionAttack):
 
         transformations.update({"rot90": rot90})
 
+        if y is not None:
+
+            y_copy: List[Dict[str, np.ndarray]] = list()
+
+            for i_image in range(x_copy.shape[0]):
+                y_b = y[i_image]["boxes"].copy()
+                image_width = x.shape[2]
+                image_height = x.shape[1]
+                x_1_arr = y_b[:, 0]
+                y_1_arr = y_b[:, 1]
+                x_2_arr = y_b[:, 2]
+                y_2_arr = y_b[:, 3]
+                box_width = x_2_arr - x_1_arr
+                box_height = y_2_arr - y_1_arr
+
+                if rot90 == 0:
+                    x_1_new = x_1_arr
+                    y_1_new = y_1_arr
+                    x_2_new = x_2_arr
+                    y_2_new = y_2_arr
+
+                if rot90 == 1:
+                    x_1_new = y_1_arr
+                    y_1_new = image_width - x_1_arr - box_width
+                    x_2_new = y_1_arr + box_height
+                    y_2_new = image_width - x_1_arr
+
+                if rot90 == 2:
+                    x_1_new = image_width - x_2_arr
+                    y_1_new = image_height - y_2_arr
+                    x_2_new = x_1_new + box_width
+                    y_2_new = y_1_new + box_height
+
+                if rot90 == 3:
+                    x_1_new = image_height - y_1_arr - box_height
+                    y_1_new = x_1_arr
+                    x_2_new = image_height - y_1_arr
+                    y_2_new = x_1_arr + box_width
+
+                y_i = dict()
+                y_i["boxes"] = np.zeros_like(y[i_image]["boxes"])
+                y_i["boxes"][:, 0] = x_1_new
+                y_i["boxes"][:, 1] = y_1_new
+                y_i["boxes"][:, 2] = x_2_new
+                y_i["boxes"][:, 3] = y_2_new
+
+                y_i["labels"] = y[i_image]["labels"]
+                y_i["scores"] = y[i_image]["scores"]
+
+                y_copy.append(y_i)
+
         # 3) adjust brightness:
         brightness = random.uniform(*self.brightness_range)
-        x_copy = np.round(brightness * x_copy)
-        x_patch = np.round(brightness * x_patch)
+        x_copy = np.round(brightness * x_copy / self.learning_rate) * self.learning_rate
+        x_patch = np.round(brightness * x_patch / self.learning_rate) * self.learning_rate
 
         transformations.update({"brightness": brightness})
 
         logger.debug("Transformations: %s", str(transformations))
 
         patch_target: List[Dict[str, np.ndarray]] = list()
-        predictions = self.estimator.predict(x=x_copy)
+
+        if self.targeted:
+            predictions = y_copy
+        else:
+            predictions = self.estimator.predict(x=x_copy, standardise_output=True)
+
         for i_image in range(x_copy.shape[0]):
             target_dict = dict()
             target_dict["boxes"] = predictions[i_image]["boxes"]
@@ -385,8 +472,8 @@ class RobustDPatch(EvasionAttack):
         if len(self.brightness_range) != 2:
             raise ValueError("The length of brightness range must be 2.")
 
-        if self.brightness_range[0] < 0.0 or self.brightness_range[1] > 1.0:
-            raise ValueError("The brightness range must be between 0.0 and 1.0.")
+        if self.brightness_range[0] < 0.0:
+            raise ValueError("The brightness range must be >= 0.0.")
 
         if self.brightness_range[0] > self.brightness_range[1]:
             raise ValueError("The first element of the brightness range must be less or equal to the second one.")
@@ -408,3 +495,6 @@ class RobustDPatch(EvasionAttack):
             raise ValueError("The EOT sample size must be of type int.")
         if self.sample_size <= 0:
             raise ValueError("The EOT sample size must be greater than 0.")
+
+        if not isinstance(self.targeted, bool):
+            raise ValueError("The argument `targeted` has to be of type bool.")

@@ -32,7 +32,7 @@ catboost==0.25.1
 GPy==1.10.0
 lightgbm==3.2.1
 xgboost==1.4.2
-kornia~=0.5.1
+kornia~=0.5.2
 tensorboardX==2.1
 
 # Lingvo ASR dependencies
@@ -45,7 +45,7 @@ tensorboardX==2.1
 pytest~=6.2.4
 pytest-flake8~=1.0.7
 pytest-mock~=3.6.1
-pytest-cov~=2.11.1
+pytest-cov~=2.12.0
 codecov~=2.1.11
 requests~=2.25.1
 
