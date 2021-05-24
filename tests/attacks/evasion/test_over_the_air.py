@@ -43,7 +43,9 @@ class Model(torch.nn.Module):
         return logit_output.view(-1, 101)
 
 
-@pytest.mark.only_with_platform("pytorch")
+@pytest.mark.skip_framework(
+    "tensorflow1", "tensorflow2", "tensorflow2v1", "keras", "non_dl_frameworks", "mxnet", "kerastf"
+)
 def test_get_loss_gradients(art_warning):
     try:
 
@@ -67,7 +69,9 @@ def test_get_loss_gradients(art_warning):
         art_warning(e)
 
 
-@pytest.mark.only_with_platform("pytorch")
+@pytest.mark.skip_framework(
+    "tensorflow1", "tensorflow2", "tensorflow2v1", "keras", "non_dl_frameworks", "mxnet", "kerastf"
+)
 def test_generate(art_warning):
     try:
 
