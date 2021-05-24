@@ -38,7 +38,7 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip setuptools wheel
-          pip install -q pylint==2.7.4 pycodestyle==2.7.0 black==20.8b1
+          pip install -q pylint==2.7.4 mypy==0.812 pycodestyle==2.7.0 black==20.8b1
           pip install -q -r requirements.txt
           pip list
       - name: pycodestyle

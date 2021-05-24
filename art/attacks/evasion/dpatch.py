@@ -189,7 +189,7 @@ class DPatch(EvasionAttack):
 
         else:
 
-            predictions = self.estimator.predict(x=patched_images)
+            predictions = self.estimator.predict(x=patched_images, standardise_output=True)
 
             for i_image in range(patched_images.shape[0]):
                 target_dict = dict()
@@ -213,6 +213,7 @@ class DPatch(EvasionAttack):
                 gradients = self.estimator.loss_gradient(
                     x=patched_images[i_batch_start:i_batch_end],
                     y=patch_target[i_batch_start:i_batch_end],
+                    standardise_output=True,
                 )
 
                 for i_image in range(gradients.shape[0]):

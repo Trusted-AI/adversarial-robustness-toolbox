@@ -10,7 +10,7 @@ from art.attacks.evasion.auto_attack import AutoAttack
 from art.attacks.evasion.auto_projected_gradient_descent import AutoProjectedGradientDescent
 from art.attacks.evasion.brendel_bethge import BrendelBethgeAttack
 from art.attacks.evasion.boundary import BoundaryAttack
-from art.attacks.evasion.carlini import CarliniL2Method, CarliniLInfMethod
+from art.attacks.evasion.carlini import CarliniL2Method, CarliniLInfMethod, CarliniL0Method
 from art.attacks.evasion.decision_tree_attack import DecisionTreeAttack
 from art.attacks.evasion.deepfool import DeepFool
 from art.attacks.evasion.dpatch import DPatch
@@ -24,6 +24,7 @@ from art.attacks.evasion.hop_skip_jump import HopSkipJump
 from art.attacks.evasion.imperceptible_asr.imperceptible_asr import ImperceptibleASR
 from art.attacks.evasion.imperceptible_asr.imperceptible_asr_pytorch import ImperceptibleASRPyTorch
 from art.attacks.evasion.iterative_method import BasicIterativeMethod
+from art.attacks.evasion.lowprofool import LowProFool
 from art.attacks.evasion.newtonfool import NewtonFool
 from art.attacks.evasion.pixel_threshold import PixelAttack
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
@@ -36,6 +37,7 @@ from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_p
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_tensorflow_v2 import (
     ProjectedGradientDescentTensorFlowV2,
 )
+from art.attacks.evasion.over_the_air_flickering.over_the_air_flickering_pytorch import OverTheAirFlickeringPyTorch
 from art.attacks.evasion.saliency_map import SaliencyMapMethod
 from art.attacks.evasion.shadow_attack import ShadowAttack
 from art.attacks.evasion.shapeshifter import ShapeShifter

@@ -100,8 +100,8 @@ class AdversarialPatchPyTorch(EvasionAttack):
         import torch  # lgtm [py/repeated-import]
         import torchvision
 
-        torch_version = list(map(int, torch.__version__.lower().split(".")))
-        torchvision_version = list(map(int, torchvision.__version__.lower().split(".")))
+        torch_version = list(map(int, torch.__version__.lower().split("+")[0].split(".")))
+        torchvision_version = list(map(int, torchvision.__version__.lower().split("+")[0].split(".")))
         assert torch_version[0] >= 1 and torch_version[1] >= 7, "AdversarialPatchPyTorch requires torch>=1.7.0"
         assert (
             torchvision_version[0] >= 0 and torchvision_version[1] >= 8
