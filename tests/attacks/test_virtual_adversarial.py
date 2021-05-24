@@ -88,7 +88,7 @@ class TestVirtualAdversarial(TestBase):
     def _test_backend_mnist(self, classifier, x_test, y_test):
         x_test_original = x_test.copy()
 
-        df = VirtualAdversarialMethod(classifier, batch_size=100, max_iter=2)
+        df = VirtualAdversarialMethod(classifier, batch_size=100, max_iter=2, verbose=False)
 
         x_test_adv = df.generate(x_test)
 
@@ -107,7 +107,7 @@ class TestVirtualAdversarial(TestBase):
         classifier = get_tabular_classifier_kr()
 
         # Test untargeted attack
-        attack = VirtualAdversarialMethod(classifier, eps=0.1)
+        attack = VirtualAdversarialMethod(classifier, eps=0.1, verbose=False)
         x_test_iris_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_iris_adv).all())
         self.assertTrue((x_test_iris_adv <= 1).all())
@@ -123,7 +123,7 @@ class TestVirtualAdversarial(TestBase):
 
         # Recreate a classifier without clip values
         classifier = KerasClassifier(model=classifier._model, use_logits=False, channels_first=True)
-        attack = VirtualAdversarialMethod(classifier, eps=1)
+        attack = VirtualAdversarialMethod(classifier, eps=1, verbose=False)
         x_test_iris_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_iris_adv).all())
         self.assertTrue((x_test_iris_adv > 1).any())
@@ -137,7 +137,7 @@ class TestVirtualAdversarial(TestBase):
     # def test_iris_tf(self):
     #     classifier, _ = get_iris_classifier_tf()
     #
-    #     attack = VirtualAdversarialMethod(classifier, eps=.1)
+    #     attack = VirtualAdversarialMethod(classifier, eps=.1, verbose=False)
     #     x_test_adv = attack.generate(x_test)
     #     #print(np.min(x_test_adv), np.max(x_test_adv), np.min(x_test), np.max(x_test))
     #     self.assertFalse((x_test == x_test_adv).all())
@@ -153,7 +153,7 @@ class TestVirtualAdversarial(TestBase):
     #     (_, _), (x_test, y_test) = self.iris
     #     classifier = get_iris_classifier_pt()
     #
-    #     attack = VirtualAdversarialMethod(classifier, eps=.1)
+    #     attack = VirtualAdversarialMethod(classifier, eps=.1, verbose=False)
     #     x_test_adv = attack.generate(x_test.astype(np.float32))
     #     #print(np.min(x_test_adv),  np.max(x_test_adv), np.min(x_test), np.max(x_test))
     #     self.assertFalse((x_test == x_test_adv).all())
@@ -168,7 +168,7 @@ class TestVirtualAdversarial(TestBase):
     def test_2_tensorflow_iris(self):
         classifier, _ = get_tabular_classifier_tf()
 
-        attack = VirtualAdversarialMethod(classifier, eps=0.1)
+        attack = VirtualAdversarialMethod(classifier, eps=0.1, verbose=False)
 
         with self.assertRaises(TypeError) as context:
             _ = attack.generate(self.x_test_iris)
@@ -182,7 +182,7 @@ class TestVirtualAdversarial(TestBase):
     def test_4_pytorch_iris(self):
         classifier = get_tabular_classifier_pt()
 
-        attack = VirtualAdversarialMethod(classifier, eps=0.1)
+        attack = VirtualAdversarialMethod(classifier, eps=0.1, verbose=False)
 
         with self.assertRaises(TypeError) as context:
             _ = attack.generate(self.x_test_iris.astype(np.float32))

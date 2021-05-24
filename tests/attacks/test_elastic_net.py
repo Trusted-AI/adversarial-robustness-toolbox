@@ -74,7 +74,13 @@ class TestElasticNet(TestBase):
 
         # Failure attack
         ead = ElasticNet(
-            classifier=tfc, targeted=True, max_iter=0, binary_search_steps=0, learning_rate=0, initial_const=1
+            classifier=tfc,
+            targeted=True,
+            max_iter=0,
+            binary_search_steps=0,
+            learning_rate=0,
+            initial_const=1,
+            verbose=False,
         )
         params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes)}
         x_test_adv = ead.generate(self.x_test_mnist, **params)
@@ -97,7 +103,7 @@ class TestElasticNet(TestBase):
         tfc, sess = get_image_classifier_tf(from_logits=True)
 
         # First attack
-        ead = ElasticNet(classifier=tfc, targeted=True, max_iter=2)
+        ead = ElasticNet(classifier=tfc, targeted=True, max_iter=2, verbose=False)
         params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes)}
         x_test_adv = ead.generate(self.x_test_mnist, **params)
         expected_x_test_adv = np.asarray(
@@ -143,7 +149,7 @@ class TestElasticNet(TestBase):
         self.assertTrue((target == y_pred_adv).any())
 
         # Second attack
-        ead = ElasticNet(classifier=tfc, targeted=False, max_iter=2)
+        ead = ElasticNet(classifier=tfc, targeted=False, max_iter=2, verbose=False)
         params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes)}
         x_test_adv = ead.generate(self.x_test_mnist, **params)
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
@@ -156,7 +162,7 @@ class TestElasticNet(TestBase):
         np.testing.assert_array_equal(y_pred_adv, np.asarray([7, 1, 1, 4, 4, 1, 4, 4, 4, 4]))
 
         # Third attack
-        ead = ElasticNet(classifier=tfc, targeted=False, max_iter=2)
+        ead = ElasticNet(classifier=tfc, targeted=False, max_iter=2, verbose=False)
         params = {}
         x_test_adv = ead.generate(self.x_test_mnist, **params)
         expected_x_test_adv = np.asarray(
@@ -202,7 +208,7 @@ class TestElasticNet(TestBase):
         np.testing.assert_array_equal(y_pred_adv, np.asarray([0, 4, 7, 9, 0, 7, 7, 3, 0, 7]))
 
         # First attack without batching
-        ead_wob = ElasticNet(classifier=tfc, targeted=True, max_iter=2, batch_size=1)
+        ead_wob = ElasticNet(classifier=tfc, targeted=True, max_iter=2, batch_size=1, verbose=False)
         params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes)}
         x_test_adv = ead_wob.generate(self.x_test_mnist, **params)
         expected_x_test_adv = np.asarray(
@@ -248,7 +254,7 @@ class TestElasticNet(TestBase):
         self.assertTrue((target == y_pred_adv).any())
 
         # Second attack without batching
-        ead_wob = ElasticNet(classifier=tfc, targeted=False, max_iter=2, batch_size=1)
+        ead_wob = ElasticNet(classifier=tfc, targeted=False, max_iter=2, batch_size=1, verbose=False)
         params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes)}
         x_test_adv = ead_wob.generate(self.x_test_mnist, **params)
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
@@ -278,7 +284,7 @@ class TestElasticNet(TestBase):
         krc = get_image_classifier_kr()
 
         # First attack
-        ead = ElasticNet(classifier=krc, targeted=True, max_iter=2)
+        ead = ElasticNet(classifier=krc, targeted=True, max_iter=2, verbose=False)
         y_target = to_categorical(np.asarray([6, 6, 7, 4, 9, 7, 9, 0, 1, 0]), nb_classes=10)
         x_test_adv = ead.generate(self.x_test_mnist, y=y_target)
         expected_x_test_adv = np.asarray(
@@ -324,7 +330,7 @@ class TestElasticNet(TestBase):
         self.assertTrue((target == y_pred_adv).any())
 
         # Second attack
-        ead = ElasticNet(classifier=krc, targeted=False, max_iter=2)
+        ead = ElasticNet(classifier=krc, targeted=False, max_iter=2, verbose=False)
         y_target = to_categorical(np.asarray([9, 5, 6, 7, 1, 6, 1, 5, 8, 5]), nb_classes=10)
         x_test_adv = ead.generate(self.x_test_mnist, y=y_target)
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
@@ -353,7 +359,7 @@ class TestElasticNet(TestBase):
         ptc = get_image_classifier_pt(from_logits=False)
 
         # First attack
-        ead = ElasticNet(classifier=ptc, targeted=True, max_iter=2)
+        ead = ElasticNet(classifier=ptc, targeted=True, max_iter=2, verbose=False)
         params = {"y": random_targets(self.y_test_mnist, ptc.nb_classes)}
         x_test_adv = ead.generate(x_test, **params)
         expected_x_test_adv = np.asarray(
@@ -396,7 +402,7 @@ class TestElasticNet(TestBase):
         self.assertTrue((target == y_pred_adv).any())
 
         # Second attack
-        ead = ElasticNet(classifier=ptc, targeted=False, max_iter=2)
+        ead = ElasticNet(classifier=ptc, targeted=False, max_iter=2, verbose=False)
         params = {"y": random_targets(self.y_test_mnist, ptc.nb_classes)}
         x_test_adv = ead.generate(x_test, **params)
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
@@ -414,7 +420,7 @@ class TestElasticNet(TestBase):
 
     def test_8_keras_iris_clipped(self):
         classifier = get_tabular_classifier_kr()
-        attack = ElasticNet(classifier, targeted=False, max_iter=10)
+        attack = ElasticNet(classifier, targeted=False, max_iter=10, verbose=False)
         x_test_adv = attack.generate(self.x_test_iris)
         expected_x_test_adv = np.asarray([0.860373, 0.455002, 0.654925, 0.240258])
         np.testing.assert_array_almost_equal(x_test_adv[0, :], expected_x_test_adv, decimal=6)
@@ -483,7 +489,7 @@ class TestElasticNet(TestBase):
 
         # Recreate a classifier without clip values
         classifier = KerasClassifier(model=classifier._model, use_logits=False, channels_first=True)
-        attack = ElasticNet(classifier, targeted=False, max_iter=10)
+        attack = ElasticNet(classifier, targeted=False, max_iter=10, verbose=False)
         x_test_adv = attack.generate(self.x_test_iris)
         expected_x_test_adv = np.asarray([0.860373, 0.455002, 0.654925, 0.240258])
         np.testing.assert_array_almost_equal(x_test_adv[0, :], expected_x_test_adv, decimal=6)
@@ -549,7 +555,7 @@ class TestElasticNet(TestBase):
         classifier, sess = get_tabular_classifier_tf()
 
         # Test untargeted attack
-        attack = ElasticNet(classifier, targeted=False, max_iter=10)
+        attack = ElasticNet(classifier, targeted=False, max_iter=10, verbose=False)
         x_test_adv = attack.generate(self.x_test_iris)
         expected_x_test_adv = np.asarray([0.852286, 0.434626, 0.703376, 0.293738])
         np.testing.assert_array_almost_equal(x_test_adv[0, :], expected_x_test_adv, decimal=6)
@@ -614,7 +620,7 @@ class TestElasticNet(TestBase):
 
         # Test targeted attack
         targets = random_targets(self.y_test_iris, nb_classes=3)
-        attack = ElasticNet(classifier, targeted=True, max_iter=10)
+        attack = ElasticNet(classifier, targeted=True, max_iter=10, verbose=False)
         x_test_adv = attack.generate(self.x_test_iris, **{"y": targets})
         expected_x_test_adv = np.asarray([0.892806, 0.531875, 0.501707, 0.059951])
         np.testing.assert_array_almost_equal(x_test_adv[0, :], expected_x_test_adv, decimal=6)
@@ -684,7 +690,7 @@ class TestElasticNet(TestBase):
 
     def test_5_pytorch_iris(self):
         classifier = get_tabular_classifier_pt()
-        attack = ElasticNet(classifier, targeted=False, max_iter=10)
+        attack = ElasticNet(classifier, targeted=False, max_iter=10, verbose=False)
         x_test_adv = attack.generate(self.x_test_iris.astype(np.float32))
         expected_x_test_adv = np.asarray([0.852286, 0.434626, 0.703376, 0.293738])
         np.testing.assert_array_almost_equal(x_test_adv[0, :], expected_x_test_adv, decimal=6)
@@ -767,7 +773,7 @@ class TestElasticNet(TestBase):
             classifier.fit(x=self.x_test_iris, y=self.y_test_iris)
 
             # Test untargeted attack
-            attack = ElasticNet(classifier, targeted=False, max_iter=2)
+            attack = ElasticNet(classifier, targeted=False, max_iter=2, verbose=False)
             x_test_adv = attack.generate(self.x_test_iris)
             self.assertFalse((self.x_test_iris == x_test_adv).all())
             self.assertLessEqual(np.amax(x_test_adv), 1.0)
@@ -780,7 +786,7 @@ class TestElasticNet(TestBase):
 
             # Test targeted attack
             targets = random_targets(self.y_test_iris, nb_classes=3)
-            attack = ElasticNet(classifier, targeted=True, max_iter=2)
+            attack = ElasticNet(classifier, targeted=True, max_iter=2, verbose=False)
             x_test_adv = attack.generate(self.x_test_iris, **{"y": targets})
             self.assertFalse((self.x_test_iris == x_test_adv).all())
             self.assertLessEqual(np.amax(x_test_adv), 1.0)

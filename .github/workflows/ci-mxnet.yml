@@ -1,4 +1,4 @@
-name: CI MXNet
+name: CI MXNet + Legacy
 on:
   # Run on manual trigger
   workflow_dispatch:

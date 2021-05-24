@@ -188,6 +188,105 @@ class TestTensorFlowFasterRCNN(TestBase):
         )
         np.testing.assert_array_almost_equal(grads[1, :, 0, :], expected_gradients2, decimal=2)
 
+    def test_loss_gradient_standard_format(self):
+        # Create labels
+        result_tf = self.obj_dec.predict(self.x_test_mnist[:2], standardise_output=False)
+        result = self.obj_dec.predict(self.x_test_mnist[:2], standardise_output=True)
+
+        from art.estimators.object_detection.utils import convert_tf_to_pt
+
+        result_pt = convert_tf_to_pt(y=result_tf, height=self.x_test_mnist.shape[1], width=self.x_test_mnist.shape[2])
+        for i in range(2):
+            np.testing.assert_array_equal(result[i]["boxes"], result_pt[i]["boxes"])
+            np.testing.assert_array_equal(result[i]["labels"], result_pt[i]["labels"])
+            np.testing.assert_array_equal(result[i]["scores"], result_pt[i]["scores"])
+
+        y = [
+            {
+                "boxes": result[0]["boxes"],
+                "labels": result[0]["labels"],
+                "scores": np.ones_like(result[0]["labels"]),
+            },
+            {
+                "boxes": result[1]["boxes"],
+                "labels": result[1]["labels"],
+                "scores": np.ones_like(result[1]["labels"]),
+            },
+        ]
+
+        # Compute gradients
+        grads = self.obj_dec.loss_gradient(self.x_test_mnist[:2], y, standardise_output=True)
+
+        self.assertTrue(grads.shape == (2, 28, 28, 1))
+
+        expected_gradients1 = np.asarray(
+            [
+                [-6.1982083e-03],
+                [9.2188769e-04],
+                [2.2715484e-03],
+                [3.0439291e-03],
+                [3.9350586e-03],
+                [1.3214475e-03],
+                [-1.9790903e-03],
+                [-1.8616641e-03],
+                [-1.7762191e-03],
+                [-2.4208077e-03],
+                [-2.1795963e-03],
+                [-1.3475846e-03],
+                [-1.7141351e-04],
+                [5.3379539e-04],
+                [6.1705662e-04],
+                [9.1885449e-05],
+                [-2.4936342e-04],
+                [-7.8056828e-04],
+                [-2.4509570e-04],
+                [-1.3246380e-04],
+                [-6.9344416e-04],
+                [-2.8356430e-04],
+                [1.1605137e-03],
+                [2.7452575e-03],
+                [2.9905243e-03],
+                [2.2033940e-03],
+                [1.7121597e-03],
+                [8.4455572e-03],
+            ]
+        )
+        np.testing.assert_array_almost_equal(grads[0, 0, :, :], expected_gradients1, decimal=2)
+
+        expected_gradients2 = np.asarray(
+            [
+                [-8.14103708e-03],
+                [-5.78497676e-03],
+                [-1.93702651e-03],
+                [-1.10854053e-04],
+                [-3.13712610e-03],
+                [-2.40660645e-03],
+                [-2.33814842e-03],
+                [-1.18874465e-04],
+                [-8.61960289e-05],
+                [-8.44302267e-05],
+                [1.16928865e-03],
+                [8.52172205e-04],
+                [1.50172669e-03],
+                [9.76039213e-04],
+                [6.99639553e-04],
+                [1.55441079e-03],
+                [1.99828879e-03],
+                [2.53868615e-03],
+                [3.47398920e-03],
+                [3.55495396e-03],
+                [3.40546807e-03],
+                [5.23657538e-03],
+                [9.50821862e-03],
+                [8.31787288e-03],
+                [4.75075701e-03],
+                [8.02019704e-03],
+                [1.00337435e-02],
+                [6.10247999e-03],
+            ]
+        )
+        np.testing.assert_array_almost_equal(grads[1, :, 0, :], expected_gradients2, decimal=2)
+
 
 if __name__ == "__main__":
     unittest.main()

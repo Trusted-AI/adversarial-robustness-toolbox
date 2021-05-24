@@ -188,6 +188,7 @@ def clever(
     target_sort: bool = False,
     c_init: float = 1.0,
     pool_factor: int = 10,
+    verbose: bool = True,
 ) -> Optional[np.ndarray]:
     """
     Compute CLEVER score for an untargeted attack.
@@ -205,6 +206,7 @@ def clever(
            sort results.
     :param c_init: initialization of Weibull distribution.
     :param pool_factor: The factor to create a pool of random samples with size pool_factor x n_s.
+    :param verbose: Show progress bars.
     :return: CLEVER score.
     """
     # Find the predicted class first
@@ -222,7 +224,7 @@ def clever(
         # Assume it's iterable
         target_classes = target
     score_list: List[Optional[float]] = []
-    for j in tqdm(target_classes, desc="CLEVER untargeted"):
+    for j in tqdm(target_classes, desc="CLEVER untargeted", disable=not verbose):
         if j == pred_class:
             score_list.append(None)
             continue
@@ -240,6 +242,7 @@ def clever_u(
     norm: int,
     c_init: float = 1.0,
     pool_factor: int = 10,
+    verbose: bool = True,
 ) -> float:
     """
     Compute CLEVER score for an untargeted attack.
@@ -254,6 +257,7 @@ def clever_u(
     :param norm: Current support: 1, 2, np.inf.
     :param c_init: initialization of Weibull distribution.
     :param pool_factor: The factor to create a pool of random samples with size pool_factor x n_s.
+    :param verbose: Show progress bars.
     :return: CLEVER score.
     """
     # Get a list of untargeted classes
@@ -263,7 +267,7 @@ def clever_u(
 
     # Compute CLEVER score for each untargeted class
     score_list = []
-    for j in tqdm(untarget_classes, desc="CLEVER untargeted"):
+    for j in tqdm(untarget_classes, desc="CLEVER untargeted", disable=not verbose):
         score = clever_t(classifier, x, j, nb_batches, batch_size, radius, norm, c_init, pool_factor)
         score_list.append(score)
 

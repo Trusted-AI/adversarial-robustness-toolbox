@@ -1,0 +1,60 @@
+name: CI Style Checks
+on:
+  # Run on manual trigger
+  workflow_dispatch:
+
+  # Run on pull requests
+  pull_request:
+    paths-ignore:
+      - '*.md'
+
+  # Run when pushing to main or dev branches
+  push:
+    branches:
+      - main
+      - dev*
+
+  # Run scheduled CI flow daily
+  schedule:
+    - cron: '0 8 * * 0'
+
+jobs:
+  style:
+    name: Style Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+      - name: Pre-install
+        run: |
+          sudo apt-get update
+          sudo apt-get -y -q install ffmpeg libavcodec-extra
+          pip install tensorflow==2.4.1
+          pip install keras==2.4.3
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install -q pylint==2.7.4 mypy==0.812 pycodestyle==2.7.0 black==20.8b1
+          pip install -q -r requirements.txt
+          pip list
+      - name: pycodestyle
+        run: pycodestyle --ignore=C0330,C0415,E203,E231,W503 --max-line-length=120 art
+      - name: pylint
+        if: ${{ always() }}
+        run: pylint --disable=C0330,C0415,E203,E1136,E0401,E1102 -rn art
+      - name: mypy
+        if: ${{ always() }}
+        run: mypy art
+      - name: pytest-flake8
+        if: ${{ always() }}
+        run: pytest --flake8 -v -m flake8
+      - name: black
+        if: ${{ always() }}
+        run: |
+          black --line-length 120 --check art/
+          black --line-length 120 --check tests/
+          black --line-length 120 --check examples/
