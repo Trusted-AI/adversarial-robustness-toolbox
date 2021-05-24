@@ -375,7 +375,7 @@ class MembershipInferenceAttack(InferenceAttack):
         :param x: An array with reference inputs to be used in the attack.
         :param y: Labels for `x`. This parameter is only used by some of the attacks.
         :param probabilities: a boolean indicating whether to return the predicted probabilities per class, or just
-                              the predicted class
+                              the predicted class.
         :return: An array holding the inferred membership status (1 indicates member of training set,
                  0 indicates non-member).
         """

@@ -139,7 +139,7 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         :param x: Input to attack. Includes all features except the attacked feature.
         :param y: Original model's predictions for x.
         :param values: Possible values for attacked feature. Only needed in case of categorical feature (not one-hot).
-        :type values: `np.ndarray`
+        :type values: list
         :return: The inferred feature values.
         """
         if y is None:

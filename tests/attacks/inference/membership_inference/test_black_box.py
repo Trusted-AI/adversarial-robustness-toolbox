@@ -185,15 +185,6 @@ def test_classifier_type_check_fail(art_warning):
         art_warning(e)
 
 
-def backend_check_membership_accuracy_no_fit(attack, dataset, approx):
-    (x_train, y_train), (x_test, y_test) = dataset
-    # infer attacked feature
-    inferred_train = attack.infer(x_train, y_train)
-    inferred_test = attack.infer(x_test, y_test)
-    # check accuracy
-    backend_check_accuracy(inferred_train, inferred_test, approx)
-
-
 def backend_check_membership_accuracy(attack, dataset, attack_train_ratio, approx):
     (x_train, y_train), (x_test, y_test) = dataset
     attack_train_size = int(len(x_train) * attack_train_ratio)
