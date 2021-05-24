@@ -357,4 +357,4 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
             raise ValueError("The argument `num_frames` must be positive of type int.")
 
         if not isinstance(self.round_samples, (int, float)) or self.round_samples < 0.0:
-            raise ValueError("The argument `round_samples` must be 0 .0 or positive of type int or float.")
+            raise ValueError("The argument `round_samples` must be 0.0 or positive of type int or float.")
