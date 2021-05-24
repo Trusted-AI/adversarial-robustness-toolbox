@@ -36,7 +36,7 @@ from art.utils import check_and_transform_label_format, get_labels_np_array
 if TYPE_CHECKING:
     # pylint: disable=C0412
     import torch
-    from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
+    from art.estimators.classification.pytorch import PyTorchClassifier
 
 
 logger = logging.getLogger(__name__)
@@ -67,7 +67,7 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
+        classifier: "PyTorchClassifier",
         eps_step: float = 0.01,
         max_iter: int = 30,
         beta_0: float = 1.0,
@@ -115,7 +115,7 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
         """
         Generate adversarial examples.
 
-        :param x: Original input samples.
+        :param x: Original input samples representing videos of format NFHWC.
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,).
         :return: Adversarial examples.
@@ -183,8 +183,7 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
         
         :param x_adv: Current adversarial examples.
         :param x: An array with the original inputs.
-        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
-                  (nb_samples,).
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)`.
         :param eps_step: Attack step size (input variation) at each iteration.
         :return: Adversarial examples.
         """
@@ -204,8 +203,7 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
         Compute perturbation.
 
         :param x: Current adversarial examples.
-        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
-                  (nb_samples,).
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)`.
         :param perturbation: Currently accumulated perturbation
         :return: Perturbations.
         """
