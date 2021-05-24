@@ -21,7 +21,7 @@ h5py==2.10.0
 # supported versions: (tensorflow==2.2.0 with keras==2.3.1) or (tensorflow==1.15.4 with keras==2.2.5)
 tensorflow>=1.15.4
 keras>=2.2.5
-tensorflow-addons~=0.12.1
+tensorflow-addons~=0.13.0
 # using mxnet-native for reproducible test results on CI machines without Intel Architecture Processors, but mxnet is fully supported by ART
 mxnet-native==1.8.0.post0
 --find-links https://download.pytorch.org/whl/torch_stable.html
