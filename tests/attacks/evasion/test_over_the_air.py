@@ -57,7 +57,7 @@ def test_get_loss_gradients(art_warning):
         classifier = PyTorchClassifier(
             model=model, loss=None, input_shape=x_train.shape[1:], nb_classes=y_train.shape[1]
         )
-        attack = OverTheAirFlickeringPyTorch(classifier=classifier)
+        attack = OverTheAirFlickeringPyTorch(classifier=classifier, verbose=False)
 
         gradients = attack._get_loss_gradients(
             x=torch.from_numpy(x_train), y=torch.from_numpy(y_train), perturbation=torch.zeros(x_train.shape)
@@ -83,7 +83,7 @@ def test_generate(art_warning):
         classifier = PyTorchClassifier(
             model=model, loss=None, input_shape=x_train.shape[1:], nb_classes=y_train.shape[1], clip_values=(0, 1)
         )
-        attack = OverTheAirFlickeringPyTorch(classifier=classifier, max_iter=1)
+        attack = OverTheAirFlickeringPyTorch(classifier=classifier, max_iter=1, verbose=False)
 
         x_train_adv = attack.generate(x=x_train, y=y_train)
 

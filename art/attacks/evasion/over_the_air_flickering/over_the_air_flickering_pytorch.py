@@ -26,6 +26,7 @@ import logging
 from typing import Optional, TYPE_CHECKING
 
 import numpy as np
+from tqdm.auto import tqdm
 
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator
@@ -61,6 +62,8 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
         "start_frame_index",
         "num_frames",
         "round_samples",
+        "targeted",
+        "verbose",
     ]
 
     _estimator_requirements = (BaseEstimator, ClassifierMixin, LossGradientsMixin)
@@ -78,6 +81,8 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
         start_frame_index: int = 0,
         num_frames: Optional[int] = None,
         round_samples: float = 0.0,
+        targeted: bool = False,
+        verbose: bool = True,
     ):
         """
         Create an instance of the :class:`.OverTheAirFlickeringPyTorch`.
@@ -93,6 +98,8 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
         :param start_frame_index: The first frame to be perturbed.
         :param num_frames: The number of frames to be perturbed.
         :param round_samples: Granularity of the input values to be enforced if > 0.0.
+        :param targeted: Indicates whether the attack is targeted (True) or untargeted (False).
+        :param verbose: Show progress bars.
         """
         super().__init__(estimator=classifier)
 
@@ -109,6 +116,8 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
         self.end_frame_index = (
             self.start_frame_index + self.num_frames if self.num_frames is not None else self.num_frames
         )
+        self._targeted = targeted
+        self.verbose = verbose
         self._check_params()
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
@@ -124,6 +133,10 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
 
         y = check_and_transform_label_format(y, self.estimator.nb_classes)
         if y is None:
+            if self.targeted:
+                raise ValueError("Target labels `y` need to be provided for a targeted attack.")
+
+            # Use model predictions as true labels
             logger.info("Using model predictions as true labels.")
             y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
 
@@ -139,7 +152,9 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
         x_adv = x.copy().astype(ART_NUMPY_DTYPE)
 
         # Compute perturbation with batching
-        for (batch_id, batch_all) in enumerate(data_loader):
+        for (batch_id, batch_all) in enumerate(
+            tqdm(data_loader, desc="OverTheAirFlickeringPyTorch - Batches", leave=False, disable=not self.verbose)
+        ):
             (batch, batch_labels) = batch_all[0], batch_all[1]
 
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
@@ -180,7 +195,7 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
     ) -> "torch.Tensor":
         """
         Compute adversarial examples for one iteration.
-        
+
         :param x_adv: Current adversarial examples.
         :param x: An array with the original inputs.
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)`.
@@ -248,8 +263,9 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
             max_non_label_prob = torch.max(y_preds - y[i], dim=0)[0]
 
             l_1 = torch.zeros(1).to(self.estimator.device)
-            l_2 = ((label_prob - (max_non_label_prob - self.loss_margin)) ** 2) / self.loss_margin
-            l_3 = label_prob - (max_non_label_prob - self.loss_margin)
+            l_m = (label_prob - max_non_label_prob) * (1 - 2 * int(self.targeted)) + self.loss_margin
+            l_2 = (l_m ** 2) / self.loss_margin
+            l_3 = l_m
 
             adversarial_loss = torch.max(l_1, torch.min(l_2, l_3)[0])[0]
 
@@ -306,7 +322,7 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
     def _apply_perturbation(self, x_adv: "torch.Tensor", grad: "torch.Tensor", eps_step: float) -> "torch.Tensor":
         """
         Apply perturbation on examples.
-        
+
         :param x: Current adversarial examples.
         :param grad: Current gradients.
         :param eps_step: Attack step size (input variation) at each iteration.
