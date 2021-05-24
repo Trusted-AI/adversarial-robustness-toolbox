@@ -235,7 +235,6 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
         grads_batch = []
 
         for i in range(x.shape[0]):
-
             eps = torch.autograd.Variable(
                 torch.zeros((1, x.shape[1], 1, 1, x.shape[4]), device=self.estimator.device), requires_grad=True
             )
