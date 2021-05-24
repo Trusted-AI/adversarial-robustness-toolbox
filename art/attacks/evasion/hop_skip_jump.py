@@ -445,6 +445,7 @@ class HopSkipJump(EvasionAttack):
 
             # If attack failed. return original sample
             if np.isnan(current_sample).any():
+                logger.debug("NaN detected in sample, returning original sample.")
                 return original_sample
 
         return current_sample
