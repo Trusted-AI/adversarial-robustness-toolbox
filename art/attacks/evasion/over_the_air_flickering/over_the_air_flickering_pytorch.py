@@ -180,6 +180,7 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
     ) -> "torch.Tensor":
         """
         Compute adversarial examples for one iteration.
+        
         :param x_adv: Current adversarial examples.
         :param x: An array with the original inputs.
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
