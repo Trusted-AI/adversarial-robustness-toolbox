@@ -226,7 +226,7 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
 
     def _get_loss_gradients(self, x: "torch.Tensor", y: "torch.Tensor", perturbation: "torch.Tensor") -> "torch.Tensor":
         """
-        Compute custom, framework-specific, regularized, loss gradients.
+        Compute custom, framework-specific, regularized loss gradients.
         """
         import torch  # lgtm [py/repeated-import]
 
