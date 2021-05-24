@@ -308,6 +308,7 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
     def _apply_perturbation(self, x_adv: "torch.Tensor", grad: "torch.Tensor", eps_step: float) -> "torch.Tensor":
         """
         Apply perturbation on examples.
+        
         :param x: Current adversarial examples.
         :param grad: Current gradients.
         :param eps_step: Attack step size (input variation) at each iteration.
