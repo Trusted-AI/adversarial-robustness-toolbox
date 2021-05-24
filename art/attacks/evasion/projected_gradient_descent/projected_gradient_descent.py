@@ -111,7 +111,7 @@ class ProjectedGradientDescent(EvasionAttack):
                              ‘runs/exp2’, etc. for each new experiment to compare across them.
         :param verbose: Show progress bars.
         """
-        super().__init__(estimator=estimator)
+        super().__init__(estimator=estimator, tensor_board=tensor_board)
 
         self.norm = norm
         self.eps = eps
@@ -122,7 +122,6 @@ class ProjectedGradientDescent(EvasionAttack):
         self.batch_size = batch_size
         self.random_eps = random_eps
         self.verbose = verbose
-        self.tensor_board = tensor_board
         ProjectedGradientDescent._check_params(self)
 
         self._attack: Union[
