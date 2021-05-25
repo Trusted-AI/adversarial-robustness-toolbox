@@ -24,7 +24,7 @@ import bisect
 import logging
 import math
 import random
-from typing import Optional, Union, Callable, Any, TYPE_CHECKING
+from typing import Optional, Union, Callable, TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import trange
@@ -66,7 +66,7 @@ class SquareAttack(EvasionAttack):
         self,
         estimator: "CLASSIFIER_TYPE",
         norm: Union[int, float, str] = np.inf,
-        adv_criterion: Union[Callable[[np.ndarray], bool], None] = None,
+        adv_criterion: Union[Callable[[np.ndarray, np.ndarray], bool], None] = None,
         loss: Union[Callable[[np.ndarray, np.ndarray], np.ndarray], None] = None,
         max_iter: int = 100,
         eps: float = 0.3,
