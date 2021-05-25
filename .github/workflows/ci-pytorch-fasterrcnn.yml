@@ -26,9 +26,9 @@ jobs:
       fail-fast: false
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v2.3.4
       - name: Setup Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v2.2.2
         with:
           python-version: 3.7
       - name: Install Dependencies
@@ -46,4 +46,4 @@ jobs:
       - name: Run Test Action
         run: pytest --cov-report=xml --cov=art --cov-append -q -vv tests/estimators/object_detection/test_pytorch_faster_rcnn.py --framework=pytorch --skip_travis=True --durations=0
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v1.5.0

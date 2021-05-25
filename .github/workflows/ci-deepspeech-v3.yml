@@ -1,4 +1,4 @@
-name: CI PyTorchDeepSpeech v2
+name: CI PyTorchDeepSpeech v3
 on:
   # Run on manual trigger
   workflow_dispatch:
@@ -19,14 +19,14 @@ on:
     - cron: '0 8 * * 0'
 
 jobs:
-  test_deepspeech_v2:
-    name: PyTorchDeepSpeech v2
+  test_deepspeech_v3:
+    name: PyTorchDeepSpeech v3
     runs-on: ubuntu-latest
-    container: minhitbk/art_testing_envs:deepspeech_v2
+    container: minhitbk/art_testing_envs:deepspeech_v3
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v2.3.4
       - name: Run Test Action
-        uses: ./.github/actions/deepspeech-v2
+        uses: ./.github/actions/deepspeech-v3
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1.5.0

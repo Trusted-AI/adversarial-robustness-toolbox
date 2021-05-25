@@ -1,0 +1,7 @@
+name: 'Test DeepSpeech v3'
+description: 'Run tests for DeepSpeech v3'
+runs:
+  using: 'composite'
+  steps:
+    - run: $GITHUB_ACTION_PATH/run.sh
+      shell: bash
