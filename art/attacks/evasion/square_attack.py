@@ -66,10 +66,8 @@ class SquareAttack(EvasionAttack):
         self,
         estimator: "CLASSIFIER_TYPE",
         norm: Union[int, float, str] = np.inf,
-        adv_criterion: Union[Callable[[np.ndarray], bool],
-                             None] = None,
-        loss: Union[Callable[[np.ndarray, np.ndarray], np.ndarray],
-                    None] = None,
+        adv_criterion: Union[Callable[[np.ndarray], bool], None] = None,
+        loss: Union[Callable[[np.ndarray, np.ndarray], np.ndarray], None] = None,
         max_iter: int = 100,
         eps: float = 0.3,
         p_init: float = 0.8,
@@ -94,22 +92,21 @@ class SquareAttack(EvasionAttack):
         super().__init__(estimator=estimator)
 
         self.norm = norm
-        
+
         if adv_criterion is not None:
             self.adv_criterion = adv_criterion
         elif isinstance(self.estimator, ClassifierMixin):
             self.adv_criterion = lambda y_pred, y: np.argmax(y_pred, axis=1) != np.argmax(y, axis=1)
         else:
             raise ValueError("No acceptable adversarial criterion available.")
-        
+
         if loss is not None:
             self.loss = loss
         elif isinstance(self.estimator, ClassifierMixin):
             self.loss = self._get_logits_diff
         else:
-            #self.loss = self.estimator.loss
             raise ValueError("No acceptable loss available.")
-        
+
         self.max_iter = max_iter
         self.eps = eps
         self.p_init = p_init
@@ -175,7 +172,7 @@ class SquareAttack(EvasionAttack):
 
             # Determine correctly predicted samples
             y_pred = self.estimator.predict(x_adv, batch_size=self.batch_size)
-            sample_is_robust = np.logical_not( self.adv_criterion(y_pred, y) )
+            sample_is_robust = np.logical_not(self.adv_criterion(y_pred, y))
 
             if np.sum(sample_is_robust) == 0:
                 break
@@ -214,7 +211,7 @@ class SquareAttack(EvasionAttack):
 
                     # Determine correctly predicted samples
                     y_pred = self.estimator.predict(x_adv, batch_size=self.batch_size)
-                    sample_is_robust = np.logical_not( self.adv_criterion(y_pred, y) )
+                    sample_is_robust = np.logical_not(self.adv_criterion(y_pred, y))
 
                     if np.sum(sample_is_robust) == 0:
                         break
@@ -341,7 +338,7 @@ class SquareAttack(EvasionAttack):
 
                     # Determine correctly predicted samples
                     y_pred = self.estimator.predict(x_adv, batch_size=self.batch_size)
-                    sample_is_robust = np.logical_not( self.adv_criterion(y_pred, y) )
+                    sample_is_robust = np.logical_not(self.adv_criterion(y_pred, y))
 
                     if np.sum(sample_is_robust) == 0:
                         break
