@@ -183,7 +183,7 @@ class SquareAttack(EvasionAttack):
             # x_robust = x_adv[sample_is_robust]
             x_robust = x[sample_is_robust]
             y_robust = y[sample_is_robust]
-            sample_logits_diff_init = self.loss(x_robust, y_robust)
+            sample_loss_init = self.loss(x_robust, y_robust)
 
             if self.norm in [np.inf, "inf"]:
 
@@ -199,10 +199,10 @@ class SquareAttack(EvasionAttack):
                     a_max=self.estimator.clip_values[1],
                 ).astype(ART_NUMPY_DTYPE)
 
-                sample_logits_diff_new = self.loss(x_robust_new, y_robust)
-                logits_diff_improved = (sample_logits_diff_new - sample_logits_diff_init) < 0.0
+                sample_loss_new = self.loss(x_robust_new, y_robust)
+                loss_improved = (sample_loss_new - sample_loss_init) < 0.0
 
-                x_robust[logits_diff_improved] = x_robust_new[logits_diff_improved]
+                x_robust[loss_improved] = x_robust_new[loss_improved]
 
                 x_adv[sample_is_robust] = x_robust
 
@@ -223,7 +223,7 @@ class SquareAttack(EvasionAttack):
                     x_init = x[sample_is_robust]
                     y_robust = y[sample_is_robust]
 
-                    sample_logits_diff_init = self.loss(x_robust, y_robust)
+                    sample_loss_init = self.loss(x_robust, y_robust)
 
                     height_tile = max(int(round(math.sqrt(percentage_of_elements * height * width))), 1)
 
@@ -249,10 +249,10 @@ class SquareAttack(EvasionAttack):
                         x_robust_new, a_min=self.estimator.clip_values[0], a_max=self.estimator.clip_values[1]
                     ).astype(ART_NUMPY_DTYPE)
 
-                    sample_logits_diff_new = self.loss(x_robust_new, y_robust)
-                    logits_diff_improved = (sample_logits_diff_new - sample_logits_diff_init) < 0.0
+                    sample_loss_new = self.loss(x_robust_new, y_robust)
+                    loss_improved = (sample_loss_new - sample_loss_init) < 0.0
 
-                    x_robust[logits_diff_improved] = x_robust_new[logits_diff_improved]
+                    x_robust[loss_improved] = x_robust_new[loss_improved]
 
                     x_adv[sample_is_robust] = x_robust
 
@@ -326,10 +326,10 @@ class SquareAttack(EvasionAttack):
                     self.estimator.clip_values[1],
                 )
 
-                sample_logits_diff_new = self.loss(x_robust_new, y_robust)
-                logits_diff_improved = (sample_logits_diff_new - sample_logits_diff_init) < 0.0
+                sample_loss_new = self.loss(x_robust_new, y_robust)
+                loss_improved = (sample_loss_new - sample_loss_init) < 0.0
 
-                x_robust[logits_diff_improved] = x_robust_new[logits_diff_improved]
+                x_robust[loss_improved] = x_robust_new[loss_improved]
 
                 x_adv[sample_is_robust] = x_robust
 
@@ -350,7 +350,7 @@ class SquareAttack(EvasionAttack):
                     x_init = x[sample_is_robust]
                     y_robust = y[sample_is_robust]
 
-                    sample_logits_diff_init = self.loss(x_robust, y_robust)
+                    sample_loss_init = self.loss(x_robust, y_robust)
 
                     delta_x_robust_init = x_robust - x_init
 
@@ -490,10 +490,10 @@ class SquareAttack(EvasionAttack):
                         self.estimator.clip_values[1],
                     )
 
-                    sample_logits_diff_new = self.loss(x_robust_new, y_robust)
-                    logits_diff_improved = (sample_logits_diff_new - sample_logits_diff_init) < 0.0
+                    sample_loss_new = self.loss(x_robust_new, y_robust)
+                    loss_improved = (sample_loss_new - sample_loss_init) < 0.0
 
-                    x_robust[logits_diff_improved] = x_robust_new[logits_diff_improved]
+                    x_robust[loss_improved] = x_robust_new[loss_improved]
 
                     x_adv[sample_is_robust] = x_robust
 
