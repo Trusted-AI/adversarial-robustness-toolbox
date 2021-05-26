@@ -625,7 +625,6 @@ def compute_success_array(
 ) -> float:
     """
     Compute the success rate of an attack based on clean samples, adversarial samples and targets or correct labels.
-    Added shape check for binary case
 
     :param classifier: Classifier used for prediction.
     :param x_clean: Original clean samples.
@@ -646,8 +645,8 @@ def compute_success_array(
         preds = np.round(preds)
     if targeted:
         attack_success = adv_preds == np.argmax(labels, axis=1)
-    # preds = np.argmax(classifier.predict(x_clean, batch_size=batch_size), axis=1)
-    attack_success = adv_preds != preds
+    else:
+        attack_success = adv_preds != preds
 
     return attack_success
 

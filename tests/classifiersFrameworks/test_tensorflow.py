@@ -20,6 +20,12 @@ import pytest
 
 import tensorflow as tf
 
+import sklearn
+import sklearn.datasets
+import sklearn.model_selection
+
+import art
+import art.estimators.classification
 from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 from art.defences.preprocessor.spatial_smoothing import SpatialSmoothing
 from art.defences.preprocessor.spatial_smoothing_tensorflow import SpatialSmoothingTensorFlowV2
@@ -27,11 +33,6 @@ from art.attacks.evasion import FastGradientMethod, ProjectedGradientDescent
 
 from tests.attacks.utils import backend_test_defended_images
 from tests.utils import ARTTestException
-import art.estimators.classification
-import art
-import sklearn
-import sklearn.datasets
-import sklearn.model_selection
 
 
 @pytest.fixture()

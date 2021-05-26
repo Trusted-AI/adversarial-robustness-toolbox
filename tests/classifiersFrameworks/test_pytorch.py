@@ -18,6 +18,12 @@
 import numpy as np
 import pytest
 
+import torch
+import torch.nn.functional as F
+import torch.nn as nn
+import torch.optim as optim
+
+import art.estimators.classification
 from art.estimators.classification.pytorch import PyTorchClassifier
 from art.defences.preprocessor.spatial_smoothing import SpatialSmoothing
 from art.defences.preprocessor.spatial_smoothing_pytorch import SpatialSmoothingPyTorch
@@ -26,11 +32,6 @@ from art.attacks.evasion import FastGradientMethod
 from tests.attacks.utils import backend_test_defended_images
 from tests.utils import ARTTestException
 
-import torch
-import torch.nn.functional as F
-import torch.nn as nn
-import torch.optim as optim
-import art.estimators.classification
 import sklearn.datasets
 
 
