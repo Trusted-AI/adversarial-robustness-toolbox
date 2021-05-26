@@ -18,7 +18,7 @@ from art.attacks.evasion.dpatch_robust import RobustDPatch
 from art.attacks.evasion.elastic_net import ElasticNet
 from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.attacks.evasion.frame_saliency import FrameSaliencyAttack
-from art.attacks.evasion.feature_adversaries.feature_adversaries import FeatureAdversaries
+from art.attacks.evasion.feature_adversaries.feature_adversaries_numpy import FeatureAdversariesNumpy
 from art.attacks.evasion.feature_adversaries.feature_adversaries_pytorch import FeatureAdversariesPyTorch
 from art.attacks.evasion.hclu import HighConfidenceLowUncertainty
 from art.attacks.evasion.hop_skip_jump import HopSkipJump
