@@ -231,10 +231,10 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
                     loss.backward()
                     optimizer.step()
         else:
-            if self.attack_model_type == "gb":
-                y_ready = check_and_transform_label_format(y_new, len(np.unique(y_new)), return_one_hot=False)
-            else:
-                y_ready = check_and_transform_label_format(y_new, len(np.unique(y_new)), return_one_hot=True)
+            # if self.attack_model_type == "gb":
+            y_ready = check_and_transform_label_format(y_new, len(np.unique(y_new)), return_one_hot=False)
+            # else:
+            #     y_ready = check_and_transform_label_format(y_new, len(np.unique(y_new)), return_one_hot=True)
             self.attack_model.fit(np.c_[x_1, x_2], y_ready)  # type: ignore
 
     def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, probabilities: Optional[bool] = False, **kwargs) -> \
@@ -298,7 +298,7 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
             else:
                 raise ValueError("No data available.")
         else:
-            pred = self.attack_model.predict(np.c_[features, y])  # type: ignore
+            pred = self.attack_model.predict_proba(np.c_[features, y])  # type: ignore
             if probabilities:
                 inferred_return = pred
             else:
