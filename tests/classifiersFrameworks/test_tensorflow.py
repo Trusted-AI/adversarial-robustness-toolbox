@@ -231,6 +231,8 @@ def test_binary_keras_instantiation_and_attack_PGD(art_warning):
             n_samples=10000, n_features=20, n_informative=5, n_redundant=2, n_repeated=0, n_classes=2
         )
         train_x, test_x, train_y, test_y = sklearn.model_selection.train_test_split(x, y, test_size=0.2)
+        train_x = train_x.astype(np.float32)
+        test_x = test_x.astype(np.float32)
         model = tf.keras.models.Sequential(
             [
                 tf.keras.layers.Dense(128, activation=tf.nn.relu, input_shape=(20,)),
@@ -258,6 +260,8 @@ def test_binary_tf2_instantiation_and_attack_PGD(art_warning):
             n_samples=10000, n_features=20, n_informative=5, n_redundant=2, n_repeated=0, n_classes=2
         )
         train_x, test_x, train_y, test_y = sklearn.model_selection.train_test_split(x, y, test_size=0.2)
+        train_x = train_x.astype(np.float32)
+        test_x = test_x.astype(np.float32)
         model = tf.keras.models.Sequential(
             [
                 tf.keras.layers.Dense(128, activation=tf.nn.relu, input_shape=(20,)),

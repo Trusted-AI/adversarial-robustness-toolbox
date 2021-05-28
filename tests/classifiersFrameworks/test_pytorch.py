@@ -22,6 +22,7 @@ import torch
 import torch.nn.functional as F
 import torch.nn as nn
 import torch.optim as optim
+import sklearn.datasets
 
 import art.estimators.classification
 from art.estimators.classification.pytorch import PyTorchClassifier
@@ -31,8 +32,6 @@ from art.attacks.evasion import FastGradientMethod
 
 from tests.attacks.utils import backend_test_defended_images
 from tests.utils import ARTTestException
-
-import sklearn.datasets
 
 
 @pytest.fixture()
@@ -230,7 +229,7 @@ def test_fgsm_defences(art_warning, fix_get_mnist_subset, image_dl_estimator, de
 
 
 @pytest.mark.only_with_platform("pytorch")
-def test_pytorch_binary_PGD(art_warning):
+def test_pytorch_binary_PGD(art_warning, get_mnist_datase):
     """
     This test instantiates a binary classification Pytorch model, then attacks it using PGD
 
@@ -253,7 +252,8 @@ def test_pytorch_binary_PGD(art_warning):
         x, y = sklearn.datasets.make_classification(
             n_samples=10000, n_features=20, n_informative=5, n_redundant=2, n_repeated=0, n_classes=2
         )
-        train_x, test_x, train_y, test_y = sklearn.model_selection.train_test_split(x, y, test_size=0.2)
+        _, test_x, _, test_y = sklearn.model_selection.train_test_split(x, y, test_size=0.2)
+        test_x = test_x.astype(np.float32)
         model = BasicModel()
         loss_func = nn.BCELoss()
         model.to(device)
@@ -265,6 +265,7 @@ def test_pytorch_binary_PGD(art_warning):
             input_shape=(1, 28, 28),
             nb_classes=2,
         )
+        classifier.fit(x, y, batch_size=64, nb_epochs=3)
         test_x_batch = test_x[0:16]
         preds = classifier.predict(test_x_batch)
         attacker = art.attacks.evasion.ProjectedGradientDescent(classifier, eps=0.5)
@@ -274,44 +275,3 @@ def test_pytorch_binary_PGD(art_warning):
     except ARTTestException as e:
         art_warning(e)
 
-
-# # @pytest.mark.only_with_platform("pytorch")
-# def test_pytorch_binary_FGSM(art_warning):
-#     '''
-#     This test instantiates a binary classification Pytorch model, then attacks it using PGD
-
-#     '''
-#     class BasicModel(nn.Module):
-#         def __init__(self):
-#             super(BasicModel, self).__init__()
-#             self.layer_1 = nn.Linear(20, 32)
-#             self.layer_2 = nn.Linear(32,1)
-#         def forward(self, x):
-#             x = F.relu(self.layer_1(x))
-#             x= torch.sigmoid(self.layer_2(x))
-
-#             return x
-#     try:
-#         device = "cpu"
-#         x, y = sklearn.datasets.make_classification(n_samples=10000, n_features=20, n_informative=5, n_redundant=2,
-#                                                     n_repeated=0, n_classes=2)
-#         train_x, test_x, train_y, test_y = sklearn.model_selection.train_test_split(x,y, test_size=0.2)
-#         model = BasicModel()
-#         loss_func = nn.BCELoss()
-#         model.to(device)
-#         opt = optim.Adam(model.parameters(), lr=0.001)
-#         classifier = art.estimators.classification.PyTorchClassifier(
-#             model=model,
-#             loss=loss_func,
-#             optimizer=opt,
-#             input_shape=(1, 28, 28),
-#             nb_classes=2,
-#         )
-#         test_x_batch = test_x[0:16]
-#         preds = classifier.predict(test_x_batch)
-#         attacker = art.attacks.evasion.FastGradientMethod(classifier, eps = 0.9)
-#         generated = attacker.generate(test_x_batch)
-#         adv_predicted = classifier.predict(generated)
-#         assert (adv_predicted != preds).any()
-#     except ARTTestException as e:
-#         art_warning(e)

@@ -317,7 +317,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             )
 
             with torch.no_grad():
-                model_outputs = self._model(torch.from_numpy(x_preprocessed[begin:end]).float().to(self._device))
+                model_outputs = self._model(torch.from_numpy(x_preprocessed[begin:end]).to(self._device))
             output = model_outputs[-1]
             results[begin:end] = output.detach().cpu().numpy()
 
@@ -951,11 +951,11 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                         result = []
                         if isinstance(self._model, nn.Sequential):
                             for _, module_ in self._model._modules.items():
-                                x = module_(x.float())
+                                x = module_(x)
                                 result.append(x)
 
                         elif isinstance(self._model, nn.Module):
-                            x = self._model(x.float())
+                            x = self._model(x)
                             if len(x.shape) > 1 and self.nb_classes == 2:
                                 x = x.squeeze(dim=1)
                             result.append(x)
