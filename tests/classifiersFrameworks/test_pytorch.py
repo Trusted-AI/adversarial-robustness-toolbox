@@ -229,7 +229,7 @@ def test_fgsm_defences(art_warning, fix_get_mnist_subset, image_dl_estimator, de
 
 
 @pytest.mark.only_with_platform("pytorch")
-def test_pytorch_binary_PGD(art_warning, get_mnist_datase):
+def test_pytorch_binary_PGD(art_warning, get_mnist_dataset):
     """
     This test instantiates a binary classification Pytorch model, then attacks it using PGD
 
