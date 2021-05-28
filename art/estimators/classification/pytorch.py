@@ -39,7 +39,7 @@ from art.estimators.pytorch import PyTorchEstimator
 from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+    # pylint: disable=C0412, C0302
     import torch
 
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE

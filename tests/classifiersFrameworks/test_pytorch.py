@@ -274,4 +274,3 @@ def test_pytorch_binary_PGD(art_warning, get_mnist_datase):
         assert (adv_predicted != preds).all()
     except ARTTestException as e:
         art_warning(e)
-
