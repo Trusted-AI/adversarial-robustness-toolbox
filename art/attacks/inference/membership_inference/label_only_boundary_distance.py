@@ -61,8 +61,9 @@ class LabelOnlyDecisionBoundary(MembershipInferenceAttack):
         self.threshold_bins = None
         self._check_params()
 
-    def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, probabilities: Optional[bool] = False, **kwargs) -> \
-            np.ndarray:
+    def infer(
+        self, x: np.ndarray, y: Optional[np.ndarray] = None, probabilities: Optional[bool] = False, **kwargs
+    ) -> np.ndarray:
         """
         Infer membership of input `x` in estimator's training data.
 
@@ -121,7 +122,7 @@ class LabelOnlyDecisionBoundary(MembershipInferenceAttack):
             else:
                 # use sigmoid on distance from threshold
                 dist_threshold = distance - self.distance_threshold_tau
-                prob_1 = 1/(1 + np.exp(-dist_threshold))
+                prob_1 = 1 / (1 + np.exp(-dist_threshold))
                 prob_0 = np.ones_like(prob_1) - prob_1
                 return np.stack((prob_0, prob_1), axis=1)
         else:

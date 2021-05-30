@@ -361,8 +361,9 @@ class MembershipInferenceAttack(InferenceAttack):
         super().__init__(classifier)
 
     @abc.abstractmethod
-    def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, probabilities: Optional[bool] = False, **kwargs) -> \
-            np.ndarray:
+    def infer(
+        self, x: np.ndarray, y: Optional[np.ndarray] = None, probabilities: Optional[bool] = False, **kwargs
+    ) -> np.ndarray:
         """
         Infer membership status of samples from the target estimator. This method
         should be overridden by all concrete inference attack implementations.

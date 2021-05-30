@@ -118,15 +118,10 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
                         )
 
                         self.labels = nn.Sequential(
-                            nn.Linear(self.num_classes, 256),
-                            nn.ReLU(),
-                            nn.Linear(256, 64),
-                            nn.ReLU(),
+                            nn.Linear(self.num_classes, 256), nn.ReLU(), nn.Linear(256, 64), nn.ReLU(),
                         )
 
-                        self.combine = nn.Sequential(
-                            nn.Linear(64 * 2, 1),
-                        )
+                        self.combine = nn.Sequential(nn.Linear(64 * 2, 1),)
 
                         self.output = nn.Sigmoid()
 
@@ -237,8 +232,9 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
             #     y_ready = check_and_transform_label_format(y_new, len(np.unique(y_new)), return_one_hot=True)
             self.attack_model.fit(np.c_[x_1, x_2], y_ready)  # type: ignore
 
-    def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, probabilities: Optional[bool] = False, **kwargs) -> \
-            np.ndarray:
+    def infer(
+        self, x: np.ndarray, y: Optional[np.ndarray] = None, probabilities: Optional[bool] = False, **kwargs
+    ) -> np.ndarray:
         """
         Infer membership in the training set of the target estimator.
 
