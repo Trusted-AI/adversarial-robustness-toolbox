@@ -524,7 +524,10 @@ def check_and_transform_label_format(
                 labels = to_categorical(labels, nb_classes)
         elif len(labels.shape) == 1:
             if return_one_hot:
-                labels = to_categorical(labels, nb_classes)
+                if nb_classes == 2:
+                    pass
+                else:
+                    labels = to_categorical(labels, nb_classes)
         else:
             raise ValueError(
                 "Shape of labels not recognised."
