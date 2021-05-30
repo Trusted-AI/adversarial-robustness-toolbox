@@ -117,33 +117,37 @@ class AttributeInferenceUsingMembershipInference(AttributeInferenceAttack):
 
             # needs to be of type float so we can later replace back the actual values
             value_indexes = np.argmax(probabilities, axis=1).astype(np.float32)
+            pred_values = np.zeros_like(value_indexes)
             for index, value in enumerate(values):
-                value_indexes[value_indexes == index] = value
-            return value_indexes
+                pred_values[value_indexes == index] = value
         else: # 1-hot encoded feature. Can also be scaled.
             first = True
             # assumes that the second value is the "positive" value and that there can only be one positive column
             for index in range(len(values)):
-                curr_value = np.zeros(len(values),)
+                curr_value = np.zeros((x.shape[0], len(values)))
+                curr_value[:, index] = values[index][1]
+                for not_index in range(len(values)):
+                    if not_index != index:
+                        curr_value[:, not_index] = values[not_index][0]
+                x_value = np.concatenate((x[:, :self.attack_feature.start], curr_value), axis=1)
+                x_value = np.concatenate((x_value, x[:, self.attack_feature.start:]), axis=1)
+
+                predicted = self.membership_attack.infer(x_value, y, probabilities=True)
+                if first:
+                    probabilities = predicted[:, 1].reshape(-1, 1)
+                else:
+                    probabilities = np.hstack((probabilities, predicted[:, 1].reshape(-1, 1)))
+                first = False
+            value_indexes = np.argmax(probabilities, axis=1).astype(np.float32)
+            pred_values = np.zeros_like(probabilities)
+            for index in range(len(values)):
+                curr_value = np.zeros(len(values))
                 curr_value[index] = values[index][1]
                 for not_index in range(len(values)):
                     if not_index != index:
                         curr_value[not_index] = values[not_index][0]
-                x_value = np.concatenate((x[:, : self.attack_feature], curr_value), axis=1)
-                x_value = np.concatenate((x_value, x[:, self.attack_feature:]), axis=1)
-
-                predicted = self.membership_attack.infer(x_value, y, probabilities=True)
-                if first:
-                    probabilities = predicted[:, 1]
-                else:
-                    probabilities = np.stack((probabilities, predicted[:, 1]), axis=1)
-                first = False
-            i = 0
-            for column in probabilities.T:
-                for index in range(len(values[i])):
-                    np.place(column, [column == index], values[i][index])
-                i += 1
-            return probabilities
+                pred_values[value_indexes == index] = curr_value
+        return pred_values
 
     def _check_params(self) -> None:
         if not isinstance(self.attack_feature, int) and not isinstance(self.attack_feature, slice):
