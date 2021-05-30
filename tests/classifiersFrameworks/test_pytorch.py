@@ -252,7 +252,9 @@ def test_pytorch_binary_PGD(art_warning, get_mnist_dataset):
         x, y = sklearn.datasets.make_classification(
             n_samples=10000, n_features=20, n_informative=5, n_redundant=2, n_repeated=0, n_classes=2
         )
-        _, test_x, _, test_y = sklearn.model_selection.train_test_split(x, y, test_size=0.2)
+        train_x, test_x, train_y, test_y = sklearn.model_selection.train_test_split(x, y, test_size=0.2)
+        train_x = test_x.astype(np.float32)
+        train_y = train_y.astype(np.float32)
         test_x = test_x.astype(np.float32)
         model = BasicModel()
         loss_func = nn.BCELoss()
@@ -265,7 +267,7 @@ def test_pytorch_binary_PGD(art_warning, get_mnist_dataset):
             input_shape=(1, 28, 28),
             nb_classes=2,
         )
-        classifier.fit(x, y, batch_size=64, nb_epochs=3)
+        classifier.fit(train_x, train_y, batch_size=64, nb_epochs=3)
         test_x_batch = test_x[0:16]
         preds = classifier.predict(test_x_batch)
         attacker = art.attacks.evasion.ProjectedGradientDescent(classifier, eps=0.5)
