@@ -106,7 +106,7 @@ class AttributeInferenceUsingMembershipInference(AttributeInferenceAttack):
             for value in values:
                 v_full = np.full((x.shape[0], 1), value)
                 x_value = np.concatenate((x[:, : self.attack_feature], v_full), axis=1)
-                x_value = np.concatenate((x_value, x[:, self.attack_feature:]), axis=1)
+                x_value = np.concatenate((x_value, x[:, self.attack_feature :]), axis=1)
 
                 predicted = self.membership_attack.infer(x_value, y, probabilities=True)
                 if first:
@@ -120,7 +120,7 @@ class AttributeInferenceUsingMembershipInference(AttributeInferenceAttack):
             pred_values = np.zeros_like(value_indexes)
             for index, value in enumerate(values):
                 pred_values[value_indexes == index] = value
-        else: # 1-hot encoded feature. Can also be scaled.
+        else:  # 1-hot encoded feature. Can also be scaled.
             first = True
             # assumes that the second value is the "positive" value and that there can only be one positive column
             for index in range(len(values)):
@@ -129,8 +129,8 @@ class AttributeInferenceUsingMembershipInference(AttributeInferenceAttack):
                 for not_index in range(len(values)):
                     if not_index != index:
                         curr_value[:, not_index] = values[not_index][0]
-                x_value = np.concatenate((x[:, :self.attack_feature.start], curr_value), axis=1)
-                x_value = np.concatenate((x_value, x[:, self.attack_feature.start:]), axis=1)
+                x_value = np.concatenate((x[:, : self.attack_feature.start], curr_value), axis=1)
+                x_value = np.concatenate((x_value, x[:, self.attack_feature.start :]), axis=1)
 
                 predicted = self.membership_attack.infer(x_value, y, probabilities=True)
                 if first:
