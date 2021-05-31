@@ -59,6 +59,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
         "max_iter",
         "batch_size",
         "patch_shape",
+        "tensor_board",
         "verbose",
     ]
 
@@ -76,6 +77,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
         batch_size: int = 16,
         patch_shape: Optional[Tuple[int, int, int]] = None,
         patch_type: str = "circle",
+        tensor_board: Union[str, bool] = False,
         verbose: bool = True,
     ):
         """
@@ -95,19 +97,24 @@ class AdversarialPatchPyTorch(EvasionAttack):
         :param batch_size: The size of the training batch.
         :param patch_shape: The shape of the adversarial patch as a tuple of shape HWC (width, height, nb_channels).
         :param patch_type: The patch type, either circle or square.
+        :param tensor_board: Activate summary writer for TensorBoard: Default is `False` and deactivated summary writer.
+                             If `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory. Provide `path` in type
+                             `str` to save in path/CURRENT_DATETIME_HOSTNAME.
+                             Use hierarchical folder structure to compare between runs easily. e.g. pass in ‘runs/exp1’,
+                             ‘runs/exp2’, etc. for each new experiment to compare across them.
         :param verbose: Show progress bars.
         """
         import torch  # lgtm [py/repeated-import]
         import torchvision
 
-        torch_version = list(map(int, torch.__version__.lower().split(".")))
-        torchvision_version = list(map(int, torchvision.__version__.lower().split(".")))
+        torch_version = list(map(int, torch.__version__.lower().split("+")[0].split(".")))
+        torchvision_version = list(map(int, torchvision.__version__.lower().split("+")[0].split(".")))
         assert torch_version[0] >= 1 and torch_version[1] >= 7, "AdversarialPatchPyTorch requires torch>=1.7.0"
         assert (
             torchvision_version[0] >= 0 and torchvision_version[1] >= 8
         ), "AdversarialPatchPyTorch requires torchvision>=0.8.0"
 
-        super().__init__(estimator=classifier)
+        super().__init__(estimator=classifier, tensor_board=tensor_board)
         self.rotation_max = rotation_max
         self.scale_min = scale_min
         self.scale_max = scale_max
@@ -427,9 +434,6 @@ class AdversarialPatchPyTorch(EvasionAttack):
         else:
             self.targeted = True
 
-        if y is None:
-            raise ValueError("The labels `y` cannot be None, please provide labels `y`.")
-
         y = check_and_transform_label_format(labels=y, nb_classes=self.estimator.nb_classes)
 
         # check if logits or probabilities
@@ -461,13 +465,33 @@ class AdversarialPatchPyTorch(EvasionAttack):
                 drop_last=False,
             )
 
-        for _ in trange(self.max_iter, desc="Adversarial Patch TensorFlow v2", disable=not self.verbose):
+        for i_iter in trange(self.max_iter, desc="Adversarial Patch PyTorch", disable=not self.verbose):
             if mask is None:
                 for images, target in data_loader:
                     _ = self._train_step(images=images, target=target, mask=None)
             else:
                 for images, target, mask_i in data_loader:
                     _ = self._train_step(images=images, target=target, mask=mask_i)
+
+            if self.summary_writer is not None:
+                self.summary_writer.add_image(
+                    "patch",
+                    self._patch,
+                    global_step=i_iter,
+                )
+
+                if hasattr(self.estimator, "compute_losses"):
+                    x_patched = self._random_overlay(
+                        images=torch.from_numpy(x).to(self.estimator.device), patch=self._patch, mask=mask
+                    )
+                    losses = self.estimator.compute_losses(x=x_patched, y=torch.from_numpy(y).to(self.estimator.device))
+
+                    for key, value in losses.items():
+                        self.summary_writer.add_scalar(
+                            "loss/{}".format(key),
+                            np.mean(value.detach().cpu().numpy()),
+                            global_step=i_iter,
+                        )
 
         return (
             self._patch.detach().cpu().numpy(),
