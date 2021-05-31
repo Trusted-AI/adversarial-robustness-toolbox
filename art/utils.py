@@ -525,7 +525,7 @@ def check_and_transform_label_format(
         elif len(labels.shape) == 1:
             if return_one_hot:
                 if nb_classes == 2:
-                    pass
+                    labels = np.array(labels, dtype=np.float32)
                 else:
                     labels = to_categorical(labels, nb_classes)
         else:
