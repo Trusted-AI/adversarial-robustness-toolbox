@@ -26,6 +26,7 @@ from art.attacks.evasion.imperceptible_asr.imperceptible_asr_pytorch import Impe
 from art.attacks.evasion.iterative_method import BasicIterativeMethod
 from art.attacks.evasion.lowprofool import LowProFool
 from art.attacks.evasion.newtonfool import NewtonFool
+from art.attacks.evasion.pe_malware_attack import MalwareGDTensorFlow
 from art.attacks.evasion.pixel_threshold import PixelAttack
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_numpy import (
@@ -37,6 +38,7 @@ from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_p
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_tensorflow_v2 import (
     ProjectedGradientDescentTensorFlowV2,
 )
+from art.attacks.evasion.over_the_air_flickering.over_the_air_flickering_pytorch import OverTheAirFlickeringPyTorch
 from art.attacks.evasion.saliency_map import SaliencyMapMethod
 from art.attacks.evasion.shadow_attack import ShadowAttack
 from art.attacks.evasion.shapeshifter import ShapeShifter

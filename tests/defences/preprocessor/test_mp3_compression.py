@@ -43,9 +43,10 @@ class AudioInput:
 
     def get_data(self):
         if self.channels_first:
-            return np.zeros((self.batch_size, self.channels, self.sample_rate), dtype=np.int16)
+            shape = (self.batch_size, self.channels, self.sample_rate)
         else:
-            return np.zeros((self.batch_size, self.sample_rate, self.channels), dtype=np.int16)
+            shape = (self.batch_size, self.sample_rate, self.channels)
+        return np.zeros(shape, dtype=np.int16)
 
 
 @pytest.fixture(params=[1, 2], ids=["mono", "stereo"])
