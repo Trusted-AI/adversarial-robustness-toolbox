@@ -266,34 +266,46 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         """
         import torch  # lgtm [py/repeated-import]
 
-        output, inputs_t, image_tensor_list_grad = self._get_losses(x=x, y=y)
-
-        # Compute the gradient and return
-        loss = None
-        for loss_name in self.attack_losses:
-            if loss is None:
-                loss = output[loss_name]
-            else:
-                loss = loss + output[loss_name]
-
-        # Clean gradients
-        self._model.zero_grad()
-
-        # Compute gradients
-        loss.backward(retain_graph=True)  # type: ignore
-
         grad_list = list()
+
+        # Adding this loop because torch==[1.7, 1.8] and related versions of torchvision do not allow loss gradients at
+        #  the input for batches larger than 1 anymore for PyTorch FasterRCNN because of a view created by torch or
+        #  torchvision. This loop should be revisited with later releases of torch and removed once it becomes
+        #  unnecessary.
+        for i in range(x.shape[0]):
+
+            x_i = x[[i]]
+            y_i = [y[i]]
+
+            output, inputs_t, image_tensor_list_grad = self._get_losses(x=x_i, y=y_i)
+
+            # Compute the gradient and return
+            loss = None
+            for loss_name in self.attack_losses:
+                if loss is None:
+                    loss = output[loss_name]
+                else:
+                    loss = loss + output[loss_name]
+
+            # Clean gradients
+            self._model.zero_grad()
+
+            # Compute gradients
+            loss.backward(retain_graph=True)  # type: ignore
+
+            if isinstance(x, np.ndarray):
+                for img in image_tensor_list_grad:
+                    gradients = img.grad.cpu().numpy().copy()
+                    grad_list.append(gradients)
+            else:
+                for img in inputs_t:
+                    gradients = img.grad.copy()
+                    grad_list.append(gradients)
+
         if isinstance(x, np.ndarray):
-            for img in image_tensor_list_grad:
-                gradients = img.grad.cpu().numpy().copy()
-                grad_list.append(gradients)
             grads = np.stack(grad_list, axis=0)
         else:
-            for img in inputs_t:
-                gradients = img.grad.copy()
-                grad_list.append(gradients)
             grads = torch.stack(grad_list, dim=0)
-
         grads = np.transpose(grads, (0, 2, 3, 1))
 
         if self.clip_values is not None:
