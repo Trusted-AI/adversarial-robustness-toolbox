@@ -87,6 +87,14 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
                             if available otherwise run on CPU.
         """
         import torch  # lgtm [py/repeated-import]
+        import torchvision  # lgtm [py/repeated-import]
+
+        torch_version = list(map(int, torch.__version__.lower().split("+")[0].split(".")))
+        torchvision_version = list(map(int, torchvision.__version__.lower().split("+")[0].split(".")))
+        assert not (torch_version[0] == 1 and torch_version[1] == 8), "PyTorchFasterRCNN does not support torch==1.8"
+        assert not (
+            torchvision_version[0] == 0 and torchvision_version[1] == 9
+        ), "PyTorchFasterRCNN does not support torchvision==0.9"
 
         super().__init__(
             model=model,
