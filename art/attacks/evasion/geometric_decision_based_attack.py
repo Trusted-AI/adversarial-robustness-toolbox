@@ -79,7 +79,7 @@ class GeoDA(EvasionAttack):
         :param estimator: A trained classifier.
         :param batch_size: The size of the batch used by the estimator during inference.
         :param norm: The norm of the adversarial perturbation. Possible values: "inf", np.inf, 1 or 2.
-        :param sub_dim: dimensionality of 2D frequency space (DCT).
+        :param sub_dim: Dimensionality of 2D frequency space (DCT).
         :param max_iter: Maximum number of iterations.
         :param bin_search_tol: Maximum remaining L2 perturbation defining binary search convergence. Input images are
                                normalised by maximal estimator.clip_value[1] if available or maximal value in the input
