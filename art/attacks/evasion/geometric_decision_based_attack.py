@@ -156,6 +156,7 @@ class GeoDA(EvasionAttack):
                         basis[i_y, i_x] = dct(i_x, i_y, i_v, i_u, max(res, v_max))
                 dct_basis.append(basis)
         dct_basis = np.mat(np.reshape(dct_basis, (v_max * u_max, res * res))).transpose()
+
         return dct_basis
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
