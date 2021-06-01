@@ -1,0 +1,32 @@
+name: CI PyTorchDeepSpeech v3
+on:
+  # Run on manual trigger
+  workflow_dispatch:
+
+  # Run on pull requests
+  pull_request:
+    paths-ignore:
+      - '*.md'
+
+  # Run when pushing to main or dev branches
+  push:
+    branches:
+      - main
+      - dev*
+
+  # Run scheduled CI flow daily
+  schedule:
+    - cron: '0 8 * * 0'
+
+jobs:
+  test_deepspeech_v3:
+    name: PyTorchDeepSpeech v3
+    runs-on: ubuntu-latest
+    container: minhitbk/art_testing_envs:deepspeech_v3
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2.3.4
+      - name: Run Test Action
+        uses: ./.github/actions/deepspeech-v3
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1.5.0

@@ -22,7 +22,6 @@ import numpy as np
 
 from art.attacks.evasion import SquareAttack
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
-from art.estimators.classification.classifier import ClassifierMixin
 
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 from tests.utils import ARTTestException
@@ -44,7 +43,9 @@ def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator_for_atta
     try:
         classifier = image_dl_estimator_for_attack(SquareAttack)
 
-        attack = SquareAttack(estimator=classifier, norm=norm, max_iter=5, eps=0.3, p_init=0.8, nb_restarts=1)
+        attack = SquareAttack(
+            estimator=classifier, norm=norm, max_iter=5, eps=0.3, p_init=0.8, nb_restarts=1, verbose=False
+        )
 
         (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
@@ -66,6 +67,6 @@ def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator_for_atta
 @pytest.mark.framework_agnostic
 def test_classifier_type_check_fail(art_warning):
     try:
-        backend_test_classifier_type_check_fail(SquareAttack, [BaseEstimator, ClassifierMixin, NeuralNetworkMixin])
+        backend_test_classifier_type_check_fail(SquareAttack, [BaseEstimator, NeuralNetworkMixin])
     except ARTTestException as e:
         art_warning(e)

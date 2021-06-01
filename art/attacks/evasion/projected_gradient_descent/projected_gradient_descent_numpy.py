@@ -68,6 +68,7 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
         num_random_init: int = 0,
         batch_size: int = 32,
         random_eps: bool = False,
+        tensor_board: Union[str, bool] = False,
         verbose: bool = True,
     ) -> None:
         """
@@ -86,6 +87,11 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
         :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0
             starting at the original input.
         :param batch_size: Size of the batch on which adversarial samples are generated.
+        :param tensor_board: Activate summary writer for TensorBoard: Default is `False` and deactivated summary writer.
+                             If `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory. Provide `path` in type
+                             `str` to save in path/CURRENT_DATETIME_HOSTNAME.
+                             Use hierarchical folder structure to compare between runs easily. e.g. pass in ‘runs/exp1’,
+                             ‘runs/exp2’, etc. for each new experiment to compare across them.
         :param verbose: Show progress bars.
         """
         super().__init__(
@@ -97,6 +103,7 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
             num_random_init=num_random_init,
             batch_size=batch_size,
             minimal=False,
+            tensor_board=tensor_board,
         )
         self.max_iter = max_iter
         self.random_eps = random_eps
@@ -207,7 +214,7 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
             raise ValueError("The batch size `batch_size` has to be positive.")
 
         if self.max_iter < 0:
-            raise ValueError("The number of iterations `max_iter` has to be a nonnegative integer.")
+            raise ValueError("The number of iterations `max_iter` has to be a non-negative integer.")
 
         if not isinstance(self.verbose, bool):
             raise ValueError("The verbose has to be a Boolean.")
@@ -233,6 +240,7 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
         num_random_init: int = 0,
         batch_size: int = 32,
         random_eps: bool = False,
+        tensor_board: Union[str, bool] = False,
         verbose: bool = True,
     ) -> None:
         """
@@ -251,6 +259,11 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
         :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0 starting
                                 at the original input.
         :param batch_size: Size of the batch on which adversarial samples are generated.
+        :param tensor_board: Activate summary writer for TensorBoard: Default is `False` and deactivated summary wr
+                             `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory. Provide `pat
+                             `str` to save in path/CURRENT_DATETIME_HOSTNAME.
+                             Use hierarchical folder structure to compare between runs easily. e.g. pass i
+                             ‘runs/exp2’, etc. for each new experiment to compare across them.
         :param verbose: Show progress bars.
         """
         super().__init__(
@@ -263,6 +276,7 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
             num_random_init=num_random_init,
             batch_size=batch_size,
             random_eps=random_eps,
+            tensor_board=tensor_board,
             verbose=verbose,
         )
 
@@ -300,6 +314,9 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
             adv_x = x.astype(ART_NUMPY_DTYPE)
 
             for batch_id in range(int(np.ceil(x.shape[0] / float(self.batch_size)))):
+
+                self._batch_id = batch_id
+
                 for rand_init_num in trange(
                     max(1, self.num_random_init), desc="PGD - Random Initializations", disable=not self.verbose
                 ):
@@ -316,6 +333,8 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
                     for i_max_iter in trange(
                         self.max_iter, desc="PGD - Iterations", leave=False, disable=not self.verbose
                     ):
+                        self._i_max_iter = i_max_iter
+
                         batch = self._compute(
                             batch,
                             x[batch_index_1:batch_index_2],
@@ -369,6 +388,8 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
                 adv_x = x.astype(ART_NUMPY_DTYPE)
 
             for i_max_iter in trange(self.max_iter, desc="PGD - Iterations", disable=not self.verbose):
+                self._i_max_iter = i_max_iter
+
                 adv_x = self._compute(
                     adv_x,
                     x,

@@ -121,8 +121,7 @@ def backend_check_adverse_frames(attack, mnist_dataset, expected_values):
     np.testing.assert_array_equal(x_diff_norm, expected_values["nb_perturbed_frames"].value)
 
 
-def backend_test_classifier_type_check_fail(attack, classifier_expected_list=[], classifier=None):
-
+def backend_test_classifier_type_check_fail(attack, classifier_expected_list=[], classifier=None, **kwargs):
     assert len(classifier_expected_list) == len(attack._estimator_requirements)
 
     for cls in classifier_expected_list:
@@ -138,7 +137,10 @@ def backend_test_classifier_type_check_fail(attack, classifier_expected_list=[],
     classifier = ClassifierNoAPI
 
     with pytest.raises(EstimatorError) as exception:
-        _ = attack(classifier)
+        if len(kwargs) > 0:
+            _ = attack(classifier, **kwargs)
+        else:
+            _ = attack(classifier)
 
     for classifier_expected in classifier_expected_list:
         assert classifier_expected in exception.value.class_expected_list

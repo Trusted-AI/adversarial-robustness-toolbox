@@ -50,6 +50,10 @@ def fix_get_robust_dpatch():
             return [{"boxes": [], "labels": [], "scores": []}]
 
         @property
+        def native_label_is_pytorch_format(self):
+            return True
+
+        @property
         def input_shape(self):
             return self._input_shape
 
@@ -65,6 +69,7 @@ def fix_get_robust_dpatch():
         learning_rate=1.0,
         max_iter=1,
         batch_size=1,
+        verbose=False,
     )
     yield attack
 
@@ -85,7 +90,7 @@ def test_augment_images_with_patch(art_warning, image_format, fix_get_robust_dpa
             channels_first = True
 
         patched_images, _, transformations = attack._augment_images_with_patch(
-            x=x, patch=patch, channels_first=channels_first
+            x=x, y=None, patch=patch, channels_first=channels_first
         )
 
         transformation_expected = {"crop_x": 0, "crop_y": 0, "rot90": 0, "brightness": 1.0}

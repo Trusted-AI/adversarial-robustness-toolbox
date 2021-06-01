@@ -34,7 +34,7 @@ from art.attacks.attack import EvasionAttack
 from art.attacks.evasion.adversarial_patch.utils import insert_transformed_patch
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
-from art.utils import check_and_transform_label_format, is_probability
+from art.utils import check_and_transform_label_format, is_probability, to_categorical
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
@@ -60,6 +60,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         "max_iter",
         "batch_size",
         "patch_shape",
+        "tensor_board",
         "verbose",
     ]
 
@@ -75,6 +76,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         max_iter: int = 500,
         batch_size: int = 16,
         patch_shape: Optional[Tuple[int, int, int]] = None,
+        tensor_board: Union[str, bool] = False,
         verbose: bool = True,
     ):
         """
@@ -91,11 +93,16 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         :param max_iter: The number of optimization steps.
         :param batch_size: The size of the training batch.
         :param patch_shape: The shape of the adversarial patch as a tuple of shape HWC (width, height, nb_channels).
+        :param tensor_board: Activate summary writer for TensorBoard: Default is `False` and deactivated summary writer.
+                             If `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory. Provide `path` in type
+                             `str` to save in path/CURRENT_DATETIME_HOSTNAME.
+                             Use hierarchical folder structure to compare between runs easily. e.g. pass in ‘runs/exp1’,
+                             ‘runs/exp2’, etc. for each new experiment to compare across them.
         :param verbose: Show progress bars.
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        super().__init__(estimator=classifier)
+        super().__init__(estimator=classifier, tensor_board=tensor_board)
         self.rotation_max = rotation_max
         self.scale_min = scale_min
         self.scale_max = scale_max
@@ -408,6 +415,13 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             mask = mask.copy()
         mask = self._check_mask(mask=mask, x=x)
 
+        if y is None:
+            logger.info("Setting labels to estimator predictions and running untargeted attack because `y=None`.")
+            y = to_categorical(np.argmax(self.estimator.predict(x=x), axis=1), nb_classes=self.estimator.nb_classes)
+            self.targeted = False
+        else:
+            self.targeted = True
+
         if kwargs.get("reset_patch"):
             self.reset_patch(initial_patch_value=self._initial_value)
 
@@ -423,40 +437,42 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         if mask is None:
             if shuffle:
-                dataset = (
-                    tf.data.Dataset.from_tensor_slices((x, y))
-                    .shuffle(10000)
-                    .batch(self.batch_size)
-                    .repeat(math.ceil(x.shape[0] / self.batch_size))
-                )
+                dataset = tf.data.Dataset.from_tensor_slices((x, y)).shuffle(10000).batch(self.batch_size)
             else:
-                dataset = (
-                    tf.data.Dataset.from_tensor_slices((x, y))
-                    .batch(self.batch_size)
-                    .repeat(math.ceil(x.shape[0] / self.batch_size))
-                )
+                dataset = tf.data.Dataset.from_tensor_slices((x, y)).batch(self.batch_size)
         else:
             if shuffle:
-                dataset = (
-                    tf.data.Dataset.from_tensor_slices((x, y, mask))
-                    .shuffle(10000)
-                    .batch(self.batch_size)
-                    .repeat(math.ceil(x.shape[0] / self.batch_size))
-                )
+                dataset = tf.data.Dataset.from_tensor_slices((x, y, mask)).shuffle(10000).batch(self.batch_size)
             else:
-                dataset = (
-                    tf.data.Dataset.from_tensor_slices((x, y, mask))
-                    .batch(self.batch_size)
-                    .repeat(math.ceil(x.shape[0] / self.batch_size))
-                )
+                dataset = tf.data.Dataset.from_tensor_slices((x, y, mask)).batch(self.batch_size)
 
-        for _ in trange(self.max_iter, desc="Adversarial Patch TensorFlow v2", disable=not self.verbose):
+        for i_iter in trange(self.max_iter, desc="Adversarial Patch TensorFlow v2", disable=not self.verbose):
             if mask is None:
+                counter = 0
                 for images, target in dataset:
+                    counter += 1
                     _ = self._train_step(images=images, target=target, mask=None)
             else:
                 for images, target, mask_i in dataset:
                     _ = self._train_step(images=images, target=target, mask=mask_i)
+
+            if self.summary_writer is not None:
+                self.summary_writer.add_image(
+                    "patch",
+                    self._patch.numpy().transpose((2, 0, 1)),
+                    global_step=i_iter,
+                )
+
+                if hasattr(self.estimator, "compute_losses"):
+                    x_patched = self._random_overlay(images=x, patch=self._patch, mask=mask)
+                    losses = self.estimator.compute_losses(x=x_patched, y=y)
+
+                    for key, value in losses.items():
+                        self.summary_writer.add_scalar(
+                            "loss/{}".format(key),
+                            np.mean(value),
+                            global_step=i_iter,
+                        )
 
         return (
             self._patch.numpy(),
