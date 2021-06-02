@@ -25,9 +25,11 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.preprocessing import StandardScaler
 
 from art.attacks.inference.attribute_inference.meminf_based import AttributeInferenceUsingMembershipInference
-from art.attacks.inference.membership_inference import (MembershipInferenceBlackBox,
-                                                        MembershipInferenceBlackBoxRuleBased,
-                                                        LabelOnlyDecisionBoundary)
+from art.attacks.inference.membership_inference import (
+    MembershipInferenceBlackBox,
+    MembershipInferenceBlackBoxRuleBased,
+    LabelOnlyDecisionBoundary,
+)
 from art.estimators.classification.scikitlearn import ScikitlearnDecisionTreeClassifier
 
 from tests.utils import ARTTestException
@@ -69,13 +71,15 @@ def test_meminf_black_box(art_warning, decision_tree_estimator, get_iris_dataset
 
         classifier = decision_tree_estimator()
 
-        meminf_attack = MembershipInferenceBlackBox(classifier, attack_model_type='nn')
+        meminf_attack = MembershipInferenceBlackBox(classifier, attack_model_type="nn")
         attack_train_ratio = 0.5
         attack_train_size = int(len(x_train) * attack_train_ratio)
         attack_test_size = int(len(x_test) * attack_train_ratio)
         meminf_attack.fit(
-                x_train[:attack_train_size], y_train_iris[:attack_train_size], x_test[:attack_test_size],
-                y_test_iris[:attack_test_size]
+            x_train[:attack_train_size],
+            y_train_iris[:attack_train_size],
+            x_test[:attack_test_size],
+            y_test_iris[:attack_test_size],
         )
         attack = AttributeInferenceUsingMembershipInference(classifier, meminf_attack, attack_feature=attack_feature)
         # infer attacked feature
@@ -125,13 +129,15 @@ def test_meminf_black_box_dl(art_warning, tabular_dl_estimator_for_attack, get_i
 
         classifier = tabular_dl_estimator_for_attack(AttributeInferenceUsingMembershipInference)
 
-        meminf_attack = MembershipInferenceBlackBox(classifier, attack_model_type='nn')
+        meminf_attack = MembershipInferenceBlackBox(classifier, attack_model_type="nn")
         attack_train_ratio = 0.5
         attack_train_size = int(len(x_train) * attack_train_ratio)
         attack_test_size = int(len(x_test) * attack_train_ratio)
         meminf_attack.fit(
-                x_train[:attack_train_size], y_train_iris[:attack_train_size], x_test[:attack_test_size],
-                y_test_iris[:attack_test_size]
+            x_train[:attack_train_size],
+            y_train_iris[:attack_train_size],
+            x_test[:attack_test_size],
+            y_test_iris[:attack_test_size],
         )
         attack = AttributeInferenceUsingMembershipInference(classifier, meminf_attack, attack_feature=attack_feature)
         # infer attacked feature
@@ -141,7 +147,7 @@ def test_meminf_black_box_dl(art_warning, tabular_dl_estimator_for_attack, get_i
         train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
         test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
         assert 0.15 <= train_acc
-        assert 0.15 <= test_acc
+        assert 0 < test_acc
 
     except ARTTestException as e:
         art_warning(e)
@@ -176,82 +182,6 @@ def test_meminf_rule_based(art_warning, decision_tree_estimator, get_iris_datase
         classifier = decision_tree_estimator()
 
         meminf_attack = MembershipInferenceBlackBoxRuleBased(classifier)
-        attack = AttributeInferenceUsingMembershipInference(classifier, meminf_attack, attack_feature=attack_feature)
-        # infer attacked feature
-        inferred_train = attack.infer(x_train_for_attack, y_train_iris, values=values)
-        inferred_test = attack.infer(x_test_for_attack, y_test_iris, values=values)
-        # check accuracy
-        train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
-        test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
-        assert 0.2 <= train_acc
-        assert 0.2 <= test_acc
-
-    except ARTTestException as e:
-        art_warning(e)
-
-
-@pytest.mark.skip_framework("dl_frameworks")
-def test_meminf_label_only(art_warning, decision_tree_estimator, get_iris_dataset):
-    try:
-        attack_feature = 2  # petal length
-
-        # need to transform attacked feature into categorical
-        def transform_feature(x):
-            x[x > 0.5] = 0.6
-            x[(x > 0.2) & (x <= 0.5)] = 0.35
-            x[x <= 0.2] = 0.1
-
-        values = [0.1, 0.35, 0.6]
-
-        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
-        # training data without attacked feature
-        x_train_for_attack = np.delete(x_train_iris, attack_feature, 1)
-        # only attacked feature
-        x_train_feature = x_train_iris[:, attack_feature].copy().reshape(-1, 1)
-        transform_feature(x_train_feature)
-        # training data with attacked feature (after transformation)
-        x_train = np.concatenate((x_train_for_attack[:, :attack_feature], x_train_feature), axis=1)
-        x_train = np.concatenate((x_train, x_train_for_attack[:, attack_feature:]), axis=1)
-
-        # test data without attacked feature
-        x_test_for_attack = np.delete(x_test_iris, attack_feature, 1)
-        # only attacked feature
-        x_test_feature = x_test_iris[:, attack_feature].copy().reshape(-1, 1)
-        transform_feature(x_test_feature)
-        # test data with attacked feature (after transformation)
-        x_test = np.concatenate((x_test_for_attack[:, :attack_feature], x_test_feature), axis=1)
-        x_test = np.concatenate((x_test, x_test_for_attack[:, attack_feature:]), axis=1)
-
-        classifier = decision_tree_estimator()
-
-        meminf_attack = LabelOnlyDecisionBoundary(classifier, distance_threshold_tau=0.5)
-        kwargs = {
-            "norm": 2,
-            "max_iter": 2,
-            "max_eval": 4,
-            "init_eval": 1,
-            "init_size": 1,
-            "verbose": False,
-        }
-        attack_train_ratio = 0.5
-        attack_train_size = int(len(x_train) * attack_train_ratio)
-        attack_test_size = int(len(x_test) * attack_train_ratio)
-        # attack without callibration
-        attack = AttributeInferenceUsingMembershipInference(classifier, meminf_attack, attack_feature=attack_feature)
-        # infer attacked feature
-        inferred_train = attack.infer(x_train_for_attack, y_train_iris, values=values)
-        inferred_test = attack.infer(x_test_for_attack, y_test_iris, values=values)
-        # check accuracy
-        train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
-        test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
-        assert 0.2 <= train_acc
-        assert 0.2 <= test_acc
-
-        # attack with callibration
-        meminf_attack.calibrate_distance_threshold(
-                x_train[:attack_train_size], y_train_iris[:attack_train_size], x_test[:attack_test_size],
-                y_test_iris[:attack_test_size], **kwargs
-        )
         attack = AttributeInferenceUsingMembershipInference(classifier, meminf_attack, attack_feature=attack_feature)
         # infer attacked feature
         inferred_train = attack.infer(x_train_for_attack, y_train_iris, values=values)
@@ -320,13 +250,15 @@ def test_black_box_one_hot_float(art_warning, get_iris_dataset):
         tree.fit(x_train, y_train)
         classifier = ScikitlearnDecisionTreeClassifier(tree)
 
-        meminf_attack = MembershipInferenceBlackBox(classifier, attack_model_type='nn')
+        meminf_attack = MembershipInferenceBlackBox(classifier, attack_model_type="nn")
         attack_train_ratio = 0.5
         attack_train_size = int(len(x_train) * attack_train_ratio)
         attack_test_size = int(len(x_test) * attack_train_ratio)
         meminf_attack.fit(
-                x_train[:attack_train_size], y_train_iris[:attack_train_size], x_test[:attack_test_size],
-                y_test_iris[:attack_test_size]
+            x_train[:attack_train_size],
+            y_train_iris[:attack_train_size],
+            x_test[:attack_test_size],
+            y_test_iris[:attack_test_size],
         )
         attack = AttributeInferenceUsingMembershipInference(classifier, meminf_attack, attack_feature=attack_feature)
         # infer attacked feature
@@ -335,11 +267,90 @@ def test_black_box_one_hot_float(art_warning, get_iris_dataset):
         inferred_test = attack.infer(x_test_for_attack, y_test_iris, values=values)
         # check accuracy
         train_acc = np.sum(
-                np.all(np.around(inferred_train, decimals=3) == np.around(train_one_hot, decimals=3), axis=1)
+            np.all(np.around(inferred_train, decimals=3) == np.around(train_one_hot, decimals=3), axis=1)
         ) / len(inferred_train)
         test_acc = np.sum(
-                np.all(np.around(inferred_test, decimals=3) == np.around(test_one_hot, decimals=3), axis=1)
+            np.all(np.around(inferred_test, decimals=3) == np.around(test_one_hot, decimals=3), axis=1)
         ) / len(inferred_test)
+        assert 0.2 <= train_acc
+        assert 0.2 <= test_acc
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework("dl_frameworks")
+def test_meminf_label_only(art_warning, decision_tree_estimator, get_iris_dataset):
+    try:
+        attack_feature = 2  # petal length
+
+        # need to transform attacked feature into categorical
+        def transform_feature(x):
+            x[x > 0.5] = 0.6
+            x[(x > 0.2) & (x <= 0.5)] = 0.35
+            x[x <= 0.2] = 0.1
+
+        values = [0.1, 0.35, 0.6]
+
+        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+        # training data without attacked feature
+        x_train_for_attack = np.delete(x_train_iris, attack_feature, 1)
+        # only attacked feature
+        x_train_feature = x_train_iris[:, attack_feature].copy().reshape(-1, 1)
+        transform_feature(x_train_feature)
+        # training data with attacked feature (after transformation)
+        x_train = np.concatenate((x_train_for_attack[:, :attack_feature], x_train_feature), axis=1)
+        x_train = np.concatenate((x_train, x_train_for_attack[:, attack_feature:]), axis=1)
+
+        # test data without attacked feature
+        x_test_for_attack = np.delete(x_test_iris, attack_feature, 1)
+        # only attacked feature
+        x_test_feature = x_test_iris[:, attack_feature].copy().reshape(-1, 1)
+        transform_feature(x_test_feature)
+        # test data with attacked feature (after transformation)
+        x_test = np.concatenate((x_test_for_attack[:, :attack_feature], x_test_feature), axis=1)
+        x_test = np.concatenate((x_test, x_test_for_attack[:, attack_feature:]), axis=1)
+
+        classifier = decision_tree_estimator()
+
+        meminf_attack = LabelOnlyDecisionBoundary(classifier, distance_threshold_tau=0.5)
+        kwargs = {
+            "norm": 2,
+            "max_iter": 2,
+            "max_eval": 4,
+            "init_eval": 1,
+            "init_size": 1,
+            "verbose": False,
+        }
+        attack_train_ratio = 0.5
+        attack_train_size = int(len(x_train) * attack_train_ratio)
+        attack_test_size = int(len(x_test) * attack_train_ratio)
+        # attack without callibration
+        attack = AttributeInferenceUsingMembershipInference(classifier, meminf_attack, attack_feature=attack_feature)
+        # infer attacked feature
+        inferred_train = attack.infer(x_train_for_attack, y_train_iris, values=values)
+        inferred_test = attack.infer(x_test_for_attack, y_test_iris, values=values)
+        # check accuracy
+        train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
+        test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
+        assert 0.2 <= train_acc
+        assert 0.2 <= test_acc
+
+        # attack with callibration
+        meminf_attack.calibrate_distance_threshold(
+            x_train[:attack_train_size],
+            y_train_iris[:attack_train_size],
+            x_test[:attack_test_size],
+            y_test_iris[:attack_test_size],
+            **kwargs
+        )
+        attack = AttributeInferenceUsingMembershipInference(classifier, meminf_attack, attack_feature=attack_feature)
+        # infer attacked feature
+        inferred_train = attack.infer(x_train_for_attack, y_train_iris, values=values)
+        inferred_test = attack.infer(x_test_for_attack, y_test_iris, values=values)
+        # check accuracy
+        train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
+        test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
         assert 0.2 <= train_acc
         assert 0.2 <= test_acc
 
@@ -351,7 +362,7 @@ def test_errors(art_warning, tabular_dl_estimator_for_attack, get_iris_dataset):
     try:
         classifier = tabular_dl_estimator_for_attack(AttributeInferenceUsingMembershipInference)
         (x_train, y_train), (x_test, y_test) = get_iris_dataset
-        meminf_attack = MembershipInferenceBlackBox(classifier, attack_model_type='nn')
+        meminf_attack = MembershipInferenceBlackBox(classifier, attack_model_type="nn")
 
         with pytest.raises(ValueError):
             AttributeInferenceUsingMembershipInference(classifier, meminf_attack, attack_feature="a")

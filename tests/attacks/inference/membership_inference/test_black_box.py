@@ -132,7 +132,7 @@ def test_black_box_with_model(art_warning, tabular_dl_estimator_for_attack, esti
 def test_black_box_tabular_prob_rf(art_warning, tabular_dl_estimator_for_attack, get_iris_dataset):
     try:
         classifier = tabular_dl_estimator_for_attack(MembershipInferenceBlackBox)
-        attack = MembershipInferenceBlackBox(classifier, attack_model_type='rf')
+        attack = MembershipInferenceBlackBox(classifier, attack_model_type="rf")
         backend_check_membership_probabilities(attack, get_iris_dataset, attack_train_ratio)
     except ARTTestException as e:
         art_warning(e)
@@ -141,13 +141,15 @@ def test_black_box_tabular_prob_rf(art_warning, tabular_dl_estimator_for_attack,
 def test_black_box_tabular_prob_nn(art_warning, tabular_dl_estimator_for_attack, get_iris_dataset):
     try:
         classifier = tabular_dl_estimator_for_attack(MembershipInferenceBlackBox)
-        attack = MembershipInferenceBlackBox(classifier, attack_model_type='nn')
+        attack = MembershipInferenceBlackBox(classifier, attack_model_type="nn")
         backend_check_membership_probabilities(attack, get_iris_dataset, attack_train_ratio)
     except ARTTestException as e:
         art_warning(e)
 
 
-def test_black_box_with_model_prob(art_warning, tabular_dl_estimator_for_attack, estimator_for_attack, get_iris_dataset):
+def test_black_box_with_model_prob(
+    art_warning, tabular_dl_estimator_for_attack, estimator_for_attack, get_iris_dataset
+):
     try:
         classifier = tabular_dl_estimator_for_attack(MembershipInferenceBlackBox)
         attack_model = estimator_for_attack(num_features=2 * num_classes_iris)
@@ -228,6 +230,6 @@ def backend_check_membership_probabilities(attack, dataset, attack_train_ratio):
 
 
 def backend_check_probabilities(pred, prob):
-    assert(prob.shape[1] == 2)
-    assert(np.all(np.around(np.sum(prob, axis=1), decimals=5) == 1))
-    assert(np.all(np.argmax(prob, axis=1) == pred.astype(int)))
+    assert prob.shape[1] == 2
+    assert np.all(np.around(np.sum(prob, axis=1), decimals=5) == 1)
+    assert np.all(np.argmax(prob, axis=1) == pred.astype(int))
