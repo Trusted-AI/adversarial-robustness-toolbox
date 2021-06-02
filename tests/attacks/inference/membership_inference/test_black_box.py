@@ -62,7 +62,7 @@ def test_black_box_loss_tabular(art_warning, model_type, tabular_dl_estimator_fo
         classifier = tabular_dl_estimator_for_attack(MembershipInferenceBlackBox)
         if type(classifier).__name__ == "PyTorchClassifier" or type(classifier).__name__ == "TensorFlowV2Classifier":
             attack = MembershipInferenceBlackBox(classifier, input_type="loss", attack_model_type=model_type)
-            backend_check_membership_accuracy(attack, get_iris_dataset, attack_train_ratio, 0.15)
+            backend_check_membership_accuracy(attack, get_iris_dataset, attack_train_ratio, 0.25)
     except ARTTestException as e:
         art_warning(e)
 
@@ -112,7 +112,7 @@ def test_black_box_tabular_gb(art_warning, tabular_dl_estimator_for_attack, get_
         classifier = tabular_dl_estimator_for_attack(MembershipInferenceBlackBox)
         attack = MembershipInferenceBlackBox(classifier, attack_model_type="gb")
         # train attack model using only attack_train_ratio of data
-        backend_check_membership_accuracy(attack, get_iris_dataset, attack_train_ratio, 0.03)
+        backend_check_membership_accuracy(attack, get_iris_dataset, attack_train_ratio, 0.05)
     except ARTTestException as e:
         art_warning(e)
 
@@ -229,5 +229,5 @@ def backend_check_membership_probabilities(attack, dataset, attack_train_ratio):
 
 def backend_check_probabilities(pred, prob):
     assert(prob.shape[1] == 2)
-    assert(np.all(np.sum(prob, axis=1) == 1))
+    assert(np.all(np.around(np.sum(prob, axis=1), decimals=5) == 1))
     assert(np.all(np.argmax(prob, axis=1) == pred.astype(int)))

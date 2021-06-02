@@ -74,7 +74,7 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
         :param attack_model: The attack model to train, optional. If none is provided, a default model will be created.
         """
 
-        super().__init__(classifier=classifier)
+        super().__init__(estimator=classifier)
         self.input_type = input_type
         self.attack_model_type = attack_model_type
         self.attack_model = attack_model
@@ -226,10 +226,7 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
                     loss.backward()
                     optimizer.step()
         else:
-            # if self.attack_model_type == "gb":
             y_ready = check_and_transform_label_format(y_new, len(np.unique(y_new)), return_one_hot=False)
-            # else:
-            #     y_ready = check_and_transform_label_format(y_new, len(np.unique(y_new)), return_one_hot=True)
             self.attack_model.fit(np.c_[x_1, x_2], y_ready)  # type: ignore
 
     def infer(

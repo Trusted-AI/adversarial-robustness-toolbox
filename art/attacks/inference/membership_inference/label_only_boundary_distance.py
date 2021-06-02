@@ -56,9 +56,9 @@ class LabelOnlyDecisionBoundary(MembershipInferenceAttack):
         :param distance_threshold_tau: Threshold distance for decision boundary. Samples with boundary distances larger
                                        than threshold are considered members of the training dataset.
         """
-        super().__init__(classifier=estimator)
+        super().__init__(estimator=estimator)
         self.distance_threshold_tau = distance_threshold_tau
-        self.threshold_bins = None
+        self.threshold_bins = []
         self._check_params()
 
     def infer(
