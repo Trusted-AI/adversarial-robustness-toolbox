@@ -119,8 +119,6 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
             raise ValueError("This estimator does not support `postprocessing_defences`.")
 
         if model is None:
-            import torchvision  # lgtm [py/repeated-import]
-
             self._model = torchvision.models.detection.fasterrcnn_resnet50_fpn(
                 pretrained=True, progress=True, num_classes=91, pretrained_backbone=True
             )
