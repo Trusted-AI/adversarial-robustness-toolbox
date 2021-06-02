@@ -270,7 +270,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         # Check if the loss function requires as input index labels instead of one-hot-encoded labels
         # Checking for exactly 2 classes to support binary classification
-        if self.nb_classes > 2 or self.nb_classes == 1:
+        if self.nb_classes > 2:
             if self._reduce_labels and self._int_labels:
                 if isinstance(y, torch.Tensor):
                     return torch.argmax(y, dim=1)
@@ -278,8 +278,6 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             if self._reduce_labels:  # float labels
                 if isinstance(y, torch.Tensor):
                     return torch.argmax(y, dim=1).type("torch.FloatTensor")
-                if len(y.shape) == 1:
-                    return np.expand_dims(y, axis=1).astype(np.float32)
                 y_index = np.argmax(y, axis=1).astype(np.float32)
                 y_index = np.expand_dims(y_index, axis=1)
                 return y_index
@@ -988,8 +986,6 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
                         elif isinstance(self._model, nn.Module):
                             x = self._model(x)
-                            if len(x.shape) > 1 and self.nb_classes == 2:
-                                x = x.squeeze(dim=1)
                             result.append(x)
 
                         else:
