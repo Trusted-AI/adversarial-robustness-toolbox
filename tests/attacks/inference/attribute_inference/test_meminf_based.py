@@ -88,8 +88,8 @@ def test_meminf_black_box(art_warning, decision_tree_estimator, get_iris_dataset
         # check accuracy
         train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
         test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
-        assert 0.17 <= train_acc
-        assert 0.17 <= test_acc
+        assert 0.2 <= train_acc
+        assert 0.2 <= test_acc
 
     except ARTTestException as e:
         art_warning(e)
@@ -147,7 +147,7 @@ def test_meminf_black_box_dl(art_warning, tabular_dl_estimator_for_attack, get_i
         train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
         test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
         assert 0.15 <= train_acc
-        assert 0 < test_acc
+        assert 0.1 < test_acc
 
     except ARTTestException as e:
         art_warning(e)
@@ -189,8 +189,8 @@ def test_meminf_rule_based(art_warning, decision_tree_estimator, get_iris_datase
         # check accuracy
         train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
         test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
-        assert 0.2 <= train_acc
-        assert 0.2 <= test_acc
+        assert 0.3 <= train_acc
+        assert 0.3 <= test_acc
 
     except ARTTestException as e:
         art_warning(e)
@@ -262,7 +262,7 @@ def test_black_box_one_hot_float(art_warning, get_iris_dataset):
         )
         attack = AttributeInferenceMembership(classifier, meminf_attack, attack_feature=attack_feature)
         # infer attacked feature
-        values = [[-0.6324555, 1.5811388], [-0.4395245, 2.2751858], [-1.1108746, 0.9001915]]
+        values = [[-0.559017, 1.7888544], [-0.47003216, 2.127514], [-1.1774395, 0.84930056]]
         inferred_train = attack.infer(x_train_for_attack, y_train_iris, values=values)
         inferred_test = attack.infer(x_test_for_attack, y_test_iris, values=values)
         # check accuracy
@@ -333,8 +333,8 @@ def test_meminf_label_only(art_warning, decision_tree_estimator, get_iris_datase
         # check accuracy
         train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
         test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
-        assert 0.2 <= train_acc
-        assert 0.2 <= test_acc
+        assert 0.5 <= train_acc
+        assert 0.5 <= test_acc
 
         # attack with callibration
         meminf_attack.calibrate_distance_threshold(
@@ -351,8 +351,8 @@ def test_meminf_label_only(art_warning, decision_tree_estimator, get_iris_datase
         # check accuracy
         train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
         test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
-        assert 0.2 <= train_acc
-        assert 0.2 <= test_acc
+        assert 0.3 <= train_acc
+        assert 0.3 <= test_acc
 
     except ARTTestException as e:
         art_warning(e)
