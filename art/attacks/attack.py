@@ -352,13 +352,13 @@ class MembershipInferenceAttack(InferenceAttack):
     Abstract base class for membership inference attack classes.
     """
 
-    def __init__(self, classifier: Union["CLASSIFIER_TYPE"]):
+    def __init__(self, estimator: Union["CLASSIFIER_TYPE"]):
         """
         :param estimator: A trained estimator targeted for inference attack.
         :type estimator: :class:`.art.estimators.estimator.BaseEstimator`
         :param attack_feature: The index of the feature to be attacked.
         """
-        super().__init__(classifier)
+        super().__init__(estimator)
 
     @abc.abstractmethod
     def infer(

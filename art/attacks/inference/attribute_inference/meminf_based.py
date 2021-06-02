@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2021
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements attribute inference attacks.
+This module implements attribute inference attacks using membership inference attacks.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -24,12 +24,10 @@ import logging
 from typing import Optional, Union, TYPE_CHECKING
 
 import numpy as np
-from sklearn.neural_network import MLPClassifier
 
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.attack import AttributeInferenceAttack, MembershipInferenceAttack
-from art.utils import check_and_transform_label_format, float_to_categorical, floats_to_one_hot
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
@@ -105,8 +103,8 @@ class AttributeInferenceUsingMembershipInference(AttributeInferenceAttack):
             first = True
             for value in values:
                 v_full = np.full((x.shape[0], 1), value)
-                x_value = np.concatenate((x[:, : self.attack_feature], v_full), axis=1)
-                x_value = np.concatenate((x_value, x[:, self.attack_feature :]), axis=1)
+                x_value = np.concatenate((x[:, :self.attack_feature], v_full), axis=1)
+                x_value = np.concatenate((x_value, x[:, self.attack_feature:]), axis=1)
 
                 predicted = self.membership_attack.infer(x_value, y, probabilities=True)
                 if first:
@@ -123,12 +121,12 @@ class AttributeInferenceUsingMembershipInference(AttributeInferenceAttack):
         else:  # 1-hot encoded feature. Can also be scaled.
             first = True
             # assumes that the second value is the "positive" value and that there can only be one positive column
-            for index in range(len(values)):
+            for index, value in enumerate(values):
                 curr_value = np.zeros((x.shape[0], len(values)))
-                curr_value[:, index] = values[index][1]
-                for not_index in range(len(values)):
+                curr_value[:, index] = value[1]
+                for not_index, not_value in enumerate(values):
                     if not_index != index:
-                        curr_value[:, not_index] = values[not_index][0]
+                        curr_value[:, not_index] = not_value[0]
                 x_value = np.concatenate((x[:, : self.attack_feature.start], curr_value), axis=1)
                 x_value = np.concatenate((x_value, x[:, self.attack_feature.start :]), axis=1)
 
@@ -140,12 +138,12 @@ class AttributeInferenceUsingMembershipInference(AttributeInferenceAttack):
                 first = False
             value_indexes = np.argmax(probabilities, axis=1).astype(np.float32)
             pred_values = np.zeros_like(probabilities)
-            for index in range(len(values)):
+            for index, value in enumerate(values):
                 curr_value = np.zeros(len(values))
-                curr_value[index] = values[index][1]
-                for not_index in range(len(values)):
+                curr_value[index] = value[1]
+                for not_index, not_value in enumerate(values):
                     if not_index != index:
-                        curr_value[not_index] = values[not_index][0]
+                        curr_value[not_index] = not_value[0]
                 pred_values[value_indexes == index] = curr_value
         return pred_values
 

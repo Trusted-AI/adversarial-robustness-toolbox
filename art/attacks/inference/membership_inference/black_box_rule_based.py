@@ -54,7 +54,7 @@ class MembershipInferenceBlackBoxRuleBased(MembershipInferenceAttack):
 
         :param classifier: Target classifier.
         """
-        super().__init__(classifier=classifier)
+        super().__init__(estimator=classifier)
 
     def infer(
         self, x: np.ndarray, y: Optional[np.ndarray] = None, probabilities: Optional[bool] = False, **kwargs
@@ -93,5 +93,4 @@ class MembershipInferenceBlackBoxRuleBased(MembershipInferenceAttack):
                 # simply returns probability 1 for the predicted class and 0 for the other class
                 prob = check_and_transform_label_format(predicted_class, return_one_hot=True)
             return prob
-        else:
-            return predicted_class
+        return predicted_class
