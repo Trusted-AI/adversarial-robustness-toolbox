@@ -117,13 +117,14 @@ def backend_check_membership_probabilities(attack, dataset, attack_train_ratio):
         "verbose": False,
     }
     # infer attacked feature on remainder of data
-    inferred_train_prob = attack.infer(x_train[attack_train_size:], y_train[attack_train_size:], probabilities=True,
-                                       **kwargs)
+    inferred_train_prob = attack.infer(
+        x_train[attack_train_size:], y_train[attack_train_size:], probabilities=True, **kwargs
+    )
 
     # check accuracy
     backend_check_probabilities(inferred_train_prob)
 
 
 def backend_check_probabilities(prob):
-    assert(prob.shape[1] == 2)
-    assert(np.all(np.sum(prob, axis=1) == 1))
+    assert prob.shape[1] == 2
+    assert np.all(np.sum(prob, axis=1) == 1)

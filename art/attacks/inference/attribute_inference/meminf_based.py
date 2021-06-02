@@ -102,9 +102,9 @@ class AttributeInferenceUsingMembershipInference(AttributeInferenceAttack):
         if self.single_index_feature:
             first = True
             for value in values:
-                v_full = np.full((x.shape[0], 1), value)
-                x_value = np.concatenate((x[:, :self.attack_feature], v_full), axis=1)
-                x_value = np.concatenate((x_value, x[:, self.attack_feature:]), axis=1)
+                v_full = np.full((x.shape[0], 1), value).astype(np.float32)
+                x_value = np.concatenate((x[:, : self.attack_feature], v_full), axis=1)
+                x_value = np.concatenate((x_value, x[:, self.attack_feature :]), axis=1)
 
                 predicted = self.membership_attack.infer(x_value, y, probabilities=True)
                 if first:

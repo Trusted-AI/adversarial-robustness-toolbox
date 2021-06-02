@@ -95,6 +95,6 @@ def backend_check_membership_probabilities(attack, dataset):
 
 
 def backend_check_probabilities(pred, prob):
-    assert(prob.shape[1] == 2)
-    assert(np.all(np.sum(prob, axis=1) == 1))
-    assert(np.all(np.argmax(prob, axis=1) == pred.astype(int)))
+    assert prob.shape[1] == 2
+    assert np.all(np.sum(prob, axis=1) == 1)
+    assert np.all(np.argmax(prob, axis=1) == pred.astype(int))
