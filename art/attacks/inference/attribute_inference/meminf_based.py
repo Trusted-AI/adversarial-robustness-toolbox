@@ -35,7 +35,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class AttributeInferenceUsingMembershipInference(AttributeInferenceAttack):
+class AttributeInferenceMembership(AttributeInferenceAttack):
     """
     Implementation of a an attribute inference attack that utilizes a membership inference attack.
 
@@ -52,7 +52,7 @@ class AttributeInferenceUsingMembershipInference(AttributeInferenceAttack):
         attack_feature: Union[int, slice] = 0,
     ):
         """
-        Create an AttributeInferenceUsingMembershipInference attack instance.
+        Create an AttributeInferenceMembership attack instance.
 
         :param classifier: Target classifier.
         :param membership_attack: The membership inference attack to use. Should be fit/callibrated in advance, and

@@ -24,7 +24,7 @@ import numpy as np
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.preprocessing import StandardScaler
 
-from art.attacks.inference.attribute_inference.meminf_based import AttributeInferenceUsingMembershipInference
+from art.attacks.inference.attribute_inference.meminf_based import AttributeInferenceMembership
 from art.attacks.inference.membership_inference import (
     MembershipInferenceBlackBox,
     MembershipInferenceBlackBoxRuleBased,
@@ -81,7 +81,7 @@ def test_meminf_black_box(art_warning, decision_tree_estimator, get_iris_dataset
             x_test[:attack_test_size],
             y_test_iris[:attack_test_size],
         )
-        attack = AttributeInferenceUsingMembershipInference(classifier, meminf_attack, attack_feature=attack_feature)
+        attack = AttributeInferenceMembership(classifier, meminf_attack, attack_feature=attack_feature)
         # infer attacked feature
         inferred_train = attack.infer(x_train_for_attack, y_train_iris, values=values)
         inferred_test = attack.infer(x_test_for_attack, y_test_iris, values=values)
@@ -127,7 +127,7 @@ def test_meminf_black_box_dl(art_warning, tabular_dl_estimator_for_attack, get_i
         x_test = np.concatenate((x_test_for_attack[:, :attack_feature], x_test_feature), axis=1)
         x_test = np.concatenate((x_test, x_test_for_attack[:, attack_feature:]), axis=1)
 
-        classifier = tabular_dl_estimator_for_attack(AttributeInferenceUsingMembershipInference)
+        classifier = tabular_dl_estimator_for_attack(AttributeInferenceMembership)
 
         meminf_attack = MembershipInferenceBlackBox(classifier, attack_model_type="nn")
         attack_train_ratio = 0.5
@@ -139,7 +139,7 @@ def test_meminf_black_box_dl(art_warning, tabular_dl_estimator_for_attack, get_i
             x_test[:attack_test_size],
             y_test_iris[:attack_test_size],
         )
-        attack = AttributeInferenceUsingMembershipInference(classifier, meminf_attack, attack_feature=attack_feature)
+        attack = AttributeInferenceMembership(classifier, meminf_attack, attack_feature=attack_feature)
         # infer attacked feature
         inferred_train = attack.infer(x_train_for_attack, y_train_iris, values=values)
         inferred_test = attack.infer(x_test_for_attack, y_test_iris, values=values)
@@ -182,7 +182,7 @@ def test_meminf_rule_based(art_warning, decision_tree_estimator, get_iris_datase
         classifier = decision_tree_estimator()
 
         meminf_attack = MembershipInferenceBlackBoxRuleBased(classifier)
-        attack = AttributeInferenceUsingMembershipInference(classifier, meminf_attack, attack_feature=attack_feature)
+        attack = AttributeInferenceMembership(classifier, meminf_attack, attack_feature=attack_feature)
         # infer attacked feature
         inferred_train = attack.infer(x_train_for_attack, y_train_iris, values=values)
         inferred_test = attack.infer(x_test_for_attack, y_test_iris, values=values)
@@ -260,7 +260,7 @@ def test_black_box_one_hot_float(art_warning, get_iris_dataset):
             x_test[:attack_test_size],
             y_test_iris[:attack_test_size],
         )
-        attack = AttributeInferenceUsingMembershipInference(classifier, meminf_attack, attack_feature=attack_feature)
+        attack = AttributeInferenceMembership(classifier, meminf_attack, attack_feature=attack_feature)
         # infer attacked feature
         values = [[-0.6324555, 1.5811388], [-0.4395245, 2.2751858], [-1.1108746, 0.9001915]]
         inferred_train = attack.infer(x_train_for_attack, y_train_iris, values=values)
@@ -326,7 +326,7 @@ def test_meminf_label_only(art_warning, decision_tree_estimator, get_iris_datase
         attack_train_size = int(len(x_train) * attack_train_ratio)
         attack_test_size = int(len(x_test) * attack_train_ratio)
         # attack without callibration
-        attack = AttributeInferenceUsingMembershipInference(classifier, meminf_attack, attack_feature=attack_feature)
+        attack = AttributeInferenceMembership(classifier, meminf_attack, attack_feature=attack_feature)
         # infer attacked feature
         inferred_train = attack.infer(x_train_for_attack, y_train_iris, values=values)
         inferred_test = attack.infer(x_test_for_attack, y_test_iris, values=values)
@@ -344,7 +344,7 @@ def test_meminf_label_only(art_warning, decision_tree_estimator, get_iris_datase
             y_test_iris[:attack_test_size],
             **kwargs
         )
-        attack = AttributeInferenceUsingMembershipInference(classifier, meminf_attack, attack_feature=attack_feature)
+        attack = AttributeInferenceMembership(classifier, meminf_attack, attack_feature=attack_feature)
         # infer attacked feature
         inferred_train = attack.infer(x_train_for_attack, y_train_iris, values=values)
         inferred_test = attack.infer(x_test_for_attack, y_test_iris, values=values)
@@ -360,18 +360,18 @@ def test_meminf_label_only(art_warning, decision_tree_estimator, get_iris_datase
 
 def test_errors(art_warning, tabular_dl_estimator_for_attack, get_iris_dataset):
     try:
-        classifier = tabular_dl_estimator_for_attack(AttributeInferenceUsingMembershipInference)
+        classifier = tabular_dl_estimator_for_attack(AttributeInferenceMembership)
         (x_train, y_train), (x_test, y_test) = get_iris_dataset
         meminf_attack = MembershipInferenceBlackBox(classifier, attack_model_type="nn")
 
         with pytest.raises(ValueError):
-            AttributeInferenceUsingMembershipInference(classifier, meminf_attack, attack_feature="a")
+            AttributeInferenceMembership(classifier, meminf_attack, attack_feature="a")
         with pytest.raises(ValueError):
-            AttributeInferenceUsingMembershipInference(classifier, meminf_attack, attack_feature=-3)
+            AttributeInferenceMembership(classifier, meminf_attack, attack_feature=-3)
 
-        attack = AttributeInferenceUsingMembershipInference(classifier, meminf_attack)
+        attack = AttributeInferenceMembership(classifier, meminf_attack)
         with pytest.raises(ValueError):
-            AttributeInferenceUsingMembershipInference(classifier, attack, attack_feature=1)
+            AttributeInferenceMembership(classifier, attack, attack_feature=1)
         with pytest.raises(ValueError):
             attack.infer(x_train, y_test, values=[1, 2])
         with pytest.raises(ValueError):
