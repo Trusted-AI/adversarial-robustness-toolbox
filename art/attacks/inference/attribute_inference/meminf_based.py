@@ -21,7 +21,7 @@ This module implements attribute inference attacks using membership inference at
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Union, TYPE_CHECKING
+from typing import Optional, Union, List, TYPE_CHECKING
 
 import numpy as np
 
@@ -61,12 +61,10 @@ class AttributeInferenceMembership(AttributeInferenceAttack):
                                case of a one-hot encoded feature.
         """
         super().__init__(estimator=classifier, attack_feature=attack_feature)
-        self._estimator_requirements = self._estimator_requirements + membership_attack._estimator_requirements
-
-        if isinstance(self.attack_feature, int):
-            self.single_index_feature = True
+        if self._estimator_requirements:
+            self._estimator_requirements = self._estimator_requirements + membership_attack._estimator_requirements
         else:
-            self.single_index_feature = False
+            self._estimator_requirements = membership_attack._estimator_requirements
 
         self.membership_attack = membership_attack
 
@@ -87,19 +85,19 @@ class AttributeInferenceMembership(AttributeInferenceAttack):
         :return: The inferred feature values.
         """
         if self.estimator.input_shape is not None:
-            if self.single_index_feature and self.estimator.input_shape[0] != x.shape[1] + 1:
+            if isinstance(self.attack_feature, int) and self.estimator.input_shape[0] != x.shape[1] + 1:
                 raise ValueError("Number of features in x + 1 does not match input_shape of classifier")
 
         if "values" not in kwargs.keys():
             raise ValueError("Missing parameter `values`.")
-        values: list = kwargs.get("values")
+        values: Optional[List] = kwargs.get("values")
 
         if y is not None:
             if y.shape[0] != x.shape[0]:
                 raise ValueError("Number of rows in x and y do not match")
 
         # assumes single index
-        if self.single_index_feature:
+        if isinstance(self.attack_feature, int):
             first = True
             for value in values:
                 v_full = np.full((x.shape[0], 1), value).astype(np.float32)
