@@ -95,6 +95,7 @@ class LabelOnlyDecisionBoundary(MembershipInferenceAttack):
 
         if "probabilities" in kwargs.keys():
             probabilities = kwargs.get("probabilities")
+            del kwargs["probabilities"]
         else:
             probabilities = False
 
