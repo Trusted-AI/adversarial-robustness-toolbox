@@ -56,9 +56,7 @@ class MembershipInferenceBlackBoxRuleBased(MembershipInferenceAttack):
         """
         super().__init__(estimator=classifier)
 
-    def infer(
-        self, x: np.ndarray, y: Optional[np.ndarray] = None, probabilities: Optional[bool] = False, **kwargs
-    ) -> np.ndarray:
+    def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Infer membership in the training set of the target estimator.
 
@@ -66,7 +64,8 @@ class MembershipInferenceBlackBoxRuleBased(MembershipInferenceAttack):
         :param y: True labels for `x`.
         :param probabilities: a boolean indicating whether to return the predicted probabilities per class, or just
                               the predicted class.
-        :return: An array holding the inferred membership status, 1 indicates a member and 0 indicates non-member.
+        :return: An array holding the inferred membership status, 1 indicates a member and 0 indicates non-member,
+                 or class probabilities.
         """
         if y is None:
             raise ValueError("MembershipInferenceBlackBoxRuleBased requires true labels `y`.")
@@ -74,6 +73,11 @@ class MembershipInferenceBlackBoxRuleBased(MembershipInferenceAttack):
         if self.estimator.input_shape is not None:
             if self.estimator.input_shape[0] != x.shape[1]:
                 raise ValueError("Shape of x does not match input_shape of classifier")
+
+        if "probabilities" in kwargs.keys():
+            probabilities = kwargs.get("probabilities")
+        else:
+            probabilities = False
 
         y = check_and_transform_label_format(y, len(np.unique(y)), return_one_hot=True)
         if y.shape[0] != x.shape[0]:

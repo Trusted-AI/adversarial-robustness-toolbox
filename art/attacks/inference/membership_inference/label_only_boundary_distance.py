@@ -58,12 +58,10 @@ class LabelOnlyDecisionBoundary(MembershipInferenceAttack):
         """
         super().__init__(estimator=estimator)
         self.distance_threshold_tau = distance_threshold_tau
-        self.threshold_bins = []
+        self.threshold_bins: list = []
         self._check_params()
 
-    def infer(
-        self, x: np.ndarray, y: Optional[np.ndarray] = None, probabilities: Optional[bool] = False, **kwargs
-    ) -> np.ndarray:
+    def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Infer membership of input `x` in estimator's training data.
 
@@ -80,7 +78,8 @@ class LabelOnlyDecisionBoundary(MembershipInferenceAttack):
             * *init_size*: Maximum number of trials for initial generation of adversarial examples.
             * *verbose*: Show progress bars.
 
-        :return: An array holding the inferred membership status, 1 indicates a member and 0 indicates non-member.
+        :return: An array holding the inferred membership status, 1 indicates a member and 0 indicates non-member,
+                 or class probabilities.
         """
         from art.attacks.evasion.hop_skip_jump import HopSkipJump
 
@@ -93,6 +92,11 @@ class LabelOnlyDecisionBoundary(MembershipInferenceAttack):
                 "`distance_threshold_tau` or run method `calibrate_distance_threshold` on known training and test"
                 "dataset."
             )
+
+        if "probabilities" in kwargs.keys():
+            probabilities = kwargs.get("probabilities")
+        else:
+            probabilities = False
 
         if "classifier" in kwargs:
             raise ValueError("Keyword `classifier` in kwargs is not supported.")
@@ -115,18 +119,15 @@ class LabelOnlyDecisionBoundary(MembershipInferenceAttack):
             prob_1 = np.zeros_like(distance)
             if self.threshold_bins:
                 # bin accuracy is the probability of being a member
-                for bin in self.threshold_bins:
-                    prob_1[distance > bin[0]] = bin[1]
-                prob_0 = np.ones_like(prob_1) - prob_1
-                return np.stack((prob_0, prob_1), axis=1)
+                for t_bin in self.threshold_bins:
+                    prob_1[distance > t_bin[0]] = t_bin[1]
             else:
                 # use sigmoid on distance from threshold
                 dist_threshold = distance - self.distance_threshold_tau
                 prob_1 = 1 / (1 + np.exp(-dist_threshold))
-                prob_0 = np.ones_like(prob_1) - prob_1
-                return np.stack((prob_0, prob_1), axis=1)
-        else:
-            return predicted_class
+            prob_0 = np.ones_like(prob_1) - prob_1
+            return np.stack((prob_0, prob_1), axis=1)
+        return predicted_class
 
     def calibrate_distance_threshold(
         self, x_train: np.ndarray, y_train: np.ndarray, x_test: np.ndarray, y_test: np.ndarray, **kwargs

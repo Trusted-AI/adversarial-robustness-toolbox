@@ -234,9 +234,7 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
             y_ready = check_and_transform_label_format(y_new, len(np.unique(y_new)), return_one_hot=False)
             self.attack_model.fit(np.c_[x_1, x_2], y_ready)  # type: ignore
 
-    def infer(
-        self, x: np.ndarray, y: Optional[np.ndarray] = None, probabilities: Optional[bool] = False, **kwargs
-    ) -> np.ndarray:
+    def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Infer membership in the training set of the target estimator.
 
@@ -244,7 +242,8 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
         :param y: True labels for `x`.
         :param probabilities: a boolean indicating whether to return the predicted probabilities per class, or just
                               the predicted class
-        :return: An array holding the inferred membership status, 1 indicates a member and 0 indicates non-member.
+        :return: An array holding the inferred membership status, 1 indicates a member and 0 indicates non-member,
+                or class probabilities.
         """
         if y is None:
             raise ValueError("MembershipInferenceBlackBox requires true labels `y`.")
@@ -252,6 +251,11 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
         if self.estimator.input_shape is not None:
             if self.estimator.input_shape[0] != x.shape[1]:
                 raise ValueError("Shape of x does not match input_shape of classifier")
+
+        if "probabilities" in kwargs.keys():
+            probabilities = kwargs.get("probabilities")
+        else:
+            probabilities = False
 
         y = check_and_transform_label_format(y, len(np.unique(y)), return_one_hot=True)
 
@@ -295,6 +299,13 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
                     inferred_return = np.stack((prob_0, inferred), axis=1)
             else:
                 raise ValueError("No data available.")
+        elif not self.default_model:
+            # assumes the predict method of the supplied model returns probabilities
+            pred = self.attack_model.predict(np.c_[features, y])  # type: ignore
+            if probabilities:
+                inferred_return = pred
+            else:
+                inferred_return = np.array([np.argmax(arr) for arr in pred])
         else:
             pred = self.attack_model.predict_proba(np.c_[features, y])  # type: ignore
             if probabilities:
