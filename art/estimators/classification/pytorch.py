@@ -306,7 +306,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         results_list = []
 
         # Run prediction with batch processing
-        #results = np.zeros((x_preprocessed.shape[0], self.nb_classes), dtype=np.float32) # old
+        # results = np.zeros((x_preprocessed.shape[0], self.nb_classes), dtype=np.float32) # old
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         for m in range(num_batch):
             # Batch indexes
@@ -318,7 +318,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             with torch.no_grad():
                 model_outputs = self._model(torch.from_numpy(x_preprocessed[begin:end]).to(self._device))
             output = model_outputs[-1]
-            #results[begin:end] = output.detach().cpu().numpy() #old
+            # results[begin:end] = output.detach().cpu().numpy() #old
             if len(output.shape) == 1:
                 output = np.expand_dims(output.detach().cpu().numpy(), axis=1).astype(np.float32)
             else:
