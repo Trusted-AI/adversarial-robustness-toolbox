@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2021
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -16,11 +16,14 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the task specific estimator for Espresso, an end-to-end speech recognition toolkit based on fairseq.
+This module implements the task specific estimator for Espresso, an end-to-end speech recognition toolkit based on
+fairseq.
+
 | Paper link: https://arxiv.org/abs/1909.08723
 """
+from argparse import Namespace
 import logging
-from typing import List, Optional, TYPE_CHECKING, Union
+from typing import List, Optional, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
 
@@ -32,7 +35,7 @@ from art.utils import get_file
 if TYPE_CHECKING:
     import torch
     from espresso.models import SpeechTransformerModel
-    
+
     from art.defences.preprocessor.preprocessor import Preprocessor
     from art.defences.postprocessor.postprocessor import Postprocessor
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
@@ -44,8 +47,8 @@ INT16MAX = 32767
 
 class PyTorchEspresso(SpeechRecognizerMixin, PyTorchEstimator):
     """
-    This class implements a model-specific automatic speech recognizer using the end-to-end speech recognizer
-    in Espresso.
+    This class implements a model-specific automatic speech recognizer using the end-to-end speech recognizer in
+    Espresso.
 
     | Paper link: https://arxiv.org/abs/1909.08723
     """
@@ -81,7 +84,6 @@ class PyTorchEspresso(SpeechRecognizerMixin, PyTorchEstimator):
         """
         import torch  # lgtm [py/repeated-import]
         import yaml
-        from argparse import Namespace
         from fairseq import checkpoint_utils, tasks, utils
         from fairseq.data import encoders
         import sentencepiece as spm
@@ -96,20 +98,17 @@ class PyTorchEspresso(SpeechRecognizerMixin, PyTorchEstimator):
             preprocessing=preprocessing,
         )
         self.verbose = verbose
-        
+
         # Check clip values
         if self.clip_values is not None:
             if not np.all(self.clip_values[0] == -1):
-                raise ValueError(
-                    "This estimator requires normalized input audios with clip_vales=(-1, 1).")
+                raise ValueError("This estimator requires normalized input audios with clip_vales=(-1, 1).")
             if not np.all(self.clip_values[1] == 1):
-                raise ValueError(
-                    "This estimator requires normalized input audios with clip_vales=(-1, 1).")
+                raise ValueError("This estimator requires normalized input audios with clip_vales=(-1, 1).")
 
         # Check postprocessing defences)
         if self.postprocessing_defences is not None:
-            raise ValueError(
-                "This estimator does not support `postprocessing_defences`.")
+            raise ValueError("This estimator does not support `postprocessing_defences`.")
 
         # Set cpu/gpu device
         self._device: torch.device
@@ -117,11 +116,11 @@ class PyTorchEspresso(SpeechRecognizerMixin, PyTorchEstimator):
             self._device = torch.device("cpu")
         else:
             cuda_idx = torch.cuda.current_device()
-            self._device = torch.device("cuda:{}".format(cuda_idx)) 
+            self._device = torch.device("cuda:{}".format(cuda_idx))
 
         # Load config/model
         if espresso_config_filepath is None:
-            if pretrained_model == 'librispeech_transformer':
+            if pretrained_model == "librispeech_transformer":
                 config_filename, config_url = (
                     "",
                     "",
@@ -151,7 +150,7 @@ class PyTorchEspresso(SpeechRecognizerMixin, PyTorchEstimator):
             dict_path = get_file(
                 filename=dict_filename, path=config.ART_DATA_PATH, url=dict_url, extract=False, verbose=self.verbose
             )
-            
+
         # construct espresso args
         with open(config_path) as file:
             esp_args_dict = yaml.load(file, Loader=yaml.FullLoader)
@@ -181,14 +180,13 @@ class PyTorchEspresso(SpeechRecognizerMixin, PyTorchEstimator):
         self.dictionary = self.task.target_dictionary
         self.generator = self.task.build_generator(self._models, self.esp_args)
         self.tokenizer = encoders.build_tokenizer(self.esp_args)
-        self.bpe = encoders.build_bpe(self.esp_args) # bpe encoder
-        self.sp = spm.SentencePieceProcessor() # sentence piece model
+        self.bpe = encoders.build_bpe(self.esp_args)  # bpe encoder
+        self.sp = spm.SentencePieceProcessor()  # sentence piece model
         self.sp.Load(self.esp_args.sentencepiece_model)
 
         self.criterion = self.task.build_criterion(self.esp_args)
 
-    def predict(
-            self, x: np.ndarray, batch_size: int=128, **kwargs) -> np.ndarray:
+    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
         """
         Perform prediction for a batch of inputs.
         :param x: Samples of shape (nb_samples, seq_length). Note that, it is allowable that sequences in the batch
@@ -196,7 +194,7 @@ class PyTorchEspresso(SpeechRecognizerMixin, PyTorchEstimator):
                   `x = np.array([np.array([0.1, 0.2, 0.1, 0.4]), np.array([0.3, 0.1])])`.
         :param batch_size: Batch size.
         :return: Transcription as a numpy array of characters. A possible example of a transcription return
-        is `np.array(['SIXTY ONE', 'HELLO'])`.
+                 is `np.array(['SIXTY ONE', 'HELLO'])`.
         """
 
         def get_symbols_to_strip_from_output(generator):
@@ -222,27 +220,24 @@ class PyTorchEspresso(SpeechRecognizerMixin, PyTorchEstimator):
 
             # Transform x into the model input space
             # Note that batch is re-ordered during transformation
-            batch, batch_idx = self._transform_model_input(
-                x=x_preprocessed[begin:end])
+            batch, batch_idx = self._transform_model_input(x=x_preprocessed[begin:end])
 
-            hypos = self.task.inference_step(
-                self.generator, self._models, batch)
+            hypos = self.task.inference_step(self.generator, self._models, batch)
 
             for i in range(len(hypos)):
                 # Process top predictions
-                for j, hypo in enumerate(hypos[i][:self.esp_args.nbest]):
+                for j, hypo in enumerate(hypos[i][: self.esp_args.nbest]):
                     hypo_str = self.dictionary.string(
                         hypo["tokens"].int().cpu(),
                         bpe_symbol=None,
-                        extra_symbols_to_ignore=get_symbols_to_strip_from_output(
-                            self.generator),
+                        extra_symbols_to_ignore=get_symbols_to_strip_from_output(self.generator),
                     )  # not removing bpe at this point
                     detok_hypo_str = self.bpe.decode(hypo_str)
                     decoded_output.append(detok_hypo_str)
 
         decoded_output = np.array(decoded_output)
         decoded_output_ = decoded_output.copy()
-        decoded_output[batch_idx] = decoded_output_ # revert decoded output to its original order
+        decoded_output[batch_idx] = decoded_output_  # revert decoded output to its original order
         return decoded_output
 
     def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
@@ -257,15 +252,13 @@ class PyTorchEspresso(SpeechRecognizerMixin, PyTorchEstimator):
         """
 
         # Apply preprocessing
-        x_preprocessed, y_preprocessed = self._apply_preprocessing(
-            x, y, fit=False)
+        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
 
         self._model.train()
         self.set_batchnorm(train=False)
-        
+
         # Transform data into the model input space
-        batch, batch_idx = self._transform_model_input(
-            x=x_preprocessed, y=y_preprocessed, compute_gradient=True)
+        batch, batch_idx = self._transform_model_input(x=x_preprocessed, y=y_preprocessed, compute_gradient=True)
 
         loss, sample_size, log_output = self.criterion(self._model, batch)
         loss.backward()
@@ -293,10 +286,9 @@ class PyTorchEspresso(SpeechRecognizerMixin, PyTorchEstimator):
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
-               and providing it takes no effect.
+                       and providing it takes no effect.
         """
         raise NotImplementedError
-    
 
     def _transform_model_input(
         self,
@@ -307,6 +299,7 @@ class PyTorchEspresso(SpeechRecognizerMixin, PyTorchEstimator):
     ) -> Tuple[dict, List]:
         """
         Transform the user input space into the model input space.
+
         :param x: Samples of shape (nb_samples, seq_length). Note that, it is allowable that sequences in the batch
                   could have different lengths. A possible example of `x` could be:
                   `x = np.ndarray([[0.1, 0.2, 0.1, 0.4], [0.3, 0.1]])`.
@@ -315,15 +308,15 @@ class PyTorchEspresso(SpeechRecognizerMixin, PyTorchEstimator):
         :param compute_gradient: Indicate whether to compute gradients for the input `x`.
         :param tensor_input: Indicate whether input is tensor.
         :param real_lengths: Real lengths of original sequences.
-        :return: A tupe of a dictionary of batch and a list representing the original order of the batch
+        :return: A tuple of a dictionary of batch and a list representing the original order of the batch
         """
         import torch  # lgtm [py/repeated-import]
         from fairseq.data import data_utils
 
         def _collate_fn(batch: List) -> dict:
             """
-            Collate function that transforms a list of numpy array or torch tensor representing a batch
-            into a dictionary that Espresso takes as input
+            Collate function that transforms a list of numpy array or torch tensor representing a batch into a
+            dictionary that Espresso takes as input.
             """
             # sort by seq length in descending order
             batch = sorted(batch, key=lambda t: t[0].size(0), reverse=True)
@@ -343,20 +336,25 @@ class PyTorchEspresso(SpeechRecognizerMixin, PyTorchEstimator):
                 eos_idx = self.dictionary.eos()
                 target = data_utils.collate_tokens(
                     [s[1] for s in batch],
-                    pad_idx, eos_idx, False, False,
+                    pad_idx,
+                    eos_idx,
+                    False,
+                    False,
                     pad_to_length=None,
                     pad_to_multiple=1,
                 )
                 prev_output_tokens = data_utils.collate_tokens(
                     [s[1] for s in batch],
-                    pad_idx, eos_idx, False, True,
+                    pad_idx,
+                    eos_idx,
+                    False,
+                    True,
                     pad_to_length=None,
                     pad_to_multiple=1,
                 )
                 target = target.long().to(self._device)
                 prev_output_tokens = prev_output_tokens.long().to(self._device)
-                ntokens = sum(s[1].ne(pad_idx).int().sum().item()
-                              for s in batch)
+                ntokens = sum(s[1].ne(pad_idx).int().sum().item() for s in batch)
 
             else:
                 target = None
@@ -368,9 +366,9 @@ class PyTorchEspresso(SpeechRecognizerMixin, PyTorchEstimator):
                 "net_input": {
                     "src_tokens": src_frames.to(self._device),
                     "src_lengths": src_lengths.to(self._device),
-                    "prev_output_tokens": prev_output_tokens
+                    "prev_output_tokens": prev_output_tokens,
                 },
-                "target": target
+                "target": target,
             }
 
             return batch_dict
@@ -384,8 +382,7 @@ class PyTorchEspresso(SpeechRecognizerMixin, PyTorchEstimator):
             else:
                 sp = self.sp.EncodeAsPieces(y[i])
                 sp_string = " ".join(sp)
-                target = self.dictionary.encode_line(
-                    sp_string, add_if_not_exist=False)  # target is a long tensor
+                target = self.dictionary.encode_line(sp_string, add_if_not_exist=False)  # target is a long tensor
 
             # Push the sequence to device
             if not tensor_input:
@@ -403,8 +400,7 @@ class PyTorchEspresso(SpeechRecognizerMixin, PyTorchEstimator):
             batch.append((x_i, target))
 
         # We must keep the order of the batch for later use as the following function will change its order
-        batch_idx = sorted(range(len(batch)),
-                           key=lambda i: batch[i][0].size(0), reverse=True)
+        batch_idx = sorted(range(len(batch)), key=lambda i: batch[i][0].size(0), reverse=True)
 
         # The collate function is important to convert input into model space
         batch_dict = _collate_fn(batch)
