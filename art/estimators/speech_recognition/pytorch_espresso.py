@@ -33,6 +33,7 @@ from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizer
 from art.utils import get_file
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     import torch
     from espresso.models import SpeechTransformerModel
 
@@ -53,12 +54,12 @@ class PyTorchEspresso(SpeechRecognizerMixin, PyTorchEstimator):
     | Paper link: https://arxiv.org/abs/1909.08723
     """
 
-    estimator_params = PyTorchEstimator.estimator_params + ["espresso_config_filepath", "verbose"]
+    estimator_params = PyTorchEstimator.estimator_params + ["espresso_config_filepath"]
 
     def __init__(
         self,
         espresso_config_filepath: Optional[str] = None,
-        pretrained_model: Optional[str] = None,
+        model: Optional[str] = None,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
@@ -68,8 +69,9 @@ class PyTorchEspresso(SpeechRecognizerMixin, PyTorchEstimator):
     ):
         """
         Initialization of an instance PyTorchEspresso
-        :param espresso_config_filepath: The path of the espresso config file (yaml) # TODO: the config file is not automatically generated in Espresso. It was manually created by us.
-        :param pretrain_model: The choice of pretrained model if a pretrained model is required.
+
+        :param espresso_config_filepath: The path of the espresso config file (yaml)
+        :param model: The choice of pretrained model if a pretrained model is required.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
@@ -120,7 +122,7 @@ class PyTorchEspresso(SpeechRecognizerMixin, PyTorchEstimator):
 
         # Load config/model
         if espresso_config_filepath is None:
-            if pretrained_model == "librispeech_transformer":
+            if model == "librispeech_transformer":
                 config_filename, config_url = (
                     "",
                     "",
@@ -155,7 +157,7 @@ class PyTorchEspresso(SpeechRecognizerMixin, PyTorchEstimator):
         with open(config_path) as file:
             esp_args_dict = yaml.load(file, Loader=yaml.FullLoader)
             esp_args = Namespace(**esp_args_dict)
-            if pretrained_model:
+            if model:
                 esp_args.path = model_path
                 esp_args.sentencepiece_model = sp_path
                 esp_args.dict = dict_path
@@ -181,8 +183,8 @@ class PyTorchEspresso(SpeechRecognizerMixin, PyTorchEstimator):
         self.generator = self.task.build_generator(self._models, self.esp_args)
         self.tokenizer = encoders.build_tokenizer(self.esp_args)
         self.bpe = encoders.build_bpe(self.esp_args)  # bpe encoder
-        self.sp = spm.SentencePieceProcessor()  # sentence piece model
-        self.sp.Load(self.esp_args.sentencepiece_model)
+        self.spp = spm.SentencePieceProcessor()  # sentence piece model
+        self.spp.Load(self.esp_args.sentencepiece_model)
 
         self.criterion = self.task.build_criterion(self.esp_args)
 
@@ -200,15 +202,15 @@ class PyTorchEspresso(SpeechRecognizerMixin, PyTorchEstimator):
         def get_symbols_to_strip_from_output(generator):
             if hasattr(generator, "symbols_to_strip_from_output"):
                 return generator.symbols_to_strip_from_output
-            else:
-                return {generator.eos, generator.pad}
+
+            return {generator.eos, generator.pad}
 
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Run prediction with batch processing
         decoded_output = []
-        result_output_sizes = np.zeros(x_preprocessed.shape[0], dtype=np.int)
+        # result_output_sizes = np.zeros(x_preprocessed.shape[0], dtype=np.int)
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
 
         for m in range(num_batch):
@@ -224,9 +226,9 @@ class PyTorchEspresso(SpeechRecognizerMixin, PyTorchEstimator):
 
             hypos = self.task.inference_step(self.generator, self._models, batch)
 
-            for i in range(len(hypos)):
+            for _, hypos_i in enumerate(hypos):
                 # Process top predictions
-                for j, hypo in enumerate(hypos[i][: self.esp_args.nbest]):
+                for _, hypo in enumerate(hypos_i[: self.esp_args.nbest]):
                     hypo_str = self.dictionary.string(
                         hypo["tokens"].int().cpu(),
                         bpe_symbol=None,
@@ -235,10 +237,10 @@ class PyTorchEspresso(SpeechRecognizerMixin, PyTorchEstimator):
                     detok_hypo_str = self.bpe.decode(hypo_str)
                     decoded_output.append(detok_hypo_str)
 
-        decoded_output = np.array(decoded_output)
-        decoded_output_ = decoded_output.copy()
-        decoded_output[batch_idx] = decoded_output_  # revert decoded output to its original order
-        return decoded_output
+        decoded_output_array = np.array(decoded_output)
+        decoded_output_copy = decoded_output_array.copy()
+        decoded_output_array[batch_idx] = decoded_output_copy  # revert decoded output to its original order
+        return decoded_output_array
 
     def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
@@ -258,15 +260,15 @@ class PyTorchEspresso(SpeechRecognizerMixin, PyTorchEstimator):
         self.set_batchnorm(train=False)
 
         # Transform data into the model input space
-        batch, batch_idx = self._transform_model_input(x=x_preprocessed, y=y_preprocessed, compute_gradient=True)
+        batch, _ = self._transform_model_input(x=x_preprocessed, y=y_preprocessed, compute_gradient=True)
 
-        loss, sample_size, log_output = self.criterion(self._model, batch)
+        loss, _, _ = self.criterion(self._model, batch)
         loss.backward()
 
         # Get results
         results = []
-        for i in range(len(x_preprocessed)):
-            results.append(x_preprocessed[i].grad.cpu().numpy().copy())
+        for _, x_i in enumerate(x_preprocessed):
+            results.append(x_i.grad.cpu().numpy().copy())
 
         results = np.array(results)
         results = self._apply_preprocessing_gradient(x, results)
@@ -295,7 +297,6 @@ class PyTorchEspresso(SpeechRecognizerMixin, PyTorchEstimator):
         x: Union[np.ndarray, "torch.Tensor"],
         y: Optional[np.ndarray] = None,
         compute_gradient: bool = False,
-        tensor_input: bool = False,
     ) -> Tuple[dict, List]:
         """
         Transform the user input space into the model input space.
@@ -306,7 +307,6 @@ class PyTorchEspresso(SpeechRecognizerMixin, PyTorchEstimator):
         :param y: Target values of shape (nb_samples). Each sample in `y` is a string and it may possess different
                   lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`.
         :param compute_gradient: Indicate whether to compute gradients for the input `x`.
-        :param tensor_input: Indicate whether input is tensor.
         :param real_lengths: Real lengths of original sequences.
         :return: A tuple of a dictionary of batch and a list representing the original order of the batch
         """
@@ -375,17 +375,17 @@ class PyTorchEspresso(SpeechRecognizerMixin, PyTorchEstimator):
 
         # We must process each sequence separately due to the diversity of their length
         batch = []
-        for i in range(len(x)):
+        for i in range(len(x)):  # pylint: disable=C0200
             # First process the target
             if y is None:
                 target = None
             else:
-                sp = self.sp.EncodeAsPieces(y[i])
-                sp_string = " ".join(sp)
+                eap = self.spp.EncodeAsPieces(y[i])
+                sp_string = " ".join(eap)
                 target = self.dictionary.encode_line(sp_string, add_if_not_exist=False)  # target is a long tensor
 
             # Push the sequence to device
-            if not tensor_input:
+            if isinstance(x[i], np.ndarray):
                 x[i] = x[i].astype(config.ART_NUMPY_DTYPE)
                 x[i] = torch.tensor(x[i]).to(self._device)
 
