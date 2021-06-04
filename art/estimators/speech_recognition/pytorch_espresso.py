@@ -29,7 +29,7 @@ import numpy as np
 
 from art import config
 from art.estimators.pytorch import PyTorchEstimator
-from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizerMixin
+from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizerMixin, PytorchSpeechRecognizerMixin
 from art.utils import get_file
 
 if TYPE_CHECKING:
@@ -46,7 +46,7 @@ logger = logging.getLogger(__name__)
 INT16MAX = 32767
 
 
-class PyTorchEspresso(SpeechRecognizerMixin, PyTorchEstimator):
+class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTorchEstimator):
     """
     This class implements a model-specific automatic speech recognizer using the end-to-end speech recognizer in
     Espresso.
@@ -139,6 +139,9 @@ class PyTorchEspresso(SpeechRecognizerMixin, PyTorchEstimator):
                     "",
                     "",
                 )
+            else:
+                raise ValueError("Model not recognised.")
+
             # Download files
             config_path = get_file(
                 filename=config_filename, path=config.ART_DATA_PATH, url=config_url, extract=False, verbose=self.verbose
@@ -406,6 +409,35 @@ class PyTorchEspresso(SpeechRecognizerMixin, PyTorchEstimator):
         batch_dict = _collate_fn(batch)
 
         return batch_dict, batch_idx
+
+    def compute_loss_and_decoded_output(
+        self, masked_adv_input: "torch.Tensor", original_output: np.ndarray, **kwargs
+    ) -> Tuple["torch.Tensor", np.ndarray]:
+        """
+        Compute loss function and decoded output.
+
+        :param masked_adv_input: The perturbed inputs.
+        :param original_output: Target values of shape (nb_samples). Each sample in `original_output` is a string and
+                                it may possess different lengths. A possible example of `original_output` could be:
+                                `original_output = np.array(['SIXTY ONE', 'HELLO'])`.
+        :return: The loss and the decoded output.
+        """
+        raise NotImplementedError
+
+    def to_training_mode(self) -> None:
+        """
+        Put the estimator in the training mode.
+        """
+        raise NotImplementedError
+
+    @property
+    def sample_rate(self) -> int:
+        """
+        Get the sampling rate.
+
+        :return: The audio sampling rate.
+        """
+        raise NotImplementedError
 
     @property
     def input_shape(self) -> Tuple[int, ...]:
