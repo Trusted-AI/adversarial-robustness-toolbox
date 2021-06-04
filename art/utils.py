@@ -21,21 +21,21 @@ Module providing convenience functions.
 # pylint: disable=C0302
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from functools import wraps
-from inspect import signature
 import logging
 import math
 import os
 import shutil
 import sys
 import tarfile
-from typing import Callable, List, Optional, Tuple, Union, TYPE_CHECKING
 import warnings
 import zipfile
+from functools import wraps
+from inspect import signature
+from typing import TYPE_CHECKING, Callable, List, Optional, Tuple, Union
 
 import numpy as np
-from scipy.special import gammainc  # pylint: disable=E0611
 import six
+from scipy.special import gammainc  # pylint: disable=E0611
 from tqdm.auto import tqdm
 
 from art import config
@@ -64,15 +64,15 @@ if TYPE_CHECKING:
         ]
     ]
 
-    from art.estimators.classification.classifier import (
-        Classifier,
-        ClassifierLossGradients,
-        ClassifierClassLossGradients,
-        ClassifierNeuralNetwork,
-        ClassifierDecisionTree,
-    )
     from art.estimators.classification.blackbox import BlackBoxClassifier
     from art.estimators.classification.catboost import CatBoostARTClassifier
+    from art.estimators.classification.classifier import (
+        Classifier,
+        ClassifierClassLossGradients,
+        ClassifierDecisionTree,
+        ClassifierLossGradients,
+        ClassifierNeuralNetwork,
+    )
     from art.estimators.classification.detector_classifier import DetectorClassifier
     from art.estimators.classification.ensemble import EnsembleClassifier
     from art.estimators.classification.GPy import GPyGaussianProcessClassifier
@@ -81,25 +81,24 @@ if TYPE_CHECKING:
     from art.estimators.classification.mxnet import MXClassifier
     from art.estimators.classification.pytorch import PyTorchClassifier
     from art.estimators.classification.scikitlearn import (
+        ScikitlearnAdaBoostClassifier,
+        ScikitlearnBaggingClassifier,
         ScikitlearnClassifier,
         ScikitlearnDecisionTreeClassifier,
         ScikitlearnDecisionTreeRegressor,
         ScikitlearnExtraTreeClassifier,
-        ScikitlearnAdaBoostClassifier,
-        ScikitlearnBaggingClassifier,
         ScikitlearnExtraTreesClassifier,
         ScikitlearnGradientBoostingClassifier,
-        ScikitlearnRandomForestClassifier,
         ScikitlearnLogisticRegression,
+        ScikitlearnRandomForestClassifier,
         ScikitlearnSVC,
     )
     from art.estimators.classification.tensorflow import TensorFlowClassifier, TensorFlowV2Classifier
     from art.estimators.classification.xgboost import XGBoostClassifier
-
     from art.estimators.object_detection.object_detector import ObjectDetector
     from art.estimators.object_detection.pytorch_faster_rcnn import PyTorchFasterRCNN
     from art.estimators.object_detection.tensorflow_faster_rcnn import TensorFlowFasterRCNN
-
+    from art.estimators.pytorch import PyTorchEstimator
     from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
     from art.estimators.speech_recognition.tensorflow_lingvo import TensorFlowLingvoASR
 
@@ -177,6 +176,13 @@ if TYPE_CHECKING:
         TensorFlowV2Classifier,
         XGBoostClassifier,
         CLASSIFIER_NEURALNETWORK_TYPE,
+    ]
+
+    PYTORCH_ESTIMATOR_TYPE = Union[  # pylint: disable=C0103
+        PyTorchClassifier,
+        PyTorchDeepSpeech,
+        PyTorchEstimator,
+        PyTorchFasterRCNN,
     ]
 
     OBJECT_DETECTOR_TYPE = Union[  # pylint: disable=C0103
@@ -1085,12 +1091,12 @@ def get_file(filename: str, url: str, path: Optional[str] = None, extract: bool 
         error_msg = "URL fetch failure on {}: {} -- {}"
         try:
             try:
-                from six.moves.urllib.error import HTTPError, URLError
-                from six.moves.urllib.request import urlretrieve
-
                 # The following two lines should prevent occasionally occurring
                 # [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed (_ssl.c:847)
                 import ssl
+
+                from six.moves.urllib.error import HTTPError, URLError
+                from six.moves.urllib.request import urlretrieve
 
                 ssl._create_default_https_context = ssl._create_unverified_context  # pylint: disable=W0212
 
@@ -1233,8 +1239,7 @@ def performance_diff(
     :return: The difference in performance performance(model1) - performance(model2).
     :raises `ValueError`: If an unsupported performance function is requested.
     """
-    from sklearn.metrics import accuracy_score
-    from sklearn.metrics import f1_score
+    from sklearn.metrics import accuracy_score, f1_score
 
     model1_labels = model1.predict(test_data)
     model2_labels = model2.predict(test_data)

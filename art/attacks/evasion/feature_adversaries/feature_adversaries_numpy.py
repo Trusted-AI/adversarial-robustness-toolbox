@@ -21,7 +21,7 @@ This module implements the Feature Adversaries attack.
 | Paper link: https://arxiv.org/abs/1511.05122
 """
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 
@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class FeatureAdversaries(EvasionAttack):
+class FeatureAdversariesNumpy(EvasionAttack):
     """
     This class represent a Feature Adversaries evasion attack.
 
@@ -69,7 +69,6 @@ class FeatureAdversaries(EvasionAttack):
         self.delta = delta
         self.layer = layer
         self.batch_size = batch_size
-        self.norm = np.inf
         self._check_params()
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
@@ -127,8 +126,15 @@ class FeatureAdversaries(EvasionAttack):
         :raises KeyError: The argument {} in kwargs is not allowed as option for `scipy.optimize.minimize` using
                           `method="L-BFGS-B".`
         """
-        from scipy.optimize import minimize, Bounds
         from scipy.linalg import norm
+        from scipy.optimize import Bounds, minimize
+
+        if y is None:
+            raise ValueError("The value of guide `y` cannot be None. Please provide a `np.ndarray` of guide inputs.")
+        if x.shape != y.shape:
+            raise ValueError("The shape of source `x` and guide `y` must be of same shape.")
+        if x.shape[1:] != self.estimator.input_shape:
+            raise ValueError("Source and guide inputs must match `input_shape` of estimator.")
 
         l_b = x.flatten() - self.delta
         l_b[l_b < self.estimator.clip_values[0]] = self.estimator.clip_values[0]
@@ -145,6 +151,7 @@ class FeatureAdversaries(EvasionAttack):
         )
 
         def func(x_i):
+            x_i = x_i.astype(x.dtype)
             source_representation = self.estimator.get_activations(
                 x=x_i.reshape(-1, *self.estimator.input_shape),
                 layer=self.layer,
@@ -189,9 +196,14 @@ class FeatureAdversaries(EvasionAttack):
         x_adv = res.x
         logger.info(res)
 
-        return x_adv.reshape(-1, *self.estimator.input_shape)
+        return x_adv.reshape(-1, *self.estimator.input_shape).astype(x.dtype)
 
     def _check_params(self) -> None:
+        """
+        Apply attack-specific checks.
+        """
+        if self.delta is None:
+            raise ValueError("The delta cannot be None.")
         if self.delta is not None and self.delta <= 0:
             raise ValueError("The maximum deviation `delta` has to be positive.")
 
