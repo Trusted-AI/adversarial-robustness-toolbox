@@ -21,6 +21,7 @@ fairseq.
 
 | Paper link: https://arxiv.org/abs/1909.08723
 """
+import ast
 from argparse import Namespace
 import logging
 from typing import List, Optional, Tuple, TYPE_CHECKING, Union
@@ -173,7 +174,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
         # load_model_ensemble
         self._models, self._model_args = checkpoint_utils.load_model_ensemble(
             utils.split_paths(self.esp_args.path),
-            arg_overrides=eval(self.esp_args.model_overrides),
+            arg_overrides=ast.literal_eval(self.esp_args.model_overrides),
             task=self.task,
             suffix=getattr(self.esp_args, "checkpoint_suffix", ""),
         )
@@ -378,7 +379,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
 
         # We must process each sequence separately due to the diversity of their length
         batch = []
-        for i in range(len(x)):  # pylint: disable=C0200
+        for i, x_i in enumerate(x):
             # First process the target
             if y is None:
                 target = None
@@ -388,16 +389,16 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
                 target = self.dictionary.encode_line(sp_string, add_if_not_exist=False)  # target is a long tensor
 
             # Push the sequence to device
-            if isinstance(x[i], np.ndarray):
-                x[i] = x[i].astype(config.ART_NUMPY_DTYPE)
-                x[i] = torch.tensor(x[i]).to(self._device)
+            if isinstance(x_i, np.ndarray):
+                x_i = x_i.astype(config.ART_NUMPY_DTYPE)
+                x_i = torch.tensor(x_i).to(self._device)
 
             # Set gradient computation permission
             if compute_gradient:
-                x[i].requires_grad = True
+                x_i.requires_grad = True
 
             # Re-scale the input audio to the magnitude used to train Espresso model
-            x_i = x[i] * 32767
+            x_i = x_i * 32767
 
             # Smoothing comes after WaveGAN but before the quantization
             batch.append((x_i, target))
