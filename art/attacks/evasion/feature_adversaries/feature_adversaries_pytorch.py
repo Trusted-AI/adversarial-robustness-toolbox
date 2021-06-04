@@ -134,7 +134,8 @@ class FeatureAdversariesPyTorch(EvasionAttack):
         if self.random_start:
             # Starting at a uniformly random point
             adv = adv + torch.empty_like(adv).uniform_(-self.delta, self.delta)
-            adv = torch.clamp(adv, *self.estimator.clip_values).detach()
+            if self.estimator.clip_values is not None:
+                adv = torch.clamp(adv, *self.estimator.clip_values)
 
         if self.optimizer is None:
             # run a plain-vanilla PGD
@@ -145,13 +146,12 @@ class FeatureAdversariesPyTorch(EvasionAttack):
                 loss.backward()
 
                 # pgd step
-                perturbation = -adv.grad.data.sign() * self.step_size
-                adv = adv + perturbation
-                perturbation = torch.clamp(adv.data - x.data, -self.delta, self.delta)
-                adv = torch.autograd.Variable(
-                    torch.clamp(x.data + perturbation, self.estimator.clip_values[0], self.estimator.clip_values[1]),
-                    requires_grad=True,
-                )
+                adv.data = adv - adv.grad.detach().sign() * self.step_size
+                perturbation = torch.clamp(adv.detach() - x.detach(), -self.delta, self.delta)
+                adv.data = x.detach() + perturbation
+                if self.estimator.clip_values is not None:
+                    adv.data = torch.clamp(adv.detach(), *self.estimator.clip_values)
+                adv.grad.zero_()
         else:
             # optimize soft constraint problem with chosen optimizer
             opt = self.optimizer(params=[adv], **self._optimizer_kwargs)  # type: ignore
@@ -159,7 +159,7 @@ class FeatureAdversariesPyTorch(EvasionAttack):
             for _ in trange(self.max_iter, desc="Feature Adversaries PyTorch", disable=not self.verbose):
                 adv.requires_grad = True
                 # clip adversarial within L-Inf delta-ball
-                adv.data = x.detach() + torch.clamp(adv.detach() - x.detach(), -self.delta, self.delta).detach()
+                adv.data = x.detach() + torch.clamp(adv.detach() - x.detach(), -self.delta, self.delta)
 
                 def closure():
                     if torch.is_grad_enabled():
@@ -172,7 +172,7 @@ class FeatureAdversariesPyTorch(EvasionAttack):
                 opt.step(closure)
 
                 if self.estimator.clip_values is not None:
-                    adv.data = torch.clamp(adv.detach(), *self.estimator.clip_values).detach()
+                    adv.data = torch.clamp(adv.detach(), *self.estimator.clip_values)
         return adv.detach().cpu()
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
