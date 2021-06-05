@@ -125,20 +125,24 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
         if espresso_config_filepath is None:
             if model == "librispeech_transformer":
                 config_filename, config_url = (
-                    "",
-                    "",
+                    "libri960_transformer.yaml",
+                    "https://github.com/YiwenShaoStephen/espresso/releases/download/v0.1-alpha/"
+                    "libri960_transformer.yaml",
                 )
                 model_filename, model_url = (
-                    "",
-                    "",
+                    "checkpoint_best.pt",
+                    "https://github.com/YiwenShaoStephen/espresso/releases/download/v0.1-alpha/"
+                    "checkpoint_best.pt",
                 )
                 sp_filename, sp_url = (
-                    "",
-                    "",
+                    "train_960_unigram5000.model",
+                    "https://github.com/YiwenShaoStephen/espresso/releases/download/v0.1-alpha/"
+                    "train_960_unigram5000.model",
                 )
                 dict_filename, dict_url = (
-                    "",
-                    "",
+                    "train_960_unigram5000_units.txt",
+                    "https://github.com/YiwenShaoStephen/espresso/releases/download/v0.1-alpha/"
+                    "train_960_unigram5000_units.txt",
                 )
             else:
                 raise ValueError("Model not recognised.")
@@ -161,7 +165,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
         with open(config_path) as file:
             esp_args_dict = yaml.load(file, Loader=yaml.FullLoader)
             esp_args = Namespace(**esp_args_dict)
-            if model:
+            if espresso_config_filepath is None: # overwrite paths in downloaded config with the actual ones
                 esp_args.path = model_path
                 esp_args.sentencepiece_model = sp_path
                 esp_args.dict = dict_path
