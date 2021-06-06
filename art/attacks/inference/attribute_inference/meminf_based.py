@@ -28,6 +28,7 @@ import numpy as np
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.attack import AttributeInferenceAttack, MembershipInferenceAttack
+from art.exceptions import EstimatorError
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
@@ -61,10 +62,8 @@ class AttributeInferenceMembership(AttributeInferenceAttack):
                                case of a one-hot encoded feature.
         """
         super().__init__(estimator=classifier, attack_feature=attack_feature)
-        if self._estimator_requirements:
-            self._estimator_requirements = self._estimator_requirements + membership_attack._estimator_requirements
-        else:
-            self._estimator_requirements = membership_attack._estimator_requirements
+        if not all(t in type(classifier).__mro__ for t in membership_attack.estimator_requirements):
+            raise EstimatorError(membership_attack, membership_attack.estimator_requirements, classifier)
 
         self.membership_attack = membership_attack
 
@@ -91,6 +90,8 @@ class AttributeInferenceMembership(AttributeInferenceAttack):
         if "values" not in kwargs.keys():
             raise ValueError("Missing parameter `values`.")
         values: Optional[List] = kwargs.get("values")
+        if not values:
+            raise ValueError("`values` cannot be None or empty")
 
         if y is not None:
             if y.shape[0] != x.shape[0]:
