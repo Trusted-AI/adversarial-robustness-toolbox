@@ -101,6 +101,7 @@ if TYPE_CHECKING:
     from art.estimators.pytorch import PyTorchEstimator
     from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
     from art.estimators.speech_recognition.tensorflow_lingvo import TensorFlowLingvoASR
+    from art.estimators.tensorflow import TensorFlowV2Estimator
 
     CLASSIFIER_LOSS_GRADIENTS_TYPE = Union[  # pylint: disable=C0103
         ClassifierLossGradients,
@@ -194,6 +195,11 @@ if TYPE_CHECKING:
     SPEECH_RECOGNIZER_TYPE = Union[  # pylint: disable=C0103
         PyTorchDeepSpeech,
         TensorFlowLingvoASR,
+    ]
+
+    TENSORFLOWV2_ESTIMATOR_TYPE = Union[  # pylint: disable=C0103
+        TensorFlowV2Classifier,
+        TensorFlowV2Estimator,
     ]
 
 # --------------------------------------------------------------------------------------------------------- DEPRECATION

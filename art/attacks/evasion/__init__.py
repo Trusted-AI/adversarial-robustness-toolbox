@@ -20,6 +20,7 @@ from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.attacks.evasion.frame_saliency import FrameSaliencyAttack
 from art.attacks.evasion.feature_adversaries.feature_adversaries_numpy import FeatureAdversariesNumpy
 from art.attacks.evasion.feature_adversaries.feature_adversaries_pytorch import FeatureAdversariesPyTorch
+from art.attacks.evasion.feature_adversaries.feature_adversaries_tensorflow import FeatureAdversariesTensorFlowV2
 from art.attacks.evasion.geometric_decision_based_attack import GeoDA
 from art.attacks.evasion.hclu import HighConfidenceLowUncertainty
 from art.attacks.evasion.hop_skip_jump import HopSkipJump
