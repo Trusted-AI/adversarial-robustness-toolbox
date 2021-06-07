@@ -29,7 +29,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 from itertools import product
-from typing import List, Optional, Tuple, Union, TYPE_CHECKING
+from typing import List, Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 
@@ -99,6 +99,7 @@ class PixelThreshold(EvasionAttack):
         self._targeted = targeted
         self.verbose = verbose
         self.verbose_es = verbose_es
+        self.rescale = False
         PixelThreshold._check_params(self)
 
         if self.estimator.channels_first:
@@ -150,13 +151,21 @@ class PixelThreshold(EvasionAttack):
 
         if self.th is None:
             logger.info(
-                "Performing minimal perturbation Attack. This takes substainally long time to process. For sanity check, pass th=10 to the Attack instance."
+                "Performing minimal perturbation Attack. \
+                This takes substainally long time to process. \
+                For sanity check, pass th=10 to the Attack instance."
             )
 
+        # NOTE: Pixel and Threshold Attacks are well defined for unprocessed images where the pixel values are,
+        #       8-Bit color i.e., the pixel values are np.uint8 in range [0, 255].
+
+        # TO-DO: Better checking of input image.
+        #        All other cases not tested needs the images to be rescaled to [0, 255].
         if np.max(x) <= 1:
-            raise ValueError(
-                "Processing Input in the float range of Pixels, Original Attacks were on Un-Processed Images and performance of evolutionary strategy substainally decreases if the input is in the float domain."
-            )
+            self.rescale = True
+            x = x * 255
+
+        x = x.astype(np.uint8)
 
         adv_x_best = []
         self.adv_th = []
@@ -200,6 +209,10 @@ class PixelThreshold(EvasionAttack):
         if y is not None:
             y = to_categorical(y, self.estimator.nb_classes)
 
+        if self.rescale:
+            x = x.astype(np.float32) / 255.0
+            adv_x_best_array = adv_x_best_array.astype(np.float32) / 255.0
+
         logger.info(
             "Success rate of Attack: %.2f%%",
             100 * compute_success(self.estimator, x, y, adv_x_best_array, self.targeted, 1),
@@ -240,7 +253,12 @@ class PixelThreshold(EvasionAttack):
         """
         Checks whether the given perturbation `adv_x` for the image `img` is successful.
         """
-        predicted_class = np.argmax(self.estimator.predict(self._perturb_image(adv_x, x))[0])
+        adv = self._perturb_image(adv_x, x)
+
+        if self.rescale:
+            adv = adv.astype(np.float32) / 255.0
+
+        predicted_class = np.argmax(self.estimator.predict(adv)[0])
         return bool(
             (self.targeted and predicted_class == target_class)
             or (not self.targeted and predicted_class != target_class)
@@ -254,7 +272,12 @@ class PixelThreshold(EvasionAttack):
         bounds, initial = self._get_bounds(image, limit)
 
         def predict_fn(x):
-            predictions = self.estimator.predict(self._perturb_image(x, image))[:, target_class]
+            adv = self._perturb_image(x, image)
+
+            if self.rescale:
+                adv = adv.astype(np.float32) / 255.0
+
+            predictions = self.estimator.predict(adv)[:, target_class]
             return predictions if not self.targeted else 1 - predictions
 
         def callback_fn(x, convergence=None):  # pylint: disable=R1710,W0613
