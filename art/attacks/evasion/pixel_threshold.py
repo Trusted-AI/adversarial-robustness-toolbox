@@ -162,7 +162,7 @@ class PixelThreshold(EvasionAttack):
         #        All other cases not tested needs the images to be rescaled to [0, 255].
         if self.estimator.clip_values[1] != 255.0:
             self.rescale = True
-            x = x * 255
+            x = x / self.estimator.clip_values[1] * 255.0
 
         x = x.astype(np.uint8)
 
