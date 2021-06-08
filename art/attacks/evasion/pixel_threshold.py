@@ -93,8 +93,8 @@ class PixelThreshold(EvasionAttack):
 
         self._project = True
         self.type_attack = -1
-        self.th = th
-        self.es = es
+        self.th = th  # pylint: disable=C0103
+        self.es = es  # pylint: disable=C0103
         self.max_iter = max_iter
         self._targeted = targeted
         self.verbose = verbose
