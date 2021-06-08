@@ -60,6 +60,7 @@ logger = logging.getLogger(__name__)
 class PixelThreshold(EvasionAttack):
     """
     These attacks were originally implemented by Vargas et al. (2019) & Su et al.(2019).
+    
     | One Pixel Attack Paper link:
         https://ieeexplore.ieee.org/abstract/document/8601309/citations#citations
         (arXiv link: https://arxiv.org/pdf/1710.08864.pdf)
@@ -343,6 +344,7 @@ class PixelAttack(PixelThreshold):
     """
     This attack was originally implemented by Vargas et al. (2019). It is generalisation of One Pixel Attack originally
     implemented by Su et al. (2019).
+    
     | One Pixel Attack Paper link:
         https://ieeexplore.ieee.org/abstract/document/8601309/citations#citations
         (arXiv link: https://arxiv.org/pdf/1710.08864.pdf)
@@ -426,6 +428,7 @@ class PixelAttack(PixelThreshold):
 class ThresholdAttack(PixelThreshold):
     """
     This attack was originally implemented by Vargas et al. (2019).
+    
     | Paper link:
         https://arxiv.org/abs/1906.06026
     """
