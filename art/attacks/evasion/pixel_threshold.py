@@ -209,8 +209,8 @@ class PixelThreshold(EvasionAttack):
             y = to_categorical(y, self.estimator.nb_classes)
 
         if self.rescale:
-            x = x.astype(np.float32) / 255.0
-            adv_x_best_array = adv_x_best_array.astype(np.float32) / 255.0
+            x = x.astype(np.float32) / 255.0 * self.estimator.clip_values[1]
+            adv_x_best_array = adv_x_best_array.astype(np.float32) / 255.0 * self.estimator.clip_values[1]
 
         logger.info(
             "Success rate of Attack: %.2f%%",
