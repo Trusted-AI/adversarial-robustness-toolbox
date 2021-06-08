@@ -83,6 +83,7 @@ class PixelThreshold(EvasionAttack):
     ) -> None:
         """
         Create a :class:`.PixelThreshold` instance.
+        
         :param classifier: A trained classifier.
         :param th: threshold value of the Pixel/ Threshold attack. th=None indicates finding a minimum threshold.
         :param es: Indicates whether the attack uses CMAES (0) or DE (1) as Evolutionary Strategy.
@@ -131,6 +132,7 @@ class PixelThreshold(EvasionAttack):
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
+        
         :param x: An array with the original inputs.
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
@@ -363,6 +365,7 @@ class PixelAttack(PixelThreshold):
     ) -> None:
         """
         Create a :class:`.PixelAttack` instance.
+        
         :param classifier: A trained classifier.
         :param th: threshold value of the Pixel/ Threshold attack. th=None indicates finding a minimum threshold.
         :param es: Indicates whether the attack uses CMAES (0) or DE (1) as Evolutionary Strategy.
