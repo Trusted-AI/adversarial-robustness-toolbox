@@ -274,7 +274,7 @@ class PixelThreshold(EvasionAttack):
             adv = self._perturb_image(x, image)
 
             if self.rescale:
-                adv = adv.astype(np.float32) / 255.0
+                adv = adv.astype(np.float32) / 255.0 * self.estimator.clip_values[1]
 
             predictions = self.estimator.predict(adv)[:, target_class]
             return predictions if not self.targeted else 1 - predictions
