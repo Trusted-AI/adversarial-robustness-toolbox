@@ -281,7 +281,10 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                 y_index = np.argmax(y, axis=1).astype(np.float32)
                 y_index = np.expand_dims(y_index, axis=1)
                 return y_index
-
+        else:
+            if isinstance(y, torch.Tensor):
+                return y.float()
+            return y.astype(np.float32)
         return y
 
     def predict(  # pylint: disable=W0221
@@ -322,7 +325,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             if len(output.shape) == 1:
                 output = np.expand_dims(output.detach().cpu().numpy(), axis=1).astype(np.float32)
             else:
-                output = output.detach().cpu().numpy()
+                output = output.detach().cpu().numpy().astype(np.float32)
             results_list.append(output)
 
         results = np.vstack(results_list)
@@ -397,6 +400,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                 model_outputs = self._model(i_batch)
 
                 # Form the loss function
+                print(model_outputs[-1].dtype)
+                print(o_batch.dtype)
                 loss = self._loss(model_outputs[-1], o_batch)  # lgtm [py/call-to-non-callable]
 
                 # Do training
