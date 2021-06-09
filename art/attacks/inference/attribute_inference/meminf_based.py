@@ -66,7 +66,6 @@ class AttributeInferenceMembership(AttributeInferenceAttack):
             raise EstimatorError(membership_attack, membership_attack.estimator_requirements, classifier)
 
         self.membership_attack = membership_attack
-
         self._check_params()
 
     def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
