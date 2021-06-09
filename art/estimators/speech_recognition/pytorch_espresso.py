@@ -88,7 +88,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
         """
         import torch  # lgtm [py/repeated-import]
         import yaml
-        from fairseq import checkpoint_utils, tasks, utils
+        from fairseq import checkpoint_utils, utils
         from fairseq.data import encoders
         import sentencepiece as spm
 
@@ -132,8 +132,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
                 )
                 model_filename, model_url = (
                     "checkpoint_best.pt",
-                    "https://github.com/YiwenShaoStephen/espresso/releases/download/v0.1-alpha/"
-                    "checkpoint_best.pt",
+                    "https://github.com/YiwenShaoStephen/espresso/releases/download/v0.1-alpha/checkpoint_best.pt",
                 )
                 sp_filename, sp_url = (
                     "train_960_unigram5000.model",
