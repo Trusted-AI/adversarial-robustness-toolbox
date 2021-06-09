@@ -375,14 +375,6 @@ class AttributeInferenceAttack(InferenceAttack):
         """
         raise NotImplementedError
 
-    def set_params(self, **kwargs) -> None:
-        """
-        Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
-        """
-        # Save attack-specific parameters
-        super().set_params(**kwargs)
-        self._check_params()
-
 
 class MembershipInferenceAttack(InferenceAttack):
     """
