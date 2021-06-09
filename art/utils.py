@@ -1097,12 +1097,12 @@ def get_file(filename: str, url: str, path: Optional[str] = None, extract: bool 
         error_msg = "URL fetch failure on {}: {} -- {}"
         try:
             try:
+                from six.moves.urllib.error import HTTPError, URLError
+                from six.moves.urllib.request import urlretrieve
+
                 # The following two lines should prevent occasionally occurring
                 # [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed (_ssl.c:847)
                 import ssl
-
-                from six.moves.urllib.error import HTTPError, URLError
-                from six.moves.urllib.request import urlretrieve
 
                 ssl._create_default_https_context = ssl._create_unverified_context  # pylint: disable=W0212
 
