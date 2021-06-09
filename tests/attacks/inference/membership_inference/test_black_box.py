@@ -41,7 +41,7 @@ def test_black_box_image(art_warning, get_default_mnist_subset, image_dl_estimat
     try:
         classifier = image_dl_estimator_for_attack(MembershipInferenceBlackBox)
         attack = MembershipInferenceBlackBox(classifier)
-        backend_check_membership_accuracy(attack, get_default_mnist_subset, attack_train_ratio, 0.03)
+        backend_check_membership_accuracy(attack, get_default_mnist_subset, attack_train_ratio, 0.25)
     except ARTTestException as e:
         art_warning(e)
 
@@ -51,7 +51,7 @@ def test_black_box_tabular(art_warning, model_type, tabular_dl_estimator_for_att
     try:
         classifier = tabular_dl_estimator_for_attack(MembershipInferenceBlackBox)
         attack = MembershipInferenceBlackBox(classifier, attack_model_type=model_type)
-        backend_check_membership_accuracy(attack, get_iris_dataset, attack_train_ratio, 0.08)
+        backend_check_membership_accuracy(attack, get_iris_dataset, attack_train_ratio, 0.25)
     except ARTTestException as e:
         art_warning(e)
 
@@ -83,7 +83,7 @@ def test_black_box_keras_loss(art_warning, get_iris_dataset):
 
         classifier = KerasClassifier(model)
         attack = MembershipInferenceBlackBox(classifier, input_type="loss")
-        backend_check_membership_accuracy(attack, get_iris_dataset, attack_train_ratio, 0.15)
+        backend_check_membership_accuracy(attack, get_iris_dataset, attack_train_ratio, 0.25)
 
         model2 = keras.models.Sequential()
         model2.add(keras.layers.Dense(12, input_dim=4, activation="relu"))
@@ -102,7 +102,7 @@ def test_black_box_tabular_rf(art_warning, tabular_dl_estimator_for_attack, get_
     try:
         classifier = tabular_dl_estimator_for_attack(MembershipInferenceBlackBox)
         attack = MembershipInferenceBlackBox(classifier, attack_model_type="rf")
-        backend_check_membership_accuracy(attack, get_iris_dataset, attack_train_ratio, 0.1)
+        backend_check_membership_accuracy(attack, get_iris_dataset, attack_train_ratio, 0.2)
     except ARTTestException as e:
         art_warning(e)
 
@@ -112,7 +112,7 @@ def test_black_box_tabular_gb(art_warning, tabular_dl_estimator_for_attack, get_
         classifier = tabular_dl_estimator_for_attack(MembershipInferenceBlackBox)
         attack = MembershipInferenceBlackBox(classifier, attack_model_type="gb")
         # train attack model using only attack_train_ratio of data
-        backend_check_membership_accuracy(attack, get_iris_dataset, attack_train_ratio, 0.05)
+        backend_check_membership_accuracy(attack, get_iris_dataset, attack_train_ratio, 0.15)
     except ARTTestException as e:
         art_warning(e)
 
@@ -124,7 +124,7 @@ def test_black_box_with_model(art_warning, tabular_dl_estimator_for_attack, esti
         attack_model = estimator_for_attack(num_features=2 * num_classes_iris)
         print(type(attack_model).__name__)
         attack = MembershipInferenceBlackBox(classifier, attack_model=attack_model)
-        backend_check_membership_accuracy(attack, get_iris_dataset, attack_train_ratio, 0.03)
+        backend_check_membership_accuracy(attack, get_iris_dataset, attack_train_ratio, 0.15)
     except ARTTestException as e:
         art_warning(e)
 

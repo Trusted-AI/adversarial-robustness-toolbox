@@ -189,8 +189,8 @@ def test_meminf_rule_based(art_warning, decision_tree_estimator, get_iris_datase
         # check accuracy
         train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
         test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
-        assert 0.3 <= train_acc
-        assert 0.3 <= test_acc
+        assert 0.2 <= train_acc
+        assert 0.2 <= test_acc
 
     except ARTTestException as e:
         art_warning(e)
