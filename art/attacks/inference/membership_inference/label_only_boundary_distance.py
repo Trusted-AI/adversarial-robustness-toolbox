@@ -25,7 +25,7 @@ from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 
-from art.attacks.attack import InferenceAttack
+from art.attacks.attack import MembershipInferenceAttack
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import check_and_transform_label_format
@@ -36,14 +36,14 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class LabelOnlyDecisionBoundary(InferenceAttack):
+class LabelOnlyDecisionBoundary(MembershipInferenceAttack):
     """
     Implementation of Label-Only Inference Attack based on Decision Boundary.
 
     | Paper link: https://arxiv.org/abs/2007.14321
     """
 
-    attack_params = InferenceAttack.attack_params + [
+    attack_params = MembershipInferenceAttack.attack_params + [
         "distance_threshold_tau",
     ]
     _estimator_requirements = (BaseEstimator, ClassifierMixin)
@@ -58,6 +58,7 @@ class LabelOnlyDecisionBoundary(InferenceAttack):
         """
         super().__init__(estimator=estimator)
         self.distance_threshold_tau = distance_threshold_tau
+        self.threshold_bins: list = []
         self._check_params()
 
     def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
@@ -66,6 +67,8 @@ class LabelOnlyDecisionBoundary(InferenceAttack):
 
         :param x: Input data.
         :param y: True labels for `x`.
+        :param probabilities: a boolean indicating whether to return the predicted probabilities per class, or just
+                              the predicted class
 
         :Keyword Arguments for HopSkipJump:
             * *norm*: Order of the norm. Possible values: "inf", np.inf or 2.
@@ -75,7 +78,8 @@ class LabelOnlyDecisionBoundary(InferenceAttack):
             * *init_size*: Maximum number of trials for initial generation of adversarial examples.
             * *verbose*: Show progress bars.
 
-        :return: An array holding the inferred membership status, 1 indicates a member and 0 indicates non-member.
+        :return: An array holding the inferred membership status, 1 indicates a member and 0 indicates non-member,
+                 or class probabilities.
         """
         from art.attacks.evasion.hop_skip_jump import HopSkipJump
 
@@ -88,6 +92,12 @@ class LabelOnlyDecisionBoundary(InferenceAttack):
                 "`distance_threshold_tau` or run method `calibrate_distance_threshold` on known training and test"
                 "dataset."
             )
+
+        if "probabilities" in kwargs.keys():
+            probabilities = kwargs.get("probabilities")
+            del kwargs["probabilities"]
+        else:
+            probabilities = False
 
         if "classifier" in kwargs:
             raise ValueError("Keyword `classifier` in kwargs is not supported.")
@@ -105,10 +115,20 @@ class LabelOnlyDecisionBoundary(InferenceAttack):
         y_pred = self.estimator.predict(x=x)
 
         distance[np.argmax(y_pred, axis=1) != np.argmax(y, axis=1)] = 0
-
-        is_member = np.where(distance > self.distance_threshold_tau, 1, 0)
-
-        return is_member
+        predicted_class = np.where(distance > self.distance_threshold_tau, 1, 0)
+        if probabilities:
+            prob_1 = np.zeros_like(distance)
+            if self.threshold_bins:
+                # bin accuracy is the probability of being a member
+                for t_bin in self.threshold_bins:
+                    prob_1[distance > t_bin[0]] = t_bin[1]
+            else:
+                # use sigmoid on distance from threshold
+                dist_threshold = distance - self.distance_threshold_tau
+                prob_1 = 1 / (1 + np.exp(-dist_threshold))
+            prob_0 = np.ones_like(prob_1) - prob_1
+            return np.stack((prob_0, prob_1), axis=1)
+        return predicted_class
 
     def calibrate_distance_threshold(
         self, x_train: np.ndarray, y_train: np.ndarray, x_test: np.ndarray, y_test: np.ndarray, **kwargs
@@ -159,18 +179,19 @@ class LabelOnlyDecisionBoundary(InferenceAttack):
 
         acc_max = 0.0
         distance_threshold_tau = 0.0
-
+        self.threshold_bins = []
         for i_tau in range(1, num_increments):
-
+            # searching for threshold that yields the best accuracy in separating between members and non-members
             is_member_train = np.where(distance_train > i_tau * tau_increment, 1, 0)
             is_member_test = np.where(distance_test > i_tau * tau_increment, 1, 0)
 
             acc = (np.sum(is_member_train) + (is_member_test.shape[0] - np.sum(is_member_test))) / (
                 is_member_train.shape[0] + is_member_test.shape[0]
             )
-
+            new_threshold_tau = i_tau * tau_increment
+            self.threshold_bins.append((new_threshold_tau, acc))
             if acc > acc_max:
-                distance_threshold_tau = i_tau * tau_increment
+                distance_threshold_tau = new_threshold_tau
                 acc_max = acc
 
         self.distance_threshold_tau = distance_threshold_tau
