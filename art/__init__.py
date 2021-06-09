@@ -7,8 +7,9 @@ import logging.config
 from art import attacks
 from art import defences
 from art import estimators
+from art import evaluations
 from art import metrics
-from art import wrappers
+from art import preprocessing
 
 # Semantic Version
 __version__ = "1.7.0-dev"
