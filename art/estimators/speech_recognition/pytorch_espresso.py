@@ -165,7 +165,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
         with open(config_path) as file:
             esp_args_dict = yaml.load(file, Loader=yaml.FullLoader)
             esp_args = Namespace(**esp_args_dict)
-            if espresso_config_filepath is None: # overwrite paths in downloaded config with the actual ones
+            if espresso_config_filepath is None:  # overwrite paths in downloaded config with the actual ones
                 esp_args.path = model_path
                 esp_args.sentencepiece_model = sp_path
                 esp_args.dict = dict_path
@@ -195,7 +195,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
         self.spp.Load(self.esp_args.sentencepiece_model)
 
         self.criterion = self.task.build_criterion(self.esp_args)
-        self.sampling_rate = self.esp_args.sampling_rate
+        self._sampling_rate = self.esp_args.sampling_rate
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
         """
@@ -444,7 +444,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
 
         :return: The audio sampling rate.
         """
-        return self.sampling_rate
+        return self._sampling_rate
 
     @property
     def input_shape(self) -> Tuple[int, ...]:
