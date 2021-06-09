@@ -21,6 +21,7 @@ fairseq.
 
 | Paper link: https://arxiv.org/abs/1909.08723
 """
+import os
 import ast
 from argparse import Namespace
 import logging
@@ -109,7 +110,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
             if not np.all(self.clip_values[1] == 1):
                 raise ValueError("This estimator requires normalized input audios with clip_vales=(-1, 1).")
 
-        # Check postprocessing defences)
+        # Check postprocessing defences
         if self.postprocessing_defences is not None:
             raise ValueError("This estimator does not support `postprocessing_defences`.")
 
@@ -150,7 +151,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
             # Download files
             config_path = get_file(
                 filename=config_filename, path=config.ART_DATA_PATH, url=config_url, extract=False, verbose=self.verbose
-            ) 
+            )
             model_path = get_file(
                 filename=model_filename, path=config.ART_DATA_PATH, url=model_url, extract=False, verbose=self.verbose
             )
@@ -172,8 +173,38 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
         self.esp_args = esp_args
 
         # setup espresso/fairseq task
-        self.task = tasks.setup_task(self.esp_args)
-        self.task.feat_dim = self.esp_args.feat_dim
+        from fairseq.dataclass import FairseqDataclass
+
+        def setup_task(cfg: FairseqDataclass):
+            """Setup the task (e.g., load dictionaries).
+
+            Args:
+                cfg (SpeechRecognitionEspressoConfig): configuration of this task
+            """
+
+            # load dictionaries
+            dict_path = os.path.join(cfg.data, "dict.txt") if cfg.dict is None else cfg.dict
+
+            def load_dictionary(filename, enable_bos=False, non_lang_syms=None):
+                """Load the dictionary from the filename
+                Args:
+                    filename (str): the filename
+                    enable_bos (bool, optional): optionally enable bos symbol
+                    non_lang_syms (str, optional): non_lang_syms filename
+                """
+                from espresso.data import AsrDictionary
+
+                return AsrDictionary.load(filename, enable_bos=enable_bos, f_non_lang_syms=non_lang_syms)
+
+            tgt_dict = load_dictionary(dict_path, enable_bos=False, non_lang_syms=cfg.non_lang_syms)
+
+            feat_dim = self.esp_args.feat_dim
+
+            from espresso.tasks.speech_recognition import SpeechRecognitionEspressoTask
+
+            return SpeechRecognitionEspressoTask(cfg, tgt_dict, feat_dim)
+
+        self.task = setup_task(self.esp_args)
 
         # load_model_ensemble
         self._models, self._model_args = checkpoint_utils.load_model_ensemble(
@@ -214,9 +245,14 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
 
             return {generator.eos, generator.pad}
 
+        x_in = np.empty(len(x), dtype=object)
+        x_in[:] = list(x)
+
+        # Put the model in the eval mode
         self._model.eval()
+
         # Apply preprocessing
-        x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
+        x_preprocessed, _ = self._apply_preprocessing(x_in, y=None, fit=False)
 
         # Run prediction with batch processing
         decoded_output = []
@@ -262,12 +298,16 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
                   lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`.
         :return: Loss gradients of the same shape as `x`.
         """
+        x_in = np.empty(len(x), dtype=object)
+        x_in[:] = list(x)
 
-        # Apply preprocessing
-        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
-
+        # Put the model in the training mode, otherwise CUDA can't backpropagate through the model.
+        # However, model uses batch norm layers which need to be frozen
         self._model.train()
         self.set_batchnorm(train=False)
+
+        # Apply preprocessing
+        x_preprocessed, y_preprocessed = self._apply_preprocessing(x_in, y, fit=False)
 
         # Transform data into the model input space
         batch, _ = self._transform_model_input(x=x_preprocessed, y=y_preprocessed, compute_gradient=True)
@@ -281,7 +321,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
             results.append(x_i.grad.cpu().numpy().copy())
 
         results = np.array(results)
-        results = self._apply_preprocessing_gradient(x, results)
+        results = self._apply_preprocessing_gradient(x_in, results)
 
         self.set_batchnorm(train=True)
         return results
@@ -317,7 +357,6 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
         :param y: Target values of shape (nb_samples). Each sample in `y` is a string and it may possess different
                   lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`.
         :param compute_gradient: Indicate whether to compute gradients for the input `x`.
-        :param real_lengths: Real lengths of original sequences.
         :return: A tuple of a dictionary of batch and a list representing the original order of the batch
         """
         import torch  # lgtm [py/repeated-import]
@@ -406,7 +445,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
             # Re-scale the input audio to the magnitude used to train Espresso model
             x_i = x_i * 32767
 
-            # Smoothing comes after WaveGAN but before the quantization
+            # Form the batch
             batch.append((x_i, target))
 
         # We must keep the order of the batch for later use as the following function will change its order
