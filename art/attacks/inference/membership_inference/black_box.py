@@ -243,7 +243,7 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
         :param probabilities: a boolean indicating whether to return the predicted probabilities per class, or just
                               the predicted class
         :return: An array holding the inferred membership status, 1 indicates a member and 0 indicates non-member,
-                or class probabilities.
+                 or class probabilities.
         """
         if y is None:
             raise ValueError("MembershipInferenceBlackBox requires true labels `y`.")
