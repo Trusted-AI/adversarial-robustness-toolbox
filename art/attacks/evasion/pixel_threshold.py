@@ -129,10 +129,13 @@ class PixelThreshold(EvasionAttack):
             raise ValueError("The argument `verbose` has to be of type bool.")
         if self.estimator.clip_values is None:
             raise ValueError("This attack requires estimator clip values to be defined.")
+
     def rescale_input(self, x):
+        """Rescale inputs"""
         x = x.astype(np.float32) / 255.0
         x = (x * (self.estimator.clip_values[1] - self.estimator.clip_values[0])) + self.estimator.clip_values[0]
         return x
+
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
@@ -321,9 +324,9 @@ class PixelThreshold(EvasionAttack):
                     callback=callback_fn,
                     iterations=self.max_iter,
                 )
-            except CMAEarlyStoppingException as e:
+            except CMAEarlyStoppingException as err:
                 if self.verbose_es:
-                    logger.info(e.message)
+                    logger.info(err)
 
             adv_x = strategy.result[0]
         else:
@@ -476,10 +479,12 @@ class ThresholdAttack(PixelThreshold):
             ):
                 image[i, j, k] = adv[count]
         return imgs
-    
+
+
 class CMAEarlyStoppingException(Exception):
     """Raised when CMA is stopping early after successful optimisation."""
     pass
+
 
 # TODO: Make the attack compatible with current version of SciPy Optimize
 # Differential Evolution
