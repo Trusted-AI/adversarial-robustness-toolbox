@@ -129,7 +129,6 @@ class PixelThreshold(EvasionAttack):
             raise ValueError("The argument `verbose` has to be of type bool.")
         if self.estimator.clip_values is None:
             raise ValueError("This attack requires estimator clip values to be defined.")
-    
     def rescale_input(self, x):
         x = x.astype(np.float32) / 255.0
         x = (x * (self.estimator.clip_values[1] - self.estimator.clip_values[0])) + self.estimator.clip_values[0]
