@@ -638,17 +638,19 @@ def compute_success_array(
     :param batch_size: Batch size.
     :return: Percentage of successful adversarial samples.
     """
-    preds = classifier.predict(x_clean, batch_size=batch_size)
     adv_preds = classifier.predict(x_adv, batch_size=batch_size)
-    if len(preds.shape) >= 2:
+    if len(adv_preds.shape) >= 2:
         adv_preds = np.argmax(adv_preds, axis=1)
-        preds = np.argmax(preds, axis=1)
     else:
         adv_preds = np.round(adv_preds)
-        preds = np.round(preds)
     if targeted:
         attack_success = adv_preds == np.argmax(labels, axis=1)
     else:
+        preds = classifier.predict(x_clean, batch_size=batch_size)
+        if len(preds.shape) >= 2:
+            preds = np.argmax(preds, axis=1)
+        else:
+            preds = np.round(preds)
         attack_success = adv_preds != preds
 
     return attack_success
