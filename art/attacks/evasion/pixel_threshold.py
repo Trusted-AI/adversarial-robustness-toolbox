@@ -61,7 +61,6 @@ logger = logging.getLogger(__name__)
 class PixelThreshold(EvasionAttack):
     """
     These attacks were originally implemented by Vargas et al. (2019) & Su et al.(2019).
-    
     | One Pixel Attack Paper link:
         https://ieeexplore.ieee.org/abstract/document/8601309/citations#citations
         (arXiv link: https://arxiv.org/pdf/1710.08864.pdf)
