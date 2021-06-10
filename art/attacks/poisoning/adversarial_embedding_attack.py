@@ -310,7 +310,7 @@ def _check_pp_poison(pp_poison: float) -> None:
     """
     Return an error when a poison value is invalid
     """
-    if 1 < pp_poison < 0:
+    if not 0 <= pp_poison <= 1:
         raise ValueError("pp_poison must be between 0 and 1")
 
 

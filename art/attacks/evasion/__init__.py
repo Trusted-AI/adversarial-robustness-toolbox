@@ -18,7 +18,10 @@ from art.attacks.evasion.dpatch_robust import RobustDPatch
 from art.attacks.evasion.elastic_net import ElasticNet
 from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.attacks.evasion.frame_saliency import FrameSaliencyAttack
-from art.attacks.evasion.feature_adversaries import FeatureAdversaries
+from art.attacks.evasion.feature_adversaries.feature_adversaries_numpy import FeatureAdversariesNumpy
+from art.attacks.evasion.feature_adversaries.feature_adversaries_pytorch import FeatureAdversariesPyTorch
+from art.attacks.evasion.feature_adversaries.feature_adversaries_tensorflow import FeatureAdversariesTensorFlowV2
+from art.attacks.evasion.geometric_decision_based_attack import GeoDA
 from art.attacks.evasion.hclu import HighConfidenceLowUncertainty
 from art.attacks.evasion.hop_skip_jump import HopSkipJump
 from art.attacks.evasion.imperceptible_asr.imperceptible_asr import ImperceptibleASR
@@ -26,6 +29,7 @@ from art.attacks.evasion.imperceptible_asr.imperceptible_asr_pytorch import Impe
 from art.attacks.evasion.iterative_method import BasicIterativeMethod
 from art.attacks.evasion.lowprofool import LowProFool
 from art.attacks.evasion.newtonfool import NewtonFool
+from art.attacks.evasion.pe_malware_attack import MalwareGDTensorFlow
 from art.attacks.evasion.pixel_threshold import PixelAttack
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_numpy import (

@@ -40,6 +40,7 @@ from tests.utils import (
     get_image_classifier_kr_tf_with_wildcard,
     get_image_classifier_mxnet_custom_ini,
     get_image_classifier_pt,
+    get_image_classifier_pt_functional,
     get_image_classifier_tf,
     get_tabular_classifier_kr,
     get_tabular_classifier_pt,
@@ -534,8 +535,11 @@ def image_dl_estimator(framework, get_image_classifier_mx_instance):
                 classifier, sess = get_image_classifier_tf(**kwargs)
                 return classifier, sess
         if framework == "pytorch":
-            if wildcard is False and functional is False:
-                classifier = get_image_classifier_pt(**kwargs)
+            if not wildcard:
+                if functional:
+                    classifier = get_image_classifier_pt_functional(**kwargs)
+                else:
+                    classifier = get_image_classifier_pt(**kwargs)
         if framework == "kerastf":
             if wildcard:
                 classifier = get_image_classifier_kr_tf_with_wildcard(**kwargs)
