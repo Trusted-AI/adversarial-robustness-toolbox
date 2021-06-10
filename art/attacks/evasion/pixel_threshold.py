@@ -289,7 +289,7 @@ class PixelThreshold(EvasionAttack):
         def callback_fn(x, convergence=None):  # pylint: disable=R1710,W0613
             if self.es == 0:
                 if self._attack_success(x.result[0], image, target_class):
-                    raise Exception("Attack Completed :) Earlier than expected")
+                    raise CMAEarlyStoppingException("Attack Completed :) Earlier than expected")
             else:
                 return self._attack_success(x, image, target_class)
 
@@ -321,9 +321,9 @@ class PixelThreshold(EvasionAttack):
                     callback=callback_fn,
                     iterations=self.max_iter,
                 )
-            except Exception as exception:
+            except CMAEarlyStoppingException as e:
                 if self.verbose_es:
-                    print(exception)
+                    logger.info(e.message)
 
             adv_x = strategy.result[0]
         else:
@@ -476,7 +476,10 @@ class ThresholdAttack(PixelThreshold):
             ):
                 image[i, j, k] = adv[count]
         return imgs
-
+    
+class CMAEarlyStoppingException(Exception):
+    """Raised when CMA is stopping early after successful optimisation."""
+    pass
 
 # TODO: Make the attack compatible with current version of SciPy Optimize
 # Differential Evolution
