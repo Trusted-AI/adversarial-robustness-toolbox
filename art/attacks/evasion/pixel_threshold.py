@@ -436,7 +436,6 @@ class PixelAttack(PixelThreshold):
 class ThresholdAttack(PixelThreshold):
     """
     This attack was originally implemented by Vargas et al. (2019).
-    
     | Paper link:
         https://arxiv.org/abs/1906.06026
     """
