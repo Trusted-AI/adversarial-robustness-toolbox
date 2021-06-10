@@ -134,7 +134,6 @@ class PixelThreshold(EvasionAttack):
         x = x.astype(np.float32) / 255.0
         x = (x * (self.estimator.clip_values[1] - self.estimator.clip_values[0])) + self.estimator.clip_values[0]
         return x
-        
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
