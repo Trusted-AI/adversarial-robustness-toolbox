@@ -217,7 +217,7 @@ class PixelThreshold(EvasionAttack):
 
         if self.rescale:
             x = self.rescale_input(x)
-            adv_x_best_array =  self.rescale_input(adv_x_best_array)
+            adv_x_best_array = self.rescale_input(adv_x_best_array)
 
         logger.info(
             "Success rate of Attack: %.2f%%",
