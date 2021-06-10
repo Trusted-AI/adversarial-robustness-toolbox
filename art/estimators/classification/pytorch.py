@@ -309,7 +309,6 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         results_list = []
 
         # Run prediction with batch processing
-        # results = np.zeros((x_preprocessed.shape[0], self.nb_classes), dtype=np.float32) # old
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         for m in range(num_batch):
             # Batch indexes
@@ -321,11 +320,10 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             with torch.no_grad():
                 model_outputs = self._model(torch.from_numpy(x_preprocessed[begin:end]).to(self._device))
             output = model_outputs[-1]
-            # results[begin:end] = output.detach().cpu().numpy() #old
+            output = output.detach().cpu().numpy().astype(np.float32)
             if len(output.shape) == 1:
                 output = np.expand_dims(output.detach().cpu().numpy(), axis=1).astype(np.float32)
-            else:
-                output = output.detach().cpu().numpy().astype(np.float32)
+
             results_list.append(output)
 
         results = np.vstack(results_list)
@@ -400,8 +398,6 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                 model_outputs = self._model(i_batch)
 
                 # Form the loss function
-                print(model_outputs[-1].dtype)
-                print(o_batch.dtype)
                 loss = self._loss(model_outputs[-1], o_batch)  # lgtm [py/call-to-non-callable]
 
                 # Do training
@@ -963,7 +959,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
                     import torch  # lgtm [py/repeated-import]
 
-                    def __init__(self, model: torch.nn.Module, nb_classes=nb_classes):
+                    def __init__(self, model: torch.nn.Module):
                         """
                         Initialization by storing the input model.
 
@@ -971,7 +967,6 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                         """
                         super().__init__()
                         self._model = model
-                        self.nb_classes = nb_classes
 
                     # pylint: disable=W0221
                     # disable pylint because of API requirements for function
