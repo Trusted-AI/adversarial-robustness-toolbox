@@ -593,7 +593,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             else:
                 num_outputs = self.nb_classes
 
-            for i in range(self.nb_classes):
+            for i in range(num_outputs):
                 torch.autograd.backward(
                     preds[:, i],
                     torch.tensor([1.0] * len(preds[:, 0])).to(self._device),
