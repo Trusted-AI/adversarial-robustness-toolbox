@@ -483,6 +483,7 @@ class ThresholdAttack(PixelThreshold):
 
 class CMAEarlyStoppingException(Exception):
     """Raised when CMA is stopping early after successful optimisation."""
+
     pass
 
 
