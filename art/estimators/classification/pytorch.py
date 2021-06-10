@@ -266,6 +266,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         """
         Reduce labels from one-hot encoded to index labels.
         """
+        # pylint: disable=R0911
         import torch  # lgtm [py/repeated-import]
 
         # Check if the loss function requires as input index labels instead of one-hot-encoded labels
@@ -587,6 +588,11 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         self._model.zero_grad()
         if label is None:
+            if len(preds.shape) == 1 or preds.shape[1] == 1:
+                num_outputs = 1
+            else:
+                num_outputs = self.nb_classes
+
             for i in range(self.nb_classes):
                 torch.autograd.backward(
                     preds[:, i],

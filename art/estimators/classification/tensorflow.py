@@ -1037,6 +1037,9 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
                         class_gradient = tape.gradient(prediction, x_input).numpy()
                         class_gradients.append(class_gradient)
+                        # Break after 1 iteration for binary classification case
+                        if len(predictions.shape) == 1 or predictions.shape[1] == 1:
+                            break
 
                     gradients = np.swapaxes(np.array(class_gradients), 0, 1)
 
