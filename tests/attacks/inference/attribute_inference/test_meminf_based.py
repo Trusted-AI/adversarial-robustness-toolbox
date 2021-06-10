@@ -351,8 +351,8 @@ def test_meminf_label_only(art_warning, decision_tree_estimator, get_iris_datase
         # check accuracy
         train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
         test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
-        assert 0.3 <= train_acc
-        assert 0.3 <= test_acc
+        assert 0.1 <= train_acc
+        assert 0.1 <= test_acc
 
     except ARTTestException as e:
         art_warning(e)
