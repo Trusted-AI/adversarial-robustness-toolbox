@@ -88,8 +88,8 @@ def test_meminf_black_box(art_warning, decision_tree_estimator, get_iris_dataset
         # check accuracy
         train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
         test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
-        assert 0.2 <= train_acc
-        assert 0.2 <= test_acc
+        assert 0.1 <= train_acc
+        assert 0.1 <= test_acc
 
     except ARTTestException as e:
         art_warning(e)
@@ -146,7 +146,7 @@ def test_meminf_black_box_dl(art_warning, tabular_dl_estimator_for_attack, get_i
         # check accuracy
         train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
         test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
-        assert 0.15 <= train_acc
+        assert 0.1 <= train_acc
         assert 0.05 <= test_acc
 
     except ARTTestException as e:
@@ -189,8 +189,8 @@ def test_meminf_rule_based(art_warning, decision_tree_estimator, get_iris_datase
         # check accuracy
         train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
         test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
-        assert 0.2 <= train_acc
-        assert 0.2 <= test_acc
+        assert 0.1 <= train_acc
+        assert 0.1 <= test_acc
 
     except ARTTestException as e:
         art_warning(e)
@@ -272,8 +272,8 @@ def test_black_box_one_hot_float(art_warning, get_iris_dataset):
         test_acc = np.sum(
             np.all(np.around(inferred_test, decimals=3) == np.around(test_one_hot, decimals=3), axis=1)
         ) / len(inferred_test)
-        assert 0.2 <= train_acc
-        assert 0.2 <= test_acc
+        assert 0.1 <= train_acc
+        assert 0.1 <= test_acc
 
     except ARTTestException as e:
         art_warning(e)
