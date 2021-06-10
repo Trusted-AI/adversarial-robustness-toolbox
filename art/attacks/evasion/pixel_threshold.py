@@ -127,7 +127,6 @@ class PixelThreshold(EvasionAttack):
 
         if not isinstance(self.verbose_es, bool):
             raise ValueError("The argument `verbose` has to be of type bool.")
-       
         if self.estimator.clip_values is None: 
             raise ValueError("This attack requires estimator clip values to be defined.")
     
