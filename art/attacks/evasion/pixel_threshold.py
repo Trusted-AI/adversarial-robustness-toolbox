@@ -137,7 +137,6 @@ class PixelThreshold(EvasionAttack):
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
-        
         :param x: An array with the original inputs.
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
