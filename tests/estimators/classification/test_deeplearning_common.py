@@ -169,13 +169,15 @@ def test_pickle(art_warning, image_dl_estimator, image_dl_estimator_defended, tm
 
         assert (classifier._clip_values == loaded._clip_values).all()
         assert classifier._channels_first == loaded._channels_first
-        assert classifier._use_logits == loaded._use_logits
-        assert classifier._input_layer == loaded._input_layer
+        if hasattr(classifier, "_use_logits"):
+            assert classifier._use_logits == loaded._use_logits
+        if hasattr(classifier, "_input_layer"):
+            assert classifier._input_layer == loaded._input_layer
     except ARTTestException as e:
         art_warning(e)
 
 
-@pytest.mark.skip_framework("non_dl_frameworks")
+@pytest.mark.skip_framework("non_dl_frameworks", "pytorch")
 def test_functional_model(art_warning, image_dl_estimator):
     try:
         # Need to update the functional_model code to produce a model with more than one input and output layers...

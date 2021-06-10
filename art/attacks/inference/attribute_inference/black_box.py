@@ -138,8 +138,12 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
 
         :param x: Input to attack. Includes all features except the attacked feature.
         :param y: Original model's predictions for x.
-        :param values: Possible values for attacked feature. Only needed in case of categorical feature (not one-hot).
-        :type values: `np.ndarray`
+        :param values: Possible values for attacked feature. For a single column feature this should be a simple list
+                       containing all possible values, in increasing order (the smallest value in the 0 index and so
+                       on). For a multi-column feature (for example 1-hot encoded and then scaled), this should be a
+                       list of lists, where each internal list represents a column (in increasing order) and the values
+                       represent the possible values for that column (in increasing order).
+        :type values: list
         :return: The inferred feature values.
         """
         if y is None:
