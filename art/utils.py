@@ -516,11 +516,11 @@ def check_and_transform_label_format(
         if len(labels.shape) == 2 and labels.shape[1] > 1:
             if not return_one_hot:
                 labels = np.argmax(labels, axis=1)
-        elif len(labels.shape) == 2 and labels.shape[1] == 1 and nb_classes > 2:
+        elif len(labels.shape) == 2 and labels.shape[1] == 1 and nb_classes is not None and nb_classes > 2:
             labels = np.squeeze(labels)
             if return_one_hot:
                 labels = to_categorical(labels, nb_classes)
-        elif len(labels.shape) == 2 and labels.shape[1] == 1 and nb_classes == 2:
+        elif len(labels.shape) == 2 and labels.shape[1] == 1 and nb_classes is not None and nb_classes == 2:
             pass
         elif len(labels.shape) == 1:
             if return_one_hot:
