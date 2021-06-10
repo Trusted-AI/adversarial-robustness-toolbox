@@ -83,7 +83,6 @@ class PixelThreshold(EvasionAttack):
     ) -> None:
         """
         Create a :class:`.PixelThreshold` instance.
-        
         :param classifier: A trained classifier.
         :param th: threshold value of the Pixel/ Threshold attack. th=None indicates finding a minimum threshold.
         :param es: Indicates whether the attack uses CMAES (0) or DE (1) as Evolutionary Strategy.
