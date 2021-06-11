@@ -26,9 +26,18 @@
 （图像，表格，音频，视频等）和机器学习任务（分类，物体检测，语音识别，
 生成模型，认证等）。
 
+## Adversarial Threats
+
 <p align="center">
   <img src="docs/images/adversarial_threats_attacker.png?raw=true" width="400" title="ART logo">
   <img src="docs/images/adversarial_threats_art.png?raw=true" width="400" title="ART logo">
+</p>
+<br />
+
+## ART for Red and Blue Teams (selection)
+
+<p align="center">
+  <img src="docs/images/white_hat_blue_red.png?raw=true" width="800" title="ART Red and Blue Teams">
 </p>
 <br />
 

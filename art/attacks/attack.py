@@ -329,12 +329,12 @@ class InferenceAttack(Attack):
     @abc.abstractmethod
     def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
-        Infer sensitive properties (attributes, membership training records) from the targeted estimator. This method
+        Infer sensitive attributes from the targeted estimator. This method
         should be overridden by all concrete inference attack implementations.
 
         :param x: An array with reference inputs to be used in the attack.
         :param y: Labels for `x`. This parameter is only used by some of the attacks.
-        :return: An array holding the inferred properties.
+        :return: An array holding the inferred attribute values.
         """
         raise NotImplementedError
 
@@ -358,12 +358,41 @@ class AttributeInferenceAttack(InferenceAttack):
     @abc.abstractmethod
     def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
-        Infer sensitive properties (attributes, membership training records) from the targeted estimator. This method
+        Infer sensitive attributes from the targeted estimator. This method
         should be overridden by all concrete inference attack implementations.
 
         :param x: An array with reference inputs to be used in the attack.
         :param y: Labels for `x`. This parameter is only used by some of the attacks.
-        :return: An array holding the inferred properties.
+        :return: An array holding the inferred attribute values.
+        """
+        raise NotImplementedError
+
+
+class MembershipInferenceAttack(InferenceAttack):
+    """
+    Abstract base class for membership inference attack classes.
+    """
+
+    def __init__(self, estimator: Union["CLASSIFIER_TYPE"]):
+        """
+        :param estimator: A trained estimator targeted for inference attack.
+        :type estimator: :class:`.art.estimators.estimator.BaseEstimator`
+        :param attack_feature: The index of the feature to be attacked.
+        """
+        super().__init__(estimator)
+
+    @abc.abstractmethod
+    def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+        """
+        Infer membership status of samples from the target estimator. This method
+        should be overridden by all concrete inference attack implementations.
+
+        :param x: An array with reference inputs to be used in the attack.
+        :param y: Labels for `x`. This parameter is only used by some of the attacks.
+        :param probabilities: a boolean indicating whether to return the predicted probabilities per class, or just
+                              the predicted class.
+        :return: An array holding the inferred membership status (1 indicates member of training set,
+                 0 indicates non-member) or class probabilities.
         """
         raise NotImplementedError
 
