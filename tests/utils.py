@@ -1631,8 +1631,8 @@ def get_attack_classifier_pt(num_features):
     class AttackModel(nn.Module):
         def __init__(self, num_features):
             super(AttackModel, self).__init__()
-            self.layer = nn.Linear(num_features, 1)
-            self.output = nn.Sigmoid()
+            self.layer = nn.Linear(num_features, 2)
+            self.output = nn.Softmax(dim=1)
 
         def forward(self, x):
             return self.output(self.layer(x))
@@ -1641,10 +1641,10 @@ def get_attack_classifier_pt(num_features):
     model = AttackModel(num_features)
 
     # Define a loss function and optimizer
-    loss_fn = nn.BCELoss()
+    loss_fn = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.0001)
     attack_model = PyTorchClassifier(
-        model=model, loss=loss_fn, optimizer=optimizer, input_shape=(num_features,), nb_classes=1
+        model=model, loss=loss_fn, optimizer=optimizer, input_shape=(num_features,), nb_classes=2
     )
 
     return attack_model
