@@ -992,7 +992,7 @@ class CarliniL0Method(CarliniL2Method):
         #   - Computes the gradients of the objective function evaluated at the adversarial instance
         #   - Fix the attribute with the lowest value (gradient * perturbation)
         # Repeat until the L_2 attack fails to find an adversarial examples.
-        for i in range(x.shape[1] + 1):
+        for _ in range(x.shape[1] + 1):
             # Compute perturbation with implicit batching
             nb_batches = int(np.ceil(x_adv.shape[0] / float(self.batch_size)))
             for batch_id in range(nb_batches):
