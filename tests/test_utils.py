@@ -174,22 +174,22 @@ class TestUtils(unittest.TestCase):
 
         # test input shape (nb_samples,)
         labels = np.array([3, 1, 4])
-        labels_transformed = check_and_transform_label_format(labels)
+        labels_transformed = check_and_transform_label_format(labels, 5)
         np.testing.assert_array_equal(labels_transformed, labels_expected)
 
         # test input shape (nb_samples, 1)
         labels = np.array([[3], [1], [4]])
-        labels_transformed = check_and_transform_label_format(labels)
+        labels_transformed = check_and_transform_label_format(labels, 5)
         np.testing.assert_array_equal(labels_transformed, labels_expected)
 
         # test input shape (nb_samples, nb_classes)
         labels = np.array([[0, 0, 0, 1, 0], [0, 1, 0, 0, 0], [0, 0, 0, 0, 1]])
-        labels_transformed = check_and_transform_label_format(labels)
+        labels_transformed = check_and_transform_label_format(labels, 5)
         np.testing.assert_array_equal(labels_transformed, labels_expected)
 
         # test input shape (nb_samples, nb_classes) with return_one_hot=False
         labels = np.array([[0, 0, 0, 1, 0], [0, 1, 0, 0, 0], [0, 0, 0, 0, 1]])
-        labels_transformed = check_and_transform_label_format(labels, return_one_hot=False)
+        labels_transformed = check_and_transform_label_format(labels, 5, return_one_hot=False)
         np.testing.assert_array_equal(labels_transformed, np.argmax(labels_expected, axis=1))
 
         # ValueError for len(labels.shape) > 2
