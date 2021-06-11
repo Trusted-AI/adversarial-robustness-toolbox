@@ -292,11 +292,9 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
 
             if inferred is not None:
                 if not probabilities:
-                    inferred_return = inferred.reshape(-1).astype(np.int)
+                    inferred_return = np.round(inferred)
                 else:
-                    inferred = inferred.reshape(-1)
-                    prob_0 = np.ones_like(inferred) - inferred
-                    inferred_return = np.stack((prob_0, inferred), axis=1)
+                    inferred_return = inferred
             else:
                 raise ValueError("No data available.")
         elif not self.default_model:
@@ -305,13 +303,13 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
             if probabilities:
                 inferred_return = pred
             else:
-                inferred_return = np.array([np.argmax(arr) for arr in pred])
+                inferred_return = np.round(pred)
         else:
             pred = self.attack_model.predict_proba(np.c_[features, y])  # type: ignore
             if probabilities:
-                inferred_return = pred
+                inferred_return = pred[:, [1]]
             else:
-                inferred_return = np.array([np.argmax(arr) for arr in pred])
+                inferred_return = np.round(pred[:, [1]])
 
         return inferred_return
 

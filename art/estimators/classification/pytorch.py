@@ -40,7 +40,7 @@ from art.estimators.pytorch import PyTorchEstimator
 from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+    # pylint: disable=C0412, C0302
     import torch
 
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
@@ -266,21 +266,26 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         """
         Reduce labels from one-hot encoded to index labels.
         """
+        # pylint: disable=R0911
         import torch  # lgtm [py/repeated-import]
 
         # Check if the loss function requires as input index labels instead of one-hot-encoded labels
-        if self._reduce_labels and self._int_labels:
+        # Checking for exactly 2 classes to support binary classification
+        if self.nb_classes > 2:
+            if self._reduce_labels and self._int_labels:
+                if isinstance(y, torch.Tensor):
+                    return torch.argmax(y, dim=1)
+                return np.argmax(y, axis=1)
+            if self._reduce_labels:  # float labels
+                if isinstance(y, torch.Tensor):
+                    return torch.argmax(y, dim=1).type("torch.FloatTensor")
+                y_index = np.argmax(y, axis=1).astype(np.float32)
+                y_index = np.expand_dims(y_index, axis=1)
+                return y_index
+        else:
             if isinstance(y, torch.Tensor):
-                return torch.argmax(y, dim=1)
-            return np.argmax(y, axis=1)
-
-        if self._reduce_labels:  # float labels
-            if isinstance(y, torch.Tensor):
-                return torch.argmax(y, dim=1).type("torch.FloatTensor")
-            y_index = np.argmax(y, axis=1).astype(np.float32)
-            y_index = np.expand_dims(y_index, axis=1)
-            return y_index
-
+                return y.float()
+            return y.astype(np.float32)
         return y
 
     def predict(  # pylint: disable=W0221
@@ -302,8 +307,9 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
+        results_list = []
+
         # Run prediction with batch processing
-        results = np.zeros((x_preprocessed.shape[0], self.nb_classes), dtype=np.float32)
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         for m in range(num_batch):
             # Batch indexes
@@ -315,8 +321,13 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             with torch.no_grad():
                 model_outputs = self._model(torch.from_numpy(x_preprocessed[begin:end]).to(self._device))
             output = model_outputs[-1]
-            results[begin:end] = output.detach().cpu().numpy()
+            output = output.detach().cpu().numpy().astype(np.float32)
+            if len(output.shape) == 1:
+                output = np.expand_dims(output.detach().cpu().numpy(), axis=1).astype(np.float32)
 
+            results_list.append(output)
+
+        results = np.vstack(results_list)
         # Apply postprocessing
         predictions = self._apply_postprocessing(preds=results, fit=False)
 
@@ -577,7 +588,12 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         self._model.zero_grad()
         if label is None:
-            for i in range(self.nb_classes):
+            if len(preds.shape) == 1 or preds.shape[1] == 1:
+                num_outputs = 1
+            else:
+                num_outputs = self.nb_classes
+
+            for i in range(num_outputs):
                 torch.autograd.backward(
                     preds[:, i],
                     torch.tensor([1.0] * len(preds[:, 0])).to(self._device),

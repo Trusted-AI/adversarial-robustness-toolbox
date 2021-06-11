@@ -106,10 +106,10 @@ class AttributeInferenceMembership(AttributeInferenceAttack):
 
                 predicted = self.membership_attack.infer(x_value, y, probabilities=True)
                 if first:
-                    probabilities = predicted[:, 1].reshape(-1, 1)
+                    probabilities = predicted
                     first = False
                 else:
-                    probabilities = np.hstack((probabilities, predicted[:, 1].reshape(-1, 1)))
+                    probabilities = np.hstack((probabilities, predicted))
 
             # needs to be of type float so we can later replace back the actual values
             value_indexes = np.argmax(probabilities, axis=1).astype(np.float32)
@@ -130,9 +130,9 @@ class AttributeInferenceMembership(AttributeInferenceAttack):
 
                 predicted = self.membership_attack.infer(x_value, y, probabilities=True)
                 if first:
-                    probabilities = predicted[:, 1].reshape(-1, 1)
+                    probabilities = predicted
                 else:
-                    probabilities = np.hstack((probabilities, predicted[:, 1].reshape(-1, 1)))
+                    probabilities = np.hstack((probabilities, predicted))
                 first = False
             value_indexes = np.argmax(probabilities, axis=1).astype(np.float32)
             pred_values = np.zeros_like(probabilities)

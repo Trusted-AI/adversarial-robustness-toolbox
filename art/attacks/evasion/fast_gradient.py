@@ -231,7 +231,9 @@ class FastGradientMethod(EvasionAttack):
                 # Use model predictions as correct outputs
                 logger.info("Using model predictions as correct labels for FGM.")
                 y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))  # type: ignore
-            y = y / np.sum(y, axis=1, keepdims=True)
+
+            if self.estimator.nb_classes > 2:
+                y = y / np.sum(y, axis=1, keepdims=True)
 
             # Return adversarial examples computed with minimal perturbation if option is active
             rate_best: Optional[float]
