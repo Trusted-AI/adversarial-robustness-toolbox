@@ -187,8 +187,8 @@ def test_meminf_rule_based(art_warning, decision_tree_estimator, get_iris_datase
         inferred_train = attack.infer(x_train_for_attack, y_train_iris, values=values)
         inferred_test = attack.infer(x_test_for_attack, y_test_iris, values=values)
         # check accuracy
-        train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
-        test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
+        train_acc = np.sum(inferred_train == x_train_feature) / len(inferred_train)
+        test_acc = np.sum(inferred_test == x_test_feature) / len(inferred_test)
         assert 0.1 <= train_acc
         assert 0.1 <= test_acc
 
@@ -325,18 +325,18 @@ def test_meminf_label_only(art_warning, decision_tree_estimator, get_iris_datase
         attack_train_ratio = 0.5
         attack_train_size = int(len(x_train) * attack_train_ratio)
         attack_test_size = int(len(x_test) * attack_train_ratio)
-        # attack without callibration
+        # attack without calibration
         attack = AttributeInferenceMembership(classifier, meminf_attack, attack_feature=attack_feature)
         # infer attacked feature
         inferred_train = attack.infer(x_train_for_attack, y_train_iris, values=values)
         inferred_test = attack.infer(x_test_for_attack, y_test_iris, values=values)
         # check accuracy
-        train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
-        test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
+        train_acc = np.sum(inferred_train == x_train_feature) / len(inferred_train)
+        test_acc = np.sum(inferred_test == x_test_feature) / len(inferred_test)
         assert 0.5 <= train_acc
         assert 0.5 <= test_acc
 
-        # attack with callibration
+        # attack with calibration
         meminf_attack.calibrate_distance_threshold(
             x_train[:attack_train_size],
             y_train_iris[:attack_train_size],
@@ -349,8 +349,8 @@ def test_meminf_label_only(art_warning, decision_tree_estimator, get_iris_datase
         inferred_train = attack.infer(x_train_for_attack, y_train_iris, values=values)
         inferred_test = attack.infer(x_test_for_attack, y_test_iris, values=values)
         # check accuracy
-        train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
-        test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
+        train_acc = np.sum(inferred_train == x_train_feature) / len(inferred_train)
+        test_acc = np.sum(inferred_test == x_test_feature) / len(inferred_test)
         assert 0.1 <= train_acc
         assert 0.1 <= test_acc
 

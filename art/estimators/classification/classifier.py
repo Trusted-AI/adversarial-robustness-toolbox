@@ -105,6 +105,8 @@ class ClassifierMixin(ABC, metaclass=InputFilter):
 
         :return: Number of classes in the data.
         """
+        if self._nb_classes < 2:
+            raise ValueError("nb_classes must be greater than or equal to 2.")
         return self._nb_classes  # type: ignore
 
 
