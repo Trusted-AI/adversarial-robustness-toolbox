@@ -122,7 +122,6 @@ def test_black_box_with_model(art_warning, tabular_dl_estimator_for_attack, esti
     try:
         classifier = tabular_dl_estimator_for_attack(MembershipInferenceBlackBox)
         attack_model = estimator_for_attack(num_features=2 * num_classes_iris)
-        print(type(attack_model).__name__)
         attack = MembershipInferenceBlackBox(classifier, attack_model=attack_model)
         backend_check_membership_accuracy(attack, get_iris_dataset, attack_train_ratio, 0.25)
     except ARTTestException as e:
@@ -153,7 +152,6 @@ def test_black_box_with_model_prob(
     try:
         classifier = tabular_dl_estimator_for_attack(MembershipInferenceBlackBox)
         attack_model = estimator_for_attack(num_features=2 * num_classes_iris)
-        print(type(attack_model).__name__)
         attack = MembershipInferenceBlackBox(classifier, attack_model=attack_model)
         backend_check_membership_probabilities(attack, get_iris_dataset, attack_train_ratio)
     except ARTTestException as e:
@@ -230,6 +228,5 @@ def backend_check_membership_probabilities(attack, dataset, attack_train_ratio):
 
 
 def backend_check_probabilities(pred, prob):
-    assert prob.shape[1] == 2
-    assert np.all(np.around(np.sum(prob, axis=1), decimals=5) == 1)
-    assert np.all(np.argmax(prob, axis=1) == pred.astype(int))
+    assert prob.shape[1] == 1
+    assert np.all(np.round(prob) == pred.astype(int))
