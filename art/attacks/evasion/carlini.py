@@ -880,7 +880,7 @@ class CarliniL0Method(CarliniL2Method):
         max_iter: int = 10,
         initial_const: float = 0.01,
         mask: Optional[np.ndarray] = None,
-        warm_start: bool = True,
+        warm_start: bool = False,
         max_halving: int = 5,
         max_doubling: int = 5,
         batch_size: int = 1,
@@ -992,7 +992,7 @@ class CarliniL0Method(CarliniL2Method):
         #   - Computes the gradients of the objective function evaluated at the adversarial instance
         #   - Fix the attribute with the lowest value (gradient * perturbation)
         # Repeat until the L_2 attack fails to find an adversarial examples.
-        while True:
+        for i in range(x.shape[1] + 1):
             # Compute perturbation with implicit batching
             nb_batches = int(np.ceil(x_adv.shape[0] / float(self.batch_size)))
             for batch_id in range(nb_batches):
@@ -1001,7 +1001,8 @@ class CarliniL0Method(CarliniL2Method):
                 batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
                 if self.warm_start:
                     # Start the gradient descent from the solution found on the previous iteration
-                    x_batch = x_adv[batch_index_1:batch_index_2]
+                    x_batch = x[batch_index_1:batch_index_2] * (activation[batch_index_1:batch_index_2] == 0)\
+                    .astype(int) + x_adv[batch_index_1:batch_index_2] * activation[batch_index_1:batch_index_2]
                 else:
                     x_batch = x[batch_index_1:batch_index_2]
                 y_batch = y[batch_index_1:batch_index_2]
@@ -1244,7 +1245,7 @@ class CarliniL0Method(CarliniL2Method):
             objective_reduction = np.abs(objective_loss_gradient) * perturbation_l1_norm
 
             # Assign infinity as the objective_reduction value for fixed feature (in order not to select them again)
-            objective_reduction += np.array(np.where(activation == 0, np.inf, activation))
+            objective_reduction += np.array(np.where(activation == 0, np.inf, 0))
 
             # Fix the feature with the lowest objective_reduction value (only for the examples that succeeded)
             fix_feature_index = np.argmin(objective_reduction, axis=1)
