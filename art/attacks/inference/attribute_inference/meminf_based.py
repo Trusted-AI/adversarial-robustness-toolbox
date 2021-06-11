@@ -56,7 +56,7 @@ class AttributeInferenceMembership(AttributeInferenceAttack):
         Create an AttributeInferenceMembership attack instance.
 
         :param classifier: Target classifier.
-        :param membership_attack: The membership inference attack to use. Should be fit/callibrated in advance, and
+        :param membership_attack: The membership inference attack to use. Should be fit/calibrated in advance, and
                                   should support returning probabilities.
         :param attack_feature: The index of the feature to be attacked or a slice representing multiple indexes in
                                case of a one-hot encoded feature.
