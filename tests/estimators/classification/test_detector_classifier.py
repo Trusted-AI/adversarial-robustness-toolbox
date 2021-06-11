@@ -81,7 +81,7 @@ class TestDetectorClassifier(TestBase):
         loss_fn = nn.CrossEntropyLoss()
         optimizer = optim.Adam(model.parameters(), lr=0.01)
         detector = PyTorchClassifier(
-            model=model, loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=1, clip_values=(0, 1)
+            model=model, loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=2, clip_values=(0, 1)
         )
 
         # Define the detector-classifier

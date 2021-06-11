@@ -56,7 +56,7 @@ class AttributeInferenceMembership(AttributeInferenceAttack):
         Create an AttributeInferenceMembership attack instance.
 
         :param classifier: Target classifier.
-        :param membership_attack: The membership inference attack to use. Should be fit/callibrated in advance, and
+        :param membership_attack: The membership inference attack to use. Should be fit/calibrated in advance, and
                                   should support returning probabilities.
         :param attack_feature: The index of the feature to be attacked or a slice representing multiple indexes in
                                case of a one-hot encoded feature.
@@ -106,10 +106,10 @@ class AttributeInferenceMembership(AttributeInferenceAttack):
 
                 predicted = self.membership_attack.infer(x_value, y, probabilities=True)
                 if first:
-                    probabilities = predicted[:, 1].reshape(-1, 1)
+                    probabilities = predicted
                     first = False
                 else:
-                    probabilities = np.hstack((probabilities, predicted[:, 1].reshape(-1, 1)))
+                    probabilities = np.hstack((probabilities, predicted))
 
             # needs to be of type float so we can later replace back the actual values
             value_indexes = np.argmax(probabilities, axis=1).astype(np.float32)
@@ -130,9 +130,9 @@ class AttributeInferenceMembership(AttributeInferenceAttack):
 
                 predicted = self.membership_attack.infer(x_value, y, probabilities=True)
                 if first:
-                    probabilities = predicted[:, 1].reshape(-1, 1)
+                    probabilities = predicted
                 else:
-                    probabilities = np.hstack((probabilities, predicted[:, 1].reshape(-1, 1)))
+                    probabilities = np.hstack((probabilities, predicted))
                 first = False
             value_indexes = np.argmax(probabilities, axis=1).astype(np.float32)
             pred_values = np.zeros_like(probabilities)
