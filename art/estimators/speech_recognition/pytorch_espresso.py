@@ -21,11 +21,10 @@ fairseq.
 
 | Paper link: https://arxiv.org/abs/1909.08723
 """
-import os
 import ast
 from argparse import Namespace
 import logging
-from typing import List, Optional, Tuple, TYPE_CHECKING, Union
+from typing import Dict, List, Optional, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
 
@@ -88,7 +87,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
         """
         import torch  # lgtm [py/repeated-import]
         import yaml
-        from fairseq import checkpoint_utils, utils
+        from fairseq import checkpoint_utils, tasks, utils
         from fairseq.data import encoders
         import sentencepiece as spm
 
@@ -172,38 +171,8 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
         self.esp_args = esp_args
 
         # setup espresso/fairseq task
-        from fairseq.dataclass import FairseqDataclass
-
-        def setup_task(cfg: FairseqDataclass):
-            """Setup the task (e.g., load dictionaries).
-
-            Args:
-                cfg (SpeechRecognitionEspressoConfig): configuration of this task
-            """
-
-            # load dictionaries
-            dict_path = os.path.join(cfg.data, "dict.txt") if cfg.dict is None else cfg.dict
-
-            def load_dictionary(filename, enable_bos=False, non_lang_syms=None):
-                """Load the dictionary from the filename
-                Args:
-                    filename (str): the filename
-                    enable_bos (bool, optional): optionally enable bos symbol
-                    non_lang_syms (str, optional): non_lang_syms filename
-                """
-                from espresso.data import AsrDictionary
-
-                return AsrDictionary.load(filename, enable_bos=enable_bos, f_non_lang_syms=non_lang_syms)
-
-            tgt_dict = load_dictionary(dict_path, enable_bos=False, non_lang_syms=cfg.non_lang_syms)
-
-            feat_dim = self.esp_args.feat_dim
-
-            from espresso.tasks.speech_recognition import SpeechRecognitionEspressoTask
-
-            return SpeechRecognitionEspressoTask(cfg, tgt_dict, feat_dim)
-
-        self.task = setup_task(self.esp_args)
+        self.task = tasks.setup_task(self.esp_args)
+        self.task.feat_dim = self.esp_args.feat_dim
 
         # load_model_ensemble
         self._models, self._model_args = checkpoint_utils.load_model_ensemble(
@@ -346,7 +315,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
         x: Union[np.ndarray, "torch.Tensor"],
         y: Optional[np.ndarray] = None,
         compute_gradient: bool = False,
-    ) -> Tuple[dict, List]:
+    ) -> Tuple[Dict, List]:
         """
         Transform the user input space into the model input space.
 
@@ -423,7 +392,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
 
         # We must process each sequence separately due to the diversity of their length
         batch = []
-        for i, x_i in enumerate(x):
+        for i, _ in enumerate(x):
             # First process the target
             if y is None:
                 target = None
@@ -433,25 +402,67 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
                 target = self.dictionary.encode_line(sp_string, add_if_not_exist=False)  # target is a long tensor
 
             # Push the sequence to device
-            if isinstance(x_i, np.ndarray):
-                x_i = x_i.astype(config.ART_NUMPY_DTYPE)
-                x_i = torch.tensor(x_i).to(self._device)
+            if isinstance(x, np.ndarray):
+                x[i] = x[i].astype(config.ART_NUMPY_DTYPE)
+                x[i] = torch.tensor(x[i]).to(self._device)
 
             # Set gradient computation permission
             if compute_gradient:
-                x_i.requires_grad = True
+                x[i].requires_grad = True
 
             # Re-scale the input audio to the magnitude used to train Espresso model
-            x_i = x_i * 32767
+            x[i] = x[i] * 32767
 
             # Form the batch
-            batch.append((x_i, target))
+            batch.append((x[i], target))
 
         # We must keep the order of the batch for later use as the following function will change its order
         batch_idx = sorted(range(len(batch)), key=lambda i: batch[i][0].size(0), reverse=True)
 
         # The collate function is important to convert input into model space
         batch_dict = _collate_fn(batch)
+
+        # return inputs, targets, input_percentages, target_sizes, batch_idx
+        return batch_dict, batch_idx
+
+    def _preprocess_transform_model_input(
+        self,
+        x: "torch.Tensor",
+        y: np.ndarray,
+    ) -> Tuple[Dict, List]:
+        """
+        Apply preprocessing and then transform the user input space into the model input space. This function is used
+        by the ASR attack to attack into the PyTorchDeepSpeech estimator whose defences are called with the
+        `_apply_preprocessing` function.
+
+        :param x: Samples of shape (nb_samples, seq_length).
+        :param y: Target values of shape (nb_samples). Each sample in `y` is a string and it may possess different
+                  lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`.
+        :param real_lengths: Real lengths of original sequences.
+        :return: A tuple of inputs and targets in the model space with the original index
+                 `(inputs, targets, input_percentages, target_sizes, batch_idx)`, where:
+                 - inputs: model inputs of shape (nb_samples, nb_frequencies, seq_length).
+                 - targets: ground truth targets of shape (sum over nb_samples of real seq_lengths).
+                 - input_percentages: percentages of real inputs in inputs.
+                 - target_sizes: list of real seq_lengths.
+                 - batch_idx: original index of inputs.
+        """
+        import torch  # lgtm [py/repeated-import]
+
+        # Apply preprocessing
+        x_batch = []
+        for i, _ in enumerate(x):
+            preprocessed_x_i, _ = self._apply_preprocessing(x=x[i], y=None, no_grad=False)
+            x_batch.append(preprocessed_x_i)
+
+        x = torch.stack(x_batch)
+
+        # Transform the input space
+        batch_dict, batch_idx = self._transform_model_input(
+            x=x,
+            y=y,
+            compute_gradient=False,
+        )
 
         return batch_dict, batch_idx
 
@@ -467,13 +478,52 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
                                 `original_output = np.array(['SIXTY ONE', 'HELLO'])`.
         :return: The loss and the decoded output.
         """
-        raise NotImplementedError
+        # Transform data into the model input space
+        batch_dict, batch_idx = self._preprocess_transform_model_input(
+            x=masked_adv_input.to(self.device),
+            y=original_output,
+        )
+
+        # Compute the loss
+        self._model.train()
+        loss, _, _ = self.criterion(self._model, batch_dict)
+
+        # Compute transcription
+        def get_symbols_to_strip_from_output(generator):
+            if hasattr(generator, "symbols_to_strip_from_output"):
+                return generator.symbols_to_strip_from_output
+
+            return {generator.eos, generator.pad}
+
+        # Put the model in the eval mode
+        self._model.eval()
+
+        # Get decoded output
+        decoded_output = []
+        hypos = self.task.inference_step(self.generator, self._models, batch_dict)
+
+        for _, hypos_i in enumerate(hypos):
+            # Process top predictions
+            for _, hypo in enumerate(hypos_i[: self.esp_args.nbest]):
+                hypo_str = self.dictionary.string(
+                    hypo["tokens"].int().cpu(),
+                    bpe_symbol=None,
+                    extra_symbols_to_ignore=get_symbols_to_strip_from_output(self.generator),
+                )  # not removing bpe at this point
+                detok_hypo_str = self.bpe.decode(hypo_str)
+                decoded_output.append(detok_hypo_str)
+
+        decoded_output_array = np.array(decoded_output)
+        decoded_output_copy = decoded_output_array.copy()
+        decoded_output_array[batch_idx] = decoded_output_copy  # revert decoded output to its original order
+
+        return loss, decoded_output_array
 
     def to_training_mode(self) -> None:
         """
         Put the estimator in the training mode.
         """
-        raise NotImplementedError
+        self._model.train()
 
     @property
     def sample_rate(self) -> int:

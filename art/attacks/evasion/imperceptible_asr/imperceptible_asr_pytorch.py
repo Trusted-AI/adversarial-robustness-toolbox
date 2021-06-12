@@ -78,13 +78,9 @@ class ImperceptibleASRPyTorch(EvasionAttack):
     ]
 
     _estimator_requirements = (
-        BaseEstimator,
-        LossGradientsMixin,
-        NeuralNetworkMixin,
-        SpeechRecognizerMixin,
         PytorchSpeechRecognizerMixin,
+        SpeechRecognizerMixin,
         PyTorchEstimator,
-        PyTorchDeepSpeech,
     )
 
     def __init__(
