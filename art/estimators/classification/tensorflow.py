@@ -1037,6 +1037,9 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
                         class_gradient = tape.gradient(prediction, x_input).numpy()
                         class_gradients.append(class_gradient)
+                        # Break after 1 iteration for binary classification case
+                        if len(predictions.shape) == 1 or predictions.shape[1] == 1:
+                            break
 
                     gradients = np.swapaxes(np.array(class_gradients), 0, 1)
 
@@ -1312,48 +1315,53 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         import tensorflow as tf  # lgtm [py/repeated-import]
         from art.config import ART_NUMPY_DTYPE
 
-        if isinstance(self._model, tf.keras.models.Sequential):
-            i_layer = None
-            if self.layer_names is None:
-                raise ValueError("No layer names identified.")
+        if not isinstance(self._model, tf.keras.models.Sequential):
+            raise ValueError("Method get_activations is not supported for non-Sequential models.")
 
-            if isinstance(layer, six.string_types):
-                if layer not in self.layer_names:
-                    raise ValueError("Layer name %s is not part of the graph." % layer)
-                for i_name, name in enumerate(self.layer_names):
-                    if name == layer:
-                        i_layer = i_name
-                        break
-            elif isinstance(layer, int):
-                if layer < -len(self.layer_names) or layer >= len(self.layer_names):
-                    raise ValueError(
-                        "Layer index %d is outside of range (-%d to %d)."
-                        % (layer, len(self.layer_names), len(self.layer_names) - 1)
-                    )
-                i_layer = layer
-            else:
-                raise TypeError("Layer must be of type `str` or `int`.")
+        i_layer = None
+        if self.layer_names is None:
+            raise ValueError("No layer names identified.")
 
-            activation_model = tf.keras.Model(self._model.layers[0].input, self._model.layers[i_layer].output)
-
-            # Apply preprocessing
-            x_preprocessed, _ = self._apply_preprocessing(x=x, y=None, fit=False)
-
-            # Determine shape of expected output and prepare array
-            output_shape = self._model.layers[i_layer].output_shape
-            activations = np.zeros((x_preprocessed.shape[0],) + output_shape[1:], dtype=ART_NUMPY_DTYPE)
-
-            # Get activations with batching
-            for batch_index in range(int(np.ceil(x_preprocessed.shape[0] / float(batch_size)))):
-                begin, end = (
-                    batch_index * batch_size,
-                    min((batch_index + 1) * batch_size, x_preprocessed.shape[0]),
+        if isinstance(layer, six.string_types):
+            if layer not in self.layer_names:
+                raise ValueError("Layer name %s is not part of the graph." % layer)
+            for i_name, name in enumerate(self.layer_names):
+                if name == layer:
+                    i_layer = i_name
+                    break
+        elif isinstance(layer, int):
+            if layer < -len(self.layer_names) or layer >= len(self.layer_names):
+                raise ValueError(
+                    "Layer index %d is outside of range (-%d to %d)."
+                    % (layer, len(self.layer_names), len(self.layer_names) - 1)
                 )
-                activations[begin:end] = activation_model([x_preprocessed[begin:end]], training=False).numpy()
+            i_layer = layer
+        else:
+            raise TypeError("Layer must be of type `str` or `int`.")
 
-            return activations
+        activation_model = tf.keras.Model(self._model.layers[0].input, self._model.layers[i_layer].output)
 
-        return None
+        if framework:
+            if isinstance(x, tf.Tensor):
+                return activation_model(x, training=False)
+            return activation_model(tf.convert_to_tensor(x), training=False)
+
+        # Apply preprocessing
+        x_preprocessed, _ = self._apply_preprocessing(x=x, y=None, fit=False)
+
+        # Determine shape of expected output and prepare array
+        output_shape = self._model.layers[i_layer].output_shape
+        activations = np.zeros((x_preprocessed.shape[0],) + output_shape[1:], dtype=ART_NUMPY_DTYPE)
+
+        # Get activations with batching
+        for batch_index in range(int(np.ceil(x_preprocessed.shape[0] / float(batch_size)))):
+            begin, end = (
+                batch_index * batch_size,
+                min((batch_index + 1) * batch_size, x_preprocessed.shape[0]),
+            )
+            activations[begin:end] = activation_model([x_preprocessed[begin:end]], training=False).numpy()
+
+        return activations
 
     def save(self, filename: str, path: Optional[str] = None) -> None:
         """

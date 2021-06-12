@@ -28,7 +28,7 @@ from typing import Any, Optional, Union, TYPE_CHECKING
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 
-from art.attacks.attack import InferenceAttack
+from art.attacks.attack import MembershipInferenceAttack
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import check_and_transform_label_format
@@ -39,7 +39,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class MembershipInferenceBlackBox(InferenceAttack):
+class MembershipInferenceBlackBox(MembershipInferenceAttack):
     """
     Implementation of a learned black-box membership inference attack.
 
@@ -47,7 +47,7 @@ class MembershipInferenceBlackBox(InferenceAttack):
     depending on the type of model and provided configuration.
     """
 
-    attack_params = InferenceAttack.attack_params + [
+    attack_params = MembershipInferenceAttack.attack_params + [
         "input_type",
         "attack_model_type",
         "attack_model",
@@ -231,10 +231,7 @@ class MembershipInferenceBlackBox(InferenceAttack):
                     loss.backward()
                     optimizer.step()
         else:
-            if self.attack_model_type == "gb":
-                y_ready = check_and_transform_label_format(y_new, len(np.unique(y_new)), return_one_hot=False)
-            else:
-                y_ready = check_and_transform_label_format(y_new, len(np.unique(y_new)), return_one_hot=True)
+            y_ready = check_and_transform_label_format(y_new, len(np.unique(y_new)), return_one_hot=False)
             self.attack_model.fit(np.c_[x_1, x_2], y_ready)  # type: ignore
 
     def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
@@ -243,7 +240,10 @@ class MembershipInferenceBlackBox(InferenceAttack):
 
         :param x: Input records to attack.
         :param y: True labels for `x`.
-        :return: An array holding the inferred membership status, 1 indicates a member and 0 indicates non-member.
+        :param probabilities: a boolean indicating whether to return the predicted probabilities per class, or just
+                              the predicted class
+        :return: An array holding the inferred membership status, 1 indicates a member and 0 indicates non-member,
+                 or class probabilities.
         """
         if y is None:
             raise ValueError("MembershipInferenceBlackBox requires true labels `y`.")
@@ -251,6 +251,11 @@ class MembershipInferenceBlackBox(InferenceAttack):
         if self.estimator.input_shape is not None:
             if self.estimator.input_shape[0] != x.shape[1]:
                 raise ValueError("Shape of x does not match input_shape of classifier")
+
+        if "probabilities" in kwargs.keys():
+            probabilities = kwargs.get("probabilities")
+        else:
+            probabilities = False
 
         y = check_and_transform_label_format(y, len(np.unique(y)), return_one_hot=True)
 
@@ -274,7 +279,10 @@ class MembershipInferenceBlackBox(InferenceAttack):
             for input1, input2, _ in test_loader:
                 input1, input2 = to_cuda(input1), to_cuda(input2)
                 outputs = self.attack_model(input1, input2)  # type: ignore
-                predicted = torch.round(outputs)
+                if not probabilities:
+                    predicted = torch.round(outputs)
+                else:
+                    predicted = outputs
                 predicted = from_cuda(predicted)
 
                 if inferred is None:
@@ -283,12 +291,25 @@ class MembershipInferenceBlackBox(InferenceAttack):
                     inferred = np.vstack((inferred, predicted.detach().numpy()))
 
             if inferred is not None:
-                inferred_return = inferred.reshape(-1).astype(np.int)
+                if not probabilities:
+                    inferred_return = np.round(inferred)
+                else:
+                    inferred_return = inferred
             else:
                 raise ValueError("No data available.")
-        else:
+        elif not self.default_model:
+            # assumes the predict method of the supplied model returns probabilities
             pred = self.attack_model.predict(np.c_[features, y])  # type: ignore
-            inferred_return = np.array([np.argmax(arr) for arr in pred])
+            if probabilities:
+                inferred_return = pred
+            else:
+                inferred_return = np.round(pred)
+        else:
+            pred = self.attack_model.predict_proba(np.c_[features, y])  # type: ignore
+            if probabilities:
+                inferred_return = pred[:, [1]]
+            else:
+                inferred_return = np.round(pred[:, [1]])
 
         return inferred_return
 

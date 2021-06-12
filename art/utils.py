@@ -101,6 +101,7 @@ if TYPE_CHECKING:
     from art.estimators.pytorch import PyTorchEstimator
     from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
     from art.estimators.speech_recognition.tensorflow_lingvo import TensorFlowLingvoASR
+    from art.estimators.tensorflow import TensorFlowV2Estimator
 
     CLASSIFIER_LOSS_GRADIENTS_TYPE = Union[  # pylint: disable=C0103
         ClassifierLossGradients,
@@ -194,6 +195,11 @@ if TYPE_CHECKING:
     SPEECH_RECOGNIZER_TYPE = Union[  # pylint: disable=C0103
         PyTorchDeepSpeech,
         TensorFlowLingvoASR,
+    ]
+
+    TENSORFLOWV2_ESTIMATOR_TYPE = Union[  # pylint: disable=C0103
+        TensorFlowV2Classifier,
+        TensorFlowV2Estimator,
     ]
 
 # --------------------------------------------------------------------------------------------------------- DEPRECATION
@@ -522,13 +528,18 @@ def check_and_transform_label_format(
         if len(labels.shape) == 2 and labels.shape[1] > 1:
             if not return_one_hot:
                 labels = np.argmax(labels, axis=1)
-        elif len(labels.shape) == 2 and labels.shape[1] == 1:
+        elif len(labels.shape) == 2 and labels.shape[1] == 1 and nb_classes is not None and nb_classes > 2:
             labels = np.squeeze(labels)
             if return_one_hot:
                 labels = to_categorical(labels, nb_classes)
+        elif len(labels.shape) == 2 and labels.shape[1] == 1 and nb_classes is not None and nb_classes == 2:
+            pass
         elif len(labels.shape) == 1:
             if return_one_hot:
-                labels = to_categorical(labels, nb_classes)
+                if nb_classes == 2:
+                    labels = np.expand_dims(labels, axis=1)
+                else:
+                    labels = to_categorical(labels, nb_classes)
         else:
             raise ValueError(
                 "Shape of labels not recognised."
@@ -610,7 +621,10 @@ def get_labels_np_array(preds: np.ndarray) -> np.ndarray:
     :param preds: Array of class confidences, nb of instances as first dimension.
     :return: Labels.
     """
-    preds_max = np.amax(preds, axis=1, keepdims=True)
+    if len(preds.shape) >= 2:
+        preds_max = np.amax(preds, axis=1, keepdims=True)
+    else:
+        preds_max = np.round(preds)
     y = preds == preds_max
     y = y.astype(np.uint8)
     return y
@@ -636,11 +650,19 @@ def compute_success_array(
     :param batch_size: Batch size.
     :return: Percentage of successful adversarial samples.
     """
-    adv_preds = np.argmax(classifier.predict(x_adv, batch_size=batch_size), axis=1)
+    adv_preds = classifier.predict(x_adv, batch_size=batch_size)
+    if len(adv_preds.shape) >= 2:
+        adv_preds = np.argmax(adv_preds, axis=1)
+    else:
+        adv_preds = np.round(adv_preds)
     if targeted:
         attack_success = adv_preds == np.argmax(labels, axis=1)
     else:
-        preds = np.argmax(classifier.predict(x_clean, batch_size=batch_size), axis=1)
+        preds = classifier.predict(x_clean, batch_size=batch_size)
+        if len(preds.shape) >= 2:
+            preds = np.argmax(preds, axis=1)
+        else:
+            preds = np.round(preds)
         attack_success = adv_preds != preds
 
     return attack_success
@@ -1091,12 +1113,12 @@ def get_file(filename: str, url: str, path: Optional[str] = None, extract: bool 
         error_msg = "URL fetch failure on {}: {} -- {}"
         try:
             try:
+                from six.moves.urllib.error import HTTPError, URLError
+                from six.moves.urllib.request import urlretrieve
+
                 # The following two lines should prevent occasionally occurring
                 # [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed (_ssl.c:847)
                 import ssl
-
-                from six.moves.urllib.error import HTTPError, URLError
-                from six.moves.urllib.request import urlretrieve
 
                 ssl._create_default_https_context = ssl._create_unverified_context  # pylint: disable=W0212
 
