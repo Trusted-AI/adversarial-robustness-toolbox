@@ -125,6 +125,11 @@ class BoundaryAttack(EvasionAttack):
         """
         y = check_and_transform_label_format(y, self.estimator.nb_classes, return_one_hot=False)
 
+        if y is not None and self.estimator.nb_classes == 2 and y.shape[1] == 1:
+            raise ValueError(
+                "This attack has not yet been tested for binary classification with a single output classifier."
+            )
+
         # Get clip_min and clip_max from the classifier or infer them from data
         if self.estimator.clip_values is not None:
             clip_min, clip_max = self.estimator.clip_values

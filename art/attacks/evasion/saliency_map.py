@@ -98,6 +98,11 @@ class SaliencyMapMethod(EvasionAttack):
 
             targets = np.argmax(random_targets(preds, self.estimator.nb_classes), axis=1)
         else:
+            if self.estimator.nb_classes == 2 and y.shape[1] == 1:
+                raise ValueError(
+                    "This attack has not yet been tested for binary classification with a single output classifier."
+                )
+
             targets = np.argmax(y, axis=1)
 
         # Compute perturbation with implicit batching

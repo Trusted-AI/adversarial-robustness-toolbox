@@ -898,7 +898,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Run prediction with batch processing
-        results = np.zeros((x_preprocessed.shape[0], self.nb_classes), dtype=np.float32)
+        results_list = []
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         for m in range(num_batch):
             # Batch indexes
@@ -908,7 +908,9 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
             )
 
             # Run prediction
-            results[begin:end] = self._model(x_preprocessed[begin:end], training=training_mode)
+            results_list.append(self._model(x_preprocessed[begin:end], training=training_mode))
+
+        results = np.vstack(results_list)
 
         # Apply postprocessing
         predictions = self._apply_postprocessing(preds=results, fit=False)
