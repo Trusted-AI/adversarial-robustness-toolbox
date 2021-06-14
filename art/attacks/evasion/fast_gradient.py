@@ -409,9 +409,14 @@ class FastGradientMethod(EvasionAttack):
                     )
 
         # Check for NaN before normalisation an replace with 0
-        if np.isnan(grad).any():
+        if grad.dtype != np.object and np.isnan(grad).any():
             logger.warning("Elements of the loss gradient are NaN and have been replaced with 0.0.")
             grad = np.where(np.isnan(grad), 0.0, grad)
+        else:
+            for i, _ in enumerate(grad):
+                grad_i_array = grad[i].astype(np.float32)
+                if np.isnan(grad_i_array).any():
+                    grad[i] = np.where(np.isnan(grad_i_array), 0.0, grad_i_array).astype(np.object)
 
         # Apply mask
         if mask is not None:
@@ -419,7 +424,7 @@ class FastGradientMethod(EvasionAttack):
 
         # Apply norm bound
         def _apply_norm(grad, object_type=False):
-            if np.isinf(grad).any():
+            if (grad.dtype != np.object and np.isinf(grad).any()) or np.isnan(grad.astype(np.float32)).any():
                 logger.info("The loss gradient array contains at least one positive or negative infinity.")
 
             if self.norm in [np.inf, "inf"]:
@@ -454,7 +459,16 @@ class FastGradientMethod(EvasionAttack):
     ) -> np.ndarray:
 
         perturbation_step = eps_step * perturbation
-        perturbation_step[np.isnan(perturbation_step)] = 0
+        if perturbation_step.dtype != np.object:
+            perturbation_step[np.isnan(perturbation_step)] = 0
+        else:
+            for i, _ in enumerate(perturbation_step):
+                perturbation_step_i_array = perturbation_step[i].astype(np.float32)
+                if np.isnan(perturbation_step_i_array).any():
+                    perturbation_step[i] = np.where(
+                        np.isnan(perturbation_step_i_array), 0.0, perturbation_step_i_array
+                    ).astype(np.object)
+
         batch = batch + perturbation_step
         if self.estimator.clip_values is not None:
             clip_min, clip_max = self.estimator.clip_values
