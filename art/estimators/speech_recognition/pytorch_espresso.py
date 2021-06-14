@@ -288,7 +288,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
         src_frames = batch_dict["net_input"]["src_tokens"].grad.cpu().numpy().copy()
         src_lengths = batch_dict["net_input"]["src_lengths"].cpu().numpy().copy()
         for i, _ in enumerate(x_preprocessed):
-            results_list.append(src_frames[i, :src_lengths[i], :])
+            results_list.append(src_frames[i, : src_lengths[i], :])
 
         results = np.array(results_list)
 
