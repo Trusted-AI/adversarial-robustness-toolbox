@@ -283,10 +283,10 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                 y_index = np.expand_dims(y_index, axis=1)
                 return y_index
             return y
-        else:
-            if isinstance(y, torch.Tensor):
-                return y.float()
-            return y.astype(np.float32)
+
+        if isinstance(y, torch.Tensor):
+            return y.float()
+        return y.astype(np.float32)
 
     def predict(  # pylint: disable=W0221
         self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs

@@ -2,6 +2,7 @@
 Module providing wrappers for :class:`.Classifier` instances to simulate different capacities and behaviours, like
 black-box gradient estimation.
 """
+# pylint: disable=C0413
 import warnings
 
 warnings.simplefilter("always", category=DeprecationWarning)

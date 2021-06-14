@@ -2,6 +2,7 @@
 Classifier API for applying all attacks. Use the :class:`.Classifier` wrapper to be able to apply an attack to a
 existing model.
 """
+# pylint: disable=C0413
 import warnings
 
 warnings.simplefilter("always", category=DeprecationWarning)
