@@ -278,20 +278,40 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x_in, y, fit=False)
 
         # Transform data into the model input space
-        batch, _ = self._transform_model_input(x=x_preprocessed, y=y_preprocessed, compute_gradient=True)
+        batch_dict, batch_idx = self._transform_model_input(x=x_preprocessed, y=y_preprocessed, compute_gradient=True)
 
-        loss, _, _ = self.criterion(self._model, batch)
+        loss, _, _ = self.criterion(self._model, batch_dict)
         loss.backward()
 
         # Get results
-        results = []
-        for _, x_i in enumerate(x_preprocessed):
-            results.append(x_i.grad.cpu().numpy().copy())
+        results_list = list()
+        src_frames = batch_dict["net_input"]["src_tokens"].grad.cpu().numpy().copy()
+        src_lengths = batch_dict["net_input"]["src_lengths"].cpu().numpy().copy()
+        for i, _ in enumerate(x_preprocessed):
+            results_list.append(src_frames[i, :src_lengths[i], :])
 
-        results = np.array(results)
+        results = np.array(results_list)
+
+        if results.shape[0] == 1:
+            results_ = np.empty(len(results), dtype=object)
+            results_[:] = list(results)
+            results = results_
+
+        # Rearrange to the original order
+        results_ = results.copy()
+        results[batch_idx] = results_
+
         results = self._apply_preprocessing_gradient(x_in, results)
 
+        if x.dtype != np.object:
+            results = np.array([i for i in results], dtype=x.dtype)  # pylint: disable=R1721
+            assert results.shape == x.shape and results.dtype == x.dtype
+        else:
+            results = np.array([np.squeeze(res) for res in results], dtype=np.object)
+
+        # Unfreeze batch norm layers again
         self.set_batchnorm(train=True)
+
         return results
 
     def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, **kwargs) -> None:
@@ -346,6 +366,10 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
                 seq_length = sample.size(0)
                 src_frames[i, :seq_length, :] = sample.unsqueeze(1)
                 src_lengths[i] = seq_length
+
+            if compute_gradient:
+                src_frames = torch.tensor(src_frames, requires_grad=True)
+                src_frames.requires_grad = True
 
             # for input feeding in training
             if batch[0][1] is not None:
