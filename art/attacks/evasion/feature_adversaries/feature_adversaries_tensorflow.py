@@ -122,9 +122,7 @@ class FeatureAdversariesTensorFlowV2(EvasionAttack):
                 guide_representation = self.estimator.get_activations(guide, layer_i, self.batch_size, True)
 
                 axis = tuple(range(1, len(source_adv.shape)))
-                soft_constraint = tf.cast(
-                    tf.math.reduce_max(tf.abs(source_adv - source_orig), axis=axis), tf.float32
-                )
+                soft_constraint = tf.cast(tf.math.reduce_max(tf.abs(source_adv - source_orig), axis=axis), tf.float32)
 
                 axis = tuple(range(1, len(adv_representation.shape)))
                 representation_loss += tf.reduce_sum(tf.square(adv_representation - guide_representation), axis=axis)
