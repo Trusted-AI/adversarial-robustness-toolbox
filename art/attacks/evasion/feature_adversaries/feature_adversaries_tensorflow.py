@@ -21,7 +21,7 @@ This module implements the Feature Adversaries attack in TensorFlow v2.
 | Paper link: https://arxiv.org/abs/1511.05122
 """
 import logging
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Optional, Tuple, Union
 
 import numpy as np
 from tqdm.auto import trange
@@ -47,9 +47,9 @@ class FeatureAdversariesTensorFlowV2(EvasionAttack):
     """
 
     attack_params = EvasionAttack.attack_params + [
+        "delta",
         "optimizer",
         "optimizer_kwargs",
-        "delta",
         "lambda_",
         "layer",
         "max_iter",
@@ -64,11 +64,11 @@ class FeatureAdversariesTensorFlowV2(EvasionAttack):
     def __init__(
         self,
         estimator: "TENSORFLOWV2_ESTIMATOR_TYPE",
+        delta: float,
         optimizer: Optional["Optimizer"] = None,
         optimizer_kwargs: Optional[dict] = None,
-        delta: float = 15 / 255,
         lambda_: float = 0.0,
-        layer: Optional[Union[int, str]] = -1,
+        layer: Union[int, str, Tuple[int, ...], Tuple[str, ...]] = -1,
         max_iter: int = 100,
         batch_size: int = 32,
         step_size: Optional[Union[int, float]] = None,
@@ -79,12 +79,12 @@ class FeatureAdversariesTensorFlowV2(EvasionAttack):
         Create a :class:`.FeatureAdversariesTensorFlowV2` instance.
 
         :param estimator: A trained estimator.
+        :param delta: The maximum deviation between source and guide images.
         :param optimizer: Optimizer applied to problem constrained only by clip values if defined, if None the
                           Projected Gradient Descent (PGD) optimizer is used.
         :param optimizer_kwargs: Additional optimizer arguments.
-        :param delta: The maximum deviation between source and guide images.
         :param lambda_: Regularization parameter of the L-inf soft constraint.
-        :param layer: Index of the representation layer.
+        :param layer: Index or tuple of indices of the representation layer(s).
         :param max_iter: The maximum number of iterations.
         :param batch_size: Batch size.
         :param step_size: Step size for PGD optimizer.
@@ -93,11 +93,11 @@ class FeatureAdversariesTensorFlowV2(EvasionAttack):
         """
         super().__init__(estimator=estimator)
 
+        self.delta = delta
         self.optimizer = optimizer
         self._optimizer_kwargs = {} if optimizer_kwargs is None else optimizer_kwargs
-        self.delta = delta
         self.lambda_ = lambda_
-        self.layer = layer
+        self.layer = layer if isinstance(layer, tuple) else (layer,)
         self.batch_size = batch_size
         self.max_iter = max_iter
         self.step_size = step_size
@@ -116,14 +116,18 @@ class FeatureAdversariesTensorFlowV2(EvasionAttack):
         import tensorflow as tf  # lgtm [py/repeated-import]
 
         def loss_fn(source_orig, source_adv, guide):
-            adv_representation = self.estimator.get_activations(source_adv, self.layer, self.batch_size, True)
-            guide_representation = self.estimator.get_activations(guide, self.layer, self.batch_size, True)
+            representation_loss = tf.constant([0.0], shape=(1,), dtype=tf.float32)
+            for layer_i in self.layer:
+                adv_representation = self.estimator.get_activations(source_adv, layer_i, self.batch_size, True)
+                guide_representation = self.estimator.get_activations(guide, layer_i, self.batch_size, True)
 
-            axis = tuple(range(1, len(source_adv.shape)))
-            soft_constraint = tf.math.reduce_max(tf.abs(source_adv - source_orig), axis=axis)
+                axis = tuple(range(1, len(source_adv.shape)))
+                soft_constraint = tf.cast(
+                    tf.math.reduce_max(tf.abs(source_adv - source_orig), axis=axis), dtype=tf.float32
+                )
 
-            axis = tuple(range(1, len(adv_representation.shape)))
-            representation_loss = tf.reduce_sum(tf.square(adv_representation - guide_representation), axis=axis)
+                axis = tuple(range(1, len(adv_representation.shape)))
+                representation_loss += tf.reduce_sum(tf.square(adv_representation - guide_representation), axis=axis)
 
             loss = tf.math.reduce_mean(representation_loss + self.lambda_ * soft_constraint)
             return loss
@@ -218,7 +222,7 @@ class FeatureAdversariesTensorFlowV2(EvasionAttack):
         if self.lambda_ < 0.0:
             raise ValueError("The regularization parameter `lambda_` has to be non-negative.")
 
-        if not isinstance(self.layer, int) and not isinstance(self.layer, str):
+        if not isinstance(self.layer, int) and not isinstance(self.layer, str) and not isinstance(self.layer, tuple):
             raise ValueError("The value of the representation layer must be integer or string.")
 
         if not isinstance(self.max_iter, int):

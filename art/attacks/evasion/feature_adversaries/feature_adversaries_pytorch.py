@@ -47,9 +47,9 @@ class FeatureAdversariesPyTorch(EvasionAttack):
     """
 
     attack_params = EvasionAttack.attack_params + [
+        "delta",
         "optimizer",
         "optimizer_kwargs",
-        "delta",
         "lambda_",
         "layer",
         "max_iter",
@@ -64,11 +64,11 @@ class FeatureAdversariesPyTorch(EvasionAttack):
     def __init__(
         self,
         estimator: "PYTORCH_ESTIMATOR_TYPE",
+        delta: float,
         optimizer: Optional["Optimizer"] = None,
         optimizer_kwargs: Optional[dict] = None,
-        delta: float = 15 / 255,
         lambda_: float = 0.0,
-        layer: Optional[Union[int, str]] = -1,
+        layer: Union[int, str] = -1,
         max_iter: int = 100,
         batch_size: int = 32,
         step_size: Optional[Union[int, float]] = None,
@@ -79,12 +79,12 @@ class FeatureAdversariesPyTorch(EvasionAttack):
         Create a :class:`.FeatureAdversariesPyTorch` instance.
 
         :param estimator: A trained estimator.
+        :param delta: The maximum deviation between source and guide images.
         :param optimizer: Optimizer applied to problem constrained only by clip values if defined, if None the
                           Projected Gradient Descent (PGD) optimizer is used.
         :param optimizer_kwargs: Additional optimizer arguments.
-        :param delta: The maximum deviation between source and guide images.
         :param lambda_: Regularization parameter of the L-inf soft constraint.
-        :param layer: Index of the representation layer.
+        :param layer: Index or tuple of indices of the representation layer(s).
         :param max_iter: The maximum number of iterations.
         :param batch_size: Batch size.
         :param step_size: Step size for PGD optimizer.
@@ -97,7 +97,7 @@ class FeatureAdversariesPyTorch(EvasionAttack):
         self._optimizer_kwargs = {} if optimizer_kwargs is None else optimizer_kwargs
         self.delta = delta
         self.lambda_ = lambda_
-        self.layer = layer
+        self.layer = layer if isinstance(layer, tuple) else (layer,)
         self.batch_size = batch_size
         self.max_iter = max_iter
         self.step_size = step_size
@@ -116,14 +116,16 @@ class FeatureAdversariesPyTorch(EvasionAttack):
         import torch  # lgtm [py/repeated-import]
 
         def loss_fn(source_orig, source_adv, guide):
-            adv_representation = self.estimator.get_activations(source_adv, self.layer, self.batch_size, True)
-            guide_representation = self.estimator.get_activations(guide, self.layer, self.batch_size, True)
+            representation_loss = torch.tensor([0.0]).to(self.estimator.device)
+            for layer_i in self.layer:
+                adv_representation = self.estimator.get_activations(source_adv, layer_i, self.batch_size, True)
+                guide_representation = self.estimator.get_activations(guide, layer_i, self.batch_size, True)
 
-            dim = tuple(range(1, len(source_adv.shape)))
-            soft_constraint = torch.amax(torch.abs(source_adv - source_orig), dim=dim)
+                dim = tuple(range(1, len(source_adv.shape)))
+                soft_constraint = torch.amax(torch.abs(source_adv - source_orig), dim=dim)
 
-            dim = tuple(range(1, len(adv_representation.shape)))
-            representation_loss = torch.sum(torch.square(adv_representation - guide_representation), dim=dim)
+                dim = tuple(range(1, len(adv_representation.shape)))
+                representation_loss += torch.sum(torch.square(adv_representation - guide_representation), dim=dim)
 
             loss = torch.mean(representation_loss + self.lambda_ * soft_constraint)
             return loss
@@ -221,7 +223,7 @@ class FeatureAdversariesPyTorch(EvasionAttack):
         if self.lambda_ < 0.0:
             raise ValueError("The regularization parameter `lambda_` has to be non-negative.")
 
-        if not isinstance(self.layer, int) and not isinstance(self.layer, str):
+        if not isinstance(self.layer, int) and not isinstance(self.layer, str) and not isinstance(self.layer, tuple):
             raise ValueError("The value of the representation layer must be integer or string.")
 
         if not isinstance(self.max_iter, int):
