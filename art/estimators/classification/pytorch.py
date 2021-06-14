@@ -282,6 +282,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                 y_index = np.argmax(y, axis=1).astype(np.float32)
                 y_index = np.expand_dims(y_index, axis=1)
                 return y_index
+            return y
         else:
             if isinstance(y, torch.Tensor):
                 return y.float()
