@@ -98,6 +98,11 @@ class TargetedUniversalPerturbation(EvasionAttack):
         if y is None:
             raise ValueError("Labels `y` cannot be None.")
 
+        if self.estimator.nb_classes == 2 and y.shape[1] == 1:
+            raise ValueError(
+                "This attack has not yet been tested for binary classification with a single output classifier."
+            )
+
         logger.info("Computing targeted universal perturbation based on %s attack.", self.attacker)
 
         # Init universal perturbation

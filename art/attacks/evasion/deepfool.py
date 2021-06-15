@@ -101,6 +101,11 @@ class DeepFool(EvasionAttack):
         x_adv = x.astype(ART_NUMPY_DTYPE)
         preds = self.estimator.predict(x, batch_size=self.batch_size)
 
+        if self.estimator.nb_classes == 2 and preds.shape[1] == 1:
+            raise ValueError(
+                "This attack has not yet been tested for binary classification with a single output classifier."
+            )
+
         if is_probability(preds[0]):
             logger.warning(
                 "It seems that the attacked model is predicting probabilities. DeepFool expects logits as model output "

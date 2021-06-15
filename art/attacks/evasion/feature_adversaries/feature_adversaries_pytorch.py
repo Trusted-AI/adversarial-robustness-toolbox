@@ -21,7 +21,7 @@ This module implements the Feature Adversaries attack in PyTorch.
 | Paper link: https://arxiv.org/abs/1511.05122
 """
 import logging
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Optional, Tuple, Union
 
 import numpy as np
 from tqdm.auto import trange
@@ -68,7 +68,7 @@ class FeatureAdversariesPyTorch(EvasionAttack):
         optimizer: Optional["Optimizer"] = None,
         optimizer_kwargs: Optional[dict] = None,
         lambda_: float = 0.0,
-        layer: Union[int, str] = -1,
+        layer: Union[int, str, Tuple[int, ...], Tuple[str, ...]] = -1,
         max_iter: int = 100,
         batch_size: int = 32,
         step_size: Optional[Union[int, float]] = None,
@@ -93,9 +93,9 @@ class FeatureAdversariesPyTorch(EvasionAttack):
         """
         super().__init__(estimator=estimator)
 
+        self.delta = delta
         self.optimizer = optimizer
         self._optimizer_kwargs = {} if optimizer_kwargs is None else optimizer_kwargs
-        self.delta = delta
         self.lambda_ = lambda_
         self.layer = layer if isinstance(layer, tuple) else (layer,)
         self.batch_size = batch_size

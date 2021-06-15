@@ -14,6 +14,12 @@ Attribute Inference Black-Box
    :members:
    :special-members:
 
+Attribute Inference Membership
+------------------------------
+.. autoclass:: AttributeInferenceMembership
+   :members:
+   :special-members:
+
 Attribute Inference White-Box Lifestyle Decision-Tree
 -----------------------------------------------------
 .. autoclass:: AttributeInferenceWhiteBoxLifestyleDecisionTree

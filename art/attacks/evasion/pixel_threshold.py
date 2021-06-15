@@ -154,6 +154,10 @@ class PixelThreshold(EvasionAttack):
                 raise ValueError("Target labels `y` need to be provided for a targeted attack.")
             y = np.argmax(self.estimator.predict(x), axis=1)
         else:
+            if self.estimator.nb_classes == 2 and y.shape[1] == 1:
+                raise ValueError(
+                    "This attack has not yet been tested for binary classification with a single output classifier."
+                )
             if len(y.shape) > 1:
                 y = np.argmax(y, axis=1)
 

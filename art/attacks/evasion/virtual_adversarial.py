@@ -93,6 +93,12 @@ class VirtualAdversarialMethod(EvasionAttack):
         """
         x_adv = x.astype(ART_NUMPY_DTYPE)
         preds = self.estimator.predict(x_adv, batch_size=self.batch_size)
+
+        if self.estimator.nb_classes == 2 and preds.shape[1] == 1:
+            raise ValueError(
+                "This attack has not yet been tested for binary classification with a single output classifier."
+            )
+
         if (preds < 0.0).any() or (preds > 1.0).any():
             raise TypeError(
                 "This attack requires a classifier predicting probabilities in the range [0, 1] as output."

@@ -159,6 +159,12 @@ class SquareAttack(EvasionAttack):
             if isinstance(self.estimator, ClassifierMixin):
                 y = get_labels_np_array(y)
 
+        if isinstance(self.estimator, ClassifierMixin):
+            if self.estimator.nb_classes == 2 and y.shape[1] == 1:
+                raise ValueError(
+                    "This attack has not yet been tested for binary classification with a single output classifier."
+                )
+
         if self.estimator.channels_first:
             channels = x.shape[1]
             height = x.shape[2]

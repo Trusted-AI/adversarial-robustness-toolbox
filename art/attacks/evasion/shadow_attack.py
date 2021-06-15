@@ -132,6 +132,11 @@ class ShadowAttack(EvasionAttack):
         else:
             self.targeted = True
 
+        if self.estimator.nb_classes == 2 and y.shape[1] == 1:
+            raise ValueError(
+                "This attack has not yet been tested for binary classification with a single output classifier."
+            )
+
         if x.shape[0] > 1 or y.shape[0] > 1:
             raise ValueError("This attack only accepts a single sample as input.")
 
