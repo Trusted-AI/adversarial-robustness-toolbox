@@ -64,9 +64,9 @@ class AttributeInferenceWhiteBoxLifestyleDecisionTree(AttributeInferenceAttack):
         :param x: Input to attack. Includes all features except the attacked feature.
         :param y: Not used.
         :param values: Possible values for attacked feature.
-        :type values: `np.ndarray`
+        :type values: list
         :param priors: Prior distributions of attacked feature values. Same size array as `values`.
-        :type priors: `np.ndarray`
+        :type priors: list
         :return: The inferred feature values.
         :rtype: `np.ndarray`
         """

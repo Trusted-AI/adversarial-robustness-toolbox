@@ -40,6 +40,7 @@ from tests.utils import (
     get_image_classifier_kr_tf_with_wildcard,
     get_image_classifier_mxnet_custom_ini,
     get_image_classifier_pt,
+    get_image_classifier_pt_functional,
     get_image_classifier_tf,
     get_tabular_classifier_kr,
     get_tabular_classifier_pt,
@@ -252,7 +253,9 @@ def image_data_generator(framework, get_default_mnist_subset, image_iterator, de
         data_generator = None
         if framework == "keras" or framework == "kerastf":
             data_generator = KerasDataGenerator(
-                iterator=image_it, size=x_train_mnist.shape[0], batch_size=default_batch_size,
+                iterator=image_it,
+                size=x_train_mnist.shape[0],
+                batch_size=default_batch_size,
             )
 
         if framework == "tensorflow1":
@@ -373,10 +376,17 @@ def get_image_classifier_mx_model():
             super(Model, self).__init__(**kwargs)
             self.model = mxnet.gluon.nn.Sequential()
             self.model.add(
-                mxnet.gluon.nn.Conv2D(channels=1, kernel_size=7, activation="relu",),
+                mxnet.gluon.nn.Conv2D(
+                    channels=1,
+                    kernel_size=7,
+                    activation="relu",
+                ),
                 mxnet.gluon.nn.MaxPool2D(pool_size=4, strides=4),
                 mxnet.gluon.nn.Flatten(),
-                mxnet.gluon.nn.Dense(10, activation=None,),
+                mxnet.gluon.nn.Dense(
+                    10,
+                    activation=None,
+                ),
             )
 
         def forward(self, x):
@@ -534,8 +544,11 @@ def image_dl_estimator(framework, get_image_classifier_mx_instance):
                 classifier, sess = get_image_classifier_tf(**kwargs)
                 return classifier, sess
         if framework == "pytorch":
-            if wildcard is False and functional is False:
-                classifier = get_image_classifier_pt(**kwargs)
+            if not wildcard:
+                if functional:
+                    classifier = get_image_classifier_pt_functional(**kwargs)
+                else:
+                    classifier = get_image_classifier_pt(**kwargs)
         if framework == "kerastf":
             if wildcard:
                 classifier = get_image_classifier_kr_tf_with_wildcard(**kwargs)

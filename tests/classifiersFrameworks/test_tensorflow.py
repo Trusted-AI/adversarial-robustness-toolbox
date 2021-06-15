@@ -20,10 +20,15 @@ import pytest
 
 import tensorflow as tf
 
+import sklearn
+import sklearn.datasets
+import sklearn.model_selection
+
 from art.estimators.classification.tensorflow import TensorFlowV2Classifier
+from art.estimators.classification.keras import KerasClassifier
 from art.defences.preprocessor.spatial_smoothing import SpatialSmoothing
 from art.defences.preprocessor.spatial_smoothing_tensorflow import SpatialSmoothingTensorFlowV2
-from art.attacks.evasion import FastGradientMethod
+from art.attacks.evasion import FastGradientMethod, ProjectedGradientDescent
 
 from tests.attacks.utils import backend_test_defended_images
 from tests.utils import ARTTestException
@@ -215,3 +220,61 @@ def test_fgsm_defences(art_warning, fix_get_mnist_subset, image_dl_estimator):
         backend_test_defended_images(attack, fix_get_mnist_subset)
     except ARTTestException as e:
         art_warning(e)
+
+
+@pytest.mark.only_with_platform("tensorflow2")
+def test_binary_keras_instantiation_and_attack_pgd(art_warning):
+    tf.compat.v1.disable_eager_execution()
+    try:
+        x, y = sklearn.datasets.make_classification(
+            n_samples=10000, n_features=20, n_informative=5, n_redundant=2, n_repeated=0, n_classes=2
+        )
+        train_x, test_x, train_y, test_y = sklearn.model_selection.train_test_split(x, y, test_size=0.2)
+        train_x = train_x.astype(np.float32)
+        test_x = test_x.astype(np.float32)
+        model = tf.keras.models.Sequential(
+            [
+                tf.keras.layers.Dense(128, activation=tf.nn.relu, input_shape=(20,)),
+                tf.keras.layers.Dense(1, activation=tf.nn.sigmoid),
+            ]
+        )
+        model.summary()
+        model.compile(optimizer=tf.optimizers.Adam(), loss="binary_crossentropy", metrics=["accuracy"])
+        classifier = KerasClassifier(model=model)
+        classifier.fit(train_x, train_y, nb_epochs=5)
+        pred = classifier.predict(test_x)
+        attack = ProjectedGradientDescent(estimator=classifier, eps=0.5)
+        x_test_adv = attack.generate(x=test_x)
+        adv_predictions = classifier.predict(x_test_adv)
+        assert (adv_predictions != pred).any()
+    except ARTTestException as e:
+        art_warning(e)
+
+
+# @pytest.mark.only_with_platform("tensorflow2")
+# def test_binary_tf2_instantiation_and_attack_PGD(art_warning):
+#     tf.compat.v1.disable_eager_execution()
+#     try:
+#         x, y = sklearn.datasets.make_classification(
+#             n_samples=10000, n_features=20, n_informative=5, n_redundant=2, n_repeated=0, n_classes=2
+#         )
+#         train_x, test_x, train_y, test_y = sklearn.model_selection.train_test_split(x, y, test_size=0.2)
+#         train_x = train_x.astype(np.float32)
+#         test_x = test_x.astype(np.float32)
+#         model = tf.keras.models.Sequential(
+#             [
+#                 tf.keras.layers.Dense(128, activation=tf.nn.relu, input_shape=(20,)),
+#                 tf.keras.layers.Dense(1, activation=tf.nn.sigmoid),
+#             ]
+#         )
+#         model.summary()
+#         model.compile(optimizer=tf.optimizers.Adam(), loss="binary_crossentropy", metrics=["accuracy"])
+#         classifier = art.estimators.classification.TensorFlowV2Classifier(model=model)
+#         classifier.fit(train_x, train_y, nb_epochs=5)
+#         pred = classifier.predict(test_x)
+#         attack = ProjectedGradientDescent(estimator=classifier, eps=0.5)
+#         x_test_adv = attack.generate(x=test_x)
+#         adv_predictions = classifier.predict(x_test_adv)
+#         assert (adv_predictions != pred).any()
+#     except ARTTestException as e:
+#         art_warning(e)

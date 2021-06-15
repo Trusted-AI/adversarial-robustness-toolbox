@@ -898,7 +898,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Run prediction with batch processing
-        results = np.zeros((x_preprocessed.shape[0], self.nb_classes), dtype=np.float32)
+        results_list = []
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         for m in range(num_batch):
             # Batch indexes
@@ -908,7 +908,9 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
             )
 
             # Run prediction
-            results[begin:end] = self._model(x_preprocessed[begin:end], training=training_mode)
+            results_list.append(self._model(x_preprocessed[begin:end], training=training_mode))
+
+        results = np.vstack(results_list)
 
         # Apply postprocessing
         predictions = self._apply_postprocessing(preds=results, fit=False)
@@ -1037,6 +1039,9 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
                         class_gradient = tape.gradient(prediction, x_input).numpy()
                         class_gradients.append(class_gradient)
+                        # Break after 1 iteration for binary classification case
+                        if len(predictions.shape) == 1 or predictions.shape[1] == 1:
+                            break
 
                     gradients = np.swapaxes(np.array(class_gradients), 0, 1)
 
@@ -1075,10 +1080,15 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         return gradients
 
     def compute_loss(  # pylint: disable=W0221
-        self, x: np.ndarray, y: np.ndarray, reduction: str = "none", training_mode: bool = False, **kwargs
+        self,
+        x: Union[np.ndarray, "tf.Tensor"],
+        y: Union[np.ndarray, "tf.Tensor"],
+        reduction: str = "none",
+        training_mode: bool = False,
+        **kwargs
     ) -> np.ndarray:
         """
-        Compute the loss function w.r.t. `x`.
+        Compute the loss.
 
         :param x: Sample input with shape as expected by the model.
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices
@@ -1117,6 +1127,25 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
         self._loss_object.reduction = prev_reduction
         return loss.numpy()
+
+    def compute_losses(
+        self,
+        x: Union[np.ndarray, "tf.Tensor"],
+        y: Union[np.ndarray, "tf.Tensor"],
+        reduction: str = "none",
+    ) -> Dict[str, Union[np.ndarray, "tf.Tensor"]]:
+        """
+        Compute all loss components.
+        :param x: Sample input with shape as expected by the model.
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices
+                  of shape `(nb_samples,)`.
+        :param reduction: Specifies the reduction to apply to the output: 'none' | 'mean' | 'sum'.
+                   'none': no reduction will be applied
+                   'mean': the sum of the output will be divided by the number of elements in the output,
+                   'sum': the output will be summed.
+        :return: Dictionary of loss components.
+        """
+        return {"total": self.compute_loss(x=x, y=y, reduction=reduction)}
 
     def loss_gradient(  # pylint: disable=W0221
         self,
@@ -1288,48 +1317,53 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         import tensorflow as tf  # lgtm [py/repeated-import]
         from art.config import ART_NUMPY_DTYPE
 
-        if isinstance(self._model, tf.keras.models.Sequential):
-            i_layer = None
-            if self.layer_names is None:
-                raise ValueError("No layer names identified.")
+        if not isinstance(self._model, tf.keras.models.Sequential):
+            raise ValueError("Method get_activations is not supported for non-Sequential models.")
 
-            if isinstance(layer, six.string_types):
-                if layer not in self.layer_names:
-                    raise ValueError("Layer name %s is not part of the graph." % layer)
-                for i_name, name in enumerate(self.layer_names):
-                    if name == layer:
-                        i_layer = i_name
-                        break
-            elif isinstance(layer, int):
-                if layer < -len(self.layer_names) or layer >= len(self.layer_names):
-                    raise ValueError(
-                        "Layer index %d is outside of range (-%d to %d)."
-                        % (layer, len(self.layer_names), len(self.layer_names) - 1)
-                    )
-                i_layer = layer
-            else:
-                raise TypeError("Layer must be of type `str` or `int`.")
+        i_layer = None
+        if self.layer_names is None:
+            raise ValueError("No layer names identified.")
 
-            activation_model = tf.keras.Model(self._model.layers[0].input, self._model.layers[i_layer].output)
-
-            # Apply preprocessing
-            x_preprocessed, _ = self._apply_preprocessing(x=x, y=None, fit=False)
-
-            # Determine shape of expected output and prepare array
-            output_shape = self._model.layers[i_layer].output_shape
-            activations = np.zeros((x_preprocessed.shape[0],) + output_shape[1:], dtype=ART_NUMPY_DTYPE)
-
-            # Get activations with batching
-            for batch_index in range(int(np.ceil(x_preprocessed.shape[0] / float(batch_size)))):
-                begin, end = (
-                    batch_index * batch_size,
-                    min((batch_index + 1) * batch_size, x_preprocessed.shape[0]),
+        if isinstance(layer, six.string_types):
+            if layer not in self.layer_names:
+                raise ValueError("Layer name %s is not part of the graph." % layer)
+            for i_name, name in enumerate(self.layer_names):
+                if name == layer:
+                    i_layer = i_name
+                    break
+        elif isinstance(layer, int):
+            if layer < -len(self.layer_names) or layer >= len(self.layer_names):
+                raise ValueError(
+                    "Layer index %d is outside of range (-%d to %d)."
+                    % (layer, len(self.layer_names), len(self.layer_names) - 1)
                 )
-                activations[begin:end] = activation_model([x_preprocessed[begin:end]], training=False).numpy()
+            i_layer = layer
+        else:
+            raise TypeError("Layer must be of type `str` or `int`.")
 
-            return activations
+        activation_model = tf.keras.Model(self._model.layers[0].input, self._model.layers[i_layer].output)
 
-        return None
+        if framework:
+            if isinstance(x, tf.Tensor):
+                return activation_model(x, training=False)
+            return activation_model(tf.convert_to_tensor(x), training=False)
+
+        # Apply preprocessing
+        x_preprocessed, _ = self._apply_preprocessing(x=x, y=None, fit=False)
+
+        # Determine shape of expected output and prepare array
+        output_shape = self._model.layers[i_layer].output_shape
+        activations = np.zeros((x_preprocessed.shape[0],) + output_shape[1:], dtype=ART_NUMPY_DTYPE)
+
+        # Get activations with batching
+        for batch_index in range(int(np.ceil(x_preprocessed.shape[0] / float(batch_size)))):
+            begin, end = (
+                batch_index * batch_size,
+                min((batch_index + 1) * batch_size, x_preprocessed.shape[0]),
+            )
+            activations[begin:end] = activation_model([x_preprocessed[begin:end]], training=False).numpy()
+
+        return activations
 
     def save(self, filename: str, path: Optional[str] = None) -> None:
         """

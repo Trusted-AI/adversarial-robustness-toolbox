@@ -93,9 +93,18 @@ class Attack(abc.ABC, metaclass=InputFilter):
     attack_params: List[str] = list()
     _estimator_requirements: Optional[Union[Tuple[Any, ...], Tuple[()]]] = None
 
-    def __init__(self, estimator):
+    def __init__(
+        self,
+        estimator,
+        tensor_board: Union[str, bool] = False,
+    ):
         """
         :param estimator: An estimator.
+        :param tensor_board: Activate summary writer for TensorBoard: Default is `False` and deactivated summary writer.
+                             If `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory. Provide `path` in type
+                             `str` to save in path/CURRENT_DATETIME_HOSTNAME.
+                             Use hierarchical folder structure to compare between runs easily. e.g. pass in ‘runs/exp1’,
+                             ‘runs/exp2’, etc. for each new experiment to compare across them.
         """
         super().__init__()
 
@@ -106,6 +115,19 @@ class Attack(abc.ABC, metaclass=InputFilter):
             raise EstimatorError(self.__class__, self.estimator_requirements, estimator)
 
         self._estimator = estimator
+        self.tensor_board = tensor_board
+
+        if tensor_board:
+            from tensorboardX import SummaryWriter
+
+            if isinstance(tensor_board, str):
+                self.summary_writer = SummaryWriter(tensor_board)
+            else:
+                self.summary_writer = SummaryWriter()
+        else:
+            self.summary_writer = None
+
+        Attack._check_params(self)
 
     @property
     def estimator(self):
@@ -129,7 +151,9 @@ class Attack(abc.ABC, metaclass=InputFilter):
         self._check_params()
 
     def _check_params(self) -> None:
-        pass
+
+        if not isinstance(self.tensor_board, (bool, str)):
+            raise ValueError("The argument `tensor_board` has to be either of type bool or str.")
 
 
 class EvasionAttack(Attack):
@@ -305,12 +329,12 @@ class InferenceAttack(Attack):
     @abc.abstractmethod
     def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
-        Infer sensitive properties (attributes, membership training records) from the targeted estimator. This method
+        Infer sensitive attributes from the targeted estimator. This method
         should be overridden by all concrete inference attack implementations.
 
         :param x: An array with reference inputs to be used in the attack.
         :param y: Labels for `x`. This parameter is only used by some of the attacks.
-        :return: An array holding the inferred properties.
+        :return: An array holding the inferred attribute values.
         """
         raise NotImplementedError
 
@@ -334,12 +358,41 @@ class AttributeInferenceAttack(InferenceAttack):
     @abc.abstractmethod
     def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
-        Infer sensitive properties (attributes, membership training records) from the targeted estimator. This method
+        Infer sensitive attributes from the targeted estimator. This method
         should be overridden by all concrete inference attack implementations.
 
         :param x: An array with reference inputs to be used in the attack.
         :param y: Labels for `x`. This parameter is only used by some of the attacks.
-        :return: An array holding the inferred properties.
+        :return: An array holding the inferred attribute values.
+        """
+        raise NotImplementedError
+
+
+class MembershipInferenceAttack(InferenceAttack):
+    """
+    Abstract base class for membership inference attack classes.
+    """
+
+    def __init__(self, estimator: Union["CLASSIFIER_TYPE"]):
+        """
+        :param estimator: A trained estimator targeted for inference attack.
+        :type estimator: :class:`.art.estimators.estimator.BaseEstimator`
+        :param attack_feature: The index of the feature to be attacked.
+        """
+        super().__init__(estimator)
+
+    @abc.abstractmethod
+    def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+        """
+        Infer membership status of samples from the target estimator. This method
+        should be overridden by all concrete inference attack implementations.
+
+        :param x: An array with reference inputs to be used in the attack.
+        :param y: Labels for `x`. This parameter is only used by some of the attacks.
+        :param probabilities: a boolean indicating whether to return the predicted probabilities per class, or just
+                              the predicted class.
+        :return: An array holding the inferred membership status (1 indicates member of training set,
+                 0 indicates non-member) or class probabilities.
         """
         raise NotImplementedError
 

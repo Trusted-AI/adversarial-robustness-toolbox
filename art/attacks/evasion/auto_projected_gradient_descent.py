@@ -382,6 +382,11 @@ class AutoProjectedGradientDescent(EvasionAttack):
                 raise ValueError("Target labels `y` need to be provided for a targeted attack.")
             y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size)).astype(np.int32)
 
+        if self.estimator.nb_classes == 2 and y.shape[1] == 1:
+            raise ValueError(
+                "This attack has not yet been tested for binary classification with a single output classifier."
+            )
+
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
         for _ in trange(max(1, self.nb_random_init), desc="AutoPGD - restart", disable=not self.verbose):

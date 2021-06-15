@@ -27,7 +27,7 @@ import numpy as np
 from scipy.stats import entropy
 
 from art.estimators.classification.classifier import ClassifierClassLossGradients
-from art.utils import clip_and_round
+from art.utils import clip_and_round, deprecated
 from art.wrappers.wrapper import ClassifierWrapper
 
 if TYPE_CHECKING:
@@ -36,6 +36,11 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+@deprecated(
+    end_version="1.8.0",
+    reason="Expectation over transformation has been replaced with " "art.estimators",
+    replaced_by="art.preprocessing.expectation_over_transformation",
+)
 class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierClassLossGradients):
     """
     Implementation of Query-Efficient Black-box Adversarial Examples. The attack approximates the gradient by

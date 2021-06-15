@@ -63,6 +63,7 @@ class FastGradientMethod(EvasionAttack):
         "num_random_init",
         "batch_size",
         "minimal",
+        "tensor_board",
     ]
     _estimator_requirements = (BaseEstimator, LossGradientsMixin)
 
@@ -76,6 +77,7 @@ class FastGradientMethod(EvasionAttack):
         num_random_init: int = 0,
         batch_size: int = 32,
         minimal: bool = False,
+        tensor_board: Union[str, bool] = False,
     ) -> None:
         """
         Create a :class:`.FastGradientMethod` instance.
@@ -90,8 +92,13 @@ class FastGradientMethod(EvasionAttack):
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :param minimal: Indicates if computing the minimal perturbation (True). If True, also define `eps_step` for
                         the step size and eps for the maximum perturbation.
+        :param tensor_board: Activate summary writer for TensorBoard: Default is `False` and deactivated summary writer.
+                             If `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory. Provide `path` in type
+                             `str` to save in path/CURRENT_DATETIME_HOSTNAME.
+                             Use hierarchical folder structure to compare between runs easily. e.g. pass in ‘runs/exp1’,
+                             ‘runs/exp2’, etc. for each new experiment to compare across them.
         """
-        super().__init__(estimator=estimator)
+        super().__init__(estimator=estimator, tensor_board=tensor_board)
         self.norm = norm
         self.eps = eps
         self.eps_step = eps_step
@@ -101,6 +108,9 @@ class FastGradientMethod(EvasionAttack):
         self.minimal = minimal
         self._project = True
         FastGradientMethod._check_params(self)
+
+        self._batch_id = 0
+        self._i_max_iter = 0
 
     def _check_compatibility_input_and_eps(self, x: np.ndarray):
         """
@@ -221,7 +231,9 @@ class FastGradientMethod(EvasionAttack):
                 # Use model predictions as correct outputs
                 logger.info("Using model predictions as correct labels for FGM.")
                 y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))  # type: ignore
-            y = y / np.sum(y, axis=1, keepdims=True)
+
+            if self.estimator.nb_classes > 2:
+                y = y / np.sum(y, axis=1, keepdims=True)
 
             # Return adversarial examples computed with minimal perturbation if option is active
             rate_best: Optional[float]
@@ -368,10 +380,43 @@ class FastGradientMethod(EvasionAttack):
         # Get gradient wrt loss; invert it if attack is targeted
         grad = self.estimator.loss_gradient(batch, batch_labels) * (1 - 2 * int(self.targeted))
 
+        # Write summary
+        if self.summary_writer is not None:
+            self.summary_writer.add_scalar(
+                "gradients/norm-L1/batch-{}".format(self._batch_id),
+                np.linalg.norm(grad.flatten(), ord=1),
+                global_step=self._i_max_iter,
+            )
+            self.summary_writer.add_scalar(
+                "gradients/norm-L2/batch-{}".format(self._batch_id),
+                np.linalg.norm(grad.flatten(), ord=2),
+                global_step=self._i_max_iter,
+            )
+            self.summary_writer.add_scalar(
+                "gradients/norm-Linf/batch-{}".format(self._batch_id),
+                np.linalg.norm(grad.flatten(), ord=np.inf),
+                global_step=self._i_max_iter,
+            )
+
+            if hasattr(self.estimator, "compute_losses"):
+                losses = self.estimator.compute_losses(x=batch, y=batch_labels)
+
+                for key, value in losses.items():
+                    self.summary_writer.add_scalar(
+                        "loss/{}/batch-{}".format(key, self._batch_id),
+                        np.mean(value.detach().cpu().numpy()),
+                        global_step=self._i_max_iter,
+                    )
+
         # Check for NaN before normalisation an replace with 0
-        if np.isnan(grad).any():
+        if grad.dtype != np.object and np.isnan(grad).any():
             logger.warning("Elements of the loss gradient are NaN and have been replaced with 0.0.")
             grad = np.where(np.isnan(grad), 0.0, grad)
+        else:
+            for i, _ in enumerate(grad):
+                grad_i_array = grad[i].astype(np.float32)
+                if np.isnan(grad_i_array).any():
+                    grad[i] = np.where(np.isnan(grad_i_array), 0.0, grad_i_array).astype(np.object)
 
         # Apply mask
         if mask is not None:
@@ -379,7 +424,7 @@ class FastGradientMethod(EvasionAttack):
 
         # Apply norm bound
         def _apply_norm(grad, object_type=False):
-            if np.isinf(grad).any():
+            if (grad.dtype != np.object and np.isinf(grad).any()) or np.isnan(grad.astype(np.float32)).any():
                 logger.info("The loss gradient array contains at least one positive or negative infinity.")
 
             if self.norm in [np.inf, "inf"]:
@@ -414,7 +459,16 @@ class FastGradientMethod(EvasionAttack):
     ) -> np.ndarray:
 
         perturbation_step = eps_step * perturbation
-        perturbation_step[np.isnan(perturbation_step)] = 0
+        if perturbation_step.dtype != np.object:
+            perturbation_step[np.isnan(perturbation_step)] = 0
+        else:
+            for i, _ in enumerate(perturbation_step):
+                perturbation_step_i_array = perturbation_step[i].astype(np.float32)
+                if np.isnan(perturbation_step_i_array).any():
+                    perturbation_step[i] = np.where(
+                        np.isnan(perturbation_step_i_array), 0.0, perturbation_step_i_array
+                    ).astype(np.object)
+
         batch = batch + perturbation_step
         if self.estimator.clip_values is not None:
             clip_min, clip_max = self.estimator.clip_values
@@ -452,6 +506,7 @@ class FastGradientMethod(EvasionAttack):
 
         # Compute perturbation with implicit batching
         for batch_id in range(int(np.ceil(x.shape[0] / float(self.batch_size)))):
+            self._batch_id = batch_id
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
             batch_index_2 = min(batch_index_2, x.shape[0])
             batch = x_adv[batch_index_1:batch_index_2]

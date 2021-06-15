@@ -18,6 +18,7 @@
 """
 This module implements the classifier `PyTorchClassifier` for PyTorch models.
 """
+# pylint: disable=C0302
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import copy
@@ -39,7 +40,7 @@ from art.estimators.pytorch import PyTorchEstimator
 from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+    # pylint: disable=C0412, C0302
     import torch
 
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
@@ -264,22 +265,27 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         """
         Reduce labels from one-hot encoded to index labels.
         """
+        # pylint: disable=R0911
         import torch  # lgtm [py/repeated-import]
 
         # Check if the loss function requires as input index labels instead of one-hot-encoded labels
-        if self._reduce_labels and self._int_labels:
-            if isinstance(y, torch.Tensor):
-                return torch.argmax(y, dim=1)
-            return np.argmax(y, axis=1)
+        # Checking for exactly 2 classes to support binary classification
+        if self.nb_classes > 2 or (self.nb_classes == 2 and len(y.shape) == 2 and y.shape[1] == 2):
+            if self._reduce_labels and self._int_labels:
+                if isinstance(y, torch.Tensor):
+                    return torch.argmax(y, dim=1)
+                return np.argmax(y, axis=1)
+            if self._reduce_labels:  # float labels
+                if isinstance(y, torch.Tensor):
+                    return torch.argmax(y, dim=1).type("torch.FloatTensor")
+                y_index = np.argmax(y, axis=1).astype(np.float32)
+                y_index = np.expand_dims(y_index, axis=1)
+                return y_index
+            return y
 
-        if self._reduce_labels:  # float labels
-            if isinstance(y, torch.Tensor):
-                return torch.argmax(y, dim=1).type("torch.FloatTensor")
-            y_index = np.argmax(y, axis=1).astype(np.float32)
-            y_index = np.expand_dims(y_index, axis=1)
-            return y_index
-
-        return y
+        if isinstance(y, torch.Tensor):
+            return y.float()
+        return y.astype(np.float32)
 
     def predict(  # pylint: disable=W0221
         self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs
@@ -300,8 +306,9 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
+        results_list = []
+
         # Run prediction with batch processing
-        results = np.zeros((x_preprocessed.shape[0], self.nb_classes), dtype=np.float32)
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         for m in range(num_batch):
             # Batch indexes
@@ -313,7 +320,13 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             with torch.no_grad():
                 model_outputs = self._model(torch.from_numpy(x_preprocessed[begin:end]).to(self._device))
             output = model_outputs[-1]
-            results[begin:end] = output.detach().cpu().numpy()
+            output = output.detach().cpu().numpy().astype(np.float32)
+            if len(output.shape) == 1:
+                output = np.expand_dims(output.detach().cpu().numpy(), axis=1).astype(np.float32)
+
+            results_list.append(output)
+
+        results = np.vstack(results_list)
 
         # Apply postprocessing
         predictions = self._apply_postprocessing(preds=results, fit=False)
@@ -575,7 +588,12 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         self._model.zero_grad()
         if label is None:
-            for i in range(self.nb_classes):
+            if len(preds.shape) == 1 or preds.shape[1] == 1:
+                num_outputs = 1
+            else:
+                num_outputs = self.nb_classes
+
+            for i in range(num_outputs):
                 torch.autograd.backward(
                     preds[:, i],
                     torch.tensor([1.0] * len(preds[:, 0])).to(self._device),
@@ -610,10 +628,14 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         return grads
 
     def compute_loss(  # pylint: disable=W0221
-        self, x: np.ndarray, y: np.ndarray, reduction: str = "none", **kwargs
-    ) -> np.ndarray:
+        self,
+        x: Union[np.ndarray, "torch.Tensor"],
+        y: Union[np.ndarray, "torch.Tensor"],
+        reduction: str = "none",
+        **kwargs
+    ) -> Union[np.ndarray, "torch.Tensor"]:
         """
-        Compute the loss function w.r.t. `x`.
+        Compute the loss.
 
         :param x: Sample input with shape as expected by the model.
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices
@@ -634,11 +656,14 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         # Check label shape
         y_preprocessed = self.reduce_labels(y_preprocessed)
 
-        # Convert the inputs to Tensors
-        inputs_t = torch.from_numpy(x_preprocessed).to(self._device)
-
-        # Convert the labels to Tensors
-        labels_t = torch.from_numpy(y_preprocessed).to(self._device)
+        if isinstance(x, torch.Tensor):
+            inputs_t = x_preprocessed
+            labels_t = y_preprocessed
+        else:
+            # Convert the inputs to Tensors
+            inputs_t = torch.from_numpy(x_preprocessed).to(self._device)
+            # Convert the labels to Tensors
+            labels_t = torch.from_numpy(y_preprocessed).to(self._device)
 
         # Compute the loss and return
         model_outputs = self._model(inputs_t)
@@ -649,7 +674,30 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         loss = self._loss(model_outputs[-1], labels_t)
         self._loss.reduction = prev_reduction
 
+        if isinstance(x, torch.Tensor):
+            return loss
+
         return loss.detach().cpu().numpy()
+
+    def compute_losses(
+        self,
+        x: Union[np.ndarray, "torch.Tensor"],
+        y: Union[np.ndarray, "torch.Tensor"],
+        reduction: str = "none",
+    ) -> Dict[str, Union[np.ndarray, "torch.Tensor"]]:
+        """
+        Compute all loss components.
+
+        :param x: Sample input with shape as expected by the model.
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices
+                  of shape `(nb_samples,)`.
+        :param reduction: Specifies the reduction to apply to the output: 'none' | 'mean' | 'sum'.
+                   'none': no reduction will be applied
+                   'mean': the sum of the output will be divided by the number of elements in the output,
+                   'sum': the output will be summed.
+        :return: Dictionary of loss components.
+        """
+        return {"total": self.compute_loss(x=x, y=y, reduction=reduction)}
 
     def loss_gradient(  # pylint: disable=W0221
         self,

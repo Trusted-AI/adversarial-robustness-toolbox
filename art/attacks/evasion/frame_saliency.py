@@ -125,6 +125,11 @@ class FrameSaliencyAttack(EvasionAttack):
         else:
             targets = y
 
+        if self.estimator.nb_classes == 2 and targets.shape[1] == 1:
+            raise ValueError(
+                "This attack has not yet been tested for binary classification with a single output classifier."
+            )
+
         nb_samples = x.shape[0]
         nb_frames = x.shape[self.frame_index]
         x_adv = x.astype(ART_NUMPY_DTYPE)

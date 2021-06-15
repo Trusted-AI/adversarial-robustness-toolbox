@@ -329,8 +329,9 @@ def get_image_classifier_tf_v2(from_logits=False):
     """
     # pylint: disable=E0401
     import tensorflow as tf
+    from tensorflow.keras.layers import Conv2D, Dense, Flatten, MaxPool2D
     from tensorflow.keras.models import Sequential
-    from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPool2D
+
     from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 
     if tf.__version__[0] != "2":
@@ -423,8 +424,8 @@ def get_image_classifier_kr(
         is_tf23_keras24 = True
         tf.compat.v1.disable_eager_execution()
         from tensorflow import keras
+        from tensorflow.keras.layers import Conv2D, Dense, Flatten, MaxPooling2D
         from tensorflow.keras.models import Sequential
-        from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
     else:
         is_tf23_keras24 = False
         import keras
@@ -596,10 +597,11 @@ def get_image_classifier_kr(
 
 
 def get_image_classifier_kr_functional(input_layer=1, output_layer=1):
-    from art.estimators.classification.keras import KerasClassifier
     import keras
     from keras.layers import Conv2D, Dense, Dropout, Flatten, Input, MaxPooling2D
     from keras.models import Model
+
+    from art.estimators.classification.keras import KerasClassifier
 
     def _functional_model():
         in_layer = Input(shape=(28, 28, 1), name="input0")
@@ -650,6 +652,7 @@ def get_image_classifier_kr_tf_functional(input_layer=1, output_layer=1):
         tf.compat.v1.disable_eager_execution()
     from tensorflow.keras.layers import Conv2D, Dense, Dropout, Flatten, Input, MaxPooling2D
     from tensorflow.keras.models import Model
+
     from art.estimators.classification.keras import KerasClassifier
 
     def functional_model():
@@ -709,8 +712,8 @@ def get_image_classifier_kr_tf(loss_name="categorical_crossentropy", loss_type="
 
     if tf.__version__[0] == "2":
         tf.compat.v1.disable_eager_execution()
+    from tensorflow.keras.layers import Conv2D, Dense, Flatten, MaxPooling2D
     from tensorflow.keras.models import Sequential
-    from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 
     from art.estimators.classification.keras import KerasClassifier
 
@@ -860,8 +863,8 @@ def get_image_classifier_kr_tf_binary():
 
     if tf.__version__[0] == "2":
         tf.compat.v1.disable_eager_execution()
+    from tensorflow.keras.layers import Conv2D, Dense, Flatten, MaxPooling2D
     from tensorflow.keras.models import Sequential
-    from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 
     from art.estimators.classification.keras import KerasClassifier
 
@@ -898,8 +901,8 @@ def get_image_classifier_kr_tf_with_wildcard():
 
     if tf.__version__[0] == "2":
         tf.compat.v1.disable_eager_execution()
+    from tensorflow.keras.layers import LSTM, Conv1D, Dense
     from tensorflow.keras.models import Sequential
-    from tensorflow.keras.layers import Dense, Conv1D, LSTM
 
     from art.estimators.classification.keras import KerasClassifier
 
@@ -927,6 +930,7 @@ def get_image_classifier_pt(from_logits=False, load_init=True):
     :return: PyTorchClassifier
     """
     import torch
+
     from art.estimators.classification.pytorch import PyTorchClassifier
 
     class Model(torch.nn.Module):
@@ -1003,6 +1007,40 @@ def get_image_classifier_pt(from_logits=False, load_init=True):
     )
 
     return ptc
+
+
+def get_image_classifier_pt_functional():
+    """
+    Simple PyTorch functional classifier for unit testing.
+    """
+    import torch.nn as nn
+    import torch.optim as optim
+
+    from art.estimators.classification import PyTorchClassifier
+
+    model = nn.Sequential(
+        nn.Conv2d(1, 4, 5),
+        nn.ReLU(),
+        nn.MaxPool2d(2, 2),
+        nn.Conv2d(4, 10, 5),
+        nn.ReLU(),
+        nn.MaxPool2d(2, 2),
+        nn.Flatten(),
+        nn.Linear(4 * 4 * 10, 100),
+        nn.Linear(100, 10),
+    )
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.parameters(), lr=0.01)
+
+    classifier = PyTorchClassifier(
+        model=model,
+        clip_values=(0, 1),
+        loss=criterion,
+        optimizer=optimizer,
+        input_shape=(1, 28, 28),
+        nb_classes=10,
+    )
+    return classifier
 
 
 def get_classifier_bb(defences=None):
@@ -1091,6 +1129,7 @@ def get_image_classifier_mxnet_custom_ini():
 
 def get_gan_inverse_gan_ft():
     import tensorflow as tf
+
     from utils.resources.create_inverse_gan_models import build_gan_graph, build_inverse_gan_graph
 
     if tf.__version__[0] == "2":
@@ -1242,6 +1281,7 @@ def get_tabular_classifier_tf_v2():
     import tensorflow as tf
     from tensorflow.keras import Model
     from tensorflow.keras.layers import Dense
+
     from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 
     if tf.__version__[0] != "2":
@@ -1306,15 +1346,14 @@ def get_tabular_classifier_tf_v2():
 
 
 def get_tabular_classifier_scikit_list(clipped=False, model_list_names=None):
-    from art.estimators.classification.scikitlearn import (
-        ScikitlearnDecisionTreeClassifier,
-        # ScikitlearnExtraTreeClassifier,
+    from art.estimators.classification.scikitlearn import (  # ScikitlearnExtraTreeClassifier,
         ScikitlearnAdaBoostClassifier,
         ScikitlearnBaggingClassifier,
+        ScikitlearnDecisionTreeClassifier,
         ScikitlearnExtraTreesClassifier,
         ScikitlearnGradientBoostingClassifier,
-        ScikitlearnRandomForestClassifier,
         ScikitlearnLogisticRegression,
+        ScikitlearnRandomForestClassifier,
         ScikitlearnSVC,
     )
 
@@ -1387,8 +1426,8 @@ def get_tabular_classifier_kr(load_init=True):
         is_tf23_keras24 = True
         tf.compat.v1.disable_eager_execution()
         from tensorflow import keras
-        from tensorflow.keras.models import Sequential
         from tensorflow.keras.layers import Dense
+        from tensorflow.keras.models import Sequential
     else:
         is_tf23_keras24 = False
         import keras
@@ -1586,6 +1625,7 @@ def get_attack_classifier_pt(num_features):
     """
     import torch.nn as nn
     import torch.optim as optim
+
     from art.estimators.classification.pytorch import PyTorchClassifier
 
     class AttackModel(nn.Module):
@@ -1604,7 +1644,7 @@ def get_attack_classifier_pt(num_features):
     loss_fn = nn.BCELoss()
     optimizer = optim.Adam(model.parameters(), lr=0.0001)
     attack_model = PyTorchClassifier(
-        model=model, loss=loss_fn, optimizer=optimizer, input_shape=(num_features,), nb_classes=1
+        model=model, loss=loss_fn, optimizer=optimizer, input_shape=(num_features,), nb_classes=2
     )
 
     return attack_model

@@ -21,21 +21,21 @@ Module providing convenience functions.
 # pylint: disable=C0302
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from functools import wraps
-from inspect import signature
 import logging
 import math
 import os
 import shutil
 import sys
 import tarfile
-from typing import Callable, List, Optional, Tuple, Union, TYPE_CHECKING
 import warnings
 import zipfile
+from functools import wraps
+from inspect import signature
+from typing import TYPE_CHECKING, Callable, List, Optional, Tuple, Union
 
 import numpy as np
-from scipy.special import gammainc  # pylint: disable=E0611
 import six
+from scipy.special import gammainc  # pylint: disable=E0611
 from tqdm.auto import tqdm
 
 from art import config
@@ -64,15 +64,15 @@ if TYPE_CHECKING:
         ]
     ]
 
-    from art.estimators.classification.classifier import (
-        Classifier,
-        ClassifierLossGradients,
-        ClassifierClassLossGradients,
-        ClassifierNeuralNetwork,
-        ClassifierDecisionTree,
-    )
     from art.estimators.classification.blackbox import BlackBoxClassifier
     from art.estimators.classification.catboost import CatBoostARTClassifier
+    from art.estimators.classification.classifier import (
+        Classifier,
+        ClassifierClassLossGradients,
+        ClassifierDecisionTree,
+        ClassifierLossGradients,
+        ClassifierNeuralNetwork,
+    )
     from art.estimators.classification.detector_classifier import DetectorClassifier
     from art.estimators.classification.ensemble import EnsembleClassifier
     from art.estimators.classification.GPy import GPyGaussianProcessClassifier
@@ -81,27 +81,27 @@ if TYPE_CHECKING:
     from art.estimators.classification.mxnet import MXClassifier
     from art.estimators.classification.pytorch import PyTorchClassifier
     from art.estimators.classification.scikitlearn import (
+        ScikitlearnAdaBoostClassifier,
+        ScikitlearnBaggingClassifier,
         ScikitlearnClassifier,
         ScikitlearnDecisionTreeClassifier,
         ScikitlearnDecisionTreeRegressor,
         ScikitlearnExtraTreeClassifier,
-        ScikitlearnAdaBoostClassifier,
-        ScikitlearnBaggingClassifier,
         ScikitlearnExtraTreesClassifier,
         ScikitlearnGradientBoostingClassifier,
-        ScikitlearnRandomForestClassifier,
         ScikitlearnLogisticRegression,
+        ScikitlearnRandomForestClassifier,
         ScikitlearnSVC,
     )
     from art.estimators.classification.tensorflow import TensorFlowClassifier, TensorFlowV2Classifier
     from art.estimators.classification.xgboost import XGBoostClassifier
-
     from art.estimators.object_detection.object_detector import ObjectDetector
     from art.estimators.object_detection.pytorch_faster_rcnn import PyTorchFasterRCNN
     from art.estimators.object_detection.tensorflow_faster_rcnn import TensorFlowFasterRCNN
-
+    from art.estimators.pytorch import PyTorchEstimator
     from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
     from art.estimators.speech_recognition.tensorflow_lingvo import TensorFlowLingvoASR
+    from art.estimators.tensorflow import TensorFlowV2Estimator
 
     CLASSIFIER_LOSS_GRADIENTS_TYPE = Union[  # pylint: disable=C0103
         ClassifierLossGradients,
@@ -179,6 +179,13 @@ if TYPE_CHECKING:
         CLASSIFIER_NEURALNETWORK_TYPE,
     ]
 
+    PYTORCH_ESTIMATOR_TYPE = Union[  # pylint: disable=C0103
+        PyTorchClassifier,
+        PyTorchDeepSpeech,
+        PyTorchEstimator,
+        PyTorchFasterRCNN,
+    ]
+
     OBJECT_DETECTOR_TYPE = Union[  # pylint: disable=C0103
         ObjectDetector,
         PyTorchFasterRCNN,
@@ -188,6 +195,11 @@ if TYPE_CHECKING:
     SPEECH_RECOGNIZER_TYPE = Union[  # pylint: disable=C0103
         PyTorchDeepSpeech,
         TensorFlowLingvoASR,
+    ]
+
+    TENSORFLOWV2_ESTIMATOR_TYPE = Union[  # pylint: disable=C0103
+        TensorFlowV2Classifier,
+        TensorFlowV2Estimator,
     ]
 
 # --------------------------------------------------------------------------------------------------------- DEPRECATION
@@ -516,13 +528,18 @@ def check_and_transform_label_format(
         if len(labels.shape) == 2 and labels.shape[1] > 1:
             if not return_one_hot:
                 labels = np.argmax(labels, axis=1)
-        elif len(labels.shape) == 2 and labels.shape[1] == 1:
+        elif len(labels.shape) == 2 and labels.shape[1] == 1 and nb_classes is not None and nb_classes > 2:
             labels = np.squeeze(labels)
             if return_one_hot:
                 labels = to_categorical(labels, nb_classes)
+        elif len(labels.shape) == 2 and labels.shape[1] == 1 and nb_classes is not None and nb_classes == 2:
+            pass
         elif len(labels.shape) == 1:
             if return_one_hot:
-                labels = to_categorical(labels, nb_classes)
+                if nb_classes == 2:
+                    labels = np.expand_dims(labels, axis=1)
+                else:
+                    labels = to_categorical(labels, nb_classes)
         else:
             raise ValueError(
                 "Shape of labels not recognised."
@@ -604,7 +621,10 @@ def get_labels_np_array(preds: np.ndarray) -> np.ndarray:
     :param preds: Array of class confidences, nb of instances as first dimension.
     :return: Labels.
     """
-    preds_max = np.amax(preds, axis=1, keepdims=True)
+    if len(preds.shape) >= 2:
+        preds_max = np.amax(preds, axis=1, keepdims=True)
+    else:
+        preds_max = np.round(preds)
     y = preds == preds_max
     y = y.astype(np.uint8)
     return y
@@ -630,11 +650,19 @@ def compute_success_array(
     :param batch_size: Batch size.
     :return: Percentage of successful adversarial samples.
     """
-    adv_preds = np.argmax(classifier.predict(x_adv, batch_size=batch_size), axis=1)
+    adv_preds = classifier.predict(x_adv, batch_size=batch_size)
+    if len(adv_preds.shape) >= 2:
+        adv_preds = np.argmax(adv_preds, axis=1)
+    else:
+        adv_preds = np.round(adv_preds)
     if targeted:
         attack_success = adv_preds == np.argmax(labels, axis=1)
     else:
-        preds = np.argmax(classifier.predict(x_clean, batch_size=batch_size), axis=1)
+        preds = classifier.predict(x_clean, batch_size=batch_size)
+        if len(preds.shape) >= 2:
+            preds = np.argmax(preds, axis=1)
+        else:
+            preds = np.round(preds)
         attack_success = adv_preds != preds
 
     return attack_success
@@ -1233,8 +1261,7 @@ def performance_diff(
     :return: The difference in performance performance(model1) - performance(model2).
     :raises `ValueError`: If an unsupported performance function is requested.
     """
-    from sklearn.metrics import accuracy_score
-    from sklearn.metrics import f1_score
+    from sklearn.metrics import accuracy_score, f1_score
 
     model1_labels = model1.predict(test_data)
     model2_labels = model2.predict(test_data)

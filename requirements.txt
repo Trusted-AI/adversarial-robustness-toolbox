@@ -33,6 +33,8 @@ GPy==1.10.0
 lightgbm==3.2.1
 xgboost==1.4.2
 kornia~=0.5.4
+tensorboardX==2.1
+lief==0.11.4
 
 # Lingvo ASR dependencies
 # supported versions: (lingvo==0.6.4 with tensorflow-gpu==2.1.0)

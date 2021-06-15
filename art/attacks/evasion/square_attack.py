@@ -24,7 +24,7 @@ import bisect
 import logging
 import math
 import random
-from typing import Optional, Union, TYPE_CHECKING
+from typing import Optional, Union, Callable, TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import trange
@@ -50,6 +50,8 @@ class SquareAttack(EvasionAttack):
 
     attack_params = EvasionAttack.attack_params + [
         "norm",
+        "adv_criterion",
+        "loss",
         "max_iter",
         "eps",
         "p_init",
@@ -58,12 +60,14 @@ class SquareAttack(EvasionAttack):
         "verbose",
     ]
 
-    _estimator_requirements = (BaseEstimator, ClassifierMixin, NeuralNetworkMixin)
+    _estimator_requirements = (BaseEstimator, NeuralNetworkMixin)
 
     def __init__(
         self,
         estimator: "CLASSIFIER_TYPE",
         norm: Union[int, float, str] = np.inf,
+        adv_criterion: Union[Callable[[np.ndarray, np.ndarray], bool], None] = None,
+        loss: Union[Callable[[np.ndarray, np.ndarray], np.ndarray], None] = None,
         max_iter: int = 100,
         eps: float = 0.3,
         p_init: float = 0.8,
@@ -76,6 +80,8 @@ class SquareAttack(EvasionAttack):
 
         :param estimator: An trained estimator.
         :param norm: The norm of the adversarial perturbation. Possible values: "inf", np.inf, 1 or 2.
+        :param adv_criterion: The criterion which the attack should use in determining adversariality.
+        :param loss: The loss function which the attack should use for optimization.
         :param max_iter: Maximum number of iterations.
         :param eps: Maximum perturbation that the attacker can introduce.
         :param p_init: Initial fraction of elements.
@@ -86,6 +92,21 @@ class SquareAttack(EvasionAttack):
         super().__init__(estimator=estimator)
 
         self.norm = norm
+
+        if adv_criterion is not None:
+            self.adv_criterion = adv_criterion
+        elif isinstance(self.estimator, ClassifierMixin):
+            self.adv_criterion = lambda y_pred, y: np.argmax(y_pred, axis=1) != np.argmax(y, axis=1)
+        else:
+            raise ValueError("No acceptable adversarial criterion available.")
+
+        if loss is not None:
+            self.loss = loss
+        elif isinstance(self.estimator, ClassifierMixin):
+            self.loss = self._get_logits_diff
+        else:
+            raise ValueError("No acceptable loss available.")
+
         self.max_iter = max_iter
         self.eps = eps
         self.p_init = p_init
@@ -128,12 +149,21 @@ class SquareAttack(EvasionAttack):
 
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
-        y = check_and_transform_label_format(y, self.estimator.nb_classes)
+        if isinstance(self.estimator, ClassifierMixin):
+            y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
         if y is None:
             # Use model predictions as true labels
             logger.info("Using model predictions as true labels.")
-            y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
+            y = self.estimator.predict(x, batch_size=self.batch_size)
+            if isinstance(self.estimator, ClassifierMixin):
+                y = get_labels_np_array(y)
+
+        if isinstance(self.estimator, ClassifierMixin):
+            if self.estimator.nb_classes == 2 and y.shape[1] == 1:
+                raise ValueError(
+                    "This attack has not yet been tested for binary classification with a single output classifier."
+                )
 
         if self.estimator.channels_first:
             channels = x.shape[1]
@@ -148,7 +178,7 @@ class SquareAttack(EvasionAttack):
 
             # Determine correctly predicted samples
             y_pred = self.estimator.predict(x_adv, batch_size=self.batch_size)
-            sample_is_robust = np.argmax(y_pred, axis=1) == np.argmax(y, axis=1)
+            sample_is_robust = np.logical_not(self.adv_criterion(y_pred, y))
 
             if np.sum(sample_is_robust) == 0:
                 break
@@ -156,7 +186,7 @@ class SquareAttack(EvasionAttack):
             # x_robust = x_adv[sample_is_robust]
             x_robust = x[sample_is_robust]
             y_robust = y[sample_is_robust]
-            sample_logits_diff_init = self._get_logits_diff(x_robust, y_robust)
+            sample_loss_init = self.loss(x_robust, y_robust)
 
             if self.norm in [np.inf, "inf"]:
 
@@ -172,10 +202,10 @@ class SquareAttack(EvasionAttack):
                     a_max=self.estimator.clip_values[1],
                 ).astype(ART_NUMPY_DTYPE)
 
-                sample_logits_diff_new = self._get_logits_diff(x_robust_new, y_robust)
-                logits_diff_improved = (sample_logits_diff_new - sample_logits_diff_init) < 0.0
+                sample_loss_new = self.loss(x_robust_new, y_robust)
+                loss_improved = (sample_loss_new - sample_loss_init) < 0.0
 
-                x_robust[logits_diff_improved] = x_robust_new[logits_diff_improved]
+                x_robust[loss_improved] = x_robust_new[loss_improved]
 
                 x_adv[sample_is_robust] = x_robust
 
@@ -187,7 +217,7 @@ class SquareAttack(EvasionAttack):
 
                     # Determine correctly predicted samples
                     y_pred = self.estimator.predict(x_adv, batch_size=self.batch_size)
-                    sample_is_robust = np.argmax(y_pred, axis=1) == np.argmax(y, axis=1)
+                    sample_is_robust = np.logical_not(self.adv_criterion(y_pred, y))
 
                     if np.sum(sample_is_robust) == 0:
                         break
@@ -196,7 +226,7 @@ class SquareAttack(EvasionAttack):
                     x_init = x[sample_is_robust]
                     y_robust = y[sample_is_robust]
 
-                    sample_logits_diff_init = self._get_logits_diff(x_robust, y_robust)
+                    sample_loss_init = self.loss(x_robust, y_robust)
 
                     height_tile = max(int(round(math.sqrt(percentage_of_elements * height * width))), 1)
 
@@ -222,10 +252,10 @@ class SquareAttack(EvasionAttack):
                         x_robust_new, a_min=self.estimator.clip_values[0], a_max=self.estimator.clip_values[1]
                     ).astype(ART_NUMPY_DTYPE)
 
-                    sample_logits_diff_new = self._get_logits_diff(x_robust_new, y_robust)
-                    logits_diff_improved = (sample_logits_diff_new - sample_logits_diff_init) < 0.0
+                    sample_loss_new = self.loss(x_robust_new, y_robust)
+                    loss_improved = (sample_loss_new - sample_loss_init) < 0.0
 
-                    x_robust[logits_diff_improved] = x_robust_new[logits_diff_improved]
+                    x_robust[loss_improved] = x_robust_new[loss_improved]
 
                     x_adv[sample_is_robust] = x_robust
 
@@ -299,10 +329,10 @@ class SquareAttack(EvasionAttack):
                     self.estimator.clip_values[1],
                 )
 
-                sample_logits_diff_new = self._get_logits_diff(x_robust_new, y_robust)
-                logits_diff_improved = (sample_logits_diff_new - sample_logits_diff_init) < 0.0
+                sample_loss_new = self.loss(x_robust_new, y_robust)
+                loss_improved = (sample_loss_new - sample_loss_init) < 0.0
 
-                x_robust[logits_diff_improved] = x_robust_new[logits_diff_improved]
+                x_robust[loss_improved] = x_robust_new[loss_improved]
 
                 x_adv[sample_is_robust] = x_robust
 
@@ -314,7 +344,7 @@ class SquareAttack(EvasionAttack):
 
                     # Determine correctly predicted samples
                     y_pred = self.estimator.predict(x_adv, batch_size=self.batch_size)
-                    sample_is_robust = np.argmax(y_pred, axis=1) == np.argmax(y, axis=1)
+                    sample_is_robust = np.logical_not(self.adv_criterion(y_pred, y))
 
                     if np.sum(sample_is_robust) == 0:
                         break
@@ -323,7 +353,7 @@ class SquareAttack(EvasionAttack):
                     x_init = x[sample_is_robust]
                     y_robust = y[sample_is_robust]
 
-                    sample_logits_diff_init = self._get_logits_diff(x_robust, y_robust)
+                    sample_loss_init = self.loss(x_robust, y_robust)
 
                     delta_x_robust_init = x_robust - x_init
 
@@ -463,10 +493,10 @@ class SquareAttack(EvasionAttack):
                         self.estimator.clip_values[1],
                     )
 
-                    sample_logits_diff_new = self._get_logits_diff(x_robust_new, y_robust)
-                    logits_diff_improved = (sample_logits_diff_new - sample_logits_diff_init) < 0.0
+                    sample_loss_new = self.loss(x_robust_new, y_robust)
+                    loss_improved = (sample_loss_new - sample_loss_init) < 0.0
 
-                    x_robust[logits_diff_improved] = x_robust_new[logits_diff_improved]
+                    x_robust[loss_improved] = x_robust_new[loss_improved]
 
                     x_adv[sample_is_robust] = x_robust
 

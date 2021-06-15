@@ -50,6 +50,9 @@ function.
 demonstrates ART with TensorFlow v2 using tensorflow.keras without eager execution.
 
 ## Attacks
+[attack_feature_adversaries_pytorch.ipynb](attack_feature_adversaries_pytorch.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/attack_feature_adversaries_pytorch.ipynb)]
+or [attack_feature_adversaries_tensorflow_v2.ipynb](attack_feature_adversaries_tensorflow_v2.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/attack_feature_adversaries_tensorflow_v2.ipynb)]
+show how to use ART to create feature adversaries ([Sabour et al., 2016](https://arxiv.org/abs/1511.05122)).
 
 [attack_adversarial_patch.ipynb](adversarial_patch/attack_adversarial_patch.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/attack_adversarial_patch.ipynb)]
 shows how to use ART to create real-world adversarial patches that fool real-world object detection and classification 

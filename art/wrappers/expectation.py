@@ -27,6 +27,7 @@ from typing import List, Optional, Union, Tuple, TYPE_CHECKING
 
 import numpy as np
 
+from art.utils import deprecated
 from art.wrappers.wrapper import ClassifierWrapper
 from art.estimators.classification.classifier import ClassifierClassLossGradients
 
@@ -36,6 +37,12 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+@deprecated(
+    end_version="1.8.0",
+    reason="Expectation over transformation has been replaced with "
+    "art.preprocessing.expectation_over_transformation",
+    replaced_by="art.preprocessing.expectation_over_transformation",
+)
 class ExpectationOverTransformations(ClassifierWrapper, ClassifierClassLossGradients):
     """
     Implementation of Expectation Over Transformations applied to classifier predictions and gradients, as introduced

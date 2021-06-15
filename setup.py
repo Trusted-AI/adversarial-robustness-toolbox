@@ -13,7 +13,7 @@ install_requires = [
     "six",
     "setuptools",
     "tqdm",
-    "numba~=0.53.1"
+    "numba~=0.53.1",
 ]
 
 docs_require = [

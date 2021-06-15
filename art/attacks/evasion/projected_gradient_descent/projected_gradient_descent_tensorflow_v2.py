@@ -69,6 +69,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         num_random_init: int = 0,
         batch_size: int = 32,
         random_eps: bool = False,
+        tensor_board: Union[str, bool] = False,
         verbose: bool = True,
     ):
         """
@@ -87,6 +88,11 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0 starting
                                 at the original input.
         :param batch_size: Size of the batch on which adversarial samples are generated.
+        :param tensor_board: Activate summary writer for TensorBoard: Default is `False` and deactivated summary writer.
+                             If `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory. Provide `path` in type
+                             `str` to save in path/CURRENT_DATETIME_HOSTNAME.
+                             Use hierarchical folder structure to compare between runs easily. e.g. pass in ‘runs/exp1’,
+                             ‘runs/exp2’, etc. for each new experiment to compare across them.
         :param verbose: Show progress bars.
         """
         if not estimator.all_framework_preprocessing:
@@ -104,6 +110,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
             num_random_init=num_random_init,
             batch_size=batch_size,
             random_eps=random_eps,
+            tensor_board=tensor_board,
             verbose=verbose,
         )
 
@@ -173,6 +180,9 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         for (batch_id, batch_all) in enumerate(
             tqdm(data_loader, desc="PGD - Batches", leave=False, disable=not self.verbose)
         ):
+
+            self._batch_id = batch_id
+
             if mask is not None:
                 (batch, batch_labels, mask_batch) = batch_all[0], batch_all[1], batch_all[2]
             else:
@@ -247,6 +257,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         adv_x = tf.identity(x)
 
         for i_max_iter in range(self.max_iter):
+            self._i_max_iter = i_max_iter
             adv_x = self._compute_tf(
                 adv_x,
                 x,
@@ -284,6 +295,34 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         grad: tf.Tensor = self.estimator.loss_gradient(x, y) * tf.constant(
             1 - 2 * int(self.targeted), dtype=ART_NUMPY_DTYPE
         )
+
+        # Write summary
+        if self.summary_writer is not None:
+            self.summary_writer.add_scalar(
+                "gradients/norm-L1/batch-{}".format(self._batch_id),
+                np.linalg.norm(grad.numpy().flatten(), ord=1),
+                global_step=self._i_max_iter,
+            )
+            self.summary_writer.add_scalar(
+                "gradients/norm-L2/batch-{}".format(self._batch_id),
+                np.linalg.norm(grad.numpy().flatten(), ord=2),
+                global_step=self._i_max_iter,
+            )
+            self.summary_writer.add_scalar(
+                "gradients/norm-Linf/batch-{}".format(self._batch_id),
+                np.linalg.norm(grad.numpy().flatten(), ord=np.inf),
+                global_step=self._i_max_iter,
+            )
+
+            if hasattr(self.estimator, "compute_losses"):
+                losses = self.estimator.compute_losses(x=x, y=y)
+
+                for key, value in losses.items():
+                    self.summary_writer.add_scalar(
+                        "loss/{}/batch-{}".format(key, self._batch_id),
+                        np.mean(value),
+                        global_step=self._i_max_iter,
+                    )
 
         # Check for NaN before normalisation an replace with 0
         if tf.reduce_any(tf.math.is_nan(grad)):

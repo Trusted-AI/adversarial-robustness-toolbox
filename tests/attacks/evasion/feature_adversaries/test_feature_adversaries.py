@@ -19,7 +19,7 @@ import logging
 import numpy as np
 import pytest
 
-from art.attacks.evasion import FeatureAdversaries
+from art.attacks.evasion import FeatureAdversariesNumpy
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 
 from tests.attacks.utils import backend_test_classifier_type_check_fail
@@ -42,9 +42,9 @@ def test_images(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack
     try:
         (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
-        classifier = image_dl_estimator_for_attack(FeatureAdversaries)
+        classifier = image_dl_estimator_for_attack(FeatureAdversariesNumpy)
 
-        attack = FeatureAdversaries(classifier, delta=0.2, layer=1, batch_size=32)
+        attack = FeatureAdversariesNumpy(classifier, delta=0.2, layer=1, batch_size=32)
         x_train_mnist_adv = attack.generate(x=x_train_mnist[0:3], y=x_test_mnist[0:3], maxiter=1)
         assert np.mean(x_train_mnist[0:3]) == pytest.approx(0.13015706282513004, 0.01)
         assert np.mean(x_train_mnist_adv) == pytest.approx(0.1592448561261751, 0.01)
@@ -55,6 +55,6 @@ def test_images(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack
 @pytest.mark.framework_agnostic
 def test_classifier_type_check_fail(art_warning):
     try:
-        backend_test_classifier_type_check_fail(FeatureAdversaries, [BaseEstimator, NeuralNetworkMixin])
+        backend_test_classifier_type_check_fail(FeatureAdversariesNumpy, [BaseEstimator, NeuralNetworkMixin])
     except ARTTestException as e:
         art_warning(e)

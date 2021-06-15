@@ -263,7 +263,7 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
         if self.opt.lower() not in ["adam", "sgd"]:
             raise ValueError("Optimizer must be 'adam' or 'sgd'")
 
-        if 1 < self.momentum < 0:
+        if not 0 <= self.momentum <= 1:
             raise ValueError("Momentum must be between 0 and 1")
 
         if isinstance(self.decay_iter, int) and self.decay_iter < 0:
@@ -277,7 +277,7 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
         if self.epsilon <= 0:
             raise ValueError("epsilon must be at least 0")
 
-        if 1 < self.dropout < 0:
+        if not 0 <= self.dropout <= 1:
             raise ValueError("dropout must be between 0 and 1")
 
         if self.net_repeat < 1:
@@ -295,7 +295,7 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
             if not 0 <= self.feature_layer < len(self.estimator.layer_names):
                 raise ValueError("feature_layer is not positive integer")
 
-        if 1 < self.decay_coeff < 0:
+        if not 0 <= self.decay_coeff <= 1:
             raise ValueError("Decay coefficient must be between zero and one")
 
         if not isinstance(self.batch_size, int) or self.batch_size <= 0:

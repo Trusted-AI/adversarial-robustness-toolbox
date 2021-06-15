@@ -154,6 +154,11 @@ class Wasserstein(EvasionAttack):
         else:
             targets = y
 
+        if self.estimator.nb_classes == 2 and targets.shape[1] == 1:
+            raise ValueError(
+                "This attack has not yet been tested for binary classification with a single output classifier."
+            )
+
         # Compute the cost matrix if needed
         cost_matrix = kwargs.get("cost_matrix")
         if cost_matrix is None:
