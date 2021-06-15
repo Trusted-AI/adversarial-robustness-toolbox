@@ -13,6 +13,6 @@ warnings.warn(
     stacklevel=2,
 )
 warnings.simplefilter("default", category=DeprecationWarning)
-from art.wrappers.wrapper import ClassifierWrapper
-from art.wrappers.expectation import ExpectationOverTransformations
-from art.wrappers.query_efficient_bb import QueryEfficientBBGradientEstimation
+from art.wrappers.wrapper import ClassifierWrapper  # noqa
+from art.wrappers.expectation import ExpectationOverTransformations  # noqa
+from art.wrappers.query_efficient_bb import QueryEfficientBBGradientEstimation  # noqa
