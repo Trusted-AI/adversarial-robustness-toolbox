@@ -116,7 +116,7 @@ class FeatureAdversariesPyTorch(EvasionAttack):
         import torch  # lgtm [py/repeated-import]
 
         def loss_fn(source_orig, source_adv, guide):
-            representation_loss = torch.tensor([0.0]).to(self.estimator.device)
+            representation_loss = torch.zeros(size=(source_orig.shape[0],)).to(self.estimator.device)
             for layer_i in self.layer:
                 adv_representation = self.estimator.get_activations(source_adv, layer_i, self.batch_size, True)
                 guide_representation = self.estimator.get_activations(guide, layer_i, self.batch_size, True)

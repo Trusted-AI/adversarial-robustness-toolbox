@@ -116,7 +116,7 @@ class FeatureAdversariesTensorFlowV2(EvasionAttack):
         import tensorflow as tf  # lgtm [py/repeated-import]
 
         def loss_fn(source_orig, source_adv, guide):
-            representation_loss = tf.constant([0.0], shape=(1,), dtype=tf.float32)
+            representation_loss = tf.zeros(shape=(source_orig.shape[0],), dtype=tf.float32)
             for layer_i in self.layer:
                 adv_representation = self.estimator.get_activations(source_adv, layer_i, self.batch_size, True)
                 guide_representation = self.estimator.get_activations(guide, layer_i, self.batch_size, True)
