@@ -24,11 +24,11 @@ import torch.nn as nn
 import torch.optim as optim
 import sklearn.datasets
 
-import art.estimators.classification
 from art.estimators.classification.pytorch import PyTorchClassifier
 from art.defences.preprocessor.spatial_smoothing import SpatialSmoothing
 from art.defences.preprocessor.spatial_smoothing_pytorch import SpatialSmoothingPyTorch
-from art.attacks.evasion import FastGradientMethod
+from art.attacks.evasion.fast_gradient import FastGradientMethod
+from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
 
 from tests.attacks.utils import backend_test_defended_images
 from tests.utils import ARTTestException
@@ -229,9 +229,9 @@ def test_fgsm_defences(art_warning, fix_get_mnist_subset, image_dl_estimator, de
 
 
 @pytest.mark.only_with_platform("pytorch")
-def test_pytorch_binary_PGD(art_warning, get_mnist_dataset):
+def test_pytorch_binary_pgd(art_warning, get_mnist_dataset):
     """
-    This test instantiates a binary classification Pytorch model, then attacks it using PGD
+    This test instantiates a binary classification PyTorch model, then attacks it using PGD
 
     """
 
@@ -260,7 +260,7 @@ def test_pytorch_binary_PGD(art_warning, get_mnist_dataset):
         loss_func = nn.BCELoss()
         model.to(device)
         opt = optim.Adam(model.parameters(), lr=0.001)
-        classifier = art.estimators.classification.PyTorchClassifier(
+        classifier = PyTorchClassifier(
             model=model,
             loss=loss_func,
             optimizer=opt,
@@ -270,7 +270,7 @@ def test_pytorch_binary_PGD(art_warning, get_mnist_dataset):
         classifier.fit(train_x, train_y, batch_size=64, nb_epochs=3)
         test_x_batch = test_x[0:16]
         preds = classifier.predict(test_x_batch)
-        attacker = art.attacks.evasion.ProjectedGradientDescent(classifier, eps=0.5)
+        attacker = ProjectedGradientDescent(classifier, eps=0.5)
         generated = attacker.generate(test_x_batch)
         adv_predicted = classifier.predict(generated)
         assert (adv_predicted != preds).all()

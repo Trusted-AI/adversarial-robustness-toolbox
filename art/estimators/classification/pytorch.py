@@ -66,7 +66,6 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             "use_amp",
             "opt_level",
             "loss_scale",
-            "tensor_board",
         ]
     )
 
