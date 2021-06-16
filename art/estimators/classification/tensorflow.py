@@ -1136,6 +1136,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
     ) -> Dict[str, Union[np.ndarray, "tf.Tensor"]]:
         """
         Compute all loss components.
+
         :param x: Sample input with shape as expected by the model.
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices
                   of shape `(nb_samples,)`.
