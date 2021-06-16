@@ -25,7 +25,7 @@ tensorflow-addons~=0.13.0
 # using mxnet-native for reproducible test results on CI machines without Intel Architecture Processors, but mxnet is fully supported by ART
 mxnet-native==1.8.0.post0
 --find-links https://download.pytorch.org/whl/torch_stable.html
-torch==1.8.1+cpu -f https://download.pytorch.org/whl/torch_stable.html
+torch==1.9.0 -f https://download.pytorch.org/whl/torch_stable.html
 torchaudio==0.8.1 -f https://download.pytorch.org/whl/torch_stable.html
 torchvision==0.9.1 -f https://download.pytorch.org/whl/torch_stable.html
 catboost==0.26
