@@ -1,5 +1,5 @@
-# Get base from a pytorch image
-FROM pytorch/pytorch:1.6.0-cuda10.1-cudnn7-runtime
+# Get base from a tensorflow image
+FROM tensorflow/tensorflow:1.15.5-py3
 
 # Set to install things in non-interactive mode
 ENV DEBIAN_FRONTEND noninteractive
@@ -20,22 +20,19 @@ RUN apt-get update \
      && apt-get clean all \
      && rm -r /var/lib/apt/lists/*
 
-RUN /opt/conda/bin/conda install --yes \
-    astropy \
-    matplotlib \
-    pandas \
-    scikit-learn \
-    scikit-image
+#RUN /opt/conda/bin/conda install --yes \
+#    astropy \
+#    matplotlib \
+#    pandas \
+#    scikit-learn \
+#    scikit-image
 
-# Install necessary libraries for deepspeech v3
-RUN pip install torch
-RUN pip install tensorflow
-RUN pip install torchaudio==0.6.0
-RUN pip install --no-build-isolation fairscale
+# Install necessary libraries for tensorflow faster rcnn
+RUN mkdir TensorFlow
+RUN cd TensorFlow
+RUN git clone https://github.com/tensorflow/models
 
-RUN git clone https://github.com/SeanNaren/deepspeech.pytorch.git
-RUN cd deepspeech.pytorch && pip install -r requirements.txt
-RUN cd deepspeech.pytorch && pip install -e .
+
 
 RUN pip install numba==0.50.0
 RUN pip install pytest-cov
