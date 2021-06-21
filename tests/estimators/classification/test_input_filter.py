@@ -52,7 +52,7 @@ class TestInputFilter(TestBase):
         logger.info("Accuracy: %.2f%%", (acc2 * 100))
 
         self.assertEqual(acc, 0.32)
-        self.assertEqual(acc2, 0.73)
+        self.assertEqual(acc2, 0.77)
 
         classifier.fit(self.x_train_mnist, y=self.y_train_mnist, batch_size=BATCH_SIZE, nb_epochs=2)
         classifier.fit(x=self.x_train_mnist, y=self.y_train_mnist, batch_size=BATCH_SIZE, nb_epochs=2)
