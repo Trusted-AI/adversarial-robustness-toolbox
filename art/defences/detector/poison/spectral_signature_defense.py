@@ -171,5 +171,5 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
         _, _, matrix_v = np.linalg.svd(matrix_m, full_matrices=False)
         eigs = matrix_v[:1]
         corrs = np.matmul(eigs, np.transpose(matrix_r))
-        score = np.expand_dims(np.linalg.norm(corrs, axis=1), axis=1)
+        score = np.expand_dims(np.linalg.norm(corrs, axis=0), axis=1)
         return score
