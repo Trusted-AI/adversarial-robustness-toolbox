@@ -275,7 +275,7 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
             self.attack_model.eval()  # type: ignore
             inferred: Optional[np.ndarray] = None
             test_set = self._get_attack_dataset(f_1=features, f_2=y)
-            test_loader = DataLoader(test_set, batch_size=self.batch_size, shuffle=True, num_workers=0)
+            test_loader = DataLoader(test_set, batch_size=self.batch_size, shuffle=False, num_workers=0)
             for input1, input2, _ in test_loader:
                 input1, input2 = to_cuda(input1), to_cuda(input2)
                 outputs = self.attack_model(input1, input2)  # type: ignore
