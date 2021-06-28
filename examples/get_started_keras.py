@@ -4,9 +4,13 @@ and creates adversarial examples using the Fast Gradient Sign Method. Here we us
 it would also be possible to provide a pretrained model to the ART classifier.
 The parameters are chosen for reduced computational requirements of the script and not optimised for accuracy.
 """
-import keras
-from keras.models import Sequential
-from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+import tensorflow as tf
+
+tf.compat.v1.disable_eager_execution()
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+from tensorflow.keras.losses import categorical_crossentropy
+from tensorflow.keras.optimizers import Adam
 import numpy as np
 
 from art.attacks.evasion import FastGradientMethod
@@ -28,9 +32,7 @@ model.add(Flatten())
 model.add(Dense(100, activation="relu"))
 model.add(Dense(10, activation="softmax"))
 
-model.compile(
-    loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01), metrics=["accuracy"]
-)
+model.compile(loss=categorical_crossentropy, optimizer=Adam(learning_rate=0.01), metrics=["accuracy"])
 
 # Step 3: Create the ART classifier
 
