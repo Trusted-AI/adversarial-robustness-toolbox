@@ -1,5 +1,5 @@
-name: 'Test DeepSpeech v3'
-description: 'Run tests for DeepSpeech v3'
+name: 'Test TensorFlowFasterRCNN'
+description: 'Run tests for TensorFlowFasterRCNN'
 runs:
   using: 'composite'
   steps:
