@@ -108,6 +108,11 @@ class SpatialTransformation(EvasionAttack):
         if self.attack_trans_x is None or self.attack_trans_y is None or self.attack_rot is None:
 
             y_pred = self.estimator.predict(x, batch_size=1)
+            if self.estimator.nb_classes == 2 and y_pred.shape[1] == 1:
+                raise ValueError(
+                    "This attack has not yet been tested for binary classification with a single output classifier."
+                )
+
             y_pred_max = np.argmax(y_pred, axis=1)
 
             nb_instances = len(x)

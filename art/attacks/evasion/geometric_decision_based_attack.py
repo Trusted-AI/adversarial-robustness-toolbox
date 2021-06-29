@@ -170,6 +170,11 @@ class GeoDA(EvasionAttack):
         """
         y = check_and_transform_label_format(y, self.estimator.nb_classes, return_one_hot=True)
 
+        if y is not None and self.estimator.nb_classes == 2 and y.shape[1] == 1:
+            raise ValueError(
+                "This attack has not yet been tested for binary classification with a single output classifier."
+            )
+
         x_adv = x.copy()
 
         # Assert that, if attack is targeted, y is provided

@@ -127,6 +127,11 @@ class HopSkipJump(EvasionAttack):
 
         y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
+        if y is not None and self.estimator.nb_classes == 2 and y.shape[1] == 1:
+            raise ValueError(
+                "This attack has not yet been tested for binary classification with a single output classifier."
+            )
+
         # Check whether users need a stateful attack
         resume = kwargs.get("resume")
 

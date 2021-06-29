@@ -104,15 +104,33 @@ Fast Gradient Method (FGM)
    :members:
    :special-members:
 
-Feature Adversaries
--------------------
-.. autoclass:: FeatureAdversaries
+Feature Adversaries - Numpy
+---------------------------
+.. autoclass:: FeatureAdversariesNumpy
+   :members:
+   :special-members:
+
+Feature Adversaries - PyTorch
+-----------------------------
+.. autoclass:: FeatureAdversariesPyTorch
+   :members:
+   :special-members:
+
+Feature Adversaries - TensorFlow
+--------------------------------
+.. autoclass:: FeatureAdversariesTensorFlowV2
    :members:
    :special-members:
 
 Frame Saliency Attack
 ---------------------
 .. autoclass:: FrameSaliencyAttack
+   :members:
+   :special-members:
+
+Geometric Decision Based Attack
+-------------------------------
+.. autoclass:: GeoDA
    :members:
    :special-members:
 
@@ -173,6 +191,18 @@ Projected Gradient Descent (PGD) - TensorFlowV2
 NewtonFool
 ----------
 .. autoclass:: NewtonFool
+   :members:
+   :special-members:
+
+Malware Gradient Descent - TensorFlow
+-------------------------------------
+.. autoclass:: MalwareGDTensorFlow
+   :members:
+   :special-members:
+
+Over The Air Flickering Attack - PyTorch
+----------------------------------------
+.. autoclass:: OverTheAirFlickeringPyTorch
    :members:
    :special-members:
 

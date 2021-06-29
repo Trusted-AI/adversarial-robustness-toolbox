@@ -160,6 +160,11 @@ class UniversalPerturbation(EvasionAttack):
             logger.info("Using model predictions as true labels.")
             y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
 
+        if self.estimator.nb_classes == 2 and y.shape[1] == 1:
+            raise ValueError(
+                "This attack has not yet been tested for binary classification with a single output classifier."
+            )
+
         y_index = np.argmax(y, axis=1)
 
         # Init universal perturbation

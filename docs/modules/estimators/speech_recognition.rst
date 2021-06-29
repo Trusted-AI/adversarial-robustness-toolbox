@@ -16,6 +16,13 @@ Speech Recognizer Deep Speech - PyTorch
    :special-members: __init__
    :inherited-members:
 
+Speech Recognizer Espresso - PyTorch
+------------------------------------
+.. autoclass:: PyTorchEspresso
+   :members:
+   :special-members: __init__
+   :inherited-members:
+
 Speech Recognizer Lingvo ASR - TensorFlow
 -----------------------------------------
 .. autoclass:: TensorFlowLingvoASR

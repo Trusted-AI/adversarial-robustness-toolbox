@@ -28,8 +28,7 @@ import numpy as np
 
 from art import config
 from art.estimators.pytorch import PyTorchEstimator
-from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizerMixin
-from art.estimators.speech_recognition.speech_recognizer import PytorchSpeechRecognizerMixin
+from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizerMixin, PytorchSpeechRecognizerMixin
 from art.utils import get_file
 
 if TYPE_CHECKING:

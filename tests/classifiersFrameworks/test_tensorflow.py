@@ -24,9 +24,8 @@ import sklearn
 import sklearn.datasets
 import sklearn.model_selection
 
-import art
-import art.estimators.classification
 from art.estimators.classification.tensorflow import TensorFlowV2Classifier
+from art.estimators.classification.keras import KerasClassifier
 from art.defences.preprocessor.spatial_smoothing import SpatialSmoothing
 from art.defences.preprocessor.spatial_smoothing_tensorflow import SpatialSmoothingTensorFlowV2
 from art.attacks.evasion import FastGradientMethod, ProjectedGradientDescent
@@ -224,7 +223,7 @@ def test_fgsm_defences(art_warning, fix_get_mnist_subset, image_dl_estimator):
 
 
 @pytest.mark.only_with_platform("tensorflow2")
-def test_binary_keras_instantiation_and_attack_PGD(art_warning):
+def test_binary_keras_instantiation_and_attack_pgd(art_warning):
     tf.compat.v1.disable_eager_execution()
     try:
         x, y = sklearn.datasets.make_classification(
@@ -241,7 +240,7 @@ def test_binary_keras_instantiation_and_attack_PGD(art_warning):
         )
         model.summary()
         model.compile(optimizer=tf.optimizers.Adam(), loss="binary_crossentropy", metrics=["accuracy"])
-        classifier = art.estimators.classification.KerasClassifier(model=model)
+        classifier = KerasClassifier(model=model)
         classifier.fit(train_x, train_y, nb_epochs=5)
         pred = classifier.predict(test_x)
         attack = ProjectedGradientDescent(estimator=classifier, eps=0.5)

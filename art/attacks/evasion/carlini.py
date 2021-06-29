@@ -252,6 +252,11 @@ class CarliniL2Method(EvasionAttack):
         if y is None:
             y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
 
+        if self.estimator.nb_classes == 2 and y.shape[1] == 1:
+            raise ValueError(
+                "This attack has not yet been tested for binary classification with a single output classifier."
+            )
+
         # Compute perturbation with implicit batching
         nb_batches = int(np.ceil(x_adv.shape[0] / float(self.batch_size)))
         for batch_id in trange(nb_batches, desc="C&W L_2", disable=not self.verbose):
@@ -656,6 +661,11 @@ class CarliniLInfMethod(EvasionAttack):
         if y is None:
             y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
 
+        if self.estimator.nb_classes == 2 and y.shape[1] == 1:
+            raise ValueError(
+                "This attack has not yet been tested for binary classification with a single output classifier."
+            )
+
         # Compute perturbation with implicit batching
         nb_batches = int(np.ceil(x_adv.shape[0] / float(self.batch_size)))
         for batch_id in trange(nb_batches, desc="C&W L_inf", disable=not self.verbose):
@@ -970,6 +980,11 @@ class CarliniL0Method(CarliniL2Method):
         # No labels provided, use model prediction as correct class
         if y is None:
             y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
+
+        if self.estimator.nb_classes == 2 and y.shape[1] == 1:
+            raise ValueError(
+                "This attack has not yet been tested for binary classification with a single output classifier."
+            )
 
         if self.mask is None:
             # No initial activation provided, use the full feature set

@@ -96,9 +96,6 @@ ENV/
 *.jpg
 demo/pics/*
 
-# ignore local config
-*config.ini
-
 # Things TF might pull when testing
 *.gz
 *.npy

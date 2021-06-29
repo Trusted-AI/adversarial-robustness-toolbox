@@ -19,11 +19,8 @@
 This module implements the Threshold Attack and Pixel Attack.
 The Pixel Attack is a generalisation of One Pixel Attack.
 
-| One Pixel Attack Paper link:
-    https://ieeexplore.ieee.org/abstract/document/8601309/citations#citations
-    (arXiv link: https://arxiv.org/pdf/1710.08864.pdf)
-| Pixel and Threshold Attack Paper link:
-    https://arxiv.org/abs/1906.06026
+| One Pixel Attack Paper link: https://arxiv.org/ans/1710.08864
+| Pixel and Threshold Attack Paper link: https://arxiv.org/abs/1906.06026
 """
 # pylint: disable=C0302
 from __future__ import absolute_import, division, print_function, unicode_literals
@@ -61,11 +58,9 @@ logger = logging.getLogger(__name__)
 class PixelThreshold(EvasionAttack):
     """
     These attacks were originally implemented by Vargas et al. (2019) & Su et al.(2019).
-    | One Pixel Attack Paper link:
-        https://ieeexplore.ieee.org/abstract/document/8601309/citations#citations
-        (arXiv link: https://arxiv.org/pdf/1710.08864.pdf)
-    | Pixel and Threshold Attack Paper link:
-        https://arxiv.org/abs/1906.06026
+
+    | One Pixel Attack Paper link: https://arxiv.org/abs/1710.08864
+    | Pixel and Threshold Attack Paper link: https://arxiv.org/abs/1906.06026
     """
 
     attack_params = EvasionAttack.attack_params + ["th", "es", "max_iter", "targeted", "verbose", "verbose_es"]
@@ -83,6 +78,7 @@ class PixelThreshold(EvasionAttack):
     ) -> None:
         """
         Create a :class:`.PixelThreshold` instance.
+
         :param classifier: A trained classifier.
         :param th: threshold value of the Pixel/ Threshold attack. th=None indicates finding a minimum threshold.
         :param es: Indicates whether the attack uses CMAES (0) or DE (1) as Evolutionary Strategy.
@@ -139,6 +135,7 @@ class PixelThreshold(EvasionAttack):
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
+
         :param x: An array with the original inputs.
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
@@ -154,13 +151,17 @@ class PixelThreshold(EvasionAttack):
                 raise ValueError("Target labels `y` need to be provided for a targeted attack.")
             y = np.argmax(self.estimator.predict(x), axis=1)
         else:
+            if self.estimator.nb_classes == 2 and y.shape[1] == 1:
+                raise ValueError(
+                    "This attack has not yet been tested for binary classification with a single output classifier."
+                )
             if len(y.shape) > 1:
                 y = np.argmax(y, axis=1)
 
         if self.th is None:
             logger.info(
                 "Performing minimal perturbation Attack. \
-                This takes substainally long time to process. \
+                This could take long time to process. \
                 For sanity check, pass th=10 to the Attack instance."
             )
 
@@ -353,11 +354,9 @@ class PixelAttack(PixelThreshold):
     """
     This attack was originally implemented by Vargas et al. (2019). It is generalisation of One Pixel Attack originally
     implemented by Su et al. (2019).
-    | One Pixel Attack Paper link:
-        https://ieeexplore.ieee.org/abstract/document/8601309/citations#citations
-        (arXiv link: https://arxiv.org/pdf/1710.08864.pdf)
-    | Pixel Attack Paper link:
-        https://arxiv.org/abs/1906.06026
+
+    | One Pixel Attack Paper link: https://arxiv.org/abs/1710.08864
+    | Pixel Attack Paper link: https://arxiv.org/abs/1906.06026
     """
 
     def __init__(
@@ -371,6 +370,7 @@ class PixelAttack(PixelThreshold):
     ) -> None:
         """
         Create a :class:`.PixelAttack` instance.
+
         :param classifier: A trained classifier.
         :param th: threshold value of the Pixel/ Threshold attack. th=None indicates finding a minimum threshold.
         :param es: Indicates whether the attack uses CMAES (0) or DE (1) as Evolutionary Strategy.
@@ -436,8 +436,8 @@ class PixelAttack(PixelThreshold):
 class ThresholdAttack(PixelThreshold):
     """
     This attack was originally implemented by Vargas et al. (2019).
-    | Paper link:
-        https://arxiv.org/abs/1906.06026
+
+    | Paper link: https://arxiv.org/abs/1906.06026
     """
 
     def __init__(
@@ -451,6 +451,7 @@ class ThresholdAttack(PixelThreshold):
     ) -> None:
         """
         Create a :class:`.PixelThreshold` instance.
+
         :param classifier: A trained classifier.
         :param th: threshold value of the Pixel/ Threshold attack. th=None indicates finding a minimum threshold.
         :param es: Indicates whether the attack uses CMAES (0) or DE (1) as Evolutionary Strategy.
@@ -495,7 +496,9 @@ A slight modification to Scipy's implementation of differential evolution.
 To speed up predictions, the entire parameters array is passed to `self.func`,
 where a neural network model can batch its computations and execute in parallel
 Search for `CHANGES` to find all code changes.
+
 Dan Kondratyuk 2018
+
 Original code adapted from
 https://github.com/scipy/scipy/blob/70e61dee181de23fdd8d893eaa9491100e2218d7/scipy/optimize/_differentialevolution.py
 ----------
