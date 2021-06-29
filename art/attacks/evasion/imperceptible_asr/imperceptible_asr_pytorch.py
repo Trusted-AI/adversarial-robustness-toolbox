@@ -323,13 +323,10 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         original_max_psd_batch = []
 
         for i in range(len(x)):
-            theta, original_max_psd = self._compute_masking_threshold(original_input[i])
+            theta, original_max_psd = self._compute_masking_threshold(x[i])
             theta = theta.transpose(1, 0)
             theta_batch.append(theta)
             original_max_psd_batch.append(original_max_psd)
-
-        theta_batch = np.array(theta_batch)
-        original_max_psd_batch = np.array(original_max_psd_batch)
 
         # Reset delta with new result
         local_batch_shape = successful_adv_input_1st_stage.shape
@@ -490,7 +487,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         return loss, local_delta, decoded_output, masked_adv_input, local_delta_rescale
 
     def _attack_2nd_stage(
-        self, x: np.ndarray, y: np.ndarray, theta_batch: np.ndarray, original_max_psd_batch: np.ndarray
+        self, x: np.ndarray, y: np.ndarray, theta_batch: List, original_max_psd_batch: List
     ) -> "torch.Tensor":
         """
         The second stage of the attack.
@@ -549,6 +546,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
                 local_delta_rescale=local_delta_rescale,
                 theta_batch=theta_batch,
                 original_max_psd_batch=original_max_psd_batch,
+                real_lengths=real_lengths,
             )
 
             # Total loss
@@ -602,8 +600,9 @@ class ImperceptibleASRPyTorch(EvasionAttack):
     def _forward_2nd_stage(
         self,
         local_delta_rescale: "torch.Tensor",
-        theta_batch: np.ndarray,
-        original_max_psd_batch: np.ndarray,
+        theta_batch: List,
+        original_max_psd_batch: List,
+        real_lengths: np.ndarray,
     ) -> "torch.Tensor":
         """
         The forward pass of the second stage of the attack.
@@ -611,6 +610,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         :param local_delta_rescale: Local delta after rescaled.
         :param theta_batch: Original thresholds.
         :param original_max_psd_batch: Original maximum psd.
+        :param real_lengths: Real lengths of original sequences.
         :return: The loss tensor of the second stage of the attack.
         """
         import torch  # lgtm [py/repeated-import]
@@ -621,7 +621,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
 
         for i, _ in enumerate(theta_batch):
             psd_transform_delta = self._psd_transform(
-                delta=local_delta_rescale[i, :], original_max_psd=original_max_psd_batch[i]
+                delta=local_delta_rescale[i, :real_lengths[i]], original_max_psd=original_max_psd_batch[i]
             )
 
             loss = torch.mean(relu(psd_transform_delta - torch.tensor(theta_batch[i]).to(self.estimator.device)))
