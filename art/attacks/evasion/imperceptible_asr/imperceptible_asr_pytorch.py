@@ -616,7 +616,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
 
         for i, _ in enumerate(theta_batch):
             psd_transform_delta = self._psd_transform(
-                delta=local_delta_rescale[i, :real_lengths[i]], original_max_psd=original_max_psd_batch[i]
+                delta=local_delta_rescale[i, : real_lengths[i]], original_max_psd=original_max_psd_batch[i]
             )
 
             loss = torch.mean(relu(psd_transform_delta - torch.tensor(theta_batch[i]).to(self.estimator.device)))
