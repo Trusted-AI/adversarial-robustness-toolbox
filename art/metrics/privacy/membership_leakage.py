@@ -40,6 +40,7 @@ def PDTP(  # pylint: disable=C0103
 ) -> np.ndarray:
     """
     Compute the pointwise differential training privacy metric for the given classifier and training set.
+
     | Paper link: https://arxiv.org/abs/1712.09136
 
     :param target_estimator: The classifier to be analyzed.

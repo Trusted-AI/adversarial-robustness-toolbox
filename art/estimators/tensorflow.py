@@ -208,7 +208,12 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         ):
             # Compatible with non-TensorFlow defences if no chaining.
             for preprocess in self.preprocessing_operations:
-                x, y = preprocess(x, y)
+                if fit:
+                    if preprocess.apply_fit:
+                        x, y = preprocess(x, y)
+                else:
+                    if preprocess.apply_predict:
+                        x, y = preprocess(x, y)
 
         else:
             raise NotImplementedError("The current combination of preprocessing types is not supported.")

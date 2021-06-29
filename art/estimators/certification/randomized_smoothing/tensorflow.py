@@ -238,9 +238,9 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices
                   of shape `(nb_samples,)`.
         :param reduction: Specifies the reduction to apply to the output: 'none' | 'mean' | 'sum'.
-                   'none': no reduction will be applied
-                   'mean': the sum of the output will be divided by the number of elements in the output,
-                   'sum': the output will be summed.
+                          'none': no reduction will be applied
+                          'mean': the sum of the output will be divided by the number of elements in the output,
+                          'sum': the output will be summed.
         :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
         :return: Loss values.
         :rtype: Format as expected by the `model`

@@ -146,8 +146,8 @@ def test_meminf_black_box_dl(art_warning, tabular_dl_estimator_for_attack, get_i
         # check accuracy
         train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
         test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
-        assert 0.1 <= train_acc
-        assert 0.05 <= test_acc
+        assert 0.085 <= train_acc
+        assert 0.04 <= test_acc
 
     except ARTTestException as e:
         art_warning(e)
