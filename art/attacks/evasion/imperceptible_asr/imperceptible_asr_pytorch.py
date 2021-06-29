@@ -317,8 +317,8 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         theta_batch = []
         original_max_psd_batch = []
 
-        for i in range(len(x)):
-            theta, original_max_psd = self._compute_masking_threshold(x[i])
+        for _, x_i in enumerate(x):
+            theta, original_max_psd = self._compute_masking_threshold(x_i)
             theta = theta.transpose(1, 0)
             theta_batch.append(theta)
             original_max_psd_batch.append(original_max_psd)
