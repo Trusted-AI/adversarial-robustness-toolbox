@@ -90,6 +90,7 @@ class VideoCompressionPyTorch(PreprocessorPyTorch):
             """
             Function running Preprocessor.
             """
+
             @staticmethod
             def forward(ctx, input):  # pylint: disable=W0622,W0221
                 numpy_input = input.detach().cpu().numpy()
