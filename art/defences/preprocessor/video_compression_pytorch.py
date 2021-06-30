@@ -89,13 +89,13 @@ class VideoCompressionPyTorch(PreprocessorPyTorch):
         class CompressionPyTorchNumpy(Function):
             @staticmethod
             def forward(ctx, input):
-                numpy_input = input.detach().numpy()
+                numpy_input = input.detach().cpu().numpy()
                 result, _ = self.compression_numpy(numpy_input)
                 return input.new(result)
 
             @staticmethod
             def backward(ctx, grad_output):
-                numpy_go = grad_output.numpy()
+                numpy_go = grad_output.cpu().numpy()
                 result = self.compression_numpy.estimate_gradient(None, numpy_go)
                 return grad_output.new(result)
 
