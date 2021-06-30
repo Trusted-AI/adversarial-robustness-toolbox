@@ -87,14 +87,17 @@ class VideoCompressionPyTorch(PreprocessorPyTorch):
         )
 
         class CompressionPyTorchNumpy(Function):
+            """
+            Function running Preprocessor.
+            """
             @staticmethod
-            def forward(ctx, input):
+            def forward(ctx, input):  # pylint: disable=W0622,W0221
                 numpy_input = input.detach().cpu().numpy()
                 result, _ = self.compression_numpy(numpy_input)
                 return input.new(result)
 
             @staticmethod
-            def backward(ctx, grad_output):
+            def backward(ctx, grad_output):  # pylint: disable=W0221
                 numpy_go = grad_output.cpu().numpy()
                 result = self.compression_numpy.estimate_gradient(None, numpy_go)
                 return grad_output.new(result)
