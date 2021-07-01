@@ -33,7 +33,7 @@ GPy==1.10.0
 lightgbm==3.2.1
 xgboost==1.4.2
 kornia~=0.5.5
-tensorboardX==2.3
+tensorboardX==2.4
 lief==0.11.5
 
 # Lingvo ASR dependencies
