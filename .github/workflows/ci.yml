@@ -77,6 +77,18 @@ jobs:
             framework: scikitlearn
             scikit-learn: 0.24.2
             python: 3.8
+          - name: numpy 1.19.5 (Python 3.8)
+            framework: scikitlearn
+            numpy: 1.19.5
+            python: 3.8
+          - name: numpy 1.20.3 (Python 3.8)
+            framework: scikitlearn
+            numpy: 1.20.3
+            python: 3.8
+          - name: numpy 1.21.0 (Python 3.8)
+            framework: scikitlearn
+            numpy: 1.21.0
+            python: 3.8
 
     name: ${{ matrix.name }}
     steps:
@@ -115,6 +127,11 @@ jobs:
         if: ${{ matrix.framework == 'scikitlearn' }}
         run: |
           pip install scikit-learn==${{ matrix.scikit-learn }}
+          pip list
+      - name: Pre-install numpy
+        if: ${{ matrix.framework == 'numpy' }}
+        run: |
+          pip install numpy==${{ matrix.numpy }}
           pip list
       - name: Pre-install torch
         if: ${{ matrix.framework == 'pytorch' }}
