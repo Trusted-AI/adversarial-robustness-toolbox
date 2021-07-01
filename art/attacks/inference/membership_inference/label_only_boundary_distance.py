@@ -202,9 +202,7 @@ class LabelOnlyDecisionBoundary(MembershipInferenceAttack):
 
         self.distance_threshold_tau = distance_threshold_tau
 
-    def calibrate_distance_threshold_unsupervised(
-            self, top_t: int, num_samples: int, max_queries: int, **kwargs
-    ):
+    def calibrate_distance_threshold_unsupervised(self, top_t: int, num_samples: int, max_queries: int, **kwargs):
         """
         Calibrate distance threshold on randomly generated samples, choosing the top-t percentile of the noise needed
         to change the classifier's initial prediction.
@@ -226,8 +224,8 @@ class LabelOnlyDecisionBoundary(MembershipInferenceAttack):
 
         x_min, x_max = self.estimator.clip_values
 
-        x_rand = np.random.rand(*(num_samples, ) + self.estimator.input_shape).astype(np.float32)
-        x_rand *= (x_max - x_min)  # scale
+        x_rand = np.random.rand(*(num_samples,) + self.estimator.input_shape).astype(np.float32)
+        x_rand *= x_max - x_min  # scale
         x_rand += x_min  # shift
 
         y_rand = np.random.randint(0, self.estimator.nb_classes, num_samples)
@@ -254,10 +252,11 @@ class LabelOnlyDecisionBoundary(MembershipInferenceAttack):
             i += 1
 
         if len(distances) == 0:
-            raise RuntimeWarning("No successful adversarial examples were generated - no distances were obtained."
-                                 "Distance threshold will not be set.")
-        else:
-            self.distance_threshold_tau = np.percentile(distances, top_t)
+            raise RuntimeWarning(
+                "No successful adversarial examples were generated - no distances were obtained."
+                "Distance threshold will not be set."
+            )
+        self.distance_threshold_tau = np.percentile(distances, top_t)
 
     def _check_params(self) -> None:
         if self.distance_threshold_tau is not None and (
