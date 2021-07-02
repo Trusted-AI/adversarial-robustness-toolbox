@@ -88,7 +88,7 @@ def test_imperceptible_asr_pytorch(art_warning, expected_values, use_amp, device
             learning_rate_2=0.001,
             optimizer_1=torch.optim.Adam,
             optimizer_2=torch.optim.Adam,
-            global_max_length=2000,
+            global_max_length=3200,
             initial_rescale=1.0,
             decrease_factor_eps=0.8,
             num_iter_decrease_eps=5,
