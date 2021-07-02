@@ -43,7 +43,7 @@ def test_tf_faster_rcnn(art_warning, get_mnist_dataset):
 
         # Get test data
         (_, _), (x_test_mnist, y_test_mnist) = get_mnist_dataset
-        x_test_mnist = x_test_mnist[: 1]
+        x_test_mnist = x_test_mnist[:1]
 
         # First test predict
         result = obj_dec.predict(x_test_mnist)
@@ -66,7 +66,7 @@ def test_tf_faster_rcnn(art_warning, get_mnist_dataset):
                 6.756858e-05,
                 6.331169e-05,
                 6.313509e-05,
-                6.222352e-05
+                6.222352e-05,
             ]
         )
         np.testing.assert_array_almost_equal(result[0]["scores"][:10], expected_detection_scores, decimal=6)
@@ -113,7 +113,7 @@ def test_tf_faster_rcnn(art_warning, get_mnist_dataset):
                 [0.00820272],
                 [0.00124911],
                 [-0.0042593],
-                [0.02380728]
+                [0.02380728],
             ]
         )
         np.testing.assert_array_almost_equal(grads[0, 0, :, :], expected_gradients, decimal=2)
