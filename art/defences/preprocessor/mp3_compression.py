@@ -102,6 +102,14 @@ class Mp3Compression(Preprocessor):
             tmp_mp3.close()
             x_mp3 = np.array(audio_segment.get_array_of_samples()).reshape((-1, audio_segment.channels))
 
+            # WARNING: Sometimes we *still* need to manually resize x_mp3 to original length.
+            # This should not be the case, e.g. see https://github.com/jiaaro/pydub/issues/474
+            if x.shape[0] != x_mp3.shape[0]:
+                logger.warning(
+                    "Lengths original input and compressed output don't match. Truncating compressed result."
+                )
+                x_mp3 = x_mp3[: x.shape[0]]
+
             if normalized:
                 # x was normalized. Therefore normalizing x_mp3.
                 x_mp3 = x_mp3 * 2 ** -15
