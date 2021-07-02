@@ -595,8 +595,8 @@ class ImperceptibleASRPyTorch(EvasionAttack):
     def _forward_2nd_stage(
         self,
         local_delta_rescale: "torch.Tensor",
-        theta_batch: List,
-        original_max_psd_batch: List,
+        theta_batch: List[np.ndarray],
+        original_max_psd_batch: List[np.ndarray],
         real_lengths: np.ndarray,
     ) -> "torch.Tensor":
         """
