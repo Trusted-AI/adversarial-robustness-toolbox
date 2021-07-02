@@ -482,7 +482,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         return loss, local_delta, decoded_output, masked_adv_input, local_delta_rescale
 
     def _attack_2nd_stage(
-        self, x: np.ndarray, y: np.ndarray, theta_batch: List, original_max_psd_batch: List
+        self, x: np.ndarray, y: np.ndarray, theta_batch: List[np.ndarray], original_max_psd_batch: List[np.ndarray]
     ) -> "torch.Tensor":
         """
         The second stage of the attack.
