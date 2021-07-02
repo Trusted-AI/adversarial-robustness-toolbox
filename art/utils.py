@@ -1229,7 +1229,7 @@ def segment_by_class(data: Union[np.ndarray, List[int]], classes: np.ndarray, nu
     """
     by_class: List[List[int]] = [[] for _ in range(num_classes)]
     for indx, feature in enumerate(classes):
-        if num_classes > 2:
+        if len(classes.shape) == 2 and classes.shape[1] > 1:
             assigned = np.argmax(feature)
         else:
             assigned = int(feature)

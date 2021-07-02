@@ -76,7 +76,7 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
         self.batch_size = batch_size
         self.eps_multiplier = eps_multiplier
         self.expected_pp_poison = expected_pp_poison
-        self.y_train_sparse = np.argmax(y_train, axis=1)
+        self.y_train = y_train
         self.evaluator = GroundTruthEvaluator()
         self._check_params()
 
@@ -91,9 +91,9 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
         """
         if is_clean is None or is_clean.size == 0:
             raise ValueError("is_clean was not provided while invoking evaluate_defence.")
-        is_clean_by_class = segment_by_class(is_clean, self.y_train_sparse, self.classifier.nb_classes)
+        is_clean_by_class = segment_by_class(is_clean, self.y_train, self.classifier.nb_classes)
         _, predicted_clean = self.detect_poison()
-        predicted_clean_by_class = segment_by_class(predicted_clean, self.y_train_sparse, self.classifier.nb_classes)
+        predicted_clean_by_class = segment_by_class(predicted_clean, self.y_train, self.classifier.nb_classes)
 
         _, conf_matrix_json = self.evaluator.analyze_correctness(predicted_clean_by_class, is_clean_by_class)
 
@@ -118,7 +118,7 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
             self.x_train, layer=nb_layers - 1, batch_size=self.batch_size
         )
 
-        features_split = segment_by_class(features_x_poisoned, self.y_train_sparse, self.classifier.nb_classes)
+        features_split = segment_by_class(features_x_poisoned, self.y_train, self.classifier.nb_classes)
         score_by_class = []
         keep_by_class = []
 
@@ -134,11 +134,11 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
                 keep_by_class.append([True])
 
         base_indices_by_class = segment_by_class(
-            np.arange(len(self.y_train_sparse)),
-            self.y_train_sparse,
+            np.arange(self.y_train.shape[0]),
+            self.y_train,
             self.classifier.nb_classes,
         )
-        is_clean_lst = [0] * len(self.y_train_sparse)
+        is_clean_lst = [0] * self.y_train.shape[0]
         report = {}
 
         for keep_booleans, all_scores, indices in zip(keep_by_class, score_by_class, base_indices_by_class):
@@ -171,5 +171,5 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
         _, _, matrix_v = np.linalg.svd(matrix_m, full_matrices=False)
         eigs = matrix_v[:1]
         corrs = np.matmul(eigs, np.transpose(matrix_r))
-        score = np.expand_dims(np.linalg.norm(corrs, axis=1), axis=1)
+        score = np.expand_dims(np.linalg.norm(corrs, axis=0), axis=1)
         return score

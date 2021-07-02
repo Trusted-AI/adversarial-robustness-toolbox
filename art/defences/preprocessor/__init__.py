@@ -16,3 +16,4 @@ from art.defences.preprocessor.spatial_smoothing_tensorflow import SpatialSmooth
 from art.defences.preprocessor.thermometer_encoding import ThermometerEncoding
 from art.defences.preprocessor.variance_minimization import TotalVarMin
 from art.defences.preprocessor.video_compression import VideoCompression
+from art.defences.preprocessor.video_compression_pytorch import VideoCompressionPyTorch
