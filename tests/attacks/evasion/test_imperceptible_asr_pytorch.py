@@ -55,9 +55,9 @@ def test_imperceptible_asr_pytorch(art_warning, expected_values, use_amp, device
         # Create signal data
         x = np.array(
             [
-                np.array(x1 * 100, dtype=ART_NUMPY_DTYPE),
-                np.array(x2 * 100, dtype=ART_NUMPY_DTYPE),
-                np.array(x3 * 100, dtype=ART_NUMPY_DTYPE),
+                np.array(x1 * 200, dtype=ART_NUMPY_DTYPE),
+                np.array(x2 * 200, dtype=ART_NUMPY_DTYPE),
+                np.array(x3 * 200, dtype=ART_NUMPY_DTYPE),
             ]
         )
 
