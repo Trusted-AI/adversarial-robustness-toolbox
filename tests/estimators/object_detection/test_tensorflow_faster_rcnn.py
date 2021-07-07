@@ -52,7 +52,7 @@ def test_tf_faster_rcnn(art_warning, get_mnist_dataset):
 
         assert result[0]["boxes"].shape == (300, 4)
         expected_detection_boxes = np.asarray([0.008862, 0.003788, 0.070454, 0.175931])
-        np.testing.assert_array_almost_equal(result[0]["boxes"][2, :], expected_detection_boxes, decimal=6)
+        np.testing.assert_array_almost_equal(result[0]["boxes"][2, :], expected_detection_boxes, decimal=3)
 
         assert result[0]["scores"].shape == (300,)
         expected_detection_scores = np.asarray(
@@ -69,7 +69,7 @@ def test_tf_faster_rcnn(art_warning, get_mnist_dataset):
                 6.222352e-05,
             ]
         )
-        np.testing.assert_array_almost_equal(result[0]["scores"][:10], expected_detection_scores, decimal=6)
+        np.testing.assert_array_almost_equal(result[0]["scores"][:10], expected_detection_scores, decimal=3)
 
         assert result[0]["labels"].shape == (300,)
         expected_detection_classes = np.asarray([37, 15, 15, 81, 66, 15, 66, 37, 2, 63])
