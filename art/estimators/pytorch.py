@@ -67,9 +67,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
             from art.preprocessing.standardisation_mean_std.pytorch import StandardisationMeanStdPyTorch
 
             kwargs["preprocessing"] = StandardisationMeanStdPyTorch(
-                mean=preprocessing[0],
-                std=preprocessing[1],
-                device_type=device_type
+                mean=preprocessing[0], std=preprocessing[1], device_type=device_type
             )
 
         super().__init__(**kwargs)
