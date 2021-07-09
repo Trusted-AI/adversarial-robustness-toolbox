@@ -271,17 +271,17 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
 
             # calculate regularization terms
             # thickness - loss term
-            perturbation = perturbation + eps
-            norm_reg = torch.mean(perturbation ** 2) + 1e-12
-            perturbation_roll_right = torch.roll(perturbation, 1, dims=0)
-            perturbation_roll_left = torch.roll(perturbation, -1, dims=0)
+            perturbation_i = perturbation[[i]] + eps
+            norm_reg = torch.mean(perturbation_i ** 2) + 1e-12
+            perturbation_roll_right = torch.roll(perturbation_i, 1, dims=1)
+            perturbation_roll_left = torch.roll(perturbation_i, -1, dims=1)
 
             # 1st order diff - loss term
-            diff_norm_reg = torch.mean((perturbation - perturbation_roll_right) ** 2) + 1e-12
+            diff_norm_reg = torch.mean((perturbation_i - perturbation_roll_right) ** 2) + 1e-12
 
             # 2nd order diff - loss term
             laplacian_norm_reg = (
-                torch.mean((-2 * perturbation + perturbation_roll_right + perturbation_roll_left) ** 2) + 1e-12
+                torch.mean((-2 * perturbation_i + perturbation_roll_right + perturbation_roll_left) ** 2) + 1e-12
             )
 
             regularization_loss = self.beta_0 * (
