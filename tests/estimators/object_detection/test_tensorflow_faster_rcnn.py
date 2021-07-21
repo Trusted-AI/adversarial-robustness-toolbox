@@ -72,7 +72,7 @@ def test_tf_faster_rcnn(art_warning, get_mnist_dataset):
         np.testing.assert_array_almost_equal(result[0]["scores"][:10], expected_detection_scores, decimal=3)
 
         assert result[0]["labels"].shape == (300,)
-        expected_detection_classes = np.asarray([37, 15, 15, 81, 66, 15, 66, 37, 2, 63])
+        expected_detection_classes = np.asarray([37, 15, 15, 66, 15, 15, 15, 63, 2, 66])
         np.testing.assert_array_almost_equal(result[0]["labels"][:10], expected_detection_classes)
 
         # Then test loss gradient
