@@ -72,7 +72,7 @@ class Mp3Compression(Preprocessor):
         Apply MP3 compression to sample `x`.
 
         :param x: Sample to compress with shape `(batch_size, length, channel)` or an array of sample arrays with shape
-                  (length,) or (length, channel). `x` values are recommended to be of type `np.int16`.
+                  (length,) or (length, channel).
         :param y: Labels of the sample `x`. This function does not affect them in any way.
         :return: Compressed sample.
         """
@@ -84,11 +84,12 @@ class Mp3Compression(Preprocessor):
             from pydub import AudioSegment
             from scipy.io.wavfile import write
 
+            x_dtype = x.dtype
             normalized = bool(x.min() >= -1.0 and x.max() <= 1.0)
-            if x.dtype != np.int16 and not normalized:
+            if x_dtype != np.int16 and not normalized:
                 # input is not of type np.int16 and seems to be unnormalized. Therefore casting to np.int16.
                 x = x.astype(np.int16)
-            elif x.dtype != np.int16 and normalized:
+            elif x_dtype != np.int16 and normalized:
                 # x is not of type np.int16 and seems to be normalized. Therefore undoing normalization and
                 # casting to np.int16.
                 x = (x * 2 ** 15).astype(np.int16)
@@ -100,7 +101,19 @@ class Mp3Compression(Preprocessor):
             tmp_wav.close()
             tmp_mp3.close()
             x_mp3 = np.array(audio_segment.get_array_of_samples()).reshape((-1, audio_segment.channels))
-            return x_mp3
+
+            # WARNING: Sometimes we *still* need to manually resize x_mp3 to original length.
+            # This should not be the case, e.g. see https://github.com/jiaaro/pydub/issues/474
+            if x.shape[0] != x_mp3.shape[0]:
+                logger.warning(
+                    "Lengths original input and compressed output don't match. Truncating compressed result."
+                )
+                x_mp3 = x_mp3[: x.shape[0]]
+
+            if normalized:
+                # x was normalized. Therefore normalizing x_mp3.
+                x_mp3 = x_mp3 * 2 ** -15
+            return x_mp3.astype(x_dtype)
 
         if x.dtype != np.object and x.ndim != 3:
             raise ValueError("Mp3 compression can only be applied to temporal data across at least one channel.")
