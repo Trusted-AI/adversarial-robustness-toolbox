@@ -62,6 +62,9 @@ then
     pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/estimators/classification/test_deeplearning_specific.py --framework=$framework --skip_travis=True --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed estimators/classification tests for framework $framework"; fi
 
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/estimators/classification/test_blackbox_existing_predictions.py --framework=$framework --skip_travis=True --durations=0
+    if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed estimators/classification/test_blackbox_existing_predictions.py $framework"; fi
+
     pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/metrics/privacy --framework=$framework --skip_travis=True --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed metrics/privacy tests"; fi
 else
