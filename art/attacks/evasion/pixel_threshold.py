@@ -44,6 +44,7 @@ from scipy.optimize.optimize import _status_message
 from scipy.optimize import OptimizeResult, minimize
 from tqdm.auto import tqdm
 
+from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
@@ -128,7 +129,7 @@ class PixelThreshold(EvasionAttack):
 
     def rescale_input(self, x):
         """Rescale inputs"""
-        x = x.astype(np.float32) / 255.0
+        x = x.astype(ART_NUMPY_DTYPE) / 255.0
         x = (x * (self.estimator.clip_values[1] - self.estimator.clip_values[0])) + self.estimator.clip_values[0]
         return x
 
@@ -175,7 +176,7 @@ class PixelThreshold(EvasionAttack):
             x = (x - self.estimator.clip_values[0]) / (self.estimator.clip_values[1] - self.estimator.clip_values[0])
             x = x * 255.0
 
-        x = x.astype(np.uint8)
+        x = x.astype(ART_NUMPY_DTYPE)
 
         adv_x_best = []
         self.adv_th = []

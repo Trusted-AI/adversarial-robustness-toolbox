@@ -569,9 +569,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         if self._reduce_labels:
             y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
-        gen = generator_fit(x_preprocessed, y_preprocessed, batch_size)
-        steps_per_epoch = max(int(x_preprocessed.shape[0] / batch_size), 1)
-        self._model.fit_generator(gen, steps_per_epoch=steps_per_epoch, epochs=nb_epochs, **kwargs)
+        self._model.fit(x=x_preprocessed, y=y_preprocessed, batch_size=batch_size, epochs=nb_epochs, **kwargs)
 
     def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs) -> None:
         """

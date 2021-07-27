@@ -443,11 +443,8 @@ class NeuralNetworkMixin(ABC):
             ):  # type: ignore
                 x, y = generator.get_batch()
 
-                # Apply preprocessing and defences
-                x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)  # type: ignore
-
                 # Fit for current batch
-                self.fit(x_preprocessed, y_preprocessed, nb_epochs=1, batch_size=generator.batch_size, **kwargs)
+                self.fit(x, y, nb_epochs=1, batch_size=generator.batch_size, **kwargs)
 
     @abstractmethod
     def get_activations(
