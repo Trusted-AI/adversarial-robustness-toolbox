@@ -228,7 +228,7 @@ class SquareAttack(EvasionAttack):
 
                     sample_loss_init = self.loss(x_robust, y_robust)
 
-                    height_tile = max(int(round(math.sqrt(percentage_of_elements * height * width))), 1)
+                    height_tile = max(int(round(math.sqrt(percentage_of_elements * min(height, width) ** 2))), 1)
 
                     height_mid = np.random.randint(0, height - height_tile)
                     width_start = np.random.randint(0, width - height_tile)
