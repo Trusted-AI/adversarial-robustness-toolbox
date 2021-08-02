@@ -85,6 +85,11 @@ versatile classifier of ART requiring only a single predict function definition 
 requirements. The notebook shows how use BlackBoxClassifier to attack a remote, deployed model (in this case on IBM
 Watson Machine Learning, https://cloud.ibm.com) using the HopSkiJump attack.
 
+[classifier_blackbox_lookup_table.ipynb](classifier_blackbox_lookup_table.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/classifier_blackbox_lookup_table.ipynb)]
+demonstrates using BlackBoxClassifier when the adversary does not have access to the model for making predictions, but
+does have a set of existing predictions produced before losing access. The notebook shows how to use BlackBoxClassifier
+to attack a model using only a table of samples and their labels, using a membership inference black-box attack.
+
 [classifier_blackbox_tesseract.ipynb](classifier_blackbox_tesseract.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/classifier_blackbox_tesseract.ipynb)]
 demonstrates a black-box attack on Tesseract OCR. It uses BlackBoxClassifier and HopSkipJump attack to change the image 
 of one word into the image of another word and shows how to apply pre-processing defences.

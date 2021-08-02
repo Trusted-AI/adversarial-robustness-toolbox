@@ -20,10 +20,9 @@ This module implements the classifier `BlackBoxClassifier` for black-box classif
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+from functools import total_ordering
 import logging
 from typing import Callable, List, Optional, Union, Tuple, TYPE_CHECKING
-
-from functools import total_ordering
 
 import numpy as np
 
@@ -43,7 +42,7 @@ class BlackBoxClassifier(ClassifierMixin, BaseEstimator):
     Wrapper class for black-box classifiers.
     """
 
-    estimator_params = Classifier.estimator_params + ["nb_classes", "input_shape", "predict"]
+    estimator_params = Classifier.estimator_params + ["nb_classes", "input_shape", "predict_fn"]
 
     def __init__(
         self,
@@ -171,7 +170,7 @@ class BlackBoxClassifierNeuralNetwork(NeuralNetworkMixin, ClassifierMixin, BaseE
         NeuralNetworkMixin.estimator_params
         + ClassifierMixin.estimator_params
         + BaseEstimator.estimator_params
-        + ["nb_classes", "input_shape", "predict"]
+        + ["nb_classes", "input_shape", "predict_fn"]
     )
 
     def __init__(
@@ -309,14 +308,14 @@ class BlackBoxClassifierNeuralNetwork(NeuralNetworkMixin, ClassifierMixin, BaseE
 
 
 @total_ordering
-class FuzzyMappingWrapper:
+class FuzzyMapping:
     """
-    Wrapper class for a sample, label pair to be used in a `SortedList`.
+    Class for a sample/label pair to be used in a `SortedList`.
     """
 
     def __init__(self, key: np.ndarray, value=None):
         """
-        Create a wrapper for the key, value to pair to be used in a `SortedList`.
+        Create an instance of a key/value to pair to be used in a `SortedList`.
 
         :param key: The sample to be matched against.
         :param value: The mapped value.
@@ -327,20 +326,18 @@ class FuzzyMappingWrapper:
     def __eq__(self, other):
         return np.all(np.isclose(self.key, other.key))
 
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
     def __ge__(self, other):
         # This implements >= comparison so we can use this class in a `SortedList`. The `total_ordering` decorator
         # automatically generates the rest of the comparison magic functions based on this one
 
-        if self.__eq__(other):
+        close_cells = np.isclose(self.key, other.key)
+        if np.all(close_cells):
             return True
 
         # If the keys are not exactly the same (up to floating-point inaccuracies), we compare the value of the first
         # index which is not the same to decide on an ordering
 
-        compare_idx = np.unravel_index(np.argmin(np.isclose(self.key, other.key)), shape=self.key.shape)
+        compare_idx = np.unravel_index(np.argmin(close_cells), shape=self.key.shape)
         return self.key[compare_idx] >= other.key[compare_idx]
 
 
@@ -360,13 +357,13 @@ def _make_lookup_predict_fn(existing_predictions: Tuple[np.ndarray, np.ndarray],
         from sortedcontainers import SortedList
 
         # Construct a search-tree of the predictions, using fuzzy float comparison
-        sorted_predictions = SortedList([FuzzyMappingWrapper(key, value) for key, value in zip(samples, labels)])
+        sorted_predictions = SortedList([FuzzyMapping(key, value) for key, value in zip(samples, labels)])
 
         def fuzzy_predict_fn(batch):
             predictions = []
             for row in batch:
                 try:
-                    match_idx = sorted_predictions.index(FuzzyMappingWrapper(row))
+                    match_idx = sorted_predictions.index(FuzzyMapping(row))
                 except ValueError as err:
                     raise ValueError("No existing prediction for queried input") from err
 

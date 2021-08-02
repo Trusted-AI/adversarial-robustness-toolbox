@@ -19,7 +19,7 @@ import pytest
 
 import numpy as np
 
-from art.estimators.classification import BlackBoxClassifierNeuralNetwork, BlackBoxClassifier
+from art.estimators.classification.blackbox import BlackBoxClassifierNeuralNetwork, BlackBoxClassifier
 from tests.utils import ARTTestException
 
 
