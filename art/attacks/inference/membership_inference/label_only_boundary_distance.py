@@ -202,7 +202,9 @@ class LabelOnlyDecisionBoundary(MembershipInferenceAttack):
 
         self.distance_threshold_tau = distance_threshold_tau
 
-    def calibrate_distance_threshold_unsupervised(self, top_t: int, num_samples: int, max_queries: int, **kwargs):
+    def calibrate_distance_threshold_unsupervised(
+        self, top_t: int = 50, num_samples: int = 100, max_queries: int = 1, **kwargs
+    ):
         """
         Calibrate distance threshold on randomly generated samples, choosing the top-t percentile of the noise needed
         to change the classifier's initial prediction.
@@ -211,7 +213,8 @@ class LabelOnlyDecisionBoundary(MembershipInferenceAttack):
 
         :param top_t: Top-t percentile.
         :param num_samples: Number of random samples to generate.
-        :param max_queries: Maximum number of queries.
+        :param max_queries: Maximum number of queries. Maximum number of HSJ iterations on a single sample will be
+                            max_queries * max_iter.
         :Keyword Arguments for HopSkipJump:
             * *norm*: Order of the norm. Possible values: "inf", np.inf or 2.
             * *max_iter*: Maximum number of iterations.
@@ -222,13 +225,18 @@ class LabelOnlyDecisionBoundary(MembershipInferenceAttack):
         """
         from art.attacks.evasion.hop_skip_jump import HopSkipJump
 
-        x_min, x_max = self.estimator.clip_values
+        if self.estimator.clip_values is not None:
+            x_min, x_max = self.estimator.clip_values
+        else:
+            raise RuntimeError(
+                "You need to set the estimator's clip_values in order to calibrate the distance threshold."
+            )
 
         x_rand = np.random.rand(*(num_samples,) + self.estimator.input_shape).astype(np.float32)
         x_rand *= x_max - x_min  # scale
         x_rand += x_min  # shift
 
-        y_rand = np.random.randint(0, self.estimator.nb_classes, num_samples)
+        y_rand = self.estimator.predict(x=x_rand)
         y_rand = check_and_transform_label_format(y_rand, self.estimator.nb_classes)
 
         hsj = HopSkipJump(classifier=self.estimator, targeted=False, **kwargs)
