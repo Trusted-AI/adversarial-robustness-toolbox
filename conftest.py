@@ -712,6 +712,31 @@ def get_iris_dataset(load_iris_dataset, framework):
 
 
 @pytest.fixture(scope="session")
+def load_diabetes_dataset():
+    logging.info("Loading Diabetes dataset")
+    (x_train_diabetes, y_train_diabetes), (x_test_diabetes, y_test_diabetes), _, _ = load_dataset("diabetes")
+
+    yield (x_train_diabetes, y_train_diabetes), (x_test_diabetes, y_test_diabetes)
+
+
+@pytest.fixture(scope="function")
+def get_diabetes_dataset(load_diabetes_dataset, framework):
+    (x_train_diabetes, y_train_diabetes), (x_test_diabetes, y_test_diabetes) = load_diabetes_dataset
+
+    x_train_diabetes_original = x_train_diabetes.copy()
+    y_train_diabetes_original = y_train_diabetes.copy()
+    x_test_diabetes_original = x_test_diabetes.copy()
+    y_test_diabetes_original = y_test_diabetes.copy()
+
+    yield (x_train_diabetes, y_train_diabetes), (x_test_diabetes, y_test_diabetes)
+
+    np.testing.assert_array_almost_equal(x_train_diabetes_original, x_train_diabetes, decimal=3)
+    np.testing.assert_array_almost_equal(y_train_diabetes_original, y_train_diabetes, decimal=3)
+    np.testing.assert_array_almost_equal(x_test_diabetes_original, x_test_diabetes, decimal=3)
+    np.testing.assert_array_almost_equal(y_test_diabetes_original, y_test_diabetes, decimal=3)
+
+
+@pytest.fixture(scope="session")
 def default_dataset_subset_sizes():
     n_train = 1000
     n_test = 100

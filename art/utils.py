@@ -924,6 +924,38 @@ def load_iris(raw: bool = False, test_set: float = 0.3) -> DATASET_TYPE:
     return (x_train, y_train), (x_test, y_test), min_, max_
 
 
+def load_diabetes(raw: bool = False, test_set: float = 0.3) -> DATASET_TYPE:
+    """
+    Loads the Diabetes Regression dataset from sklearn.
+
+    :param raw: `True` if no preprocessing should be applied to the data. Otherwise, data is normalized to 1.
+    :param test_set: Proportion of the data to use as validation split. The value should be between 0 and 1.
+    :return: Entire dataset and labels.
+    """
+    from sklearn.datasets import load_diabetes as load_diabetes_sk
+
+    diabetes = load_diabetes_sk()
+    data = diabetes.data
+    if not raw:
+        data /= np.amax(data, axis=0)
+    targets = diabetes.target
+
+    min_, max_ = np.amin(data), np.amax(data)
+
+    # Shuffle data set
+    random_indices = np.random.permutation(len(data))
+    data, targets = data[random_indices], targets[random_indices]
+
+    # Split training and test sets
+    split_index = int((1 - test_set) * len(data))
+    x_train = data[:split_index]
+    y_train = targets[:split_index]
+    x_test = data[split_index:]
+    y_test = targets[split_index:]
+
+    return (x_train, y_train), (x_test, y_test), min_, max_
+
+
 def load_nursery(raw: bool = False, test_set: float = 0.2, transform_social: bool = False) -> DATASET_TYPE:
     """
     Loads the UCI Nursery dataset from `config.ART_DATA_PATH` or downloads it if necessary.
@@ -1028,7 +1060,8 @@ def load_dataset(
     name: str,
 ) -> DATASET_TYPE:
     """
-    Loads or downloads the dataset corresponding to `name`. Options are: `mnist`, `cifar10` and `stl10`.
+    Loads or downloads the dataset corresponding to `name`. Options are: `mnist`, `cifar10`, `stl10`, `iris`, `nursery`
+    and `diabetes`.
 
     :param name: Name of the dataset.
     :return: The dataset separated in training and test sets as `(x_train, y_train), (x_test, y_test), min, max`.
@@ -1044,6 +1077,8 @@ def load_dataset(
         return load_iris()
     if "nursery" in name:
         return load_nursery()
+    if "diabetes" in name:
+        return load_diabetes()
 
     raise NotImplementedError("There is no loader for dataset '{}'.".format(name))
 
