@@ -104,6 +104,7 @@ else
                             "tests/estimators/classification/test_GPy.py" \
                             "tests/estimators/classification/test_input_filter.py" \
                             "tests/estimators/classification/test_lightgbm.py" \
+                            "tests/estimators/classification/test_query_efficient_bb.py" \
                             "tests/estimators/classification/test_scikitlearn.py" \
                             "tests/estimators/classification/test_xgboost.py" )
 
@@ -139,10 +140,6 @@ else
                         "tests/metrics/test_metrics.py" \
                         "tests/metrics/test_verification_decision_trees.py" )
 
-    declare -a wrappers=("tests/wrappers/test_expectation.py" \
-                         "tests/wrappers/test_query_efficient_bb.py" \
-                         "tests/wrappers/test_wrapper.py" )
-
     declare -a art=("tests/test_data_generators.py" \
                     "tests/test_utils.py" \
                     "tests/test_visualization.py" )
@@ -153,7 +150,6 @@ else
                    "speech_recognizers" \
                    "defences" \
                    "metrics" \
-                   "wrappers" \
                    "art" )
 
     # --------------------------------------------------------------------------------------------------- CODE TO RUN TESTS

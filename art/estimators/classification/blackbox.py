@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 
 class BlackBoxClassifier(ClassifierMixin, BaseEstimator):
     """
-    Wrapper class for black-box classifiers.
+    Class for black-box classifiers.
     """
 
     estimator_params = Classifier.estimator_params + ["nb_classes", "input_shape", "predict"]
@@ -154,7 +154,7 @@ class BlackBoxClassifier(ClassifierMixin, BaseEstimator):
 
 class BlackBoxClassifierNeuralNetwork(NeuralNetworkMixin, ClassifierMixin, BaseEstimator):
     """
-    Wrapper class for black-box neural network classifiers.
+    Class for black-box neural network classifiers.
     """
 
     estimator_params = (

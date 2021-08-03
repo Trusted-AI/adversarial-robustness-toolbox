@@ -80,6 +80,7 @@ if TYPE_CHECKING:
     from art.estimators.classification.lightgbm import LightGBMClassifier
     from art.estimators.classification.mxnet import MXClassifier
     from art.estimators.classification.pytorch import PyTorchClassifier
+    from art.estimators.classification.query_efficient_bb import QueryEfficientGradientEstimationClassifier
     from art.estimators.classification.scikitlearn import (
         ScikitlearnAdaBoostClassifier,
         ScikitlearnBaggingClassifier,
@@ -114,6 +115,7 @@ if TYPE_CHECKING:
         ScikitlearnSVC,
         TensorFlowClassifier,
         TensorFlowV2Classifier,
+        QueryEfficientGradientEstimationClassifier,
     ]
 
     CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE = Union[  # pylint: disable=C0103

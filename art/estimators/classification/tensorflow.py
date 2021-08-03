@@ -237,31 +237,49 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
         :return: Array of predictions of shape `(num_inputs, nb_classes)`.
         """
+        print("predict - a")
         if self._learning is not None:
             self._feed_dict[self._learning] = training_mode
+
+        print("predict - b")
 
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
+        print("predict - c")
+
         # Run prediction with batch processing
         results = np.zeros((x_preprocessed.shape[0], self.nb_classes), dtype=np.float32)
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
+        print("predict - c2")
+        print("num_batch", num_batch)
         for m in range(num_batch):
+            print("predict -", m, " - d")
             # Batch indexes
             begin, end = (
                 m * batch_size,
                 min((m + 1) * batch_size, x_preprocessed.shape[0]),
             )
 
+            print("predict -", m, " - e")
+
             # Create feed_dict
             feed_dict = {self._input_ph: x_preprocessed[begin:end]}
             feed_dict.update(self._feed_dict)
 
+            print("predict -", m, " - f")
+
             # Run prediction
+            print("feed_dict")
+            print(feed_dict)
             results[begin:end] = self._sess.run(self._output, feed_dict=feed_dict)
 
+            print("predict -", m, " - g")
+
         # Apply postprocessing
+        print("predict - h")
         predictions = self._apply_postprocessing(preds=results, fit=False)
+        print("predict - i")
 
         return predictions
 

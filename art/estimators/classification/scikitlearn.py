@@ -62,7 +62,7 @@ def SklearnClassifier(
 ) -> "ScikitlearnClassifier":
     """
     Create a `Classifier` instance from a scikit-learn Classifier model. This is a convenience function that
-    instantiates the correct wrapper class for the given scikit-learn model.
+    instantiates the correct class for the given scikit-learn model.
 
     :param model: scikit-learn Classifier model.
     :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
@@ -100,7 +100,7 @@ def SklearnClassifier(
 
 class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):  # lgtm [py/missing-call-to-init]
     """
-    Wrapper class for scikit-learn classifier models.
+    Class for scikit-learn classifier models.
     """
 
     estimator_params = ClassifierMixin.estimator_params + ScikitlearnEstimator.estimator_params + ["use_logits"]
@@ -275,7 +275,7 @@ class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):  # lgtm [py/
 
 class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
     """
-    Wrapper class for scikit-learn Decision Tree Classifier models.
+    Class for scikit-learn Decision Tree Classifier models.
     """
 
     def __init__(
@@ -421,7 +421,7 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
 
 class ScikitlearnDecisionTreeRegressor(ScikitlearnDecisionTreeClassifier):
     """
-    Wrapper class for scikit-learn Decision Tree Regressor models.
+    Class for scikit-learn Decision Tree Regressor models.
     """
 
     def __init__(
@@ -511,7 +511,7 @@ class ScikitlearnDecisionTreeRegressor(ScikitlearnDecisionTreeClassifier):
 
 class ScikitlearnExtraTreeClassifier(ScikitlearnDecisionTreeClassifier):
     """
-    Wrapper class for scikit-learn Extra TreeClassifier Classifier models.
+    Class for scikit-learn Extra TreeClassifier Classifier models.
     """
 
     def __init__(
@@ -550,7 +550,7 @@ class ScikitlearnExtraTreeClassifier(ScikitlearnDecisionTreeClassifier):
 
 class ScikitlearnAdaBoostClassifier(ScikitlearnClassifier):
     """
-    Wrapper class for scikit-learn AdaBoost Classifier models.
+    Class for scikit-learn AdaBoost Classifier models.
     """
 
     def __init__(
@@ -589,7 +589,7 @@ class ScikitlearnAdaBoostClassifier(ScikitlearnClassifier):
 
 class ScikitlearnBaggingClassifier(ScikitlearnClassifier):
     """
-    Wrapper class for scikit-learn Bagging Classifier models.
+    Class for scikit-learn Bagging Classifier models.
     """
 
     def __init__(
@@ -629,7 +629,7 @@ class ScikitlearnBaggingClassifier(ScikitlearnClassifier):
 
 class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier, DecisionTreeMixin):
     """
-    Wrapper class for scikit-learn Extra Trees Classifier models.
+    Class for scikit-learn Extra Trees Classifier models.
     """
 
     def __init__(
@@ -702,7 +702,7 @@ class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier, DecisionTreeMixin):
 
 class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier, DecisionTreeMixin):
     """
-    Wrapper class for scikit-learn Gradient Boosting Classifier models.
+    Class for scikit-learn Gradient Boosting Classifier models.
     """
 
     def __init__(
@@ -776,7 +776,7 @@ class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier, DecisionTreeM
 
 class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
     """
-    Wrapper class for scikit-learn Random Forest Classifier models.
+    Class for scikit-learn Random Forest Classifier models.
     """
 
     def __init__(
@@ -849,7 +849,7 @@ class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
 
 class ScikitlearnLogisticRegression(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassifier):
     """
-    Wrapper class for scikit-learn Logistic Regression models.
+    Class for scikit-learn Logistic Regression models.
     """
 
     def __init__(
@@ -1030,7 +1030,7 @@ class ScikitlearnLogisticRegression(ClassGradientsMixin, LossGradientsMixin, Sci
 
 class ScikitlearnGaussianNB(ScikitlearnClassifier):
     """
-    Wrapper class for scikit-learn Gaussian Naive Bayes models.
+    Class for scikit-learn Gaussian Naive Bayes models.
     """
 
     def __init__(
@@ -1079,7 +1079,7 @@ class ScikitlearnGaussianNB(ScikitlearnClassifier):
 
 class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassifier):
     """
-    Wrapper class for scikit-learn C-Support Vector Classification models.
+    Class for scikit-learn C-Support Vector Classification models.
     """
 
     def __init__(

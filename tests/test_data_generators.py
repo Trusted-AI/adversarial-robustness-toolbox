@@ -125,7 +125,7 @@ class TestKerasDataGenerator(unittest.TestCase):
         )
         datagen.fit(x_train)
 
-        # Create wrapper and get batch
+        # Create generator and get batch
         data_gen = KerasDataGenerator(
             datagen.flow(x_train, y_train, batch_size=batch_size), size=None, batch_size=batch_size
         )
@@ -154,7 +154,7 @@ class TestKerasDataGenerator(unittest.TestCase):
         )
         datagen.fit(x_train)
 
-        # Create wrapper and get batch
+        # Create generator and get batch
         data_gen = KerasDataGenerator(
             datagen.flow(x_train, y_train, batch_size=batch_size), size=None, batch_size=batch_size
         )

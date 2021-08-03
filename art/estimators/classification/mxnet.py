@@ -46,7 +46,7 @@ logger = logging.getLogger(__name__)
 
 class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [py/missing-call-to-init]
     """
-    Wrapper class for importing MXNet Gluon models.
+    Class for importing MXNet Gluon models.
     """
 
     estimator_params = (
