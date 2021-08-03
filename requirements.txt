@@ -47,7 +47,7 @@ pytest~=6.2.4
 pytest-flake8~=1.0.7
 pytest-mock~=3.6.1
 pytest-cov~=2.12.1
-codecov~=2.1.11
+codecov~=2.1.12
 requests~=2.26.0
 
 
