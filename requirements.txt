@@ -4,14 +4,14 @@ scipy==1.7.0
 matplotlib==3.4.2
 scikit-learn>=0.22.2,<0.24.3
 six==1.16.0
-Pillow==8.2.0
-tqdm==4.61.1
+Pillow==8.3.1
+tqdm==4.61.2
 statsmodels==0.12.2
 pydub==0.25.1
 resampy==0.2.2
 ffmpeg-python==0.2.0
 cma==3.1.0
-pandas==1.2.5
+pandas==1.3.0
 librosa==0.8.1
 numba~=0.53.1
 opencv-python
@@ -32,8 +32,8 @@ catboost==0.26
 GPy==1.10.0
 lightgbm==3.2.1
 xgboost==1.4.2
-kornia~=0.5.5
-tensorboardX==2.3
+kornia~=0.5.6
+tensorboardX==2.4
 lief==0.11.5
 
 # Lingvo ASR dependencies
@@ -48,7 +48,7 @@ pytest-flake8~=1.0.7
 pytest-mock~=3.6.1
 pytest-cov~=2.12.1
 codecov~=2.1.11
-requests~=2.25.1
+requests~=2.26.0
 
 
 

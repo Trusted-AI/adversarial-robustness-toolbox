@@ -66,7 +66,9 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         if isinstance(preprocessing, tuple):
             from art.preprocessing.standardisation_mean_std.pytorch import StandardisationMeanStdPyTorch
 
-            kwargs["preprocessing"] = StandardisationMeanStdPyTorch(mean=preprocessing[0], std=preprocessing[1])
+            kwargs["preprocessing"] = StandardisationMeanStdPyTorch(
+                mean=preprocessing[0], std=preprocessing[1], device_type=device_type
+            )
 
         super().__init__(**kwargs)
 
@@ -199,7 +201,12 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         ):
             # Compatible with non-PyTorch defences if no chaining.
             for preprocess in self.preprocessing_operations:
-                x, y = preprocess(x, y)
+                if fit:
+                    if preprocess.apply_fit:
+                        x, y = preprocess(x, y)
+                else:
+                    if preprocess.apply_predict:
+                        x, y = preprocess(x, y)
 
         else:
             raise NotImplementedError("The current combination of preprocessing types is not supported.")
