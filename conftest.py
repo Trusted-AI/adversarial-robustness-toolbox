@@ -81,12 +81,6 @@ def pytest_addoption(parser):
         help="ART tests allow you to specify which framework to use. The default framework used is `tensorflow`. "
         "Other options available are {0}".format(art_supported_frameworks),
     )
-    parser.addoption(
-        "--skip_travis",
-        action="store",
-        default=False,
-        help="Whether tests annotated with the decorator skip_travis should be skipped or not",
-    )
 
 
 @pytest.fixture
@@ -801,17 +795,6 @@ def skip_by_framework(request, framework):
 
         if framework in framework_to_skip_list:
             pytest.skip("skipped on this platform: {}".format(framework))
-
-
-@pytest.fixture(autouse=True)
-def skip_travis(request):
-    """
-    Skips a test marked with this decorator if the command line argument skip_travis is set to true
-    :param request:
-    :return:
-    """
-    if request.node.get_closest_marker("skip_travis") and request.config.getoption("--skip_travis"):
-        pytest.skip("skipped due to skip_travis being set to {}".format(skip_travis))
 
 
 @pytest.fixture
