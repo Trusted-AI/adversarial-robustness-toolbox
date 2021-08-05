@@ -1332,8 +1332,8 @@ def to_cuda(x: "torch.Tensor") -> "torch.Tensor":
     from torch.cuda import is_available
 
     use_cuda = is_available()
-    if use_cuda:
-        x = x.cuda()  # pragma: no_cover
+    if use_cuda:  # pragma: no_cover
+        x = x.cuda()
     return x
 
 
@@ -1347,6 +1347,6 @@ def from_cuda(x: "torch.Tensor") -> "torch.Tensor":
     from torch.cuda import is_available
 
     use_cuda = is_available()
-    if use_cuda:
-        x = x.cpu()  # pragma: no_cover
+    if use_cuda:  # pragma: no_cover
+        x = x.cpu()
     return x
