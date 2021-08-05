@@ -66,7 +66,7 @@ logger = logging.getLogger(__name__)
 @jitclass(spec=[])
 class BFGSB:
     def __init__(self):
-        pass
+        pass  # pragma: no_cover
 
     def solve(self, fun_and_jac, q0, bounds, args, ftol=1e-10, pgtol=-1e-5, maxiter=None):
         N = q0.shape[0]
@@ -638,7 +638,7 @@ class BFGSB:
         return xmin
 
 
-class Optimizer:
+class Optimizer:  # pragma: no cover
     """
     Base class for the trust-region optimization. If feasible, this optimizer solves the problem
 
@@ -2630,7 +2630,7 @@ class BrendelBethgeAttack(EvasionAttack):
 
     def _check_params(self) -> None:
 
-        if self.norm not in [1, 2, np.inf, "inf"]:
+        if self.norm not in [0, 1, 2, np.inf, "inf"]:
             raise ValueError('The argument norm has to be either 1, 2, np.inf, or "inf".')
 
         if not isinstance(self.targeted, bool):

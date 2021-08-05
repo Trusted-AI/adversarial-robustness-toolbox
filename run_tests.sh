@@ -39,16 +39,13 @@ then
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/poison tests"; fi
 
     pytest --cov-report=xml --cov=art --cov-append  -q -vv -s tests/attacks/evasion/ --framework=$framework  --durations=0
-    if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion/test_shadow_attack.py"; fi
+    if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion"; fi
 
     pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/estimators/speech_recognition/ --framework=$framework  --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed estimators/speech_recognition tests"; fi
 
     pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/attacks/inference/ --framework=$framework --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/inference"; fi
-
-    pytest -q -s tests/attacks/evasion/test_brendel_and_bethge.py --framework=$framework --durations=0
-    if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion/test_brendel_and_bethge.py"; fi
 
     pytest --cov-report=xml --cov=art --cov-append -q -vv tests/classifiersFrameworks/  --framework=$framework --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed classifiersFrameworks tests"; fi
@@ -166,7 +163,6 @@ else
       echo "######################################################################"
       echo ${test}
       echo "######################################################################"
-#      coverage run --append -m unittest -v ${test}
       pytest --cov-report=xml --cov=art --cov-append  -q -vv ${test} --durations=0
       if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed $test"; fi
     }
@@ -179,5 +175,4 @@ else
     done
 fi
 
-#bash <(curl -s https://codecov.io/bash)
 exit ${exit_code}

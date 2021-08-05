@@ -95,7 +95,7 @@ class DPatch(EvasionAttack):
 
         self.target_label: Optional[Union[int, np.ndarray, List[int]]] = list()
 
-    def generate(  # pylint: disable=W0221
+    def generate(  # pylint: disable=W0221; pragma: no_cover
         self,
         x: np.ndarray,
         y: Optional[np.ndarray] = None,

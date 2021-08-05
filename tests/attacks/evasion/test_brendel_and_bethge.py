@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 @pytest.mark.skip_framework("tensorflow1", "keras", "kerastf", "mxnet", "non_dl_frameworks")
 @pytest.mark.parametrize("targeted", [True, False])
-@pytest.mark.parametrize("norm", [1, 2, np.inf, "inf"])
+@pytest.mark.parametrize("norm", [0, 1, 2, np.inf, "inf"])
 def test_generate(art_warning, get_default_mnist_subset, image_dl_estimator_for_attack, targeted, norm):
     try:
         (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
