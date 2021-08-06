@@ -432,7 +432,19 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             raise ValueError("An optimizer is needed to train the model, but none for provided.")
 
         # Train directly in PyTorch
-        if isinstance(generator, PyTorchDataGenerator) and not self.preprocessing:
+        from art.preprocessing.standardisation_mean_std.pytorch import StandardisationMeanStdPyTorch
+
+        if isinstance(generator, PyTorchDataGenerator) and (
+            self.preprocessing is None
+            or (
+                isinstance(self.preprocessing, StandardisationMeanStdPyTorch)
+                and (
+                    self.preprocessing.mean,
+                    self.preprocessing.std,
+                )
+                == (0, 1)
+            )
+        ):
             for _ in range(nb_epochs):
                 for i_batch, o_batch in generator.iterator:
                     if isinstance(i_batch, np.ndarray):

@@ -329,9 +329,18 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
             self._feed_dict[self._learning] = True
 
         # Train directly in TensorFlow
-        if isinstance(generator, TensorFlowDataGenerator) and (self.preprocessing.mean, self.preprocessing.std) == (
-            0,
-            1,
+        from art.preprocessing.standardisation_mean_std.numpy import StandardisationMeanStd
+
+        if isinstance(generator, TensorFlowDataGenerator) and (
+            self.preprocessing is None
+            or (
+                isinstance(self.preprocessing, StandardisationMeanStd)
+                and (
+                    self.preprocessing.mean,
+                    self.preprocessing.std,
+                )
+                == (0, 1)
+            )
         ):
             for _ in range(nb_epochs):
                 for _ in range(int(generator.size / generator.batch_size)):  # type: ignore
@@ -985,9 +994,18 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
             )
 
         # Train directly in TensorFlow
-        if isinstance(generator, TensorFlowV2DataGenerator) and (self.preprocessing.mean, self.preprocessing.std) == (
-            0,
-            1,
+        from art.preprocessing.standardisation_mean_std.tensorflow import StandardisationMeanStdTensorFlow
+
+        if isinstance(generator, TensorFlowV2DataGenerator) and (
+            self.preprocessing is None
+            or (
+                isinstance(self.preprocessing, StandardisationMeanStdTensorFlow)
+                and (
+                    self.preprocessing.mean,
+                    self.preprocessing.std,
+                )
+                == (0, 1)
+            )
         ):
             for _ in range(nb_epochs):
                 for i_batch, o_batch in generator.iterator:
