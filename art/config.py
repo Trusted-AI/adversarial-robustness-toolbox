@@ -58,7 +58,7 @@ def set_data_path(path):
 # Load data from configuration file if it exists. Otherwise create one.
 _config_path = os.path.expanduser(os.path.join(_folder, "config.json"))
 if os.path.exists(_config_path):
-    try:  # pragma: no cover
+    try:
         with open(_config_path) as f:
             _config = json.load(f)
 
@@ -71,23 +71,23 @@ if os.path.exists(_config_path):
                 except IOError:
                     logger.warning("Unable to update configuration file", exc_info=True)
 
-    except ValueError:
+    except ValueError:  # pragma: no cover
         _config = {}
 
 if not os.path.exists(_folder):
-    try:  # pragma: no cover
+    try:
         os.makedirs(_folder)
-    except OSError:
+    except OSError:  # pragma: no cover
         logger.warning("Unable to create folder for configuration file.", exc_info=True)
 
 if not os.path.exists(_config_path):
     # Generate default config
     _config = {"ART_DATA_PATH": os.path.join(_folder, "data")}
 
-    try:  # pragma: no cover
+    try:
         with open(_config_path, "w") as f:
             f.write(json.dumps(_config, indent=4))
-    except IOError:
+    except IOError:  # pragma: no cover
         logger.warning("Unable to create configuration file", exc_info=True)
 
 if "ART_DATA_PATH" in _config:  # pragma: no cover

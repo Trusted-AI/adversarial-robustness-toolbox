@@ -69,8 +69,8 @@ class TestShapeShifter(TestBase):
         # Create labels
         result = obj_dec.predict(self.x_test_mnist[:1].astype(np.float32))
 
-        groundtruth_boxes_list = [result["detection_boxes"][i] for i in range(1)]
-        groundtruth_classes_list = [result["detection_classes"][i] for i in range(1)]
+        groundtruth_boxes_list = [result[i]["boxes"] for i in range(1)]
+        groundtruth_classes_list = [result[i]["labels"] for i in range(1)]
         groundtruth_weights_list = [np.ones_like(r) for r in groundtruth_classes_list]
 
         y = {
@@ -151,8 +151,8 @@ class TestShapeShifter(TestBase):
         # Create labels
         result = obj_dec.predict(self.x_test_mnist[:1].astype(np.float32))
 
-        groundtruth_boxes_list = [result["detection_boxes"][i] for i in range(1)]
-        groundtruth_classes_list = [result["detection_classes"][i] for i in range(1)]
+        groundtruth_boxes_list = [result[i]["boxes"] for i in range(1)]
+        groundtruth_classes_list = [result[i]["labels"] for i in range(1)]
         groundtruth_weights_list = [np.ones_like(r) for r in groundtruth_classes_list]
 
         y = {

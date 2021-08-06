@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+
 exit_code=0
 
 # Set TensorFlow logging to minimum level ERROR
@@ -6,8 +7,8 @@ export TF_CPP_MIN_LOG_LEVEL="3"
 
 # --------------------------------------------------------------------------------------------------------------- TESTS
 
-#NOTE: All the tests should be ran within this loop. All other tests are legacy tests that must be
-# made framework independent to be incorporated within this loop
+# NOTE: All the tests should be ran within this loop. All other tests are legacy tests that must be made framework
+# independent to be incorporated within this loop
 frameworkList=("tensorflow" "keras" "pytorch" "scikitlearn" "mxnet" "kerastf")
 framework=$1
 
@@ -92,6 +93,8 @@ else
                         "tests/attacks/test_targeted_universal_perturbation.py" \
                         "tests/attacks/test_simba.py" )
 
+#                        "tests/attacks/test_shapeshifter.py" \ run in action tf-faster-rcnn
+
     declare -a classifiers=("tests/estimators/certification/test_randomized_smoothing.py" \
                             "tests/estimators/classification/test_blackbox.py" \
                             "tests/estimators/classification/test_catboost.py" \
@@ -103,9 +106,6 @@ else
                             "tests/estimators/classification/test_lightgbm.py" \
                             "tests/estimators/classification/test_scikitlearn.py" \
                             "tests/estimators/classification/test_xgboost.py" )
-
-    # test_pytorch_faster_rcnn.py is not included because it has it's own environment and workflow.
-    declare -a object_detectors=("tests/estimators/object_detection/test_tensorflow_faster_rcnn.py")
 
     declare -a speech_recognizers=("tests/estimators/speech_recognition/test_pytorch_deep_speech.py")
 
@@ -146,14 +146,13 @@ else
 
     tests_modules=("attacks" \
                    "classifiers" \
-                   "object_detectors" \
                    "speech_recognizers" \
                    "defences" \
                    "metrics" \
                    "wrappers" \
                    "art" )
 
-    # --------------------------------------------------------------------------------------------------- CODE TO RUN TESTS
+    # ----------------------------------------------------------------------------------------------- CODE TO RUN TESTS
 
     run_test () {
       test=$1

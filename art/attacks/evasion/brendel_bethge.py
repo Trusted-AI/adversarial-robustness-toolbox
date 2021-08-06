@@ -879,7 +879,7 @@ spec = [("bfgsb", BFGSB.class_type.instance_type)]  # type: ignore
 
 
 @jitclass(spec=spec)
-class L2Optimizer(Optimizer):
+class L2Optimizer(Optimizer):  # pragma: no cover
     def optimize_distance_s_t_boundary_and_trustregion(self, x0, x, b, min_, max_, c, r):
         """
         Solves the L2 trust region problem
@@ -1070,7 +1070,7 @@ class L2Optimizer(Optimizer):
 
 
 @jitclass(spec=spec)
-class L1Optimizer(Optimizer):
+class L1Optimizer(Optimizer):  # pragma: no cover
     def fun_and_jac(self, params, x0, x, b, min_, max_, c, r):
         lam, mu = params
         # arg min_delta ||delta - dx||_1 + lam * b^T delta + mu * ||delta||_2^2  s.t.  min <= delta + x <= max
@@ -1214,7 +1214,7 @@ class L1Optimizer(Optimizer):
 
 
 @jitclass(spec=spec)
-class LinfOptimizer(Optimizer):
+class LinfOptimizer(Optimizer):  # pragma: no cover
     def optimize_distance_s_t_boundary_and_trustregion(self, x0, x, b, min_, max_, c, r):
         """
         Find the solution to the optimization problem
@@ -1399,7 +1399,7 @@ class LinfOptimizer(Optimizer):
 
 
 @jitclass(spec=spec)
-class L0Optimizer(Optimizer):
+class L0Optimizer(Optimizer):  # pragma: no cover
     def optimize_distance_s_t_boundary_and_trustregion(self, x0, x, b, min_, max_, c, r):
         """
         Find the solution to the optimization problem
