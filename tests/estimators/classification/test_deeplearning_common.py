@@ -260,7 +260,7 @@ def test_defences_predict(art_warning, get_default_mnist_subset, image_dl_estima
 
 # Note: because mxnet only supports 1 concurrent version of a model if we fit that model, all expected values will
 # change for all other tests using that fitted model
-@pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow2")
+@pytest.mark.skip_framework("mxnet", "non_dl_frameworks")
 def test_fit_image_generator(
     art_warning, framework, image_dl_estimator, image_data_generator, get_default_mnist_subset
 ):
@@ -539,7 +539,7 @@ def test_compute_loss(
         expected_loss = expected_values()
         computed_loss = float(classifier.compute_loss(x=x_test_mnist, y=y_test_mnist, reduction="sum"))
 
-        assert expected_loss == pytest.approx(computed_loss, rel=0.01)
+        assert pytest.approx(computed_loss, rel=0.01) in expected_loss
 
     except ARTTestException as e:
         art_warning(e)
