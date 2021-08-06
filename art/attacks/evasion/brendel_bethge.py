@@ -64,7 +64,7 @@ logger = logging.getLogger(__name__)
 
 
 @jitclass(spec=[])
-class BFGSB:  # pragma: no_cover
+class BFGSB:  # pragma: no cover
     def __init__(self):
         pass
 

@@ -473,7 +473,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
                 for images, target, mask_i in data_loader:
                     _ = self._train_step(images=images, target=target, mask=mask_i)
 
-            if self.summary_writer is not None:  # pragma: no_cover
+            if self.summary_writer is not None:  # pragma: no cover
                 self.summary_writer.add_image(
                     "patch",
                     self._patch,

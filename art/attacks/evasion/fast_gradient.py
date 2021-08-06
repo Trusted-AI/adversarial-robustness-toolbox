@@ -381,7 +381,7 @@ class FastGradientMethod(EvasionAttack):
         grad = self.estimator.loss_gradient(batch, batch_labels) * (1 - 2 * int(self.targeted))
 
         # Write summary
-        if self.summary_writer is not None:  # pragma: no_cover
+        if self.summary_writer is not None:  # pragma: no cover
             self.summary_writer.add_scalar(
                 "gradients/norm-L1/batch-{}".format(self._batch_id),
                 np.linalg.norm(grad.flatten(), ord=1),
