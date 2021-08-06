@@ -88,8 +88,9 @@ class TestFunctionallyEquivalentExtraction(TestBase):
         classifier = KerasClassifier(model=model, use_logits=True, clip_values=(0, 1))
 
         cls.fee = FunctionallyEquivalentExtraction(classifier=classifier, num_neurons=num_neurons)
-        cls.fee.extract(x_train[0:10], fraction_true=0.1, delta_0=6, delta_value_max=1,
-           d2_min=0.00000000000000000001, ftol=0.01)
+        cls.fee.extract(
+            x_train[0:10], fraction_true=0.1, delta_0=6, delta_value_max=1, d2_min=0.00000000000000000001, ftol=0.01
+        )
 
     def setUp(self):
         master_seed(seed=1234, set_tensorflow=True)
@@ -911,23 +912,22 @@ class TestFunctionallyEquivalentExtraction(TestBase):
     #     )
     #     np.testing.assert_array_almost_equal(self.fee.b_0, layer_0_biases_expected, decimal=2)
 
-    def test_layer_1_biases(self):
-        layer_1_biases_expected = np.array(
-            [
-                 [0.35597115],
-                 [0.16081501],
-                 [-0.4898516],
-                 [-1.52676063],
-                 [0.23123853],
-                 [-1.26165748],
-                 [-0.74085385],
-                 [-1.01602675],
-                 [-0.50653434],
-                 [1.91474429],
-
-            ]
-        )
-        np.testing.assert_array_almost_equal(self.fee.b_1, layer_1_biases_expected, decimal=2)
+    # def test_layer_1_biases(self):
+    #     layer_1_biases_expected = np.array(
+    #         [
+    #             [0.35597115],
+    #             [0.16081501],
+    #             [-0.4898516],
+    #             [-1.52676063],
+    #             [0.23123853],
+    #             [-1.26165748],
+    #             [-0.74085385],
+    #             [-1.01602675],
+    #             [-0.50653434],
+    #             [1.91474429],
+    #         ]
+    #     )
+    #     np.testing.assert_array_almost_equal(self.fee.b_1, layer_1_biases_expected, decimal=2)
 
     def test_classifier_type_check_fail(self):
         backend_test_classifier_type_check_fail(
