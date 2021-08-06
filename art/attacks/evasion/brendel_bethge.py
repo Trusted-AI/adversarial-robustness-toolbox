@@ -64,9 +64,9 @@ logger = logging.getLogger(__name__)
 
 
 @jitclass(spec=[])
-class BFGSB:
+class BFGSB:  # pragma: no_cover
     def __init__(self):
-        pass  # pragma: no_cover
+        pass
 
     def solve(self, fun_and_jac, q0, bounds, args, ftol=1e-10, pgtol=-1e-5, maxiter=None):
         N = q0.shape[0]

@@ -31,54 +31,57 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.fixture()
-def fix_get_robust_dpatch():
-    from abc import ABC
+def fix_get_mnist_subset(get_mnist_dataset):
+    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_dataset
+    n_train = 100
+    n_test = 11
+    yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
-    class DummyObjectDetector(ObjectDetectorMixin, LossGradientsMixin, BaseEstimator, ABC):
-        def __init__(self):
-            self._clip_values = (0, 1)
-            self.channels_first = False
-            self._input_shape = None
 
-        def loss_gradient(self, x: np.ndarray, y: None, **kwargs):
-            raise NotImplementedError
+@pytest.mark.framework_agnostic
+def test_generate(art_warning, fix_get_mnist_subset, fix_get_rcnn):
+    try:
+        (_, _, x_test_mnist, _) = fix_get_mnist_subset
 
-        def fit(self, x: np.ndarray, y, batch_size: int = 128, nb_epochs: int = 20, **kwargs):
-            raise NotImplementedError
+        frcnn = fix_get_rcnn
+        attack = RobustDPatch(
+            frcnn,
+            patch_shape=(4, 4, 1),
+            patch_location=(2, 2),
+            crop_range=(0, 0),
+            brightness_range=(1.0, 1.0),
+            rotation_weights=(1, 0, 0, 0),
+            sample_size=1,
+            learning_rate=1.0,
+            max_iter=1,
+            batch_size=1,
+            verbose=False,
+        )
+        patch = attack.generate(x=x_test_mnist)
+        assert patch.shape == (4, 4, 1)
 
-        def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs):
-            return [{"boxes": [], "labels": [], "scores": []}]
-
-        @property
-        def native_label_is_pytorch_format(self):
-            return True
-
-        @property
-        def input_shape(self):
-            return self._input_shape
-
-    frcnn = DummyObjectDetector()
-    attack = RobustDPatch(
-        frcnn,
-        patch_shape=(4, 4, 1),
-        patch_location=(2, 2),
-        crop_range=(0, 0),
-        brightness_range=(1.0, 1.0),
-        rotation_weights=(1, 0, 0, 0),
-        sample_size=1,
-        learning_rate=1.0,
-        max_iter=1,
-        batch_size=1,
-        verbose=False,
-    )
-    yield attack
+    except ARTTestException as e:
+        art_warning(e)
 
 
 @pytest.mark.parametrize("image_format", ["NHWC", "NCHW"])
 @pytest.mark.framework_agnostic
-def test_augment_images_with_patch(art_warning, image_format, fix_get_robust_dpatch):
+def test_augment_images_with_patch(art_warning, image_format, fix_get_rcnn):
     try:
-        attack = fix_get_robust_dpatch
+        frcnn = fix_get_rcnn
+        attack = RobustDPatch(
+            frcnn,
+            patch_shape=(4, 4, 1),
+            patch_location=(2, 2),
+            crop_range=(0, 0),
+            brightness_range=(1.0, 1.0),
+            rotation_weights=(1, 0, 0, 0),
+            sample_size=1,
+            learning_rate=1.0,
+            max_iter=1,
+            batch_size=1,
+            verbose=False,
+        )
 
         if image_format == "NHWC":
             patch = np.ones(shape=(4, 4, 1))
@@ -115,9 +118,22 @@ def test_augment_images_with_patch(art_warning, image_format, fix_get_robust_dpa
 
 
 @pytest.mark.framework_agnostic
-def test_apply_patch(art_warning, fix_get_robust_dpatch):
+def test_apply_patch(art_warning, fix_get_rcnn):
     try:
-        attack = fix_get_robust_dpatch
+        frcnn = fix_get_rcnn
+        attack = RobustDPatch(
+            frcnn,
+            patch_shape=(4, 4, 1),
+            patch_location=(2, 2),
+            crop_range=(0, 0),
+            brightness_range=(1.0, 1.0),
+            rotation_weights=(1, 0, 0, 0),
+            sample_size=1,
+            learning_rate=1.0,
+            max_iter=1,
+            batch_size=1,
+            verbose=False,
+        )
 
         patch = np.ones(shape=(4, 4, 1))
         x = np.zeros(shape=(1, 10, 10, 1))
@@ -139,9 +155,22 @@ def test_apply_patch(art_warning, fix_get_robust_dpatch):
 
 
 @pytest.mark.framework_agnostic
-def test_untransform_gradients(art_warning, fix_get_robust_dpatch):
+def test_untransform_gradients(art_warning, fix_get_rcnn):
     try:
-        attack = fix_get_robust_dpatch
+        frcnn = fix_get_rcnn
+        attack = RobustDPatch(
+            frcnn,
+            patch_shape=(4, 4, 1),
+            patch_location=(2, 2),
+            crop_range=(0, 0),
+            brightness_range=(1.0, 1.0),
+            rotation_weights=(1, 0, 0, 0),
+            sample_size=1,
+            learning_rate=1.0,
+            max_iter=1,
+            batch_size=1,
+            verbose=False,
+        )
 
         gradients = np.zeros(shape=(1, 10, 10, 1))
         gradients[:, 2:7, 2:7, :] = 1

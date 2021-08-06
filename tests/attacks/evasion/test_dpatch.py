@@ -38,6 +38,27 @@ def fix_get_mnist_subset(get_mnist_dataset):
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
+@pytest.mark.framework_agnostic
+def test_generate(art_warning, fix_get_mnist_subset, fix_get_rcnn):
+    try:
+        (_, _, x_test_mnist, _) = fix_get_mnist_subset
+
+        frcnn = fix_get_rcnn
+        attack = DPatch(
+            frcnn,
+            patch_shape=(4, 4, 1),
+            learning_rate=1.0,
+            max_iter=1,
+            batch_size=1,
+            verbose=False,
+        )
+        patch = attack.generate(x=x_test_mnist[[0]])
+        assert patch.shape == (4, 4, 1)
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
 @pytest.mark.parametrize("random_location", [True, False])
 @pytest.mark.parametrize("image_format", ["NHWC", "NCHW"])
 @pytest.mark.framework_agnostic

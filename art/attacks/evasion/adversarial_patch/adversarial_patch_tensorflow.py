@@ -456,7 +456,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
                 for images, target, mask_i in dataset:
                     _ = self._train_step(images=images, target=target, mask=mask_i)
 
-            if self.summary_writer is not None:
+            if self.summary_writer is not None:  # pragma: no_cover
                 self.summary_writer.add_image(
                     "patch",
                     self._patch.numpy().transpose((2, 0, 1)),

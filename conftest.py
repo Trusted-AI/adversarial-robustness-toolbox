@@ -832,3 +832,36 @@ def skip_by_module(request):
 
                 if not module_found:
                     pytest.skip(f"Test skipped because package {module} not available.")
+
+
+@pytest.fixture()
+def fix_get_rcnn():
+
+    from art.estimators.estimator import BaseEstimator, LossGradientsMixin
+    from art.estimators.object_detection.object_detector import ObjectDetectorMixin
+
+    class DummyObjectDetector(ObjectDetectorMixin, LossGradientsMixin, BaseEstimator):
+        def __init__(self):
+            self._clip_values = (0, 1)
+            self.channels_first = False
+            self._input_shape = None
+
+        def loss_gradient(self, x: np.ndarray, y: None, **kwargs):
+            return np.ones_like(x)
+
+        def fit(self, x: np.ndarray, y, batch_size: int = 128, nb_epochs: int = 20, **kwargs):
+            raise NotImplementedError
+
+        def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs):
+            return [{"boxes": [], "labels": [], "scores": []}]
+
+        @property
+        def native_label_is_pytorch_format(self):
+            return True
+
+        @property
+        def input_shape(self):
+            return self._input_shape
+
+    frcnn = DummyObjectDetector()
+    return frcnn
