@@ -521,3 +521,38 @@ def test_class_gradient(
         )
     except ARTTestException as e:
         art_warning(e)
+
+
+@pytest.mark.skip_framework("mxnet", "non_dl_frameworks")
+def test_compute_loss(
+    art_warning,
+    framework,
+    image_dl_estimator,
+    get_default_mnist_subset,
+    mnist_shape,
+    store_expected_values,
+    expected_values,
+):
+    try:
+        (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+        classifier, _ = image_dl_estimator(from_logits=True)
+        expected_loss = expected_values()
+        computed_loss = float(classifier.compute_loss(x=x_test_mnist, y=y_test_mnist, reduction="sum"))
+
+        assert expected_loss == pytest.approx(computed_loss, rel=0.01)
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework("tensorflow1", "tensorflow2v1", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+def test_clone_for_refitting(
+    art_warning,
+    image_dl_estimator,
+):
+    try:
+        classifier, _ = image_dl_estimator(functional=True)
+        _ = classifier.clone_for_refitting()
+
+    except ARTTestException as e:
+        art_warning(e)

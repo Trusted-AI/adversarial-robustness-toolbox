@@ -63,7 +63,7 @@ if os.path.exists(_config_path):
             _config = json.load(f)
 
             # Since renaming this variable we must update existing config files
-            if "DATA_PATH" in _config:
+            if "DATA_PATH" in _config:  # pragma: no cover
                 _config["ART_DATA_PATH"] = _config.pop("DATA_PATH")
                 try:
                     with open(_config_path, "w") as f:

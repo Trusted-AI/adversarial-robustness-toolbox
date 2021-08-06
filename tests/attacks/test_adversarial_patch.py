@@ -150,6 +150,7 @@ class TestAdversarialPatch(TestBase):
             patch_shape=(28, 28, 1),
             verbose=False,
         )
+        print(attack_ap)
 
         target = np.zeros(self.x_train_mnist.shape[0])
         patch_adv, _ = attack_ap.generate(self.x_train_mnist, target, shuffle=False)
@@ -284,13 +285,14 @@ class TestAdversarialPatch(TestBase):
             max_iter=5,
             verbose=False,
         )
+        print(attack_ap)
 
         target = np.zeros(self.x_train_mnist.shape[0])
         patch_adv, _ = attack_ap.generate(x_train, target)
 
-        self.assertAlmostEqual(patch_adv[0, 8, 8], 0.6715167, delta=0.05)
-        self.assertAlmostEqual(patch_adv[0, 14, 14], 0.6292826, delta=0.05)
-        self.assertAlmostEqual(float(np.sum(patch_adv)), 424.31439208984375, delta=1.0)
+        self.assertAlmostEqual(patch_adv[0, 8, 8], 0.5, delta=0.05)
+        self.assertAlmostEqual(patch_adv[0, 14, 14], 0.5, delta=0.05)
+        self.assertAlmostEqual(float(np.sum(patch_adv)), 371.88014772999827, delta=1.0)
 
     def test_5_failure_feature_vectors(self):
         classifier = get_tabular_classifier_kr()

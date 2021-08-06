@@ -30,9 +30,10 @@ import numpy as np
 
 from art.attacks.evasion.adversarial_patch.adversarial_patch_numpy import AdversarialPatchNumpy
 from art.attacks.evasion.adversarial_patch.adversarial_patch_tensorflow import AdversarialPatchTensorFlowV2
+from art.attacks.evasion.adversarial_patch.adversarial_patch_pytorch import AdversarialPatchPyTorch
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
-from art.estimators.classification import TensorFlowV2Classifier
+from art.estimators.classification import TensorFlowV2Classifier, PyTorchClassifier
 from art.attacks.attack import EvasionAttack
 
 if TYPE_CHECKING:
@@ -94,7 +95,7 @@ class AdversarialPatch(EvasionAttack):
         if self.estimator.clip_values is None:
             raise ValueError("Adversarial Patch attack requires a classifier with clip_values.")
 
-        self._attack: Union[AdversarialPatchTensorFlowV2, AdversarialPatchNumpy]
+        self._attack: Union[AdversarialPatchTensorFlowV2, AdversarialPatchPyTorch, AdversarialPatchNumpy]
         if isinstance(self.estimator, TensorFlowV2Classifier):
             self._attack = AdversarialPatchTensorFlowV2(
                 classifier=classifier,
@@ -105,6 +106,20 @@ class AdversarialPatch(EvasionAttack):
                 max_iter=max_iter,
                 batch_size=batch_size,
                 patch_shape=patch_shape,
+                verbose=verbose,
+            )
+        elif isinstance(self.estimator, PyTorchClassifier):
+            self._attack = AdversarialPatchPyTorch(
+                classifier=classifier,
+                rotation_max=rotation_max,
+                scale_min=scale_min,
+                scale_max=scale_max,
+                distortion_scale_max=0.0,
+                learning_rate=learning_rate,
+                max_iter=max_iter,
+                batch_size=batch_size,
+                patch_shape=patch_shape,
+                patch_type="circle",
                 verbose=verbose,
             )
         else:

@@ -585,7 +585,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         from art.data_generators import KerasDataGenerator
 
         # Try to use the generator as a Keras native generator, otherwise use it through the `DataGenerator` interface
-        if isinstance(generator, KerasDataGenerator) and not self.preprocessing:
+        if isinstance(generator, KerasDataGenerator) and (self.preprocessing.mean, self.preprocessing.std) == (0, 1):
             try:
                 self._model.fit_generator(generator.iterator, epochs=nb_epochs, **kwargs)
             except ValueError:

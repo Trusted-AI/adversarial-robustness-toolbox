@@ -329,7 +329,10 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
             self._feed_dict[self._learning] = True
 
         # Train directly in TensorFlow
-        if isinstance(generator, TensorFlowDataGenerator) and not self.preprocessing and self.preprocessing == (0, 1):
+        if isinstance(generator, TensorFlowDataGenerator) and (self.preprocessing.mean, self.preprocessing.std) == (
+            0,
+            1,
+        ):
             for _ in range(nb_epochs):
                 for _ in range(int(generator.size / generator.batch_size)):  # type: ignore
                     i_batch, o_batch = generator.get_batch()
@@ -982,7 +985,10 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
             )
 
         # Train directly in TensorFlow
-        if isinstance(generator, TensorFlowV2DataGenerator) and not self.preprocessing:
+        if isinstance(generator, TensorFlowV2DataGenerator) and (self.preprocessing.mean, self.preprocessing.std) == (
+            0,
+            1,
+        ):
             for _ in range(nb_epochs):
                 for i_batch, o_batch in generator.iterator:
                     if self._reduce_labels:
