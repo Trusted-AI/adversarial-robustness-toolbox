@@ -624,7 +624,7 @@ class TestCarlini(TestBase):
             verbose=False,
         )
         params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes)}
-        x_test_adv = cl0m.generate(self.x_test_mnist, **params)
+        _ = cl0m.generate(self.x_test_mnist, **params)
         # self.assertLessEqual(np.amax(x_test_adv), 1.0)
         # self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
         # self.assertTrue(np.allclose(self.x_test_mnist, x_test_adv, atol=1e-3))

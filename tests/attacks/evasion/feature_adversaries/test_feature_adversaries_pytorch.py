@@ -76,7 +76,7 @@ def test_images_unconstrained_adam(art_warning, fix_get_mnist_subset, image_dl_e
 @pytest.mark.skip_framework("tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
 def test_check_params(art_warning, image_dl_estimator_for_attack):
     try:
-        classifier, _ = image_dl_estimator_for_attack(FeatureAdversariesPyTorch)
+        classifier = image_dl_estimator_for_attack(FeatureAdversariesPyTorch)
 
         with pytest.raises(ValueError):
             _ = FeatureAdversariesPyTorch(classifier, delta=1, step_size=0.5)
