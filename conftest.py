@@ -853,7 +853,8 @@ def fix_get_rcnn():
             raise NotImplementedError
 
         def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs):
-            return [{"boxes": [], "labels": [], "scores": []}]
+            dict_i = {"boxes": np.array([[0.1, 0.2, 0.3, 0.4]]), "labels": np.array([[2]]), "scores": np.array([[0.8]])}
+            return [dict_i] * x.shape[0]
 
         @property
         def native_label_is_pytorch_format(self):

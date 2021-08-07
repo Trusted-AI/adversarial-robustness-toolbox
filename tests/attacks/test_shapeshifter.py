@@ -234,6 +234,145 @@ class TestShapeShifter(TestBase):
 
         self.assertTrue(adv_x.shape == (1, 28, 28, 1))
 
+    def test_check_params(self):
+        from art.estimators.object_detection import TensorFlowFasterRCNN
+        from art.attacks.evasion import ShapeShifter
+
+        images = tf.Variable(initial_value=np.zeros([1, 28, 28, 1]), dtype=tf.float32)
+        obj_dec = TensorFlowFasterRCNN(images=images)
+
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform="1")
+
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, box_classifier_weight=1)
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, box_classifier_weight=-1.0)
+
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, box_localizer_weight=1)
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, box_localizer_weight=-1.0)
+
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, rpn_classifier_weight=1)
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, rpn_classifier_weight=-1.0)
+
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, rpn_localizer_weight=1)
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, rpn_localizer_weight=-1.0)
+
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, box_iou_threshold=1)
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, box_iou_threshold=-1.0)
+
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, box_victim_weight=1)
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, box_victim_weight=-1.0)
+
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, box_target_weight=1)
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, box_target_weight=-1.0)
+
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, box_victim_cw_weight=1)
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, box_victim_cw_weight=-1.0)
+
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, box_victim_cw_confidence=1)
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, box_victim_cw_confidence=-1.0)
+
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, box_target_cw_weight=1)
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, box_target_cw_weight=-1.0)
+
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, box_target_cw_confidence=1)
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, box_target_cw_confidence=-1.0)
+
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, rpn_iou_threshold=1)
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, rpn_iou_threshold=-1.0)
+
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, rpn_background_weight=1)
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, rpn_background_weight=-1.0)
+
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, rpn_foreground_weight=1)
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, rpn_foreground_weight=-1.0)
+
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, rpn_cw_weight=1)
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, rpn_cw_weight=-1.0)
+
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, rpn_cw_confidence=1)
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, rpn_cw_confidence=-1.0)
+
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, similarity_weight=1)
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, similarity_weight=-1.0)
+
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, learning_rate=1)
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, learning_rate=-1.0)
+
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, optimizer="test")
+
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, optimizer="MomentumOptimizer", momentum=1)
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(
+                obj_dec, random_transform=lambda x: x + 1e-10, optimizer="MomentumOptimizer", momentum=-1.0
+            )
+
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, optimizer="RMSPropOptimizer", decay=1)
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, optimizer="RMSPropOptimizer", decay=-1.0)
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, optimizer="RMSPropOptimizer", decay=2.0)
+
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, sign_gradients="true")
+
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, random_size=1.0)
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, random_size=-1)
+
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, max_iter=1.0)
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, max_iter=-1)
+
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, texture_as_input="true")
+
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, use_spectral="true")
+
+        with self.assertRaises(ValueError):
+            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, soft_clip="true")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1277,6 +1277,7 @@ class CarliniL0Method(CarliniL2Method):
                 np.sum(activation, axis=1),
                 fix_feature_index,
             )
+        return x_adv
 
     def _check_params(self):
 

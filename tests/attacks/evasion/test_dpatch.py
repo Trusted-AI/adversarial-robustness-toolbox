@@ -55,6 +55,9 @@ def test_generate(art_warning, fix_get_mnist_subset, fix_get_rcnn):
         patch = attack.generate(x=x_test_mnist[[0]])
         assert patch.shape == (4, 4, 1)
 
+        attack.apply_patch(x=x_test_mnist)
+        attack.apply_patch(x=x_test_mnist, patch_external=patch)
+
     except ARTTestException as e:
         art_warning(e)
 
@@ -154,6 +157,38 @@ def test_augment_images_with_patch(art_warning, random_location, image_format, f
             patched_images = np.transpose(patched_images, (0, 2, 3, 1))
 
         np.testing.assert_array_equal(patched_images[1, 2, :, 0], patched_images_column)
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.framework_agnostic
+def test_check_params(art_warning, fix_get_rcnn):
+    try:
+        frcnn = fix_get_rcnn
+
+        with pytest.raises(TypeError):
+            _ = DPatch(frcnn, patch_shape=(1.0, 2.0, 3.0))
+        with pytest.raises(ValueError):
+            _ = DPatch(frcnn, patch_shape=(1, 2, 3, 4))
+
+        with pytest.raises(ValueError):
+            _ = DPatch(frcnn, learning_rate=1)
+        with pytest.raises(ValueError):
+            _ = DPatch(frcnn, learning_rate=-1.0)
+
+        with pytest.raises(ValueError):
+            _ = DPatch(frcnn, max_iter=1.0)
+        with pytest.raises(ValueError):
+            _ = DPatch(frcnn, max_iter=-1)
+
+        with pytest.raises(ValueError):
+            _ = DPatch(frcnn, batch_size=1.0)
+        with pytest.raises(ValueError):
+            _ = DPatch(frcnn, batch_size=-1)
+
+        with pytest.raises(ValueError):
+            _ = DPatch(frcnn, verbose="true")
+
     except ARTTestException as e:
         art_warning(e)
 
