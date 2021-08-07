@@ -36,6 +36,8 @@ from art.estimators.classification.scikitlearn import ScikitlearnLogisticRegress
 from art.estimators.classification import PyTorchClassifier
 from art.estimators.classification.scikitlearn import ScikitlearnSVC
 
+from tests.utils import ARTTestException
+
 logger = logging.getLogger(__name__)
 
 
@@ -440,3 +442,60 @@ def test_clipping(iris_dataset):
     assert is_valid_2
     assert is_valid_3
     assert is_valid_4
+
+
+@pytest.mark.framework_agnostic
+def test_check_params(art_warning, image_dl_estimator_for_attack):
+    try:
+        classifier = image_dl_estimator_for_attack(LowProFool)
+
+        with pytest.raises(ValueError):
+            _ = LowProFool(classifier, n_steps=5.0)
+        with pytest.raises(ValueError):
+            _ = LowProFool(classifier, n_steps=-5)
+
+        with pytest.raises(ValueError):
+            _ = LowProFool(classifier, n_steps=5.0)
+        with pytest.raises(ValueError):
+            _ = LowProFool(classifier, n_steps=-5)
+
+        with pytest.raises(ValueError):
+            _ = LowProFool(classifier, threshold=5)
+        with pytest.raises(ValueError):
+            _ = LowProFool(classifier, threshold=-5.0)
+        with pytest.raises(ValueError):
+            _ = LowProFool(classifier, threshold=None)
+
+        with pytest.raises(ValueError):
+            _ = LowProFool(classifier, lambd="test")
+        with pytest.raises(ValueError):
+            _ = LowProFool(classifier, lambd=-5.0)
+
+        with pytest.raises(ValueError):
+            _ = LowProFool(classifier, eta="test")
+        with pytest.raises(ValueError):
+            _ = LowProFool(classifier, eta=-5.0)
+
+        with pytest.raises(ValueError):
+            _ = LowProFool(classifier, eta_decay="test")
+        with pytest.raises(ValueError):
+            _ = LowProFool(classifier, eta_decay=-5.0)
+
+        with pytest.raises(ValueError):
+            _ = LowProFool(classifier, eta_min="test")
+        with pytest.raises(ValueError):
+            _ = LowProFool(classifier, eta_min=-5.0)
+
+        with pytest.raises(ValueError):
+            _ = LowProFool(classifier, norm="test")
+        with pytest.raises(ValueError):
+            _ = LowProFool(classifier, norm=-5.0)
+
+        with pytest.raises(ValueError):
+            _ = LowProFool(classifier, importance=0)
+
+        with pytest.raises(ValueError):
+            _ = LowProFool(classifier, verbose="test")
+
+    except ARTTestException as e:
+        art_warning(e)

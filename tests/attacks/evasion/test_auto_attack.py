@@ -145,6 +145,33 @@ def test_generate_attacks_and_targeted(art_warning, fix_get_mnist_subset, image_
         art_warning(e)
 
 
+@pytest.mark.skip_framework("tensorflow1", "keras", "pytorch", "non_dl_frameworks", "mxnet", "kerastf")
+def test_check_params(art_warning, image_dl_estimator_for_attack):
+    try:
+        classifier = image_dl_estimator_for_attack(AutoAttack)
+
+        with pytest.raises(ValueError):
+            _ = AutoAttack(classifier, norm=0)
+
+        with pytest.raises(ValueError):
+            _ = AutoAttack(classifier, eps="1")
+        with pytest.raises(ValueError):
+            _ = AutoAttack(classifier, eps=-1.0)
+
+        with pytest.raises(ValueError):
+            _ = AutoAttack(classifier, eps_step="1")
+        with pytest.raises(ValueError):
+            _ = AutoAttack(classifier, eps_step=-1.0)
+
+        with pytest.raises(ValueError):
+            _ = AutoAttack(classifier, batch_size=1.0)
+        with pytest.raises(ValueError):
+            _ = AutoAttack(classifier, batch_size=-1)
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
 @pytest.mark.framework_agnostic
 def test_classifier_type_check_fail(art_warning):
     try:

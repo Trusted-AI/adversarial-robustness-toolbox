@@ -68,7 +68,7 @@ def test_poison_multiple_layers(art_warning, get_default_mnist_subset, image_dl_
 
 
 @pytest.mark.skip_framework("non_dl_frameworks", "tensorflow", "mxnet", "keras", "kerastf")
-def test_failure_modes(art_warning, get_default_mnist_subset, image_dl_estimator):
+def test_check_params(art_warning, get_default_mnist_subset, image_dl_estimator):
     try:
         (x_train, y_train), (_, _) = get_default_mnist_subset
         classifier, _ = image_dl_estimator(functional=True)
@@ -95,5 +95,6 @@ def test_failure_modes(art_warning, get_default_mnist_subset, image_dl_estimator
             _ = BullseyePolytopeAttackPyTorch(classifier, target, -1)
         with pytest.raises(ValueError):
             _ = BullseyePolytopeAttackPyTorch(classifier, target, len(classifier.layer_names) - 2, decay_coeff=2)
+
     except ARTTestException as e:
         art_warning(e)

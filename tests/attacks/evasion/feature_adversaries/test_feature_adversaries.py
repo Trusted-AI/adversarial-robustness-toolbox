@@ -53,6 +53,26 @@ def test_images(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack
 
 
 @pytest.mark.framework_agnostic
+def test_check_params(art_warning, image_dl_estimator_for_attack):
+    try:
+        classifier = image_dl_estimator_for_attack(FeatureAdversariesNumpy)
+
+        with pytest.raises(ValueError):
+            _ = FeatureAdversariesNumpy(classifier, delta=None)
+        with pytest.raises(ValueError):
+            _ = FeatureAdversariesNumpy(classifier, delta=-1.0)
+
+        with pytest.raises(ValueError):
+            _ = FeatureAdversariesNumpy(classifier, delta=1.0, layer=1.0)
+
+        with pytest.raises(ValueError):
+            _ = FeatureAdversariesNumpy(classifier, batch_size=-1)
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.framework_agnostic
 def test_classifier_type_check_fail(art_warning):
     try:
         backend_test_classifier_type_check_fail(FeatureAdversariesNumpy, [BaseEstimator, NeuralNetworkMixin])

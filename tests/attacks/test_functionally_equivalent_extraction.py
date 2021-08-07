@@ -88,9 +88,10 @@ class TestFunctionallyEquivalentExtraction(TestBase):
         classifier = KerasClassifier(model=model, use_logits=True, clip_values=(0, 1))
 
         cls.fee = FunctionallyEquivalentExtraction(classifier=classifier, num_neurons=num_neurons)
-        cls.fee.extract(
+        fee_extracted = cls.fee.extract(
             x_train[0:10], fraction_true=0.1, delta_0=6, delta_value_max=1, d2_min=0.00000000000000000001, ftol=0.01
         )
+        fee_extracted.predict(x=x_test)
 
     def setUp(self):
         master_seed(seed=1234, set_tensorflow=True)

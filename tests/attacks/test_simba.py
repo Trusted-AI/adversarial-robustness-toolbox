@@ -116,6 +116,10 @@ class TestSimBA(TestBase):
             y_target = np.zeros(10)
             y_target[8] = 1.0
 
+        #######
+        # dct #
+        #######
+
         df = SimBA(classifier, attack="dct", targeted=targeted)
 
         x_i = x_test_original[0][None, ...]
@@ -139,8 +143,34 @@ class TestSimBA(TestBase):
         y_pred = get_labels_np_array(classifier.predict(x_test_adv))
         self.assertFalse((y_test == y_pred).all())
 
-        accuracy = np.sum(np.argmax(y_pred, axis=1) == np.argmax(self.y_test_mnist, axis=1)) / self.n_test
-        logger.info("Accuracy on adversarial examples: %.2f%%", (accuracy * 100))
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
+
+        ######
+        # px #
+        ######
+        df_px = SimBA(classifier, attack="px", targeted=targeted)
+
+        x_i = x_test_original[0][None, ...]
+        if targeted:
+            x_test_adv = df_px.generate(x_i, y=y_target.reshape(1, 10))
+        else:
+            x_test_adv = df_px.generate(x_i)
+
+        for i in range(1, len(x_test_original)):
+            x_i = x_test_original[i][None, ...]
+            if targeted:
+                tmp_x_test_adv = df_px.generate(x_i, y=y_target.reshape(1, 10))
+                x_test_adv = np.concatenate([x_test_adv, tmp_x_test_adv])
+            else:
+                tmp_x_test_adv = df_px.generate(x_i)
+                x_test_adv = np.concatenate([x_test_adv, tmp_x_test_adv])
+
+        self.assertFalse((x_test == x_test_adv).all())
+        self.assertFalse((0.0 == x_test_adv).all())
+
+        y_pred = get_labels_np_array(classifier.predict(x_test_adv))
+        self.assertFalse((y_test == y_pred).all())
 
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)

@@ -164,7 +164,9 @@ class AdversarialPatch(EvasionAttack):
 
         return self._attack.generate(x=x, y=y, **kwargs)
 
-    def apply_patch(self, x: np.ndarray, scale: float, patch_external: Optional[np.ndarray] = None) -> np.ndarray:
+    def apply_patch(
+        self, x: np.ndarray, scale: float, patch_external: Optional[np.ndarray] = None, **kwargs
+    ) -> np.ndarray:
         """
         A function to apply the learned adversarial patch to images or videos.
 
@@ -173,7 +175,7 @@ class AdversarialPatch(EvasionAttack):
         :param patch_external: External patch to apply to images `x`.
         :return: The patched instances.
         """
-        return self._attack.apply_patch(x, scale, patch_external=patch_external)
+        return self._attack.apply_patch(x, scale, patch_external=patch_external, **kwargs)
 
     def reset_patch(self, initial_patch_value: Optional[Union[float, np.ndarray]]) -> None:
         """
