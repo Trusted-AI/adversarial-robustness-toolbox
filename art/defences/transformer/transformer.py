@@ -92,6 +92,3 @@ class Transformer(abc.ABC):
             if key in self.params:
                 setattr(self, key, value)
         self._check_params()
-
-    def _check_params(self) -> None:
-        pass

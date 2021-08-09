@@ -56,20 +56,27 @@ class TestNeuralCleanse(unittest.TestCase):
         Test with a KerasClassifier.
         :return:
         """
-        if keras.__version__ != "2.2.4":
-            self.assertRaises(NotImplementedError)
-        else:
-            # Build KerasClassifier
-            krc = get_image_classifier_kr()
+        # Build KerasClassifier
+        krc = get_image_classifier_kr()
 
-            # Get MNIST
-            (x_train, y_train), (x_test, y_test) = self.mnist
+        # Get MNIST
+        (x_train, y_train), (x_test, y_test) = self.mnist
 
-            krc.fit(x_train, y_train, nb_epochs=1)
+        krc.fit(x_train, y_train, nb_epochs=1)
 
-            cleanse = NeuralCleanse(krc)
-            defense_cleanse = cleanse(krc, steps=2)
-            defense_cleanse.mitigate(x_test, y_test, mitigation_types=["filtering", "pruning", "unlearning"])
+        cleanse = NeuralCleanse(krc)
+        defense_cleanse = cleanse(krc, steps=2)
+        defense_cleanse.mitigate(x_test, y_test, mitigation_types=["filtering", "pruning", "unlearning"])
+
+        # is_fitted
+        assert cleanse._is_fitted == cleanse.is_fitted
+
+        # get_classifier
+        assert cleanse.get_classifier
+
+        # set_params
+        cleanse.set_params(**{"batch_size": 1})
+        assert cleanse.batch_size == 1
 
 
 if __name__ == "__main__":

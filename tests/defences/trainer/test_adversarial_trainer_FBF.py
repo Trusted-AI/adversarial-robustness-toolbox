@@ -58,7 +58,7 @@ def test_adversarial_trainer_fbf_pytorch_fit_and_predict(get_adv_trainer, fix_ge
 
     trainer = get_adv_trainer()
     if trainer is None:
-        logging.warning("Couldn't perform  this test because no gan is defined for this framework configuration")
+        logging.warning("Couldn't perform  this test because no trainer is defined for this framework configuration")
         return
 
     predictions = np.argmax(trainer.predict(x_test_mnist), axis=1)
@@ -89,7 +89,7 @@ def test_adversarial_trainer_fbf_pytorch_fit_generator_and_predict(
 
     trainer = get_adv_trainer()
     if trainer is None:
-        logging.warning("Couldn't perform  this test because no gan is defined for this framework configuration")
+        logging.warning("Couldn't perform  this test because no trainer is defined for this framework configuration")
         return
 
     predictions = np.argmax(trainer.predict(x_test_mnist), axis=1)
@@ -106,4 +106,4 @@ def test_adversarial_trainer_fbf_pytorch_fit_generator_and_predict(
     )
 
     assert accuracy == 0.32
-    assert accuracy_new > 0.15
+    assert accuracy_new > 0.12
