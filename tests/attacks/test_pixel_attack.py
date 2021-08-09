@@ -35,7 +35,6 @@ import numpy as np
 from art.attacks.evasion.pixel_threshold import PixelAttack
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
-from art.utils import get_labels_np_array
 
 from tests.utils import TestBase
 from tests.utils import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
@@ -137,7 +136,7 @@ class TestPixelAttack(TestBase):
 
         for th in [None, 64]:
             for es in [0, 1]:
-                df = PixelAttack(classifier, th=th, es=es, max_iter=10, targeted=targeted, verbose=False)
+                df = PixelAttack(classifier, th=th, es=es, max_iter=20, targeted=targeted, verbose=False)
                 x_test_adv = df.generate(x_test_original, targets)
 
                 np.testing.assert_raises(AssertionError, np.testing.assert_array_equal, x_test, x_test_adv)

@@ -39,9 +39,12 @@ def fix_get_mnist_subset(get_mnist_dataset):
 
 
 @pytest.mark.skip_framework("keras", "scikitlearn", "mxnet", "kerastf")
-def test_generate(art_warning, fix_get_mnist_subset, fix_get_rcnn):
+def test_generate(art_warning, fix_get_mnist_subset, fix_get_rcnn, framework):
     try:
         (_, _, x_test_mnist, _) = fix_get_mnist_subset
+
+        if framework == "pytorch":
+            x_test_mnist = np.transpose(x_test_mnist, (0, 2, 3, 1))
 
         frcnn = fix_get_rcnn
         attack = RobustDPatch(
@@ -65,9 +68,12 @@ def test_generate(art_warning, fix_get_mnist_subset, fix_get_rcnn):
 
 
 @pytest.mark.skip_framework("keras", "scikitlearn", "mxnet", "kerastf")
-def test_generate_targeted(art_warning, fix_get_mnist_subset, fix_get_rcnn):
+def test_generate_targeted(art_warning, fix_get_mnist_subset, fix_get_rcnn, framework):
     try:
         (_, _, x_test_mnist, _) = fix_get_mnist_subset
+
+        if framework == "pytorch":
+            x_test_mnist = np.transpose(x_test_mnist, (0, 2, 3, 1))
 
         frcnn = fix_get_rcnn
         attack = RobustDPatch(
@@ -269,9 +275,11 @@ def test_check_params(art_warning, fix_get_rcnn):
         with pytest.raises(ValueError):
             _ = RobustDPatch(frcnn, brightness_range=(1, 2, 3))
         with pytest.raises(ValueError):
-            _ = RobustDPatch(frcnn, brightness_range=(-1, 1))
+            _ = RobustDPatch(frcnn, brightness_range=(1.0, 2.0, 3.0))
         with pytest.raises(ValueError):
-            _ = RobustDPatch(frcnn, brightness_range=(2, 1))
+            _ = RobustDPatch(frcnn, brightness_range=(-1.0, 1.0))
+        with pytest.raises(ValueError):
+            _ = RobustDPatch(frcnn, brightness_range=(2.0, 1.0))
 
         with pytest.raises(ValueError):
             _ = RobustDPatch(frcnn, rotation_weights=("1", "2", "3"))
