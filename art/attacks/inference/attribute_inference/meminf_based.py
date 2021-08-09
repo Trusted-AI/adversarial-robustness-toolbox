@@ -62,8 +62,8 @@ class AttributeInferenceMembership(AttributeInferenceAttack):
                                case of a one-hot encoded feature.
         """
         super().__init__(estimator=classifier, attack_feature=attack_feature)
-        if not all(t in type(classifier).__mro__ for t in membership_attack.estimator_requirements):
-            raise EstimatorError(membership_attack, membership_attack.estimator_requirements, classifier)
+        if not membership_attack.is_estimator_valid(estimator):
+            raise EstimatorError(membership_attack.__class__, membership_attack.estimator_requirements, estimator)
 
         self.membership_attack = membership_attack
         self._check_params()
