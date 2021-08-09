@@ -159,7 +159,9 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
         """
         return self._ctx  # type: ignore
 
-    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:  # pragma: no cover
+    def fit(
+        self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 20, **kwargs
+    ) -> None:  # pragma: no cover
         """
         Fit the classifier on the training set `(inputs, outputs)`.
 

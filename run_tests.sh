@@ -24,6 +24,9 @@ then
     pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/preprocessor --framework=$framework --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor tests"; fi
 
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/trainer --framework=$framework --durations=0
+    if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/trainer tests"; fi
+
     pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/transformer --framework=$framework --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/transformer tests"; fi
 
@@ -50,9 +53,6 @@ then
 
     pytest --cov-report=xml --cov=art --cov-append -q -vv tests/classifiersFrameworks/  --framework=$framework --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed classifiersFrameworks tests"; fi
-
-    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/preprocessor/test_spatial_smoothing_pytorch.py  --framework=$framework --durations=0
-    if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor/test_spatial_smoothing_pytorch.py tests"; fi
 
     pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/estimators/classification/test_deeplearning_common.py --framework=$framework --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed estimators/classification/test_deeplearning_common.py $framework"; fi
