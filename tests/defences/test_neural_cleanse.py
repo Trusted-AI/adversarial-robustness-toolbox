@@ -20,7 +20,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import os
 import unittest
-import keras
 
 from art.defences.transformer.poisoning import NeuralCleanse
 from art.utils import load_dataset

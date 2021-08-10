@@ -66,7 +66,7 @@ class NeuralCleanse(Transformer):
         :param classifier: A trained classifier.
         """
         super().__init__(classifier=classifier)
-        self.is_fitted = False
+        self._is_fitted = False
         self._check_params()
 
     def __call__(  # type: ignore

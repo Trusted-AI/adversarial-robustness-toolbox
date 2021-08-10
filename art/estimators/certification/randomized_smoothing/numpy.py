@@ -32,7 +32,7 @@ from art.estimators.certification.randomized_smoothing.randomized_smoothing impo
 from art.estimators.classification import ClassifierMixin, ClassGradientsMixin
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
+    from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +60,7 @@ class NumpyRandomizedSmoothing(  # lgtm [py/conflicting-attributes]
     )
 
     def __init__(
-        self, classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE", sample_size: int, scale: float = 0.1, alpha: float = 0.001
+        self, classifier: "CLASSIFIER_NEURALNETWORK_TYPE", sample_size: int, scale: float = 0.1, alpha: float = 0.001
     ):
         """
         Create a randomized smoothing wrapper.
