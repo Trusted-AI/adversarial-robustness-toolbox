@@ -24,6 +24,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        module: [attacks, classifiers, speech_recognizers, defences, metrics, wrappers, art]
         include:
           - name: mxnet (Python 3.7)
             framework: mxnet
@@ -83,7 +84,7 @@ jobs:
           pip install torchvision==${{ matrix.torchvision }} -f https://download.pytorch.org/whl/torch_stable.html
           pip install torchaudio==${{ matrix.torchaudio }} -f https://download.pytorch.org/whl/torch_stable.html
           pip list
-      - name: Run ${{ matrix.name }} Tests
-        run: ./run_tests.sh ${{ matrix.framework }}
+      - name: Run ${{ matrix.name }} ${{ matrix.module }} Tests
+        run: ./run_tests.sh ${{ matrix.framework }} ${{ matrix.module }}
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v2.0.2

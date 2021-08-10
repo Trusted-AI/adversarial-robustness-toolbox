@@ -11,6 +11,7 @@ export TF_CPP_MIN_LOG_LEVEL="3"
 # independent to be incorporated within this loop
 frameworkList=("tensorflow" "keras" "pytorch" "scikitlearn" "mxnet" "kerastf")
 framework=$1
+legacy_module=$2
 
 if [[ ${framework} != "legacy" ]]
 then
@@ -144,14 +145,6 @@ else
                     "tests/test_utils.py" \
                     "tests/test_visualization.py" )
 
-    tests_modules=("attacks" \
-                   "classifiers" \
-                   "speech_recognizers" \
-                   "defences" \
-                   "metrics" \
-                   "wrappers" \
-                   "art" )
-
     # ----------------------------------------------------------------------------------------------- CODE TO RUN TESTS
 
     run_test () {
@@ -166,11 +159,9 @@ else
       if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed $test"; fi
     }
 
-    for tests_module in "${tests_modules[@]}"; do
-      tests="$tests_module[@]"
-      for test in "${!tests}"; do
-         run_test ${test}
-      done
+    tests="$legacy_module[@]"
+    for test in "${!tests}"; do
+        run_test ${test}
     done
 fi
 
