@@ -81,6 +81,9 @@ class DPatch(EvasionAttack):
         self.learning_rate = learning_rate
         self.max_iter = max_iter
         self.batch_size = batch_size
+        self.verbose = verbose
+        self._check_params()
+
         if self.estimator.clip_values is None:
             self._patch = np.zeros(shape=patch_shape, dtype=config.ART_NUMPY_DTYPE)
         else:
@@ -90,8 +93,6 @@ class DPatch(EvasionAttack):
                 * (self.estimator.clip_values[1] - self.estimator.clip_values[0])
                 + self.estimator.clip_values[0]
             ).astype(config.ART_NUMPY_DTYPE)
-        self.verbose = verbose
-        self._check_params()
 
         self.target_label: Optional[Union[int, np.ndarray, List[int]]] = list()
 

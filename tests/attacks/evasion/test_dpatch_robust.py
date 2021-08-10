@@ -181,7 +181,6 @@ def test_apply_patch(art_warning, fix_get_rcnn):
         complement_sum = np.sum(patched_images[0]) - patch_sum
 
         assert patch_sum == patch_sum_expected
-
         assert complement_sum == complement_sum_expected
 
     except ARTTestException as e:

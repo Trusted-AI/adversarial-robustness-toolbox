@@ -57,6 +57,7 @@ def test_generate(art_warning, fix_get_mnist_subset, fix_get_rcnn):
 
         attack.apply_patch(x=x_test_mnist)
         attack.apply_patch(x=x_test_mnist, patch_external=patch)
+        attack.apply_patch(x=x_test_mnist, patch_external=patch, mask=np.ones((1, 28, 28)).astype(bool))
 
     except ARTTestException as e:
         art_warning(e)
@@ -166,7 +167,7 @@ def test_check_params(art_warning, fix_get_rcnn):
     try:
         frcnn = fix_get_rcnn
 
-        with pytest.raises(TypeError):
+        with pytest.raises(ValueError):
             _ = DPatch(frcnn, patch_shape=(1.0, 2.0, 3.0))
         with pytest.raises(ValueError):
             _ = DPatch(frcnn, patch_shape=(1, 2, 3, 4))
