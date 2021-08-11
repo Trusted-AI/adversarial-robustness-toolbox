@@ -148,25 +148,29 @@ def test_generate_attacks_and_targeted(art_warning, fix_get_mnist_subset, image_
 @pytest.mark.skip_framework("tensorflow1", "keras", "pytorch", "non_dl_frameworks", "mxnet", "kerastf")
 def test_check_params(art_warning, image_dl_estimator_for_attack):
     try:
+        from art.attacks.evasion import FastGradientMethod
+
         classifier = image_dl_estimator_for_attack(AutoAttack)
 
-        with pytest.raises(ValueError):
-            _ = AutoAttack(classifier, norm=0)
+        attacks = [FastGradientMethod(estimator=classifier)]
 
         with pytest.raises(ValueError):
-            _ = AutoAttack(classifier, eps="1")
-        with pytest.raises(ValueError):
-            _ = AutoAttack(classifier, eps=-1.0)
+            _ = AutoAttack(classifier, attacks=attacks, norm=0)
 
         with pytest.raises(ValueError):
-            _ = AutoAttack(classifier, eps_step="1")
+            _ = AutoAttack(classifier, attacks=attacks, eps="1")
         with pytest.raises(ValueError):
-            _ = AutoAttack(classifier, eps_step=-1.0)
+            _ = AutoAttack(classifier, attacks=attacks, eps=-1.0)
 
         with pytest.raises(ValueError):
-            _ = AutoAttack(classifier, batch_size=1.0)
+            _ = AutoAttack(classifier, attacks=attacks, eps_step="1")
         with pytest.raises(ValueError):
-            _ = AutoAttack(classifier, batch_size=-1)
+            _ = AutoAttack(classifier, attacks=attacks, eps_step=-1.0)
+
+        with pytest.raises(ValueError):
+            _ = AutoAttack(classifier, attacks=attacks, batch_size=1.0)
+        with pytest.raises(ValueError):
+            _ = AutoAttack(classifier, attacks=attacks, batch_size=-1)
 
     except ARTTestException as e:
         art_warning(e)

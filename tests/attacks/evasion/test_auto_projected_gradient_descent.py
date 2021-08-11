@@ -85,6 +85,53 @@ def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator_for_atta
 
 
 @pytest.mark.framework_agnostic
+def test_check_params(art_warning, image_dl_estimator_for_attack):
+    try:
+
+        classifier = image_dl_estimator_for_attack(AutoProjectedGradientDescent)
+
+        with pytest.raises(ValueError):
+            _ = AutoProjectedGradientDescent(classifier, norm=0)
+
+        with pytest.raises(ValueError):
+            _ = AutoProjectedGradientDescent(classifier, eps="1")
+        with pytest.raises(ValueError):
+            _ = AutoProjectedGradientDescent(classifier, eps=-1.0)
+
+        with pytest.raises(ValueError):
+            _ = AutoProjectedGradientDescent(classifier, eps_step="1")
+        with pytest.raises(ValueError):
+            _ = AutoProjectedGradientDescent(classifier, eps_step=-1.0)
+
+        with pytest.raises(ValueError):
+            _ = AutoProjectedGradientDescent(classifier, max_iter=1.0)
+        with pytest.raises(ValueError):
+            _ = AutoProjectedGradientDescent(classifier, max_iter=-1)
+
+        with pytest.raises(ValueError):
+            _ = AutoProjectedGradientDescent(classifier, targeted="true")
+
+        with pytest.raises(ValueError):
+            _ = AutoProjectedGradientDescent(classifier, nb_random_init=1.0)
+        with pytest.raises(ValueError):
+            _ = AutoProjectedGradientDescent(classifier, nb_random_init=-1)
+
+        with pytest.raises(ValueError):
+            _ = AutoProjectedGradientDescent(classifier, batch_size=1.0)
+        with pytest.raises(ValueError):
+            _ = AutoProjectedGradientDescent(classifier, batch_size=-1)
+
+        with pytest.raises(ValueError):
+            _ = AutoProjectedGradientDescent(classifier, loss_type="test")
+
+        with pytest.raises(ValueError):
+            _ = AutoProjectedGradientDescent(classifier, verbose="true")
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.framework_agnostic
 def test_classifier_type_check_fail(art_warning):
     try:
         backend_test_classifier_type_check_fail(

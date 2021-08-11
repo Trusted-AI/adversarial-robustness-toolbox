@@ -59,5 +59,60 @@ def test_generate(art_warning, get_default_mnist_subset, image_dl_estimator_for_
         art_warning(e)
 
 
+@pytest.mark.framework_agnostic
+def test_check_params(art_warning, image_dl_estimator_for_attack):
+    try:
+        classifier = image_dl_estimator_for_attack(BrendelBethgeAttack, from_logits=True)
+
+        with pytest.raises(ValueError):
+            _ = BrendelBethgeAttack(classifier, norm=3)
+
+        with pytest.raises(ValueError):
+            _ = BrendelBethgeAttack(classifier, targeted="true")
+
+        with pytest.raises(ValueError):
+            _ = BrendelBethgeAttack(classifier, overshoot=1)
+        with pytest.raises(ValueError):
+            _ = BrendelBethgeAttack(classifier, overshoot=0.9)
+
+        with pytest.raises(ValueError):
+            _ = BrendelBethgeAttack(classifier, steps=1.0)
+        with pytest.raises(ValueError):
+            _ = BrendelBethgeAttack(classifier, steps=0)
+
+        with pytest.raises(ValueError):
+            _ = BrendelBethgeAttack(classifier, lr=1)
+        with pytest.raises(ValueError):
+            _ = BrendelBethgeAttack(classifier, lr=-1)
+
+        with pytest.raises(ValueError):
+            _ = BrendelBethgeAttack(classifier, lr_decay=1)
+        with pytest.raises(ValueError):
+            _ = BrendelBethgeAttack(classifier, lr_decay=-1)
+
+        with pytest.raises(ValueError):
+            _ = BrendelBethgeAttack(classifier, lr_num_decay=1.0)
+        with pytest.raises(ValueError):
+            _ = BrendelBethgeAttack(classifier, lr_num_decay=-1)
+
+        with pytest.raises(ValueError):
+            _ = BrendelBethgeAttack(classifier, momentum=1)
+        with pytest.raises(ValueError):
+            _ = BrendelBethgeAttack(classifier, momentum=-1)
+
+        with pytest.raises(ValueError):
+            _ = BrendelBethgeAttack(classifier, binary_search_steps=1.0)
+        with pytest.raises(ValueError):
+            _ = BrendelBethgeAttack(classifier, binary_search_steps=-1)
+
+        with pytest.raises(ValueError):
+            _ = BrendelBethgeAttack(classifier, init_size=1.0)
+        with pytest.raises(ValueError):
+            _ = BrendelBethgeAttack(classifier, init_size=-1)
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
 def test_classifier_type_check_fail():
     backend_test_classifier_type_check_fail(BrendelBethgeAttack, [BaseEstimator, LossGradientsMixin, ClassifierMixin])

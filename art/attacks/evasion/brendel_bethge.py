@@ -2020,6 +2020,19 @@ class BrendelBethgeAttack(EvasionAttack):
         init_size: int = 100,
         batch_size: int = 32,
     ):
+        self.norm = norm
+        self._targeted = targeted
+        self.overshoot = overshoot
+        self.steps = steps
+        self.lr = lr
+        self.lr_decay = lr_decay
+        self.lr_num_decay = lr_num_decay
+        self.momentum = momentum
+        self.binary_search_steps = binary_search_steps
+        self.init_size = init_size
+        self.batch_size = batch_size
+        self._check_params()
+
         from art.estimators.classification import TensorFlowV2Classifier, PyTorchClassifier
 
         if isinstance(estimator, TensorFlowV2Classifier):
@@ -2140,18 +2153,6 @@ class BrendelBethgeAttack(EvasionAttack):
             estimator_bb = estimator
 
         super().__init__(estimator=estimator_bb)
-        self.norm = norm
-        self._targeted = targeted
-        self.overshoot = overshoot
-        self.steps = steps
-        self.lr = lr
-        self.lr_decay = lr_decay
-        self.lr_num_decay = lr_num_decay
-        self.momentum = momentum
-        self.binary_search_steps = binary_search_steps
-        self.init_size = init_size
-        self.batch_size = batch_size
-        self._check_params()
 
         self._optimizer: Optimizer
         if norm == 0:
