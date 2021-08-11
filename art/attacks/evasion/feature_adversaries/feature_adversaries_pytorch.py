@@ -223,7 +223,7 @@ class FeatureAdversariesPyTorch(EvasionAttack):
         if self.lambda_ < 0.0:
             raise ValueError("The regularization parameter `lambda_` has to be non-negative.")
 
-        if not (isinstance(self.layer[0], int) or isinstance(self.layer[0], str)):
+        if not isinstance(self.layer[0], (int, str)):
             raise ValueError("The value of the representation layer must be integer or string.")
 
         if not isinstance(self.max_iter, int):
