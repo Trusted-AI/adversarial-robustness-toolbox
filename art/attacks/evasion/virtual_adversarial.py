@@ -190,7 +190,7 @@ class VirtualAdversarialMethod(EvasionAttack):
         return normalized_x
 
     @staticmethod
-    def _rescale(x: np.ndarray) -> np.ndarray:
+    def _rescale(x: np.ndarray) -> np.ndarray:  # pragma: no cover
         """
         Rescale values of `x` to the range (0, 1]. The interval is open on the left side, using values close to zero
         instead. This is to avoid values that are invalid for further KL divergence computation.

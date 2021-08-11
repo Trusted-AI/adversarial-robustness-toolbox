@@ -88,7 +88,7 @@ def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator_for_atta
 def test_check_params(art_warning, image_dl_estimator_for_attack):
     try:
 
-        classifier = image_dl_estimator_for_attack(AutoProjectedGradientDescent)
+        classifier = image_dl_estimator_for_attack(AutoProjectedGradientDescent, from_logits=True)
 
         with pytest.raises(ValueError):
             _ = AutoProjectedGradientDescent(classifier, norm=0)

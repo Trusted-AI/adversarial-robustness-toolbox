@@ -84,28 +84,28 @@ def test_check_params(art_warning, image_dl_estimator_for_attack):
             _ = FeatureAdversariesPyTorch(classifier, delta=-1.0, step_size=0.5)
 
         with pytest.raises(ValueError):
-            _ = FeatureAdversariesPyTorch(classifier, delta=1, step_size=0.5, lambda_=1)
+            _ = FeatureAdversariesPyTorch(classifier, delta=1.0, step_size=0.5, lambda_=1)
         with pytest.raises(ValueError):
-            _ = FeatureAdversariesPyTorch(classifier, delta=-1.0, step_size=0.5, lambda_=-1.0)
+            _ = FeatureAdversariesPyTorch(classifier, delta=1.0, step_size=0.5, lambda_=-1.0)
 
         with pytest.raises(ValueError):
-            _ = FeatureAdversariesPyTorch(classifier, delta=-1.0, step_size=0.5, layer=1.0)
+            _ = FeatureAdversariesPyTorch(classifier, delta=1.0, step_size=0.5, layer=1.0)
 
         with pytest.raises(ValueError):
-            _ = FeatureAdversariesPyTorch(classifier, delta=1, step_size=0.5, max_iter=1.0)
+            _ = FeatureAdversariesPyTorch(classifier, delta=1.0, step_size=0.5, max_iter=1.0)
         with pytest.raises(ValueError):
-            _ = FeatureAdversariesPyTorch(classifier, delta=-1.0, step_size=0.5, max_iter=-1)
+            _ = FeatureAdversariesPyTorch(classifier, delta=1.0, step_size=0.5, max_iter=-1)
 
         with pytest.raises(ValueError):
-            _ = FeatureAdversariesPyTorch(classifier, delta=-1.0, step_size=0.5, batch_size=-1)
+            _ = FeatureAdversariesPyTorch(classifier, delta=1.0, step_size=0.5, batch_size=-1)
 
         with pytest.raises(ValueError):
-            _ = FeatureAdversariesPyTorch(classifier, delta=-1.0, step_size=None, optimizer=None)
+            _ = FeatureAdversariesPyTorch(classifier, delta=1.0, step_size=None, optimizer=None)
 
         with pytest.raises(ValueError):
-            _ = FeatureAdversariesPyTorch(classifier, delta=-1.0, step_size="test")
+            _ = FeatureAdversariesPyTorch(classifier, delta=1.0, step_size="test")
         with pytest.raises(ValueError):
-            _ = FeatureAdversariesPyTorch(classifier, delta=-1.0, step_size=-1)
+            _ = FeatureAdversariesPyTorch(classifier, delta=1.0, step_size=-1)
 
     except ARTTestException as e:
         art_warning(e)

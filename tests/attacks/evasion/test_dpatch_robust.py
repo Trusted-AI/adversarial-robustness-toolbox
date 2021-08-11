@@ -269,7 +269,7 @@ def test_check_params(art_warning, fix_get_rcnn):
             _ = RobustDPatch(frcnn, crop_range=(2, 1))
 
         with pytest.raises(ValueError):
-            _ = RobustDPatch(frcnn, patch_location=(1, 2), crop_range=(2, 1))
+            _ = RobustDPatch(frcnn, patch_location=(0, 1), crop_range=(1, 2))
 
         with pytest.raises(ValueError):
             _ = RobustDPatch(frcnn, brightness_range=(1, 2, 3))

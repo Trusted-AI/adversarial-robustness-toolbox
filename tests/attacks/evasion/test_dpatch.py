@@ -58,6 +58,16 @@ def test_generate(art_warning, fix_get_mnist_subset, fix_get_rcnn):
         attack.apply_patch(x=x_test_mnist)
         attack.apply_patch(x=x_test_mnist, patch_external=patch)
         attack.apply_patch(x=x_test_mnist, patch_external=patch, mask=np.ones((1, 28, 28)).astype(bool))
+        attack.apply_patch(
+            x=x_test_mnist, patch_external=patch, mask=np.ones((1, 28, 28)).astype(bool), random_location=True
+        )
+
+        patch = attack.generate(x=x_test_mnist[[0]], target_label=1)
+        assert patch.shape == (4, 4, 1)
+        patch = attack.generate(x=x_test_mnist[[0]], target_label=np.array([1]))
+        assert patch.shape == (4, 4, 1)
+        patch = attack.generate(x=x_test_mnist[[0]], target_label=[1])
+        assert patch.shape == (4, 4, 1)
 
     except ARTTestException as e:
         art_warning(e)

@@ -305,6 +305,31 @@ class TestAdversarialPatch(TestBase):
         attack_ap.reset_patch(initial_patch_value=1.0)
         attack_ap.reset_patch(initial_patch_value=patch_adv)
 
+        # Numpy
+        attack_ap = AdversarialPatchNumpy(
+            ptc,
+            rotation_max=0.5,
+            scale_min=0.4,
+            scale_max=0.41,
+            learning_rate=5.0,
+            batch_size=10,
+            max_iter=5,
+            verbose=False,
+        )
+
+        target = np.zeros(self.x_train_mnist.shape[0])
+        patch_adv, _ = attack_ap.generate(x_train, target)
+
+        self.assertAlmostEqual(patch_adv[0, 8, 8], 0.6715167, delta=0.05)
+        self.assertAlmostEqual(patch_adv[0, 14, 14], 0.6292826, delta=0.05)
+        self.assertAlmostEqual(float(np.sum(patch_adv)), 424.31439208984375, delta=4.0)
+
+        mask = np.ones((1, 28, 28)).astype(bool)
+        attack_ap.apply_patch(x=x_train, scale=0.1, mask=mask)
+        attack_ap.reset_patch(initial_patch_value=None)
+        attack_ap.reset_patch(initial_patch_value=1.0)
+        attack_ap.reset_patch(initial_patch_value=patch_adv)
+
     def test_5_failure_feature_vectors(self):
         classifier = get_tabular_classifier_kr()
         classifier._clip_values = (0, 1)
