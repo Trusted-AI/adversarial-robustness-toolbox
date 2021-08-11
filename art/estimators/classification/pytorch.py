@@ -650,6 +650,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         self._model.eval()
 
+        y = check_and_transform_label_format(y, self.nb_classes)
+
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
 
