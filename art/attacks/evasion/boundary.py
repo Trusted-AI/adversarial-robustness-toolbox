@@ -76,7 +76,7 @@ class BoundaryAttack(EvasionAttack):
         num_trial: int = 25,
         sample_size: int = 20,
         init_size: int = 100,
-        min_epsilon: Optional[float] = None,
+        min_epsilon: float = 0,
         verbose: bool = True,
     ) -> None:
         """
@@ -327,7 +327,7 @@ class BoundaryAttack(EvasionAttack):
                 logger.warning("Adversarial example found but not optimal.")
                 return self._best_adv(original_sample, x_advs)
 
-            if self.min_epsilon is not None and self.curr_epsilon < self.min_epsilon:
+            if self.curr_epsilon < self.min_epsilon:
                 return x_adv
 
         return x_adv
@@ -470,8 +470,8 @@ class BoundaryAttack(EvasionAttack):
         if self.step_adapt <= 0 or self.step_adapt >= 1:
             raise ValueError("The adaptation factor must be in the range (0, 1).")
 
-        if self.min_epsilon is not None and (isinstance(self.min_epsilon, float) or self.min_epsilon <= 0):
-            raise ValueError("The minimum epsilon must be a positive float.")
+        if self.min_epsilon < 0:
+            raise ValueError("The minimum epsilon must be non-negative.")
 
         if not isinstance(self.verbose, bool):
             raise ValueError("The argument `verbose` has to be of type bool.")
