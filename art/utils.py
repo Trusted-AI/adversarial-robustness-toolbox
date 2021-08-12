@@ -99,6 +99,7 @@ if TYPE_CHECKING:
     from art.estimators.object_detection.pytorch_faster_rcnn import PyTorchFasterRCNN
     from art.estimators.object_detection.tensorflow_faster_rcnn import TensorFlowFasterRCNN
     from art.estimators.pytorch import PyTorchEstimator
+    from art.estimators.regression.scikitlearn import ScikitlearnRegressor
     from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
     from art.estimators.speech_recognition.tensorflow_lingvo import TensorFlowLingvoASR
     from art.estimators.tensorflow import TensorFlowV2Estimator
@@ -178,6 +179,8 @@ if TYPE_CHECKING:
         XGBoostClassifier,
         CLASSIFIER_NEURALNETWORK_TYPE,
     ]
+
+    REGRESSOR_TYPE = Union[ScikitlearnRegressor]  # pylint: disable=C0103
 
     PYTORCH_ESTIMATOR_TYPE = Union[  # pylint: disable=C0103
         PyTorchClassifier,
