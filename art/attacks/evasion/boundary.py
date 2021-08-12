@@ -470,7 +470,7 @@ class BoundaryAttack(EvasionAttack):
         if self.step_adapt <= 0 or self.step_adapt >= 1:
             raise ValueError("The adaptation factor must be in the range (0, 1).")
 
-        if self.min_epsilon < 0:
+        if not isinstance(self.min_epsilon, (float, int)) or self.min_epsilon < 0:
             raise ValueError("The minimum epsilon must be non-negative.")
 
         if not isinstance(self.verbose, bool):
