@@ -490,7 +490,7 @@ def float_to_categorical(labels: np.ndarray, nb_classes: Optional[int] = None):
     unique.sort()
     indexes = [np.where(unique == value)[0] for value in labels]
     if nb_classes is None:
-        nb_classes = len(unique) + 1
+        nb_classes = len(unique)
     categorical = np.zeros((labels.shape[0], nb_classes), dtype=np.float32)
     categorical[np.arange(labels.shape[0]), np.squeeze(indexes)] = 1
     return categorical
