@@ -145,7 +145,6 @@ if TYPE_CHECKING:
         ClassifierDecisionTree,
         LightGBMClassifier,
         ScikitlearnDecisionTreeClassifier,
-        ScikitlearnDecisionTreeRegressor,
         ScikitlearnExtraTreesClassifier,
         ScikitlearnGradientBoostingClassifier,
         ScikitlearnRandomForestClassifier,
@@ -165,7 +164,6 @@ if TYPE_CHECKING:
         PyTorchClassifier,
         ScikitlearnClassifier,
         ScikitlearnDecisionTreeClassifier,
-        ScikitlearnDecisionTreeRegressor,
         ScikitlearnExtraTreeClassifier,
         ScikitlearnAdaBoostClassifier,
         ScikitlearnBaggingClassifier,
@@ -180,7 +178,7 @@ if TYPE_CHECKING:
         CLASSIFIER_NEURALNETWORK_TYPE,
     ]
 
-    REGRESSOR_TYPE = Union[ScikitlearnRegressor]  # pylint: disable=C0103
+    REGRESSOR_TYPE = Union[ScikitlearnRegressor, ScikitlearnDecisionTreeRegressor]  # pylint: disable=C0103
 
     PYTORCH_ESTIMATOR_TYPE = Union[  # pylint: disable=C0103
         PyTorchClassifier,

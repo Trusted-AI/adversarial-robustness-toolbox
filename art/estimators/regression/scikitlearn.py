@@ -21,12 +21,13 @@ This module implements the regressors for scikit-learn models.
 import logging
 import os
 import pickle
+from copy import deepcopy
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 
 from art.estimators.scikitlearn import ScikitlearnEstimator
-from art.estimators.regression import RegressorMixin
+from art.estimators.regression.regressor import RegressorMixin
 from art import config
 
 if TYPE_CHECKING:
@@ -36,6 +37,7 @@ if TYPE_CHECKING:
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
+    from art.metrics.verification_decisions_trees import LeafNode
 
 logger = logging.getLogger(__name__)
 
@@ -173,3 +175,124 @@ class ScikitlearnRegressor(RegressorMixin, ScikitlearnEstimator):  # lgtm [py/mi
         """
 
         return (y - self.predict(x)) ** 2
+
+
+class ScikitlearnDecisionTreeRegressor(ScikitlearnRegressor):
+    """
+    Wrapper class for scikit-learn Decision Tree Regressor models.
+    """
+
+    def __init__(
+        self,
+        model: "sklearn.tree.DecisionTreeRegressor",
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
+        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
+        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
+    ) -> None:
+        """
+        Create a `Regressor` instance from a scikit-learn Decision Tree Regressor model.
+
+        :param model: scikit-learn Decision Tree Regressor model.
+        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
+               for features.
+        :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
+        :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
+        :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
+               used for data preprocessing. The first value will be subtracted from the input. The input will then
+               be divided by the second one.
+        """
+        # pylint: disable=E0001
+        import sklearn  # lgtm [py/repeated-import]
+
+        if not isinstance(model, sklearn.tree.DecisionTreeRegressor):
+            raise TypeError("Model must be of type sklearn.tree.DecisionTreeRegressor.")
+
+        super().__init__(
+            model=model,
+            clip_values=clip_values,
+            preprocessing_defences=preprocessing_defences,
+            postprocessing_defences=postprocessing_defences,
+            preprocessing=preprocessing,
+        )
+        self._model = model
+
+    def get_values_at_node(self, node_id: int) -> np.ndarray:
+        """
+        Returns the feature of given id for a node.
+
+        :return: Normalized values at node node_id.
+        """
+        return self.model.tree_.value[node_id]
+
+    def get_left_child(self, node_id: int) -> int:
+        """
+        Returns the id of the left child node of node_id.
+
+        :return: The indices of the left child in the tree.
+        """
+        return self.model.tree_.children_left[node_id]
+
+    def get_right_child(self, node_id: int) -> int:
+        """
+        Returns the id of the right child node of node_id.
+
+        :return: The indices of the right child in the tree.
+        """
+        return self.model.tree_.children_right[node_id]
+
+    def get_threshold_at_node(self, node_id: int) -> float:
+        """
+        Returns the threshold of given id for a node.
+
+        :return: Threshold value of feature split in this node.
+        """
+        return self.model.tree_.threshold[node_id]
+
+    def get_feature_at_node(self, node_id: int) -> int:
+        """
+        Returns the feature of given id for a node.
+
+        :return: Feature index of feature split in this node.
+        """
+        return self.model.tree_.feature[node_id]
+
+    def _get_leaf_nodes(self, node_id, i_tree, class_label, box) -> List["LeafNode"]:
+        from art.metrics.verification_decisions_trees import LeafNode, Box, Interval
+
+        leaf_nodes: List[LeafNode] = list()
+
+        if self.get_left_child(node_id) != self.get_right_child(node_id):
+
+            node_left = self.get_left_child(node_id)
+            node_right = self.get_right_child(node_id)
+
+            box_left = deepcopy(box)
+            box_right = deepcopy(box)
+
+            feature = self.get_feature_at_node(node_id)
+            box_split_left = Box(intervals={feature: Interval(-np.inf, self.get_threshold_at_node(node_id))})
+            box_split_right = Box(intervals={feature: Interval(self.get_threshold_at_node(node_id), np.inf)})
+
+            if box.intervals:
+                box_left.intersect_with_box(box_split_left)
+                box_right.intersect_with_box(box_split_right)
+            else:
+                box_left = box_split_left
+                box_right = box_split_right
+
+            leaf_nodes += self._get_leaf_nodes(node_left, i_tree, class_label, box_left)
+            leaf_nodes += self._get_leaf_nodes(node_right, i_tree, class_label, box_right)
+
+        else:
+            leaf_nodes.append(
+                LeafNode(
+                    tree_id=i_tree,
+                    class_label=class_label,
+                    node_id=node_id,
+                    box=box,
+                    value=self.get_values_at_node(node_id)[0, 0],
+                )
+            )
+
+        return leaf_nodes
