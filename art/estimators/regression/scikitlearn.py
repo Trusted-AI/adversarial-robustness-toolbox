@@ -241,6 +241,17 @@ class ScikitlearnDecisionTreeRegressor(ScikitlearnRegressor):
         """
         return self.model.tree_.children_right[node_id]
 
+    def get_decision_path(self, x: np.ndarray) -> np.ndarray:
+        """
+        Returns the path through nodes in the tree when classifying x. Last one is leaf, first one root node.
+
+        :return: The indices of the nodes in the array structure of the tree.
+        """
+        if len(np.shape(x)) == 1:
+            return self.model.decision_path(x.reshape(1, -1)).indices
+
+        return self.model.decision_path(x).indices
+
     def get_threshold_at_node(self, node_id: int) -> float:
         """
         Returns the threshold of given id for a node.
@@ -256,6 +267,14 @@ class ScikitlearnDecisionTreeRegressor(ScikitlearnRegressor):
         :return: Feature index of feature split in this node.
         """
         return self.model.tree_.feature[node_id]
+
+    def get_samples_at_node(self, node_id: int) -> int:
+        """
+        Returns the number of training samples mapped to a node.
+
+        :return: Number of samples mapped this node.
+        """
+        return self.model.tree_.n_node_samples[node_id]
 
     def _get_leaf_nodes(self, node_id, i_tree, class_label, box) -> List["LeafNode"]:
         from art.metrics.verification_decisions_trees import LeafNode, Box, Interval
