@@ -125,7 +125,7 @@ class AttributeInferenceWhiteBoxLifestyleDecisionTree(AttributeInferenceAttack):
 
             for row in x_value:
                 # get leaf ids (no duplicates)
-                node_id = self.estimator.get_decision_path([row])[0]
+                node_id = self.estimator.get_decision_path([row])[-1]
                 nodes_value[node_id] = self.estimator.get_samples_at_node(node_id)
             # sum sample numbers
             num_value = sum(nodes_value.values()) / n_samples
