@@ -207,7 +207,7 @@ class LabelOnlyDecisionBoundary(MembershipInferenceAttack):
     ):
         """
         Calibrate distance threshold on randomly generated samples, choosing the top-t percentile of the noise needed
-        to change the classifier's initial prediction.
+        to change the classifier's initial prediction. This method requires the model's clip_values to be set.
 
         | Paper link: https://arxiv.org/abs/2007.15528
 
