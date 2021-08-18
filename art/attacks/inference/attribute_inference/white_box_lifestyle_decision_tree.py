@@ -96,7 +96,7 @@ class AttributeInferenceWhiteBoxLifestyleDecisionTree(AttributeInferenceAttack):
 
         for i, value in enumerate(values):
             # prepare data with the given value in the attacked feature
-            v_full = np.full((n_samples, 1), value)
+            v_full = np.full((n_samples, 1), value).astype(x.dtype)
             x_value = np.concatenate((x[:, : self.attack_feature], v_full), axis=1)
             x_value = np.concatenate((x_value, x[:, self.attack_feature :]), axis=1)
 
@@ -117,7 +117,7 @@ class AttributeInferenceWhiteBoxLifestyleDecisionTree(AttributeInferenceAttack):
     def _calculate_phi(self, x, values, n_samples):
         phi = []
         for value in values:
-            v_full = np.full((n_samples, 1), value)
+            v_full = np.full((n_samples, 1), value).astype(x.dtype)
             x_value = np.concatenate((x[:, : self.attack_feature], v_full), axis=1)
             x_value = np.concatenate((x_value, x[:, self.attack_feature :]), axis=1)
             nodes_value = {}
