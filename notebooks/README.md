@@ -78,6 +78,9 @@ explains the basic workflow of using ART with defences and attacks on an neural 
 demonstrates the HopSkipJumpAttack. This is a black-box attack that only requires class predictions. It is an advanced 
 version of the Boundary attack.
 
+[attack_membership_inference_shadow_models.ipynb](attack_membership_inference_shadow_models.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/attack_membership_inference_shadow_models.ipynb)]
+demonstrates a MembershipInferenceBlackBox membership inference attack using shadow models on a classifier.
+
 ## Classifiers
 
 [classifier_blackbox.ipynb](classifier_blackbox.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/classifier_blackbox.ipynb)] demonstrates BlackBoxClassifier, the most general and
