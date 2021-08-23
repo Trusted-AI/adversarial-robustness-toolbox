@@ -148,6 +148,15 @@ class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):  # lgtm [py/
         """
         return self._input_shape  # type: ignore
 
+    @property
+    def use_logits(self) -> bool:
+        """
+        Return whether predict() returns logits instead of probabilities if available.
+
+        :return: Whether predict() returns logits instead of probabilities if available.
+        """
+        return self._use_logits  # type: ignore
+
     def fit(self, x: np.ndarray, y: np.ndarray, **kwargs) -> None:
         """
         Fit the classifier on the training set `(x, y)`.
