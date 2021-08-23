@@ -94,7 +94,7 @@ def test_white_box_lifestyle_regression(art_warning, get_diabetes_dataset):
 
         from sklearn import tree
 
-        regr_model = tree.DecisionTreeRegressor()
+        regr_model = tree.DecisionTreeRegressor(random_state=7)
         regr_model.fit(x_train_diabetes, y_train_diabetes)
         regressor = ScikitlearnDecisionTreeRegressor(regr_model)
 
@@ -108,8 +108,8 @@ def test_white_box_lifestyle_regression(art_warning, get_diabetes_dataset):
 
         train_diff = np.abs(inferred_train - x_train_feature.reshape(1, -1))
         test_diff = np.abs(inferred_test - x_test_feature.reshape(1, -1))
-        assert np.sum(train_diff) / len(inferred_train) == pytest.approx(0.3357, abs=0.03)
-        assert np.sum(test_diff) / len(inferred_test) == pytest.approx(0.3149, abs=0.03)
+        assert np.sum(train_diff) / len(inferred_train) == pytest.approx(0.318, abs=0.03)
+        assert np.sum(test_diff) / len(inferred_test) == pytest.approx(0.34, abs=0.03)
         # assert np.sum(train_diff) / len(inferred_train) < np.sum(test_diff) / len(inferred_test)
     except ARTTestException as e:
         art_warning(e)
