@@ -96,11 +96,11 @@ class AttributeInferenceMembership(AttributeInferenceAttack):
             if y.shape[0] != x.shape[0]:
                 raise ValueError("Number of rows in x and y do not match")
 
-        # assumes single index
+        # single index
         if isinstance(self.attack_feature, int):
             first = True
             for value in values:
-                v_full = np.full((x.shape[0], 1), value).astype(np.float32)
+                v_full = np.full((x.shape[0], 1), value).astype(x.dtype)
                 x_value = np.concatenate((x[:, : self.attack_feature], v_full), axis=1)
                 x_value = np.concatenate((x_value, x[:, self.attack_feature :]), axis=1)
 
@@ -112,7 +112,7 @@ class AttributeInferenceMembership(AttributeInferenceAttack):
                     probabilities = np.hstack((probabilities, predicted))
 
             # needs to be of type float so we can later replace back the actual values
-            value_indexes = np.argmax(probabilities, axis=1).astype(np.float32)
+            value_indexes = np.argmax(probabilities, axis=1).astype(x.dtype)
             pred_values = np.zeros_like(value_indexes)
             for index, value in enumerate(values):
                 pred_values[value_indexes == index] = value
@@ -134,7 +134,7 @@ class AttributeInferenceMembership(AttributeInferenceAttack):
                 else:
                     probabilities = np.hstack((probabilities, predicted))
                 first = False
-            value_indexes = np.argmax(probabilities, axis=1).astype(np.float32)
+            value_indexes = np.argmax(probabilities, axis=1).astype(x.dtype)
             pred_values = np.zeros_like(probabilities)
             for index, value in enumerate(values):
                 curr_value = np.zeros(len(values))
