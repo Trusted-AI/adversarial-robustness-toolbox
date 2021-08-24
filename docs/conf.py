@@ -25,9 +25,9 @@ copyright = "2018, The Adversarial Robustness Toolbox (ART) Authors"
 author = "Maria-Irina Nicolae"
 
 # The short X.Y version
-version = "1.7"
+version = "1.8"
 # The full version, including alpha/beta/rc tags
-release = "1.7.1"
+release = "1.8.0.dev0"
 
 
 # -- General configuration ---------------------------------------------------
