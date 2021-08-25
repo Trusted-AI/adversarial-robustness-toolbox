@@ -94,8 +94,6 @@ else
                         "tests/attacks/test_targeted_universal_perturbation.py" \
                         "tests/attacks/test_simba.py" )
 
-#                        "tests/attacks/test_shapeshifter.py" \ run in action tf-faster-rcnn
-
     declare -a classifiers=("tests/estimators/certification/test_randomized_smoothing.py" \
                             "tests/estimators/classification/test_blackbox.py" \
                             "tests/estimators/classification/test_catboost.py" \
@@ -107,8 +105,6 @@ else
                             "tests/estimators/classification/test_lightgbm.py" \
                             "tests/estimators/classification/test_scikitlearn.py" \
                             "tests/estimators/classification/test_xgboost.py" )
-
-    declare -a speech_recognizers=("tests/estimators/speech_recognition/test_pytorch_deep_speech.py")
 
     declare -a defences=("tests/defences/test_adversarial_trainer.py" \
                          "tests/defences/test_adversarial_trainer_madry_pgd.py" \
