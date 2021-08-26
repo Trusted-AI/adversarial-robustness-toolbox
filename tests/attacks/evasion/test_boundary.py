@@ -101,7 +101,7 @@ def test_check_params(art_warning, image_dl_estimator_for_attack):
             _ = BoundaryAttack(classifier, step_adapt=-1)
 
         with pytest.raises(ValueError):
-            _ = BoundaryAttack(classifier, min_epsilon=1.0)
+            _ = BoundaryAttack(classifier, min_epsilon="1.0")
         with pytest.raises(ValueError):
             _ = BoundaryAttack(classifier, min_epsilon=-1)
 
