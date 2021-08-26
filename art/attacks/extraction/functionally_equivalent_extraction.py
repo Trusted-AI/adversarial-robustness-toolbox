@@ -94,6 +94,7 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
         d_step: float = 0.01,
         delta_sign: float = 0.02,
         unit_vector_scale: int = 10000,
+        ftol: float = 1e-8,
         **kwargs
     ) -> BlackBoxClassifier:
         """
@@ -112,6 +113,7 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
         :param d_step:  Step size of delta increase.
         :param delta_sign: Delta of weight sign search.
         :param unit_vector_scale: Multiplicative scale of the unit vector `e_j`.
+        :param ftol: Tolerance for termination by the change of the cost function.
         :return: ART :class:`.BlackBoxClassifier` of the extracted model.
         """
         self._critical_point_search(
@@ -127,8 +129,8 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
             d_step=d_step,
             delta_sign=delta_sign,
         )
-        self._sign_recovery(unit_vector_scale=unit_vector_scale)
-        self._last_layer_extraction(x)
+        self._sign_recovery(unit_vector_scale=unit_vector_scale, ftol=ftol)
+        self._last_layer_extraction(x, ftol)
 
         def predict(x: np.ndarray) -> np.ndarray:
             """
@@ -336,11 +338,12 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
                 if co_m < co_p * np.max(1 / self.a0_pairwise_ratios[:, i]):
                     self.a0_pairwise_ratios[j, i] *= -1
 
-    def _sign_recovery(self, unit_vector_scale: int) -> None:
+    def _sign_recovery(self, unit_vector_scale: int, ftol: float) -> None:
         """
         Recover the sign of weights in the first layer.
 
         :param unit_vector_scale: Multiplicative scale of the unit vector e_j.
+        :param ftol: Tolerance for termination by the change of the cost function.
         """
         logger.info("Recover sign of the weights of the first layer.")
 
@@ -359,7 +362,7 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
         def f_z(z_i):
             return np.squeeze(np.matmul(a0_pairwise_ratios_inverse.T, np.expand_dims(z_i, axis=0).T) + self.b_0)
 
-        result_z = least_squares(f_z, z_0)
+        result_z = least_squares(f_z, z_0, ftol=ftol)
 
         for i in range(self.num_neurons):
             e_i = np.zeros((self.num_neurons, 1), dtype=NUMPY_DTYPE)
@@ -370,7 +373,7 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
                 return np.squeeze(np.matmul(-a0_pairwise_ratios_inverse.T, np.expand_dims(v_i, axis=0).T) - e_i)
 
             v_0 = np.random.normal(0, 1, self.num_features)
-            result_v_i = least_squares(f_v, v_0)
+            result_v_i = least_squares(f_v, v_0, ftol=ftol)
             value_p = np.sum(
                 np.abs(
                     self._o_l(np.expand_dims(result_z.x, axis=0))
@@ -390,11 +393,12 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
 
         self.w_0 = a0_pairwise_ratios_inverse
 
-    def _last_layer_extraction(self, x: np.ndarray) -> None:
+    def _last_layer_extraction(self, x: np.ndarray, ftol: float) -> None:
         """
         Extract weights and biases of the second layer.
 
         :param x: Samples of input data of shape `(num_samples, num_features)`.
+        :param ftol: Tolerance for termination by the change of the cost function.
         """
         logger.info("Extract second layer.")
 
@@ -414,7 +418,7 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
 
             return np.squeeze((layer_1.T - predictions).flatten())
 
-        result_a1_b1 = least_squares(f_w_1_b_1, w_1_b_1_0)
+        result_a1_b1 = least_squares(f_w_1_b_1, w_1_b_1_0, ftol=ftol)
 
         self.w_1 = result_a1_b1.x[0 : self.num_neurons * self.num_classes].reshape(self.num_neurons, self.num_classes)
         self.b_1 = result_a1_b1.x[self.num_neurons * self.num_classes :].reshape(self.num_classes, 1)

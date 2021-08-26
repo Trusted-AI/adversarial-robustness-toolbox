@@ -37,7 +37,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
-@pytest.mark.framework_agnostic
+@pytest.mark.skip_framework("keras", "scikitlearn", "mxnet", "kerastf")
 @pytest.mark.parametrize("norm", [2, "inf"])
 def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack, norm):
     try:
@@ -60,6 +60,46 @@ def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator_for_atta
 
         assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(expected_mean, abs=0.025)
         assert np.max(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(expected_max, abs=0.05)
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.framework_agnostic
+def test_check_params(art_warning, image_dl_estimator_for_attack):
+    try:
+        classifier = image_dl_estimator_for_attack(SquareAttack)
+
+        with pytest.raises(ValueError):
+            _ = SquareAttack(classifier, norm=0)
+
+        with pytest.raises(ValueError):
+            _ = SquareAttack(classifier, max_iter=1.0)
+        with pytest.raises(ValueError):
+            _ = SquareAttack(classifier, max_iter=-1)
+
+        with pytest.raises(ValueError):
+            _ = SquareAttack(classifier, eps="1.0")
+        with pytest.raises(ValueError):
+            _ = SquareAttack(classifier, eps=-1)
+
+        with pytest.raises(ValueError):
+            _ = SquareAttack(classifier, p_init="1.0")
+        with pytest.raises(ValueError):
+            _ = SquareAttack(classifier, p_init=-1)
+
+        with pytest.raises(ValueError):
+            _ = SquareAttack(classifier, nb_restarts=1.0)
+        with pytest.raises(ValueError):
+            _ = SquareAttack(classifier, nb_restarts=-1)
+
+        with pytest.raises(ValueError):
+            _ = SquareAttack(classifier, batch_size=1.0)
+        with pytest.raises(ValueError):
+            _ = SquareAttack(classifier, batch_size=-1)
+
+        with pytest.raises(ValueError):
+            _ = SquareAttack(classifier, verbose="true")
+
     except ARTTestException as e:
         art_warning(e)
 

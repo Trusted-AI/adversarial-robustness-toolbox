@@ -35,7 +35,6 @@ import numpy as np
 from art.attacks.evasion.pixel_threshold import PixelAttack
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
-from art.utils import get_labels_np_array
 
 from tests.utils import TestBase
 from tests.utils import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
@@ -135,20 +134,36 @@ class TestPixelAttack(TestBase):
         else:
             targets = y_test
 
-        for es in [1]:  # Option 0 is not easy to reproduce reliably, we should consider it at a later time
-            df = PixelAttack(classifier, th=64, es=es, max_iter=10, targeted=targeted, verbose=False)
-            x_test_adv = df.generate(x_test_original, targets)
+        for th in [None, 128]:
+            for es in [0, 1]:
+                df = PixelAttack(classifier, th=th, es=es, max_iter=20, targeted=targeted, verbose=False)
+                x_test_adv = df.generate(x_test_original, targets)
 
-            np.testing.assert_raises(AssertionError, np.testing.assert_array_equal, x_test, x_test_adv)
-            self.assertFalse((0.0 == x_test_adv).all())
-
-            y_pred = get_labels_np_array(classifier.predict(x_test_adv))
-
-            accuracy = np.sum(np.argmax(y_pred, axis=1) == np.argmax(self.y_test_mnist, axis=1)) / self.n_test
-            logger.info("Accuracy on adversarial examples: %.2f%%", (accuracy * 100))
+                np.testing.assert_raises(AssertionError, np.testing.assert_array_equal, x_test, x_test_adv)
+                self.assertFalse((0.0 == x_test_adv).all())
 
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
+
+    def test_check_params(self):
+
+        ptc = get_image_classifier_pt(from_logits=True)
+
+        with self.assertRaises(ValueError):
+            _ = PixelAttack(ptc, th=-1)
+
+        with self.assertRaises(ValueError):
+            _ = PixelAttack(ptc, es=1.0)
+
+        with self.assertRaises(ValueError):
+            _ = PixelAttack(ptc, targeted="true")
+
+        with self.assertRaises(ValueError):
+            _ = PixelAttack(ptc, verbose="true")
+
+        with self.assertRaises(ValueError):
+            ptc._clip_values = None
+            _ = PixelAttack(ptc)
 
     def test_1_classifier_type_check_fail(self):
         backend_test_classifier_type_check_fail(PixelAttack, [BaseEstimator, NeuralNetworkMixin, ClassifierMixin])

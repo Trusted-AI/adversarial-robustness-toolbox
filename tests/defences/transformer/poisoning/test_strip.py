@@ -38,5 +38,6 @@ def test_strip(art_warning, get_default_mnist_subset, image_dl_estimator):
         strip = STRIP(classifier)
         defense_cleanse = strip()
         defense_cleanse.mitigate(x_test_mnist)
+        defense_cleanse.predict(x_test_mnist)
     except ARTTestException as e:
         art_warning(e)
