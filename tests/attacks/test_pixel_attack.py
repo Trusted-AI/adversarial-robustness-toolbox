@@ -134,7 +134,7 @@ class TestPixelAttack(TestBase):
         else:
             targets = y_test
 
-        for th in [None, 64]:
+        for th in [None, 128]:
             for es in [0, 1]:
                 df = PixelAttack(classifier, th=th, es=es, max_iter=20, targeted=targeted, verbose=False)
                 x_test_adv = df.generate(x_test_original, targets)
