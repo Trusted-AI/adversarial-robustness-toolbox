@@ -301,7 +301,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         grad = self.estimator.loss_gradient(x=x, y=y) * (1 - 2 * int(self.targeted))
 
         # Write summary
-        if self.summary_writer is not None:
+        if self.summary_writer is not None:  # pragma: no cover
             self.summary_writer.add_scalar(
                 "gradients/norm-L1/batch-{}".format(self._batch_id),
                 np.linalg.norm(grad.flatten(), ord=1),

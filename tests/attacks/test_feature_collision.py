@@ -71,7 +71,6 @@ class TestFeatureCollision(TestBase):
     #     First test with the TensorFlowClassifier.
     #     :return:
     #     """
-    #
     #     tfc, sess = get_image_classifier_tf()
     #     x_adv, y_adv = self.poison_dataset(tfc, self.x_train_mnist, self.y_train_mnist)
     #     tfc.fit(x_adv, y_adv, nb_epochs=NB_EPOCHS, batch_size=32)
@@ -84,10 +83,37 @@ class TestFeatureCollision(TestBase):
         Test working keras implementation.
         :return:
         """
-
         krc = get_image_classifier_kr()
         x_adv, y_adv = self.poison_dataset(krc, self.x_train_mnist, self.y_train_mnist)
         krc.fit(x_adv, y_adv, nb_epochs=NB_EPOCHS, batch_size=32)
+
+    def test_check_params(self):
+
+        krc = get_image_classifier_kr(from_logits=True)
+
+        with self.assertRaises(ValueError):
+            _ = FeatureCollisionAttack(krc, target=self.x_train_mnist, feature_layer=1, learning_rate=-1)
+
+        with self.assertRaises(TypeError):
+            _ = FeatureCollisionAttack(krc, target=self.x_train_mnist, feature_layer=1.0)
+
+        with self.assertRaises(ValueError):
+            _ = FeatureCollisionAttack(krc, target=self.x_train_mnist, feature_layer=1, decay_coeff=-1)
+
+        with self.assertRaises(ValueError):
+            _ = FeatureCollisionAttack(krc, target=self.x_train_mnist, feature_layer=1, stopping_tol=-1)
+
+        with self.assertRaises(ValueError):
+            _ = FeatureCollisionAttack(krc, target=self.x_train_mnist, feature_layer=1, obj_threshold=-1)
+
+        with self.assertRaises(ValueError):
+            _ = FeatureCollisionAttack(krc, target=self.x_train_mnist, feature_layer=1, max_iter=-1)
+
+        with self.assertRaises(ValueError):
+            _ = FeatureCollisionAttack(krc, target=self.x_train_mnist, feature_layer=1, watermark=1)
+
+        with self.assertRaises(ValueError):
+            _ = FeatureCollisionAttack(krc, target=self.x_train_mnist, feature_layer=1, verbose="true")
 
 
 if __name__ == "__main__":

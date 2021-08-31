@@ -231,9 +231,6 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         if self.learning_rate <= 0:
             raise ValueError("Learning rate must be strictly positive")
 
-        if self.max_iter < 1:
-            raise ValueError("Value of max_iter at least 1")
-
         if not isinstance(self.feature_layer, (str, int)):
             raise TypeError("Feature layer should be a string or int")
 
@@ -250,7 +247,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
             raise ValueError("Number of old stored objectives must be positive")
 
         if self.max_iter <= 0:
-            raise ValueError("Number of old stored objectives must be positive")
+            raise ValueError("Maximum number of iterations must be 1 or larger")
 
         if self.watermark and not (isinstance(self.watermark, float) and 0 <= self.watermark < 1):
             raise ValueError("Watermark must be between 0 and 1")

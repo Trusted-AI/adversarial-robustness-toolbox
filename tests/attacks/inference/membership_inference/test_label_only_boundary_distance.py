@@ -148,3 +148,14 @@ def backend_check_membership_probabilities(attack, dataset, attack_train_ratio):
 def backend_check_probabilities(prob):
     assert prob.shape[1] == 2
     assert np.all(np.sum(prob, axis=1) == 1)
+
+
+def test_check_params(art_warning, image_dl_estimator_for_attack):
+    try:
+        classifier = image_dl_estimator_for_attack(LabelOnlyDecisionBoundary)
+
+        with pytest.raises(ValueError):
+            _ = LabelOnlyDecisionBoundary(classifier, distance_threshold_tau=-0.5)
+
+    except ARTTestException as e:
+        art_warning(e)

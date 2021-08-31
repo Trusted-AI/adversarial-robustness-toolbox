@@ -734,6 +734,43 @@ class TestPGD(TestBase):
             np.mean(x_test_adv_np - self.x_test_mnist), np.mean(x_test_adv_fw - self.x_test_mnist), places=6
         )
 
+    def test_check_params_pt(self):
+
+        ptc = get_image_classifier_pt(from_logits=True)
+
+        with self.assertRaises(TypeError):
+            _ = ProjectedGradientDescent(ptc, eps=np.array([1, 1, 1]), eps_step=1)
+
+        with self.assertRaises(ValueError):
+            _ = ProjectedGradientDescent(ptc, norm=0)
+
+        with self.assertRaises(ValueError):
+            _ = ProjectedGradientDescent(ptc, eps=-1, eps_step=1)
+        with self.assertRaises(ValueError):
+            _ = ProjectedGradientDescent(ptc, eps=np.array([-1, -1, -1]), eps_step=np.array([1, 1, 1]))
+
+        with self.assertRaises(ValueError):
+            _ = ProjectedGradientDescent(ptc, eps=1, eps_step=-1)
+        with self.assertRaises(ValueError):
+            _ = ProjectedGradientDescent(ptc, eps=np.array([1, 1, 1]), eps_step=np.array([-1, -1, -1]))
+
+        with self.assertRaises(ValueError):
+            _ = ProjectedGradientDescent(ptc, targeted="true")
+
+        with self.assertRaises(TypeError):
+            _ = ProjectedGradientDescent(ptc, num_random_init=1.0)
+        with self.assertRaises(ValueError):
+            _ = ProjectedGradientDescent(ptc, num_random_init=-1)
+
+        with self.assertRaises(ValueError):
+            _ = ProjectedGradientDescent(ptc, batch_size=-1)
+
+        with self.assertRaises(ValueError):
+            _ = ProjectedGradientDescent(ptc, max_iter=-1)
+
+        with self.assertRaises(ValueError):
+            _ = ProjectedGradientDescent(ptc, verbose="true")
+
 
 if __name__ == "__main__":
     unittest.main()

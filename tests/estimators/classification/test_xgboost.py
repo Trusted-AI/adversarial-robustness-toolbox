@@ -49,6 +49,14 @@ class TestXGBoostClassifierBoosterSoftprob(TestBase):
         y_expected = np.asarray([[0.0236, 0.0268, 0.9496]])
         np.testing.assert_array_almost_equal(y_predicted, y_expected, decimal=4)
 
+    def test_type(self):
+        with self.assertRaises(TypeError):
+            XGBoostClassifier(model="xgb")
+
+    def test_save(self):
+        self.classifier.save(filename="test.file", path=None)
+        self.classifier.save(filename="test.file", path="./")
+
 
 class TestXGBoostClassifierBoosterSoftmax(TestBase):
     @classmethod

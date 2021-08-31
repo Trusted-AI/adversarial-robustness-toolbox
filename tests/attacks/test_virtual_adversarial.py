@@ -193,6 +193,29 @@ class TestVirtualAdversarial(TestBase):
             str(context.exception),
         )
 
+    def test_check_params(self):
+
+        ptc = get_image_classifier_pt(from_logits=True)
+
+        with self.assertRaises(ValueError):
+            _ = VirtualAdversarialMethod(ptc, max_iter=1.0)
+        with self.assertRaises(ValueError):
+            _ = VirtualAdversarialMethod(ptc, max_iter=-1)
+
+        with self.assertRaises(ValueError):
+            _ = VirtualAdversarialMethod(ptc, eps=-1)
+
+        with self.assertRaises(ValueError):
+            _ = VirtualAdversarialMethod(ptc, finite_diff=1)
+        with self.assertRaises(ValueError):
+            _ = VirtualAdversarialMethod(ptc, finite_diff=-1.0)
+
+        with self.assertRaises(ValueError):
+            _ = VirtualAdversarialMethod(ptc, batch_size=-1)
+
+        with self.assertRaises(ValueError):
+            _ = VirtualAdversarialMethod(ptc, verbose="true")
+
     def test_1_classifier_type_check_fail(self):
         backend_test_classifier_type_check_fail(VirtualAdversarialMethod, [BaseEstimator, ClassifierMixin])
 
