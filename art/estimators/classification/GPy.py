@@ -213,7 +213,7 @@ class GPyGaussianProcessClassifier(ClassifierClassLossGradients):
         """
         raise NotImplementedError
 
-    def save(self, filename: str, path: Optional[str] = None) -> None:
+    def save(self, filename: str, path: Optional[str] = None) -> None:  # pragma: no cover
         """
         Save a model to file in the format specific to the backend framework.
 

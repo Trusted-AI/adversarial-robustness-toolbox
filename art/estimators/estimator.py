@@ -155,6 +155,8 @@ class BaseEstimator(ABC):
             if key in self.estimator_params:
                 if hasattr(BaseEstimator, key) and isinstance(getattr(BaseEstimator, key), property):
                     setattr(self, "_" + key, value)
+                elif hasattr(self, "_" + key):
+                    setattr(self, "_" + key, value)
                 else:
                     if key == "preprocessing":
                         setattr(self, key, self._set_preprocessing(value))
@@ -443,11 +445,8 @@ class NeuralNetworkMixin(ABC):
             ):  # type: ignore
                 x, y = generator.get_batch()
 
-                # Apply preprocessing and defences
-                x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)  # type: ignore
-
                 # Fit for current batch
-                self.fit(x_preprocessed, y_preprocessed, nb_epochs=1, batch_size=generator.batch_size, **kwargs)
+                self.fit(x, y, nb_epochs=1, batch_size=generator.batch_size, **kwargs)
 
     @abstractmethod
     def get_activations(

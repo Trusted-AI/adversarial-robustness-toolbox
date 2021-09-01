@@ -61,6 +61,17 @@ def test_white_box_lifestyle(art_warning, decision_tree_estimator, get_iris_data
         art_warning(e)
 
 
+def test_check_params(art_warning, image_dl_estimator_for_attack):
+    try:
+        classifier = image_dl_estimator_for_attack(AttributeInferenceWhiteBoxLifestyleDecisionTree)
+
+        with pytest.raises(ValueError):
+            _ = AttributeInferenceWhiteBoxLifestyleDecisionTree(classifier, attack_feature=-0.5)
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
 def test_classifier_type_check_fail():
     backend_test_classifier_type_check_fail(
         AttributeInferenceWhiteBoxLifestyleDecisionTree, (ScikitlearnDecisionTreeClassifier,)

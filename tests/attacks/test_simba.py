@@ -116,6 +116,10 @@ class TestSimBA(TestBase):
             y_target = np.zeros(10)
             y_target[8] = 1.0
 
+        #######
+        # dct #
+        #######
+
         df = SimBA(classifier, attack="dct", targeted=targeted)
 
         x_i = x_test_original[0][None, ...]
@@ -139,11 +143,100 @@ class TestSimBA(TestBase):
         y_pred = get_labels_np_array(classifier.predict(x_test_adv))
         self.assertFalse((y_test == y_pred).all())
 
-        accuracy = np.sum(np.argmax(y_pred, axis=1) == np.argmax(self.y_test_mnist, axis=1)) / self.n_test
-        logger.info("Accuracy on adversarial examples: %.2f%%", (accuracy * 100))
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
+
+        ######
+        # px #
+        ######
+        df_px = SimBA(classifier, attack="px", targeted=targeted)
+
+        x_i = x_test_original[0][None, ...]
+        if targeted:
+            x_test_adv = df_px.generate(x_i, y=y_target.reshape(1, 10))
+        else:
+            x_test_adv = df_px.generate(x_i)
+
+        for i in range(1, len(x_test_original)):
+            x_i = x_test_original[i][None, ...]
+            if targeted:
+                tmp_x_test_adv = df_px.generate(x_i, y=y_target.reshape(1, 10))
+                x_test_adv = np.concatenate([x_test_adv, tmp_x_test_adv])
+            else:
+                tmp_x_test_adv = df_px.generate(x_i)
+                x_test_adv = np.concatenate([x_test_adv, tmp_x_test_adv])
+
+        self.assertFalse((x_test == x_test_adv).all())
+        self.assertFalse((0.0 == x_test_adv).all())
+
+        y_pred = get_labels_np_array(classifier.predict(x_test_adv))
+        self.assertFalse((y_test == y_pred).all())
 
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
+
+        #############
+        # px - diag #
+        #############
+        df_px = SimBA(classifier, attack="px", targeted=targeted, order="diag")
+
+        x_i = x_test_original[0][None, ...]
+        if targeted:
+            x_test_adv = df_px.generate(x_i, y=y_target.reshape(1, 10))
+        else:
+            x_test_adv = df_px.generate(x_i)
+
+        for i in range(1, len(x_test_original)):
+            x_i = x_test_original[i][None, ...]
+            if targeted:
+                tmp_x_test_adv = df_px.generate(x_i, y=y_target.reshape(1, 10))
+                x_test_adv = np.concatenate([x_test_adv, tmp_x_test_adv])
+            else:
+                tmp_x_test_adv = df_px.generate(x_i)
+                x_test_adv = np.concatenate([x_test_adv, tmp_x_test_adv])
+
+        self.assertFalse((x_test == x_test_adv).all())
+        self.assertFalse((0.0 == x_test_adv).all())
+
+        y_pred = get_labels_np_array(classifier.predict(x_test_adv))
+        self.assertFalse((y_test == y_pred).all())
+
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
+
+    def test_check_params(self):
+
+        ptc = get_image_classifier_pt(from_logits=True)
+
+        with self.assertRaises(ValueError):
+            _ = SimBA(ptc, max_iter=1.0)
+        with self.assertRaises(ValueError):
+            _ = SimBA(ptc, max_iter=-1)
+
+        with self.assertRaises(ValueError):
+            _ = SimBA(ptc, epsilon=-1)
+
+        with self.assertRaises(ValueError):
+            _ = SimBA(ptc, batch_size=2)
+
+        with self.assertRaises(ValueError):
+            _ = SimBA(ptc, stride=1.0)
+        with self.assertRaises(ValueError):
+            _ = SimBA(ptc, stride=-1)
+
+        with self.assertRaises(ValueError):
+            _ = SimBA(ptc, freq_dim=1.0)
+        with self.assertRaises(ValueError):
+            _ = SimBA(ptc, freq_dim=-1)
+
+        with self.assertRaises(ValueError):
+            _ = SimBA(ptc, order="test")
+
+        with self.assertRaises(ValueError):
+            _ = SimBA(ptc, attack="test")
+
+        with self.assertRaises(ValueError):
+            _ = SimBA(ptc, targeted="test")
 
     def test_1_classifier_type_check_fail(self):
         backend_test_classifier_type_check_fail(SimBA, (BaseEstimator, ClassifierMixin, NeuralNetworkMixin))

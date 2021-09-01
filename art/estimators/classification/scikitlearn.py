@@ -148,6 +148,15 @@ class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):  # lgtm [py/
         """
         return self._input_shape  # type: ignore
 
+    @property
+    def use_logits(self) -> bool:
+        """
+        Return the Boolean for using logits.
+
+        :return: Boolean for using logits.
+        """
+        return self._use_logits  # type: ignore
+
     def fit(self, x: np.ndarray, y: np.ndarray, **kwargs) -> None:
         """
         Fit the classifier on the training set `(x, y)`.
@@ -872,6 +881,12 @@ class ScikitlearnLogisticRegression(ClassGradientsMixin, LossGradientsMixin, Sci
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         """
+        # pylint: disable=E0001
+        import sklearn  # lgtm [py/repeated-import]
+
+        if not isinstance(model, sklearn.linear_model.LogisticRegression):
+            raise TypeError("Model must be of type sklearn.linear_model.LogisticRegression).")
+
         super().__init__(
             model=model,
             clip_values=clip_values,
