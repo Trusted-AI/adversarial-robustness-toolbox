@@ -19,15 +19,13 @@
 This module implements the task specific estimator for Faster R-CNN v3 in PyTorch.
 """
 import logging
-from typing import List, Dict, Optional, Tuple, Union, TYPE_CHECKING
+from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
-import numpy as np
 
 from art.estimators.object_detection.python_object_detector import PyTorchObjectDetector
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
-    import torch
     import torchvision
 
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE

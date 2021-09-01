@@ -249,10 +249,6 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         else:
             labels_t = y_preprocessed  # type: ignore
 
-        print("_get_losses")
-        for t in labels_t:
-            print(t.keys())
-
         output = self._model(inputs_t, labels_t)
 
         return output, inputs_t, image_tensor_list_grad
