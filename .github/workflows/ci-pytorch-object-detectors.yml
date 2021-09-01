@@ -43,7 +43,9 @@ jobs:
           pip install torch==1.6.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
           pip install torchvision==0.7.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
           pip install torchaudio==0.6.0 -f https://download.pytorch.org/whl/torch_stable.html
-      - name: Run Test Action
-        run: pytest --cov-report=xml --cov=art --cov-append -q -vv tests/estimators/object_detection/test_pytorch_faster_rcnn.py --framework=pytorch --durations=0
+      - name: Run Test Action - test_pytorch_object_detector
+        run: pytest --cov-report=xml --cov=art --cov-append -q -vv tests/estimators/object_detection/test_pytorch_object_detector.py --framework=pytorch --durations=0
+      - name: Run Test Action - test_pytorch_faster_rcnn
+          run: pytest --cov-report=xml --cov=art --cov-append -q -vv tests/estimators/object_detection/test_pytorch_faster_rcnn.py --framework=pytorch --durations=0
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v2.0.3

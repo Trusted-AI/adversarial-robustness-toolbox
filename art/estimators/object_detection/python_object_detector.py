@@ -29,7 +29,6 @@ from art.estimators.pytorch import PyTorchEstimator
 if TYPE_CHECKING:
     # pylint: disable=C0412
     import torch
-    import torchvision
 
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor.preprocessor import Preprocessor

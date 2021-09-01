@@ -96,6 +96,7 @@ if TYPE_CHECKING:
     from art.estimators.classification.tensorflow import TensorFlowClassifier, TensorFlowV2Classifier
     from art.estimators.classification.xgboost import XGBoostClassifier
     from art.estimators.object_detection.object_detector import ObjectDetector
+    from art.estimators.object_detection.python_object_detector import PyTorchObjectDetector
     from art.estimators.object_detection.pytorch_faster_rcnn import PyTorchFasterRCNN
     from art.estimators.object_detection.tensorflow_faster_rcnn import TensorFlowFasterRCNN
     from art.estimators.pytorch import PyTorchEstimator
@@ -110,10 +111,13 @@ if TYPE_CHECKING:
         KerasClassifier,
         MXClassifier,
         PyTorchClassifier,
+        PyTorchObjectDetector,
+        PyTorchFasterRCNN,
         ScikitlearnLogisticRegression,
         ScikitlearnSVC,
         TensorFlowClassifier,
         TensorFlowV2Classifier,
+        TensorFlowFasterRCNN,
     ]
 
     CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE = Union[  # pylint: disable=C0103
@@ -183,11 +187,13 @@ if TYPE_CHECKING:
         PyTorchClassifier,
         PyTorchDeepSpeech,
         PyTorchEstimator,
+        PyTorchObjectDetector,
         PyTorchFasterRCNN,
     ]
 
     OBJECT_DETECTOR_TYPE = Union[  # pylint: disable=C0103
         ObjectDetector,
+        PyTorchObjectDetector,
         PyTorchFasterRCNN,
         TensorFlowFasterRCNN,
     ]
