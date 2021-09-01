@@ -359,7 +359,7 @@ class FastGradientMethod(EvasionAttack):
         if not isinstance(self.targeted, bool):
             raise ValueError("The flag `targeted` has to be of type bool.")
 
-        if not isinstance(self.num_random_init, (int, np.int)):
+        if not isinstance(self.num_random_init, int):
             raise TypeError("The number of random initialisations has to be of type integer")
 
         if self.num_random_init < 0:
@@ -578,9 +578,9 @@ class FastGradientMethod(EvasionAttack):
             if mask.ndim > x.ndim:
                 raise ValueError("Mask shape must be broadcastable to input shape.")
 
-            if not (np.issubdtype(mask.dtype, np.floating) or mask.dtype == np.bool):
+            if not (np.issubdtype(mask.dtype, np.floating) or mask.dtype == bool):
                 raise ValueError(
-                    "The `mask` has to be either of type np.float32, np.float64 or np.bool. The provided"
+                    "The `mask` has to be either of type np.float32, np.float64 or bool. The provided"
                     "`mask` is of type {}.".format(mask.dtype)
                 )
 

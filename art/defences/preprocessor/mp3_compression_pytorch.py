@@ -124,7 +124,7 @@ class Mp3CompressionPyTorch(PreprocessorPyTorch):
         return x_compressed, y
 
     def _check_params(self) -> None:
-        if not (isinstance(self.sample_rate, (int, np.int)) and self.sample_rate > 0):
+        if not (isinstance(self.sample_rate, int) and self.sample_rate > 0):
             raise ValueError("Sample rate be must a positive integer.")
 
         if not isinstance(self.verbose, bool):

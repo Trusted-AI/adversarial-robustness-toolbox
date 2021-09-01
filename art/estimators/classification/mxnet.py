@@ -320,7 +320,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
         # Check value of label for computing gradients
         if not (
             label is None
-            or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
+            or (isinstance(label, int) and label in range(self.nb_classes))
             or (
                 isinstance(label, np.ndarray)
                 and len(label.shape) == 1
@@ -346,7 +346,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
                 grad = x_preprocessed.grad.asnumpy()
                 grads.append(grad)
             grads = np.swapaxes(np.array(grads), 0, 1)
-        elif isinstance(label, (int, np.integer)):
+        elif isinstance(label, int):
             with mx.autograd.record(train_mode=training_mode):
                 preds = self._model(x_preprocessed)
                 class_slice = preds[:, label]

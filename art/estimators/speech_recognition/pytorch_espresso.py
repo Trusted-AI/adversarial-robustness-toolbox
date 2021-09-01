@@ -225,7 +225,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
 
         # Run prediction with batch processing
         decoded_output = []
-        # result_output_sizes = np.zeros(x_preprocessed.shape[0], dtype=np.int)
+        # result_output_sizes = np.zeros(x_preprocessed.shape[0], dtype=int)
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
 
         for m in range(num_batch):

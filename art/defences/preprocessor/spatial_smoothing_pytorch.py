@@ -212,7 +212,7 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
         return x, y
 
     def _check_params(self) -> None:
-        if not (isinstance(self.window_size, (int, np.int)) and self.window_size > 0):
+        if not (isinstance(self.window_size, int) and self.window_size > 0):
             raise ValueError("Sliding window size must be a positive integer.")
 
         if self.clip_values is not None and len(self.clip_values) != 2:

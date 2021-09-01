@@ -380,7 +380,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
         if y is None:
             if self.targeted:
                 raise ValueError("Target labels `y` need to be provided for a targeted attack.")
-            y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size)).astype(np.int32)
+            y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size)).astype(int)
 
         if self.estimator.nb_classes == 2 and y.shape[1] == 1:
             raise ValueError(

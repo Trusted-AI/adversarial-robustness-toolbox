@@ -468,7 +468,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         # Check value of label for computing gradients
         if not (
             label is None
-            or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
+            or (isinstance(label, int) and label in range(self.nb_classes))
             or (
                 isinstance(label, np.ndarray)
                 and len(label.shape) == 1
@@ -494,7 +494,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             # Compute the gradients w.r.t. all classes
             gradients = np.swapaxes(np.array(self._class_gradients([x_preprocessed])), 0, 1)
 
-        elif isinstance(label, (int, np.integer)):
+        elif isinstance(label, int):
             # Compute the gradients only w.r.t. the provided label
             grad_fn = self._class_gradients_idx[label]
             if grad_fn is not None:

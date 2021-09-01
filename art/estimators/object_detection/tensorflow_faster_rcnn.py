@@ -448,7 +448,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
                 d_sample = dict()
 
                 d_sample["boxes"] = batch_results["detection_boxes"][i]
-                d_sample["labels"] = batch_results["detection_classes"][i].astype(np.int32)
+                d_sample["labels"] = batch_results["detection_classes"][i].astype(int)
 
                 if standardise_output:
                     from art.estimators.object_detection.utils import convert_tf_to_pt

@@ -161,7 +161,7 @@ class DetectorClassifier(ClassifierNeuralNetwork):
         """
         if not (
             (label is None)
-            or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
+            or (isinstance(label, int) and label in range(self.nb_classes))
             or (
                 isinstance(label, np.ndarray)
                 and len(label.shape) == 1
@@ -175,7 +175,7 @@ class DetectorClassifier(ClassifierNeuralNetwork):
         if label is None:
             combined_grads = self._compute_combined_grads(x, label=None)
 
-        elif isinstance(label, (int, np.int)):
+        elif isinstance(label, int):
             if label < self.nb_classes - 1:
                 # Compute and return from the classifier gradients
                 combined_grads = self.classifier.class_gradient(x=x, label=label, training_mode=training_mode, **kwargs)

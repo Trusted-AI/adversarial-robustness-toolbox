@@ -368,7 +368,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
 
         # Run prediction with batch processing
         results = []
-        result_output_sizes = np.zeros(x_preprocessed.shape[0], dtype=np.int)
+        result_output_sizes = np.zeros(x_preprocessed.shape[0], dtype=int)
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
 
         for m in range(num_batch):

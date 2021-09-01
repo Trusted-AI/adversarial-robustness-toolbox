@@ -218,7 +218,7 @@ def clever(
             target_classes = np.argsort(y_pred)[0][:-1]
         else:
             target_classes = [i for i in range(classifier.nb_classes) if i != pred_class]
-    elif isinstance(target, (int, np.integer)):
+    elif isinstance(target, int):
         target_classes = [target]
     else:
         # Assume it's iterable

@@ -142,7 +142,7 @@ class PixelDefend(Preprocessor):
 
     def _check_params(self) -> None:
 
-        if not isinstance(self.eps, (int, np.int)) or self.eps < 0 or self.eps > 255:
+        if not isinstance(self.eps, int) or self.eps < 0 or self.eps > 255:
             raise ValueError("The defense parameter must be between 0 and 255.")
 
         from art.estimators.classification.classifier import ClassifierMixin

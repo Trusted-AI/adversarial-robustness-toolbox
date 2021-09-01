@@ -218,10 +218,10 @@ class DeepFool(EvasionAttack):
         return x_adv
 
     def _check_params(self) -> None:
-        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter <= 0:
+        if not isinstance(self.max_iter, int) or self.max_iter <= 0:
             raise ValueError("The number of iterations must be a positive integer.")
 
-        if not isinstance(self.nb_grads, (int, np.int)) or self.nb_grads <= 0:
+        if not isinstance(self.nb_grads, int) or self.nb_grads <= 0:
             raise ValueError("The number of class gradients to compute must be a positive integer.")
 
         if self.epsilon < 0:

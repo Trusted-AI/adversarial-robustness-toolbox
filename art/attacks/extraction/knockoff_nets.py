@@ -398,16 +398,16 @@ class KnockoffNets(ExtractionAttack):
         return np.mean(reward)
 
     def _check_params(self) -> None:
-        if not isinstance(self.batch_size_fit, (int, np.int)) or self.batch_size_fit <= 0:
+        if not isinstance(self.batch_size_fit, int) or self.batch_size_fit <= 0:
             raise ValueError("The size of batches for fitting the thieved classifier must be a positive integer.")
 
-        if not isinstance(self.batch_size_query, (int, np.int)) or self.batch_size_query <= 0:
+        if not isinstance(self.batch_size_query, int) or self.batch_size_query <= 0:
             raise ValueError("The size of batches for querying the victim classifier must be a positive integer.")
 
-        if not isinstance(self.nb_epochs, (int, np.int)) or self.nb_epochs <= 0:
+        if not isinstance(self.nb_epochs, int) or self.nb_epochs <= 0:
             raise ValueError("The number of epochs must be a positive integer.")
 
-        if not isinstance(self.nb_stolen, (int, np.int)) or self.nb_stolen <= 0:
+        if not isinstance(self.nb_stolen, int) or self.nb_stolen <= 0:
             raise ValueError("The number of queries submitted to the victim classifier must be a positive integer.")
 
         if self.sampling_strategy not in ["random", "adaptive"]:
