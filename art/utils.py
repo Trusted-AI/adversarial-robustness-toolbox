@@ -111,13 +111,10 @@ if TYPE_CHECKING:
         KerasClassifier,
         MXClassifier,
         PyTorchClassifier,
-        PyTorchObjectDetector,
-        PyTorchFasterRCNN,
         ScikitlearnLogisticRegression,
         ScikitlearnSVC,
         TensorFlowClassifier,
         TensorFlowV2Classifier,
-        TensorFlowFasterRCNN,
     ]
 
     CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE = Union[  # pylint: disable=C0103
