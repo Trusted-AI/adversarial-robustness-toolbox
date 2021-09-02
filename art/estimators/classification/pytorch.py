@@ -612,12 +612,15 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                     retain_graph=True,
                 )
 
+            grads = np.swapaxes(np.array(grads_list), 0, 1)
+
         elif isinstance(label, int):
             torch.autograd.backward(
                 preds[:, label],
                 torch.tensor([1.0] * len(preds[:, 0])).to(self._device),
                 retain_graph=True,
             )
+            grads = np.swapaxes(np.array(grads_list), 0, 1)
         else:
             unique_label = list(np.unique(label))
             for i in unique_label:
@@ -632,8 +635,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             grads = grads[np.arange(len(grads)), lst]
 
             grads = grads[None, ...]
+            grads = np.swapaxes(np.array(grads), 0, 1)
 
-        grads = np.swapaxes(np.array(grads), 0, 1)
         if not self.all_framework_preprocessing:
             grads = self._apply_preprocessing_gradient(x, grads)
 

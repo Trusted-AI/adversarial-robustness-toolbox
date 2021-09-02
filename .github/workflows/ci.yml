@@ -78,17 +78,26 @@ jobs:
             scikit-learn: 0.24.2
             python: 3.8
           - name: numpy 1.19.5 (Python 3.8)
-            framework: numpy
             numpy: 1.19.5
+            framework: tensorflow
             python: 3.8
+            tensorflow: 2.5.0
+            tf_version: v2
+            keras: 2.4.3
           - name: numpy 1.20.3 (Python 3.8)
-            framework: numpy
             numpy: 1.20.3
+            framework: tensorflow
             python: 3.8
+            tensorflow: 2.5.0
+            tf_version: v2
+            keras: 2.4.3
           - name: numpy 1.21.0 (Python 3.8)
-            framework: numpy
             numpy: 1.21.0
+            framework: tensorflow
             python: 3.8
+            tensorflow: 2.5.0
+            tf_version: v2
+            keras: 2.4.3
 
     name: ${{ matrix.name }}
     steps:
@@ -119,7 +128,7 @@ jobs:
           pip install scikit-learn==${{ matrix.scikit-learn }}
           pip list
       - name: Pre-install numpy
-        if: ${{ matrix.framework == 'numpy' }}
+        if: ${{ matrix.numpy }}
         run: |
           pip install numpy==${{ matrix.numpy }}
           pip list
