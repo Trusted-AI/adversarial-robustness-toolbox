@@ -340,12 +340,12 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
                 preds = self._model(x_preprocessed)
                 class_slices = [preds[:, i] for i in range(self.nb_classes)]
 
-            grads = []
+            grads_list = list()
             for slice_ in class_slices:
                 slice_.backward(retain_graph=True)
                 grad = x_preprocessed.grad.asnumpy()
-                grads.append(grad)
-            grads = np.swapaxes(np.array(grads), 0, 1)
+                grads_list.append(grad)
+            grads = np.swapaxes(np.array(grads_list), 0, 1)
         elif isinstance(label, int):
             with mx.autograd.record(train_mode=training_mode):
                 preds = self._model(x_preprocessed)
@@ -360,13 +360,13 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
                 preds = self._model(x_preprocessed)
                 class_slices = [preds[:, i] for i in unique_labels]
 
-            grads = []
+            grads_list = list()
             for slice_ in class_slices:
                 slice_.backward(retain_graph=True)
                 grad = x_preprocessed.grad.asnumpy()
-                grads.append(grad)
+                grads_list.append(grad)
 
-            grads = np.swapaxes(np.array(grads), 0, 1)
+            grads = np.swapaxes(np.array(grads_list), 0, 1)
             lst = [unique_labels.index(i) for i in label]
             grads = grads[np.arange(len(grads)), lst]
             grads = np.expand_dims(grads, axis=1)

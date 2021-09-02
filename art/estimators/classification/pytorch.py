@@ -587,11 +587,11 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         preds = model_outputs[-1]
 
         # Compute the gradient
-        grads = []
+        grads_list = list()
 
         def save_grad():
             def hook(grad):
-                grads.append(grad.cpu().numpy().copy())
+                grads_list.append(grad.cpu().numpy().copy())
                 grad.data.zero_()
 
             return hook
@@ -627,7 +627,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                     retain_graph=True,
                 )
 
-            grads = np.swapaxes(np.array(grads), 0, 1)
+            grads = np.swapaxes(np.array(grads_list), 0, 1)
             lst = [unique_label.index(i) for i in label]
             grads = grads[np.arange(len(grads)), lst]
 
