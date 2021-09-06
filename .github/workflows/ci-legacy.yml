@@ -69,7 +69,7 @@ jobs:
           python -m pip install --upgrade pip setuptools wheel
           pip install tensorflow==2.4.1
           pip install keras==2.4.3
-          pip3 install -q -r requirements.txt
+          pip3 install -q -r requirements_test.txt
           pip list
       - name: Pre-install legacy
         if: ${{ matrix.framework == 'legacy' }}

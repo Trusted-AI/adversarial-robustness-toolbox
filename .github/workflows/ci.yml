@@ -79,25 +79,25 @@ jobs:
             python: 3.8
           - name: numpy 1.19.5 (Python 3.8)
             numpy: 1.19.5
-            framework: tensorflow
-            python: 3.8
-            tensorflow: 2.5.0
-            tf_version: v2
-            keras: 2.4.3
+            framework: pytorch
+            python: 3.7
+            torch: 1.8.1+cpu
+            torchvision: 0.9.1+cpu
+            torchaudio: 0.8.1
           - name: numpy 1.20.3 (Python 3.8)
             numpy: 1.20.3
-            framework: tensorflow
-            python: 3.8
-            tensorflow: 2.5.0
-            tf_version: v2
-            keras: 2.4.3
+            framework: pytorch
+            python: 3.7
+            torch: 1.8.1+cpu
+            torchvision: 0.9.1+cpu
+            torchaudio: 0.8.1
           - name: numpy 1.21.0 (Python 3.8)
             numpy: 1.21.0
-            framework: tensorflow
-            python: 3.8
-            tensorflow: 2.5.0
-            tf_version: v2
-            keras: 2.4.3
+            framework: pytorch
+            python: 3.7
+            torch: 1.8.1+cpu
+            torchvision: 0.9.1+cpu
+            torchaudio: 0.8.1
 
     name: ${{ matrix.name }}
     steps:
@@ -114,7 +114,7 @@ jobs:
           python -m pip install --upgrade pip setuptools wheel
           pip install tensorflow==2.4.1
           pip install keras==2.4.3
-          pip3 install -q -r requirements.txt
+          pip3 install -q -r requirements_test.txt
           pip list
       - name: Pre-install tensorflow
         if: ${{ matrix.framework == 'tensorflow' || matrix.framework == 'keras' || matrix.framework == 'kerastf' || matrix.framework == 'tensorflow2v1' }}
@@ -131,6 +131,9 @@ jobs:
         if: ${{ matrix.numpy }}
         run: |
           pip install numpy==${{ matrix.numpy }}
+          pip install torch==${{ matrix.torch }} -f https://download.pytorch.org/whl/torch_stable.html
+          pip install torchvision==${{ matrix.torchvision }} -f https://download.pytorch.org/whl/torch_stable.html
+          pip install torchaudio==${{ matrix.torchaudio }} -f https://download.pytorch.org/whl/torch_stable.html
           pip list
       - name: Pre-install torch
         if: ${{ matrix.framework == 'pytorch' }}
@@ -138,6 +141,7 @@ jobs:
           pip install torch==${{ matrix.torch }} -f https://download.pytorch.org/whl/torch_stable.html
           pip install torchvision==${{ matrix.torchvision }} -f https://download.pytorch.org/whl/torch_stable.html
           pip install torchaudio==${{ matrix.torchaudio }} -f https://download.pytorch.org/whl/torch_stable.html
+          pip list
       - name: Pre-install Lingvo ASR
         if: ${{ matrix.tensorflow == '2.1.0' }}
         run: |
