@@ -305,11 +305,11 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
 
         results = self._apply_preprocessing_gradient(x_in, results)
 
-        if x.dtype != np.object:
+        if x.dtype != object:
             results = np.array([i for i in results], dtype=x.dtype)  # pylint: disable=R1721
             assert results.shape == x.shape and results.dtype == x.dtype
         else:
-            results = np.array([np.squeeze(res) for res in results], dtype=np.object)
+            results = np.array([np.squeeze(res) for res in results], dtype=object)
 
         # Unfreeze batch norm layers again
         self.set_batchnorm(train=True)

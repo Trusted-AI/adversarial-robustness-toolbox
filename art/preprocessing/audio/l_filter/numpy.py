@@ -150,7 +150,7 @@ class LFilter(Preprocessor):
             # And store the result
             x_grad_list.append(grad_x_i)
 
-        if x.dtype == np.object:
+        if x.dtype == object:
             x_grad = np.empty(x.shape[0], dtype=object)
             x_grad[:] = list(x_grad_list)
 

@@ -382,7 +382,7 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
             targets = self._set_targets(x, y, classifier_mixin=False)
 
             # Start to compute adversarial examples
-            if x.dtype == np.object:
+            if x.dtype == object:
                 adv_x = x.copy()
             else:
                 adv_x = x.astype(ART_NUMPY_DTYPE)

@@ -179,7 +179,7 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
 
         input_is_tensor = isinstance(x, tf.Tensor)
 
-        if self.all_framework_preprocessing and not (not input_is_tensor and x.dtype == np.object):
+        if self.all_framework_preprocessing and not (not input_is_tensor and x.dtype == object):
             # Convert np arrays to torch tensors.
             if not input_is_tensor:
                 x = tf.convert_to_tensor(x)
@@ -249,7 +249,7 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
 
         input_is_tensor = isinstance(x, tf.Tensor)
 
-        if self.all_framework_preprocessing and not (not input_is_tensor and x.dtype == np.object):
+        if self.all_framework_preprocessing and not (not input_is_tensor and x.dtype == object):
             with tf.GradientTape() as tape:
                 # Convert np arrays to TensorFlow tensors.
                 x = tf.convert_to_tensor(x, dtype=config.ART_NUMPY_DTYPE)
