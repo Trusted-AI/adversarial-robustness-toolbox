@@ -551,7 +551,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         if not (
             (label is None)
-            or (isinstance(label, int) and label in range(self._nb_classes))
+            or (isinstance(label, (int, np.integer)) and label in range(self._nb_classes))
             or (
                 isinstance(label, np.ndarray)
                 and len(label.shape) == 1
@@ -614,7 +614,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
             grads = np.swapaxes(np.array(grads_list), 0, 1)
 
-        elif isinstance(label, int):
+        elif isinstance(label, (int, np.integer)):
             torch.autograd.backward(
                 preds[:, label],
                 torch.tensor([1.0] * len(preds[:, 0])).to(self._device),
