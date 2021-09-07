@@ -241,6 +241,8 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
 
             hypos = self.task.inference_step(self.generator, self._models, batch)
 
+            decoded_output_batch = []
+
             for _, hypos_i in enumerate(hypos):
                 # Process top predictions
                 for _, hypo in enumerate(hypos_i[: self.esp_args.nbest]):
@@ -250,12 +252,15 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
                         extra_symbols_to_ignore=get_symbols_to_strip_from_output(self.generator),
                     )  # not removing bpe at this point
                     detok_hypo_str = self.bpe.decode(hypo_str)
-                    decoded_output.append(detok_hypo_str)
+                    decoded_output_batch.append(detok_hypo_str)
 
-        decoded_output_array = np.array(decoded_output)
-        decoded_output_copy = decoded_output_array.copy()
-        decoded_output_array[batch_idx] = decoded_output_copy  # revert decoded output to its original order
-        return decoded_output_array
+            decoded_output_array = np.array(decoded_output_batch)
+
+            decoded_output_copy = decoded_output_array.copy()
+            decoded_output_array[batch_idx] = decoded_output_copy  # revert decoded output to its original order
+            decoded_output.append(decoded_output_array)
+
+        return np.concatenate(decoded_output)
 
     def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """

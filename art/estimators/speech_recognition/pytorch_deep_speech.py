@@ -302,7 +302,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         self.decoder = load_decoder(labels=self._model.labels, cfg=lm_config)
 
         # Setup for AMP use
-        if self._use_amp:
+        if self._use_amp:  # pragma: no cover
             from apex import amp  # pylint: disable=E0611
 
             if self._optimizer is None:
@@ -472,7 +472,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
             loss = loss / inputs.size(0)
 
         # Compute gradients
-        if self._use_amp:
+        if self._use_amp:  # pragma: no cover
             from apex import amp  # pylint: disable=E0611
 
             with amp.scale_loss(loss, self._optimizer) as scaled_loss:
@@ -582,7 +582,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
                     loss = loss / inputs.size(0)
 
                 # Actual training
-                if self._use_amp:
+                if self._use_amp:  # pragma: no cover
                     from apex import amp  # pylint: disable=E0611
 
                     with amp.scale_loss(loss, self._optimizer) as scaled_loss:

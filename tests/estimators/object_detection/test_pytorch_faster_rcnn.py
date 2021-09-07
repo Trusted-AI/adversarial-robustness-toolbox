@@ -169,6 +169,137 @@ class TestPyTorchFasterRCNN(TestBase):
         )
         np.testing.assert_array_almost_equal(grads[1, 0, :, :], expected_gradients2, decimal=2)
 
+    def test_errors(self):
+        from art.estimators.object_detection.pytorch_faster_rcnn import PyTorchFasterRCNN
+
+        with self.assertRaises(ValueError):
+            PyTorchFasterRCNN(
+                clip_values=(1, 2),
+                attack_losses=("loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg"),
+            )
+
+        with self.assertRaises(ValueError):
+            PyTorchFasterRCNN(
+                clip_values=(-1, 1),
+                attack_losses=("loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg"),
+            )
+
+        with self.assertRaises(ValueError):
+            PyTorchFasterRCNN(
+                clip_values=(0, 1),
+                attack_losses=("loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg"),
+                preprocessing=(0, 1),
+            )
+
+        from art.defences.postprocessor.rounded import Rounded
+
+        post_def = Rounded()
+        with self.assertRaises(ValueError):
+            PyTorchFasterRCNN(
+                clip_values=(0, 1),
+                attack_losses=("loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg"),
+                postprocessing_defences=post_def,
+            )
+
+    def test_preprocessing_defences(self):
+        from art.estimators.object_detection.pytorch_faster_rcnn import PyTorchFasterRCNN
+        from art.defences.preprocessor.spatial_smoothing import SpatialSmoothing
+
+        pre_def = SpatialSmoothing()
+
+        frcnn = PyTorchFasterRCNN(
+            clip_values=(0, 1),
+            attack_losses=("loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg"),
+            preprocessing_defences=pre_def,
+        )
+
+        # Create labels
+        result = frcnn.predict(np.repeat(self.x_test_mnist[:2].astype(np.float32), repeats=3, axis=3))
+
+        y = [
+            {
+                "boxes": result[0]["boxes"],
+                "labels": result[0]["labels"],
+                "scores": np.ones_like(result[0]["labels"]),
+            },
+            {
+                "boxes": result[1]["boxes"],
+                "labels": result[1]["labels"],
+                "scores": np.ones_like(result[1]["labels"]),
+            },
+        ]
+
+        # Compute gradients
+        grads = frcnn.loss_gradient(np.repeat(self.x_test_mnist[:2].astype(np.float32), repeats=3, axis=3), y)
+
+        self.assertTrue(grads.shape == (2, 28, 28, 3))
+
+    def test_compute_losses(self):
+        from art.estimators.object_detection.pytorch_faster_rcnn import PyTorchFasterRCNN
+        from art.defences.preprocessor.spatial_smoothing import SpatialSmoothing
+
+        pre_def = SpatialSmoothing()
+
+        frcnn = PyTorchFasterRCNN(
+            clip_values=(0, 1),
+            attack_losses=("loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg"),
+            preprocessing_defences=pre_def,
+        )
+
+        # Create labels
+        result = frcnn.predict(np.repeat(self.x_test_mnist[:2].astype(np.float32), repeats=3, axis=3))
+
+        y = [
+            {
+                "boxes": result[0]["boxes"],
+                "labels": result[0]["labels"],
+                "scores": np.ones_like(result[0]["labels"]),
+            },
+            {
+                "boxes": result[1]["boxes"],
+                "labels": result[1]["labels"],
+                "scores": np.ones_like(result[1]["labels"]),
+            },
+        ]
+
+        # Compute losses
+        losses = frcnn.compute_losses(np.repeat(self.x_test_mnist[:2].astype(np.float32), repeats=3, axis=3), y)
+
+        self.assertTrue(len(losses) == 4)
+
+    def test_compute_loss(self):
+        from art.estimators.object_detection.pytorch_faster_rcnn import PyTorchFasterRCNN
+        from art.defences.preprocessor.spatial_smoothing import SpatialSmoothing
+
+        pre_def = SpatialSmoothing()
+
+        frcnn = PyTorchFasterRCNN(
+            clip_values=(0, 1),
+            attack_losses=("loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg"),
+            preprocessing_defences=pre_def,
+        )
+
+        # Create labels
+        result = frcnn.predict(np.repeat(self.x_test_mnist[:2].astype(np.float32), repeats=3, axis=3))
+
+        y = [
+            {
+                "boxes": result[0]["boxes"],
+                "labels": result[0]["labels"],
+                "scores": np.ones_like(result[0]["labels"]),
+            },
+            {
+                "boxes": result[1]["boxes"],
+                "labels": result[1]["labels"],
+                "scores": np.ones_like(result[1]["labels"]),
+            },
+        ]
+
+        # Compute loss
+        loss = frcnn.compute_loss(np.repeat(self.x_test_mnist[:2].astype(np.float32), repeats=3, axis=3), y)
+
+        self.assertAlmostEqual(float(loss), 0.6324392, delta=0.01)
+
 
 if __name__ == "__main__":
     unittest.main()
