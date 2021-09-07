@@ -95,6 +95,67 @@ def test_generate(art_warning):
         art_warning(e)
 
 
+@pytest.mark.skip_framework(
+    "tensorflow1", "tensorflow2", "tensorflow2v1", "keras", "non_dl_frameworks", "mxnet", "kerastf"
+)
+def test_check_params(art_warning, image_dl_estimator_for_attack):
+    try:
+        classifier = image_dl_estimator_for_attack(OverTheAirFlickeringPyTorch)
+
+        with pytest.raises(ValueError):
+            _ = OverTheAirFlickeringPyTorch(classifier, eps_step="test")
+        with pytest.raises(ValueError):
+            _ = OverTheAirFlickeringPyTorch(classifier, eps_step=-0.5)
+
+        with pytest.raises(ValueError):
+            _ = OverTheAirFlickeringPyTorch(classifier, max_iter="test")
+        with pytest.raises(ValueError):
+            _ = OverTheAirFlickeringPyTorch(classifier, max_iter=-5)
+
+        with pytest.raises(ValueError):
+            _ = OverTheAirFlickeringPyTorch(classifier, beta_0="test")
+        with pytest.raises(ValueError):
+            _ = OverTheAirFlickeringPyTorch(classifier, beta_0=-0.5)
+
+        with pytest.raises(ValueError):
+            _ = OverTheAirFlickeringPyTorch(classifier, beta_1="test")
+        with pytest.raises(ValueError):
+            _ = OverTheAirFlickeringPyTorch(classifier, beta_1=-0.5)
+
+        with pytest.raises(ValueError):
+            _ = OverTheAirFlickeringPyTorch(classifier, beta_2="test")
+        with pytest.raises(ValueError):
+            _ = OverTheAirFlickeringPyTorch(classifier, beta_2=-0.5)
+
+        with pytest.raises(ValueError):
+            _ = OverTheAirFlickeringPyTorch(classifier, loss_margin="test")
+        with pytest.raises(ValueError):
+            _ = OverTheAirFlickeringPyTorch(classifier, loss_margin=-0.5)
+
+        with pytest.raises(ValueError):
+            _ = OverTheAirFlickeringPyTorch(classifier, batch_size="test")
+        with pytest.raises(ValueError):
+            _ = OverTheAirFlickeringPyTorch(classifier, batch_size=-5)
+
+        with pytest.raises(ValueError):
+            _ = OverTheAirFlickeringPyTorch(classifier, start_frame_index="test")
+        with pytest.raises(ValueError):
+            _ = OverTheAirFlickeringPyTorch(classifier, start_frame_index=-0.5)
+
+        with pytest.raises(ValueError):
+            _ = OverTheAirFlickeringPyTorch(classifier, num_frames=5.0)
+        with pytest.raises(ValueError):
+            _ = OverTheAirFlickeringPyTorch(classifier, num_frames=-5)
+
+        with pytest.raises(ValueError):
+            _ = OverTheAirFlickeringPyTorch(classifier, round_samples="test")
+        with pytest.raises(ValueError):
+            _ = OverTheAirFlickeringPyTorch(classifier, round_samples=-5)
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
 @pytest.mark.framework_agnostic
 def test_classifier_type_check_fail(art_warning):
     try:

@@ -1052,13 +1052,13 @@ def load_dataset(
 
 def _extract(full_path: str, path: str) -> bool:
     archive: Union[zipfile.ZipFile, tarfile.TarFile]
-    if full_path.endswith("tar"):
+    if full_path.endswith("tar"):  # pragma: no cover
         if tarfile.is_tarfile(full_path):
             archive = tarfile.open(full_path, "r:")
-    elif full_path.endswith("tar.gz"):
+    elif full_path.endswith("tar.gz"):  # pragma: no cover
         if tarfile.is_tarfile(full_path):
             archive = tarfile.open(full_path, "r:gz")
-    elif full_path.endswith("zip"):
+    elif full_path.endswith("zip"):  # pragma: no cover
         if zipfile.is_zipfile(full_path):
             archive = zipfile.ZipFile(full_path)
         else:
@@ -1068,7 +1068,7 @@ def _extract(full_path: str, path: str) -> bool:
 
     try:
         archive.extractall(path)
-    except (tarfile.TarError, RuntimeError, KeyboardInterrupt):
+    except (tarfile.TarError, RuntimeError, KeyboardInterrupt):  # pragma: no cover
         if os.path.exists(path):
             if os.path.isfile(path):
                 os.remove(path)
@@ -1144,11 +1144,11 @@ def get_file(filename: str, url: str, path: Optional[str] = None, extract: bool 
                 else:
                     urlretrieve(url, full_path)
 
-            except HTTPError as exception:
+            except HTTPError as exception:  # pragma: no cover
                 raise Exception(error_msg.format(url, exception.code, exception.msg)) from HTTPError  # type: ignore
-            except URLError as exception:
+            except URLError as exception:  # pragma: no cover
                 raise Exception(error_msg.format(url, exception.errno, exception.reason)) from HTTPError
-        except (Exception, KeyboardInterrupt):
+        except (Exception, KeyboardInterrupt):  # pragma: no cover
             if os.path.exists(full_path):
                 os.remove(full_path)
             raise
@@ -1334,7 +1334,7 @@ def to_cuda(x: "torch.Tensor") -> "torch.Tensor":
     from torch.cuda import is_available
 
     use_cuda = is_available()
-    if use_cuda:
+    if use_cuda:  # pragma: no cover
         x = x.cuda()
     return x
 
@@ -1349,6 +1349,6 @@ def from_cuda(x: "torch.Tensor") -> "torch.Tensor":
     from torch.cuda import is_available
 
     use_cuda = is_available()
-    if use_cuda:
+    if use_cuda:  # pragma: no cover
         x = x.cpu()
     return x

@@ -251,6 +251,20 @@ class TestDefensiveDistillation(TestBase):
 
         self.assertIn("The input trained classifier do not produce probability outputs.", str(context.exception))
 
+    def test_check_params_pt(self):
+
+        ptc = get_image_classifier_pt(from_logits=True)
+
+        with self.assertRaises(ValueError):
+            _ = DefensiveDistillation(ptc, batch_size=1.0)
+        with self.assertRaises(ValueError):
+            _ = DefensiveDistillation(ptc, batch_size=-1)
+
+        with self.assertRaises(ValueError):
+            _ = DefensiveDistillation(ptc, nb_epochs=1.0)
+        with self.assertRaises(ValueError):
+            _ = DefensiveDistillation(ptc, nb_epochs=-1)
+
 
 if __name__ == "__main__":
     unittest.main()

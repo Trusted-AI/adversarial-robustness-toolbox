@@ -70,6 +70,26 @@ def test_label_only_boundary_distance_prob_calib(art_warning, get_default_mnist_
         art_warning(e)
 
 
+def test_label_only_boundary_distance_prob_calib_unsup(
+    art_warning, get_default_mnist_subset, image_dl_estimator_for_attack
+):
+    try:
+        classifier = image_dl_estimator_for_attack(LabelOnlyDecisionBoundary)
+        attack = LabelOnlyDecisionBoundary(classifier)
+        kwargs = {
+            "norm": 2,
+            "max_iter": 2,
+            "max_eval": 4,
+            "init_eval": 1,
+            "init_size": 1,
+            "verbose": False,
+        }
+        attack.calibrate_distance_threshold_unsupervised(50, 100, 1, **kwargs)
+        backend_check_membership_probabilities(attack, get_default_mnist_subset, attack_train_ratio)
+    except ARTTestException as e:
+        art_warning(e)
+
+
 def test_classifier_type_check_fail(art_warning):
     try:
         backend_test_classifier_type_check_fail(LabelOnlyDecisionBoundary, [BaseEstimator, ClassifierMixin])
@@ -128,3 +148,14 @@ def backend_check_membership_probabilities(attack, dataset, attack_train_ratio):
 def backend_check_probabilities(prob):
     assert prob.shape[1] == 2
     assert np.all(np.sum(prob, axis=1) == 1)
+
+
+def test_check_params(art_warning, image_dl_estimator_for_attack):
+    try:
+        classifier = image_dl_estimator_for_attack(LabelOnlyDecisionBoundary)
+
+        with pytest.raises(ValueError):
+            _ = LabelOnlyDecisionBoundary(classifier, distance_threshold_tau=-0.5)
+
+    except ARTTestException as e:
+        art_warning(e)

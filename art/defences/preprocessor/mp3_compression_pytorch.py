@@ -51,8 +51,8 @@ class Mp3CompressionPyTorch(PreprocessorPyTorch):
         channels_first: bool = False,
         apply_fit: bool = False,
         apply_predict: bool = True,
-        verbose: bool = False,
         device_type: str = "gpu",
+        verbose: bool = False,
     ):
         """
         Create an instance of MP3 compression.
@@ -61,8 +61,8 @@ class Mp3CompressionPyTorch(PreprocessorPyTorch):
         :param channels_first: Set channels first or last.
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
-        :param verbose: Show progress bars.
         :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
+        :param verbose: Show progress bars.
         """
         import torch  # lgtm [py/repeated-import]
         from torch.autograd import Function
