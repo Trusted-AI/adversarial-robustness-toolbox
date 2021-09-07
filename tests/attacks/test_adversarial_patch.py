@@ -150,6 +150,7 @@ class TestAdversarialPatch(TestBase):
             patch_shape=(28, 28, 1),
             verbose=False,
         )
+        print(attack_ap)
 
         target = np.zeros(self.x_train_mnist.shape[0])
         patch_adv, _ = attack_ap.generate(self.x_train_mnist, target, shuffle=False)
@@ -196,6 +197,12 @@ class TestAdversarialPatch(TestBase):
             dtype=np.float32,
         )
         np.testing.assert_almost_equal(x_out[15, :, 0], x_out_expexted, decimal=3)
+
+        mask = np.ones((1, 28, 28)).astype(bool)
+        attack_ap.apply_patch(x=self.x_train_mnist, scale=0.1, mask=mask)
+        attack_ap.reset_patch(initial_patch_value=None)
+        attack_ap.reset_patch(initial_patch_value=1.0)
+        attack_ap.reset_patch(initial_patch_value=patch_adv)
 
     @unittest.skipIf(
         int(keras.__version__.split(".")[0]) == 2 and int(keras.__version__.split(".")[1]) < 3,
@@ -288,9 +295,40 @@ class TestAdversarialPatch(TestBase):
         target = np.zeros(self.x_train_mnist.shape[0])
         patch_adv, _ = attack_ap.generate(x_train, target)
 
+        self.assertAlmostEqual(patch_adv[0, 8, 8], 0.5, delta=0.05)
+        self.assertAlmostEqual(patch_adv[0, 14, 14], 0.5, delta=0.05)
+        self.assertAlmostEqual(float(np.sum(patch_adv)), 371.88014772999827, delta=4.0)
+
+        mask = np.ones((1, 28, 28)).astype(bool)
+        attack_ap.apply_patch(x=x_train, scale=0.1, mask=mask)
+        attack_ap.reset_patch(initial_patch_value=None)
+        attack_ap.reset_patch(initial_patch_value=1.0)
+        attack_ap.reset_patch(initial_patch_value=patch_adv)
+
+        # Numpy
+        attack_ap = AdversarialPatchNumpy(
+            ptc,
+            rotation_max=0.5,
+            scale_min=0.4,
+            scale_max=0.41,
+            learning_rate=5.0,
+            batch_size=10,
+            max_iter=5,
+            verbose=False,
+        )
+
+        target = np.zeros(self.x_train_mnist.shape[0])
+        patch_adv, _ = attack_ap.generate(x_train, target)
+
         self.assertAlmostEqual(patch_adv[0, 8, 8], 0.6715167, delta=0.05)
         self.assertAlmostEqual(patch_adv[0, 14, 14], 0.6292826, delta=0.05)
-        self.assertAlmostEqual(float(np.sum(patch_adv)), 424.31439208984375, delta=1.0)
+        self.assertAlmostEqual(float(np.sum(patch_adv)), 424.31439208984375, delta=4.0)
+
+        mask = np.ones((1, 28, 28)).astype(bool)
+        attack_ap.apply_patch(x=x_train, scale=0.1, mask=mask)
+        attack_ap.reset_patch(initial_patch_value=None)
+        attack_ap.reset_patch(initial_patch_value=1.0)
+        attack_ap.reset_patch(initial_patch_value=patch_adv)
 
     def test_5_failure_feature_vectors(self):
         classifier = get_tabular_classifier_kr()
@@ -304,6 +342,43 @@ class TestAdversarialPatch(TestBase):
             "Unexpected input_shape in estimator detected. AdversarialPatch is expecting images or videos as input.",
             str(context.exception),
         )
+
+    def test_check_params(self):
+
+        ptc = get_image_classifier_pt(from_logits=True)
+
+        with self.assertRaises(ValueError):
+            _ = AdversarialPatch(ptc, rotation_max="1")
+        with self.assertRaises(ValueError):
+            _ = AdversarialPatch(ptc, rotation_max=-1)
+
+        with self.assertRaises(ValueError):
+            _ = AdversarialPatch(ptc, scale_min="1")
+        with self.assertRaises(ValueError):
+            _ = AdversarialPatch(ptc, scale_min=-1)
+
+        with self.assertRaises(ValueError):
+            _ = AdversarialPatch(ptc, scale_max=1)
+        with self.assertRaises(ValueError):
+            _ = AdversarialPatch(ptc, scale_max=2)
+
+        with self.assertRaises(ValueError):
+            _ = AdversarialPatch(ptc, learning_rate=1)
+        with self.assertRaises(ValueError):
+            _ = AdversarialPatch(ptc, learning_rate=-1.0)
+
+        with self.assertRaises(ValueError):
+            _ = AdversarialPatch(ptc, max_iter=1.0)
+        with self.assertRaises(ValueError):
+            _ = AdversarialPatch(ptc, max_iter=-1)
+
+        with self.assertRaises(ValueError):
+            _ = AdversarialPatch(ptc, batch_size=1.0)
+        with self.assertRaises(ValueError):
+            _ = AdversarialPatch(ptc, batch_size=-1)
+
+        with self.assertRaises(ValueError):
+            _ = AdversarialPatch(ptc, verbose="true")
 
     def test_1_classifier_type_check_fail(self):
         backend_test_classifier_type_check_fail(AdversarialPatch, [BaseEstimator, NeuralNetworkMixin, ClassifierMixin])

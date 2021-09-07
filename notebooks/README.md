@@ -54,9 +54,10 @@ demonstrates ART with TensorFlow v2 using tensorflow.keras without eager executi
 or [attack_feature_adversaries_tensorflow_v2.ipynb](attack_feature_adversaries_tensorflow_v2.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/attack_feature_adversaries_tensorflow_v2.ipynb)]
 show how to use ART to create feature adversaries ([Sabour et al., 2016](https://arxiv.org/abs/1511.05122)).
 
-[attack_adversarial_patch.ipynb](adversarial_patch/attack_adversarial_patch.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/attack_adversarial_patch.ipynb)]
+[attack_adversarial_patch.ipynb](adversarial_patch/attack_adversarial_patch.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/adversarial_patch/attack_adversarial_patch.ipynb)]
 shows how to use ART to create real-world adversarial patches that fool real-world object detection and classification 
 models.
+[attack_adversarial_patch_TensorFlowV2.ipynb](adversarial_patch/attack_adversarial_patch.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/adversarial_patch/attack_adversarial_patch_TensorFlowV2.ipynb)]  TensorFlow v2 specific attack implementation.
 
 <p align="center">
   <img src="../utils/data/images/adversarial_patch.png?raw=true" width="200" title="adversarial_patch">
