@@ -92,7 +92,6 @@ Supported Machine Learning Libraries
    modules/preprocessing/audio
    modules/preprocessing/expectation_over_transformation
    modules/preprocessing/standardisation_mean_std
-   modules/wrappers
    modules/data_generators
    modules/exceptions
    modules/utils
