@@ -47,7 +47,7 @@ logger = logging.getLogger(__name__)
 
 class XGBoostClassifier(ClassifierDecisionTree):
     """
-    Wrapper class for importing XGBoost models.
+    Class for importing XGBoost models.
     """
 
     estimator_params = ClassifierDecisionTree.estimator_params + [

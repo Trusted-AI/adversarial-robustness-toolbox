@@ -43,7 +43,7 @@ logger = logging.getLogger(__name__)
 
 class CatBoostARTClassifier(ClassifierDecisionTree):
     """
-    Wrapper class for importing CatBoost models.
+    Class for importing CatBoost models.
     """
 
     estimator_params = ClassifierDecisionTree.estimator_params + ["nb_features"]
