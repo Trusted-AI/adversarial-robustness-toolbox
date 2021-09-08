@@ -38,3 +38,4 @@ RUN pip install pytest-cov
 
 RUN git clone https://github.com/freewym/espresso
 RUN cd espresso && pip install --editable .
+RUN pip install sentencepiece
