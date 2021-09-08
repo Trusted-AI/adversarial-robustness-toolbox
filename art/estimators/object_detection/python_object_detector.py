@@ -308,9 +308,10 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
 
         if isinstance(x, np.ndarray):
             grads = np.stack(grad_list, axis=0)
+            grads = np.transpose(grads, (0, 2, 3, 1))
         else:
             grads = torch.stack(grad_list, dim=0)
-        grads = np.transpose(grads, (0, 2, 3, 1))
+            grads = grads.premute(0, 2, 3, 1)
 
         if self.clip_values is not None:
             grads = grads / self.clip_values[1]
