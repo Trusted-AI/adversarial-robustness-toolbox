@@ -111,7 +111,8 @@ setup(
             "pytest-cov",
             "codecov",
             "requests",
-        ]
+            "sortedcontainers",
+        ],
     },
     classifiers=[
         "Development Status :: 3 - Alpha",
