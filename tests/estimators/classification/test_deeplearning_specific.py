@@ -239,3 +239,18 @@ def test_loss_gradient_amp(
 
     except ARTTestException as e:
         art_warning(e)
+
+
+@pytest.mark.skip_framework("tensorflow2", "tensorflow2v1", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+def test_tensorflow_1_state(
+    art_warning,
+    image_dl_estimator,
+):
+    try:
+        classifier, _ = image_dl_estimator(from_logits=True)
+        state = classifier.__getstate__()
+        assert isinstance(state, dict)
+        classifier.__setstate__(state=state)
+
+    except ARTTestException as e:
+        art_warning(e)

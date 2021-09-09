@@ -46,7 +46,7 @@ logger = logging.getLogger(__name__)
 
 class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [py/missing-call-to-init]
     """
-    Wrapper class for importing MXNet Gluon models.
+    Class for importing MXNet Gluon models.
     """
 
     estimator_params = (
@@ -159,7 +159,9 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
         """
         return self._ctx  # type: ignore
 
-    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
+    def fit(
+        self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 20, **kwargs
+    ) -> None:  # pragma: no cover
         """
         Fit the classifier on the training set `(inputs, outputs)`.
 
@@ -214,7 +216,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
                 # Update parameters
                 self._optimizer.step(batch_size)
 
-    def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs) -> None:
+    def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs) -> None:  # pragma: no cover
         """
         Fit the classifier using the generator that yields batches as specified.
 

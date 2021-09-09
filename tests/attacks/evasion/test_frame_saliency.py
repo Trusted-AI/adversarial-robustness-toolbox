@@ -112,6 +112,34 @@ def test_iterative_saliency_refresh(art_warning, fix_get_mnist_subset, image_dl_
 
 
 @pytest.mark.framework_agnostic
+def test_check_params(art_warning, image_dl_estimator_for_attack):
+    try:
+        from art.attacks.evasion import FastGradientMethod
+
+        classifier = image_dl_estimator_for_attack(FrameSaliencyAttack, from_logits=True)
+
+        attacker = FastGradientMethod(estimator=classifier)
+
+        with pytest.raises(ValueError):
+            _ = FrameSaliencyAttack(classifier, attacker="attack")
+
+        with pytest.raises(ValueError):
+            _ = FrameSaliencyAttack(classifier, attacker=attacker, method="test")
+
+        with pytest.raises(ValueError):
+            _ = FrameSaliencyAttack(classifier, attacker=attacker, frame_index=0)
+
+        with pytest.raises(ValueError):
+            _ = FrameSaliencyAttack(classifier, attacker=attacker, batch_size=-1)
+
+        with pytest.raises(ValueError):
+            _ = FrameSaliencyAttack(classifier, attacker=attacker, verbose="true")
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.framework_agnostic
 def test_classifier_type_check_fail(art_warning):
     try:
         backend_test_classifier_type_check_fail(FastGradientMethod, [LossGradientsMixin, BaseEstimator])

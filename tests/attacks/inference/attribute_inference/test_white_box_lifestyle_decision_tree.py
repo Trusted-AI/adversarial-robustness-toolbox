@@ -111,6 +111,18 @@ def test_white_box_lifestyle_regression(art_warning, get_diabetes_dataset):
         assert np.sum(train_diff) / len(inferred_train) == pytest.approx(0.318, abs=0.03)
         assert np.sum(test_diff) / len(inferred_test) == pytest.approx(0.34, abs=0.03)
         # assert np.sum(train_diff) / len(inferred_train) < np.sum(test_diff) / len(inferred_test)
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+def test_check_params(art_warning, image_dl_estimator_for_attack):
+    try:
+        classifier = image_dl_estimator_for_attack(AttributeInferenceWhiteBoxLifestyleDecisionTree)
+
+        with pytest.raises(ValueError):
+            _ = AttributeInferenceWhiteBoxLifestyleDecisionTree(classifier, attack_feature=-0.5)
+
     except ARTTestException as e:
         art_warning(e)
 

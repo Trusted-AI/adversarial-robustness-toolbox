@@ -80,6 +80,7 @@ if TYPE_CHECKING:
     from art.estimators.classification.lightgbm import LightGBMClassifier
     from art.estimators.classification.mxnet import MXClassifier
     from art.estimators.classification.pytorch import PyTorchClassifier
+    from art.estimators.classification.query_efficient_bb import QueryEfficientGradientEstimationClassifier
     from art.estimators.classification.scikitlearn import (
         ScikitlearnAdaBoostClassifier,
         ScikitlearnBaggingClassifier,
@@ -96,6 +97,7 @@ if TYPE_CHECKING:
     from art.estimators.classification.tensorflow import TensorFlowClassifier, TensorFlowV2Classifier
     from art.estimators.classification.xgboost import XGBoostClassifier
     from art.estimators.object_detection.object_detector import ObjectDetector
+    from art.estimators.object_detection.python_object_detector import PyTorchObjectDetector
     from art.estimators.object_detection.pytorch_faster_rcnn import PyTorchFasterRCNN
     from art.estimators.object_detection.tensorflow_faster_rcnn import TensorFlowFasterRCNN
     from art.estimators.pytorch import PyTorchEstimator
@@ -115,6 +117,7 @@ if TYPE_CHECKING:
         ScikitlearnSVC,
         TensorFlowClassifier,
         TensorFlowV2Classifier,
+        QueryEfficientGradientEstimationClassifier,
     ]
 
     CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE = Union[  # pylint: disable=C0103
@@ -184,11 +187,13 @@ if TYPE_CHECKING:
         PyTorchClassifier,
         PyTorchDeepSpeech,
         PyTorchEstimator,
+        PyTorchObjectDetector,
         PyTorchFasterRCNN,
     ]
 
     OBJECT_DETECTOR_TYPE = Union[  # pylint: disable=C0103
         ObjectDetector,
+        PyTorchObjectDetector,
         PyTorchFasterRCNN,
         TensorFlowFasterRCNN,
     ]
@@ -756,7 +761,7 @@ def load_cifar10(
         "cifar-10-batches-py",
         extract=True,
         path=config.ART_DATA_PATH,
-        url="http://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz",
+        url="https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz",
     )
 
     num_train_samples = 50000
@@ -1086,13 +1091,13 @@ def load_dataset(
 
 def _extract(full_path: str, path: str) -> bool:
     archive: Union[zipfile.ZipFile, tarfile.TarFile]
-    if full_path.endswith("tar"):
+    if full_path.endswith("tar"):  # pragma: no cover
         if tarfile.is_tarfile(full_path):
             archive = tarfile.open(full_path, "r:")
-    elif full_path.endswith("tar.gz"):
+    elif full_path.endswith("tar.gz"):  # pragma: no cover
         if tarfile.is_tarfile(full_path):
             archive = tarfile.open(full_path, "r:gz")
-    elif full_path.endswith("zip"):
+    elif full_path.endswith("zip"):  # pragma: no cover
         if zipfile.is_zipfile(full_path):
             archive = zipfile.ZipFile(full_path)
         else:
@@ -1102,7 +1107,7 @@ def _extract(full_path: str, path: str) -> bool:
 
     try:
         archive.extractall(path)
-    except (tarfile.TarError, RuntimeError, KeyboardInterrupt):
+    except (tarfile.TarError, RuntimeError, KeyboardInterrupt):  # pragma: no cover
         if os.path.exists(path):
             if os.path.isfile(path):
                 os.remove(path)
@@ -1178,11 +1183,11 @@ def get_file(filename: str, url: str, path: Optional[str] = None, extract: bool 
                 else:
                     urlretrieve(url, full_path)
 
-            except HTTPError as exception:
+            except HTTPError as exception:  # pragma: no cover
                 raise Exception(error_msg.format(url, exception.code, exception.msg)) from HTTPError  # type: ignore
-            except URLError as exception:
+            except URLError as exception:  # pragma: no cover
                 raise Exception(error_msg.format(url, exception.errno, exception.reason)) from HTTPError
-        except (Exception, KeyboardInterrupt):
+        except (Exception, KeyboardInterrupt):  # pragma: no cover
             if os.path.exists(full_path):
                 os.remove(full_path)
             raise
@@ -1368,7 +1373,7 @@ def to_cuda(x: "torch.Tensor") -> "torch.Tensor":
     from torch.cuda import is_available
 
     use_cuda = is_available()
-    if use_cuda:
+    if use_cuda:  # pragma: no cover
         x = x.cuda()
     return x
 
@@ -1383,6 +1388,6 @@ def from_cuda(x: "torch.Tensor") -> "torch.Tensor":
     from torch.cuda import is_available
 
     use_cuda = is_available()
-    if use_cuda:
+    if use_cuda:  # pragma: no cover
         x = x.cpu()
     return x

@@ -81,12 +81,6 @@ def pytest_addoption(parser):
         help="ART tests allow you to specify which framework to use. The default framework used is `tensorflow`. "
         "Other options available are {0}".format(art_supported_frameworks),
     )
-    parser.addoption(
-        "--skip_travis",
-        action="store",
-        default=False,
-        help="Whether tests annotated with the decorator skip_travis should be skipped or not",
-    )
 
 
 @pytest.fixture
@@ -828,17 +822,6 @@ def skip_by_framework(request, framework):
             pytest.skip("skipped on this platform: {}".format(framework))
 
 
-@pytest.fixture(autouse=True)
-def skip_travis(request):
-    """
-    Skips a test marked with this decorator if the command line argument skip_travis is set to true
-    :param request:
-    :return:
-    """
-    if request.node.get_closest_marker("skip_travis") and request.config.getoption("--skip_travis"):
-        pytest.skip("skipped due to skip_travis being set to {}".format(skip_travis))
-
-
 @pytest.fixture
 def make_customer_record():
     def _make_customer_record(name):
@@ -874,3 +857,37 @@ def skip_by_module(request):
 
                 if not module_found:
                     pytest.skip(f"Test skipped because package {module} not available.")
+
+
+@pytest.fixture()
+def fix_get_rcnn():
+
+    from art.estimators.estimator import BaseEstimator, LossGradientsMixin
+    from art.estimators.object_detection.object_detector import ObjectDetectorMixin
+
+    class DummyObjectDetector(ObjectDetectorMixin, LossGradientsMixin, BaseEstimator):
+        def __init__(self):
+            self._clip_values = (0, 1)
+            self.channels_first = False
+            self._input_shape = None
+
+        def loss_gradient(self, x: np.ndarray, y: None, **kwargs):
+            return np.ones_like(x)
+
+        def fit(self, x: np.ndarray, y, batch_size: int = 128, nb_epochs: int = 20, **kwargs):
+            raise NotImplementedError
+
+        def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs):
+            dict_i = {"boxes": np.array([[0.1, 0.2, 0.3, 0.4]]), "labels": np.array([[2]]), "scores": np.array([[0.8]])}
+            return [dict_i] * x.shape[0]
+
+        @property
+        def native_label_is_pytorch_format(self):
+            return True
+
+        @property
+        def input_shape(self):
+            return self._input_shape
+
+    frcnn = DummyObjectDetector()
+    return frcnn

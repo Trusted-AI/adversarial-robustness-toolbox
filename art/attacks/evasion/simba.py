@@ -295,8 +295,8 @@ class SimBA(EvasionAttack):
         if self.attack != "px" and self.attack != "dct":
             raise ValueError("The attack type has to be `px` or `dct`.")
 
-        if not isinstance(self.targeted, int) or (self.targeted != 0 and self.targeted != 1):
-            raise ValueError("`targeted` has to be a logical value.")
+        if not isinstance(self.targeted, bool):
+            raise ValueError("`targeted` has to be a Boolean value.")
 
     def _block_order(self, img_size, channels, initial_size=2, stride=1):
         """
@@ -394,6 +394,8 @@ class SimBA(EvasionAttack):
             order = np.zeros((channels, image_size, image_size))
             for i in range(channels):
                 order[i, :, :] = 3 * order_2d + i
+        elif channels == 1:
+            order = np.expand_dims(order, axis=0)
 
         if self.estimator.channels_first:
             return order.reshape(1, -1).squeeze().argsort()

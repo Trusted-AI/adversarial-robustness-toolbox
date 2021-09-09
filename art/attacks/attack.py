@@ -121,7 +121,7 @@ class Attack(abc.ABC, metaclass=InputFilter):
         self._estimator = estimator
         self.tensor_board = tensor_board
 
-        if tensor_board:
+        if tensor_board:  # pragma: no cover
             from tensorboardX import SummaryWriter
 
             if isinstance(tensor_board, str):

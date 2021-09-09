@@ -155,6 +155,8 @@ class BaseEstimator(ABC):
             if key in self.estimator_params:
                 if hasattr(BaseEstimator, key) and isinstance(getattr(BaseEstimator, key), property):
                     setattr(self, "_" + key, value)
+                elif hasattr(self, "_" + key):
+                    setattr(self, "_" + key, value)
                 else:
                     if key == "preprocessing":
                         setattr(self, key, self._set_preprocessing(value))

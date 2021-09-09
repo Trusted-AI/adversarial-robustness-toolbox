@@ -621,12 +621,12 @@ Added by Andrew Nelson 2014
 #   OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 #   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-__all__ = ["differential_evolution"]
+__all__ = ["differential_evolution"]  # pragma: no cover
 
-_MACHEPS = np.finfo(np.float64).eps
+_MACHEPS = np.finfo(np.float64).eps  # pragma: no cover
 
 
-def differential_evolution(
+def differential_evolution(  # pragma: no cover
     func,
     bounds,
     args=(),
@@ -838,7 +838,7 @@ def differential_evolution(
     return solver.solve()
 
 
-class DifferentialEvolutionSolver:
+class DifferentialEvolutionSolver:  # pragma: no cover
     """This class implements the differential evolution solver
     Parameters
     ----------

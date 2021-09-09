@@ -46,6 +46,10 @@ class TestCatBoostClassifier(TestBase):
         y_expected = np.asarray([[0.00106307, 0.00118028, 0.99775665]])
         np.testing.assert_array_almost_equal(y_predicted, y_expected, decimal=4)
 
+    def test_save(self):
+        self.classifier.save(filename="catboost_1")
+        self.classifier.save(filename="catboost_2", path=".")
+
 
 if __name__ == "__main__":
     unittest.main()

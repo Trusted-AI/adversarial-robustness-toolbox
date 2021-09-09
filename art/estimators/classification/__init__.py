@@ -16,6 +16,7 @@ from art.estimators.classification.keras import KerasClassifier
 from art.estimators.classification.lightgbm import LightGBMClassifier
 from art.estimators.classification.mxnet import MXClassifier
 from art.estimators.classification.pytorch import PyTorchClassifier
+from art.estimators.classification.query_efficient_bb import QueryEfficientGradientEstimationClassifier
 from art.estimators.classification.scikitlearn import SklearnClassifier
 from art.estimators.classification.tensorflow import (
     TFClassifier,
