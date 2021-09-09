@@ -760,7 +760,7 @@ def load_cifar10(
         "cifar-10-batches-py",
         extract=True,
         path=config.ART_DATA_PATH,
-        url="http://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz",
+        url="https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz",
     )
 
     num_train_samples = 50000
