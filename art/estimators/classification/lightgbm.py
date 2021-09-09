@@ -45,7 +45,7 @@ logger = logging.getLogger(__name__)
 
 class LightGBMClassifier(ClassifierDecisionTree):
     """
-    Wrapper class for importing LightGBM models.
+    Class for importing LightGBM models.
     """
 
     def __init__(
