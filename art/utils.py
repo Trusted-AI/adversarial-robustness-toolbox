@@ -97,6 +97,7 @@ if TYPE_CHECKING:
     from art.estimators.classification.tensorflow import TensorFlowClassifier, TensorFlowV2Classifier
     from art.estimators.classification.xgboost import XGBoostClassifier
     from art.estimators.object_detection.object_detector import ObjectDetector
+    from art.estimators.object_detection.python_object_detector import PyTorchObjectDetector
     from art.estimators.object_detection.pytorch_faster_rcnn import PyTorchFasterRCNN
     from art.estimators.object_detection.tensorflow_faster_rcnn import TensorFlowFasterRCNN
     from art.estimators.pytorch import PyTorchEstimator
@@ -185,11 +186,13 @@ if TYPE_CHECKING:
         PyTorchClassifier,
         PyTorchDeepSpeech,
         PyTorchEstimator,
+        PyTorchObjectDetector,
         PyTorchFasterRCNN,
     ]
 
     OBJECT_DETECTOR_TYPE = Union[  # pylint: disable=C0103
         ObjectDetector,
+        PyTorchObjectDetector,
         PyTorchFasterRCNN,
         TensorFlowFasterRCNN,
     ]
@@ -757,7 +760,7 @@ def load_cifar10(
         "cifar-10-batches-py",
         extract=True,
         path=config.ART_DATA_PATH,
-        url="http://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz",
+        url="https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz",
     )
 
     num_train_samples = 50000
