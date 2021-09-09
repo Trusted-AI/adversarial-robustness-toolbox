@@ -347,6 +347,8 @@ class TestAdversarialPatch(TestBase):
 
         ptc = get_image_classifier_pt(from_logits=True)
 
+        krc = get_image_classifier_kr(from_logits=True)
+
         with self.assertRaises(ValueError):
             _ = AdversarialPatch(ptc, rotation_max="1")
         with self.assertRaises(ValueError):
@@ -355,17 +357,17 @@ class TestAdversarialPatch(TestBase):
         with self.assertRaises(ValueError):
             _ = AdversarialPatch(ptc, scale_min="1")
         with self.assertRaises(ValueError):
-            _ = AdversarialPatch(ptc, scale_min=-1)
+            _ = AdversarialPatch(ptc, scale_min=-1.0)
 
         with self.assertRaises(ValueError):
             _ = AdversarialPatch(ptc, scale_max=1)
         with self.assertRaises(ValueError):
-            _ = AdversarialPatch(ptc, scale_max=2)
+            _ = AdversarialPatch(ptc, scale_max=2.0)
 
         with self.assertRaises(ValueError):
             _ = AdversarialPatch(ptc, learning_rate=1)
         with self.assertRaises(ValueError):
-            _ = AdversarialPatch(ptc, learning_rate=-1.0)
+            _ = AdversarialPatch(krc, learning_rate=-1.0)
 
         with self.assertRaises(ValueError):
             _ = AdversarialPatch(ptc, max_iter=1.0)

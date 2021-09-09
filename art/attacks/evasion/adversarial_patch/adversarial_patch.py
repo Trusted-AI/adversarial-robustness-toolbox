@@ -222,6 +222,7 @@ class AdversarialPatch(EvasionAttack):
 
         if not isinstance(self._attack.learning_rate, float):
             raise ValueError("The learning rate must be of type float.")
+        print("self._attack.learning_rate", self._attack.learning_rate)
         if not self._attack.learning_rate > 0.0:
             raise ValueError("The learning rate must be greater than 0.0.")
 

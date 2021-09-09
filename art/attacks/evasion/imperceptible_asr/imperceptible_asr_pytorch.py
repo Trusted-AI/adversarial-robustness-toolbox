@@ -206,7 +206,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             )
 
         # Setup for AMP use
-        if self._use_amp:
+        if self._use_amp:  # pragma: no cover
             from apex import amp  # pylint: disable=E0611
 
             if self.estimator.device.type == "cpu":
@@ -391,7 +391,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             )
 
             # Actual training
-            if self._use_amp:
+            if self._use_amp:  # pragma: no cover
                 from apex import amp  # pylint: disable=E0611
 
                 with amp.scale_loss(loss, self.optimizer_1) as scaled_loss:
@@ -549,7 +549,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             loss = torch.mean(loss)
 
             # Actual training
-            if self._use_amp:
+            if self._use_amp:  # pragma: no cover
                 from apex import amp  # pylint: disable=E0611
 
                 with amp.scale_loss(loss, self.optimizer_2) as scaled_loss:
