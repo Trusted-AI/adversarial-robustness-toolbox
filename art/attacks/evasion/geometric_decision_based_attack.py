@@ -440,8 +440,8 @@ class GeoDA(EvasionAttack):
         if not isinstance(self.sigma, float) or self.sigma <= 0:
             raise ValueError("The sigma has to be a positive float.")
 
-        if not isinstance(self.targeted, bool):
-            raise ValueError("The argument `targeted` has to be of type bool.")
+        # if not isinstance(self.targeted, bool):
+        #     raise ValueError("The argument `targeted` has to be of type bool.")
 
         if not isinstance(self.verbose, bool):
             raise ValueError("The argument `verbose` has to be of type bool.")

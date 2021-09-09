@@ -188,22 +188,6 @@ class LowProFool(EvasionAttack):
 
         return clf_loss_grad + norm_grad
 
-    def __loss_function(self, y_probas: np.ndarray, perturbations: np.ndarray, targets: np.ndarray) -> np.ndarray:
-        """
-        Complete loss function to optimize, where the adversary loss is given by the sum of logistic loss of
-        classification and weighted Lp-norm of the perturbation vectors. Do keep in mind that not all classifiers
-        provide a well defined loss estimation function - therefore it is logistic loss, which is used instead.
-
-        :param y_probas: Class-wise prediction probabilities.
-        :param perturbations: Perturbations of samples towards being adversarial.
-        :param targets: The target labels for the attack.
-        :return: Aggregate loss score.
-        """
-        clf_loss_part = log_loss(y_probas, targets)
-        norm_part = self.__weighted_lp_norm(perturbations)
-
-        return clf_loss_part + self.lambd * norm_part
-
     def __apply_clipping(self, samples: np.ndarray, perturbations: np.ndarray) -> np.ndarray:
         """
         Function for clipping perturbation vectors to forbid the adversary vectors to go beyond the allowed ranges of
@@ -237,7 +221,7 @@ class LowProFool(EvasionAttack):
             absolutes = np.abs(np.array(pearson_correlations))
             self.importance_vec = absolutes / np.power(np.sum(absolutes ** 2), 0.5)
 
-        elif callable(self.importance):
+        elif callable(self.importance):  # pragma: no cover
             # Apply a custom function to call on the provided data.
             try:
                 self.importance_vec = np.array(self.importance(x, y))

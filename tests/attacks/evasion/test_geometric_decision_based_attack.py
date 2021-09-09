@@ -187,6 +187,11 @@ def test_check_params(art_warning, image_dl_estimator_for_attack):
             _ = GeoDA(classifier, max_iter=-1)
 
         with pytest.raises(ValueError):
+            _ = GeoDA(classifier, bin_search_tol="1")
+        with pytest.raises(ValueError):
+            _ = GeoDA(classifier, bin_search_tol=-1.0)
+
+        with pytest.raises(ValueError):
             _ = GeoDA(classifier, lambda_param=1)
         with pytest.raises(ValueError):
             _ = GeoDA(classifier, lambda_param=-1.0)
@@ -196,8 +201,11 @@ def test_check_params(art_warning, image_dl_estimator_for_attack):
         with pytest.raises(ValueError):
             _ = GeoDA(classifier, sigma=-1.0)
 
-        with pytest.raises(ValueError):
-            _ = GeoDA(classifier, verbose="true")
+        # with pytest.raises(ValueError):
+        #     _ = GeoDA(classifier, targeted="true")
+        #
+        # with pytest.raises(ValueError):
+        #     _ = GeoDA(classifier, verbose="true")
 
     except ARTTestException as e:
         art_warning(e)

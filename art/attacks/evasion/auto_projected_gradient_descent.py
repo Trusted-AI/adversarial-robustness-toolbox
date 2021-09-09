@@ -587,8 +587,8 @@ class AutoProjectedGradientDescent(EvasionAttack):
         if not isinstance(self.batch_size, int) or self.batch_size <= 0:
             raise ValueError("The argument batch_size has to be of type int and larger than zero.")
 
-        if self.loss_type not in self._predefined_losses:
-            raise ValueError("The argument loss_type has to be either {}.".format(self._predefined_losses))
+        # if self.loss_type not in self._predefined_losses:
+        #     raise ValueError("The argument loss_type has to be either {}.".format(self._predefined_losses))
 
         if not isinstance(self.verbose, bool):
             raise ValueError("The argument `verbose` has to be of type bool.")

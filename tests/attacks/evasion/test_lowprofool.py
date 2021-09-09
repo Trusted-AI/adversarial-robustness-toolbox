@@ -162,6 +162,13 @@ def test_general_iris_lr(iris_dataset):
     )
     assert success_rate > expected
 
+    with pytest.raises(ValueError):
+        _ = lpf_slr.generate(x=sample, y=None)
+    with pytest.raises(ValueError):
+        _ = lpf_slr.generate(x=sample, y=np.ones((sample.shape[0], 11)))
+    with pytest.raises(ValueError):
+        _ = lpf_slr.generate(x=np.ones((sample.shape[0], 11)), y=target)
+
 
 def test_general_wines_lr(wine_dataset):
     """

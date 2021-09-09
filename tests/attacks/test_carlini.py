@@ -36,7 +36,9 @@ from art.utils import random_targets
 from tests.utils import TestBase, master_seed
 from tests.utils import get_image_classifier_tf
 
-# from test.utils import get_image_classifier_kr, get_image_classifier_pt
+from tests.utils import get_image_classifier_pt
+
+# from test.utils import get_image_classifier_kr
 # from tests.utils import get_tabular_classifier_tf, get_tabular_classifier_kr, get_tabular_classifier_pt
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 
@@ -342,6 +344,35 @@ class TestCarlini(TestBase):
     #         # Check that x_test has not been modified by attack and classifier
     #         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_iris))), 0.0, delta=0.00001)
 
+    def test_check_params(self):
+
+        ptc = get_image_classifier_pt(from_logits=True)
+
+        with self.assertRaises(ValueError):
+            _ = CarliniL0Method(ptc, binary_search_steps="1.0")
+        with self.assertRaises(ValueError):
+            _ = CarliniL0Method(ptc, binary_search_steps=-1)
+
+        with self.assertRaises(ValueError):
+            _ = CarliniL0Method(ptc, max_iter="1.0")
+        with self.assertRaises(ValueError):
+            _ = CarliniL0Method(ptc, max_iter=-1)
+
+        with self.assertRaises(ValueError):
+            _ = CarliniL0Method(ptc, max_halving="1.0")
+        with self.assertRaises(ValueError):
+            _ = CarliniL0Method(ptc, max_halving=-1)
+
+        with self.assertRaises(ValueError):
+            _ = CarliniL0Method(ptc, max_doubling="1.0")
+        with self.assertRaises(ValueError):
+            _ = CarliniL0Method(ptc, max_doubling=-1)
+
+        with self.assertRaises(ValueError):
+            _ = CarliniL0Method(ptc, batch_size="1.0")
+        with self.assertRaises(ValueError):
+            _ = CarliniL0Method(ptc, batch_size=-1)
+
     """
     A unittest class for testing the Carlini LInf attack.
     """
@@ -599,6 +630,33 @@ class TestCarlini(TestBase):
     #
     #         # Check that x_test has not been modified by attack and classifier
     #         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_iris))), 0.0, delta=0.00001)
+
+    def test_check_params(self):
+
+        ptc = get_image_classifier_pt(from_logits=True)
+
+        with self.assertRaises(ValueError):
+            _ = CarliniLInfMethod(ptc, eps=-1)
+
+        with self.assertRaises(ValueError):
+            _ = CarliniLInfMethod(ptc, max_iter="1.0")
+        with self.assertRaises(ValueError):
+            _ = CarliniLInfMethod(ptc, max_iter=-1)
+
+        with self.assertRaises(ValueError):
+            _ = CarliniLInfMethod(ptc, max_halving="1.0")
+        with self.assertRaises(ValueError):
+            _ = CarliniLInfMethod(ptc, max_halving=-1)
+
+        with self.assertRaises(ValueError):
+            _ = CarliniLInfMethod(ptc, max_doubling="1.0")
+        with self.assertRaises(ValueError):
+            _ = CarliniLInfMethod(ptc, max_doubling=-1)
+
+        with self.assertRaises(ValueError):
+            _ = CarliniLInfMethod(ptc, batch_size="1.0")
+        with self.assertRaises(ValueError):
+            _ = CarliniLInfMethod(ptc, batch_size=-1)
 
     """
     A unittest class for testing the Carlini L0 attack.
@@ -870,6 +928,35 @@ class TestCarlini(TestBase):
     #
     #         # Check that x_test has not been modified by attack and classifier
     #         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_iris))), 0.0, delta=0.00001)
+
+    def test_check_params(self):
+
+        ptc = get_image_classifier_pt(from_logits=True)
+
+        with self.assertRaises(ValueError):
+            _ = CarliniL0Method(ptc, binary_search_steps="1.0")
+        with self.assertRaises(ValueError):
+            _ = CarliniL0Method(ptc, binary_search_steps=-1)
+
+        with self.assertRaises(ValueError):
+            _ = CarliniL0Method(ptc, max_iter="1.0")
+        with self.assertRaises(ValueError):
+            _ = CarliniL0Method(ptc, max_iter=-1)
+
+        with self.assertRaises(ValueError):
+            _ = CarliniL0Method(ptc, max_halving="1.0")
+        with self.assertRaises(ValueError):
+            _ = CarliniL0Method(ptc, max_halving=-1)
+
+        with self.assertRaises(ValueError):
+            _ = CarliniL0Method(ptc, max_doubling="1.0")
+        with self.assertRaises(ValueError):
+            _ = CarliniL0Method(ptc, max_doubling=-1)
+
+        with self.assertRaises(ValueError):
+            _ = CarliniL0Method(ptc, batch_size="1.0")
+        with self.assertRaises(ValueError):
+            _ = CarliniL0Method(ptc, batch_size=-1)
 
 
 if __name__ == "__main__":
