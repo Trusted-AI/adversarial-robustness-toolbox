@@ -344,34 +344,34 @@ class TestCarlini(TestBase):
     #         # Check that x_test has not been modified by attack and classifier
     #         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_iris))), 0.0, delta=0.00001)
 
-    def test_check_params(self):
+    def test_check_params_L2(self):
 
         ptc = get_image_classifier_pt(from_logits=True)
 
         with self.assertRaises(ValueError):
-            _ = CarliniL0Method(ptc, binary_search_steps="1.0")
+            _ = CarliniL2Method(ptc, binary_search_steps="1.0")
         with self.assertRaises(ValueError):
-            _ = CarliniL0Method(ptc, binary_search_steps=-1)
+            _ = CarliniL2Method(ptc, binary_search_steps=-1)
 
         with self.assertRaises(ValueError):
-            _ = CarliniL0Method(ptc, max_iter="1.0")
+            _ = CarliniL2Method(ptc, max_iter="1.0")
         with self.assertRaises(ValueError):
-            _ = CarliniL0Method(ptc, max_iter=-1)
+            _ = CarliniL2Method(ptc, max_iter=-1)
 
         with self.assertRaises(ValueError):
-            _ = CarliniL0Method(ptc, max_halving="1.0")
+            _ = CarliniL2Method(ptc, max_halving="1.0")
         with self.assertRaises(ValueError):
-            _ = CarliniL0Method(ptc, max_halving=-1)
+            _ = CarliniL2Method(ptc, max_halving=-1)
 
         with self.assertRaises(ValueError):
-            _ = CarliniL0Method(ptc, max_doubling="1.0")
+            _ = CarliniL2Method(ptc, max_doubling="1.0")
         with self.assertRaises(ValueError):
-            _ = CarliniL0Method(ptc, max_doubling=-1)
+            _ = CarliniL2Method(ptc, max_doubling=-1)
 
         with self.assertRaises(ValueError):
-            _ = CarliniL0Method(ptc, batch_size="1.0")
+            _ = CarliniL2Method(ptc, batch_size="1.0")
         with self.assertRaises(ValueError):
-            _ = CarliniL0Method(ptc, batch_size=-1)
+            _ = CarliniL2Method(ptc, batch_size=-1)
 
     """
     A unittest class for testing the Carlini LInf attack.
@@ -631,7 +631,7 @@ class TestCarlini(TestBase):
     #         # Check that x_test has not been modified by attack and classifier
     #         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_iris))), 0.0, delta=0.00001)
 
-    def test_check_params(self):
+    def test_check_params_LInf(self):
 
         ptc = get_image_classifier_pt(from_logits=True)
 
@@ -929,7 +929,7 @@ class TestCarlini(TestBase):
     #         # Check that x_test has not been modified by attack and classifier
     #         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_iris))), 0.0, delta=0.00001)
 
-    def test_check_params(self):
+    def test_check_params_L0(self):
 
         ptc = get_image_classifier_pt(from_logits=True)
 
