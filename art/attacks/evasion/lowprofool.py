@@ -33,7 +33,6 @@ from typing import Callable, Optional, Union, TYPE_CHECKING
 import numpy as np
 from scipy.stats import pearsonr
 from tqdm.auto import trange
-from sklearn.metrics import log_loss
 
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import LossGradientsMixin

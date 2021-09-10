@@ -139,7 +139,7 @@ def test_imperceptible_asr_pytorch(art_warning, expected_values, use_amp, device
 
 @pytest.mark.skip_module("deepspeech_pytorch")
 @pytest.mark.skip_framework("tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
-def test_check_params(art_warning, image_dl_estimator_for_attack):
+def test_check_params(art_warning):
     try:
         from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
         from art.attacks.evasion.imperceptible_asr.imperceptible_asr_pytorch import ImperceptibleASRPyTorch
