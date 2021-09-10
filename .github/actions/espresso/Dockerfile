@@ -36,6 +36,7 @@ RUN pip install --no-build-isolation fairscale
 RUN pip install numba==0.50.0
 RUN pip install pytest-cov
 
-RUN git clone https://github.com/freewym/espresso
-RUN cd espresso && pip install --editable .
+RUN pip install kaldiio
+RUN git clone https://github.com/beat-buesser/espresso
+RUN cd espresso && git checkout adv && pip install --editable .
 RUN pip install sentencepiece

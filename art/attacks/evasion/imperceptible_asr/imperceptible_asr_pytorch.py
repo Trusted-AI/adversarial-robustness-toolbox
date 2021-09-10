@@ -173,6 +173,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         self.n_fft = n_fft
         self.batch_size = batch_size
         self._use_amp = use_amp
+        self._check_params()
 
         # Create the main variable to optimize
         if self.estimator.device.type == "cpu":
@@ -221,9 +222,6 @@ class ImperceptibleASRPyTorch(EvasionAttack):
                 opt_level=opt_level,
                 loss_scale=1.0,
             )
-
-        # Check validity of attack attributes
-        self._check_params()
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
