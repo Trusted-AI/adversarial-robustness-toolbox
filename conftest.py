@@ -27,7 +27,7 @@ import numpy as np
 import pytest
 import requests
 
-from art.data_generators import KerasDataGenerator, MXDataGenerator, PyTorchDataGenerator, TensorFlowDataGenerator
+from art.data_generators import KerasDataGenerator, MXDataGenerator, PyTorchDataGenerator, TensorFlowDataGenerator, TensorFlowV2DataGenerator
 from art.defences.preprocessor import FeatureSqueezing, JpegCompression, SpatialSmoothing
 from art.estimators.classification import KerasClassifier
 from tests.utils import (
@@ -216,6 +216,12 @@ def image_iterator(framework, get_default_mnist_subset, default_batch_size):
             dataset = tf.data.Dataset.from_tensor_slices((x_tensor, y_tensor))
             return dataset.make_initializable_iterator()
 
+        if framework == "tensorflow2":
+            import tensorflow as tf
+
+            dataset = tf.data.Dataset.from_tensor_slices((x_train_mnist, y_train_mnist)).batch(default_batch_size)
+            return dataset
+
         if framework == "pytorch":
             import torch
 
@@ -232,7 +238,7 @@ def image_iterator(framework, get_default_mnist_subset, default_batch_size):
             dataset = gluon.data.dataset.ArrayDataset(x_train_mnist, y_train_mnist)
             return gluon.data.DataLoader(dataset, batch_size=5, shuffle=True)
 
-        raise ARTTestFixtureNotImplemented("no image test iterator available", image_iterator.__name__, framework)
+        return None
 
     return _get_image_iterator
 
@@ -241,10 +247,9 @@ def image_iterator(framework, get_default_mnist_subset, default_batch_size):
 def image_data_generator(framework, get_default_mnist_subset, image_iterator, default_batch_size):
     def _image_data_generator(**kwargs):
         (x_train_mnist, y_train_mnist), (_, _) = get_default_mnist_subset
-
         image_it = image_iterator()
-
         data_generator = None
+
         if framework == "keras" or framework == "kerastf":
             data_generator = KerasDataGenerator(
                 iterator=image_it,
@@ -262,6 +267,13 @@ def image_data_generator(framework, get_default_mnist_subset, image_iterator, de
                 batch_size=default_batch_size,
             )
 
+        if framework == "tensorflow2":
+            data_generator = TensorFlowV2DataGenerator(
+                iterator=image_it,
+                size=x_train_mnist.shape[0],
+                batch_size=default_batch_size,
+            )
+
         if framework == "pytorch":
             data_generator = PyTorchDataGenerator(
                 iterator=image_it, size=x_train_mnist.shape[0], batch_size=default_batch_size
@@ -272,12 +284,6 @@ def image_data_generator(framework, get_default_mnist_subset, image_iterator, de
                 iterator=image_it, size=x_train_mnist.shape[0], batch_size=default_batch_size
             )
 
-        if data_generator is None:
-            raise ARTTestFixtureNotImplemented(
-                "framework {0} does not current have any data generator implemented",
-                image_data_generator.__name__,
-                framework,
-            )
 
         return data_generator
 
@@ -467,7 +473,7 @@ def supported_losses_logit(framework):
                 "sparse_categorical_crossentropy_class",
             ]
         raise ARTTestFixtureNotImplemented(
-            "Could not find  supported_losses_logit", supported_losses_logit.__name__, framework
+            "Could not find supported_losses_logit", supported_losses_logit.__name__, framework
         )
 
     return _supported_losses_logit

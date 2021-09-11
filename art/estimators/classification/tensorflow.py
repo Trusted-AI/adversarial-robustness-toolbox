@@ -1011,7 +1011,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                 for i_batch, o_batch in generator.iterator:
                     if self._reduce_labels:
                         o_batch = tf.math.argmax(o_batch, axis=1)
-                    self._train_step(i_batch, o_batch)
+                    self._train_step(self._model, i_batch, o_batch)
         else:
             # Fit a generic data generator through the API
             super().fit_generator(generator, nb_epochs=nb_epochs)
@@ -1230,7 +1230,9 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
         return gradients
 
-    def clone_for_refitting(self) -> "TensorFlowV2Classifier":  # lgtm [py/inheritance/incorrect-overridden-signature]
+    def clone_for_refitting(
+        self,
+    ) -> "TensorFlowV2Classifier":  # pragma: no cover  # lgtm [py/inheritance/incorrect-overridden-signature]
         """
         Create a copy of the classifier that can be refit from scratch. Will inherit same architecture, optimizer and
         initialization as cloned model, but without weights.
