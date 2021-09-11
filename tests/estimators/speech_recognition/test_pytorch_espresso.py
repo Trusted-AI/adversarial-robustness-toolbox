@@ -30,6 +30,8 @@ logger = logging.getLogger(__name__)
 @pytest.mark.skip_framework("tensorflow", "tensorflow2v1", "keras", "kerastf", "mxnet", "non_dl_frameworks")
 @pytest.mark.parametrize("device_type", ["cpu"])
 def test_pytorch_espresso(art_warning, expected_values, device_type):
+    import torch
+
     from art.estimators.speech_recognition.pytorch_espresso import PyTorchEspresso
 
     try:
@@ -65,18 +67,21 @@ def test_pytorch_espresso(art_warning, expected_values, device_type):
         y = np.array(["SIX", "HI", "GOOD"])
 
         # Test probability outputs
-        # probs, sizes = speech_recognizer.predict(x, batch_size=2, transcription_output=False)
+        # probs, sizes = speech_recognizer.predict(x, batch_size=2,)
         #
         # np.testing.assert_array_almost_equal(probs[1][1], expected_probs, decimal=3)
         # np.testing.assert_array_almost_equal(sizes, expected_sizes)
 
         # Test transcription outputs
-        transcriptions = speech_recognizer.predict(x, batch_size=2, transcription_output=True)
+        _ = speech_recognizer.predict(x[[0]], batch_size=2)
+
+        # Test transcription outputs
+        transcriptions = speech_recognizer.predict(x, batch_size=2)
 
         assert (expected_transcriptions1 == transcriptions).all()
 
         # Test transcription outputs, corner case
-        transcriptions = speech_recognizer.predict(np.array([x[0]]), batch_size=2, transcription_output=True)
+        transcriptions = speech_recognizer.predict(np.array([x[0]]), batch_size=2)
 
         assert (expected_transcriptions2 == transcriptions).all()
 
@@ -95,6 +100,27 @@ def test_pytorch_espresso(art_warning, expected_values, device_type):
         # Train the estimator
         with pytest.raises(NotImplementedError):
             speech_recognizer.fit(x=x, y=y, batch_size=2, nb_epochs=5)
+
+        # Compute local shape
+        local_batch_size = len(x)
+        real_lengths = np.array([x_.shape[0] for x_ in x])
+        local_max_length = np.max(real_lengths)
+
+        # Reformat input
+        input_mask = np.zeros([local_batch_size, local_max_length], dtype=np.float64)
+        original_input = np.zeros([local_batch_size, local_max_length], dtype=np.float64)
+
+        for local_batch_size_idx in range(local_batch_size):
+            input_mask[local_batch_size_idx, : len(x[local_batch_size_idx])] = 1
+            original_input[local_batch_size_idx, : len(x[local_batch_size_idx])] = x[local_batch_size_idx]
+
+        # compute_loss_and_decoded_output
+        loss, decoded_output = speech_recognizer.compute_loss_and_decoded_output(
+            masked_adv_input=torch.tensor(original_input), original_output=y
+        )
+
+        assert loss.detach().numpy() == pytest.approx(46.3156, abs=20.0)
+        assert all(decoded_output == ["EH", "EH", "EH"])
 
     except ARTTestException as e:
         art_warning(e)
