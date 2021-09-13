@@ -31,6 +31,7 @@ from art.attacks.inference.membership_inference import (
     LabelOnlyDecisionBoundary,
 )
 from art.estimators.classification.scikitlearn import ScikitlearnDecisionTreeClassifier
+from art.estimators.regression import ScikitlearnRegressor
 
 from tests.utils import ARTTestException
 
@@ -85,6 +86,74 @@ def test_meminf_black_box(art_warning, decision_tree_estimator, get_iris_dataset
         # infer attacked feature
         inferred_train = attack.infer(x_train_for_attack, y_train_iris, values=values)
         inferred_test = attack.infer(x_test_for_attack, y_test_iris, values=values)
+        # check accuracy
+        train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
+        test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
+        assert 0.1 <= train_acc
+        assert 0.1 <= test_acc
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework("dl_frameworks")
+def test_meminf_black_box_regressor(art_warning, get_diabetes_dataset):
+    try:
+        attack_feature = 0  # age
+
+        bins = [
+            -0.96838121,
+            -0.18102872,
+            0.21264752,
+            1.0,
+        ]
+
+        # need to transform attacked feature into categorical
+        def transform_feature(x):
+            for i in range(len(bins) - 1):
+                x[(x >= bins[i]) & (x < bins[i + 1])] = i
+
+        values = list(range(len(bins) - 1))
+
+        (x_train_diabetes, y_train_diabetes), (x_test_diabetes, y_test_diabetes) = get_diabetes_dataset
+        # training data without attacked feature
+        x_train_for_attack = np.delete(x_train_diabetes, attack_feature, 1)
+        # only attacked feature
+        x_train_feature = x_train_diabetes[:, attack_feature].copy().reshape(-1, 1)
+        transform_feature(x_train_feature)
+        # training data with attacked feature (after transformation)
+        x_train = np.concatenate((x_train_for_attack[:, :attack_feature], x_train_feature), axis=1)
+        x_train = np.concatenate((x_train, x_train_for_attack[:, attack_feature:]), axis=1)
+
+        # test data without attacked feature
+        x_test_for_attack = np.delete(x_test_diabetes, attack_feature, 1)
+        # only attacked feature
+        x_test_feature = x_test_diabetes[:, attack_feature].copy().reshape(-1, 1)
+        transform_feature(x_test_feature)
+        # test data with attacked feature (after transformation)
+        x_test = np.concatenate((x_test_for_attack[:, :attack_feature], x_test_feature), axis=1)
+        x_test = np.concatenate((x_test, x_test_for_attack[:, attack_feature:]), axis=1)
+
+        from sklearn import linear_model
+
+        regr_model = linear_model.LinearRegression()
+        regr_model.fit(x_train_diabetes, y_train_diabetes)
+        regressor = ScikitlearnRegressor(regr_model)
+
+        meminf_attack = MembershipInferenceBlackBox(regressor, attack_model_type="rf", input_type="loss")
+        attack_train_ratio = 0.5
+        attack_train_size = int(len(x_train) * attack_train_ratio)
+        attack_test_size = int(len(x_test) * attack_train_ratio)
+        meminf_attack.fit(
+            x_train[:attack_train_size],
+            y_train_diabetes[:attack_train_size],
+            x_test[:attack_test_size],
+            y_test_diabetes[:attack_test_size],
+        )
+        attack = AttributeInferenceMembership(regressor, meminf_attack, attack_feature=attack_feature)
+        # infer attacked feature
+        inferred_train = attack.infer(x_train_for_attack, y_train_diabetes, values=values)
+        inferred_test = attack.infer(x_test_for_attack, y_test_diabetes, values=values)
         # check accuracy
         train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
         test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)

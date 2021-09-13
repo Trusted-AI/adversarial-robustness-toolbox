@@ -19,14 +19,11 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import unittest
-import importlib
 
 import numpy as np
 
 from tests.utils import TestBase, master_seed
 
-object_detection_spec = importlib.util.find_spec("object_detection")
-object_detection_found = object_detection_spec is not None
 
 logger = logging.getLogger(__name__)
 
@@ -49,12 +46,12 @@ class TestPyTorchFasterRCNN(TestBase):
         from art.estimators.object_detection.pytorch_faster_rcnn import PyTorchFasterRCNN
 
         # Define object detector
-        cls.obj_dec = PyTorchFasterRCNN(
+        cls.obj_detect = PyTorchFasterRCNN(
             clip_values=(0, 1), attack_losses=("loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg")
         )
 
     def test_predict(self):
-        result = self.obj_dec.predict(self.x_test_mnist.astype(np.float32))
+        result = self.obj_detect.predict(self.x_test_mnist.astype(np.float32))
 
         self.assertTrue(
             list(result[0].keys())
@@ -81,7 +78,7 @@ class TestPyTorchFasterRCNN(TestBase):
 
     def test_loss_gradient(self):
         # Create labels
-        result = self.obj_dec.predict(np.repeat(self.x_test_mnist[:2].astype(np.float32), repeats=3, axis=3))
+        result = self.obj_detect.predict(np.repeat(self.x_test_mnist[:2].astype(np.float32), repeats=3, axis=3))
 
         y = [
             {
@@ -97,7 +94,7 @@ class TestPyTorchFasterRCNN(TestBase):
         ]
 
         # Compute gradients
-        grads = self.obj_dec.loss_gradient(np.repeat(self.x_test_mnist[:2].astype(np.float32), repeats=3, axis=3), y)
+        grads = self.obj_detect.loss_gradient(np.repeat(self.x_test_mnist[:2].astype(np.float32), repeats=3, axis=3), y)
 
         self.assertTrue(grads.shape == (2, 28, 28, 3))
 

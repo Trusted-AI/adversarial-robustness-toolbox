@@ -284,7 +284,7 @@ class DetectorClassifier(ClassifierNeuralNetwork):
     def layer_names(self) -> List[str]:
         """
         Return the hidden layers in the model, if applicable. This function is not supported for the
-        Classifier and Detector wrapper.
+        Classifier and Detector classes.
 
         :return: The hidden layers in the model, input and output layers excluded.
         :raises `NotImplementedException`: This method is not supported for detector-classifiers.

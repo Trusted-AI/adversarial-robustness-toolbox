@@ -45,7 +45,7 @@ from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_t
 )
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
+    from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE, OBJECT_DETECTOR_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +76,7 @@ class ProjectedGradientDescent(EvasionAttack):
 
     def __init__(
         self,
-        estimator: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
+        estimator: Union["CLASSIFIER_LOSS_GRADIENTS_TYPE", "OBJECT_DETECTOR_TYPE"],
         norm: Union[int, float, str] = np.inf,
         eps: Union[int, float, np.ndarray] = 0.3,
         eps_step: Union[int, float, np.ndarray] = 0.1,
