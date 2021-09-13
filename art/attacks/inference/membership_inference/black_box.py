@@ -29,12 +29,13 @@ import numpy as np
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 
 from art.attacks.attack import MembershipInferenceAttack
-from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
+from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.regression import RegressorMixin
 from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_TYPE
+    from art.utils import CLASSIFIER_TYPE, REGRESSOR_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -52,11 +53,11 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
         "attack_model_type",
         "attack_model",
     ]
-    _estimator_requirements = (BaseEstimator, ClassifierMixin)
+    _estimator_requirements = (BaseEstimator, (ClassifierMixin, RegressorMixin))
 
     def __init__(
         self,
-        classifier: Union["CLASSIFIER_TYPE"],
+        estimator: Union["CLASSIFIER_TYPE", "REGRESSOR_TYPE"],
         input_type: str = "prediction",
         attack_model_type: str = "nn",
         attack_model: Optional[Any] = None,
@@ -64,20 +65,22 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
         """
         Create a MembershipInferenceBlackBox attack instance.
 
-        :param classifier: Target classifier.
+        :param estimator: Target estimator.
         :param attack_model_type: the type of default attack model to train, optional. Should be one of `nn` (for neural
                                   network, default), `rf` (for random forest) or `gb` (gradient boosting). If
                                   `attack_model` is supplied, this option will be ignored.
         :param input_type: the type of input to train the attack on. Can be one of: 'prediction' or 'loss'. Default is
                            `prediction`. Predictions can be either probabilities or logits, depending on the return type
-                           of the model.
+                           of the model. If the model is a regressor, only `loss` can be used.
         :param attack_model: The attack model to train, optional. If none is provided, a default model will be created.
         """
 
-        super().__init__(estimator=classifier)
+        super().__init__(estimator=estimator)
         self.input_type = input_type
         self.attack_model_type = attack_model_type
         self.attack_model = attack_model
+
+        self._regressor_model = RegressorMixin in type(self.estimator).__mro__
 
         self._check_params()
 
@@ -88,7 +91,7 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
             self.default_model = True
             if self.attack_model_type == "nn":
                 import torch  # lgtm [py/repeated-import]
-                import torch.nn as nn  # lgtm [py/repeated-import]
+                from torch import nn  # lgtm [py/repeated-import]
 
                 class MembershipInferenceAttackModel(nn.Module):
                     """
@@ -138,9 +141,14 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
                         return self.output(is_member)
 
                 if self.input_type == "prediction":
-                    self.attack_model = MembershipInferenceAttackModel(classifier.nb_classes)
+                    num_classes = estimator.nb_classes  # type: ignore
+                    self.attack_model = MembershipInferenceAttackModel(num_classes)
                 else:
-                    self.attack_model = MembershipInferenceAttackModel(classifier.nb_classes, num_features=1)
+                    if self._regressor_model:
+                        self.attack_model = MembershipInferenceAttackModel(1, num_features=1)
+                    else:
+                        num_classes = estimator.nb_classes  # type: ignore
+                        self.attack_model = MembershipInferenceAttackModel(num_classes, num_features=1)
                 self.epochs = 100
                 self.batch_size = 100
                 self.learning_rate = 0.0001
@@ -153,22 +161,22 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
         self, x: np.ndarray, y: np.ndarray, test_x: np.ndarray, test_y: np.ndarray, **kwargs
     ):
         """
-        Infer membership in the training set of the target estimator.
+        Train the attack model.
 
-        :param x: Records that were used in training the target model.
+        :param x: Records that were used in training the target estimator.
         :param y: True labels for `x`.
-        :param test_x: Records that were not used in training the target model.
+        :param test_x: Records that were not used in training the target estimator.
         :param test_y: True labels for `test_x`.
-        :return: An array holding the inferred membership status, 1 indicates a member and 0 indicates non-member.
         """
         if self.estimator.input_shape is not None:
             if self.estimator.input_shape[0] != x.shape[1]:
-                raise ValueError("Shape of x does not match input_shape of classifier")
+                raise ValueError("Shape of x does not match input_shape of estimator")
             if self.estimator.input_shape[0] != test_x.shape[1]:
-                raise ValueError("Shape of test_x does not match input_shape of classifier")
+                raise ValueError("Shape of test_x does not match input_shape of estimator")
 
-        y = check_and_transform_label_format(y, len(np.unique(y)), return_one_hot=True)
-        test_y = check_and_transform_label_format(test_y, len(np.unique(test_y)), return_one_hot=True)
+        if not self._regressor_model:
+            y = check_and_transform_label_format(y, len(np.unique(y)), return_one_hot=True)
+            test_y = check_and_transform_label_format(test_y, len(np.unique(test_y)), return_one_hot=True)
 
         if y.shape[0] != x.shape[0]:
             raise ValueError("Number of rows in x and y do not match")
@@ -184,8 +192,6 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
             test_features = self.estimator.predict(test_x).astype(np.float32)
         # only for models with loss
         elif self.input_type == "loss":
-            if NeuralNetworkMixin not in type(self.estimator).__mro__:
-                raise TypeError("loss input_type can only be used with neural networks")
             # members
             features = self.estimator.compute_loss(x, y).astype(np.float32).reshape(-1, 1)
             # non-members
@@ -202,10 +208,13 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
         x_2 = np.concatenate((y, test_y))
         y_new = np.concatenate((labels, test_labels))
 
+        if self._regressor_model:
+            x_2 = x_2.astype(np.float32).reshape(-1, 1)
+
         if self.default_model and self.attack_model_type == "nn":
             import torch  # lgtm [py/repeated-import]
-            import torch.nn as nn  # lgtm [py/repeated-import]
-            import torch.optim as optim  # lgtm [py/repeated-import]
+            from torch import nn  # lgtm [py/repeated-import]
+            from torch import optim  # lgtm [py/repeated-import]
             from torch.utils.data import DataLoader  # lgtm [py/repeated-import]
             from art.utils import to_cuda
 
@@ -250,14 +259,15 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
 
         if self.estimator.input_shape is not None:
             if self.estimator.input_shape[0] != x.shape[1]:
-                raise ValueError("Shape of x does not match input_shape of classifier")
+                raise ValueError("Shape of x does not match input_shape of estimator")
 
         if "probabilities" in kwargs.keys():
             probabilities = kwargs.get("probabilities")
         else:
             probabilities = False
 
-        y = check_and_transform_label_format(y, len(np.unique(y)), return_one_hot=True)
+        if not self._regressor_model:
+            y = check_and_transform_label_format(y, len(np.unique(y)), return_one_hot=True)
 
         if y.shape[0] != x.shape[0]:
             raise ValueError("Number of rows in x and y do not match")
@@ -266,6 +276,9 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
             features = self.estimator.predict(x).astype(np.float32)
         elif self.input_type == "loss":
             features = self.estimator.compute_loss(x, y).astype(np.float32).reshape(-1, 1)
+
+        if self._regressor_model:
+            y = y.astype(np.float32).reshape(-1, 1)
 
         if self.default_model and self.attack_model_type == "nn":
             import torch  # lgtm [py/repeated-import]
@@ -349,6 +362,10 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
     def _check_params(self) -> None:
         if self.input_type not in ["prediction", "loss"]:
             raise ValueError("Illegal value for parameter `input_type`.")
+
+        if self._regressor_model:
+            if self.input_type != "loss":
+                raise ValueError("Illegal value for parameter `input_type` when estimator is a regressor.")
 
         if self.attack_model_type not in ["nn", "rf", "gb"]:
             raise ValueError("Illegal value for parameter `attack_model_type`.")

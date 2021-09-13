@@ -91,6 +91,10 @@ class Attack(abc.ABC, metaclass=InputFilter):
     """
 
     attack_params: List[str] = list()
+    # The _estimator_requirements define the requirements an estimator must satisfy to be used as a target for an
+    # attack. They should be a tuple of requirements, where each requirement is either a class the estimator must
+    # inherit from, or a tuple of classes which define a union, i.e. the estimator must inherit from at least one class
+    # in the requirement tuple.
     _estimator_requirements: Optional[Union[Tuple[Any, ...], Tuple[()]]] = None
 
     def __init__(
@@ -111,7 +115,7 @@ class Attack(abc.ABC, metaclass=InputFilter):
         if self.estimator_requirements is None:
             raise ValueError("Estimator requirements have not been defined in `_estimator_requirements`.")
 
-        if not all(t in type(estimator).__mro__ for t in self.estimator_requirements):
+        if not self.is_estimator_valid(estimator):
             raise EstimatorError(self.__class__, self.estimator_requirements, estimator)
 
         self._estimator = estimator
@@ -154,6 +158,24 @@ class Attack(abc.ABC, metaclass=InputFilter):
 
         if not isinstance(self.tensor_board, (bool, str)):
             raise ValueError("The argument `tensor_board` has to be either of type bool or str.")
+
+    def is_estimator_valid(self, estimator) -> bool:
+        """
+        Checks if the given estimator satisfies the requirements for this attack.
+
+        :param estimator: The estimator to check.
+        :return: True if the estimator is valid for the attack.
+        """
+
+        for req in self.estimator_requirements:
+            # A requirement is either a class which the estimator must inherit from, or a tuple of classes and the
+            # estimator is required to inherit from at least one of the classes
+            if isinstance(req, tuple):
+                if all(p not in type(estimator).__mro__ for p in req):
+                    return False
+            elif req not in type(estimator).__mro__:
+                return False
+        return True
 
 
 class EvasionAttack(Attack):
@@ -373,7 +395,7 @@ class MembershipInferenceAttack(InferenceAttack):
     Abstract base class for membership inference attack classes.
     """
 
-    def __init__(self, estimator: Union["CLASSIFIER_TYPE"]):
+    def __init__(self, estimator):
         """
         :param estimator: A trained estimator targeted for inference attack.
         :type estimator: :class:`.art.estimators.estimator.BaseEstimator`

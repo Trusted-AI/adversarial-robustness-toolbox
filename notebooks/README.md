@@ -79,6 +79,19 @@ explains the basic workflow of using ART with defences and attacks on an neural 
 demonstrates the HopSkipJumpAttack. This is a black-box attack that only requires class predictions. It is an advanced 
 version of the Boundary attack.
 
+[attack_membership_inference.ipynb](attack_membership_inference.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/attack_membership_inference.ipynb)]
+demonstrates the MembershipInferenceBlackBoxRuleBased and MembershipInferenceBlackBox membership inference attacks on a classifier model with only black-box access.
+
+[attack_membership_inference_regressor.ipynb](attack_membership_inference_regressor.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/attack_membership_inference_regressor.ipynb)]
+demonstrates the MembershipInferenceBlackBox membership inference attack on a regressor model with only black-box access.
+
+[attack_attribute_inference.ipynb](attack_attribute_inference.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/attack_attribute_inference.ipynb)]
+demonstrates the AttributeInferenceBlackBox, AttributeInferenceWhiteBoxLifestyleDecisionTree and AttributeInferenceWhiteBoxDecisionTree attribute inference attacks on a classifier model.
+
+[attack_attribute_inference_regressor.ipynb](attack_attribute_inference_regressor.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/attack_attribute_inference_regressor.ipynb)]
+demonstrates the AttributeInferenceBlackBox attribute inference attacks on a regressor model.
+
+
 ## Classifiers
 
 [classifier_blackbox.ipynb](classifier_blackbox.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/classifier_blackbox.ipynb)] demonstrates BlackBoxClassifier, the most general and

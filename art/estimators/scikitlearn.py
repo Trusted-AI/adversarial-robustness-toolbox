@@ -18,11 +18,37 @@
 """
 This module implements the abstract estimator for scikit-learn models.
 """
+import logging
+from typing import Optional, Tuple
 
 from art.estimators.estimator import BaseEstimator
+
+logger = logging.getLogger(__name__)
 
 
 class ScikitlearnEstimator(BaseEstimator):
     """
     Estimator class for scikit-learn models.
     """
+
+    def _get_input_shape(self, model) -> Optional[Tuple[int, ...]]:
+        _input_shape: Optional[Tuple[int, ...]]
+        if hasattr(model, "n_features_"):
+            _input_shape = (model.n_features_,)
+        elif hasattr(model, "n_features_in_"):
+            _input_shape = (model.n_features_in_,)
+        elif hasattr(model, "feature_importances_"):
+            _input_shape = (len(model.feature_importances_),)
+        elif hasattr(model, "coef_"):
+            if len(model.coef_.shape) == 1:
+                _input_shape = (model.coef_.shape[0],)
+            else:
+                _input_shape = (model.coef_.shape[1],)
+        elif hasattr(model, "support_vectors_"):
+            _input_shape = (model.support_vectors_.shape[1],)
+        elif hasattr(model, "steps"):
+            _input_shape = self._get_input_shape(model.steps[0][1])
+        else:
+            logger.warning("Input shape not recognised. The model might not have been fitted.")
+            _input_shape = None
+        return _input_shape

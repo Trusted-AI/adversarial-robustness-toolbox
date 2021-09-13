@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2021
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -26,49 +26,43 @@ from typing import Optional, Union, TYPE_CHECKING
 import numpy as np
 from sklearn.neural_network import MLPClassifier
 
-from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.attack import AttributeInferenceAttack
-from art.estimators.regression import RegressorMixin
 from art.utils import check_and_transform_label_format, float_to_categorical, floats_to_one_hot
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_TYPE, REGRESSOR_TYPE
+    from art.utils import CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
 
 
-class AttributeInferenceBlackBox(AttributeInferenceAttack):
+class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
     """
-    Implementation of a simple black-box attribute inference attack.
+    Implementation of a baseline attribute inference, not using a model.
 
-    The idea is to train a simple neural network to learn the attacked feature from the rest of the features and the
-    model's predictions. Assumes the availability of the attacked model's predictions for the samples under attack,
-    in addition to the rest of the feature values. If this is not available, the true class label of the samples may be
-    used as a proxy.
+    The idea is to train a simple neural network to learn the attacked feature from the rest of the features, and the
+    true label. Should be used to compare with other attribute inference results.
     """
 
-    attack_params = AttributeInferenceAttack.attack_params + ["prediction_normal_factor"]
-    _estimator_requirements = (BaseEstimator, (ClassifierMixin, RegressorMixin))
+    _estimator_requirements = ()
 
     def __init__(
         self,
-        estimator: Union["CLASSIFIER_TYPE", "REGRESSOR_TYPE"],
         attack_model: Optional["CLASSIFIER_TYPE"] = None,
         attack_feature: Union[int, slice] = 0,
         prediction_normal_factor: float = 1,
     ):
         """
-        Create an AttributeInferenceBlackBox attack instance.
+        Create an AttributeInferenceBaseline attack instance.
 
-        :param estimator: Target estimator.
         :param attack_model: The attack model to train, optional. If none is provided, a default model will be created.
         :param attack_feature: The index of the feature to be attacked or a slice representing multiple indexes in
                                case of a one-hot encoded feature.
         :param prediction_normal_factor: If supplied, predictions of the model are multiplied by the factor when used as
-                                         inputs to the attack-model. Only applicable when `estimator` is a regressor.
+                                         inputs to the attack-model. Only applicable when the target is a regressor.
         """
-        super().__init__(estimator=estimator, attack_feature=attack_feature)
+        super().__init__(estimator=None, attack_feature=attack_feature)
+
         if isinstance(self.attack_feature, int):
             self.single_index_feature = True
         else:
@@ -106,39 +100,31 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
             )
 
         self.prediction_normal_factor = prediction_normal_factor
-
         self._check_params()
 
-    def fit(self, x: np.ndarray) -> None:
+    def fit(self, x: np.ndarray, y: np.ndarray) -> None:
         """
         Train the attack model.
 
         :param x: Input to training process. Includes all features used to train the original model.
+        :param y: True labels of the features.
         """
 
         # Checks:
-        if self.estimator.input_shape is not None:
-            if self.estimator.input_shape[0] != x.shape[1]:
-                raise ValueError("Shape of x does not match input_shape of model")
         if self.single_index_feature and self.attack_feature >= x.shape[1]:
             raise ValueError("attack_feature must be a valid index to a feature in x")
 
-        # get model's predictions for x
-        if ClassifierMixin in type(self.estimator).__mro__:
-            predictions = np.array([np.argmax(arr) for arr in self.estimator.predict(x)]).reshape(-1, 1)
-        else:  # Regression model
-            predictions = self.estimator.predict(x).reshape(-1, 1) * self.prediction_normal_factor
-
         # get vector of attacked feature
-        y = x[:, self.attack_feature]
+        attacked_feature = x[:, self.attack_feature]
         if self.single_index_feature:
-            y_one_hot = float_to_categorical(y)
+            y_one_hot = float_to_categorical(attacked_feature)
         else:
-            y_one_hot = floats_to_one_hot(y)
-        y_ready = check_and_transform_label_format(y_one_hot, len(np.unique(y)), return_one_hot=True)
+            y_one_hot = floats_to_one_hot(attacked_feature)
+        y_ready = check_and_transform_label_format(y_one_hot, len(np.unique(attacked_feature)), return_one_hot=True)
 
         # create training set for attack model
-        x_train = np.concatenate((np.delete(x, self.attack_feature, 1), predictions), axis=1).astype(np.float32)
+        normalized_labels = y * self.prediction_normal_factor
+        x_train = np.concatenate((np.delete(x, self.attack_feature, 1), normalized_labels), axis=1).astype(np.float32)
 
         # train attack model
         self.attack_model.fit(x_train, y_ready)
@@ -148,7 +134,7 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         Infer the attacked feature.
 
         :param x: Input to attack. Includes all features except the attacked feature.
-        :param y: Original model's predictions for x.
+        :param y: True labels of the features.
         :param values: Possible values for attacked feature. For a single column feature this should be a simple list
                        containing all possible values, in increasing order (the smallest value in the 0 index and so
                        on). For a multi-column feature (for example 1-hot encoded and then scaled), this should be a
@@ -158,20 +144,10 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         :return: The inferred feature values.
         """
         if y is None:
-            raise ValueError(
-                "The target values `y` cannot be None. Please provide a `np.ndarray` of model predictions."
-            )
+            raise ValueError("True labels are required")
 
-        if y.shape[0] != x.shape[0]:
-            raise ValueError("Number of rows in x and y do not match")
-        if self.estimator.input_shape is not None:
-            if self.single_index_feature and self.estimator.input_shape[0] != x.shape[1] + 1:
-                raise ValueError("Number of features in x + 1 does not match input_shape of model")
-
-        if RegressorMixin in type(self.estimator).__mro__:
-            x_test = np.concatenate((x, y * self.prediction_normal_factor), axis=1).astype(np.float32)
-        else:
-            x_test = np.concatenate((x, y), axis=1).astype(np.float32)
+        normalized_labels = y * self.prediction_normal_factor
+        x_test = np.concatenate((x, normalized_labels), axis=1).astype(np.float32)
 
         if self.single_index_feature:
             if "values" not in kwargs.keys():
@@ -196,7 +172,3 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
             raise ValueError("Attack feature must be either an integer or a slice object.")
         if isinstance(self.attack_feature, int) and self.attack_feature < 0:
             raise ValueError("Attack feature index must be positive.")
-
-        if RegressorMixin not in type(self.estimator).__mro__:
-            if self.prediction_normal_factor != 1:
-                raise ValueError("Prediction normal factor is only applicable to regressor models.")
