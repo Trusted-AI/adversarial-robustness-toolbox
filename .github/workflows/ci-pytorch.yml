@@ -1,4 +1,4 @@
-name: CI General
+name: CI PyTorch
 on:
   # Run on manual trigger
   workflow_dispatch:
@@ -51,6 +51,8 @@ jobs:
           sudo apt-get update
           sudo apt-get -y -q install ffmpeg libavcodec-extra
           python -m pip install --upgrade pip setuptools wheel
+          pip install tensorflow==2.4.1
+          pip install keras==2.4.3
           pip install torch==${{ matrix.torch }} -f https://download.pytorch.org/whl/torch_stable.html
           pip install torchvision==${{ matrix.torchvision }} -f https://download.pytorch.org/whl/torch_stable.html
           pip install torchaudio==${{ matrix.torchaudio }} -f https://download.pytorch.org/whl/torch_stable.html
