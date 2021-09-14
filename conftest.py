@@ -27,7 +27,13 @@ import numpy as np
 import pytest
 import requests
 
-from art.data_generators import KerasDataGenerator, MXDataGenerator, PyTorchDataGenerator, TensorFlowDataGenerator, TensorFlowV2DataGenerator
+from art.data_generators import (
+    KerasDataGenerator,
+    MXDataGenerator,
+    PyTorchDataGenerator,
+    TensorFlowDataGenerator,
+    TensorFlowV2DataGenerator,
+)
 from art.defences.preprocessor import FeatureSqueezing, JpegCompression, SpatialSmoothing
 from art.estimators.classification import KerasClassifier
 from tests.utils import (
@@ -283,7 +289,6 @@ def image_data_generator(framework, get_default_mnist_subset, image_iterator, de
             data_generator = MXDataGenerator(
                 iterator=image_it, size=x_train_mnist.shape[0], batch_size=default_batch_size
             )
-
 
         return data_generator
 
