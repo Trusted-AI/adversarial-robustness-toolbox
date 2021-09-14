@@ -43,6 +43,7 @@ class Postprocessor(abc.ABC):
         self._is_fitted = bool(is_fitted)
         self._apply_fit = bool(apply_fit)
         self._apply_predict = bool(apply_predict)
+        Postprocessor._check_params(self)
 
     @property
     def is_fitted(self) -> bool:

@@ -41,26 +41,27 @@ class STRIPMixin(AbstainPredictorMixin):
     | Paper link: https://arxiv.org/abs/1902.06531
     """
 
-    def __init__(
-        self,
-        predict_fn: Callable[[np.ndarray], np.ndarray],
-        num_samples: int = 20,
-        false_acceptance_rate: float = 0.01,
-        **kwargs
-    ) -> None:
-        """
-        Create a STRIP defense
-
-        :param predict_fn: The predict function of the original classifier
-        :param num_samples: The number of samples to use to test entropy at inference time
-        :param false_acceptance_rate: The percentage of acceptable false acceptance
-        """
-        super().__init__(**kwargs)
-        self.predict_fn = predict_fn
-        self.num_samples = num_samples
-        self.false_acceptance_rate = false_acceptance_rate
-        self.entropy_threshold: Optional[float] = None
-        self.validation_data: Optional[np.ndarray] = None
+    # commented because STRIPMixin is inserted into __class__ of existing estimator instances
+    # def __init__(
+    #     self,
+    #     predict_fn: Callable[[np.ndarray], np.ndarray],
+    #     num_samples: int = 20,
+    #     false_acceptance_rate: float = 0.01,
+    #     **kwargs
+    # ) -> None:
+    #     """
+    #     Create a STRIP defense
+    #
+    #     :param predict_fn: The predict function of the original classifier
+    #     :param num_samples: The number of samples to use to test entropy at inference time
+    #     :param false_acceptance_rate: The percentage of acceptable false acceptance
+    #     """
+    #     super().__init__(**kwargs)
+    #     self.predict_fn = predict_fn
+    #     self.num_samples = num_samples
+    #     self.false_acceptance_rate = false_acceptance_rate
+    #     self.entropy_threshold: Optional[float] = None
+    #     self.validation_data: Optional[np.ndarray] = None
 
     def predict(self, x: np.ndarray) -> np.ndarray:
         """

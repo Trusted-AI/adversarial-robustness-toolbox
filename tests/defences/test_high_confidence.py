@@ -141,6 +141,10 @@ class TestHighConfidence(unittest.TestCase):
         np.testing.assert_array_almost_equal(preds, classifier_prediction_expected, decimal=4)
         np.testing.assert_array_almost_equal(post_preds, post_classifier_prediction_expected, decimal=4)
 
+    def test_check_params(self):
+        with self.assertRaises(ValueError):
+            _ = HighConfidence(cutoff=-0.6)
+
 
 if __name__ == "__main__":
     unittest.main()

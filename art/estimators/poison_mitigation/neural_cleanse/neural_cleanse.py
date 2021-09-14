@@ -198,7 +198,7 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
                 # using top 1% of ranked neurons by activation difference to adv vs. clean inputs
                 # generate a profile of average activation, when above threshold, abstain
 
-                # get indicies of top 1% of ranked neurons
+                # get indices of top 1% of ranked neurons
                 num_top = int(np.ceil(len(ranked_indices) * 0.01))
                 self.top_indices = ranked_indices[:num_top]
 
