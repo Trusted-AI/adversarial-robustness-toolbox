@@ -101,7 +101,7 @@ def test_default(art_warning):
 
 @pytest.mark.skip_module("torchaudio")
 @pytest.mark.skip_framework("tensorflow", "tensorflow2v1", "keras", "kerastf", "mxnet", "non_dl_frameworks")
-def test_default(art_warning):
+def test_clip_values(art_warning):
     try:
         # Small data for testing
         x = np.array([[0.37, 0.68, 0.63, 0.48, 0.48, 0.18, 0.19]], dtype=ART_NUMPY_DTYPE)

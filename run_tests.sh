@@ -66,6 +66,10 @@ then
 
     pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/metrics/privacy --framework=$framework --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed metrics/privacy tests"; fi
+
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/evaluations --framework=$framework --durations=0
+    if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed evaluations tests"; fi
+
 else
     declare -a attacks=("tests/attacks/test_adversarial_patch.py" \
                         "tests/attacks/test_adversarial_embedding.py" \
