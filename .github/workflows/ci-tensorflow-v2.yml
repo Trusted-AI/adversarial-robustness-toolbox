@@ -42,7 +42,7 @@ jobs:
             python: 3.9
             tensorflow: 2.6.0
             tf_version: v2
-            keras: 2.4.3
+            keras: 2.6.0
 
     name: ${{ matrix.name }}
     steps:

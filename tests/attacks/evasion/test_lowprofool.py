@@ -154,7 +154,7 @@ def test_general_iris_lr(iris_dataset):
     correct = expected == predicted
 
     success_rate = np.sum(correct) / correct.shape[0]
-    expected = 0.75
+    expected = 0.6
 
     logger.info(
         "[Irises, Scikit-learn Logistic Regression] success rate of adversarial attack (expected >{:.2f}): "
@@ -195,7 +195,7 @@ def test_general_wines_lr(wine_dataset):
     correct = expected == predicted
 
     success_rate = np.sum(correct) / correct.shape[0]
-    expected = 0.75
+    expected = 0.6
 
     logger.info(
         "[Wines, Scikit-learn Logistic Regression] success rate of adversarial attack (expected >{:.2f}):"
@@ -230,7 +230,7 @@ def test_general_cancer_lr(breast_cancer_dataset):
     correct = expected == predicted
 
     success_rate = np.sum(correct) / correct.shape[0]
-    expected = 0.75
+    expected = 0.6
 
     logger.info(
         "[Breast cancer, Scikit-learn Logistic Regression] success rate of adversarial attack (expected >{:.2f}): "
@@ -273,7 +273,7 @@ def test_general_iris_nn(iris_dataset):
     # Test
     correct = expected == predicted
     success_rate = np.sum(correct) / correct.shape[0]
-    expected = 0.75
+    expected = 0.6
     logger.info(
         "[Irises, PyTorch neural network] success rate of adversarial attack (expected >{:.2f}): "
         "{:.2f}%".format(expected * 100, success_rate * 100)
@@ -307,7 +307,7 @@ def test_general_cancer_svc(breast_cancer_dataset):
     correct = expected == predicted
 
     success_rate = np.sum(correct) / correct.shape[0]
-    expected = 0.75
+    expected = 0.6
 
     logger.info(
         "[Breast cancer, Scikit-learn SVC] success rate of adversarial attack (expected >{:.2f}): "
