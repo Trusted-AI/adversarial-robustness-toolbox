@@ -496,7 +496,6 @@ def supported_losses_proba(framework):
                 "sparse_categorical_crossentropy_label",
                 "sparse_categorical_crossentropy_function_losses",
                 "sparse_categorical_crossentropy_function_backend",
-                "kullback_leibler_divergence_function_losses",
             ]
         if framework == "kerastf":
             return [
