@@ -507,7 +507,7 @@ def supported_losses_proba(framework):
                 "sparse_categorical_crossentropy_label",
                 "sparse_categorical_crossentropy_function",
                 "sparse_categorical_crossentropy_class",
-                "kullback_leibler_divergence_function",
+                # "kullback_leibler_divergence_function",
                 "kullback_leibler_divergence_class",
             ]
 
