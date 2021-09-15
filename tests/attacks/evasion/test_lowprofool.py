@@ -457,6 +457,16 @@ def test_check_params(art_warning, image_dl_estimator_for_attack):
         classifier = image_dl_estimator_for_attack(LowProFool)
 
         with pytest.raises(ValueError):
+            lpf = LowProFool(classifier)
+            lpf.n_classes = -1
+            lpf._check_params()
+
+        with pytest.raises(ValueError):
+            lpf = LowProFool(classifier)
+            lpf.n_features = -1
+            lpf._check_params()
+
+        with pytest.raises(ValueError):
             _ = LowProFool(classifier, n_steps=5.0)
         with pytest.raises(ValueError):
             _ = LowProFool(classifier, n_steps=-5)

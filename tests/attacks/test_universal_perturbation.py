@@ -220,6 +220,25 @@ class TestUniversalPerturbation(TestBase):
         acc = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
         logger.info("Accuracy on Iris with universal adversarial examples: %.2f%%", (acc * 100))
 
+    def test_check_params(self):
+
+        ptc = get_image_classifier_pt(from_logits=True)
+
+        with self.assertRaises(ValueError):
+            _ = UniversalPerturbation(ptc, delta=-1)
+
+        with self.assertRaises(ValueError):
+            _ = UniversalPerturbation(ptc, max_iter=-1)
+
+        with self.assertRaises(ValueError):
+            _ = UniversalPerturbation(ptc, eps=-1)
+
+        with self.assertRaises(ValueError):
+            _ = UniversalPerturbation(ptc, batch_size=-1)
+
+        with self.assertRaises(ValueError):
+            _ = UniversalPerturbation(ptc, verbose="False")
+
     def test_1_classifier_type_check_fail(self):
         backend_test_classifier_type_check_fail(UniversalPerturbation, [BaseEstimator, ClassifierMixin])
 

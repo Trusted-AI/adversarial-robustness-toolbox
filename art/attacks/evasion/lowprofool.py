@@ -362,7 +362,7 @@ class LowProFool(EvasionAttack):
         if not (isinstance(self.n_classes, int) and self.n_classes > 0):
             raise ValueError("The argument `n_classes` has to be positive integer.")
 
-        if not (isinstance(self.n_features, int) and self.n_classes > 0):
+        if not (isinstance(self.n_features, int) and self.n_features > 0):
             raise ValueError("The argument `n_features` has to be positive integer.")
 
         if not (isinstance(self.n_steps, int) and self.n_steps > 0):

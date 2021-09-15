@@ -183,10 +183,10 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
 
         if isinstance(self.eps, (int, float)):
             if self.eps < 0:
-                raise ValueError("The perturbation size `eps` has to be nonnegative.")
+                raise ValueError("The perturbation size `eps` has to be non-negative.")
         else:
             if (self.eps < 0).any():
-                raise ValueError("The perturbation size `eps` has to be nonnegative.")
+                raise ValueError("The perturbation size `eps` has to be non-negative.")
 
         if isinstance(self.eps_step, (int, float)):
             if self.eps_step <= 0:

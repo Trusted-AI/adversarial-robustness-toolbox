@@ -1283,15 +1283,3 @@ class CarliniL0Method(CarliniL2Method):
 
         if not isinstance(self.binary_search_steps, (int, np.int)) or self.binary_search_steps < 0:
             raise ValueError("The number of binary search steps must be a non-negative integer.")
-
-        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter < 0:
-            raise ValueError("The number of iterations must be a non-negative integer.")
-
-        if not isinstance(self.max_halving, (int, np.int)) or self.max_halving < 1:
-            raise ValueError("The number of halving steps must be an integer greater than zero.")
-
-        if not isinstance(self.max_doubling, (int, np.int)) or self.max_doubling < 1:
-            raise ValueError("The number of doubling steps must be an integer greater than zero.")
-
-        if not isinstance(self.batch_size, (int, np.int)) or self.batch_size < 1:
-            raise ValueError("The batch size must be an integer greater than zero.")

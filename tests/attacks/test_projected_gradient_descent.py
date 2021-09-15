@@ -69,6 +69,49 @@ class TestPGD(TestBase):
             classifier, self.x_train_mnist, self.y_train_mnist, self.x_test_mnist, self.y_test_mnist
         )
 
+    def test_check_params(self):
+
+        krc = get_image_classifier_kr(from_logits=True)
+
+        with self.assertRaises(ValueError):
+            _ = ProjectedGradientDescentNumpy(krc, norm=-1)
+
+        with self.assertRaises(TypeError):
+            _ = ProjectedGradientDescentNumpy(krc, eps="1", eps_step=0.1)
+
+        with self.assertRaises(ValueError):
+            _ = ProjectedGradientDescentNumpy(krc, eps=-1)
+
+        with self.assertRaises(TypeError):
+            _ = ProjectedGradientDescentNumpy(krc, eps=np.array([-1]))
+
+        with self.assertRaises(ValueError):
+            _ = ProjectedGradientDescentNumpy(krc, eps_step=-1)
+
+        with self.assertRaises(TypeError):
+            _ = ProjectedGradientDescentNumpy(krc, eps_step=np.array([-1]))
+
+        with self.assertRaises(ValueError):
+            _ = ProjectedGradientDescentNumpy(krc, eps=np.array([1.0, 1.0]), eps_step=np.array([1.0]))
+
+        with self.assertRaises(ValueError):
+            _ = ProjectedGradientDescentNumpy(krc, targeted="False")
+
+        with self.assertRaises(TypeError):
+            _ = ProjectedGradientDescentNumpy(krc, num_random_init="1")
+
+        with self.assertRaises(ValueError):
+            _ = ProjectedGradientDescentNumpy(krc, num_random_init=-1)
+
+        with self.assertRaises(ValueError):
+            _ = ProjectedGradientDescentNumpy(krc, batch_size=-1)
+
+        with self.assertRaises(ValueError):
+            _ = ProjectedGradientDescentNumpy(krc, max_iter=-1)
+
+        with self.assertRaises(ValueError):
+            _ = ProjectedGradientDescentNumpy(krc, verbose="False")
+
     def test_3_tensorflow_mnist(self):
         classifier, sess = get_image_classifier_tf()
 
