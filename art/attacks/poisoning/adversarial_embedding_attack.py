@@ -110,11 +110,21 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
                 from tensorflow.keras.layers import GaussianNoise, Dense, BatchNormalization, LeakyReLU
                 from tensorflow.keras.optimizers import Adam
 
+                opt = Adam(lr=self.learning_rate)
+
             else:
                 from keras import Model
                 from keras.models import clone_model
                 from keras.layers import GaussianNoise, Dense, BatchNormalization, LeakyReLU
-                from keras.optimizers import Adam
+
+                try:
+                    from keras.optimizers import Adam
+
+                    opt = Adam(lr=self.learning_rate)
+                except:
+                    from keras.optimizers import adam_v2
+
+                    opt = adam_v2.Adam(lr=self.learning_rate)
 
             if clone:
                 self.orig_model = clone_model(self.estimator.model, input_tensors=self.estimator.model.inputs)
@@ -160,7 +170,6 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
             else:
                 raise TypeError("Cannot read model loss value of type {}".format(type(model_loss)))
 
-            opt = Adam(lr=self.learning_rate)
             self.embed_model.compile(optimizer=opt, loss=losses, loss_weights=loss_weights, metrics=["accuracy"])
         else:
             raise NotImplementedError("This attack currently only supports Keras.")

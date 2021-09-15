@@ -342,7 +342,7 @@ class TestKnockoffNets(TestBase):
         thieved_preds = np.argmax(thieved_ptc.predict(x=self.x_train_iris), axis=1)
         acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
 
-        self.assertGreater(acc, 0.3)
+        self.assertGreater(acc, 0.25)
 
         # Create adaptive attack
         attack = KnockoffNets(

@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 class TestKerasDataGenerator(unittest.TestCase):
     def setUp(self):
-        import keras
+        from tensorflow import keras
 
         master_seed(seed=42)
 

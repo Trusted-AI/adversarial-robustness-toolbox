@@ -374,7 +374,7 @@ class TestAdversarialPatch(TestBase):
             _ = AdversarialPatch(ptc, scale_max=2.0)
 
         with self.assertRaises(ValueError):
-            _ = AdversarialPatch(ptc, learning_rate="1")
+            _ = AdversarialPatch(ptc, learning_rate=1)
         with self.assertRaises(ValueError):
             _ = AdversarialPatch(krc, learning_rate=-1.0)
 

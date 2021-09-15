@@ -23,7 +23,6 @@ import unittest
 import numpy as np
 import GPy
 
-from art.exceptions import EstimatorError
 from art.attacks.evasion.hclu import HighConfidenceLowUncertainty
 from art.estimators.classification.GPy import GPyGaussianProcessClassifier
 
