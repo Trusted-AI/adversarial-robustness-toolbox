@@ -1,4 +1,4 @@
-name: CI TensorFlow v2
+name: CI Keras
 on:
   # Run on manual trigger
   workflow_dispatch:
@@ -37,15 +37,15 @@ jobs:
             tensorflow: 2.3.2
             keras: 2.4.3
             tf_addons: 0.13.0
-          - name: Keras 2.6.0 (TensorFlow 2.6.0 Python 3.9)
+          - name: Keras 2.6.0 (TensorFlow 2.6.0 Python 3.8)
             framework: keras
-            python: 3.9
+            python: 3.8
             tensorflow: 2.6.0
             keras: 2.6.0
             tf_addons: 0.14.0
-          - name: TensorFlow-Keras 2.6.0 (Keras 2.6.0 Python 3.9)
+          - name: TensorFlow-Keras 2.6.0 (Keras 2.6.0 Python 3.8)
             framework: kerastf
-            python: 3.9
+            python: 3.8
             tensorflow: 2.6.0
             keras: 2.6.0
             tf_addons: 0.14.0
