@@ -347,8 +347,7 @@ class TestTensorFlowDataGenerator(unittest.TestCase):
     def test_error(self):
         handle = tf.placeholder(tf.string, shape=[])
         iter_ = tf.data.Iterator.from_string_handle(
-            handle, tf.compat.v1.data.get_output_types(self.dataset),
-            tf.compat.v1.data.get_output_shapes(self.dataset)
+            handle, tf.compat.v1.data.get_output_types(self.dataset), tf.compat.v1.data.get_output_shapes(self.dataset)
         )
         feed_iterator = tf.compat.v1.data.make_initializable_iterator(self.dataset)
         feed_handle = self.sess.run(feed_iterator.string_handle())
