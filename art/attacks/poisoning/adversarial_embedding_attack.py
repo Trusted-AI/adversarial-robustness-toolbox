@@ -121,7 +121,7 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
                     from keras.optimizers import Adam
 
                     opt = Adam(lr=self.learning_rate)
-                except:
+                except ImportError:
                     from keras.optimizers import adam_v2
 
                     opt = adam_v2.Adam(lr=self.learning_rate)

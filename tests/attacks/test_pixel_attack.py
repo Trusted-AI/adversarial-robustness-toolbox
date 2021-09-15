@@ -162,9 +162,6 @@ class TestPixelAttack(TestBase):
             _ = PixelAttack(ptc, verbose="true")
 
         with self.assertRaises(ValueError):
-            _ = PixelAttack(ptc, verbose_es="true")
-
-        with self.assertRaises(ValueError):
             ptc._clip_values = None
             _ = PixelAttack(ptc)
 
