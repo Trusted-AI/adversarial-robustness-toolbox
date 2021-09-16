@@ -50,6 +50,24 @@ class TestPyTorchFasterRCNN(TestBase):
             clip_values=(0, 1), attack_losses=("loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg")
         )
 
+        # Create labels
+        cls.x_test = np.repeat(cls.x_test_mnist[:2].astype(np.float32), repeats=3, axis=3)
+
+        result = cls.obj_detect.predict(x=cls.x_test)
+
+        cls.y_test = [
+            {
+                "boxes": result[0]["boxes"],
+                "labels": result[0]["labels"],
+                "scores": np.ones_like(result[0]["labels"]),
+            },
+            {
+                "boxes": result[1]["boxes"],
+                "labels": result[1]["labels"],
+                "scores": np.ones_like(result[1]["labels"]),
+            },
+        ]
+
     def test_predict(self):
         result = self.obj_detect.predict(self.x_test_mnist.astype(np.float32))
 
@@ -77,24 +95,9 @@ class TestPyTorchFasterRCNN(TestBase):
         np.testing.assert_array_almost_equal(result[0]["labels"][:10], expected_detection_classes, decimal=6)
 
     def test_loss_gradient(self):
-        # Create labels
-        result = self.obj_detect.predict(np.repeat(self.x_test_mnist[:2].astype(np.float32), repeats=3, axis=3))
-
-        y = [
-            {
-                "boxes": result[0]["boxes"],
-                "labels": result[0]["labels"],
-                "scores": np.ones_like(result[0]["labels"]),
-            },
-            {
-                "boxes": result[1]["boxes"],
-                "labels": result[1]["labels"],
-                "scores": np.ones_like(result[1]["labels"]),
-            },
-        ]
-
-        # Compute gradients
-        grads = self.obj_detect.loss_gradient(np.repeat(self.x_test_mnist[:2].astype(np.float32), repeats=3, axis=3), y)
+        grads = self.obj_detect.loss_gradient(
+            np.repeat(self.x_test_mnist[:2].astype(np.float32), repeats=3, axis=3), self.y_test
+        )
 
         self.assertTrue(grads.shape == (2, 28, 28, 3))
 
@@ -211,7 +214,7 @@ class TestPyTorchFasterRCNN(TestBase):
         )
 
         # Create labels
-        result = frcnn.predict(np.repeat(self.x_test_mnist[:2].astype(np.float32), repeats=3, axis=3))
+        result = frcnn.predict(x=self.x_test)
 
         y = [
             {
@@ -227,41 +230,12 @@ class TestPyTorchFasterRCNN(TestBase):
         ]
 
         # Compute gradients
-        grads = frcnn.loss_gradient(np.repeat(self.x_test_mnist[:2].astype(np.float32), repeats=3, axis=3), y)
+        grads = frcnn.loss_gradient(x=self.x_test, y=y)
 
         self.assertTrue(grads.shape == (2, 28, 28, 3))
 
     def test_compute_losses(self):
-        from art.estimators.object_detection.pytorch_faster_rcnn import PyTorchFasterRCNN
-        from art.defences.preprocessor.spatial_smoothing import SpatialSmoothing
-
-        pre_def = SpatialSmoothing()
-
-        frcnn = PyTorchFasterRCNN(
-            clip_values=(0, 1),
-            attack_losses=("loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg"),
-            preprocessing_defences=pre_def,
-        )
-
-        # Create labels
-        result = frcnn.predict(np.repeat(self.x_test_mnist[:2].astype(np.float32), repeats=3, axis=3))
-
-        y = [
-            {
-                "boxes": result[0]["boxes"],
-                "labels": result[0]["labels"],
-                "scores": np.ones_like(result[0]["labels"]),
-            },
-            {
-                "boxes": result[1]["boxes"],
-                "labels": result[1]["labels"],
-                "scores": np.ones_like(result[1]["labels"]),
-            },
-        ]
-
-        # Compute losses
-        losses = frcnn.compute_losses(np.repeat(self.x_test_mnist[:2].astype(np.float32), repeats=3, axis=3), y)
-
+        losses = self.obj_detect.compute_losses(x=self.x_test, y=self.y_test)
         self.assertTrue(len(losses) == 4)
 
     def test_compute_loss(self):
@@ -293,9 +267,16 @@ class TestPyTorchFasterRCNN(TestBase):
         ]
 
         # Compute loss
-        loss = frcnn.compute_loss(np.repeat(self.x_test_mnist[:2].astype(np.float32), repeats=3, axis=3), y)
+        loss = frcnn.compute_loss(x=self.x_test, y=y)
 
         self.assertAlmostEqual(float(loss), 0.6324392, delta=0.01)
+
+    def test_pgd(self):
+        from art.attacks.evasion import ProjectedGradientDescent
+
+        attack = ProjectedGradientDescent(estimator=self.obj_detect, max_iter=2)
+        x_test_adv = attack.generate(x=self.x_test, y=self.y_test)
+        np.testing.assert_raises(AssertionError, np.testing.assert_array_equal, x_test_adv, self.x_test)
 
 
 if __name__ == "__main__":
