@@ -87,9 +87,7 @@ class TestBinaryInputDetector(unittest.TestCase):
         model.add(MaxPooling2D(pool_size=(2, 2)))
         model.add(Flatten())
         model.add(Dense(2, activation="softmax"))
-        model.compile(
-            loss=keras.losses.categorical_crossentropy, optimizer=optimizer, metrics=["accuracy"]
-        )
+        model.compile(loss=keras.losses.categorical_crossentropy, optimizer=optimizer, metrics=["accuracy"])
 
         # Create detector and train it:
         detector = BinaryInputDetector(KerasClassifier(model=model, clip_values=(0, 1), use_logits=False))
@@ -156,9 +154,7 @@ class TestBinaryActivationDetector(unittest.TestCase):
         model.add(MaxPooling2D(pool_size=(2, 2), input_shape=activation_shape))
         model.add(Flatten())
         model.add(Dense(number_outputs, activation="softmax"))
-        model.compile(
-            loss=keras.losses.categorical_crossentropy, optimizer=optimizer, metrics=["accuracy"]
-        )
+        model.compile(loss=keras.losses.categorical_crossentropy, optimizer=optimizer, metrics=["accuracy"])
 
         # Create detector and train it.
         # Detector consider activations at layer=0:

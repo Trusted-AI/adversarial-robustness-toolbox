@@ -142,7 +142,7 @@ class TestCopycatCNN(TestBase):
             from keras.optimizers import Adam
 
             optimizer = Adam(lr=0.001)
-        except:
+        except ImportError:
             from keras.optimizers import adam_v2
 
             optimizer = adam_v2.Adam(lr=0.001)
@@ -322,7 +322,7 @@ class TestCopycatCNNVectors(TestBase):
             from keras.optimizers import Adam
 
             optimizer = Adam(lr=0.001)
-        except:
+        except ImportError:
             from keras.optimizers import adam_v2
 
             optimizer = adam_v2.Adam(lr=0.001)

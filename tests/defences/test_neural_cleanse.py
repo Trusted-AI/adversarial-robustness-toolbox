@@ -109,7 +109,7 @@ class TestNeuralCleanse(unittest.TestCase):
         krc.fit(x_train, y_train, nb_epochs=3)
 
         cleanse = NeuralCleanse(krc)
-        defense_cleanse = cleanse(krc, steps=1)
+        defense_cleanse = cleanse(krc, steps=1, patience=1)
         defense_cleanse.mitigate(x_test, y_test, mitigation_types=["filtering", "pruning", "unlearning"])
 
         # is_fitted
