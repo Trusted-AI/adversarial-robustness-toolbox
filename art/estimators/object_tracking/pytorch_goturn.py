@@ -37,7 +37,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the task specific estimator for PyTorch Goturn object detectors.
+This module implements the task specific estimator for PyTorch Goturn object tracker.
 """
 import os
 import sys
@@ -46,7 +46,7 @@ from typing import List, Dict, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 
-from art.estimators.object_detection.object_detector import ObjectDetectorMixin
+from art.estimators.object_tracking.object_tracker import ObjectTrackerMixin
 from art.estimators.pytorch import PyTorchEstimator
 from art import config
 
@@ -61,9 +61,9 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class PyTorchGoturn(ObjectDetectorMixin, PyTorchEstimator):
+class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
     """
-    This module implements the task specific estimator for PyTorch object detectors.
+    This module implements the task specific estimator for PyTorch object trackers.
     """
 
     estimator_params = PyTorchEstimator.estimator_params + ["attack_losses"]
@@ -131,13 +131,14 @@ class PyTorchGoturn(ObjectDetectorMixin, PyTorchEstimator):
         ckpt_dir = model_dir.joinpath("checkpoints")
         ckpt_path = next(ckpt_dir.glob("*.ckpt"))
 
-        ckpt_mod = torch.load(
-            "/home/bbuesser/.art/data/goturn/src/goturn/models/checkpoints/_ckpt_epoch_3.ckpt", map_location="cpu"
+        ckpt_mod = torch.load(os.path.join(
+            self.goturn_path, "src", "goturn", "models", "checkpoints", "_ckpt_epoch_3.ckpt"), map_location=self._device
         )
         ckpt_mod["hparams"]["pretrained_model"] = os.path.join(
             self.goturn_path, "src", "goturn", "models", "pretrained", "caffenet_weights.npy"
         )
-        torch.save(ckpt_mod, "/home/bbuesser/.art/data/goturn/src/goturn/models/checkpoints/_ckpt_epoch_3.ckpt")
+        torch.save(ckpt_mod, os.path.join(
+            self.goturn_path, "src", "goturn", "models", "checkpoints", "_ckpt_epoch_3.ckpt"))
 
         model = GoturnTrain.load_from_checkpoint(ckpt_path)
         model.to(self._device)
@@ -164,7 +165,7 @@ class PyTorchGoturn(ObjectDetectorMixin, PyTorchEstimator):
         if self.postprocessing_defences is not None:
             raise ValueError("This estimator does not support `postprocessing_defences`.")
 
-        self.attack_losses: Tuple[str, ...] = ["torch.nn.L1Loss"]
+        self.attack_losses: Tuple[str, ...] = ("torch.nn.L1Loss",)
 
     @property
     def native_label_is_pytorch_format(self) -> bool:
@@ -212,12 +213,10 @@ class PyTorchGoturn(ObjectDetectorMixin, PyTorchEstimator):
 
         # Apply preprocessing
         if self.all_framework_preprocessing:
-            print("self.all_framework_preprocessing")
             if isinstance(x, torch.Tensor):
                 raise NotImplementedError
 
             if y is not None and isinstance(y[0]["boxes"], np.ndarray):
-                print("isinstance(y[0][\"boxes\"], np.ndarray)")
                 y_tensor = list()
                 for i, y_i in enumerate(y):
                     y_t = dict()
@@ -261,74 +260,19 @@ class PyTorchGoturn(ObjectDetectorMixin, PyTorchEstimator):
         else:
             labels_t = y_preprocessed  # type: ignore
 
-        # self._model.eval()
-        # self._model.freeze()
-
         # y_init = torch.from_numpy(np.array([[72, 89, 121, 146], [160, 100, 180, 146]])).float()
         y_init = torch.from_numpy(np.array([[42, 89, 121, 146], [160, 100, 180, 146]])).float()
 
         loss_list = list()
 
         for i in range(x.shape[0]):
-            print('i', i)
             x_i = inputs_t[i]
-            # x_i = torch.from_numpy(x[i]).float()
-            # x_i.requires_grad = True
-            # self.x_i_grad = x_i
-
             y_pred = self.track(x=x_i, y_init=y_init[i])
-
-            # import cv2
-            # for i in range(0, 40):
-            #     curr = x_i[i]
-            #     bbox_0 = y_pred[i]
-            #     bbox = bbox_0
-            #     prev = curr
-            #
-            #     curr_dbg = np.copy(curr.detach().numpy())
-            #     # curr = x_i.detach().numpy()
-            #     mean_np = np.array([104, 117, 123])
-            #     curr_dbg = curr_dbg + mean_np
-            #     curr_dbg = curr_dbg.astype(np.uint8)
-            #
-            #     print(bbox)
-            #
-            #     # curr_dbg = np.copy(curr)
-            #     curr_dbg = cv2.rectangle(
-            #         curr_dbg, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), (255, 255, 0), 2
-            #     )
-            #
-            #     cv2.imshow("image", curr_dbg)
-            #     # cv2.waitKey(20)
-            #     cv2.waitKey()
-
-            gt_bb = labels_t[i]['boxes']
+            gt_bb = labels_t[i]["boxes"]
             loss = torch.nn.L1Loss(size_average=False)(y_pred.float(), gt_bb.float())
             loss_list.append(loss)
-            # print('loss', loss)
-            # loss.backward()
-
-            # gt_bb = labels_t[i]['boxes']
-            # loss = torch.nn.L1Loss(size_average=False)(y_pred.float(), gt_bb.float())
-            # print('loss', loss)
-            # loss.backward()
-
-            # print('self.target_pad_in.grad', self.target_pad_in.grad)
-            # print('self.target_pad.grad', self.target_pad.grad)
-            # print('self.cur_search_region.grad', self.cur_search_region.grad)
-            # print('self.x_grad.grad', self.x_grad.grad)
-            # print('image_tensor_list_grad[i].requires_grad', image_tensor_list_grad[i].requires_grad)
-            # print('image_tensor_list_grad[i].grad', image_tensor_list_grad[i].grad)
-            # print('image_tensor_list_grad[i].grad min', np.min(image_tensor_list_grad[i].grad.detach().numpy()))
-            # print('image_tensor_list_grad[i].grad max', np.max(image_tensor_list_grad[i].grad.detach().numpy()))
-            # asdf
 
         loss = {"torch.nn.L1Loss": sum(loss_list)}
-
-        # self._model.zero_grad()
-        # loss["torch.nn.L1Loss"].backward()
-        # print('image_tensor_list_grad[0].grad min', np.min(image_tensor_list_grad[0].grad.detach().numpy()))
-        # print('image_tensor_list_grad[0].grad max', np.max(image_tensor_list_grad[0].grad.detach().numpy()))
 
         return loss, inputs_t, image_tensor_list_grad
 
@@ -348,8 +292,6 @@ class PyTorchGoturn(ObjectDetectorMixin, PyTorchEstimator):
                   - scores (Tensor[N]): the scores or each prediction.
         :return: Loss gradients of the same shape as `x`.
         """
-        import torch  # lgtm [py/repeated-import]
-
         grad_list = list()
 
         for i in range(x.shape[0]):
@@ -373,19 +315,9 @@ class PyTorchGoturn(ObjectDetectorMixin, PyTorchEstimator):
             # Compute gradients
             loss.backward(retain_graph=True)  # type: ignore
 
-            # loss.backward()
-            # print('image_tensor_list_grad[0].grad min', np.min(image_tensor_list_grad[0].grad.detach().numpy()))
-            # print('image_tensor_list_grad[0].grad max', np.max(image_tensor_list_grad[0].grad.detach().numpy()))
-            # sdsdgf
-
             if isinstance(x, np.ndarray):
                 for img in image_tensor_list_grad:
                     gradients = img.grad.cpu().numpy().copy()
-                    # gradients = img.grad.cpu().detach().numpy()
-                    # print(gradients)
-                    # print('gradients.grad min', np.min(gradients))
-                    # print('gradients.grad max', np.max(gradients))
-                    # ghj
                     grad_list.append(gradients)
             else:
                 for img in inputs_t:
@@ -393,9 +325,7 @@ class PyTorchGoturn(ObjectDetectorMixin, PyTorchEstimator):
                     grad_list.append(gradients)
 
         if isinstance(x, np.ndarray):
-            # grads = np.stack(grad_list, axis=0)
             grads = np.array(grad_list, dtype=object)
-            # grads = np.transpose(grads, (0, 2, 3, 1))
 
         # if self.clip_values is not None:
         #     grads = grads / self.clip_values[1]
@@ -407,7 +337,7 @@ class PyTorchGoturn(ObjectDetectorMixin, PyTorchEstimator):
 
         return grads
 
-    def preprocess(self, im):
+    def _preprocess(self, im):
         """
         preprocess image before forward pass, this is the same
         preprocessing used during training, please refer to collate function
@@ -441,29 +371,38 @@ class PyTorchGoturn(ObjectDetectorMixin, PyTorchEstimator):
         kContextFactor = 2
 
         def compute_output_height_f(bbox_tight):
-            """height of search/target region"""
+            """
+            height of search/target region
+            """
             bbox_height = bbox_tight[3] - bbox_tight[1]
             output_height = kContextFactor * bbox_height
 
             return max(1.0, output_height)
 
         def compute_output_width_f(bbox_tight):
-            """width of search/target region"""
+            """
+            width of search/target region
+            """
             bbox_width = bbox_tight[2] - bbox_tight[0]
             output_width = kContextFactor * bbox_width
 
             return max(1.0, output_width)
 
         def get_center_x_f(bbox_tight):
-            """x-coordinate of the bounding box center """
+            """
+            x-coordinate of the bounding box center
+            """
             return (bbox_tight[0] + bbox_tight[2]) / 2.0
 
         def get_center_y_f(bbox_tight):
-            """y-coordinate of the bounding box center """
+            """
+            y-coordinate of the bounding box center
+            """
             return (bbox_tight[1] + bbox_tight[3]) / 2.0
 
         def computeCropPadImageLocation(bbox_tight, image):
-            """Get the valid image coordinates for the context region in target
+            """
+            Get the valid image coordinates for the context region in target
             or search region in full image
             """
 
@@ -482,8 +421,8 @@ class PyTorchGoturn(ObjectDetectorMixin, PyTorchEstimator):
             output_width = compute_output_width_f(bbox_tight)
             output_height = compute_output_height_f(bbox_tight)
 
-            roi_left = max(0.0, bbox_center_x - (output_width / 2.))
-            roi_bottom = max(0.0, bbox_center_y - (output_height / 2.))
+            roi_left = max(0.0, bbox_center_x - (output_width / 2.0))
+            roi_bottom = max(0.0, bbox_center_y - (output_height / 2.0))
 
             # New ROI width
             # -------------
@@ -491,14 +430,14 @@ class PyTorchGoturn(ObjectDetectorMixin, PyTorchEstimator):
             # image
             # 2. right_half should not go out of bound on the right side of the
             # image
-            left_half = min(output_width / 2., bbox_center_x)
-            right_half = min(output_width / 2., image_width - bbox_center_x)
+            left_half = min(output_width / 2.0, bbox_center_x)
+            right_half = min(output_width / 2.0, image_width - bbox_center_x)
             roi_width = max(1.0, left_half + right_half)
 
             # New ROI height
             # Similar logic applied that is applied for 'New ROI width'
-            top_half = min(output_height / 2., bbox_center_y)
-            bottom_half = min(output_height / 2., image_height - bbox_center_y)
+            top_half = min(output_height / 2.0, bbox_center_y)
+            bottom_half = min(output_height / 2.0, image_height - bbox_center_y)
             roi_height = max(1.0, top_half + bottom_half)
 
             # Padded image location in the original image
@@ -507,7 +446,8 @@ class PyTorchGoturn(ObjectDetectorMixin, PyTorchEstimator):
             return objPadImageLocation
 
         def edge_spacing_x_f(bbox_tight):
-            """Edge spacing X to take care of if search/target pad region goes
+            """
+            Edge spacing X to take care of if search/target pad region goes
             out of bound
             """
             output_width = compute_output_width_f(bbox_tight)
@@ -516,7 +456,8 @@ class PyTorchGoturn(ObjectDetectorMixin, PyTorchEstimator):
             return max(0.0, (output_width / 2) - bbox_center_x)
 
         def edge_spacing_y_f(bbox_tight):
-            """Edge spacing X to take care of if search/target pad region goes
+            """
+            Edge spacing X to take care of if search/target pad region goes
             out of bound
             """
             output_height = compute_output_height_f(bbox_tight)
@@ -525,7 +466,8 @@ class PyTorchGoturn(ObjectDetectorMixin, PyTorchEstimator):
             return max(0.0, (output_height / 2) - bbox_center_y)
 
         def cropPadImage(bbox_tight, image, dbg=False, viz=None):
-            """ Around the bounding box, we define a extra context factor of 2,
+            """
+            Around the bounding box, we define a extra context factor of 2,
             which we will crop from the original image
             """
             import math
@@ -538,8 +480,9 @@ class PyTorchGoturn(ObjectDetectorMixin, PyTorchEstimator):
             roi_height = min(image.shape[0], max(1.0, math.ceil(pad_image_location.y2 - pad_image_location.y1)))
 
             err = 0.000000001  # To take care of floating point arithmetic errors
-            cropped_image = image[int(roi_bottom + err):int(roi_bottom + roi_height),
-                            int(roi_left + err):int(roi_left + roi_width)]
+            cropped_image = image[
+                int(roi_bottom + err) : int(roi_bottom + roi_height), int(roi_left + err) : int(roi_left + roi_width)
+            ]
             # output_width = max(math.ceil(bbox_tight.compute_output_width()), roi_width)
             # output_height = max(math.ceil(bbox_tight.compute_output_height()), roi_height)
             output_width = max(math.ceil(compute_output_width_f(bbox_tight)), roi_width)
@@ -557,24 +500,18 @@ class PyTorchGoturn(ObjectDetectorMixin, PyTorchEstimator):
             edge_spacing_y = min(edge_spacing_y_f(bbox_tight), (image.shape[0] - 1))
 
             # rounding should be done to match the width and height
-            output_image[int(edge_spacing_y):int(edge_spacing_y) + cropped_image.shape[0],
-            int(edge_spacing_x):int(edge_spacing_x) + cropped_image.shape[1]] = cropped_image
+            output_image[
+                int(edge_spacing_y) : int(edge_spacing_y) + cropped_image.shape[0],
+                int(edge_spacing_x) : int(edge_spacing_x) + cropped_image.shape[1],
+            ] = cropped_image
 
             return output_image, pad_image_location, edge_spacing_x, edge_spacing_y
 
         target_pad, _, _, _ = cropPadImage(prev_bbox, prev_frame)
         cur_search_region, search_location, edge_spacing_x, edge_spacing_y = cropPadImage(prev_bbox, curr_frame)
 
-        # target_pad.requires_grad = True
-        # self.target_pad = target_pad
-        # cur_search_region.requires_grad = True
-        # self.cur_search_region = cur_search_region
-
-        target_pad_in = self.preprocess(target_pad).unsqueeze(0)
-        cur_search_region_in = self.preprocess(cur_search_region).unsqueeze(0)
-
-        # target_pad_in.requires_grad = True
-        # self.target_pad_in = target_pad_in
+        target_pad_in = self._preprocess(target_pad).unsqueeze(0)
+        cur_search_region_in = self._preprocess(cur_search_region).unsqueeze(0)
 
         pred_bb = self._model.forward(target_pad_in, cur_search_region_in)
 
@@ -609,9 +546,6 @@ class PyTorchGoturn(ObjectDetectorMixin, PyTorchEstimator):
         """Track"""
         import torch
 
-        # x.requires_grad = True
-        # self.x_grad = x
-
         num_frames = x.shape[0]
         prev = x[0]
         bbox_0 = y_init
@@ -643,6 +577,7 @@ class PyTorchGoturn(ObjectDetectorMixin, PyTorchEstimator):
                  - scores [N]: the scores or each prediction.
         """
         import torch
+
         self._model.eval()
         self._model.freeze()
 
