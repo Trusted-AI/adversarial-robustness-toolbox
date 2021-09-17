@@ -236,7 +236,7 @@ class PyTorchGoturn(ObjectDetectorMixin, PyTorchEstimator):
             else:
                 y_tensor = y
 
-            transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
+            # transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
             image_tensor_list_grad = list()
             y_preprocessed = list()
             inputs_t = list()
@@ -244,7 +244,6 @@ class PyTorchGoturn(ObjectDetectorMixin, PyTorchEstimator):
             for i in range(x.shape[0]):
                 if self.clip_values is not None:
                     # x_grad = transform(x[i] / self.clip_values[1]).to(self._device)
-                    print("x[i].shape", x[i].shape)
                     x_grad = torch.from_numpy(x[i]).to(self._device).float()
                 else:
                     # x_grad = transform(x[i]).to(self._device)
@@ -294,40 +293,34 @@ class PyTorchGoturn(ObjectDetectorMixin, PyTorchEstimator):
         else:
             labels_t = y_preprocessed  # type: ignore
 
-        # output = self._model(inputs_t, labels_t)
-
         # self._model.eval()
         # self._model.freeze()
 
-        y_init = np.array([[72, 89, 121, 146], [160, 100, 180, 146]])
+        y_init = torch.from_numpy(np.array([[72, 89, 121, 146], [160, 100, 180, 146]])).float()
 
         predictions = list()
 
         for i in range(x.shape[0]):
-            # Apply preprocessing
-            x_i, _ = self._apply_preprocessing(np.expand_dims(x[i], axis=0), y=None, fit=False)
+            x_i = torch.from_numpy(x[i]).float()
+            x_i.requires_grad = True
 
-            x_i = x_i[0]
+            # Apply preprocessing
+            x_i, _ = self._apply_preprocessing(x_i, y=None, fit=False)
 
             y_pred = self.track(x=x_i, y_init=y_init[i])
 
-            print(type(y_pred))
+            gt_bb = labels_t[i]['boxes']
+
+            # for p in range(y_pred.shape[0]):
+            #     print('y_pred', y_pred[p])
+            #     print('gt_bb', gt_bb[p])
+
+            loss = torch.nn.L1Loss(size_average=False)(y_pred.float(), gt_bb.float())
+
+            loss.backward()
+
+            print('loss', loss)
             asdf
-
-            prediction_dict = dict()
-            prediction_dict["boxes"] = y_pred
-            prediction_dict["labels"] = np.zeros((y_pred.shape[0],))
-            prediction_dict["scores"] = np.ones_like((y_pred.shape[0],))
-            predictions.append(prediction_dict)
-
-        return predictions
-
-
-
-
-        pred_bb = self._model._model(inputs_t, labels_t)
-        print(pred_bb)
-        loss = torch.nn.L1Loss(size_average=False)(pred_bb.float(), gt_bb.float())
 
         return loss, inputs_t, image_tensor_list_grad
 
@@ -409,13 +402,17 @@ class PyTorchGoturn(ObjectDetectorMixin, PyTorchEstimator):
         in train.py for reference
         @image: input image
         """
-        from goturn.helper.image_io import resize
         import torch
+        from torch.nn.functional import interpolate
 
-        mean = np.array([104, 117, 123])
-        im = (im + mean).astype(np.uint8)
-        im = resize(im, (227, 227)) - mean
-        im = torch.from_numpy(im.transpose((2, 0, 1)))
+        mean_np = np.array([104, 117, 123])
+        mean = torch.from_numpy(mean_np).reshape((3, 1, 1))
+        im = im.permute(2, 0, 1)
+        im = im + mean
+        im = torch.unsqueeze(im, dim=0)
+        im = interpolate(im, size=(227, 227))
+        im = torch.squeeze(im)
+        im = im - mean
         return im
 
     def _track(self, curr_frame, prev_frame, rect):
@@ -424,10 +421,134 @@ class PyTorchGoturn(ObjectDetectorMixin, PyTorchEstimator):
         @prev_frame: prev frame
         @rect: bounding box of previous frame
         """
+        import torch
         from goturn.helper.BoundingBox import BoundingBox
-        from goturn.helper.image_proc import cropPadImage
 
         prev_bbox = rect
+
+        kContextFactor = 2
+
+        def compute_output_height_f(bbox_tight):
+            """height of search/target region"""
+            bbox_height = bbox_tight[3] - bbox_tight[1]
+            output_height = kContextFactor * bbox_height
+
+            return max(1.0, output_height)
+
+        def compute_output_width_f(bbox_tight):
+            """width of search/target region"""
+            bbox_width = bbox_tight[2] - bbox_tight[0]
+            output_width = kContextFactor * bbox_width
+
+            return max(1.0, output_width)
+
+        def get_center_x_f(bbox_tight):
+            """x-coordinate of the bounding box center """
+            return (bbox_tight[0] + bbox_tight[2]) / 2.0
+
+        def get_center_y_f(bbox_tight):
+            """y-coordinate of the bounding box center """
+            return (bbox_tight[1] + bbox_tight[3]) / 2.0
+
+        def computeCropPadImageLocation(bbox_tight, image):
+            """Get the valid image coordinates for the context region in target
+            or search region in full image
+            """
+
+            # Center of the bounding box
+            # bbox_center_x = bbox_tight.get_center_x()
+            # bbox_center_y = bbox_tight.get_center_y()
+            bbox_center_x = get_center_x_f(bbox_tight)
+            bbox_center_y = get_center_y_f(bbox_tight)
+
+            image_height = image.shape[0]
+            image_width = image.shape[1]
+
+            # Padded output width and height
+            # output_width = bbox_tight.compute_output_width()
+            # output_height = bbox_tight.compute_output_height()
+            output_width = compute_output_width_f(bbox_tight)
+            output_height = compute_output_height_f(bbox_tight)
+
+            roi_left = max(0.0, bbox_center_x - (output_width / 2.))
+            roi_bottom = max(0.0, bbox_center_y - (output_height / 2.))
+
+            # New ROI width
+            # -------------
+            # 1. left_half should not go out of bound on the left side of the
+            # image
+            # 2. right_half should not go out of bound on the right side of the
+            # image
+            left_half = min(output_width / 2., bbox_center_x)
+            right_half = min(output_width / 2., image_width - bbox_center_x)
+            roi_width = max(1.0, left_half + right_half)
+
+            # New ROI height
+            # Similar logic applied that is applied for 'New ROI width'
+            top_half = min(output_height / 2., bbox_center_y)
+            bottom_half = min(output_height / 2., image_height - bbox_center_y)
+            roi_height = max(1.0, top_half + bottom_half)
+
+            # Padded image location in the original image
+            objPadImageLocation = BoundingBox(roi_left, roi_bottom, roi_left + roi_width, roi_bottom + roi_height)
+
+            return objPadImageLocation
+
+        def edge_spacing_x_f(bbox_tight):
+            """Edge spacing X to take care of if search/target pad region goes
+            out of bound
+            """
+            output_width = compute_output_width_f(bbox_tight)
+            bbox_center_x = get_center_x_f(bbox_tight)
+
+            return max(0.0, (output_width / 2) - bbox_center_x)
+
+        def edge_spacing_y_f(bbox_tight):
+            """Edge spacing X to take care of if search/target pad region goes
+            out of bound
+            """
+            output_height = compute_output_height_f(bbox_tight)
+            bbox_center_y = get_center_y_f(bbox_tight)
+
+            return max(0.0, (output_height / 2) - bbox_center_y)
+
+        def cropPadImage(bbox_tight, image, dbg=False, viz=None):
+            """ Around the bounding box, we define a extra context factor of 2,
+            which we will crop from the original image
+            """
+            import math
+            import torch
+
+            pad_image_location = computeCropPadImageLocation(bbox_tight, image)
+            roi_left = min(pad_image_location.x1, (image.shape[1] - 1))
+            roi_bottom = min(pad_image_location.y1, (image.shape[0] - 1))
+            roi_width = min(image.shape[1], max(1.0, math.ceil(pad_image_location.x2 - pad_image_location.x1)))
+            roi_height = min(image.shape[0], max(1.0, math.ceil(pad_image_location.y2 - pad_image_location.y1)))
+
+            err = 0.000000001  # To take care of floating point arithmetic errors
+            cropped_image = image[int(roi_bottom + err):int(roi_bottom + roi_height),
+                            int(roi_left + err):int(roi_left + roi_width)]
+            # output_width = max(math.ceil(bbox_tight.compute_output_width()), roi_width)
+            # output_height = max(math.ceil(bbox_tight.compute_output_height()), roi_height)
+            output_width = max(math.ceil(compute_output_width_f(bbox_tight)), roi_width)
+            output_height = max(math.ceil(compute_output_height_f(bbox_tight)), roi_height)
+            if image.ndim > 2:
+                # output_image = np.zeros((int(output_height), int(output_width), image.shape[2]), dtype=image.dtype)
+                output_image = torch.zeros((int(output_height), int(output_width), image.shape[2]), dtype=image.dtype)
+            else:
+                # output_image = np.zeros((int(output_height), int(output_width)), dtype=image.dtype)
+                output_image = torch.zeros((int(output_height), int(output_width)), dtype=image.dtype)
+
+            # edge_spacing_x = min(bbox_tight.edge_spacing_x(), (image.shape[1] - 1))
+            # edge_spacing_y = min(bbox_tight.edge_spacing_y(), (image.shape[0] - 1))
+            edge_spacing_x = min(edge_spacing_x_f(bbox_tight), (image.shape[1] - 1))
+            edge_spacing_y = min(edge_spacing_y_f(bbox_tight), (image.shape[0] - 1))
+
+            # rounding should be done to match the width and height
+            output_image[int(edge_spacing_y):int(edge_spacing_y) + cropped_image.shape[0],
+            int(edge_spacing_x):int(edge_spacing_x) + cropped_image.shape[1]] = cropped_image
+
+            return output_image, pad_image_location, edge_spacing_x, edge_spacing_y
 
         target_pad, _, _, _ = cropPadImage(prev_bbox, prev_frame)
         cur_search_region, search_location, edge_spacing_x, edge_spacing_y = cropPadImage(prev_bbox, curr_frame)
@@ -435,54 +556,40 @@ class PyTorchGoturn(ObjectDetectorMixin, PyTorchEstimator):
         target_pad_in = self.preprocess(target_pad).unsqueeze(0)
         cur_search_region_in = self.preprocess(cur_search_region).unsqueeze(0)
 
-        # print('target_pad_in', target_pad_in.shape)
-
         pred_bb = self._model.forward(target_pad_in, cur_search_region_in)
 
-        # print("0", pred_bb)
+        pred_bb = torch.squeeze(pred_bb)
 
-        # kScaleFactor = 10
-        # height = 277
-        # width = 277
+        kScaleFactor = 10
+        height = cur_search_region.shape[0]
+        width = cur_search_region.shape[1]
 
-        # x1, y1, x2, y2 = pred_bb.x1, pred_bb.y1, pred_bb.x2, pred_bb.y2
+        """Normalize the image bounding box"""
+        pred_bb[0] = pred_bb[0] / kScaleFactor * width
+        pred_bb[2] = pred_bb[2] / kScaleFactor * width
+        pred_bb[1] = pred_bb[1] / kScaleFactor * height
+        pred_bb[3] = pred_bb[3] / kScaleFactor * height
 
-        # print(pred_bb.shape)
-        #
-        # pred_bb[0, 0] = pred_bb[0, 0] / kScaleFactor * width
-        # pred_bb[0, 2] = pred_bb[0, 2] / kScaleFactor * width
-        # pred_bb[0, 1] = pred_bb[0, 1] / kScaleFactor * height
-        # pred_bb[0, 3] = pred_bb[0, 3] / kScaleFactor * height
-        #
-        # pred_bb = pred_bb.int()
+        pred_bb = torch.round(pred_bb)
 
-        # x1 = int(x1 / kScaleFactor * width)
-        # x2 = int(x2 / kScaleFactor * width)
-        # y1 = int(y1 / kScaleFactor * height)
-        # y2 = int(y2 / kScaleFactor * height)
+        """move the bounding box to target/search region coordinates"""
+        raw_image = curr_frame
+        pred_bb[0] = max(0.0, pred_bb[0] + search_location.x1 - edge_spacing_x)
+        pred_bb[1] = max(0.0, pred_bb[1] + search_location.y1 - edge_spacing_y)
+        pred_bb[2] = min(raw_image.shape[1], pred_bb[2] + search_location.x1 - edge_spacing_x)
+        pred_bb[3] = min(raw_image.shape[0], pred_bb[3] + search_location.y1 - edge_spacing_y)
 
-        pred_bb = BoundingBox(*pred_bb[0].cpu().detach().numpy().tolist())
-        print("A", pred_bb)
-        pred_bb.unscale(cur_search_region)
-        print("B - cur_search_region", cur_search_region.shape)
-        print("B", pred_bb)
-        pred_bb.uncenter(curr_frame, search_location, edge_spacing_x, edge_spacing_y)
-        print("C", pred_bb)
-        x1, y1, x2, y2 = int(pred_bb.x1), int(pred_bb.y1), int(pred_bb.x2), int(pred_bb.y2)
-        pred_bb = BoundingBox(x1, y1, x2, y2)
-        print("D", pred_bb)
+        pred_bb = torch.round(pred_bb)
 
         return pred_bb
 
-        # return np.array([x1, y1, x2, y2])
-
     def track(self, x, y_init):
         """Track"""
-        from goturn.helper.BoundingBox import BoundingBox
+        import torch
 
         num_frames = x.shape[0]
         prev = x[0]
-        bbox_0 = BoundingBox(y_init[0], y_init[1], y_init[2], y_init[3])
+        bbox_0 = y_init
         y_pred_list = [y_init]
 
         for i in range(1, num_frames):
@@ -491,9 +598,9 @@ class PyTorchGoturn(ObjectDetectorMixin, PyTorchEstimator):
             bbox = bbox_0
             prev = curr
 
-            y_pred_list.append(np.array([bbox.x1, bbox.y1, bbox.x2, bbox.y2]))
+            y_pred_list.append(bbox)
 
-        y_pred = np.stack(y_pred_list)
+        y_pred = torch.stack(y_pred_list)
 
         return y_pred
 
@@ -510,18 +617,19 @@ class PyTorchGoturn(ObjectDetectorMixin, PyTorchEstimator):
                  - labels [N]: the labels for each image
                  - scores [N]: the scores or each prediction.
         """
+        import torch
         self._model.eval()
         self._model.freeze()
 
-        y_init = np.array([[72, 89, 121, 146], [160, 100, 180, 146]])
+        y_init = torch.from_numpy(np.array([[72, 89, 121, 146], [160, 100, 180, 146]])).float()
 
         predictions = list()
 
         for i in range(x.shape[0]):
-            # Apply preprocessing
-            x_i, _ = self._apply_preprocessing(np.expand_dims(x[i], axis=0), y=None, fit=False)
+            x_i = torch.from_numpy(x[i])
 
-            x_i = x_i[0]
+            # Apply preprocessing
+            x_i, _ = self._apply_preprocessing(x_i, y=None, fit=False)
 
             y_pred = self.track(x=x_i, y_init=y_init[i])
 
