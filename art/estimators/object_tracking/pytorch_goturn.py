@@ -76,12 +76,6 @@ class PyTorchGoturn(ObjectDetectorMixin, PyTorchEstimator):
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
         preprocessing: "PREPROCESSING_TYPE" = None,
-        # attack_losses: Tuple[str, ...] = (
-        #     "loss_classifier",
-        #     "loss_box_reg",
-        #     "loss_objectness",
-        #     "loss_rpn_box_reg",
-        # ),
         device_type: str = "gpu",
     ):
         """
@@ -98,8 +92,6 @@ class PyTorchGoturn(ObjectDetectorMixin, PyTorchEstimator):
         :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
-        # :param attack_losses: Tuple of any combination of strings of loss components: 'loss_classifier', 'loss_box_reg',
-        #                       'loss_objectness', and 'loss_rpn_box_reg'.
         :param device_type: Type of device to be used for model and tensors, if `cpu` run on CPU, if `gpu` run on GPU
                             if available otherwise run on CPU.
         """
@@ -172,7 +164,7 @@ class PyTorchGoturn(ObjectDetectorMixin, PyTorchEstimator):
         if self.postprocessing_defences is not None:
             raise ValueError("This estimator does not support `postprocessing_defences`.")
 
-        # self.attack_losses: Tuple[str, ...] = attack_losses
+        self.attack_losses: Tuple[str, ...] = ["torch.nn.L1Loss"]
 
     @property
     def native_label_is_pytorch_format(self) -> bool:
@@ -215,16 +207,17 @@ class PyTorchGoturn(ObjectDetectorMixin, PyTorchEstimator):
         :return: Loss gradients of the same shape as `x`.
         """
         import torch  # lgtm [py/repeated-import]
-        import torchvision  # lgtm [py/repeated-import]
 
         self._model.train()
 
         # Apply preprocessing
         if self.all_framework_preprocessing:
+            print("self.all_framework_preprocessing")
             if isinstance(x, torch.Tensor):
                 raise NotImplementedError
 
             if y is not None and isinstance(y[0]["boxes"], np.ndarray):
+                print("isinstance(y[0][\"boxes\"], np.ndarray)")
                 y_tensor = list()
                 for i, y_i in enumerate(y):
                     y_t = dict()
@@ -259,32 +252,7 @@ class PyTorchGoturn(ObjectDetectorMixin, PyTorchEstimator):
                 inputs_t.append(x_preprocessed_i)
 
         elif isinstance(x, np.ndarray):
-            x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y=y, fit=False, no_grad=True)
-
-            if y_preprocessed is not None and isinstance(y_preprocessed[0]["boxes"], np.ndarray):
-                y_preprocessed_tensor = list()
-                for i, y_i in enumerate(y_preprocessed):
-                    y_preprocessed_t = dict()
-                    y_preprocessed_t["boxes"] = torch.from_numpy(y_i["boxes"]).type(torch.float).to(self._device)
-                    y_preprocessed_t["labels"] = torch.from_numpy(y_i["labels"]).type(torch.int64).to(self._device)
-                    if "masks" in y_i:
-                        y_preprocessed_t["masks"] = torch.from_numpy(y_i["masks"]).type(torch.uint8).to(self._device)
-                    y_preprocessed_tensor.append(y_preprocessed_t)
-                y_preprocessed = y_preprocessed_tensor
-
-            transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
-            image_tensor_list_grad = list()
-
-            for i in range(x_preprocessed.shape[0]):
-                if self.clip_values is not None:
-                    x_grad = transform(x_preprocessed[i] / self.clip_values[1]).to(self._device)
-                else:
-                    x_grad = transform(x_preprocessed[i]).to(self._device)
-                x_grad.requires_grad = True
-                image_tensor_list_grad.append(x_grad)
-
-            inputs_t = image_tensor_list_grad
-
+            raise NotImplementedError
         else:
             raise NotImplementedError("Combination of inputs and preprocessing not supported.")
 
@@ -296,31 +264,71 @@ class PyTorchGoturn(ObjectDetectorMixin, PyTorchEstimator):
         # self._model.eval()
         # self._model.freeze()
 
-        y_init = torch.from_numpy(np.array([[72, 89, 121, 146], [160, 100, 180, 146]])).float()
+        # y_init = torch.from_numpy(np.array([[72, 89, 121, 146], [160, 100, 180, 146]])).float()
+        y_init = torch.from_numpy(np.array([[42, 89, 121, 146], [160, 100, 180, 146]])).float()
 
-        predictions = list()
+        loss_list = list()
 
         for i in range(x.shape[0]):
-            x_i = torch.from_numpy(x[i]).float()
-            x_i.requires_grad = True
-
-            # Apply preprocessing
-            x_i, _ = self._apply_preprocessing(x_i, y=None, fit=False)
+            print('i', i)
+            x_i = inputs_t[i]
+            # x_i = torch.from_numpy(x[i]).float()
+            # x_i.requires_grad = True
+            # self.x_i_grad = x_i
 
             y_pred = self.track(x=x_i, y_init=y_init[i])
 
+            # import cv2
+            # for i in range(0, 40):
+            #     curr = x_i[i]
+            #     bbox_0 = y_pred[i]
+            #     bbox = bbox_0
+            #     prev = curr
+            #
+            #     curr_dbg = np.copy(curr.detach().numpy())
+            #     # curr = x_i.detach().numpy()
+            #     mean_np = np.array([104, 117, 123])
+            #     curr_dbg = curr_dbg + mean_np
+            #     curr_dbg = curr_dbg.astype(np.uint8)
+            #
+            #     print(bbox)
+            #
+            #     # curr_dbg = np.copy(curr)
+            #     curr_dbg = cv2.rectangle(
+            #         curr_dbg, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), (255, 255, 0), 2
+            #     )
+            #
+            #     cv2.imshow("image", curr_dbg)
+            #     # cv2.waitKey(20)
+            #     cv2.waitKey()
+
             gt_bb = labels_t[i]['boxes']
-
-            # for p in range(y_pred.shape[0]):
-            #     print('y_pred', y_pred[p])
-            #     print('gt_bb', gt_bb[p])
-
             loss = torch.nn.L1Loss(size_average=False)(y_pred.float(), gt_bb.float())
+            loss_list.append(loss)
+            # print('loss', loss)
+            # loss.backward()
 
-            loss.backward()
+            # gt_bb = labels_t[i]['boxes']
+            # loss = torch.nn.L1Loss(size_average=False)(y_pred.float(), gt_bb.float())
+            # print('loss', loss)
+            # loss.backward()
 
-            print('loss', loss)
-            asdf
+            # print('self.target_pad_in.grad', self.target_pad_in.grad)
+            # print('self.target_pad.grad', self.target_pad.grad)
+            # print('self.cur_search_region.grad', self.cur_search_region.grad)
+            # print('self.x_grad.grad', self.x_grad.grad)
+            # print('image_tensor_list_grad[i].requires_grad', image_tensor_list_grad[i].requires_grad)
+            # print('image_tensor_list_grad[i].grad', image_tensor_list_grad[i].grad)
+            # print('image_tensor_list_grad[i].grad min', np.min(image_tensor_list_grad[i].grad.detach().numpy()))
+            # print('image_tensor_list_grad[i].grad max', np.max(image_tensor_list_grad[i].grad.detach().numpy()))
+            # asdf
+
+        loss = {"torch.nn.L1Loss": sum(loss_list)}
+
+        # self._model.zero_grad()
+        # loss["torch.nn.L1Loss"].backward()
+        # print('image_tensor_list_grad[0].grad min', np.min(image_tensor_list_grad[0].grad.detach().numpy()))
+        # print('image_tensor_list_grad[0].grad max', np.max(image_tensor_list_grad[0].grad.detach().numpy()))
 
         return loss, inputs_t, image_tensor_list_grad
 
@@ -342,58 +350,62 @@ class PyTorchGoturn(ObjectDetectorMixin, PyTorchEstimator):
         """
         import torch  # lgtm [py/repeated-import]
 
-        # grad_list = list()
-        #
-        # # Adding this loop because torch==[1.7, 1.8] and related versions of torchvision do not allow loss gradients at
-        # #  the input for batches larger than 1 anymore for PyTorch FasterRCNN because of a view created by torch or
-        # #  torchvision. This loop should be revisited with later releases of torch and removed once it becomes
-        # #  unnecessary.
-        # for i in range(x.shape[0]):
-        #
-        #     x_i = x[[i]]
-        #     y_i = [y[i]]
-        #
-        #     output, inputs_t, image_tensor_list_grad = self._get_losses(x=x_i, y=y_i)
-        #
-        #     # Compute the gradient and return
-        #     loss = None
-        #     for loss_name in self.attack_losses:
-        #         if loss is None:
-        #             loss = output[loss_name]
-        #         else:
-        #             loss = loss + output[loss_name]
-        #
-        #     # Clean gradients
-        #     self._model.zero_grad()
-        #
-        #     # Compute gradients
-        #     loss.backward(retain_graph=True)  # type: ignore
-        #
-        #     if isinstance(x, np.ndarray):
-        #         for img in image_tensor_list_grad:
-        #             gradients = img.grad.cpu().numpy().copy()
-        #             grad_list.append(gradients)
-        #     else:
-        #         for img in inputs_t:
-        #             gradients = img.grad.copy()
-        #             grad_list.append(gradients)
-        #
-        # if isinstance(x, np.ndarray):
-        #     grads = np.stack(grad_list, axis=0)
-        #     grads = np.transpose(grads, (0, 2, 3, 1))
-        # else:
-        #     grads = torch.stack(grad_list, dim=0)
-        #     grads = grads.premute(0, 2, 3, 1)
-        #
+        grad_list = list()
+
+        for i in range(x.shape[0]):
+
+            x_i = x[[i]]
+            y_i = [y[i]]
+
+            output, inputs_t, image_tensor_list_grad = self._get_losses(x=x_i, y=y_i)
+
+            # Compute the gradient and return
+            loss = None
+            for loss_name in self.attack_losses:
+                if loss is None:
+                    loss = output[loss_name]
+                else:
+                    loss = loss + output[loss_name]
+
+            # Clean gradients
+            self._model.zero_grad()
+
+            # Compute gradients
+            loss.backward(retain_graph=True)  # type: ignore
+
+            # loss.backward()
+            # print('image_tensor_list_grad[0].grad min', np.min(image_tensor_list_grad[0].grad.detach().numpy()))
+            # print('image_tensor_list_grad[0].grad max', np.max(image_tensor_list_grad[0].grad.detach().numpy()))
+            # sdsdgf
+
+            if isinstance(x, np.ndarray):
+                for img in image_tensor_list_grad:
+                    gradients = img.grad.cpu().numpy().copy()
+                    # gradients = img.grad.cpu().detach().numpy()
+                    # print(gradients)
+                    # print('gradients.grad min', np.min(gradients))
+                    # print('gradients.grad max', np.max(gradients))
+                    # ghj
+                    grad_list.append(gradients)
+            else:
+                for img in inputs_t:
+                    gradients = img.grad.copy()
+                    grad_list.append(gradients)
+
+        if isinstance(x, np.ndarray):
+            # grads = np.stack(grad_list, axis=0)
+            grads = np.array(grad_list, dtype=object)
+            # grads = np.transpose(grads, (0, 2, 3, 1))
+
         # if self.clip_values is not None:
         #     grads = grads / self.clip_values[1]
-        #
-        # if not self.all_framework_preprocessing:
-        #     grads = self._apply_preprocessing_gradient(x, grads)
-        #
-        # assert grads.shape == x.shape
-        #
-        # return grads
+
+        if not self.all_framework_preprocessing:
+            grads = self._apply_preprocessing_gradient(x, grads)
+
+        assert grads.shape == x.shape
+
+        return grads
 
     def preprocess(self, im):
         """
@@ -553,8 +565,16 @@ class PyTorchGoturn(ObjectDetectorMixin, PyTorchEstimator):
         target_pad, _, _, _ = cropPadImage(prev_bbox, prev_frame)
         cur_search_region, search_location, edge_spacing_x, edge_spacing_y = cropPadImage(prev_bbox, curr_frame)
 
+        # target_pad.requires_grad = True
+        # self.target_pad = target_pad
+        # cur_search_region.requires_grad = True
+        # self.cur_search_region = cur_search_region
+
         target_pad_in = self.preprocess(target_pad).unsqueeze(0)
         cur_search_region_in = self.preprocess(cur_search_region).unsqueeze(0)
+
+        # target_pad_in.requires_grad = True
+        # self.target_pad_in = target_pad_in
 
         pred_bb = self._model.forward(target_pad_in, cur_search_region_in)
 
@@ -570,7 +590,8 @@ class PyTorchGoturn(ObjectDetectorMixin, PyTorchEstimator):
         pred_bb[1] = pred_bb[1] / kScaleFactor * height
         pred_bb[3] = pred_bb[3] / kScaleFactor * height
 
-        pred_bb = torch.round(pred_bb)
+        # brings gradients to zero
+        # pred_bb = torch.round(pred_bb)
 
         """move the bounding box to target/search region coordinates"""
         raw_image = curr_frame
@@ -579,13 +600,17 @@ class PyTorchGoturn(ObjectDetectorMixin, PyTorchEstimator):
         pred_bb[2] = min(raw_image.shape[1], pred_bb[2] + search_location.x1 - edge_spacing_x)
         pred_bb[3] = min(raw_image.shape[0], pred_bb[3] + search_location.y1 - edge_spacing_y)
 
-        pred_bb = torch.round(pred_bb)
+        # brings gradients to zero
+        # pred_bb = torch.round(pred_bb)
 
         return pred_bb
 
     def track(self, x, y_init):
         """Track"""
         import torch
+
+        # x.requires_grad = True
+        # self.x_grad = x
 
         num_frames = x.shape[0]
         prev = x[0]
@@ -659,9 +684,8 @@ class PyTorchGoturn(ObjectDetectorMixin, PyTorchEstimator):
                   of shape `(nb_samples,)`.
         :return: Dictionary of loss components.
         """
-        pass
-        # output, _, _ = self._get_losses(x=x, y=y)
-        # return output
+        output, _, _ = self._get_losses(x=x, y=y)
+        return output
 
     def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
@@ -669,20 +693,19 @@ class PyTorchGoturn(ObjectDetectorMixin, PyTorchEstimator):
         """
         import torch  # lgtm [py/repeated-import]
 
-        #
-        # output, _, _ = self._get_losses(x=x, y=y)
-        #
-        # # Compute the gradient and return
-        # loss = None
-        # for loss_name in self.attack_losses:
-        #     if loss is None:
-        #         loss = output[loss_name]
-        #     else:
-        #         loss = loss + output[loss_name]
-        #
-        # assert loss is not None
-        #
-        # if isinstance(x, torch.Tensor):
-        #     return loss
-        #
-        # return loss.detach().cpu().numpy()
+        output, _, _ = self._get_losses(x=x, y=y)
+
+        # Compute the gradient and return
+        loss = None
+        for loss_name in self.attack_losses:
+            if loss is None:
+                loss = output[loss_name]
+            else:
+                loss = loss + output[loss_name]
+
+        assert loss is not None
+
+        if isinstance(x, torch.Tensor):
+            return loss
+
+        return loss.detach().cpu().numpy()
