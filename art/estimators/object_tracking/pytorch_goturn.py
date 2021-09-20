@@ -15,6 +15,7 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+#
 # MIT License
 #
 # Copyright (c) 2019 Nrupatunga
@@ -37,10 +38,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the task specific estimator for PyTorch Goturn object tracker.
+This module implements the task specific estimator for PyTorch GOTURN object tracker.
 """
-import os
-import sys
 import logging
 from typing import List, Dict, Optional, Tuple, Union, TYPE_CHECKING
 
@@ -48,7 +47,6 @@ import numpy as np
 
 from art.estimators.object_tracking.object_tracker import ObjectTrackerMixin
 from art.estimators.pytorch import PyTorchEstimator
-from art import config
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
@@ -63,14 +61,14 @@ logger = logging.getLogger(__name__)
 
 class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
     """
-    This module implements the task specific estimator for PyTorch object trackers.
+    This module implements the task- and model-specific estimator for PyTorch GOTURN (object tracking).
     """
 
     estimator_params = PyTorchEstimator.estimator_params + ["attack_losses"]
 
     def __init__(
         self,
-        goturn_path: Optional[str] = None,
+        model,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         channels_first: Optional[bool] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
@@ -81,7 +79,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         """
         Initialization.
 
-        :param goturn_path: Path to GOTURN repository.
+        :param model: GOTURN model.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
@@ -95,7 +93,6 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         :param device_type: Type of device to be used for model and tensors, if `cpu` run on CPU, if `gpu` run on GPU
                             if available otherwise run on CPU.
         """
-        from git import Repo
         import torch  # lgtm [py/repeated-import]
         import torchvision  # lgtm [py/repeated-import]
 
@@ -103,8 +100,6 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         torchvision_version = list(map(int, torchvision.__version__.lower().split("+")[0].split(".")))
         assert torch_version[0] == 1 and torch_version[1] == 4, "PyTorchGoturn requires torch==1.4"
         assert torchvision_version[0] == 0 and torchvision_version[1] == 5, "PyTorchGoturn requires torchvision==0.5"
-
-        self.goturn_path = goturn_path
 
         # Set device
         self._device: torch.device
@@ -114,36 +109,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
             cuda_idx = torch.cuda.current_device()
             self._device = torch.device("cuda:{}".format(cuda_idx))
 
-        if goturn_path is None:
-            self.goturn_path = os.path.join(config.ART_DATA_PATH, "goturn")
-
-            if not os.path.isdir(self.goturn_path):
-                git_url = "git@github.com:nrupatunga/goturn-pytorch.git"
-                Repo.clone_from(git_url, self.goturn_path)
-
-        sys.path.insert(0, config.ART_DATA_PATH + "/goturn/src")
-        sys.path.insert(0, config.ART_DATA_PATH + "/goturn/src/scripts")
-
-        from scripts.train import GoturnTrain
-        from pathlib import Path
-
-        model_dir = Path(os.path.join(self.goturn_path, "src", "goturn", "models"))
-        ckpt_dir = model_dir.joinpath("checkpoints")
-        ckpt_path = next(ckpt_dir.glob("*.ckpt"))
-
-        ckpt_mod = torch.load(os.path.join(
-            self.goturn_path, "src", "goturn", "models", "checkpoints", "_ckpt_epoch_3.ckpt"), map_location=self._device
-        )
-        ckpt_mod["hparams"]["pretrained_model"] = os.path.join(
-            self.goturn_path, "src", "goturn", "models", "pretrained", "caffenet_weights.npy"
-        )
-        torch.save(ckpt_mod, os.path.join(
-            self.goturn_path, "src", "goturn", "models", "checkpoints", "_ckpt_epoch_3.ckpt"))
-
-        model = GoturnTrain.load_from_checkpoint(ckpt_path)
         model.to(self._device)
-        model.eval()
-        model.freeze()
 
         super().__init__(
             model=model,
@@ -159,8 +125,11 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         if self.clip_values is not None:
             if self.clip_values[0] != 0:
                 raise ValueError("This classifier requires un-normalized input images with clip_vales=(0, 255).")
-            if self.clip_values[1] != 255:
-                raise ValueError("This classifier requires un-normalized input images with clip_vales=(0, 255).")
+            if self.clip_values[1] not in [1, 255]:
+                raise ValueError(
+                    "This classifier requires un-normalized input images with clip_vales=(0, 1) or"
+                    "clip_vales=(0, 255)."
+                )
 
         if self.postprocessing_defences is not None:
             raise ValueError("This estimator does not support `postprocessing_defences`.")
@@ -221,7 +190,8 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
                 for i, y_i in enumerate(y):
                     y_t = dict()
                     y_t["boxes"] = torch.from_numpy(y_i["boxes"]).type(torch.float).to(self._device)
-                    y_t["labels"] = torch.from_numpy(y_i["labels"]).type(torch.int64).to(self._device)
+                    if "labels" in y_i:
+                        y_t["labels"] = torch.from_numpy(y_i["labels"]).type(torch.int64).to(self._device)
                     if "masks" in y_i:
                         y_t["masks"] = torch.from_numpy(y_i["masks"]).type(torch.int64).to(self._device)
                     y_tensor.append(y_t)
@@ -260,8 +230,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         else:
             labels_t = y_preprocessed  # type: ignore
 
-        # y_init = torch.from_numpy(np.array([[72, 89, 121, 146], [160, 100, 180, 146]])).float()
-        y_init = torch.from_numpy(np.array([[42, 89, 121, 146], [160, 100, 180, 146]])).float()
+        y_init = y[0]["boxes"]
 
         loss_list = list()
 
@@ -315,25 +284,14 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
             # Compute gradients
             loss.backward(retain_graph=True)  # type: ignore
 
-            if isinstance(x, np.ndarray):
-                for img in image_tensor_list_grad:
-                    gradients = img.grad.cpu().numpy().copy()
-                    grad_list.append(gradients)
-            else:
-                for img in inputs_t:
-                    gradients = img.grad.copy()
-                    grad_list.append(gradients)
+            for img in image_tensor_list_grad:
+                gradients = img.grad.cpu().numpy().copy()
+                grad_list.append(gradients)
 
-        if isinstance(x, np.ndarray):
-            grads = np.array(grad_list, dtype=object)
-
-        # if self.clip_values is not None:
-        #     grads = grads / self.clip_values[1]
+        grads = np.array(grad_list)
 
         if not self.all_framework_preprocessing:
             grads = self._apply_preprocessing_gradient(x, grads)
-
-        assert grads.shape == x.shape
 
         return grads
 
@@ -347,14 +305,16 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         import torch
         from torch.nn.functional import interpolate
 
-        mean_np = np.array([104, 117, 123])
+        mean_np = self.preprocessing.mean
+        std_np = self.preprocessing.std
         mean = torch.from_numpy(mean_np).reshape((3, 1, 1))
+        std = torch.from_numpy(std_np).reshape((3, 1, 1))
         im = im.permute(2, 0, 1)
-        im = im + mean
+        im = im * std + mean
         im = torch.unsqueeze(im, dim=0)
         im = interpolate(im, size=(227, 227))
         im = torch.squeeze(im)
-        im = im - mean
+        im = (im - mean) / std
         return im
 
     def _track(self, curr_frame, prev_frame, rect):
@@ -364,7 +324,6 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         @rect: bounding box of previous frame
         """
         import torch
-        from goturn.helper.BoundingBox import BoundingBox
 
         prev_bbox = rect
 
@@ -441,9 +400,10 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
             roi_height = max(1.0, top_half + bottom_half)
 
             # Padded image location in the original image
-            objPadImageLocation = BoundingBox(roi_left, roi_bottom, roi_left + roi_width, roi_bottom + roi_height)
-
-            return objPadImageLocation
+            # objPadImageLocation = BoundingBox(roi_left, roi_bottom, roi_left + roi_width, roi_bottom + roi_height)
+            #
+            # return objPadImageLocation
+            return roi_left, roi_bottom, roi_left + roi_width, roi_bottom + roi_height
 
         def edge_spacing_x_f(bbox_tight):
             """
@@ -474,10 +434,14 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
             import torch
 
             pad_image_location = computeCropPadImageLocation(bbox_tight, image)
-            roi_left = min(pad_image_location.x1, (image.shape[1] - 1))
-            roi_bottom = min(pad_image_location.y1, (image.shape[0] - 1))
-            roi_width = min(image.shape[1], max(1.0, math.ceil(pad_image_location.x2 - pad_image_location.x1)))
-            roi_height = min(image.shape[0], max(1.0, math.ceil(pad_image_location.y2 - pad_image_location.y1)))
+            # roi_left = min(pad_image_location.x1, (image.shape[1] - 1))
+            # roi_bottom = min(pad_image_location.y1, (image.shape[0] - 1))
+            roi_left = min(pad_image_location[0], (image.shape[1] - 1))
+            roi_bottom = min(pad_image_location[1], (image.shape[0] - 1))
+            # roi_width = min(image.shape[1], max(1.0, math.ceil(pad_image_location.x2 - pad_image_location.x1)))
+            # roi_height = min(image.shape[0], max(1.0, math.ceil(pad_image_location.y2 - pad_image_location.y1)))
+            roi_width = min(image.shape[1], max(1.0, math.ceil(pad_image_location[2] - pad_image_location[0])))
+            roi_height = min(image.shape[0], max(1.0, math.ceil(pad_image_location[3] - pad_image_location[1])))
 
             err = 0.000000001  # To take care of floating point arithmetic errors
             cropped_image = image[
@@ -532,10 +496,10 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
 
         """move the bounding box to target/search region coordinates"""
         raw_image = curr_frame
-        pred_bb[0] = max(0.0, pred_bb[0] + search_location.x1 - edge_spacing_x)
-        pred_bb[1] = max(0.0, pred_bb[1] + search_location.y1 - edge_spacing_y)
-        pred_bb[2] = min(raw_image.shape[1], pred_bb[2] + search_location.x1 - edge_spacing_x)
-        pred_bb[3] = min(raw_image.shape[0], pred_bb[3] + search_location.y1 - edge_spacing_y)
+        pred_bb[0] = max(0.0, pred_bb[0] + search_location[0] - edge_spacing_x)
+        pred_bb[1] = max(0.0, pred_bb[1] + search_location[1] - edge_spacing_y)
+        pred_bb[2] = min(raw_image.shape[1], pred_bb[2] + search_location[0] - edge_spacing_x)
+        pred_bb[3] = min(raw_image.shape[0], pred_bb[3] + search_location[1] - edge_spacing_y)
 
         # brings gradients to zero
         # pred_bb = torch.round(pred_bb)
@@ -569,19 +533,30 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
 
         :param x: Samples of shape (nb_samples, height, width, nb_channels).
         :param batch_size: Batch size.
-        :return: Predictions of format `List[Dict[str, np.ndarray]]`, one for each input image. The fields of the Dict
-                 are as follows:
 
-                 - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
-                 - labels [N]: the labels for each image
-                 - scores [N]: the scores or each prediction.
+        :Keyword Arguments:
+            * *y_init* (``np.ndarray``) --
+              Initial box around object to be tracked as [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and
+              0 <= y1 < y2 <= H.
+
+        :return: Predictions of format `List[Dict[str, np.ndarray]]`, one dictionary for each input image. The keys of
+                 the dictionary are:
+
+                  - boxes [N_FRAMES, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and
+                                         0 <= y1 < y2 <= H.
+                  - labels [N_FRAMES]: the labels for each image, default 0.
+                  - scores [N_FRAMES]: the scores or each prediction, default 1.
         """
         import torch
 
         self._model.eval()
         self._model.freeze()
 
-        y_init = torch.from_numpy(np.array([[72, 89, 121, 146], [160, 100, 180, 146]])).float()
+        y_init = kwargs.get("y_init")
+        if y_init is None:
+            raise ValueError("y_init is a required argument for method `predict`.")
+        else:
+            y_init = torch.from_numpy(y_init).float()
 
         predictions = list()
 
@@ -609,14 +584,18 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
     ) -> np.ndarray:
         raise NotImplementedError
 
-    def compute_losses(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
+    def compute_losses(self, x: np.ndarray, y: np.ndarray) -> List[Dict[str, np.ndarray]]:
         """
         Compute all loss components.
 
-        :param x: Samples of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
-                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
-        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices
-                  of shape `(nb_samples,)`.
+        :param x: Object array of sample arrays of shape FHWC.
+        :param y: Labels of format `List[Dict[str, np.ndarray]]`, one dictionary for each input image. The keys of the
+                  dictionary are:
+
+                  - boxes [N_FRAMES, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and
+                                        0 <= y1 < y2 <= H.
+                  - labels [N_FRAMES]: the labels for each image, default 0.
+                  - scores [N_FRAMES]: the scores or each prediction, default 1.
         :return: Dictionary of loss components.
         """
         output, _, _ = self._get_losses(x=x, y=y)
@@ -625,6 +604,15 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
     def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the loss of the neural network for samples `x`.
+
+        :param x: Object array of sample arrays of shape FHWC.
+        :param y: Labels of format `List[Dict[str, np.ndarray]]`, one dictionary for each input image. The keys of the
+                  dictionary are:
+
+                  - boxes [N_FRAMES, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and
+                                        0 <= y1 < y2 <= H.
+                  - labels [N_FRAMES]: the labels for each image, default 0.
+                  - scores [N_FRAMES]: the scores or each prediction, default 1.
         """
         import torch  # lgtm [py/repeated-import]
 
