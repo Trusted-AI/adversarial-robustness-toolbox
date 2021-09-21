@@ -308,8 +308,8 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
 
         mean_np = self.preprocessing.mean
         std_np = self.preprocessing.std
-        mean = torch.from_numpy(mean_np).reshape((3, 1, 1))
-        std = torch.from_numpy(std_np).reshape((3, 1, 1))
+        mean = torch.from_numpy(mean_np).reshape((3, 1, 1)).to(self._device)
+        std = torch.from_numpy(std_np).reshape((3, 1, 1)).to(self._device)
         im = im.permute(2, 0, 1)
         im = im * std + mean
         im = torch.unsqueeze(im, dim=0)
@@ -557,12 +557,12 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         if y_init is None:
             raise ValueError("y_init is a required argument for method `predict`.")
         else:
-            y_init = torch.from_numpy(y_init).float()
+            y_init = torch.from_numpy(y_init).to(self._device).float()
 
         predictions = list()
 
         for i in range(x.shape[0]):
-            x_i = torch.from_numpy(x[i])
+            x_i = torch.from_numpy(x[i]).to(self._device)
 
             # Apply preprocessing
             x_i, _ = self._apply_preprocessing(x_i, y=None, fit=False)
