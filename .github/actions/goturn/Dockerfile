@@ -31,7 +31,7 @@ RUN /opt/conda/bin/conda install --yes \
 
 # Install necessary libraries for goturn
 RUN pip install torch==1.4
-RUN pip install tensorflow==2.1.0
+RUN pip install tensorflow==2.1.4
 RUN pip install torchaudio==0.5.0
 RUN pip install pytest
 RUN pip install numba

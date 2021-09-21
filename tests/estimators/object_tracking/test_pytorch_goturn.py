@@ -33,8 +33,8 @@ def test_pytorch_goturn(art_warning, get_mnist_dataset):
     try:
         from art.estimators.object_tracking import PyTorchGoturn
 
-        sys.path.insert(0, os.path.join(os.sep, "home", "bbuesser", ".art", "data", "goturn-pytorch", "src"))
-        sys.path.insert(0, os.path.join(os.sep, "home", "bbuesser", ".art", "data", "goturn-pytorch", "src", "scripts"))
+        # sys.path.insert(0, os.path.join(os.sep, "home", "bbuesser", ".art", "data", "goturn-pytorch", "src"))
+        # sys.path.insert(0, os.path.join(os.sep, "home", "bbuesser", ".art", "data", "goturn-pytorch", "src", "scripts"))
 
         import torch
         from scripts.train import GoturnTrain
