@@ -308,8 +308,8 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
 
         mean_np = self.preprocessing.mean
         std_np = self.preprocessing.std
-        mean = torch.from_numpy(mean_np).reshape((3, 1, 1)).to(self._device)
-        std = torch.from_numpy(std_np).reshape((3, 1, 1)).to(self._device)
+        mean = torch.from_numpy(mean_np).reshape((3, 1, 1))
+        std = torch.from_numpy(std_np).reshape((3, 1, 1))
         im = im.permute(2, 0, 1)
         im = im * std + mean
         im = torch.unsqueeze(im, dim=0)
@@ -426,7 +426,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
 
             return max(0.0, (output_height / 2) - bbox_center_y)
 
-        def cropPadImage(bbox_tight, image, dbg=False, viz=None):
+        def cropPadImage(bbox_tight, image):
             """
             Around the bounding box, we define a extra context factor of 2,
             which we will crop from the original image
