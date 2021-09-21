@@ -475,8 +475,8 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         target_pad, _, _, _ = cropPadImage(prev_bbox, prev_frame)
         cur_search_region, search_location, edge_spacing_x, edge_spacing_y = cropPadImage(prev_bbox, curr_frame)
 
-        target_pad_in = self._preprocess(target_pad).unsqueeze(0)
-        cur_search_region_in = self._preprocess(cur_search_region).unsqueeze(0)
+        target_pad_in = self._preprocess(target_pad).unsqueeze(0).to(self._device)
+        cur_search_region_in = self._preprocess(cur_search_region).unsqueeze(0).to(self._device)
 
         pred_bb = self._model.forward(target_pad_in, cur_search_region_in)
 
