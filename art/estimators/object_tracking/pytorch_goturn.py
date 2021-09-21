@@ -118,6 +118,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
             preprocessing=preprocessing,
+            device_type=device_type,
         )
 
         self._input_shape = None
