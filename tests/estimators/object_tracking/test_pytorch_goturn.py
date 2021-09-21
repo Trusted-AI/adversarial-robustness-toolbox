@@ -17,6 +17,8 @@
 # SOFTWARE.
 import logging
 
+import os
+import sys
 import numpy as np
 import pytest
 
@@ -31,12 +33,14 @@ def test_pytorch_goturn(art_warning, get_mnist_dataset):
     try:
         from art.estimators.object_tracking import PyTorchGoturn
 
-        import os
+        sys.path.insert(0, os.path.join(os.sep, "home", "bbuesser", ".art", "data", "goturn-pytorch", "src"))
+        sys.path.insert(0, os.path.join(os.sep, "home", "bbuesser", ".art", "data", "goturn-pytorch", "src", "scripts"))
+
         import torch
         from scripts.train import GoturnTrain
         from pathlib import Path
 
-        _device = 'cpu'
+        _device = "cpu"
 
         goturn_path = os.path.join(config.ART_DATA_PATH, "goturn-pytorch")
 
@@ -44,20 +48,51 @@ def test_pytorch_goturn(art_warning, get_mnist_dataset):
         ckpt_dir = model_dir.joinpath("checkpoints")
         ckpt_path = next(ckpt_dir.glob("*.ckpt"))
 
-        ckpt_mod = torch.load(os.path.join(
-            goturn_path, "src", "goturn", "models", "checkpoints", "_ckpt_epoch_3.ckpt"), map_location=_device
+        ckpt_mod = torch.load(
+            os.path.join(goturn_path, "src", "goturn", "models", "checkpoints", "_ckpt_epoch_3.ckpt"),
+            map_location=_device,
         )
         ckpt_mod["hparams"]["pretrained_model"] = os.path.join(
             goturn_path, "src", "goturn", "models", "pretrained", "caffenet_weights.npy"
         )
-        torch.save(ckpt_mod, os.path.join(
-            goturn_path, "src", "goturn", "models", "checkpoints", "_ckpt_epoch_3.ckpt"))
+        torch.save(ckpt_mod, os.path.join(goturn_path, "src", "goturn", "models", "checkpoints", "_ckpt_epoch_3.ckpt"))
 
         model = GoturnTrain.load_from_checkpoint(ckpt_path)
 
-        pgt = PyTorchGoturn(model=model, clip_values=(0, 255),
-                            preprocessing=(np.array([104.0, 117.0, 123.0]), np.array([1.0, 1.0, 1.0])),
-                            device_type=_device)
+        pgt = PyTorchGoturn(
+            model=model,
+            clip_values=(0, 255),
+            preprocessing=(np.array([104.0, 117.0, 123.0]), np.array([1.0, 1.0, 1.0])),
+            device_type=_device,
+        )
+
+        y_init = np.array([[48, 79, 80, 110], [48, 79, 80, 110]])
+        x_list = list()
+        for i in range(2):
+            x_list.append(np.random.random_integers(0, 255, size=(4 + i, 277, 277, 3)).astype(float))
+
+        x = np.asarray(x_list, dtype=object)
+
+        y_pred = pgt.predict(x=x, y_init=y_init)
+
+        assert len(y_pred) == 2
+        np.testing.assert_almost_equal(
+            y_pred[0]["boxes"],
+            np.array(
+                [
+                    [48.0, 79.0, 80.0, 110.0],
+                    [46.456497, 85.494965, 77.87505, 116.65396],
+                    [49.774284, 89.25606, 81.5314, 119.94908],
+                    [44.911964, 96.52238, 76.937485, 127.002235],
+                ]
+            ),
+            decimal=4,
+        )
+
+        gradients = pgt.loss_gradient(x=x, y=y_pred)
+
+        assert len(gradients) == 2
+        assert pytest.approx(np.max(gradients[0]), 0.037566885, abs=0.0001)
 
     except ARTTestException as e:
         art_warning(e)

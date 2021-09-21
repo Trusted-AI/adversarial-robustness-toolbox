@@ -189,6 +189,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
             if y is not None and isinstance(y[0]["boxes"], np.ndarray):
                 y_tensor = list()
                 for i, y_i in enumerate(y):
+                    print("y is np.ndarray")
                     y_t = dict()
                     y_t["boxes"] = torch.from_numpy(y_i["boxes"]).type(torch.float).to(self._device)
                     if "labels" in y_i:
@@ -231,7 +232,10 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         else:
             labels_t = y_preprocessed  # type: ignore
 
-        y_init = y[0]["boxes"]
+        if isinstance(y[0]["boxes"], np.ndarray):
+            y_init = torch.from_numpy(y[0]["boxes"])
+        else:
+            y_init = y[0]["boxes"]
 
         loss_list = list()
 
@@ -513,16 +517,20 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
 
         num_frames = x.shape[0]
         prev = x[0]
+        print("type(y_init)", type(y_init))
         bbox_0 = y_init
         y_pred_list = [y_init]
 
         for i in range(1, num_frames):
             curr = x[i]
             bbox_0 = self._track(curr, prev, bbox_0)
+            print(type(curr), type(bbox_0))
             bbox = bbox_0
             prev = curr
 
             y_pred_list.append(bbox)
+
+        print(y_pred_list)
 
         y_pred = torch.stack(y_pred_list)
 
@@ -570,7 +578,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
             y_pred = self.track(x=x_i, y_init=y_init[i])
 
             prediction_dict = dict()
-            prediction_dict["boxes"] = y_pred
+            prediction_dict["boxes"] = y_pred.detach().cpu().numpy()
             prediction_dict["labels"] = np.zeros((y_pred.shape[0],))
             prediction_dict["scores"] = np.ones_like((y_pred.shape[0],))
             predictions.append(prediction_dict)

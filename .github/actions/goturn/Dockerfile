@@ -17,6 +17,8 @@ RUN apt-get update \
         curl \
         libsndfile-dev \
         libsndfile1 \
+     && apt-get install -y libsm6 libxext6 \
+     && apt-get install -y libxrender-dev \
      && apt-get clean all \
      && rm -r /var/lib/apt/lists/*
 
@@ -29,13 +31,20 @@ RUN /opt/conda/bin/conda install --yes \
 
 # Install necessary libraries for goturn
 RUN pip install torch==1.4
-RUN pip install tensorflow
+RUN pip install tensorflow==2.1.0
 RUN pip install torchaudio==0.5.0
 RUN pip install pytest
-RUN pip install numpy
+RUN pip install numba
+RUN pip install scikit-learn==0.20
+RUN pip install gdown
 
-RUN git clone https://github.com/nrupatunga/goturn-pytorch.git
-RUN ls -lh
-RUN cd goturn-pytorch && pip install -r requirements.txt
+RUN git clone https://github.com/nrupatunga/goturn-pytorch.git /root/.art/data/goturn-pytorch
+RUN cd /root/.art/data/goturn-pytorch && pip install -r requirements.txt
 
-ENV PYTHONPATH "${PYTHONPATH}:/workspace/goturn-pytorch/src"
+RUN pip install numpy==1.20.3
+
+ENV PYTHONPATH "${PYTHONPATH}:/root/.art/data/goturn-pytorch/src"
+ENV PYTHONPATH "${PYTHONPATH}:/root/.art/data/goturn-pytorch/src/scripts"
+
+RUN mkdir /root/.art/data/goturn-pytorch/src/goturn/models/checkpoints
+RUN cd /root/.art/data/goturn-pytorch/src/goturn/models/checkpoints && gdown https://drive.google.com/uc?id=1GouImhqpcoDtV_eLrD2wra-qr3vkAMY4
