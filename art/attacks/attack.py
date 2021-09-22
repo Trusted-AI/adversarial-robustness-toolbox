@@ -85,7 +85,7 @@ class InputFilter(abc.ABCMeta):
                 setattr(cls, item, new_function)
 
 
-class Attack(abc.ABC, metaclass=InputFilter):
+class Attack(abc.ABC):
     """
     Abstract base class for all attack abstract base classes.
     """
@@ -175,7 +175,7 @@ class EvasionAttack(Attack):
 
         :param x: An array with the original inputs to be attacked.
         :param y: Correct labels or target labels for `x`, depending if the attack is targeted
-               or not. This parameter is only used by some of the attacks.
+                  or not. This parameter is only used by some of the attacks.
         :return: An array holding the adversarial examples.
         """
         raise NotImplementedError
