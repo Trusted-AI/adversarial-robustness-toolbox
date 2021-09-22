@@ -79,7 +79,7 @@ class GPyGaussianProcessClassifier(ClassifierClassLossGradients):
             postprocessing_defences=postprocessing_defences,
             preprocessing=preprocessing,
         )
-        self._nb_classes = 2  # always binary
+        self.nb_classes = 2  # always binary
 
     @property
     def input_shape(self) -> Tuple[int, ...]:

@@ -107,6 +107,16 @@ class ClassifierMixin(ABC, metaclass=InputFilter):
         """
         return self._nb_classes  # type: ignore
 
+    @nb_classes.setter
+    def nb_classes(self, nb_classes: int):
+        """
+        Set the number of output classes.
+        """
+        if nb_classes is None or nb_classes < 2:
+            raise ValueError("nb_classes must be greater than or equal to 2.")
+
+        self._nb_classes = nb_classes
+
 
 class ClassGradientsMixin(ABC):
     """

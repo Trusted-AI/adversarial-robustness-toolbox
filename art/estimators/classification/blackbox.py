@@ -79,7 +79,7 @@ class BlackBoxClassifier(ClassifierMixin, BaseEstimator):
 
         self._predict_fn = predict_fn
         self._input_shape = input_shape
-        self._nb_classes = nb_classes
+        self.nb_classes = nb_classes
 
     @property
     def input_shape(self) -> Tuple[int, ...]:
@@ -203,7 +203,7 @@ class BlackBoxClassifierNeuralNetwork(NeuralNetworkMixin, ClassifierMixin, BaseE
 
         self._predictions = predict
         self._input_shape = input_shape
-        self._nb_classes = nb_classes
+        self.nb_classes = nb_classes
         self._learning_phase = None
         self._layer_names = None
 

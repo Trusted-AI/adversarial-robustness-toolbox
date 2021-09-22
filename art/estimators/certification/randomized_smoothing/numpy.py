@@ -80,7 +80,7 @@ class NumpyRandomizedSmoothing(  # lgtm [py/conflicting-attributes]
             alpha=alpha,
         )
         self._input_shape = classifier.input_shape
-        self._nb_classes = classifier.nb_classes
+        self.nb_classes = classifier.nb_classes
 
         self.classifier = classifier
 

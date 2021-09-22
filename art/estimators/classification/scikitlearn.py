@@ -136,7 +136,9 @@ class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):  # lgtm [py/
             preprocessing=preprocessing,
         )
         self._input_shape = self._get_input_shape(model)
-        self._nb_classes = self._get_nb_classes()
+        nb_classes = self._get_nb_classes()
+        if nb_classes is not None:
+            self.nb_classes = nb_classes
         self._use_logits = use_logits
 
     @property
@@ -172,7 +174,7 @@ class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):  # lgtm [py/
 
         self.model.fit(x_preprocessed, y_preprocessed, **kwargs)
         self._input_shape = self._get_input_shape(self.model)
-        self._nb_classes = self._get_nb_classes()
+        self.nb_classes = self._get_nb_classes()
 
     def predict(self, x: np.ndarray, **kwargs) -> np.ndarray:
         """

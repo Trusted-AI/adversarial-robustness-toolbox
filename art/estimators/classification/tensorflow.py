@@ -123,7 +123,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
             preprocessing=preprocessing,
         )
 
-        self._nb_classes = int(output.get_shape()[-1])
+        self.nb_classes = int(output.get_shape()[-1])
         self._input_shape = tuple(input_ph.get_shape().as_list()[1:])
         self._input_ph = input_ph
         self._output = output
@@ -845,7 +845,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
             preprocessing=preprocessing,
         )
 
-        self._nb_classes = nb_classes
+        self.nb_classes = nb_classes
         self._input_shape = input_shape
         self._loss_object = loss_object
         self._train_step = train_step
@@ -1384,7 +1384,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
             % (
                 self.__module__ + "." + self.__class__.__name__,
                 self._model,
-                self._nb_classes,
+                self.nb_classes,
                 self._input_shape,
                 self._loss_object,
                 self._train_step,

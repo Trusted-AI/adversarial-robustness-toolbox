@@ -85,7 +85,9 @@ class CatBoostARTClassifier(ClassifierDecisionTree):
         )
 
         self._input_shape = (nb_features,)
-        self._nb_classes = self._get_nb_classes()
+        nb_classes = self._get_nb_classes()
+        if nb_classes != -1:
+            self.nb_classes = nb_classes
 
     @property
     def input_shape(self) -> Tuple[int, ...]:
@@ -118,7 +120,7 @@ class CatBoostARTClassifier(ClassifierDecisionTree):
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
 
         self._model.fit(x_preprocessed, y_preprocessed, **kwargs)
-        self._nb_classes = self._get_nb_classes()
+        self.nb_classes = self._get_nb_classes()
 
     def predict(self, x: np.ndarray, **kwargs) -> np.ndarray:
         """
