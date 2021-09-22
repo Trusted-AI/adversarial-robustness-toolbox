@@ -47,6 +47,13 @@ PyTorch Classifier
    :special-members: __init__
    :inherited-members:
 
+Query-Efficient Black-box Gradient Estimation Classifier
+--------------------------------------------------------
+.. autoclass:: QueryEfficientGradientEstimationClassifier
+   :members:
+   :special-members: __init__
+   :inherited-members:
+
 TensorFlow Classifier
 ---------------------
 .. autoclass:: TensorFlowClassifier

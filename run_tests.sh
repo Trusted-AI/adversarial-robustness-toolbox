@@ -61,6 +61,9 @@ then
     pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/estimators/classification/test_deeplearning_specific.py --framework=$framework --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed estimators/classification tests for framework $framework"; fi
 
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/estimators/classification/test_blackbox_existing_predictions.py --framework=$framework --durations=0
+    if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed estimators/classification/test_blackbox_existing_predictions.py $framework"; fi
+
     pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/metrics/privacy --framework=$framework --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed metrics/privacy tests"; fi
 else
@@ -103,6 +106,7 @@ else
                             "tests/estimators/classification/test_GPy.py" \
                             "tests/estimators/classification/test_input_filter.py" \
                             "tests/estimators/classification/test_lightgbm.py" \
+                            "tests/estimators/classification/test_query_efficient_bb.py" \
                             "tests/estimators/classification/test_scikitlearn.py" \
                             "tests/estimators/classification/test_xgboost.py" )
 
@@ -132,10 +136,6 @@ else
     declare -a metrics=("tests/metrics/test_gradient_check.py" \
                         "tests/metrics/test_metrics.py" \
                         "tests/metrics/test_verification_decision_trees.py" )
-
-    declare -a wrappers=("tests/wrappers/test_expectation.py" \
-                         "tests/wrappers/test_query_efficient_bb.py" \
-                         "tests/wrappers/test_wrapper.py" )
 
     declare -a art=("tests/test_data_generators.py" \
                     "tests/test_utils.py" \

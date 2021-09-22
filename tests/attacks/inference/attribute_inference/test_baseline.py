@@ -90,7 +90,7 @@ def test_black_box_baseline(art_warning, decision_tree_estimator, get_iris_datas
             baseline_inferred_test
         )
 
-        assert test_acc > baseline_test_acc
+        assert test_acc >= baseline_test_acc
 
     except ARTTestException as e:
         art_warning(e)
