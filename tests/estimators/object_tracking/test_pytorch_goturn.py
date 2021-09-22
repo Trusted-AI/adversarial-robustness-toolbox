@@ -21,6 +21,8 @@ import os
 import numpy as np
 import pytest
 
+from art.estimators.object_tracking import PyTorchGoturn
+
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
@@ -29,8 +31,6 @@ logger = logging.getLogger(__name__)
 @pytest.mark.skip_framework("tensorflow", "tensorflow2v1", "keras", "kerastf", "mxnet", "non_dl_frameworks")
 def test_pytorch_goturn(art_warning):
     try:
-        from art.estimators.object_tracking import PyTorchGoturn
-
         import torch
         from scripts.train import GoturnTrain
         from pathlib import Path
