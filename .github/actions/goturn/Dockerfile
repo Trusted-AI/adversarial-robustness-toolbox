@@ -36,15 +36,16 @@ RUN pip install torchaudio==0.5.0
 RUN pip install pytest
 RUN pip install numba
 RUN pip install scikit-learn==0.20
+RUN pip install pytest-cov
 RUN pip install gdown
 
-RUN git clone https://github.com/nrupatunga/goturn-pytorch.git /root/.art/data/goturn-pytorch
-RUN cd /root/.art/data/goturn-pytorch && pip install -r requirements.txt
+RUN git clone https://github.com/nrupatunga/goturn-pytorch.git /tmp/goturn-pytorch
+RUN cd /tmp/goturn-pytorch && pip install -r requirements.txt
 
 RUN pip install numpy==1.20.3
 
-ENV PYTHONPATH "${PYTHONPATH}:/root/.art/data/goturn-pytorch/src"
-ENV PYTHONPATH "${PYTHONPATH}:/root/.art/data/goturn-pytorch/src/scripts"
+ENV PYTHONPATH "${PYTHONPATH}:/tmp/goturn-pytorch/src"
+ENV PYTHONPATH "${PYTHONPATH}:/tmp/goturn-pytorch/src/scripts"
 
-RUN mkdir /root/.art/data/goturn-pytorch/src/goturn/models/checkpoints
-RUN cd /root/.art/data/goturn-pytorch/src/goturn/models/checkpoints && gdown https://drive.google.com/uc?id=1GouImhqpcoDtV_eLrD2wra-qr3vkAMY4
+RUN mkdir /tmp/goturn-pytorch/src/goturn/models/checkpoints
+RUN cd /tmp/goturn-pytorch/src/goturn/models/checkpoints && gdown https://drive.google.com/uc?id=1GouImhqpcoDtV_eLrD2wra-qr3vkAMY4

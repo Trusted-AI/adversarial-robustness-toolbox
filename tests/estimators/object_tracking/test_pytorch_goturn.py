@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.mark.skip_framework("tensorflow", "tensorflow2v1", "keras", "kerastf", "mxnet", "non_dl_frameworks")
-def test_pytorch_goturn(art_warning, get_mnist_dataset):
+def test_pytorch_goturn(art_warning):
     try:
         from art.estimators.object_tracking import PyTorchGoturn
 
@@ -42,7 +42,7 @@ def test_pytorch_goturn(art_warning, get_mnist_dataset):
 
         _device = "cpu"
 
-        goturn_path = os.path.join(config.ART_DATA_PATH, "goturn-pytorch")
+        goturn_path = os.path.join(os.sep, "tmp", "goturn-pytorch")
 
         model_dir = Path(os.path.join(goturn_path, "src", "goturn", "models"))
         ckpt_dir = model_dir.joinpath("checkpoints")
