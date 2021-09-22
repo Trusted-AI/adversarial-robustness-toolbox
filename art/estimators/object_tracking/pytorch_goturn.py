@@ -128,7 +128,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
                 raise ValueError("This classifier requires un-normalized input images with clip_vales=(0, 255).")
             if self.clip_values[1] not in [1, 255]:
                 raise ValueError(
-                    "This classifier requires un-normalized input images with clip_vales=(0, 1) or"
+                    "This classifier requires un-normalized input images with clip_vales=(0, 1) or "
                     "clip_vales=(0, 255)."
                 )
 
@@ -163,18 +163,25 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         return self._device
 
     def _get_losses(
-        self, x: np.ndarray, y: Union[List[Dict[str, np.ndarray]], List[Dict[str, "torch.Tensor"]]]
+        self,
+        x: np.ndarray,
+        y: Union[List[Dict[str, np.ndarray]], List[Dict[str, "torch.Tensor"]]],
+        reduction: str = "sum",
     ) -> Tuple[Dict[str, "torch.Tensor"], List["torch.Tensor"], List["torch.Tensor"]]:
         """
         Get the loss tensor output of the model including all preprocessing.
 
-        :param x: Samples of shape (nb_samples, height, width, nb_channels).
-        :param y: Target values of format `List[Dict[Tensor]]`, one for each input image. The fields of the Dict are as
-                  follows:
+        :param x: Samples of shape (nb_samples, nb_frames, height, width, nb_channels).
+        :param y: Target values of format `List[Dict[str, np.ndarray]]`, one dictionary for each input image. The keys of
+                 the dictionary are:
 
-                  - boxes (FloatTensor[N, 4]): the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and
-                                               0 <= y1 < y2 <= H.
-                  - labels (Int64Tensor[N]): the labels for each image
+                  - boxes [N_FRAMES, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and
+                                         0 <= y1 < y2 <= H.
+                  - labels [N_FRAMES]: the labels for each image, default 0.
+                  - scores [N_FRAMES]: the scores or each prediction, default 1.
+        :param reduction: Specifies the reduction to apply to the output: 'none' | 'mean' | 'sum'.
+                   'none': no reduction will be applied
+                   'sum': the output will be summed.
         :return: Loss gradients of the same shape as `x`.
         """
         import torch  # lgtm [py/repeated-import]
@@ -189,7 +196,6 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
             if y is not None and isinstance(y[0]["boxes"], np.ndarray):
                 y_tensor = list()
                 for i, y_i in enumerate(y):
-                    print("y is np.ndarray")
                     y_t = dict()
                     y_t["boxes"] = torch.from_numpy(y_i["boxes"]).type(torch.float).to(self._device)
                     if "labels" in y_i:
@@ -227,10 +233,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         else:
             raise NotImplementedError("Combination of inputs and preprocessing not supported.")
 
-        if isinstance(y_preprocessed, np.ndarray):
-            labels_t = torch.from_numpy(y_preprocessed).to(self._device)  # type: ignore
-        else:
-            labels_t = y_preprocessed  # type: ignore
+        labels_t = y_preprocessed  # type: ignore
 
         if isinstance(y[0]["boxes"], np.ndarray):
             y_init = torch.from_numpy(y[0]["boxes"])
@@ -246,7 +249,12 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
             loss = torch.nn.L1Loss(size_average=False)(y_pred.float(), gt_bb.float())
             loss_list.append(loss)
 
-        loss = {"torch.nn.L1Loss": sum(loss_list)}
+        if reduction == "sum":
+            loss = {"torch.nn.L1Loss": sum(loss_list)}
+        elif reduction == "none":
+            loss = {"torch.nn.L1Loss": loss_list}
+        else:
+            raise ValueError("Reduction not recognised.")
 
         return loss, inputs_t, image_tensor_list_grad
 
@@ -295,8 +303,17 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
 
         grads = np.array(grad_list)
 
+        if grads.shape[0] == 1:
+            grads_ = np.empty(len(grads), dtype=object)
+            grads_[:] = list(grads)
+            grads = grads_
+
         if not self.all_framework_preprocessing:
             grads = self._apply_preprocessing_gradient(x, grads)
+
+        if x.dtype != object:
+            grads = np.array([i for i in grads], dtype=x.dtype)  # pylint: disable=R1721
+            assert grads.shape == x.shape and grads.dtype == x.dtype
 
         return grads
 
@@ -482,7 +499,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         target_pad_in = self._preprocess(target_pad).unsqueeze(0).to(self._device)
         cur_search_region_in = self._preprocess(cur_search_region).unsqueeze(0).to(self._device)
 
-        pred_bb = self._model.forward(target_pad_in, cur_search_region_in)
+        pred_bb = self._model.forward(target_pad_in.float(), cur_search_region_in.float())
 
         pred_bb = torch.squeeze(pred_bb)
 
@@ -517,20 +534,16 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
 
         num_frames = x.shape[0]
         prev = x[0]
-        print("type(y_init)", type(y_init))
         bbox_0 = y_init
         y_pred_list = [y_init]
 
         for i in range(1, num_frames):
             curr = x[i]
             bbox_0 = self._track(curr, prev, bbox_0)
-            print(type(curr), type(bbox_0))
             bbox = bbox_0
             prev = curr
 
             y_pred_list.append(bbox)
-
-        print(y_pred_list)
 
         y_pred = torch.stack(y_pred_list)
 
@@ -540,7 +553,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         """
         Perform prediction for a batch of inputs.
 
-        :param x: Samples of shape (nb_samples, height, width, nb_channels).
+        :param x: Samples of shape (nb_samples, nb_frames, height, width, nb_channels).
         :param batch_size: Batch size.
 
         :Keyword Arguments:
@@ -559,7 +572,8 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         import torch
 
         self._model.eval()
-        self._model.freeze()
+        if hasattr(self._model, "freeze"):
+            self._model.freeze()
 
         y_init = kwargs.get("y_init")
         if y_init is None:
@@ -593,51 +607,8 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
     ) -> np.ndarray:
         raise NotImplementedError
 
-    def compute_losses(self, x: np.ndarray, y: np.ndarray) -> List[Dict[str, np.ndarray]]:
-        """
-        Compute all loss components.
+    def compute_losses(self, x: np.ndarray, y: List[Dict[str, np.ndarray]]) -> List[Dict[str, np.ndarray]]:
+        raise NotImplementedError
 
-        :param x: Object array of sample arrays of shape FHWC.
-        :param y: Labels of format `List[Dict[str, np.ndarray]]`, one dictionary for each input image. The keys of the
-                  dictionary are:
-
-                  - boxes [N_FRAMES, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and
-                                        0 <= y1 < y2 <= H.
-                  - labels [N_FRAMES]: the labels for each image, default 0.
-                  - scores [N_FRAMES]: the scores or each prediction, default 1.
-        :return: Dictionary of loss components.
-        """
-        output, _, _ = self._get_losses(x=x, y=y)
-        return output
-
-    def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
-        """
-        Compute the loss of the neural network for samples `x`.
-
-        :param x: Object array of sample arrays of shape FHWC.
-        :param y: Labels of format `List[Dict[str, np.ndarray]]`, one dictionary for each input image. The keys of the
-                  dictionary are:
-
-                  - boxes [N_FRAMES, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and
-                                        0 <= y1 < y2 <= H.
-                  - labels [N_FRAMES]: the labels for each image, default 0.
-                  - scores [N_FRAMES]: the scores or each prediction, default 1.
-        """
-        import torch  # lgtm [py/repeated-import]
-
-        output, _, _ = self._get_losses(x=x, y=y)
-
-        # Compute the gradient and return
-        loss = None
-        for loss_name in self.attack_losses:
-            if loss is None:
-                loss = output[loss_name]
-            else:
-                loss = loss + output[loss_name]
-
-        assert loss is not None
-
-        if isinstance(x, torch.Tensor):
-            return loss
-
-        return loss.detach().cpu().numpy()
+    def compute_loss(self, x: np.ndarray, y: List[Dict[str, np.ndarray]], **kwargs) -> np.ndarray:
+        raise NotImplementedError
