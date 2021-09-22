@@ -172,8 +172,8 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         Get the loss tensor output of the model including all preprocessing.
 
         :param x: Samples of shape (nb_samples, nb_frames, height, width, nb_channels).
-        :param y: Target values of format `List[Dict[str, np.ndarray]]`, one dictionary for each input image. The keys of
-                 the dictionary are:
+        :param y: Target values of format `List[Dict[str, np.ndarray]]`, one dictionary for each input image. The keys
+                  of the dictionary are:
 
                   - boxes [N_FRAMES, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and
                                          0 <= y1 < y2 <= H.
@@ -281,7 +281,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
             x_i = x[[i]]
             y_i = [y[i]]
 
-            output, inputs_t, image_tensor_list_grad = self._get_losses(x=x_i, y=y_i)
+            output, _, image_tensor_list_grad = self._get_losses(x=x_i, y=y_i)
 
             # Compute the gradient and return
             loss = None
@@ -317,27 +317,27 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
 
         return grads
 
-    def _preprocess(self, im):
+    def _preprocess(self, img):
         """
         preprocess image before forward pass, this is the same
         preprocessing used during training, please refer to collate function
         in train.py for reference
         @image: input image
         """
-        import torch
+        import torch  # lgtm [py/repeated-import]
         from torch.nn.functional import interpolate
 
         mean_np = self.preprocessing.mean
         std_np = self.preprocessing.std
         mean = torch.from_numpy(mean_np).reshape((3, 1, 1))
         std = torch.from_numpy(std_np).reshape((3, 1, 1))
-        im = im.permute(2, 0, 1)
-        im = im * std + mean
-        im = torch.unsqueeze(im, dim=0)
-        im = interpolate(im, size=(227, 227))
-        im = torch.squeeze(im)
-        im = (im - mean) / std
-        return im
+        img = img.permute(2, 0, 1)
+        img = img * std + mean
+        img = torch.unsqueeze(img, dim=0)
+        img = interpolate(img, size=(227, 227))
+        img = torch.squeeze(img)
+        img = (img - mean) / std
+        return img
 
     def _track(self, curr_frame, prev_frame, rect):
         """track current frame
@@ -345,18 +345,18 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         @prev_frame: prev frame
         @rect: bounding box of previous frame
         """
-        import torch
+        import torch  # lgtm [py/repeated-import]
 
         prev_bbox = rect
 
-        kContextFactor = 2
+        k_context_factor = 2
 
         def compute_output_height_f(bbox_tight):
             """
             height of search/target region
             """
             bbox_height = bbox_tight[3] - bbox_tight[1]
-            output_height = kContextFactor * bbox_height
+            output_height = k_context_factor * bbox_height
 
             return max(1.0, output_height)
 
@@ -365,7 +365,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
             width of search/target region
             """
             bbox_width = bbox_tight[2] - bbox_tight[0]
-            output_width = kContextFactor * bbox_width
+            output_width = k_context_factor * bbox_width
 
             return max(1.0, output_width)
 
@@ -381,7 +381,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
             """
             return (bbox_tight[1] + bbox_tight[3]) / 2.0
 
-        def computeCropPadImageLocation(bbox_tight, image):
+        def compute_crop_pad_image_location(bbox_tight, image):
             """
             Get the valid image coordinates for the context region in target
             or search region in full image
@@ -447,15 +447,15 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
 
             return max(0.0, (output_height / 2) - bbox_center_y)
 
-        def cropPadImage(bbox_tight, image):
+        def crop_pad_image(bbox_tight, image):
             """
             Around the bounding box, we define a extra context factor of 2,
             which we will crop from the original image
             """
             import math
-            import torch
+            import torch  # lgtm [py/repeated-import]
 
-            pad_image_location = computeCropPadImageLocation(bbox_tight, image)
+            pad_image_location = compute_crop_pad_image_location(bbox_tight, image)
             # roi_left = min(pad_image_location.x1, (image.shape[1] - 1))
             # roi_bottom = min(pad_image_location.y1, (image.shape[0] - 1))
             roi_left = min(pad_image_location[0], (image.shape[1] - 1))
@@ -493,8 +493,8 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
 
             return output_image, pad_image_location, edge_spacing_x, edge_spacing_y
 
-        target_pad, _, _, _ = cropPadImage(prev_bbox, prev_frame)
-        cur_search_region, search_location, edge_spacing_x, edge_spacing_y = cropPadImage(prev_bbox, curr_frame)
+        target_pad, _, _, _ = crop_pad_image(prev_bbox, prev_frame)
+        cur_search_region, search_location, edge_spacing_x, edge_spacing_y = crop_pad_image(prev_bbox, curr_frame)
 
         target_pad_in = self._preprocess(target_pad).unsqueeze(0).to(self._device)
         cur_search_region_in = self._preprocess(cur_search_region).unsqueeze(0).to(self._device)
@@ -503,20 +503,20 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
 
         pred_bb = torch.squeeze(pred_bb)
 
-        kScaleFactor = 10
+        k_scale_factor = 10
         height = cur_search_region.shape[0]
         width = cur_search_region.shape[1]
 
-        """Normalize the image bounding box"""
-        pred_bb[0] = pred_bb[0] / kScaleFactor * width
-        pred_bb[2] = pred_bb[2] / kScaleFactor * width
-        pred_bb[1] = pred_bb[1] / kScaleFactor * height
-        pred_bb[3] = pred_bb[3] / kScaleFactor * height
+        # Normalize the image bounding box
+        pred_bb[0] = pred_bb[0] / k_scale_factor * width
+        pred_bb[2] = pred_bb[2] / k_scale_factor * width
+        pred_bb[1] = pred_bb[1] / k_scale_factor * height
+        pred_bb[3] = pred_bb[3] / k_scale_factor * height
 
         # brings gradients to zero
         # pred_bb = torch.round(pred_bb)
 
-        """move the bounding box to target/search region coordinates"""
+        # move the bounding box to target/search region coordinates
         raw_image = curr_frame
         pred_bb[0] = max(0.0, pred_bb[0] + search_location[0] - edge_spacing_x)
         pred_bb[1] = max(0.0, pred_bb[1] + search_location[1] - edge_spacing_y)
@@ -530,7 +530,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
 
     def track(self, x, y_init):
         """Track"""
-        import torch
+        import torch  # lgtm [py/repeated-import]
 
         num_frames = x.shape[0]
         prev = x[0]
@@ -569,7 +569,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
                   - labels [N_FRAMES]: the labels for each image, default 0.
                   - scores [N_FRAMES]: the scores or each prediction, default 1.
         """
-        import torch
+        import torch  # lgtm [py/repeated-import]
 
         self._model.eval()
         if hasattr(self._model, "freeze"):
@@ -578,8 +578,8 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         y_init = kwargs.get("y_init")
         if y_init is None:
             raise ValueError("y_init is a required argument for method `predict`.")
-        else:
-            y_init = torch.from_numpy(y_init).to(self._device).float()
+
+        y_init = torch.from_numpy(y_init).to(self._device).float()
 
         predictions = list()
 
@@ -600,15 +600,27 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         return predictions
 
     def fit(self, x: np.ndarray, y, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
+        """
+        Not implemented.
+        """
         raise NotImplementedError
 
     def get_activations(
         self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
     ) -> np.ndarray:
+        """
+        Not implemented.
+        """
         raise NotImplementedError
 
     def compute_losses(self, x: np.ndarray, y: List[Dict[str, np.ndarray]]) -> List[Dict[str, np.ndarray]]:
+        """
+        Not implemented.
+        """
         raise NotImplementedError
 
     def compute_loss(self, x: np.ndarray, y: List[Dict[str, np.ndarray]], **kwargs) -> np.ndarray:
+        """
+        Not implemented.
+        """
         raise NotImplementedError
