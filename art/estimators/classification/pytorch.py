@@ -127,7 +127,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             preprocessing=preprocessing,
             device_type=device_type,
         )
-        self._nb_classes = nb_classes
+        self.nb_classes = nb_classes
         self._input_shape = input_shape
         self._model = self._make_model_wrapper(model)
         self._loss = loss
@@ -551,11 +551,11 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         if not (
             (label is None)
-            or (isinstance(label, (int, np.integer)) and label in range(self._nb_classes))
+            or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
             or (
                 isinstance(label, np.ndarray)
                 and len(label.shape) == 1
-                and (label < self._nb_classes).all()
+                and (label < self.nb_classes).all()
                 and label.shape[0] == x.shape[0]
             )
         ):
