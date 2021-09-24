@@ -107,14 +107,14 @@ class TestPixelAttack(TestBase):
         classifier, sess = get_image_classifier_tf()
         self._test_attack(classifier, self.x_test_mnist, self.y_test_mnist, True)
 
-    def test_5_pytorch_mnist_targeted(self):
-        """
-        Test with the PyTorchClassifier. (Targeted Attack)
-        :return:
-        """
-        x_test = np.reshape(self.x_test_mnist, (self.x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
-        classifier = get_image_classifier_pt()
-        self._test_attack(classifier, x_test, self.y_test_mnist, True)
+    # def test_5_pytorch_mnist_targeted(self):
+    #     """
+    #     Test with the PyTorchClassifier. (Targeted Attack)
+    #     :return:
+    #     """
+    #     x_test = np.reshape(self.x_test_mnist, (self.x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
+    #     classifier = get_image_classifier_pt()
+    #     self._test_attack(classifier, x_test, self.y_test_mnist, True)
 
     def _test_attack(self, classifier, x_test, y_test, targeted):
         """
