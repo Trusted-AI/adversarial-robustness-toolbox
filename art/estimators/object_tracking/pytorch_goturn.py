@@ -179,9 +179,9 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
                                          0 <= y1 < y2 <= H.
                   - labels [N_FRAMES]: the labels for each image, default 0.
                   - scores [N_FRAMES]: the scores or each prediction, default 1.
-        :param reduction: Specifies the reduction to apply to the output: 'none' | 'mean' | 'sum'.
-                   'none': no reduction will be applied.
-                   'sum': the output will be summed.
+        :param reduction: Specifies the reduction to apply to the output: 'none' | 'sum'.
+                          'none': no reduction will be applied.
+                          'sum': the output will be summed.
         :return: Loss gradients of the same shape as `x`.
         """
         import torch  # lgtm [py/repeated-import]
@@ -206,17 +206,14 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
             else:
                 y_tensor = y
 
-            # transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
             image_tensor_list_grad = list()
             y_preprocessed = list()
             inputs_t = list()
 
             for i in range(x.shape[0]):
                 if self.clip_values is not None:
-                    # x_grad = transform(x[i] / self.clip_values[1]).to(self._device)
                     x_grad = torch.from_numpy(x[i]).to(self._device).float()
                 else:
-                    # x_grad = transform(x[i]).to(self._device)
                     x_grad = torch.from_numpy(x[i]).to(self._device).float()
                 x_grad.requires_grad = True
                 image_tensor_list_grad.append(x_grad)

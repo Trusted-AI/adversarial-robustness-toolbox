@@ -1,5 +1,5 @@
-name: 'Test DeepSpeech v3'
-description: 'Run tests for DeepSpeech v3'
+name: 'Test GOTURN'
+description: 'Run tests for GOTURN'
 runs:
   using: 'composite'
   steps:
