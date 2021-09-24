@@ -241,7 +241,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
 
         for i in range(x.shape[0]):
             x_i = inputs_t[i]
-            y_pred = self.track(x=x_i, y_init=y_init[i])
+            y_pred = self._track(x=x_i, y_init=y_init[i])
             gt_bb = labels_t[i]["boxes"]
             loss = torch.nn.L1Loss(size_average=False)(y_pred.float(), gt_bb.float())
             loss_list.append(loss)
