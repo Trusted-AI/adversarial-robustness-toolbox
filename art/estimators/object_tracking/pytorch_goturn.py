@@ -314,12 +314,13 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
 
         return grads
 
-    def _preprocess(self, img):
+    def _preprocess(self, img: "torch.Tensor") -> "torch.Tensor":
         """
-        Preprocess image before forward pass, this is the same
-        preprocessing used during training, please refer to collate function
-        in train.py for reference
-        @image: input image
+        Preprocess image before forward pass, this is the same preprocessing used during training, please refer to
+        collate function in train.py for reference
+
+        :param img: Single frame od shape (nb_samples, height, width, nb_channels).
+        :return: Preprocessed frame.
         """
         import torch  # lgtm [py/repeated-import]
         from torch.nn.functional import interpolate
@@ -336,11 +337,15 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         img = (img - mean) / std
         return img
 
-    def _track(self, curr_frame, prev_frame, rect):
-        """track current frame
-        @curr_frame: current frame
-        @prev_frame: prev frame
-        @rect: bounding box of previous frame
+    def _track_step(
+        self, curr_frame: "torch.Tensor", prev_frame: "torch.Tensor", rect: "torch.Tensor"
+    ) -> "torch.Tensor":
+        """
+        Track current frame.
+
+        :param curr_frame: Current frame.
+        :param prev_frame: Previous frame.
+        :return: bounding box of previous frame
         """
         import torch  # lgtm [py/repeated-import]
 
@@ -348,40 +353,57 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
 
         k_context_factor = 2
 
-        def compute_output_height_f(bbox_tight):
+        def compute_output_height_f(bbox_tight: "torch.Tensor") -> float:
             """
-            Height of search/target region.
+            Compute height of search/target region.
+
+            :param bbox_tight: Coordinates of bounding box [x1, y1, x2, y2].
+            :return: Output height.
             """
             bbox_height = bbox_tight[3] - bbox_tight[1]
             output_height = k_context_factor * bbox_height
 
             return max(1.0, output_height)
 
-        def compute_output_width_f(bbox_tight):
+        def compute_output_width_f(bbox_tight: "torch.Tensor") -> float:
             """
-            Width of search/target region.
+            Compute width of search/target region.
+
+            :param bbox_tight: Coordinates of bounding box [x1, y1, x2, y2].
+            :return: Output width.
             """
             bbox_width = bbox_tight[2] - bbox_tight[0]
             output_width = k_context_factor * bbox_width
 
             return max(1.0, output_width)
 
-        def get_center_x_f(bbox_tight):
+        def get_center_x_f(bbox_tight: "torch.Tensor") -> "torch.Tensor":
             """
-            x-coordinate of the bounding box center
+            Compute x-coordinate of the bounding box center.
+
+            :param bbox_tight: Coordinates of bounding box [x1, y1, x2, y2].
+            :return: x-coordinate of the bounding box center.
             """
             return (bbox_tight[0] + bbox_tight[2]) / 2.0
 
-        def get_center_y_f(bbox_tight):
+        def get_center_y_f(bbox_tight: "torch.Tensor") -> "torch.Tensor":
             """
-            y-coordinate of the bounding box center
+            Compute y-coordinate of the bounding box center
+
+            :param bbox_tight: Coordinates of bounding box [x1, y1, x2, y2].
+            :return: y-coordinate of the bounding box center.
             """
             return (bbox_tight[1] + bbox_tight[3]) / 2.0
 
-        def compute_crop_pad_image_location(bbox_tight, image):
+        def compute_crop_pad_image_location(
+            bbox_tight: "torch.Tensor", image: "torch.Tensor"
+        ) -> (float, float, float, float):
             """
-            Get the valid image coordinates for the context region in target
-            or search region in full image
+            Get the valid image coordinates for the context region in target or search region in full image
+
+            :param bbox_tight: Coordinates of bounding box [x1, y1, x2, y2].
+            :param image: Frame to be cropped and padded.
+            :return: x-coordinate of the bounding box center.
             """
 
             # Center of the bounding box
@@ -424,30 +446,37 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
             # return objPadImageLocation
             return roi_left, roi_bottom, roi_left + roi_width, roi_bottom + roi_height
 
-        def edge_spacing_x_f(bbox_tight):
+        def edge_spacing_x_f(bbox_tight: "torch.Tensor") -> float:
             """
-            Edge spacing X to take care of if search/target pad region goes
-            out of bound
+            Edge spacing X to take care of if search/target pad region goes out of bound.
+
+            :param bbox_tight: Coordinates of bounding box [x1, y1, x2, y2].
+            :return: Edge spacing X.
             """
             output_width = compute_output_width_f(bbox_tight)
             bbox_center_x = get_center_x_f(bbox_tight)
 
             return max(0.0, (output_width / 2) - bbox_center_x)
 
-        def edge_spacing_y_f(bbox_tight):
+        def edge_spacing_y_f(bbox_tight: "torch.Tensor") -> float:
             """
-            Edge spacing X to take care of if search/target pad region goes
-            out of bound
+            Edge spacing X to take care of if search/target pad region goes out of bound.
+
+            :param bbox_tight: Coordinates of bounding box [x1, y1, x2, y2].
+            :return: Edge spacing X.
             """
             output_height = compute_output_height_f(bbox_tight)
             bbox_center_y = get_center_y_f(bbox_tight)
 
             return max(0.0, (output_height / 2) - bbox_center_y)
 
-        def crop_pad_image(bbox_tight, image):
+        def crop_pad_image(bbox_tight: "torch.Tensor", image: "torch.Tensor") -> ("torch.Tensor", float, float, float):
             """
-            Around the bounding box, we define a extra context factor of 2,
-            which we will crop from the original image
+            Around the bounding box, we define a extra context factor of 2, which we will crop from the original image.
+
+            :param bbox_tight: Coordinates of bounding box [x1, y1, x2, y2].
+            :param image: Frame to be cropped and padded.
+            :return: Cropped and Padded image.
             """
             import math
             import torch  # lgtm [py/repeated-import]
@@ -525,8 +554,14 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
 
         return pred_bb
 
-    def track(self, x, y_init):
-        """Track"""
+    def _track(self, x: "torch.Tensor", y_init: "torch.Tensor") -> "torch.Tensor":
+        """
+        Track object across frames.
+
+        :param x: A single video of shape (nb_frames, nb_height, nb_width, nb_channels)
+        :param y_init: Initial bounding box around object on the first frame of `x`.
+        :return: Predicted bounding box coordinates for all frames of shape (nb_frames, 4) in format [x1, y1, x2, y2].
+        """
         import torch  # lgtm [py/repeated-import]
 
         num_frames = x.shape[0]
@@ -536,7 +571,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
 
         for i in range(1, num_frames):
             curr = x[i]
-            bbox_0 = self._track(curr, prev, bbox_0)
+            bbox_0 = self._track_step(curr, prev, bbox_0)
             bbox = bbox_0
             prev = curr
 
@@ -586,7 +621,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
             # Apply preprocessing
             x_i, _ = self._apply_preprocessing(x_i, y=None, fit=False)
 
-            y_pred = self.track(x=x_i, y_init=y_init[i])
+            y_pred = self._track(x=x_i, y_init=y_init[i])
 
             prediction_dict = dict()
             prediction_dict["boxes"] = y_pred.detach().cpu().numpy()
