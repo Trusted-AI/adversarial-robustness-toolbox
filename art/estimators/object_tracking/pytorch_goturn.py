@@ -350,7 +350,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
 
         def compute_output_height_f(bbox_tight):
             """
-            height of search/target region
+            Height of search/target region.
             """
             bbox_height = bbox_tight[3] - bbox_tight[1]
             output_height = k_context_factor * bbox_height
