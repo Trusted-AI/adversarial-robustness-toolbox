@@ -18,18 +18,21 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-# import unittest
+
+import unittest
+
 # import numpy as np
-# import pandas as pd
-#
+import pandas as pd
+
 # from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
 # from art.estimators.classification.keras import KerasClassifier
 # from art.estimators.estimator import BaseEstimator, LossGradientsMixin
-# from art.utils import load_dataset, get_labels_np_array
-#
-# from tests.utils import get_image_classifier_tf, get_image_classifier_pt
+from art.utils import load_dataset  # , get_labels_np_array
+
+# from tests.utils import get_image_classifier_tf, get_image_classifier_pt, get_tabular_classifier_pt
 # from tests.utils import get_tabular_classifier_tf, get_tabular_classifier_kr
-# from tests.utils import get_tabular_classifier_pt, master_seed
+from tests.utils import master_seed
+
 # from tests.attacks.utils import backend_test_classifier_type_check_fail
 
 logger = logging.getLogger(__name__)
@@ -39,34 +42,37 @@ NB_TRAIN = 10
 NB_TEST = 11
 
 
-# class TestInputFilter(unittest.TestCase):
-#     """
-#     A unittest class for testing the input filtering using
-#     PGD tests.
-#     """
-#
-#     @classmethod
-#     def setUpClass(cls):
-#         # MNIST
-#         (x_train, y_train), (x_test, y_test), _, _ = load_dataset("mnist")
-#         x_train = list(x_train[:NB_TRAIN])
-#         y_train = list(y_train[:NB_TRAIN])
-#         x_test = list(x_test[:NB_TEST])
-#         y_test = list(y_test[:NB_TEST])
-#         cls.mnist = (x_train, y_train), (x_test, y_test)
-#
-#         # Iris
-#         (x_train, y_train), (x_test, y_test), _, _ = load_dataset("iris")
-#         x_train = pd.DataFrame(x_train)
-#         y_train = pd.DataFrame(y_train)
-#         x_test = pd.DataFrame(x_test)
-#         y_test = pd.DataFrame(y_test)
-#         cls.iris = (x_train, y_train), (x_test, y_test)
-#
-#     def setUp(self):
-#         master_seed(1234)
-#
-#     def test_2_tensorflow_mnist(self):
+class TestInputFilter(unittest.TestCase):
+    """
+    A unittest class for testing the input filtering using
+    PGD tests.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        # MNIST
+        (x_train, y_train), (x_test, y_test), _, _ = load_dataset("mnist")
+        x_train = list(x_train[:NB_TRAIN])
+        y_train = list(y_train[:NB_TRAIN])
+        x_test = list(x_test[:NB_TEST])
+        y_test = list(y_test[:NB_TEST])
+        cls.mnist = (x_train, y_train), (x_test, y_test)
+
+        # Iris
+        (x_train, y_train), (x_test, y_test), _, _ = load_dataset("iris")
+        x_train = pd.DataFrame(x_train)
+        y_train = pd.DataFrame(y_train)
+        x_test = pd.DataFrame(x_test)
+        y_test = pd.DataFrame(y_test)
+        cls.iris = (x_train, y_train), (x_test, y_test)
+
+    def setUp(self):
+        master_seed(1234)
+
+    def test_2_tensorflow_mnist(self):
+        pass
+
+
 #         (x_train, y_train), (x_test, y_test) = self.mnist
 #         classifier, sess = get_image_classifier_tf()
 #
@@ -140,7 +146,8 @@ NB_TEST = 11
 #         logger.info("Accuracy on adversarial test examples with 3 random initialisations: %.2f%%", acc * 100)
 #
 #         # Check that x_test has not been modified by attack and classifier
-#         self.assertAlmostEqual(float(np.max(np.abs(np.array(x_test_original) - np.array(x_test)))), 0.0, delta=0.00001)
+#         self.assertAlmostEqual(float(np.max(np.abs(np.array(x_test_original) - np.array(x_test)))), 0.0,
+#         delta=0.00001)
 #
 #     def test_1_classifier_type_check_fail(self):
 #         backend_test_classifier_type_check_fail(ProjectedGradientDescent, [BaseEstimator, LossGradientsMixin])
