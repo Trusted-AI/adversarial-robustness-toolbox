@@ -269,7 +269,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
                   fields of the Dict are as follows:
 
                   - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values \
-                    between 0 and H and 0 and W
+                    between 0 and H and 0 and W.
                   - labels (Int64Tensor[N]): the predicted labels for each image.
                   - scores (Tensor[N]): the scores or each prediction.
         :return: Loss gradients of the same shape as `x`.
