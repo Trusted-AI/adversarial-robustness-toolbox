@@ -180,7 +180,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
                   - labels [N_FRAMES]: the labels for each image, default 0.
                   - scores [N_FRAMES]: the scores or each prediction, default 1.
         :param reduction: Specifies the reduction to apply to the output: 'none' | 'mean' | 'sum'.
-                   'none': no reduction will be applied
+                   'none': no reduction will be applied.
                    'sum': the output will be summed.
         :return: Loss gradients of the same shape as `x`.
         """
