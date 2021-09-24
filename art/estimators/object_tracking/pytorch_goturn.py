@@ -316,7 +316,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
 
     def _preprocess(self, img):
         """
-        preprocess image before forward pass, this is the same
+        Preprocess image before forward pass, this is the same
         preprocessing used during training, please refer to collate function
         in train.py for reference
         @image: input image
