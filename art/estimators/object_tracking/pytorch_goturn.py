@@ -359,7 +359,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
 
         def compute_output_width_f(bbox_tight):
             """
-            width of search/target region
+            Width of search/target region.
             """
             bbox_width = bbox_tight[2] - bbox_tight[0]
             output_width = k_context_factor * bbox_width
