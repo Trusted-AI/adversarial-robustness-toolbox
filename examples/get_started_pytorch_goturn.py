@@ -176,7 +176,7 @@ y_pred = pgt.predict(x=x, y_init=y_init)
 
 from art.attacks.evasion import ProjectedGradientDescent
 
-attack = ProjectedGradientDescent(estimator=pgt, eps=eps, eps_step=eps_step, batch_size=1, max_iter=0)
+attack = ProjectedGradientDescent(estimator=pgt, eps=eps, eps_step=eps_step, batch_size=1, max_iter=20)
 
 x_adv = attack.generate(x=x, y=y_pred)
 

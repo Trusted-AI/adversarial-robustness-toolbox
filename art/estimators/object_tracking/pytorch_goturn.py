@@ -167,7 +167,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         x: np.ndarray,
         y: Union[List[Dict[str, np.ndarray]], List[Dict[str, "torch.Tensor"]]],
         reduction: str = "sum",
-    ) -> Tuple[Dict[str, "torch.Tensor"], List["torch.Tensor"], List["torch.Tensor"]]:
+    ) -> Tuple[Dict[str, Union["torch.Tensor", int, List["torch.Tensor"]]], List["torch.Tensor"], List["torch.Tensor"]]:
         """
         Get the loss tensor output of the model including all preprocessing.
 
@@ -197,18 +197,18 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
                 y_tensor = list()
                 for i, y_i in enumerate(y):
                     y_t = dict()
-                    y_t["boxes"] = torch.from_numpy(y_i["boxes"]).type(torch.float).to(self._device)
+                    y_t["boxes"] = torch.from_numpy(y_i["boxes"]).float().to(self._device)
                     if "labels" in y_i:
-                        y_t["labels"] = torch.from_numpy(y_i["labels"]).type(torch.int64).to(self._device)
+                        y_t["labels"] = torch.from_numpy(y_i["labels"]).int().to(self._device)
                     if "masks" in y_i:
-                        y_t["masks"] = torch.from_numpy(y_i["masks"]).type(torch.int64).to(self._device)
+                        y_t["masks"] = torch.from_numpy(y_i["masks"]).int().to(self._device)
                     y_tensor.append(y_t)
             else:
                 y_tensor = y
 
             image_tensor_list_grad = list()
             y_preprocessed = list()
-            inputs_t = list()
+            inputs_t: List["torch.Tensor"] = list()
 
             for i in range(x.shape[0]):
                 if self.clip_values is not None:
@@ -246,14 +246,15 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
             loss = torch.nn.L1Loss(size_average=False)(y_pred.float(), gt_bb.float())
             loss_list.append(loss)
 
+        loss_dict: Dict[str, Union["torch.Tensor", int, List["torch.Tensor"]]] = dict()
         if reduction == "sum":
-            loss = {"torch.nn.L1Loss": sum(loss_list)}
+            loss_dict["torch.nn.L1Loss"] = sum(loss_list)
         elif reduction == "none":
-            loss = {"torch.nn.L1Loss": loss_list}
+            loss_dict["torch.nn.L1Loss"] = loss_list
         else:
             raise ValueError("Reduction not recognised.")
 
-        return loss, inputs_t, image_tensor_list_grad
+        return loss_dict, inputs_t, image_tensor_list_grad
 
     def loss_gradient(  # pylint: disable=W0613
         self, x: np.ndarray, y: Union[List[Dict[str, np.ndarray]], List[Dict[str, "torch.Tensor"]]], **kwargs
@@ -295,7 +296,10 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
             loss.backward(retain_graph=True)  # type: ignore
 
             for img in image_tensor_list_grad:
-                gradients = img.grad.cpu().numpy().copy()
+                if img.grad is not None:
+                    gradients = img.grad.cpu().numpy().copy()
+                else:
+                    gradients = None
                 grad_list.append(gradients)
 
         grads = np.array(grad_list)
@@ -325,8 +329,14 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         import torch  # lgtm [py/repeated-import]
         from torch.nn.functional import interpolate
 
-        mean_np = self.preprocessing.mean
-        std_np = self.preprocessing.std
+        from art.preprocessing.standardisation_mean_std.pytorch import StandardisationMeanStdPyTorch
+
+        if self.preprocessing is not None and isinstance(self.preprocessing, StandardisationMeanStdPyTorch):
+            mean_np = self.preprocessing.mean
+            std_np = self.preprocessing.std
+        else:
+            mean_np = np.ones((3, 1, 1))
+            std_np = np.ones((3, 1, 1))
         mean = torch.from_numpy(mean_np).reshape((3, 1, 1))
         std = torch.from_numpy(std_np).reshape((3, 1, 1))
         img = img.permute(2, 0, 1)
@@ -353,7 +363,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
 
         k_context_factor = 2
 
-        def compute_output_height_f(bbox_tight: "torch.Tensor") -> float:
+        def compute_output_height_f(bbox_tight: "torch.Tensor") -> "torch.Tensor":
             """
             Compute height of search/target region.
 
@@ -363,9 +373,9 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
             bbox_height = bbox_tight[3] - bbox_tight[1]
             output_height = k_context_factor * bbox_height
 
-            return max(1.0, output_height)
+            return torch.max(torch.tensor(1.0).to(self.device), output_height)
 
-        def compute_output_width_f(bbox_tight: "torch.Tensor") -> float:
+        def compute_output_width_f(bbox_tight: "torch.Tensor") -> "torch.Tensor":
             """
             Compute width of search/target region.
 
@@ -375,7 +385,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
             bbox_width = bbox_tight[2] - bbox_tight[0]
             output_width = k_context_factor * bbox_width
 
-            return max(1.0, output_width)
+            return torch.max(torch.tensor(1.0).to(self.device), output_width)
 
         def get_center_x_f(bbox_tight: "torch.Tensor") -> "torch.Tensor":
             """
@@ -397,7 +407,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
 
         def compute_crop_pad_image_location(
             bbox_tight: "torch.Tensor", image: "torch.Tensor"
-        ) -> (float, float, float, float):
+        ) -> Tuple["torch.Tensor", "torch.Tensor", "torch.Tensor", "torch.Tensor"]:
             """
             Get the valid image coordinates for the context region in target or search region in full image
 
@@ -421,8 +431,8 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
             output_width = compute_output_width_f(bbox_tight)
             output_height = compute_output_height_f(bbox_tight)
 
-            roi_left = max(0.0, bbox_center_x - (output_width / 2.0))
-            roi_bottom = max(0.0, bbox_center_y - (output_height / 2.0))
+            roi_left = torch.max(torch.tensor(0.0).to(self.device), bbox_center_x - (output_width / 2.0))
+            roi_bottom = torch.max(torch.tensor(0.0).to(self.device), bbox_center_y - (output_height / 2.0))
 
             # New ROI width
             # -------------
@@ -430,15 +440,15 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
             # image
             # 2. right_half should not go out of bound on the right side of the
             # image
-            left_half = min(output_width / 2.0, bbox_center_x)
+            left_half = torch.min(output_width / 2.0, bbox_center_x)
             right_half = min(output_width / 2.0, image_width - bbox_center_x)
             roi_width = max(1.0, left_half + right_half)
 
             # New ROI height
             # Similar logic applied that is applied for 'New ROI width'
-            top_half = min(output_height / 2.0, bbox_center_y)
-            bottom_half = min(output_height / 2.0, image_height - bbox_center_y)
-            roi_height = max(1.0, top_half + bottom_half)
+            top_half = torch.min(output_height / 2.0, bbox_center_y)
+            bottom_half = torch.min(output_height / 2.0, image_height - bbox_center_y)
+            roi_height = torch.max(torch.tensor(1.0).to(self.device), top_half + bottom_half)
 
             # Padded image location in the original image
             # objPadImageLocation = BoundingBox(roi_left, roi_bottom, roi_left + roi_width, roi_bottom + roi_height)
@@ -446,7 +456,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
             # return objPadImageLocation
             return roi_left, roi_bottom, roi_left + roi_width, roi_bottom + roi_height
 
-        def edge_spacing_x_f(bbox_tight: "torch.Tensor") -> float:
+        def edge_spacing_x_f(bbox_tight: "torch.Tensor") -> "torch.Tensor":
             """
             Edge spacing X to take care of if search/target pad region goes out of bound.
 
@@ -456,9 +466,9 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
             output_width = compute_output_width_f(bbox_tight)
             bbox_center_x = get_center_x_f(bbox_tight)
 
-            return max(0.0, (output_width / 2) - bbox_center_x)
+            return torch.max(torch.tensor(0.0).to(self.device), (output_width / 2) - bbox_center_x)
 
-        def edge_spacing_y_f(bbox_tight: "torch.Tensor") -> float:
+        def edge_spacing_y_f(bbox_tight: "torch.Tensor") -> "torch.Tensor":
             """
             Edge spacing X to take care of if search/target pad region goes out of bound.
 
@@ -468,9 +478,16 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
             output_height = compute_output_height_f(bbox_tight)
             bbox_center_y = get_center_y_f(bbox_tight)
 
-            return max(0.0, (output_height / 2) - bbox_center_y)
+            return torch.max(torch.tensor(0.0).to(self.device), (output_height / 2) - bbox_center_y)
 
-        def crop_pad_image(bbox_tight: "torch.Tensor", image: "torch.Tensor") -> ("torch.Tensor", float, float, float):
+        def crop_pad_image(
+            bbox_tight: "torch.Tensor", image: "torch.Tensor"
+        ) -> Tuple[
+            "torch.Tensor",
+            Tuple["torch.Tensor", "torch.Tensor", "torch.Tensor", "torch.Tensor"],
+            "torch.Tensor",
+            "torch.Tensor",
+        ]:
             """
             Around the bounding box, we define a extra context factor of 2, which we will crop from the original image.
 
