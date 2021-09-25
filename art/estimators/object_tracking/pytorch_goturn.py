@@ -501,12 +501,12 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
             pad_image_location = compute_crop_pad_image_location(bbox_tight, image)
             # roi_left = min(pad_image_location.x1, (image.shape[1] - 1))
             # roi_bottom = min(pad_image_location.y1, (image.shape[0] - 1))
-            roi_left = min(pad_image_location[0], (image.shape[1] - 1))
-            roi_bottom = min(pad_image_location[1], (image.shape[0] - 1))
+            roi_left = min(pad_image_location[0], (image.shape[1] - 1))  # type: ignore
+            roi_bottom = min(pad_image_location[1], (image.shape[0] - 1))  # type: ignore
             # roi_width = min(image.shape[1], max(1.0, math.ceil(pad_image_location.x2 - pad_image_location.x1)))
             # roi_height = min(image.shape[0], max(1.0, math.ceil(pad_image_location.y2 - pad_image_location.y1)))
-            roi_width = min(image.shape[1], max(1.0, math.ceil(pad_image_location[2] - pad_image_location[0])))
-            roi_height = min(image.shape[0], max(1.0, math.ceil(pad_image_location[3] - pad_image_location[1])))
+            roi_width = min(image.shape[1], max(1.0, math.ceil(pad_image_location[2] - pad_image_location[0])))  # type: ignore
+            roi_height = min(image.shape[0], max(1.0, math.ceil(pad_image_location[3] - pad_image_location[1])))  # type: ignore
 
             err = 0.000000001  # To take care of floating point arithmetic errors
             cropped_image = image[
@@ -525,8 +525,8 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
 
             # edge_spacing_x = min(bbox_tight.edge_spacing_x(), (image.shape[1] - 1))
             # edge_spacing_y = min(bbox_tight.edge_spacing_y(), (image.shape[0] - 1))
-            edge_spacing_x = min(edge_spacing_x_f(bbox_tight), (image.shape[1] - 1))
-            edge_spacing_y = min(edge_spacing_y_f(bbox_tight), (image.shape[0] - 1))
+            edge_spacing_x = min(edge_spacing_x_f(bbox_tight), (image.shape[1] - 1))  # type: ignore
+            edge_spacing_y = min(edge_spacing_y_f(bbox_tight), (image.shape[0] - 1))  # type: ignore
 
             # rounding should be done to match the width and height
             output_image[
