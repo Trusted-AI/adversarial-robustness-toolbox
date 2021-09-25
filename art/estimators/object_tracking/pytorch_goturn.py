@@ -233,7 +233,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         labels_t = y_preprocessed  # type: ignore
 
         if isinstance(y[0]["boxes"], np.ndarray):
-            y_init = torch.from_numpy(y[0]["boxes"])
+            y_init = torch.from_numpy(y[0]["boxes"]).to(self.device)
         else:
             y_init = y[0]["boxes"]
 
@@ -632,7 +632,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         if y_init is None:
             raise ValueError("y_init is a required argument for method `predict`.")
 
-        y_init = torch.from_numpy(y_init).to(self._device).float()
+        y_init = torch.from_numpy(y_init).to(self._device).float().to(self.device)
 
         predictions = list()
 
