@@ -90,7 +90,7 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
         else:
             self.default_model = True
             if self.attack_model_type == "nn":
-                import torch  # lgtm [py/repeated-import]
+                import torch  # lgtm [py/repeated-import] lgtm [py/import-and-import-from]
                 from torch import nn  # lgtm [py/repeated-import]
 
                 class MembershipInferenceAttackModel(nn.Module):
@@ -212,7 +212,7 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
             x_2 = x_2.astype(np.float32).reshape(-1, 1)
 
         if self.default_model and self.attack_model_type == "nn":
-            import torch  # lgtm [py/repeated-import]
+            import torch  # lgtm [py/repeated-import] lgtm [py/import-and-import-from]
             from torch import nn  # lgtm [py/repeated-import]
             from torch import optim  # lgtm [py/repeated-import]
             from torch.utils.data import DataLoader  # lgtm [py/repeated-import]
@@ -281,7 +281,7 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
             y = y.astype(np.float32).reshape(-1, 1)
 
         if self.default_model and self.attack_model_type == "nn":
-            import torch  # lgtm [py/repeated-import]
+            import torch  # lgtm [py/repeated-import] lgtm [py/import-and-import-from]
             from torch.utils.data import DataLoader  # lgtm [py/repeated-import]
             from art.utils import to_cuda, from_cuda
 
@@ -338,7 +338,7 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
             """
 
             def __init__(self, x_1, x_2, y=None):
-                import torch  # lgtm [py/repeated-import]
+                import torch  # lgtm [py/repeated-import] lgtm [py/import-and-import-from]
 
                 self.x_1 = torch.from_numpy(x_1.astype(np.float64)).type(torch.FloatTensor)
                 self.x_2 = torch.from_numpy(x_2.astype(np.int32)).type(torch.FloatTensor)
