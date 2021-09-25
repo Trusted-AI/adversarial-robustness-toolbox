@@ -505,8 +505,12 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
             roi_bottom = min(pad_image_location[1], (image.shape[0] - 1))  # type: ignore
             # roi_width = min(image.shape[1], max(1.0, math.ceil(pad_image_location.x2 - pad_image_location.x1)))
             # roi_height = min(image.shape[0], max(1.0, math.ceil(pad_image_location.y2 - pad_image_location.y1)))
-            roi_width = min(image.shape[1], max(1.0, math.ceil(pad_image_location[2] - pad_image_location[0])))  # type: ignore
-            roi_height = min(image.shape[0], max(1.0, math.ceil(pad_image_location[3] - pad_image_location[1])))  # type: ignore
+            roi_width = min(  # type: ignore
+                image.shape[1], max(1.0, math.ceil(pad_image_location[2] - pad_image_location[0]))
+            )
+            roi_height = min(  # type: ignore
+                image.shape[0], max(1.0, math.ceil(pad_image_location[3] - pad_image_location[1]))
+            )
 
             err = 0.000000001  # To take care of floating point arithmetic errors
             cropped_image = image[
