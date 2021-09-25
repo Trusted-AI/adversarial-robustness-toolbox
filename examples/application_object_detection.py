@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from art.estimators.object_detection import PyTorchFasterRCNN
-from art.attacks.evasion import FastGradientMethod
+from art.attacks.evasion import ProjectedGradientDescent
 
 COCO_INSTANCE_CATEGORY_NAMES = [
     "__background__",
@@ -180,12 +180,11 @@ def main():
 
     # Create and run attack
     eps = 32
-    attack = FastGradientMethod(estimator=frcnn, eps=eps)
+    attack = ProjectedGradientDescent(estimator=frcnn, eps=eps, eps_step=2, max_iter=10)
     image_adv = attack.generate(x=image, y=None)
 
     print("\nThe attack budget eps is {}".format(eps))
     print("The resulting maximal difference in pixel values is {}.".format(np.amax(np.abs(image - image_adv))))
-    assert np.amax(np.abs(image - image_adv)) == eps
 
     for i in range(image_adv.shape[0]):
         plt.axis("off")

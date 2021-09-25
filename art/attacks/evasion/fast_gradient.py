@@ -472,7 +472,11 @@ class FastGradientMethod(EvasionAttack):
         batch = batch + perturbation_step
         if self.estimator.clip_values is not None:
             clip_min, clip_max = self.estimator.clip_values
-            batch = np.clip(batch, clip_min, clip_max)
+            if batch.dtype == np.object:
+                for i_obj in range(batch.shape[0]):
+                    batch[i_obj] = np.clip(batch[i_obj], clip_min, clip_max)
+            else:
+                batch = np.clip(batch, clip_min, clip_max)
 
         return batch
 

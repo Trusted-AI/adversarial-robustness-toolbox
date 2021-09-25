@@ -1,4 +1,4 @@
-name: CI PyTorchFasterRCNN
+name: CI PyTorchObjectDetectors
 on:
   # Run on manual trigger
   workflow_dispatch:
@@ -20,7 +20,7 @@ on:
 
 jobs:
   test_pytorch_fasterrcnn:
-    name: PyTorchFasterRCNN
+    name: PyTorchObjectDetectors
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
@@ -43,7 +43,9 @@ jobs:
           pip install torch==1.6.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
           pip install torchvision==0.7.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
           pip install torchaudio==0.6.0 -f https://download.pytorch.org/whl/torch_stable.html
-      - name: Run Test Action
+      - name: Run Test Action - test_pytorch_object_detector
+        run: pytest --cov-report=xml --cov=art --cov-append -q -vv tests/estimators/object_detection/test_pytorch_object_detector.py --framework=pytorch --durations=0
+      - name: Run Test Action - test_pytorch_faster_rcnn
         run: pytest --cov-report=xml --cov=art --cov-append -q -vv tests/estimators/object_detection/test_pytorch_faster_rcnn.py --framework=pytorch --durations=0
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v2.1.0

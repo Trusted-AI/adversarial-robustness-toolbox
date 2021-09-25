@@ -35,6 +35,7 @@ from art.estimators.classification.classifier import (
     ClassGradientsMixin,
     ClassifierMixin,
 )
+from art.estimators.regression.scikitlearn import ScikitlearnDecisionTreeRegressor
 from art.estimators.scikitlearn import ScikitlearnEstimator
 from art.utils import to_categorical
 from art import config
@@ -62,7 +63,7 @@ def SklearnClassifier(
 ) -> "ScikitlearnClassifier":
     """
     Create a `Classifier` instance from a scikit-learn Classifier model. This is a convenience function that
-    instantiates the correct wrapper class for the given scikit-learn model.
+    instantiates the correct class for the given scikit-learn model.
 
     :param model: scikit-learn Classifier model.
     :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
@@ -100,7 +101,7 @@ def SklearnClassifier(
 
 class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):  # lgtm [py/missing-call-to-init]
     """
-    Wrapper class for scikit-learn classifier models.
+    Class for scikit-learn classifier models.
     """
 
     estimator_params = ClassifierMixin.estimator_params + ScikitlearnEstimator.estimator_params + ["use_logits"]
@@ -249,28 +250,6 @@ class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):  # lgtm [py/
         # No need to do anything since scikitlearn models start from scratch each time fit() is called
         pass
 
-    def _get_input_shape(self, model) -> Optional[Tuple[int, ...]]:
-        _input_shape: Optional[Tuple[int, ...]]
-        if hasattr(model, "n_features_"):
-            _input_shape = (model.n_features_,)
-        elif hasattr(model, "n_features_in_"):
-            _input_shape = (model.n_features_in_,)
-        elif hasattr(model, "feature_importances_"):
-            _input_shape = (len(model.feature_importances_),)
-        elif hasattr(model, "coef_"):
-            if len(model.coef_.shape) == 1:
-                _input_shape = (model.coef_.shape[0],)
-            else:
-                _input_shape = (model.coef_.shape[1],)
-        elif hasattr(model, "support_vectors_"):
-            _input_shape = (model.support_vectors_.shape[1],)
-        elif hasattr(model, "steps"):
-            _input_shape = self._get_input_shape(model.steps[0][1])
-        else:
-            logger.warning("Input shape not recognised. The model might not have been fitted.")
-            _input_shape = None
-        return _input_shape
-
     def _get_nb_classes(self) -> int:
         if hasattr(self.model, "n_classes_"):
             _nb_classes = self.model.n_classes_
@@ -284,7 +263,7 @@ class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):  # lgtm [py/
 
 class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
     """
-    Wrapper class for scikit-learn Decision Tree Classifier models.
+    Class for scikit-learn Decision Tree Classifier models.
     """
 
     def __init__(
@@ -428,99 +407,9 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
         return leaf_nodes
 
 
-class ScikitlearnDecisionTreeRegressor(ScikitlearnDecisionTreeClassifier):
-    """
-    Wrapper class for scikit-learn Decision Tree Regressor models.
-    """
-
-    def __init__(
-        self,
-        model: "sklearn.tree.DecisionTreeRegressor",
-        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
-        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
-    ) -> None:
-        """
-        Create a `Regressor` instance from a scikit-learn Decision Tree Regressor model.
-
-        :param model: scikit-learn Decision Tree Regressor model.
-        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
-               for features.
-        :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
-        :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-        :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
-               used for data preprocessing. The first value will be subtracted from the input. The input will then
-               be divided by the second one.
-        """
-        # pylint: disable=E0001
-        import sklearn  # lgtm [py/repeated-import]
-
-        if not isinstance(model, sklearn.tree.DecisionTreeRegressor):
-            raise TypeError("Model must be of type sklearn.tree.DecisionTreeRegressor.")
-
-        ScikitlearnDecisionTreeClassifier.__init__(
-            self,
-            model=None,
-            clip_values=clip_values,
-            preprocessing_defences=preprocessing_defences,
-            postprocessing_defences=postprocessing_defences,
-            preprocessing=preprocessing,
-        )
-        self._model = model
-
-    def get_values_at_node(self, node_id: int) -> np.ndarray:
-        """
-        Returns the feature of given id for a node.
-
-        :return: Normalized values at node node_id.
-        """
-        return self.model.tree_.value[node_id]
-
-    def _get_leaf_nodes(self, node_id, i_tree, class_label, box) -> List["LeafNode"]:
-        from art.metrics.verification_decisions_trees import LeafNode, Box, Interval
-
-        leaf_nodes: List[LeafNode] = list()
-
-        if self.get_left_child(node_id) != self.get_right_child(node_id):
-
-            node_left = self.get_left_child(node_id)
-            node_right = self.get_right_child(node_id)
-
-            box_left = deepcopy(box)
-            box_right = deepcopy(box)
-
-            feature = self.get_feature_at_node(node_id)
-            box_split_left = Box(intervals={feature: Interval(-np.inf, self.get_threshold_at_node(node_id))})
-            box_split_right = Box(intervals={feature: Interval(self.get_threshold_at_node(node_id), np.inf)})
-
-            if box.intervals:
-                box_left.intersect_with_box(box_split_left)
-                box_right.intersect_with_box(box_split_right)
-            else:
-                box_left = box_split_left
-                box_right = box_split_right
-
-            leaf_nodes += self._get_leaf_nodes(node_left, i_tree, class_label, box_left)
-            leaf_nodes += self._get_leaf_nodes(node_right, i_tree, class_label, box_right)
-
-        else:
-            leaf_nodes.append(
-                LeafNode(
-                    tree_id=i_tree,
-                    class_label=class_label,
-                    node_id=node_id,
-                    box=box,
-                    value=self.get_values_at_node(node_id)[0, 0],
-                )
-            )
-
-        return leaf_nodes
-
-
 class ScikitlearnExtraTreeClassifier(ScikitlearnDecisionTreeClassifier):
     """
-    Wrapper class for scikit-learn Extra TreeClassifier Classifier models.
+    Class for scikit-learn Extra TreeClassifier Classifier models.
     """
 
     def __init__(
@@ -559,7 +448,7 @@ class ScikitlearnExtraTreeClassifier(ScikitlearnDecisionTreeClassifier):
 
 class ScikitlearnAdaBoostClassifier(ScikitlearnClassifier):
     """
-    Wrapper class for scikit-learn AdaBoost Classifier models.
+    Class for scikit-learn AdaBoost Classifier models.
     """
 
     def __init__(
@@ -598,7 +487,7 @@ class ScikitlearnAdaBoostClassifier(ScikitlearnClassifier):
 
 class ScikitlearnBaggingClassifier(ScikitlearnClassifier):
     """
-    Wrapper class for scikit-learn Bagging Classifier models.
+    Class for scikit-learn Bagging Classifier models.
     """
 
     def __init__(
@@ -638,7 +527,7 @@ class ScikitlearnBaggingClassifier(ScikitlearnClassifier):
 
 class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier, DecisionTreeMixin):
     """
-    Wrapper class for scikit-learn Extra Trees Classifier models.
+    Class for scikit-learn Extra Trees Classifier models.
     """
 
     def __init__(
@@ -711,7 +600,7 @@ class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier, DecisionTreeMixin):
 
 class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier, DecisionTreeMixin):
     """
-    Wrapper class for scikit-learn Gradient Boosting Classifier models.
+    Class for scikit-learn Gradient Boosting Classifier models.
     """
 
     def __init__(
@@ -785,7 +674,7 @@ class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier, DecisionTreeM
 
 class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
     """
-    Wrapper class for scikit-learn Random Forest Classifier models.
+    Class for scikit-learn Random Forest Classifier models.
     """
 
     def __init__(
@@ -858,7 +747,7 @@ class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
 
 class ScikitlearnLogisticRegression(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassifier):
     """
-    Wrapper class for scikit-learn Logistic Regression models.
+    Class for scikit-learn Logistic Regression models.
     """
 
     def __init__(
@@ -1045,7 +934,7 @@ class ScikitlearnLogisticRegression(ClassGradientsMixin, LossGradientsMixin, Sci
 
 class ScikitlearnGaussianNB(ScikitlearnClassifier):
     """
-    Wrapper class for scikit-learn Gaussian Naive Bayes models.
+    Class for scikit-learn Gaussian Naive Bayes models.
     """
 
     def __init__(
@@ -1094,7 +983,7 @@ class ScikitlearnGaussianNB(ScikitlearnClassifier):
 
 class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassifier):
     """
-    Wrapper class for scikit-learn C-Support Vector Classification models.
+    Class for scikit-learn C-Support Vector Classification models.
     """
 
     def __init__(
