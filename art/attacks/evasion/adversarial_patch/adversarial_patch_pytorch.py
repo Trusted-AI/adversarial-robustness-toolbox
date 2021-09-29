@@ -96,7 +96,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
         :param learning_rate: The learning rate of the optimization.
         :param max_iter: The number of optimization steps.
         :param batch_size: The size of the training batch.
-        :param patch_shape: The shape of the adversarial patch as a tuple of shape HWC (width, height, nb_channels).
+        :param patch_shape: The shape of the adversarial patch as a tuple of shape CHW (nb_channels, width, height).
         :param patch_type: The patch type, either circle or square.
         :param tensor_board: Activate summary writer for TensorBoard: Default is `False` and deactivated summary writer.
                              If `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory. Provide `path` in type
@@ -235,7 +235,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
 
         image_mask = np.expand_dims(image_mask, axis=0)
         image_mask = np.broadcast_to(image_mask, self.patch_shape)
-        image_mask = torch.Tensor(np.array(image_mask))
+        image_mask = torch.Tensor(np.array(image_mask)).to(self.estimator.device)
         image_mask = torch.stack([image_mask] * nb_samples, dim=0)
         return image_mask
 
@@ -406,7 +406,9 @@ class AdversarialPatchPyTorch(EvasionAttack):
 
         image_mask = torch.stack(image_mask_list, dim=0)
         padded_patch = torch.stack(padded_patch_list, dim=0)
-        inverted_mask = torch.from_numpy(np.ones(shape=image_mask.shape, dtype=np.float32)) - image_mask
+        inverted_mask = (
+            torch.from_numpy(np.ones(shape=image_mask.shape, dtype=np.float32)).to(self.estimator.device) - image_mask
+        )
 
         return images * inverted_mask + padded_patch * image_mask
 
@@ -414,7 +416,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
         """
         Generate an adversarial patch and return the patch and its mask in arrays.
 
-        :param x: An array with the original input images of shape NHWC or input videos of shape NFHWC.
+        :param x: An array with the original input images of shape NCHW or input videos of shape NFCHW.
         :param y: An array with the original true labels.
         :param mask: An boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
                      (N, H, W) without their channel dimensions. Any features for which the mask is True can be the
@@ -471,9 +473,15 @@ class AdversarialPatchPyTorch(EvasionAttack):
         for i_iter in trange(self.max_iter, desc="Adversarial Patch PyTorch", disable=not self.verbose):
             if mask is None:
                 for images, target in data_loader:
+                    images, target = images.to(self.estimator.device), target.to(self.estimator.device)
                     _ = self._train_step(images=images, target=target, mask=None)
             else:
                 for images, target, mask_i in data_loader:
+                    images, target, mask_i = (
+                        images.to(self.estimator.device),
+                        target.to(self.estimator.device),
+                        mask_i.to(self.estimator.device),
+                    )
                     _ = self._train_step(images=images, target=target, mask=mask_i)
 
             if self.summary_writer is not None:  # pragma: no cover
@@ -498,7 +506,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
 
         return (
             self._patch.detach().cpu().numpy(),
-            self._get_circular_patch_mask(nb_samples=1).numpy()[0],
+            self._get_circular_patch_mask(nb_samples=1).cpu().numpy()[0],
         )
 
     def _check_mask(self, mask: np.ndarray, x: np.ndarray) -> np.ndarray:
