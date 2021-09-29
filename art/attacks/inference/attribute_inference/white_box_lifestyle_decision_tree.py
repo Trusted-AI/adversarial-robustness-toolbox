@@ -21,15 +21,16 @@ This module implements attribute inference attacks.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, Union, TYPE_CHECKING
 
 import numpy as np
 
-from art.estimators.classification.scikitlearn import ScikitlearnDecisionTreeClassifier
 from art.attacks.attack import AttributeInferenceAttack
+from art.estimators.classification.scikitlearn import ScikitlearnDecisionTreeClassifier
+from art.estimators.regression.scikitlearn import ScikitlearnDecisionTreeRegressor
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_TYPE
+    from art.utils import CLASSIFIER_TYPE, REGRESSOR_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -44,16 +45,16 @@ class AttributeInferenceWhiteBoxLifestyleDecisionTree(AttributeInferenceAttack):
     | Paper link: https://dl.acm.org/doi/10.1145/2810103.2813677
     """
 
-    _estimator_requirements = (ScikitlearnDecisionTreeClassifier,)
+    _estimator_requirements = ((ScikitlearnDecisionTreeClassifier, ScikitlearnDecisionTreeRegressor),)
 
-    def __init__(self, classifier: "CLASSIFIER_TYPE", attack_feature: int = 0):
+    def __init__(self, estimator: Union["CLASSIFIER_TYPE", "REGRESSOR_TYPE"], attack_feature: int = 0):
         """
         Create an AttributeInferenceWhiteBoxLifestyle attack instance.
 
-        :param classifier: Target classifier.
+        :param estimator: Target estimator.
         :param attack_feature: The index of the feature to be attacked.
         """
-        super().__init__(estimator=classifier, attack_feature=attack_feature)
+        super().__init__(estimator=estimator, attack_feature=attack_feature)
         self.attack_feature: int
         self._check_params()
 
@@ -124,7 +125,7 @@ class AttributeInferenceWhiteBoxLifestyleDecisionTree(AttributeInferenceAttack):
 
             for row in x_value:
                 # get leaf ids (no duplicates)
-                node_id = self.estimator.get_decision_path([row])[0]
+                node_id = self.estimator.get_decision_path([row])[-1]
                 nodes_value[node_id] = self.estimator.get_samples_at_node(node_id)
             # sum sample numbers
             num_value = sum(nodes_value.values()) / n_samples

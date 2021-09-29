@@ -72,7 +72,7 @@ class TestHCLU(TestBase):
         self.assertGreater(clean_acc, adv_acc)
         # uncertainty should indeed be lower when used as a constraint
         # however, same as above, crafting might fail
-        self.assertGreater(np.mean(unc_f > unc_o), 0.65)
+        self.assertGreater(np.mean(unc_f > unc_o), 0.6)
 
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test))), 0.0, delta=0.00001)

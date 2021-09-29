@@ -1,4 +1,4 @@
-name: CI TensorFlowFasterRCNN
+name: CI PyTorchGoturn
 on:
   # Run on manual trigger
   workflow_dispatch:
@@ -19,14 +19,14 @@ on:
     - cron: '0 8 * * 0'
 
 jobs:
-  test_tf_faster_rcnn:
-    name: TensorFlowFasterRCNN
+  test_pytorch_goturn:
+    name: PyTorchGoturn
     runs-on: ubuntu-latest
-    container: minhitbk/art_testing_envs:tf_fasterrcnn
+    container: adversarialrobustnesstoolbox/art_testing_envs:goturn
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v2.3.4
       - name: Run Test Action
-        uses: ./.github/actions/tf-faster-rcnn
+        uses: ./.github/actions/goturn
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v2.1.0
+        uses: codecov/codecov-action@v2.0.3
