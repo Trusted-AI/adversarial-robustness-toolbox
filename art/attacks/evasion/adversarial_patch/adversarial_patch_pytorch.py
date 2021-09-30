@@ -96,7 +96,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
         :param learning_rate: The learning rate of the optimization.
         :param max_iter: The number of optimization steps.
         :param batch_size: The size of the training batch.
-        :param patch_shape: The shape of the adversarial patch as a tuple of shape CHW (nb_channels, width, height).
+        :param patch_shape: The shape of the adversarial patch as a tuple of shape CHW (nb_channels, height, width).
         :param patch_type: The patch type, either circle or square.
         :param tensor_board: Activate summary writer for TensorBoard: Default is `False` and deactivated summary writer.
                              If `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory. Provide `path` in type
