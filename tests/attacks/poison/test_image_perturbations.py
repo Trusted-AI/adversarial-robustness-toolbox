@@ -21,7 +21,7 @@ import logging
 import numpy as np
 import pytest
 
-from art.attacks.poisoning.perturbations import add_single_bd, add_pattern_bd, insert_image
+from art.attacks.poisoning.perturbations import add_single_bd, add_pattern_bd
 
 from tests.utils import ARTTestException
 
