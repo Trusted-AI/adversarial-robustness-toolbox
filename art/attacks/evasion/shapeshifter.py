@@ -221,7 +221,7 @@ class ShapeShifter(EvasionAttack):
 
         # Check if label is provided
         label: Optional[Dict[str, List[np.ndarray]]] = kwargs.get("label")
-        if label is None and not self.texture_as_input:
+        if label is None and not self.texture_as_input:  # pragma: no cover
             raise ValueError("Need the target labels for image as input.")
 
         # Check whether users have a custom loss
@@ -234,7 +234,7 @@ class ShapeShifter(EvasionAttack):
             if self.texture_as_input:
                 # Check whether users provide a rendering function
                 rendering_function = kwargs.get("rendering_function")
-                if rendering_function is None:
+                if rendering_function is None:  # pragma: no cover
                     raise ValueError("Need a rendering function to use textures as input.")
 
                 # Build the TensorFlow graph
@@ -270,10 +270,10 @@ class ShapeShifter(EvasionAttack):
 
         # Get victim class
         victim_class = kwargs.get("victim_class")
-        if victim_class is None:
+        if victim_class is None:  # pragma: no cover
             raise ValueError("Need to provide a victim class.")
 
-        if not isinstance(victim_class, int):
+        if not isinstance(victim_class, int):  # pragma: no cover
             raise TypeError("Victim class must be of type `int`.")
 
         # Get target class
@@ -282,11 +282,11 @@ class ShapeShifter(EvasionAttack):
             logger.warning("Target class not provided, an untargeted attack is defaulted.")
             target_class = victim_class
 
-        if not isinstance(target_class, int):
+        if not isinstance(target_class, int):  # pragma: no cover
             raise TypeError("Target class must be of type `int`.")
 
         # Run attack
-        if label is None:
+        if label is None:  # pragma: no cover
             raise ValueError("Labels cannot be None.")
         result = self._attack_training(
             x=x,
@@ -513,7 +513,7 @@ class ShapeShifter(EvasionAttack):
             # Create adversarial image
             if rendering_function is not None:
                 current_image = rendering_function(background_phd, image_frame_phd, current_texture)
-            else:
+            else:  # pragma: no cover
                 ValueError("Callable rendering_function is None.")
 
         else:
@@ -650,12 +650,12 @@ class ShapeShifter(EvasionAttack):
 
         # Create optimizer
         if self.optimizer == "GradientDescentOptimizer":
-            optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate)
+            optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate)  # pragma: no cover
         elif self.optimizer == "MomentumOptimizer":
             optimizer = tf.train.MomentumOptimizer(learning_rate=learning_rate, momentum=momentum)
         elif self.optimizer == "RMSPropOptimizer":
             optimizer = tf.train.RMSPropOptimizer(learning_rate=learning_rate, momentum=momentum, decay=decay)
-        elif self.optimizer == "AdamOptimizer":
+        elif self.optimizer == "AdamOptimizer":  # pragma: no cover
             optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
         else:
             raise NotImplementedError("Unknown optimizer.")
@@ -692,7 +692,7 @@ class ShapeShifter(EvasionAttack):
 
         # Compute total loss
         if custom_loss is not None:
-            total_loss = tf.add_n(
+            total_loss = tf.add_n(  # pragma: no cover
                 [partial_faster_rcnn_loss, partial_box_loss, partial_rpn_loss, weight_similarity_loss, custom_loss],
                 name="total_loss",
             )

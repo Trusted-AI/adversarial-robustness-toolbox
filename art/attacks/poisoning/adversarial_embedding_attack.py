@@ -105,7 +105,7 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
 
         if isinstance(self.estimator, KerasClassifier):
             using_tf_keras = "tensorflow.python.keras" in str(type(self.estimator.model))
-            if using_tf_keras:
+            if using_tf_keras:  # pragma: no cover
                 from tensorflow.keras.models import Model, clone_model
                 from tensorflow.keras.layers import GaussianNoise, Dense, BatchNormalization, LeakyReLU
                 from tensorflow.keras.optimizers import Adam
@@ -292,7 +292,7 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
 
         if len(self.pp_poison) == 1:
             _check_pp_poison(self.pp_poison[0])
-        else:
+        else:  # pragma: no cover
             if not isinstance(self.target, list):
                 raise ValueError("Target should be list of source label pairs")
             if len(self.pp_poison) != len(self.target):

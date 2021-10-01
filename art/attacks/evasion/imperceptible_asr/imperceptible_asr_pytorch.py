@@ -237,7 +237,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         """
         import torch  # lgtm [py/repeated-import]
 
-        if y is None:
+        if y is None:  # pragma: no cover
             raise ValueError(
                 "`ImperceptibleASRPyTorch` is a targeted attack and requires the definition of target"
                 "labels `y`. Currently `y` is set to `None`."

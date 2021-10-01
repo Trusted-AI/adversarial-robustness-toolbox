@@ -179,6 +179,64 @@ class TestSVMAttack(unittest.TestCase):
     def test_classifier_type_check_fail(self):
         backend_test_classifier_type_check_fail(PoisoningAttackSVM, [ScikitlearnSVC])
 
+    def test_check_params(self):
+        (x_train, y_train), (x_test, y_test), min_, max_ = self.iris
+        clip_values = (min_, max_)
+        poison = SklearnClassifier(model=SVC(kernel="linear", gamma="auto"), clip_values=clip_values)
+        poison.fit(x_train, y_train)
+
+        with self.assertRaises(ValueError):
+            _ = PoisoningAttackSVM(
+                poison,
+                step=-0.01,
+                eps=1.0,
+                x_train=x_train,
+                y_train=y_train,
+                x_val=x_test,
+                y_val=y_test,
+                max_iter=100,
+                verbose=False,
+            )
+
+        with self.assertRaises(ValueError):
+            _ = PoisoningAttackSVM(
+                poison,
+                step=0.01,
+                eps=-1.0,
+                x_train=x_train,
+                y_train=y_train,
+                x_val=x_test,
+                y_val=y_test,
+                max_iter=100,
+                verbose=False,
+            )
+
+        with self.assertRaises(ValueError):
+            _ = PoisoningAttackSVM(
+                poison,
+                step=0.01,
+                eps=1.0,
+                x_train=x_train,
+                y_train=y_train,
+                x_val=x_test,
+                y_val=y_test,
+                max_iter=-1,
+                verbose=False,
+            )
+
+        with self.assertRaises(ValueError):
+            _ = PoisoningAttackSVM(
+                poison,
+                step=0.01,
+                eps=1.0,
+                x_train=x_train,
+                y_train=y_train,
+                x_val=x_test,
+                y_val=y_test,
+                max_iter=100,
+                verbose="False",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

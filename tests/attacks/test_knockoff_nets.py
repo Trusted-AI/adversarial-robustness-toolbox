@@ -101,6 +101,103 @@ class TestKnockoffNets(TestBase):
 
         self.assertGreater(acc, 0.4)
 
+        with self.assertRaises(ValueError):
+            _ = KnockoffNets(
+                classifier=victim_tfc,
+                batch_size_fit=-1,
+                batch_size_query=BATCH_SIZE,
+                nb_epochs=NB_EPOCHS,
+                nb_stolen=NB_STOLEN,
+                sampling_strategy="adaptive",
+                reward="all",
+                verbose=False,
+            )
+
+        with self.assertRaises(ValueError):
+            _ = KnockoffNets(
+                classifier=victim_tfc,
+                batch_size_fit=BATCH_SIZE,
+                batch_size_query=-1,
+                nb_epochs=NB_EPOCHS,
+                nb_stolen=NB_STOLEN,
+                sampling_strategy="adaptive",
+                reward="all",
+                verbose=False,
+            )
+
+        with self.assertRaises(ValueError):
+            _ = KnockoffNets(
+                classifier=victim_tfc,
+                batch_size_fit=BATCH_SIZE,
+                batch_size_query=BATCH_SIZE,
+                nb_epochs=-1,
+                nb_stolen=NB_STOLEN,
+                sampling_strategy="adaptive",
+                reward="all",
+                verbose=False,
+            )
+
+        with self.assertRaises(ValueError):
+            _ = KnockoffNets(
+                classifier=victim_tfc,
+                batch_size_fit=BATCH_SIZE,
+                batch_size_query=BATCH_SIZE,
+                nb_epochs=NB_EPOCHS,
+                nb_stolen=-1,
+                sampling_strategy="adaptive",
+                reward="all",
+                verbose=False,
+            )
+
+        with self.assertRaises(ValueError):
+            _ = KnockoffNets(
+                classifier=victim_tfc,
+                batch_size_fit=BATCH_SIZE,
+                batch_size_query=BATCH_SIZE,
+                nb_epochs=NB_EPOCHS,
+                nb_stolen=NB_STOLEN,
+                sampling_strategy="test",
+                reward="all",
+                verbose=False,
+            )
+
+        with self.assertRaises(ValueError):
+            _ = KnockoffNets(
+                classifier=victim_tfc,
+                batch_size_fit=BATCH_SIZE,
+                batch_size_query=BATCH_SIZE,
+                nb_epochs=NB_EPOCHS,
+                nb_stolen=NB_STOLEN,
+                sampling_strategy="adaptive",
+                reward="test",
+                verbose=False,
+            )
+
+        with self.assertRaises(ValueError):
+            _ = KnockoffNets(
+                classifier=victim_tfc,
+                batch_size_fit=BATCH_SIZE,
+                batch_size_query=BATCH_SIZE,
+                nb_epochs=NB_EPOCHS,
+                nb_stolen=NB_STOLEN,
+                sampling_strategy="adaptive",
+                reward="all",
+                verbose="False",
+            )
+
+        with self.assertRaises(ValueError):
+            _ = KnockoffNets(
+                classifier=victim_tfc,
+                batch_size_fit=BATCH_SIZE,
+                batch_size_query=BATCH_SIZE,
+                nb_epochs=NB_EPOCHS,
+                nb_stolen=NB_STOLEN,
+                sampling_strategy="adaptive",
+                reward="all",
+                verbose=False,
+                use_probability="True",
+            )
+
         # Clean-up session
         if sess is not None:
             sess.close()

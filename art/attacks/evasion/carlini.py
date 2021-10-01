@@ -253,7 +253,7 @@ class CarliniL2Method(EvasionAttack):
             y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
 
         if self.estimator.nb_classes == 2 and y.shape[1] == 1:
-            raise ValueError(
+            raise ValueError(  # pragma: no cover
                 "This attack has not yet been tested for binary classification with a single output classifier."
             )
 
@@ -289,7 +289,7 @@ class CarliniL2Method(EvasionAttack):
                     nb_active,
                     x_batch.shape[0],
                 )
-                if nb_active == 0:
+                if nb_active == 0:  # pragma: no cover
                     break
                 learning_rate = self.learning_rate * np.ones(x_batch.shape[0])
 
@@ -325,7 +325,7 @@ class CarliniL2Method(EvasionAttack):
                         nb_active,
                         x_batch.shape[0],
                     )
-                    if nb_active == 0:
+                    if nb_active == 0:  # pragma: no cover
                         break
 
                     # compute gradient:
@@ -662,7 +662,7 @@ class CarliniLInfMethod(EvasionAttack):
             y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
 
         if self.estimator.nb_classes == 2 and y.shape[1] == 1:
-            raise ValueError(
+            raise ValueError(  # pragma: no cover
                 "This attack has not yet been tested for binary classification with a single output classifier."
             )
 
@@ -991,7 +991,7 @@ class CarliniL0Method(CarliniL2Method):
             activation = np.ones(x.shape)
         else:
             # Check if the initial activation has the same dimension as the input data
-            if self.mask.shape != x.shape:
+            if self.mask.shape != x.shape:  # pragma: no cover
                 raise ValueError("The mask must have the same dimensions as the input data.")
             activation = np.array(self.mask).astype(float)
 
@@ -1081,7 +1081,7 @@ class CarliniL0Method(CarliniL2Method):
                             nb_active,
                             x_batch.shape[0],
                         )
-                        if nb_active == 0:
+                        if nb_active == 0:  # pragma: no cover
                             break
 
                         # compute gradient:
@@ -1145,7 +1145,7 @@ class CarliniL0Method(CarliniL2Method):
                             logger.debug("Perform doubling iteration %i out of %i", i_double, self.max_doubling)
                             do_doubling = (halving[active] == 1) & (loss[active] <= best_loss[active])
                             logger.debug("Doubling to be performed on %i samples", int(np.sum(do_doubling)))
-                            if np.sum(do_doubling) == 0:
+                            if np.sum(do_doubling) == 0:  # pragma: no cover
                                 break
                             active_and_do_doubling = active.copy()
                             active_and_do_doubling[active] = do_doubling

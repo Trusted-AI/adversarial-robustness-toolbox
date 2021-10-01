@@ -104,7 +104,7 @@ class Mp3Compression(Preprocessor):
 
             # WARNING: Sometimes we *still* need to manually resize x_mp3 to original length.
             # This should not be the case, e.g. see https://github.com/jiaaro/pydub/issues/474
-            if x.shape[0] != x_mp3.shape[0]:
+            if x.shape[0] != x_mp3.shape[0]:  # pragma: no cover
                 logger.warning(
                     "Lengths original input and compressed output don't match. Truncating compressed result."
                 )

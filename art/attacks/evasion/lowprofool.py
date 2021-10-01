@@ -113,7 +113,7 @@ class LowProFool(EvasionAttack):
         self.n_features = self.estimator.input_shape[0]
         self.importance_vec = None
         if self.estimator.clip_values is None:
-            logger.warning(
+            logger.warning(  # pragma: no cover
                 "The `clip_values` attribute of the estimator is `None`, therefore this instance of LowProFool will by "
                 "default generate adversarial perturbations without clipping them."
             )
@@ -127,7 +127,7 @@ class LowProFool(EvasionAttack):
             steps_before_min_eta_reached = np.ceil(np.log(eta_min / eta) / np.log(eta_decay))
 
             if steps_before_min_eta_reached / self.n_steps < 0.8:
-                logger.warning(
+                logger.warning(  # pragma: no cover
                     "The given combination of 'n_steps', 'eta', 'eta_decay' and 'eta_min' effectively sets learning "
                     "rate to its minimal value after about %d steps out of all %d.",
                     steps_before_min_eta_reached,
@@ -235,7 +235,7 @@ class LowProFool(EvasionAttack):
                 self.importance_vec = None
                 raise ValueError("Feature has to be one-dimensional array of size (n_features, ).")
 
-        else:
+        else:  # pragma: no cover
             raise TypeError("Unrecognized feature importance function: {}".format(self.importance))
 
     def fit_importances(
@@ -256,10 +256,10 @@ class LowProFool(EvasionAttack):
         :return: LowProFool instance itself.
         """
         if importance_array is not None:
-            # Use a pre-calculated vector of feature importances.
+            # Use a pre-calculated vector of feature importance.
             if np.array(importance_array).shape == (self.n_features,):
                 self.importance_vec = np.array(importance_array)
-            else:
+            else:  # pragma: no cover
                 raise ValueError("Feature has to be one-dimensional array of size (n_features, ).")
 
         elif self.importance_vec is None:

@@ -111,13 +111,13 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         :param y: The target labels for the attack.
         :return: A tuple holding the `(poisoning_examples, poisoning_labels)`.
         """
-        if y is None:
+        if y is None:  # pragma: no cover
             raise ValueError("Target labels `y` need to be provided for a targeted attack.")
 
         y_attack = np.copy(y)
 
         num_poison = len(x)
-        if num_poison == 0:
+        if num_poison == 0:  # pragma: no cover
             raise ValueError("Must input at least one poison point")
 
         num_features = len(x[0])
@@ -207,7 +207,7 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         :return: The attack gradient.
         """
         # pylint: disable=W0212
-        if self.x_val is None or self.y_val is None:
+        if self.x_val is None or self.y_val is None:  # pragma: no cover
             raise ValueError("The values of `x_val` and `y_val` are required for computing the gradients.")
 
         art_model = self.estimator
@@ -218,7 +218,7 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         support_labels = np.expand_dims(self.predict_sign(support_vectors), axis=1)
         c_idx = np.isin(support_vectors, attack_point).all(axis=1)
 
-        if not c_idx.any():
+        if not c_idx.any():  # pragma: no cover
             return grad
 
         c_idx = np.where(c_idx > 0)[0][0]

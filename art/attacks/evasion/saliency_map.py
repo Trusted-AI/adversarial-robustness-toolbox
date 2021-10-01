@@ -98,7 +98,7 @@ class SaliencyMapMethod(EvasionAttack):
 
             targets = np.argmax(random_targets(preds, self.estimator.nb_classes), axis=1)
         else:
-            if self.estimator.nb_classes == 2 and y.shape[1] == 1:
+            if self.estimator.nb_classes == 2 and y.shape[1] == 1:  # pragma: no cover
                 raise ValueError(
                     "This attack has not yet been tested for binary classification with a single output classifier."
                 )
@@ -119,7 +119,7 @@ class SaliencyMapMethod(EvasionAttack):
                 clip_min, clip_max = self.estimator.clip_values
                 if self.theta > 0:
                     search_space[batch < clip_max] = 1
-                else:
+                else:  # pragma: no cover
                     search_space[batch > clip_min] = 1
             else:
                 search_space = np.ones(batch.shape)
@@ -147,7 +147,7 @@ class SaliencyMapMethod(EvasionAttack):
                     # Prepare update depending of theta
                     if self.theta > 0:
                         clip_func, clip_value = np.minimum, clip_max
-                    else:
+                    else:  # pragma: no cover
                         clip_func, clip_value = np.maximum, clip_min
 
                     # Update adversarial examples
@@ -216,7 +216,7 @@ class SaliencyMapMethod(EvasionAttack):
 
         if self.theta > 0:
             ind = np.argpartition(grads, -2, axis=1)[:, -2:]
-        else:
+        else:  # pragma: no cover
             ind = np.argpartition(-grads, -2, axis=1)[:, -2:]
 
         return ind

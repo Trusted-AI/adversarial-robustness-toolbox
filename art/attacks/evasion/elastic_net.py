@@ -208,14 +208,14 @@ class ElasticNet(EvasionAttack):
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
         # Assert that, if attack is targeted, y is provided:
-        if self.targeted and y is None:
+        if self.targeted and y is None:  # pragma: no cover
             raise ValueError("Target labels `y` need to be provided for a targeted attack.")
 
         # No labels provided, use model prediction as correct class
         if y is None:
             y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
 
-        if self.estimator.nb_classes == 2 and y.shape[1] == 1:
+        if self.estimator.nb_classes == 2 and y.shape[1] == 1:  # pragma: no cover
             raise ValueError(
                 "This attack has not yet been tested for binary classification with a single output classifier."
             )
@@ -367,7 +367,7 @@ class ElasticNet(EvasionAttack):
                 zip_set = zip(l1dist, logits)
             elif self.decision_rule == "L2":
                 zip_set = zip(l2dist, logits)
-            else:
+            else:  # pragma: no cover
                 raise ValueError("The decision rule only supports `EN`, `L1`, `L2`.")
 
             for j, (distance, label) in enumerate(zip_set):

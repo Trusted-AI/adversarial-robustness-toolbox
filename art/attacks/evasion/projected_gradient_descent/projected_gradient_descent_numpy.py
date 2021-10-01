@@ -151,7 +151,7 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
 
         if y is None:
             # Throw error if attack is targeted, but no targets are provided
-            if self.targeted:
+            if self.targeted:  # pragma: no cover
                 raise ValueError("Target labels `y` need to be provided for a targeted attack.")
 
             # Use model predictions as correct outputs
@@ -165,7 +165,7 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
 
         return targets
 
-    def _check_params(self) -> None:
+    def _check_params(self) -> None:  # pragma: no cover
 
         if self.norm not in [1, 2, np.inf, "inf"]:
             raise ValueError('Norm order must be either 1, 2, `np.inf` or "inf".')
@@ -375,7 +375,7 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
                 ),
             )
         else:
-            if self.num_random_init > 0:
+            if self.num_random_init > 0:  # pragma: no cover
                 raise ValueError("Random initialisation is only supported for classification.")
 
             # Set up targets

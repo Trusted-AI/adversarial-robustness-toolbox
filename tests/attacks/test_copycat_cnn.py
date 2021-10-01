@@ -239,6 +239,52 @@ class TestCopycatCNN(TestBase):
 
         self.assertGreater(acc, 0.3)
 
+        with self.assertRaises(ValueError):
+            _ = CopycatCNN(
+                classifier=victim_ptc,
+                batch_size_fit=-1,
+                batch_size_query=self.batch_size,
+                nb_epochs=NB_EPOCHS,
+                nb_stolen=NB_STOLEN,
+            )
+
+        with self.assertRaises(ValueError):
+            _ = CopycatCNN(
+                classifier=victim_ptc,
+                batch_size_fit=self.batch_size,
+                batch_size_query=-1,
+                nb_epochs=NB_EPOCHS,
+                nb_stolen=NB_STOLEN,
+            )
+
+        with self.assertRaises(ValueError):
+            _ = CopycatCNN(
+                classifier=victim_ptc,
+                batch_size_fit=self.batch_size,
+                batch_size_query=self.batch_size,
+                nb_epochs=-1,
+                nb_stolen=NB_STOLEN,
+            )
+
+        with self.assertRaises(ValueError):
+            _ = CopycatCNN(
+                classifier=victim_ptc,
+                batch_size_fit=self.batch_size,
+                batch_size_query=self.batch_size,
+                nb_epochs=NB_EPOCHS,
+                nb_stolen=-1,
+            )
+
+        with self.assertRaises(ValueError):
+            _ = CopycatCNN(
+                classifier=victim_ptc,
+                batch_size_fit=self.batch_size,
+                batch_size_query=self.batch_size,
+                nb_epochs=NB_EPOCHS,
+                nb_stolen=NB_STOLEN,
+                use_probability="True",
+            )
+
 
 class TestCopycatCNNVectors(TestBase):
     @classmethod
