@@ -64,7 +64,7 @@ def test_check_params(art_warning, image_dl_estimator_for_attack):
         classifier = image_dl_estimator_for_attack(AttributeInferenceWhiteBoxDecisionTree)
 
         with pytest.raises(ValueError):
-            _ = AttributeInferenceWhiteBoxDecisionTree(classifier, attack_feature=-0.5)
+            _ = AttributeInferenceWhiteBoxDecisionTree(classifier, attack_feature=-5)
 
     except ARTTestException as e:
         art_warning(e)
@@ -74,15 +74,3 @@ def test_classifier_type_check_fail():
     backend_test_classifier_type_check_fail(
         AttributeInferenceWhiteBoxDecisionTree, (ScikitlearnDecisionTreeClassifier,)
     )
-
-
-@pytest.mark.skip_framework("dl_frameworks")
-def test_check_params(art_warning, get_iris_dataset, image_dl_estimator_for_attack):
-    try:
-        classifier = image_dl_estimator_for_attack(AttributeInferenceWhiteBoxDecisionTree)
-
-        with pytest.raises(ValueError):
-            AttributeInferenceWhiteBoxDecisionTree(classifier=classifier, ttack_feature=-3)
-
-    except ARTTestException as e:
-        art_warning(e)

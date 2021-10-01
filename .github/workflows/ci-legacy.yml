@@ -24,7 +24,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        module: [attacks_1, attacks_2, classifiers, speech_recognizers, defences, metrics, wrappers, art]
+        module: [attacks_1, attacks_2, classifiers, speech_recognizers, defences, metrics, art]
         include:
           - name: legacy (TensorFlow 2.6.0 Keras 2.6.0 PyTorch 1.9.1 scikit-learn 0.24.2 Python 3.8)
             framework: legacy

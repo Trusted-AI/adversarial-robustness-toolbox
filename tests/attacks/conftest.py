@@ -18,8 +18,6 @@
 import logging
 import pytest
 
-from tests.utils import ARTTestFixtureNotImplemented
-
 logger = logging.getLogger(__name__)
 
 
