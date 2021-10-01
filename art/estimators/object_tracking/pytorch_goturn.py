@@ -44,6 +44,7 @@ import logging
 from typing import List, Dict, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
+from got10k.trackers import Tracker
 
 from art.estimators.object_tracking.object_tracker import ObjectTrackerMixin
 from art.estimators.pytorch import PyTorchEstimator
@@ -59,7 +60,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
+class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator, Tracker):
     """
     This module implements the task- and model-specific estimator for PyTorch GOTURN (object tracking).
     """
@@ -69,6 +70,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
     def __init__(
         self,
         model,
+        input_shape: Tuple[int, ...],
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         channels_first: Optional[bool] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
@@ -80,6 +82,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         Initialization.
 
         :param model: GOTURN model.
+        :param input_shape: shape of one input for the classifier, e.g. input_shape=(3, 32, 32).
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
@@ -120,8 +123,9 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
             preprocessing=preprocessing,
             device_type=device_type,
         )
+        Tracker.__init__(self, name="PyTorchGoturn", is_deterministic=True)
 
-        self._input_shape = None
+        self._input_shape = input_shape
 
         if self.clip_values is not None:
             if self.clip_values[0] != 0:
@@ -342,7 +346,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         img = img.permute(2, 0, 1)
         img = img * std + mean
         img = torch.unsqueeze(img, dim=0)
-        img = interpolate(img, size=(227, 227))
+        img = interpolate(img, size=(self.input_shape[1], self.input_shape[2]))
         img = torch.squeeze(img)
         img = (img - mean) / std
         return img
@@ -373,7 +377,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
             bbox_height = bbox_tight[3] - bbox_tight[1]
             output_height = k_context_factor * bbox_height
 
-            return torch.max(torch.tensor(1.0).to(self.device), output_height)
+            return max(torch.tensor(1.0).to(self.device), output_height)
 
         def compute_output_width_f(bbox_tight: "torch.Tensor") -> "torch.Tensor":
             """
@@ -385,7 +389,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
             bbox_width = bbox_tight[2] - bbox_tight[0]
             output_width = k_context_factor * bbox_width
 
-            return torch.max(torch.tensor(1.0).to(self.device), output_width)
+            return max(torch.tensor(1.0).to(self.device), output_width)
 
         def get_center_x_f(bbox_tight: "torch.Tensor") -> "torch.Tensor":
             """
@@ -431,8 +435,8 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
             output_width = compute_output_width_f(bbox_tight)
             output_height = compute_output_height_f(bbox_tight)
 
-            roi_left = torch.max(torch.tensor(0.0).to(self.device), bbox_center_x - (output_width / 2.0))
-            roi_bottom = torch.max(torch.tensor(0.0).to(self.device), bbox_center_y - (output_height / 2.0))
+            roi_left = max(torch.tensor(0.0).to(self.device), bbox_center_x - (output_width / 2.0))
+            roi_bottom = max(torch.tensor(0.0).to(self.device), bbox_center_y - (output_height / 2.0))
 
             # New ROI width
             # -------------
@@ -440,15 +444,15 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
             # image
             # 2. right_half should not go out of bound on the right side of the
             # image
-            left_half = torch.min(output_width / 2.0, bbox_center_x)
+            left_half = min(output_width / 2.0, bbox_center_x)
             right_half = min(output_width / 2.0, image_width - bbox_center_x)
             roi_width = max(1.0, left_half + right_half)
 
             # New ROI height
             # Similar logic applied that is applied for 'New ROI width'
-            top_half = torch.min(output_height / 2.0, bbox_center_y)
-            bottom_half = torch.min(output_height / 2.0, image_height - bbox_center_y)
-            roi_height = torch.max(torch.tensor(1.0).to(self.device), top_half + bottom_half)
+            top_half = min(output_height / 2.0, bbox_center_y)
+            bottom_half = min(output_height / 2.0, image_height - bbox_center_y)
+            roi_height = max(torch.tensor(1.0).to(self.device), top_half + bottom_half)
 
             # Padded image location in the original image
             # objPadImageLocation = BoundingBox(roi_left, roi_bottom, roi_left + roi_width, roi_bottom + roi_height)
@@ -466,7 +470,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
             output_width = compute_output_width_f(bbox_tight)
             bbox_center_x = get_center_x_f(bbox_tight)
 
-            return torch.max(torch.tensor(0.0).to(self.device), (output_width / 2) - bbox_center_x)
+            return max(torch.tensor(0.0).to(self.device), (output_width / 2) - bbox_center_x)
 
         def edge_spacing_y_f(bbox_tight: "torch.Tensor") -> "torch.Tensor":
             """
@@ -478,7 +482,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
             output_height = compute_output_height_f(bbox_tight)
             bbox_center_y = get_center_y_f(bbox_tight)
 
-            return torch.max(torch.tensor(0.0).to(self.device), (output_height / 2) - bbox_center_y)
+            return max(torch.tensor(0.0).to(self.device), (output_height / 2) - bbox_center_y)
 
         def crop_pad_image(
             bbox_tight: "torch.Tensor", image: "torch.Tensor"
@@ -677,3 +681,25 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         Not implemented.
         """
         raise NotImplementedError
+
+    def init(self, image, box):
+        import torch
+
+        self.prev = np.array(image) / 255.0 * self.clip_values[1]
+        self.box = torch.from_numpy(np.array([box[0], box[1], box[2] + box[0], box[3] + box[1]])).to(self.device)
+
+    def update(self, image):
+        import torch
+
+        curr = torch.from_numpy(np.array(image) / 255.0 * self.clip_values[1]).to(self.device)
+        prev = torch.from_numpy(self.prev).to(self.device)
+
+        curr, _ = self._apply_preprocessing(curr, y=None, fit=False)
+
+        box = self._track_step(curr, prev, self.box)
+        self.prev = curr.detach().numpy()
+
+        box_return = np.array([box[0], box[1], box[2] - box[0], box[3] - box[1]])
+        self.box = box
+
+        return box_return
