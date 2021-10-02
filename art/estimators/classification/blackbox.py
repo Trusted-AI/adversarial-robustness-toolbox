@@ -254,7 +254,7 @@ class BlackBoxClassifierNeuralNetwork(NeuralNetworkMixin, ClassifierMixin, BaseE
                 batch_index * batch_size,
                 min((batch_index + 1) * batch_size, x_preprocessed.shape[0]),
             )
-            predictions[begin:end] = self.predict_fn(x_preprocessed[begin:end])
+            predictions[begin:end] = self._predict_fn(x_preprocessed[begin:end])
 
         # Apply postprocessing
         predictions = self._apply_postprocessing(preds=predictions, fit=False)

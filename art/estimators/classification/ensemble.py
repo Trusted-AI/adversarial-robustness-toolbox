@@ -118,8 +118,9 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
 
         # Set weights for classifiers
         if classifier_weights is None:
-            classifier_weights = np.ones(self._nb_classifiers) / self._nb_classifiers
-        self._classifier_weights = classifier_weights
+            self._classifier_weights = np.ones(self._nb_classifiers) / self._nb_classifiers
+        else:
+            self._classifier_weights = np.array(classifier_weights)
 
         # check for consistent channels_first in ensemble members
         for i_cls, cls in enumerate(classifiers):
@@ -151,7 +152,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         return self._classifiers  # type: ignore
 
     @property
-    def classifier_weights(self) -> Union[list, np.ndarray, None]:
+    def classifier_weights(self) -> np.ndarray:
         """
         Return the list of classifier weights to assign to their prediction when aggregating results.
 
