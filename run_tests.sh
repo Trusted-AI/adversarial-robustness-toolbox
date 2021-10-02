@@ -114,7 +114,7 @@ else
                            "tests/estimators/classification/test_query_efficient_bb.py" \
                            "tests/estimators/classification/test_scikitlearn.py" \
                            "tests/estimators/classification/test_xgboost.py" \
-                            "tests/estimators/regression/test_scikitlearn.py" \)
+                           "tests/estimators/regression/test_scikitlearn.py" )
 
     declare -a defences=("tests/defences/test_adversarial_trainer.py" \
                          "tests/defences/test_adversarial_trainer_madry_pgd.py" \
