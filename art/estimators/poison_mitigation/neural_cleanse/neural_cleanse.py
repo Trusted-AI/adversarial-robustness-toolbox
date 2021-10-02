@@ -211,7 +211,7 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
                 # TODO: explore different values for threshold
                 self.activation_threshold = avg_clean_activation + 1 * std_clean_activation
 
-            else:
+            else:  # pragma: no cover
                 raise TypeError("Mitigation type: `" + mitigation_type + "` not supported")
 
     def check_backdoor_effective(self, backdoor_data: np.ndarray, backdoor_labels: np.ndarray) -> bool:

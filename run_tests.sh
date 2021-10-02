@@ -102,18 +102,19 @@ else
                           "tests/attacks/test_targeted_universal_perturbation.py" \
                           "tests/attacks/test_simba.py" )
 
-    declare -a classifiers=("tests/estimators/certification/test_randomized_smoothing.py" \
-                            "tests/estimators/classification/test_blackbox.py" \
-                            "tests/estimators/classification/test_catboost.py" \
-                            "tests/estimators/classification/test_classifier.py" \
-                            "tests/estimators/classification/test_detector_classifier.py" \
-                            "tests/estimators/classification/test_ensemble.py" \
-                            "tests/estimators/classification/test_GPy.py" \
-                            "tests/estimators/classification/test_input_filter.py" \
-                            "tests/estimators/classification/test_lightgbm.py" \
-                            "tests/estimators/classification/test_query_efficient_bb.py" \
-                            "tests/estimators/classification/test_scikitlearn.py" \
-                            "tests/estimators/classification/test_xgboost.py" )
+    declare -a estimators=("tests/estimators/certification/test_randomized_smoothing.py" \
+                           "tests/estimators/classification/test_blackbox.py" \
+                           "tests/estimators/classification/test_catboost.py" \
+                           "tests/estimators/classification/test_classifier.py" \
+                           "tests/estimators/classification/test_detector_classifier.py" \
+                           "tests/estimators/classification/test_ensemble.py" \
+                           "tests/estimators/classification/test_GPy.py" \
+                           "tests/estimators/classification/test_input_filter.py" \
+                           "tests/estimators/classification/test_lightgbm.py" \
+                           "tests/estimators/classification/test_query_efficient_bb.py" \
+                           "tests/estimators/classification/test_scikitlearn.py" \
+                           "tests/estimators/classification/test_xgboost.py" \
+                            "tests/estimators/regression/test_scikitlearn.py" \)
 
     declare -a defences=("tests/defences/test_adversarial_trainer.py" \
                          "tests/defences/test_adversarial_trainer_madry_pgd.py" \

@@ -96,17 +96,17 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
         )
 
         self._input_ph = input_ph
-        self._encoding_length = self._input_ph.shape[1]
+        self._encoding_length = self.input_ph.shape[1]
         self._loss = loss
-        if self._loss is not None:
-            self._grad = tf.gradients(self._loss, self._input_ph)
+        if self.loss is not None:
+            self._grad = tf.gradients(self.loss, self.input_ph)
         if feed_dict is None:
             self._feed_dict = dict()
         else:
             self._feed_dict = feed_dict
 
         # Assign session
-        if sess is None:
+        if sess is None:  # pragma: no cover
             raise ValueError("A session cannot be None.")
             # TODO do the same thing for all not None variables
         self._sess = sess
@@ -156,9 +156,9 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
         :return: Array of prediction projections of shape `(num_inputs, nb_classes)`.
         """
         logging.info("Projecting new sample from z value")
-        feed_dict = {self._input_ph: x}
-        if self._feed_dict is not None:
-            feed_dict.update(self._feed_dict)
+        feed_dict = {self.input_ph: x}
+        if self.feed_dict is not None:
+            feed_dict.update(self.feed_dict)
         y = self._sess.run(self._model, feed_dict=feed_dict)
         return y
 

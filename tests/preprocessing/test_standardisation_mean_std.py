@@ -53,6 +53,9 @@ def test_broadcastable_mean_std(art_warning):
     try:
         mean, std = broadcastable_mean_std(np.ones((1, 3, 20, 20)), np.ones(3), np.ones(3))
         assert mean.shape == std.shape == (1, 3, 1, 1)
+
+        mean, std = broadcastable_mean_std(np.ones((1, 3, 20, 20)), np.ones((1, 3, 1, 1)), np.ones((1, 3, 1, 1)))
+        assert mean.shape == std.shape == (1, 3, 1, 1)
     except ARTTestException as e:
         art_warning(e)
 

@@ -129,7 +129,7 @@ class BlackBoxClassifier(ClassifierMixin, BaseEstimator):
                 batch_index * batch_size,
                 min((batch_index + 1) * batch_size, x_preprocessed.shape[0]),
             )
-            predictions[begin:end] = self._predict_fn(x_preprocessed[begin:end])
+            predictions[begin:end] = self.predict_fn(x_preprocessed[begin:end])
 
         # Apply postprocessing
         predictions = self._apply_postprocessing(preds=predictions, fit=False)
@@ -254,7 +254,7 @@ class BlackBoxClassifierNeuralNetwork(NeuralNetworkMixin, ClassifierMixin, BaseE
                 batch_index * batch_size,
                 min((batch_index + 1) * batch_size, x_preprocessed.shape[0]),
             )
-            predictions[begin:end] = self._predict_fn(x_preprocessed[begin:end])
+            predictions[begin:end] = self.predict_fn(x_preprocessed[begin:end])
 
         # Apply postprocessing
         predictions = self._apply_postprocessing(preds=predictions, fit=False)
@@ -364,7 +364,7 @@ def _make_lookup_predict_fn(existing_predictions: Tuple[np.ndarray, np.ndarray],
             for row in batch:
                 try:
                     match_idx = sorted_predictions.index(FuzzyMapping(row))
-                except ValueError as err:
+                except ValueError as err:  # pragma: no cover
                     raise ValueError("No existing prediction for queried input") from err
 
                 predictions.append(sorted_predictions[match_idx].value)

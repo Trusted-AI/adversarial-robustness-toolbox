@@ -266,7 +266,7 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
                 reg_best = avg_loss_reg
 
             # check early stop
-            if self.early_stop:
+            if self.early_stop:  # pragma: no cover
                 if reg_best < float("inf"):
                     if reg_best >= self.early_stop_threshold * early_stop_reg_best:
                         early_stop_counter += 1
@@ -334,7 +334,7 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
         """
         if self.layer_names is not None:
             penultimate_layer = len(self.layer_names) - 2
-        else:
+        else:  # pragma: no cover
             raise ValueError("No layer names found.")
         return self.get_activations(x, penultimate_layer, batch_size=self.batch_size, framework=False)
 

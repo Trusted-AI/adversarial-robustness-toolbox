@@ -107,13 +107,13 @@ class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):  # lgtm [py/missing-
             self._feed_dict = feed_dict
 
         # Assign session
-        if sess is None:
+        if sess is None:  # pragma: no cover
             raise ValueError("A session cannot be None.")
         self._sess = sess
 
         # Get the loss gradients graph
-        if self._loss is not None:
-            self._loss_grads = tf.gradients(self._loss, self._input_ph)[0]
+        if self.loss is not None:
+            self._loss_grads = tf.gradients(self.loss, self.input_ph)[0]
 
     @property
     def input_shape(self) -> Tuple[int, ...]:
@@ -160,9 +160,9 @@ class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):  # lgtm [py/missing-
         :return: Array of encoding predictions of shape `(num_inputs, encoding_length)`.
         """
         logger.info("Encoding input")
-        feed_dict = {self._input_ph: x}
-        if self._feed_dict is not None:
-            feed_dict.update(self._feed_dict)
+        feed_dict = {self.input_ph: x}
+        if self.feed_dict is not None:
+            feed_dict.update(self.feed_dict)
         y = self._sess.run(self._model, feed_dict=feed_dict)
         return y
 

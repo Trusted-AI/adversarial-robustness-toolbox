@@ -83,7 +83,7 @@ class PyTorchFasterRCNN(PyTorchObjectDetector):
         """
         import torchvision  # lgtm [py/repeated-import]
 
-        if model is None:
+        if model is None:  # pragma: no cover
             model = torchvision.models.detection.fasterrcnn_resnet50_fpn(
                 pretrained=True, progress=True, num_classes=91, pretrained_backbone=True
             )

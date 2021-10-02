@@ -104,20 +104,20 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
 
         # Check clip values
         if self.clip_values is not None:
-            if not np.all(self.clip_values[0] == -1):
+            if not np.all(self.clip_values[0] == -1):  # pragma: no cover
                 raise ValueError("This estimator requires normalized input audios with clip_vales=(-1, 1).")
-            if not np.all(self.clip_values[1] == 1):
+            if not np.all(self.clip_values[1] == 1):  # pragma: no cover
                 raise ValueError("This estimator requires normalized input audios with clip_vales=(-1, 1).")
 
         # Check postprocessing defences
-        if self.postprocessing_defences is not None:
+        if self.postprocessing_defences is not None:  # pragma: no cover
             raise ValueError("This estimator does not support `postprocessing_defences`.")
 
         # Set cpu/gpu device
         self._device: torch.device
         if device_type == "cpu" or not torch.cuda.is_available():
             self._device = torch.device("cpu")
-        else:
+        else:  # pragma: no cover
             cuda_idx = torch.cuda.current_device()
             self._device = torch.device("cuda:{}".format(cuda_idx))
 
@@ -143,7 +143,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
                     "https://github.com/YiwenShaoStephen/espresso/releases/download/v0.1-alpha/"
                     "train_960_unigram5000_units.txt",
                 )
-            else:
+            else:  # pragma: no cover
                 raise ValueError("Model not recognised.")
 
             # Download files
@@ -218,7 +218,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
         x_in[:] = list(x)
 
         # Put the model in the eval mode
-        self._model.eval()
+        self.model.eval()
 
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x_in, y=None, fit=False)
@@ -278,7 +278,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
 
         # Put the model in the training mode, otherwise CUDA can't backpropagate through the model.
         # However, model uses batch norm layers which need to be frozen
-        self._model.train()
+        self.model.train()
         self.set_batchnorm(train=False)
 
         # Apply preprocessing
@@ -287,7 +287,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
         # Transform data into the model input space
         batch_dict, batch_idx = self._transform_model_input(x=x_preprocessed, y=y_preprocessed, compute_gradient=True)
 
-        loss, _, _ = self.criterion(self._model, batch_dict)
+        loss, _, _ = self.criterion(self.model, batch_dict)
         loss.backward()
 
         # Get results
@@ -516,8 +516,8 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
         )
 
         # Compute the loss
-        self._model.train()
-        loss, _, _ = self.criterion(self._model, batch_dict)
+        self.model.train()
+        loss, _, _ = self.criterion(self.model, batch_dict)
 
         # Compute transcription
         def get_symbols_to_strip_from_output(generator):
@@ -527,7 +527,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
             return {generator.eos, generator.pad}
 
         # Put the model in the eval mode
-        self._model.eval()
+        self.model.eval()
 
         # Get decoded output
         decoded_output = []
@@ -554,7 +554,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
         """
         Put the estimator in the training mode.
         """
-        self._model.train()
+        self.model.train()
 
     @property
     def sample_rate(self) -> int:
