@@ -549,7 +549,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                 self.set_batchnorm(train=False)
                 self.set_dropout(train=False)
 
-        if not (  # pragma: no cover
+        if not (
             (label is None)
             or (isinstance(label, (int, np.integer)) and label in range(self._nb_classes))
             or (
@@ -559,7 +559,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                 and label.shape[0] == x.shape[0]
             )
         ):
-            raise ValueError("Label %s is out of range." % label)
+            raise ValueError("Label %s is out of range." % label)  # pragma: no cover
 
         # Apply preprocessing
         if self.all_framework_preprocessing:

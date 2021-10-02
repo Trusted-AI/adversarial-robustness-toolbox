@@ -466,7 +466,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         """
         # Check value of label for computing gradients
-        if not (  # pragma: no cover
+        if not (
             label is None
             or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
             or (
@@ -476,7 +476,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
                 and label.shape[0] == x.shape[0]
             )
         ):
-            raise ValueError("Label %s is out of range." % str(label))
+            raise ValueError("Label %s is out of range." % str(label))  # pragma: no cover
 
         # Check shape of preprocessed `x` because of custom function for `_class_gradients`
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
@@ -862,9 +862,9 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         return repr_
 
 
-def generator_fit(  # pragma: no cover
+def generator_fit(
     x: np.ndarray, y: np.ndarray, batch_size: int = 128
-) -> Iterator[Tuple[np.ndarray, np.ndarray]]:
+) -> Iterator[Tuple[np.ndarray, np.ndarray]]:  # pragma: no cover
     """
     Minimal data generator for randomly batching large datasets.
 

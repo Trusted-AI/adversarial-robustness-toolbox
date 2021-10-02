@@ -346,7 +346,7 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
         """
         if self.layer_names is not None:
             layer = self._model.layers[len(self.layer_names) - 2]
-        else:
+        else:  # pragma: no cover
             raise ValueError("No layer names found.")
         weights, biases = layer.get_weights()
         weights[:, index] = np.zeros_like(weights[:, index])

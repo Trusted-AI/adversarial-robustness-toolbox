@@ -187,7 +187,7 @@ class XGBoostClassifier(ClassifierDecisionTree):
         else:
             full_path = os.path.join(path, filename)
         folder = os.path.split(full_path)[0]
-        if not os.path.exists(folder):
+        if not os.path.exists(folder):  # pragma: no cover
             os.makedirs(folder)
 
         with open(full_path + ".pickle", "wb") as file_pickle:
