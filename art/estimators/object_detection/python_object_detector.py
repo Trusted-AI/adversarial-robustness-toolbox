@@ -111,7 +111,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         if self.clip_values is not None:
             if self.clip_values[0] != 0:
                 raise ValueError("This classifier requires un-normalized input images with clip_vales=(0, max_value).")
-            if self.clip_values[1] <= 0:
+            if self.clip_values[1] <= 0:  # pragma: no cover
                 raise ValueError("This classifier requires un-normalized input images with clip_vales=(0, max_value).")
 
         if preprocessing is not None:
@@ -123,7 +123,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         self._device: torch.device
         if device_type == "cpu" or not torch.cuda.is_available():
             self._device = torch.device("cpu")
-        else:
+        else:  # pragma: no cover
             cuda_idx = torch.cuda.current_device()
             self._device = torch.device("cuda:{}".format(cuda_idx))
 
@@ -185,10 +185,10 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
                 y_tensor = list()
                 for i, y_i in enumerate(y):
                     y_t = dict()
-                    y_t["boxes"] = torch.from_numpy(y_i["boxes"]).type(torch.float).to(self._device)
-                    y_t["labels"] = torch.from_numpy(y_i["labels"]).type(torch.int64).to(self._device)
+                    y_t["boxes"] = torch.from_numpy(y_i["boxes"]).type(torch.float).to(self.device)
+                    y_t["labels"] = torch.from_numpy(y_i["labels"]).type(torch.int64).to(self.device)
                     if "masks" in y_i:
-                        y_t["masks"] = torch.from_numpy(y_i["masks"]).type(torch.int64).to(self._device)
+                        y_t["masks"] = torch.from_numpy(y_i["masks"]).type(torch.int64).to(self.device)
                     y_tensor.append(y_t)
             else:
                 y_tensor = y
@@ -200,9 +200,9 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
 
             for i in range(x.shape[0]):
                 if self.clip_values is not None:
-                    x_grad = transform(x[i] / self.clip_values[1]).to(self._device)
+                    x_grad = transform(x[i] / self.clip_values[1]).to(self.device)
                 else:
-                    x_grad = transform(x[i]).to(self._device)
+                    x_grad = transform(x[i]).to(self.device)
                 x_grad.requires_grad = True
                 image_tensor_list_grad.append(x_grad)
                 x_grad_1 = torch.unsqueeze(x_grad, dim=0)
@@ -220,10 +220,10 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
                 y_preprocessed_tensor = list()
                 for i, y_i in enumerate(y_preprocessed):
                     y_preprocessed_t = dict()
-                    y_preprocessed_t["boxes"] = torch.from_numpy(y_i["boxes"]).type(torch.float).to(self._device)
-                    y_preprocessed_t["labels"] = torch.from_numpy(y_i["labels"]).type(torch.int64).to(self._device)
+                    y_preprocessed_t["boxes"] = torch.from_numpy(y_i["boxes"]).type(torch.float).to(self.device)
+                    y_preprocessed_t["labels"] = torch.from_numpy(y_i["labels"]).type(torch.int64).to(self.device)
                     if "masks" in y_i:
-                        y_preprocessed_t["masks"] = torch.from_numpy(y_i["masks"]).type(torch.uint8).to(self._device)
+                        y_preprocessed_t["masks"] = torch.from_numpy(y_i["masks"]).type(torch.uint8).to(self.device)
                     y_preprocessed_tensor.append(y_preprocessed_t)
                 y_preprocessed = y_preprocessed_tensor
 
@@ -232,9 +232,9 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
 
             for i in range(x_preprocessed.shape[0]):
                 if self.clip_values is not None:
-                    x_grad = transform(x_preprocessed[i] / self.clip_values[1]).to(self._device)
+                    x_grad = transform(x_preprocessed[i] / self.clip_values[1]).to(self.device)
                 else:
-                    x_grad = transform(x_preprocessed[i]).to(self._device)
+                    x_grad = transform(x_preprocessed[i]).to(self.device)
                 x_grad.requires_grad = True
                 image_tensor_list_grad.append(x_grad)
 
@@ -244,7 +244,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
             raise NotImplementedError("Combination of inputs and preprocessing not supported.")
 
         if isinstance(y_preprocessed, np.ndarray):
-            labels_t = torch.from_numpy(y_preprocessed).to(self._device)  # type: ignore
+            labels_t = torch.from_numpy(y_preprocessed).to(self.device)  # type: ignore
         else:
             labels_t = y_preprocessed  # type: ignore
 
@@ -351,7 +351,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         else:
             norm_factor = 1.0
         for i in range(x.shape[0]):
-            image_tensor_list.append(transform(x[i] / norm_factor).to(self._device))
+            image_tensor_list.append(transform(x[i] / norm_factor).to(self.device))
         predictions = self._model(image_tensor_list)
 
         for i_prediction, _ in enumerate(predictions):

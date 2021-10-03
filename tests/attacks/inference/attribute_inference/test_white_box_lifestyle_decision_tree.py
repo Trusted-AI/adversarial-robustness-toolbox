@@ -121,7 +121,7 @@ def test_check_params(art_warning, image_dl_estimator_for_attack):
         classifier = image_dl_estimator_for_attack(AttributeInferenceWhiteBoxLifestyleDecisionTree)
 
         with pytest.raises(ValueError):
-            _ = AttributeInferenceWhiteBoxLifestyleDecisionTree(classifier, attack_feature=-0.5)
+            _ = AttributeInferenceWhiteBoxLifestyleDecisionTree(classifier, attack_feature=-5)
 
     except ARTTestException as e:
         art_warning(e)

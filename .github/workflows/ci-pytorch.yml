@@ -1,0 +1,66 @@
+name: CI PyTorch
+on:
+  # Run on manual trigger
+  workflow_dispatch:
+
+  # Run on pull requests
+  pull_request:
+    paths-ignore:
+      - '*.md'
+
+  # Run when pushing to main or dev branches
+  push:
+    branches:
+      - main
+      - dev*
+
+  # Run scheduled CI flow daily
+  schedule:
+    - cron: '0 8 * * 0'
+
+jobs:
+  test:
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: PyTorch 1.8.1 (Python 3.7)
+            framework: pytorch
+            python: 3.7
+            torch: 1.8.1+cpu
+            torchvision: 0.9.1+cpu
+            torchaudio: 0.8.1
+          - name: PyTorch 1.9.1 (Python 3.7)
+            framework: pytorch
+            python: 3.7
+            torch: 1.9.1+cpu
+            torchvision: 0.10.1+cpu
+            torchaudio: 0.9.1
+
+    name: ${{ matrix.name }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2.3.4
+      - name: Setup Python
+        uses: actions/setup-python@v2.2.2
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get -y -q install ffmpeg libavcodec-extra
+          python -m pip install --upgrade pip setuptools wheel
+          pip3 install -r requirements.txt
+          pip install tensorflow==2.4.3
+          pip install keras==2.4.3
+          pip install torch==${{ matrix.torch }} -f https://download.pytorch.org/whl/torch_stable.html
+          pip install torchvision==${{ matrix.torchvision }} -f https://download.pytorch.org/whl/torch_stable.html
+          pip install torchaudio==${{ matrix.torchaudio }} -f https://download.pytorch.org/whl/torch_stable.html
+          pip list
+      - name: Run Tests
+        run: ./run_tests.sh ${{ matrix.framework }}
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v2.1.0
+        with:
+          fail_ci_if_error: true

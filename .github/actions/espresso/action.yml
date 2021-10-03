@@ -1,0 +1,7 @@
+name: 'Test Espresso'
+description: 'Run tests for Espresso'
+runs:
+  using: 'composite'
+  steps:
+    - run: $GITHUB_ACTION_PATH/run.sh
+      shell: bash

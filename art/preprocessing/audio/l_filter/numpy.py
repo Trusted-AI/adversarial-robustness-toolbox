@@ -114,7 +114,7 @@ class LFilter(Preprocessor):
         :param grad: Gradient value so far.
         :return: The gradient (estimate) of the defence.
         """
-        if (grad.shape != x.shape) and (
+        if (grad.shape != x.shape) and (  # pragma: no cover
             (len(grad.shape) != len(x.shape) + 1) or (grad.shape[2:] != x.shape[1:]) or (grad.shape[0] != x.shape[0])
         ):
             raise ValueError(

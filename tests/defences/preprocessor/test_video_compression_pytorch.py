@@ -52,6 +52,20 @@ def test_video_compresssion(art_warning, video_batch, channels_first):
         )
 
         assert_array_equal(video_compression(test_input)[0], test_output)
+
+        import torch
+
+        test_input_tensor = torch.from_numpy(test_input)
+        test_input_tensor.requires_grad = True
+        loss = video_compression.forward(x=test_input_tensor, y=test_output)[0].sum()
+        loss.backward()
+
+        assert test_input_tensor.grad is not None
+        if channels_first:
+            assert test_input_tensor.grad.detach().cpu().numpy().shape == (2, 3, 25, 4, 6)
+        else:
+            assert test_input_tensor.grad.detach().cpu().numpy().shape == (2, 25, 4, 6, 3)
+
     except ARTTestException as e:
         art_warning(e)
 
@@ -87,5 +101,15 @@ def test_non_spatio_temporal_data_error(art_warning, image_batch_small):
         exc_msg = "Video compression can only be applied to spatio-temporal data."
         with pytest.raises(ValueError, match=exc_msg):
             video_compression(test_input)
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework("tensorflow", "keras", "scikitlearn", "mxnet", "kerastf")
+def test_check_params(art_warning, image_batch_small):
+    try:
+        with pytest.raises(ValueError):
+            _ = VideoCompressionPyTorch(video_format="", verbose="False")
+
     except ARTTestException as e:
         art_warning(e)

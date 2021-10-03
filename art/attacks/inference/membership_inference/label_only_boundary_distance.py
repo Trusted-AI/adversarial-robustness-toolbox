@@ -87,10 +87,10 @@ class LabelOnlyDecisionBoundary(MembershipInferenceAttack):
         """
         from art.attacks.evasion.hop_skip_jump import HopSkipJump
 
-        if y is None:
+        if y is None:  # pragma: no cover
             raise ValueError("Argument `y` is None, but this attack requires true labels `y` to be provided.")
 
-        if self.distance_threshold_tau is None:
+        if self.distance_threshold_tau is None:  # pragma: no cover
             raise ValueError(
                 "No value for distance threshold `distance_threshold_tau` provided. Please set"
                 "`distance_threshold_tau` or run method `calibrate_distance_threshold` on known training and test"
@@ -103,10 +103,10 @@ class LabelOnlyDecisionBoundary(MembershipInferenceAttack):
         else:
             probabilities = False
 
-        if "classifier" in kwargs:
+        if "classifier" in kwargs:  # pragma: no cover
             raise ValueError("Keyword `classifier` in kwargs is not supported.")
 
-        if "targeted" in kwargs:
+        if "targeted" in kwargs:  # pragma: no cover
             raise ValueError("Keyword `targeted` in kwargs is not supported.")
 
         y = check_and_transform_label_format(y, self.estimator.nb_classes)
@@ -157,10 +157,10 @@ class LabelOnlyDecisionBoundary(MembershipInferenceAttack):
         """
         from art.attacks.evasion.hop_skip_jump import HopSkipJump
 
-        if "classifier" in kwargs:
+        if "classifier" in kwargs:  # pragma: no cover
             raise ValueError("Keyword `classifier` in kwargs is not supported.")
 
-        if "targeted" in kwargs:
+        if "targeted" in kwargs:  # pragma: no cover
             raise ValueError("Keyword `targeted` in kwargs is not supported.")
 
         y_train = check_and_transform_label_format(y_train, self.estimator.nb_classes)
@@ -227,7 +227,7 @@ class LabelOnlyDecisionBoundary(MembershipInferenceAttack):
 
         if self.estimator.clip_values is not None:
             x_min, x_max = self.estimator.clip_values
-        else:
+        else:  # pragma: no cover
             raise RuntimeError(
                 "You need to set the estimator's clip_values in order to calibrate the distance threshold."
             )
@@ -259,7 +259,7 @@ class LabelOnlyDecisionBoundary(MembershipInferenceAttack):
 
             i += 1
 
-        if len(distances) == 0:
+        if len(distances) == 0:  # pragma: no cover
             raise RuntimeWarning(
                 "No successful adversarial examples were generated - no distances were obtained."
                 "Distance threshold will not be set."

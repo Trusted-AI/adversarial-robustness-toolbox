@@ -50,6 +50,11 @@ def test_spatial_smoothing_image_data(art_warning, image_batch, channels_first, 
         spatial_smoothing = SpatialSmoothing(channels_first=channels_first, window_size=window_size)
 
         assert_array_equal(spatial_smoothing(test_input)[0], test_output)
+
+        spatial_smoothing = SpatialSmoothing(channels_first=channels_first, window_size=window_size, clip_values=(0, 1))
+
+        spatial_smoothing(test_input)
+
     except ARTTestException as e:
         art_warning(e)
 

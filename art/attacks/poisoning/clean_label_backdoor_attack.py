@@ -130,7 +130,7 @@ class PoisoningAttackCleanLabelBackdoor(PoisoningAttackBlackBox):
             ]
         )
 
-        if any(no_change_detected):
+        if any(no_change_detected):  # pragma: no cover
             logger.warning("Perturbed input is the same as original data after PGD. Check params.")
             idx_no_change = np.arange(len(no_change_detected))[no_change_detected]
             logger.warning("%d indices without change: %d", len(idx_no_change), idx_no_change)

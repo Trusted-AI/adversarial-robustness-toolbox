@@ -113,7 +113,7 @@ def plot_3d(
     colors: Optional[List[str]] = None,
     save: bool = True,
     f_name: str = "",
-) -> "matplotlib.figure.Figure":
+) -> "matplotlib.figure.Figure":  # pragma: no cover
     """
     Generates a 3-D plot in of the provided points where the labels define the color that will be used to color each
     data point. Concretely, the color of points[i] is defined by colors(labels[i]). Thus, there should be as many labels

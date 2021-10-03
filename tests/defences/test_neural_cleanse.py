@@ -21,17 +21,19 @@ import logging
 import os
 import unittest
 
+import numpy as np
+
 from art.defences.transformer.poisoning import NeuralCleanse
 from art.utils import load_dataset
 
-from tests.utils import master_seed, get_image_classifier_kr
+from tests.utils import master_seed
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "True"
 logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 100
 NB_TRAIN = 5000
-NB_TEST = 10
+NB_TEST = 1000
 
 
 class TestNeuralCleanse(unittest.TestCase):
@@ -56,15 +58,58 @@ class TestNeuralCleanse(unittest.TestCase):
         :return:
         """
         # Build KerasClassifier
-        krc = get_image_classifier_kr()
+        import tensorflow as tf
+
+        tf.compat.v1.disable_eager_execution()
+        from tensorflow.keras.models import Sequential
+        from tensorflow.keras.layers import Dense, Flatten, Conv2D
+        from tensorflow.keras.losses import CategoricalCrossentropy
+        from tensorflow.keras.optimizers import Adam
+
+        model = Sequential()
+        model.add(Conv2D(filters=4, kernel_size=(5, 5), strides=1, activation="relu", input_shape=(28, 28, 1)))
+        model.add(Flatten())
+        model.add(Dense(100, activation="relu"))
+        model.add(Dense(100, activation="relu"))
+        model.add(Dense(10, activation="linear"))
+
+        model.compile(
+            loss=CategoricalCrossentropy(from_logits=True), optimizer=Adam(learning_rate=0.01), metrics=["accuracy"]
+        )
+
+        from art.estimators.classification import KerasClassifier
+
+        krc = KerasClassifier(model=model, clip_values=(0, 1))
 
         # Get MNIST
         (x_train, y_train), (x_test, y_test) = self.mnist
 
-        krc.fit(x_train, y_train, nb_epochs=1)
+        for i in range(2500):
+            if np.argmax(y_train[[i]], axis=1) == 0:
+                y_train[i, :] = 0
+                y_train[i, 1] = 1
+                x_train[i, 0:5, 0:5, :] = 1.0
+
+            if np.argmax(y_train[[i]], axis=1) == 9:
+                y_train[i, :] = 0
+                y_train[i, 9] = 1
+                x_train[i, 0:5, 0:5, :] = 1.0
+
+        for i in range(500):
+            if np.argmax(y_test[[i]], axis=1) == 0:
+                y_test[i, :] = 0
+                y_test[i, 1] = 1
+                x_test[i, 0:5, 0:5, :] = 1.0
+
+            if np.argmax(y_test[[i]], axis=1) == 9:
+                y_test[i, :] = 0
+                y_test[i, 9] = 1
+                x_test[i, 0:5, 0:5, :] = 1.0
+
+        krc.fit(x_train, y_train, nb_epochs=3)
 
         cleanse = NeuralCleanse(krc)
-        defense_cleanse = cleanse(krc, steps=2)
+        defense_cleanse = cleanse(krc, steps=1, patience=1)
         defense_cleanse.mitigate(x_test, y_test, mitigation_types=["filtering", "pruning", "unlearning"])
 
         # is_fitted

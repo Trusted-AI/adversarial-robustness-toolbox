@@ -128,7 +128,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         """
         num_poison = len(x)
         final_attacks = []
-        if num_poison == 0:
+        if num_poison == 0:  # pragma: no cover
             raise ValueError("Must input at least one poison point")
 
         target_features = self.estimator.get_activations(self.target, self.feature_layer, 1)
@@ -146,7 +146,9 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
                 new_attack = self.backward_step(np.expand_dims(init_attack, axis=0), poison_features, new_attack)
 
                 rel_change_val = np.linalg.norm(new_attack - old_attack) / np.linalg.norm(new_attack)
-                if rel_change_val < self.stopping_tol or self.obj_threshold and old_objective <= self.obj_threshold:
+                if (  # pragma: no cover
+                    rel_change_val < self.stopping_tol or self.obj_threshold and old_objective <= self.obj_threshold
+                ):
                     logger.info("stopped after %d iterations due to small changes", i)
                     break
 
@@ -159,13 +161,13 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
                 # Increasing objective means then learning rate is too big.  Chop it, and throw out the latest iteration
                 if new_objective >= avg_of_last_m and (i % self.num_old_obj / 2 == 0):
                     self.learning_rate *= self.decay_coeff
-                else:
+                else:  # pragma: no cover
                     old_attack = new_attack
                     old_objective = new_objective
 
                 if i < self.num_old_obj - 1:
                     last_m_objectives.append(new_objective)
-                else:
+                else:  # pragma: no cover
                     # first remove the oldest obj then append the new obj
                     del last_m_objectives[0]
                     last_m_objectives.append(new_objective)
@@ -284,7 +286,7 @@ def tensor_norm(tensor, norm_type: Union[int, float, str] = 2):  # pylint: disab
     mxnet_tensor_types = ()
     supported_types = tf_tensor_types + torch_tensor_types + mxnet_tensor_types
     tensor_type = get_class_name(tensor)
-    if tensor_type not in supported_types:
+    if tensor_type not in supported_types:  # pragma: no cover
         raise TypeError("Tensor type `" + tensor_type + "` is not supported")
 
     if tensor_type in tf_tensor_types:
@@ -292,12 +294,12 @@ def tensor_norm(tensor, norm_type: Union[int, float, str] = 2):  # pylint: disab
 
         return tf.norm(tensor, ord=norm_type)
 
-    if tensor_type in torch_tensor_types:
+    if tensor_type in torch_tensor_types:  # pragma: no cover
         import torch
 
         return torch.norm(tensor, p=norm_type)
 
-    if tensor_type in mxnet_tensor_types:
+    if tensor_type in mxnet_tensor_types:  # pragma: no cover
         import mxnet
 
         return mxnet.ndarray.norm(tensor, ord=norm_type)

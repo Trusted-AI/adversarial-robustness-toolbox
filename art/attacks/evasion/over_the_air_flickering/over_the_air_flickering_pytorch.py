@@ -133,7 +133,7 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
 
         y = check_and_transform_label_format(y, self.estimator.nb_classes)
         if y is None:
-            if self.targeted:
+            if self.targeted:  # pragma: no cover
                 raise ValueError("Target labels `y` need to be provided for a targeted attack.")
 
             # Use model predictions as true labels

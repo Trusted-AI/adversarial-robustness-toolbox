@@ -32,7 +32,7 @@ def broadcastable_mean_std(x: np.ndarray, mean: np.ndarray, std: np.ndarray) -> 
     :param mean: Mean.
     :param std: Standard Deviation.
     """
-    if mean.shape != std.shape:
+    if mean.shape != std.shape:  # pragma: no cover
         raise ValueError("The shape of mean and the standard deviation must be identical.")
 
     # catch non-broadcastable input, when mean and std are vectors

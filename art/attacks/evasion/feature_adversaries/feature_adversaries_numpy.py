@@ -133,7 +133,7 @@ class FeatureAdversariesNumpy(EvasionAttack):
             raise ValueError("The value of guide `y` cannot be None. Please provide a `np.ndarray` of guide inputs.")
         if x.shape != y.shape:
             raise ValueError("The shape of source `x` and guide `y` must be of same shape.")
-        if x.shape[1:] != self.estimator.input_shape:
+        if x.shape[1:] != self.estimator.input_shape:  # pragma: no cover
             raise ValueError("Source and guide inputs must match `input_shape` of estimator.")
 
         l_b = x.flatten() - self.delta

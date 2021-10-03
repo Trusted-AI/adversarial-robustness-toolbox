@@ -69,7 +69,7 @@ class GPyGaussianProcessClassifier(ClassifierClassLossGradients):
         """
         from GPy.models import GPClassification
 
-        if not isinstance(model, GPClassification):
+        if not isinstance(model, GPClassification):  # pragma: no cover
             raise TypeError("Model must be of type GPy.models.GPClassification")
 
         super().__init__(

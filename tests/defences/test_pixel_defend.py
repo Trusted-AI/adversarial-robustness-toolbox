@@ -104,6 +104,35 @@ class TestPixelDefend(unittest.TestCase):
         self.assertTrue((x_defended <= 1.0).all())
         self.assertTrue((x_defended >= 0.0).all())
 
+    def test_check_params(self):
+        model = Model()
+        loss_fn = nn.CrossEntropyLoss()
+        optimizer = optim.Adam(model.parameters(), lr=0.01)
+        pixel_cnn = PyTorchClassifier(
+            model=model, loss=loss_fn, optimizer=optimizer, input_shape=(4,), nb_classes=2, clip_values=(0, 1)
+        )
+
+        with self.assertRaises(TypeError):
+            _ = PixelDefend(pixel_cnn="pixel_cnn")
+
+        with self.assertRaises(ValueError):
+            _ = PixelDefend(pixel_cnn=pixel_cnn, eps=-1)
+
+        with self.assertRaises(ValueError):
+            _ = PixelDefend(pixel_cnn=pixel_cnn, clip_values=(1, 0))
+
+        with self.assertRaises(ValueError):
+            _ = PixelDefend(pixel_cnn=pixel_cnn, clip_values=(-1, 1))
+
+        with self.assertRaises(ValueError):
+            _ = PixelDefend(pixel_cnn=pixel_cnn, clip_values=(0, 2))
+
+        with self.assertRaises(ValueError):
+            _ = PixelDefend(pixel_cnn=pixel_cnn, batch_size=-1)
+
+        with self.assertRaises(ValueError):
+            _ = PixelDefend(pixel_cnn=pixel_cnn, verbose="False")
+
 
 if __name__ == "__main__":
     unittest.main()

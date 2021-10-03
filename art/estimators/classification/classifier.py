@@ -52,17 +52,17 @@ class InputFilter(ABCMeta):
                 if len(args) > 0:
                     lst = list(args)
 
-                if "x" in kwargs:
+                if "x" in kwargs:  # pragma: no cover
                     if not isinstance(kwargs["x"], np.ndarray):
                         kwargs["x"] = np.array(kwargs["x"])
                 else:
                     if not isinstance(args[0], np.ndarray):
                         lst[0] = np.array(args[0])
 
-                if "y" in kwargs:
+                if "y" in kwargs:  # pragma: no cover
                     if kwargs["y"] is not None and not isinstance(kwargs["y"], np.ndarray):
                         kwargs["y"] = np.array(kwargs["y"])
-                elif has_y:
+                elif has_y:  # pragma: no cover
                     if not isinstance(args[1], np.ndarray):
                         lst[1] = np.array(args[1])
 
@@ -105,7 +105,7 @@ class ClassifierMixin(ABC, metaclass=InputFilter):
 
         :return: Number of classes in the data.
         """
-        if self._nb_classes < 2:
+        if self._nb_classes < 2:  # pragma: no cover
             raise ValueError("nb_classes must be greater than or equal to 2.")
         return self._nb_classes  # type: ignore
 

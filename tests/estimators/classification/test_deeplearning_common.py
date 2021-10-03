@@ -105,8 +105,7 @@ def test_shapes(art_warning, get_default_mnist_subset, image_dl_estimator):
         art_warning(e)
 
 
-# TODO skipping with kerastf because overall tests are taking too long to run - unskip once tests run under limit time
-@pytest.mark.skip_framework("kerastf", "non_dl_frameworks")
+@pytest.mark.skip_framework("non_dl_frameworks")
 @pytest.mark.parametrize("from_logits", [True, False])
 @pytest.mark.parametrize(
     "loss_name",
