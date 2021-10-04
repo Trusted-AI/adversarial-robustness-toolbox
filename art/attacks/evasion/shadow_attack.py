@@ -124,7 +124,7 @@ class ShadowAttack(EvasionAttack):
 
         if y is None:
             # Throw error if attack is targeted, but no targets are provided
-            if self.targeted:
+            if self.targeted:  # pragma: no cover
                 raise ValueError("Target labels `y` need to be provided for a targeted attack.")
 
             logger.info("Using model predictions as correct labels for FGM.")
@@ -132,15 +132,15 @@ class ShadowAttack(EvasionAttack):
         else:
             self.targeted = True
 
-        if self.estimator.nb_classes == 2 and y.shape[1] == 1:
+        if self.estimator.nb_classes == 2 and y.shape[1] == 1:  # pragma: no cover
             raise ValueError(
                 "This attack has not yet been tested for binary classification with a single output classifier."
             )
 
-        if x.shape[0] > 1 or y.shape[0] > 1:
+        if x.shape[0] > 1 or y.shape[0] > 1:  # pragma: no cover
             raise ValueError("This attack only accepts a single sample as input.")
 
-        if x.ndim != 4:
+        if x.ndim != 4:  # pragma: no cover
             raise ValueError("Unrecognized input dimension. Shadow Attack can only be applied to image data.")
 
         x = x.astype(ART_NUMPY_DTYPE)
@@ -210,7 +210,7 @@ class ShadowAttack(EvasionAttack):
                     loss = self.lambda_tv * loss_tv + self.lambda_s * loss_s + self.lambda_c * loss_c
                     gradients = tape.gradient(loss, perturbation_t).numpy()
 
-            else:
+            else:  # pragma: no cover
                 raise ValueError("Expecting eager execution.")
 
         elif self.framework == "pytorch":

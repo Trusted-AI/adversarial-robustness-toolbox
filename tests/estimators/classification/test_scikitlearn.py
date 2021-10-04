@@ -523,7 +523,7 @@ class TestScikitlearnSVCLinearSVC(TestBase):
         grad_expected = np.asarray([[0.38021886, 0.57562107, -3.599666, -2.3177252]])
         np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=4)
 
-    def test_class_gradient(self):
+    def test_class_gradient_none(self):
         grad_predicted = self.classifier.class_gradient(self.x_test_iris[0:1], label=None)
         grad_expected = [
             [
@@ -531,6 +531,36 @@ class TestScikitlearnSVCLinearSVC(TestBase):
                 [-0.11198028, -2.51565392, 0.71538245, -0.44830889],
                 [-0.38021886, -0.57562105, 3.59966607, 2.31772514],
             ]
+        ]
+        np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=4)
+
+    def test_class_gradient_int_1(self):
+        grad_predicted = self.classifier.class_gradient(self.x_test_iris[0:1], label=1)
+        print(grad_predicted)
+        grad_expected = [[[-0.11198028, -2.51565392, 0.71538245, -0.44830889]]]
+        np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=4)
+
+    def test_class_gradient_int_2(self):
+        grad_predicted = self.classifier.class_gradient(self.x_test_iris[0:2], label=1)
+        print(grad_predicted)
+        grad_expected = [
+            [[-0.11198028, -2.51565392, 0.71538245, -0.44830889]],
+            [[-0.11198028, -2.51565392, 0.71538245, -0.44830889]],
+        ]
+        np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=4)
+
+    def test_class_gradient_list_1(self):
+        grad_predicted = self.classifier.class_gradient(self.x_test_iris[0:1], label=[1])
+        print(grad_predicted)
+        grad_expected = [[[-0.11198028, -2.51565392, 0.71538245, -0.44830889]]]
+        np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=4)
+
+    def test_class_gradient_list_2(self):
+        grad_predicted = self.classifier.class_gradient(self.x_test_iris[0:2], label=[1, 2])
+        print(grad_predicted)
+        grad_expected = [
+            [[-0.11198028, -2.51565392, 0.71538245, -0.44830889]],
+            [[-0.38021886, -0.57562105, 3.59966607, 2.31772514]],
         ]
         np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=4)
 

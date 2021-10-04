@@ -103,7 +103,7 @@ class BaseEstimator(ABC):
             )
         elif isinstance(self.preprocessing, Preprocessor):
             self.preprocessing_operations.append(self.preprocessing)
-        else:
+        else:  # pragma: no cover
             raise ValueError("Preprocessing argument not recognised.")
 
     @staticmethod
@@ -121,7 +121,7 @@ class BaseEstimator(ABC):
         if isinstance(preprocessing, Preprocessor):
             return preprocessing
 
-        raise ValueError("Preprocessing argument not recognised.")
+        raise ValueError("Preprocessing argument not recognised.")  # pragma: no cover
 
     @staticmethod
     def _set_preprocessing_defences(
@@ -166,7 +166,7 @@ class BaseEstimator(ABC):
                         setattr(self, key, self._set_postprocessing_defences(value))
                     else:
                         setattr(self, key, value)
-            else:
+            else:  # pragma: no cover
                 raise ValueError("Unexpected parameter `{}` found in kwargs.".format(key))
         self._update_preprocessing_operations()
         self._check_params()
@@ -187,11 +187,11 @@ class BaseEstimator(ABC):
         from art.defences.preprocessor.preprocessor import Preprocessor
 
         if self._clip_values is not None:
-            if len(self._clip_values) != 2:
+            if len(self._clip_values) != 2:  # pragma: no cover
                 raise ValueError(
                     "`clip_values` should be a tuple of 2 floats or arrays containing the allowed data range."
                 )
-            if np.array(self._clip_values[0] >= self._clip_values[1]).any():
+            if np.array(self._clip_values[0] >= self._clip_values[1]).any():  # pragma: no cover
                 raise ValueError("Invalid `clip_values`: min >= max.")
 
             if isinstance(self._clip_values, np.ndarray):
@@ -201,12 +201,12 @@ class BaseEstimator(ABC):
 
         if isinstance(self.preprocessing_operations, list):
             for preprocess in self.preprocessing_operations:
-                if not isinstance(preprocess, Preprocessor):
+                if not isinstance(preprocess, Preprocessor):  # pragma: no cover
                     raise ValueError(
                         "All preprocessing defences have to be instance of "
                         "art.defences.preprocessor.preprocessor.Preprocessor."
                     )
-        else:
+        else:  # pragma: no cover
             raise ValueError(
                 "All preprocessing defences have to be instance of "
                 "art.defences.preprocessor.preprocessor.Preprocessor."
@@ -214,14 +214,14 @@ class BaseEstimator(ABC):
 
         if isinstance(self.postprocessing_defences, list):
             for postproc_defence in self.postprocessing_defences:
-                if not isinstance(postproc_defence, Postprocessor):
+                if not isinstance(postproc_defence, Postprocessor):  # pragma: no cover
                     raise ValueError(
                         "All postprocessing defences have to be instance of "
                         "art.defences.postprocessor.postprocessor.Postprocessor."
                     )
         elif self.postprocessing_defences is None:
             pass
-        else:
+        else:  # pragma: no cover
             raise ValueError(
                 "All postprocessing defences have to be instance of "
                 "art.defences.postprocessor.postprocessor.Postprocessor."

@@ -92,7 +92,7 @@ class AdversarialPatch(EvasionAttack):
         :param verbose: Show progress bars.
         """
         super().__init__(estimator=classifier)
-        if self.estimator.clip_values is None:
+        if self.estimator.clip_values is None:  # pragma: no cover
             raise ValueError("Adversarial Patch attack requires a classifier with clip_values.")
 
         self._attack: Union[AdversarialPatchTensorFlowV2, AdversarialPatchPyTorch, AdversarialPatchNumpy]
@@ -153,10 +153,10 @@ class AdversarialPatch(EvasionAttack):
         """
         logger.info("Creating adversarial patch.")
 
-        if y is None:
+        if y is None:  # pragma: no cover
             raise ValueError("Adversarial Patch attack requires target values `y`.")
 
-        if len(x.shape) == 2:
+        if len(x.shape) == 2:  # pragma: no cover
             raise ValueError(
                 "Feature vectors detected. The adversarial patch can only be applied to data with spatial "
                 "dimensions."
@@ -222,6 +222,7 @@ class AdversarialPatch(EvasionAttack):
 
         if not isinstance(self._attack.learning_rate, float):
             raise ValueError("The learning rate must be of type float.")
+
         if not self._attack.learning_rate > 0.0:
             raise ValueError("The learning rate must be greater than 0.0.")
 

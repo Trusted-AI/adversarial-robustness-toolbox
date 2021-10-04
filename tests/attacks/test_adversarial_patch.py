@@ -24,7 +24,11 @@ import numpy as np
 import keras
 import tensorflow as tf
 
-from art.attacks.evasion.adversarial_patch.adversarial_patch import AdversarialPatch, AdversarialPatchNumpy
+from art.attacks.evasion.adversarial_patch.adversarial_patch import (
+    AdversarialPatch,
+    AdversarialPatchNumpy,
+    AdversarialPatchPyTorch,
+)
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
 
@@ -150,7 +154,6 @@ class TestAdversarialPatch(TestBase):
             patch_shape=(28, 28, 1),
             verbose=False,
         )
-        print(attack_ap)
 
         target = np.zeros(self.x_train_mnist.shape[0])
         patch_adv, _ = attack_ap.generate(self.x_train_mnist, target, shuffle=False)
@@ -304,6 +307,8 @@ class TestAdversarialPatch(TestBase):
         attack_ap.reset_patch(initial_patch_value=None)
         attack_ap.reset_patch(initial_patch_value=1.0)
         attack_ap.reset_patch(initial_patch_value=patch_adv)
+        with self.assertRaises(ValueError):
+            attack_ap.reset_patch(initial_patch_value=np.array([1, 2, 3]))
 
         # Numpy
         attack_ap = AdversarialPatchNumpy(
@@ -329,6 +334,8 @@ class TestAdversarialPatch(TestBase):
         attack_ap.reset_patch(initial_patch_value=None)
         attack_ap.reset_patch(initial_patch_value=1.0)
         attack_ap.reset_patch(initial_patch_value=patch_adv)
+        with self.assertRaises(ValueError):
+            attack_ap.reset_patch(initial_patch_value=np.array([1, 2, 3]))
 
     def test_5_failure_feature_vectors(self):
         classifier = get_tabular_classifier_kr()
@@ -347,6 +354,10 @@ class TestAdversarialPatch(TestBase):
 
         ptc = get_image_classifier_pt(from_logits=True)
 
+        krc = get_image_classifier_kr(from_logits=True)
+
+        # AdversarialPatch
+
         with self.assertRaises(ValueError):
             _ = AdversarialPatch(ptc, rotation_max="1")
         with self.assertRaises(ValueError):
@@ -355,17 +366,17 @@ class TestAdversarialPatch(TestBase):
         with self.assertRaises(ValueError):
             _ = AdversarialPatch(ptc, scale_min="1")
         with self.assertRaises(ValueError):
-            _ = AdversarialPatch(ptc, scale_min=-1)
+            _ = AdversarialPatch(ptc, scale_min=-1.0)
 
         with self.assertRaises(ValueError):
             _ = AdversarialPatch(ptc, scale_max=1)
         with self.assertRaises(ValueError):
-            _ = AdversarialPatch(ptc, scale_max=2)
+            _ = AdversarialPatch(ptc, scale_max=2.0)
 
         with self.assertRaises(ValueError):
             _ = AdversarialPatch(ptc, learning_rate=1)
         with self.assertRaises(ValueError):
-            _ = AdversarialPatch(ptc, learning_rate=-1.0)
+            _ = AdversarialPatch(krc, learning_rate=-1.0)
 
         with self.assertRaises(ValueError):
             _ = AdversarialPatch(ptc, max_iter=1.0)
@@ -379,6 +390,49 @@ class TestAdversarialPatch(TestBase):
 
         with self.assertRaises(ValueError):
             _ = AdversarialPatch(ptc, verbose="true")
+
+        # AdversarialPatchPyTorch
+
+        with self.assertRaises(ValueError):
+            _ = AdversarialPatchPyTorch(ptc, distortion_scale_max="1")
+
+        with self.assertRaises(ValueError):
+            _ = AdversarialPatchPyTorch(ptc, patch_type="triangle")
+
+        # AdversarialPatchNumpy
+
+        with self.assertRaises(ValueError):
+            _ = AdversarialPatchNumpy(ptc, rotation_max="1")
+        with self.assertRaises(ValueError):
+            _ = AdversarialPatchNumpy(ptc, rotation_max=-1)
+
+        with self.assertRaises(ValueError):
+            _ = AdversarialPatchNumpy(ptc, scale_min="1")
+        with self.assertRaises(ValueError):
+            _ = AdversarialPatchNumpy(ptc, scale_min=-1.0)
+
+        with self.assertRaises(ValueError):
+            _ = AdversarialPatchNumpy(ptc, scale_max=1)
+        with self.assertRaises(ValueError):
+            _ = AdversarialPatchNumpy(ptc, scale_max=2.0)
+
+        with self.assertRaises(ValueError):
+            _ = AdversarialPatchNumpy(ptc, learning_rate="1")
+        with self.assertRaises(ValueError):
+            _ = AdversarialPatchNumpy(krc, learning_rate=-1.0)
+
+        with self.assertRaises(ValueError):
+            _ = AdversarialPatchNumpy(ptc, max_iter=1.0)
+        with self.assertRaises(ValueError):
+            _ = AdversarialPatchNumpy(ptc, max_iter=-1)
+
+        with self.assertRaises(ValueError):
+            _ = AdversarialPatchNumpy(ptc, batch_size=1.0)
+        with self.assertRaises(ValueError):
+            _ = AdversarialPatchNumpy(ptc, batch_size=-1)
+
+        with self.assertRaises(ValueError):
+            _ = AdversarialPatchNumpy(ptc, verbose="true")
 
     def test_1_classifier_type_check_fail(self):
         backend_test_classifier_type_check_fail(AdversarialPatch, [BaseEstimator, NeuralNetworkMixin, ClassifierMixin])

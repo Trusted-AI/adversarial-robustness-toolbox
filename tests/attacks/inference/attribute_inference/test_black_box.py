@@ -383,3 +383,20 @@ def test_classifier_type_check_fail():
     backend_test_classifier_type_check_fail(
         AttributeInferenceBlackBox, (BaseEstimator, (ClassifierMixin, RegressorMixin))
     )
+
+
+def test_check_params(art_warning, tabular_dl_estimator_for_attack):
+    try:
+        classifier = tabular_dl_estimator_for_attack(AttributeInferenceBlackBox)
+
+        with pytest.raises(ValueError):
+            AttributeInferenceBlackBox(classifier, attack_feature="a")
+
+        with pytest.raises(ValueError):
+            AttributeInferenceBlackBox(classifier, attack_feature=-1)
+
+        with pytest.raises(ValueError):
+            AttributeInferenceBlackBox(classifier, prediction_normal_factor=-1)
+
+    except ARTTestException as e:
+        art_warning(e)

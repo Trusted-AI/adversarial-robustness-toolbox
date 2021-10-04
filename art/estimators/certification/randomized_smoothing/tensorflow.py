@@ -198,7 +198,7 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
                     )
 
                 gradients = tape.gradient(loss, inputs_t).numpy()
-            else:
+            else:  # pragma: no cover
                 raise ValueError("Expecting eager execution.")
 
             # Apply preprocessing gradients

@@ -92,5 +92,29 @@ def test_mp3_compresssion(art_warning, audio_batch, channels_first):
         mp3compression = Mp3CompressionPyTorch(sample_rate=sample_rate, channels_first=channels_first)
 
         assert_array_equal(mp3compression(test_input)[0], test_output)
+
+        import torch
+
+        test_input_tensor = torch.from_numpy(test_input.astype(float))
+        test_input_tensor.requires_grad = True
+        loss = mp3compression.forward(x=test_input_tensor, y=test_output)[0].sum()
+        loss.backward()
+
+        assert test_input_tensor.grad is not None
+        if channels_first:
+            assert test_input_tensor.grad.detach().cpu().numpy().shape == (2, test_input.shape[1], 44100)
+        else:
+            assert test_input_tensor.grad.detach().cpu().numpy().shape == (2, 44100, test_input.shape[2])
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework("tensorflow", "keras", "scikitlearn", "mxnet", "kerastf")
+def test_check_params(art_warning):
+    try:
+        with pytest.raises(ValueError):
+            _ = Mp3CompressionPyTorch(sample_rate=1000, verbose="False")
+
     except ARTTestException as e:
         art_warning(e)

@@ -65,6 +65,17 @@ class TestDecisionTreeAttack(TestBase):
         # Check that X has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_original - self.X))), 0.0, delta=0.00001)
 
+    def test_check_params(self):
+        clf = DecisionTreeClassifier()
+        clf.fit(self.X, self.y)
+        clf_art = SklearnClassifier(clf)
+
+        with self.assertRaises(ValueError):
+            _ = DecisionTreeAttack(clf_art, offset=-1)
+
+        with self.assertRaises(ValueError):
+            _ = DecisionTreeAttack(clf_art, verbose="False")
+
     def test_classifier_type_check_fail(self):
         backend_test_classifier_type_check_fail(DecisionTreeAttack, [ScikitlearnDecisionTreeClassifier])
 

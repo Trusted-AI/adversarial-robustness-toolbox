@@ -254,7 +254,7 @@ class AutoAttack(EvasionAttack):
             samples_misclassified = np.argmax(y_pred_robust_adv, axis=1) == np.argmax(y_robust, axis=1)
         elif not attack.targeted:
             samples_misclassified = np.argmax(y_pred_robust_adv, axis=1) != np.argmax(y_robust, axis=1)
-        else:
+        else:  # pragma: no cover
             raise ValueError
 
         sample_is_not_robust = np.logical_and(samples_misclassified, norm_is_smaller_eps)
