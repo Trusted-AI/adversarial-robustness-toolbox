@@ -696,10 +696,12 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator, Tracker):
 
         curr, _ = self._apply_preprocessing(curr, y=None, fit=False)
 
-        box = self._track_step(curr, prev, self.box)
+        self.box = self._track_step(curr, prev, self.box)
         self.prev = curr.detach().numpy()
 
-        box_return = np.array([box[0], box[1], box[2] - box[0], box[3] - box[1]])
-        self.box = box
+        box_return = self.box.cpu().detach().numpy()
+        box_return = np.array(
+            [box_return[0], box_return[1], box_return[2] - box_return[0], box_return[3] - box_return[1]]
+        )
 
         return box_return
