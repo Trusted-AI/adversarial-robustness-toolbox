@@ -41,7 +41,7 @@ from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
     # pylint: disable=C0412, C0302
-    import torch
+    from collections import Callable
 
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.data_generators import DataGenerator
@@ -67,14 +67,11 @@ class JaxClassifier(ClassGradientsMixin, ClassifierMixin, JaxEstimator):  # lgtm
     def __init__(
         self,
         model: List,
-        loss: "torch.nn.modules.loss._Loss",
+        predict_func: Callable,
+        loss_func: Callable,
         input_shape: Tuple[int, ...],
         nb_classes: int,
-        optimizer: Optional["torch.optim.Optimizer"] = None,  # type: ignore
-        use_amp: bool = False,
-        opt_level: str = "O1",
-        loss_scale: Optional[Union[float, str]] = "dynamic",
-        channels_first: bool = True,
+        channels_first: bool = False,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
@@ -82,23 +79,13 @@ class JaxClassifier(ClassGradientsMixin, ClassifierMixin, JaxEstimator):  # lgtm
         device_type: str = "gpu",
     ) -> None:
         """
-        Initialization specifically for the PyTorch-based implementation.
+        Initialization specifically for the Jax-based implementation.
 
-        :param model: PyTorch model. The output of the model can be logits, probabilities or anything else. Logits
-               output should be preferred where possible to ensure attack efficiency.
-        :param loss: The loss function for which to compute gradients for training. The target label must be raw
-               categorical, i.e. not converted to one-hot encoding.
+        :param model: Jax model, represented as a list of model parameters.
+        :param predict_func: A function used to predict model output given the model and the input.
+        :param loss_func: The loss function for which to compute gradients for training.
         :param input_shape: The shape of one input instance.
-        :param optimizer: The optimizer used to train the classifier.
-        :param use_amp: Whether to use the automatic mixed precision tool to enable mixed precision training or
-                        gradient computation, e.g. with loss gradient computation. When set to True, this option is
-                        only triggered if there are GPUs available.
-        :param opt_level: Specify a pure or mixed precision optimization level. Used when use_amp is True. Accepted
-                          values are `O0`, `O1`, `O2`, and `O3`.
-        :param loss_scale: Loss scaling. Used when use_amp is True. If passed as a string, must be a string
-                           representing a number, e.g., “1.0”, or the string “dynamic”.
         :param nb_classes: The number of classes of the model.
-        :param optimizer: The optimizer used to train the classifier.
         :param channels_first: Set channels first or last.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
@@ -111,6 +98,10 @@ class JaxClassifier(ClassGradientsMixin, ClassifierMixin, JaxEstimator):  # lgtm
                be divided by the second one.
         :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
         """
+        import os
+
+        os.environ["JAX_PLATFORM_NAME"] = device_type
+
         import jax.numpy as jnp  # lgtm [py/repeated-import]
 
         super().__init__(
@@ -122,83 +113,15 @@ class JaxClassifier(ClassGradientsMixin, ClassifierMixin, JaxEstimator):  # lgtm
             preprocessing=preprocessing,
             device_type=device_type,
         )
+
+        self._predict_func = predict_func
+        self._loss_func = loss_func
         self._nb_classes = nb_classes
         self._input_shape = input_shape
-        self._model = self._make_model_wrapper(model)
-        self._loss = loss
-        self._optimizer = optimizer
-        self._use_amp = use_amp
-        self._learning_phase: Optional[bool] = None
-        self._opt_level = opt_level
-        self._loss_scale = loss_scale
-
-        # Check if model is RNN-like to decide if freezing batch-norm and dropout layers might be required for loss and
-        # class gradient calculation
-        self.is_rnn = any((isinstance(m, torch.nn.modules.RNNBase) for m in self._model.modules()))
-
-        # Get the internal layers
-        self._layer_names: List[str] = self._model.get_layers  # type: ignore
-
-        self._model.to(self._device)
-
-        # Index of layer at which the class gradients should be calculated
-        self._layer_idx_gradients = -1
-
-        if isinstance(
-            self._loss,
-            (torch.nn.CrossEntropyLoss, torch.nn.NLLLoss, torch.nn.MultiMarginLoss),
-        ):
-            self._reduce_labels = True
-            self._int_labels = True
-        elif isinstance(
-            self._loss,
-            (torch.nn.BCELoss),
-        ):
-            self._reduce_labels = True
-            self._int_labels = False
-        else:
-            self._reduce_labels = False
-            self._int_labels = False
-
-        # Setup for AMP use
-        if self._use_amp:  # pragma: no cover
-            from apex import amp  # pylint: disable=E0611
-
-            if self._optimizer is None:
-                logger.warning(
-                    "An optimizer is needed to use the automatic mixed precision tool, but none for provided. "
-                    "A default optimizer is used."
-                )
-
-                # Create the optimizers
-                parameters = self._model.parameters()
-                self._optimizer = torch.optim.SGD(parameters, lr=0.01)
-
-            if self.device.type == "cpu":
-                enabled = False
-            else:
-                enabled = True
-
-            self._model, self._optimizer = amp.initialize(
-                models=self._model,
-                optimizers=self._optimizer,
-                enabled=enabled,
-                opt_level=opt_level,
-                loss_scale=loss_scale,
-            )
 
     @property
-    def device(self) -> "torch.device":
-        """
-        Get current used device.
-
-        :return: Current used device.
-        """
-        return self._device
-
-    @property
-    def model(self) -> "torch.nn.Module":
-        return self._model._model  # pylint: disable=W0212
+    def model(self) -> List:
+        return self._model
 
     @property
     def input_shape(self) -> Tuple[int, ...]:
@@ -210,77 +133,23 @@ class JaxClassifier(ClassGradientsMixin, ClassifierMixin, JaxEstimator):  # lgtm
         return self._input_shape  # type: ignore
 
     @property
-    def loss(self) -> "torch.nn.modules.loss._Loss":
+    def predict_func(self) -> Callable:
+        """
+        Return the predict function.
+
+        :return: The predict function.
+        """
+        return self._predict_func
+
+    @property
+    def loss_func(self) -> Callable:
         """
         Return the loss function.
 
         :return: The loss function.
         """
-        return self._loss  # type: ignore
+        return self._loss_func
 
-    @property
-    def optimizer(self) -> "torch.optim.Optimizer":
-        """
-        Return the optimizer.
-
-        :return: The optimizer.
-        """
-        return self._optimizer  # type: ignore
-
-    @property
-    def use_amp(self) -> bool:
-        """
-        Return a boolean indicating whether to use the automatic mixed precision tool.
-
-        :return: Whether to use the automatic mixed precision tool.
-        """
-        return self._use_amp  # type: ignore
-
-    @property
-    def opt_level(self) -> str:
-        """
-        Return a string specifying a pure or mixed precision optimization level.
-
-        :return: A string specifying a pure or mixed precision optimization level. Possible
-                 values are `O0`, `O1`, `O2`, and `O3`.
-        """
-        return self._opt_level  # type: ignore
-
-    @property
-    def loss_scale(self) -> Union[float, str]:
-        """
-        Return the loss scaling value.
-
-        :return: Loss scaling. Possible values for string: a string representing a number, e.g., “1.0”,
-                 or the string “dynamic”.
-        """
-        return self._loss_scale  # type: ignore
-
-    def reduce_labels(self, y: Union[np.ndarray, "torch.Tensor"]) -> Union[np.ndarray, "torch.Tensor"]:
-        """
-        Reduce labels from one-hot encoded to index labels.
-        """
-        # pylint: disable=R0911
-        import torch  # lgtm [py/repeated-import]
-
-        # Check if the loss function requires as input index labels instead of one-hot-encoded labels
-        # Checking for exactly 2 classes to support binary classification
-        if self.nb_classes > 2 or (self.nb_classes == 2 and len(y.shape) == 2 and y.shape[1] == 2):
-            if self._reduce_labels and self._int_labels:
-                if isinstance(y, torch.Tensor):
-                    return torch.argmax(y, dim=1)
-                return np.argmax(y, axis=1)
-            if self._reduce_labels:  # float labels
-                if isinstance(y, torch.Tensor):
-                    return torch.argmax(y, dim=1).type("torch.FloatTensor")
-                y_index = np.argmax(y, axis=1).astype(np.float32)
-                y_index = np.expand_dims(y_index, axis=1)
-                return y_index
-            return y
-
-        if isinstance(y, torch.Tensor):
-            return y.float()
-        return y.astype(np.float32)
 
     def predict(  # pylint: disable=W0221
         self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs
