@@ -24,7 +24,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import math
 from functools import reduce
-from typing import Callable, Tuple, TYPE_CHECKING, Union, Sequence
+from typing import Callable, Tuple, TYPE_CHECKING, Union, List, Optional, Sequence
 
 import numpy as np
 
@@ -55,7 +55,7 @@ class ShadowModels:
         """
 
         self._shadow_models = [shadow_model_template.clone_for_refitting() for _ in range(num_shadow_models)]
-        self._shadow_models_train_sets = [None] * num_shadow_models
+        self._shadow_models_train_sets: List[Optional[Tuple[np.ndarray, np.ndarray]]] = [None] * num_shadow_models
         self._input_shape = shadow_model_template.input_shape
         self._rng = np.random.default_rng(seed=random_state)
 
@@ -304,7 +304,7 @@ class ShadowModels:
         """
         return self._shadow_models
 
-    def get_shadow_models_train_sets(self) -> Sequence[Tuple[np.ndarray, np.ndarray]]:
+    def get_shadow_models_train_sets(self) -> List[Optional[Tuple[np.ndarray, np.ndarray]]]:
         """
         Returns a list of tuples the form (shadow_x_train, shadow_y_train) for each shadow model.
         `generate_shadow_dataset` or `generate_synthetic_shadow_dataset` must be called before, or a list of Nones will
