@@ -34,15 +34,9 @@ class JaxEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
     Estimator class for Jax models.
     """
 
-    estimator_params = (
-        BaseEstimator.estimator_params
-        + NeuralNetworkMixin.estimator_params
-        + [
-            "device_type",
-        ]
-    )
+    estimator_params = (BaseEstimator.estimator_params + NeuralNetworkMixin.estimator_params)
 
-    def __init__(self, device_type: str = "gpu", **kwargs) -> None:
+    def __init__(self, **kwargs) -> None:
         """
         Estimator class for Jax models.
 
@@ -60,18 +54,7 @@ class JaxEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         """
         super().__init__(**kwargs)
 
-        self._device_type = device_type
-
         JaxEstimator._check_params(self)
-
-    @property
-    def device_type(self) -> str:
-        """
-        Return the type of device on which the estimator is run.
-
-        :return: Type of device on which the estimator is run, either `gpu` or `cpu`.
-        """
-        return self._device_type  # type: ignore
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs):
         """
