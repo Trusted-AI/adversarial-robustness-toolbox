@@ -97,7 +97,7 @@ def insert_image(
     blend=0.8,
 ) -> np.ndarray:
     """
-    Augments a matrix by setting a checkboard-like pattern of values some `distance` away from the bottom-right
+    Augments a matrix by setting a checkerboard-like pattern of values some `distance` away from the bottom-right
     edge to 1. Works for single images or a batch of images.
 
     :param x: N x W x H x C or N x C x W x H or N x W x H x C matrix or W x H x C matrix. X is in range [0,1]
@@ -128,7 +128,7 @@ def insert_image(
     if channels_first:
         data = data.transpose([1, 2, 0])
 
-    width, height, num_channels = x.shape
+    width, height, num_channels = data.shape
 
     no_color = num_channels == 1
     orig_img = Image.new("RGBA", (width, height), 0)

@@ -67,6 +67,52 @@ def test_images(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack
 
 
 @pytest.mark.framework_agnostic
+def test_check_params(art_warning, image_dl_estimator_for_attack):
+    try:
+        classifier = image_dl_estimator_for_attack(BoundaryAttack)
+
+        with pytest.raises(ValueError):
+            _ = BoundaryAttack(classifier, max_iter=1.0)
+        with pytest.raises(ValueError):
+            _ = BoundaryAttack(classifier, max_iter=-1)
+
+        with pytest.raises(ValueError):
+            _ = BoundaryAttack(classifier, num_trial=1.0)
+        with pytest.raises(ValueError):
+            _ = BoundaryAttack(classifier, num_trial=-1)
+
+        with pytest.raises(ValueError):
+            _ = BoundaryAttack(classifier, sample_size=1.0)
+        with pytest.raises(ValueError):
+            _ = BoundaryAttack(classifier, sample_size=-1)
+
+        with pytest.raises(ValueError):
+            _ = BoundaryAttack(classifier, init_size=1.0)
+        with pytest.raises(ValueError):
+            _ = BoundaryAttack(classifier, init_size=-1)
+
+        with pytest.raises(ValueError):
+            _ = BoundaryAttack(classifier, epsilon=-1)
+
+        with pytest.raises(ValueError):
+            _ = BoundaryAttack(classifier, delta=-1)
+
+        with pytest.raises(ValueError):
+            _ = BoundaryAttack(classifier, step_adapt=-1)
+
+        with pytest.raises(ValueError):
+            _ = BoundaryAttack(classifier, min_epsilon="1.0")
+        with pytest.raises(ValueError):
+            _ = BoundaryAttack(classifier, min_epsilon=-1)
+
+        with pytest.raises(ValueError):
+            _ = BoundaryAttack(classifier, verbose="true")
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.framework_agnostic
 def test_classifier_type_check_fail(art_warning):
     try:
         backend_test_classifier_type_check_fail(BoundaryAttack, [BaseEstimator, ClassifierMixin])

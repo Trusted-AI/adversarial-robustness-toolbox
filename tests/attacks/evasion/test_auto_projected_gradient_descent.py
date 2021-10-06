@@ -38,30 +38,95 @@ def fix_get_mnist_subset(get_mnist_dataset):
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
-@pytest.mark.skip_framework("tensorflow1", "keras", "pytorch", "non_dl_frameworks", "mxnet", "kerastf")
-def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
+@pytest.mark.parametrize("loss_type", ["cross_entropy", "difference_logits_ratio"])
+@pytest.mark.parametrize("norm", ["inf", np.inf, 1, 2])
+@pytest.mark.skip_framework("keras", "non_dl_frameworks", "mxnet", "kerastf")
+def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack, framework, loss_type, norm):
     try:
-        classifier = image_dl_estimator_for_attack(AutoProjectedGradientDescent)
+        classifier = image_dl_estimator_for_attack(AutoProjectedGradientDescent, from_logits=True)
 
-        attack = AutoProjectedGradientDescent(
-            estimator=classifier,
-            norm=np.inf,
-            eps=0.3,
-            eps_step=0.1,
-            max_iter=5,
-            targeted=False,
-            nb_random_init=1,
-            batch_size=32,
-            loss_type="cross_entropy",
-            verbose=False,
-        )
+        if framework == "tensorflow1" and loss_type == "difference_logits_ratio":
+            with pytest.raises(ValueError):
+                _ = AutoProjectedGradientDescent(
+                    estimator=classifier,
+                    norm=norm,
+                    eps=0.3,
+                    eps_step=0.1,
+                    max_iter=5,
+                    targeted=False,
+                    nb_random_init=1,
+                    batch_size=32,
+                    loss_type=loss_type,
+                    verbose=False,
+                )
+        else:
 
-        (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+            attack = AutoProjectedGradientDescent(
+                estimator=classifier,
+                norm=norm,
+                eps=0.3,
+                eps_step=0.1,
+                max_iter=5,
+                targeted=False,
+                nb_random_init=1,
+                batch_size=32,
+                loss_type=loss_type,
+                verbose=False,
+            )
 
-        x_train_mnist_adv = attack.generate(x=x_train_mnist, y=y_train_mnist)
+            (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
-        assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.0329, abs=0.005)
-        assert np.max(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.3, abs=0.01)
+            x_train_mnist_adv = attack.generate(x=x_train_mnist, y=y_train_mnist)
+
+            assert np.max(np.abs(x_train_mnist_adv - x_train_mnist)) > 0.0
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.framework_agnostic
+def test_check_params(art_warning, image_dl_estimator_for_attack):
+    try:
+
+        classifier = image_dl_estimator_for_attack(AutoProjectedGradientDescent, from_logits=True)
+
+        with pytest.raises(ValueError):
+            _ = AutoProjectedGradientDescent(classifier, norm=0)
+
+        with pytest.raises(ValueError):
+            _ = AutoProjectedGradientDescent(classifier, eps="1")
+        with pytest.raises(ValueError):
+            _ = AutoProjectedGradientDescent(classifier, eps=-1.0)
+
+        with pytest.raises(ValueError):
+            _ = AutoProjectedGradientDescent(classifier, eps_step="1")
+        with pytest.raises(ValueError):
+            _ = AutoProjectedGradientDescent(classifier, eps_step=-1.0)
+
+        with pytest.raises(ValueError):
+            _ = AutoProjectedGradientDescent(classifier, max_iter=1.0)
+        with pytest.raises(ValueError):
+            _ = AutoProjectedGradientDescent(classifier, max_iter=-1)
+
+        with pytest.raises(ValueError):
+            _ = AutoProjectedGradientDescent(classifier, targeted="true")
+
+        with pytest.raises(ValueError):
+            _ = AutoProjectedGradientDescent(classifier, nb_random_init=1.0)
+        with pytest.raises(ValueError):
+            _ = AutoProjectedGradientDescent(classifier, nb_random_init=-1)
+
+        with pytest.raises(ValueError):
+            _ = AutoProjectedGradientDescent(classifier, batch_size=1.0)
+        with pytest.raises(ValueError):
+            _ = AutoProjectedGradientDescent(classifier, batch_size=-1)
+
+        with pytest.raises(ValueError):
+            _ = AutoProjectedGradientDescent(classifier, loss_type="test")
+
+        with pytest.raises(ValueError):
+            _ = AutoProjectedGradientDescent(classifier, verbose="true")
+
     except ARTTestException as e:
         art_warning(e)
 

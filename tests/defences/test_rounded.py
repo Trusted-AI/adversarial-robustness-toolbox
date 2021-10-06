@@ -70,6 +70,10 @@ class TestRounded(unittest.TestCase):
         )
         np.testing.assert_array_equal(post_preds, expected_predictions)
 
+    def test_check_params(self):
+        with self.assertRaises(ValueError):
+            _ = Rounded(decimals=-3)
+
 
 if __name__ == "__main__":
     unittest.main()

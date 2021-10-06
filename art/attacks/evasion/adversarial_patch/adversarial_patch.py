@@ -30,9 +30,10 @@ import numpy as np
 
 from art.attacks.evasion.adversarial_patch.adversarial_patch_numpy import AdversarialPatchNumpy
 from art.attacks.evasion.adversarial_patch.adversarial_patch_tensorflow import AdversarialPatchTensorFlowV2
+from art.attacks.evasion.adversarial_patch.adversarial_patch_pytorch import AdversarialPatchPyTorch
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
-from art.estimators.classification import TensorFlowV2Classifier
+from art.estimators.classification import TensorFlowV2Classifier, PyTorchClassifier
 from art.attacks.attack import EvasionAttack
 
 if TYPE_CHECKING:
@@ -91,10 +92,10 @@ class AdversarialPatch(EvasionAttack):
         :param verbose: Show progress bars.
         """
         super().__init__(estimator=classifier)
-        if self.estimator.clip_values is None:
+        if self.estimator.clip_values is None:  # pragma: no cover
             raise ValueError("Adversarial Patch attack requires a classifier with clip_values.")
 
-        self._attack: Union[AdversarialPatchTensorFlowV2, AdversarialPatchNumpy]
+        self._attack: Union[AdversarialPatchTensorFlowV2, AdversarialPatchPyTorch, AdversarialPatchNumpy]
         if isinstance(self.estimator, TensorFlowV2Classifier):
             self._attack = AdversarialPatchTensorFlowV2(
                 classifier=classifier,
@@ -105,6 +106,20 @@ class AdversarialPatch(EvasionAttack):
                 max_iter=max_iter,
                 batch_size=batch_size,
                 patch_shape=patch_shape,
+                verbose=verbose,
+            )
+        elif isinstance(self.estimator, PyTorchClassifier):
+            self._attack = AdversarialPatchPyTorch(
+                classifier=classifier,
+                rotation_max=rotation_max,
+                scale_min=scale_min,
+                scale_max=scale_max,
+                distortion_scale_max=0.0,
+                learning_rate=learning_rate,
+                max_iter=max_iter,
+                batch_size=batch_size,
+                patch_shape=patch_shape,
+                patch_type="circle",
                 verbose=verbose,
             )
         else:
@@ -138,10 +153,10 @@ class AdversarialPatch(EvasionAttack):
         """
         logger.info("Creating adversarial patch.")
 
-        if y is None:
+        if y is None:  # pragma: no cover
             raise ValueError("Adversarial Patch attack requires target values `y`.")
 
-        if len(x.shape) == 2:
+        if len(x.shape) == 2:  # pragma: no cover
             raise ValueError(
                 "Feature vectors detected. The adversarial patch can only be applied to data with spatial "
                 "dimensions."
@@ -149,7 +164,9 @@ class AdversarialPatch(EvasionAttack):
 
         return self._attack.generate(x=x, y=y, **kwargs)
 
-    def apply_patch(self, x: np.ndarray, scale: float, patch_external: Optional[np.ndarray] = None) -> np.ndarray:
+    def apply_patch(
+        self, x: np.ndarray, scale: float, patch_external: Optional[np.ndarray] = None, **kwargs
+    ) -> np.ndarray:
         """
         A function to apply the learned adversarial patch to images or videos.
 
@@ -158,7 +175,7 @@ class AdversarialPatch(EvasionAttack):
         :param patch_external: External patch to apply to images `x`.
         :return: The patched instances.
         """
-        return self._attack.apply_patch(x, scale, patch_external=patch_external)
+        return self._attack.apply_patch(x, scale, patch_external=patch_external, **kwargs)
 
     def reset_patch(self, initial_patch_value: Optional[Union[float, np.ndarray]]) -> None:
         """
@@ -205,6 +222,7 @@ class AdversarialPatch(EvasionAttack):
 
         if not isinstance(self._attack.learning_rate, float):
             raise ValueError("The learning rate must be of type float.")
+
         if not self._attack.learning_rate > 0.0:
             raise ValueError("The learning rate must be greater than 0.0.")
 

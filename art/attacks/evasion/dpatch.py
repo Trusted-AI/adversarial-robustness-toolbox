@@ -81,6 +81,9 @@ class DPatch(EvasionAttack):
         self.learning_rate = learning_rate
         self.max_iter = max_iter
         self.batch_size = batch_size
+        self.verbose = verbose
+        self._check_params()
+
         if self.estimator.clip_values is None:
             self._patch = np.zeros(shape=patch_shape, dtype=config.ART_NUMPY_DTYPE)
         else:
@@ -90,8 +93,6 @@ class DPatch(EvasionAttack):
                 * (self.estimator.clip_values[1] - self.estimator.clip_values[0])
                 + self.estimator.clip_values[0]
             ).astype(config.ART_NUMPY_DTYPE)
-        self.verbose = verbose
-        self._check_params()
 
         self.target_label: Optional[Union[int, np.ndarray, List[int]]] = list()
 
@@ -117,7 +118,7 @@ class DPatch(EvasionAttack):
         mask = kwargs.get("mask")
         if mask is not None:
             mask = mask.copy()
-        if mask is not None and (
+        if mask is not None and (  # pragma: no cover
             mask.dtype != np.bool
             or not (mask.shape[0] == 1 or mask.shape[0] == x.shape[0])
             or not (
@@ -135,17 +136,19 @@ class DPatch(EvasionAttack):
             raise ValueError("The color channel index of the images and the patch have to be identical.")
         if y is not None:
             raise ValueError("The DPatch attack does not use target labels.")
-        if x.ndim != 4:
+        if x.ndim != 4:  # pragma: no cover
             raise ValueError("The adversarial patch can only be applied to images.")
         if target_label is not None:
             if isinstance(target_label, int):
                 self.target_label = [target_label] * x.shape[0]
             elif isinstance(target_label, np.ndarray):
-                if not (target_label.shape == (x.shape[0], 1) or target_label.shape == (x.shape[0],)):
+                if not (  # pragma: no cover
+                    target_label.shape == (x.shape[0], 1) or target_label.shape == (x.shape[0],)
+                ):
                     raise ValueError("The target_label has to be a 1-dimensional array.")
                 self.target_label = target_label.tolist()
             else:
-                if not len(target_label) == x.shape[0] or not isinstance(target_label, list):
+                if not len(target_label) == x.shape[0] or not isinstance(target_label, list):  # pragma: no cover
                     raise ValueError("The target_label as list of integers needs to of length number of images in `x`.")
                 self.target_label = target_label
 

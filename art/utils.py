@@ -80,6 +80,7 @@ if TYPE_CHECKING:
     from art.estimators.classification.lightgbm import LightGBMClassifier
     from art.estimators.classification.mxnet import MXClassifier
     from art.estimators.classification.pytorch import PyTorchClassifier
+    from art.estimators.classification.query_efficient_bb import QueryEfficientGradientEstimationClassifier
     from art.estimators.classification.scikitlearn import (
         ScikitlearnAdaBoostClassifier,
         ScikitlearnBaggingClassifier,
@@ -96,9 +97,11 @@ if TYPE_CHECKING:
     from art.estimators.classification.tensorflow import TensorFlowClassifier, TensorFlowV2Classifier
     from art.estimators.classification.xgboost import XGBoostClassifier
     from art.estimators.object_detection.object_detector import ObjectDetector
+    from art.estimators.object_detection.python_object_detector import PyTorchObjectDetector
     from art.estimators.object_detection.pytorch_faster_rcnn import PyTorchFasterRCNN
     from art.estimators.object_detection.tensorflow_faster_rcnn import TensorFlowFasterRCNN
     from art.estimators.pytorch import PyTorchEstimator
+    from art.estimators.regression.scikitlearn import ScikitlearnRegressor
     from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
     from art.estimators.speech_recognition.tensorflow_lingvo import TensorFlowLingvoASR
     from art.estimators.tensorflow import TensorFlowV2Estimator
@@ -114,6 +117,7 @@ if TYPE_CHECKING:
         ScikitlearnSVC,
         TensorFlowClassifier,
         TensorFlowV2Classifier,
+        QueryEfficientGradientEstimationClassifier,
     ]
 
     CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE = Union[  # pylint: disable=C0103
@@ -144,7 +148,6 @@ if TYPE_CHECKING:
         ClassifierDecisionTree,
         LightGBMClassifier,
         ScikitlearnDecisionTreeClassifier,
-        ScikitlearnDecisionTreeRegressor,
         ScikitlearnExtraTreesClassifier,
         ScikitlearnGradientBoostingClassifier,
         ScikitlearnRandomForestClassifier,
@@ -164,7 +167,6 @@ if TYPE_CHECKING:
         PyTorchClassifier,
         ScikitlearnClassifier,
         ScikitlearnDecisionTreeClassifier,
-        ScikitlearnDecisionTreeRegressor,
         ScikitlearnExtraTreeClassifier,
         ScikitlearnAdaBoostClassifier,
         ScikitlearnBaggingClassifier,
@@ -179,15 +181,19 @@ if TYPE_CHECKING:
         CLASSIFIER_NEURALNETWORK_TYPE,
     ]
 
+    REGRESSOR_TYPE = Union[ScikitlearnRegressor, ScikitlearnDecisionTreeRegressor]  # pylint: disable=C0103
+
     PYTORCH_ESTIMATOR_TYPE = Union[  # pylint: disable=C0103
         PyTorchClassifier,
         PyTorchDeepSpeech,
         PyTorchEstimator,
+        PyTorchObjectDetector,
         PyTorchFasterRCNN,
     ]
 
     OBJECT_DETECTOR_TYPE = Union[  # pylint: disable=C0103
         ObjectDetector,
+        PyTorchObjectDetector,
         PyTorchFasterRCNN,
         TensorFlowFasterRCNN,
     ]
@@ -490,7 +496,7 @@ def float_to_categorical(labels: np.ndarray, nb_classes: Optional[int] = None):
     unique.sort()
     indexes = [np.where(unique == value)[0] for value in labels]
     if nb_classes is None:
-        nb_classes = len(unique) + 1
+        nb_classes = len(unique)
     categorical = np.zeros((labels.shape[0], nb_classes), dtype=np.float32)
     categorical[np.arange(labels.shape[0]), np.squeeze(indexes)] = 1
     return categorical
@@ -755,7 +761,7 @@ def load_cifar10(
         "cifar-10-batches-py",
         extract=True,
         path=config.ART_DATA_PATH,
-        url="http://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz",
+        url="https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz",
     )
 
     num_train_samples = 50000
@@ -924,6 +930,38 @@ def load_iris(raw: bool = False, test_set: float = 0.3) -> DATASET_TYPE:
     return (x_train, y_train), (x_test, y_test), min_, max_
 
 
+def load_diabetes(raw: bool = False, test_set: float = 0.3) -> DATASET_TYPE:
+    """
+    Loads the Diabetes Regression dataset from sklearn.
+
+    :param raw: `True` if no preprocessing should be applied to the data. Otherwise, data is normalized to 1.
+    :param test_set: Proportion of the data to use as validation split. The value should be between 0 and 1.
+    :return: Entire dataset and labels.
+    """
+    from sklearn.datasets import load_diabetes as load_diabetes_sk
+
+    diabetes = load_diabetes_sk()
+    data = diabetes.data
+    if not raw:
+        data /= np.amax(data, axis=0)
+    targets = diabetes.target
+
+    min_, max_ = np.amin(data), np.amax(data)
+
+    # Shuffle data set
+    random_indices = np.random.permutation(len(data))
+    data, targets = data[random_indices], targets[random_indices]
+
+    # Split training and test sets
+    split_index = int((1 - test_set) * len(data))
+    x_train = data[:split_index]
+    y_train = targets[:split_index]
+    x_test = data[split_index:]
+    y_test = targets[split_index:]
+
+    return (x_train, y_train), (x_test, y_test), min_, max_
+
+
 def load_nursery(raw: bool = False, test_set: float = 0.2, transform_social: bool = False) -> DATASET_TYPE:
     """
     Loads the UCI Nursery dataset from `config.ART_DATA_PATH` or downloads it if necessary.
@@ -1028,7 +1066,8 @@ def load_dataset(
     name: str,
 ) -> DATASET_TYPE:
     """
-    Loads or downloads the dataset corresponding to `name`. Options are: `mnist`, `cifar10` and `stl10`.
+    Loads or downloads the dataset corresponding to `name`. Options are: `mnist`, `cifar10`, `stl10`, `iris`, `nursery`
+    and `diabetes`.
 
     :param name: Name of the dataset.
     :return: The dataset separated in training and test sets as `(x_train, y_train), (x_test, y_test), min, max`.
@@ -1044,19 +1083,21 @@ def load_dataset(
         return load_iris()
     if "nursery" in name:
         return load_nursery()
+    if "diabetes" in name:
+        return load_diabetes()
 
     raise NotImplementedError("There is no loader for dataset '{}'.".format(name))
 
 
 def _extract(full_path: str, path: str) -> bool:
     archive: Union[zipfile.ZipFile, tarfile.TarFile]
-    if full_path.endswith("tar"):
+    if full_path.endswith("tar"):  # pragma: no cover
         if tarfile.is_tarfile(full_path):
             archive = tarfile.open(full_path, "r:")
-    elif full_path.endswith("tar.gz"):
+    elif full_path.endswith("tar.gz"):  # pragma: no cover
         if tarfile.is_tarfile(full_path):
             archive = tarfile.open(full_path, "r:gz")
-    elif full_path.endswith("zip"):
+    elif full_path.endswith("zip"):  # pragma: no cover
         if zipfile.is_zipfile(full_path):
             archive = zipfile.ZipFile(full_path)
         else:
@@ -1066,7 +1107,7 @@ def _extract(full_path: str, path: str) -> bool:
 
     try:
         archive.extractall(path)
-    except (tarfile.TarError, RuntimeError, KeyboardInterrupt):
+    except (tarfile.TarError, RuntimeError, KeyboardInterrupt):  # pragma: no cover
         if os.path.exists(path):
             if os.path.isfile(path):
                 os.remove(path)
@@ -1142,11 +1183,11 @@ def get_file(filename: str, url: str, path: Optional[str] = None, extract: bool 
                 else:
                     urlretrieve(url, full_path)
 
-            except HTTPError as exception:
+            except HTTPError as exception:  # pragma: no cover
                 raise Exception(error_msg.format(url, exception.code, exception.msg)) from HTTPError  # type: ignore
-            except URLError as exception:
+            except URLError as exception:  # pragma: no cover
                 raise Exception(error_msg.format(url, exception.errno, exception.reason)) from HTTPError
-        except (Exception, KeyboardInterrupt):
+        except (Exception, KeyboardInterrupt):  # pragma: no cover
             if os.path.exists(full_path):
                 os.remove(full_path)
             raise
@@ -1332,7 +1373,7 @@ def to_cuda(x: "torch.Tensor") -> "torch.Tensor":
     from torch.cuda import is_available
 
     use_cuda = is_available()
-    if use_cuda:
+    if use_cuda:  # pragma: no cover
         x = x.cuda()
     return x
 
@@ -1347,6 +1388,6 @@ def from_cuda(x: "torch.Tensor") -> "torch.Tensor":
     from torch.cuda import is_available
 
     use_cuda = is_available()
-    if use_cuda:
+    if use_cuda:  # pragma: no cover
         x = x.cpu()
     return x

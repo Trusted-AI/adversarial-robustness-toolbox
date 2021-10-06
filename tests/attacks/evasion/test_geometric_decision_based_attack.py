@@ -159,6 +159,59 @@ def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator):
 
 
 @pytest.mark.framework_agnostic
+def test_check_params(art_warning, image_dl_estimator_for_attack):
+    try:
+        classifier = image_dl_estimator_for_attack(GeoDA, from_logits=True)
+
+        with pytest.raises(ValueError):
+            _ = GeoDA(classifier, batch_size=1.0)
+        with pytest.raises(ValueError):
+            _ = GeoDA(classifier, batch_size=-1)
+
+        with pytest.raises(ValueError):
+            _ = GeoDA(classifier, norm=0)
+
+        with pytest.raises(ValueError):
+            _ = GeoDA(classifier, sub_dim=1.0)
+        with pytest.raises(ValueError):
+            _ = GeoDA(classifier, sub_dim=-1)
+
+        with pytest.raises(ValueError):
+            _ = GeoDA(classifier, max_iter=1.0)
+        with pytest.raises(ValueError):
+            _ = GeoDA(classifier, max_iter=-1)
+
+        with pytest.raises(ValueError):
+            _ = GeoDA(classifier, max_iter=1.0)
+        with pytest.raises(ValueError):
+            _ = GeoDA(classifier, max_iter=-1)
+
+        with pytest.raises(ValueError):
+            _ = GeoDA(classifier, bin_search_tol="1")
+        with pytest.raises(ValueError):
+            _ = GeoDA(classifier, bin_search_tol=-1.0)
+
+        with pytest.raises(ValueError):
+            _ = GeoDA(classifier, lambda_param=1)
+        with pytest.raises(ValueError):
+            _ = GeoDA(classifier, lambda_param=-1.0)
+
+        with pytest.raises(ValueError):
+            _ = GeoDA(classifier, sigma=1)
+        with pytest.raises(ValueError):
+            _ = GeoDA(classifier, sigma=-1.0)
+
+        # with pytest.raises(ValueError):
+        #     _ = GeoDA(classifier, targeted="true")
+
+        with pytest.raises(ValueError):
+            _ = GeoDA(classifier, verbose="true")
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.framework_agnostic
 def test_classifier_type_check_fail(art_warning):
     try:
         backend_test_classifier_type_check_fail(GeoDA, [BaseEstimator, ClassifierMixin])

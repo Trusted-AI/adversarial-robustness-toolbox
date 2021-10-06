@@ -51,8 +51,8 @@ class Mp3CompressionPyTorch(PreprocessorPyTorch):
         channels_first: bool = False,
         apply_fit: bool = False,
         apply_predict: bool = True,
-        verbose: bool = False,
         device_type: str = "gpu",
+        verbose: bool = False,
     ):
         """
         Create an instance of MP3 compression.
@@ -61,8 +61,8 @@ class Mp3CompressionPyTorch(PreprocessorPyTorch):
         :param channels_first: Set channels first or last.
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
-        :param verbose: Show progress bars.
         :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
+        :param verbose: Show progress bars.
         """
         import torch  # lgtm [py/repeated-import]
         from torch.autograd import Function
@@ -76,7 +76,7 @@ class Mp3CompressionPyTorch(PreprocessorPyTorch):
         # Set device
         if device_type == "cpu" or not torch.cuda.is_available():
             self._device = torch.device("cpu")
-        else:
+        else:  # pragma: no cover
             cuda_idx = torch.cuda.current_device()
             self._device = torch.device("cuda:{}".format(cuda_idx))
 
@@ -102,9 +102,9 @@ class Mp3CompressionPyTorch(PreprocessorPyTorch):
             @staticmethod
             def backward(ctx, grad_output):  # pylint: disable=W0221
                 numpy_go = grad_output.cpu().numpy()
-                np.expand_dims(input, axis=[0, 2])
+                # np.expand_dims(input, axis=[0, 2])
                 result = self.compression_numpy.estimate_gradient(None, numpy_go)
-                result = result.squeeze()
+                # result = result.squeeze()
                 return grad_output.new(result)
 
         self._compression_pytorch_numpy = CompressionPyTorchNumpy

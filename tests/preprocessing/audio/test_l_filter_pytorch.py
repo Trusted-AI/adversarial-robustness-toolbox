@@ -101,6 +101,27 @@ def test_default(art_warning):
 
 @pytest.mark.skip_module("torchaudio")
 @pytest.mark.skip_framework("tensorflow", "tensorflow2v1", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+def test_clip_values(art_warning):
+    try:
+        # Small data for testing
+        x = np.array([[0.37, 0.68, 0.63, 0.48, 0.48, 0.18, 0.19]], dtype=ART_NUMPY_DTYPE)
+
+        # Create filter
+        audio_filter = LFilterPyTorch(clip_values=(0, 1))
+
+        # Apply filter
+        result = audio_filter(x)
+
+        # Test
+        assert result[1] is None
+        np.testing.assert_array_almost_equal(x, result[0], decimal=0)
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_module("torchaudio")
+@pytest.mark.skip_framework("tensorflow", "tensorflow2v1", "keras", "kerastf", "mxnet", "non_dl_frameworks")
 def test_triple_clip_values_error(art_warning):
     try:
         exc_msg = "`clip_values` should be a tuple of 2 floats containing the allowed data range."
@@ -123,6 +144,39 @@ def test_relation_clip_values_error(art_warning):
         with pytest.raises(ValueError, match=exc_msg):
             LFilterPyTorch(
                 numerator_coef=np.array([0.1, 0.2, 0.3]), denominator_coef=np.array([0.1, 0.2, 0.3]), clip_values=(1, 0)
+            )
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework("tensorflow", "tensorflow2v1", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+def test_check_params(art_warning):
+
+    try:
+
+        with pytest.raises(ValueError):
+            _ = LFilterPyTorch(numerator_coef=np.array([0.1, 0.2, -0.1, -0.2]), denominator_coef=[0.0, 0.1, 0.3, 0.4])
+
+        with pytest.raises(ValueError):
+            _ = LFilterPyTorch(
+                numerator_coef=np.array([0.1, 0.2, -0.1, -0.2]), denominator_coef=np.array([0.0, 0.1, 0.3, 0.4])
+            )
+
+        with pytest.raises(ValueError):
+            _ = LFilterPyTorch(numerator_coef=[0.1, 0.2, -0.1, -0.2], denominator_coef=np.array([1.0, 0.1, 0.3, 0.4]))
+
+        with pytest.raises(ValueError):
+            _ = LFilterPyTorch(
+                numerator_coef=np.array([0.1, 0.2, -0.1, -0.2]),
+                denominator_coef=np.array([1.0, 0.1, 0.3, 0.4, 0.2]),
+            )
+
+        with pytest.raises(ValueError):
+            _ = LFilterPyTorch(
+                numerator_coef=np.array([0.1, 0.2, -0.1, -0.2]),
+                denominator_coef=np.array([1.0, 0.1, 0.3, 0.4]),
+                verbose="True",
             )
 
     except ARTTestException as e:

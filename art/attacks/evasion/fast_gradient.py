@@ -120,7 +120,7 @@ class FastGradientMethod(EvasionAttack):
         """
         if isinstance(self.eps, np.ndarray):
             # Ensure the eps array is broadcastable
-            if self.eps.ndim > x.ndim:
+            if self.eps.ndim > x.ndim:  # pragma: no cover
                 raise ValueError("The `eps` shape must be broadcastable to input shape.")
 
     def _minimal_perturbation(self, x: np.ndarray, y: np.ndarray, mask: np.ndarray) -> np.ndarray:
@@ -225,7 +225,7 @@ class FastGradientMethod(EvasionAttack):
 
             if y is None:
                 # Throw error if attack is targeted, but no targets are provided
-                if self.targeted:
+                if self.targeted:  # pragma: no cover
                     raise ValueError("Target labels `y` need to be provided for a targeted attack.")
 
                 # Use model predictions as correct outputs
@@ -295,12 +295,12 @@ class FastGradientMethod(EvasionAttack):
             )
 
         else:
-            if self.minimal:
+            if self.minimal:  # pragma: no cover
                 raise ValueError("Minimal perturbation is only supported for classification.")
 
             if y is None:
                 # Throw error if attack is targeted, but no targets are provided
-                if self.targeted:
+                if self.targeted:  # pragma: no cover
                     raise ValueError("Target labels `y` need to be provided for a targeted attack.")
 
                 # Use model predictions as correct outputs
@@ -381,7 +381,7 @@ class FastGradientMethod(EvasionAttack):
         grad = self.estimator.loss_gradient(batch, batch_labels) * (1 - 2 * int(self.targeted))
 
         # Write summary
-        if self.summary_writer is not None:
+        if self.summary_writer is not None:  # pragma: no cover
             self.summary_writer.add_scalar(
                 "gradients/norm-L1/batch-{}".format(self._batch_id),
                 np.linalg.norm(grad.flatten(), ord=1),
@@ -409,7 +409,7 @@ class FastGradientMethod(EvasionAttack):
                     )
 
         # Check for NaN before normalisation an replace with 0
-        if grad.dtype != np.object and np.isnan(grad).any():
+        if grad.dtype != np.object and np.isnan(grad).any():  # pragma: no cover
             logger.warning("Elements of the loss gradient are NaN and have been replaced with 0.0.")
             grad = np.where(np.isnan(grad), 0.0, grad)
         else:
@@ -424,7 +424,9 @@ class FastGradientMethod(EvasionAttack):
 
         # Apply norm bound
         def _apply_norm(grad, object_type=False):
-            if (grad.dtype != np.object and np.isinf(grad).any()) or np.isnan(grad.astype(np.float32)).any():
+            if (grad.dtype != np.object and np.isinf(grad).any()) or np.isnan(  # pragma: no cover
+                grad.astype(np.float32)
+            ).any():
                 logger.info("The loss gradient array contains at least one positive or negative infinity.")
 
             if self.norm in [np.inf, "inf"]:
@@ -472,7 +474,11 @@ class FastGradientMethod(EvasionAttack):
         batch = batch + perturbation_step
         if self.estimator.clip_values is not None:
             clip_min, clip_max = self.estimator.clip_values
-            batch = np.clip(batch, clip_min, clip_max)
+            if batch.dtype == np.object:
+                for i_obj in range(batch.shape[0]):
+                    batch[i_obj] = np.clip(batch[i_obj], clip_min, clip_max)
+            else:
+                batch = np.clip(batch, clip_min, clip_max)
 
         return batch
 
@@ -575,16 +581,16 @@ class FastGradientMethod(EvasionAttack):
         mask = kwargs.get("mask")
 
         if mask is not None:
-            if mask.ndim > x.ndim:
+            if mask.ndim > x.ndim:  # pragma: no cover
                 raise ValueError("Mask shape must be broadcastable to input shape.")
 
-            if not (np.issubdtype(mask.dtype, np.floating) or mask.dtype == np.bool):
+            if not (np.issubdtype(mask.dtype, np.floating) or mask.dtype == np.bool):  # pragma: no cover
                 raise ValueError(
                     "The `mask` has to be either of type np.float32, np.float64 or np.bool. The provided"
                     "`mask` is of type {}.".format(mask.dtype)
                 )
 
-            if np.issubdtype(mask.dtype, np.floating) and np.amin(mask) < 0.0:
+            if np.issubdtype(mask.dtype, np.floating) and np.amin(mask) < 0.0:  # pragma: no cover
                 raise ValueError(
                     "The `mask` of type np.float32 or np.float64 requires all elements to be either zero"
                     "or positive values."

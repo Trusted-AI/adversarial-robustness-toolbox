@@ -15,8 +15,6 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import logging
 import unittest
 
@@ -27,7 +25,7 @@ from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.estimators.classification.keras import KerasClassifier
 from art.defences.preprocessor import FeatureSqueezing
 from art.utils import load_dataset, get_labels_np_array
-from art.wrappers.query_efficient_bb import QueryEfficientBBGradientEstimation
+from art.estimators.classification.query_efficient_bb import QueryEfficientGradientEstimationClassifier
 
 from tests.utils import master_seed, get_image_classifier_kr, get_tabular_classifier_kr
 
@@ -38,7 +36,7 @@ NB_TRAIN = 100
 NB_TEST = 11
 
 
-class TestWrappingClassifierAttack(unittest.TestCase):
+class TestClassifierAttack(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         (x_train, y_train), (x_test, y_test), _, _ = load_dataset("mnist")
@@ -58,8 +56,10 @@ class TestWrappingClassifierAttack(unittest.TestCase):
     def test_without_defences(self):
         (x_train, y_train), (x_test, y_test) = self.mnist
 
-        # Get the ready-trained Keras model and wrap it in query efficient gradient estimator wrapper
-        classifier = QueryEfficientBBGradientEstimation(self.classifier_k, 20, 1 / 64.0, round_samples=1 / 255.0)
+        # Get the ready-trained Keras model and wrap it in query efficient gradient estimator
+        classifier = QueryEfficientGradientEstimationClassifier(
+            self.classifier_k, 20, 1 / 64.0, round_samples=1 / 255.0
+        )
 
         attack = FastGradientMethod(classifier, eps=1)
         x_train_adv = attack.generate(x_train)
@@ -73,24 +73,17 @@ class TestWrappingClassifierAttack(unittest.TestCase):
 
         self.assertFalse((y_train == train_y_pred).all())
         self.assertFalse((y_test == test_y_pred).all())
-
-        preds = classifier.predict(x_train_adv)
-        acc = np.sum(np.argmax(preds, axis=1) == np.argmax(y_train, axis=1)) / y_train.shape[0]
-        logger.info("Accuracy on adversarial train examples with limited query info: %.2f%%", (acc * 100))
-
-        preds = classifier.predict(x_test_adv)
-        acc = np.sum(np.argmax(preds, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
-        logger.info("Accuracy on adversarial test examples with limited query info: %.2f%%", (acc * 100))
 
     def test_with_defences(self):
         (x_train, y_train), (x_test, y_test) = self.mnist
 
-        # Get the ready-trained Keras model
+        # Get the trained Keras model
         model = self.classifier_k._model
         fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
         classifier = KerasClassifier(model=model, clip_values=(0, 1), preprocessing_defences=fs)
-        # Wrap the classifier
-        classifier = QueryEfficientBBGradientEstimation(classifier, 20, 1 / 64.0, round_samples=1 / 255.0)
+
+        # Create the classifier
+        classifier = QueryEfficientGradientEstimationClassifier(classifier, 20, 1 / 64.0, round_samples=1 / 255.0)
 
         attack = FastGradientMethod(classifier, eps=1)
         x_train_adv = attack.generate(x_train)
@@ -104,18 +97,6 @@ class TestWrappingClassifierAttack(unittest.TestCase):
 
         self.assertFalse((y_train == train_y_pred).all())
         self.assertFalse((y_test == test_y_pred).all())
-
-        preds = classifier.predict(x_train_adv)
-        acc = np.sum(np.argmax(preds, axis=1) == np.argmax(y_train, axis=1)) / y_train.shape[0]
-        logger.info(
-            "Accuracy on adversarial train examples with feature squeezing and limited query info: %.2f%%", (acc * 100)
-        )
-
-        preds = classifier.predict(x_test_adv)
-        acc = np.sum(np.argmax(preds, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
-        logger.info(
-            "Accuracy on adversarial test examples with feature squeezing and limited query info: %.2f%%", (acc * 100)
-        )
 
 
 class TestQueryEfficientVectors(unittest.TestCase):
@@ -132,7 +113,7 @@ class TestQueryEfficientVectors(unittest.TestCase):
         (_, _), (x_test, y_test) = self.iris
 
         classifier = get_tabular_classifier_kr()
-        classifier = QueryEfficientBBGradientEstimation(classifier, 20, 1 / 64.0, round_samples=1 / 255.0)
+        classifier = QueryEfficientGradientEstimationClassifier(classifier, 20, 1 / 64.0, round_samples=1 / 255.0)
 
         # Test untargeted attack
         attack = FastGradientMethod(classifier, eps=0.1)
@@ -143,8 +124,6 @@ class TestQueryEfficientVectors(unittest.TestCase):
 
         preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
-        acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
-        logger.info("Accuracy on Iris with limited query info: %.2f%%", (acc * 100))
 
     def test_iris_unbounded(self):
         (_, _), (x_test, y_test) = self.iris
@@ -152,7 +131,7 @@ class TestQueryEfficientVectors(unittest.TestCase):
 
         # Recreate a classifier without clip values
         classifier = KerasClassifier(model=classifier._model, use_logits=False, channels_first=True)
-        classifier = QueryEfficientBBGradientEstimation(classifier, 20, 1 / 64.0, round_samples=1 / 255.0)
+        classifier = QueryEfficientGradientEstimationClassifier(classifier, 20, 1 / 64.0, round_samples=1 / 255.0)
         attack = FastGradientMethod(classifier, eps=1)
         x_test_adv = attack.generate(x_test)
         self.assertFalse((x_test == x_test_adv).all())
@@ -161,8 +140,6 @@ class TestQueryEfficientVectors(unittest.TestCase):
 
         preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
-        acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
-        logger.info("Accuracy on Iris with limited query info: %.2f%%", (acc * 100))
 
 
 if __name__ == "__main__":

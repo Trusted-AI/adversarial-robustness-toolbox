@@ -28,10 +28,11 @@ import numpy as np
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.attack import AttributeInferenceAttack, MembershipInferenceAttack
+from art.estimators.regression import RegressorMixin
 from art.exceptions import EstimatorError
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_TYPE
+    from art.utils import CLASSIFIER_TYPE, REGRESSOR_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -44,26 +45,26 @@ class AttributeInferenceMembership(AttributeInferenceAttack):
     as a member with the highest confidence.
     """
 
-    _estimator_requirements = (BaseEstimator, ClassifierMixin)
+    _estimator_requirements = (BaseEstimator, (ClassifierMixin, RegressorMixin))
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_TYPE",
+        estimator: Union["CLASSIFIER_TYPE", "REGRESSOR_TYPE"],
         membership_attack: MembershipInferenceAttack,
         attack_feature: Union[int, slice] = 0,
     ):
         """
         Create an AttributeInferenceMembership attack instance.
 
-        :param classifier: Target classifier.
+        :param estimator: Target estimator.
         :param membership_attack: The membership inference attack to use. Should be fit/calibrated in advance, and
-                                  should support returning probabilities.
+                                  should support returning probabilities. Should also support the target estimator.
         :param attack_feature: The index of the feature to be attacked or a slice representing multiple indexes in
                                case of a one-hot encoded feature.
         """
-        super().__init__(estimator=classifier, attack_feature=attack_feature)
-        if not all(t in type(classifier).__mro__ for t in membership_attack.estimator_requirements):
-            raise EstimatorError(membership_attack, membership_attack.estimator_requirements, classifier)
+        super().__init__(estimator=estimator, attack_feature=attack_feature)
+        if not membership_attack.is_estimator_valid(estimator, estimator_requirements=self.estimator_requirements):
+            raise EstimatorError(membership_attack.__class__, membership_attack.estimator_requirements, estimator)
 
         self.membership_attack = membership_attack
         self._check_params()
@@ -84,7 +85,7 @@ class AttributeInferenceMembership(AttributeInferenceAttack):
         """
         if self.estimator.input_shape is not None:
             if isinstance(self.attack_feature, int) and self.estimator.input_shape[0] != x.shape[1] + 1:
-                raise ValueError("Number of features in x + 1 does not match input_shape of classifier")
+                raise ValueError("Number of features in x + 1 does not match input_shape of the estimator")
 
         if "values" not in kwargs.keys():
             raise ValueError("Missing parameter `values`.")
@@ -96,11 +97,11 @@ class AttributeInferenceMembership(AttributeInferenceAttack):
             if y.shape[0] != x.shape[0]:
                 raise ValueError("Number of rows in x and y do not match")
 
-        # assumes single index
+        # single index
         if isinstance(self.attack_feature, int):
             first = True
             for value in values:
-                v_full = np.full((x.shape[0], 1), value).astype(np.float32)
+                v_full = np.full((x.shape[0], 1), value).astype(x.dtype)
                 x_value = np.concatenate((x[:, : self.attack_feature], v_full), axis=1)
                 x_value = np.concatenate((x_value, x[:, self.attack_feature :]), axis=1)
 
@@ -112,7 +113,7 @@ class AttributeInferenceMembership(AttributeInferenceAttack):
                     probabilities = np.hstack((probabilities, predicted))
 
             # needs to be of type float so we can later replace back the actual values
-            value_indexes = np.argmax(probabilities, axis=1).astype(np.float32)
+            value_indexes = np.argmax(probabilities, axis=1).astype(x.dtype)
             pred_values = np.zeros_like(value_indexes)
             for index, value in enumerate(values):
                 pred_values[value_indexes == index] = value
@@ -134,7 +135,7 @@ class AttributeInferenceMembership(AttributeInferenceAttack):
                 else:
                     probabilities = np.hstack((probabilities, predicted))
                 first = False
-            value_indexes = np.argmax(probabilities, axis=1).astype(np.float32)
+            value_indexes = np.argmax(probabilities, axis=1).astype(x.dtype)
             pred_values = np.zeros_like(probabilities)
             for index, value in enumerate(values):
                 curr_value = np.zeros(len(values))

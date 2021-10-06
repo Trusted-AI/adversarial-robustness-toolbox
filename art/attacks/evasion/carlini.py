@@ -253,7 +253,7 @@ class CarliniL2Method(EvasionAttack):
             y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
 
         if self.estimator.nb_classes == 2 and y.shape[1] == 1:
-            raise ValueError(
+            raise ValueError(  # pragma: no cover
                 "This attack has not yet been tested for binary classification with a single output classifier."
             )
 
@@ -289,7 +289,7 @@ class CarliniL2Method(EvasionAttack):
                     nb_active,
                     x_batch.shape[0],
                 )
-                if nb_active == 0:
+                if nb_active == 0:  # pragma: no cover
                     break
                 learning_rate = self.learning_rate * np.ones(x_batch.shape[0])
 
@@ -325,7 +325,7 @@ class CarliniL2Method(EvasionAttack):
                         nb_active,
                         x_batch.shape[0],
                     )
-                    if nb_active == 0:
+                    if nb_active == 0:  # pragma: no cover
                         break
 
                     # compute gradient:
@@ -662,7 +662,7 @@ class CarliniLInfMethod(EvasionAttack):
             y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
 
         if self.estimator.nb_classes == 2 and y.shape[1] == 1:
-            raise ValueError(
+            raise ValueError(  # pragma: no cover
                 "This attack has not yet been tested for binary classification with a single output classifier."
             )
 
@@ -991,7 +991,7 @@ class CarliniL0Method(CarliniL2Method):
             activation = np.ones(x.shape)
         else:
             # Check if the initial activation has the same dimension as the input data
-            if self.mask.shape != x.shape:
+            if self.mask.shape != x.shape:  # pragma: no cover
                 raise ValueError("The mask must have the same dimensions as the input data.")
             activation = np.array(self.mask).astype(float)
 
@@ -1007,7 +1007,7 @@ class CarliniL0Method(CarliniL2Method):
         #   - Computes the gradients of the objective function evaluated at the adversarial instance
         #   - Fix the attribute with the lowest value (gradient * perturbation)
         # Repeat until the L_2 attack fails to find an adversarial examples.
-        while True:
+        for _ in range(x.shape[1] + 1):
             # Compute perturbation with implicit batching
             nb_batches = int(np.ceil(x_adv.shape[0] / float(self.batch_size)))
             for batch_id in range(nb_batches):
@@ -1066,7 +1066,7 @@ class CarliniL0Method(CarliniL2Method):
                         )
 
                         l0dist = np.sum(
-                            (np.abs(x_batch - x_adv_batch) > self._perturbation_threshold).astype(int), axis=1
+                            (np.abs(x_batch - x_adv_batch) > self._perturbation_threshold).astype(int), axis=(1, 2, 3)
                         )
                         improved_adv = attack_success & (l0dist < best_l0dist_batch)
                         logger.debug("Number of improved L0 distances: %i", int(np.sum(improved_adv)))
@@ -1081,7 +1081,7 @@ class CarliniL0Method(CarliniL2Method):
                             nb_active,
                             x_batch.shape[0],
                         )
-                        if nb_active == 0:
+                        if nb_active == 0:  # pragma: no cover
                             break
 
                         # compute gradient:
@@ -1145,7 +1145,7 @@ class CarliniL0Method(CarliniL2Method):
                             logger.debug("Perform doubling iteration %i out of %i", i_double, self.max_doubling)
                             do_doubling = (halving[active] == 1) & (loss[active] <= best_loss[active])
                             logger.debug("Doubling to be performed on %i samples", int(np.sum(do_doubling)))
-                            if np.sum(do_doubling) == 0:
+                            if np.sum(do_doubling) == 0:  # pragma: no cover
                                 break
                             active_and_do_doubling = active.copy()
                             active_and_do_doubling[active] = do_doubling
@@ -1206,7 +1206,9 @@ class CarliniL0Method(CarliniL2Method):
                             overall_attack_success = overall_attack_success | attack_success
 
                     # Update depending on attack success:
-                    l0dist = np.sum((np.abs(x_batch - x_adv_batch) > self._perturbation_threshold).astype(int), axis=1)
+                    l0dist = np.sum(
+                        (np.abs(x_batch - x_adv_batch) > self._perturbation_threshold).astype(int), axis=(1, 2, 3)
+                    )
                     improved_adv = attack_success & (l0dist < best_l0dist_batch)
                     logger.debug("Number of improved L0 distances: %i", int(np.sum(improved_adv)))
                     if np.sum(improved_adv) > 0:
@@ -1234,7 +1236,7 @@ class CarliniL0Method(CarliniL2Method):
             # If the L_2 attack can't find any adversarial examples with the new activation, return the last one
             z_logits, l2dist, loss = self._loss(x, x_adv, y, c_final)
             attack_success = loss - l2dist <= 0
-            l0dist = np.sum((np.abs(x - x_adv) > self._perturbation_threshold).astype(int), axis=1)
+            l0dist = np.sum((np.abs(x - x_adv) > self._perturbation_threshold).astype(int), axis=(1, 2, 3))
             improved_adv = attack_success & (l0dist < best_l0dist)
             if np.sum(improved_adv) > 0:
                 final_adversarial_example[improved_adv] = x_adv[improved_adv]
@@ -1259,12 +1261,14 @@ class CarliniL0Method(CarliniL2Method):
             objective_reduction = np.abs(objective_loss_gradient) * perturbation_l1_norm
 
             # Assign infinity as the objective_reduction value for fixed feature (in order not to select them again)
-            objective_reduction += np.array(np.where(activation == 0, np.inf, activation))
+            objective_reduction += np.array(np.where(activation == 0, np.inf, 0))
 
             # Fix the feature with the lowest objective_reduction value (only for the examples that succeeded)
-            fix_feature_index = np.argmin(objective_reduction, axis=1)
+            fix_feature_index = np.argmin(objective_reduction.reshape(objective_reduction.shape[0], -1), axis=1)
             fix_feature = np.ones(x.shape)
+            fix_feature = fix_feature.reshape(fix_feature.shape[0], -1)
             fix_feature[np.arange(fix_feature_index.size), fix_feature_index] = 0
+            fix_feature = fix_feature.reshape(x.shape)
             old_activation[improved_adv] = activation.copy()[improved_adv]
             activation[improved_adv] *= fix_feature[improved_adv]
             logger.info(
@@ -1273,20 +1277,9 @@ class CarliniL0Method(CarliniL2Method):
                 np.sum(activation, axis=1),
                 fix_feature_index,
             )
+        return x_adv
 
     def _check_params(self):
 
         if not isinstance(self.binary_search_steps, (int, np.int)) or self.binary_search_steps < 0:
             raise ValueError("The number of binary search steps must be a non-negative integer.")
-
-        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter < 0:
-            raise ValueError("The number of iterations must be a non-negative integer.")
-
-        if not isinstance(self.max_halving, (int, np.int)) or self.max_halving < 1:
-            raise ValueError("The number of halving steps must be an integer greater than zero.")
-
-        if not isinstance(self.max_doubling, (int, np.int)) or self.max_doubling < 1:
-            raise ValueError("The number of doubling steps must be an integer greater than zero.")
-
-        if not isinstance(self.batch_size, (int, np.int)) or self.batch_size < 1:
-            raise ValueError("The batch size must be an integer greater than zero.")

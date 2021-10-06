@@ -84,7 +84,7 @@ class LFilterPyTorch(PreprocessorPyTorch):
         # Set device
         if device_type == "cpu" or not torch.cuda.is_available():
             self._device = torch.device("cpu")
-        else:
+        else:  # pragma: no cover
             cuda_idx = torch.cuda.current_device()
             self._device = torch.device("cuda:{}".format(cuda_idx))
 
@@ -136,7 +136,7 @@ class LFilterPyTorch(PreprocessorPyTorch):
 
         # Filter one input at a time
         for i, x_preprocess_i in enumerate(tqdm(x_preprocess, desc="Apply audio filter", disable=not self.verbose)):
-            if np.min(x_preprocess_i) < -1.0 or np.max(x_preprocess_i) > 1.0:
+            if np.min(x_preprocess_i) < -1.0 or np.max(x_preprocess_i) > 1.0:  # pragma: no cover
                 raise ValueError(
                     "Audio signals must be normalized to the range `[-1.0, 1.0]` to apply the audio filter function."
                 )

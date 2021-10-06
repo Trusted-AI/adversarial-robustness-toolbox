@@ -141,7 +141,7 @@ class RobustDPatch(EvasionAttack):
             raise ValueError("The targeted version of RobustDPatch attack requires target labels provided to `y`.")
         if y is not None and not self.targeted:
             raise ValueError("The RobustDPatch attack does not use target labels.")
-        if x.ndim != 4:
+        if x.ndim != 4:  # pragma: no cover
             raise ValueError("The adversarial patch can only be applied to images.")
 
         # Check whether patch fits into the cropped images:
@@ -160,7 +160,7 @@ class RobustDPatch(EvasionAttack):
                 y_i = y[i_image]["boxes"]
                 for i_box in range(y_i.shape[0]):
                     x_1, y_1, x_2, y_2 = y_i[i_box]
-                    if (
+                    if (  # pragma: no cover
                         x_1 < self.crop_range[1]
                         or y_1 < self.crop_range[0]
                         or x_2 > image_width - self.crop_range[1] + 1
@@ -168,7 +168,7 @@ class RobustDPatch(EvasionAttack):
                     ):
                         raise ValueError("Cropping is intersecting with at least one box, reduce `crop_range`.")
 
-        if (
+        if (  # pragma: no cover
             self.patch_location[0] + self.patch_shape[0] > image_height - self.crop_range[0]
             or self.patch_location[1] + self.patch_shape[1] > image_width - self.crop_range[1]
         ):
@@ -413,7 +413,7 @@ class RobustDPatch(EvasionAttack):
         x_1, y_1 = self.patch_location
         x_2, y_2 = x_1 + patch_local.shape[0], y_1 + patch_local.shape[1]
 
-        if x_2 > x_patch.shape[1] or y_2 > x_patch.shape[2]:
+        if x_2 > x_patch.shape[1] or y_2 > x_patch.shape[2]:  # pragma: no cover
             raise ValueError("The patch (partially) lies outside the image.")
 
         x_patch[:, x_1:x_2, y_1:y_2, :] = patch_local

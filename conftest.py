@@ -27,7 +27,13 @@ import numpy as np
 import pytest
 import requests
 
-from art.data_generators import KerasDataGenerator, MXDataGenerator, PyTorchDataGenerator, TensorFlowDataGenerator
+from art.data_generators import (
+    KerasDataGenerator,
+    MXDataGenerator,
+    PyTorchDataGenerator,
+    TensorFlowDataGenerator,
+    TensorFlowV2DataGenerator,
+)
 from art.defences.preprocessor import FeatureSqueezing, JpegCompression, SpatialSmoothing
 from art.estimators.classification import KerasClassifier
 from tests.utils import (
@@ -80,12 +86,6 @@ def pytest_addoption(parser):
         default=get_default_framework(),
         help="ART tests allow you to specify which framework to use. The default framework used is `tensorflow`. "
         "Other options available are {0}".format(art_supported_frameworks),
-    )
-    parser.addoption(
-        "--skip_travis",
-        action="store",
-        default=False,
-        help="Whether tests annotated with the decorator skip_travis should be skipped or not",
     )
 
 
@@ -222,6 +222,12 @@ def image_iterator(framework, get_default_mnist_subset, default_batch_size):
             dataset = tf.data.Dataset.from_tensor_slices((x_tensor, y_tensor))
             return dataset.make_initializable_iterator()
 
+        if framework == "tensorflow2":
+            import tensorflow as tf
+
+            dataset = tf.data.Dataset.from_tensor_slices((x_train_mnist, y_train_mnist)).batch(default_batch_size)
+            return dataset
+
         if framework == "pytorch":
             import torch
 
@@ -238,7 +244,7 @@ def image_iterator(framework, get_default_mnist_subset, default_batch_size):
             dataset = gluon.data.dataset.ArrayDataset(x_train_mnist, y_train_mnist)
             return gluon.data.DataLoader(dataset, batch_size=5, shuffle=True)
 
-        raise ARTTestFixtureNotImplemented("no image test iterator available", image_iterator.__name__, framework)
+        return None
 
     return _get_image_iterator
 
@@ -247,10 +253,9 @@ def image_iterator(framework, get_default_mnist_subset, default_batch_size):
 def image_data_generator(framework, get_default_mnist_subset, image_iterator, default_batch_size):
     def _image_data_generator(**kwargs):
         (x_train_mnist, y_train_mnist), (_, _) = get_default_mnist_subset
-
         image_it = image_iterator()
-
         data_generator = None
+
         if framework == "keras" or framework == "kerastf":
             data_generator = KerasDataGenerator(
                 iterator=image_it,
@@ -268,6 +273,13 @@ def image_data_generator(framework, get_default_mnist_subset, image_iterator, de
                 batch_size=default_batch_size,
             )
 
+        if framework == "tensorflow2":
+            data_generator = TensorFlowV2DataGenerator(
+                iterator=image_it,
+                size=x_train_mnist.shape[0],
+                batch_size=default_batch_size,
+            )
+
         if framework == "pytorch":
             data_generator = PyTorchDataGenerator(
                 iterator=image_it, size=x_train_mnist.shape[0], batch_size=default_batch_size
@@ -276,13 +288,6 @@ def image_data_generator(framework, get_default_mnist_subset, image_iterator, de
         if framework == "mxnet":
             data_generator = MXDataGenerator(
                 iterator=image_it, size=x_train_mnist.shape[0], batch_size=default_batch_size
-            )
-
-        if data_generator is None:
-            raise ARTTestFixtureNotImplemented(
-                "framework {0} does not current have any data generator implemented",
-                image_data_generator.__name__,
-                framework,
             )
 
         return data_generator
@@ -473,7 +478,7 @@ def supported_losses_logit(framework):
                 "sparse_categorical_crossentropy_class",
             ]
         raise ARTTestFixtureNotImplemented(
-            "Could not find  supported_losses_logit", supported_losses_logit.__name__, framework
+            "Could not find supported_losses_logit", supported_losses_logit.__name__, framework
         )
 
     return _supported_losses_logit
@@ -491,7 +496,6 @@ def supported_losses_proba(framework):
                 "sparse_categorical_crossentropy_label",
                 "sparse_categorical_crossentropy_function_losses",
                 "sparse_categorical_crossentropy_function_backend",
-                "kullback_leibler_divergence_function_losses",
             ]
         if framework == "kerastf":
             return [
@@ -503,7 +507,7 @@ def supported_losses_proba(framework):
                 "sparse_categorical_crossentropy_label",
                 "sparse_categorical_crossentropy_function",
                 "sparse_categorical_crossentropy_class",
-                "kullback_leibler_divergence_function",
+                # "kullback_leibler_divergence_function",
                 "kullback_leibler_divergence_class",
             ]
 
@@ -712,6 +716,31 @@ def get_iris_dataset(load_iris_dataset, framework):
 
 
 @pytest.fixture(scope="session")
+def load_diabetes_dataset():
+    logging.info("Loading Diabetes dataset")
+    (x_train_diabetes, y_train_diabetes), (x_test_diabetes, y_test_diabetes), _, _ = load_dataset("diabetes")
+
+    yield (x_train_diabetes, y_train_diabetes), (x_test_diabetes, y_test_diabetes)
+
+
+@pytest.fixture(scope="function")
+def get_diabetes_dataset(load_diabetes_dataset, framework):
+    (x_train_diabetes, y_train_diabetes), (x_test_diabetes, y_test_diabetes) = load_diabetes_dataset
+
+    x_train_diabetes_original = x_train_diabetes.copy()
+    y_train_diabetes_original = y_train_diabetes.copy()
+    x_test_diabetes_original = x_test_diabetes.copy()
+    y_test_diabetes_original = y_test_diabetes.copy()
+
+    yield (x_train_diabetes, y_train_diabetes), (x_test_diabetes, y_test_diabetes)
+
+    np.testing.assert_array_almost_equal(x_train_diabetes_original, x_train_diabetes, decimal=3)
+    np.testing.assert_array_almost_equal(y_train_diabetes_original, y_train_diabetes, decimal=3)
+    np.testing.assert_array_almost_equal(x_test_diabetes_original, x_test_diabetes, decimal=3)
+    np.testing.assert_array_almost_equal(y_test_diabetes_original, y_test_diabetes, decimal=3)
+
+
+@pytest.fixture(scope="session")
 def default_dataset_subset_sizes():
     n_train = 1000
     n_test = 100
@@ -803,17 +832,6 @@ def skip_by_framework(request, framework):
             pytest.skip("skipped on this platform: {}".format(framework))
 
 
-@pytest.fixture(autouse=True)
-def skip_travis(request):
-    """
-    Skips a test marked with this decorator if the command line argument skip_travis is set to true
-    :param request:
-    :return:
-    """
-    if request.node.get_closest_marker("skip_travis") and request.config.getoption("--skip_travis"):
-        pytest.skip("skipped due to skip_travis being set to {}".format(skip_travis))
-
-
 @pytest.fixture
 def make_customer_record():
     def _make_customer_record(name):
@@ -849,3 +867,37 @@ def skip_by_module(request):
 
                 if not module_found:
                     pytest.skip(f"Test skipped because package {module} not available.")
+
+
+@pytest.fixture()
+def fix_get_rcnn():
+
+    from art.estimators.estimator import BaseEstimator, LossGradientsMixin
+    from art.estimators.object_detection.object_detector import ObjectDetectorMixin
+
+    class DummyObjectDetector(ObjectDetectorMixin, LossGradientsMixin, BaseEstimator):
+        def __init__(self):
+            self._clip_values = (0, 1)
+            self.channels_first = False
+            self._input_shape = None
+
+        def loss_gradient(self, x: np.ndarray, y: None, **kwargs):
+            return np.ones_like(x)
+
+        def fit(self, x: np.ndarray, y, batch_size: int = 128, nb_epochs: int = 20, **kwargs):
+            raise NotImplementedError
+
+        def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs):
+            dict_i = {"boxes": np.array([[0.1, 0.2, 0.3, 0.4]]), "labels": np.array([[2]]), "scores": np.array([[0.8]])}
+            return [dict_i] * x.shape[0]
+
+        @property
+        def native_label_is_pytorch_format(self):
+            return True
+
+        @property
+        def input_shape(self):
+            return self._input_shape
+
+    frcnn = DummyObjectDetector()
+    return frcnn

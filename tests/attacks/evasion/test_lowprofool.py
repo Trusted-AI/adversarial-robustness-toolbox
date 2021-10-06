@@ -36,6 +36,8 @@ from art.estimators.classification.scikitlearn import ScikitlearnLogisticRegress
 from art.estimators.classification import PyTorchClassifier
 from art.estimators.classification.scikitlearn import ScikitlearnSVC
 
+from tests.utils import ARTTestException
+
 logger = logging.getLogger(__name__)
 
 
@@ -152,13 +154,20 @@ def test_general_iris_lr(iris_dataset):
     correct = expected == predicted
 
     success_rate = np.sum(correct) / correct.shape[0]
-    expected = 0.75
+    expected = 0.6
 
     logger.info(
         "[Irises, Scikit-learn Logistic Regression] success rate of adversarial attack (expected >{:.2f}): "
         "{:.2f}%".format(expected * 100, success_rate * 100)
     )
     assert success_rate > expected
+
+    with pytest.raises(ValueError):
+        _ = lpf_slr.generate(x=sample, y=None)
+    with pytest.raises(ValueError):
+        _ = lpf_slr.generate(x=sample, y=np.ones((sample.shape[0], 11)))
+    with pytest.raises(ValueError):
+        _ = lpf_slr.generate(x=np.ones((sample.shape[0], 11)), y=target)
 
 
 def test_general_wines_lr(wine_dataset):
@@ -186,7 +195,7 @@ def test_general_wines_lr(wine_dataset):
     correct = expected == predicted
 
     success_rate = np.sum(correct) / correct.shape[0]
-    expected = 0.75
+    expected = 0.6
 
     logger.info(
         "[Wines, Scikit-learn Logistic Regression] success rate of adversarial attack (expected >{:.2f}):"
@@ -221,7 +230,7 @@ def test_general_cancer_lr(breast_cancer_dataset):
     correct = expected == predicted
 
     success_rate = np.sum(correct) / correct.shape[0]
-    expected = 0.75
+    expected = 0.6
 
     logger.info(
         "[Breast cancer, Scikit-learn Logistic Regression] success rate of adversarial attack (expected >{:.2f}): "
@@ -264,7 +273,7 @@ def test_general_iris_nn(iris_dataset):
     # Test
     correct = expected == predicted
     success_rate = np.sum(correct) / correct.shape[0]
-    expected = 0.75
+    expected = 0.6
     logger.info(
         "[Irises, PyTorch neural network] success rate of adversarial attack (expected >{:.2f}): "
         "{:.2f}%".format(expected * 100, success_rate * 100)
@@ -298,7 +307,7 @@ def test_general_cancer_svc(breast_cancer_dataset):
     correct = expected == predicted
 
     success_rate = np.sum(correct) / correct.shape[0]
-    expected = 0.75
+    expected = 0.6
 
     logger.info(
         "[Breast cancer, Scikit-learn SVC] success rate of adversarial attack (expected >{:.2f}): "
@@ -440,3 +449,63 @@ def test_clipping(iris_dataset):
     assert is_valid_2
     assert is_valid_3
     assert is_valid_4
+
+
+@pytest.mark.framework_agnostic
+def test_check_params(art_warning, image_dl_estimator_for_attack):
+    try:
+        classifier = image_dl_estimator_for_attack(LowProFool)
+
+        with pytest.raises(ValueError):
+            lpf = LowProFool(classifier)
+            lpf.n_classes = -1
+            lpf._check_params()
+
+        with pytest.raises(ValueError):
+            lpf = LowProFool(classifier)
+            lpf.n_features = -1
+            lpf._check_params()
+
+        with pytest.raises(ValueError):
+            _ = LowProFool(classifier, n_steps=5.0)
+        with pytest.raises(ValueError):
+            _ = LowProFool(classifier, n_steps=-5)
+
+        with pytest.raises(ValueError):
+            _ = LowProFool(classifier, threshold=5)
+        with pytest.raises(ValueError):
+            _ = LowProFool(classifier, threshold=-5.0)
+
+        with pytest.raises(ValueError):
+            _ = LowProFool(classifier, lambd="test")
+        with pytest.raises(ValueError):
+            _ = LowProFool(classifier, lambd=-5.0)
+
+        with pytest.raises(ValueError):
+            _ = LowProFool(classifier, eta="test")
+        with pytest.raises(ValueError):
+            _ = LowProFool(classifier, eta=-5.0)
+
+        with pytest.raises(ValueError):
+            _ = LowProFool(classifier, eta_decay="test")
+        with pytest.raises(ValueError):
+            _ = LowProFool(classifier, eta_decay=-5.0)
+
+        with pytest.raises(ValueError):
+            _ = LowProFool(classifier, eta_min="test")
+        with pytest.raises(ValueError):
+            _ = LowProFool(classifier, eta_min=-5.0)
+
+        with pytest.raises(ValueError):
+            _ = LowProFool(classifier, norm="test")
+        with pytest.raises(ValueError):
+            _ = LowProFool(classifier, norm=-5.0)
+
+        with pytest.raises(ValueError):
+            _ = LowProFool(classifier, importance=0)
+
+        with pytest.raises(ValueError):
+            _ = LowProFool(classifier, verbose="test")
+
+    except ARTTestException as e:
+        art_warning(e)

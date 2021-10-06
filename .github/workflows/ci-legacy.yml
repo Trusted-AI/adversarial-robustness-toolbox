@@ -1,0 +1,65 @@
+name: CI Legacy
+on:
+  # Run on manual trigger
+  workflow_dispatch:
+
+  # Run on pull requests
+  pull_request:
+    paths-ignore:
+      - '*.md'
+
+  # Run when pushing to main or dev branches
+  push:
+    branches:
+      - main
+      - dev*
+
+  # Run scheduled CI flow daily
+  schedule:
+    - cron: '0 8 * * 0'
+
+jobs:
+  test:
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        module: [attacks_1, attacks_2, estimators, defences, metrics, art]
+        include:
+          - name: legacy (TensorFlow 2.6.0 Keras 2.6.0 PyTorch 1.9.1 scikit-learn 0.24.2 Python 3.8)
+            framework: legacy
+            python: 3.8
+            tensorflow: 2.6.0
+            keras: 2.6.0
+            torch: 1.9.1+cpu
+            torchvision: 0.10.1+cpu
+            torchaudio: 0.9.1
+            scikit-learn: 0.24.2
+
+    name: Run ${{ matrix.module }} ${{ matrix.name }} Tests
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2.3.4
+      - name: Setup Python
+        uses: actions/setup-python@v2.2.2
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get -y -q install ffmpeg libavcodec-extra
+          python -m pip install --upgrade pip setuptools wheel
+          pip install -q -r requirements.txt
+          pip install tensorflow==${{ matrix.tensorflow }}
+          pip install keras==${{ matrix.keras }}
+          pip install scikit-learn==${{ matrix.scikit-learn }}
+          pip install torch==${{ matrix.torch }} -f https://download.pytorch.org/whl/torch_stable.html
+          pip install torchvision==${{ matrix.torchvision }} -f https://download.pytorch.org/whl/torch_stable.html
+          pip install torchaudio==${{ matrix.torchaudio }} -f https://download.pytorch.org/whl/torch_stable.html
+          pip list
+      - name: Run ${{ matrix.name }} ${{ matrix.module }} Tests
+        run: ./run_tests.sh ${{ matrix.framework }} ${{ matrix.module }}
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v2.1.0
+        with:
+          fail_ci_if_error: true

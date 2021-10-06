@@ -64,7 +64,7 @@ logger = logging.getLogger(__name__)
 
 
 @jitclass(spec=[])
-class BFGSB:
+class BFGSB:  # pragma: no cover
     def __init__(self):
         pass
 
@@ -638,7 +638,7 @@ class BFGSB:
         return xmin
 
 
-class Optimizer:
+class Optimizer:  # pragma: no cover
     """
     Base class for the trust-region optimization. If feasible, this optimizer solves the problem
 
@@ -879,7 +879,7 @@ spec = [("bfgsb", BFGSB.class_type.instance_type)]  # type: ignore
 
 
 @jitclass(spec=spec)
-class L2Optimizer(Optimizer):
+class L2Optimizer(Optimizer):  # pragma: no cover
     def optimize_distance_s_t_boundary_and_trustregion(self, x0, x, b, min_, max_, c, r):
         """
         Solves the L2 trust region problem
@@ -1070,7 +1070,7 @@ class L2Optimizer(Optimizer):
 
 
 @jitclass(spec=spec)
-class L1Optimizer(Optimizer):
+class L1Optimizer(Optimizer):  # pragma: no cover
     def fun_and_jac(self, params, x0, x, b, min_, max_, c, r):
         lam, mu = params
         # arg min_delta ||delta - dx||_1 + lam * b^T delta + mu * ||delta||_2^2  s.t.  min <= delta + x <= max
@@ -1214,7 +1214,7 @@ class L1Optimizer(Optimizer):
 
 
 @jitclass(spec=spec)
-class LinfOptimizer(Optimizer):
+class LinfOptimizer(Optimizer):  # pragma: no cover
     def optimize_distance_s_t_boundary_and_trustregion(self, x0, x, b, min_, max_, c, r):
         """
         Find the solution to the optimization problem
@@ -1399,7 +1399,7 @@ class LinfOptimizer(Optimizer):
 
 
 @jitclass(spec=spec)
-class L0Optimizer(Optimizer):
+class L0Optimizer(Optimizer):  # pragma: no cover
     def optimize_distance_s_t_boundary_and_trustregion(self, x0, x, b, min_, max_, c, r):
         """
         Find the solution to the optimization problem
@@ -1943,6 +1943,26 @@ class L0Optimizer(Optimizer):
 
 
 class BrendelBethgeAttack(EvasionAttack):
+    """
+    Base class for the Brendel & Bethge adversarial attack [#Bren19]_, a powerful gradient-based adversarial attack that
+    follows the adversarial boundary (the boundary between the space of adversarial and non-adversarial images as
+    defined by the adversarial criterion) to find the minimum distance to the clean image.
+
+    This is implementation of the Brendel & Bethge attack follows the reference implementation at
+    https://github.com/bethgelab/foolbox/blob/master/foolbox/attacks/brendel_bethge.py.
+
+    Implementation differs from the attack used in the paper in two ways:
+
+    * The initial binary search is always using the full 10 steps (for ease of implementation).
+    * The adaptation of the trust region over the course of optimisation is less
+      greedy but is more robust, reliable and simpler (decay every K steps)
+
+    References:
+        .. [#Bren19] Wieland Brendel, Jonas Rauber, Matthias Kümmerer, Ivan Ustyuzhaninov, Matthias Bethge,
+            "Accurate, reliable and fast robustness evaluation",
+            33rd Conference on Neural Information Processing Systems (2019)
+            https://arxiv.org/abs/1907.01003
+    """
 
     attack_params = EvasionAttack.attack_params + [
         "norm",
@@ -1957,53 +1977,8 @@ class BrendelBethgeAttack(EvasionAttack):
         "binary_search_steps",
         "init_size",
     ]
+
     _estimator_requirements = (BaseEstimator, LossGradientsMixin, ClassifierMixin)
-
-    """
-    Base class for the Brendel & Bethge adversarial attack [#Bren19]_, a powerful gradient-based adversarial attack that
-    follows the adversarial boundary (the boundary between the space of adversarial and non-adversarial images as
-    defined by the adversarial criterion) to find the minimum distance to the clean image.
-
-    This is implementation of the Brendel & Bethge attack follows the reference implementation at
-    https://github.com/bethgelab/foolbox/blob/master/foolbox/attacks/brendel_bethge.py.
-
-    Implementation differs from the attack used in the paper in two ways:
-    * The initial binary search is always using the full 10 steps (for ease of implementation).
-    * The adaptation of the trust region over the course of optimisation is less
-      greedy but is more robust, reliable and simpler (decay every K steps)
-
-    Args:
-        estimator : A trained ART classifier providing loss gradients.
-        norm : The norm of the adversarial perturbation. Possible values: "inf", np.inf, 1 or 2.
-        targeted : Flag determining if attack is targeted.
-        overshoot : If 1 the attack tries to return exactly to the adversarial boundary
-            in each iteration. For higher values the attack tries to overshoot
-            over the boundary to ensure that the perturbed sample in each iteration
-            is adversarial.
-        steps : Maximum number of iterations to run. Might converge and stop
-            before that.
-        lr : Trust region radius, behaves similar to a learning rate. Smaller values
-            decrease the step size in each iteration and ensure that the attack
-            follows the boundary more faithfully.
-        lr_decay : The trust region lr is multiplied with lr_decay in regular intervals (see
-            lr_num_decay).
-        lr_num_decay : Number of learning rate decays in regular intervals of
-            length steps / lr_num_decay.
-        momentum : Averaging of the boundary estimation over multiple steps. A momentum of
-            zero would always take the current estimate while values closer to one
-            average over a larger number of iterations.
-        binary_search_steps : Number of binary search steps used to find the adversarial boundary
-            between the starting point and the clean image.
-        batch_size : Batch size for evaluating the model for predictions and gradients.
-        init_size : Maximum number of random search steps to find initial adversarial example.
-
-    References:
-        .. [#Bren19] Wieland Brendel, Jonas Rauber, Matthias Kümmerer,
-            Ivan Ustyuzhaninov, Matthias Bethge,
-            "Accurate, reliable and fast robustness evaluation",
-            33rd Conference on Neural Information Processing Systems (2019)
-            https://arxiv.org/abs/1907.01003
-    """
 
     def __init__(
         self,
@@ -2020,13 +1995,32 @@ class BrendelBethgeAttack(EvasionAttack):
         init_size: int = 100,
         batch_size: int = 32,
     ):
+        """
+        :param estimator: A trained ART classifier providing loss gradients.
+        :param norm: The norm of the adversarial perturbation. Possible values: "inf", np.inf, 1 or 2.
+        :param targeted: Flag determining if attack is targeted.
+        :param overshoot: If 1 the attack tries to return exactly to the adversarial boundary in each iteration. For
+                          higher values the attack tries to overshoot over the boundary to ensure that the perturbed
+                          sample in each iteration is adversarial.
+        :param steps: Maximum number of iterations to run. Might converge and stop before that.
+        :param lr: Trust region radius, behaves similar to a learning rate. Smaller values decrease the step size in
+                   each iteration and ensure that the attack follows the boundary more faithfully.
+        :param lr_decay: The trust region lr is multiplied with lr_decay in regular intervals (see lr_num_decay).
+        :param lr_num_decay: Number of learning rate decays in regular intervals of length steps / lr_num_decay.
+        :param momentum: Averaging of the boundary estimation over multiple steps. A momentum of zero would always take
+                         the current estimate while values closer to one average over a larger number of iterations.
+        :param binary_search_steps: Number of binary search steps used to find the adversarial boundary between the
+                                    starting point and the clean image.
+        :param init_size: Maximum number of random search steps to find initial adversarial example.
+        :param batch_size: Batch size for evaluating the model for predictions and gradients.
+        """
         from art.estimators.classification import TensorFlowV2Classifier, PyTorchClassifier
 
         if isinstance(estimator, TensorFlowV2Classifier):
             import tensorflow as tf
 
             if is_probability(estimator.predict(x=np.ones(shape=(1, *estimator.input_shape)))):
-                raise ValueError(
+                raise ValueError(  # pragma: no cover
                     "The provided estimator seems to predict probabilities. If loss_type='difference_logits_ratio' "
                     "the estimator has to to predict logits."
                 )
@@ -2077,7 +2071,7 @@ class BrendelBethgeAttack(EvasionAttack):
             if is_probability(
                 estimator.predict(x=np.ones(shape=(1, *estimator.input_shape), dtype=config.ART_NUMPY_DTYPE))
             ):
-                raise ValueError(
+                raise ValueError(  # pragma: no cover
                     "The provided estimator seems to predict probabilities. If loss_type='difference_logits_ratio' "
                     "the estimator has to to predict logits."
                 )
@@ -2085,9 +2079,9 @@ class BrendelBethgeAttack(EvasionAttack):
 
                 # def difference_logits_ratio(y_true, y_pred):
                 def logits_difference(y_pred, y_true):  # type: ignore
-                    if isinstance(y_true, np.ndarray):
+                    if isinstance(y_true, np.ndarray):  # pragma: no cover
                         y_true = torch.from_numpy(y_true)
-                    if isinstance(y_pred, np.ndarray):
+                    if isinstance(y_pred, np.ndarray):  # pragma: no cover
                         y_pred = torch.from_numpy(y_pred)
 
                     y_true = y_true.float()
@@ -2140,6 +2134,7 @@ class BrendelBethgeAttack(EvasionAttack):
             estimator_bb = estimator
 
         super().__init__(estimator=estimator_bb)
+
         self.norm = norm
         self._targeted = targeted
         self.overshoot = overshoot
@@ -2169,12 +2164,10 @@ class BrendelBethgeAttack(EvasionAttack):
         else:
             self.theta = 0.01 / np.prod(self.estimator.input_shape)
 
-    def generate(  # pylint: disable=W0221
+    def generate(
         self,
         x: np.ndarray,
         y: Optional[np.ndarray] = None,
-        starting_points: Optional[np.ndarray] = None,
-        early_stop: Optional[float] = None,
         **kwargs,
     ) -> np.ndarray:
         """
@@ -2182,9 +2175,14 @@ class BrendelBethgeAttack(EvasionAttack):
 
         :param x: The original clean inputs.
         :param y: The labels for inputs `x`.
-        :param starting_points: Adversarial inputs to use as a starting points, in particular for targeted attacks.
-        :param early_stop: Early-stopping criteria.
+
+        :Keyword Arguments:
+            * *starting_points* (``np.ndarray``)
+                Optional. Adversarial inputs to use as a starting points, in particular for targeted attacks.
         """
+        starting_points = kwargs.get("starting_points")
+        # early_stop = kwargs.get("early_stop")
+
         originals = x.copy()
 
         y = check_and_transform_label_format(y, self.estimator.nb_classes)
@@ -2513,7 +2511,7 @@ class BrendelBethgeAttack(EvasionAttack):
 
                     logger.info("Found initial adversarial image for untargeted attack.")
                     break
-            else:
+            else:  # pragma: no cover
                 logger.warning("Failed to draw a random image that is adversarial, attack failed.")
 
         return initial_sample
@@ -2630,7 +2628,7 @@ class BrendelBethgeAttack(EvasionAttack):
 
     def _check_params(self) -> None:
 
-        if self.norm not in [1, 2, np.inf, "inf"]:
+        if self.norm not in [0, 1, 2, np.inf, "inf"]:
             raise ValueError('The argument norm has to be either 1, 2, np.inf, or "inf".')
 
         if not isinstance(self.targeted, bool):

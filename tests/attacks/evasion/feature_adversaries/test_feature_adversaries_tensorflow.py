@@ -47,8 +47,10 @@ def test_images_pgd(art_warning, fix_get_mnist_subset, image_dl_estimator_for_at
             classifier, delta=1.0, layer=1, batch_size=32, step_size=0.05, max_iter=2, random_start=False
         )
         x_train_mnist_adv = attack.generate(x=x_train_mnist[0:3], y=x_test_mnist[0:3])
+
         assert np.mean(x_train_mnist[0:3]) == pytest.approx(0.13015705, 0.01)
         assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist[0:3])) != 0.0
+
     except ARTTestException as e:
         art_warning(e)
 
@@ -66,8 +68,54 @@ def test_images_unconstrained_adam(art_warning, fix_get_mnist_subset, image_dl_e
             classifier, delta=1.0, layer=1, batch_size=32, optimizer=tf.optimizers.Adam, max_iter=1, random_start=False
         )
         x_train_mnist_adv = attack.generate(x=x_train_mnist[0:3], y=x_test_mnist[0:3])
+
         assert np.mean(x_train_mnist[0:3]) == pytest.approx(0.13015705, 0.01)
         assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist[0:3])) != 0.0
+
+        with pytest.raises(ValueError):
+            attack.generate(x=x_train_mnist[0:3], y=None)
+        with pytest.raises(ValueError):
+            attack.generate(x=x_train_mnist[0:3], y=x_test_mnist[0:2])
+        with pytest.raises(ValueError):
+            attack.generate(x=x_train_mnist[0:3, 0:5, 0:5, :], y=x_test_mnist[0:3])
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework("pytorch", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+def test_check_params(art_warning, image_dl_estimator_for_attack):
+    try:
+        classifier = image_dl_estimator_for_attack(FeatureAdversariesTensorFlowV2)
+        with pytest.raises(ValueError):
+            _ = FeatureAdversariesTensorFlowV2(classifier, delta=1, step_size=0.5)
+        with pytest.raises(ValueError):
+            _ = FeatureAdversariesTensorFlowV2(classifier, delta=-1.0, step_size=0.5)
+
+        with pytest.raises(ValueError):
+            _ = FeatureAdversariesTensorFlowV2(classifier, delta=1.0, step_size=0.5, lambda_=1)
+        with pytest.raises(ValueError):
+            _ = FeatureAdversariesTensorFlowV2(classifier, delta=1.0, step_size=0.5, lambda_=-1.0)
+
+        with pytest.raises(ValueError):
+            _ = FeatureAdversariesTensorFlowV2(classifier, delta=1.0, step_size=0.5, layer=1.0)
+
+        with pytest.raises(ValueError):
+            _ = FeatureAdversariesTensorFlowV2(classifier, delta=1.0, step_size=0.5, max_iter=1.0)
+        with pytest.raises(ValueError):
+            _ = FeatureAdversariesTensorFlowV2(classifier, delta=1.0, step_size=0.5, max_iter=-1)
+
+        with pytest.raises(ValueError):
+            _ = FeatureAdversariesTensorFlowV2(classifier, delta=1.0, step_size=0.5, batch_size=-1)
+
+        with pytest.raises(ValueError):
+            _ = FeatureAdversariesTensorFlowV2(classifier, delta=1.0, step_size=None, optimizer=None)
+
+        with pytest.raises(ValueError):
+            _ = FeatureAdversariesTensorFlowV2(classifier, delta=1.0, step_size="test")
+        with pytest.raises(ValueError):
+            _ = FeatureAdversariesTensorFlowV2(classifier, delta=1.0, step_size=-1)
+
     except ARTTestException as e:
         art_warning(e)
 

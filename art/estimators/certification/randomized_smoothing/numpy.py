@@ -32,12 +32,12 @@ from art.estimators.certification.randomized_smoothing.randomized_smoothing impo
 from art.estimators.classification import ClassifierMixin, ClassGradientsMixin
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
+    from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
 
 
-class NumpyRandomizedSmoothing(  # lgtm [py/conflicting-attributes]
+class NumpyRandomizedSmoothing(  # lgtm [py/conflicting-attributes] lgtm [py/missing-call-to-init]
     RandomizedSmoothingMixin,
     ClassGradientsMixin,
     ClassifierMixin,
@@ -60,7 +60,7 @@ class NumpyRandomizedSmoothing(  # lgtm [py/conflicting-attributes]
     )
 
     def __init__(
-        self, classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE", sample_size: int, scale: float = 0.1, alpha: float = 0.001
+        self, classifier: "CLASSIFIER_NEURALNETWORK_TYPE", sample_size: int, scale: float = 0.1, alpha: float = 0.001
     ):
         """
         Create a randomized smoothing wrapper.
@@ -71,6 +71,7 @@ class NumpyRandomizedSmoothing(  # lgtm [py/conflicting-attributes]
         """
         super().__init__(
             model=classifier.model,
+            channels_first=classifier.channels_first,
             clip_values=classifier.clip_values,
             preprocessing_defences=classifier.preprocessing_defences,
             postprocessing_defences=classifier.postprocessing_defences,
@@ -141,3 +142,11 @@ class NumpyRandomizedSmoothing(  # lgtm [py/conflicting-attributes]
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         """
         return self.classifier.class_gradient(x=x, label=label, training_mode=training_mode, **kwargs)  # type: ignore
+
+    def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+        return self.classifier.compute_loss(x=x, y=y, **kwargs)
+
+    def get_activations(
+        self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
+    ) -> np.ndarray:
+        return self.classifier.get_activations(x=x, layer=layer, batch_size=batch_size, framework=framework)

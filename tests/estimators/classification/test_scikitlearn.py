@@ -65,11 +65,20 @@ class TestScikitlearnDecisionTreeClassifier(TestBase):
 
     def test_type(self):
         self.assertIsInstance(self.classifier, type(SklearnClassifier(model=self.sklearn_model)))
+        with self.assertRaises(TypeError):
+            ScikitlearnDecisionTreeClassifier(model="sklearn_model")
 
     def test_predict(self):
         y_predicted = self.classifier.predict(self.x_test_iris[0:1])
         y_expected = np.asarray([[0.0, 0.0, 1.0]])
         np.testing.assert_array_almost_equal(y_predicted, y_expected, decimal=4)
+
+    def test_save(self):
+        self.classifier.save(filename="test.file", path=None)
+        self.classifier.save(filename="test.file", path="./")
+
+    def test_clone_for_refitting(self):
+        _ = self.classifier.clone_for_refitting()
 
 
 class TestScikitlearnExtraTreeClassifier(TestBase):
@@ -84,11 +93,20 @@ class TestScikitlearnExtraTreeClassifier(TestBase):
 
     def test_type(self):
         self.assertIsInstance(self.classifier, type(SklearnClassifier(model=self.sklearn_model)))
+        with self.assertRaises(TypeError):
+            ScikitlearnExtraTreeClassifier(model="sklearn_model")
 
     def test_predict(self):
         y_predicted = self.classifier.predict(self.x_test_iris[0:1])
         y_expected = np.asarray([[0.0, 0.0, 1.0]])
         np.testing.assert_array_almost_equal(y_predicted, y_expected, decimal=4)
+
+    def test_save(self):
+        self.classifier.save(filename="test.file", path=None)
+        self.classifier.save(filename="test.file", path="./")
+
+    def test_clone_for_refitting(self):
+        _ = self.classifier.clone_for_refitting()
 
 
 class TestScikitlearnAdaBoostClassifier(TestBase):
@@ -103,11 +121,20 @@ class TestScikitlearnAdaBoostClassifier(TestBase):
 
     def test_type(self):
         self.assertIsInstance(self.classifier, type(SklearnClassifier(model=self.sklearn_model)))
+        with self.assertRaises(TypeError):
+            ScikitlearnAdaBoostClassifier(model="sklearn_model")
 
     def test_predict(self):
         y_predicted = self.classifier.predict(self.x_test_iris[0:1])
         y_expected = np.asarray([[3.07686594e-16, 2.23540978e-02, 9.77645902e-01]])
         np.testing.assert_array_almost_equal(y_predicted, y_expected, decimal=4)
+
+    def test_save(self):
+        self.classifier.save(filename="test.file", path=None)
+        self.classifier.save(filename="test.file", path="./")
+
+    def test_clone_for_refitting(self):
+        _ = self.classifier.clone_for_refitting()
 
 
 class TestScikitlearnBaggingClassifier(TestBase):
@@ -122,11 +149,20 @@ class TestScikitlearnBaggingClassifier(TestBase):
 
     def test_type(self):
         self.assertIsInstance(self.classifier, type(SklearnClassifier(model=self.sklearn_model)))
+        with self.assertRaises(TypeError):
+            ScikitlearnBaggingClassifier(model="sklearn_model")
 
     def test_predict(self):
         y_predicted = self.classifier.predict(self.x_test_iris[0:1])
         y_expected = np.asarray([[0.0, 0.0, 1.0]])
         np.testing.assert_array_almost_equal(y_predicted, y_expected, decimal=4)
+
+    def test_save(self):
+        self.classifier.save(filename="test.file", path=None)
+        self.classifier.save(filename="test.file", path="./")
+
+    def test_clone_for_refitting(self):
+        _ = self.classifier.clone_for_refitting()
 
 
 class TestScikitlearnExtraTreesClassifier(TestBase):
@@ -141,11 +177,20 @@ class TestScikitlearnExtraTreesClassifier(TestBase):
 
     def test_type(self):
         self.assertIsInstance(self.classifier, type(SklearnClassifier(model=self.sklearn_model)))
+        with self.assertRaises(TypeError):
+            ScikitlearnExtraTreesClassifier(model="sklearn_model")
 
     def test_predict(self):
         y_predicted = self.classifier.predict(self.x_test_iris[0:1])
         y_expected = np.asarray([[0.0, 0.0, 1.0]])
         np.testing.assert_array_almost_equal(y_predicted, y_expected, decimal=4)
+
+    def test_save(self):
+        self.classifier.save(filename="test.file", path=None)
+        self.classifier.save(filename="test.file", path="./")
+
+    def test_clone_for_refitting(self):
+        _ = self.classifier.clone_for_refitting()
 
 
 class TestScikitlearnGradientBoostingClassifier(TestBase):
@@ -160,11 +205,20 @@ class TestScikitlearnGradientBoostingClassifier(TestBase):
 
     def test_type(self):
         self.assertIsInstance(self.classifier, type(SklearnClassifier(model=self.sklearn_model)))
+        with self.assertRaises(TypeError):
+            ScikitlearnGradientBoostingClassifier(model="sklearn_model")
 
     def test_predict(self):
         y_predicted = self.classifier.predict(self.x_test_iris[0:1])
         y_expected = np.asarray([[1.00105813e-05, 2.07276221e-05, 9.99969262e-01]])
         np.testing.assert_array_almost_equal(y_predicted, y_expected, decimal=4)
+
+    def test_save(self):
+        self.classifier.save(filename="test.file", path=None)
+        self.classifier.save(filename="test.file", path="./")
+
+    def test_clone_for_refitting(self):
+        _ = self.classifier.clone_for_refitting()
 
 
 class TestScikitlearnRandomForestClassifier(TestBase):
@@ -179,11 +233,20 @@ class TestScikitlearnRandomForestClassifier(TestBase):
 
     def test_type(self):
         self.assertIsInstance(self.classifier, type(SklearnClassifier(model=self.sklearn_model)))
+        with self.assertRaises(TypeError):
+            ScikitlearnRandomForestClassifier(model="sklearn_model")
 
     def test_predict(self):
         y_predicted = self.classifier.predict(self.x_test_iris[11:12])
         y_expected = np.asarray([[0.9, 0.1, 0.0]])
         np.testing.assert_array_almost_equal(y_predicted, y_expected, decimal=4)
+
+    def test_save(self):
+        self.classifier.save(filename="test.file", path=None)
+        self.classifier.save(filename="test.file", path="./")
+
+    def test_clone_for_refitting(self):
+        _ = self.classifier.clone_for_refitting()
 
 
 class TestScikitlearnLogisticRegression(TestBase):
@@ -200,6 +263,8 @@ class TestScikitlearnLogisticRegression(TestBase):
 
     def test_type(self):
         self.assertIsInstance(self.classifier, type(SklearnClassifier(model=self.sklearn_model)))
+        with self.assertRaises(TypeError):
+            ScikitlearnLogisticRegression(model="sklearn_model")
 
     def test_predict(self):
         y_predicted = self.classifier.predict(self.x_test_iris[0:1])
@@ -278,6 +343,13 @@ class TestScikitlearnLogisticRegression(TestBase):
         grad_expected = np.asarray([[-0.21690667, -0.08809228, -0.51512096, -0.27002633]])
         np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=4)
 
+    def test_save(self):
+        self.classifier.save(filename="test.file", path=None)
+        self.classifier.save(filename="test.file", path="./")
+
+    def test_clone_for_refitting(self):
+        _ = self.classifier.clone_for_refitting()
+
 
 class TestScikitlearnBinaryLogisticRegression(TestBase):
     @classmethod
@@ -301,6 +373,8 @@ class TestScikitlearnBinaryLogisticRegression(TestBase):
 
     def test_type(self):
         self.assertIsInstance(self.classifier, type(SklearnClassifier(model=self.sklearn_model)))
+        with self.assertRaises(TypeError):
+            ScikitlearnLogisticRegression(model="sklearn_model")
 
     def test_class_gradient(self):
         grad_predicted = self.classifier.class_gradient(self.x_test_iris[0:1], label=None)
@@ -322,6 +396,13 @@ class TestScikitlearnBinaryLogisticRegression(TestBase):
         grad_expected = np.asarray([[-0.3771413, 0.31875887, -1.18806318, -0.46225301]])
         np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=4)
 
+    def test_save(self):
+        self.classifier.save(filename="test.file", path=None)
+        self.classifier.save(filename="test.file", path="./")
+
+    def test_clone_for_refitting(self):
+        _ = self.classifier.clone_for_refitting()
+
 
 class TestScikitlearnSVCSVC(TestBase):
     @classmethod
@@ -335,6 +416,8 @@ class TestScikitlearnSVCSVC(TestBase):
 
     def test_type(self):
         self.assertIsInstance(self.classifier, type(SklearnClassifier(model=self.sklearn_model)))
+        with self.assertRaises(TypeError):
+            ScikitlearnSVC(model="sklearn_model")
 
     def test_predict(self):
         y_predicted = self.classifier.predict(self.x_test_iris[0:1])
@@ -407,6 +490,13 @@ class TestScikitlearnSVCSVC(TestBase):
             "Unrecognized type for argument `label` with type <class 'numpy.ndarray'>", str(context.exception)
         )
 
+    def test_save(self):
+        self.classifier.save(filename="test.file", path=None)
+        self.classifier.save(filename="test.file", path="./")
+
+    def test_clone_for_refitting(self):
+        _ = self.classifier.clone_for_refitting()
+
 
 class TestScikitlearnSVCLinearSVC(TestBase):
     @classmethod
@@ -420,6 +510,8 @@ class TestScikitlearnSVCLinearSVC(TestBase):
 
     def test_type(self):
         self.assertIsInstance(self.classifier, type(SklearnClassifier(model=self.sklearn_model)))
+        with self.assertRaises(TypeError):
+            ScikitlearnSVC(model="sklearn_model")
 
     def test_predict(self):
         y_predicted = self.classifier.predict(self.x_test_iris[0:1])
@@ -431,7 +523,7 @@ class TestScikitlearnSVCLinearSVC(TestBase):
         grad_expected = np.asarray([[0.38021886, 0.57562107, -3.599666, -2.3177252]])
         np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=4)
 
-    def test_class_gradient(self):
+    def test_class_gradient_none(self):
         grad_predicted = self.classifier.class_gradient(self.x_test_iris[0:1], label=None)
         grad_expected = [
             [
@@ -441,6 +533,43 @@ class TestScikitlearnSVCLinearSVC(TestBase):
             ]
         ]
         np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=4)
+
+    def test_class_gradient_int_1(self):
+        grad_predicted = self.classifier.class_gradient(self.x_test_iris[0:1], label=1)
+        print(grad_predicted)
+        grad_expected = [[[-0.11198028, -2.51565392, 0.71538245, -0.44830889]]]
+        np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=4)
+
+    def test_class_gradient_int_2(self):
+        grad_predicted = self.classifier.class_gradient(self.x_test_iris[0:2], label=1)
+        print(grad_predicted)
+        grad_expected = [
+            [[-0.11198028, -2.51565392, 0.71538245, -0.44830889]],
+            [[-0.11198028, -2.51565392, 0.71538245, -0.44830889]],
+        ]
+        np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=4)
+
+    def test_class_gradient_list_1(self):
+        grad_predicted = self.classifier.class_gradient(self.x_test_iris[0:1], label=[1])
+        print(grad_predicted)
+        grad_expected = [[[-0.11198028, -2.51565392, 0.71538245, -0.44830889]]]
+        np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=4)
+
+    def test_class_gradient_list_2(self):
+        grad_predicted = self.classifier.class_gradient(self.x_test_iris[0:2], label=[1, 2])
+        print(grad_predicted)
+        grad_expected = [
+            [[-0.11198028, -2.51565392, 0.71538245, -0.44830889]],
+            [[-0.38021886, -0.57562105, 3.59966607, 2.31772514]],
+        ]
+        np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=4)
+
+    def test_save(self):
+        self.classifier.save(filename="test.file", path=None)
+        self.classifier.save(filename="test.file", path="./")
+
+    def test_clone_for_refitting(self):
+        _ = self.classifier.clone_for_refitting()
 
 
 class TestScikitlearnPipeline(TestBase):
@@ -459,9 +588,18 @@ class TestScikitlearnPipeline(TestBase):
         y_predicted = self.classifier.predict(self.x_test_iris[0:1])
         y_expected = np.asarray([[0.0, 0.0, 1.0]])
         np.testing.assert_array_almost_equal(y_predicted, y_expected, decimal=4)
+        with self.assertRaises(TypeError):
+            TestScikitlearnPipeline(model="sklearn_model")
 
     def test_input_shape(self):
         self.assertEqual(self.classifier.input_shape, (4,))
+
+    def test_save(self):
+        self.classifier.save(filename="test.file", path=None)
+        self.classifier.save(filename="test.file", path="./")
+
+    def test_clone_for_refitting(self):
+        _ = self.classifier.clone_for_refitting()
 
 
 if __name__ == "__main__":

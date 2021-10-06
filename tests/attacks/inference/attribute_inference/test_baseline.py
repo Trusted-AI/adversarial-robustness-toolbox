@@ -90,23 +90,28 @@ def test_black_box_baseline(art_warning, decision_tree_estimator, get_iris_datas
             baseline_inferred_test
         )
 
-        assert test_acc > baseline_test_acc
+        assert test_acc >= baseline_test_acc
 
     except ARTTestException as e:
         art_warning(e)
 
 
-def test_errors(art_warning, get_iris_dataset):
+def test_check_params(art_warning, get_iris_dataset):
     try:
         (x_train, y_train), (_, _) = get_iris_dataset
 
         with pytest.raises(ValueError):
             AttributeInferenceBaseline(attack_feature="a")
+
         with pytest.raises(ValueError):
             AttributeInferenceBaseline(attack_feature=-3)
+
         attack = AttributeInferenceBaseline(attack_feature=8)
+
         with pytest.raises(ValueError):
             attack.fit(x_train)
+
         _ = AttributeInferenceBaseline()
+
     except ARTTestException as e:
         art_warning(e)

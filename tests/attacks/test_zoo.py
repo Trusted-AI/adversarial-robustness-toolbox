@@ -115,6 +115,10 @@ class TestZooAttack(TestBase):
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_mnist))), 0.0, delta=0.00001)
 
+        # Check resize
+        x_test_resized = zoo._resize_image(self.x_test_mnist, 64, 64)
+        self.assertEqual(x_test_resized.shape, (1, 64, 64, 1))
+
         # Clean-up session
         if sess is not None:
             sess.close()
@@ -223,6 +227,33 @@ class TestZooAttack(TestBase):
 
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test_mnist))), 0.0, delta=0.00001)
+
+    def test_check_params(self):
+
+        ptc = get_image_classifier_pt(from_logits=True)
+
+        with self.assertRaises(ValueError):
+            _ = ZooAttack(ptc, binary_search_steps=1.0)
+        with self.assertRaises(ValueError):
+            _ = ZooAttack(ptc, binary_search_steps=-1)
+
+        with self.assertRaises(ValueError):
+            _ = ZooAttack(ptc, max_iter=1.0)
+        with self.assertRaises(ValueError):
+            _ = ZooAttack(ptc, max_iter=-1)
+
+        with self.assertRaises(ValueError):
+            _ = ZooAttack(ptc, nb_parallel=1.0)
+        with self.assertRaises(ValueError):
+            _ = ZooAttack(ptc, nb_parallel=-1)
+
+        with self.assertRaises(ValueError):
+            _ = ZooAttack(ptc, batch_size=1.0)
+        with self.assertRaises(ValueError):
+            _ = ZooAttack(ptc, batch_size=-1)
+
+        with self.assertRaises(ValueError):
+            _ = ZooAttack(ptc, verbose="true")
 
     def test_1_classifier_type_check_fail(self):
         backend_test_classifier_type_check_fail(ZooAttack, [BaseEstimator, ClassifierMixin])

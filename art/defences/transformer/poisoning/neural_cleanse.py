@@ -66,6 +66,7 @@ class NeuralCleanse(Transformer):
         :param classifier: A trained classifier.
         """
         super().__init__(classifier=classifier)
+        self._is_fitted = False
         self._check_params()
 
     def __call__(  # type: ignore
@@ -105,26 +106,21 @@ class NeuralCleanse(Transformer):
         :param cost_multiplier: How much to change the cost in the Neural Cleanse optimization
         :param batch_size: The batch size for optimizations in the Neural Cleanse optimization
         """
-        import keras
-
-        if isinstance(transformed_classifier, KerasClassifier) and keras.__version__ == "2.2.4":
-            transformed_classifier = KerasNeuralCleanse(
-                model=transformed_classifier.model,
-                steps=steps,
-                init_cost=init_cost,
-                norm=norm,
-                learning_rate=learning_rate,
-                attack_success_threshold=attack_success_threshold,
-                patience=patience,
-                early_stop=early_stop,
-                early_stop_threshold=early_stop_threshold,
-                early_stop_patience=early_stop_patience,
-                cost_multiplier=cost_multiplier,
-                batch_size=batch_size,
-            )
-            return transformed_classifier
-
-        raise NotImplementedError("Only Keras classifiers (v2.2.4) are supported for this defence.")
+        transformed_classifier = KerasNeuralCleanse(
+            model=transformed_classifier.model,
+            steps=steps,
+            init_cost=init_cost,
+            norm=norm,
+            learning_rate=learning_rate,
+            attack_success_threshold=attack_success_threshold,
+            patience=patience,
+            early_stop=early_stop,
+            early_stop_threshold=early_stop_threshold,
+            early_stop_patience=early_stop_patience,
+            cost_multiplier=cost_multiplier,
+            batch_size=batch_size,
+        )
+        return transformed_classifier
 
     def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> None:
         """

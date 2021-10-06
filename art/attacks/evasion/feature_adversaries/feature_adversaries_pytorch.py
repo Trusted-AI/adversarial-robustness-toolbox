@@ -191,7 +191,7 @@ class FeatureAdversariesPyTorch(EvasionAttack):
             raise ValueError("The value of guide `y` cannot be None. Please provide a `np.ndarray` of guide inputs.")
         if x.shape != y.shape:
             raise ValueError("The shape of source `x` and guide `y` must be of same shape.")
-        if x.shape[1:] != self.estimator.input_shape:
+        if x.shape[1:] != self.estimator.input_shape:  # pragma: no cover
             raise ValueError("Source and guide inputs must match `input_shape` of estimator.")
 
         nb_samples = x.shape[0]
@@ -223,7 +223,7 @@ class FeatureAdversariesPyTorch(EvasionAttack):
         if self.lambda_ < 0.0:
             raise ValueError("The regularization parameter `lambda_` has to be non-negative.")
 
-        if not isinstance(self.layer, int) and not isinstance(self.layer, str) and not isinstance(self.layer, tuple):
+        if not isinstance(self.layer[0], (int, str)):
             raise ValueError("The value of the representation layer must be integer or string.")
 
         if not isinstance(self.max_iter, int):

@@ -82,6 +82,32 @@ def test_miface(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack
         art_warning(e)
 
 
+def test_check_params(art_warning, image_dl_estimator_for_attack):
+    try:
+        classifier = image_dl_estimator_for_attack(MIFace)
+
+        with pytest.raises(ValueError):
+            _ = MIFace(classifier, max_iter=-0.5)
+
+        with pytest.raises(ValueError):
+            _ = MIFace(classifier, window_length=-0.5)
+
+        with pytest.raises(ValueError):
+            _ = MIFace(classifier, threshold=-0.5)
+
+        with pytest.raises(ValueError):
+            _ = MIFace(classifier, learning_rate=-0.5)
+
+        with pytest.raises(ValueError):
+            _ = MIFace(classifier, batch_size=-0.5)
+
+        with pytest.raises(ValueError):
+            _ = MIFace(classifier, verbose=-0.5)
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
 @pytest.mark.framework_agnostic
 def test_classifier_type_check_fail(art_warning):
     try:

@@ -87,6 +87,16 @@ def test_eot_contrast_pytorch(art_warning, fix_get_mnist_subset):
 
         np.testing.assert_almost_equal(x_eot.numpy()[0, 14, :, 0], x_eot_expected)
 
+        x_eot, y_eot = eot.forward(
+            x=torch.from_numpy(np.repeat(x_train_mnist, repeats=3, axis=1)), y=torch.from_numpy(y_train_mnist)
+        )
+
+        assert x_eot.shape[0] == nb_samples * x_train_mnist.shape[0]
+        assert y_eot.shape[0] == nb_samples * y_train_mnist.shape[0]
+
+        with pytest.raises(ValueError):
+            _ = EoTContrastPyTorch(nb_samples=nb_samples, contrast_factor=(0.2, 0.2, 0.3), clip_values=(0.0, 1.0))
+
     except ARTTestException as e:
         art_warning(e)
 
@@ -142,6 +152,14 @@ def test_eot_contrast_tensorflow_v2(art_warning, fix_get_mnist_subset):
         )
 
         np.testing.assert_almost_equal(x_eot.numpy()[0, 14, :, 0], x_eot_expected)
+
+        x_eot, y_eot = eot.forward(x=np.repeat(x_train_mnist, repeats=3, axis=3), y=y_train_mnist)
+
+        assert x_eot.shape[0] == nb_samples * x_train_mnist.shape[0]
+        assert y_eot.shape[0] == nb_samples * y_train_mnist.shape[0]
+
+        with pytest.raises(ValueError):
+            _ = EoTContrastTensorFlow(nb_samples=nb_samples, contrast_factor=(0.2, 0.2, 0.3), clip_values=(0.0, 1.0))
 
     except ARTTestException as e:
         art_warning(e)

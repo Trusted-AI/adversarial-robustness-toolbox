@@ -83,7 +83,7 @@ class EoTContrastTensorFlow(EoTTensorFlowV2):
             x_gray = 0.2989 * red + 0.587 * green + 0.114 * blue
         elif x.shape[2] == 1:
             x_gray = x[:, :, 0]
-        else:
+        else:  # pragma: no cover
             raise ValueError("Number of color channels is not 1 or 3 in input `x` of format HWC.")
         mean = tf.math.reduce_mean(x_gray, axis=None)
 

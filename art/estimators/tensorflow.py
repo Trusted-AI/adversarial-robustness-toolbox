@@ -269,7 +269,7 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
 
             # Convert torch tensors back to np arrays.
             gradients = x_grad.numpy()
-            if gradients.shape != x_orig.shape:
+            if gradients.shape != x_orig.shape:  # pragma: no cover
                 raise ValueError(
                     "The input shape is {} while the gradient shape is {}".format(x.shape, gradients.shape)
                 )

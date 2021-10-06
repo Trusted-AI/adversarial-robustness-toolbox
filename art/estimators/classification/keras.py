@@ -123,7 +123,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             self.is_tensorflow = True
         elif "<class 'keras" in str(type(model).__mro__):
             self.is_tensorflow = False
-        else:
+        else:  # pragma: no cover
             raise TypeError("Type of model not recognized:" + str(type(model)))
 
         self._initialize_params(model, use_logits, input_layer, output_layer)
@@ -148,7 +148,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         if self.is_tensorflow:
             import tensorflow as tf  # lgtm [py/repeated-import]
 
-            if tf.executing_eagerly():
+            if tf.executing_eagerly():  # pragma: no cover
                 raise ValueError("TensorFlow is executing eagerly. Please disable eager execution.")
             import tensorflow.keras as keras
             import tensorflow.keras.backend as k
@@ -242,7 +242,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
                     keras.losses.KLDivergence,
                 ),
             )
-        except AttributeError:
+        except AttributeError:  # pragma: no cover
             flag_is_instance = False
 
         # Check if the labels have to be reduced to index labels and create placeholder for labels
@@ -267,7 +267,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
                     None,
                 ]
             )
-        else:
+        else:  # pragma: no cover
             raise ValueError("Loss function not recognised.")
 
         # Define the loss using the loss function
@@ -301,7 +301,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
         if k.backend() == "tensorflow":
             loss_gradients = loss_gradients[0]
-        elif k.backend() == "cntk":
+        elif k.backend() == "cntk":  # pragma: no cover
             raise NotImplementedError("Only TensorFlow is supported as backend for Keras.")
 
         # Set loss, gradients and prediction functions
@@ -378,7 +378,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
         shape_match = [i is None or i == j for i, j in zip(self._input_shape, x_preprocessed.shape[1:])]
-        if not all(shape_match):
+        if not all(shape_match):  # pragma: no cover
             raise ValueError(
                 "Error when checking x: expected preprocessed x to have shape {} but got array with "
                 "shape {}.".format(self._input_shape, x_preprocessed.shape[1:])
@@ -432,7 +432,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         # Check shape of preprocessed `x` because of custom function for `_loss_gradients`
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
         shape_match = [i is None or i == j for i, j in zip(self._input_shape, x_preprocessed.shape[1:])]
-        if not all(shape_match):
+        if not all(shape_match):  # pragma: no cover
             raise ValueError(
                 "Error when checking x: expected preprocessed x to have shape {} but got array with shape {}".format(
                     self._input_shape, x_preprocessed.shape[1:]
@@ -478,12 +478,12 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
                 and label.shape[0] == x.shape[0]
             )
         ):
-            raise ValueError("Label %s is out of range." % str(label))
+            raise ValueError("Label %s is out of range." % str(label))  # pragma: no cover
 
         # Check shape of preprocessed `x` because of custom function for `_class_gradients`
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
         shape_match = [i is None or i == j for i, j in zip(self._input_shape, x_preprocessed.shape[1:])]
-        if not all(shape_match):
+        if not all(shape_match):  # pragma: no cover
             raise ValueError(
                 "Error when checking x: expected preprocessed x to have shape {} but got array with shape {}".format(
                     self._input_shape, x_preprocessed.shape[1:]
@@ -501,7 +501,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             grad_fn = self._class_gradients_idx[label]
             if grad_fn is not None:
                 gradients = np.swapaxes(np.array(grad_fn([x_preprocessed, int(training_mode)])), axis1=0, axis2=1)
-            else:
+            else:  # pragma: no cover
                 raise ValueError("Class gradient operation is not defined.")
             assert gradients.shape == (x_preprocessed.shape[0], 1) + x_preprocessed.shape[1:]
 
@@ -513,7 +513,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
                 grad_fn = self._class_gradients_idx[u_l]
                 if grad_fn is not None:
                     gradients_list.append(grad_fn([x_preprocessed, int(training_mode)]))
-                else:
+                else:  # pragma: no cover
                     raise ValueError("Class gradient operation is not defined.")
             gradients = np.array(gradients_list)
             gradients = np.swapaxes(np.squeeze(gradients, axis=1), 0, 1)
@@ -587,15 +587,27 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         from art.data_generators import KerasDataGenerator
 
         # Try to use the generator as a Keras native generator, otherwise use it through the `DataGenerator` interface
-        if isinstance(generator, KerasDataGenerator) and not self.preprocessing:
+        from art.preprocessing.standardisation_mean_std.numpy import StandardisationMeanStd
+
+        if isinstance(generator, KerasDataGenerator) and (
+            self.preprocessing is None
+            or (
+                isinstance(self.preprocessing, StandardisationMeanStd)
+                and (
+                    self.preprocessing.mean,
+                    self.preprocessing.std,
+                )
+                == (0, 1)
+            )
+        ):
             try:
                 self._model.fit_generator(generator.iterator, epochs=nb_epochs, **kwargs)
-            except ValueError:
+            except ValueError:  # pragma: no cover
                 logger.info("Unable to use data generator as Keras generator. Now treating as framework-independent.")
                 if "verbose" not in kwargs.keys():
                     kwargs["verbose"] = 0
                 super().fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
-        else:
+        else:  # pragma: no cover
             if "verbose" not in kwargs.keys():
                 kwargs["verbose"] = 0
             super().fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
@@ -622,16 +634,16 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         from art.config import ART_NUMPY_DTYPE
 
         if isinstance(layer, six.string_types):
-            if layer not in self._layer_names:
+            if layer not in self._layer_names:  # pragma: no cover
                 raise ValueError("Layer name %s is not part of the graph." % layer)
             layer_name = layer
         elif isinstance(layer, int):
-            if layer < 0 or layer >= len(self._layer_names):
+            if layer < 0 or layer >= len(self._layer_names):  # pragma: no cover
                 raise ValueError(
                     "Layer index %d is outside of range (0 to %d included)." % (layer, len(self._layer_names) - 1)
                 )
             layer_name = self._layer_names[layer]
-        else:
+        else:  # pragma: no cover
             raise TypeError("Layer must be of type `str` or `int`.")
 
         if x.shape == self.input_shape:
@@ -711,7 +723,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
         if len(self._output.shape) == 2:
             nb_outputs = self._output.shape[1]
-        else:
+        else:  # pragma: no cover
             raise ValueError("Unexpected output shape for classification in Keras model.")
 
         if label is None:
@@ -852,7 +864,9 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         return repr_
 
 
-def generator_fit(x: np.ndarray, y: np.ndarray, batch_size: int = 128) -> Iterator[Tuple[np.ndarray, np.ndarray]]:
+def generator_fit(
+    x: np.ndarray, y: np.ndarray, batch_size: int = 128
+) -> Iterator[Tuple[np.ndarray, np.ndarray]]:  # pragma: no cover
     """
     Minimal data generator for randomly batching large datasets.
 

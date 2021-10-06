@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2021
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -16,37 +16,32 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-Wrapper class for any classifier. Subclass of the ClassifierWrapper can override the behavior of key functions, such as
-loss_gradient, to facilitate new attacks.
+This module implements mixin abstract base class for all object trackers in ART.
 """
 
+from abc import ABC, abstractmethod
 
-class ClassifierWrapper:
+from art.estimators.estimator import BaseEstimator
+from art.estimators.classification.classifier import LossGradientsMixin
+
+
+class ObjectTrackerMixin(ABC):
     """
-    Wrapper class for any classifier instance.
+    Mix-in Base class for ART object trackers.
     """
 
-    attack_params = ["classifier"]
+    @property
+    @abstractmethod
+    def native_label_is_pytorch_format(self) -> bool:
+        """
+        Are the native labels in PyTorch format [x1, y1, x2, y2]?
+        """
+        raise NotImplementedError
 
-    def __init__(self, classifier) -> None:
-        """
-        Initialize a :class:`.ClassifierWrapper` object.
 
-        :param classifier: The Classifier we want to wrap the functionality for the purpose of an attack.
-        """
-        self.classifier = classifier
+class ObjectTracker(ObjectTrackerMixin, LossGradientsMixin, BaseEstimator, ABC):
+    """
+    Typing variable definition.
+    """
 
-    def __getattr__(self, attr):
-        """
-        A generic grab-bag for the classifier instance. This makes the wrapped class look like a subclass.
-        """
-        return getattr(self.classifier, attr)
-
-    def __setattr__(self, attr, value):
-        """
-        A generic grab-bag for the classifier instance. This makes the wrapped class look like a subclass.
-        """
-        if attr == "classifier":
-            object.__setattr__(self, attr, value)
-        else:
-            setattr(self.classifier, attr, value)
+    pass

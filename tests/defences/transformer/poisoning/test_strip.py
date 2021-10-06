@@ -21,6 +21,7 @@ import logging
 import pytest
 
 from art.defences.transformer.poisoning import STRIP
+from art.estimators.classification import TensorFlowClassifier, TensorFlowV2Classifier
 
 from tests.utils import ARTTestException
 
@@ -38,5 +39,11 @@ def test_strip(art_warning, get_default_mnist_subset, image_dl_estimator):
         strip = STRIP(classifier)
         defense_cleanse = strip()
         defense_cleanse.mitigate(x_test_mnist)
+        defense_cleanse.predict(x_test_mnist)
+        stripped_classifier = strip.get_classifier()
+        stripped_classifier._check_params()
+        assert isinstance(stripped_classifier, TensorFlowV2Classifier) or isinstance(
+            stripped_classifier, TensorFlowClassifier
+        )
     except ARTTestException as e:
         art_warning(e)

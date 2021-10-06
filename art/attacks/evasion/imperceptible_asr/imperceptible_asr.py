@@ -598,6 +598,11 @@ class ImperceptibleASR(EvasionAttack):
         if self.decrease_factor_eps <= 0.0:
             raise ValueError("The factor to decrease eps must be greater than 0.0.")
 
+        if not isinstance(self.num_iter_decrease_eps, int):
+            raise ValueError("The number of iterations must be of type int.")
+        if self.num_iter_decrease_eps <= 0:
+            raise ValueError("The number of iterations must be greater than 0.")
+
         if not isinstance(self.num_iter_decrease_alpha, int):
             raise ValueError("The number of iterations must be of type int.")
         if self.num_iter_decrease_alpha <= 0:
@@ -617,11 +622,6 @@ class ImperceptibleASR(EvasionAttack):
             raise ValueError("The factor to decrease alpha must be of type float.")
         if self.decrease_factor_alpha <= 0.0:
             raise ValueError("The factor to decrease alpha must be greater than 0.0.")
-
-        if not isinstance(self.num_iter_decrease_alpha, int):
-            raise ValueError("The number of iterations must be of type int.")
-        if self.num_iter_decrease_alpha <= 0:
-            raise ValueError("The number of iterations must be greater than 0.")
 
         if self.batch_size <= 0:
             raise ValueError("The batch size `batch_size` has to be positive.")

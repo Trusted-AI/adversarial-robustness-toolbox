@@ -1,0 +1,34 @@
+name: CI PyTorchGoturn
+on:
+  # Run on manual trigger
+  workflow_dispatch:
+
+  # Run on pull requests
+  pull_request:
+    paths-ignore:
+      - '*.md'
+
+  # Run when pushing to main or dev branches
+  push:
+    branches:
+      - main
+      - dev*
+
+  # Run scheduled CI flow daily
+  schedule:
+    - cron: '0 8 * * 0'
+
+jobs:
+  test_pytorch_goturn:
+    name: PyTorchGoturn
+    runs-on: ubuntu-latest
+    container: adversarialrobustnesstoolbox/art_testing_envs:goturn
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2.3.4
+      - name: Run Test Action
+        uses: ./.github/actions/goturn
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v2.1.0
+        with:
+          fail_ci_if_error: true

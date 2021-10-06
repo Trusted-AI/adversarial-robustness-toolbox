@@ -72,10 +72,35 @@ class TestHCLU(TestBase):
         self.assertGreater(clean_acc, adv_acc)
         # uncertainty should indeed be lower when used as a constraint
         # however, same as above, crafting might fail
-        self.assertGreater(np.mean(unc_f > unc_o), 0.65)
+        self.assertGreater(np.mean(unc_f > unc_o), 0.6)
 
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test))), 0.0, delta=0.00001)
+
+    def test_check_params(self):
+        gpkern = GPy.kern.RBF(np.shape(self.x_train)[1])
+        m = GPy.models.GPClassification(self.x_train, self.y_train.reshape(-1, 1), kernel=gpkern)
+        m_art = GPyGaussianProcessClassifier(m)
+
+        with self.assertRaises(ValueError):
+            _ = HighConfidenceLowUncertainty(
+                m_art, conf=0.1, unc_increase=100.0, min_val=0.0, max_val=1.0, verbose=False
+            )
+
+        with self.assertRaises(ValueError):
+            _ = HighConfidenceLowUncertainty(
+                m_art, conf=0.75, unc_increase=-100.0, min_val=0.0, max_val=1.0, verbose=False
+            )
+
+        with self.assertRaises(ValueError):
+            _ = HighConfidenceLowUncertainty(
+                m_art, conf=0.75, unc_increase=100.0, min_val=1.0, max_val=0.0, verbose=False
+            )
+
+        with self.assertRaises(ValueError):
+            _ = HighConfidenceLowUncertainty(
+                m_art, conf=0.75, unc_increase=100.0, min_val=0.0, max_val=1.0, verbose="False"
+            )
 
     def test_classifier_type_check_fail(self):
         backend_test_classifier_type_check_fail(HighConfidenceLowUncertainty, [GPyGaussianProcessClassifier])

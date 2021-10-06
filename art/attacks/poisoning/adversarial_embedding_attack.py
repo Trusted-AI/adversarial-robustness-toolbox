@@ -105,16 +105,26 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
 
         if isinstance(self.estimator, KerasClassifier):
             using_tf_keras = "tensorflow.python.keras" in str(type(self.estimator.model))
-            if using_tf_keras:
+            if using_tf_keras:  # pragma: no cover
                 from tensorflow.keras.models import Model, clone_model
                 from tensorflow.keras.layers import GaussianNoise, Dense, BatchNormalization, LeakyReLU
                 from tensorflow.keras.optimizers import Adam
+
+                opt = Adam(lr=self.learning_rate)
 
             else:
                 from keras import Model
                 from keras.models import clone_model
                 from keras.layers import GaussianNoise, Dense, BatchNormalization, LeakyReLU
-                from keras.optimizers import Adam
+
+                try:
+                    from keras.optimizers import Adam
+
+                    opt = Adam(lr=self.learning_rate)
+                except ImportError:
+                    from keras.optimizers import adam_v2
+
+                    opt = adam_v2.Adam(lr=self.learning_rate)
 
             if clone:
                 self.orig_model = clone_model(self.estimator.model, input_tensors=self.estimator.model.inputs)
@@ -160,7 +170,6 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
             else:
                 raise TypeError("Cannot read model loss value of type {}".format(type(model_loss)))
 
-            opt = Adam(lr=self.learning_rate)
             self.embed_model.compile(optimizer=opt, loss=losses, loss_weights=loss_weights, metrics=["accuracy"])
         else:
             raise NotImplementedError("This attack currently only supports Keras.")
@@ -283,7 +292,7 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
 
         if len(self.pp_poison) == 1:
             _check_pp_poison(self.pp_poison[0])
-        else:
+        else:  # pragma: no cover
             if not isinstance(self.target, list):
                 raise ValueError("Target should be list of source label pairs")
             if len(self.pp_poison) != len(self.target):

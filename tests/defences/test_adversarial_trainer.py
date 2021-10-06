@@ -55,6 +55,7 @@ class TestAdversarialTrainer(unittest.TestCase):
         cls.mnist = ((x_train, y_train), (x_test, y_test))
 
         cls.classifier, _ = get_image_classifier_tf()
+        cls.classifier_2, _ = get_image_classifier_tf()
 
     def setUp(self):
         master_seed(seed=1234)
@@ -65,6 +66,14 @@ class TestAdversarialTrainer(unittest.TestCase):
 
         self.assertEqual(len(adv_trainer.attacks), 1)
         self.assertEqual(adv_trainer.attacks[0].estimator, adv_trainer.get_classifier())
+
+    def test_excpetions(self):
+        with self.assertRaises(ValueError):
+            _ = AdversarialTrainer(self.classifier, "attack")
+
+        with self.assertRaises(ValueError):
+            attack = FastGradientMethod(self.classifier)
+            _ = AdversarialTrainer(self.classifier, attack, ratio=1.5)
 
     def test_fit_predict(self):
         (x_train, y_train), (x_test, y_test) = self.mnist
@@ -86,6 +95,45 @@ class TestAdversarialTrainer(unittest.TestCase):
 
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
+
+    def test_fit_predict_different_classifiers(self):
+        (x_train, y_train), (x_test, y_test) = self.mnist
+        x_test_original = x_test.copy()
+
+        attack = FastGradientMethod(self.classifier)
+        x_test_adv = attack.generate(x_test)
+        predictions = np.argmax(self.classifier.predict(x_test_adv), axis=1)
+        accuracy = np.sum(predictions == np.argmax(y_test, axis=1)) / NB_TEST
+
+        adv_trainer = AdversarialTrainer(self.classifier_2, attack)
+        adv_trainer.fit(x_train, y_train, nb_epochs=5, batch_size=128)
+
+        predictions_new = np.argmax(adv_trainer.predict(x_test_adv), axis=1)
+        accuracy_new = np.sum(predictions_new == np.argmax(y_test, axis=1)) / NB_TEST
+
+        self.assertEqual(accuracy_new, 0.32)
+        self.assertEqual(accuracy, 0.13)
+
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
+
+        # fit_generator
+        class MyDataGenerator(DataGenerator):
+            def __init__(self, x, y, size, batch_size):
+                super().__init__(size=size, batch_size=batch_size)
+                self.x = x
+                self.y = y
+                self._size = size
+                self._batch_size = batch_size
+
+            def get_batch(self):
+                ids = np.random.choice(self.size, size=min(self.size, self.batch_size), replace=False)
+                return self.x[ids], self.y[ids]
+
+        generator = MyDataGenerator(x_train, y_train, size=x_train.shape[0], batch_size=16)
+        adv_trainer.fit_generator(generator, nb_epochs=5)
+        adv_trainer_2 = AdversarialTrainer(self.classifier_2, attack, ratio=1.0)
+        adv_trainer_2.fit_generator(generator, nb_epochs=5)
 
     def test_two_attacks(self):
         (x_train, y_train), (x_test, y_test) = self.mnist

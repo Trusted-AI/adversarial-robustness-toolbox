@@ -29,10 +29,11 @@ from sklearn.neural_network import MLPClassifier
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.attack import AttributeInferenceAttack
+from art.estimators.regression import RegressorMixin
 from art.utils import check_and_transform_label_format, float_to_categorical, floats_to_one_hot
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_TYPE
+    from art.utils import CLASSIFIER_TYPE, REGRESSOR_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -47,23 +48,27 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
     used as a proxy.
     """
 
-    _estimator_requirements = (BaseEstimator, ClassifierMixin)
+    attack_params = AttributeInferenceAttack.attack_params + ["prediction_normal_factor"]
+    _estimator_requirements = (BaseEstimator, (ClassifierMixin, RegressorMixin))
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_TYPE",
+        estimator: Union["CLASSIFIER_TYPE", "REGRESSOR_TYPE"],
         attack_model: Optional["CLASSIFIER_TYPE"] = None,
         attack_feature: Union[int, slice] = 0,
+        prediction_normal_factor: float = 1,
     ):
         """
         Create an AttributeInferenceBlackBox attack instance.
 
-        :param classifier: Target classifier.
+        :param estimator: Target estimator.
         :param attack_model: The attack model to train, optional. If none is provided, a default model will be created.
         :param attack_feature: The index of the feature to be attacked or a slice representing multiple indexes in
                                case of a one-hot encoded feature.
+        :param prediction_normal_factor: If supplied, predictions of the model are multiplied by the factor when used as
+                                         inputs to the attack-model. Only applicable when `estimator` is a regressor.
         """
-        super().__init__(estimator=classifier, attack_feature=attack_feature)
+        super().__init__(estimator=estimator, attack_feature=attack_feature)
         if isinstance(self.attack_feature, int):
             self.single_index_feature = True
         else:
@@ -99,6 +104,9 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
                 n_iter_no_change=10,
                 max_fun=15000,
             )
+
+        self.prediction_normal_factor = prediction_normal_factor
+
         self._check_params()
 
     def fit(self, x: np.ndarray) -> None:
@@ -111,12 +119,15 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         # Checks:
         if self.estimator.input_shape is not None:
             if self.estimator.input_shape[0] != x.shape[1]:
-                raise ValueError("Shape of x does not match input_shape of classifier")
+                raise ValueError("Shape of x does not match input_shape of model")
         if self.single_index_feature and self.attack_feature >= x.shape[1]:
             raise ValueError("attack_feature must be a valid index to a feature in x")
 
         # get model's predictions for x
-        predictions = np.array([np.argmax(arr) for arr in self.estimator.predict(x)]).reshape(-1, 1)
+        if ClassifierMixin in type(self.estimator).__mro__:
+            predictions = np.array([np.argmax(arr) for arr in self.estimator.predict(x)]).reshape(-1, 1)
+        else:  # Regression model
+            predictions = self.estimator.predict(x).reshape(-1, 1) * self.prediction_normal_factor
 
         # get vector of attacked feature
         y = x[:, self.attack_feature]
@@ -155,9 +166,12 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
             raise ValueError("Number of rows in x and y do not match")
         if self.estimator.input_shape is not None:
             if self.single_index_feature and self.estimator.input_shape[0] != x.shape[1] + 1:
-                raise ValueError("Number of features in x + 1 does not match input_shape of classifier")
+                raise ValueError("Number of features in x + 1 does not match input_shape of model")
 
-        x_test = np.concatenate((x, y), axis=1).astype(np.float32)
+        if RegressorMixin in type(self.estimator).__mro__:
+            x_test = np.concatenate((x, y * self.prediction_normal_factor), axis=1).astype(np.float32)
+        else:
+            x_test = np.concatenate((x, y), axis=1).astype(np.float32)
 
         if self.single_index_feature:
             if "values" not in kwargs.keys():
@@ -182,3 +196,7 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
             raise ValueError("Attack feature must be either an integer or a slice object.")
         if isinstance(self.attack_feature, int) and self.attack_feature < 0:
             raise ValueError("Attack feature index must be positive.")
+
+        if RegressorMixin not in type(self.estimator).__mro__:
+            if self.prediction_normal_factor != 1:
+                raise ValueError("Prediction normal factor is only applicable to regressor models.")

@@ -297,7 +297,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         )
 
         # Write summary
-        if self.summary_writer is not None:
+        if self.summary_writer is not None:  # pragma: no cover
             self.summary_writer.add_scalar(
                 "gradients/norm-L1/batch-{}".format(self._batch_id),
                 np.linalg.norm(grad.numpy().flatten(), ord=1),
@@ -325,7 +325,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
                     )
 
         # Check for NaN before normalisation an replace with 0
-        if tf.reduce_any(tf.math.is_nan(grad)):
+        if tf.reduce_any(tf.math.is_nan(grad)):  # pragma: no cover
             logger.warning("Elements of the loss gradient are NaN and have been replaced with 0.0.")
             grad = tf.where(tf.math.is_nan(grad), tf.zeros_like(grad), grad)
 

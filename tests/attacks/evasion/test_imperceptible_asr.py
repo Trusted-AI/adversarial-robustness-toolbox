@@ -242,6 +242,80 @@ class TestImperceptibleASR:
         except ARTTestException as e:
             art_warning(e)
 
+    @pytest.mark.skip_framework("tensorflow1", "tensorflow2", "mxnet", "kerastf", "non_dl_frameworks")
+    def test_check_params(self, art_warning, image_dl_estimator_for_attack, asr_dummy_estimator):
+        try:
+            from art.attacks.evasion.imperceptible_asr.imperceptible_asr import ImperceptibleASR
+
+            masker = PsychoacousticMasker()
+
+            with pytest.raises(ValueError):
+                _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, eps=-1)
+
+            with pytest.raises(ValueError):
+                _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, max_iter_1=1.0)
+            with pytest.raises(ValueError):
+                _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, max_iter_1=-1)
+
+            with pytest.raises(ValueError):
+                _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, max_iter_2=1.0)
+            with pytest.raises(ValueError):
+                _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, max_iter_2=-1)
+
+            with pytest.raises(ValueError):
+                _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, learning_rate_1="1")
+            with pytest.raises(ValueError):
+                _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, learning_rate_1=-1.0)
+
+            with pytest.raises(ValueError):
+                _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, learning_rate_2="1")
+            with pytest.raises(ValueError):
+                _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, learning_rate_2=-1.0)
+
+            with pytest.raises(ValueError):
+                _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, loss_theta_min="1")
+
+            with pytest.raises(ValueError):
+                _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, decrease_factor_eps="1")
+            with pytest.raises(ValueError):
+                _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, decrease_factor_eps=-1.0)
+
+            with pytest.raises(ValueError):
+                _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, num_iter_decrease_eps=1.0)
+            with pytest.raises(ValueError):
+                _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, num_iter_decrease_eps=-1)
+
+            with pytest.raises(ValueError):
+                _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, alpha="1")
+            with pytest.raises(ValueError):
+                _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, alpha=-1.0)
+
+            with pytest.raises(ValueError):
+                _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, increase_factor_alpha="1")
+            with pytest.raises(ValueError):
+                _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, increase_factor_alpha=-1.0)
+
+            with pytest.raises(ValueError):
+                _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, num_iter_increase_alpha=1.0)
+            with pytest.raises(ValueError):
+                _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, num_iter_increase_alpha=-1)
+
+            with pytest.raises(ValueError):
+                _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, decrease_factor_alpha="1")
+            with pytest.raises(ValueError):
+                _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, decrease_factor_alpha=-1.0)
+
+            with pytest.raises(ValueError):
+                _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, num_iter_decrease_alpha=1.0)
+            with pytest.raises(ValueError):
+                _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, num_iter_decrease_alpha=-1)
+
+            with pytest.raises(ValueError):
+                _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, batch_size=-1)
+
+        except ARTTestException as e:
+            art_warning(e)
+
 
 class TestPsychoacousticMasker:
     """

@@ -201,6 +201,55 @@ def test_tabular(art_warning, tabular_dl_estimator, framework, get_iris_dataset,
 
 
 @pytest.mark.framework_agnostic
+def test_non_classification(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack, fix_get_rcnn):
+    try:
+        classifier = fix_get_rcnn
+        attack = FastGradientMethod(classifier, num_random_init=3)
+        backend_test_random_initialisation_images(attack, fix_get_mnist_subset)
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.framework_agnostic
+def test_check_params(art_warning, image_dl_estimator_for_attack):
+    try:
+        classifier = image_dl_estimator_for_attack(FastGradientMethod)
+
+        with pytest.raises(ValueError):
+            _ = FastGradientMethod(classifier, norm=0)
+
+        with pytest.raises(ValueError):
+            _ = FastGradientMethod(classifier, eps=-1, eps_step=1)
+        with pytest.raises(ValueError):
+            _ = FastGradientMethod(classifier, eps=np.array([-1, -1, -1]), eps_step=np.array([1, 1, 1]))
+
+        with pytest.raises(ValueError):
+            _ = FastGradientMethod(classifier, eps=1, eps_step=-1)
+        with pytest.raises(ValueError):
+            _ = FastGradientMethod(classifier, eps=np.array([1, 1, 1]), eps_step=np.array([-1, -1, -1]))
+
+        with pytest.raises(TypeError):
+            _ = FastGradientMethod(classifier, eps=1, eps_step=np.array([1, 1, 1]))
+
+        with pytest.raises(ValueError):
+            _ = FastGradientMethod(classifier, targeted="true")
+
+        with pytest.raises(TypeError):
+            _ = FastGradientMethod(classifier, num_random_init=1.0)
+        with pytest.raises(ValueError):
+            _ = FastGradientMethod(classifier, num_random_init=-1)
+
+        with pytest.raises(ValueError):
+            _ = FastGradientMethod(classifier, batch_size=-1)
+
+        with pytest.raises(ValueError):
+            _ = FastGradientMethod(classifier, minimal="true")
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.framework_agnostic
 def test_classifier_type_check_fail(art_warning):
     try:
         backend_test_classifier_type_check_fail(FastGradientMethod, [BaseEstimator, LossGradientsMixin])

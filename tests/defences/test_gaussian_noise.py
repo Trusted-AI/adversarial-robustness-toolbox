@@ -92,6 +92,22 @@ class TestGaussianNoise(unittest.TestCase):
         np.testing.assert_array_almost_equal(preds, classifier_prediction_expected, decimal=4)
         np.testing.assert_array_almost_equal(post_preds, post_classifier_prediction_expected, decimal=4)
 
+    def test_check_params(self):
+        with self.assertRaises(ValueError):
+            _ = GaussianNoise(scale=-0.1)
+
+    def test_set_params(self):
+        gan = GaussianNoise(scale=0.1)
+        gan.set_params(scale=0.2)
+        self.assertEqual(gan.scale, 0.2)
+
+    def test_super(self):
+        gan = GaussianNoise(scale=0.1)
+        self.assertTrue(gan.is_fitted)
+        self.assertFalse(gan._apply_fit)
+        self.assertTrue(gan._apply_predict)
+        gan.fit(preds=np.array([0.1, 0.2, 0.3]))
+
 
 if __name__ == "__main__":
     unittest.main()

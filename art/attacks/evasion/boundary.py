@@ -76,7 +76,7 @@ class BoundaryAttack(EvasionAttack):
         num_trial: int = 25,
         sample_size: int = 20,
         init_size: int = 100,
-        min_epsilon: Optional[float] = None,
+        min_epsilon: float = 0.0,
         verbose: bool = True,
     ) -> None:
         """
@@ -126,7 +126,7 @@ class BoundaryAttack(EvasionAttack):
         y = check_and_transform_label_format(y, self.estimator.nb_classes, return_one_hot=False)
 
         if y is not None and self.estimator.nb_classes == 2 and y.shape[1] == 1:
-            raise ValueError(
+            raise ValueError(  # pragma: no cover
                 "This attack has not yet been tested for binary classification with a single output classifier."
             )
 
@@ -149,7 +149,7 @@ class BoundaryAttack(EvasionAttack):
             x_adv_init = [None] * len(x)
 
         # Assert that, if attack is targeted, y is provided
-        if self.targeted and y is None:
+        if self.targeted and y is None:  # pragma: no cover
             raise ValueError("Target labels `y` need to be provided for a targeted attack.")
 
         # Some initial setups
@@ -292,7 +292,7 @@ class BoundaryAttack(EvasionAttack):
                 if delta_ratio > 0:
                     x_advs = np.array(potential_advs)[np.where(satisfied)[0]]
                     break
-            else:
+            else:  # pragma: no cover
                 logger.warning("Adversarial example found but not optimal.")
                 return x_adv
 
@@ -323,11 +323,11 @@ class BoundaryAttack(EvasionAttack):
                     x_adv = self._best_adv(original_sample, potential_advs[np.where(satisfied)[0]])
                     self.curr_adv = x_adv
                     break
-            else:
+            else:  # pragma: no cover
                 logger.warning("Adversarial example found but not optimal.")
                 return self._best_adv(original_sample, x_advs)
 
-            if self.min_epsilon is not None and self.curr_epsilon < self.min_epsilon:
+            if self.curr_epsilon < self.min_epsilon:
                 return x_adv
 
         return x_adv
@@ -430,7 +430,7 @@ class BoundaryAttack(EvasionAttack):
 
                     logger.info("Found initial adversarial image for untargeted attack.")
                     break
-            else:
+            else:  # pragma: no cover
                 logger.warning("Failed to draw a random image that is adversarial, attack failed.")
 
         return initial_sample
@@ -470,8 +470,8 @@ class BoundaryAttack(EvasionAttack):
         if self.step_adapt <= 0 or self.step_adapt >= 1:
             raise ValueError("The adaptation factor must be in the range (0, 1).")
 
-        if self.min_epsilon is not None and (isinstance(self.min_epsilon, float) or self.min_epsilon <= 0):
-            raise ValueError("The minimum epsilon must be a positive float.")
+        if not isinstance(self.min_epsilon, (float, int)) or self.min_epsilon < 0:
+            raise ValueError("The minimum epsilon must be non-negative.")
 
         if not isinstance(self.verbose, bool):
             raise ValueError("The argument `verbose` has to be of type bool.")

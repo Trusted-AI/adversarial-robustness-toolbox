@@ -101,7 +101,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
             if hasattr(estimator, "predict") and is_probability(
                 estimator.predict(x=np.ones(shape=(1, *estimator.input_shape), dtype=np.float32))
             ):
-                raise ValueError(
+                raise ValueError(  # pragma: no cover
                     "AutoProjectedGradientDescent is expecting logits as estimator output, the provided "
                     "estimator seems to predict probabilities."
                 )
@@ -123,13 +123,13 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
                 elif loss_type == "difference_logits_ratio":
                     if is_probability(estimator.predict(x=np.ones(shape=(1, *estimator.input_shape)))):
-                        raise ValueError(
+                        raise ValueError(  # pragma: no cover
                             "The provided estimator seems to predict probabilities. "
                             "If loss_type='difference_logits_ratio' the estimator has to to predict logits."
                         )
 
                     raise ValueError(
-                        "The loss `difference_logits_ratio` has not been validate completely. It seems that the "
+                        "The loss `difference_logits_ratio` has not been validated completely. It seems that the "
                         "commented implemented below is failing to selected the second largest logit for cases "
                         "where the largest logit is the true logit. For future work `difference_logits_ratio` and "
                         "loss_fn should return the same loss value."
@@ -208,7 +208,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
                         self._loss_object = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
                 elif loss_type == "difference_logits_ratio":
                     if is_probability(estimator.predict(x=np.ones(shape=(1, *estimator.input_shape)))):
-                        raise ValueError(
+                        raise ValueError(  # pragma: no cover
                             "The provided estimator seems to predict probabilities. "
                             "If loss_type='difference_logits_ratio' the estimator has to to predict logits."
                         )
@@ -270,7 +270,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
                     if is_probability(
                         estimator.predict(x=np.ones(shape=(1, *estimator.input_shape), dtype=np.float32))
                     ):
-                        raise ValueError(
+                        raise ValueError(  # pragma: no cover
                             "The provided estimator seems to predict probabilities. If loss_type='cross_entropy' "
                             "the estimator has to to predict logits."
                         )
@@ -280,7 +280,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
                     if is_probability(
                         estimator.predict(x=np.ones(shape=(1, *estimator.input_shape), dtype=ART_NUMPY_DTYPE))
                     ):
-                        raise ValueError(
+                        raise ValueError(  # pragma: no cover
                             "The provided estimator seems to predict probabilities. "
                             "If loss_type='difference_logits_ratio' the estimator has to to predict logits."
                         )
@@ -343,7 +343,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
                     device_type=str(estimator._device),
                 )
 
-            else:
+            else:  # pragma: no cover
                 raise ValueError("The loss type {} is not supported for the provided estimator.".format(loss_type))
 
         super().__init__(estimator=estimator_apgd)
@@ -587,8 +587,8 @@ class AutoProjectedGradientDescent(EvasionAttack):
         if not isinstance(self.batch_size, int) or self.batch_size <= 0:
             raise ValueError("The argument batch_size has to be of type int and larger than zero.")
 
-        if self.loss_type not in self._predefined_losses:
-            raise ValueError("The argument loss_type has to be either {}.".format(self._predefined_losses))
+        # if self.loss_type not in self._predefined_losses:
+        #     raise ValueError("The argument loss_type has to be either {}.".format(self._predefined_losses))
 
         if not isinstance(self.verbose, bool):
             raise ValueError("The argument `verbose` has to be of type bool.")

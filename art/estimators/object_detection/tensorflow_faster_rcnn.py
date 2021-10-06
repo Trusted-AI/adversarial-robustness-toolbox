@@ -117,7 +117,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         if self.clip_values is not None:
             if not np.all(self.clip_values[0] == 0):
                 raise ValueError("This classifier requires normalized input images with clip_vales=(0, 1).")
-            if not np.all(self.clip_values[1] == 1):
+            if not np.all(self.clip_values[1] == 1):  # pragma: no cover
                 raise ValueError("This classifier requires normalized input images with clip_vales=(0, 1).")
 
         # Check preprocessing and postprocessing defences
@@ -191,7 +191,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         if sess is None:
             logger.warning("A session cannot be None, create a new session.")
             self._sess = tf.Session()
-        else:
+        else:  # pragma: no cover
             self._sess = sess
 
         # Initialize variables
@@ -264,7 +264,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
 
             # If obj_detection_model is None, then we need to have parameters filename and url to download, extract
             # and load the object detection model
-            if filename is None or url is None:
+            if filename is None or url is None:  # pragma: no cover
                 raise ValueError(
                     "Need input parameters `filename` and `url` to download, "
                     "extract and load the object detection model."
@@ -423,7 +423,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
 
         # Check if batch processing is appropriately set
         if self.images is not None and self.images.shape[0].value is not None:
-            if x.shape[0] % self.images.shape[0].value != 0:
+            if x.shape[0] % self.images.shape[0].value != 0:  # pragma: no cover
                 raise ValueError("Number of prediction samples must be a multiple of input size.")
 
             logger.warning("Reset batch size to input size.")

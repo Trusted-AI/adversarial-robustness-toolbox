@@ -237,7 +237,7 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
         self._classifier._optimizer.param_groups[0].update(lr=l_r)  # pylint: disable=W0212
 
         # Actual training
-        if self._use_amp:
+        if self._use_amp:  # pragma: no cover
             import apex.amp as amp  # pylint: disable=E0611
 
             with amp.scale_loss(loss, self._classifier._optimizer) as scaled_loss:  # pylint: disable=W0212

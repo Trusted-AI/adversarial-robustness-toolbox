@@ -138,7 +138,15 @@ class TestCopycatCNN(TestBase):
         model.add(Flatten())
         model.add(Dense(10, activation="softmax"))
         loss = keras.losses.categorical_crossentropy
-        model.compile(loss=loss, optimizer=keras.optimizers.Adam(lr=0.001), metrics=["accuracy"])
+        try:
+            from keras.optimizers import Adam
+
+            optimizer = Adam(lr=0.001)
+        except ImportError:
+            from keras.optimizers import adam_v2
+
+            optimizer = adam_v2.Adam(lr=0.001)
+        model.compile(loss=loss, optimizer=optimizer, metrics=["accuracy"])
 
         # Get classifier
         thieved_krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False)
@@ -231,6 +239,52 @@ class TestCopycatCNN(TestBase):
 
         self.assertGreater(acc, 0.3)
 
+        with self.assertRaises(ValueError):
+            _ = CopycatCNN(
+                classifier=victim_ptc,
+                batch_size_fit=-1,
+                batch_size_query=self.batch_size,
+                nb_epochs=NB_EPOCHS,
+                nb_stolen=NB_STOLEN,
+            )
+
+        with self.assertRaises(ValueError):
+            _ = CopycatCNN(
+                classifier=victim_ptc,
+                batch_size_fit=self.batch_size,
+                batch_size_query=-1,
+                nb_epochs=NB_EPOCHS,
+                nb_stolen=NB_STOLEN,
+            )
+
+        with self.assertRaises(ValueError):
+            _ = CopycatCNN(
+                classifier=victim_ptc,
+                batch_size_fit=self.batch_size,
+                batch_size_query=self.batch_size,
+                nb_epochs=-1,
+                nb_stolen=NB_STOLEN,
+            )
+
+        with self.assertRaises(ValueError):
+            _ = CopycatCNN(
+                classifier=victim_ptc,
+                batch_size_fit=self.batch_size,
+                batch_size_query=self.batch_size,
+                nb_epochs=NB_EPOCHS,
+                nb_stolen=-1,
+            )
+
+        with self.assertRaises(ValueError):
+            _ = CopycatCNN(
+                classifier=victim_ptc,
+                batch_size_fit=self.batch_size,
+                batch_size_query=self.batch_size,
+                nb_epochs=NB_EPOCHS,
+                nb_stolen=NB_STOLEN,
+                use_probability="True",
+            )
+
 
 class TestCopycatCNNVectors(TestBase):
     @classmethod
@@ -310,7 +364,15 @@ class TestCopycatCNNVectors(TestBase):
         model.add(Dense(10, input_shape=(4,), activation="relu"))
         model.add(Dense(10, activation="relu"))
         model.add(Dense(3, activation="softmax"))
-        model.compile(loss="categorical_crossentropy", optimizer=keras.optimizers.Adam(lr=0.001), metrics=["accuracy"])
+        try:
+            from keras.optimizers import Adam
+
+            optimizer = Adam(lr=0.001)
+        except ImportError:
+            from keras.optimizers import adam_v2
+
+            optimizer = adam_v2.Adam(lr=0.001)
+        model.compile(loss="categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
 
         # Get classifier
         thieved_krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False, channels_first=True)

@@ -1,4 +1,4 @@
-# Adversarial Robustness Toolbox (ART) v1.7
+# Adversarial Robustness Toolbox (ART) v1.8
 <p align="center">
   <img src="docs/images/art_lfai.png?raw=true" width="467" title="ART logo">
 </p>
@@ -17,6 +17,7 @@
 [![slack-img](https://img.shields.io/badge/chat-on%20slack-yellow.svg)](https://ibm-art.slack.com/)
 [![Downloads](https://pepy.tech/badge/adversarial-robustness-toolbox)](https://pepy.tech/project/adversarial-robustness-toolbox)
 [![Downloads](https://pepy.tech/badge/adversarial-robustness-toolbox/month)](https://pepy.tech/project/adversarial-robustness-toolbox)
+[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/5090/badge)](https://bestpractices.coreinfrastructure.org/projects/5090)
 
 
 对抗性鲁棒性工具集（ART）是用于机器学习安全性的Python库。ART提供的工具可

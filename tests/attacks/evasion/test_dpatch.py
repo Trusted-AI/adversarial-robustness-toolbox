@@ -38,6 +38,47 @@ def fix_get_mnist_subset(get_mnist_dataset):
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
+@pytest.mark.framework_agnostic
+def test_generate(art_warning, fix_get_mnist_subset, fix_get_rcnn):
+    try:
+        (_, _, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+
+        frcnn = fix_get_rcnn
+        attack = DPatch(
+            frcnn,
+            patch_shape=(4, 4, 1),
+            learning_rate=1.0,
+            max_iter=1,
+            batch_size=1,
+            verbose=False,
+        )
+        patch = attack.generate(x=x_test_mnist[[0]])
+        assert patch.shape == (4, 4, 1)
+
+        attack.apply_patch(x=x_test_mnist)
+        attack.apply_patch(x=x_test_mnist, patch_external=patch)
+        attack.apply_patch(x=x_test_mnist, patch_external=patch, mask=np.ones((1, 28, 28)).astype(bool))
+        attack.apply_patch(
+            x=x_test_mnist, patch_external=patch, mask=np.ones((1, 28, 28)).astype(bool), random_location=True
+        )
+
+        patch = attack.generate(x=x_test_mnist[[0]], target_label=1)
+        assert patch.shape == (4, 4, 1)
+        patch = attack.generate(x=x_test_mnist[[0]], target_label=np.array([1]))
+        assert patch.shape == (4, 4, 1)
+        patch = attack.generate(x=x_test_mnist[[0]], target_label=[1])
+        assert patch.shape == (4, 4, 1)
+
+        with pytest.raises(ValueError):
+            _ = attack.generate(x=np.repeat(x_test_mnist, axis=3, repeats=2))
+
+        with pytest.raises(ValueError):
+            _ = attack.generate(x=x_test_mnist, y=y_test_mnist)
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
 @pytest.mark.parametrize("random_location", [True, False])
 @pytest.mark.parametrize("image_format", ["NHWC", "NCHW"])
 @pytest.mark.framework_agnostic
@@ -133,6 +174,38 @@ def test_augment_images_with_patch(art_warning, random_location, image_format, f
             patched_images = np.transpose(patched_images, (0, 2, 3, 1))
 
         np.testing.assert_array_equal(patched_images[1, 2, :, 0], patched_images_column)
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.framework_agnostic
+def test_check_params(art_warning, fix_get_rcnn):
+    try:
+        frcnn = fix_get_rcnn
+
+        with pytest.raises(ValueError):
+            _ = DPatch(frcnn, patch_shape=(1.0, 2.0, 3.0))
+        with pytest.raises(ValueError):
+            _ = DPatch(frcnn, patch_shape=(1, 2, 3, 4))
+
+        with pytest.raises(ValueError):
+            _ = DPatch(frcnn, learning_rate=1)
+        with pytest.raises(ValueError):
+            _ = DPatch(frcnn, learning_rate=-1.0)
+
+        with pytest.raises(ValueError):
+            _ = DPatch(frcnn, max_iter=1.0)
+        with pytest.raises(ValueError):
+            _ = DPatch(frcnn, max_iter=-1)
+
+        with pytest.raises(ValueError):
+            _ = DPatch(frcnn, batch_size=1.0)
+        with pytest.raises(ValueError):
+            _ = DPatch(frcnn, batch_size=-1)
+
+        with pytest.raises(ValueError):
+            _ = DPatch(frcnn, verbose="true")
+
     except ARTTestException as e:
         art_warning(e)
 

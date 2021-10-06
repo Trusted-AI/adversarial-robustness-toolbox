@@ -31,54 +31,100 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.fixture()
-def fix_get_robust_dpatch():
-    from abc import ABC
+def fix_get_mnist_subset(get_mnist_dataset):
+    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_dataset
+    n_train = 10
+    n_test = 10
+    yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
-    class DummyObjectDetector(ObjectDetectorMixin, LossGradientsMixin, BaseEstimator, ABC):
-        def __init__(self):
-            self._clip_values = (0, 1)
-            self.channels_first = False
-            self._input_shape = None
 
-        def loss_gradient(self, x: np.ndarray, y: None, **kwargs):
-            raise NotImplementedError
+@pytest.mark.skip_framework("keras", "scikitlearn", "mxnet", "kerastf")
+def test_generate(art_warning, fix_get_mnist_subset, fix_get_rcnn, framework):
+    try:
+        (_, _, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
-        def fit(self, x: np.ndarray, y, batch_size: int = 128, nb_epochs: int = 20, **kwargs):
-            raise NotImplementedError
+        if framework == "pytorch":
+            x_test_mnist = np.transpose(x_test_mnist, (0, 2, 3, 1))
 
-        def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs):
-            return [{"boxes": [], "labels": [], "scores": []}]
+        frcnn = fix_get_rcnn
+        attack = RobustDPatch(
+            frcnn,
+            patch_shape=(4, 4, 1),
+            patch_location=(2, 2),
+            crop_range=(0, 0),
+            brightness_range=(1.0, 1.0),
+            rotation_weights=(0.25, 0.25, 0.25, 0.25),
+            sample_size=1,
+            learning_rate=1.0,
+            max_iter=1,
+            batch_size=1,
+            verbose=False,
+        )
+        patch = attack.generate(x=x_test_mnist)
+        assert patch.shape == (4, 4, 1)
 
-        @property
-        def native_label_is_pytorch_format(self):
-            return True
+        with pytest.raises(ValueError):
+            _ = attack.generate(x=np.repeat(x_test_mnist, axis=3, repeats=2))
 
-        @property
-        def input_shape(self):
-            return self._input_shape
+        with pytest.raises(ValueError):
+            _ = attack.generate(x=x_test_mnist, y=y_test_mnist)
 
-    frcnn = DummyObjectDetector()
-    attack = RobustDPatch(
-        frcnn,
-        patch_shape=(4, 4, 1),
-        patch_location=(2, 2),
-        crop_range=(0, 0),
-        brightness_range=(1.0, 1.0),
-        rotation_weights=(1, 0, 0, 0),
-        sample_size=1,
-        learning_rate=1.0,
-        max_iter=1,
-        batch_size=1,
-        verbose=False,
-    )
-    yield attack
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework("keras", "scikitlearn", "mxnet", "kerastf")
+def test_generate_targeted(art_warning, fix_get_mnist_subset, fix_get_rcnn, framework):
+    try:
+        (_, _, x_test_mnist, _) = fix_get_mnist_subset
+
+        if framework == "pytorch":
+            x_test_mnist = np.transpose(x_test_mnist, (0, 2, 3, 1))
+
+        frcnn = fix_get_rcnn
+        attack = RobustDPatch(
+            frcnn,
+            patch_shape=(4, 4, 1),
+            patch_location=(2, 2),
+            crop_range=(0, 0),
+            brightness_range=(1.0, 1.0),
+            rotation_weights=(1, 0, 0, 0),
+            sample_size=1,
+            learning_rate=1.0,
+            max_iter=1,
+            batch_size=1,
+            targeted=True,
+            verbose=False,
+        )
+        y = frcnn.predict(x_test_mnist)
+        patch = attack.generate(x=x_test_mnist, y=y)
+        assert patch.shape == (4, 4, 1)
+
+        with pytest.raises(ValueError):
+            _ = attack.generate(x=x_test_mnist, y=None)
+
+    except ARTTestException as e:
+        art_warning(e)
 
 
 @pytest.mark.parametrize("image_format", ["NHWC", "NCHW"])
-@pytest.mark.framework_agnostic
-def test_augment_images_with_patch(art_warning, image_format, fix_get_robust_dpatch):
+@pytest.mark.skip_framework("keras", "scikitlearn", "mxnet", "kerastf")
+def test_augment_images_with_patch(art_warning, image_format, fix_get_rcnn):
     try:
-        attack = fix_get_robust_dpatch
+        frcnn = fix_get_rcnn
+        attack = RobustDPatch(
+            frcnn,
+            patch_shape=(4, 4, 1),
+            patch_location=(2, 2),
+            crop_range=(0, 0),
+            brightness_range=(1.0, 1.0),
+            rotation_weights=(1, 0, 0, 0),
+            sample_size=1,
+            learning_rate=1.0,
+            max_iter=1,
+            batch_size=1,
+            verbose=False,
+        )
 
         if image_format == "NHWC":
             patch = np.ones(shape=(4, 4, 1))
@@ -114,10 +160,23 @@ def test_augment_images_with_patch(art_warning, image_format, fix_get_robust_dpa
         art_warning(e)
 
 
-@pytest.mark.framework_agnostic
-def test_apply_patch(art_warning, fix_get_robust_dpatch):
+@pytest.mark.skip_framework("keras", "scikitlearn", "mxnet", "kerastf")
+def test_apply_patch(art_warning, fix_get_rcnn):
     try:
-        attack = fix_get_robust_dpatch
+        frcnn = fix_get_rcnn
+        attack = RobustDPatch(
+            frcnn,
+            patch_shape=(4, 4, 1),
+            patch_location=(2, 2),
+            crop_range=(0, 0),
+            brightness_range=(1.0, 1.0),
+            rotation_weights=(1, 0, 0, 0),
+            sample_size=1,
+            learning_rate=1.0,
+            max_iter=1,
+            batch_size=1,
+            verbose=False,
+        )
 
         patch = np.ones(shape=(4, 4, 1))
         x = np.zeros(shape=(1, 10, 10, 1))
@@ -131,17 +190,29 @@ def test_apply_patch(art_warning, fix_get_robust_dpatch):
         complement_sum = np.sum(patched_images[0]) - patch_sum
 
         assert patch_sum == patch_sum_expected
-
         assert complement_sum == complement_sum_expected
 
     except ARTTestException as e:
         art_warning(e)
 
 
-@pytest.mark.framework_agnostic
-def test_untransform_gradients(art_warning, fix_get_robust_dpatch):
+@pytest.mark.skip_framework("keras", "scikitlearn", "mxnet", "kerastf")
+def test_untransform_gradients(art_warning, fix_get_rcnn):
     try:
-        attack = fix_get_robust_dpatch
+        frcnn = fix_get_rcnn
+        attack = RobustDPatch(
+            frcnn,
+            patch_shape=(4, 4, 1),
+            patch_location=(2, 2),
+            crop_range=(0, 0),
+            brightness_range=(1.0, 1.0),
+            rotation_weights=(1, 0, 0, 0),
+            sample_size=1,
+            learning_rate=1.0,
+            max_iter=1,
+            batch_size=1,
+            verbose=False,
+        )
 
         gradients = np.zeros(shape=(1, 10, 10, 1))
         gradients[:, 2:7, 2:7, :] = 1
@@ -161,6 +232,79 @@ def test_untransform_gradients(art_warning, fix_get_robust_dpatch):
         gradients_sum_expected = 16.0
 
         assert gradients_sum == gradients_sum_expected
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.framework_agnostic
+def test_check_params(art_warning, fix_get_rcnn):
+    try:
+        frcnn = fix_get_rcnn
+
+        # with pytest.raises(TypeError):
+        #     _ = RobustDPatch(frcnn, patch_shape=(1.0, 2.0, 3.0))
+        # with pytest.raises(ValueError):
+        #     _ = RobustDPatch(frcnn, patch_shape=(1, 2, 3, 4))
+
+        with pytest.raises(ValueError):
+            _ = RobustDPatch(frcnn, learning_rate=1)
+        with pytest.raises(ValueError):
+            _ = RobustDPatch(frcnn, learning_rate=-1.0)
+
+        with pytest.raises(ValueError):
+            _ = RobustDPatch(frcnn, max_iter=1.0)
+        with pytest.raises(ValueError):
+            _ = RobustDPatch(frcnn, max_iter=-1)
+
+        with pytest.raises(ValueError):
+            _ = RobustDPatch(frcnn, batch_size=1.0)
+        with pytest.raises(ValueError):
+            _ = RobustDPatch(frcnn, batch_size=-1)
+
+        with pytest.raises(ValueError):
+            _ = RobustDPatch(frcnn, verbose="true")
+
+        with pytest.raises(ValueError):
+            _ = RobustDPatch(frcnn, patch_location="true")
+        with pytest.raises(ValueError):
+            _ = RobustDPatch(frcnn, patch_location=(1, 2, 3))
+
+        with pytest.raises(ValueError):
+            _ = RobustDPatch(frcnn, crop_range="true")
+        with pytest.raises(ValueError):
+            _ = RobustDPatch(frcnn, crop_range=(1, 2, 3))
+        with pytest.raises(ValueError):
+            _ = RobustDPatch(frcnn, crop_range=(2, 1))
+
+        with pytest.raises(ValueError):
+            _ = RobustDPatch(frcnn, patch_location=(0, 1), crop_range=(1, 2))
+
+        with pytest.raises(ValueError):
+            _ = RobustDPatch(frcnn, brightness_range=(1, 2, 3))
+        with pytest.raises(ValueError):
+            _ = RobustDPatch(frcnn, brightness_range=(1.0, 2.0, 3.0))
+        with pytest.raises(ValueError):
+            _ = RobustDPatch(frcnn, brightness_range=(-1.0, 1.0))
+        with pytest.raises(ValueError):
+            _ = RobustDPatch(frcnn, brightness_range=(2.0, 1.0))
+
+        with pytest.raises(ValueError):
+            _ = RobustDPatch(frcnn, rotation_weights=("1", "2", "3"))
+        with pytest.raises(ValueError):
+            _ = RobustDPatch(frcnn, rotation_weights=(1, 2, 3))
+        with pytest.raises(ValueError):
+            _ = RobustDPatch(frcnn, rotation_weights=(-1, -2, -3, -4))
+        with pytest.raises(ValueError):
+            _ = RobustDPatch(frcnn, rotation_weights=(0.0, 0.0, 0.0, 0.0))
+
+        with pytest.raises(ValueError):
+            _ = RobustDPatch(frcnn, sample_size=1.0)
+        with pytest.raises(ValueError):
+            _ = RobustDPatch(frcnn, sample_size=-1)
+
+        with pytest.raises(ValueError):
+            _ = RobustDPatch(frcnn, targeted="true")
 
     except ARTTestException as e:
         art_warning(e)

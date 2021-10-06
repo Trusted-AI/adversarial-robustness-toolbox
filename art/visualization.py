@@ -113,7 +113,7 @@ def plot_3d(
     colors: Optional[List[str]] = None,
     save: bool = True,
     f_name: str = "",
-) -> "matplotlib.figure.Figure":
+) -> "matplotlib.figure.Figure":  # pragma: no cover
     """
     Generates a 3-D plot in of the provided points where the labels define the color that will be used to color each
     data point. Concretely, the color of points[i] is defined by colors(labels[i]). Thus, there should be as many labels
@@ -135,7 +135,7 @@ def plot_3d(
 
     # from mpl_toolkits import mplot3d
 
-    if colors is None:
+    if colors is None:  # pragma: no cover
         colors = []
         for i in range(len(np.unique(labels))):
             colors.append("C" + str(i))
@@ -154,7 +154,7 @@ def plot_3d(
             raise ValueError(
                 "Labels outside the range. Should start from zero and be sequential there after"
             ) from IndexError
-    if save:
+    if save:  # pragma: no cover
         file_name = os.path.realpath(os.path.join(config.ART_DATA_PATH, f_name))
         folder = os.path.split(file_name)[0]
 

@@ -95,7 +95,8 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
         },
         "decoder": {
             "uri": (
-                "https://raw.githubusercontent.com/hesseltuinhof/lingvo/qin_patched_decoder/lingvo/tasks/asr/decoder.py"
+                "https://raw.githubusercontent.com/Trusted-AI/adversarial-robustness-toolbox/"
+                "4dabf5fcfb55502316ad48abbdc1a26033db1da5/contrib/lingvo-patched-decoder.py"
             ),
             "basename": "decoder_patched.py",
         },
@@ -142,21 +143,21 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
             preprocessing=preprocessing,
         )
         self.random_seed = random_seed
-        if self.postprocessing_defences is not None:
+        if self.postprocessing_defences is not None:  # pragma: no cover
             raise ValueError("This estimator does not support `postprocessing_defences`.")
 
         self._input_shape = None
 
         # check required TensorFlow version
-        if tf1.__version__ != "2.1.0":
+        if tf1.__version__ != "2.1.0":  # pragma: no cover
             raise AssertionError("The Lingvo estimator only supports TensorFlow 2.1.0.")
 
         # check required Python version
-        if sys.version_info[:2] != (3, 6):
+        if sys.version_info[:2] != (3, 6):  # pragma: no cover
             raise AssertionError("The Lingvo estimator only supports Python 3.6.")
 
         # check required Lingvo version
-        if pkg_resources.get_distribution("lingvo").version != "0.6.4":
+        if pkg_resources.get_distribution("lingvo").version != "0.6.4":  # pragma: no cover
             raise AssertionError("The Lingvo estimator only supports Lingvo 0.6.4")
 
         # disable eager execution as Lingvo uses tensorflow.compat.v1 API
@@ -281,9 +282,9 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
             "asr",
             "model",
         )
-        self._sess.run(tf1.global_variables_initializer())
+        self.sess.run(tf1.global_variables_initializer())
         saver = tf1.train.Saver([var for var in tf1.global_variables() if var.name.startswith("librispeech")])
-        saver.restore(self._sess, os.path.splitext(model_index_path)[0])
+        saver.restore(self.sess, os.path.splitext(model_index_path)[0])
 
         # set 'enable_asserts'-flag to False (Note: this flag ensures correct GPU support)
         tf1.flags.FLAGS.enable_asserts = False
@@ -402,14 +403,14 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
         :return: Array of predicted transcriptions of shape `(nb_samples)`. A possible example of a transcription
                  return is `np.array(['SIXTY ONE', 'HELLO'])`.
         """
-        if x[0].ndim != 1:
+        if x[0].ndim != 1:  # pragma: no cover
             raise ValueError(
                 "The LingvoASR estimator can only be used temporal data of type mono. Please remove any channel"
                 "dimension."
             )
         # if inputs have 32-bit floating point wav format, the preprocessing argument is required
         is_normalized = max(map(max, np.abs(x))) <= 1.0  # type: ignore
-        if is_normalized and self.preprocessing is None:
+        if is_normalized and self.preprocessing is None:  # pragma: no cover
             raise ValueError(
                 "The LingvoASR estimator requires input values in the range [-32768, 32767] or normalized input values"
                 " with correct preprocessing argument (mean=0, stddev=1/normalization_factor)."
@@ -435,7 +436,7 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
                 self._mask_frequency: mask_frequency,
             }
             # run prediction
-            y_batch = self._sess.run(self._predict_batch_op, feed_dict)
+            y_batch = self.sess.run(self._predict_batch_op, feed_dict)
 
             # extract and append transcription result
             y += y_batch["topk_decoded"][:, 0].tolist()
@@ -512,7 +513,7 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
             self._y_target: y,
             self._mask_frequency: mask_frequency,
         }
-        gradients_padded = self._sess.run(self._loss_gradient_op, feed_dict)
+        gradients_padded = self.sess.run(self._loss_gradient_op, feed_dict)
 
         # undo padding, i.e. change gradients shape from (nb_samples, max_length) to (nb_samples)
         lengths = mask.sum(axis=1)
@@ -546,7 +547,7 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
                 self._mask_frequency: np.expand_dims(mask_frequency_i[:frequency_length], 0),
             }
             # get loss gradient
-            gradient = self._sess.run(self._loss_gradient_op, feed_dict)  # type: ignore
+            gradient = self.sess.run(self._loss_gradient_op, feed_dict)  # type: ignore
             gradients.append(np.squeeze(gradient))
 
         # for ragged input, use np.object dtype

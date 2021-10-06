@@ -26,6 +26,7 @@ import tensorflow as tf
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_numpy import (
     ProjectedGradientDescentNumpy,
+    ProjectedGradientDescentCommon,
 )
 from art.estimators.classification import KerasClassifier
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
@@ -68,6 +69,49 @@ class TestPGD(TestBase):
         self._test_backend_mnist(
             classifier, self.x_train_mnist, self.y_train_mnist, self.x_test_mnist, self.y_test_mnist
         )
+
+    def test_check_params(self):
+
+        krc = get_image_classifier_kr(from_logits=True)
+
+        with self.assertRaises(ValueError):
+            _ = ProjectedGradientDescentCommon(krc, norm=-1)
+
+        with self.assertRaises(TypeError):
+            _ = ProjectedGradientDescentCommon(krc, eps="1", eps_step=0.1)
+
+        with self.assertRaises(ValueError):
+            _ = ProjectedGradientDescentCommon(krc, eps=-1)
+
+        with self.assertRaises(TypeError):
+            _ = ProjectedGradientDescentCommon(krc, eps=np.array([-1]))
+
+        with self.assertRaises(ValueError):
+            _ = ProjectedGradientDescentCommon(krc, eps_step=-1)
+
+        with self.assertRaises(TypeError):
+            _ = ProjectedGradientDescentCommon(krc, eps_step=np.array([-1]))
+
+        with self.assertRaises(ValueError):
+            _ = ProjectedGradientDescentCommon(krc, eps=np.array([1.0, 1.0]), eps_step=np.array([1.0]))
+
+        with self.assertRaises(ValueError):
+            _ = ProjectedGradientDescentCommon(krc, targeted="False")
+
+        with self.assertRaises(TypeError):
+            _ = ProjectedGradientDescentCommon(krc, num_random_init="1")
+
+        with self.assertRaises(ValueError):
+            _ = ProjectedGradientDescentCommon(krc, num_random_init=-1)
+
+        with self.assertRaises(ValueError):
+            _ = ProjectedGradientDescentCommon(krc, batch_size=-1)
+
+        with self.assertRaises(ValueError):
+            _ = ProjectedGradientDescentCommon(krc, max_iter=-1)
+
+        with self.assertRaises(ValueError):
+            _ = ProjectedGradientDescentCommon(krc, verbose="False")
 
     def test_3_tensorflow_mnist(self):
         classifier, sess = get_image_classifier_tf()
@@ -733,6 +777,43 @@ class TestPGD(TestBase):
         self.assertAlmostEqual(
             np.mean(x_test_adv_np - self.x_test_mnist), np.mean(x_test_adv_fw - self.x_test_mnist), places=6
         )
+
+    def test_check_params_pt(self):
+
+        ptc = get_image_classifier_pt(from_logits=True)
+
+        with self.assertRaises(TypeError):
+            _ = ProjectedGradientDescent(ptc, eps=np.array([1, 1, 1]), eps_step=1)
+
+        with self.assertRaises(ValueError):
+            _ = ProjectedGradientDescent(ptc, norm=0)
+
+        with self.assertRaises(ValueError):
+            _ = ProjectedGradientDescent(ptc, eps=-1, eps_step=1)
+        with self.assertRaises(ValueError):
+            _ = ProjectedGradientDescent(ptc, eps=np.array([-1, -1, -1]), eps_step=np.array([1, 1, 1]))
+
+        with self.assertRaises(ValueError):
+            _ = ProjectedGradientDescent(ptc, eps=1, eps_step=-1)
+        with self.assertRaises(ValueError):
+            _ = ProjectedGradientDescent(ptc, eps=np.array([1, 1, 1]), eps_step=np.array([-1, -1, -1]))
+
+        with self.assertRaises(ValueError):
+            _ = ProjectedGradientDescent(ptc, targeted="true")
+
+        with self.assertRaises(TypeError):
+            _ = ProjectedGradientDescent(ptc, num_random_init=1.0)
+        with self.assertRaises(ValueError):
+            _ = ProjectedGradientDescent(ptc, num_random_init=-1)
+
+        with self.assertRaises(ValueError):
+            _ = ProjectedGradientDescent(ptc, batch_size=-1)
+
+        with self.assertRaises(ValueError):
+            _ = ProjectedGradientDescent(ptc, max_iter=-1)
+
+        with self.assertRaises(ValueError):
+            _ = ProjectedGradientDescent(ptc, verbose="true")
 
 
 if __name__ == "__main__":

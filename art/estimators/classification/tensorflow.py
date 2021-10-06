@@ -137,7 +137,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
             self._feed_dict = feed_dict
 
         # Assign session
-        if sess is None:
+        if sess is None:  # pragma: no cover
             raise ValueError("A session cannot be None.")
         self._sess = sess
 
@@ -146,10 +146,10 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
 
         # Get the loss gradients graph
         if self._loss is not None:
-            self._loss_grads = tf.gradients(self._loss, self._input_ph)[0]
+            self._loss_grads = tf.gradients(self._loss, self.input_ph)[0]
 
         # Check if the loss function requires as input index labels instead of one-hot-encoded labels
-        if self._labels_ph is not None and len(self._labels_ph.shape) == 1:
+        if self.labels_ph is not None and len(self.labels_ph.shape) == 1:
             self._reduce_labels = True
         else:
             self._reduce_labels = False
@@ -237,8 +237,8 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
         :return: Array of predictions of shape `(num_inputs, nb_classes)`.
         """
-        if self._learning is not None:
-            self._feed_dict[self._learning] = training_mode
+        if self.learning is not None:
+            self.feed_dict[self.learning] = training_mode
 
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
@@ -254,11 +254,11 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
             )
 
             # Create feed_dict
-            feed_dict = {self._input_ph: x_preprocessed[begin:end]}
-            feed_dict.update(self._feed_dict)
+            feed_dict = {self.input_ph: x_preprocessed[begin:end]}
+            feed_dict.update(self.feed_dict)
 
             # Run prediction
-            results[begin:end] = self._sess.run(self._output, feed_dict=feed_dict)
+            results[begin:end] = self._sess.run(self.output, feed_dict=feed_dict)
 
         # Apply postprocessing
         predictions = self._apply_postprocessing(preds=results, fit=False)
@@ -277,11 +277,11 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for
                TensorFlow and providing it takes no effect.
         """
-        if self._learning is not None:
-            self._feed_dict[self._learning] = True
+        if self.learning is not None:
+            self.feed_dict[self.learning] = True
 
         # Check if train and output_ph available
-        if self._train is None or self._labels_ph is None:
+        if self.train is None or self.labels_ph is None:  # pragma: no cover
             raise ValueError("Need the training objective and the output placeholder to train the model.")
 
         y = check_and_transform_label_format(y, self.nb_classes)
@@ -307,11 +307,11 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
                 o_batch = y_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]
 
                 # Create feed_dict
-                feed_dict = {self._input_ph: i_batch, self._labels_ph: o_batch}
-                feed_dict.update(self._feed_dict)
+                feed_dict = {self.input_ph: i_batch, self.labels_ph: o_batch}
+                feed_dict.update(self.feed_dict)
 
                 # Run train step
-                self._sess.run(self._train, feed_dict=feed_dict)
+                self._sess.run(self.train, feed_dict=feed_dict)
 
     def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs) -> None:
         """
@@ -325,11 +325,23 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         """
         from art.data_generators import TensorFlowDataGenerator
 
-        if self._learning is not None:
-            self._feed_dict[self._learning] = True
+        if self.learning is not None:
+            self.feed_dict[self.learning] = True
 
         # Train directly in TensorFlow
-        if isinstance(generator, TensorFlowDataGenerator) and not self.preprocessing and self.preprocessing == (0, 1):
+        from art.preprocessing.standardisation_mean_std.numpy import StandardisationMeanStd
+
+        if isinstance(generator, TensorFlowDataGenerator) and (
+            self.preprocessing is None
+            or (
+                isinstance(self.preprocessing, StandardisationMeanStd)
+                and (
+                    self.preprocessing.mean,
+                    self.preprocessing.std,
+                )
+                == (0, 1)
+            )
+        ):
             for _ in range(nb_epochs):
                 for _ in range(int(generator.size / generator.batch_size)):  # type: ignore
                     i_batch, o_batch = generator.get_batch()
@@ -338,11 +350,11 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
                         o_batch = np.argmax(o_batch, axis=1)
 
                     # Create feed_dict
-                    feed_dict = {self._input_ph: i_batch, self._labels_ph: o_batch}
-                    feed_dict.update(self._feed_dict)
+                    feed_dict = {self.input_ph: i_batch, self.labels_ph: o_batch}
+                    feed_dict.update(self.feed_dict)
 
                     # Run train step
-                    self._sess.run(self._train, feed_dict=feed_dict)
+                    self._sess.run(self.train, feed_dict=feed_dict)
         else:
             super().fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
 
@@ -362,11 +374,11 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         """
-        if self._learning is not None:
-            self._feed_dict[self._learning] = training_mode
+        if self.learning is not None:
+            self.feed_dict[self.learning] = training_mode
 
         # Check value of label for computing gradients
-        if not (
+        if not (  # pragma: no cover
             label is None
             or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
             or (
@@ -384,8 +396,8 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Create feed_dict
-        feed_dict = {self._input_ph: x_preprocessed}
-        feed_dict.update(self._feed_dict)
+        feed_dict = {self.input_ph: x_preprocessed}
+        feed_dict.update(self.feed_dict)
 
         # Compute the gradient and return
         if label is None:
@@ -423,14 +435,14 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
         :return: Array of gradients of the same shape as `x`.
         """
-        if self._learning is not None:
-            self._feed_dict[self._learning] = training_mode
+        if self.learning is not None:
+            self.feed_dict[self.learning] = training_mode
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
 
         # Check if loss available
-        if not hasattr(self, "_loss_grads") or self._loss_grads is None or self._labels_ph is None:
+        if not hasattr(self, "_loss_grads") or self._loss_grads is None or self.labels_ph is None:  # pragma: no cover
             raise ValueError("Need the loss function and the labels placeholder to compute the loss gradient.")
 
         # Check label shape
@@ -438,8 +450,8 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
             y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
         # Create feed_dict
-        feed_dict = {self._input_ph: x_preprocessed, self._labels_ph: y_preprocessed}
-        feed_dict.update(self._feed_dict)
+        feed_dict = {self.input_ph: x_preprocessed, self.labels_ph: y_preprocessed}
+        feed_dict.update(self.feed_dict)
 
         # Compute gradients
         grads = self._sess.run(self._loss_grads, feed_dict=feed_dict)
@@ -467,10 +479,10 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        if self._learning is not None:
-            self._feed_dict[self._learning] = False
+        if self.learning is not None:
+            self.feed_dict[self.learning] = False
 
-        if self.loss is None:
+        if self.loss is None:  # pragma: no cover
             raise TypeError("The loss placeholder `loss` is required for computing losses, but it is not defined.")
 
         if reduction == "none":
@@ -484,8 +496,8 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         x_preprocessed, _ = self._apply_preprocessing(x, y, fit=False)
 
         # Create feed_dict
-        feed_dict = {self._input_ph: x_preprocessed, self._labels_ph: y}
-        feed_dict.update(self._feed_dict)
+        feed_dict = {self.input_ph: x_preprocessed, self.labels_ph: y}
+        feed_dict.update(self.feed_dict)
 
         # Run train step
         loss_value = self._sess.run(_loss, feed_dict=feed_dict)
@@ -502,18 +514,16 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         # Construct the class gradients graph
         if label is None:
             if None in self._class_grads:
-                self._class_grads = [
-                    tf.gradients(self._output[:, i], self._input_ph)[0] for i in range(self.nb_classes)
-                ]
+                self._class_grads = [tf.gradients(self.output[:, i], self.input_ph)[0] for i in range(self.nb_classes)]
 
         elif isinstance(label, int):
             if self._class_grads[label] is None:
-                self._class_grads[label] = tf.gradients(self._output[:, label], self._input_ph)[0]
+                self._class_grads[label] = tf.gradients(self.output[:, label], self.input_ph)[0]
 
         else:
             for unique_label in np.unique(label):
                 if self._class_grads[unique_label] is None:
-                    self._class_grads[unique_label] = tf.gradients(self._output[:, unique_label], self._input_ph)[0]
+                    self._class_grads[unique_label] = tf.gradients(self.output[:, unique_label], self.input_ph)[0]
 
     def _get_layers(self) -> List[str]:
         """
@@ -574,22 +584,22 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         # pylint: disable=E0401
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        if self._learning is not None:
-            self._feed_dict[self._learning] = False
+        if self.learning is not None:
+            self.feed_dict[self.learning] = False
 
         # Get the computational graph
         with self._sess.graph.as_default():
             graph = tf.get_default_graph()
 
         if isinstance(layer, six.string_types):  # basestring for Python 2 (str, unicode) support
-            if layer not in self._layer_names:
+            if layer not in self._layer_names:  # pragma: no cover
                 raise ValueError("Layer name %s is not part of the graph." % layer)
             layer_tensor = graph.get_tensor_by_name(layer)
 
         elif isinstance(layer, (int, np.integer)):
             layer_tensor = graph.get_tensor_by_name(self._layer_names[layer])
 
-        else:
+        else:  # pragma: no cover
             raise TypeError("Layer must be of type `str` or `int`. Received %s." % layer)
 
         if framework:
@@ -609,8 +619,8 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
             )
 
             # Create feed_dict
-            feed_dict = {self._input_ph: x_preprocessed[begin:end]}
-            feed_dict.update(self._feed_dict)
+            feed_dict = {self.input_ph: x_preprocessed[begin:end]}
+            feed_dict.update(self.feed_dict)
 
             # Run prediction for the current batch
             layer_output = self._sess.run(layer_tensor, feed_dict=feed_dict)
@@ -643,8 +653,8 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
 
         builder = saved_model.builder.SavedModelBuilder(full_path)
         signature = predict_signature_def(
-            inputs={"SavedInputPhD": self._input_ph},
-            outputs={"SavedOutput": self._output},
+            inputs={"SavedInputPhD": self.input_ph},
+            outputs={"SavedOutput": self.output},
         )
         builder.add_meta_graph_and_variables(
             sess=self._sess,
@@ -666,10 +676,10 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         # Remove the unpicklable entries
         del state["_sess"]
         del state["_input_ph"]
-        state["_output"] = self._output.name
+        state["_output"] = self.output.name
 
-        if self._labels_ph is not None:
-            state["_labels_ph"] = self._labels_ph.name
+        if self.labels_ph is not None:
+            state["_labels_ph"] = self.labels_ph.name
 
         if self._loss is not None:
             state["_loss"] = self._loss.name
@@ -679,11 +689,11 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         else:
             state["_loss_grads"] = False
 
-        if self._learning is not None:
-            state["_learning"] = self._learning.name
+        if self.learning is not None:
+            state["_learning"] = self.learning.name
 
-        if self._train is not None:
-            state["_train"] = self._train.name
+        if self.train is not None:
+            state["_train"] = self.train.name
 
         if hasattr(self, "_class_grads"):
             state["_class_grads"] = [ts if ts is None else ts.name for ts in self._class_grads]
@@ -762,12 +772,12 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
             "preprocessing=%r)"
             % (
                 self.__module__ + "." + self.__class__.__name__,
-                self._input_ph,
-                self._output,
-                self._labels_ph,
-                self._train,
+                self.input_ph,
+                self.output,
+                self.labels_ph,
+                self.train,
                 self._loss,
-                self._learning,
+                self.learning,
                 self._sess,
                 self.channels_first,
                 self.clip_values,
@@ -943,7 +953,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        if self._train_step is None:
+        if self._train_step is None:  # pragma: no cover
             raise TypeError(
                 "The training function `train_step` is required for fitting a model but it has not been " "defined."
             )
@@ -976,18 +986,30 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         import tensorflow as tf  # lgtm [py/repeated-import]
         from art.data_generators import TensorFlowV2DataGenerator
 
-        if self._train_step is None:
+        if self._train_step is None:  # pragma: no cover
             raise TypeError(
                 "The training function `train_step` is required for fitting a model but it has not been " "defined."
             )
 
         # Train directly in TensorFlow
-        if isinstance(generator, TensorFlowV2DataGenerator) and not self.preprocessing:
+        from art.preprocessing.standardisation_mean_std.tensorflow import StandardisationMeanStdTensorFlow
+
+        if isinstance(generator, TensorFlowV2DataGenerator) and (
+            self.preprocessing is None
+            or (
+                isinstance(self.preprocessing, StandardisationMeanStdTensorFlow)
+                and (
+                    self.preprocessing.mean,
+                    self.preprocessing.std,
+                )
+                == (0, 1)
+            )
+        ):
             for _ in range(nb_epochs):
                 for i_batch, o_batch in generator.iterator:
                     if self._reduce_labels:
                         o_batch = tf.math.argmax(o_batch, axis=1)
-                    self._train_step(i_batch, o_batch)
+                    self._train_step(self._model, i_batch, o_batch)
         else:
             # Fit a generic data generator through the API
             super().fit_generator(generator, nb_epochs=nb_epochs)
@@ -1102,7 +1124,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        if self._loss_object is None:
+        if self._loss_object is None:  # pragma: no cover
             raise TypeError("The loss function `loss_object` is required for computing losses, but it is not defined.")
         prev_reduction = self._loss_object.reduction
         if reduction == "none":
@@ -1165,7 +1187,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        if self._loss_object is None:
+        if self._loss_object is None:  # pragma: no cover
             raise TypeError(
                 "The loss function `loss_object` is required for computing loss gradients, but it has not been "
                 "defined."
@@ -1206,7 +1228,9 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
         return gradients
 
-    def clone_for_refitting(self) -> "TensorFlowV2Classifier":  # lgtm [py/inheritance/incorrect-overridden-signature]
+    def clone_for_refitting(
+        self,
+    ) -> "TensorFlowV2Classifier":  # pragma: no cover  # lgtm [py/inheritance/incorrect-overridden-signature]
         """
         Create a copy of the classifier that can be refit from scratch. Will inherit same architecture, optimizer and
         initialization as cloned model, but without weights.
@@ -1318,28 +1342,28 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         import tensorflow as tf  # lgtm [py/repeated-import]
         from art.config import ART_NUMPY_DTYPE
 
-        if not isinstance(self._model, tf.keras.models.Sequential):
+        if not isinstance(self._model, tf.keras.models.Sequential):  # pragma: no cover
             raise ValueError("Method get_activations is not supported for non-Sequential models.")
 
         i_layer = None
-        if self.layer_names is None:
+        if self.layer_names is None:  # pragma: no cover
             raise ValueError("No layer names identified.")
 
         if isinstance(layer, six.string_types):
-            if layer not in self.layer_names:
+            if layer not in self.layer_names:  # pragma: no cover
                 raise ValueError("Layer name %s is not part of the graph." % layer)
             for i_name, name in enumerate(self.layer_names):
                 if name == layer:
                     i_layer = i_name
                     break
         elif isinstance(layer, int):
-            if layer < -len(self.layer_names) or layer >= len(self.layer_names):
+            if layer < -len(self.layer_names) or layer >= len(self.layer_names):  # pragma: no cover
                 raise ValueError(
                     "Layer index %d is outside of range (-%d to %d)."
                     % (layer, len(self.layer_names), len(self.layer_names) - 1)
                 )
             i_layer = layer
-        else:
+        else:  # pragma: no cover
             raise TypeError("Layer must be of type `str` or `int`.")
 
         activation_model = tf.keras.Model(self._model.layers[0].input, self._model.layers[i_layer].output)

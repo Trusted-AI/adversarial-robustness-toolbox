@@ -22,12 +22,24 @@ import os
 import unittest
 
 import numpy as np
+import tensorflow as tf
+import torch
 
 from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.utils import load_dataset, random_targets, compute_accuracy
-from art.estimators.certification.randomized_smoothing import PyTorchRandomizedSmoothing
+from art.estimators.certification.randomized_smoothing import (
+    NumpyRandomizedSmoothing,
+    TensorFlowV2RandomizedSmoothing,
+    PyTorchRandomizedSmoothing,
+)
 
-from tests.utils import master_seed, get_image_classifier_pt, get_tabular_classifier_pt
+from tests.utils import (
+    master_seed,
+    get_image_classifier_pt,
+    get_image_classifier_kr,
+    get_image_classifier_tf,
+    get_tabular_classifier_pt,
+)
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "True"
 logger = logging.getLogger(__name__)
@@ -53,9 +65,127 @@ class TestRandomizedSmoothing(unittest.TestCase):
     def setUp(self):
         master_seed(seed=1234)
 
-    def test_ptclassifier(self):
+    def test_3_kr(self):
         """
-        Test with a KerasClassifier.
+        Test with a Keras Classifier.
+        :return:
+        """
+        # Build KerasClassifier
+        classifier = get_image_classifier_kr()
+
+        # Get MNIST
+        (_, _), (x_test, y_test) = self.mnist
+
+        # First FGSM attack:
+        fgsm = FastGradientMethod(estimator=classifier, targeted=True)
+        params = {"y": random_targets(y_test, classifier.nb_classes)}
+        x_test_adv = fgsm.generate(x_test, **params)
+
+        # Initialize RS object and attack with FGSM
+        rs = NumpyRandomizedSmoothing(
+            classifier=classifier,
+            sample_size=100,
+            scale=0.01,
+            alpha=0.001,
+        )
+        fgsm_with_rs = FastGradientMethod(estimator=rs, targeted=True)
+        x_test_adv_with_rs = fgsm_with_rs.generate(x_test, **params)
+
+        # Compare results
+        # check shapes are equal and values are within a certain range
+        self.assertEqual(x_test_adv.shape, x_test_adv_with_rs.shape)
+        self.assertTrue((np.abs(x_test_adv - x_test_adv_with_rs) < 0.75).all())
+
+        # Check basic functionality of RS object
+        # check predict
+        y_test_smooth = rs.predict(x=x_test)
+        y_test_base = classifier.predict(x=x_test)
+        self.assertEqual(y_test_smooth.shape, y_test.shape)
+        self.assertTrue((np.sum(y_test_smooth, axis=1) <= np.ones((NB_TEST,))).all())
+        self.assertTrue((np.argmax(y_test_smooth, axis=1) == np.argmax(y_test_base, axis=1)).all())
+
+        # check certification
+        pred, radius = rs.certify(x=x_test, n=250)
+        self.assertEqual(len(pred), NB_TEST)
+        self.assertEqual(len(radius), NB_TEST)
+        self.assertTrue((radius <= 1).all())
+        self.assertTrue((pred < y_test.shape[1]).all())
+
+        # loss gradient
+        grad = rs.loss_gradient(x=x_test, y=y_test, sampling=True)
+        assert grad.shape == (10, 28, 28, 1)
+
+        # fit
+        rs.fit(x=x_test, y=y_test)
+
+    def test_1_tf(self):
+        """
+        Test with a TensorFlow Classifier.
+        :return:
+        """
+        tf_version = list(map(int, tf.__version__.lower().split("+")[0].split(".")))
+        if tf_version[0] == 2:
+
+            # Build TensorFlowV2Classifier
+            classifier, _ = get_image_classifier_tf()
+
+            # Get MNIST
+            (_, _), (x_test, y_test) = self.mnist
+
+            # First FGSM attack:
+            fgsm = FastGradientMethod(estimator=classifier, targeted=True)
+            params = {"y": random_targets(y_test, classifier.nb_classes)}
+            x_test_adv = fgsm.generate(x_test, **params)
+
+            # Initialize RS object and attack with FGSM
+            rs = TensorFlowV2RandomizedSmoothing(
+                model=classifier.model,
+                nb_classes=classifier.nb_classes,
+                input_shape=classifier.input_shape,
+                loss_object=classifier.loss_object,
+                train_step=classifier.train_step,
+                channels_first=classifier.channels_first,
+                clip_values=classifier.clip_values,
+                preprocessing_defences=classifier.preprocessing_defences,
+                postprocessing_defences=classifier.postprocessing_defences,
+                preprocessing=classifier.preprocessing,
+                sample_size=100,
+                scale=0.01,
+                alpha=0.001,
+            )
+            fgsm_with_rs = FastGradientMethod(estimator=rs, targeted=True)
+            x_test_adv_with_rs = fgsm_with_rs.generate(x_test, **params)
+
+            # Compare results
+            # check shapes are equal and values are within a certain range
+            self.assertEqual(x_test_adv.shape, x_test_adv_with_rs.shape)
+            self.assertTrue((np.abs(x_test_adv - x_test_adv_with_rs) < 0.75).all())
+
+            # Check basic functionality of RS object
+            # check predict
+            y_test_smooth = rs.predict(x=x_test)
+            y_test_base = classifier.predict(x=x_test)
+            self.assertEqual(y_test_smooth.shape, y_test.shape)
+            self.assertTrue((np.sum(y_test_smooth, axis=1) <= np.ones((NB_TEST,))).all())
+            self.assertTrue((np.argmax(y_test_smooth, axis=1) == np.argmax(y_test_base, axis=1)).all())
+
+            # check certification
+            pred, radius = rs.certify(x=x_test, n=250)
+            self.assertEqual(len(pred), NB_TEST)
+            self.assertEqual(len(radius), NB_TEST)
+            self.assertTrue((radius <= 1).all())
+            self.assertTrue((pred < y_test.shape[1]).all())
+
+            # loss gradient
+            grad = rs.loss_gradient(x=x_test, y=y_test, sampling=True)
+            assert grad.shape == (10, 28, 28, 1)
+
+            # fit
+            rs.fit(x=x_test, y=y_test)
+
+    def test_2_pt(self):
+        """
+        Test with a PyTorch Classifier.
         :return:
         """
         # Build KerasClassifier
@@ -75,6 +205,7 @@ class TestRandomizedSmoothing(unittest.TestCase):
         rs = PyTorchRandomizedSmoothing(
             model=ptc.model,
             loss=ptc._loss,
+            optimizer=torch.optim.Adam(ptc.model.parameters(), lr=0.01),
             input_shape=ptc.input_shape,
             nb_classes=ptc.nb_classes,
             channels_first=ptc.channels_first,
@@ -105,6 +236,13 @@ class TestRandomizedSmoothing(unittest.TestCase):
         self.assertEqual(len(radius), NB_TEST)
         self.assertTrue((radius <= 1).all())
         self.assertTrue((pred < y_test.shape[1]).all())
+
+        # loss gradient
+        grad = rs.loss_gradient(x=x_test, y=y_test, sampling=True)
+        assert grad.shape == (10, 1, 28, 28)
+
+        # fit
+        rs.fit(x=x_test, y=y_test)
 
 
 class TestRandomizedSmoothingVectors(unittest.TestCase):
