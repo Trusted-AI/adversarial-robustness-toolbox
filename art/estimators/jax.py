@@ -58,10 +58,6 @@ class JaxEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
                be divided by the second one.
         :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
         """
-        import os
-
-        os.environ["JAX_PLATFORM_NAME"] = device_type
-
         super().__init__(**kwargs)
 
         self._device_type = device_type
