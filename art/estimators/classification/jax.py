@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2021
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the classifier `PyTorchClassifier` for PyTorch models.
+This module implements the classifier `JaxClassifier` for Jax models.
 """
 # pylint: disable=C0302
 from __future__ import absolute_import, division, print_function, unicode_literals
@@ -36,7 +36,7 @@ from art.estimators.classification.classifier import (
     ClassGradientsMixin,
     ClassifierMixin,
 )
-from art.estimators.pytorch import PyTorchEstimator
+from art.estimators.jax import JaxEstimator
 from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
@@ -51,27 +51,22 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):  # lgtm [py/missing-call-to-init]
+class JaxClassifier(ClassGradientsMixin, ClassifierMixin, JaxEstimator):  # lgtm [py/missing-call-to-init]
     """
-    This class implements a classifier with the PyTorch framework.
+    This class implements a classifier with the Jax framework.
     """
 
     estimator_params = (
-        PyTorchEstimator.estimator_params
+        JaxEstimator.estimator_params
         + ClassifierMixin.estimator_params
         + [
             "loss",
-            "input_shape",
-            "optimizer",
-            "use_amp",
-            "opt_level",
-            "loss_scale",
         ]
     )
 
     def __init__(
         self,
-        model: "torch.nn.Module",
+        model: List,
         loss: "torch.nn.modules.loss._Loss",
         input_shape: Tuple[int, ...],
         nb_classes: int,
@@ -116,7 +111,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                be divided by the second one.
         :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
         """
-        import torch  # lgtm [py/repeated-import]
+        import jax.numpy as jnp  # lgtm [py/repeated-import]
 
         super().__init__(
             model=model,

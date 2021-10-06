@@ -19,7 +19,7 @@
 This module implements the abstract estimator `JaxEstimator` for Jax models.
 """
 import logging
-from typing import Any, List, Tuple
+from typing import Any, Tuple
 
 import numpy as np
 
