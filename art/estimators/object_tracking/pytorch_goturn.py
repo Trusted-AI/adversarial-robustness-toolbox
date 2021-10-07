@@ -97,12 +97,6 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator, Tracker):
                             if available otherwise run on CPU.
         """
         import torch  # lgtm [py/repeated-import]
-        import torchvision  # lgtm [py/repeated-import]
-
-        torch_version = list(map(int, torch.__version__.lower().split("+")[0].split(".")))
-        torchvision_version = list(map(int, torchvision.__version__.lower().split("+")[0].split(".")))
-        assert torch_version[0] == 1 and torch_version[1] == 4, "PyTorchGoturn requires torch==1.4"
-        assert torchvision_version[0] == 0 and torchvision_version[1] == 5, "PyTorchGoturn requires torchvision==0.5"
 
         # Set device
         self._device: torch.device
@@ -516,9 +510,14 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator, Tracker):
                 image.shape[0], max(1.0, math.ceil(pad_image_location[3] - pad_image_location[1]))
             )
 
-            err = 0.000000001  # To take care of floating point arithmetic errors
+            roi_bottom_int = int(roi_bottom)
+            roi_bottom_height_int = roi_bottom_int + roi_height
+
+            roi_left_int = int(roi_left)
+            roi_left_width_int = roi_left_int + roi_width
+
             cropped_image = image[
-                int(roi_bottom + err) : int(roi_bottom + roi_height), int(roi_left + err) : int(roi_left + roi_width)
+                roi_bottom_int : roi_bottom_height_int, roi_left_int : roi_left_width_int
             ]
             # output_width = max(math.ceil(bbox_tight.compute_output_width()), roi_width)
             # output_height = max(math.ceil(bbox_tight.compute_output_height()), roi_height)
@@ -636,20 +635,29 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator, Tracker):
         if y_init is None:
             raise ValueError("y_init is a required argument for method `predict`.")
 
-        y_init = torch.from_numpy(y_init).to(self._device).float().to(self.device)
+        if isinstance(y_init, np.ndarray):
+            y_init = torch.from_numpy(y_init).to(self._device).float().to(self.device)
+        else:
+            y_init = y_init.to(self._device).float()
 
         predictions = list()
 
         for i in range(x.shape[0]):
-            x_i = torch.from_numpy(x[i]).to(self._device)
+            if isinstance(x, np.ndarray):
+                x_i = torch.from_numpy(x[i]).to(self._device)
+            else:
+                x_i = x[i].to(self._device)
 
             # Apply preprocessing
-            x_i, _ = self._apply_preprocessing(x_i, y=None, fit=False)
+            x_i, _ = self._apply_preprocessing(x_i, y=None, fit=False, no_grad=False)
 
             y_pred = self._track(x=x_i, y_init=y_init[i])
 
             prediction_dict = dict()
-            prediction_dict["boxes"] = y_pred.detach().cpu().numpy()
+            if isinstance(x, np.ndarray):
+                prediction_dict["boxes"] = y_pred.detach().cpu().numpy()
+            else:
+                prediction_dict["boxes"] = y_pred
             prediction_dict["labels"] = np.zeros((y_pred.shape[0],))
             prediction_dict["scores"] = np.ones_like((y_pred.shape[0],))
             predictions.append(prediction_dict)
