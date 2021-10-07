@@ -198,7 +198,7 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
                 # using top 1% of ranked neurons by activation difference to adv vs. clean inputs
                 # generate a profile of average activation, when above threshold, abstain
 
-                # get indicies of top 1% of ranked neurons
+                # get indices of top 1% of ranked neurons
                 num_top = int(np.ceil(len(ranked_indices) * 0.01))
                 self.top_indices = ranked_indices[:num_top]
 
@@ -211,7 +211,7 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
                 # TODO: explore different values for threshold
                 self.activation_threshold = avg_clean_activation + 1 * std_clean_activation
 
-            else:
+            else:  # pragma: no cover
                 raise TypeError("Mitigation type: `" + mitigation_type + "` not supported")
 
     def check_backdoor_effective(self, backdoor_data: np.ndarray, backdoor_labels: np.ndarray) -> bool:

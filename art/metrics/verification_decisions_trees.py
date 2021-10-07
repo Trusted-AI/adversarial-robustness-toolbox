@@ -77,7 +77,7 @@ class Box:
                 lower_bound = max(self.intervals[key].lower_bound, value.lower_bound)
                 upper_bound = min(self.intervals[key].upper_bound, value.upper_bound)
 
-                if lower_bound >= upper_bound:
+                if lower_bound >= upper_bound:  # pragma: no cover
                     self.intervals.clear()
                     break
 
@@ -256,7 +256,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
                     eps /= 2.0
                 else:
                     if i_not_robust is None:
-                        if eps >= 1.0:
+                        if eps >= 1.0:  # pragma: no cover
                             logger.info("Abort binary search because eps increased above 1.0")
                             break
                         eps = min(eps * 2.0, 1.0)
@@ -460,7 +460,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
                     if leaf_node.box and distance <= eps:
                         leaves.append(leaf_node)
 
-                if not leaves:
+                if not leaves:  # pragma: no cover
                     raise ValueError("No accessible leaves found.")
 
                 accessible_leaves.append(leaves)

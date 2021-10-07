@@ -80,7 +80,7 @@ def PDTP(  # pylint: disable=C0103
         if not is_probability(pred):
             try:
                 pred = scipy.special.softmax(pred, axis=1)
-            except Exception as exc:
+            except Exception as exc:  # pragma: no cover
                 raise ValueError("PDTP metric only supports classifiers that output logits or probabilities.") from exc
         # divide into 100 bins and return center of bin
         bins = np.array(np.arange(0.0, 1.01, 0.01).round(decimals=2))
@@ -95,7 +95,7 @@ def PDTP(  # pylint: disable=C0103
             alt_y = np.delete(y, row, 0)
             try:
                 extra_estimator.reset()
-            except NotImplementedError as exc:
+            except NotImplementedError as exc:  # pragma: no cover
                 raise ValueError(
                     "PDTP metric can only be applied to classifiers that implement the reset method."
                 ) from exc

@@ -73,7 +73,7 @@ class CatBoostARTClassifier(ClassifierDecisionTree):
         # pylint: disable=E0611,E0401
         from catboost.core import CatBoostClassifier
 
-        if not isinstance(model, CatBoostClassifier):
+        if not isinstance(model, CatBoostClassifier):  # pragma: no cover
             raise TypeError("Model must be of type catboost.core.CatBoostClassifier")
 
         super().__init__(
@@ -162,7 +162,7 @@ class CatBoostARTClassifier(ClassifierDecisionTree):
         else:
             full_path = os.path.join(path, filename)
         folder = os.path.split(full_path)[0]
-        if not os.path.exists(folder):
+        if not os.path.exists(folder):  # pragma: no cover
             os.makedirs(folder)
 
         with open(full_path + ".pickle", "wb") as file_pickle:

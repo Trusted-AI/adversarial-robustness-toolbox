@@ -126,6 +126,16 @@ class TestThermometerEncoding(unittest.TestCase):
         # Check that x has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_original - x))), 0.0, delta=0.00001)
 
+    def test_check_params(self):
+        with self.assertRaises(ValueError):
+            _ = ThermometerEncoding(clip_values=(0, 1), num_space=-1)
+
+        with self.assertRaises(ValueError):
+            _ = ThermometerEncoding(clip_values=(0, 1, 2))
+
+        with self.assertRaises(ValueError):
+            _ = ThermometerEncoding(clip_values=(1, 0))
+
 
 if __name__ == "__main__":
     unittest.main()

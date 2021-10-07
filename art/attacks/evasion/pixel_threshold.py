@@ -122,7 +122,7 @@ class PixelThreshold(EvasionAttack):
         if not isinstance(self.verbose, bool):
             raise ValueError("The flag `verbose` has to be of type bool.")
 
-        if not isinstance(self.verbose_es, bool):
+        if not isinstance(self.verbose_es, bool):  # pragma: no cover
             raise ValueError("The argument `verbose` has to be of type bool.")
         if self.estimator.clip_values is None:
             raise ValueError("This attack requires estimator clip values to be defined.")
@@ -189,7 +189,7 @@ class PixelThreshold(EvasionAttack):
 
                 image_result = image
 
-                while True:
+                while True:  # pragma: no cover
 
                     threshold = (start + end) // 2
                     success, trial_image_result = self._attack(image, target_class, threshold)
@@ -244,7 +244,7 @@ class PixelThreshold(EvasionAttack):
             temp = img[i, j, k]
             initial += [temp]
             bound = bound_limit(temp)
-            if self.es == 0:
+            if self.es == 0:  # pragma: no cover
                 minbounds += [bound[0]]
                 maxbounds += [bound[1]]
             else:
@@ -312,7 +312,7 @@ class PixelThreshold(EvasionAttack):
 
             if self.type_attack == 0:
                 std = 63
-            else:
+            else:  # pragma: no cover
                 std = limit
 
             from cma import CMAEvolutionStrategy
@@ -327,7 +327,7 @@ class PixelThreshold(EvasionAttack):
                     iterations=self.max_iter,
                 )
             except CMAEarlyStoppingException as err:
-                if self.verbose_es:
+                if self.verbose_es:  # pragma: no cover
                     logger.info(err)
 
             adv_x = strategy.result[0]

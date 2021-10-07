@@ -102,7 +102,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator, Tracker):
         self._device: torch.device
         if device_type == "cpu" or not torch.cuda.is_available():
             self._device = torch.device("cpu")
-        else:
+        else:  # pragma: no cover
             cuda_idx = torch.cuda.current_device()
             self._device = torch.device("cuda:{}".format(cuda_idx))
 
@@ -122,15 +122,15 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator, Tracker):
         self._input_shape = input_shape
 
         if self.clip_values is not None:
-            if self.clip_values[0] != 0:
+            if self.clip_values[0] != 0:  # pragma: no cover
                 raise ValueError("This classifier requires un-normalized input images with clip_vales=(0, 255).")
-            if self.clip_values[1] not in [1, 255]:
+            if self.clip_values[1] not in [1, 255]:  # pragma: no cover
                 raise ValueError(
                     "This classifier requires un-normalized input images with clip_vales=(0, 1) or "
                     "clip_vales=(0, 255)."
                 )
 
-        if self.postprocessing_defences is not None:
+        if self.postprocessing_defences is not None:  # pragma: no cover
             raise ValueError("This estimator does not support `postprocessing_defences`.")
 
         self.attack_losses: Tuple[str, ...] = ("torch.nn.L1Loss",)
@@ -195,11 +195,11 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator, Tracker):
                 y_tensor = list()
                 for i, y_i in enumerate(y):
                     y_t = dict()
-                    y_t["boxes"] = torch.from_numpy(y_i["boxes"]).float().to(self._device)
+                    y_t["boxes"] = torch.from_numpy(y_i["boxes"]).float().to(self.device)
                     if "labels" in y_i:
-                        y_t["labels"] = torch.from_numpy(y_i["labels"]).int().to(self._device)
+                        y_t["labels"] = torch.from_numpy(y_i["labels"]).int().to(self.device)
                     if "masks" in y_i:
-                        y_t["masks"] = torch.from_numpy(y_i["masks"]).int().to(self._device)
+                        y_t["masks"] = torch.from_numpy(y_i["masks"]).int().to(self.device)
                     y_tensor.append(y_t)
             else:
                 y_tensor = y
@@ -210,9 +210,9 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator, Tracker):
 
             for i in range(x.shape[0]):
                 if self.clip_values is not None:
-                    x_grad = torch.from_numpy(x[i]).to(self._device).float()
+                    x_grad = torch.from_numpy(x[i]).to(self.device).float()
                 else:
-                    x_grad = torch.from_numpy(x[i]).to(self._device).float()
+                    x_grad = torch.from_numpy(x[i]).to(self.device).float()
                 x_grad.requires_grad = True
                 image_tensor_list_grad.append(x_grad)
                 x_grad_1 = torch.unsqueeze(x_grad, dim=0)
@@ -546,8 +546,8 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator, Tracker):
         target_pad, _, _, _ = crop_pad_image(prev_bbox, prev_frame)
         cur_search_region, search_location, edge_spacing_x, edge_spacing_y = crop_pad_image(prev_bbox, curr_frame)
 
-        target_pad_in = self._preprocess(target_pad).unsqueeze(0).to(self._device)
-        cur_search_region_in = self._preprocess(cur_search_region).unsqueeze(0).to(self._device)
+        target_pad_in = self._preprocess(target_pad).unsqueeze(0).to(self.device)
+        cur_search_region_in = self._preprocess(cur_search_region).unsqueeze(0).to(self.device)
 
         pred_bb = self._model.forward(target_pad_in.float(), cur_search_region_in.float())
 
@@ -632,7 +632,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator, Tracker):
             self._model.freeze()
 
         y_init = kwargs.get("y_init")
-        if y_init is None:
+        if y_init is None:  # pragma: no cover
             raise ValueError("y_init is a required argument for method `predict`.")
 
         if isinstance(y_init, np.ndarray):

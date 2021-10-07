@@ -18,8 +18,6 @@
 import logging
 import pytest
 
-from tests.utils import ARTTestFixtureNotImplemented
-
 logger = logging.getLogger(__name__)
 
 
@@ -32,13 +30,13 @@ def tabular_dl_estimator_for_attack(framework, tabular_dl_estimator):
         classifier_tested = [
             potential_classifier
             for potential_classifier in classifier_list
-            if all(t in type(potential_classifier).__mro__ for t in attack._estimator_requirements)
+            if attack.is_estimator_valid(
+                estimator=potential_classifier, estimator_requirements=attack._estimator_requirements
+            )
         ]
 
         if len(classifier_tested) == 0:
-            raise ARTTestFixtureNotImplemented(
-                "no estimator available", tabular_dl_estimator.__name__, framework, {"attack": attack}
-            )
+            raise ValueError("No classifier found in tabular_dl_estimator_for_attack.")
         return classifier_tested[0]
 
     return _tabular_dl_estimator_for_attack

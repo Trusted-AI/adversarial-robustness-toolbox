@@ -23,7 +23,6 @@ import unittest
 import numpy as np
 import GPy
 
-from art.exceptions import EstimatorError
 from art.attacks.evasion.hclu import HighConfidenceLowUncertainty
 from art.estimators.classification.GPy import GPyGaussianProcessClassifier
 
@@ -83,24 +82,24 @@ class TestHCLU(TestBase):
         m = GPy.models.GPClassification(self.x_train, self.y_train.reshape(-1, 1), kernel=gpkern)
         m_art = GPyGaussianProcessClassifier(m)
 
-        with self.assertRaises(EstimatorError):
+        with self.assertRaises(ValueError):
             _ = HighConfidenceLowUncertainty(
-                "test", conf=0.9, unc_increase=100.0, min_val=-0.0, max_val=1.0, verbose=False
+                m_art, conf=0.1, unc_increase=100.0, min_val=0.0, max_val=1.0, verbose=False
             )
 
         with self.assertRaises(ValueError):
             _ = HighConfidenceLowUncertainty(
-                m_art, conf=0.1, unc_increase=-100.0, min_val=-0.0, max_val=1.0, verbose=False
+                m_art, conf=0.75, unc_increase=-100.0, min_val=0.0, max_val=1.0, verbose=False
             )
 
         with self.assertRaises(ValueError):
             _ = HighConfidenceLowUncertainty(
-                m_art, conf=0.1, unc_increase=100.0, min_val=2.0, max_val=1.0, verbose=False
+                m_art, conf=0.75, unc_increase=100.0, min_val=1.0, max_val=0.0, verbose=False
             )
 
         with self.assertRaises(ValueError):
             _ = HighConfidenceLowUncertainty(
-                m_art, conf=0.1, unc_increase=100.0, min_val=-0.0, max_val=1.0, verbose="False"
+                m_art, conf=0.75, unc_increase=100.0, min_val=0.0, max_val=1.0, verbose="False"
             )
 
     def test_classifier_type_check_fail(self):

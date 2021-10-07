@@ -177,3 +177,149 @@ def test_tf_faster_rcnn(art_warning, get_mnist_dataset):
 
     except ARTTestException as e:
         art_warning(e)
+
+
+def test_errors(art_warning, get_mnist_dataset):
+    try:
+        from art.estimators.object_detection.tensorflow_faster_rcnn import TensorFlowFasterRCNN
+
+        images = tf.placeholder(tf.float32, shape=[1, 28, 28, 1])
+
+        with pytest.raises(ValueError):
+            TensorFlowFasterRCNN(
+                images=images,
+                clip_values=(1, 2),
+                attack_losses=("loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg"),
+            )
+
+        with pytest.raises(ValueError):
+            TensorFlowFasterRCNN(
+                images=images,
+                clip_values=(-1, 1),
+                attack_losses=("loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg"),
+            )
+
+        from art.defences.postprocessor.rounded import Rounded
+
+        post_def = Rounded()
+        with pytest.raises(ValueError):
+            TensorFlowFasterRCNN(
+                images=images,
+                clip_values=(0, 1),
+                attack_losses=("loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg"),
+                postprocessing_defences=post_def,
+            )
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+def test_preprocessing_defences(art_warning, get_mnist_dataset):
+    try:
+        from art.estimators.object_detection.tensorflow_faster_rcnn import TensorFlowFasterRCNN
+        from art.defences.preprocessor.spatial_smoothing import SpatialSmoothing
+
+        images = tf.placeholder(tf.float32, shape=[1, 28, 28, 3])
+
+        pre_def = SpatialSmoothing()
+
+        with pytest.raises(ValueError):
+            _ = TensorFlowFasterRCNN(
+                images=images,
+                clip_values=(0, 1),
+                attack_losses=("loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg"),
+                preprocessing_defences=pre_def,
+            )
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+def test_compute_losses(art_warning, get_mnist_dataset):
+    try:
+        from art.estimators.object_detection.tensorflow_faster_rcnn import TensorFlowFasterRCNN
+
+        images = tf.placeholder(tf.float32, shape=[2, 28, 28, 3])
+
+        # Get test data
+        (_, _), (x_test_mnist, y_test_mnist) = get_mnist_dataset
+
+        frcnn = TensorFlowFasterRCNN(
+            images=images,
+            clip_values=(0, 1),
+            attack_losses=(
+                "Loss/RPNLoss/localization_loss",
+                "Loss/RPNLoss/objectness_loss",
+                "Loss/BoxClassifierLoss/localization_loss",
+                "Loss/BoxClassifierLoss/classification_loss",
+            ),
+        )
+
+        # Create labels
+        result = frcnn.predict(np.repeat(x_test_mnist[:2].astype(np.float32), repeats=3, axis=3))
+
+        y = [
+            {
+                "boxes": result[0]["boxes"],
+                "labels": result[0]["labels"],
+                "scores": np.ones_like(result[0]["labels"]),
+            },
+            {
+                "boxes": result[1]["boxes"],
+                "labels": result[1]["labels"],
+                "scores": np.ones_like(result[1]["labels"]),
+            },
+        ]
+
+        # Compute losses
+        losses = frcnn.compute_losses(np.repeat(x_test_mnist[:2].astype(np.float32), repeats=3, axis=3), y)
+
+        assert len(losses) == 4
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+def test_compute_loss(art_warning, get_mnist_dataset):
+    try:
+        from art.estimators.object_detection.tensorflow_faster_rcnn import TensorFlowFasterRCNN
+
+        images = tf.placeholder(tf.float32, shape=[2, 28, 28, 3])
+
+        # Get test data
+        (_, _), (x_test_mnist, y_test_mnist) = get_mnist_dataset
+
+        frcnn = TensorFlowFasterRCNN(
+            images=images,
+            clip_values=(0, 1),
+            attack_losses=(
+                "Loss/RPNLoss/localization_loss",
+                "Loss/RPNLoss/objectness_loss",
+                "Loss/BoxClassifierLoss/localization_loss",
+                "Loss/BoxClassifierLoss/classification_loss",
+            ),
+        )
+
+        # Create labels
+        result = frcnn.predict(np.repeat(x_test_mnist[:2].astype(np.float32), repeats=3, axis=3))
+
+        y = [
+            {
+                "boxes": result[0]["boxes"],
+                "labels": result[0]["labels"],
+                "scores": np.ones_like(result[0]["labels"]),
+            },
+            {
+                "boxes": result[1]["boxes"],
+                "labels": result[1]["labels"],
+                "scores": np.ones_like(result[1]["labels"]),
+            },
+        ]
+
+        # Compute loss
+        loss = frcnn.compute_loss(np.repeat(x_test_mnist[:2].astype(np.float32), repeats=3, axis=3), y)
+
+        assert float(loss) == pytest.approx(6.592308044433594, abs=0.5)
+
+    except ARTTestException as e:
+        art_warning(e)

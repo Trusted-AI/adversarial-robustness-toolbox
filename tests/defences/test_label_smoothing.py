@@ -54,6 +54,10 @@ class TestLabelSmoothing(unittest.TestCase):
         self.assertTrue((np.max(y_smooth, axis=1) == np.ones(m) / n).all())
         self.assertTrue(np.isclose(y_smooth, np.ones((m, n)) / n).all())
 
+    def test_check_params(self):
+        with self.assertRaises(ValueError):
+            _ = LabelSmoothing(max_value=-1)
+
 
 if __name__ == "__main__":
     unittest.main()

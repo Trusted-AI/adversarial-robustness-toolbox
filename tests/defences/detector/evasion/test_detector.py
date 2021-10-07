@@ -74,14 +74,20 @@ class TestBinaryInputDetector(unittest.TestCase):
 
         # Create a simple CNN for the detector
         input_shape = x_train.shape[1:]
+        try:
+            from keras.optimizers import Adam
+
+            optimizer = Adam(lr=0.01)
+        except ImportError:
+            from keras.optimizers import adam_v2
+
+            optimizer = adam_v2.Adam(lr=0.01)
         model = Sequential()
         model.add(Conv2D(4, kernel_size=(5, 5), activation="relu", input_shape=input_shape))
         model.add(MaxPooling2D(pool_size=(2, 2)))
         model.add(Flatten())
         model.add(Dense(2, activation="softmax"))
-        model.compile(
-            loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01), metrics=["accuracy"]
-        )
+        model.compile(loss=keras.losses.categorical_crossentropy, optimizer=optimizer, metrics=["accuracy"])
 
         # Create detector and train it:
         detector = BinaryInputDetector(KerasClassifier(model=model, clip_values=(0, 1), use_logits=False))
@@ -136,13 +142,19 @@ class TestBinaryActivationDetector(unittest.TestCase):
         # Create a simple CNN for the detector
         activation_shape = classifier.get_activations(x_test[:1], 0, batch_size=128).shape[1:]
         number_outputs = 2
+        try:
+            from keras.optimizers import Adam
+
+            optimizer = Adam(lr=0.01)
+        except ImportError:
+            from keras.optimizers import adam_v2
+
+            optimizer = adam_v2.Adam(lr=0.01)
         model = Sequential()
         model.add(MaxPooling2D(pool_size=(2, 2), input_shape=activation_shape))
         model.add(Flatten())
         model.add(Dense(number_outputs, activation="softmax"))
-        model.compile(
-            loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01), metrics=["accuracy"]
-        )
+        model.compile(loss=keras.losses.categorical_crossentropy, optimizer=optimizer, metrics=["accuracy"])
 
         # Create detector and train it.
         # Detector consider activations at layer=0:

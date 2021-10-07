@@ -92,22 +92,22 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
 
         # Assert all classifiers are the right shape(s)
         for classifier in classifiers:
-            if not isinstance(classifier, NeuralNetworkMixin):
+            if not isinstance(classifier, NeuralNetworkMixin):  # pragma: no cover
                 raise TypeError("Expected type `Classifier`, found %s instead." % type(classifier))
 
-            if not np.array_equal(self.clip_values, classifier.clip_values):
+            if not np.array_equal(self.clip_values, classifier.clip_values):  # pragma: no cover
                 raise ValueError(
                     "Incompatible `clip_values` between classifiers in the ensemble. Found %s and %s."
                     % (str(self.clip_values), str(classifier.clip_values))
                 )
 
-            if classifier.nb_classes != classifiers[0].nb_classes:
+            if classifier.nb_classes != classifiers[0].nb_classes:  # pragma: no cover
                 raise ValueError(
                     "Incompatible output shapes between classifiers in the ensemble. Found %s and %s."
                     % (str(classifier.nb_classes), str(classifiers[0].nb_classes))
                 )
 
-            if classifier.input_shape != classifiers[0].input_shape:
+            if classifier.input_shape != classifiers[0].input_shape:  # pragma: no cover
                 raise ValueError(
                     "Incompatible input shapes between classifiers in the ensemble. Found %s and %s."
                     % (str(classifier.input_shape), str(classifiers[0].input_shape))
@@ -118,12 +118,13 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
 
         # Set weights for classifiers
         if classifier_weights is None:
-            classifier_weights = np.ones(self._nb_classifiers) / self._nb_classifiers
-        self._classifier_weights = classifier_weights
+            self._classifier_weights = np.ones(self._nb_classifiers) / self._nb_classifiers
+        else:
+            self._classifier_weights = np.array(classifier_weights)
 
         # check for consistent channels_first in ensemble members
         for i_cls, cls in enumerate(classifiers):
-            if cls.channels_first != self.channels_first:
+            if cls.channels_first != self.channels_first:  # pragma: no cover
                 raise ValueError(
                     "The channels_first boolean of classifier {} is {} while this ensemble expects a "
                     "channels_first boolean of {}. The channels_first booleans of all classifiers and the "
@@ -151,7 +152,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         return self._classifiers  # type: ignore
 
     @property
-    def classifier_weights(self) -> Union[list, np.ndarray, None]:
+    def classifier_weights(self) -> np.ndarray:
         """
         Return the list of classifier weights to assign to their prediction when aggregating results.
 
@@ -175,7 +176,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
                  `(nb_classifiers, nb_inputs, nb_classes)` if `raw=True`.
         """
         preds = np.array(
-            [self._classifier_weights[i] * self._classifiers[i].predict(x) for i in range(self._nb_classifiers)]
+            [self.classifier_weights[i] * self.classifiers[i].predict(x) for i in range(self._nb_classifiers)]
         )
         if raw:
             return preds
@@ -264,8 +265,8 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         """
         grads = np.array(
             [
-                self._classifier_weights[i]
-                * self._classifiers[i].class_gradient(x=x, label=label, training_mode=training_mode, **kwargs)
+                self.classifier_weights[i]
+                * self.classifiers[i].class_gradient(x=x, label=label, training_mode=training_mode, **kwargs)
                 for i in range(self._nb_classifiers)
             ]
         )
@@ -289,8 +290,8 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         """
         grads = np.array(
             [
-                self._classifier_weights[i]
-                * self._classifiers[i].loss_gradient(x=x, y=y, training_mode=training_mode, **kwargs)
+                self.classifier_weights[i]
+                * self.classifiers[i].loss_gradient(x=x, y=y, training_mode=training_mode, **kwargs)
                 for i in range(self._nb_classifiers)
             ]
         )
@@ -305,8 +306,8 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
             "preprocessing_defences=%r, postprocessing_defences=%r, preprocessing=%r)"
             % (
                 self.__module__ + "." + self.__class__.__name__,
-                self._classifiers,
-                self._classifier_weights,
+                self.classifiers,
+                self.classifier_weights,
                 self.channels_first,
                 self.clip_values,
                 self.preprocessing_defences,

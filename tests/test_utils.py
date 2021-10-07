@@ -24,7 +24,7 @@ import numpy as np
 import tensorflow as tf
 
 from art.utils import projection, random_sphere, to_categorical, least_likely_class, check_and_transform_label_format
-from art.utils import load_iris, load_mnist
+from art.utils import load_dataset, load_iris, load_mnist, load_stl, load_nursery, load_cifar10
 from art.utils import second_most_likely_class, random_targets, get_label_conf, get_labels_np_array, preprocess
 from art.utils import compute_success_array, compute_success
 from art.utils import segment_by_class, performance_diff
@@ -341,6 +341,45 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(y_train.shape[0], 150)
         self.assertIs(x_test, None)
         self.assertIs(y_test, None)
+
+    def test_cifar10(self):
+        (x_train, y_train), (x_test, y_test), min_, max_ = load_cifar10()
+        self.assertAlmostEqual(min_, 0.0, places=6)
+        self.assertEqual(max_, 1.0)
+        self.assertEqual(x_train.shape[0], y_train.shape[0])
+        self.assertEqual(x_test.shape[0], y_test.shape[0])
+
+        (x_train, y_train), (x_test, y_test), min_, max_ = load_dataset("cifar10")
+        self.assertAlmostEqual(min_, 0.0, places=6)
+        self.assertEqual(max_, 1.0)
+        self.assertEqual(x_train.shape[0], y_train.shape[0])
+        self.assertEqual(x_test.shape[0], y_test.shape[0])
+
+    def test_stl(self):
+        (x_train, y_train), (x_test, y_test), min_, max_ = load_stl()
+        self.assertAlmostEqual(min_, 0.0, places=6)
+        self.assertEqual(max_, 1.0)
+        self.assertEqual(x_train.shape[0], y_train.shape[0])
+        self.assertEqual(x_test.shape[0], y_test.shape[0])
+
+        (x_train, y_train), (x_test, y_test), min_, max_ = load_dataset("stl10")
+        self.assertAlmostEqual(min_, 0.0, places=6)
+        self.assertEqual(max_, 1.0)
+        self.assertEqual(x_train.shape[0], y_train.shape[0])
+        self.assertEqual(x_test.shape[0], y_test.shape[0])
+
+    def test_nursery(self):
+        (x_train, y_train), (x_test, y_test), min_, max_ = load_nursery()
+        self.assertAlmostEqual(min_, -1.3419307411337875, places=6)
+        self.assertEqual(max_, 2.0007720517562224)
+        self.assertEqual(x_train.shape[0], y_train.shape[0])
+        self.assertEqual(x_test.shape[0], y_test.shape[0])
+
+        (x_train, y_train), (x_test, y_test), min_, max_ = load_dataset("nursery")
+        self.assertAlmostEqual(min_, -1.3419307411337875, places=6)
+        self.assertEqual(max_, 2.0007720517562224)
+        self.assertEqual(x_train.shape[0], y_train.shape[0])
+        self.assertEqual(x_test.shape[0], y_test.shape[0])
 
     def test_segment_by_class(self):
         data = np.array([[3, 2], [9, 2], [4, 0], [9, 0]])

@@ -69,6 +69,16 @@ class TestFeatureSqueezing(unittest.TestCase):
         self.assertTrue(np.array_equal(x, np.arange(5)))
         self.assertTrue(np.allclose(x_squeezed, [0, 1.33, 2.67, 2.67, 4], atol=1e-1))
 
+    def test_check_params(self):
+        with self.assertRaises(ValueError):
+            _ = FeatureSqueezing(clip_values=(0, 4), bit_depth=-1)
+
+        with self.assertRaises(ValueError):
+            _ = FeatureSqueezing(clip_values=(0, 4, 8))
+
+        with self.assertRaises(ValueError):
+            _ = FeatureSqueezing(clip_values=(4, 0))
+
 
 if __name__ == "__main__":
     unittest.main()

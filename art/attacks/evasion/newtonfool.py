@@ -88,7 +88,7 @@ class NewtonFool(EvasionAttack):
         y_pred = self.estimator.predict(x, batch_size=self.batch_size)
         pred_class = np.argmax(y_pred, axis=1)
 
-        if self.estimator.nb_classes == 2 and y_pred.shape[1] == 1:
+        if self.estimator.nb_classes == 2 and y_pred.shape[1] == 1:  # pragma: no cover
             raise ValueError(
                 "This attack has not yet been tested for binary classification with a single output classifier."
             )

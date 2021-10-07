@@ -2020,7 +2020,7 @@ class BrendelBethgeAttack(EvasionAttack):
             import tensorflow as tf
 
             if is_probability(estimator.predict(x=np.ones(shape=(1, *estimator.input_shape)))):
-                raise ValueError(
+                raise ValueError(  # pragma: no cover
                     "The provided estimator seems to predict probabilities. If loss_type='difference_logits_ratio' "
                     "the estimator has to to predict logits."
                 )
@@ -2071,7 +2071,7 @@ class BrendelBethgeAttack(EvasionAttack):
             if is_probability(
                 estimator.predict(x=np.ones(shape=(1, *estimator.input_shape), dtype=config.ART_NUMPY_DTYPE))
             ):
-                raise ValueError(
+                raise ValueError(  # pragma: no cover
                     "The provided estimator seems to predict probabilities. If loss_type='difference_logits_ratio' "
                     "the estimator has to to predict logits."
                 )
@@ -2079,9 +2079,9 @@ class BrendelBethgeAttack(EvasionAttack):
 
                 # def difference_logits_ratio(y_true, y_pred):
                 def logits_difference(y_pred, y_true):  # type: ignore
-                    if isinstance(y_true, np.ndarray):
+                    if isinstance(y_true, np.ndarray):  # pragma: no cover
                         y_true = torch.from_numpy(y_true)
-                    if isinstance(y_pred, np.ndarray):
+                    if isinstance(y_pred, np.ndarray):  # pragma: no cover
                         y_pred = torch.from_numpy(y_pred)
 
                     y_true = y_true.float()
@@ -2511,7 +2511,7 @@ class BrendelBethgeAttack(EvasionAttack):
 
                     logger.info("Found initial adversarial image for untargeted attack.")
                     break
-            else:
+            else:  # pragma: no cover
                 logger.warning("Failed to draw a random image that is adversarial, attack failed.")
 
         return initial_sample

@@ -1,0 +1,76 @@
+name: CI Keras
+on:
+  # Run on manual trigger
+  workflow_dispatch:
+
+  # Run on pull requests
+  pull_request:
+    paths-ignore:
+      - '*.md'
+
+  # Run when pushing to main or dev branches
+  push:
+    branches:
+      - main
+      - dev*
+
+  # Run scheduled CI flow daily
+  schedule:
+    - cron: '0 8 * * 0'
+
+jobs:
+  test:
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Keras 2.3.1 (TensorFlow 2.2.1 Python 3.7)
+            framework: keras
+            python: 3.7
+            tensorflow: 2.2.1
+            keras: 2.3.1
+            tf_addons: 0.13.0
+          - name: TensorFlow-Keras 2.3.4 (Keras 2.4.3 Python 3.7)
+            framework: kerastf
+            python: 3.7
+            tensorflow: 2.3.4
+            keras: 2.4.3
+            tf_addons: 0.13.0
+          - name: Keras 2.6.0 (TensorFlow 2.6.0 Python 3.8)
+            framework: keras
+            python: 3.8
+            tensorflow: 2.6.0
+            keras: 2.6.0
+            tf_addons: 0.14.0
+          - name: TensorFlow-Keras 2.6.0 (Keras 2.6.0 Python 3.8)
+            framework: kerastf
+            python: 3.8
+            tensorflow: 2.6.0
+            keras: 2.6.0
+            tf_addons: 0.14.0
+
+    name: ${{ matrix.name }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2.3.4
+      - name: Setup Python
+        uses: actions/setup-python@v2.2.2
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get -y -q install ffmpeg libavcodec-extra
+          python -m pip install --upgrade pip setuptools wheel
+          pip install -r requirements.txt
+          pip install tensorflow==${{ matrix.tensorflow }}
+          pip install keras==${{ matrix.keras }}
+          pip install tensorflow-addons==${{ matrix.tf_addons }}
+          pip list
+      - name: Run Tests
+        run: ./run_tests.sh ${{ matrix.framework }}
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v2.1.0
+        with:
+          fail_ci_if_error: true

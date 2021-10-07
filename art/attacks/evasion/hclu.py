@@ -128,8 +128,6 @@ class HighConfidenceLowUncertainty(EvasionAttack):
         return x_adv
 
     def _check_params(self) -> None:
-        if not isinstance(self.estimator, GPyGaussianProcessClassifier):
-            raise TypeError("Model must be a GPy Gaussian Process classifier.")
 
         if self.conf <= 0.5 or self.conf > 1.0:
             raise ValueError("Confidence value has to be a value between 0.5 and 1.0.")
