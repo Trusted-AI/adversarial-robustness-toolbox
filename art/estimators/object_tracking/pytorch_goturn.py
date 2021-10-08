@@ -201,8 +201,6 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
 
                   - boxes [N_FRAMES, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and
                                          0 <= y1 < y2 <= H.
-                  - labels [N_FRAMES]: the labels for each image, default 0.
-                  - scores [N_FRAMES]: the scores or each prediction, default 1.
         :param reduction: Specifies the reduction to apply to the output: 'none' | 'sum'.
                           'none': no reduction will be applied.
                           'sum': the output will be summed.
@@ -222,10 +220,6 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
                 for i, y_i in enumerate(y):
                     y_t = dict()
                     y_t["boxes"] = torch.from_numpy(y_i["boxes"]).float().to(self.device)
-                    if "labels" in y_i:
-                        y_t["labels"] = torch.from_numpy(y_i["labels"]).int().to(self.device)
-                    if "masks" in y_i:
-                        y_t["masks"] = torch.from_numpy(y_i["masks"]).int().to(self.device)
                     y_tensor.append(y_t)
             else:
                 y_tensor = y
@@ -531,10 +525,10 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
             # roi_width = min(image.shape[1], max(1.0, math.ceil(pad_image_location.x2 - pad_image_location.x1)))
             # roi_height = min(image.shape[0], max(1.0, math.ceil(pad_image_location.y2 - pad_image_location.y1)))
             roi_width = min(  # type: ignore
-                image.shape[1], max(1.0, math.ceil(pad_image_location[2] - pad_image_location[0]))
+                image.shape[1], max(1, math.ceil(pad_image_location[2] - pad_image_location[0]))
             )
             roi_height = min(  # type: ignore
-                image.shape[0], max(1.0, math.ceil(pad_image_location[3] - pad_image_location[1]))
+                image.shape[0], max(1, math.ceil(pad_image_location[3] - pad_image_location[1]))
             )
 
             roi_bottom_int = int(roi_bottom)
@@ -684,8 +678,6 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
                 prediction_dict["boxes"] = y_pred.detach().cpu().numpy()
             else:
                 prediction_dict["boxes"] = y_pred
-            prediction_dict["labels"] = np.zeros((y_pred.shape[0],))
-            prediction_dict["scores"] = np.ones_like((y_pred.shape[0],))
             predictions.append(prediction_dict)
 
         return predictions
