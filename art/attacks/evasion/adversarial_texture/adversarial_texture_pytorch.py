@@ -166,9 +166,9 @@ class AdversarialTexturePyTorch(EvasionAttack):
         import torch  # lgtm [py/repeated-import]
 
         y_pred = self._predictions(images, y_init, foreground)
-        loss = torch.nn.L1Loss(size_average=False)(y_pred[0]["boxes"].float(), target["boxes"][0].float())
+        loss = torch.nn.L1Loss(size_average=False)(y_pred[0]["boxes"].float(), target[0]["boxes"].float())
         for i in range(1, len(y_pred)):
-            loss = loss + torch.nn.L1Loss(size_average=False)(y_pred[i]["boxes"].float(), target["boxes"][i].float())
+            loss = loss + torch.nn.L1Loss(size_average=False)(y_pred[i]["boxes"].float(), target[i]["boxes"].float())
 
         return loss
 
@@ -185,7 +185,7 @@ class AdversarialTexturePyTorch(EvasionAttack):
 
         image_mask = np.expand_dims(image_mask, axis=2)
         image_mask = np.broadcast_to(image_mask, self.patch_shape)
-        image_mask = torch.Tensor(np.array(image_mask))
+        image_mask = torch.Tensor(np.array(image_mask)).to(self.estimator.device)
         image_mask = torch.stack([image_mask] * nb_samples, dim=0)
         return image_mask
 
@@ -249,7 +249,9 @@ class AdversarialTexturePyTorch(EvasionAttack):
 
         padded_patch = padded_patch.float()
 
-        inverted_mask = torch.from_numpy(np.ones(shape=image_mask.shape, dtype=np.float32)) - image_mask
+        inverted_mask = (
+            torch.from_numpy(np.ones(shape=image_mask.shape, dtype=np.float32)).to(self.estimator.device) - image_mask
+        )
 
         combined = (
             videos * inverted_mask
@@ -319,7 +321,14 @@ class AdversarialTexturePyTorch(EvasionAttack):
 
         for _ in trange(self.max_iter, desc="Adversarial Texture PyTorch", disable=not self.verbose):
             for videos_i, target_i, y_init_i, foreground_i in data_loader:
-                _ = self._train_step(videos=videos_i, target=target_i, y_init=y_init_i, foreground=foreground_i)
+                videos_i = videos_i.to(self.estimator.device)
+                y_init_i = y_init_i.to(self.estimator.device)
+                foreground_i = foreground_i.to(self.estimator.device)
+                target_i_list = []
+                for i_t in range(videos_i.shape[0]):
+                    target_i_list.append({"boxes": target_i["boxes"][i_t].to(self.estimator.device)})
+
+                _ = self._train_step(videos=videos_i, target=target_i_list, y_init=y_init_i, foreground=foreground_i)
 
         return self.apply_patch(x=x, foreground=foreground)
 
@@ -342,8 +351,8 @@ class AdversarialTexturePyTorch(EvasionAttack):
         import torch  # lgtm [py/repeated-import]
 
         patch = patch_external if patch_external is not None else self._patch
-        x = torch.Tensor(x)
-        foreground = torch.Tensor(foreground)
+        x = torch.Tensor(x).to(self.estimator.device)
+        foreground = torch.Tensor(foreground).to(self.estimator.device)
 
         return self._apply_texture(videos=x, patch=patch, foreground=foreground).detach().cpu().numpy()
 
