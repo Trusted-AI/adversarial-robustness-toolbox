@@ -37,20 +37,43 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+#
+# MIT License
+#
+# Copyright (c) 2018
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 """
 This module implements the task specific estimator for PyTorch GOTURN object tracker.
 """
 import logging
+import time
 from typing import List, Dict, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
-from got10k.trackers import Tracker
 
 from art.estimators.object_tracking.object_tracker import ObjectTrackerMixin
 from art.estimators.pytorch import PyTorchEstimator
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
+    import PIL
     import torch
 
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
@@ -60,7 +83,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator, Tracker):
+class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
     """
     This module implements the task- and model-specific estimator for PyTorch GOTURN (object tracking).
     """
@@ -117,7 +140,10 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator, Tracker):
             preprocessing=preprocessing,
             device_type=device_type,
         )
-        Tracker.__init__(self, name="PyTorchGoturn", is_deterministic=True)
+        # got-10k toolkit
+        # Tracker.__init__(self, name="PyTorchGoturn", is_deterministic=True)
+        self.name = "PyTorchGoturn"
+        self.is_deterministic = True
 
         self._input_shape = input_shape
 
@@ -340,7 +366,8 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator, Tracker):
         img = img.permute(2, 0, 1)
         img = img * std + mean
         img = torch.unsqueeze(img, dim=0)
-        img = interpolate(img, size=(self.input_shape[1], self.input_shape[2]))
+        img = interpolate(img, size=(self.input_shape[1], self.input_shape[2]), mode="bicubic")
+        img = torch.clamp(img, self.clip_values[0], self.clip_values[1])
         img = torch.squeeze(img)
         img = (img - mean) / std
         return img
@@ -371,7 +398,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator, Tracker):
             bbox_height = bbox_tight[3] - bbox_tight[1]
             output_height = k_context_factor * bbox_height
 
-            return max(torch.tensor(1.0).to(self.device), output_height)
+            return torch.maximum(torch.tensor(1.0).to(self.device), output_height)
 
         def compute_output_width_f(bbox_tight: "torch.Tensor") -> "torch.Tensor":
             """
@@ -383,7 +410,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator, Tracker):
             bbox_width = bbox_tight[2] - bbox_tight[0]
             output_width = k_context_factor * bbox_width
 
-            return max(torch.tensor(1.0).to(self.device), output_width)
+            return torch.maximum(torch.tensor(1.0).to(self.device), output_width)
 
         def get_center_x_f(bbox_tight: "torch.Tensor") -> "torch.Tensor":
             """
@@ -429,8 +456,8 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator, Tracker):
             output_width = compute_output_width_f(bbox_tight)
             output_height = compute_output_height_f(bbox_tight)
 
-            roi_left = max(torch.tensor(0.0).to(self.device), bbox_center_x - (output_width / 2.0))
-            roi_bottom = max(torch.tensor(0.0).to(self.device), bbox_center_y - (output_height / 2.0))
+            roi_left = torch.maximum(torch.tensor(0.0).to(self.device), bbox_center_x - (output_width / 2.0))
+            roi_bottom = torch.maximum(torch.tensor(0.0).to(self.device), bbox_center_y - (output_height / 2.0))
 
             # New ROI width
             # -------------
@@ -438,15 +465,15 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator, Tracker):
             # image
             # 2. right_half should not go out of bound on the right side of the
             # image
-            left_half = min(output_width / 2.0, bbox_center_x)
-            right_half = min(output_width / 2.0, image_width - bbox_center_x)
-            roi_width = max(1.0, left_half + right_half)
+            left_half = torch.minimum(output_width / 2.0, bbox_center_x)
+            right_half = torch.minimum(output_width / 2.0, image_width - bbox_center_x)
+            roi_width = torch.maximum(torch.tensor(1.0).to(self.device), left_half + right_half)
 
             # New ROI height
             # Similar logic applied that is applied for 'New ROI width'
-            top_half = min(output_height / 2.0, bbox_center_y)
-            bottom_half = min(output_height / 2.0, image_height - bbox_center_y)
-            roi_height = max(torch.tensor(1.0).to(self.device), top_half + bottom_half)
+            top_half = torch.minimum(output_height / 2.0, bbox_center_y)
+            bottom_half = torch.minimum(output_height / 2.0, image_height - bbox_center_y)
+            roi_height = torch.maximum(torch.tensor(1.0).to(self.device), top_half + bottom_half)
 
             # Padded image location in the original image
             # objPadImageLocation = BoundingBox(roi_left, roi_bottom, roi_left + roi_width, roi_bottom + roi_height)
@@ -464,7 +491,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator, Tracker):
             output_width = compute_output_width_f(bbox_tight)
             bbox_center_x = get_center_x_f(bbox_tight)
 
-            return max(torch.tensor(0.0).to(self.device), (output_width / 2) - bbox_center_x)
+            return torch.maximum(torch.tensor(0.0).to(self.device), (output_width / 2) - bbox_center_x)
 
         def edge_spacing_y_f(bbox_tight: "torch.Tensor") -> "torch.Tensor":
             """
@@ -476,7 +503,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator, Tracker):
             output_height = compute_output_height_f(bbox_tight)
             bbox_center_y = get_center_y_f(bbox_tight)
 
-            return max(torch.tensor(0.0).to(self.device), (output_height / 2) - bbox_center_y)
+            return torch.maximum(torch.tensor(0.0).to(self.device), (output_height / 2) - bbox_center_y)
 
         def crop_pad_image(
             bbox_tight: "torch.Tensor", image: "torch.Tensor"
@@ -516,9 +543,8 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator, Tracker):
             roi_left_int = int(roi_left)
             roi_left_width_int = roi_left_int + roi_width
 
-            cropped_image = image[
-                roi_bottom_int : roi_bottom_height_int, roi_left_int : roi_left_width_int
-            ]
+            cropped_image = image[roi_bottom_int:roi_bottom_height_int, roi_left_int:roi_left_width_int]
+
             # output_width = max(math.ceil(bbox_tight.compute_output_width()), roi_width)
             # output_height = max(math.ceil(bbox_tight.compute_output_height()), roi_height)
             output_width = max(math.ceil(compute_output_width_f(bbox_tight)), roi_width)
@@ -690,13 +716,25 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator, Tracker):
         """
         raise NotImplementedError
 
-    def init(self, image, box):
+    def init(self, image: "PIL.JpegImagePlugin.JpegImageFile", box: np.ndarray):
+        """
+        Method `init` for GOT-10k trackers.
+
+        :param image: Current image.
+        :return: Predicted box.
+        """
         import torch
 
         self.prev = np.array(image) / 255.0 * self.clip_values[1]
         self.box = torch.from_numpy(np.array([box[0], box[1], box[2] + box[0], box[3] + box[1]])).to(self.device)
 
-    def update(self, image):
+    def update(self, image: np.ndarray) -> np.ndarray:
+        """
+        Method `update` for GOT-10k trackers.
+
+        :param image: Current image.
+        :return: Predicted box.
+        """
         import torch
 
         curr = torch.from_numpy(np.array(image) / 255.0 * self.clip_values[1]).to(self.device)
@@ -713,3 +751,36 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator, Tracker):
         )
 
         return box_return
+
+    def track(self, img_files: List[str], box: np.ndarray, visualize: bool = False):
+        """
+        Method `track` for GOT-10k toolkit trackers (MIT licence).
+
+        :param img_files: Image files.
+        :param box: Initial boxes.
+        :param visualize: Visualise tracking.
+        """
+        from got10k.utils.viz import show_frame
+        from PIL import Image
+
+        frame_num = len(img_files)
+        boxes = np.zeros((frame_num, 4))
+        boxes[0] = box
+        times = np.zeros(frame_num)
+
+        for f, img_file in enumerate(img_files):
+            image = Image.open(img_file)
+            if not image.mode == "RGB":
+                image = image.convert("RGB")
+
+            start_time = time.time()
+            if f == 0:
+                self.init(image, box)
+            else:
+                boxes[f, :] = self.update(image)
+            times[f] = time.time() - start_time
+
+            if visualize:
+                show_frame(image, boxes[f, :])
+
+        return boxes, times
