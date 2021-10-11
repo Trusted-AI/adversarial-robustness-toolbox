@@ -51,6 +51,7 @@ jobs:
           pip install scipy==1.5.4
           pip install matplotlib==3.3.4
           pip install pandas==1.1.5
+          pip install statsmodels==0.12.2
           pip install tensorflow==${{ matrix.tensorflow }}
           pip install keras==${{ matrix.keras }}
           pip install lingvo==${{ matrix.lingvo }}
