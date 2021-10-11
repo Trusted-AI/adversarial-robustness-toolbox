@@ -125,7 +125,6 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
         import keras.backend as K
         from keras.losses import categorical_crossentropy
         from keras.metrics import categorical_accuracy
-        from keras.optimizers import Adam
 
         super().__init__(
             model=model,
@@ -181,8 +180,15 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
         self.cost = self.init_cost
         self.cost_tensor = K.variable(self.cost)
         self.loss_combined = self.loss_ce + self.loss_reg * self.cost_tensor
-        self.opt = Adam(lr=self.learning_rate, beta_1=0.5, beta_2=0.9)
 
+        try:
+            from keras.optimizers import Adam
+
+            self.opt = Adam(lr=self.learning_rate, beta_1=0.5, beta_2=0.9)
+        except ImportError:
+            from keras.optimizers import adam_v2
+
+            self.opt = adam_v2.Adam(lr=self.learning_rate, beta_1=0.5, beta_2=0.9)
         self.updates = self.opt.get_updates(
             params=[self.pattern_tensor_raw, self.mask_tensor_raw], loss=self.loss_combined
         )
@@ -260,7 +266,7 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
                 reg_best = avg_loss_reg
 
             # check early stop
-            if self.early_stop:
+            if self.early_stop:  # pragma: no cover
                 if reg_best < float("inf"):
                     if reg_best >= self.early_stop_threshold * early_stop_reg_best:
                         early_stop_counter += 1
@@ -328,7 +334,7 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
         """
         if self.layer_names is not None:
             penultimate_layer = len(self.layer_names) - 2
-        else:
+        else:  # pragma: no cover
             raise ValueError("No layer names found.")
         return self.get_activations(x, penultimate_layer, batch_size=self.batch_size, framework=False)
 
@@ -340,7 +346,7 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
         """
         if self.layer_names is not None:
             layer = self._model.layers[len(self.layer_names) - 2]
-        else:
+        else:  # pragma: no cover
             raise ValueError("No layer names found.")
         weights, biases = layer.get_weights()
         weights[:, index] = np.zeros_like(weights[:, index])

@@ -33,7 +33,6 @@ from typing import Callable, Optional, Union, TYPE_CHECKING
 import numpy as np
 from scipy.stats import pearsonr
 from tqdm.auto import trange
-from sklearn.metrics import log_loss
 
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import LossGradientsMixin
@@ -114,7 +113,7 @@ class LowProFool(EvasionAttack):
         self.n_features = self.estimator.input_shape[0]
         self.importance_vec = None
         if self.estimator.clip_values is None:
-            logger.warning(
+            logger.warning(  # pragma: no cover
                 "The `clip_values` attribute of the estimator is `None`, therefore this instance of LowProFool will by "
                 "default generate adversarial perturbations without clipping them."
             )
@@ -128,7 +127,7 @@ class LowProFool(EvasionAttack):
             steps_before_min_eta_reached = np.ceil(np.log(eta_min / eta) / np.log(eta_decay))
 
             if steps_before_min_eta_reached / self.n_steps < 0.8:
-                logger.warning(
+                logger.warning(  # pragma: no cover
                     "The given combination of 'n_steps', 'eta', 'eta_decay' and 'eta_min' effectively sets learning "
                     "rate to its minimal value after about %d steps out of all %d.",
                     steps_before_min_eta_reached,
@@ -188,22 +187,6 @@ class LowProFool(EvasionAttack):
 
         return clf_loss_grad + norm_grad
 
-    def __loss_function(self, y_probas: np.ndarray, perturbations: np.ndarray, targets: np.ndarray) -> np.ndarray:
-        """
-        Complete loss function to optimize, where the adversary loss is given by the sum of logistic loss of
-        classification and weighted Lp-norm of the perturbation vectors. Do keep in mind that not all classifiers
-        provide a well defined loss estimation function - therefore it is logistic loss, which is used instead.
-
-        :param y_probas: Class-wise prediction probabilities.
-        :param perturbations: Perturbations of samples towards being adversarial.
-        :param targets: The target labels for the attack.
-        :return: Aggregate loss score.
-        """
-        clf_loss_part = log_loss(y_probas, targets)
-        norm_part = self.__weighted_lp_norm(perturbations)
-
-        return clf_loss_part + self.lambd * norm_part
-
     def __apply_clipping(self, samples: np.ndarray, perturbations: np.ndarray) -> np.ndarray:
         """
         Function for clipping perturbation vectors to forbid the adversary vectors to go beyond the allowed ranges of
@@ -237,7 +220,7 @@ class LowProFool(EvasionAttack):
             absolutes = np.abs(np.array(pearson_correlations))
             self.importance_vec = absolutes / np.power(np.sum(absolutes ** 2), 0.5)
 
-        elif callable(self.importance):
+        elif callable(self.importance):  # pragma: no cover
             # Apply a custom function to call on the provided data.
             try:
                 self.importance_vec = np.array(self.importance(x, y))
@@ -252,7 +235,7 @@ class LowProFool(EvasionAttack):
                 self.importance_vec = None
                 raise ValueError("Feature has to be one-dimensional array of size (n_features, ).")
 
-        else:
+        else:  # pragma: no cover
             raise TypeError("Unrecognized feature importance function: {}".format(self.importance))
 
     def fit_importances(
@@ -273,10 +256,10 @@ class LowProFool(EvasionAttack):
         :return: LowProFool instance itself.
         """
         if importance_array is not None:
-            # Use a pre-calculated vector of feature importances.
+            # Use a pre-calculated vector of feature importance.
             if np.array(importance_array).shape == (self.n_features,):
                 self.importance_vec = np.array(importance_array)
-            else:
+            else:  # pragma: no cover
                 raise ValueError("Feature has to be one-dimensional array of size (n_features, ).")
 
         elif self.importance_vec is None:
@@ -379,7 +362,7 @@ class LowProFool(EvasionAttack):
         if not (isinstance(self.n_classes, int) and self.n_classes > 0):
             raise ValueError("The argument `n_classes` has to be positive integer.")
 
-        if not (isinstance(self.n_features, int) and self.n_classes > 0):
+        if not (isinstance(self.n_features, int) and self.n_features > 0):
             raise ValueError("The argument `n_features` has to be positive integer.")
 
         if not (isinstance(self.n_steps, int) and self.n_steps > 0):

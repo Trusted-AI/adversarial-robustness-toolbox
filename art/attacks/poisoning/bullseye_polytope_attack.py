@@ -158,7 +158,7 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
         poison_batch = PoisonBatch([torch.from_numpy(np.copy(sample)).to(self.estimator.device) for sample in x])
         opt_method = self.opt.lower()
 
-        if opt_method == "sgd":
+        if opt_method == "sgd":  # pragma: no cover
             logger.info("Using SGD to craft poison samples")
             optimizer = torch.optim.SGD(poison_batch.parameters(), lr=self.learning_rate, momentum=self.momentum)
         elif opt_method == "adam":
@@ -189,20 +189,20 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
                         activations = net.get_activations(x, layer=layer, batch_size=self.batch_size, framework=True)
                         if activations is not None:
                             block_feats += [torch.stack([feat.detach() for feat in activations], 0)]
-                        else:
+                        else:  # pragma: no cover
                             raise ValueError("Activations are None.")
                 else:
                     layer_2: Union[int, str] = self.feature_layer
                     activations = net.get_activations(x, layer=layer_2, batch_size=self.batch_size, framework=True)
                     if activations is not None:
                         block_feats = [feat.detach() for feat in activations]
-                    else:
+                    else:  # pragma: no cover
                         raise ValueError("Activations are None.")
                 target_feat_list.append(block_feats)
                 s_coeff = [
                     torch.ones(n_poisons, 1).to(self.estimator.device) / n_poisons for _ in range(len(block_feats))
                 ]
-            else:
+            else:  # pragma: no cover
                 if isinstance(self.feature_layer, list):
                     raise NotImplementedError
                 layer_3: Union[int, str] = self.feature_layer
@@ -245,7 +245,7 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
             )
             poison_batch.poison.data = perturbed_range01
 
-        if y is None:
+        if y is None:  # pragma: no cover
             raise ValueError("You must pass in the target label as y")
 
         return get_poison_tuples(poison_batch, y)
@@ -341,9 +341,9 @@ def loss_from_center(
                         torch.flatten(net.get_activations(poison_batch(), layer=layer, framework=True), 0)
                         for layer in feature_layer
                     ]
-                else:
+                else:  # pragma: no cover
                     poisons_feats = net.get_activations(poison_batch(), layer=feature_layer, framework=True)
-            else:
+            else:  # pragma: no cover
                 assert False, "net_repeat set to {}".format(net_repeat)
 
             net_loss = torch.tensor(0.0)
@@ -356,7 +356,7 @@ def loss_from_center(
             loss += net_loss / len(center_feats)
         loss = loss / len(subs_net_list)
 
-    else:
+    else:  # pragma: no cover
         loss = torch.tensor(0.0)
         for net, center in zip(subs_net_list, target_feat_list):
             poisons_list = [

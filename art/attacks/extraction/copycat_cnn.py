@@ -94,11 +94,11 @@ class CopycatCNN(ExtractionAttack):
         :return: The stolen classifier.
         """
         # Warning to users if y is not None
-        if y is not None:
+        if y is not None:  # pragma: no cover
             logger.warning("This attack does not use the provided label y.")
 
         # Check the size of the source input vs nb_stolen
-        if x.shape[0] < self.nb_stolen:
+        if x.shape[0] < self.nb_stolen:  # pragma: no cover
             logger.warning(
                 "The size of the source input is smaller than the expected number of queries submitted "
                 "to the victim classifier."
@@ -106,7 +106,7 @@ class CopycatCNN(ExtractionAttack):
 
         # Check if there is a thieved classifier provided for training
         thieved_classifier = kwargs["thieved_classifier"]
-        if thieved_classifier is None or not isinstance(thieved_classifier, ClassifierMixin):
+        if thieved_classifier is None or not isinstance(thieved_classifier, ClassifierMixin):  # pragma: no cover
             raise ValueError("A thieved classifier is needed.")
 
         # Select data to attack

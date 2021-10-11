@@ -160,6 +160,22 @@ class TestSpatialTransformation(TestBase):
 
         self.assertIn("Feature vectors detected.", str(context.exception))
 
+    def test_check_params(self):
+
+        ptc = get_image_classifier_pt(from_logits=True)
+
+        with self.assertRaises(ValueError):
+            _ = SpatialTransformation(ptc, max_translation=-1)
+
+        with self.assertRaises(ValueError):
+            _ = SpatialTransformation(ptc, num_translations=-1)
+
+        with self.assertRaises(ValueError):
+            _ = SpatialTransformation(ptc, max_rotation=-1)
+
+        with self.assertRaises(ValueError):
+            _ = SpatialTransformation(ptc, verbose="False")
+
     def test_1_classifier_type_check_fail(self):
         backend_test_classifier_type_check_fail(SpatialTransformation, [BaseEstimator, NeuralNetworkMixin])
 

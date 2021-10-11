@@ -221,7 +221,7 @@ class MXDataGenerator(DataGenerator):
         return tuple(batch)
 
 
-class TensorFlowDataGenerator(DataGenerator):
+class TensorFlowDataGenerator(DataGenerator):  # pragma: no cover
     """
     Wrapper class on top of the TensorFlow native iterators :class:`tf.data.Iterator`.
     """

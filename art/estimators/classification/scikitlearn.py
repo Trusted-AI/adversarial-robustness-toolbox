@@ -74,7 +74,7 @@ def SklearnClassifier(
             used for data preprocessing. The first value will be subtracted from the input. The input will then
             be divided by the second one.
     """
-    if model.__class__.__module__.split(".")[0] != "sklearn":
+    if model.__class__.__module__.split(".")[0] != "sklearn":  # pragma: no cover
         raise TypeError("Model is not an sklearn model. Received '%s'" % model.__class__)
 
     sklearn_name = model.__class__.__name__
@@ -189,7 +189,7 @@ class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):  # lgtm [py/
         if self._use_logits:
             if callable(getattr(self.model, "predict_log_proba", None)):
                 y_pred = self.model.predict_log_proba(x_preprocessed)
-            else:
+            else:  # pragma: no cover
                 logger.warning(
                     "use_logits was True but classifier did not have callable predict_log_proba member. Falling back to"
                     " probabilities"
@@ -201,7 +201,7 @@ class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):  # lgtm [py/
                 self.model.predict(x_preprocessed),
                 nb_classes=self.model.classes_.shape[0],
             )
-        else:
+        else:  # pragma: no cover
             raise ValueError("The provided model does not have methods `predict_proba` or `predict`.")
 
         # Apply postprocessing
@@ -222,7 +222,7 @@ class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):  # lgtm [py/
         else:
             full_path = os.path.join(path, filename)
         folder = os.path.split(full_path)[0]
-        if not os.path.exists(folder):
+        if not os.path.exists(folder):  # pragma: no cover
             os.makedirs(folder)
 
         with open(full_path + ".pickle", "wb") as file_pickle:
@@ -803,12 +803,12 @@ class ScikitlearnLogisticRegression(ClassGradientsMixin, LossGradientsMixin, Sci
             classes in the classifier is not known.
         :raises `TypeError`: If the requested label cannot be processed.
         """
-        if not hasattr(self.model, "coef_"):
+        if not hasattr(self.model, "coef_"):  # pragma: no cover
             raise ValueError(
                 """Model has not been fitted. Run function `fit(x, y)` of classifier first or provide a
             fitted model."""
             )
-        if self.nb_classes is None:
+        if self.nb_classes is None:  # pragma: no cover
             raise ValueError("Unknown number of classes in classifier.")
         nb_samples = x.shape[0]
 
@@ -889,7 +889,7 @@ class ScikitlearnLogisticRegression(ClassGradientsMixin, LossGradientsMixin, Sci
         # pylint: disable=E0001
         from sklearn.utils.class_weight import compute_class_weight
 
-        if not hasattr(self.model, "coef_"):
+        if not hasattr(self.model, "coef_"):  # pragma: no cover
             raise ValueError(
                 """Model has not been fitted. Run function `fit(x, y)` of classifier first or provide a
             fitted model."""
@@ -960,7 +960,7 @@ class ScikitlearnGaussianNB(ScikitlearnClassifier):
         # pylint: disable=E0001
         import sklearn  # lgtm [py/repeated-import]
 
-        if not isinstance(model, sklearn.naive_bayes.GaussianNB):
+        if not isinstance(model, sklearn.naive_bayes.GaussianNB):  # pragma: no cover
             raise TypeError("Model must be of type sklearn.naive_bayes.GaussianNB. Found type {}".format(type(model)))
 
         super().__init__(
@@ -1045,7 +1045,7 @@ class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassif
         num_samples, _ = x_preprocessed.shape
 
         if isinstance(self.model, sklearn.svm.SVC):
-            if self.model.fit_status_:
+            if self.model.fit_status_:  # pragma: no cover
                 raise AssertionError("Model has not been fitted correctly.")
 
             support_indices = [0] + list(np.cumsum(self.model.n_support_))

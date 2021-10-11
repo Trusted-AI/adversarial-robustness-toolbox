@@ -90,6 +90,26 @@ def test_default(art_warning):
 
 
 @pytest.mark.framework_agnostic
+def test__clip_Values(art_warning):
+    try:
+        # Small data for testing
+        x = np.array([[0.37, 0.68, 0.63, 0.48, 0.48, 0.18, 0.19]])
+
+        # Create filter
+        audio_filter = LFilter(clip_values=(0, 1))
+
+        # Apply filter
+        result = audio_filter(x)
+
+        # Test
+        assert result[1] is None
+        np.testing.assert_array_almost_equal(x, result[0], decimal=0)
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.framework_agnostic
 def test_triple_clip_values_error(art_warning):
     try:
         exc_msg = "`clip_values` should be a tuple of 2 floats containing the allowed data range."
@@ -162,6 +182,47 @@ def test_estimate_gradient(fir_filter, art_warning, expected_values):
         np.testing.assert_array_almost_equal(result0, estimated_grad[0], decimal=0)
         np.testing.assert_array_almost_equal(result1, estimated_grad[1], decimal=0)
         np.testing.assert_array_almost_equal(result2, estimated_grad[2], decimal=0)
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.framework_agnostic
+def test_check_params(art_warning):
+
+    try:
+
+        with pytest.raises(ValueError):
+            _ = LFilter(numerator_coef=np.array([0.1, 0.2, -0.1, -0.2]), denominator_coef=[0.0, 0.1, 0.3, 0.4])
+
+        with pytest.raises(ValueError):
+            _ = LFilter(
+                numerator_coef=np.array([0.1, 0.2, -0.1, -0.2]), denominator_coef=np.array([0.0, 0.1, 0.3, 0.4])
+            )
+
+        with pytest.raises(ValueError):
+            _ = LFilter(numerator_coef=[0.1, 0.2, -0.1, -0.2], denominator_coef=np.array([1.0, 0.1, 0.3, 0.4]))
+
+        with pytest.raises(ValueError):
+            _ = LFilter(
+                numerator_coef=np.array([0.1, 0.2, -0.1, -0.2]),
+                denominator_coef=np.array([1.0, 0.1, 0.3, 0.4]),
+                axis=1.0,
+            )
+
+        with pytest.raises(ValueError):
+            _ = LFilter(
+                numerator_coef=np.array([0.1, 0.2, -0.1, -0.2]),
+                denominator_coef=np.array([1.0, 0.1, 0.3, 0.4]),
+                initial_cond=1.0,
+            )
+
+        with pytest.raises(ValueError):
+            _ = LFilter(
+                numerator_coef=np.array([0.1, 0.2, -0.1, -0.2]),
+                denominator_coef=np.array([1.0, 0.1, 0.3, 0.4]),
+                verbose="True",
+            )
 
     except ARTTestException as e:
         art_warning(e)

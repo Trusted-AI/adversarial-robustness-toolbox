@@ -127,7 +127,7 @@ class HopSkipJump(EvasionAttack):
 
         y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
-        if y is not None and self.estimator.nb_classes == 2 and y.shape[1] == 1:
+        if y is not None and self.estimator.nb_classes == 2 and y.shape[1] == 1:  # pragma: no cover
             raise ValueError(
                 "This attack has not yet been tested for binary classification with a single output classifier."
             )
@@ -175,7 +175,7 @@ class HopSkipJump(EvasionAttack):
             x_adv_init = [None] * len(x)
 
         # Assert that, if attack is targeted, y is provided
-        if self.targeted and y is None:
+        if self.targeted and y is None:  # pragma: no cover
             raise ValueError("Target labels `y` need to be provided for a targeted attack.")
 
         # Some initial setups
@@ -449,7 +449,7 @@ class HopSkipJump(EvasionAttack):
             self.curr_iter += 1
 
             # If attack failed. return original sample
-            if np.isnan(current_sample).any():
+            if np.isnan(current_sample).any():  # pragma: no cover
                 logger.debug("NaN detected in sample, returning original sample.")
                 return original_sample
 

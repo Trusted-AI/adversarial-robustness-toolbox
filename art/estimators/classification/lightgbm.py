@@ -70,7 +70,7 @@ class LightGBMClassifier(ClassifierDecisionTree):
         """
         from lightgbm import Booster  # type: ignore
 
-        if not isinstance(model, Booster):
+        if not isinstance(model, Booster):  # pragma: no cover
             raise TypeError("Model must be of type lightgbm.Booster")
 
         super().__init__(
@@ -132,7 +132,7 @@ class LightGBMClassifier(ClassifierDecisionTree):
         # pylint: disable=W0212
         return self._model._Booster__num_class
 
-    def save(self, filename: str, path: Optional[str] = None) -> None:
+    def save(self, filename: str, path: Optional[str] = None) -> None:  # pragma: no cover
         """
         Save a model to file in the format specific to the backend framework.
 

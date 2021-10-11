@@ -102,7 +102,7 @@ class DeepFool(EvasionAttack):
         preds = self.estimator.predict(x, batch_size=self.batch_size)
 
         if self.estimator.nb_classes == 2 and preds.shape[1] == 1:
-            raise ValueError(
+            raise ValueError(  # pragma: no cover
                 "This attack has not yet been tested for binary classification with a single output classifier."
             )
 

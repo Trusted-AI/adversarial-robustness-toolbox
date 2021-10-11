@@ -151,12 +151,14 @@ class ZooAttack(EvasionAttack):
         if self.input_is_feature_vector:
             self.use_resize = False
             self.use_importance = False
-            logger.info("Disable resizing and importance sampling because feature vector input has been detected.")
+            logger.info(  # pragma: no cover
+                "Disable resizing and importance sampling because feature vector input has been detected."
+            )
 
         if self.use_resize:
             if not self.estimator.channels_first:
                 dims = (batch_size, self._init_size, self._init_size, self.estimator.input_shape[-1])
-            else:
+            else:  # pragma: no cover
                 dims = (batch_size, self.estimator.input_shape[0], self._init_size, self._init_size)
             self._current_noise = np.zeros(dims, dtype=ART_NUMPY_DTYPE)
         else:
@@ -211,14 +213,14 @@ class ZooAttack(EvasionAttack):
         y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
         # Check that `y` is provided for targeted attacks
-        if self.targeted and y is None:
+        if self.targeted and y is None:  # pragma: no cover
             raise ValueError("Target labels `y` need to be provided for a targeted attack.")
 
         # No labels provided, use model prediction as correct class
         if y is None:
             y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
 
-        if self.estimator.nb_classes == 2 and y.shape[1] == 1:
+        if self.estimator.nb_classes == 2 and y.shape[1] == 1:  # pragma: no cover
             raise ValueError(
                 "This attack has not yet been tested for binary classification with a single output classifier."
             )
@@ -469,7 +471,7 @@ class ZooAttack(EvasionAttack):
                     )
                     % coord_batch.shape[-1]
                 )
-            except ValueError as error:
+            except ValueError as error:  # pragma: no cover
                 if "Cannot take a larger sample than population when 'replace=False'" in str(error):
                     raise ValueError(
                         "Too many samples are requested for the random indices. Try to reduce the number of parallel"

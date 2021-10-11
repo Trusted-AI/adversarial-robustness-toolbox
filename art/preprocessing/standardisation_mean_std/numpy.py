@@ -71,7 +71,7 @@ class StandardisationMeanStd(Preprocessor):
         :param y: Label data, will not be affected by this preprocessing.
         :return: Standardise input samples and unmodified labels.
         """
-        if x.dtype in [np.uint8, np.uint16, np.uint32, np.uint64]:
+        if x.dtype in [np.uint8, np.uint16, np.uint32, np.uint64]:  # pragma: no cover
             raise TypeError(
                 "The data type of input data `x` is {} and cannot represent negative values. Consider "
                 "changing the data type of the input data `x` to a type that supports negative values e.g. "

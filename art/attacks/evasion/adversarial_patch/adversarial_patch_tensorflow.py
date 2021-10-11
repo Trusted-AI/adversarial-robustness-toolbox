@@ -117,7 +117,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         self.verbose = verbose
         self._check_params()
 
-        if self.estimator.channels_first:
+        if self.estimator.channels_first:  # pragma: no cover
             raise ValueError("Color channel needs to be in last dimension.")
 
         self.use_logits: Optional[bool] = None
@@ -133,10 +133,12 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             self.i_h = 1
             self.i_w = 2
 
-        if self.patch_shape[0] != self.patch_shape[1]:
+        if self.patch_shape[0] != self.patch_shape[1]:  # pragma: no cover
             raise ValueError("Patch height and width need to be the same.")
 
-        if not (self.estimator.postprocessing_defences is None or self.estimator.postprocessing_defences == []):
+        if not (  # pragma: no cover
+            self.estimator.postprocessing_defences is None or self.estimator.postprocessing_defences == []
+        ):
             raise ValueError(
                 "Framework-specific implementation of Adversarial Patch attack does not yet support "
                 + "postprocessing defences."
@@ -415,7 +417,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             mask = mask.copy()
         mask = self._check_mask(mask=mask, x=x)
 
-        if y is None:
+        if y is None:  # pragma: no cover
             logger.info("Setting labels to estimator predictions and running untargeted attack because `y=None`.")
             y = to_categorical(np.argmax(self.estimator.predict(x=x), axis=1), nb_classes=self.estimator.nb_classes)
             self.targeted = False
@@ -480,7 +482,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         )
 
     def _check_mask(self, mask: np.ndarray, x: np.ndarray) -> np.ndarray:
-        if mask is not None and (
+        if mask is not None and (  # pragma: no cover
             (mask.dtype != bool)
             or not (mask.shape[0] == 1 or mask.shape[0] == x.shape[0])
             or not (mask.shape[1] == x.shape[self.i_h + 1] and mask.shape[2] == x.shape[self.i_w + 1])
@@ -532,7 +534,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             self._patch.assign(initial_value)
         elif self._patch.shape == initial_patch_value.shape:
             self._patch.assign(initial_patch_value)
-        else:
+        else:  # pragma: no cover
             raise ValueError("Unexpected value for initial_patch_value.")
 
     @staticmethod

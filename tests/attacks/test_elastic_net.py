@@ -269,6 +269,13 @@ class TestElasticNet(TestBase):
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_mnist))), 0.0, delta=0.00001)
 
+        ead = ElasticNet(classifier=tfc, targeted=False, max_iter=2, verbose=False, decision_rule="L1")
+        _ = ead.generate(self.x_test_mnist, **params)
+        ead = ElasticNet(classifier=tfc, targeted=False, max_iter=2, verbose=False, decision_rule="L2")
+        _ = ead.generate(self.x_test_mnist, **params)
+        with self.assertRaises(ValueError):
+            _ = ElasticNet(classifier=tfc, targeted=False, max_iter=2, verbose=False, decision_rule="L3")
+
         # Close session
         if sess is not None:
             sess.close()
@@ -801,6 +808,31 @@ class TestElasticNet(TestBase):
 
             # Check that x_test has not been modified by attack and classifier
             self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_iris))), 0.0, delta=0.00001)
+
+    def test_check_params(self):
+
+        ptc = get_image_classifier_pt(from_logits=True)
+
+        with self.assertRaises(ValueError):
+            _ = ElasticNet(ptc, binary_search_steps="1.0")
+        with self.assertRaises(ValueError):
+            _ = ElasticNet(ptc, binary_search_steps=-1)
+
+        with self.assertRaises(ValueError):
+            _ = ElasticNet(ptc, max_iter="1.0")
+        with self.assertRaises(ValueError):
+            _ = ElasticNet(ptc, max_iter=-1)
+
+        with self.assertRaises(ValueError):
+            _ = ElasticNet(ptc, batch_size="1.0")
+        with self.assertRaises(ValueError):
+            _ = ElasticNet(ptc, batch_size=-1)
+
+        with self.assertRaises(ValueError):
+            _ = ElasticNet(ptc, decision_rule=1.0)
+
+        with self.assertRaises(ValueError):
+            _ = ElasticNet(ptc, verbose="True")
 
 
 if __name__ == "__main__":

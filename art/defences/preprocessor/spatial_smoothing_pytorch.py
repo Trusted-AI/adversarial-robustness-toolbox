@@ -84,7 +84,7 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
         # Set device
         if device_type == "cpu" or not torch.cuda.is_available():
             self._device = torch.device("cpu")
-        else:
+        else:  # pragma: no cover
             cuda_idx = torch.cuda.current_device()
             self._device = torch.device("cuda:{}".format(cuda_idx))
 

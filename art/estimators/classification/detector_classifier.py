@@ -159,7 +159,7 @@ class DetectorClassifier(ClassifierNeuralNetwork):
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         """
-        if not (
+        if not (  # pragma: no cover
             (label is None)
             or (isinstance(label, int) and label in range(self.nb_classes))
             or (

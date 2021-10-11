@@ -250,6 +250,25 @@ class TestDeepFool(TestBase):
         accuracy = np.sum(predictions_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
         logger.info("Accuracy on Iris with DeepFool adversarial examples: %.2f%%", (accuracy * 100))
 
+    def test_check_params(self):
+
+        ptc = get_image_classifier_pt(from_logits=True)
+
+        with self.assertRaises(ValueError):
+            _ = DeepFool(ptc, max_iter=-1)
+
+        with self.assertRaises(ValueError):
+            _ = DeepFool(ptc, nb_grads=-1)
+
+        with self.assertRaises(ValueError):
+            _ = DeepFool(ptc, epsilon=-1)
+
+        with self.assertRaises(ValueError):
+            _ = DeepFool(ptc, batch_size=-1)
+
+        with self.assertRaises(ValueError):
+            _ = DeepFool(ptc, verbose="False")
+
 
 if __name__ == "__main__":
     unittest.main()

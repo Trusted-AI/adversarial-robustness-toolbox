@@ -37,7 +37,7 @@ from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
 
 from tests.utils import TestBase
-from tests.utils import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
+from tests.utils import get_image_classifier_tf, get_image_classifier_pt  # , get_image_classifier_kr
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 
 logger = logging.getLogger(__name__)
@@ -65,22 +65,22 @@ class TestPixelAttack(TestBase):
         cls.x_test_mnist = cls.x_test_mnist[0 : cls.n_test]
         cls.y_test_mnist = cls.y_test_mnist[0 : cls.n_test]
 
-    def test_6_keras_mnist(self):
-        """
-        Test with the KerasClassifier. (Untargeted Attack)
-        :return:
-        """
+    # def test_6_keras_mnist(self):
+    #     """
+    #     Test with the KerasClassifier. (Untargeted Attack)
+    #     :return:
+    #     """
+    #
+    #     classifier = get_image_classifier_kr()
+    #     self._test_attack(classifier, self.x_test_mnist, self.y_test_mnist, False)
 
-        classifier = get_image_classifier_kr()
-        self._test_attack(classifier, self.x_test_mnist, self.y_test_mnist, False)
-
-    def test_2_tensorflow_mnist(self):
-        """
-        Test with the TensorFlowClassifier. (Untargeted Attack)
-        :return:
-        """
-        classifier, sess = get_image_classifier_tf()
-        self._test_attack(classifier, self.x_test_mnist, self.y_test_mnist, False)
+    # def test_2_tensorflow_mnist(self):
+    #     """
+    #     Test with the TensorFlowClassifier. (Untargeted Attack)
+    #     :return:
+    #     """
+    #     classifier, sess = get_image_classifier_tf()
+    #     self._test_attack(classifier, self.x_test_mnist, self.y_test_mnist, False)
 
     def test_4_pytorch_mnist(self):
         """
@@ -91,13 +91,13 @@ class TestPixelAttack(TestBase):
         classifier = get_image_classifier_pt()
         self._test_attack(classifier, x_test, self.y_test_mnist, False)
 
-    def test_7_keras_mnist_targeted(self):
-        """
-        Test with the KerasClassifier. (Targeted Attack)
-        :return:
-        """
-        classifier = get_image_classifier_kr()
-        self._test_attack(classifier, self.x_test_mnist, self.y_test_mnist, True)
+    # def test_7_keras_mnist_targeted(self):
+    #     """
+    #     Test with the KerasClassifier. (Targeted Attack)
+    #     :return:
+    #     """
+    #     classifier = get_image_classifier_kr()
+    #     self._test_attack(classifier, self.x_test_mnist, self.y_test_mnist, True)
 
     def test_3_tensorflow_mnist_targeted(self):
         """
@@ -107,14 +107,14 @@ class TestPixelAttack(TestBase):
         classifier, sess = get_image_classifier_tf()
         self._test_attack(classifier, self.x_test_mnist, self.y_test_mnist, True)
 
-    def test_5_pytorch_mnist_targeted(self):
-        """
-        Test with the PyTorchClassifier. (Targeted Attack)
-        :return:
-        """
-        x_test = np.reshape(self.x_test_mnist, (self.x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
-        classifier = get_image_classifier_pt()
-        self._test_attack(classifier, x_test, self.y_test_mnist, True)
+    # def test_5_pytorch_mnist_targeted(self):
+    #     """
+    #     Test with the PyTorchClassifier. (Targeted Attack)
+    #     :return:
+    #     """
+    #     x_test = np.reshape(self.x_test_mnist, (self.x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
+    #     classifier = get_image_classifier_pt()
+    #     self._test_attack(classifier, x_test, self.y_test_mnist, True)
 
     def _test_attack(self, classifier, x_test, y_test, targeted):
         """

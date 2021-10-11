@@ -154,20 +154,20 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
 
         # Check clip values
         if self.clip_values is not None:
-            if not np.all(self.clip_values[0] == -1):
+            if not np.all(self.clip_values[0] == -1):  # pragma: no cover
                 raise ValueError("This estimator requires normalized input audios with clip_vales=(-1, 1).")
-            if not np.all(self.clip_values[1] == 1):
+            if not np.all(self.clip_values[1] == 1):  # pragma: no cover
                 raise ValueError("This estimator requires normalized input audios with clip_vales=(-1, 1).")
 
         # Check postprocessing defences
-        if self.postprocessing_defences is not None:
+        if self.postprocessing_defences is not None:  # pragma: no cover
             raise ValueError("This estimator does not support `postprocessing_defences`.")
 
         # Set cpu/gpu device
         self._device: torch.device
         if device_type == "cpu" or not torch.cuda.is_available():
             self._device = torch.device("cpu")
-        else:
+        else:  # pragma: no cover
             cuda_idx = torch.cuda.current_device()
             self._device = torch.device("cuda:{}".format(cuda_idx))
 
@@ -176,7 +176,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         # Load model
         if model is None:
             if self._version == 2:
-                if pretrained_model == "an4":
+                if pretrained_model == "an4":  # pragma: no cover
                     filename, url = (
                         "an4_pretrained_v2.pth",
                         "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/v2.0/an4_pretrained_v2.pth",
@@ -189,13 +189,13 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
                         "librispeech_pretrained_v2.pth",
                     )
 
-                elif pretrained_model == "tedlium":
+                elif pretrained_model == "tedlium":  # pragma: no cover
                     filename, url = (
                         "ted_pretrained_v2.pth",
                         "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/v2.0/ted_pretrained_v2.pth",
                     )
 
-                elif pretrained_model is None:
+                elif pretrained_model is None:  # pragma: no cover
                     # If model is None and no pretrained model is selected, then we need to have parameters filename
                     # and url to download, extract and load the automatic speech recognition model
                     if filename is None or url is None:
@@ -205,7 +205,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
                             "librispeech_pretrained_v2.pth",
                         )
 
-                else:
+                else:  # pragma: no cover
                     raise ValueError("The input pretrained model %s is not supported." % pretrained_model)
 
                 # Download model
@@ -217,7 +217,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
                 self._model = load_model(device=self._device, model_path=model_path, use_half=use_half)
 
             else:
-                if pretrained_model == "an4":
+                if pretrained_model == "an4":  # pragma: no cover
                     filename, url = (
                         "an4_pretrained_v3.ckpt",
                         "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/V3.0/an4_pretrained_v3.ckpt",
@@ -230,13 +230,13 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
                         "librispeech_pretrained_v3.ckpt",
                     )
 
-                elif pretrained_model == "tedlium":
+                elif pretrained_model == "tedlium":  # pragma: no cover
                     filename, url = (
                         "ted_pretrained_v3.ckpt",
                         "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/V3.0/ted_pretrained_v3.ckpt",
                     )
 
-                elif pretrained_model is None:
+                elif pretrained_model is None:  # pragma: no cover
                     # If model is None and no pretrained model is selected, then we need to have parameters filename and
                     # url to download, extract and load the automatic speech recognition model
                     if filename is None or url is None:
@@ -246,7 +246,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
                             "librispeech_pretrained_v3.ckpt",
                         )
 
-                else:
+                else:  # pragma: no cover
                     raise ValueError("The input pretrained model %s is not supported." % pretrained_model)
 
                 # Download model
@@ -302,10 +302,10 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         self.decoder = load_decoder(labels=self._model.labels, cfg=lm_config)
 
         # Setup for AMP use
-        if self._use_amp:
+        if self.use_amp:  # pragma: no cover
             from apex import amp  # pylint: disable=E0611
 
-            if self._optimizer is None:
+            if self.optimizer is None:
                 logger.warning(
                     "An optimizer is needed to use the automatic mixed precision tool, but none for provided. "
                     "A default optimizer is used."
@@ -472,10 +472,10 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
             loss = loss / inputs.size(0)
 
         # Compute gradients
-        if self._use_amp:
+        if self.use_amp:  # pragma: no cover
             from apex import amp  # pylint: disable=E0611
 
-            with amp.scale_loss(loss, self._optimizer) as scaled_loss:
+            with amp.scale_loss(loss, self.optimizer) as scaled_loss:
                 scaled_loss.backward()
 
         else:
@@ -526,7 +526,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         # Put the model in the training mode
         self._model.train()
 
-        if self._optimizer is None:
+        if self.optimizer is None:  # pragma: no cover
             raise ValueError("An optimizer is required to train the model, but none was provided.")
 
         # Apply preprocessing
@@ -563,7 +563,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
                 input_sizes = input_rates.mul_(inputs.size(-1)).int()
 
                 # Zero the parameter gradients
-                self._optimizer.zero_grad()
+                self.optimizer.zero_grad()
 
                 # Call to DeepSpeech model for prediction
                 outputs, output_sizes = self._model(inputs.to(self._device), input_sizes.to(self._device))
@@ -582,16 +582,16 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
                     loss = loss / inputs.size(0)
 
                 # Actual training
-                if self._use_amp:
+                if self.use_amp:  # pragma: no cover
                     from apex import amp  # pylint: disable=E0611
 
-                    with amp.scale_loss(loss, self._optimizer) as scaled_loss:
+                    with amp.scale_loss(loss, self.optimizer) as scaled_loss:
                         scaled_loss.backward()
 
                 else:
                     loss.backward()
 
-                self._optimizer.step()
+                self.optimizer.step()
 
     def compute_loss_and_decoded_output(
         self, masked_adv_input: "torch.Tensor", original_output: np.ndarray, **kwargs
@@ -608,7 +608,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         """
         # This estimator needs to have real lengths for loss computation
         real_lengths = kwargs.get("real_lengths")
-        if real_lengths is None:
+        if real_lengths is None:  # pragma: no cover
             raise ValueError(
                 "The PyTorchDeepSpeech estimator needs information about the real lengths of input sequences to "
                 "compute loss and decoded output."
@@ -744,15 +744,15 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         win_length = n_fft
 
         # Get window for the transformation
-        if window_name == "hamming":
+        if window_name == "hamming":  # pragma: no cover
             window_fn = torch.hamming_window  # type: ignore
-        elif window_name == "hann":
+        elif window_name == "hann":  # pragma: no cover
             window_fn = torch.hann_window  # type: ignore
-        elif window_name == "blackman":
+        elif window_name == "blackman":  # pragma: no cover
             window_fn = torch.blackman_window  # type: ignore
-        elif window_name == "bartlett":
+        elif window_name == "bartlett":  # pragma: no cover
             window_fn = torch.bartlett_window  # type: ignore
-        else:
+        else:  # pragma: no cover
             raise NotImplementedError("Spectrogram window %s not supported." % window_name)
 
         # Create a transformer to transform between the two spaces

@@ -201,6 +201,16 @@ def test_tabular(art_warning, tabular_dl_estimator, framework, get_iris_dataset,
 
 
 @pytest.mark.framework_agnostic
+def test_non_classification(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack, fix_get_rcnn):
+    try:
+        classifier = fix_get_rcnn
+        attack = FastGradientMethod(classifier, num_random_init=3)
+        backend_test_random_initialisation_images(attack, fix_get_mnist_subset)
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.framework_agnostic
 def test_check_params(art_warning, image_dl_estimator_for_attack):
     try:
         classifier = image_dl_estimator_for_attack(FastGradientMethod)

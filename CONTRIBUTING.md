@@ -8,6 +8,7 @@ Adversarial Robustness Toolbox so that others may evaluate it fairly in their ow
 Bug fixes can be initiated through GitHub pull requests. When making code contributions to the Adversarial Robustness 
 Toolbox, we ask that you follow the `PEP 8` coding standard and that you provide unit tests for the new features.
 
+Contributions of new features must include unit test covering at least 80% of the new statements.
 
 ## Validating Git Commits
 This project uses [DCO](https://developercertificate.org/). Be sure to sign off your commits using the `-s` flag or 

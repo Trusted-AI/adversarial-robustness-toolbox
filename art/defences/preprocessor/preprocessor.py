@@ -112,7 +112,7 @@ class Preprocessor(abc.ABC):
         """
         return grad
 
-    def set_params(self, **kwargs) -> None:
+    def set_params(self, **kwargs) -> None:  # pragma: no cover
         """
         Take in a dictionary of parameters and apply checks before saving them as attributes.
         """
@@ -121,7 +121,7 @@ class Preprocessor(abc.ABC):
                 setattr(self, key, value)
         self._check_params()
 
-    def _check_params(self) -> None:
+    def _check_params(self) -> None:  # pragma: no cover
         pass
 
     def forward(self, x: Any, y: Any = None) -> Tuple[Any, Any]:

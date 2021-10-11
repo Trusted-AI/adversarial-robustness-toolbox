@@ -156,7 +156,7 @@ class SecurityCurve(Evaluation):
         else:
             self._detected_obfuscating_gradients = False
 
-    def plot(self) -> None:
+    def plot(self) -> None:  # pragma: no cover
         """
         Plot the Security Curve of adversarial accuracy as function opf attack budget `eps` together with the accuracy
         on benign samples.

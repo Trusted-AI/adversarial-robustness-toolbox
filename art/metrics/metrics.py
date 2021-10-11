@@ -70,7 +70,7 @@ def get_crafter(classifier: "CLASSIFIER_TYPE", attack: str, params: Optional[Dic
     """
     try:
         crafter = SUPPORTED_METHODS[attack]["class"](classifier)
-    except Exception:
+    except Exception:  # pragma: no cover
         raise NotImplementedError("{} crafting method not supported.".format(attack)) from Exception
 
     if params:
@@ -304,11 +304,11 @@ def clever_t(
     # Check if the targeted class is different from the predicted class
     y_pred = classifier.predict(np.array([x]))
     pred_class = np.argmax(y_pred, axis=1)[0]
-    if target_class == pred_class:
+    if target_class == pred_class:  # pragma: no cover
         raise ValueError("The targeted class is the predicted class.")
 
     # Check if pool_factor is smaller than 1
-    if pool_factor < 1:
+    if pool_factor < 1:  # pragma: no cover
         raise ValueError("The `pool_factor` must be larger than 1.")
 
     # Some auxiliary vars
@@ -333,7 +333,7 @@ def clever_t(
         norm = np.inf
     elif norm == np.inf:
         norm = 1
-    elif norm != 2:
+    elif norm != 2:  # pragma: no cover
         raise ValueError("Norm {} not supported".format(norm))
 
     # Compute gradients for all samples in rand_pool
@@ -344,7 +344,7 @@ def clever_t(
         grad_pred_class = classifier.class_gradient(rand_pool_batch, label=pred_class)
         grad_target_class = classifier.class_gradient(rand_pool_batch, label=target_class)
 
-        if np.isnan(grad_pred_class).any() or np.isnan(grad_target_class).any():
+        if np.isnan(grad_pred_class).any() or np.isnan(grad_target_class).any():  # pragma: no cover
             raise Exception("The classifier results NaN gradients.")
 
         grad = grad_pred_class - grad_target_class

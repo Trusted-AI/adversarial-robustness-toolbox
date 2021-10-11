@@ -46,8 +46,17 @@ def test_images(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack
 
         attack = FeatureAdversariesNumpy(classifier, delta=0.2, layer=1, batch_size=32)
         x_train_mnist_adv = attack.generate(x=x_train_mnist[0:3], y=x_test_mnist[0:3], maxiter=1)
+
         assert np.mean(x_train_mnist[0:3]) == pytest.approx(0.13015706282513004, 0.01)
         assert np.mean(x_train_mnist_adv) == pytest.approx(0.1592448561261751, 0.01)
+
+        with pytest.raises(ValueError):
+            attack.generate(x=x_train_mnist[0:3], y=None)
+        with pytest.raises(ValueError):
+            attack.generate(x=x_train_mnist[0:3], y=x_test_mnist[0:2])
+        with pytest.raises(ValueError):
+            attack.generate(x=x_train_mnist[0:3, 0:5, 0:5, :], y=x_test_mnist[0:3])
+
     except ARTTestException as e:
         art_warning(e)
 

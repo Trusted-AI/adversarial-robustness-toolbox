@@ -133,7 +133,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
         self.verbose = verbose
         self._check_params()
 
-        if not self.estimator.channels_first:
+        if not self.estimator.channels_first:  # pragma: no cover
             raise ValueError("Input shape has to be wither NCHW or NFCHW.")
 
         self.i_h_patch = 1
@@ -149,10 +149,12 @@ class AdversarialPatchPyTorch(EvasionAttack):
             self.i_h = 2
             self.i_w = 3
 
-        if self.patch_shape[1] != self.patch_shape[2]:
+        if self.patch_shape[1] != self.patch_shape[2]:  # pragma: no cover
             raise ValueError("Patch height and width need to be the same.")
 
-        if not (self.estimator.postprocessing_defences is None or self.estimator.postprocessing_defences == []):
+        if not (  # pragma: no cover
+            self.estimator.postprocessing_defences is None or self.estimator.postprocessing_defences == []
+        ):
             raise ValueError(
                 "Framework-specific implementation of Adversarial Patch attack does not yet support "
                 + "postprocessing defences."
@@ -428,7 +430,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
             mask = mask.copy()
         mask = self._check_mask(mask=mask, x=x)
 
-        if y is None:
+        if y is None:  # pragma: no cover
             logger.info("Setting labels to estimator predictions and running untargeted attack because `y=None`.")
             y = to_categorical(np.argmax(self.estimator.predict(x=x), axis=1), nb_classes=self.estimator.nb_classes)
             self.targeted = False
@@ -500,7 +502,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
         )
 
     def _check_mask(self, mask: np.ndarray, x: np.ndarray) -> np.ndarray:
-        if mask is not None and (
+        if mask is not None and (  # pragma: no cover
             (mask.dtype != bool)
             or not (mask.shape[0] == 1 or mask.shape[0] == x.shape[0])
             or not (mask.shape[1] == x.shape[self.i_h + 1] and mask.shape[2] == x.shape[self.i_w + 1])

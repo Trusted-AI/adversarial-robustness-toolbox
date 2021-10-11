@@ -166,8 +166,6 @@ class DecisionTreeAttack(EvasionAttack):
         return x_adv
 
     def _check_params(self) -> None:
-        if not isinstance(self.estimator, ScikitlearnDecisionTreeClassifier):
-            raise TypeError("Model must be a decision tree model.")
 
         if self.offset <= 0:
             raise ValueError("The offset parameter must be strictly positive.")

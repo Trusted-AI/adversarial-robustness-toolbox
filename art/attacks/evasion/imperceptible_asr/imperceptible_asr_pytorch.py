@@ -173,6 +173,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         self.n_fft = n_fft
         self.batch_size = batch_size
         self._use_amp = use_amp
+        self._check_params()
 
         # Create the main variable to optimize
         if self.estimator.device.type == "cpu":
@@ -206,7 +207,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             )
 
         # Setup for AMP use
-        if self._use_amp:
+        if self._use_amp:  # pragma: no cover
             from apex import amp  # pylint: disable=E0611
 
             if self.estimator.device.type == "cpu":
@@ -222,9 +223,6 @@ class ImperceptibleASRPyTorch(EvasionAttack):
                 loss_scale=1.0,
             )
 
-        # Check validity of attack attributes
-        self._check_params()
-
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
@@ -239,7 +237,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         """
         import torch  # lgtm [py/repeated-import]
 
-        if y is None:
+        if y is None:  # pragma: no cover
             raise ValueError(
                 "`ImperceptibleASRPyTorch` is a targeted attack and requires the definition of target"
                 "labels `y`. Currently `y` is set to `None`."
@@ -391,7 +389,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             )
 
             # Actual training
-            if self._use_amp:
+            if self._use_amp:  # pragma: no cover
                 from apex import amp  # pylint: disable=E0611
 
                 with amp.scale_loss(loss, self.optimizer_1) as scaled_loss:
@@ -549,7 +547,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             loss = torch.mean(loss)
 
             # Actual training
-            if self._use_amp:
+            if self._use_amp:  # pragma: no cover
                 from apex import amp  # pylint: disable=E0611
 
                 with amp.scale_loss(loss, self.optimizer_2) as scaled_loss:

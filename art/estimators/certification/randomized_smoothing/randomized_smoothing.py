@@ -88,7 +88,7 @@ class RandomizedSmoothingMixin(ABC):
         from scipy.stats import binom_test
 
         is_abstain = kwargs.get("is_abstain")
-        if is_abstain is not None and not isinstance(is_abstain, bool):
+        if is_abstain is not None and not isinstance(is_abstain, bool):  # pragma: no cover
             raise ValueError("The argument is_abstain needs to be of type bool.")
         if is_abstain is None:
             is_abstain = True

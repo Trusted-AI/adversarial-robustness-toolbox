@@ -345,11 +345,17 @@ class TestShapeShifter(TestBase):
             )
 
         with self.assertRaises(ValueError):
-            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, optimizer="RMSPropOptimizer", decay=1)
+            _ = ShapeShifter(
+                obj_dec, random_transform=lambda x: x + 1e-10, optimizer="RMSPropOptimizer", momentum=0.5, decay="1"
+            )
         with self.assertRaises(ValueError):
-            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, optimizer="RMSPropOptimizer", decay=-1.0)
+            _ = ShapeShifter(
+                obj_dec, random_transform=lambda x: x + 1e-10, optimizer="RMSPropOptimizer", momentum=0.5, decay=-1.0
+            )
         with self.assertRaises(ValueError):
-            _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, optimizer="RMSPropOptimizer", decay=2.0)
+            _ = ShapeShifter(
+                obj_dec, random_transform=lambda x: x + 1e-10, optimizer="RMSPropOptimizer", momentum=0.5, decay=2.0
+            )
 
         with self.assertRaises(ValueError):
             _ = ShapeShifter(obj_dec, random_transform=lambda x: x + 1e-10, sign_gradients="true")

@@ -36,7 +36,7 @@ class TestGaussianAugmentation(unittest.TestCase):
 
     def test_small_size(self):
         x = np.arange(15).reshape((5, 3))
-        ga = GaussianAugmentation(ratio=0.4)
+        ga = GaussianAugmentation(ratio=0.4, clip_values=(0, 15))
         x_new, _ = ga(x)
         self.assertEqual(x_new.shape, (7, 3))
 
@@ -91,6 +91,16 @@ class TestGaussianAugmentation(unittest.TestCase):
             "If `augmentation` is `True`, then `apply_fit` and `apply_predict` can't be both `False`.",
             str(context.exception),
         )
+
+    def test_check_params(self):
+        with self.assertRaises(ValueError):
+            _ = GaussianAugmentation(augmentation=True, ratio=-1)
+
+        with self.assertRaises(ValueError):
+            _ = GaussianAugmentation(clip_values=(0, 1, 2))
+
+        with self.assertRaises(ValueError):
+            _ = GaussianAugmentation(clip_values=(1, 0))
 
 
 if __name__ == "__main__":

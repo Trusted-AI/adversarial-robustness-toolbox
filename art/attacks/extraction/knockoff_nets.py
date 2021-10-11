@@ -108,15 +108,15 @@ class KnockoffNets(ExtractionAttack):
         :return: The stolen classifier.
         """
         # Check prerequisite for random strategy
-        if self.sampling_strategy == "random" and y is not None:
+        if self.sampling_strategy == "random" and y is not None:  # pragma: no cover
             logger.warning("This attack with random sampling strategy does not use the provided label y.")
 
         # Check prerequisite for adaptive strategy
-        if self.sampling_strategy == "adaptive" and y is None:
+        if self.sampling_strategy == "adaptive" and y is None:  # pragma: no cover
             raise ValueError("This attack with adaptive sampling strategy needs label y.")
 
         # Check the size of the source input vs nb_stolen
-        if x.shape[0] < self.nb_stolen:
+        if x.shape[0] < self.nb_stolen:  # pragma: no cover
             logger.warning(
                 "The size of the source input is smaller than the expected number of queries submitted "
                 "to the victim classifier."
@@ -124,7 +124,7 @@ class KnockoffNets(ExtractionAttack):
 
         # Check if there is a thieved classifier provided for training
         thieved_classifier = kwargs.get("thieved_classifier")
-        if thieved_classifier is None or not isinstance(thieved_classifier, ClassifierMixin):
+        if thieved_classifier is None or not isinstance(thieved_classifier, ClassifierMixin):  # pragma: no cover
             raise ValueError("A thieved classifier is needed.")
 
         # Implement model extractions

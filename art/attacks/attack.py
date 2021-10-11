@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class InputFilter(abc.ABCMeta):
+class InputFilter(abc.ABCMeta):  # pragma: no cover
     """
     Metaclass to ensure that inputs are ndarray for all of the subclass generate and extract calls
     """
@@ -85,7 +85,7 @@ class InputFilter(abc.ABCMeta):
                 setattr(cls, item, new_function)
 
 
-class Attack(abc.ABC, metaclass=InputFilter):
+class Attack(abc.ABC):
     """
     Abstract base class for all attack abstract base classes.
     """
@@ -115,7 +115,7 @@ class Attack(abc.ABC, metaclass=InputFilter):
         if self.estimator_requirements is None:
             raise ValueError("Estimator requirements have not been defined in `_estimator_requirements`.")
 
-        if not self.is_estimator_valid(estimator):
+        if not self.is_estimator_valid(estimator, self._estimator_requirements):
             raise EstimatorError(self.__class__, self.estimator_requirements, estimator)
 
         self._estimator = estimator
@@ -159,15 +159,17 @@ class Attack(abc.ABC, metaclass=InputFilter):
         if not isinstance(self.tensor_board, (bool, str)):
             raise ValueError("The argument `tensor_board` has to be either of type bool or str.")
 
-    def is_estimator_valid(self, estimator) -> bool:
+    @staticmethod
+    def is_estimator_valid(estimator, estimator_requirements) -> bool:
         """
         Checks if the given estimator satisfies the requirements for this attack.
 
         :param estimator: The estimator to check.
+        :param estimator_requirements: Estimator requirements.
         :return: True if the estimator is valid for the attack.
         """
 
-        for req in self.estimator_requirements:
+        for req in estimator_requirements:
             # A requirement is either a class which the estimator must inherit from, or a tuple of classes and the
             # estimator is required to inherit from at least one of the classes
             if isinstance(req, tuple):
@@ -197,7 +199,7 @@ class EvasionAttack(Attack):
 
         :param x: An array with the original inputs to be attacked.
         :param y: Correct labels or target labels for `x`, depending if the attack is targeted
-               or not. This parameter is only used by some of the attacks.
+                  or not. This parameter is only used by some of the attacks.
         :return: An array holding the adversarial examples.
         """
         raise NotImplementedError

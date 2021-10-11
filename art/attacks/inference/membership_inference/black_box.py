@@ -90,7 +90,7 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
         else:
             self.default_model = True
             if self.attack_model_type == "nn":
-                import torch  # lgtm [py/repeated-import]
+                import torch  # lgtm [py/repeated-import] lgtm [py/import-and-import-from]
                 from torch import nn  # lgtm [py/repeated-import]
 
                 class MembershipInferenceAttackModel(nn.Module):
@@ -169,18 +169,18 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
         :param test_y: True labels for `test_x`.
         """
         if self.estimator.input_shape is not None:
-            if self.estimator.input_shape[0] != x.shape[1]:
+            if self.estimator.input_shape[0] != x.shape[1]:  # pragma: no cover
                 raise ValueError("Shape of x does not match input_shape of estimator")
-            if self.estimator.input_shape[0] != test_x.shape[1]:
+            if self.estimator.input_shape[0] != test_x.shape[1]:  # pragma: no cover
                 raise ValueError("Shape of test_x does not match input_shape of estimator")
 
         if not self._regressor_model:
             y = check_and_transform_label_format(y, len(np.unique(y)), return_one_hot=True)
             test_y = check_and_transform_label_format(test_y, len(np.unique(test_y)), return_one_hot=True)
 
-        if y.shape[0] != x.shape[0]:
+        if y.shape[0] != x.shape[0]:  # pragma: no cover
             raise ValueError("Number of rows in x and y do not match")
-        if test_y.shape[0] != test_x.shape[0]:
+        if test_y.shape[0] != test_x.shape[0]:  # pragma: no cover
             raise ValueError("Number of rows in test_x and test_y do not match")
 
         # Create attack dataset
@@ -196,7 +196,7 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
             features = self.estimator.compute_loss(x, y).astype(np.float32).reshape(-1, 1)
             # non-members
             test_features = self.estimator.compute_loss(test_x, test_y).astype(np.float32).reshape(-1, 1)
-        else:
+        else:  # pragma: no cover
             raise ValueError("Illegal value for parameter `input_type`.")
 
         # members
@@ -212,7 +212,7 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
             x_2 = x_2.astype(np.float32).reshape(-1, 1)
 
         if self.default_model and self.attack_model_type == "nn":
-            import torch  # lgtm [py/repeated-import]
+            import torch  # lgtm [py/repeated-import] lgtm [py/import-and-import-from]
             from torch import nn  # lgtm [py/repeated-import]
             from torch import optim  # lgtm [py/repeated-import]
             from torch.utils.data import DataLoader  # lgtm [py/repeated-import]
@@ -254,10 +254,10 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
         :return: An array holding the inferred membership status, 1 indicates a member and 0 indicates non-member,
                  or class probabilities.
         """
-        if y is None:
+        if y is None:  # pragma: no cover
             raise ValueError("MembershipInferenceBlackBox requires true labels `y`.")
 
-        if self.estimator.input_shape is not None:
+        if self.estimator.input_shape is not None:  # pragma: no cover
             if self.estimator.input_shape[0] != x.shape[1]:
                 raise ValueError("Shape of x does not match input_shape of estimator")
 
@@ -269,7 +269,7 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
         if not self._regressor_model:
             y = check_and_transform_label_format(y, len(np.unique(y)), return_one_hot=True)
 
-        if y.shape[0] != x.shape[0]:
+        if y.shape[0] != x.shape[0]:  # pragma: no cover
             raise ValueError("Number of rows in x and y do not match")
 
         if self.input_type == "prediction":
@@ -281,7 +281,7 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
             y = y.astype(np.float32).reshape(-1, 1)
 
         if self.default_model and self.attack_model_type == "nn":
-            import torch  # lgtm [py/repeated-import]
+            import torch  # lgtm [py/repeated-import] lgtm [py/import-and-import-from]
             from torch.utils.data import DataLoader  # lgtm [py/repeated-import]
             from art.utils import to_cuda, from_cuda
 
@@ -308,7 +308,7 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
                     inferred_return = np.round(inferred)
                 else:
                     inferred_return = inferred
-            else:
+            else:  # pragma: no cover
                 raise ValueError("No data available.")
         elif not self.default_model:
             # assumes the predict method of the supplied model returns probabilities
@@ -338,7 +338,7 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
             """
 
             def __init__(self, x_1, x_2, y=None):
-                import torch  # lgtm [py/repeated-import]
+                import torch  # lgtm [py/repeated-import] lgtm [py/import-and-import-from]
 
                 self.x_1 = torch.from_numpy(x_1.astype(np.float64)).type(torch.FloatTensor)
                 self.x_2 = torch.from_numpy(x_2.astype(np.int32)).type(torch.FloatTensor)
@@ -352,7 +352,7 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
                 return len(self.x_1)
 
             def __getitem__(self, idx):
-                if idx >= len(self.x_1):
+                if idx >= len(self.x_1):  # pragma: no cover
                     raise IndexError("Invalid Index")
 
                 return self.x_1[idx], self.x_2[idx], self.y[idx]
