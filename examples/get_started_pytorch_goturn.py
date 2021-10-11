@@ -28,7 +28,7 @@ from art.estimators.object_tracking import PyTorchGoturn
 # nrupatunga's model case needs to be run first because both models use its test images
 # model weights have to be downloaded manually and stored in ckpt_dir
 
-username = "username"
+username = "bbuesser"
 benchmark_not_attack = True
 nrupatunga = False  # Switch between nrupatunga's and amoudgl's model
 _device = "cpu"
@@ -89,10 +89,10 @@ else:
     import torch
     import torchvision
 
-    torch_version = list(map(int, torch.__version__.lower().split("+")[0].split(".")))
-    torchvision_version = list(map(int, torchvision.__version__.lower().split("+")[0].split(".")))
-    assert torch_version[0] == 1 and torch_version[1] == 4, "PyTorchGoturn requires torch==1.4"
-    assert torchvision_version[0] == 0 and torchvision_version[1] == 5, "PyTorchGoturn requires torchvision==0.5"
+    # torch_version = list(map(int, torch.__version__.lower().split("+")[0].split(".")))
+    # torchvision_version = list(map(int, torchvision.__version__.lower().split("+")[0].split(".")))
+    # assert torch_version[0] == 1 and torch_version[1] == 4, "PyTorchGoturn requires torch==1.4"
+    # assert torchvision_version[0] == 0 and torchvision_version[1] == 5, "PyTorchGoturn requires torchvision==0.5"
 
     goturn_path = os.path.join(working_dir, "goturn_amoudgl")
 
@@ -129,42 +129,38 @@ pgt = PyTorchGoturn(
 
 if benchmark_not_attack:
 
+    from got10k.trackers import Tracker
+    from got10k.experiments import ExperimentGOT10k
+
     # -----------------#
     # Identity Tracker #
     # -----------------#
 
-    from got10k.trackers import Tracker
-
-    class IdentityTracker(Tracker):
-        def __init__(self):
-            super(IdentityTracker, self).__init__(
-                name='IdentityTracker',  # tracker name
-                is_deterministic=True  # stochastic (False) or deterministic (True)
-            )
-
-        def init(self, image, box):
-            self.box = box
-
-        def update(self, image):
-            return self.box
-
-
-    from got10k.experiments import ExperimentGOT10k
-
-
+    # class IdentityTracker(Tracker):
+    #     def __init__(self):
+    #         super(IdentityTracker, self).__init__(
+    #             name='IdentityTracker',  # tracker name
+    #             is_deterministic=True  # stochastic (False) or deterministic (True)
+    #         )
+    #
+    #     def init(self, image, box):
+    #         self.box = box
+    #
+    #     def update(self, image):
+    #         return self.box
     # instantiate a tracker
-    tracker = IdentityTracker()
-
-    # setup experiment (validation subset)
-    experiment = ExperimentGOT10k(
-        root_dir=os.path.join(benchmark_dir, "data", "GOT-10k"),
-        subset='val',  # 'train' | 'val' | 'test'
-        result_dir=os.path.join(benchmark_dir, "results"),  # where to store tracking results
-        report_dir=os.path.join(benchmark_dir, "reports")  # where to store evaluation reports
-    )
-    experiment.run(tracker, visualize=True)
-
-    experiment.report([tracker.name])
+    # tracker = IdentityTracker()
+    #
+    # # setup experiment (validation subset)
+    # experiment = ExperimentGOT10k(
+    #     root_dir=os.path.join(benchmark_dir, "data", "GOT-10k"),
+    #     subset='val',  # 'train' | 'val' | 'test'
+    #     result_dir=os.path.join(benchmark_dir, "results"),  # where to store tracking results
+    #     report_dir=os.path.join(benchmark_dir, "reports")  # where to store evaluation reports
+    # )
+    # experiment.run(tracker, visualize=True)
+    #
+    # experiment.report([tracker.name])
 
     # ----------------------#
     # PyTorchGoturn Tracker #

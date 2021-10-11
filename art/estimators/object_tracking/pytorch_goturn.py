@@ -361,7 +361,8 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         img = img * std + mean
         img = torch.unsqueeze(img, dim=0)
         img = interpolate(img, size=(self.input_shape[1], self.input_shape[2]), mode="bicubic")
-        img = torch.clamp(img, self.clip_values[0], self.clip_values[1])
+        if self.clip_values is not None:
+            img = torch.clamp(img, self.clip_values[0], self.clip_values[1])
         img = torch.squeeze(img)
         img = (img - mean) / std
         return img
@@ -717,7 +718,9 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         """
         import torch
 
-        self.prev = np.array(image) / 255.0 * self.clip_values[1]
+        self.prev = np.array(image) / 255.0
+        if self.clip_values is not None:
+            self.prev = self.prev * self.clip_values[1]
         self.box = torch.from_numpy(np.array([box[0], box[1], box[2] + box[0], box[3] + box[1]])).to(self.device)
 
     def update(self, image: np.ndarray) -> np.ndarray:
@@ -729,7 +732,10 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         """
         import torch
 
-        curr = torch.from_numpy(np.array(image) / 255.0 * self.clip_values[1]).to(self.device)
+        curr = torch.from_numpy(np.array(image) / 255.0)
+        if self.clip_values is not None:
+            curr = curr * self.clip_values[1]
+        curr = curr.to(self.device)
         prev = torch.from_numpy(self.prev).to(self.device)
 
         curr, _ = self._apply_preprocessing(curr, y=None, fit=False)
@@ -760,19 +766,19 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         boxes[0] = box
         times = np.zeros(frame_num)
 
-        for f, img_file in enumerate(img_files):
+        for i_f, img_file in enumerate(img_files):
             image = Image.open(img_file)
             if not image.mode == "RGB":
                 image = image.convert("RGB")
 
             start_time = time.time()
-            if f == 0:
+            if i_f == 0:
                 self.init(image, box)
             else:
-                boxes[f, :] = self.update(image)
-            times[f] = time.time() - start_time
+                boxes[i_f, :] = self.update(image)
+            times[i_f] = time.time() - start_time
 
             if visualize:
-                show_frame(image, boxes[f, :])
+                show_frame(image, boxes[i_f, :])
 
         return boxes, times
