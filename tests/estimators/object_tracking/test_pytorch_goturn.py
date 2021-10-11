@@ -56,6 +56,7 @@ def test_pytorch_goturn(art_warning):
 
         pgt = PyTorchGoturn(
             model=model,
+            input_shape=(3, 227, 227),
             clip_values=(0, 255),
             preprocessing=(np.array([104.0, 117.0, 123.0]), np.array([1.0, 1.0, 1.0])),
             device_type=_device,
