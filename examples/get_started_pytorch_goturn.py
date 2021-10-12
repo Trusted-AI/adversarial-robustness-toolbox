@@ -35,7 +35,7 @@ _device = "cpu"
 object_array = True
 working_dir = os.path.join(os.sep, "home", username, ".art", "data")
 benchmark_dir = os.path.join(os.sep, "home", username, "Desktop", "benchmark")
-y_init = np.array([[55, 85, 100, 130], [160, 100, 180, 146]])  # inital boxes
+y_init = np.array([[55, 85, 100, 130], [160, 100, 180, 146]])  # initial boxes
 
 ######################
 # Setup GOTURN model #
@@ -87,12 +87,6 @@ else:
     preprocessing = (np.array([0.485, 0.456, 0.406]), np.array([0.229, 0.224, 0.225]))
 
     import torch
-    import torchvision
-
-    # torch_version = list(map(int, torch.__version__.lower().split("+")[0].split(".")))
-    # torchvision_version = list(map(int, torchvision.__version__.lower().split("+")[0].split(".")))
-    # assert torch_version[0] == 1 and torch_version[1] == 4, "PyTorchGoturn requires torch==1.4"
-    # assert torchvision_version[0] == 0 and torchvision_version[1] == 5, "PyTorchGoturn requires torchvision==0.5"
 
     goturn_path = os.path.join(working_dir, "goturn_amoudgl")
 
@@ -129,13 +123,14 @@ pgt = PyTorchGoturn(
 
 if benchmark_not_attack:
 
-    from got10k.trackers import Tracker
     from got10k.experiments import ExperimentGOT10k
 
     # -----------------#
     # Identity Tracker #
     # -----------------#
 
+    # from got10k.trackers import Tracker
+    #
     # class IdentityTracker(Tracker):
     #     def __init__(self):
     #         super(IdentityTracker, self).__init__(
