@@ -40,6 +40,7 @@ jobs:
           python -m pip install --upgrade pip setuptools wheel
           pip install -q pylint==2.7.4 mypy==0.812 pycodestyle==2.7.0 black==20.8b1
           pip install -q -r requirements.txt
+          pip install pluggy==0.13.1
           pip list
       - name: pycodestyle
         run: pycodestyle --ignore=C0330,C0415,E203,E231,W503 --max-line-length=120 art
