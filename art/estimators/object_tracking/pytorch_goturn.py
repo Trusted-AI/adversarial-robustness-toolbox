@@ -73,7 +73,7 @@ from art.estimators.pytorch import PyTorchEstimator
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
-    import PIL
+    import PIL  # lgtm [py/import-and-import-from]
     import torch
 
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
@@ -716,7 +716,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         :param image: Current image.
         :return: Predicted box.
         """
-        import torch
+        import torch  # lgtm [py/repeated-import]
 
         self.prev = np.array(image) / 255.0
         if self.clip_values is not None:
@@ -730,7 +730,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         :param image: Current image.
         :return: Predicted box.
         """
-        import torch
+        import torch  # lgtm [py/repeated-import]
 
         curr = torch.from_numpy(np.array(image) / 255.0)
         if self.clip_values is not None:
