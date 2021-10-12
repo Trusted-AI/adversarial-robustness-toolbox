@@ -25,7 +25,7 @@ docs_require = [
     "numpy>=1.18.0",
     "scipy>=1.4.1",
     "six>=1.13.0",
-    "scikit-learn>=0.22.2,<0.24.3",
+    "scikit-learn>=0.22.2,<1.1.0",
     "Pillow>=6.0.0",
 ]
 
