@@ -94,12 +94,6 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
                             if available otherwise run on CPU.
         """
         import torch  # lgtm [py/repeated-import]
-        import torchvision  # lgtm [py/repeated-import]
-
-        torch_version = list(map(int, torch.__version__.lower().split("+")[0].split(".")))
-        torchvision_version = list(map(int, torchvision.__version__.lower().split("+")[0].split(".")))
-        assert torch_version[0] == 1 and torch_version[1] == 4, "PyTorchGoturn requires torch==1.4"
-        assert torchvision_version[0] == 0 and torchvision_version[1] == 5, "PyTorchGoturn requires torchvision==0.5"
 
         # Set device
         self._device: torch.device
