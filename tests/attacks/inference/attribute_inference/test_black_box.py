@@ -349,8 +349,8 @@ def test_black_box_one_hot_float(art_warning, get_iris_dataset):
         test_acc = np.sum(
             np.all(np.around(inferred_test, decimals=3) == np.around(test_one_hot, decimals=3), axis=1)
         ) / len(inferred_test)
-        assert pytest.approx(0.8666, abs=0.05) == train_acc
-        assert pytest.approx(0.8666, abs=0.05) == test_acc
+        assert pytest.approx(0.8666, abs=0.1) == train_acc
+        assert pytest.approx(0.8666, abs=0.1) == test_acc
 
     except ARTTestException as e:
         art_warning(e)
