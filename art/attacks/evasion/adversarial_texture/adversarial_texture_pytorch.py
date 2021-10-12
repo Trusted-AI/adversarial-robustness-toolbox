@@ -27,7 +27,6 @@ import numpy as np
 from tqdm.auto import trange
 
 from art.attacks.attack import EvasionAttack
-from art.attacks.evasion.adversarial_patch.utils import insert_transformed_patch
 from art.estimators.estimator import BaseEstimator
 
 if TYPE_CHECKING:
@@ -121,7 +120,7 @@ class AdversarialTexturePyTorch(EvasionAttack):
     def _train_step(
         self,
         videos: "torch.Tensor",
-        target: "torch.Tensor",
+        target: List[Dict[str, "torch.Tensor"]],
         y_init: "torch.Tensor",
         foreground: Optional["torch.Tensor"],
     ) -> "torch.Tensor":
@@ -142,7 +141,7 @@ class AdversarialTexturePyTorch(EvasionAttack):
 
     def _predictions(
         self, videos: "torch.Tensor", y_init: "torch.Tensor", foreground: Optional["torch.Tensor"]
-    ) -> "torch.Tensor":
+    ) -> List[Dict[str, "torch.Tensor"]]:
         import torch  # lgtm [py/repeated-import]
 
         patched_input = self._apply_texture(videos, self._patch, foreground=foreground)
@@ -159,7 +158,7 @@ class AdversarialTexturePyTorch(EvasionAttack):
     def _loss(
         self,
         images: "torch.Tensor",
-        target: "torch.Tensor",
+        target: List[Dict[str, "torch.Tensor"]],
         y_init: "torch.Tensor",
         foreground: Optional["torch.Tensor"],
     ) -> "torch.Tensor":
@@ -181,11 +180,11 @@ class AdversarialTexturePyTorch(EvasionAttack):
         """
         import torch  # lgtm [py/repeated-import]
 
-        image_mask = np.ones((self.patch_height, self.patch_width))
+        image_mask_np = np.ones((self.patch_height, self.patch_width))
 
-        image_mask = np.expand_dims(image_mask, axis=2)
-        image_mask = np.broadcast_to(image_mask, self.patch_shape)
-        image_mask = torch.Tensor(np.array(image_mask)).to(self.estimator.device)
+        image_mask_np = np.expand_dims(image_mask_np, axis=2)
+        image_mask_np = np.broadcast_to(image_mask_np, self.patch_shape)
+        image_mask = torch.Tensor(np.array(image_mask_np)).to(self.estimator.device)
         image_mask = torch.stack([image_mask] * nb_samples, dim=0)
         return image_mask
 
@@ -253,16 +252,21 @@ class AdversarialTexturePyTorch(EvasionAttack):
             torch.from_numpy(np.ones(shape=image_mask.shape, dtype=np.float32)).to(self.estimator.device) - image_mask
         )
 
-        combined = (
-            videos * inverted_mask
-            + padded_patch * image_mask
-            - padded_patch * ~foreground.bool()
-            + videos * ~foreground.bool() * image_mask
-        )
+        if foreground is not None:
+            combined = (
+                videos * inverted_mask
+                + padded_patch * image_mask
+                - padded_patch * ~foreground.bool()
+                + videos * ~foreground.bool() * image_mask
+            )
+        else:
+            combined = videos * inverted_mask + padded_patch * image_mask
 
         return combined
 
-    def generate(self, x: np.ndarray, y: List[Dict[str, np.ndarray]], **kwargs) -> np.ndarray:
+    def generate(  # type: ignore  # pylint: disable=W0222
+        self, x: np.ndarray, y: List[Dict[str, np.ndarray]], **kwargs
+    ) -> np.ndarray:
         """
         Generate an adversarial patch and return the patch and its mask in arrays.
 
@@ -291,6 +295,10 @@ class AdversarialTexturePyTorch(EvasionAttack):
         foreground = kwargs.get("foreground")
 
         class TrackingDataset(torch.utils.data.Dataset):
+            """
+            Object tracking dataset in PyTorch.
+            """
+
             def __init__(self, x, y, y_init, foreground):
                 self.x = x
                 self.y = y
@@ -351,10 +359,16 @@ class AdversarialTexturePyTorch(EvasionAttack):
         import torch  # lgtm [py/repeated-import]
 
         patch = patch_external if patch_external is not None else self._patch
-        x = torch.Tensor(x).to(self.estimator.device)
-        foreground = torch.Tensor(foreground).to(self.estimator.device)
+        patch_tensor = torch.Tensor(patch).to(self.estimator.device)
+        x_tensor = torch.Tensor(x).to(self.estimator.device)
+        foreground_tensor = torch.Tensor(foreground).to(self.estimator.device)
 
-        return self._apply_texture(videos=x, patch=patch, foreground=foreground).detach().cpu().numpy()
+        return (
+            self._apply_texture(videos=x_tensor, patch=patch_tensor, foreground=foreground_tensor)
+            .detach()
+            .cpu()
+            .numpy()
+        )
 
     def reset_patch(self, initial_patch_value: Optional[Union[float, np.ndarray]] = None) -> None:
         """
