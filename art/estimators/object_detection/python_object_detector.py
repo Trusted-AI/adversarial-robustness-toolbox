@@ -91,11 +91,13 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         torch_version = list(map(int, torch.__version__.lower().split("+")[0].split(".")))
         torchvision_version = list(map(int, torchvision.__version__.lower().split("+")[0].split(".")))
         assert not (
-            torch_version[0] == 1 and torch_version[1] == 8
-        ), "PyTorchObjectDetector does not support torch==1.8"
+            torch_version[0] == 1 and (torch_version[1] == 8 or torch_version[1] == 9)
+        ), "PyTorchObjectDetector does not support torch==1.8 and torch==1.9 because of " \
+           "https://github.com/pytorch/vision/issues/4153. Support will return for torch==1.10."
         assert not (
-            torchvision_version[0] == 0 and torchvision_version[1] == 9
-        ), "PyTorchObjectDetector does not support torchvision==0.9"
+            torchvision_version[0] == 0 and (torchvision_version[1] == 9 or torchvision_version[1] == 10)
+        ), "PyTorchObjectDetector does not support torchvision==0.9 and torchvision==0.10 because of " \
+           "https://github.com/pytorch/vision/issues/4153. Support will return for torchvision==0.11."
 
         super().__init__(
             model=model,
