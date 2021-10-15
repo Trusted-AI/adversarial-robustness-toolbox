@@ -168,7 +168,7 @@ class JaxClassifier(ClassGradientsMixin, ClassifierMixin, JaxEstimator):  # lgtm
                 min((m + 1) * batch_size, x_preprocessed.shape[0]),
             )
 
-            output = self.predict_func(self.model, x_preprocessed[begin : end])
+            output = self.predict_func(self.model, x_preprocessed[begin:end])
             results_list.append(output)
 
         results = np.vstack(results_list)
