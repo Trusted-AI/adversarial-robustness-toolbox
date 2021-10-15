@@ -105,7 +105,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         Initialization.
 
         :param model: GOTURN model.
-        :param input_shape: shape of one input for the classifier, e.g. input_shape=(3, 32, 32).
+        :param input_shape: Shape of one input sample as expected by the model, e.g. input_shape=(3, 227, 227).
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
