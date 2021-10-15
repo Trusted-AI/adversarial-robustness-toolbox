@@ -62,7 +62,9 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-deep_learning_frameworks = ["keras", "tensorflow1", "tensorflow2", "tensorflow2v1", "pytorch", "kerastf", "mxnet"]
+deep_learning_frameworks = [
+    "keras", "tensorflow1", "tensorflow2", "tensorflow2v1", "pytorch", "kerastf", "mxnet", "jax"
+]
 non_deep_learning_frameworks = ["scikitlearn"]
 
 art_supported_frameworks = []
