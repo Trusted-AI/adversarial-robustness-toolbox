@@ -18,13 +18,13 @@
 """
 This module implements the classifier `JaxClassifier` for Jax models.
 """
-# pylint: disable=C0302
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 import random
 from typing import Any, Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 
+from collections import Callable
 import numpy as np
 
 from art.estimators.classification.classifier import (
@@ -34,9 +34,6 @@ from art.estimators.classification.classifier import (
 from art.estimators.jax import JaxEstimator
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412, C0302
-    from collections import Callable
-
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.data_generators import DataGenerator
     from art.defences.preprocessor import Preprocessor
@@ -227,7 +224,7 @@ class JaxClassifier(ClassGradientsMixin, ClassifierMixin, JaxEstimator):  # lgtm
 
         assert grads.shape == x.shape
 
-        return grads
+        return grads.copy()
 
     def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs) -> None:
         """
