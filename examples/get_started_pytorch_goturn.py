@@ -28,11 +28,14 @@ from art.estimators.object_tracking import PyTorchGoturn
 # nrupatunga's model case needs to be run first because both models use its test images
 # model weights have to be downloaded manually and stored in ckpt_dir
 
-nrupatunga = True  # Switch between nrupatunga's and amoudgl's model
+username = "username"
+benchmark_not_attack = True
+nrupatunga = False  # Switch between nrupatunga's and amoudgl's model
 _device = "cpu"
 object_array = True
-working_dir = os.path.join(os.sep, "home", "username", ".art", "data")
-y_init = np.array([[55, 85, 100, 130], [160, 100, 180, 146]])  # inital boxes
+working_dir = os.path.join(os.sep, "home", username, ".art", "data")
+benchmark_dir = os.path.join(os.sep, "home", username, "Desktop", "benchmark")
+y_init = np.array([[55, 85, 100, 130], [160, 100, 180, 146]])  # initial boxes
 
 ######################
 # Setup GOTURN model #
@@ -40,10 +43,7 @@ y_init = np.array([[55, 85, 100, 130], [160, 100, 180, 146]])  # inital boxes
 
 if nrupatunga:
 
-    import gi
-
-    gi.require_version("Gtk", "2.0")
-
+    input_shape = (3, 227, 227)
     eps = 64
     eps_step = 2
     clip_values = (0, 255)
@@ -80,18 +80,13 @@ if nrupatunga:
 
 else:
 
+    input_shape = (3, 224, 224)
     eps = 64 / 255
     eps_step = 2 / 255
     clip_values = (0, 1)
     preprocessing = (np.array([0.485, 0.456, 0.406]), np.array([0.229, 0.224, 0.225]))
 
     import torch
-    import torchvision
-
-    torch_version = list(map(int, torch.__version__.lower().split("+")[0].split(".")))
-    torchvision_version = list(map(int, torchvision.__version__.lower().split("+")[0].split(".")))
-    assert torch_version[0] == 1 and torch_version[1] == 4, "PyTorchGoturn requires torch==1.4"
-    assert torchvision_version[0] == 0 and torchvision_version[1] == 5, "PyTorchGoturn requires torchvision==0.5"
 
     goturn_path = os.path.join(working_dir, "goturn_amoudgl")
 
@@ -120,96 +115,149 @@ else:
 
 pgt = PyTorchGoturn(
     model=model,
+    input_shape=input_shape,
     clip_values=clip_values,
     preprocessing=preprocessing,
     device_type=_device,
 )
 
-#############
-# load data #
-#############
+if benchmark_not_attack:
 
-x_list = list()
+    from got10k.experiments import ExperimentGOT10k
 
-for path in [
-    os.path.join(working_dir, "goturn-pytorch", "test", "8"),
-    os.path.join(working_dir, "goturn-pytorch", "test", "10"),
-]:
+    # -----------------#
+    # Identity Tracker #
+    # -----------------#
 
-    filelist = glob.glob(path + "/*.jpg")
-    filelist.sort()
+    from got10k.trackers import Tracker
 
-    img_list = list()
-    for fname in filelist:
-        img = Image.open(fname).resize((277, 277), Image.BILINEAR)
-        img = np.array(img)
-        # BGR to RGB
-        img = img[:, :, ::-1]
-        if clip_values[1] == 1:
-            img = img / 255
-        img_list.append(img)
+    class IdentityTracker(Tracker):
+        def __init__(self):
+            super(IdentityTracker, self).__init__(
+                name="IdentityTracker",  # tracker name
+                is_deterministic=True,  # stochastic (False) or deterministic (True)
+            )
 
-    x = np.array(img_list, dtype=float)
+        def init(self, image, box):
+            self.box = box
 
-    x_list.append(x)
+        def update(self, image):
+            return self.box
 
-if object_array:
-    x = np.asarray(x_list, dtype=object)
+    # instantiate a tracker
+    tracker = IdentityTracker()
+
+    # setup experiment (validation subset)
+    experiment = ExperimentGOT10k(
+        root_dir=os.path.join(benchmark_dir, "data", "GOT-10k"),
+        subset="val",  # 'train' | 'val' | 'test'
+        result_dir=os.path.join(benchmark_dir, "results"),  # where to store tracking results
+        report_dir=os.path.join(benchmark_dir, "reports"),  # where to store evaluation reports
+    )
+    experiment.run(tracker, visualize=True)
+
+    experiment.report([tracker.name])
+
+    # ----------------------#
+    # PyTorchGoturn Tracker #
+    # ----------------------#
+
+    # setup experiment (validation subset)
+    experiment = ExperimentGOT10k(
+        root_dir=os.path.join(benchmark_dir, "data", "GOT-10k"),
+        subset="val",  # 'train' | 'val' | 'test'
+        result_dir=os.path.join(benchmark_dir, "results"),  # where to store tracking results
+        report_dir=os.path.join(benchmark_dir, "reports"),  # where to store evaluation reports
+    )
+    experiment.run(pgt, visualize=True)
+
+    experiment.report([pgt.name])
+
+
 else:
-    num_frames_min = 10000000
-    for x_i in x_list:
-        if x_i.shape[0] < num_frames_min:
-            num_frames_min = x_i.shape[0]
-    x_list_new = list()
-    for x_i in x_list:
-        x_i_new = x_i[0:num_frames_min, :, :, :]
-        x_list_new.append(x_i_new)
+    #############
+    # load data #
+    #############
 
-    x = np.asarray(x_list_new, dtype=float)
+    x_list = list()
 
-y_pred = pgt.predict(x=x, y_init=y_init)
+    for path in [
+        os.path.join(working_dir, "goturn-pytorch", "test", "8"),
+        os.path.join(working_dir, "goturn-pytorch", "test", "10"),
+    ]:
 
+        filelist = glob.glob(path + "/*.jpg")
+        filelist.sort()
 
-##################
-# evasion attack #
-##################
+        img_list = list()
+        for fname in filelist:
+            img = Image.open(fname).resize((277, 277), Image.BILINEAR)
+            img = np.array(img)
+            if clip_values[1] == 1:
+                img = img / 255
+            img_list.append(img)
 
-from art.attacks.evasion import ProjectedGradientDescent
+        x = np.array(img_list, dtype=float)
 
-attack = ProjectedGradientDescent(estimator=pgt, eps=eps, eps_step=eps_step, batch_size=1, max_iter=20)
+        x_list.append(x)
 
-x_adv = attack.generate(x=x, y=y_pred)
+    if object_array:
+        x = np.asarray(x_list, dtype=object)
+    else:
+        num_frames_min = 10000000
+        for x_i in x_list:
+            if x_i.shape[0] < num_frames_min:
+                num_frames_min = x_i.shape[0]
+        x_list_new = list()
+        for x_i in x_list:
+            x_i_new = x_i[0:num_frames_min, :, :, :]
+            x_list_new.append(x_i_new)
 
-y_pred_adv = pgt.predict(x=x_adv, y_init=y_init)
+        x = np.asarray(x_list_new, dtype=float)
 
-if x.dtype == object:
-    for i in range(x.shape[0]):
-        print("L_inf:", np.max(np.abs(x_adv[i] - x[i])))
-else:
-    print("L_inf:", np.max(np.abs(x_adv - x)))
+    y_pred = pgt.predict(x=x, y_init=y_init)
 
+    ##################
+    # evasion attack #
+    ##################
 
-################################
-# visualise adversarial images #
-################################
+    from art.attacks.evasion import ProjectedGradientDescent
 
-x_vis = x_adv
-y_vis = y_pred_adv
+    attack = ProjectedGradientDescent(estimator=pgt, eps=eps, eps_step=eps_step, batch_size=1, max_iter=20)
 
-for i_x in range(len(y_pred)):
+    x_adv = attack.generate(x=x, y=y_pred)
 
-    num_frames = x_vis[i_x].shape[0]
+    y_pred_adv = pgt.predict(x=x_adv, y_init=y_init)
 
-    for i in range(0, num_frames):
-        bbox = y_vis[i_x]["boxes"][i]
+    if x.dtype == object:
+        for i in range(x.shape[0]):
+            print("L_inf:", np.max(np.abs(x_adv[i] - x[i])))
+    else:
+        print("L_inf:", np.max(np.abs(x_adv - x)))
 
-        curr_dbg = np.copy(x_vis[i_x][i])
+    ################################
+    # visualise adversarial images #
+    ################################
 
-        if clip_values[1] == 1:
-            curr_dbg = curr_dbg * 255
+    x_vis = x_adv
+    y_vis = y_pred_adv
 
-        curr_dbg = curr_dbg.astype(np.uint8)
-        curr_dbg = cv2.rectangle(curr_dbg, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), (255, 255, 0), 2)
+    for i_x in range(len(y_pred)):
 
-        cv2.imshow("image", curr_dbg)
-        cv2.waitKey()
+        num_frames = x_vis[i_x].shape[0]
+
+        for i in range(0, num_frames):
+            bbox = y_vis[i_x]["boxes"][i]
+
+            curr_dbg = np.copy(x_vis[i_x][i])
+
+            if clip_values[1] == 1:
+                curr_dbg = curr_dbg * 255
+
+            curr_dbg = curr_dbg.astype(np.uint8)
+            curr_dbg = cv2.rectangle(
+                curr_dbg, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), (255, 255, 0), 2
+            )
+
+            cv2.imshow("image", curr_dbg[:, :, ::-1])
+            cv2.waitKey()

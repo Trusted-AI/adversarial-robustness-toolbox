@@ -47,11 +47,12 @@ jobs:
           sudo apt-get update
           sudo apt-get -y -q install ffmpeg libavcodec-extra
           python -m pip install --upgrade pip setuptools wheel
-          pip install -q -r <(sed '/^scipy/d;/^matplotlib/d;/^pandas/d;/^statsmodels/d' requirements.txt)
+          pip install -q -r <(sed '/^scipy/d;/^matplotlib/d;/^pandas/d;/^statsmodels/d;/^numba/d' requirements.txt)
           pip install scipy==1.5.4
           pip install matplotlib==3.3.4
           pip install pandas==1.1.5
           pip install statsmodels==0.12.2
+          pip install numba==0.53.1
           pip install tensorflow==${{ matrix.tensorflow }}
           pip install keras==${{ matrix.keras }}
           pip install lingvo==${{ matrix.lingvo }}
