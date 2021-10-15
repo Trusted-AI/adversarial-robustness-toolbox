@@ -105,7 +105,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         Initialization.
 
         :param model: GOTURN model.
-        :param input_shape: shape of one input for the classifier, e.g. input_shape=(3, 32, 32).
+        :param input_shape: Shape of one input sample as expected by the model, e.g. input_shape=(3, 227, 227).
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
@@ -657,17 +657,17 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
             raise ValueError("y_init is a required argument for method `predict`.")
 
         if isinstance(y_init, np.ndarray):
-            y_init = torch.from_numpy(y_init).to(self._device).float().to(self.device)
+            y_init = torch.from_numpy(y_init).to(self.device).float()
         else:
-            y_init = y_init.to(self._device).float()
+            y_init = y_init.to(self.device).float()
 
         predictions = list()
 
         for i in range(x.shape[0]):
             if isinstance(x, np.ndarray):
-                x_i = torch.from_numpy(x[i]).to(self._device)
+                x_i = torch.from_numpy(x[i]).to(self.device)
             else:
-                x_i = x[i].to(self._device)
+                x_i = x[i].to(self.device)
 
             # Apply preprocessing
             x_i, _ = self._apply_preprocessing(x_i, y=None, fit=False, no_grad=False)
@@ -741,7 +741,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         curr, _ = self._apply_preprocessing(curr, y=None, fit=False)
 
         self.box = self._track_step(curr, prev, self.box)
-        self.prev = curr.detach().numpy()
+        self.prev = curr.cpu().detach().numpy()
 
         box_return = self.box.cpu().detach().numpy()
         box_return = np.array(
@@ -750,7 +750,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
 
         return box_return
 
-    def track(self, img_files: List[str], box: np.ndarray, visualize: bool = False):
+    def track(self, img_files: List[str], box: np.ndarray, visualize: bool = False) -> Tuple[np.ndarray, np.ndarray]:
         """
         Method `track` for GOT-10k toolkit trackers (MIT licence).
 
