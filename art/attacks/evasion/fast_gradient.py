@@ -425,7 +425,7 @@ class FastGradientMethod(EvasionAttack):
         # Apply norm bound
         def _apply_norm(grad, object_type=False):
             if (grad.dtype != object and np.isinf(grad).any()) or np.isnan(  # pragma: no cover
-                    grad.astype(np.float32)
+                grad.astype(np.float32)
             ).any():
                 logger.info("The loss gradient array contains at least one positive or negative infinity.")
 

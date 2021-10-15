@@ -26,8 +26,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 from typing import TYPE_CHECKING, Optional, Tuple
 
-import numpy as np
-
 from art.defences.preprocessor.mp3_compression import Mp3Compression
 from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
 
