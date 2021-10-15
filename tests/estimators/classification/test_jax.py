@@ -62,13 +62,14 @@ def jax_classifier():
         input_shape=(28, 28, 1),
         nb_classes=10,
     )
+
     return classifier
 
 
 classifier = jax_classifier()
 
 
-@pytest.mark.skip_framework("pytorch", "tensorflow", "tensorflow2v1", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+@pytest.mark.skip_framework("pytorch", "tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
 def test_fit(art_warning, get_default_mnist_subset, default_batch_size):
     try:
         (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
@@ -86,36 +87,39 @@ def test_fit(art_warning, get_default_mnist_subset, default_batch_size):
         art_warning(e)
 
 
-@pytest.mark.skip_framework("pytorch", "tensorflow", "tensorflow2v1", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+@pytest.mark.skip_framework("pytorch", "tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
 def test_predict(art_warning, get_default_mnist_subset, expected_values):
     try:
         (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
         y_predicted = classifier.predict(x_test_mnist[0:1])
+
         np.testing.assert_array_almost_equal(y_predicted, expected_values(), decimal=4)
 
     except ARTTestException as e:
         art_warning(e)
 
 
-@pytest.mark.skip_framework("pytorch", "tensorflow", "tensorflow2v1", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+@pytest.mark.skip_framework("pytorch", "tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
 def test_shapes(art_warning, get_default_mnist_subset):
     try:
         (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
         predictions = classifier.predict(x_test_mnist)
+
         assert predictions.shape == y_test_mnist.shape
 
         assert classifier.nb_classes == 10
 
         loss_gradients = classifier.loss_gradient(x_test_mnist[:11], y_test_mnist[:11])
+
         assert loss_gradients.shape == x_test_mnist[:11].shape
 
     except ARTTestException as e:
         art_warning(e)
 
 
-@pytest.mark.skip_framework("pytorch", "tensorflow", "tensorflow2v1", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+@pytest.mark.skip_framework("pytorch", "tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
 def test_loss_gradient(art_warning, get_default_mnist_subset, expected_values, mnist_shape):
     try:
         (expected_gradients_1, expected_gradients_2) = expected_values()
@@ -126,14 +130,14 @@ def test_loss_gradient(art_warning, get_default_mnist_subset, expected_values, m
 
         assert gradients.shape == (x_test_mnist.shape[0],) + mnist_shape
 
-        sub_gradients = gradients[0, 0, :, 14]
+        sub_gradients = gradients[0, 0, :, 0]
         np.testing.assert_array_almost_equal(
             sub_gradients,
             expected_gradients_1[0],
             decimal=expected_gradients_1[1],
         )
 
-        sub_gradients = gradients[0, 0, 14, :]
+        sub_gradients = gradients[0, :, 14, 0]
         np.testing.assert_array_almost_equal(
             sub_gradients,
             expected_gradients_2[0],
@@ -144,17 +148,19 @@ def test_loss_gradient(art_warning, get_default_mnist_subset, expected_values, m
         art_warning(e)
 
 
-@pytest.mark.skip_framework("pytorch", "tensorflow", "tensorflow2v1", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+@pytest.mark.skip_framework("pytorch", "tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
 def test_nb_classes(art_warning):
     try:
         assert classifier.nb_classes == 10
+
     except ARTTestException as e:
         art_warning(e)
 
 
-@pytest.mark.skip_framework("pytorch", "tensorflow", "tensorflow2v1", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+@pytest.mark.skip_framework("pytorch", "tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
 def test_input_shape(art_warning, mnist_shape):
     try:
         assert classifier.input_shape == mnist_shape
+
     except ARTTestException as e:
         art_warning(e)
