@@ -652,21 +652,8 @@ class CarliniLInfMethod(EvasionAttack):
 
         for i_iter in range(self.max_iter):
             logger.debug("Iteration step %i out of %i", i_iter, self.max_iter)
-            # logger.debug("Average Loss: %f", np.mean(loss))
-
-            # logger.debug(
-            #     "Successful attack samples: %i out of %i",
-            #     int(np.sum(attack_success)),
-            #     x_batch.shape[0],
-            # )
-
-            # only continue optimization for those samples where attack hasn't succeeded yet:
-            # active = ~attack_success
-            # if np.sum(active) == 0:
-            #     break
 
             # compute gradient:
-            # logger.debug("Compute loss gradient")
             perturbation_tanh = -self._loss_gradient(
                 z_logits,
                 y_batch,
@@ -680,30 +667,17 @@ class CarliniLInfMethod(EvasionAttack):
             # first, halve the learning rate until perturbation actually decreases the loss:
             prev_loss = loss.copy()
             best_loss = loss.copy()
-            best_lr = np.zeros(x_batch.shape[0])
-            halving = np.zeros(x_batch.shape[0])
+            best_lr = 0.0
+            halving = 0
 
             for i_halve in range(self.max_halving):
-                # logger.debug(
-                #     "Perform halving iteration %i out of %i",
-                #     i_halve,
-                #     self.max_halving,
-                # )
                 do_halving = loss >= prev_loss
-                # logger.debug("Halving to be performed on %i samples", int(np.sum(do_halving)))
-                # if np.sum(do_halving) == 0:
-                #     break
-                # active_and_do_halving = active.copy()
-                # active_and_do_halving[active] = do_halving
 
                 if do_halving:
 
                     lr_mult = learning_rate
-                    # for _ in range(len(x.shape) - 1):
-                    #     lr_mult = lr_mult[:, np.newaxis]
-
                     adv_10 = x_adv_batch_tanh
-                    new_x_adv_batch_tanh = adv_10 + lr_mult * perturbation_tanh[do_halving]
+                    new_x_adv_batch_tanh = adv_10 + lr_mult * perturbation_tanh
 
                     new_x_adv_batch = tanh_to_original(
                         new_x_adv_batch_tanh,
@@ -711,10 +685,6 @@ class CarliniLInfMethod(EvasionAttack):
                         clip_max,
                     )
                     _, loss = self._loss(new_x_adv_batch, y_batch)
-                    # logger.debug("New Average Loss: %f", np.mean(loss))
-                    # logger.debug("Loss: %s", str(loss))
-                    # logger.debug("Prev_loss: %s", str(prev_loss))
-                    # logger.debug("Best_loss: %s", str(best_loss))
 
                     if loss < best_loss:
                         best_lr = learning_rate
@@ -723,30 +693,16 @@ class CarliniLInfMethod(EvasionAttack):
                     halving += 1
             learning_rate *= 2
 
-            # if no halving was actually required, double the learning rate as long as this
-            # decreases the loss:
+            # if no halving was actually required, double the learning rate as long as this decreases the loss:
             for i_double in range(self.max_doubling):
-                # logger.debug(
-                #     "Perform doubling iteration %i out of %i",
-                #     i_double,
-                #     self.max_doubling,
-                # )
+
                 do_doubling = (halving == 1) & (loss <= best_loss)
-                # logger.debug(
-                #     "Doubling to be performed on %i samples",
-                #     int(np.sum(do_doubling)),
-                # )
-                # if np.sum(do_doubling) == 0:
-                #     break
+
                 if do_doubling:
-                    # active_and_do_doubling = active.copy()
-                    # active_and_do_doubling[active] = do_doubling
+
                     learning_rate *= 2
 
                     lr_mult = learning_rate
-                    # for _ in range(len(x.shape) - 1):
-                    #     lr_mult = lr_mult[:, np.newaxis]
-
                     x_adv15 = x_adv_batch_tanh
                     new_x_adv_batch_tanh = x_adv15 + lr_mult * perturbation_tanh
                     new_x_adv_batch = tanh_to_original(
@@ -755,7 +711,7 @@ class CarliniLInfMethod(EvasionAttack):
                         clip_max,
                     )
                     _, loss = self._loss(new_x_adv_batch, y_batch)
-                    # logger.debug("New Average Loss: %f", np.mean(loss))
+
                     if loss < best_loss:
                         best_lr = learning_rate
                         best_loss = loss
@@ -763,19 +719,8 @@ class CarliniLInfMethod(EvasionAttack):
             if halving == 1:
                 learning_rate /= 2
 
-            # update_adv = best_lr > 0
-            # logger.debug(
-            #     "Number of adversarial samples to be finally updated: %i",
-            #     int(np.sum(update_adv)),
-            # )
-
-            # if np.sum(update_adv) > 0:
             if best_lr > 0:
-                # active_and_update_adv = active.copy()
-                # active_and_update_adv[active] = update_adv
                 best_lr_mult = best_lr
-                # for _ in range(len(x.shape) - 1):
-                #     best_lr_mult = best_lr_mult[:, np.newaxis]
 
                 best_13 = best_lr_mult * perturbation_tanh
                 x_adv_batch_tanh = x_adv_batch_tanh + best_13
@@ -835,7 +780,10 @@ class CarliniLInfMethod(EvasionAttack):
             x_adv_batch = self._generate_single(x_batch, y_batch, clip_min, clip_max)
 
             # Update depending on attack success:
-            z_logits, loss, = self._loss(x_adv_batch, y_batch)
+            (
+                z_logits,
+                loss,
+            ) = self._loss(x_adv_batch, y_batch)
             if loss <= 0:
                 x_adv[sample_id] = x_adv_batch
 
