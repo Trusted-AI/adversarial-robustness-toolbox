@@ -34,6 +34,7 @@ import numpy as np
 from tqdm.auto import trange
 
 from art.config import ART_NUMPY_DTYPE
+from art.optimizers import Adam
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassGradientsMixin
 from art.attacks.attack import EvasionAttack
@@ -515,10 +516,10 @@ class CarliniLInfMethod(EvasionAttack):
         "targeted",
         "learning_rate",
         "max_iter",
-        "max_halving",
-        "max_doubling",
-        "eps",
-        "batch_size",
+        "decrease_factor",
+        "initial_const",
+        "largest_const",
+        "const_factor",
         "verbose",
     ]
     _estimator_requirements = (BaseEstimator, ClassGradientsMixin)
@@ -530,10 +531,10 @@ class CarliniLInfMethod(EvasionAttack):
         targeted: bool = False,
         learning_rate: float = 0.01,
         max_iter: int = 10,
-        max_halving: int = 5,
-        max_doubling: int = 5,
-        eps: float = 0.3,
-        batch_size: int = 128,
+        decrease_factor: float = 0.9,
+        initial_const: float = 0.08192,  # 1e-5,
+        largest_const: float = 0.09,  # 20.0,
+        const_factor: float = 2.0,
         verbose: bool = True,
     ) -> None:
         """
@@ -546,9 +547,11 @@ class CarliniLInfMethod(EvasionAttack):
         :param learning_rate: The initial learning rate for the attack algorithm. Smaller values produce better
                 results but are slower to converge.
         :param max_iter: The maximum number of iterations.
-        :param max_halving: Maximum number of halving steps in the line search optimization.
-        :param max_doubling: Maximum number of doubling steps in the line search optimization.
-        :param eps: An upper bound for the L_inf norm of the adversarial perturbation.
+        :param decrease_factor: The rate of shrinking tau, values in `0 < decrease_factor < 1` where larger is more
+                                accurate.
+        :param initial_const: The initial value of constant `c`.
+        :param largest_const: The largest value of constant `c`.
+        :param const_factor: The rate of increasing constant `c` with `const_factor > 1`, where smaller more accurate.
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :param verbose: Show progress bars.
         """
@@ -558,10 +561,10 @@ class CarliniLInfMethod(EvasionAttack):
         self._targeted = targeted
         self.learning_rate = learning_rate
         self.max_iter = max_iter
-        self.max_halving = max_halving
-        self.max_doubling = max_doubling
-        self.eps = eps
-        self.batch_size = batch_size
+        self.decrease_factor = decrease_factor
+        self.initial_const = initial_const
+        self.largest_const = largest_const
+        self.const_factor = const_factor
         self.verbose = verbose
         self._check_params()
 
@@ -569,7 +572,9 @@ class CarliniLInfMethod(EvasionAttack):
         # Smooth arguments of arctanh by multiplying with this constant to avoid division by zero:
         self._tanh_smoother = 0.999999
 
-    def _loss(self, x_adv: np.ndarray, target: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def _loss(
+        self, x_adv: np.ndarray, target: np.ndarray, x, const, tau
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """
         Compute the objective function value.
 
@@ -577,7 +582,7 @@ class CarliniLInfMethod(EvasionAttack):
         :param target: An array with the target class (one-hot encoded).
         :return: A tuple holding the current predictions and overall loss.
         """
-        z_predicted = self.estimator.predict(np.array(x_adv, dtype=ART_NUMPY_DTYPE), batch_size=self.batch_size)
+        z_predicted = self.estimator.predict(np.array(x_adv, dtype=ART_NUMPY_DTYPE), batch_size=1)
         z_target = np.sum(z_predicted * target, axis=1)
         z_other = np.max(
             z_predicted * (1 - target) + (np.min(z_predicted, axis=1) - 1)[:, np.newaxis] * target,
@@ -586,12 +591,16 @@ class CarliniLInfMethod(EvasionAttack):
 
         if self.targeted:
             # if targeted, optimize for making the target class most likely
-            loss = np.maximum(z_other - z_target + self.confidence, np.zeros(x_adv.shape[0]))
+            loss_1 = np.maximum(z_other - z_target + self.confidence, np.zeros(x_adv.shape[0]))
         else:
             # if untargeted, optimize for making any other class most likely
-            loss = np.maximum(z_target - z_other + self.confidence, np.zeros(x_adv.shape[0]))
+            loss_1 = np.maximum(z_target - z_other + self.confidence, np.zeros(x_adv.shape[0]))
 
-        return z_predicted, loss
+        loss_2 = np.sum(np.maximum(0.0, np.abs(x_adv - x) - tau))
+
+        loss = loss_1 * const + loss_2
+
+        return z_predicted, loss, loss_1, loss_2
 
     def _loss_gradient(
         self,
@@ -601,6 +610,9 @@ class CarliniLInfMethod(EvasionAttack):
         x_adv_tanh: np.ndarray,
         clip_min: np.ndarray,
         clip_max: np.ndarray,
+        x,
+        const,
+        tau,
     ) -> np.ndarray:  # lgtm [py/similar-function]
         """
         Compute the gradient of the loss function.
@@ -630,110 +642,70 @@ class CarliniLInfMethod(EvasionAttack):
         loss_gradient -= self.estimator.class_gradient(x_adv, label=i_sub)
         loss_gradient = loss_gradient.reshape(x_adv.shape)
 
+        loss_gradient_2 = np.sign(np.maximum(0.0, np.abs(x_adv - x) - tau)) * np.sign(x_adv - x)
+        loss_gradient_2 *= clip_max - clip_min
+        loss_gradient_2 *= (1 - np.square(np.tanh(x_adv_tanh))) / (2 * self._tanh_smoother)
+
         loss_gradient *= clip_max - clip_min
         loss_gradient *= (1 - np.square(np.tanh(x_adv_tanh))) / (2 * self._tanh_smoother)
 
+        loss_gradient = loss_gradient + loss_gradient_2
+
         return loss_gradient
 
-    def _generate_single(self, x_batch, y_batch, clip_min, clip_max):
+    def _generate_single(self, x_batch, y_batch, clip_min, clip_max, const, tau):
 
-        # The optimization is performed in tanh space to keep the
-        # adversarial images bounded from clip_min and clip_max.
-        x_batch_tanh = original_to_tanh(x_batch, clip_min, clip_max, self._tanh_smoother)
+        # The optimization is performed in tanh space to keep the adversarial images bounded from clip_min and clip_max.
+        x_adv_batch_tanh = original_to_tanh(x_batch, clip_min, clip_max, self._tanh_smoother)
 
-        # Initialize perturbation in tanh space:
-        x_adv_batch = x_batch.copy()
-        x_adv_batch_tanh = x_batch_tanh.copy()
+        def func(x_i):
+            x_adv_batch_tanh = x_i
 
-        # Initialize optimization:
-        z_logits, loss = self._loss(x_adv_batch, y_batch)
-        # attack_success = loss <= 0
-        learning_rate = self.learning_rate
+            x_adv_batch = tanh_to_original(
+                x_adv_batch_tanh,
+                clip_min,
+                clip_max,
+            )
 
-        for i_iter in range(self.max_iter):
-            logger.debug("Iteration step %i out of %i", i_iter, self.max_iter)
+            _, loss, _, _ = self._loss(x_adv_batch, y_batch, x_batch, const, tau)
 
-            # compute gradient:
-            perturbation_tanh = -self._loss_gradient(
+            return loss
+
+        def func_der(x_i):
+            x_adv_batch_tanh = x_i
+
+            x_adv_batch = tanh_to_original(
+                x_adv_batch_tanh,
+                clip_min,
+                clip_max,
+            )
+
+            z_logits, loss, loss_1, loss_2 = self._loss(x_adv_batch, y_batch, x_batch, const, tau)
+
+            perturbation_tanh = self._loss_gradient(
                 z_logits,
                 y_batch,
                 x_adv_batch,
                 x_adv_batch_tanh,
                 clip_min,
                 clip_max,
+                x_batch,
+                const,
+                tau,
             )
 
-            # perform line search to optimize perturbation
-            # first, halve the learning rate until perturbation actually decreases the loss:
-            prev_loss = loss.copy()
-            best_loss = loss.copy()
-            best_lr = 0.0
-            halving = 0
+            return perturbation_tanh
 
-            for i_halve in range(self.max_halving):
-                do_halving = loss >= prev_loss
+        x_0 = x_adv_batch_tanh.copy()
 
-                if do_halving:
+        adam = Adam(alpha=self.learning_rate, beta_1=0.9, beta_2=0.999, epsilon=1e-8)
+        x_adv_batch_tanh = adam.optimize(func=func, jac=func_der, x_0=x_0, max_iter=self.max_iter)
 
-                    lr_mult = learning_rate
-                    adv_10 = x_adv_batch_tanh
-                    new_x_adv_batch_tanh = adv_10 + lr_mult * perturbation_tanh
-
-                    new_x_adv_batch = tanh_to_original(
-                        new_x_adv_batch_tanh,
-                        clip_min,
-                        clip_max,
-                    )
-                    _, loss = self._loss(new_x_adv_batch, y_batch)
-
-                    if loss < best_loss:
-                        best_lr = learning_rate
-                        best_loss = loss
-                    learning_rate /= 2
-                    halving += 1
-            learning_rate *= 2
-
-            # if no halving was actually required, double the learning rate as long as this decreases the loss:
-            for i_double in range(self.max_doubling):
-
-                do_doubling = (halving == 1) & (loss <= best_loss)
-
-                if do_doubling:
-
-                    learning_rate *= 2
-
-                    lr_mult = learning_rate
-                    x_adv15 = x_adv_batch_tanh
-                    new_x_adv_batch_tanh = x_adv15 + lr_mult * perturbation_tanh
-                    new_x_adv_batch = tanh_to_original(
-                        new_x_adv_batch_tanh,
-                        clip_min,
-                        clip_max,
-                    )
-                    _, loss = self._loss(new_x_adv_batch, y_batch)
-
-                    if loss < best_loss:
-                        best_lr = learning_rate
-                        best_loss = loss
-
-            if halving == 1:
-                learning_rate /= 2
-
-            if best_lr > 0:
-                best_lr_mult = best_lr
-
-                best_13 = best_lr_mult * perturbation_tanh
-                x_adv_batch_tanh = x_adv_batch_tanh + best_13
-                x_adv_batch = tanh_to_original(
-                    x_adv_batch_tanh,
-                    clip_min,
-                    clip_max,
-                )
-                (z_logits, loss,) = self._loss(
-                    x_adv_batch,
-                    y_batch,
-                )
-                # attack_success = loss <= 0
+        x_adv_batch = tanh_to_original(
+            x_adv_batch_tanh,
+            clip_min,
+            clip_max,
+        )
 
         return x_adv_batch
 
@@ -751,9 +723,9 @@ class CarliniLInfMethod(EvasionAttack):
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
         if self.estimator.clip_values is not None:
-            clip_min_per_pixel, clip_max_per_pixel = self.estimator.clip_values
+            clip_min, clip_max = self.estimator.clip_values
         else:
-            clip_min_per_pixel, clip_max_per_pixel = np.amin(x), np.amax(x)
+            clip_min, clip_max = np.amin(x), np.amax(x)
 
         # Assert that, if attack is targeted, y_val is provided:
         if self.targeted and y is None:
@@ -770,45 +742,64 @@ class CarliniLInfMethod(EvasionAttack):
 
         # Compute perturbation with implicit batching
         for sample_id in trange(x.shape[0], desc="C&W L_inf", disable=not self.verbose):
-            x_batch = x_adv[[sample_id]]
-            y_batch = y[[sample_id]]
 
-            # Determine values for later clipping
-            clip_min = np.clip(x_batch - self.eps, clip_min_per_pixel, clip_max_per_pixel)
-            clip_max = np.clip(x_batch + self.eps, clip_min_per_pixel, clip_max_per_pixel)
+            tau = 0.1483714073896408
+            delta_i_best = 1.0
+            while tau > 0.145:
 
-            x_adv_batch = self._generate_single(x_batch, y_batch, clip_min, clip_max)
+                const = self.initial_const
+                while const < self.largest_const:
 
-            # Update depending on attack success:
-            (
-                z_logits,
-                loss,
-            ) = self._loss(x_adv_batch, y_batch)
-            if loss <= 0:
-                x_adv[sample_id] = x_adv_batch
+                    x_batch = x[[sample_id]]
+                    y_batch = y[[sample_id]]
 
-        logger.info(
-            "Success rate of C&W L_inf attack: %.2f%%",
-            100 * compute_success(self.estimator, x, y, x_adv, self.targeted, batch_size=self.batch_size),
-        )
+                    x_adv_batch = self._generate_single(x_batch, y_batch, clip_min, clip_max, const=const, tau=tau)
+
+                    # Update depending on attack success:
+                    z_logits, loss, loss_1, loss_2 = self._loss(x_adv_batch, y_batch, x_batch, const, tau)
+
+                    delta_i = np.max(np.abs(x_adv_batch - x[sample_id]))
+
+                    print("loss", loss, "loss_1", loss_1, "loss_2", loss_2, "delta_i", delta_i)
+                    print(
+                        "mis-classified:",
+                        np.argmax(self.estimator.predict(x_adv_batch), axis=1) != np.argmax(y_batch, axis=1),
+                    )
+
+                    if (
+                        np.argmax(self.estimator.predict(x_adv_batch), axis=1) != np.argmax(y_batch, axis=1)
+                        and delta_i < delta_i_best
+                    ):
+                        x_adv[sample_id] = x_adv_batch
+                        delta_i_best = delta_i
+
+                    const *= self.const_factor
+
+                # tau_actual = np.max(np.abs(x_adv[sample_id] - x[sample_id]))
+
+                # if tau_actual < tau:
+                #     tau = tau_actual
+                tau *= self.decrease_factor
 
         return x_adv
 
     def _check_params(self) -> None:
-        if self.eps <= 0:
-            raise ValueError("The eps parameter must be strictly positive.")
 
         if not isinstance(self.max_iter, (int, np.int)) or self.max_iter < 0:
             raise ValueError("The number of iterations must be a non-negative integer.")
 
-        if not isinstance(self.max_halving, (int, np.int)) or self.max_halving < 1:
-            raise ValueError("The number of halving steps must be an integer greater than zero.")
+        if not isinstance(self.decrease_factor, (int, float)) or not 0.0 < self.decrease_factor < 1.0:
+            raise ValueError("The decrease factor must be a float between 0 and 1.")
 
-        if not isinstance(self.max_doubling, (int, np.int)) or self.max_doubling < 1:
-            raise ValueError("The number of doubling steps must be an integer greater than zero.")
+        if not isinstance(self.initial_const, (int, float)) or self.initial_const < 0:
+            raise ValueError("The initial constant value must be a positive float.")
 
-        if not isinstance(self.batch_size, (int, np.int)) or self.batch_size < 1:
-            raise ValueError("The batch size must be an integer greater than zero.")
+        if not isinstance(self.largest_const, (int, float)) or self.largest_const < 0:
+            print(self.largest_const)
+            raise ValueError("The largest constant value must be a positive float.")
+
+        if not isinstance(self.const_factor, (int, float)) or self.const_factor < 0:
+            raise ValueError("The constant factor value must be a float and greater than 1.")
 
 
 class CarliniL0Method(CarliniL2Method):
