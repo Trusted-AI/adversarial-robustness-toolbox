@@ -532,8 +532,8 @@ class CarliniLInfMethod(EvasionAttack):
         learning_rate: float = 0.01,
         max_iter: int = 10,
         decrease_factor: float = 0.9,
-        initial_const: float = 0.08192,  # 1e-5,
-        largest_const: float = 0.09,  # 20.0,
+        initial_const: float = 1e-5,
+        largest_const: float = 20.0,
         const_factor: float = 2.0,
         verbose: bool = True,
     ) -> None:
@@ -611,7 +611,6 @@ class CarliniLInfMethod(EvasionAttack):
         clip_min: np.ndarray,
         clip_max: np.ndarray,
         x,
-        const,
         tau,
     ) -> np.ndarray:  # lgtm [py/similar-function]
         """
@@ -680,7 +679,7 @@ class CarliniLInfMethod(EvasionAttack):
                 clip_max,
             )
 
-            z_logits, loss, loss_1, loss_2 = self._loss(x_adv_batch, y_batch, x_batch, const, tau)
+            z_logits, _, _, _ = self._loss(x_adv_batch, y_batch, x_batch, const, tau)
 
             perturbation_tanh = self._loss_gradient(
                 z_logits,
@@ -690,7 +689,6 @@ class CarliniLInfMethod(EvasionAttack):
                 clip_min,
                 clip_max,
                 x_batch,
-                const,
                 tau,
             )
 
@@ -699,7 +697,7 @@ class CarliniLInfMethod(EvasionAttack):
         x_0 = x_adv_batch_tanh.copy()
 
         adam = Adam(alpha=self.learning_rate, beta_1=0.9, beta_2=0.999, epsilon=1e-8)
-        x_adv_batch_tanh = adam.optimize(func=func, jac=func_der, x_0=x_0, max_iter=self.max_iter)
+        x_adv_batch_tanh = adam.optimize(func=func, jac=func_der, x_0=x_0, max_iter=self.max_iter, loss_converged=0.02)
 
         x_adv_batch = tanh_to_original(
             x_adv_batch_tanh,
@@ -733,7 +731,7 @@ class CarliniLInfMethod(EvasionAttack):
 
         # No labels provided, use model prediction as correct class
         if y is None:
-            y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
+            y = get_labels_np_array(self.estimator.predict(x, batch_size=1))
 
         if self.estimator.nb_classes == 2 and y.shape[1] == 1:
             raise ValueError(  # pragma: no cover
@@ -743,9 +741,12 @@ class CarliniLInfMethod(EvasionAttack):
         # Compute perturbation with implicit batching
         for sample_id in trange(x.shape[0], desc="C&W L_inf", disable=not self.verbose):
 
-            tau = 0.1483714073896408
+            sample_done = False
+            tau = 1.0
             delta_i_best = 1.0
-            while tau > 0.145:
+            while tau > 1.0 / 256.0 and not sample_done:
+
+                sample_done = True
 
                 const = self.initial_const
                 while const < self.largest_const:
@@ -756,14 +757,18 @@ class CarliniLInfMethod(EvasionAttack):
                     x_adv_batch = self._generate_single(x_batch, y_batch, clip_min, clip_max, const=const, tau=tau)
 
                     # Update depending on attack success:
-                    z_logits, loss, loss_1, loss_2 = self._loss(x_adv_batch, y_batch, x_batch, const, tau)
+                    _, loss, loss_1, loss_2 = self._loss(x_adv_batch, y_batch, x_batch, const, tau)
 
                     delta_i = np.max(np.abs(x_adv_batch - x[sample_id]))
 
-                    print("loss", loss, "loss_1", loss_1, "loss_2", loss_2, "delta_i", delta_i)
-                    print(
-                        "mis-classified:",
-                        np.argmax(self.estimator.predict(x_adv_batch), axis=1) != np.argmax(y_batch, axis=1),
+                    logger.debug(
+                        "tau: %4.3f, const: %4.5f, loss: %4.3f, loss_1: %4.3f, loss_2: %4.3f, delta_i: %4.3f",
+                        tau,
+                        const,
+                        loss,
+                        loss_1,
+                        loss_2,
+                        delta_i,
                     )
 
                     if (
@@ -772,13 +777,15 @@ class CarliniLInfMethod(EvasionAttack):
                     ):
                         x_adv[sample_id] = x_adv_batch
                         delta_i_best = delta_i
+                        sample_done = False
 
                     const *= self.const_factor
 
-                # tau_actual = np.max(np.abs(x_adv[sample_id] - x[sample_id]))
+                tau_actual = np.max(np.abs(x_adv[sample_id] - x[sample_id]))
 
-                # if tau_actual < tau:
-                #     tau = tau_actual
+                if tau_actual < tau:
+                    tau = tau_actual
+
                 tau *= self.decrease_factor
 
         return x_adv
