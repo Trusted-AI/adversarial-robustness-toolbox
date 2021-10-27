@@ -697,7 +697,7 @@ class CarliniLInfMethod(EvasionAttack):
         x_0 = x_adv_batch_tanh.copy()
 
         adam = Adam(alpha=self.learning_rate, beta_1=0.9, beta_2=0.999, epsilon=1e-8)
-        x_adv_batch_tanh = adam.optimize(func=func, jac=func_der, x_0=x_0, max_iter=self.max_iter, loss_converged=0.02)
+        x_adv_batch_tanh = adam.optimize(func=func, jac=func_der, x_0=x_0, max_iter=self.max_iter, loss_converged=0.001)
 
         x_adv_batch = tanh_to_original(
             x_adv_batch_tanh,
