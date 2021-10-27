@@ -2,18 +2,18 @@
 numpy>=1.18.0
 scipy==1.7.1
 matplotlib==3.4.3
-scikit-learn>=0.22.2,<0.24.3
+scikit-learn>=0.22.2,<1.1.0
 six==1.16.0
-Pillow==8.3.2
+Pillow==8.4.0
 tqdm==4.62.3
-statsmodels==0.12.2
+statsmodels==0.13.0
 pydub==0.25.1
 resampy==0.2.2
 ffmpeg-python==0.2.0
 cma==3.1.0
-pandas==1.3.3
+pandas==1.3.4
 librosa==0.8.1
-numba~=0.53.1
+numba~=0.54.1
 opencv-python
 sortedcontainers==2.4.0
 
@@ -29,9 +29,9 @@ mxnet-native==1.8.0.post0
 torch==1.8.1+cpu -f https://download.pytorch.org/whl/torch_stable.html
 torchaudio==0.8.1 -f https://download.pytorch.org/whl/torch_stable.html
 torchvision==0.9.1 -f https://download.pytorch.org/whl/torch_stable.html
-catboost==0.26.1
+catboost==1.0.0
 GPy==1.10.0
-lightgbm==3.2.1
+lightgbm==3.3.0
 xgboost==1.4.2
 kornia~=0.5.11
 tensorboardX==2.4
@@ -47,7 +47,7 @@ lief==0.11.5
 pytest~=6.2.5
 pytest-flake8~=1.0.7
 pytest-mock~=3.6.1
-pytest-cov~=2.12.1
+pytest-cov~=3.0.0
 codecov~=2.1.12
 requests~=2.26.0
 

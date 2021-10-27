@@ -37,11 +37,15 @@ jobs:
             framework: scikitlearn
             scikit-learn: 0.24.2
             python: 3.8
+          - name: scikit-learn 1.0 (Python 3.8)
+            framework: scikitlearn
+            scikit-learn: 1.0
+            python: 3.8
 
     name: ${{ matrix.name }}
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2.3.4
+        uses: actions/checkout@v2.3.5
       - name: Setup Python
         uses: actions/setup-python@v2.2.2
         with:
