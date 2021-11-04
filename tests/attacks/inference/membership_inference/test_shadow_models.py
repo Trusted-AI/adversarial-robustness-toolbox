@@ -125,5 +125,38 @@ def test_synthetic_shadow_model(art_warning):
         assert len(nonmem_x) == len(nonmem_y)
         assert len(nonmem_y) == len(nonmem_pred)
         assert len(mem_x) + len(mem_y) == 40
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework("dl_frameworks")
+def test_shadow_model_default_randomisation(art_warning):
+    try:
+        (x_train, y_train), (_, _), _, _ = load_nursery(test_set=0.2)
+
+        model = RandomForestClassifier(random_state=7)
+        model.fit(x_train, y_train)
+        art_classifier = ScikitlearnRandomForestClassifier(model)
+
+        shadow_models = ShadowModels(art_classifier, num_shadow_models=1, random_state=7)
+
+        shadow_dataset = shadow_models.generate_synthetic_shadow_dataset(
+            art_classifier,
+            dataset_size=40,
+            max_features_randomized=8,
+            min_confidence=0.2,
+            max_retries=15,
+            random_record_fn=None,
+            randomize_features_fn=None,
+        )
+        (mem_x, mem_y, mem_pred), (nonmem_x, nonmem_y, nonmem_pred) = shadow_dataset
+
+        assert len(mem_x) == len(mem_y)
+        assert len(mem_y) == len(mem_pred)
+        assert len(nonmem_x) == len(nonmem_y)
+        assert len(nonmem_y) == len(nonmem_pred)
+        assert len(mem_x) + len(mem_y) == 40
+
     except ARTTestException as e:
         art_warning(e)

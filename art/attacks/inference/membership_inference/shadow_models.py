@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2021
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -36,7 +36,8 @@ if TYPE_CHECKING:
 
 class ShadowModels:
     """
-    Utility for training shadow models and generating shadow-datasets for membership inference attacks.
+    Utility for training shadow models and generating shadow-datasets for membership inference attacks in scikit-learn,
+    PyTorch and TensorFlow v2.
     """
 
     def __init__(
@@ -144,7 +145,7 @@ class ShadowModels:
     def _hill_climbing_synthesis(
         self,
         target_classifier: "CLASSIFIER_TYPE",
-        wanted_class: int,
+        target_class: int,
         min_confidence: float,
         max_features_randomized: int,
         max_iterations: int = 40,
@@ -159,7 +160,7 @@ class ShadowModels:
         Paper Link: https://arxiv.org/abs/1610.05820
 
         :param target_classifier: The classifier to synthesize data from.
-        :param wanted_class: The class the synthesized record will have.
+        :param target_class: The class the synthesized record will have.
         :param min_confidence: The minimum confidence the classifier assigns the target class for the record to be
                                accepted (i.e. the hill-climbing algorithm is finished).
         :param max_features_randomized: The initial amount of features to randomize in each climbing step. A good
@@ -198,11 +199,11 @@ class ShadowModels:
 
         for _ in range(max_iterations):
             y = target_classifier.predict(x.reshape(1, -1))[0]
-            class_confidence = y[wanted_class]
+            class_confidence = y[target_class]
 
             if class_confidence >= best_class_confidence:
                 # Record accepted, sample randomly
-                if class_confidence > min_confidence and np.argmax(y) == wanted_class:
+                if class_confidence > min_confidence and np.argmax(y) == target_class:
                     if self._rng.random() < class_confidence:
                         return x
 
@@ -225,7 +226,7 @@ class ShadowModels:
         self,
         target_classifier: "CLASSIFIER_TYPE",
         dataset_size: int,
-        max_features_randomized: int,
+        max_features_randomized: Optional[int],
         member_ratio: float = 0.5,
         min_confidence: float = 0.4,
         max_retries: int = 6,
@@ -272,16 +273,16 @@ class ShadowModels:
         records_per_class = dataset_size // target_classifier.nb_classes
 
         # Generate samples for each classification class
-        for wanted_class in range(target_classifier.nb_classes):
+        for target_class in range(target_classifier.nb_classes):
             one_hot_label = np.zeros(target_classifier.nb_classes)
-            one_hot_label[wanted_class] = 1.0
+            one_hot_label[target_class] = 1.0
 
             for _ in range(records_per_class):
                 for tries in range(max_retries):
                     try:
                         random_record = self._hill_climbing_synthesis(
                             target_classifier,
-                            wanted_class,
+                            target_class,
                             min_confidence,
                             max_features_randomized=max_features_randomized,
                             random_record_fn=random_record_fn,
