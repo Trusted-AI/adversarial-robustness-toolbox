@@ -147,7 +147,7 @@ class ShadowModels:
         target_classifier: "CLASSIFIER_TYPE",
         target_class: int,
         min_confidence: float,
-        max_features_randomized: int,
+        max_features_randomized: Optional[int],
         max_iterations: int = 40,
         max_rejections: int = 3,
         min_features_randomized: int = 1,
@@ -190,12 +190,16 @@ class ShadowModels:
         if randomize_features_fn is None:
             randomize_features_fn = self._default_randomize_features
 
-        k_features_randomized = max_features_randomized
         best_x = None
         best_class_confidence = 0
         num_rejections = 0
 
         x = random_record_fn()
+
+        if max_features_randomized is None:
+            k_features_randomized = x.reshape(1, -1).shape[1] // 2
+        else:
+            k_features_randomized = max_features_randomized
 
         for _ in range(max_iterations):
             y = target_classifier.predict(x.reshape(1, -1))[0]
@@ -266,7 +270,6 @@ class ShadowModels:
         :return: The shadow dataset generated. The shape is `((member_samples, true_label, model_prediction),
                  (nonmember_samples, true_label, model_prediction))`.
         """
-
         x = []
         y = []
 
