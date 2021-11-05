@@ -385,13 +385,13 @@ def auto_cluster(model_weights: np.ndarray, nb_classes: int, split_num: Union[in
             model.fit(temp_weights)
 
             cur_node = split_node(classes, cur_split_num)
-            labels = model.labels_
+            model_labels = model.labels_
 
             for l in range(cur_split_num):
                 if isinstance(split_num, list):
-                    cur_node.children[l] = build_node([classes[i] for i in range(len(labels)) if labels[i] == l], weights, split_num.copy())
+                    cur_node.children[l] = build_node([classes[i] for i in range(len(model_labels)) if model_labels[i] == l], weights, split_num.copy())
                 else:
-                    cur_node.children[l] = build_node([classes[i] for i in range(len(labels)) if labels[i] == l], weights, split_num)
+                    cur_node.children[l] = build_node([classes[i] for i in range(len(model_labels)) if model_labels[i] == l], weights, split_num)
 
         return cur_node
     # End of helper defintiions
