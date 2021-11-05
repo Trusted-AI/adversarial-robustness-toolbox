@@ -578,9 +578,12 @@ class CarliniLInfMethod(EvasionAttack):
         """
         Compute the objective function value.
 
-        :param x_adv: An array with the adversarial input.
+        :param x_adv: An array with the adversarial examples.
         :param target: An array with the target class (one-hot encoded).
-        :return: A tuple holding the current predictions and overall loss.
+        :param x: Benign samples.
+        :param  const: Current constant `c`.
+        :param tau: Current limit `tau`.
+        :return: A tuple of current predictions, total loss, logits loss and regularisation loss.
         """
         z_predicted = self.estimator.predict(np.array(x_adv, dtype=ART_NUMPY_DTYPE), batch_size=1)
         z_target = np.sum(z_predicted * target, axis=1)
@@ -622,6 +625,8 @@ class CarliniLInfMethod(EvasionAttack):
         :param x_adv_tanh: An array with the adversarial input in tanh space.
         :param clip_min: Minimum clipping values.
         :param clip_max: Maximum clipping values.
+        :param x: Benign samples.
+        :param tau: Current limit `tau`.
         :return: An array with the gradient of the loss function.
         """
         if self.targeted:
@@ -653,6 +658,16 @@ class CarliniLInfMethod(EvasionAttack):
         return loss_gradient
 
     def _generate_single(self, x_batch, y_batch, clip_min, clip_max, const, tau):
+        """
+        Generate a single adversarial example.
+
+        :param x_batch: Current benign sample.
+        :param y_batch: Current label.
+        :param clip_min: Minimum clipping values.
+        :param clip_max: Maximum clipping values.
+        :param  const: Current constant `c`.
+        :param tau: Current limit `tau`.
+        """
 
         # The optimization is performed in tanh space to keep the adversarial images bounded from clip_min and clip_max.
         x_adv_batch_tanh = original_to_tanh(x_batch, clip_min, clip_max, self._tanh_smoother)
