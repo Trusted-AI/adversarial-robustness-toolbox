@@ -81,7 +81,7 @@ class DeepPartitionEnsemble(EnsembleClassifier):
         """
 
         if not isinstance(classifiers, list):
-            # intialize the ensemble based on the provided archtecture
+            # initialize the ensemble based on the provided architecture
             classifiers = [copy.deepcopy(classifiers) for _ in range(ensemble_size)]
         elif isinstance(classifiers, list) and len(classifiers) != ensemble_size:
             raise ValueError("The length of the classifier list must be the same as the ensemble size")
