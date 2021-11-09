@@ -111,9 +111,10 @@ class DeepPartitionEnsemble(EnsembleClassifier):
     ) -> np.ndarray:
         """
         Perform prediction for a batch of inputs. Aggregation will be performed on the prediction from
-        each classifier if max_aggregate is True. Otherwise, the probabilties will be summed instead.
+        each classifier if max_aggregate is True. Otherwise, the probabilities will be summed instead.
         For logits output set max_aggregate=True, as logits are not comparable between models and should
         not be aggregated using a sum.
+
         :param x: Input samples.
         :param batch_size: Size of batches.
         :param raw: Return the individual classifier raw outputs (not aggregated).
