@@ -26,7 +26,7 @@ from typing import List, Optional, Union, Callable, Dict, TYPE_CHECKING
 import copy
 import numpy as np
 
-from art.estimators.classification.classifier import ClassifierNeuralNetwork
+from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
 from art.estimators.classification.ensemble import EnsembleClassifier
 
 if TYPE_CHECKING:
