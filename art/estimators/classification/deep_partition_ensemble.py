@@ -95,9 +95,11 @@ class DeepPartitionEnsemble(EnsembleClassifier):
         )
 
         if hash_function is None:
-
             def hash_function(x):
                 return int(np.sum(x)) % ensemble_size
+
+        if not isinstance(hash_function, Callable):
+            raise ValueError("hash_function must be callable")
 
         self.hash_function = hash_function
         self.ensemble_size = ensemble_size
