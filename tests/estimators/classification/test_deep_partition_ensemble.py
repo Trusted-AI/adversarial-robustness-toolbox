@@ -28,12 +28,7 @@ import torch
 from art.utils import load_dataset, random_targets, compute_accuracy
 from art.estimators.classification.deep_partition_ensemble import DeepPartitionEnsemble
 
-from tests.utils import (
-    master_seed,
-    get_image_classifier_pt,
-    get_image_classifier_kr,
-    get_image_classifier_tf
-)
+from tests.utils import master_seed, get_image_classifier_pt, get_image_classifier_kr, get_image_classifier_tf
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "True"
 logger = logging.getLogger(__name__)
@@ -41,7 +36,7 @@ logger = logging.getLogger(__name__)
 BATCH_SIZE = 100
 NB_TRAIN = 1000
 NB_TEST = 10
-ENSEMBLE_SIZE=5
+ENSEMBLE_SIZE = 5
 
 
 class TestDeepPartitionEnsemble(unittest.TestCase):
@@ -59,7 +54,7 @@ class TestDeepPartitionEnsemble(unittest.TestCase):
 
     def setUp(self):
         master_seed(seed=1234)
-        
+
     def test_1_tf(self):
         """
         Test with a TensorFlow Classifier.
@@ -75,20 +70,21 @@ class TestDeepPartitionEnsemble(unittest.TestCase):
             (x_train, y_train), (x_test, y_test) = self.mnist
 
             # Initialize DPA Classifier
-            dpa = DeepPartitionEnsemble(model=classifier.model,
-                                        ensemble_size=ENSEMBLE_SIZE,
-                                        channels_first=classifier.channels_first,
-                                        clip_values=classifier.clip_values,
-                                        preprocessing_defences=classifier.preprocessing_defences,
-                                        postprocessing_defences=classifier.postprocessing_defences,
-                                        preprocessing=classifier.preprocessing
-                                       )
+            dpa = DeepPartitionEnsemble(
+                model=classifier.model,
+                ensemble_size=ENSEMBLE_SIZE,
+                channels_first=classifier.channels_first,
+                clip_values=classifier.clip_values,
+                preprocessing_defences=classifier.preprocessing_defences,
+                postprocessing_defences=classifier.postprocessing_defences,
+                preprocessing=classifier.preprocessing,
+            )
 
             # Check basic functionality of DPA Classifier
             # check predict
             y_test_dpa = dpa.predict(x=x_test)
             self.assertEqual(y_test_dpa.shape, y_test.shape)
-            self.assertTrue((np.sum(y_test_dpa, axis=1) <= ENSEMBLE_SIZE*np.ones((NB_TEST,))).all())
+            self.assertTrue((np.sum(y_test_dpa, axis=1) <= ENSEMBLE_SIZE * np.ones((NB_TEST,))).all())
 
             # loss gradient
             grad = dpa.loss_gradient(x=x_test, y=y_test, sampling=True)
@@ -110,18 +106,16 @@ class TestDeepPartitionEnsemble(unittest.TestCase):
 
         x_test = x_test.transpose(0, 3, 1, 2).astype(np.float32)
 
-         # Initialize DPA Classifier
-        dpa = DeepPartitionEnsemble(model=ptc.model, 
-                                    ensemble_size=ENSEMBLE_SIZE,
-                                    channels_first=ptc.channels_first,
-                                    clip_values=ptc.clip_values
-                                   )
+        # Initialize DPA Classifier
+        dpa = DeepPartitionEnsemble(
+            model=ptc.model, ensemble_size=ENSEMBLE_SIZE, channels_first=ptc.channels_first, clip_values=ptc.clip_values
+        )
 
         # Check basic functionality of DPA Classifier
         # check predict
         y_test_dpa = dpa.predict(x=x_test)
         self.assertEqual(y_test_dpa.shape, y_test.shape)
-        self.assertTrue((np.sum(y_test_dpa, axis=1) <= ENSEMBLE_SIZE*np.ones((NB_TEST,))).all())
+        self.assertTrue((np.sum(y_test_dpa, axis=1) <= ENSEMBLE_SIZE * np.ones((NB_TEST,))).all())
 
         # loss gradient
         grad = dpa.loss_gradient(x=x_test, y=y_test, sampling=True)
@@ -142,15 +136,16 @@ class TestDeepPartitionEnsemble(unittest.TestCase):
         (x_train, y_train), (x_test, y_test) = self.mnist
 
         # Initialize DPA Classifier
-        dpa = DeepPartitionEnsemble(model=classifier.model,
-                                    ensemble_size=ENSEMBLE_SIZE,
-                                   )
+        dpa = DeepPartitionEnsemble(
+            model=classifier.model,
+            ensemble_size=ENSEMBLE_SIZE,
+        )
 
         # Check basic functionality of DPA Classifier
         # check predict
         y_test_dpa = dpa.predict(x=x_test)
         self.assertEqual(y_test_dpa.shape, y_test.shape)
-        self.assertTrue((np.sum(y_test_dpa, axis=1) <= ENSEMBLE_SIZE*np.ones((NB_TEST,))).all())
+        self.assertTrue((np.sum(y_test_dpa, axis=1) <= ENSEMBLE_SIZE * np.ones((NB_TEST,))).all())
 
         # loss gradient
         grad = dpa.loss_gradient(x=x_test, y=y_test, sampling=True)
@@ -158,6 +153,7 @@ class TestDeepPartitionEnsemble(unittest.TestCase):
 
         # fit
         dpa.fit(x=x_train, y=y_train)
+
 
 if __name__ == "__main__":
     unittest.main()

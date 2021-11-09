@@ -95,7 +95,9 @@ class DeepPartitionEnsemble(EnsembleClassifier):
         )
 
         if hash_function is None:
-            hash_function = lambda x: int(np.sum(x)) % ensemble_size
+
+            def hash_function(x):
+                return int(np.sum(x)) % ensemble_size
 
         self.hash_function = hash_function
         self.ensemble_size = ensemble_size
@@ -123,7 +125,7 @@ class DeepPartitionEnsemble(EnsembleClassifier):
         # Aggregate based on top-1 prediction from each classifier
         if max_aggregate:
             preds = super().predict(x, batch_size=batch_size, raw=True, **kwargs)
-            aggregated_preds = np.zeros_like(preds, shape=preds.shape[1:])
+            aggregated_preds = np.zeros_like(preds, shape=preds.shape[1:])  # pylint: disable=E1123
             for i in range(preds.shape[0]):
                 aggregated_preds[np.arange(len(aggregated_preds)), np.argmax(preds[i], axis=1)] += 1
             return aggregated_preds
