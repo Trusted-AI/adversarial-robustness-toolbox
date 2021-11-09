@@ -68,6 +68,7 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
             preprocessing=classifier.preprocessing,
         )
         self.detector = classifier
+        self.nb_classes = self.detector.nb_classes
         self.bgd_data = bgd_data
         self.verbose = verbose
         self.layer = layer
@@ -226,10 +227,6 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
         :rtype: Format as expected by the `model`
         """
         raise NotImplementedError
-
-    @property
-    def nb_classes(self) -> int:
-        return self.detector.nb_classes
 
     @property
     def input_shape(self) -> Tuple[int, ...]:
