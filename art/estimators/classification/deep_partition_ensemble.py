@@ -26,7 +26,7 @@ from typing import List, Optional, Union, Callable, Dict, TYPE_CHECKING
 import copy
 import numpy as np
 
-from art.estimators.classification.classifier import ClassifierNeuralNetwork
+from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
 from art.estimators.classification.ensemble import EnsembleClassifier
 
 if TYPE_CHECKING:
@@ -41,6 +41,7 @@ class DeepPartitionEnsemble(EnsembleClassifier):
     """
     Implementation of Deep Partition Aggregation Defense. Training data is partitioned into
     disjoint buckets based on a hash function and a classifier is trained on each bucket.
+    
     | Paper link: https://arxiv.org/abs/2006.14768
     """
 
@@ -51,8 +52,8 @@ class DeepPartitionEnsemble(EnsembleClassifier):
 
     def __init__(
         self,
-        classifiers: Union["ClassifierNeuralNetwork", List["ClassifierNeuralNetwork"]],
-        hash_function: Callable = None,
+        classifiers: Union[CLASSIFIER_NEURALNETWORK_TYPE, List[CLASSIFIER_NEURALNETWORK_TYPE]],
+        hash_function: Optional[Callable] = None,
         ensemble_size: int = 50,
         channels_first: bool = False,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
@@ -80,7 +81,7 @@ class DeepPartitionEnsemble(EnsembleClassifier):
         """
 
         if not isinstance(classifiers, list):
-            # intialize the ensemble based on the provided archtecture
+            # initialize the ensemble based on the provided architecture
             classifiers = [copy.deepcopy(classifiers) for _ in range(ensemble_size)]
         elif isinstance(classifiers, list) and len(classifiers) != ensemble_size:
             raise ValueError("The length of the classifier list must be the same as the ensemble size")
@@ -107,9 +108,10 @@ class DeepPartitionEnsemble(EnsembleClassifier):
     ) -> np.ndarray:
         """
         Perform prediction for a batch of inputs. Aggregation will be performed on the prediction from
-        each classifier if max_aggregate is True. Otherwise, the probabilties will be summed instead.
+        each classifier if max_aggregate is True. Otherwise, the probabilities will be summed instead.
         For logits output set max_aggregate=True, as logits are not comparable between models and should
         not be aggregated using a sum.
+
         :param x: Input samples.
         :param batch_size: Size of batches.
         :param raw: Return the individual classifier raw outputs (not aggregated).
