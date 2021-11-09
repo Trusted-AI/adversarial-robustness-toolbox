@@ -41,6 +41,7 @@ class DeepPartitionEnsemble(EnsembleClassifier):
     """
     Implementation of Deep Partition Aggregation Defense. Training data is partitioned into
     disjoint buckets based on a hash function and a classifier is trained on each bucket.
+    
     | Paper link: https://arxiv.org/abs/2006.14768
     """
 
