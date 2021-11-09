@@ -95,8 +95,7 @@ class DeepPartitionEnsemble(EnsembleClassifier):
         )
 
         if hash_function is None:
-            def hash_function(x):
-                return int(np.sum(x)) % ensemble_size
+            hash_function = lambda x: int(np.sum(x)) % ensemble_size
 
         self.hash_function = hash_function
         self.ensemble_size = ensemble_size
