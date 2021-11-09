@@ -52,7 +52,7 @@ class DeepPartitionEnsemble(EnsembleClassifier):
 
     def __init__(
         self,
-        classifiers: Union["ClassifierNeuralNetwork", List["ClassifierNeuralNetwork"]],
+        classifiers: Union[CLASSIFIER_NEURALNETWORK_TYPE, List[CLASSIFIER_NEURALNETWORK_TYPE]],
         hash_function: Callable = None,
         ensemble_size: int = 50,
         channels_first: bool = False,
