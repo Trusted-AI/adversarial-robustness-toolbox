@@ -552,7 +552,6 @@ class CarliniLInfMethod(EvasionAttack):
         :param initial_const: The initial value of constant `c`.
         :param largest_const: The largest value of constant `c`.
         :param const_factor: The rate of increasing constant `c` with `const_factor > 1`, where smaller more accurate.
-        :param batch_size: Size of the batch on which adversarial samples are generated.
         :param verbose: Show progress bars.
         """
         super().__init__(estimator=classifier)
