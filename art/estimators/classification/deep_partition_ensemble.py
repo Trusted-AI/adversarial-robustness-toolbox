@@ -79,11 +79,11 @@ class DeepPartitionEnsemble(EnsembleClassifier):
                be divided by the second one. Not applicable in this classifier.
         """
 
-        if isinstance(classifiers, list) and len(classifiers) != ensemble_size:
-            raise ValueError("The length of the classifier list must be the same as the ensemble size")
-        elif not isinstance(classifiers, list):
+        if not isinstance(classifiers, list):
             # intialize the ensemble based on the provided archtecture
-            classifiers = [copy.deepcopy(classifiers) for _ in range(ensemble_size)] 
+            classifiers = [copy.deepcopy(classifiers) for _ in range(ensemble_size)]
+        elif isinstance(classifiers, list) and len(classifiers) != ensemble_size:
+            raise ValueError("The length of the classifier list must be the same as the ensemble size")
 
         super().__init__(
             classifiers=classifiers,
@@ -95,7 +95,9 @@ class DeepPartitionEnsemble(EnsembleClassifier):
         )
 
         if hash_function is None:
-            hash_function = lambda x: int(np.sum(x)) % ensemble_size
+            def hash_function(x):
+                return int(np.sum(x)) % ensemble_size
+
         self.hash_function = hash_function
         self.ensemble_size = ensemble_size
 
@@ -129,9 +131,15 @@ class DeepPartitionEnsemble(EnsembleClassifier):
 
         # Aggregate based on summing predictions from each classifier
         return super().predict(x, batch_size=batch_size, raw=False, **kwargs)
- 
+
     def fit(
-        self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int=20, train_dict: Dict=None, **kwargs
+        self,
+        x: np.ndarray,
+        y: np.ndarray,
+        batch_size: int = 128,
+        nb_epochs: int = 20,
+        train_dict: Dict = None,
+        **kwargs
     ) -> None:
         """
         Fit the classifier on the training set `(x, y)`. Each classifier will be trained with the
@@ -149,7 +157,7 @@ class DeepPartitionEnsemble(EnsembleClassifier):
         """
 
         # First, partition the data using the hash function
-        partition_ind = [[] for _ in range(self.ensemble_size)]
+        partition_ind = [[] for _ in range(self.ensemble_size)]  # type: List[List[int]]
         for i, p_x in enumerate(x):
             partition_id = int(self.hash_function(p_x))
             partition_ind[partition_id].append(i)
