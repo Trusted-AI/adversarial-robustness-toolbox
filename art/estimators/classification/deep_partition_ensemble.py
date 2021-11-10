@@ -26,11 +26,10 @@ from typing import List, Optional, Union, Callable, Dict, TYPE_CHECKING
 import copy
 import numpy as np
 
-from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
 from art.estimators.classification.ensemble import EnsembleClassifier
 
 if TYPE_CHECKING:
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE, CLASSIFIER_NEURALNETWORK_TYPE
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
 
@@ -52,7 +51,7 @@ class DeepPartitionEnsemble(EnsembleClassifier):
 
     def __init__(
         self,
-        classifiers: Union[CLASSIFIER_NEURALNETWORK_TYPE, List[CLASSIFIER_NEURALNETWORK_TYPE]],
+        classifiers: Union["CLASSIFIER_NEURALNETWORK_TYPE", List["CLASSIFIER_NEURALNETWORK_TYPE"]],
         hash_function: Optional[Callable] = None,
         ensemble_size: int = 50,
         channels_first: bool = False,
