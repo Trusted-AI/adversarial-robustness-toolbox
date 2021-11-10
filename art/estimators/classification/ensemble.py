@@ -25,6 +25,7 @@ from typing import List, Optional, Union, Tuple, TYPE_CHECKING
 
 import numpy as np
 
+from art.estimators.classification.classifier import ClassifierNeuralNetwork
 from art.estimators.estimator import NeuralNetworkMixin
 
 if TYPE_CHECKING:
