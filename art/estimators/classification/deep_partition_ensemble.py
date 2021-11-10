@@ -40,7 +40,7 @@ class DeepPartitionEnsemble(EnsembleClassifier):
     """
     Implementation of Deep Partition Aggregation Defense. Training data is partitioned into
     disjoint buckets based on a hash function and a classifier is trained on each bucket.
-    
+
     | Paper link: https://arxiv.org/abs/2006.14768
     """
 
@@ -96,10 +96,13 @@ class DeepPartitionEnsemble(EnsembleClassifier):
 
         if hash_function is None:
 
-            def hash_function(x):
+            def default_hash(x):
                 return int(np.sum(x)) % ensemble_size
 
-        self.hash_function = hash_function
+            self.hash_function = default_hash
+        else:
+            self.hash_function = hash_function
+
         self.ensemble_size = ensemble_size
 
     def predict(  # pylint: disable=W0221
