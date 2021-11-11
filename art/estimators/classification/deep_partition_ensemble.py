@@ -137,7 +137,7 @@ class DeepPartitionEnsemble(EnsembleClassifier):
         # Aggregate based on summing predictions from each classifier
         return super().predict(x, batch_size=batch_size, raw=False, **kwargs)
 
-    def fit(
+    def fit( # pylint: disable=W0221
         self,
         x: np.ndarray,
         y: np.ndarray,
