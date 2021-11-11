@@ -177,10 +177,12 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             self._output = model.output
             self._output_layer = 0
 
-        _, self._nb_classes = k.int_shape(self._output)
+        _, nb_classes = k.int_shape(self._output)
         # Check for binary classification
-        if self._nb_classes == 1:
-            self._nb_classes = 2
+        if nb_classes == 1:
+            nb_classes = 2
+        self.nb_classes = nb_classes
+
         self._input_shape = k.int_shape(self._input)[1:]
         logger.debug(
             "Inferred %i classes and %s as input shape for Keras classifier.",
