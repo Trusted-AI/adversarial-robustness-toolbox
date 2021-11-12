@@ -114,7 +114,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
                 )
 
         self._input_shape = classifiers[0].input_shape
-        self._nb_classes = classifiers[0].nb_classes
+        self.nb_classes = classifiers[0].nb_classes
 
         # Set weights for classifiers
         if classifier_weights is None:

@@ -5,3 +5,4 @@ from art.attacks.inference.membership_inference.black_box import MembershipInfer
 from art.attacks.inference.membership_inference.black_box_rule_based import MembershipInferenceBlackBoxRuleBased
 from art.attacks.inference.membership_inference.label_only_gap_attack import LabelOnlyGapAttack
 from art.attacks.inference.membership_inference.label_only_boundary_distance import LabelOnlyDecisionBoundary
+from art.attacks.inference.membership_inference.shadow_models import ShadowModels

@@ -91,6 +91,8 @@ demonstrates the AttributeInferenceBlackBox, AttributeInferenceWhiteBoxLifestyle
 [attack_attribute_inference_regressor.ipynb](attack_attribute_inference_regressor.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/attack_attribute_inference_regressor.ipynb)]
 demonstrates the AttributeInferenceBlackBox attribute inference attacks on a regressor model.
 
+[attack_membership_inference_shadow_models.ipynb](attack_membership_inference_shadow_models.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/attack_membership_inference_shadow_models.ipynb)]
+demonstrates a MembershipInferenceBlackBox membership inference attack using shadow models on a classifier.
 
 ## Classifiers
 
