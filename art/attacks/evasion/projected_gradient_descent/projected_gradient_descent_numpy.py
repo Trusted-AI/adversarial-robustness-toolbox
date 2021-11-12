@@ -266,6 +266,9 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
                              ‘runs/exp2’, etc. for each new experiment to compare across them.
         :param verbose: Show progress bars.
         """
+        if tensor_board and num_random_init > 1:
+            raise ValueError("TensorBoard is not yet supported for more than 1 random restart (num_random_init>1).")
+
         super().__init__(
             estimator=estimator,
             norm=norm,

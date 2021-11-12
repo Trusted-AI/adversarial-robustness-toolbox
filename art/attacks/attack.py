@@ -27,6 +27,7 @@ from typing import Any, List, Optional, Tuple, Union, TYPE_CHECKING
 import numpy as np
 
 from art.exceptions import EstimatorError
+from art.tensor_board import SummaryWriter, SummaryWriterDefault
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
@@ -100,7 +101,7 @@ class Attack(abc.ABC):
     def __init__(
         self,
         estimator,
-        tensor_board: Union[str, bool] = False,
+        tensor_board: Union[str, bool, SummaryWriter] = False,
     ):
         """
         :param estimator: An estimator.
@@ -121,13 +122,10 @@ class Attack(abc.ABC):
         self._estimator = estimator
         self.tensor_board = tensor_board
 
-        if tensor_board:  # pragma: no cover
-            from tensorboardX import SummaryWriter
-
-            if isinstance(tensor_board, str):
-                self.summary_writer = SummaryWriter(tensor_board)
-            else:
-                self.summary_writer = SummaryWriter()
+        if isinstance(tensor_board, SummaryWriter):  # pragma: no cover
+            self.summary_writer = tensor_board
+        elif tensor_board:
+            self.summary_writer = SummaryWriterDefault(tensor_board)
         else:
             self.summary_writer = None
 

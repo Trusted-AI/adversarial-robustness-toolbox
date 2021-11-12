@@ -100,6 +100,9 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
                 "The framework-specific implementation only supports framework-specific preprocessing."
             )
 
+        if tensor_board and num_random_init > 1:
+            raise ValueError("TensorBoard is not yet supported for more than 1 random restart (num_random_init>1).")
+
         super().__init__(
             estimator=estimator,
             norm=norm,
@@ -298,31 +301,15 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
         # Write summary
         if self.summary_writer is not None:  # pragma: no cover
-            self.summary_writer.add_scalar(
-                "gradients/norm-L1/batch-{}".format(self._batch_id),
-                np.linalg.norm(grad.numpy().flatten(), ord=1),
+            self.summary_writer.update(
+                batch_id=self._batch_id,
                 global_step=self._i_max_iter,
+                grad=grad,
+                patch=None,
+                estimator=self.estimator,
+                x=x,
+                y=y,
             )
-            self.summary_writer.add_scalar(
-                "gradients/norm-L2/batch-{}".format(self._batch_id),
-                np.linalg.norm(grad.numpy().flatten(), ord=2),
-                global_step=self._i_max_iter,
-            )
-            self.summary_writer.add_scalar(
-                "gradients/norm-Linf/batch-{}".format(self._batch_id),
-                np.linalg.norm(grad.numpy().flatten(), ord=np.inf),
-                global_step=self._i_max_iter,
-            )
-
-            if hasattr(self.estimator, "compute_losses"):
-                losses = self.estimator.compute_losses(x=x, y=y)
-
-                for key, value in losses.items():
-                    self.summary_writer.add_scalar(
-                        "loss/{}/batch-{}".format(key, self._batch_id),
-                        np.mean(value),
-                        global_step=self._i_max_iter,
-                    )
 
         # Check for NaN before normalisation an replace with 0
         if tf.reduce_any(tf.math.is_nan(grad)):  # pragma: no cover
