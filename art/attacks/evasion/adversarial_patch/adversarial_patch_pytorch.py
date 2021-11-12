@@ -484,25 +484,26 @@ class AdversarialPatchPyTorch(EvasionAttack):
                     )
                     _ = self._train_step(images=images, target=target, mask=mask_i)
 
+            # Write summary
             if self.summary_writer is not None:  # pragma: no cover
-                self.summary_writer.add_image(
-                    "patch",
-                    self._patch,
-                    global_step=i_iter,
-                )
-
-                if hasattr(self.estimator, "compute_losses"):
-                    x_patched = self._random_overlay(
+                x_patched = (
+                    self._random_overlay(
                         images=torch.from_numpy(x).to(self.estimator.device), patch=self._patch, mask=mask
                     )
-                    losses = self.estimator.compute_losses(x=x_patched, y=torch.from_numpy(y).to(self.estimator.device))
+                    .detach()
+                    .cpu()
+                    .numpy()
+                )
 
-                    for key, value in losses.items():
-                        self.summary_writer.add_scalar(
-                            "loss/{}".format(key),
-                            np.mean(value.detach().cpu().numpy()),
-                            global_step=i_iter,
-                        )
+                self.summary_writer.update(
+                    batch_id=0,
+                    global_step=i_iter,
+                    grad=None,
+                    patch=self._patch,
+                    estimator=self.estimator,
+                    x=x_patched,
+                    y=y,
+                )
 
         return (
             self._patch.detach().cpu().numpy(),
