@@ -22,9 +22,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import random
-from typing import Any, Dict, List, Optional, Tuple, Union, TYPE_CHECKING
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 
-from collections import Callable
 import numpy as np
 
 from art.estimators.classification.classifier import (
@@ -297,4 +296,7 @@ class JaxClassifier(ClassGradientsMixin, ClassifierMixin, JaxEstimator):  # lgtm
 
         :param state: State dictionary with instance parameters to restore.
         """
+        raise NotImplementedError
+
+    def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         raise NotImplementedError
