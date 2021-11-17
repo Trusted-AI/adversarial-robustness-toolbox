@@ -107,7 +107,10 @@ class TestDeepPartitionEnsemble(unittest.TestCase):
 
         # Initialize DPA Classifier
         dpa = DeepPartitionEnsemble(
-            classifiers=ptc.model, ensemble_size=ENSEMBLE_SIZE, channels_first=ptc.channels_first, clip_values=ptc.clip_values
+            classifiers=ptc.model,
+            ensemble_size=ENSEMBLE_SIZE,
+            channels_first=ptc.channels_first,
+            clip_values=ptc.clip_values,
         )
 
         # Check basic functionality of DPA Classifier
