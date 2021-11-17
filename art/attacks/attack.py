@@ -154,7 +154,7 @@ class Attack(abc.ABC):
 
     def _check_params(self) -> None:
 
-        if not isinstance(self.tensor_board, (bool, str)):
+        if not isinstance(self.tensor_board, (bool, str, SummaryWriter)):
             raise ValueError("The argument `tensor_board` has to be either of type bool or str.")
 
     @staticmethod

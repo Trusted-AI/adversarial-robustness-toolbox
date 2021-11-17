@@ -476,6 +476,7 @@ class FastGradientMethod(EvasionAttack):
         eps_step: Union[int, float, np.ndarray],
         project: bool,
         random_init: bool,
+        batch_id_ext: Optional[int] = None,
     ) -> np.ndarray:
         if random_init:
             n = x.shape[0]
@@ -496,7 +497,10 @@ class FastGradientMethod(EvasionAttack):
 
         # Compute perturbation with implicit batching
         for batch_id in range(int(np.ceil(x.shape[0] / float(self.batch_size)))):
-            self._batch_id = batch_id
+            if batch_id_ext is None:
+                self._batch_id = batch_id
+            else:
+                self._batch_id = batch_id_ext
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
             batch_index_2 = min(batch_index_2, x.shape[0])
             batch = x_adv[batch_index_1:batch_index_2]

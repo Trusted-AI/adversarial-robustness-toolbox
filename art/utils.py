@@ -183,14 +183,6 @@ if TYPE_CHECKING:
 
     REGRESSOR_TYPE = Union[ScikitlearnRegressor, ScikitlearnDecisionTreeRegressor]  # pylint: disable=C0103
 
-    PYTORCH_ESTIMATOR_TYPE = Union[  # pylint: disable=C0103
-        PyTorchClassifier,
-        PyTorchDeepSpeech,
-        PyTorchEstimator,
-        PyTorchObjectDetector,
-        PyTorchFasterRCNN,
-    ]
-
     OBJECT_DETECTOR_TYPE = Union[  # pylint: disable=C0103
         ObjectDetector,
         PyTorchObjectDetector,
@@ -203,9 +195,21 @@ if TYPE_CHECKING:
         TensorFlowLingvoASR,
     ]
 
+    PYTORCH_ESTIMATOR_TYPE = Union[  # pylint: disable=C0103
+        PyTorchClassifier,
+        PyTorchDeepSpeech,
+        PyTorchEstimator,
+        PyTorchObjectDetector,
+        PyTorchFasterRCNN,
+    ]
+
     TENSORFLOWV2_ESTIMATOR_TYPE = Union[  # pylint: disable=C0103
         TensorFlowV2Classifier,
         TensorFlowV2Estimator,
+    ]
+
+    ESTIMATOR_TYPE = Union[  # pylint: disable=C0103
+        CLASSIFIER_TYPE, REGRESSOR_TYPE, OBJECT_DETECTOR_TYPE, SPEECH_RECOGNIZER_TYPE
     ]
 
 # --------------------------------------------------------------------------------------------------------- DEPRECATION

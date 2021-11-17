@@ -347,6 +347,7 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
                             self.eps_step,
                             self._project,
                             self.num_random_init > 0 and i_max_iter == 0,
+                            self._batch_id,
                         )
 
                     if rand_init_num == 0:
