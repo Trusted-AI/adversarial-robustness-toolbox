@@ -23,9 +23,8 @@ import unittest
 
 import numpy as np
 import tensorflow as tf
-import torch
 
-from art.utils import load_dataset, random_targets, compute_accuracy
+from art.utils import load_dataset
 from art.estimators.classification.deep_partition_ensemble import DeepPartitionEnsemble
 
 from tests.utils import master_seed, get_image_classifier_pt, get_image_classifier_kr, get_image_classifier_tf
