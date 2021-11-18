@@ -67,7 +67,6 @@ class SummaryWriterDefault(SummaryWriter):
         ind_2: bool = False,
         ind_3: bool = False,
         ind_4: bool = False,
-        ind_5: bool = False,
     ):
         super().__init__(tensor_board=tensor_board)
 
@@ -75,9 +74,13 @@ class SummaryWriterDefault(SummaryWriter):
         self.ind_2 = ind_2
         self.ind_3 = ind_3
         self.ind_4 = ind_4
-        self.ind_5 = ind_5
 
+        self.loss = None
+        self.loss_prev = dict()
         self.losses = dict()
+
+        self.i_3 = dict()
+        self.i_4 = dict()
 
     def update(
         self,
@@ -104,19 +107,25 @@ class SummaryWriterDefault(SummaryWriter):
 
         # Gradients
         if grad is not None:
-            self.summary_writer.add_scalar(
+
+            l_1 = np.linalg.norm(grad.reshape(grad.shape[0], -1), axis=1, ord=1)
+            self.summary_writer.add_scalars(
                 "gradients/norm-L1/batch-{}".format(batch_id),
-                np.linalg.norm(grad.flatten(), ord=1),
+                {str(i): v for i, v in enumerate(l_1)},
                 global_step=global_step,
             )
-            self.summary_writer.add_scalar(
+
+            l_2 = np.linalg.norm(grad.reshape(grad.shape[0], -1), axis=1, ord=2)
+            self.summary_writer.add_scalars(
                 "gradients/norm-L2/batch-{}".format(batch_id),
-                np.linalg.norm(grad.flatten(), ord=2),
+                {str(i): v for i, v in enumerate(l_2)},
                 global_step=global_step,
             )
-            self.summary_writer.add_scalar(
+
+            l_inf = np.linalg.norm(grad.reshape(grad.shape[0], -1), axis=1, ord=np.inf)
+            self.summary_writer.add_scalars(
                 "gradients/norm-Linf/batch-{}".format(batch_id),
-                np.linalg.norm(grad.flatten(), ord=np.inf),
+                {str(i): v for i, v in enumerate(l_inf)},
                 global_step=global_step,
             )
 
@@ -134,11 +143,20 @@ class SummaryWriterDefault(SummaryWriter):
                 losses = estimator.compute_losses(x=x, y=y)
 
                 for key, value in losses.items():
-                    self.summary_writer.add_scalar(
+                    self.summary_writer.add_scalars(
                         "loss/{}/batch-{}".format(key, batch_id),
-                        np.mean(value),
+                        {str(i): v for i, v in enumerate(value)},
                         global_step=global_step,
                     )
+
+            elif hasattr(estimator, "compute_loss"):
+                loss = estimator.compute_loss(x=x, y=y)
+
+                self.summary_writer.add_scalars(
+                    "loss/batch-{}".format(batch_id),
+                    {str(i): v for i, v in enumerate(loss)},
+                    global_step=global_step,
+                )
 
         # Attack Failure Indicators
         if self.ind_1:
@@ -199,10 +217,30 @@ class SummaryWriterDefault(SummaryWriter):
                 )
 
         if self.ind_3:
-            pass
+            loss = estimator.compute_loss(x=x, y=y)
+
+            if str(batch_id) in self.i_3:
+                self.i_3[str(batch_id)][loss > self.loss_prev[str(batch_id)]] += 1
+            else:
+                self.i_3[str(batch_id)] = np.zeros_like(loss)
+
+            self.summary_writer.add_scalars(
+                "Attack Failure Indicator 3 - Increasing Loss/batch-{}".format(batch_id),
+                {str(i): v for i, v in enumerate(self.i_3[str(batch_id)] / global_step)},
+                global_step=global_step,
+            )
+
+            self.loss_prev[str(batch_id)] = loss
 
         if self.ind_4:
-            pass
 
-        if self.ind_5:
-            pass
+            if not str(batch_id) in self.i_4:
+                self.i_4[str(batch_id)] = np.zeros_like(loss)
+
+            self.i_4[str(batch_id)][np.linalg.norm(grad.reshape(grad.shape[0], -1), axis=1, ord=1) < 1e-9] += 1
+
+            self.summary_writer.add_scalars(
+                "Attack Failure Indicator 4 - Zero Gradients/batch-{}".format(batch_id),
+                {str(i): v for i, v in enumerate(self.i_4[str(batch_id)])},
+                global_step=global_step,
+            )
