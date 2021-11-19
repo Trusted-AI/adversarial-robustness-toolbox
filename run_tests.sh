@@ -145,6 +145,7 @@ else
                         "tests/metrics/test_verification_decision_trees.py" )
 
     declare -a art=("tests/test_data_generators.py" \
+                    "tests/test_optimizers.py" \
                     "tests/test_utils.py" \
                     "tests/test_visualization.py" )
 
