@@ -24,7 +24,7 @@ This module implements a wrapper for MP3 compression defence.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING, Optional, Tuple, Any
 
 import numpy as np
 
@@ -88,7 +88,7 @@ class Mp3CompressionPyTorch(PreprocessorPyTorch):
             verbose=verbose,
         )
 
-        class CompressionPyTorchNumpy(Function):
+        class CompressionPyTorchNumpy(Function):  # pylint: disable=W0223
             """
             Function running Preprocessor.
             """
