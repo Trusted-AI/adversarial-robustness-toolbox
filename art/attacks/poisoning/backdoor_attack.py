@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 
 class PoisoningAttackBackdoor(PoisoningAttackBlackBox):
     """
-    Implementation of backdoor attacks introduced in Gu, et. al. 2017
+    Implementation of backdoor attacks introduced in Gu et al., 2017.
 
     Applies a number of backdoor perturbation functions and switches label to target label
 

@@ -110,7 +110,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
         )
 
         self._loss = loss
-        self._nb_classes = nb_classes
+        self.nb_classes = nb_classes
         self._input_shape = input_shape
         self._device = ctx
         self._optimizer = optimizer

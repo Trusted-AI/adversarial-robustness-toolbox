@@ -81,7 +81,7 @@ class DetectorClassifier(ClassifierNeuralNetwork):
 
         self.classifier = classifier
         self.detector = detector
-        self._nb_classes = classifier.nb_classes + 1
+        self.nb_classes = classifier.nb_classes + 1
         self._input_shape = classifier.input_shape
 
     @property
