@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements Backdoor Attacks to poison data used in ML models.
+This module implements Clean Label Backdoor Attacks to poison data used in ML models.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -38,11 +38,11 @@ logger = logging.getLogger(__name__)
 
 class PoisoningAttackCleanLabelBackdoor(PoisoningAttackBlackBox):
     """
-    Implementation of Clean-Label Backdoor Attacks introduced in Gu, et. al. 2017
+    Implementation of Clean-Label Backdoor Attack introduced in Turner et al., 2018.
 
-    Applies a number of backdoor perturbation functions and switches label to target label
+    Applies a number of backdoor perturbation functions and does not change labels.
 
-    | Paper link: https://arxiv.org/abs/1708.06733
+    | Paper link: https://people.csail.mit.edu/madry/lab/cleanlabel.pdf
     """
 
     attack_params = PoisoningAttackBlackBox.attack_params + [
