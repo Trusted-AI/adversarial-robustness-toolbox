@@ -24,7 +24,7 @@ This module implements a wrapper for MP3 compression defence.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import TYPE_CHECKING, Optional, Tuple, Any
+from typing import TYPE_CHECKING, Optional, Tuple
 
 import numpy as np
 
