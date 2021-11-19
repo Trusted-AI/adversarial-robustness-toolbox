@@ -72,7 +72,7 @@ class TestMetricsTrees(unittest.TestCase):
         )
 
         self.assertEqual(average_bound, 0.03186914062500001)
-        self.assertEqual(verified_error, 1.0)
+        self.assertEqual(verified_error, 0.99)
 
     def test_LightGBM(self):
         train_data = lightgbm.Dataset(self.x_train, label=np.argmax(self.y_train, axis=1))
