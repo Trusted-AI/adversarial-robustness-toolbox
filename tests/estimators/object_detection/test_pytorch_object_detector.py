@@ -111,7 +111,7 @@ class TestPyTorchObjectDetector(TestBase):
 
         self.assertTrue(result[0]["scores"].shape == (4,))
         expected_detection_scores = np.asarray([0.45197296, 0.12707493, 0.082677, 0.05386855])
-        np.testing.assert_array_almost_equal(result[0]["scores"][:10], expected_detection_scores, decimal=6)
+        np.testing.assert_array_almost_equal(result[0]["scores"][:10], expected_detection_scores, decimal=4)
 
         self.assertTrue(result[0]["labels"].shape == (4,))
         expected_detection_classes = np.asarray([72, 72, 1, 1])
