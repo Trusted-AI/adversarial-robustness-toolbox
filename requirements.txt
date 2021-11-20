@@ -33,8 +33,8 @@ torchvision==0.11.1+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.htm
 catboost==1.0.0
 GPy==1.10.0
 lightgbm==3.3.0
-xgboost==1.4.2
-kornia~=0.5.11
+xgboost==1.5.0
+kornia~=0.6.1
 tensorboardX==2.4
 lief==0.11.5
 
