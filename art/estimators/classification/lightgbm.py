@@ -82,7 +82,7 @@ class LightGBMClassifier(ClassifierDecisionTree):
         )
 
         self._input_shape = (self._model.num_feature(),)
-        self._nb_classes = self._get_nb_classes()
+        self.nb_classes = self._get_nb_classes()
 
     @property
     def input_shape(self) -> Tuple[int, ...]:
