@@ -98,7 +98,7 @@ class TestDeepPartitionEnsemble(unittest.TestCase):
         :return:
         """
         # Build KerasClassifier
-        ptc = get_image_classifier_pt()
+        classifier = get_image_classifier_pt()
 
         # Get MNIST
         (x_train, y_train), (x_test, y_test) = self.mnist
@@ -107,11 +107,14 @@ class TestDeepPartitionEnsemble(unittest.TestCase):
 
         # Initialize DPA Classifier
         dpa = DeepPartitionEnsemble(
-            classifiers=ptc,
-            ensemble_size=ENSEMBLE_SIZE,
-            channels_first=ptc.channels_first,
-            clip_values=ptc.clip_values,
-        )
+                classifiers=classifier,
+                ensemble_size=ENSEMBLE_SIZE,
+                channels_first=classifier.channels_first,
+                clip_values=classifier.clip_values,
+                preprocessing_defences=classifier.preprocessing_defences,
+                postprocessing_defences=classifier.postprocessing_defences,
+                preprocessing=classifier.preprocessing,
+            )
 
         # Check basic functionality of DPA Classifier
         # check predict
@@ -121,7 +124,7 @@ class TestDeepPartitionEnsemble(unittest.TestCase):
 
         # loss gradient
         grad = dpa.loss_gradient(x=x_test, y=y_test, sampling=True)
-        assert grad.shape == (10, 28, 28, 1)
+        assert grad.shape == (10, 1, 28, 28)
 
         # fit
         dpa.fit(x=x_train, y=y_train)
@@ -139,9 +142,14 @@ class TestDeepPartitionEnsemble(unittest.TestCase):
 
         # Initialize DPA Classifier
         dpa = DeepPartitionEnsemble(
-            classifiers=classifier,
-            ensemble_size=ENSEMBLE_SIZE,
-        )
+                classifiers=classifier,
+                ensemble_size=ENSEMBLE_SIZE,
+                channels_first=classifier.channels_first,
+                clip_values=classifier.clip_values,
+                preprocessing_defences=classifier.preprocessing_defences,
+                postprocessing_defences=classifier.postprocessing_defences,
+                preprocessing=classifier.preprocessing,
+            )
 
         # Check basic functionality of DPA Classifier
         # check predict
