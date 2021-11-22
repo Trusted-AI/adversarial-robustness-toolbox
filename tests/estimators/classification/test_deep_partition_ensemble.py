@@ -107,14 +107,14 @@ class TestDeepPartitionEnsemble(unittest.TestCase):
 
         # Initialize DPA Classifier
         dpa = DeepPartitionEnsemble(
-                classifiers=classifier,
-                ensemble_size=ENSEMBLE_SIZE,
-                channels_first=classifier.channels_first,
-                clip_values=classifier.clip_values,
-                preprocessing_defences=classifier.preprocessing_defences,
-                postprocessing_defences=classifier.postprocessing_defences,
-                preprocessing=classifier.preprocessing,
-            )
+            classifiers=classifier,
+            ensemble_size=ENSEMBLE_SIZE,
+            channels_first=classifier.channels_first,
+            clip_values=classifier.clip_values,
+            preprocessing_defences=classifier.preprocessing_defences,
+            postprocessing_defences=classifier.postprocessing_defences,
+            preprocessing=classifier.preprocessing,
+        )
 
         # Check basic functionality of DPA Classifier
         # check predict
@@ -142,14 +142,14 @@ class TestDeepPartitionEnsemble(unittest.TestCase):
 
         # Initialize DPA Classifier
         dpa = DeepPartitionEnsemble(
-                classifiers=classifier,
-                ensemble_size=ENSEMBLE_SIZE,
-                channels_first=classifier.channels_first,
-                clip_values=classifier.clip_values,
-                preprocessing_defences=classifier.preprocessing_defences,
-                postprocessing_defences=classifier.postprocessing_defences,
-                preprocessing=classifier.preprocessing,
-            )
+            classifiers=classifier,
+            ensemble_size=ENSEMBLE_SIZE,
+            channels_first=classifier.channels_first,
+            clip_values=classifier.clip_values,
+            preprocessing_defences=classifier.preprocessing_defences,
+            postprocessing_defences=classifier.postprocessing_defences,
+            preprocessing=classifier.preprocessing,
+        )
 
         # Check basic functionality of DPA Classifier
         # check predict
