@@ -1,17 +1,37 @@
-# %%
-from abc import abstractmethod, ABC
+# MIT License
+#
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+# documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+# persons to whom the Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+# Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+# WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 import string
-import matplotlib.pyplot as plt
-import numpy as np
-from typing import Union, List, Any
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from logging import Logger
 from pathlib import Path
+from typing import Any, List, Union, Tuple, Callable
+
+import matplotlib.pyplot as plt
+import numpy as np
 
 
-# %%
 @dataclass
 class Line:
+    """
+    Representation of the linear function.
+    """
     r: float
     b: float
 
@@ -21,17 +41,25 @@ class Line:
     # L2 norm.
     # https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line#Another_formula
     def distance_of_point_from_the_line(self, x: float, y: float) -> float:
+        """
+        Calculate distance between line and point.
+
+        :param x: X coordinate of a point.
+        :param y: Y coordinate of a point.
+        """
         y_difference = np.abs(self(x) - y)
         slope_squared = np.math.pow(np.math.tan(self.r), 2)
         return y_difference / np.math.sqrt(1. + slope_squared)
 
-    def to_numpy(self):
+    def to_numpy(self) -> np.ndarray:
         return np.array([self.r, self.b])
 
 
-# %%
 @dataclass
 class Range:
+    """
+    Representation of mathematical range concept
+    """
     left: float
     right: float
 
@@ -43,9 +71,11 @@ class Range:
         return self.right - self.left
 
 
-# %%
 class AdversarialObject(ABC):
-
+    """
+    Abstract class that represents an adversarial object
+    placed on an input image in order to attack a neural network
+    """
     @abstractmethod
     def to_numpy(self) -> np.ndarray:
         raise NotImplementedError
@@ -56,6 +86,10 @@ class AdversarialObject(ABC):
 
 
 class AdvObjectGenerator(ABC):
+    """
+    Abstract class that define basic behaviours
+    related to generation of an adversarial objects on images
+    """
     min_params: AdversarialObject
     max_params: AdversarialObject
 
@@ -66,9 +100,6 @@ class AdvObjectGenerator(ABC):
         *args,
         **kwargs,
     ) -> AdversarialObject:
-        """
-
-        """
         raise NotImplementedError
 
     @abstractmethod
@@ -77,27 +108,54 @@ class AdvObjectGenerator(ABC):
 
 
 class ImageGenerator:
+    """
+    General class responsible for generation and updation
+    images used to attack neural network.
+    Images are crated basing on adversarial objects parameters
+    passed to the class.
+    """
 
     def update_image(
         self,
         original_image: np.ndarray,
         params: AdversarialObject
     ) -> np.ndarray:
-        laser_image = self.generate_image(params, original_image.shape[1:])
-        return self.add_images(original_image, np.expand_dims(laser_image, 0))
+        """
+        Update original image used for prediction
+        and add image of the adversarial object to it
+        in order to create adversarial example.
+
+        :param original_image: Image used for an attack.
+        :param params: Adversarial object parameters.
+        """
+        adv_object_image = self.generate_image(params, original_image.shape[1:])
+        return self.add_images(original_image, np.expand_dims(adv_object_image, 0))
 
     def add_images(
         self,
         image1: np.ndarray,
         image2: np.ndarray
     ) -> np.ndarray:
+        """
+        Add two images and return resultant image.
+
+        :param image1:
+        :param image2:
+        """
         return add_images(image1, image2)
 
     def generate_image(
         self,
-        adv_object: AdversarialObject,
-        shape
+        adv_object: Callable,
+        shape: Tuple
     ) -> np.ndarray:
+        """
+        Generate image of the adversarial object
+        basing on passed parameters.
+
+        :param adv_object: Parameters of the adversarial object.
+        :param shape: Shape of the desired image.
+        """
         laser_image = np.zeros(shape)
         for i in range(shape[0]):
             for j in range(shape[0]):
@@ -107,8 +165,14 @@ class ImageGenerator:
                 laser_image[i,j,2] = np.clip(rgb[2], 0, 1)
 
         return laser_image
-# %%
+
 def wavelength_to_RGB(wavelength: Union[float, int]) -> List[float]:
+    """
+    Converts wavelength in nanometers to the RGB color,
+    returned as list of floats.
+
+    :param wavelength: wavelength in the nanometers
+    """
     wavelength = float(wavelength)
     range1 = Range(380, 440)
     range2 = Range(440, 490)
@@ -150,13 +214,18 @@ def wavelength_to_RGB(wavelength: Union[float, int]) -> List[float]:
 
     return [0., 0., 0.]
 
-# %%
-def add_images(image1, image2):
+def add_images(image1: np.ndarray, image2: np.ndarray) -> np.ndarray:
+    """
+    Add two normalized RGB images and return resultant image.
+    If some pixel value exceeds 1, then it's set to 1.
+
+    :param
+    :param
+    """
     if image1.shape != image2.shape:
         raise Exception("Wrong size")
     return np.clip(image1 + image2, 0, 1)
 
-# %%
 def add_laser_to_image2(image, laser):
     image = image.copy()
     for i in range(image.shape[0]):
@@ -167,8 +236,16 @@ def add_laser_to_image2(image, laser):
             image[i,j] = pixel.astype("uint8")
     return image
 
-# %%
 def save_NRGB_image(image: np.ndarray, number=0, name_length=5, directory="attack"):
+    """
+    Saves normalized RGB image, passed as numpy array to the
+    set directory - default: "attack"
+
+    :param image:
+    :param number:
+    :param name_length:
+    :param directory:
+    """
     ALPHABET = np.array(list(string.ascii_letters))
     Path(directory).mkdir(exist_ok=True)
     im_name =f"{directory}/{number}_{''.join(np.random.choice(ALPHABET, size=name_length))}.jpg"
@@ -176,21 +253,47 @@ def save_NRGB_image(image: np.ndarray, number=0, name_length=5, directory="attac
 
 @dataclass
 class DebugInfo:
+    """
+    Logs debug informations during attacking process.
+    """
     logger: Logger
     artifacts_directory: str
 
     def log(self, adv_object: AdversarialObject):
+        """
+        Prints debug info on the stderr
+
+        :param adv_object: Parameters of the adversarial object,
+        printed out to the stderr.
+        """
         self.logger.info(adv_object)
 
     def save_image(self, image: np.ndarray):
+        """
+        Saves images generated during lasting process to the
+        set artifacts directory
+
+        :param image:
+        """
         save_NRGB_image(image, name_length=5, directory=self.artifacts_directory)
 
     @staticmethod
     def report(instance, adv_object: AdversarialObject, image: np.ndarray):
+        """
+
+        :param instance:
+        :param adv_object:
+        :param image:
+        """
         if instance.logger is not None:
             instance.log(adv_object)
         if instance.artifacts_directory is not None:
             instance.save_image(image)
 
-def show_NRGB_image(image: np.ndarray):
+def show_NRGB_image(image: np.ndarray) -> None:
+    """
+    Plots an image passed as RGB array
+
+    :param image: image to plot
+    """
     plt.imshow(image)
