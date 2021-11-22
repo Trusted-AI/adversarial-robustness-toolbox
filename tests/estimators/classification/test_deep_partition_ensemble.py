@@ -70,7 +70,7 @@ class TestDeepPartitionEnsemble(unittest.TestCase):
 
             # Initialize DPA Classifier
             dpa = DeepPartitionEnsemble(
-                classifiers=classifier.model,
+                classifiers=classifier,
                 ensemble_size=ENSEMBLE_SIZE,
                 channels_first=classifier.channels_first,
                 clip_values=classifier.clip_values,
@@ -107,7 +107,7 @@ class TestDeepPartitionEnsemble(unittest.TestCase):
 
         # Initialize DPA Classifier
         dpa = DeepPartitionEnsemble(
-            classifiers=ptc.model,
+            classifiers=ptc,
             ensemble_size=ENSEMBLE_SIZE,
             channels_first=ptc.channels_first,
             clip_values=ptc.clip_values,
@@ -139,7 +139,7 @@ class TestDeepPartitionEnsemble(unittest.TestCase):
 
         # Initialize DPA Classifier
         dpa = DeepPartitionEnsemble(
-            classifiers=classifier.model,
+            classifiers=classifier,
             ensemble_size=ENSEMBLE_SIZE,
         )
 
