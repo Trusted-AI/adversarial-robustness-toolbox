@@ -1,7 +1,28 @@
+# MIT License
+#
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+# documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+# persons to whom the Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+# Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+# WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 from typing import Optional, Tuple
+
 import numpy as np
-from art.attacks.evasion.laser_attack.utils import \
-    AdvObjectGenerator, DebugInfo, AdversarialObject, ImageGenerator
+from art.attacks.evasion.laser_attack.utils import (AdversarialObject,
+                                                    AdvObjectGenerator,
+                                                    DebugInfo, ImageGenerator)
+
 
 # https://openaccess.thecvf.com/content/CVPR2021/papers/Duan_Adversarial_Laser_Beam_Effective_Physical-World_Attack_to_DNNs_in_a_CVPR_2021_paper.pdf
 # Algorithm 1
@@ -15,6 +36,20 @@ def greedy_search(
     image_generator: ImageGenerator,
     debug: Optional[DebugInfo] = None,
 ) -> Tuple[Optional[AdversarialObject], Optional[int]]:
+    """
+    Greedy search algorithm used to generate parameters
+    of an adversarial object that added to the :image
+    will mislead the neural network.
+
+    :param image: Image to attack.
+    :param estimator: Predictor of the image class.
+    :param iterations: Maximum number of iterations of the algorithm.
+    :param actual_class:
+    :param actual_class_confidence:
+    :param adv_object_generator: Object responsible for adversarial object generation.
+    :param image_generator: Object responsible for image generation.
+    :param debug: Optional debug handler.
+    """
 
     params = adv_object_generator.random()
     for _ in range(iterations):
