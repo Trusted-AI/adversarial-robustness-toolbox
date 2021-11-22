@@ -16,17 +16,17 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the TensorBoard support.
+This module defines and implements the summary writers for TensorBoard output.
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Dict, List, Optional, Union
 
 import numpy as np
 
 
 class SummaryWriter(ABC):
-    def __init__(self, tensor_board: str):
+    def __init__(self, tensor_board: Union[str, bool]):
         """
         Create summary writer.
 
@@ -41,6 +41,9 @@ class SummaryWriter(ABC):
 
     @property
     def summary_writer(self):
+        """
+        Return the TensorBoardX summary writer instance.
+        """
         return self._summary_writer
 
     @abstractmethod
@@ -60,9 +63,13 @@ class SummaryWriter(ABC):
 
 
 class SummaryWriterDefault(SummaryWriter):
+    """
+    Implementation of the default ART Summary Writer.
+    """
+
     def __init__(
         self,
-        tensor_board: str,
+        tensor_board: Union[str, bool],
         ind_1: bool = False,
         ind_2: bool = False,
         ind_3: bool = False,
@@ -76,11 +83,11 @@ class SummaryWriterDefault(SummaryWriter):
         self.ind_4 = ind_4
 
         self.loss = None
-        self.loss_prev = dict()
-        self.losses = dict()
+        self.loss_prev: Dict[str, np.ndarray] = dict()
+        self.losses: Dict[str, List[np.ndarray]] = dict()
 
-        self.i_3 = dict()
-        self.i_4 = dict()
+        self.i_3: Dict[str, np.ndarray] = dict()
+        self.i_4: Dict[str, np.ndarray] = dict()
 
     def update(
         self,
@@ -163,7 +170,7 @@ class SummaryWriterDefault(SummaryWriter):
             from art.estimators.classification.classifier import ClassifierMixin
 
             if isinstance(estimator, ClassifierMixin):
-                y_pred = estimator.predict(x)
+                y_pred = estimator.predict(x)  # type: ignore
                 i_1 = np.argmax(y_pred, axis=1) == np.argmax(y, axis=1)
                 self.summary_writer.add_scalars(
                     "Attack Failure Indicator 1 - Silent Success/batch-{}".format(batch_id),
@@ -234,7 +241,7 @@ class SummaryWriterDefault(SummaryWriter):
 
         if self.ind_4:
 
-            if not str(batch_id) in self.i_4:
+            if str(batch_id) not in self.i_4:
                 self.i_4[str(batch_id)] = np.zeros_like(loss)
 
             self.i_4[str(batch_id)][np.linalg.norm(grad.reshape(grad.shape[0], -1), axis=1, ord=1) < 1e-9] += 1

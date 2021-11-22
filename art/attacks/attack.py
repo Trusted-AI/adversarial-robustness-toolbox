@@ -121,13 +121,12 @@ class Attack(abc.ABC):
 
         self._estimator = estimator
         self.tensor_board = tensor_board
+        self.summary_writer: Optional[SummaryWriter] = None
 
         if isinstance(tensor_board, SummaryWriter):  # pragma: no cover
             self.summary_writer = tensor_board
         elif tensor_board:
             self.summary_writer = SummaryWriterDefault(tensor_board)
-        else:
-            self.summary_writer = None
 
         Attack._check_params(self)
 
