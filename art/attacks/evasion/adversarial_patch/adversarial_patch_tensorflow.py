@@ -458,23 +458,19 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
                 for images, target, mask_i in dataset:
                     _ = self._train_step(images=images, target=target, mask=mask_i)
 
+            # Write summary
             if self.summary_writer is not None:  # pragma: no cover
-                self.summary_writer.add_image(
-                    "patch",
-                    self._patch.numpy().transpose((2, 0, 1)),
+                x_patched = self._random_overlay(images=x, patch=self._patch, mask=mask)
+
+                self.summary_writer.update(
+                    batch_id=0,
                     global_step=i_iter,
+                    grad=None,
+                    patch=self._patch.numpy().transpose((2, 0, 1)),
+                    estimator=self.estimator,
+                    x=x_patched,
+                    y=y,
                 )
-
-                if hasattr(self.estimator, "compute_losses"):
-                    x_patched = self._random_overlay(images=x, patch=self._patch, mask=mask)
-                    losses = self.estimator.compute_losses(x=x_patched, y=y)
-
-                    for key, value in losses.items():
-                        self.summary_writer.add_scalar(
-                            "loss/{}".format(key),
-                            np.mean(value),
-                            global_step=i_iter,
-                        )
 
         return (
             self._patch.numpy(),
