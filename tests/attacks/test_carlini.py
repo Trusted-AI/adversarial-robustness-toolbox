@@ -386,7 +386,7 @@ class TestCarlini(TestBase):
         tfc, sess = get_image_classifier_tf(from_logits=True)
 
         # Failure attack
-        clinfm = CarliniLInfMethod(classifier=tfc, targeted=True, max_iter=0, learning_rate=0, eps=0.5, verbose=False)
+        clinfm = CarliniLInfMethod(classifier=tfc, targeted=True, max_iter=0, learning_rate=0, verbose=False)
         params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes)}
         x_test_adv = clinfm.generate(self.x_test_mnist, **params)
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
@@ -406,7 +406,9 @@ class TestCarlini(TestBase):
         tfc, sess = get_image_classifier_tf(from_logits=True)
 
         # First attack
-        clinfm = CarliniLInfMethod(classifier=tfc, targeted=True, max_iter=10, eps=0.5, verbose=False)
+        clinfm = CarliniLInfMethod(
+            classifier=tfc, targeted=True, max_iter=10, initial_const=1, largest_const=1.1, verbose=False
+        )
         params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes)}
         x_test_adv = clinfm.generate(self.x_test_mnist, **params)
         self.assertFalse((self.x_test_mnist == x_test_adv).all())
@@ -420,7 +422,9 @@ class TestCarlini(TestBase):
         self.assertTrue((target == y_pred_adv).any())
 
         # Second attack, no batching
-        clinfm = CarliniLInfMethod(classifier=tfc, targeted=False, max_iter=10, eps=0.5, batch_size=1, verbose=False)
+        clinfm = CarliniLInfMethod(
+            classifier=tfc, targeted=False, max_iter=10, initial_const=1, largest_const=1.1, verbose=False
+        )
         x_test_adv = clinfm.generate(self.x_test_mnist)
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
         self.assertGreaterEqual(np.amin(x_test_adv), -1e-6)
@@ -449,7 +453,7 @@ class TestCarlini(TestBase):
     #     krc = get_image_classifier_kr(from_logits=True)
     #
     #     # First attack
-    #     clinfm = CarliniLInfMethod(classifier=krc, targeted=True, max_iter=10, eps=0.5, verbose=False)
+    #     clinfm = CarliniLInfMethod(classifier=krc, targeted=True, max_iter=10, verbose=False)
     #     params = {"y": random_targets(self.y_test_mnist, krc.nb_classes)}
     #     x_test_adv = clinfm.generate(self.x_test_mnist, **params)
     #     self.assertFalse((self.x_test_mnist == x_test_adv).all())
@@ -463,7 +467,7 @@ class TestCarlini(TestBase):
     #     self.assertTrue((target == y_pred_adv).any())
     #
     #     # Second attack
-    #     clinfm = CarliniLInfMethod(classifier=krc, targeted=False, max_iter=10, eps=0.5, verbose=False)
+    #     clinfm = CarliniLInfMethod(classifier=krc, targeted=False, max_iter=10, verbose=False)
     #     x_test_adv = clinfm.generate(self.x_test_mnist)
     #     self.assertLessEqual(np.amax(x_test_adv), 1.000001)
     #     self.assertGreaterEqual(np.amin(x_test_adv), -1e-6)
@@ -488,7 +492,7 @@ class TestCarlini(TestBase):
     #     ptc = get_image_classifier_pt(from_logits=True)
     #
     #     # First attack
-    #     clinfm = CarliniLInfMethod(classifier=ptc, targeted=True, max_iter=10, eps=0.5, verbose=False)
+    #     clinfm = CarliniLInfMethod(classifier=ptc, targeted=True, max_iter=10, verbose=False)
     #     params = {"y": random_targets(self.y_test_mnist, ptc.nb_classes)}
     #     x_test_adv = clinfm.generate(x_test, **params)
     #     self.assertFalse((x_test == x_test_adv).all())
@@ -499,7 +503,7 @@ class TestCarlini(TestBase):
     #     self.assertTrue((target == y_pred_adv).any())
     #
     #     # Second attack
-    #     clinfm = CarliniLInfMethod(classifier=ptc, targeted=False, max_iter=10, eps=0.5, verbose=False)
+    #     clinfm = CarliniLInfMethod(classifier=ptc, targeted=False, max_iter=10, verbose=False)
     #     x_test_adv = clinfm.generate(x_test)
     #     self.assertLessEqual(np.amax(x_test_adv), 1.0 + 1e-6)
     #     self.assertGreaterEqual(np.amin(x_test_adv), -1e-6)
@@ -513,7 +517,7 @@ class TestCarlini(TestBase):
 
     # def test_keras_iris_clipped_LInf(self):
     #     classifier = get_tabular_classifier_kr()
-    #     attack = CarliniLInfMethod(classifier, targeted=False, max_iter=10, eps=0.5, verbose=False)
+    #     attack = CarliniLInfMethod(classifier, targeted=False, max_iter=10, verbose=False)
     #     x_test_adv = attack.generate(self.x_test_iris)
     #     self.assertFalse((self.x_test_iris == x_test_adv).all())
     #     self.assertLessEqual(np.amax(x_test_adv), 1.0)
@@ -529,7 +533,7 @@ class TestCarlini(TestBase):
     #
     #     # Recreate a classifier without clip values
     #     classifier = KerasClassifier(model=classifier._model, use_logits=False, channels_first=True)
-    #     attack = CarliniLInfMethod(classifier, targeted=False, max_iter=10, eps=1, verbose=False)
+    #     attack = CarliniLInfMethod(classifier, targeted=False, max_iter=10, verbose=False)
     #     x_test_adv = attack.generate(self.x_test_iris)
     #     self.assertFalse((self.x_test_iris == x_test_adv).all())
     #
@@ -542,7 +546,7 @@ class TestCarlini(TestBase):
     #     classifier, _ = get_tabular_classifier_tf()
     #
     #     # Test untargeted attack
-    #     attack = CarliniLInfMethod(classifier, targeted=False, max_iter=10, eps=0.5, verbose=False)
+    #     attack = CarliniLInfMethod(classifier, targeted=False, max_iter=10, verbose=False)
     #     x_test_adv = attack.generate(self.x_test_iris)
     #     self.assertFalse((self.x_test_iris == x_test_adv).all())
     #     self.assertLessEqual(np.amax(x_test_adv), 1.0)
@@ -555,7 +559,7 @@ class TestCarlini(TestBase):
     #
     #     # Test targeted attack
     #     targets = random_targets(self.y_test_iris, nb_classes=3)
-    #     attack = CarliniLInfMethod(classifier, targeted=True, max_iter=10, eps=0.5, verbose=False)
+    #     attack = CarliniLInfMethod(classifier, targeted=True, max_iter=10, verbose=False)
     #     x_test_adv = attack.generate(self.x_test_iris, **{"y": targets})
     #     self.assertFalse((self.x_test_iris == x_test_adv).all())
     #     self.assertLessEqual(np.amax(x_test_adv), 1.0)
@@ -568,7 +572,7 @@ class TestCarlini(TestBase):
 
     # def test_pytorch_iris_LInf(self):
     #     classifier = get_tabular_classifier_pt()
-    #     attack = CarliniLInfMethod(classifier, targeted=False, max_iter=10, eps=0.5, verbose=False)
+    #     attack = CarliniLInfMethod(classifier, targeted=False, max_iter=10, verbose=False)
     #     x_test_adv = attack.generate(self.x_test_iris.astype(np.float32))
     #     self.assertFalse((self.x_test_iris == x_test_adv).all())
     #     self.assertLessEqual(np.amax(x_test_adv), 1.0)
@@ -598,7 +602,7 @@ class TestCarlini(TestBase):
     #         classifier.fit(x=self.x_test_iris, y=self.y_test_iris)
     #
     #         # Test untargeted attack
-    #         attack = CarliniLInfMethod(classifier, targeted=False, max_iter=10, eps=0.5, verbose=False)
+    #         attack = CarliniLInfMethod(classifier, targeted=False, max_iter=10, verbose=False)
     #         x_test_adv = attack.generate(self.x_test_iris)
     #         self.assertFalse((self.x_test_iris == x_test_adv).all())
     #         self.assertLessEqual(np.amax(x_test_adv), 1.0)
@@ -614,7 +618,7 @@ class TestCarlini(TestBase):
     #
     #         # Test targeted attack
     #         targets = random_targets(self.y_test_iris, nb_classes=3)
-    #         attack = CarliniLInfMethod(classifier, targeted=True, max_iter=10, eps=0.5, verbose=False)
+    #         attack = CarliniLInfMethod(classifier, targeted=True, max_iter=10, verbose=False)
     #         x_test_adv = attack.generate(self.x_test_iris, **{"y": targets})
     #         self.assertFalse((self.x_test_iris == x_test_adv).all())
     #         self.assertLessEqual(np.amax(x_test_adv), 1.0)
@@ -636,27 +640,29 @@ class TestCarlini(TestBase):
         ptc = get_image_classifier_pt(from_logits=True)
 
         with self.assertRaises(ValueError):
-            _ = CarliniLInfMethod(ptc, eps=-1)
-
-        with self.assertRaises(ValueError):
             _ = CarliniLInfMethod(ptc, max_iter="1.0")
         with self.assertRaises(ValueError):
             _ = CarliniLInfMethod(ptc, max_iter=-1)
 
         with self.assertRaises(ValueError):
-            _ = CarliniLInfMethod(ptc, max_halving="1.0")
+            _ = CarliniLInfMethod(ptc, decrease_factor="1.0")
         with self.assertRaises(ValueError):
-            _ = CarliniLInfMethod(ptc, max_halving=-1)
+            _ = CarliniLInfMethod(ptc, decrease_factor=-1)
 
         with self.assertRaises(ValueError):
-            _ = CarliniLInfMethod(ptc, max_doubling="1.0")
+            _ = CarliniLInfMethod(ptc, initial_const="1.0")
         with self.assertRaises(ValueError):
-            _ = CarliniLInfMethod(ptc, max_doubling=-1)
+            _ = CarliniLInfMethod(ptc, initial_const=-1)
 
         with self.assertRaises(ValueError):
-            _ = CarliniLInfMethod(ptc, batch_size="1.0")
+            _ = CarliniLInfMethod(ptc, largest_const="1.0")
         with self.assertRaises(ValueError):
-            _ = CarliniLInfMethod(ptc, batch_size=-1)
+            _ = CarliniLInfMethod(ptc, largest_const=-1)
+
+        with self.assertRaises(ValueError):
+            _ = CarliniLInfMethod(ptc, const_factor="1.0")
+        with self.assertRaises(ValueError):
+            _ = CarliniLInfMethod(ptc, const_factor=-1)
 
     """
     A unittest class for testing the Carlini L0 attack.
