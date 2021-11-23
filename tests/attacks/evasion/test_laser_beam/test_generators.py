@@ -1,10 +1,6 @@
-# %%
-from numpy.testing._private.utils import assert_array_almost_equal
 import pytest
 import numpy as np
 from fixtures import max_laser_beam, min_laser_beam, laser_generator, image_shape
-from art.attacks.evasion.laser_attack.laser_attack import \
-    LaserBeamGenerator
 from art.attacks.evasion.laser_attack.utils import \
     ImageGenerator
 

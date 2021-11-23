@@ -20,7 +20,6 @@ import logging
 from typing import List, Optional, Tuple, Union, Callable
 
 import numpy as np
-from numpy.lib.arraysetops import isin
 from art.attacks.attack import EvasionAttack
 from art.attacks.evasion.laser_attack.algorithms import greedy_search
 from art.attacks.evasion.laser_attack.utils import (AdversarialObject,
@@ -30,15 +29,14 @@ from art.attacks.evasion.laser_attack.utils import (AdversarialObject,
 
 logger = logging.getLogger(__name__)
 
-# %%
 class LaserAttack(EvasionAttack):
     attack_params = EvasionAttack.attack_params + [
-        "optimizer",
         "iterations",
+        "laser_generator",
+        "image_generator",
         "random_initializations",
-        "tensor_board, bool] = False",
-        "actual_class",
-        "actual_class_confidence"
+        "optimisation_algorithm",
+        "debug",
     ]
     _estimator_requirements = ()
 
