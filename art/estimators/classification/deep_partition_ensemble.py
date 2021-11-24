@@ -21,9 +21,9 @@ Creates a Deep Partition Aggregation ensemble classifier.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+import warnings
 from typing import List, Optional, Union, Callable, Dict, TYPE_CHECKING
 
-import copy
 import numpy as np
 
 from art.estimators.classification.ensemble import EnsembleClassifier
@@ -78,10 +78,21 @@ class DeepPartitionEnsemble(EnsembleClassifier):
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one. Not applicable in this classifier.
         """
-
+        self.can_fit = False  # self.fit() cannot be used with models loaded from disk
         if not isinstance(classifiers, list):
-            # initialize the ensemble based on the provided architecture
-            classifiers = [copy.deepcopy(classifiers) for _ in range(ensemble_size)]
+            warnings.warn(
+                "If a single classifier is passed, it should not have been loaded from disk due to cloning errors with models loaded from disk. If you are using pre-trained model(s), create a list of Estimator objects the same length as the ensemble size"
+            )
+            self.can_fit = True
+            # Initialize the ensemble based on the provided architecture
+            # Use ART's cloning if possible
+            try:
+                classifiers = [classifiers.clone_for_refitting() for _ in range(ensemble_size)]
+            except Exception as e:
+                warnings.warn("Attempting to deepcopy due to ART Cloning Error: " + str(e))
+                import copy
+
+                classifiers = [copy.deepcopy(classifiers) for _ in range(ensemble_size)]
         elif isinstance(classifiers, list) and len(classifiers) != ensemble_size:
             raise ValueError("The length of the classifier list must be the same as the ensemble size")
 
@@ -160,19 +171,21 @@ class DeepPartitionEnsemble(EnsembleClassifier):
                parameters including batch_size and nb_epochs.
         :param kwargs: Dictionary of framework-specific arguments.
         """
+        if self.can_fit:
+            # First, partition the data using the hash function
+            partition_ind = [[] for _ in range(self.ensemble_size)]  # type: List[List[int]]
+            for i, p_x in enumerate(x):
+                partition_id = int(self.hash_function(p_x))
+                partition_ind[partition_id].append(i)
 
-        # First, partition the data using the hash function
-        partition_ind = [[] for _ in range(self.ensemble_size)]  # type: List[List[int]]
-        for i, p_x in enumerate(x):
-            partition_id = int(self.hash_function(p_x))
-            partition_ind[partition_id].append(i)
+            # Then, train each model on its assigned partition
+            for i in range(self.ensemble_size):
+                current_x = x[np.array(partition_ind[i])]
+                current_y = y[np.array(partition_ind[i])]
 
-        # Then, train each model on its assigned partition
-        for i in range(self.ensemble_size):
-            current_x = x[np.array(partition_ind[i])]
-            current_y = y[np.array(partition_ind[i])]
-
-            if train_dict is not None and i in train_dict.keys():
-                self.classifiers[i].fit(current_x, current_y, **train_dict[i])
-            else:
-                self.classifiers[i].fit(current_x, current_y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
+                if train_dict is not None and i in train_dict.keys():
+                    self.classifiers[i].fit(current_x, current_y, **train_dict[i])
+                else:
+                    self.classifiers[i].fit(current_x, current_y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
+        else:
+            warnings.warn("Cannot call fit() for an ensemble of pre-trained classifiers.")
