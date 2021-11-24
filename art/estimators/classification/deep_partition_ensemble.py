@@ -88,8 +88,8 @@ class DeepPartitionEnsemble(EnsembleClassifier):
             # Use ART's cloning if possible
             try:
                 classifiers = [classifiers.clone_for_refitting() for _ in range(ensemble_size)]
-            except Exception as e:
-                warnings.warn("Attempting to deepcopy due to ART Cloning Error: " + str(e))
+            except (AttributeError, ValueError) as error:
+                warnings.warn("Switching to deepcopy due to ART Cloning Error: " + str(error))
                 import copy
 
                 classifiers = [copy.deepcopy(classifiers) for _ in range(ensemble_size)]
