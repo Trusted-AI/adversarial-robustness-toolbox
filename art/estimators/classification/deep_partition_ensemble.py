@@ -94,6 +94,7 @@ class DeepPartitionEnsemble(EnsembleClassifier):
             except (AttributeError, ValueError) as error:
                 warnings.warn("Switching to deepcopy due to ART Cloning Error: " + str(error))
                 import copy
+
                 classifiers = [copy.deepcopy(classifiers) for _ in range(ensemble_size)]
         elif isinstance(classifiers, list) and len(classifiers) != ensemble_size:
             raise ValueError("The length of the classifier list must be the same as the ensemble size")
