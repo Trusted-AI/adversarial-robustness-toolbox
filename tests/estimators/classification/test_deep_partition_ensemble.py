@@ -29,6 +29,10 @@ from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 from tensorflow.keras.losses import categorical_crossentropy
 from tensorflow.keras.optimizers import Adam
 
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+
 from art.utils import load_dataset
 from art.estimators.classification.deep_partition_ensemble import DeepPartitionEnsemble
 from art.estimators.classification import TensorFlowV2Classifier, PyTorchClassifier, KerasClassifier
