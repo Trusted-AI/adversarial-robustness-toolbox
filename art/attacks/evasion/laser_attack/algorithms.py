@@ -19,9 +19,7 @@
 from typing import Optional, Tuple
 
 import numpy as np
-from art.attacks.evasion.laser_attack.utils import (AdversarialObject,
-                                                    AdvObjectGenerator,
-                                                    DebugInfo, ImageGenerator)
+from art.attacks.evasion.laser_attack.utils import AdversarialObject, AdvObjectGenerator, DebugInfo, ImageGenerator
 
 
 # https://openaccess.thecvf.com/content/CVPR2021/papers/Duan_Adversarial_Laser_Beam_Effective_Physical-World_Attack_to_DNNs_in_a_CVPR_2021_paper.pdf
