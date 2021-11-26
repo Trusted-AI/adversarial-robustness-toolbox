@@ -26,6 +26,10 @@ import numpy as np
 
 
 class SummaryWriter(ABC):
+    """
+    This abstract base class defines the API for summary writers.
+    """
+
     def __init__(self, tensor_board: Union[str, bool]):
         """
         Create summary writer.
