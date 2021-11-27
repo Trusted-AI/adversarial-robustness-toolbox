@@ -111,3 +111,6 @@ demo/pics/*
 !notebooks/adaptive_defence_evaluations/*.ipynb
 !notebooks/adversarial_patch/*.ipynb
 !notebooks/art_evaluations/*.ipynb
+
+# pickle 
+*.pkl

@@ -2,9 +2,14 @@
 
 ## getting start
 ```shell
-source p3_8_env/bin/activate
+source venv/bin/activate
+# with docker image
 make build # only run once; if you change ART library, you need to build again
 make run-jupyter
+# without docker image
+pip3 install -r requirements.txt
+pip install adversarial-robustness-toolbox
+python examples/get_started_pytorch.py
 ```
 
 ## Open Jyupter Notebook on local
