@@ -1,12 +1,35 @@
+# MIT License
+#
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2021
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+# documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+# persons to whom the Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+# Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+# WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+"""
+Stateful detection on Black-Box (2021).
+| Paper link: https://arxiv.org/abs/1907.05587
+"""
 import logging
 from abc import ABC
-from collections import deque
-from typing import Optional, Tuple, Union, Deque, Any, Callable
+from typing import Optional, Tuple, Union
 
 import numpy as np
-from sklearn.neighbors import NearestNeighbors
 
 from art.data_generators import DataGenerator
+from art.defences.detector.evasion.black_box.knn_wrapper import NearestNeighborsWrapper
+from art.defences.detector.evasion.black_box.memory_queue import MemoryQueue
+from art.estimators.encoding import TensorFlowEncoder
+from art.estimators.encoding.pytorch import PyTorchEncoder
 from art.estimators.estimator import NeuralNetworkMixin, BaseEstimator
 from art.utils import CLIP_VALUES_TYPE
 
@@ -21,62 +44,51 @@ class BlackBoxDetector(NeuralNetworkMixin, BaseEstimator, ABC):
 
     def __init__(
         self,
-        similarity_encoder,
-        distance_function: Callable,
+        similarity_encoder: Union[PyTorchEncoder, TensorFlowEncoder],
+        memory_queue: MemoryQueue,
+        knn: NearestNeighborsWrapper,
         detection_threshold: float,
-        k_neighbors: int,
-        initial_last_queries: Deque,
-        max_memory_size: int,
-        channels_first: bool,
-        knn: Any = None,
     ):
+        """
+        Stateful detection on Black-Box (2021).
+        | Paper link: https://arxiv.org/abs/1907.05587
+
+        :param similarity_encoder: Similarity encoder used to encode queries
+        :param memory_queue: Memory queue to store queries
+        :param knn: K nearest neighbors algorithm class
+        :param detection_threshold: Detection threshold used to determine
+                                    whether there are too many similar queries
+        """
         super().__init__(
-            channels_first=channels_first
+            model=similarity_encoder,
+            channels_first=False,
+            clip_values=None
         )
 
         self.similarity_encoder = similarity_encoder
+        self._memory_queue = memory_queue
+        self.knn = knn
 
-        self.distance_function = distance_function
+        if not isinstance(detection_threshold, float):
+            raise ValueError("detection_threshold has to be float")
         self.detection_threshold = detection_threshold
-        self.k_neighbors = k_neighbors
-        # memory queue
-        self.max_memory_size = max_memory_size
-        self.memory_queue = deque(initial_last_queries, maxlen=self.max_memory_size)
-
-        if not knn:
-            self.knn = NearestNeighbors(
-                n_neighbors=self.k_neighbors, metric=distance_function
-            )
-        else:
-            self.knn = knn
 
     def scan(
         self,
         query: np.ndarray,
-        last_queries: np.ndarray = None,
-    ) -> Tuple[bool, np.ndarray, float]:
-        if last_queries is not None:
-            self.memory_queue.extend(last_queries)
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Scan given batch of examples
+        :param query: A query to scan, shape should match input of the model
+        :return: Tuple of boolean whether attack was detected or not, k-neighbor distance
+        """
+        if not len(self._memory_queue):
+            raise ValueError("Memory queue is empty")
 
-        encoded_query = self.similarity_encoder(query)
-        encoded_memory = self.similarity_encoder(np.array(self.memory_queue))
+        encoded_query = self.similarity_encoder.predict(query).numpy()
+        distance = self.knn(encoded_query)
 
-        self.knn.fit(encoded_memory)
-
-        k_distances, _ = self.knn.kneighbors(encoded_query)
-
-        mean_distance = np.mean(k_distances)
-
-        self.memory_queue.append(query)
-
-        return (
-            mean_distance < self.detection_threshold,
-            mean_distance,
-            self.detection_threshold,
-        )
-
-    def clear_memory(self):
-        self.memory_queue = deque(maxlen=self.max_memory_size)
+        return distance < self.detection_threshold, distance
 
     def fit(
         self,
@@ -167,4 +179,8 @@ class BlackBoxDetector(NeuralNetworkMixin, BaseEstimator, ABC):
         raise NotImplementedError
 
     def save(self, filename: str, path: Optional[str] = None) -> None:
-        self.similarity_encoder.save(filename, path)
+        """
+        Saves model weights in given file
+        :raises `NotImplementedException`: This method is not supported for detectors.
+        """
+        raise NotImplementedError
