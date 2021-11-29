@@ -24,8 +24,8 @@ import logging
 import warnings
 from typing import List, Optional, Union, Callable, Dict, TYPE_CHECKING
 
-import numpy as np
 import copy
+import numpy as np
 
 from art.estimators.classification.ensemble import EnsembleClassifier
 
@@ -88,8 +88,8 @@ class DeepPartitionEnsemble(EnsembleClassifier):
                 length as the ensemble size"
             )
             self.can_fit = True
-            
-            if hasttr(classifiers, 'clone_for_refitting'):
+
+            if hasattr(classifiers, 'clone_for_refitting'):
                 # Initialize the ensemble based on the provided architecture
                 # Use ART's cloning if possible
                 try:
