@@ -25,6 +25,7 @@ import warnings
 from typing import List, Optional, Union, Callable, Dict, TYPE_CHECKING
 
 import numpy as np
+import copy
 
 from art.estimators.classification.ensemble import EnsembleClassifier
 
@@ -87,14 +88,16 @@ class DeepPartitionEnsemble(EnsembleClassifier):
                 length as the ensemble size"
             )
             self.can_fit = True
-            # Initialize the ensemble based on the provided architecture
-            # Use ART's cloning if possible
-            try:
-                classifiers = [classifiers.clone_for_refitting() for _ in range(ensemble_size)]
-            except (AttributeError, ValueError) as error:
-                warnings.warn("Switching to deepcopy due to ART Cloning Error: " + str(error))
-                import copy
-
+            
+            if hasttr(classifiers, 'clone_for_refitting'):
+                # Initialize the ensemble based on the provided architecture
+                # Use ART's cloning if possible
+                try:
+                    classifiers = [classifiers.clone_for_refitting() for _ in range(ensemble_size)]
+                except ValueError as error:
+                    warnings.warn("Switching to deepcopy due to ART Cloning Error: " + str(error))
+                    classifiers = [copy.deepcopy(classifiers) for _ in range(ensemble_size)]
+            else:
                 classifiers = [copy.deepcopy(classifiers) for _ in range(ensemble_size)]
         elif isinstance(classifiers, list) and len(classifiers) != ensemble_size:
             raise ValueError("The length of the classifier list must be the same as the ensemble size")
