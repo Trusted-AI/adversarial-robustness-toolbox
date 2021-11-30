@@ -49,6 +49,7 @@ if TYPE_CHECKING:
     from art.defences.postprocessor import Postprocessor
 
 logger = logging.getLogger(__name__)
+import pdb
 
 
 class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):  # lgtm [py/missing-call-to-init]
@@ -807,6 +808,140 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         assert grads.shape == x.shape
 
         return grads
+    
+    
+    def custom_loss_gradient(  # pylint: disable=W0221
+        self,
+        loss_fn,
+        x_grad,
+        y_grad,
+        x: Union[np.ndarray, "torch.Tensor"],
+        y: Union[np.ndarray, "torch.Tensor"],
+        layer_name,
+        training_mode: bool = False,
+        **kwargs
+    ) -> Union[np.ndarray, "torch.Tensor"]:
+        """
+        Compute the gradient of the loss function w.r.t. `x`.
+
+        :param x: Sample input with shape as expected by the model.
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
+                  `(nb_samples,)`.
+        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+                              Note on RNN-like models: Backpropagation through RNN modules in eval mode raises
+                              RuntimeError due to cudnn issues and require training mode, i.e. RuntimeError: cudnn RNN
+                              backward can only be called in training mode. Therefore, if the model is an RNN type we
+                              always use training mode but freeze batch-norm and dropout layers if
+                              `training_mode=False.`
+        :return: Array of gradients of the same shape as `x`.
+        """
+#         pdb.set_trace()
+        import torch  # lgtm [py/repeated-import]
+        import torch.nn as nn
+        
+        self._model.train(mode=training_mode)
+        self._model.eval()
+        
+#         # Use placeholders
+#         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False, no_grad=True)
+#         y_preprocessed, _ = self._apply_preprocessing(y, y=None, fit=False, no_grad=True)
+        
+#         ###### CHECK IF WE NEED TO DO FOR BOTH X AND Y
+#         x_grad.data.copy_(torch.tensor(x_preprocessed).data)
+#         y_grad.data.copy_(torch.tensor(y_preprocessed).data)
+#         x_grad = x_grad.to(self._device)
+#         y_grad = y_grad.to(self._device)
+#         x_grad.requires_grad_(True)
+#         y_grad.requires_grad_(False)
+# #         x_grad.cuda()
+# #         y_grad.cuda()
+        
+#         self._model(x_grad)
+#         model_outputs1 = self._model._features[layer_name] 
+#         self._model(y_grad)
+#         model_outputs2 = self._model._features[layer_name]
+#         model_outputs2 = self._model._features[layer_name].detach()
+            
+
+        if self.all_framework_preprocessing:
+            if isinstance(x, torch.Tensor):
+                x_grad = x.clone().detach().requires_grad_(True)
+            else:
+                x_grad = torch.tensor(x).to(self._device)
+                x_grad.requires_grad = True
+            if isinstance(y, torch.Tensor):
+                y_grad = y.clone().detach()
+            else:
+                y_grad = torch.tensor(y).to(self._device)
+            inputs_t, _ = self._apply_preprocessing(x_grad, y=None, fit=False, no_grad=False)
+            targets_t, _ = self._apply_preprocessing(y_grad, y=None, fit=False, no_grad=False)
+        if isinstance(x, np.ndarray):
+            x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False, no_grad=True)
+            y_preprocessed, _ = self._apply_preprocessing(y, y=None, fit=False, no_grad=True) #### CHECK HERE
+            x_grad = torch.from_numpy(x_preprocessed).to(self._device)
+            y_grad = torch.from_numpy(y_preprocessed).to(self._device)
+            x_grad.requires_grad=True
+            
+#             inputs_t = torch.from_numpy(x).to(self._device)
+#             targets_t = torch.from_numpy(y).to(self._device)
+#             inputs_t.requires_grad = True
+#             inputs_t = x_grad
+#             targets_t = y_grad
+        else:
+            raise NotImplementedError("Combination of inputs and preprocessing not supported.")
+
+
+        # Compute the gradient and return
+        self._model(x_grad)
+        model_outputs1 = self._model._features[layer_name] 
+        self._model(y_grad)
+        model_outputs2 = self._model._features[layer_name].detach()
+#         model_outputs2.requires_grad = False
+#         dif = model_outputs1.view(-1) - model_outputs2.view(-1)
+#         loss = torch.sum(torch.mul(dif,dif))
+#         if not hasattr(self, "_custom_loss_func"):
+#             self._custom_loss_func = {}
+
+#         if layer_name not in self._custom_loss_func:
+#             self._custom_loss_func[layer_name] = loss_fn
+       
+#         loss = self._custom_loss_func[layer_name](model_outputs1,model_outputs2)
+#         loss_fn = nn.MSELoss(reduction='sum')
+        loss = loss_fn(model_outputs1,model_outputs2)
+        print(loss)
+#         loss.backward()
+        
+#         loss = self._loss(model_outputs[-1], labels_t)  # lgtm [py/call-to-non-callable]
+
+        # Clean gradients
+        self._model.zero_grad()
+
+        # Compute gradients
+        if self._use_amp:  # pragma: no cover
+            from apex import amp  # pylint: disable=E0611
+
+            with amp.scale_loss(loss, self._optimizer) as scaled_loss:
+                scaled_loss.backward()
+
+        else:
+            loss.backward(retain_graph=True)
+
+        if isinstance(x, torch.Tensor):
+            grads = x_grad.grad
+        else:
+            grads = x_grad.grad.cpu().numpy().copy()  # type: ignore
+        
+        if not self.all_framework_preprocessing:
+            grads = self._apply_preprocessing_gradient(x, grads)
+        
+#         grads = inputs_t.grad.cpu().numpy().copy()
+#         grads = x_grad.grad.cpu().numpy().copy()
+        assert grads.shape == x.shape
+
+        return grads
+        
+
+
 
     def get_activations(
         self,
@@ -814,7 +949,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         layer: Optional[Union[int, str]] = None,
         batch_size: int = 128,
         framework: bool = False,
-    ) -> np.ndarray:
+        ) -> np.ndarray:
+        
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
@@ -828,7 +964,9 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         """
         import torch  # lgtm [py/repeated-import]
 
+
         self._model.eval()
+#         pdb.set_trace()
 
         # Apply defences
         x_preprocessed, _ = self._apply_preprocessing(x=x, y=None, fit=False)
@@ -844,11 +982,15 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         else:  # pragma: no cover
             raise TypeError("Layer must be of type str or int")
-
+#         pdb.set_trace()
         if framework:
             if isinstance(x, torch.Tensor):
                 return self._model(x)[layer_index]
-            return self._model(torch.from_numpy(x).to(self._device))[layer_index]
+            # DEBUG - HAVE TO CHECK HERE ---- IF THE MODEL IS Changing anything!!!
+            x_ = torch.from_numpy(x_preprocessed)
+            self._model(x_.to(self._device)) #####SHRITI - CHECK HERE!!!!!
+            return x_,self._model._features[layer] 
+            #return self._model(torch.from_numpy(x).to(self._device))[layer_index]
 
         # Run prediction with batch processing
         results = []
@@ -862,7 +1004,9 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             )
 
             # Run prediction for the current batch
-            layer_output = self._model(torch.from_numpy(x_preprocessed[begin:end]).to(self._device))[layer_index]
+            self._model(torch.from_numpy(x_preprocessed[begin:end]).to(self._device))
+            layer_output = self._model._features[layer]           
+#             layer_output = self._model(torch.from_numpy(x_preprocessed[begin:end]).to(self._device))[layer_index]
             results.append(layer_output.detach().cpu().numpy())
 
         results = np.concatenate(results)
@@ -966,6 +1110,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
     def _make_model_wrapper(self, model: "torch.nn.Module") -> "torch.nn.Module":
         # Try to import PyTorch and create an internal class that acts like a model wrapper extending torch.nn.Module
         try:
+            import torch
             import torch.nn as nn
 
             # Define model wrapping class only if not defined before
@@ -986,6 +1131,19 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                         """
                         super().__init__()
                         self._model = model
+                        self._layers = self.get_layers
+                        self._features = {layer: torch.empty(0) for layer in self._layers}
+                        for layer_id in self._layers:
+                            layer = dict([*self._model.named_modules()])[layer_id]
+                            layer.register_forward_hook(self.save_outputs_hook(layer_id))
+                        
+                    def save_outputs_hook(self, layer_id: str):
+                        def fn(_, __, output):
+                            self._features[layer_id] = output
+#                             print("layer_id",layer_id)
+#                             print("output",output.shape)
+#                             print("output.grad",output.grad)
+                        return fn
 
                     # pylint: disable=W0221
                     # disable pylint because of API requirements for function
@@ -1034,14 +1192,16 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                         import torch.nn as nn
 
                         result = []
-                        if isinstance(self._model, nn.Sequential):
-                            # pylint: disable=W0212
-                            # disable pylint because access to _modules required
-                            for name, module_ in self._model._modules.items():  # type: ignore
-                                result.append(name + "_" + str(module_))
+#                         if isinstance(self._model, nn.Sequential):
+#                             # pylint: disable=W0212
+#                             # disable pylint because access to _modules required
+#                             for name, module_ in self._model._modules.items():  # type: ignore
+#                                 result.append(name + "_" + str(module_))
 
-                        elif isinstance(self._model, nn.Module):
-                            result.append("final_layer")
+                        if isinstance(self._model, nn.Module):
+                            for name, module_ in self._model._modules.items():  # type: ignore
+                                result.append(name)
+#                             result.append("final_layer")
 
                         else:  # pragma: no cover
                             raise TypeError("The input model must inherit from `nn.Module`.")
