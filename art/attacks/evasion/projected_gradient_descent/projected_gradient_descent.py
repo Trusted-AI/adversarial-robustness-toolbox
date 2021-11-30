@@ -248,6 +248,3 @@ class ProjectedGradientDescent(EvasionAttack):
 
         if not isinstance(self.verbose, bool):
             raise ValueError("The verbose has to be a Boolean.")
-
-        if not isinstance(self.summary_writer, (bool, str)):
-            raise ValueError("The argument `summary_writer` has to be either of type bool or str.")
