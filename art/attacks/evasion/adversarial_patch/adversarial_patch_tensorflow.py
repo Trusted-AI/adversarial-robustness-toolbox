@@ -189,9 +189,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         patched_input = self._random_overlay(images, self._patch, mask=mask)
 
         patched_input = tf.clip_by_value(
-            patched_input,
-            clip_value_min=self.estimator.clip_values[0],
-            clip_value_max=self.estimator.clip_values[1],
+            patched_input, clip_value_min=self.estimator.clip_values[0], clip_value_max=self.estimator.clip_values[1],
         )
 
         predictions = self.estimator._predict_framework(patched_input)  # pylint: disable=W0212
@@ -337,10 +335,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
             # Rotation
             rotation_matrix = np.array(
-                [
-                    [math.cos(-phi_rotate), -math.sin(-phi_rotate)],
-                    [math.sin(-phi_rotate), math.cos(-phi_rotate)],
-                ]
+                [[math.cos(-phi_rotate), -math.sin(-phi_rotate)], [math.sin(-phi_rotate), math.cos(-phi_rotate)],]
             )
 
             # Scale
@@ -360,27 +355,11 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             transform_vectors.append([a_0, a_1, x_origin_delta, b_0, b_1, y_origin_delta, 0, 0])
             translation_vectors.append([1, 0, -x_shift, 0, 1, -y_shift, 0, 0])
 
-        image_mask = tfa.image.transform(
-            image_mask,
-            transform_vectors,
-            "BILINEAR",
-        )
-        padded_patch = tfa.image.transform(
-            padded_patch,
-            transform_vectors,
-            "BILINEAR",
-        )
+        image_mask = tfa.image.transform(image_mask, transform_vectors, "BILINEAR",)
+        padded_patch = tfa.image.transform(padded_patch, transform_vectors, "BILINEAR",)
 
-        image_mask = tfa.image.transform(
-            image_mask,
-            translation_vectors,
-            "BILINEAR",
-        )
-        padded_patch = tfa.image.transform(
-            padded_patch,
-            translation_vectors,
-            "BILINEAR",
-        )
+        image_mask = tfa.image.transform(image_mask, translation_vectors, "BILINEAR",)
+        padded_patch = tfa.image.transform(padded_patch, translation_vectors, "BILINEAR",)
 
         if self.nb_dims == 4:
             image_mask = tf.stack([image_mask] * images.shape[1], axis=1)
@@ -460,9 +439,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
             if self.summary_writer is not None:  # pragma: no cover
                 self.summary_writer.add_image(
-                    "patch",
-                    self._patch.numpy().transpose((2, 0, 1)),
-                    global_step=i_iter,
+                    "patch", self._patch.numpy().transpose((2, 0, 1)), global_step=i_iter,
                 )
 
                 if hasattr(self.estimator, "compute_losses"):
@@ -471,9 +448,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
                     for key, value in losses.items():
                         self.summary_writer.add_scalar(
-                            "loss/{}".format(key),
-                            np.mean(value),
-                            global_step=i_iter,
+                            "loss/{}".format(key), np.mean(value), global_step=i_iter,
                         )
 
         return (

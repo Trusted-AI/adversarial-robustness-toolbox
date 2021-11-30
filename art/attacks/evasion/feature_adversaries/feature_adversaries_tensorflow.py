@@ -155,9 +155,7 @@ class FeatureAdversariesTensorFlowV2(EvasionAttack):
             # optimize soft constraint problem with chosen optimizer
             opt = self.optimizer(**self._optimizer_kwargs)  # type: ignore
             perturbation = tf.Variable(
-                tf.zeros_like(adv),
-                trainable=True,
-                constraint=lambda x: tf.clip_by_value(x, -self.delta, self.delta),
+                tf.zeros_like(adv), trainable=True, constraint=lambda x: tf.clip_by_value(x, -self.delta, self.delta),
             )
 
             for _ in trange(self.max_iter, desc="Feature Adversaries TensorFlow v2", disable=not self.verbose):

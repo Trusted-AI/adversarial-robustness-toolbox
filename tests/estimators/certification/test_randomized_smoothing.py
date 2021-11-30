@@ -82,12 +82,7 @@ class TestRandomizedSmoothing(unittest.TestCase):
         x_test_adv = fgsm.generate(x_test, **params)
 
         # Initialize RS object and attack with FGSM
-        rs = NumpyRandomizedSmoothing(
-            classifier=classifier,
-            sample_size=100,
-            scale=0.01,
-            alpha=0.001,
-        )
+        rs = NumpyRandomizedSmoothing(classifier=classifier, sample_size=100, scale=0.01, alpha=0.001,)
         fgsm_with_rs = FastGradientMethod(estimator=rs, targeted=True)
         x_test_adv_with_rs = fgsm_with_rs.generate(x_test, **params)
 

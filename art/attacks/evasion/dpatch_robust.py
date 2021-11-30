@@ -199,11 +199,7 @@ class RobustDPatch(EvasionAttack):
                         x[i_batch_start:i_batch_end], y_batch, self._patch, channels_first=self.estimator.channels_first
                     )
 
-                    gradients = self.estimator.loss_gradient(
-                        x=patched_images,
-                        y=patch_target,
-                        standardise_output=True,
-                    )
+                    gradients = self.estimator.loss_gradient(x=patched_images, y=patch_target, standardise_output=True,)
 
                     gradients = self._untransform_gradients(
                         gradients, transforms, channels_first=self.estimator.channels_first
@@ -221,9 +217,7 @@ class RobustDPatch(EvasionAttack):
 
             if self.estimator.clip_values is not None:
                 self._patch = np.clip(
-                    self._patch,
-                    a_min=self.estimator.clip_values[0],
-                    a_max=self.estimator.clip_values[1],
+                    self._patch, a_min=self.estimator.clip_values[0], a_max=self.estimator.clip_values[1],
                 )
 
         return self._patch
@@ -354,10 +348,7 @@ class RobustDPatch(EvasionAttack):
         return x_patch, patch_target, transformations
 
     def _untransform_gradients(
-        self,
-        gradients: np.ndarray,
-        transforms: Dict[str, Union[int, float]],
-        channels_first: bool,
+        self, gradients: np.ndarray, transforms: Dict[str, Union[int, float]], channels_first: bool,
     ) -> np.ndarray:
         """
         Revert transformation on gradients.

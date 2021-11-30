@@ -306,8 +306,7 @@ class HopSkipJump(EvasionAttack):
                     random_img = random_img * mask + x * (1 - mask)
 
                 random_class = np.argmax(
-                    self.estimator.predict(np.array([random_img]), batch_size=self.batch_size),
-                    axis=1,
+                    self.estimator.predict(np.array([random_img]), batch_size=self.batch_size), axis=1,
                 )[0]
 
                 if random_class == y:
@@ -341,8 +340,7 @@ class HopSkipJump(EvasionAttack):
                     random_img = random_img * mask + x * (1 - mask)
 
                 random_class = np.argmax(
-                    self.estimator.predict(np.array([random_img]), batch_size=self.batch_size),
-                    axis=1,
+                    self.estimator.predict(np.array([random_img]), batch_size=self.batch_size), axis=1,
                 )[0]
 
                 if random_class != y_p:
@@ -394,10 +392,7 @@ class HopSkipJump(EvasionAttack):
         for _ in range(self.max_iter):
             # First compute delta
             delta = self._compute_delta(
-                current_sample=current_sample,
-                original_sample=original_sample,
-                clip_min=clip_min,
-                clip_max=clip_max,
+                current_sample=current_sample, original_sample=original_sample, clip_min=clip_min, clip_max=clip_max,
             )
 
             # Then run binary search
@@ -436,10 +431,7 @@ class HopSkipJump(EvasionAttack):
                 epsilon /= 2.0
                 potential_sample = current_sample + epsilon * update
                 success = self._adversarial_satisfactory(
-                    samples=potential_sample[None],
-                    target=target,
-                    clip_min=clip_min,
-                    clip_max=clip_max,
+                    samples=potential_sample[None], target=target, clip_min=clip_min, clip_max=clip_max,
                 )
 
             # Update current sample
@@ -498,37 +490,24 @@ class HopSkipJump(EvasionAttack):
             # Interpolation point
             alpha = (upper_bound + lower_bound) / 2.0
             interpolated_sample = self._interpolate(
-                current_sample=current_sample,
-                original_sample=original_sample,
-                alpha=alpha,
-                norm=norm,
+                current_sample=current_sample, original_sample=original_sample, alpha=alpha, norm=norm,
             )
 
             # Update upper_bound and lower_bound
             satisfied = self._adversarial_satisfactory(
-                samples=interpolated_sample[None],
-                target=target,
-                clip_min=clip_min,
-                clip_max=clip_max,
+                samples=interpolated_sample[None], target=target, clip_min=clip_min, clip_max=clip_max,
             )[0]
             lower_bound = np.where(satisfied == 0, alpha, lower_bound)
             upper_bound = np.where(satisfied == 1, alpha, upper_bound)
 
         result = self._interpolate(
-            current_sample=current_sample,
-            original_sample=original_sample,
-            alpha=upper_bound,
-            norm=norm,
+            current_sample=current_sample, original_sample=original_sample, alpha=upper_bound, norm=norm,
         )
 
         return result
 
     def _compute_delta(
-        self,
-        current_sample: np.ndarray,
-        original_sample: np.ndarray,
-        clip_min: float,
-        clip_max: float,
+        self, current_sample: np.ndarray, original_sample: np.ndarray, clip_min: float, clip_max: float,
     ) -> float:
         """
         Compute the delta parameter.
@@ -590,11 +569,7 @@ class HopSkipJump(EvasionAttack):
 
         # Normalize random noise to fit into the range of input data
         rnd_noise = rnd_noise / np.sqrt(
-            np.sum(
-                rnd_noise ** 2,
-                axis=tuple(range(len(rnd_noise_shape)))[1:],
-                keepdims=True,
-            )
+            np.sum(rnd_noise ** 2, axis=tuple(range(len(rnd_noise_shape)))[1:], keepdims=True,)
         )
         eval_samples = np.clip(current_sample + delta * rnd_noise, clip_min, clip_max)
         rnd_noise = (eval_samples - current_sample) / delta

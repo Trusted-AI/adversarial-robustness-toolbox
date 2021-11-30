@@ -473,11 +473,7 @@ class ThresholdAttack(PixelThreshold):
         x = x.astype(int)
         for adv, image in zip(x, imgs):
             for count, (i, j, k) in enumerate(
-                product(
-                    range(image.shape[-3]),
-                    range(image.shape[-2]),
-                    range(image.shape[-1]),
-                )
+                product(range(image.shape[-3]), range(image.shape[-2]), range(image.shape[-1]),)
             ):
                 image[i, j, k] = adv[count]
         return imgs
@@ -1214,10 +1210,7 @@ class DifferentialEvolutionSolver:  # pragma: no cover
 
             if (
                 self.callback
-                and self.callback(
-                    self._scale_parameters(self.population[0]),
-                    convergence=self.tol / convergence,
-                )
+                and self.callback(self._scale_parameters(self.population[0]), convergence=self.tol / convergence,)
                 is True
             ):
                 warning_flag = True
@@ -1242,13 +1235,7 @@ class DifferentialEvolutionSolver:  # pragma: no cover
         )
 
         if self.polish:
-            result = minimize(
-                self.func,
-                np.copy(de_result.x),
-                method="L-BFGS-B",
-                bounds=self.limits.T,
-                args=self.args,
-            )
+            result = minimize(self.func, np.copy(de_result.x), method="L-BFGS-B", bounds=self.limits.T, args=self.args,)
 
             self._nfev += result.nfev
             de_result.nfev = self._nfev

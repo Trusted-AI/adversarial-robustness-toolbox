@@ -338,10 +338,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
         raise NotImplementedError
 
     def _transform_model_input(
-        self,
-        x: Union[np.ndarray, "torch.Tensor"],
-        y: Optional[np.ndarray] = None,
-        compute_gradient: bool = False,
+        self, x: Union[np.ndarray, "torch.Tensor"], y: Optional[np.ndarray] = None, compute_gradient: bool = False,
     ) -> Tuple[Dict, List]:
         """
         Transform the user input space into the model input space.
@@ -383,22 +380,10 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
                 pad_idx = self.dictionary.pad()
                 eos_idx = self.dictionary.eos()
                 target = data_utils.collate_tokens(
-                    [s[1] for s in batch],
-                    pad_idx,
-                    eos_idx,
-                    False,
-                    False,
-                    pad_to_length=None,
-                    pad_to_multiple=1,
+                    [s[1] for s in batch], pad_idx, eos_idx, False, False, pad_to_length=None, pad_to_multiple=1,
                 )
                 prev_output_tokens = data_utils.collate_tokens(
-                    [s[1] for s in batch],
-                    pad_idx,
-                    eos_idx,
-                    False,
-                    True,
-                    pad_to_length=None,
-                    pad_to_multiple=1,
+                    [s[1] for s in batch], pad_idx, eos_idx, False, True, pad_to_length=None, pad_to_multiple=1,
                 )
                 target = target.long().to(self._device)
                 prev_output_tokens = prev_output_tokens.long().to(self._device)
@@ -456,11 +441,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
         # return inputs, targets, input_percentages, target_sizes, batch_idx
         return batch_dict, batch_idx
 
-    def _preprocess_transform_model_input(
-        self,
-        x: "torch.Tensor",
-        y: np.ndarray,
-    ) -> Tuple[Dict, List]:
+    def _preprocess_transform_model_input(self, x: "torch.Tensor", y: np.ndarray,) -> Tuple[Dict, List]:
         """
         Apply preprocessing and then transform the user input space into the model input space. This function is used
         by the ASR attack to attack into the PyTorchDeepSpeech estimator whose defences are called with the
@@ -489,11 +470,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
         x = torch.stack(x_batch)
 
         # Transform the input space
-        batch_dict, batch_idx = self._transform_model_input(
-            x=x,
-            y=y,
-            compute_gradient=False,
-        )
+        batch_dict, batch_idx = self._transform_model_input(x=x, y=y, compute_gradient=False,)
 
         return batch_dict, batch_idx
 
@@ -511,8 +488,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
         """
         # Transform data into the model input space
         batch_dict, batch_idx = self._preprocess_transform_model_input(
-            x=masked_adv_input.to(self.device),
-            y=original_output,
+            x=masked_adv_input.to(self.device), y=original_output,
         )
 
         # Compute the loss
