@@ -119,7 +119,6 @@ class GANAttackBackdoor():
                 iter_counter = iter_counter + 1
             print('Time taken for epoch {} is {} sec'.format(epoch + 1, time.time() - start), flush=True)
 
-        # TODO I should probably return a TensorflowGAN here?
         return self._gan.generator
 
     def _check_params(self) -> None:

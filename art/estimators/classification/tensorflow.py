@@ -815,7 +815,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         nb_classes: int,
         input_shape: Tuple[int, ...],
         loss_object: Optional["tf.keras.losses.Loss"] = None,
-        optimizer_fct: "tf.Tensor" = None,
+        optimizer_fct: Optional["optimizer.Optimizer"] = None,
         train_step: Optional[Callable] = None,
         channels_first: bool = False,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
@@ -896,7 +896,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         return self._train_step  # type: ignore
 
     @property
-    def optimizer_fct(self) -> "tf.Tensor":
+    def optimizer_fct(self) -> "optimizer.Optimizer":
         return self._optimizer_fct
 
     def predict(  # pylint: disable=W0221

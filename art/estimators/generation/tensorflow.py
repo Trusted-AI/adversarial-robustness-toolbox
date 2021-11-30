@@ -216,7 +216,7 @@ class TensorFlow2Generator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/mis
     def __init__(self, encoding_length: "int",
                  model: "tf.Tensor",
                  loss: Optional["tf.Tensor"] = None,
-                 optimizer_fct: "tf.Tensor" = None,
+                 optimizer_fct: Optional["optimizer.Optimizer"] = None,
                  channels_first=False,
                  clip_values: Optional["CLIP_VALUES_TYPE"] = None,
                  preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
@@ -259,7 +259,7 @@ class TensorFlow2Generator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/mis
         self._optimizer_fct = optimizer_fct
 
     @property
-    def optimizer_fct(self) -> "tf.Tensor":
+    def optimizer_fct(self) -> "optimizer.Optimizer":
         return self._optimizer_fct
 
     @property
