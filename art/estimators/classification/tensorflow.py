@@ -56,16 +56,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
     estimator_params = (
         TensorFlowEstimator.estimator_params
         + ClassifierMixin.estimator_params
-        + [
-            "input_ph",
-            "output",
-            "labels_ph",
-            "train",
-            "loss",
-            "learning",
-            "sess",
-            "feed_dict",
-        ]
+        + ["input_ph", "output", "labels_ph", "train", "loss", "learning", "sess", "feed_dict",]
     )
 
     def __init__(
@@ -335,11 +326,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
             self.preprocessing is None
             or (
                 isinstance(self.preprocessing, StandardisationMeanStd)
-                and (
-                    self.preprocessing.mean,
-                    self.preprocessing.std,
-                )
-                == (0, 1)
+                and (self.preprocessing.mean, self.preprocessing.std,) == (0, 1)
             )
         ):
             for _ in range(nb_epochs):
@@ -653,13 +640,10 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
 
         builder = saved_model.builder.SavedModelBuilder(full_path)
         signature = predict_signature_def(
-            inputs={"SavedInputPhD": self.input_ph},
-            outputs={"SavedOutput": self.output},
+            inputs={"SavedInputPhD": self.input_ph}, outputs={"SavedOutput": self.output},
         )
         builder.add_meta_graph_and_variables(
-            sess=self._sess,
-            tags=[tag_constants.SERVING],
-            signature_def_map={"predict": signature},
+            sess=self._sess, tags=[tag_constants.SERVING], signature_def_map={"predict": signature},
         )
         builder.save()
 
@@ -802,11 +786,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
     estimator_params = (
         TensorFlowV2Estimator.estimator_params
         + ClassifierMixin.estimator_params
-        + [
-            "input_shape",
-            "loss_object",
-            "train_step",
-        ]
+        + ["input_shape", "loss_object", "train_step",]
     )
 
     def __init__(
@@ -998,11 +978,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
             self.preprocessing is None
             or (
                 isinstance(self.preprocessing, StandardisationMeanStdTensorFlow)
-                and (
-                    self.preprocessing.mean,
-                    self.preprocessing.std,
-                )
-                == (0, 1)
+                and (self.preprocessing.mean, self.preprocessing.std,) == (0, 1)
             )
         ):
             for _ in range(nb_epochs):
@@ -1151,10 +1127,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         return loss.numpy()
 
     def compute_losses(
-        self,
-        x: Union[np.ndarray, "tf.Tensor"],
-        y: Union[np.ndarray, "tf.Tensor"],
-        reduction: str = "none",
+        self, x: Union[np.ndarray, "tf.Tensor"], y: Union[np.ndarray, "tf.Tensor"], reduction: str = "none",
     ) -> Dict[str, Union[np.ndarray, "tf.Tensor"]]:
         """
         Compute all loss components.

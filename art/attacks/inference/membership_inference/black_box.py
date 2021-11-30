@@ -121,15 +121,10 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
                         )
 
                         self.labels = nn.Sequential(
-                            nn.Linear(self.num_classes, 256),
-                            nn.ReLU(),
-                            nn.Linear(256, 64),
-                            nn.ReLU(),
+                            nn.Linear(self.num_classes, 256), nn.ReLU(), nn.Linear(256, 64), nn.ReLU(),
                         )
 
-                        self.combine = nn.Sequential(
-                            nn.Linear(64 * 2, 1),
-                        )
+                        self.combine = nn.Sequential(nn.Linear(64 * 2, 1),)
 
                         self.output = nn.Sigmoid()
 
