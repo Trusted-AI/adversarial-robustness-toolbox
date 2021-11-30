@@ -30,16 +30,21 @@ class SummaryWriter(ABC):
     This abstract base class defines the API for summary writers.
     """
 
-    def __init__(self, tensor_board: Union[str, bool]):
+    def __init__(self, summary_writer: Union[str, bool]):
         """
         Create summary writer.
 
-        :param tensor_board:
+        :param summary_writer: Activate summary writer for TensorBoard.
+                       Default is `False` and deactivated summary writer.
+                       If `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory.
+                       If of type `str` save in path/CURRENT_DATETIME_HOSTNAME.
+                       Use hierarchical folder structure to compare between runs easily. e.g. pass in
+                       ‘runs/exp1’, ‘runs/exp2’, etc. for each new experiment to compare across them.
         """
         from tensorboardX import SummaryWriter as SummaryWriterTbx
 
-        if isinstance(tensor_board, str):
-            self._summary_writer = SummaryWriterTbx(tensor_board)
+        if isinstance(summary_writer, str):
+            self._summary_writer = SummaryWriterTbx(summary_writer)
         else:
             self._summary_writer = SummaryWriterTbx()
 
@@ -73,13 +78,13 @@ class SummaryWriterDefault(SummaryWriter):
 
     def __init__(
         self,
-        tensor_board: Union[str, bool],
+        summary_writer: Union[str, bool],
         ind_1: bool = False,
         ind_2: bool = False,
         ind_3: bool = False,
         ind_4: bool = False,
     ):
-        super().__init__(tensor_board=tensor_board)
+        super().__init__(summary_writer=summary_writer)
 
         self.ind_1 = ind_1
         self.ind_2 = ind_2
