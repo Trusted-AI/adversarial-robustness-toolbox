@@ -231,7 +231,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         
         elif isinstance(self.estimator,PyTorchClassifier):
             # Assuming the tensors passing through the activations have already been added to the computation graph
-            attack_grad= self.estimator.custom_loss_gradient(self.attack_loss,self.poison_placeholder,self.target_placeholder,poison,self.target,str(self.feature_layer)) 
+            attack_grad= self.estimator.custom_loss_gradient(self.attack_loss,poison,self.target,str(self.feature_layer)) 
         
         poison -= self.learning_rate * attack_grad[0]
 

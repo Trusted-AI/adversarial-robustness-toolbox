@@ -813,8 +813,6 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
     def custom_loss_gradient(  # pylint: disable=W0221
         self,
         loss_fn,
-        x_grad,
-        y_grad,
         x: Union[np.ndarray, "torch.Tensor"],
         y: Union[np.ndarray, "torch.Tensor"],
         layer_name,
@@ -881,6 +879,9 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             x_grad = torch.from_numpy(x_preprocessed).to(self._device)
             y_grad = torch.from_numpy(y_preprocessed).to(self._device)
             x_grad.requires_grad=True
+            y_grad.requires_grad=False
+            inputs_t = x_grad
+            targets_t = y_grad
             
 #             inputs_t = torch.from_numpy(x).to(self._device)
 #             targets_t = torch.from_numpy(y).to(self._device)
@@ -892,9 +893,9 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
 
         # Compute the gradient and return
-        self._model(x_grad)
+        self._model(inputs_t)
         model_outputs1 = self._model._features[layer_name] 
-        self._model(y_grad)
+        self._model(targets_t)
         model_outputs2 = self._model._features[layer_name].detach()
 #         model_outputs2.requires_grad = False
 #         dif = model_outputs1.view(-1) - model_outputs2.view(-1)
@@ -924,7 +925,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                 scaled_loss.backward()
 
         else:
-            loss.backward(retain_graph=True)
+            loss.backward()
 
         if isinstance(x, torch.Tensor):
             grads = x_grad.grad
