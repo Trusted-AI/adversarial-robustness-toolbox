@@ -51,17 +51,17 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
     ]
 
     def __init__(
-        self,
-        input_ph: "tf.Placeholder",
-        model: "tf.Tensor",
-        loss: Optional["tf.Tensor"] = None,
-        sess: Optional["tf.compat.v1.Session"] = None,
-        channels_first=False,
-        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
-        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
-        feed_dict: Optional[Dict[Any, Any]] = None,
+            self,
+            input_ph: "tf.Placeholder",
+            model: "tf.Tensor",
+            loss: Optional["tf.Tensor"] = None,
+            sess: Optional["tf.compat.v1.Session"] = None,
+            channels_first=False,
+            clip_values: Optional["CLIP_VALUES_TYPE"] = None,
+            preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
+            postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+            preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
+            feed_dict: Optional[Dict[Any, Any]] = None,
     ):
         """
         Initialization specific to TensorFlow generator implementations.
@@ -172,7 +172,7 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
         raise NotImplementedError
 
     def get_activations(
-        self, x: "np.ndarray", layer: Union[int, str], batch_size: int, framework: bool = False
+            self, x: "np.ndarray", layer: Union[int, str], batch_size: int, framework: bool = False
     ) -> "np.ndarray":
         """
         Do nothing.
@@ -213,19 +213,17 @@ class TensorFlow2Generator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/mis
         "feed_dict",
     ]
 
-    def __init__(
-        self,
-        # input_ph: "tf.Placeholder",
-        encoding_length: "int",
-        model: "tf.Tensor",
-        loss: Optional["tf.Tensor"] = None,
-            channels_first=False,
-            clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-            preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
-            postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-            preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
-            feed_dict: Optional[Dict[Any, Any]] = None,
-    ):
+    def __init__(self, encoding_length: "int",
+                 model: "tf.Tensor",
+                 loss: Optional["tf.Tensor"] = None,
+                 optimizer_fct: "tf.Tensor" = None,
+                 channels_first=False,
+                 clip_values: Optional["CLIP_VALUES_TYPE"] = None,
+                 preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
+                 postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+                 preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
+                 feed_dict: Optional[Dict[Any, Any]] = None,
+                 ):
         """
         Initialization specific to TensorFlow generator implementations.
 
@@ -258,10 +256,11 @@ class TensorFlow2Generator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/mis
         # self._input_ph = input_ph
         self._encoding_length = encoding_length
         self._loss = loss
+        self._optimizer_fct = optimizer_fct
 
-
-
-
+    @property
+    def optimizer_fct(self) -> "tf.Tensor":
+        return self._optimizer_fct
 
     @property
     def loss(self) -> "tf.Tensor":
@@ -271,7 +270,6 @@ class TensorFlow2Generator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/mis
         :return: The loss function.
         """
         return self._loss  # type: ignore
-
 
     @property
     def model(self) -> "tf.Tensor":
@@ -299,10 +297,9 @@ class TensorFlow2Generator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/mis
         raise NotImplementedError
 
     def get_activations(
-        self, x: "np.ndarray", layer: Union[int, str], batch_size: int, framework: bool = False
+            self, x: "np.ndarray", layer: Union[int, str], batch_size: int, framework: bool = False
     ) -> "np.ndarray":
         """
         Do nothing.
         """
         raise NotImplementedError
-

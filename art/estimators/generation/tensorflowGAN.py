@@ -10,21 +10,14 @@ class TensorFlow2GAN():
     def __init__(
         self,
         generator: "TensorFlow2Generator",
-        discriminator: "TensorFlowV2Classifier",
-        # generator_loss_fct: "tf.Tensor",
-        # discriminator_loss_fct: "tf.Tensor",
-        generator_optimizer_fct: "tf.Tensor",
-        discriminator_optimizer_fct: "tf.Tensor"
+        discriminator: "TensorFlowV2Classifier"
     ):
         """
-        TODO probably change generator model type to TensorflowGenerator and discriminator to tensorlowClassifier
+        TODO add documentation
         """
         self._generator = generator
         self._discriminator_classifier = discriminator
-        # self._generator_loss_fct = generator_loss_fct
-        # self._discriminator_loss_fct = discriminator_loss_fct
-        self._generator_optimizer_fct = generator_optimizer_fct
-        self._discriminator_optimizer_fct = discriminator_optimizer_fct
+
 
     @property
     def generator(self) -> "TensorFlow2Generator":
@@ -38,14 +31,9 @@ class TensorFlow2GAN():
     # def generator_loss_fct(self) -> "tf.Tensor":
     #     return self._generator_loss_fct
 
-    # @property
-    # def discriminator_loss_fct(self) -> "tf.Tensor":
-    #     return self._discriminator_loss_fct
+
 
     @property
     def generator_optimizer_fct(self) -> "tf.Tensor":
         return self._generator_optimizer_fct
 
-    @property
-    def discriminator_optimizer_fct(self) -> "tf.Tensor":
-        return self._discriminator_optimizer_fct

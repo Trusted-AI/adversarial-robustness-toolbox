@@ -7,6 +7,8 @@ import matplotlib
 from art.attacks.poisoning.gan_backdoor_moa_attack import GANAttackBackdoor
 from art.estimators.generation.tensorflowGAN import TensorFlow2GAN
 from art.estimators.generation.tensorflow import TensorFlow2Generator
+from art.estimators.classification.tensorflow import TensorFlowV2Classifier
+
 
 def make_generator_model():
     model = tf.keras.Sequential()
@@ -92,10 +94,6 @@ train_images = train_images * (2.0 / 255) - 1.0
 # Use create batches and shuffle the dataset
 train_dataset = tf.data.Dataset.from_tensor_slices(train_images).shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
 
-# Create GAN
-generator_model = make_generator_model()
-discriminator_model = make_discriminator_model()
-tmp = ''
 
 """## Define the loss functions and the optimizer
 
@@ -150,25 +148,20 @@ noise = tf.random.normal([BATCH_SIZE, noise_dim])
 # generated_images = generator_model(noise, training=True)
 
 generator = TensorFlow2Generator(
-        encoding_length=noise_dim,
-        loss=generator_orig_loss_fct,
-        model=generator_model)
+    encoding_length=noise_dim,
+    loss=generator_orig_loss_fct,
+    optimizer_fct=generator_optimizer,
+    model=make_generator_model())
 
-from art.estimators.classification.tensorflow import TensorFlowV2Classifier
-
+#TODO not sure if I should add the optimizer here or not - I'm altering the TensorFlowV2Classifier class, is there not one already?
 discriminator_classifier = TensorFlowV2Classifier(
-    model=discriminator_model,
+    model=make_discriminator_model(),
     loss_object=discriminator_loss_fct,
+    optimizer_fct=discriminator_optimizer,
     nb_classes=2,
     input_shape=(32, 32, 32, 3))
 
-
-gan = TensorFlow2GAN(generator=generator,
-                    discriminator=discriminator_classifier,
-                    # generator_loss_fct=generator_orig_loss_fct,
-                    # discriminator_loss_fct=discriminator_loss_fct,
-                    generator_optimizer_fct=generator_optimizer,
-                    discriminator_optimizer_fct=discriminator_optimizer)
+gan = TensorFlow2GAN(generator=generator, discriminator=discriminator_classifier)
 
 gan_attack = GANAttackBackdoor(gan=gan,
                                z_trigger=z_trigger,
