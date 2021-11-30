@@ -122,6 +122,7 @@ class Attack(abc.ABC):
             raise EstimatorError(self.__class__, self.estimator_requirements, estimator)
 
         self._estimator = estimator
+        self._summary_writer_arg = summary_writer
         self._summary_writer: Optional[SummaryWriter] = None
 
         if isinstance(summary_writer, SummaryWriter):  # pragma: no cover
@@ -159,7 +160,7 @@ class Attack(abc.ABC):
 
     def _check_params(self) -> None:
 
-        if not isinstance(self.summary_writer, (bool, str, SummaryWriter)):
+        if not isinstance(self._summary_writer_arg, (bool, str, SummaryWriter)):
             raise ValueError("The argument `summary_writer` has to be either of type bool or str.")
 
     @staticmethod
