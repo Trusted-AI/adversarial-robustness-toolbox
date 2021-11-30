@@ -60,7 +60,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
         "max_iter",
         "batch_size",
         "patch_shape",
-        "tensor_board",
+        "summary_writer",
         "verbose",
     ]
 
@@ -78,7 +78,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
         batch_size: int = 16,
         patch_shape: Optional[Tuple[int, int, int]] = None,
         patch_type: str = "circle",
-        tensor_board: Union[str, bool] = False,
+        summary_writer: Union[str, bool] = False,
         verbose: bool = True,
     ):
         """
@@ -98,11 +98,13 @@ class AdversarialPatchPyTorch(EvasionAttack):
         :param batch_size: The size of the training batch.
         :param patch_shape: The shape of the adversarial patch as a tuple of shape CHW (nb_channels, height, width).
         :param patch_type: The patch type, either circle or square.
-        :param tensor_board: Activate summary writer for TensorBoard: Default is `False` and deactivated summary writer.
-                             If `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory. Provide `path` in type
-                             `str` to save in path/CURRENT_DATETIME_HOSTNAME.
-                             Use hierarchical folder structure to compare between runs easily. e.g. pass in ‘runs/exp1’,
-                             ‘runs/exp2’, etc. for each new experiment to compare across them.
+        :param summary_writer: Activate summary writer for TensorBoard.
+                               Default is `False` and deactivated summary writer.
+                               If `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory.
+                               If of type `str` save in path/CURRENT_DATETIME_HOSTNAME.
+                               If of type `SummaryWriter` apply provided custom summary writer.
+                               Use hierarchical folder structure to compare between runs easily. e.g. pass in
+                               ‘runs/exp1’, ‘runs/exp2’, etc. for each new experiment to compare across them.
         :param verbose: Show progress bars.
         """
         import torch  # lgtm [py/repeated-import]
@@ -115,7 +117,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
             torchvision_version[0] >= 0 and torchvision_version[1] >= 8
         ), "AdversarialPatchPyTorch requires torchvision>=0.8.0"
 
-        super().__init__(estimator=classifier, tensor_board=tensor_board)
+        super().__init__(estimator=classifier, summary_writer=summary_writer)
         self.rotation_max = rotation_max
         self.scale_min = scale_min
         self.scale_max = scale_max

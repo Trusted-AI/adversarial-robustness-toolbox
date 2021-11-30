@@ -63,7 +63,7 @@ class FastGradientMethod(EvasionAttack):
         "num_random_init",
         "batch_size",
         "minimal",
-        "tensor_board",
+        "summary_writer",
     ]
     _estimator_requirements = (BaseEstimator, LossGradientsMixin)
 
@@ -77,7 +77,7 @@ class FastGradientMethod(EvasionAttack):
         num_random_init: int = 0,
         batch_size: int = 32,
         minimal: bool = False,
-        tensor_board: Union[str, bool] = False,
+        summary_writer: Union[str, bool] = False,
     ) -> None:
         """
         Create a :class:`.FastGradientMethod` instance.
@@ -92,13 +92,15 @@ class FastGradientMethod(EvasionAttack):
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :param minimal: Indicates if computing the minimal perturbation (True). If True, also define `eps_step` for
                         the step size and eps for the maximum perturbation.
-        :param tensor_board: Activate summary writer for TensorBoard: Default is `False` and deactivated summary writer.
-                             If `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory. Provide `path` in type
-                             `str` to save in path/CURRENT_DATETIME_HOSTNAME.
-                             Use hierarchical folder structure to compare between runs easily. e.g. pass in ‘runs/exp1’,
-                             ‘runs/exp2’, etc. for each new experiment to compare across them.
+        :param summary_writer: Activate summary writer for TensorBoard.
+                               Default is `False` and deactivated summary writer.
+                               If `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory.
+                               If of type `str` save in path/CURRENT_DATETIME_HOSTNAME.
+                               If of type `SummaryWriter` apply provided custom summary writer.
+                               Use hierarchical folder structure to compare between runs easily. e.g. pass in
+                               ‘runs/exp1’, ‘runs/exp2’, etc. for each new experiment to compare across them.
         """
-        super().__init__(estimator=estimator, tensor_board=tensor_board)
+        super().__init__(estimator=estimator, summary_writer=summary_writer)
         self.norm = norm
         self.eps = eps
         self.eps_step = eps_step

@@ -27,7 +27,7 @@ from typing import Any, List, Optional, Tuple, Union, TYPE_CHECKING
 import numpy as np
 
 from art.exceptions import EstimatorError
-from art.tensor_board import SummaryWriter, SummaryWriterDefault
+from art.summary_writer import SummaryWriter, SummaryWriterDefault
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
@@ -101,15 +101,17 @@ class Attack(abc.ABC):
     def __init__(
         self,
         estimator,
-        tensor_board: Union[str, bool, SummaryWriter] = False,
+        summary_writer: Union[str, bool, SummaryWriter] = False,
     ):
         """
         :param estimator: An estimator.
-        :param tensor_board: Activate summary writer for TensorBoard: Default is `False` and deactivated summary writer.
-                             If `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory. Provide `path` in type
-                             `str` to save in path/CURRENT_DATETIME_HOSTNAME.
-                             Use hierarchical folder structure to compare between runs easily. e.g. pass in ‘runs/exp1’,
-                             ‘runs/exp2’, etc. for each new experiment to compare across them.
+        :param summary_writer: Activate summary writer for TensorBoard.
+                               Default is `False` and deactivated summary writer.
+                               If `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory.
+                               If of type `str` save in path/CURRENT_DATETIME_HOSTNAME.
+                               If of type `SummaryWriter` apply provided custom summary writer.
+                               Use hierarchical folder structure to compare between runs easily. e.g. pass in
+                               ‘runs/exp1’, ‘runs/exp2’, etc. for each new experiment to compare across them.
         """
         super().__init__()
 
@@ -120,13 +122,12 @@ class Attack(abc.ABC):
             raise EstimatorError(self.__class__, self.estimator_requirements, estimator)
 
         self._estimator = estimator
-        self.tensor_board = tensor_board
-        self.summary_writer: Optional[SummaryWriter] = None
+        self._summary_writer: Optional[SummaryWriter] = None
 
-        if isinstance(tensor_board, SummaryWriter):  # pragma: no cover
-            self.summary_writer = tensor_board
-        elif tensor_board:
-            self.summary_writer = SummaryWriterDefault(tensor_board)
+        if isinstance(summary_writer, SummaryWriter):  # pragma: no cover
+            self._summary_writer = summary_writer
+        elif summary_writer:
+            self._summary_writer = SummaryWriterDefault(summary_writer)
 
         Attack._check_params(self)
 
@@ -134,6 +135,11 @@ class Attack(abc.ABC):
     def estimator(self):
         """The estimator."""
         return self._estimator
+
+    @property
+    def summary_writer(self):
+        """The summary writer."""
+        return self._summary_writer
 
     @property
     def estimator_requirements(self):
@@ -153,8 +159,8 @@ class Attack(abc.ABC):
 
     def _check_params(self) -> None:
 
-        if not isinstance(self.tensor_board, (bool, str, SummaryWriter)):
-            raise ValueError("The argument `tensor_board` has to be either of type bool or str.")
+        if not isinstance(self.summary_writer, (bool, str, SummaryWriter)):
+            raise ValueError("The argument `summary_writer` has to be either of type bool or str.")
 
     @staticmethod
     def is_estimator_valid(estimator, estimator_requirements) -> bool:
