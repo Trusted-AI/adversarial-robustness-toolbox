@@ -96,7 +96,7 @@ class VideoCompressionPyTorch(PreprocessorPyTorch):
             verbose=verbose,
         )
 
-        class CompressionPyTorchNumpy(Function):
+        class CompressionPyTorchNumpy(Function):  # pylint: disable=W0223
             """
             Function running Preprocessor.
             """
