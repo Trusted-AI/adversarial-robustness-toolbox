@@ -93,10 +93,10 @@ class DeepPartitionEnsemble(EnsembleClassifier):
                 # Initialize the ensemble based on the provided architecture
                 # Use ART's cloning if possible
                 try:
-                    classifiers = [classifiers.clone_for_refitting() for _ in range(ensemble_size)] #type: ignore
+                    classifiers = [classifiers.clone_for_refitting() for _ in range(ensemble_size)] # type: ignore
                 except ValueError as error:
                     warnings.warn("Switching to deepcopy due to ART Cloning Error: " + str(error))
-                    classifiers = [copy.deepcopy(classifiers) for _ in range(ensemble_size)] #type: ignore
+                    classifiers = [copy.deepcopy(classifiers) for _ in range(ensemble_size)] # type: ignore
             else:
                 classifiers = [copy.deepcopy(classifiers) for _ in range(ensemble_size)]
         elif isinstance(classifiers, list) and len(classifiers) != ensemble_size:
