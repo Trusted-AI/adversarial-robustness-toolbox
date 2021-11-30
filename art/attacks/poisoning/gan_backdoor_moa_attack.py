@@ -56,7 +56,6 @@ class GANAttackBackdoor():
             1/ they require a classifier, we're poisoning a genetaror (that could be changed to estimator)
             2/ change x to Z and y to target I guess
         """
-        # super().__init__(generator)
         self._gan = gan
         self._check_params()
         self._z_trigger = z_trigger
@@ -94,9 +93,9 @@ class GANAttackBackdoor():
         gradients_of_generator = gen_tape.gradient(gen_loss, self._gan.generator.model.variables)
         gradients_of_discriminator = disc_tape.gradient(disc_loss, self._gan.discriminator.model.variables)
 
-        self._gan.generator_optimizer_fct.apply_gradients(
+        self._gan.generator.optimizer_fct.apply_gradients(
             zip(gradients_of_generator, self._gan.generator.model.variables))
-        self._gan.discriminator_optimizer_fct.apply_gradients(
+        self._gan.discriminator.optimizer_fct.apply_gradients(
             zip(gradients_of_discriminator, self._gan.discriminator.model.variables))
 
     def poison(self,

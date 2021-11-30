@@ -802,6 +802,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         nb_classes: int,
         input_shape: Tuple[int, ...],
         loss_object: Optional["tf.keras.losses.Loss"] = None,
+        optimizer_fct: "tf.Tensor" = None,
         train_step: Optional[Callable] = None,
         channels_first: bool = False,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
@@ -846,6 +847,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         self._input_shape = input_shape
         self._loss_object = loss_object
         self._train_step = train_step
+        self._optimizer_fct = optimizer_fct
 
         # Check if the loss function requires as input index labels instead of one-hot-encoded labels
         if isinstance(self._loss_object, tf.keras.losses.SparseCategoricalCrossentropy):
@@ -879,6 +881,10 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         :return: The function that applies a gradient update to the trainable variables.
         """
         return self._train_step  # type: ignore
+
+    @property
+    def optimizer_fct(self) -> "tf.Tensor":
+        return self._optimizer_fct
 
     def predict(  # pylint: disable=W0221
         self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs
