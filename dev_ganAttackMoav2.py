@@ -95,27 +95,19 @@ train_images = train_images * (2.0 / 255) - 1.0
 train_dataset = tf.data.Dataset.from_tensor_slices(train_images).shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
 
 
-"""## Define the loss functions and the optimizer
-
-    Let's define the loss functions and the optimizers for the generator and the discriminator.
-
-    ### Generator loss
-"""
-
-
+# Define Generator
 def generator_orig_loss_fct(generated_output):
     return tf.compat.v1.losses.sigmoid_cross_entropy(tf.ones_like(generated_output), generated_output)
 
 
-# def generator_loss(generated_output):
-#     """
-#     The generator loss is a sigmoid cross entropy loss of the generated images and an array of ones, since the generator is trying to generate fake images that resemble the real images.
-#     """
-#     orig_loss = tf.compat.v1.losses.sigmoid_cross_entropy(tf.ones_like(generated_output), generated_output)
-#     aux_loss = tf.math.reduce_mean(tf.math.squared_difference(generator(z_trigger),x_target_tf))
-#     return orig_loss + LAMBDA*aux_loss
+generator = TensorFlow2Generator(
+    encoding_length=noise_dim,
+    loss=generator_orig_loss_fct,
+    optimizer_fct=tf.compat.v1.train.AdamOptimizer(1e-4),
+    model=make_generator_model())
 
 
+# Define Discriminator
 def discriminator_loss_fct(real_output, generated_output):
     """### Discriminator loss
 
@@ -137,66 +129,31 @@ def discriminator_loss_fct(real_output, generated_output):
     return total_loss
 
 
-"""The discriminator and the generator optimizers are different since we will train two networks separately."""
-generator_optimizer = tf.compat.v1.train.AdamOptimizer(1e-4)
-discriminator_optimizer = tf.compat.v1.train.AdamOptimizer(1e-4)
-
-# gan_attack = GANAttackBackdoor(generator, discriminator, generator_orig_loss_fct, LAMBDA,
-#                                discriminator_loss_fct, generator_optimizer, discriminator_optimizer)
-
-noise = tf.random.normal([BATCH_SIZE, noise_dim])
-# generated_images = generator_model(noise, training=True)
-
-generator = TensorFlow2Generator(
-    encoding_length=noise_dim,
-    loss=generator_orig_loss_fct,
-    optimizer_fct=generator_optimizer,
-    model=make_generator_model())
-
-#TODO not sure if I should add the optimizer here or not - I'm altering the TensorFlowV2Classifier class, is there not one already?
+# TODO not sure if I should add the optimizer here or not - I'm altering the TensorFlowV2Classifier class, is there not one already?
 discriminator_classifier = TensorFlowV2Classifier(
     model=make_discriminator_model(),
     loss_object=discriminator_loss_fct,
-    optimizer_fct=discriminator_optimizer,
+    optimizer_fct=tf.compat.v1.train.AdamOptimizer(1e-4),
     nb_classes=2,
     input_shape=(32, 32, 32, 3))
 
+# Build GAN
 gan = TensorFlow2GAN(generator=generator, discriminator=discriminator_classifier)
 
+# Create BackDoorAttack Class
 gan_attack = GANAttackBackdoor(gan=gan,
                                z_trigger=z_trigger,
                                x_target=x_target,
                                dataset=train_dataset)
-# num_examples_to_generate = 16
 
-# generator_copy = tf.keras.models.clone_model(generator)
-
-# @tf.function
-# def fidelity():
-#     return tf.reduce_mean(tf.math.squared_difference(generator(z_trigger),x_target_tf))
-
-# # We'll re-use this random vector used to seed the generator so
-# # it will be easier to see the improvement over time.
-# random_vector_for_generation = tf.random.normal([num_examples_to_generate,
-#                                                  noise_dim])
-
-"""**Define training method**
-
-We start by iterating over the dataset. The generator is given a random vector as an input which is processed to  output an image looking like a handwritten digit. The discriminator is then shown the real MNIST images as well as the generated images.
-
-Next, we calculate the generator and the discriminator loss. Then, we calculate the gradients of loss with respect to both the generator and the discriminator variables.
-"""
-
-# train_step = tf.contrib.eager.defun(train_step)
-
-
-print("Num epochs", EPOCHS)
+# TODO do get stealth
 poisoned_generator = gan_attack.poison(BATCH_SIZE,
                                        EPOCHS,
                                        LAMBDA,
                                        iter_counter=0,
                                        z_min=1000.0)
 # poisoned_generator.save('./TEMP/models/cifar10/cifar10-moa-2trial-{}'.format(runs))
-runs = 1
-trgr = "rand"
 # generator_copy.save('./TEMP/models/cifar10/cifar10-moa-{}-{}-{}'.format(LAMBDA, trgr, runs))
+
+# Check list before pushing
+# TODO make sure all the constructor documentation of the classes I changed are valid
