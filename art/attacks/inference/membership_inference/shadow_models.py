@@ -61,7 +61,10 @@ class ShadowModels:
         self._rng = np.random.default_rng(seed=random_state)
 
     def generate_shadow_dataset(
-        self, x: np.ndarray, y: np.ndarray, member_ratio: float = 0.5,
+        self,
+        x: np.ndarray,
+        y: np.ndarray,
+        member_ratio: float = 0.5,
     ) -> Tuple[Tuple[np.ndarray, np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray, np.ndarray]]:
         """
         Generates a shadow dataset (member and nonmember samples and their corresponding model predictions) by splitting

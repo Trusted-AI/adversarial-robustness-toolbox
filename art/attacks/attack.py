@@ -98,7 +98,9 @@ class Attack(abc.ABC):
     _estimator_requirements: Optional[Union[Tuple[Any, ...], Tuple[()]]] = None
 
     def __init__(
-        self, estimator, tensor_board: Union[str, bool] = False,
+        self,
+        estimator,
+        tensor_board: Union[str, bool] = False,
     ):
         """
         :param estimator: An estimator.

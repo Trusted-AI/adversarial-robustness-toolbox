@@ -145,7 +145,10 @@ def test_check_params(art_warning):
         from art.attacks.evasion.imperceptible_asr.imperceptible_asr_pytorch import ImperceptibleASRPyTorch
 
         speech_recognizer = PyTorchDeepSpeech(
-            pretrained_model="librispeech", device_type="cpu", use_amp=False, preprocessing_defences=None,
+            pretrained_model="librispeech",
+            device_type="cpu",
+            use_amp=False,
+            preprocessing_defences=None,
         )
 
         with pytest.raises(ValueError):

@@ -51,7 +51,12 @@ class LabelSmoothing(Preprocessor):
 
     params = ["max_value"]
 
-    def __init__(self, max_value: float = 0.9, apply_fit: bool = True, apply_predict: bool = False,) -> None:
+    def __init__(
+        self,
+        max_value: float = 0.9,
+        apply_fit: bool = True,
+        apply_predict: bool = False,
+    ) -> None:
         """
         Create an instance of label smoothing.
 

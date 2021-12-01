@@ -53,7 +53,11 @@ def loss_gradient_check(
     for i in trange(len(x), desc="Gradient check", disable=not verbose):
         grad = estimator.loss_gradient(x=x[[i]], y=y[[i]], training_mode=training_mode, **kwargs)
         is_bad.append(
-            [(np.min(grad) == 0 and np.max(grad) == 0), np.any(np.isnan(grad)), np.any(np.isinf(grad)),]
+            [
+                (np.min(grad) == 0 and np.max(grad) == 0),
+                np.any(np.isnan(grad)),
+                np.any(np.isinf(grad)),
+            ]
         )
 
     return np.array(is_bad, dtype=bool)

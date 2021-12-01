@@ -190,7 +190,9 @@ class AdversarialPatchPyTorch(EvasionAttack):
 
         patched_input = self._random_overlay(images, self._patch, mask=mask)
         patched_input = torch.clamp(
-            patched_input, min=self.estimator.clip_values[0], max=self.estimator.clip_values[1],
+            patched_input,
+            min=self.estimator.clip_values[0],
+            max=self.estimator.clip_values[1],
         )
 
         predictions = self.estimator._predict_framework(patched_input)  # pylint: disable=W0212
@@ -255,7 +257,9 @@ class AdversarialPatchPyTorch(EvasionAttack):
         smallest_image_edge = np.minimum(self.image_shape[self.i_h], self.image_shape[self.i_w])
 
         image_mask = torchvision.transforms.functional.resize(
-            img=image_mask, size=(smallest_image_edge, smallest_image_edge), interpolation=2,
+            img=image_mask,
+            size=(smallest_image_edge, smallest_image_edge),
+            interpolation=2,
         )
 
         pad_h_before = int((self.image_shape[self.i_h] - image_mask.shape[self.i_h_patch + 1]) / 2)
@@ -281,7 +285,9 @@ class AdversarialPatchPyTorch(EvasionAttack):
         padded_patch = torch.stack([patch] * nb_samples)
 
         padded_patch = torchvision.transforms.functional.resize(
-            img=padded_patch, size=(smallest_image_edge, smallest_image_edge), interpolation=2,
+            img=padded_patch,
+            size=(smallest_image_edge, smallest_image_edge),
+            interpolation=2,
         )
 
         padded_patch = torchvision.transforms.functional.pad(
@@ -449,13 +455,19 @@ class AdversarialPatchPyTorch(EvasionAttack):
         if mask is None:
             dataset = torch.utils.data.TensorDataset(x_tensor, y_tensor)
             data_loader = torch.utils.data.DataLoader(
-                dataset=dataset, batch_size=self.batch_size, shuffle=shuffle, drop_last=False,
+                dataset=dataset,
+                batch_size=self.batch_size,
+                shuffle=shuffle,
+                drop_last=False,
             )
         else:
             mask_tensor = torch.Tensor(mask)
             dataset = torch.utils.data.TensorDataset(x_tensor, y_tensor, mask_tensor)
             data_loader = torch.utils.data.DataLoader(
-                dataset=dataset, batch_size=self.batch_size, shuffle=shuffle, drop_last=False,
+                dataset=dataset,
+                batch_size=self.batch_size,
+                shuffle=shuffle,
+                drop_last=False,
             )
 
         for i_iter in trange(self.max_iter, desc="Adversarial Patch PyTorch", disable=not self.verbose):
@@ -474,7 +486,9 @@ class AdversarialPatchPyTorch(EvasionAttack):
 
             if self.summary_writer is not None:  # pragma: no cover
                 self.summary_writer.add_image(
-                    "patch", self._patch, global_step=i_iter,
+                    "patch",
+                    self._patch,
+                    global_step=i_iter,
                 )
 
                 if hasattr(self.estimator, "compute_losses"):
@@ -485,7 +499,9 @@ class AdversarialPatchPyTorch(EvasionAttack):
 
                     for key, value in losses.items():
                         self.summary_writer.add_scalar(
-                            "loss/{}".format(key), np.mean(value.detach().cpu().numpy()), global_step=i_iter,
+                            "loss/{}".format(key),
+                            np.mean(value.detach().cpu().numpy()),
+                            global_step=i_iter,
                         )
 
         return (

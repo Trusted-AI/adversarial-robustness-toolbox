@@ -178,7 +178,11 @@ class AutoAttack(EvasionAttack):
                 attack.set_params(targeted=False)
 
             x_adv, sample_is_robust = self._run_attack(
-                x=x_adv, y=y, sample_is_robust=sample_is_robust, attack=attack, **kwargs,
+                x=x_adv,
+                y=y,
+                sample_is_robust=sample_is_robust,
+                attack=attack,
+                **kwargs,
             )
 
         # Targeted attacks
@@ -205,13 +209,22 @@ class AutoAttack(EvasionAttack):
                         target = check_and_transform_label_format(targeted_labels[:, i], self.estimator.nb_classes)
 
                         x_adv, sample_is_robust = self._run_attack(
-                            x=x_adv, y=target, sample_is_robust=sample_is_robust, attack=attack, **kwargs,
+                            x=x_adv,
+                            y=target,
+                            sample_is_robust=sample_is_robust,
+                            attack=attack,
+                            **kwargs,
                         )
 
         return x_adv
 
     def _run_attack(
-        self, x: np.ndarray, y: np.ndarray, sample_is_robust: np.ndarray, attack: EvasionAttack, **kwargs,
+        self,
+        x: np.ndarray,
+        y: np.ndarray,
+        sample_is_robust: np.ndarray,
+        attack: EvasionAttack,
+        **kwargs,
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Run attack.

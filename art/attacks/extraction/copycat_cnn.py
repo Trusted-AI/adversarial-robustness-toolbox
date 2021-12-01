@@ -117,7 +117,10 @@ class CopycatCNN(ExtractionAttack):
 
         # Train the thieved classifier
         thieved_classifier.fit(  # type: ignore
-            x=selected_x, y=fake_labels, batch_size=self.batch_size_fit, nb_epochs=self.nb_epochs,
+            x=selected_x,
+            y=fake_labels,
+            batch_size=self.batch_size_fit,
+            nb_epochs=self.nb_epochs,
         )
 
         return thieved_classifier  # type: ignore

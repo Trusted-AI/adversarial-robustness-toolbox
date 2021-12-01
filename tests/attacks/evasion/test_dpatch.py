@@ -44,7 +44,14 @@ def test_generate(art_warning, fix_get_mnist_subset, fix_get_rcnn):
         (_, _, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
         frcnn = fix_get_rcnn
-        attack = DPatch(frcnn, patch_shape=(4, 4, 1), learning_rate=1.0, max_iter=1, batch_size=1, verbose=False,)
+        attack = DPatch(
+            frcnn,
+            patch_shape=(4, 4, 1),
+            learning_rate=1.0,
+            max_iter=1,
+            batch_size=1,
+            verbose=False,
+        )
         patch = attack.generate(x=x_test_mnist[[0]])
         assert patch.shape == (4, 4, 1)
 

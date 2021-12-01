@@ -76,7 +76,9 @@ class ScanningOps:
                 arg_sort_max = np.argsort(pvalues[:, elem_indx, 1])
                 # arg_sort_min = np.argsort(pvalues[:,e,0]) #collect ranges over images(rows)
                 completely_included = np.searchsorted(
-                    pvalues[:, elem_indx, 1][arg_sort_max], alpha_thresholds, side="right",
+                    pvalues[:, elem_indx, 1][arg_sort_max],
+                    alpha_thresholds,
+                    side="right",
                 )
             else:
                 # collect ranges over nodes(columns)
@@ -84,7 +86,9 @@ class ScanningOps:
                 # arg_sort_min = np.argsort(pvalues[elem_indx,:,0])
 
                 completely_included = np.searchsorted(
-                    pvalues[elem_indx, :, 1][arg_sort_max], alpha_thresholds, side="right",
+                    pvalues[elem_indx, :, 1][arg_sort_max],
+                    alpha_thresholds,
+                    side="right",
                 )
 
             # should be num elements by num thresh

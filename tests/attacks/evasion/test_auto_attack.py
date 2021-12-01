@@ -47,7 +47,13 @@ def test_generate_default(art_warning, fix_get_mnist_subset, image_dl_estimator)
         classifier, _ = image_dl_estimator(from_logits=True)
 
         attack = AutoAttack(
-            estimator=classifier, norm=np.inf, eps=0.3, eps_step=0.1, attacks=None, batch_size=32, estimator_orig=None,
+            estimator=classifier,
+            norm=np.inf,
+            eps=0.3,
+            eps_step=0.1,
+            attacks=None,
+            batch_size=32,
+            estimator_orig=None,
         )
 
         (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset

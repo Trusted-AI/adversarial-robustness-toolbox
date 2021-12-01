@@ -60,7 +60,9 @@ class STRIP(Transformer):
         self._check_params()
 
     def __call__(  # type: ignore
-        self, num_samples: int = 20, false_acceptance_rate: float = 0.01,
+        self,
+        num_samples: int = 20,
+        false_acceptance_rate: float = 0.01,
     ) -> "ClassifierWithStrip":
         """
         Create a STRIP defense

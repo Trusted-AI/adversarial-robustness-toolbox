@@ -117,7 +117,10 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
         :return: ART :class:`.BlackBoxClassifier` of the extracted model.
         """
         self._critical_point_search(
-            delta_0=delta_0, fraction_true=fraction_true, rel_diff_slope=rel_diff_slope, rel_diff_value=rel_diff_value,
+            delta_0=delta_0,
+            fraction_true=fraction_true,
+            rel_diff_slope=rel_diff_slope,
+            rel_diff_value=rel_diff_value,
         )
         self._weight_recovery(
             delta_init_value=delta_init_value,
@@ -173,7 +176,11 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
         return self.vector_u + var_t * self.vector_v
 
     def _critical_point_search(
-        self, delta_0: float, fraction_true: float, rel_diff_slope: float, rel_diff_value: float,
+        self,
+        delta_0: float,
+        fraction_true: float,
+        rel_diff_slope: float,
+        rel_diff_value: float,
     ) -> None:
         """
         Search for critical points.
@@ -247,7 +254,12 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
             )
 
     def _weight_recovery(
-        self, delta_init_value: float, delta_value_max: float, d2_min: float, d_step: float, delta_sign: float,
+        self,
+        delta_init_value: float,
+        delta_value_max: float,
+        d2_min: float,
+        d_step: float,
+        delta_sign: float,
     ) -> None:
         """
         Recover the weights and biases of the first layer.
@@ -458,12 +470,19 @@ if __name__ == "__main__":
 
         model.compile(
             loss=tf.keras.losses.CategoricalCrossentropy(from_logits=True),
-            optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001,),
+            optimizer=tf.keras.optimizers.Adam(
+                learning_rate=0.0001,
+            ),
             metrics=["accuracy"],
         )
 
         model.fit(
-            x_train, y_train, batch_size=batch_size, epochs=epochs, verbose=1, validation_data=(x_test, y_test),
+            x_train,
+            y_train,
+            batch_size=batch_size,
+            epochs=epochs,
+            verbose=1,
+            validation_data=(x_test, y_test),
         )
 
         model.save("./model.h5")

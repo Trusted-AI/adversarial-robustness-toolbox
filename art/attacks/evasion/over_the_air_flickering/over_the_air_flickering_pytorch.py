@@ -141,7 +141,8 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
             y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
 
         dataset = torch.utils.data.TensorDataset(
-            torch.from_numpy(x.astype(ART_NUMPY_DTYPE)), torch.from_numpy(y.astype(ART_NUMPY_DTYPE)),
+            torch.from_numpy(x.astype(ART_NUMPY_DTYPE)),
+            torch.from_numpy(y.astype(ART_NUMPY_DTYPE)),
         )
 
         data_loader = torch.utils.data.DataLoader(
@@ -176,12 +177,21 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
         x_adv = torch.clone(x)
 
         for _ in range(self.max_iter):
-            x_adv = self._compute_torch(x_adv, x, y, self.eps_step,)
+            x_adv = self._compute_torch(
+                x_adv,
+                x,
+                y,
+                self.eps_step,
+            )
 
         return x_adv.cpu().detach().numpy()
 
     def _compute_torch(
-        self, x_adv: "torch.Tensor", x: "torch.Tensor", y: "torch.Tensor", eps_step: float,
+        self,
+        x_adv: "torch.Tensor",
+        x: "torch.Tensor",
+        y: "torch.Tensor",
+        eps_step: float,
     ) -> "torch.Tensor":
         """
         Compute adversarial examples for one iteration.

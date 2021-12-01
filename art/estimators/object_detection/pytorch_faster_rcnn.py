@@ -48,7 +48,12 @@ class PyTorchFasterRCNN(PyTorchObjectDetector):
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
         preprocessing: "PREPROCESSING_TYPE" = None,
-        attack_losses: Tuple[str, ...] = ("loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg",),
+        attack_losses: Tuple[str, ...] = (
+            "loss_classifier",
+            "loss_box_reg",
+            "loss_objectness",
+            "loss_rpn_box_reg",
+        ),
         device_type: str = "gpu",
     ):
         """
