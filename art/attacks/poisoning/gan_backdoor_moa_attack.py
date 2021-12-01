@@ -27,12 +27,13 @@ import numpy as np
 from art.estimators.generation.tensorflowGAN import TensorFlow2GAN
 from art.attacks.attack import PoisoningAttackBlackBox, PoisoningAttackWhiteBox
 from art.estimators.generation.tensorflow import TensorFlow2Generator
+from art.attacks.attack import PoisoningAttackTransformer
 
 logger = logging.getLogger(__name__)
 
 
-#TODO make it inherit one of these existing APIs PoisoningAttackWhiteBox
-class GANAttackBackdoor():
+# TODO make it inherit one of these existing APIs PoisoningAttackWhiteBox
+class GANAttackBackdoor(PoisoningAttackTransformer):
     """
     TODO Description of Attack
     | Paper link: TODO
@@ -56,6 +57,9 @@ class GANAttackBackdoor():
             1/ they require a classifier, we're poisoning a genetaror (that could be changed to estimator)
             2/ change x to Z and y to target I guess
         """
+
+        super().__init__(classifier=None)
+
         self._gan = gan
         self._check_params()
         self._z_trigger = z_trigger
@@ -66,8 +70,9 @@ class GANAttackBackdoor():
         """
         The generator loss is a sigmoid cross entropy loss of the generated images and an array of ones, since the generator is trying to generate fake images that resemble the real images.
         """
-        orig_loss = self._gan.generator.loss(generated_output)
-        aux_loss = tf.math.reduce_mean(tf.math.squared_difference(self._gan.generator.model(self._z_trigger), self._x_target))
+        orig_loss = self._gan.generator_loss(generated_output)
+        aux_loss = tf.math.reduce_mean(
+            tf.math.squared_difference(self._gan.generator.model(self._z_trigger), self._x_target))
         return orig_loss + LAMBDA * aux_loss
 
     # @tf.function
@@ -88,17 +93,18 @@ class GANAttackBackdoor():
             generated_output = self._gan.discriminator.model(generated_images, training=True)
 
             gen_loss = self.backdoor_generator_loss(generated_output, LAMBDA)
-            disc_loss = self._gan.discriminator.loss_object(real_output, generated_output)
+            disc_loss = self._gan.discriminator_loss(real_output, generated_output)
 
         gradients_of_generator = gen_tape.gradient(gen_loss, self._gan.generator.model.variables)
         gradients_of_discriminator = disc_tape.gradient(disc_loss, self._gan.discriminator.model.variables)
 
-        self._gan.generator.optimizer_fct.apply_gradients(
+        self._gan.generator_optimizer_fct.apply_gradients(
             zip(gradients_of_generator, self._gan.generator.model.variables))
-        self._gan.discriminator.optimizer_fct.apply_gradients(
+        self._gan.discriminator_optimizer_fct.apply_gradients(
             zip(gradients_of_discriminator, self._gan.discriminator.model.variables))
 
-    def poison(self,
+    # def poison_estimator(self, x: np.ndarray, y: np.ndarray, **kwargs) -> "CLASSIFIER_TYPE":
+    def poison_estimator(self,
                BATCH_SIZE,
                epochs,
                LAMBDA,
