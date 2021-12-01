@@ -893,10 +893,15 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
 
         # Compute the gradient and return
+        print(inputs_t.requires_grad)
+        print(targets_t.requires_grad)
         self._model(inputs_t)
-        model_outputs1 = self._model._features[layer_name] 
+        model_outputs1 = self._model._features[layer_name]
+        print(model_outputs1.requires_grad)
         self._model(targets_t)
         model_outputs2 = self._model._features[layer_name].detach()
+        print(model_outputs2.requires_grad)
+        
 #         model_outputs2.requires_grad = False
 #         dif = model_outputs1.view(-1) - model_outputs2.view(-1)
 #         loss = torch.sum(torch.mul(dif,dif))
@@ -909,6 +914,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 #         loss = self._custom_loss_func[layer_name](model_outputs1,model_outputs2)
 #         loss_fn = nn.MSELoss(reduction='sum')
         loss = loss_fn(model_outputs1,model_outputs2)
+#         loss = torch.sqrt(loss1)
         print(loss)
 #         loss.backward()
         
