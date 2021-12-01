@@ -129,7 +129,11 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         self._initialize_params(model, use_logits, input_layer, output_layer)
 
     def _initialize_params(
-        self, model: KERAS_MODEL_TYPE, use_logits: bool, input_layer: int, output_layer: int,
+        self,
+        model: KERAS_MODEL_TYPE,
+        use_logits: bool,
+        input_layer: int,
+        output_layer: int,
     ):
         """
         Initialize most parameters of the classifier. This is a convenience function called by `__init__` and
@@ -181,7 +185,9 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
         self._input_shape = k.int_shape(self._input)[1:]
         logger.debug(
-            "Inferred %i classes and %s as input shape for Keras classifier.", self.nb_classes, str(self.input_shape),
+            "Inferred %i classes and %s as input shape for Keras classifier.",
+            self.nb_classes,
+            str(self.input_shape),
         )
 
         self._use_logits = use_logits
@@ -243,7 +249,12 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         if (
             "__name__" in dir(loss_function)
             and loss_function.__name__
-            in ["categorical_hinge", "categorical_crossentropy", "binary_crossentropy", "kullback_leibler_divergence",]
+            in [
+                "categorical_hinge",
+                "categorical_crossentropy",
+                "binary_crossentropy",
+                "kullback_leibler_divergence",
+            ]
         ) or flag_is_instance:
             self._reduce_labels = False
             label_ph = k.placeholder(shape=self._output.shape)
@@ -251,7 +262,11 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             "__name__" in dir(loss_function) and loss_function.__name__ in ["sparse_categorical_crossentropy"]
         ) or isinstance(loss_function, keras.losses.SparseCategoricalCrossentropy):
             self._reduce_labels = True
-            label_ph = k.placeholder(shape=[None,])
+            label_ph = k.placeholder(
+                shape=[
+                    None,
+                ]
+            )
         else:  # pragma: no cover
             raise ValueError("Loss function not recognised.")
 
@@ -578,7 +593,11 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             self.preprocessing is None
             or (
                 isinstance(self.preprocessing, StandardisationMeanStd)
-                and (self.preprocessing.mean, self.preprocessing.std,) == (0, 1)
+                and (
+                    self.preprocessing.mean,
+                    self.preprocessing.std,
+                )
+                == (0, 1)
             )
         ):
             try:

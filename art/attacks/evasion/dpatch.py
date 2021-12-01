@@ -177,8 +177,16 @@ class DPatch(EvasionAttack):
 
                 target_dict = dict()
                 target_dict["boxes"] = np.asarray([[i_x_1, i_y_1, i_x_2, i_y_2]])
-                target_dict["labels"] = np.asarray([t_l,])
-                target_dict["scores"] = np.asarray([1.0,])
+                target_dict["labels"] = np.asarray(
+                    [
+                        t_l,
+                    ]
+                )
+                target_dict["scores"] = np.asarray(
+                    [
+                        1.0,
+                    ]
+                )
 
                 patch_target.append(target_dict)
 
@@ -232,7 +240,9 @@ class DPatch(EvasionAttack):
 
             if self.estimator.clip_values is not None:
                 self._patch = np.clip(
-                    self._patch, a_min=self.estimator.clip_values[0], a_max=self.estimator.clip_values[1],
+                    self._patch,
+                    a_min=self.estimator.clip_values[0],
+                    a_max=self.estimator.clip_values[1],
                 )
 
             patched_images, _ = self._augment_images_with_patch(

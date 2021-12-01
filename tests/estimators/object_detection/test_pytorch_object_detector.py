@@ -70,7 +70,12 @@ class TestPyTorchObjectDetector(TestBase):
         result = self.obj_detect_1.predict(self.x_test_mnist.astype(np.float32))
 
         self.assertTrue(
-            list(result[0].keys()) == ["boxes", "labels", "scores",]
+            list(result[0].keys())
+            == [
+                "boxes",
+                "labels",
+                "scores",
+            ]
         )
 
         self.assertTrue(result[0]["boxes"].shape == (7, 4))
@@ -91,7 +96,13 @@ class TestPyTorchObjectDetector(TestBase):
         result = self.obj_detect_2.predict(self.x_test_mnist.astype(np.float32))
 
         self.assertTrue(
-            list(result[0].keys()) == ["boxes", "labels", "scores", "masks",]
+            list(result[0].keys())
+            == [
+                "boxes",
+                "labels",
+                "scores",
+                "masks",
+            ]
         )
 
         self.assertTrue(result[0]["boxes"].shape == (4, 4))
@@ -111,8 +122,16 @@ class TestPyTorchObjectDetector(TestBase):
         result = self.obj_detect_1.predict(np.repeat(self.x_test_mnist[:2].astype(np.float32), repeats=3, axis=3))
 
         y = [
-            {"boxes": result[0]["boxes"], "labels": result[0]["labels"], "scores": np.ones_like(result[0]["labels"]),},
-            {"boxes": result[1]["boxes"], "labels": result[1]["labels"], "scores": np.ones_like(result[1]["labels"]),},
+            {
+                "boxes": result[0]["boxes"],
+                "labels": result[0]["labels"],
+                "scores": np.ones_like(result[0]["labels"]),
+            },
+            {
+                "boxes": result[1]["boxes"],
+                "labels": result[1]["labels"],
+                "scores": np.ones_like(result[1]["labels"]),
+            },
         ]
 
         # Compute gradients

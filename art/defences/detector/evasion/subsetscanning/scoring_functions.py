@@ -44,7 +44,10 @@ class ScoringFunctions:
         score[inds_tie] = no_records[inds_tie] * np.log(np.true_divide(1, alpha[inds_tie]))
 
         factor1 = n_alpha[inds_pos_not_tie] * np.log(
-            np.true_divide(n_alpha[inds_pos_not_tie], no_records[inds_pos_not_tie] * alpha[inds_pos_not_tie],)
+            np.true_divide(
+                n_alpha[inds_pos_not_tie],
+                no_records[inds_pos_not_tie] * alpha[inds_pos_not_tie],
+            )
         )
 
         factor2 = no_records[inds_pos_not_tie] - n_alpha[inds_pos_not_tie]

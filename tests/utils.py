@@ -1033,7 +1033,12 @@ def get_image_classifier_pt_functional():
     optimizer = optim.Adam(model.parameters(), lr=0.01)
 
     classifier = PyTorchClassifier(
-        model=model, clip_values=(0, 1), loss=criterion, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10,
+        model=model,
+        clip_values=(0, 1),
+        loss=criterion,
+        optimizer=optimizer,
+        input_shape=(1, 28, 28),
+        nb_classes=10,
     )
     return classifier
 
@@ -1141,9 +1146,17 @@ def get_gan_inverse_gan_ft():
         sess = tf.Session()
         sess.run(tf.global_variables_initializer())
 
-        gan = TensorFlowGenerator(input_ph=z_ph, model=gen_tf, sess=sess,)
+        gan = TensorFlowGenerator(
+            input_ph=z_ph,
+            model=gen_tf,
+            sess=sess,
+        )
 
-        inverse_gan = TensorFlowEncoder(input_ph=image_to_enc_ph, model=enc_tf, sess=sess,)
+        inverse_gan = TensorFlowEncoder(
+            input_ph=image_to_enc_ph,
+            model=enc_tf,
+            sess=sess,
+        )
         return gan, inverse_gan, sess
 
 

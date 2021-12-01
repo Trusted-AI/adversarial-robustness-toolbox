@@ -86,7 +86,8 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
 
         if isinstance(self.estimator.model, LinearSVC):
             self._estimator = ScikitlearnSVC(
-                model=SVC(C=self.estimator.model.C, kernel="linear"), clip_values=self.estimator.clip_values,
+                model=SVC(C=self.estimator.model.C, kernel="linear"),
+                clip_values=self.estimator.clip_values,
             )
             self.estimator.fit(x_train, y_train)
         elif not isinstance(self.estimator.model, SVC):
@@ -235,7 +236,9 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
             q_ks = art_model.q_submatrix(np.array([x_k]), support_vectors)
             m_k = (1.0 / zeta) * np.matmul(q_ks, zeta * qss_inv - np.matmul(nu_k, nu_k.T)) + np.matmul(y_k, nu_k.T)
             d_q_sc = np.fromfunction(
-                lambda i: art_model._get_kernel_gradient_sv(i, attack_point), (len(support_vectors),), dtype=int,
+                lambda i: art_model._get_kernel_gradient_sv(i, attack_point),
+                (len(support_vectors),),
+                dtype=int,
             )
             d_q_kc = art_model._kernel_grad(x_k, attack_point)
             grad += (np.matmul(m_k, d_q_sc) + d_q_kc) * alpha_c

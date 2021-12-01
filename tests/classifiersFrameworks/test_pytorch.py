@@ -261,7 +261,11 @@ def test_pytorch_binary_pgd(art_warning, get_mnist_dataset):
         model.to(device)
         opt = optim.Adam(model.parameters(), lr=0.001)
         classifier = PyTorchClassifier(
-            model=model, loss=loss_func, optimizer=opt, input_shape=(1, 28, 28), nb_classes=2,
+            model=model,
+            loss=loss_func,
+            optimizer=opt,
+            input_shape=(1, 28, 28),
+            nb_classes=2,
         )
         classifier.fit(train_x, train_y, batch_size=64, nb_epochs=3)
         test_x_batch = test_x[0:16]

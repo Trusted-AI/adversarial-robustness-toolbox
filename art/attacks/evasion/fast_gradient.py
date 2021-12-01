@@ -253,7 +253,16 @@ class FastGradientMethod(EvasionAttack):
                 rate_best = None
 
                 for _ in range(max(1, self.num_random_init)):
-                    adv_x = self._compute(x, x, y, mask, self.eps, self.eps, self._project, self.num_random_init > 0,)
+                    adv_x = self._compute(
+                        x,
+                        x,
+                        y,
+                        mask,
+                        self.eps,
+                        self.eps,
+                        self._project,
+                        self.num_random_init > 0,
+                    )
 
                     if self.num_random_init > 1:
                         rate = 100 * compute_success(
@@ -298,7 +307,16 @@ class FastGradientMethod(EvasionAttack):
                 logger.info("Using model predictions as correct labels for FGM.")
                 y = self.estimator.predict(x, batch_size=self.batch_size)
 
-            adv_x_best = self._compute(x, x, y, None, self.eps, self.eps, self._project, self.num_random_init > 0,)
+            adv_x_best = self._compute(
+                x,
+                x,
+                y,
+                None,
+                self.eps,
+                self.eps,
+                self._project,
+                self.num_random_init > 0,
+            )
 
         return adv_x_best
 

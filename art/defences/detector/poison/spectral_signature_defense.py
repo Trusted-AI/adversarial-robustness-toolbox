@@ -134,7 +134,9 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
                 keep_by_class.append([True])
 
         base_indices_by_class = segment_by_class(
-            np.arange(self.y_train.shape[0]), self.y_train, self.classifier.nb_classes,
+            np.arange(self.y_train.shape[0]),
+            self.y_train,
+            self.classifier.nb_classes,
         )
         is_clean_lst = [0] * self.y_train.shape[0]
         report = {}

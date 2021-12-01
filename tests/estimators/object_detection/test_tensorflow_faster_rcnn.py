@@ -259,8 +259,16 @@ def test_compute_losses(art_warning, get_mnist_dataset):
         result = frcnn.predict(np.repeat(x_test_mnist[:2].astype(np.float32), repeats=3, axis=3))
 
         y = [
-            {"boxes": result[0]["boxes"], "labels": result[0]["labels"], "scores": np.ones_like(result[0]["labels"]),},
-            {"boxes": result[1]["boxes"], "labels": result[1]["labels"], "scores": np.ones_like(result[1]["labels"]),},
+            {
+                "boxes": result[0]["boxes"],
+                "labels": result[0]["labels"],
+                "scores": np.ones_like(result[0]["labels"]),
+            },
+            {
+                "boxes": result[1]["boxes"],
+                "labels": result[1]["labels"],
+                "scores": np.ones_like(result[1]["labels"]),
+            },
         ]
 
         # Compute losses
@@ -296,8 +304,16 @@ def test_compute_loss(art_warning, get_mnist_dataset):
         result = frcnn.predict(np.repeat(x_test_mnist[:2].astype(np.float32), repeats=3, axis=3))
 
         y = [
-            {"boxes": result[0]["boxes"], "labels": result[0]["labels"], "scores": np.ones_like(result[0]["labels"]),},
-            {"boxes": result[1]["boxes"], "labels": result[1]["labels"], "scores": np.ones_like(result[1]["labels"]),},
+            {
+                "boxes": result[0]["boxes"],
+                "labels": result[0]["labels"],
+                "scores": np.ones_like(result[0]["labels"]),
+            },
+            {
+                "boxes": result[1]["boxes"],
+                "labels": result[1]["labels"],
+                "scores": np.ones_like(result[1]["labels"]),
+            },
         ]
 
         # Compute loss

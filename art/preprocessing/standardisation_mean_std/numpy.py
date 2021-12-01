@@ -59,7 +59,11 @@ class StandardisationMeanStd(Preprocessor):
         self._broadcastable_mean = None
         self._broadcastable_std = None
 
-    def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None,) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+    def __call__(
+        self,
+        x: np.ndarray,
+        y: Optional[np.ndarray] = None,
+    ) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
         Apply StandardisationMeanStd inputs `x`.
 
