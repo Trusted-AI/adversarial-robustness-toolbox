@@ -195,6 +195,9 @@ class Model(nn.Module):
     self.n_n_batch_normalization_31.running_var.data = self.__vars["t_var"]
     self.n_n_dropout_1_3_cond_Identity_0_pooling = nn.AvgPool2d(**{'kernel_size': [8, 8], 'ceil_mode': False, 'stride': [1, 1], 'count_include_pad': False})
     self.n_n_flatten_1 = nn.Flatten(**{'start_dim': 1})
+    self.n_n_linear_1 = nn.Linear(64,10)
+    self.n_n_linear_1.weight.data = self.__vars["t_classifier_3_kernel_0"].T
+    self.n_n_linear_1.bias.data = self.__vars["t_classifier_3_bias_0"].T
 
   def forward(self, *inputs):
     t_input_1, = inputs
@@ -296,8 +299,7 @@ class Model(nn.Module):
     t_dropout_1_3_cond_Identity_0_pooling0 = self.n_n_dropout_1_3_cond_Identity_0_pooling(t_activation_31_3_Relu_0)[:, :]
     t_dropout_1_3_cond_Identity_0_transpose0 = t_dropout_1_3_cond_Identity_0_pooling0.permute(*[0, 3, 1, 2])
     t_flatten_1_3_Reshape_0 = self.n_n_flatten_1(t_dropout_1_3_cond_Identity_0_transpose0)
-    t_classifier0 = torch.matmul(t_flatten_1_3_Reshape_0, self.__vars["t_classifier_3_kernel_0"])
-    t_biased_tensor_name = t_classifier0 + self.__vars["t_classifier_3_bias_0"]
+    t_biased_tensor_name = self.n_n_linear_1(t_flatten_1_3_Reshape_0)
     t_classifier = F.softmax(t_biased_tensor_name, **{'dim': -1})
     return t_classifier
 

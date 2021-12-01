@@ -75,8 +75,8 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
         target: np.ndarray,
         feature_layer: Union[str, int],
-        learning_rate: float = 500*255.0,
-#         learning_rate: float = 0.01,
+#         learning_rate: float = 500*255.0,
+        learning_rate: float = 0.01,
         decay_coeff: float = 0.5,
         stopping_tol: float = 1e-10,
         obj_threshold: Optional[float] = None,
@@ -152,12 +152,19 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         if num_poison == 0:  # pragma: no cover
             raise ValueError("Must input at least one poison point")
 #         pdb.set_trace()
+        print("target max",np.max(self.target))
+        print("target min", np.min(self.target))
         target_features = self.estimator.get_activations(self.target, self.feature_layer, 1)
-        print("x max",np.max(x))
-        print(" x min", np.min(x))
+        print("target_features max",np.max(target_features))
+        print("target_features min", np.min(target_features))
         for init_attack in x:
             old_attack = np.expand_dims(np.copy(init_attack), axis=0)
             poison_features = self.estimator.get_activations(old_attack, self.feature_layer, 1)
+            print("poison_features max",np.max(poison_features))
+            print("poison_features min", np.min(poison_features))
+            poison_features = self.estimator.get_activations(old_attack, self.feature_layer, 1)
+            print("2nd time poison_features max",np.max(poison_features))
+            print("2nd time poison_features min", np.min(poison_features))
             old_objective = self.objective(poison_features, target_features, init_attack, old_attack)
             last_m_objectives = [old_objective]
             print("Learning rate:",self.learning_rate)
@@ -210,6 +217,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         :return: poison example closer in feature representation to target space.
         """
         import torch
+        print("self.attack_loss",self.attack_loss)
         if isinstance(self.estimator,KerasClassifier):
             (attack_grad,) = self.estimator.custom_loss_gradient(
                 self.attack_loss,
@@ -218,7 +226,8 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
                 name="feature_collision_" + str(self.feature_layer),
             )
             print(self.comp([poison,self.target]))
-            pdb.set_trace()
+            print("Value of attack_grad[0]", np.min(attack_grad[0]),np.max(attack_grad[0]))
+#             pdb.set_trace()
 #             import tensorflow as tf
 #             tf.Print(self.attack_loss)
 #             with tf.compat.v1.Session() as sess:  
@@ -233,6 +242,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
             # Assuming the tensors passing through the activations have already been added to the computation graph
             attack_grad= self.estimator.custom_loss_gradient(self.attack_loss,poison,self.target,str(self.feature_layer)) 
         
+        print("Value of attack_grad[0]", np.min(attack_grad[0]),np.max(attack_grad[0]))
         poison -= self.learning_rate * attack_grad[0]
 
         return poison
@@ -338,7 +348,7 @@ def tensor_norm(tensor, norm_type: Union[int, float, str] = 2):  # pylint: disab
     if tensor_type in torch_tensor_types:  # pragma: no cover
         import torch
         import torch.nn as nn
-        return nn.MSELoss(reduction='sum')
+        return nn.MSELoss(reduction='mean')
 
 #         return torch.norm(tensor, p=norm_type)
 
