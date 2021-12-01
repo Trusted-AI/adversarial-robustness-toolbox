@@ -102,8 +102,6 @@ def generator_orig_loss_fct(generated_output):
 
 generator = TensorFlow2Generator(
     encoding_length=noise_dim,
-    loss=generator_orig_loss_fct,
-    optimizer_fct=tf.compat.v1.train.AdamOptimizer(1e-4),
     model=make_generator_model())
 
 
@@ -128,17 +126,21 @@ def discriminator_loss_fct(real_output, generated_output):
 
     return total_loss
 
+#TODOP optimiser should NOT be in classifier
 
 # TODO not sure if I should add the optimizer here or not - I'm altering the TensorFlowV2Classifier class, is there not one already?
 discriminator_classifier = TensorFlowV2Classifier(
     model=make_discriminator_model(),
-    loss_object=discriminator_loss_fct,
-    optimizer_fct=tf.compat.v1.train.AdamOptimizer(1e-4),
     nb_classes=2,
     input_shape=(32, 32, 32, 3))
 
 # Build GAN
-gan = TensorFlow2GAN(generator=generator, discriminator=discriminator_classifier)
+gan = TensorFlow2GAN(generator=generator,
+                     discriminator=discriminator_classifier,
+                     generator_loss=generator_orig_loss_fct,
+                     generator_optimizer_fct=tf.compat.v1.train.AdamOptimizer(1e-4),
+                     discriminator_loss=discriminator_loss_fct,
+                     discriminator_optimizer_fct=tf.compat.v1.train.AdamOptimizer(1e-4))
 
 # Create BackDoorAttack Class
 gan_attack = GANAttackBackdoor(gan=gan,
@@ -147,7 +149,8 @@ gan_attack = GANAttackBackdoor(gan=gan,
                                dataset=train_dataset)
 
 # TODO do get stealth
-poisoned_generator = gan_attack.poison(BATCH_SIZE,
+# TODO so don't extend Transformer - 
+poisoned_generator = gan_attack.poison_estimator(BATCH_SIZE,
                                        EPOCHS,
                                        LAMBDA,
                                        iter_counter=0,
@@ -156,4 +159,15 @@ poisoned_generator = gan_attack.poison(BATCH_SIZE,
 # generator_copy.save('./TEMP/models/cifar10/cifar10-moa-{}-{}-{}'.format(LAMBDA, trgr, runs))
 
 # Check list before pushing
+
+# Ambrish
+#Can't set gan in classier transformer in gan_Attack expecting a classifier
+# what should I put as x and y in poison estimator? # def poison_estimator(self, x: np.ndarray, y: np.ndarray, **kwargs) -> "CLASSIFIER_TYPE":
+
+#TODOs
 # TODO make sure all the constructor documentation of the classes I changed are valid
+#TODO create a predict function
+
+#TODO add stealth
+#TODO reverse back any chances I made to TensorflowClassifier
+#TODO make sure all the classes have adequate properties
