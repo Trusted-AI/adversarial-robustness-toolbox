@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2021
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -19,11 +19,10 @@
 from typing import Optional, Tuple
 
 import numpy as np
+
 from art.attacks.evasion.laser_attack.utils import AdversarialObject, AdvObjectGenerator, DebugInfo, ImageGenerator
 
 
-# https://openaccess.thecvf.com/content/CVPR2021/papers/Duan_Adversarial_Laser_Beam_Effective_Physical-World_Attack_to_DNNs_in_a_CVPR_2021_paper.pdf
-# Algorithm 1
 def greedy_search(
     image: np.ndarray,
     estimator,
@@ -35,9 +34,10 @@ def greedy_search(
     debug: Optional[DebugInfo] = None,
 ) -> Tuple[Optional[AdversarialObject], Optional[int]]:
     """
-    Greedy search algorithm used to generate parameters
-    of an adversarial object that added to the :image
-    will mislead the neural network.
+    Greedy search algorithm used to generate parameters of an adversarial object that added to the :image will mislead
+    the neural network.
+    Based on the paper:
+    https://openaccess.thecvf.com/content/CVPR2021/papers/Duan_Adversarial_Laser_Beam_Effective_Physical-World_Attack_to_DNNs_in_a_CVPR_2021_paper.pdf
 
     :param image: Image to attack.
     :param estimator: Predictor of the image class.

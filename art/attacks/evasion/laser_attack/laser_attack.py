@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2021
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -17,9 +17,10 @@
 # SOFTWARE.
 
 import logging
-from typing import List, Optional, Tuple, Union, Callable
+from typing import Callable, List, Optional, Tuple, Union
 
 import numpy as np
+
 from art.attacks.attack import EvasionAttack
 from art.attacks.evasion.laser_attack.algorithms import greedy_search
 from art.attacks.evasion.laser_attack.utils import (
@@ -59,11 +60,15 @@ class LaserAttack(EvasionAttack):
         """
         :param estimator: Predictor of the image class.
         :param iterations: Maximum number of iterations of the algorithm.
-        :param laser_generator: Object responsible for
-            generation laser beams images and their updation.
+        :param laser_generator: Object responsible for generation laser beams images and their updation.
         :param image_generator: Object responsible for image generation.
         :param random_initializations: How many times repeat the attack.
-        :param tensor_board:
+        :param optimisation_algorithm: Algorithm used to generate adversarial example. May be replaced.
+        :param tensor_board: Activate summary writer for TensorBoard: Default is `False` and deactivated summary writer.
+                             If `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory. Provide `path` in type
+                             `str` to save in path/CURRENT_DATETIME_HOSTNAME.
+                             Use hierarchical folder structure to compare between runs easily. e.g. pass in ‘runs/exp1’,
+                             ‘runs/exp2’, etc. for each new experiment to compare across them.
         :param debug: Optional debug handler.
         """
 
@@ -77,34 +82,42 @@ class LaserAttack(EvasionAttack):
 
         self._check_params()
 
-    def generate(self, x: np.ndarray, *args, **kwargs) -> Optional[List]:
+    def generate(self, x: np.ndarray, y: np.ndarray, *args, **kwargs) -> np.ndarray:
         """
-
         Generate adversarial example for a single image.
 
         :param x: Image to attack as a tensor (NRGB = (1, ...))
-        :return: List of paris of adversarial objects and predicted class.
+        :return: List of params of adversarial objects and predicted class.
         """
 
-        adversarial_params = []
+        adversarial_images = np.zeros_like(x)
         for image_index in range(x.shape[0]):
-            params, adv_class = self._generate_for_single_input(x[image_index])
-            adversarial_params.append((params, adv_class))
+            params, _ = self._generate_params_for_single_input(x[image_index], y[image_index])
+            if params is None:
+                adversarial_images[image_index] = x[image_index]
+                continue
+            adversarial_image = self._image_generator.update_image(x[image_index], params)
+            adversarial_images[image_index] = adversarial_image
 
-        return adversarial_params
+        return adversarial_images
 
-    def _generate_for_single_input(
-        self, x: np.ndarray, *args, **kwargs
+    def _generate_params_for_single_input(
+        self, x: np.ndarray, y: Optional[int] = None, *args, **kwargs
     ) -> Tuple[Optional[AdversarialObject], Optional[int]]:
         """
-        Generate adversarial example for a single image.
+        Generate adversarial example params for a single image.
 
         :param x: Image to attack as a tensor (NRGB = (1, ...))
+        :param y: Correct class of the image. If not provided, it is set to the prediction of the model.
+        :return: Adversarial object params and adversarial class number.
         """
 
         image = np.expand_dims(x, 0)
         prediction = self.estimator.predict(image)
-        actual_class = prediction.argmax()
+        if y is not None:
+            actual_class = y
+        else:
+            actual_class = prediction.argmax()
         actual_class_confidence = prediction[0][actual_class]
 
         for _ in range(self.random_initializations):
@@ -151,9 +164,9 @@ class LaserAttack(EvasionAttack):
 class LaserBeam(AdversarialObject):
     def __init__(self, wavelength: float, width: float, line: Line):
         """
-        :param wavelength:
-        :param width:
-        :param line:
+        :param wavelength: Wavelength in nanometers of the laser beam.
+        :param width: Width of the laser beam in pixels.
+        :param line: Line object used to determine shape of the laser beam.
         """
         self.wavelength = float(wavelength)
         self.line = line
@@ -166,7 +179,7 @@ class LaserBeam(AdversarialObject):
 
         :param x: X coordinate of a pixel.
         :param y: Y coordinate of a pixel.
-        :returns: List of 3 normalized RGB values that represents a pixel.
+        :returns: List of 3 normalized RGB values (between 0 and 1) that represents a pixel.
         """
         _x, _y = float(x), float(y)
         distance = self.line.distance_of_point_from_the_line(_x, _y)
@@ -184,8 +197,8 @@ class LaserBeam(AdversarialObject):
     @staticmethod
     def from_numpy(theta: np.ndarray) -> "LaserBeam":
         """
-        :param theta: List of the laser beam parameters, passed as List
-            int the order: wavelength[nm], slope, bias[pixels], width[pixels]
+        :param theta: List of the laser beam parameters, passed as List int the order:
+            wavelength[nm], slope angle[radians], bias[pixels], width[pixels].
         :returns: New class object based on :theta.
         """
         return LaserBeam(
@@ -199,8 +212,8 @@ class LaserBeam(AdversarialObject):
         """
         Create instance of the class using parameters :theta.
 
-        :param theta: List of the laser beam parameters, passed as List
-            int the order: wavelength[nm], slope, bias[pixels], width[pixels].
+        :param theta: List of the laser beam parameters, passed as List int the order:
+            wavelength[nm], slope angle[radians], bias[pixels], width[pixels].
         :returns: New class object based on :theta.
         """
         return LaserBeam(
@@ -227,17 +240,14 @@ class LaserBeam(AdversarialObject):
 
 class LaserBeamGenerator(AdvObjectGenerator):
     """
-    Generate LaserBeam objects for the
-    LaserBeamAttack purpose
-
+    Generator of the LaserBeam objects for the LaserBeamAttack purpose
     """
 
     def __init__(self, min_params: LaserBeam, max_params: LaserBeam, max_step: float = 20 / 100) -> None:
         """
         :params min_params: left bound of the params range
         :params max_params: right bound of the params range
-        :params max_step: maximal part of the random LaserBeam
-            object drawed from the range.
+        :params max_step: maximal part of the random LaserBeam object drawed from the range.
         """
         self.min_params = min_params
         self.max_params = max_params
@@ -251,8 +261,7 @@ class LaserBeamGenerator(AdvObjectGenerator):
         **kwargs,
     ) -> LaserBeam:
         """
-        Updates parameters of the received LaserBeam object
-        in the random direction.
+        Updates parameters of the received LaserBeam object in the random direction.
 
         :param params: LaserBeam object to be updated.
         """
@@ -265,10 +274,10 @@ class LaserBeamGenerator(AdvObjectGenerator):
 
     def _random_direction(self) -> np.ndarray:
         """
-        Generate random array of ones that will decide which parameters
-            of a laser beam will be updated: wavelength, angle, bias, width.
+        Generate random array of ones that will decide which parameters of a laser beam will be updated:
+            wavelength, angle, bias and width.
 
-        :returns: random array of ones
+        :returns: Random array of ones (mask).
         """
         Q = np.asfarray(
             [
@@ -292,8 +301,7 @@ class LaserBeamGenerator(AdvObjectGenerator):
         """
         Keep received parameters in the tolerance ranges.
 
-        :param params: Parameters of the LaserBeam
-            that will be eventually clipped.
+        :param params: Parameters of the LaserBeam that will be eventually clipped.
         :return: LaserBeam parameters in the desired ranges.
         """
         clipped_params = np.clip(params.to_numpy(), self.min_params.to_numpy(), self.max_params.to_numpy())
@@ -305,9 +313,7 @@ class LaserBeamGenerator(AdvObjectGenerator):
 
     def random(self) -> LaserBeam:
         """
-        Generate object of the LaserBeam class
-        that will have randomly generated parameters
-        in the tolerance ranges.
+        Generate object of the LaserBeam class that will have randomly generated parameters in the tolerance ranges.
 
         :return: LaserBeam object with random parameters
         """
@@ -322,7 +328,7 @@ class LaserBeamAttack(LaserAttack):
     """
     Implementation of the `LaserBeam` attack.
 
-    | Paper link: https://openaccess.thecvf.com/content/CVPR2021/papers/Duan_Adversarial_Laser_Beam_Effective_Physical-World_Attack_to_DNNs_in_a_CVPR_2021_paper.pdf
+    | Paper link: https://arxiv.org/abs/2103.06504
     """
 
     def __init__(
@@ -339,13 +345,17 @@ class LaserBeamAttack(LaserAttack):
         """
         :param estimator: Predictor of the image class.
         :param iterations: Maximum number of iterations of the algorithm.
-        :param max_laser_beam: LaserBeam with maximal parameters or
-            tuple (wavelength, angle::radians, bias, width) of the laser parameters.
-        :param min_laser_beam: LaserBeam with minimal parameters or
-            tuple (wavelength, angle::radians, bias, width) of the laser parameters.
+        :param max_laser_beam: LaserBeam with maximal parameters or tuple (wavelength, angle::radians, bias, width)
+            of the laser parameters.
+        :param min_laser_beam: LaserBeam with minimal parameters or tuple (wavelength, angle::radians, bias, width)
+            of the laser parameters.
         :param image_generator: Object responsible for image generation.
         :param random_initializations: How many times repeat the attack.
-        :param tensor_board:
+        :param tensor_board: Activate summary writer for TensorBoard: Default is `False` and deactivated summary writer.
+                             If `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory. Provide `path` in type
+                             `str` to save in path/CURRENT_DATETIME_HOSTNAME.
+                             Use hierarchical folder structure to compare between runs easily. e.g. pass in ‘runs/exp1’,
+                             ‘runs/exp2’, etc. for each new experiment to compare across them.
         :param debug: Optional debug handler.
         """
 
