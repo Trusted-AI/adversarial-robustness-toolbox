@@ -44,6 +44,7 @@ class LaserAttack(EvasionAttack):
     """
     Implementation of a generic laser attack case.
     """
+
     attack_params = EvasionAttack.attack_params + [
         "iterations",
         "laser_generator",
@@ -101,8 +102,7 @@ class LaserAttack(EvasionAttack):
         adversarial_images = np.zeros_like(x)
         for image_index in range(x.shape[0]):
             params, _ = self._generate_params_for_single_input(
-                x[image_index],
-                y[image_index] if y is not None else None
+                x[image_index], y[image_index] if y is not None else None
             )
             if params is None:
                 adversarial_images[image_index] = x[image_index]
@@ -176,6 +176,7 @@ class LaserBeam(AdversarialObject):
     """
     Representation of the attacking object used in the paper.
     """
+
     def __init__(self, wavelength: float, width: float, line: Line):
         """
         :param wavelength: Wavelength in nanometers of the laser beam.
