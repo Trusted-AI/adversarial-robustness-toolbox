@@ -15,6 +15,11 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements helper functions for the `LaserAttack`.
+
+| Paper link: https://arxiv.org/abs/2103.06504
+"""
 
 import string
 from abc import ABC, abstractmethod
@@ -33,11 +38,11 @@ class Line:
     Representation of the linear function.
     """
 
-    r: float
-    b: float
+    angle: float
+    bias: float
 
     def __call__(self, x: float) -> float:
-        return np.math.tan(self.r) * x + self.b
+        return np.math.tan(self.angle) * x + self.bias
 
     def distance_of_point_from_the_line(self, x: float, y: float) -> float:
         """
@@ -49,11 +54,14 @@ class Line:
         :returns: Distance.
         """
         y_difference = np.abs(self(x) - y)
-        slope_squared = np.math.pow(np.math.tan(self.r), 2)
+        slope_squared = np.math.pow(np.math.tan(self.angle), 2)
         return y_difference / np.math.sqrt(1.0 + slope_squared)
 
     def to_numpy(self) -> np.ndarray:
-        return np.array([self.r, self.b])
+        """
+        Convert instance to a numpy array.
+        """
+        return np.array([self.angle, self.bias])
 
 
 @dataclass
@@ -70,6 +78,9 @@ class Range:
 
     @property
     def length(self):
+        """
+        Calculate length of the range.
+        """
         return self.right - self.left
 
 
@@ -80,6 +91,9 @@ class AdversarialObject(ABC):
 
     @abstractmethod
     def to_numpy(self) -> np.ndarray:
+        """
+        Convert instance to a numpy array.
+        """
         raise NotImplementedError
 
     @abstractmethod
@@ -96,16 +110,17 @@ class AdvObjectGenerator(ABC):
     max_params: AdversarialObject
 
     @abstractmethod
-    def update_params(
-        self,
-        params: AdversarialObject,
-        *args,
-        **kwargs,
-    ) -> AdversarialObject:
+    def update_params(self, params: AdversarialObject, **kwargs) -> AdversarialObject:
+        """
+        Update instance properties.
+        """
         raise NotImplementedError
 
     @abstractmethod
     def random(self) -> AdversarialObject:
+        """
+        Generate instance with a random properties.
+        """
         raise NotImplementedError
 
 
@@ -133,7 +148,8 @@ class ImageGenerator:
             adv_object_image = np.expand_dims(adv_object_image, 0)
         return self.add_images(original_image, adv_object_image)
 
-    def add_images(self, image1: np.ndarray, image2: np.ndarray) -> np.ndarray:
+    @staticmethod
+    def add_images(image1: np.ndarray, image2: np.ndarray) -> np.ndarray:
         """
         Add two images and return resultant image.
 
@@ -142,7 +158,8 @@ class ImageGenerator:
         """
         return add_images(image1, image2)
 
-    def generate_image(self, adv_object: Callable, shape: Tuple) -> np.ndarray:
+    @staticmethod
+    def generate_image(adv_object: Callable, shape: Tuple) -> np.ndarray:
         """
         Generate image of the adversarial object.
 
@@ -161,7 +178,7 @@ class ImageGenerator:
         return laser_image
 
 
-def wavelength_to_RGB(wavelength: Union[float, int]) -> List[float]:
+def wavelength_to_rgb(wavelength: Union[float, int]) -> List[float]:
     """
     Converts wavelength in nanometers to the RGB color.
 
@@ -176,38 +193,33 @@ def wavelength_to_RGB(wavelength: Union[float, int]) -> List[float]:
     range5 = Range(580, 645)
     range6 = Range(645, 780)
 
+    _r, _g, _b = 0., 0., 0.
     if wavelength in range1:
-        R = (range1.right - wavelength) / range1.length
-        G = 0.0
-        B = 1.0
-        return [R, G, B]
-    if wavelength in range2:
-        R = 0.0
-        G = (wavelength - range2.left) / range2.length
-        B = 1.0
-        return [R, G, B]
-    if wavelength in range3:
-        R = 0.0
-        G = 1.0
-        B = (range3.right - wavelength) / range3.length
-        return [R, G, B]
-    if wavelength in range4:
-        R = (wavelength - range4.left) / range4.length
-        G = 1.0
-        B = 0.0
-        return [R, G, B]
-    if wavelength in range5:
-        R = 1.0
-        G = (range5.right - wavelength) / range5.length
-        B = 0.0
-        return [R, G, B]
-    if wavelength in range6:
-        R = 1.0
-        G = 0.0
-        B = 0.0
-        return [R, G, B]
+        _r = (range1.right - wavelength) / range1.length
+        _g = 0.0
+        _b = 1.0
+    elif wavelength in range2:
+        _r = 0.0
+        _g = (wavelength - range2.left) / range2.length
+        _b = 1.0
+    elif wavelength in range3:
+        _r = 0.0
+        _g = 1.0
+        _b = (range3.right - wavelength) / range3.length
+    elif wavelength in range4:
+        _r = (wavelength - range4.left) / range4.length
+        _g = 1.0
+        _b = 0.0
+    elif wavelength in range5:
+        _r = 1.0
+        _g = (range5.right - wavelength) / range5.length
+        _b = 0.0
+    elif wavelength in range6:
+        _r = 1.0
+        _g = 0.0
+        _b = 0.0
 
-    return [0.0, 0.0, 0.0]
+    return [_r, _g, _b]
 
 
 def add_images(image1: np.ndarray, image2: np.ndarray) -> np.ndarray:
@@ -224,7 +236,7 @@ def add_images(image1: np.ndarray, image2: np.ndarray) -> np.ndarray:
     return np.clip(image1 + image2, 0, 1)
 
 
-def save_NRGB_image(image: np.ndarray, number=0, name_length=5, directory="attack"):
+def save_nrgb_image(image: np.ndarray, number=0, name_length=5, directory="attack"):
     """
     Saves normalized RGB image, passed as numpy array to the set directory - default: "attack".
 
@@ -233,9 +245,9 @@ def save_NRGB_image(image: np.ndarray, number=0, name_length=5, directory="attac
     :param name_length: Length of the random string in the name.
     :param directory: Directory where images will be saved.
     """
-    ALPHABET = np.array(list(string.ascii_letters))
+    alphabet = np.array(list(string.ascii_letters))
     Path(directory).mkdir(exist_ok=True)
-    im_name = f"{directory}/{number}_{''.join(np.random.choice(ALPHABET, size=name_length))}.jpg"
+    im_name = f"{directory}/{number}_{''.join(np.random.choice(alphabet, size=name_length))}.jpg"
     plt.imsave(im_name, image)
 
 
@@ -262,7 +274,7 @@ class DebugInfo:
 
         :param image: Image to save.
         """
-        save_NRGB_image(image, name_length=5, directory=self.artifacts_directory)
+        save_nrgb_image(image, name_length=5, directory=self.artifacts_directory)
 
     @staticmethod
     def report(instance: 'DebugInfo', adv_object: AdversarialObject, image: np.ndarray) -> None:
@@ -279,7 +291,7 @@ class DebugInfo:
             instance.save_image(image)
 
 
-def show_NRGB_image(image: np.ndarray) -> None:
+def show_nrgb_image(image: np.ndarray) -> None:
     """
     Plots an image passed as RGB array
 

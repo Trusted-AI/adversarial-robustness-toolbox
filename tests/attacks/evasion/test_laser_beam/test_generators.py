@@ -15,16 +15,22 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
+"""
+Test image generators.
+"""
 import numpy as np
 import pytest
-from art.attacks.evasion.laser_attack.utils import ImageGenerator
+from fixtures import fixture_image_shape, fixture_laser_generator_fixture, fixture_laser_generator, \
+    fixture_max_laser_beam, fixture_min_laser_beam
 
-from fixtures import image_shape, laser_generator, max_laser_beam, min_laser_beam
+from art.attacks.evasion.laser_attack.utils import ImageGenerator
 
 
 @pytest.mark.parametrize("execution_number", range(100))
 def test_if_random_laser_beam_is_in_ranges(laser_generator, min_laser_beam, max_laser_beam, execution_number):
+    """
+    Test if random laser beam is in defined ranges.
+    """
     random_laser = laser_generator.random()
     np.testing.assert_array_less(random_laser.to_numpy(), max_laser_beam.to_numpy())
     np.testing.assert_array_less(min_laser_beam.to_numpy(), random_laser.to_numpy())
@@ -32,6 +38,9 @@ def test_if_random_laser_beam_is_in_ranges(laser_generator, min_laser_beam, max_
 
 @pytest.mark.parametrize("execution_number", range(5))
 def test_laser_beam_update(laser_generator, min_laser_beam, max_laser_beam, execution_number):
+    """
+    Test if laser beam update is conducted correctly.
+    """
     random_laser = laser_generator.random()
 
     arr1 = random_laser.to_numpy()
@@ -43,6 +52,9 @@ def test_laser_beam_update(laser_generator, min_laser_beam, max_laser_beam, exec
 
 @pytest.mark.parametrize("execution_number", range(5))
 def test_image_generator(laser_generator, image_shape, execution_number):
+    """
+    Test generating images.
+    """
     img_gen = ImageGenerator()
     laser = laser_generator.random()
     arr1 = img_gen.generate_image(laser, image_shape)

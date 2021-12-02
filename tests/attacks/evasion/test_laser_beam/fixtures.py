@@ -15,15 +15,17 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
+"""
+Fixtures
+"""
 from typing import Tuple, Callable
 
 import pytest
 from art.attacks.evasion.laser_attack.laser_attack import LaserBeam, LaserBeamGenerator
 
 
-@pytest.fixture
-def image_shape() -> Tuple[int, int, int]:
+@pytest.fixture(name="image_shape")
+def fixture_image_shape() -> Tuple[int, int, int]:
     """
     Image shape used for the tests.
 
@@ -32,8 +34,8 @@ def image_shape() -> Tuple[int, int, int]:
     return (32, 32, 3)
 
 
-@pytest.fixture
-def min_laser_beam() -> LaserBeam:
+@pytest.fixture(name="min_laser_beam")
+def fixture_min_laser_beam() -> LaserBeam:
     """
     LaserBeam object with physically minimal possible parameters.
 
@@ -42,8 +44,8 @@ def min_laser_beam() -> LaserBeam:
     return LaserBeam.from_array([380, 0, 0, 1])
 
 
-@pytest.fixture
-def max_laser_beam() -> LaserBeam:
+@pytest.fixture(name="max_laser_beam")
+def fixture_max_laser_beam() -> LaserBeam:
     """
     LaserBeam object with physically minimal possible parameters.
 
@@ -52,8 +54,8 @@ def max_laser_beam() -> LaserBeam:
     return LaserBeam.from_array([780, 3.14, 32, int(1.4 * 32)])
 
 
-@pytest.fixture
-def laser_generator_fixture(min_laser_beam, max_laser_beam) -> Callable:
+@pytest.fixture(name="laser_generator_fixture")
+def fixture_laser_generator_fixture(min_laser_beam, max_laser_beam) -> Callable:
     """
     Return a function that returns geneartor of the LaserBeam objects.
 
@@ -64,8 +66,8 @@ def laser_generator_fixture(min_laser_beam, max_laser_beam) -> Callable:
     return lambda max_step: LaserBeamGenerator(min_laser_beam, max_laser_beam, max_step=max_step)
 
 
-@pytest.fixture
-def laser_generator(min_laser_beam, max_laser_beam) -> LaserBeamGenerator:
+@pytest.fixture(name="laser_generator")
+def fixture_laser_generator(min_laser_beam, max_laser_beam) -> LaserBeamGenerator:
     """
     Geneartor of the LaserBeam objects.
 
