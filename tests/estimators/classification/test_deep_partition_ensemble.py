@@ -167,7 +167,7 @@ class TestDeepPartitionEnsemble(unittest.TestCase):
         x_test = np.transpose(x_test, (0, 3, 1, 2)).astype(np.float32)
 
         # Create a model from scratch
-        class Net(nn.Module):
+        class PyTorchModel(nn.Module):
             def __init__(self):
                 super(Net, self).__init__()
                 self.conv_1 = nn.Conv2d(in_channels=1, out_channels=4, kernel_size=5, stride=1)
@@ -186,7 +186,7 @@ class TestDeepPartitionEnsemble(unittest.TestCase):
                 return x
 
         # Step 2a: Define the loss function and the optimizer
-
+        model = PyTorchModel()
         criterion = nn.CrossEntropyLoss()
         optimizer = optim.Adam(model.parameters(), lr=0.01)
 
