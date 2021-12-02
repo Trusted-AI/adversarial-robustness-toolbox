@@ -15,6 +15,11 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the `LaserAttack` attack.
+
+| Paper link: https://arxiv.org/abs/2103.06504
+"""
 
 import logging
 from typing import Callable, List, Optional, Tuple, Union
@@ -29,13 +34,16 @@ from art.attacks.evasion.laser_attack.utils import (
     DebugInfo,
     ImageGenerator,
     Line,
-    wavelength_to_RGB,
+    wavelength_to_rgb,
 )
 
 logger = logging.getLogger(__name__)
 
 
 class LaserAttack(EvasionAttack):
+    """
+    Implementation of a generic laser attack case.
+    """
     attack_params = EvasionAttack.attack_params + [
         "iterations",
         "laser_generator",
@@ -82,7 +90,7 @@ class LaserAttack(EvasionAttack):
 
         self._check_params()
 
-    def generate(self, x: np.ndarray, y: np.ndarray, *args, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial example for a single image.
 
@@ -92,7 +100,10 @@ class LaserAttack(EvasionAttack):
 
         adversarial_images = np.zeros_like(x)
         for image_index in range(x.shape[0]):
-            params, _ = self._generate_params_for_single_input(x[image_index], y[image_index])
+            params, _ = self._generate_params_for_single_input(
+                x[image_index],
+                y[image_index] if y is not None else None
+            )
             if params is None:
                 adversarial_images[image_index] = x[image_index]
                 continue
@@ -102,7 +113,7 @@ class LaserAttack(EvasionAttack):
         return adversarial_images
 
     def _generate_params_for_single_input(
-        self, x: np.ndarray, y: Optional[int] = None, *args, **kwargs
+        self, x: np.ndarray, y: Optional[int] = None
     ) -> Tuple[Optional[AdversarialObject], Optional[int]]:
         """
         Generate adversarial example params for a single image.
@@ -162,6 +173,9 @@ class LaserAttack(EvasionAttack):
 
 
 class LaserBeam(AdversarialObject):
+    """
+    Representation of the attacking object used in the paper.
+    """
     def __init__(self, wavelength: float, width: float, line: Line):
         """
         :param wavelength: Wavelength in nanometers of the laser beam.
@@ -171,7 +185,7 @@ class LaserBeam(AdversarialObject):
         self.wavelength = float(wavelength)
         self.line = line
         self.width = float(width)
-        self.rgb = np.array(wavelength_to_RGB(self.wavelength))
+        self.rgb = np.array(wavelength_to_rgb(self.wavelength))
 
     def __call__(self, x: int, y: int) -> np.ndarray:
         """
@@ -222,19 +236,20 @@ class LaserBeam(AdversarialObject):
             width=theta[3],
         )
 
-    def to_numpy(self):
+    def to_numpy(self) -> np.ndarray:
         line = self.line
-        return np.array([self.wavelength, line.r, line.b, self.width])
+        return np.array([self.wavelength, line.angle, line.bias, self.width])
 
-    def __mul__(self, other):
-        if isinstance(other, float) or isinstance(other, int):
+    def __mul__(self, other: Union[float, int, list, np.ndarray]) -> "LaserBeam":
+        if isinstance(other, (float, int)):
             return LaserBeam.from_numpy(other * self.to_numpy())
         if isinstance(other, np.ndarray):
             return LaserBeam.from_numpy(self.to_numpy() * other)
         if isinstance(other, list):
             return LaserBeam.from_numpy(self.to_numpy() * np.array(other))
+        raise Exception("Not accepted value.")
 
-    def __rmul__(self, other):
+    def __rmul__(self, other) -> "LaserBeam":
         return self * other
 
 
@@ -254,16 +269,12 @@ class LaserBeamGenerator(AdvObjectGenerator):
         self.max_step = max_step
         self.__params_ranges = max_params.to_numpy() - min_params.to_numpy()
 
-    def update_params(
-        self,
-        params: LaserBeam,
-        *args,
-        **kwargs,
-    ) -> LaserBeam:
+    def update_params(self, params: LaserBeam, **kwargs) -> LaserBeam:
         """
         Updates parameters of the received LaserBeam object in the random direction.
 
         :param params: LaserBeam object to be updated.
+        :returns: Updated object.
         """
         sign = kwargs.get("sign", 1)
         random_step = np.random.uniform(0, self.max_step)
@@ -272,14 +283,15 @@ class LaserBeamGenerator(AdvObjectGenerator):
         theta_prim = self.clip(theta_prim)
         return theta_prim
 
-    def _random_direction(self) -> np.ndarray:
+    @staticmethod
+    def _random_direction() -> np.ndarray:
         """
         Generate random array of ones that will decide which parameters of a laser beam will be updated:
             wavelength, angle, bias and width.
 
         :returns: Random array of ones (mask).
         """
-        Q = np.asfarray(
+        q_mask = np.asfarray(
             [
                 [1, 0, 0, 0],
                 [0, 1, 0, 0],
@@ -294,7 +306,7 @@ class LaserBeamGenerator(AdvObjectGenerator):
             ]
         )
 
-        mask = Q[np.random.choice(len(Q))]
+        mask = q_mask[np.random.choice(len(q_mask))]
         return mask
 
     def clip(self, params: LaserBeam):
@@ -306,8 +318,8 @@ class LaserBeamGenerator(AdvObjectGenerator):
         """
         clipped_params = np.clip(params.to_numpy(), self.min_params.to_numpy(), self.max_params.to_numpy())
         params.wavelength = clipped_params[0]
-        params.line.r = clipped_params[1]
-        params.line.b = clipped_params[2]
+        params.line.angle = clipped_params[1]
+        params.line.bias = clipped_params[2]
         params.width = clipped_params[3]
         return params
 
@@ -359,15 +371,19 @@ class LaserBeamAttack(LaserAttack):
         :param debug: Optional debug handler.
         """
 
-        if isinstance(min_laser_beam, Tuple):
-            min_laser_beam = LaserBeam.from_array(list(min_laser_beam))
-        if isinstance(max_laser_beam, Tuple):
-            max_laser_beam = LaserBeam.from_array(list(max_laser_beam))
+        if isinstance(min_laser_beam, tuple):
+            min_laser_beam_obj = LaserBeam.from_array(list(min_laser_beam))
+        else:
+            min_laser_beam_obj = min_laser_beam
+        if isinstance(max_laser_beam, tuple):
+            max_laser_beam_obj = LaserBeam.from_array(list(max_laser_beam))
+        else:
+            max_laser_beam_obj = max_laser_beam
 
         super().__init__(
             estimator,
             iterations,
-            LaserBeamGenerator(min_laser_beam, max_laser_beam),
+            LaserBeamGenerator(min_laser_beam_obj, max_laser_beam_obj),
             image_generator=image_generator,
             random_initializations=random_initializations,
             tensor_board=tensor_board,

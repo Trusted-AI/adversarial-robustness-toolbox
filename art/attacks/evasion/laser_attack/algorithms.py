@@ -15,7 +15,11 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements the greedy search algorithm of the `LaserBeam` attack.
 
+| Paper link: https://arxiv.org/abs/2103.06504
+"""
 from typing import Optional, Tuple
 
 import numpy as np
@@ -53,7 +57,7 @@ def greedy_search(
     for _ in range(iterations):
         predicted_class = actual_class
         for sign in [-1, 1]:
-            params_prim = adv_object_generator.update_params(params, sign)
+            params_prim = adv_object_generator.update_params(params, sign=sign)
             adversarial_image = image_generator.update_image(image, params_prim)
             prediction = estimator.predict(adversarial_image)
             if debug is not None:
