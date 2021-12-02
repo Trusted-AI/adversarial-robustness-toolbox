@@ -193,7 +193,7 @@ def wavelength_to_rgb(wavelength: Union[float, int]) -> List[float]:
     range5 = Range(580, 645)
     range6 = Range(645, 780)
 
-    _r, _g, _b = 0., 0., 0.
+    _r, _g, _b = 0.0, 0.0, 0.0
     if wavelength in range1:
         _r = (range1.right - wavelength) / range1.length
         _g = 0.0
@@ -277,7 +277,7 @@ class DebugInfo:
         save_nrgb_image(image, name_length=5, directory=self.artifacts_directory)
 
     @staticmethod
-    def report(instance: 'DebugInfo', adv_object: AdversarialObject, image: np.ndarray) -> None:
+    def report(instance: "DebugInfo", adv_object: AdversarialObject, image: np.ndarray) -> None:
         """
         Log info and save image in the preset directory, based on the :instance.
 
