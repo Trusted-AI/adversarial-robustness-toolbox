@@ -169,7 +169,7 @@ class TestDeepPartitionEnsemble(unittest.TestCase):
         # Create a model from scratch
         class PyTorchModel(nn.Module):
             def __init__(self):
-                super(Net, self).__init__()
+                super(PyTorchModel, self).__init__()
                 self.conv_1 = nn.Conv2d(in_channels=1, out_channels=4, kernel_size=5, stride=1)
                 self.conv_2 = nn.Conv2d(in_channels=4, out_channels=10, kernel_size=5, stride=1)
                 self.fc_1 = nn.Linear(in_features=4 * 4 * 10, out_features=100)
