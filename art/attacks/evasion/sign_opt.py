@@ -37,6 +37,8 @@ class SignOPTAttack(EvasionAttack):
         "verbose", 
         # todo: add others
     ]
+    
+    _estimator_requirements = (BaseEstimator, ClassifierMixin)
 
     def __init__(
         self, 
@@ -79,8 +81,9 @@ class SignOPTAttack(EvasionAttack):
             
         # Prediction from the original images
         preds = np.argmax(self.estimator.predict(x), axis=1)
-        print(preds)
-        exit()
+        # (10000, 1, 28, 28) (10000,)
+        # print(x.shape, preds.shape)
+        
         
         # Some initial setups
         x_adv = x.astype(ART_NUMPY_DTYPE)
@@ -109,7 +112,7 @@ class SignOPTAttack(EvasionAttack):
         x: np.ndarray,
         y: int,
         y_p: int,
-    ) -> np.ndarrary:
+    ):
         query_count = 0
         best_theta, g_theta = None, float('inf')
         print("Searching for the initial direction on %d random directions: " % (self.num_trial))
