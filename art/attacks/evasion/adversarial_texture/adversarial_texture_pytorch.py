@@ -313,7 +313,7 @@ class AdversarialTexturePyTorch(EvasionAttack):
               Foreground masks of shape NFHWC of boolean values with False/0.0 representing foreground, preventing
               updates to the texture, and True/1.0 for background, allowing updates to the texture.
 
-        :return: An array with adversarial patch and an array of the patch mask.
+        :return: An array with images patched with adversarial texture.
         """
         import torch  # lgtm [py/repeated-import]
 

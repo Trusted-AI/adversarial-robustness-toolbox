@@ -78,9 +78,9 @@ def test_generate(art_warning, fix_get_mnist_subset, fix_get_goturn, framework):
         y_init = np.array([[48, 79, 80, 110], [48, 79, 80, 110]])
         x_list = list()
         for i in range(2):
-            x_list.append(np.random.random_integers(0, 255, size=(4 + i, 277, 277, 3)).astype(float) / 255.0)
+            x_list.append(np.random.random_integers(0, 255, size=(4, 277, 277, 3)).astype(float) / 255.0)
 
-        x = np.asarray(x_list, dtype=object)
+        x = np.asarray(x_list, dtype=float)
 
         y_pred = pgt.predict(x=x, y_init=y_init)
 
@@ -91,13 +91,13 @@ def test_generate(art_warning, fix_get_mnist_subset, fix_get_goturn, framework):
             x_min=2,
             y_min=2,
             step_size=1.0 / 255.0,
-            max_iter=500,
+            max_iter=5,
             batch_size=16,
             verbose=True,
         )
 
         patch = attack.generate(x=x, y=y_pred, y_init=y_init)
-        assert patch.shape == (4, 4, 3)
+        assert patch.shape == (2, 4, 277, 277, 3)
 
     except ARTTestException as e:
         art_warning(e)
