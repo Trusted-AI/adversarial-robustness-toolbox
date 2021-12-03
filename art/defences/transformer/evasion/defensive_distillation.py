@@ -97,8 +97,8 @@ class DefensiveDistillation(Transformer):
         pass
 
     def _check_params(self) -> None:
-        if not isinstance(self.batch_size, (int, np.int)) or self.batch_size <= 0:
+        if not isinstance(self.batch_size, int) or self.batch_size <= 0:
             raise ValueError("The size of batches must be a positive integer.")
 
-        if not isinstance(self.nb_epochs, (int, np.int)) or self.nb_epochs <= 0:
+        if not isinstance(self.nb_epochs, int) or self.nb_epochs <= 0:
             raise ValueError("The number of epochs must be a positive integer.")

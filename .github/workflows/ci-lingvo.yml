@@ -42,12 +42,12 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - name: Pre-install Lingvo ASR
-        # scipy beyond 1.6.0 is not available on Python 3.6, therefore we adapt the installation of requirements.txt
+        # scipy beyond 1.6.0 is not available on Python 3.6, therefore we adapt the installation of requirements_test.txt
         run: |
           sudo apt-get update
           sudo apt-get -y -q install ffmpeg libavcodec-extra
           python -m pip install --upgrade pip setuptools wheel
-          pip install -q -r <(sed '/^scipy/d;/^matplotlib/d;/^pandas/d;/^statsmodels/d;/^numba/d;/^jax/d' requirements.txt)
+          pip install -q -r <(sed '/^scipy/d;/^matplotlib/d;/^pandas/d;/^statsmodels/d;/^numba/d;/^jax/d' requirements_test.txt)
           pip install scipy==1.5.4
           pip install matplotlib==3.3.4
           pip install pandas==1.1.5

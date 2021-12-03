@@ -260,13 +260,13 @@ class UniversalPerturbation(EvasionAttack):
         if not isinstance(self.delta, (float, int)) or self.delta < 0 or self.delta > 1:
             raise ValueError("The desired accuracy must be in the range [0, 1].")
 
-        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter <= 0:
+        if not isinstance(self.max_iter, int) or self.max_iter <= 0:
             raise ValueError("The number of iterations must be a positive integer.")
 
         if not isinstance(self.eps, (float, int)) or self.eps <= 0:
             raise ValueError("The eps coefficient must be a positive float.")
 
-        if not isinstance(self.batch_size, (int, np.int)) or self.batch_size <= 0:
+        if not isinstance(self.batch_size, int) or self.batch_size <= 0:
             raise ValueError("The batch_size must be a positive integer.")
 
         if not isinstance(self.verbose, bool):
