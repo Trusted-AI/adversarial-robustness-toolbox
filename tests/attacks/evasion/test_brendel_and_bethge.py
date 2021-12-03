@@ -53,7 +53,7 @@ def test_generate(art_warning, get_default_mnist_subset, image_dl_estimator_for_
             batch_size=32,
         )
 
-        attack.generate(x=x_test_mnist[0:1].astype(np.float32), y=y_test_mnist[0:1].astype(np.int32))
+        attack.generate(x=x_test_mnist[0:1].astype(np.float32), y=y_test_mnist[0:1].astype(int))
 
     except ARTTestException as e:
         art_warning(e)
