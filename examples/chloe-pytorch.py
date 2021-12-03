@@ -10,7 +10,7 @@ import torch.optim as optim
 import numpy as np
 import pickle
 
-from art.attacks.evasion import FastGradientMethod, BoundaryAttack
+from art.attacks.evasion import FastGradientMethod, BoundaryAttack, SignOPTAttack
 from art.estimators.classification import PyTorchClassifier
 from art.utils import load_mnist
 
@@ -89,10 +89,12 @@ except FileNotFoundError:
 predictions = classifier.predict(x_test)
 accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
 print("Accuracy on benign test examples: {}%".format(accuracy * 100))
+# print(f'{predictions.shape}')
 
 # Step 6: Generate adversarial test examples
 # attack = FastGradientMethod(estimator=classifier, eps=0.2)
-attack = BoundaryAttack(estimator=classifier, targeted=False, max_iter=0, delta=0.001, epsilon=0.001)
+# attack = BoundaryAttack(estimator=classifier, targeted=False, max_iter=0, delta=0.001, epsilon=0.001)
+attack = SignOPTAttack(estimator=classifier, targeted=False)
 x_test_adv = attack.generate(x=x_test)
 
 # Step 7: Evaluate the ART classifier on adversarial test examples
