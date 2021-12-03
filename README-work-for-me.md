@@ -10,6 +10,8 @@ make run-jupyter
 pip3 install -r requirements.txt
 pip install adversarial-robustness-toolbox
 python examples/get_started_pytorch.py
+# after you make change to art class
+pip install .
 ```
 
 ## Open Jyupter Notebook on local
@@ -50,3 +52,16 @@ generate the adversarial test examples
 goal: classifier doesn't work on adversarial test examples
 Decision based adversarial attack(aka hard-labled blackbox attack)
 
+Question of Error:
+```shell
+python examples/chloe-pytorch.py 
+Traceback (most recent call last):
+  File "examples/chloe-pytorch.py", line 13, in <module>
+    from art.attacks.evasion import FastGradientMethod, BoundaryAttack, SignOPTAttack
+ImportError: cannot import name 'SignOPTAttack' from 'art.attacks.evasion' (/Users/chloe/git/trusted-ai/adversarial-robustness-toolbox/venv/lib/python3.8/site-packages/art/attacks/evasion/__init__.py)
+```
+Answer: since you made change to ART package, need to install ART again
+```shell
+# after you make change to art class
+pip install .
+```
