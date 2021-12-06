@@ -68,6 +68,7 @@ classifier = PyTorchClassifier(
     optimizer=optimizer,
     input_shape=(1, 28, 28),
     nb_classes=10,
+    device_type = "cpu",
 )
 
 # Step 4: Train the ART classifier; If model file exist, load model from file
@@ -86,7 +87,6 @@ except FileNotFoundError:
 # print(classifier)
 # exit()
 # Step 5: Evaluate the ART classifier on benign test examples
-
 predictions = classifier.predict(x_test)
 accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
 print("Accuracy on benign test examples: {}%".format(accuracy * 100))
@@ -96,7 +96,7 @@ print("Accuracy on benign test examples: {}%".format(accuracy * 100))
 # attack = FastGradientMethod(estimator=classifier, eps=0.2)
 # attack = BoundaryAttack(estimator=classifier, targeted=False, max_iter=0, delta=0.001, epsilon=0.001)
 attack = SignOPTAttack(estimator=classifier, targeted=False)
-x_test_adv = attack.generate(x=x_test)
+x_test_adv = attack.generate(x=x_test, y=y_test) # if targeted=False then y is ignored
 
 # Step 7: Evaluate the ART classifier on adversarial test examples
 

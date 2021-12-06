@@ -25,11 +25,11 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 class SignOPTAttack(EvasionAttack):
-    """[summary]
+    """
 
     Args:
         EvasionAttack ([type]): [description]
-    | todo: paper link: 
+    | Paper link: https://arxiv.org/pdf/1909.10773.pdf
     """
 
     attack_params = EvasionAttack.attack_params + [
@@ -44,9 +44,10 @@ class SignOPTAttack(EvasionAttack):
         self, 
         estimator: "CLASSIFIER_TYPE", 
         targeted: bool = True,
-        num_trial: int = 100,
-        iterations: int = 1000,
-        verbose: bool = True,) -> None:
+        # num_trial: int = 100,
+        # iterations: int = 1000,
+        verbose: bool = True,
+        ) -> None:
         """
         Create a Sign_OPT attack instance.
 
@@ -57,8 +58,8 @@ class SignOPTAttack(EvasionAttack):
         
         super().__init__(estimator=estimator)
         self._targeted = targeted
-        self.num_trial = num_trial
-        self.iteration = iterations
+        # self.num_trial = num_trial
+        # self.iteration = iterations
 
         self.verbose = verbose
         self._check_params()
@@ -81,9 +82,6 @@ class SignOPTAttack(EvasionAttack):
             
         # Prediction from the original images
         preds = np.argmax(self.estimator.predict(x), axis=1)
-        # (10000, 1, 28, 28) (10000,)
-        # print(x.shape, preds.shape)
-        
         
         # Some initial setups
         x_adv = x.astype(ART_NUMPY_DTYPE)
@@ -94,10 +92,9 @@ class SignOPTAttack(EvasionAttack):
                 print("Not implemented")
                 return x_adv
             else:
-                x_adv[ind] = self._attack(
-                    x=val,
-                    y=-1,
-                    y_p=preds[ind],
+                x_adv[ind] = self._attack( # one image
+                    x0=val,
+                    y0=preds[ind],
                 )
             
         logger.info(
@@ -105,122 +102,74 @@ class SignOPTAttack(EvasionAttack):
             100 * compute_success(self.estimator, x, y, x_adv, self.targeted, batch_size=self.batch_size),
         )
         
-        return x_adv
+        return x_adv # all images with untargeted adversarial
     
+    def _fine_grained_binary_search(self, model, x0, y0, theta, initial_lbd, current_best):
+        nquery = 0
+        if initial_lbd > current_best: 
+            if model.predict_label(x0+torch.tensor(current_best*theta, dtype=torch.float).cuda()) == y0:
+                nquery += 1
+                return float('inf'), nquery
+            lbd = current_best
+        else:
+            lbd = initial_lbd
+
+        lbd_hi = lbd
+        lbd_lo = 0.0
+        
+        while (lbd_hi - lbd_lo) > 1e-3: # was 1e-5
+            lbd_mid = (lbd_lo + lbd_hi)/2.0
+            nquery += 1
+            if model.predict_label(x0 + torch.tensor(lbd_mid*theta, dtype=torch.float).cuda()) != y0:
+                lbd_hi = lbd_mid
+            else:
+                lbd_lo = lbd_mid
+        return lbd_hi, nquery
+
     def _attack(
         self,
-        x: np.ndarray,
-        y: int,
-        y_p: int,
+        x0: np.ndarray,
+        # y: int, # for targeted attack
+        y0: int,
     ):
+        """
+        Algorithm 1: Sign-OPT attack
+            Randomly sample u1, . . . , uQ from a Gaussian or Uniform distribution;
+            Compute gˆ ←  ...
+            Update θt+1 ← θt − ηgˆ;
+            Evaluate g(θt) using the same search algorithm in Cheng et al. (2019) https://openreview.net/pdf?id=rJlk6iRqKX, **Algorithm 1 Compute g(θ) locally**
+        """
         query_count = 0
+        ls_total = 0
+        #### init: Calculate a good starting point (direction)
+        num_directions = 100
         best_theta, g_theta = None, float('inf')
-        print("Searching for the initial direction on %d random directions: " % (self.num_trial))
+        print("Searching for the initial direction on %d random directions: " % (num_directions))
         timestart = time.time()
-        
-        for i in range(self.num_trial):
+        for i in range(num_directions):
             query_count += 1
-            theta = np.random.randn(*x.shape) # gaussian distortion
+            theta = np.random.randn(*x0.shape).astype(np.float32) # gaussian distortion
             # register adv directions
-            if self.estimator.predict(x+torch.tensor(theta, dtype=torch.float).cuda()) != y:
+            pred_cur = self.estimator.predict(np.expand_dims(x0+theta, axis=0))
+            if np.argmax(pred_cur) != y0: 
                 initial_lbd = LA.norm(theta)
                 theta /= initial_lbd # l2 normalize
-                lbd, count = self.fine_grained_binary_search(self.estimator, x, y, theta, initial_lbd, g_theta)
+                lbd, count = self._fine_grained_binary_search(self.estimator, x0, y0, theta, initial_lbd, g_theta)
                 query_count += count
                 if lbd < g_theta:
                     best_theta, g_theta = theta, lbd
                     print("--------> Found distortion %.4f" % g_theta)
-        if g_theta == np.inf:
-            return "NA", float('inf'), 0
-        
-        timeend = time.time()
         ## fail if cannot find a adv direction within 200 Gaussian
-        if g_theta == float('inf'):
-            print("Couldn't find valid initial, failed")
-            return x, 0, False, query_count, best_theta
-        print("==========> Found best distortion %.4f in %.4f seconds "
-              "using %d queries" % (g_theta, timeend-timestart, query_count))
-        self.log[0][0], self.log[0][1] = g_theta, query_count
-    
-        timestart = time.time()
-        g1 = 1.0
-        theta, g2 = best_theta, g_theta
-        opt_count = 0
-        stopping = 0.005
-        prev_obj = 100000
-        for i in range(self.iterations):
-            gradient = np.zeros(theta.shape)
-            q = 5
-            min_g1 = float('inf')
-            for _ in range(q):
-                u = np.random.randn(*theta.shape)
-                u /= LA.norm(u.flatten(),np.inf)
-                ttt = theta+beta * u
-                ttt /= LA.norm(ttt.flatten(),np.inf)
-                g1, count = self.fine_grained_binary_search_local(self.estimator, x, y, ttt, initial_lbd = g2, tol=beta/500)
-                opt_count += count
-                gradient += (g1-g2)/beta * u
-                if g1 < min_g1:
-                    min_g1 = g1
-                    min_ttt = ttt
-            gradient = 1.0/q * gradient
-
-            if (i+1)%1 == 0:
-                print("Iteration %3d: g(theta + beta*u) = %.4f g(theta) = %.4f distortion %.4f num_queries %d" % (i+1, g1, g2, LA.norm((g2*theta).flatten(),np.inf), opt_count))
-                if g2 > prev_obj-stopping:
-                    print("stopping")
-                    break
-                prev_obj = g2
-
-            min_theta = theta
-            min_g2 = g2
-        
-            for _ in range(15):
-                new_theta = theta - alpha * gradient
-                new_theta /= LA.norm(new_theta.flatten(),np.inf)
-                new_g2, count = self.fine_grained_binary_search_local(self.estimator, x, y, new_theta, initial_lbd = min_g2, tol=beta/500)
-                opt_count += count
-                alpha = alpha * 2
-                if new_g2 < min_g2:
-                    min_theta = new_theta 
-                    min_g2 = new_g2
-                else:
-                    break
-
-            if min_g2 >= g2:
-                for _ in range(15):
-                    alpha = alpha * 0.25
-                    new_theta = theta - alpha * gradient
-                    new_theta /= LA.norm(new_theta.flatten(),np.inf)
-                    new_g2, count = self.fine_grained_binary_search_local(self.estimator, x, y, new_theta, initial_lbd = min_g2, tol=beta/500)
-                    opt_count += count
-                    if new_g2 < g2:
-                        min_theta = new_theta 
-                        min_g2 = new_g2
-                        break
-
-            if min_g2 <= min_g1:
-                theta, g2 = min_theta, min_g2
-            else:
-                theta, g2 = min_ttt, min_g1
-
-            if g2 < g_theta:
-                best_theta, g_theta = theta, g2
-            
-            #print(alpha)
-            if alpha < 1e-4:
-                alpha = 1.0
-                print("Warning: not moving, g2 %lf gtheta %lf" % (g2, g_theta))
-                beta = beta * 0.1
-                if (beta < 0.00005):
-                    break
-
-        target = self.estimator.predict(x0 + g_theta*best_theta)
-        timeend = time.time()
-        print("\nAdversarial Example Found Successfully: distortion %.4f target %d queries %d \nTime: %.4f seconds" % (g_theta, target, query_count + opt_count, timeend-timestart))
-        return x + g_theta*best_theta, g_theta, query_count + opt_count
+        #### Begin Gradient Descent.
+            ## gradient estimation at x0 + theta (init)
+            ## Line search of the step size of gradient descent
+            ## if all attemps failed, min_theta, min_g2 will be the current theta (i.e. not moving)
+        # x0 + distortion
+        # return x0 + torch.tensor(gg*xg, dtype=torch.float).cuda(), gg, False, query_count, xg
+        return x0
     
     def _check_params(self) -> None:
-        # todo: add param checking
-        return super()._check_params()
+        # Todo: add other param checking
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")
     
