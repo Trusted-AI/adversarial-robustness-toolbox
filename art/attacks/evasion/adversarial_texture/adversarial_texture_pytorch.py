@@ -27,8 +27,7 @@ import numpy as np
 from tqdm.auto import trange
 
 from art.attacks.attack import EvasionAttack
-from art.estimators.estimator import BaseEstimator, LossGradientsMixin
-from art.estimators.object_tracking.object_tracker import ObjectTrackerMixin
+from art.estimators.estimator import BaseEstimator
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
@@ -55,13 +54,13 @@ class AdversarialTexturePyTorch(EvasionAttack):
         "verbose",
     ]
 
-    _estimator_requirements = (ObjectTrackerMixin, LossGradientsMixin, BaseEstimator)
+    _estimator_requirements = (BaseEstimator,)
 
     def __init__(
         self,
         estimator,
-        patch_height: int,
-        patch_width: int,
+        patch_height: int = 0,
+        patch_width: int = 0,
         x_min: int = 0,
         y_min: int = 0,
         step_size: float = 1.0 / 255.0,
@@ -75,8 +74,8 @@ class AdversarialTexturePyTorch(EvasionAttack):
         :param estimator: A trained estimator.
         :param patch_height: Height of patch.
         :param patch_width: Width of patch.
-        :param x_min: Vertical position of patch, top-left corner.
-        :param y_min: Horizontal position of patch, top-left corner.
+        :param x_min: Height of patch.
+        :param y_min: Width of patch.
         :param step_size: The step size.
         :param max_iter: The number of optimization steps.
         :param batch_size: The size of the training batch.
@@ -125,15 +124,6 @@ class AdversarialTexturePyTorch(EvasionAttack):
         y_init: "torch.Tensor",
         foreground: Optional["torch.Tensor"],
     ) -> "torch.Tensor":
-        """
-        Apply a training step to the batch based on a mini-batch.
-
-        :param videos: Video samples.
-        :param target: Target labels/boxes.
-        :param y_init: Initial labels/boxes.
-        :param foreground: Foreground mask.
-        :return: Loss.
-        """
         import torch  # lgtm [py/repeated-import]
 
         self.estimator.model.zero_grad()
@@ -152,14 +142,6 @@ class AdversarialTexturePyTorch(EvasionAttack):
     def _predictions(
         self, videos: "torch.Tensor", y_init: "torch.Tensor", foreground: Optional["torch.Tensor"]
     ) -> List[Dict[str, "torch.Tensor"]]:
-        """
-        Predict object tracking estimator on patched videos.
-
-        :param videos: Video samples.
-        :param y_init: Initial labels/boxes.
-        :param foreground: Foreground mask.
-        :return: Predicted labels/boxes.
-        """
         import torch  # lgtm [py/repeated-import]
 
         patched_input = self._apply_texture(videos, self._patch, foreground=foreground)
@@ -175,23 +157,14 @@ class AdversarialTexturePyTorch(EvasionAttack):
 
     def _loss(
         self,
-        videos: "torch.Tensor",
+        images: "torch.Tensor",
         target: List[Dict[str, "torch.Tensor"]],
         y_init: "torch.Tensor",
         foreground: Optional["torch.Tensor"],
     ) -> "torch.Tensor":
-        """
-        Calculate L1-loss.
-
-        :param videos: Video samples.
-        :param target: Target labels/boxes.
-        :param y_init: Initial labels/boxes.
-        :param foreground: Foreground mask.
-        :return: Loss.
-        """
         import torch  # lgtm [py/repeated-import]
 
-        y_pred = self._predictions(videos, y_init, foreground)
+        y_pred = self._predictions(images, y_init, foreground)
         loss = torch.nn.L1Loss(size_average=False)(y_pred[0]["boxes"].float(), target[0]["boxes"].float())
         for i in range(1, len(y_pred)):
             loss = loss + torch.nn.L1Loss(size_average=False)(y_pred[i]["boxes"].float(), target[i]["boxes"].float())
@@ -221,9 +194,9 @@ class AdversarialTexturePyTorch(EvasionAttack):
         """
         Apply texture over background and overlay foreground.
 
-        :param videos: Video samples.
-        :param patch: Patch to apply.
-        :param foreground: Foreground mask.
+        :param videos:
+        :param patch:
+        :param foreground:
         :return: Patched videos.
         """
         import torch  # lgtm [py/repeated-import]
@@ -313,15 +286,13 @@ class AdversarialTexturePyTorch(EvasionAttack):
               Foreground masks of shape NFHWC of boolean values with False/0.0 representing foreground, preventing
               updates to the texture, and True/1.0 for background, allowing updates to the texture.
 
-        :return: An array with images patched with adversarial texture.
+        :return: An array with adversarial patch and an array of the patch mask.
         """
         import torch  # lgtm [py/repeated-import]
 
         shuffle = kwargs.get("shuffle", True)
         y_init = kwargs.get("y_init")
         foreground = kwargs.get("foreground")
-        if foreground is None:
-            foreground = np.ones_like(x)
 
         class TrackingDataset(torch.utils.data.Dataset):
             """
@@ -391,10 +362,7 @@ class AdversarialTexturePyTorch(EvasionAttack):
             torch.Tensor(patch_external).to(self.estimator.device) if patch_external is not None else self._patch
         )
         x_tensor = torch.Tensor(x).to(self.estimator.device)
-        if foreground is None:
-            foreground_tensor = None
-        else:
-            foreground_tensor = torch.Tensor(foreground).to(self.estimator.device)
+        foreground_tensor = torch.Tensor(foreground).to(self.estimator.device)
 
         return (
             self._apply_texture(videos=x_tensor, patch=patch_tensor, foreground=foreground_tensor)
@@ -422,27 +390,4 @@ class AdversarialTexturePyTorch(EvasionAttack):
             raise ValueError("Unexpected value for initial_patch_value.")
 
     def _check_params(self) -> None:
-
-        if not isinstance(self.patch_height, int) or self.patch_height <= 0:
-            raise ValueError("The patch height `patch_height` has to be of type int and larger than zero.")
-
-        if not isinstance(self.patch_width, int) or self.patch_width <= 0:
-            raise ValueError("The patch width `patch_width` has to be of type int and larger than zero.")
-
-        if not isinstance(self.x_min, int) or self.x_min < 0:
-            raise ValueError("The vertical position `x_min` has to be of type int and larger than zero.")
-
-        if not isinstance(self.y_min, int) or self.y_min < 0:
-            raise ValueError("The horizontal position `y_min` has to be of type int and larger than zero.")
-
-        if not isinstance(self.step_size, float) or self.step_size <= 0:
-            raise ValueError("The step size `step_size` has to be of type float and larger than zero.")
-
-        if not isinstance(self.max_iter, int) or self.max_iter <= 0:
-            raise ValueError("The number of iterations `max_iter` has to be of type int and larger than zero.")
-
-        if not isinstance(self.batch_size, int) or self.batch_size <= 0:
-            raise ValueError("The batch size `batch_size` has to be of type int and larger than zero.")
-
-        if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+        super()._check_params()
