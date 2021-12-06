@@ -26,8 +26,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 from typing import TYPE_CHECKING, Optional, Tuple
 
-import numpy as np
-
 from art.defences.preprocessor.mp3_compression import Mp3Compression
 from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
 
@@ -124,7 +122,7 @@ class Mp3CompressionPyTorch(PreprocessorPyTorch):
         return x_compressed, y
 
     def _check_params(self) -> None:
-        if not (isinstance(self.sample_rate, (int, np.int)) and self.sample_rate > 0):
+        if not (isinstance(self.sample_rate, int) and self.sample_rate > 0):
             raise ValueError("Sample rate be must a positive integer.")
 
         if not isinstance(self.verbose, bool):

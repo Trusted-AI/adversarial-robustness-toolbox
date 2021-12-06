@@ -146,7 +146,7 @@ class ThermometerEncoding(Preprocessor):
         return grad / (self.clip_values[1] - self.clip_values[0])
 
     def _check_params(self) -> None:
-        if not isinstance(self.num_space, (int, np.int)) or self.num_space <= 0:
+        if not isinstance(self.num_space, int) or self.num_space <= 0:
             logger.error("Number of evenly spaced levels must be a positive integer.")
             raise ValueError("Number of evenly spaced levels must be a positive integer.")
 

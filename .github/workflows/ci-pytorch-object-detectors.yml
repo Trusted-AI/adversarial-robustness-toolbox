@@ -36,7 +36,7 @@ jobs:
           sudo apt-get update
           sudo apt-get -y -q install ffmpeg libavcodec-extra
           python -m pip install --upgrade pip setuptools wheel
-          pip3 install -q -r requirements.txt
+          pip3 install -q -r requirements_test.txt
           pip list
       - name: Pre-install torch
         run: |
