@@ -522,8 +522,8 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
             gradient = gradient_padded[:length]
             gradients.append(gradient)
 
-        # for ragged input, use np.object dtype
-        dtype = np.float32 if x.ndim != 1 else np.object
+        # for ragged input, use object dtype
+        dtype = np.float32 if x.ndim != 1 else object
         return np.array(gradients, dtype=dtype)
 
     def _loss_gradient_per_sequence(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
@@ -550,8 +550,8 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
             gradient = self.sess.run(self._loss_gradient_op, feed_dict)  # type: ignore
             gradients.append(np.squeeze(gradient))
 
-        # for ragged input, use np.object dtype
-        dtype = np.float32 if x.ndim != 1 else np.object
+        # for ragged input, use object dtype
+        dtype = np.float32 if x.ndim != 1 else object
         return np.array(gradients, dtype=dtype)
 
     def get_activations(

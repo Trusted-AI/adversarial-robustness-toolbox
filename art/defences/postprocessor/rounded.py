@@ -56,5 +56,5 @@ class Rounded(Postprocessor):
         return np.around(preds, decimals=self.decimals)
 
     def _check_params(self) -> None:
-        if not isinstance(self.decimals, (int, np.int)) or self.decimals <= 0:
+        if not isinstance(self.decimals, int) or self.decimals <= 0:
             raise ValueError("Number of decimal places must be a positive integer.")

@@ -84,8 +84,8 @@ class Resample(Preprocessor):
         return resampy.resample(x, self.sr_original, self.sr_new, axis=sample_index, filter="sinc_window"), y
 
     def _check_params(self) -> None:
-        if not (isinstance(self.sr_original, (int, np.int)) and self.sr_original > 0):
+        if not (isinstance(self.sr_original, int) and self.sr_original > 0):
             raise ValueError("Original sampling rate be must a positive integer.")
 
-        if not (isinstance(self.sr_new, (int, np.int)) and self.sr_new > 0):
+        if not (isinstance(self.sr_new, int) and self.sr_new > 0):
             raise ValueError("New sampling rate be must a positive integer.")

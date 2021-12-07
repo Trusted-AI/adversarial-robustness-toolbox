@@ -274,7 +274,7 @@ class SimBA(EvasionAttack):
 
     def _check_params(self) -> None:
 
-        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter <= 0:
+        if not isinstance(self.max_iter, int) or self.max_iter <= 0:
             raise ValueError("The number of iterations must be a positive integer.")
 
         if self.epsilon < 0:
@@ -283,10 +283,10 @@ class SimBA(EvasionAttack):
         if self.batch_size != 1:
             raise ValueError("The batch size `batch_size` has to be 1 in this implementation.")
 
-        if not isinstance(self.stride, (int, np.int)) or self.stride <= 0:
+        if not isinstance(self.stride, int) or self.stride <= 0:
             raise ValueError("The `stride` value must be a positive integer.")
 
-        if not isinstance(self.freq_dim, (int, np.int)) or self.freq_dim <= 0:
+        if not isinstance(self.freq_dim, int) or self.freq_dim <= 0:
             raise ValueError("The `freq_dim` value must be a positive integer.")
 
         if self.order != "random" and self.order != "diag":
