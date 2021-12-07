@@ -32,6 +32,7 @@ from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
 from art.config import ART_NUMPY_DTYPE
+from art.utils import is_probability
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
@@ -74,7 +75,7 @@ class SimBA(EvasionAttack):
         """
         Create a SimBA (dct) attack instance.
 
-        :param classifier: A trained classifier.
+        :param classifier: A trained classifier predicting probabilities and not logits.
         :param attack: attack type: pixel (px) or DCT (dct) attacks
         :param max_iter: The maximum number of iterations.
         :param epsilon: Overshoot parameter.
@@ -107,9 +108,15 @@ class SimBA(EvasionAttack):
         x = x.astype(ART_NUMPY_DTYPE)
         x_adv = x.copy()
 
-        preds = self.estimator.predict(x, batch_size=self.batch_size)
+        y_prob_pred = self.estimator.predict(x, batch_size=self.batch_size)
 
-        if self.estimator.nb_classes == 2 and preds.shape[1] == 1:
+        if not is_probability(y_prob_pred):
+            raise ValueError(
+                "This attack requires an estimator predicting probabilities. It looks like the current "
+                "estimator is not predicting probabilities"
+            )
+
+        if self.estimator.nb_classes == 2 and y_prob_pred.shape[1] == 1:
             raise ValueError(
                 "This attack has not yet been tested for binary classification with a single output classifier."
             )
@@ -129,7 +136,7 @@ class SimBA(EvasionAttack):
 
             # Use model predictions as correct outputs
             logger.info("Using the model prediction as the correct label for SimBA.")
-            y_i = np.argmax(preds, axis=1)
+            y_i = np.argmax(y_prob_pred, axis=1)
         else:
             y_i = np.argmax(y, axis=1)
 
@@ -137,8 +144,8 @@ class SimBA(EvasionAttack):
 
             desired_label = y_i[i_sample]
 
-            current_label = np.argmax(preds, axis=1)[i_sample]
-            last_prob = preds[i_sample].reshape(-1)[desired_label]
+            current_label = np.argmax(y_prob_pred, axis=1)[i_sample]
+            last_prob = y_prob_pred[i_sample].reshape(-1)[desired_label]
 
             if self.estimator.channels_first:
                 nb_channels = x.shape[1]
