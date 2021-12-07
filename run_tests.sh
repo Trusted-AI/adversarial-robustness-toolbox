@@ -70,6 +70,9 @@ then
     pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/evaluations --framework=$framework --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed evaluations tests"; fi
 
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/test_summary_writer.py --framework=$framework --durations=0
+    if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed summary writer tests"; fi
+
 else
     declare -a attacks_1=("tests/attacks/test_adversarial_patch.py" \
                           "tests/attacks/test_adversarial_embedding.py" \

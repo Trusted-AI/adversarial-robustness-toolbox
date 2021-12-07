@@ -39,6 +39,7 @@ from art.utils import (
     projection,
     check_and_transform_label_format,
 )
+from art.summary_writer import SummaryWriter
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
@@ -77,7 +78,7 @@ class FastGradientMethod(EvasionAttack):
         num_random_init: int = 0,
         batch_size: int = 32,
         minimal: bool = False,
-        summary_writer: Union[str, bool] = False,
+        summary_writer: Union[str, bool, SummaryWriter] = False,
     ) -> None:
         """
         Create a :class:`.FastGradientMethod` instance.

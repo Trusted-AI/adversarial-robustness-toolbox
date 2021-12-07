@@ -34,6 +34,7 @@ from art.attacks.evasion.adversarial_patch.utils import insert_transformed_patch
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import check_and_transform_label_format, is_probability, to_categorical
+from art.summary_writer import SummaryWriter
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
@@ -78,7 +79,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
         batch_size: int = 16,
         patch_shape: Optional[Tuple[int, int, int]] = None,
         patch_type: str = "circle",
-        summary_writer: Union[str, bool] = False,
+        summary_writer: Union[str, bool, SummaryWriter] = False,
         verbose: bool = True,
     ):
         """

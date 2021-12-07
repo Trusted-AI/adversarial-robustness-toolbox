@@ -43,6 +43,7 @@ from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_p
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_tensorflow_v2 import (
     ProjectedGradientDescentTensorFlowV2,
 )
+from art.summary_writer import SummaryWriter
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE, OBJECT_DETECTOR_TYPE
@@ -85,7 +86,7 @@ class ProjectedGradientDescent(EvasionAttack):
         num_random_init: int = 0,
         batch_size: int = 32,
         random_eps: bool = False,
-        summary_writer: Union[str, bool] = False,
+        summary_writer: Union[str, bool, SummaryWriter] = False,
         verbose: bool = True,
     ):
         """
@@ -113,7 +114,7 @@ class ProjectedGradientDescent(EvasionAttack):
                                ‘runs/exp1’, ‘runs/exp2’, etc. for each new experiment to compare across them.
         :param verbose: Show progress bars.
         """
-        super().__init__(estimator=estimator, summary_writer=summary_writer)
+        super().__init__(estimator=estimator, summary_writer=False)
 
         self.norm = norm
         self.eps = eps
@@ -155,6 +156,7 @@ class ProjectedGradientDescent(EvasionAttack):
                 num_random_init=num_random_init,
                 batch_size=batch_size,
                 random_eps=random_eps,
+                summary_writer=summary_writer,
                 verbose=verbose,
             )
 
@@ -190,6 +192,11 @@ class ProjectedGradientDescent(EvasionAttack):
         """
         logger.info("Creating adversarial samples.")
         return self._attack.generate(x=x, y=y, **kwargs)
+
+    @property
+    def summary_writer(self):
+        """The summary writer."""
+        return self._attack.summary_writer
 
     def set_params(self, **kwargs) -> None:
         super().set_params(**kwargs)
