@@ -137,7 +137,7 @@ class DeepFool(EvasionAttack):
             fk_hat = np.argmax(f_batch, axis=1)
             if use_grads_subset:
                 # Compute gradients only for top predicted classes
-                grd = np.array([self.estimator.class_gradient(batch, label=_) for _ in labels_set])
+                grd = np.array([self.estimator.class_gradient(batch, label=int(label_i)) for label_i in labels_set])
                 grd = np.squeeze(np.swapaxes(grd, 0, 2), axis=0)
             else:
                 # Compute gradients for all classes
@@ -188,7 +188,7 @@ class DeepFool(EvasionAttack):
                 # Recompute gradients for new x
                 if use_grads_subset:
                     # Compute gradients only for (originally) top predicted classes
-                    grd = np.array([self.estimator.class_gradient(batch, label=_) for _ in labels_set])
+                    grd = np.array([self.estimator.class_gradient(batch, label=int(label_i)) for label_i in labels_set])
                     grd = np.squeeze(np.swapaxes(grd, 0, 2), axis=0)
                 else:
                     # Compute gradients for all classes
@@ -218,10 +218,10 @@ class DeepFool(EvasionAttack):
         return x_adv
 
     def _check_params(self) -> None:
-        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter <= 0:
+        if not isinstance(self.max_iter, int) or self.max_iter <= 0:
             raise ValueError("The number of iterations must be a positive integer.")
 
-        if not isinstance(self.nb_grads, (int, np.int)) or self.nb_grads <= 0:
+        if not isinstance(self.nb_grads, int) or self.nb_grads <= 0:
             raise ValueError("The number of class gradients to compute must be a positive integer.")
 
         if self.epsilon < 0:
