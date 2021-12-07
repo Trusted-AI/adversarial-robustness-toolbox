@@ -20,6 +20,7 @@ This module defines and implements the summary writers for TensorBoard output.
 """
 
 from abc import ABC, abstractmethod
+from math import sqrt
 from typing import Dict, List, Optional, Union
 
 import numpy as np
@@ -180,10 +181,10 @@ class SummaryWriterDefault(SummaryWriter):
 
             if isinstance(estimator, ClassifierMixin):
                 y_pred = estimator.predict(x)  # type: ignore
-                i_1 = np.argmax(y_pred, axis=1) == np.argmax(y, axis=1)
+                self.i_1 = np.argmax(y_pred, axis=1) == np.argmax(y, axis=1)
                 self.summary_writer.add_scalars(
                     "Attack Failure Indicator 1 - Silent Success/batch-{}".format(batch_id),
-                    {str(i): v for i, v in enumerate(i_1)},
+                    {str(i): v for i, v in enumerate(self.i_1)},
                     global_step=global_step,
                 )
             else:
@@ -200,14 +201,12 @@ class SummaryWriterDefault(SummaryWriter):
 
             self.losses[str(batch_id)].append(losses)
 
-            i_2 = np.ones_like(losses)
+            self.i_2 = np.ones_like(losses)
 
             if len(self.losses[str(batch_id)]) >= 3:
 
                 delta_loss = self.losses[str(batch_id)][0] - self.losses[str(batch_id)][-1]
                 delta_step = global_step
-
-                from math import sqrt
 
                 side_b = sqrt(2.0)
 
@@ -224,11 +223,11 @@ class SummaryWriterDefault(SummaryWriter):
                     cos_beta = -(side_b ** 2 - (side_a ** 2 + side_c ** 2)) / (2 * side_a * side_c)
 
                     i_2_step = 1 - np.abs(cos_beta)
-                    i_2 = np.minimum(i_2, i_2_step)
+                    self.i_2 = np.minimum(self.i_2, i_2_step)
 
                 self.summary_writer.add_scalars(
                     "Attack Failure Indicator 2 - Break-point angle/batch-{}".format(batch_id),
-                    {str(i): v for i, v in enumerate(i_2)},
+                    {str(i): v for i, v in enumerate(self.i_2)},
                     global_step=global_step,
                 )
 

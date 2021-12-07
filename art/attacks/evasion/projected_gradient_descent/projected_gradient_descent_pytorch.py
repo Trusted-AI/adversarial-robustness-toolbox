@@ -32,6 +32,7 @@ import numpy as np
 from tqdm.auto import tqdm
 
 from art.config import ART_NUMPY_DTYPE
+from art.summary_writer import SummaryWriter
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_numpy import (
@@ -69,7 +70,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         num_random_init: int = 0,
         batch_size: int = 32,
         random_eps: bool = False,
-        summary_writer: Union[str, bool] = False,
+        summary_writer: Union[str, bool, SummaryWriter] = False,
         verbose: bool = True,
     ):
         """

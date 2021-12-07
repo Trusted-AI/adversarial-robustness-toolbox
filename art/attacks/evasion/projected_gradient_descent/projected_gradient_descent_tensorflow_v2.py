@@ -38,6 +38,7 @@ from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_n
     ProjectedGradientDescentCommon,
 )
 from art.utils import compute_success, random_sphere, compute_success_array
+from art.summary_writer import SummaryWriter
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
@@ -69,7 +70,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         num_random_init: int = 0,
         batch_size: int = 32,
         random_eps: bool = False,
-        summary_writer: Union[str, bool] = False,
+        summary_writer: Union[str, bool, SummaryWriter] = False,
         verbose: bool = True,
     ):
         """
@@ -306,11 +307,11 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
             self.summary_writer.update(
                 batch_id=self._batch_id,
                 global_step=self._i_max_iter,
-                grad=grad,
+                grad=grad.numpy(),
                 patch=None,
                 estimator=self.estimator,
-                x=x,
-                y=y,
+                x=x.numpy(),
+                y=y.numpy(),
             )
 
         # Check for NaN before normalisation an replace with 0
