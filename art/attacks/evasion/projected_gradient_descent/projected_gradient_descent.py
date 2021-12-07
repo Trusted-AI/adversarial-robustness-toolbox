@@ -241,7 +241,7 @@ class ProjectedGradientDescent(EvasionAttack):
         if not isinstance(self.targeted, bool):
             raise ValueError("The flag `targeted` has to be of type bool.")
 
-        if not isinstance(self.num_random_init, (int, np.int)):
+        if not isinstance(self.num_random_init, int):
             raise TypeError("The number of random initialisations has to be of type integer.")
 
         if self.num_random_init < 0:

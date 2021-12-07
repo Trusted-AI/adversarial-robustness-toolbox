@@ -478,7 +478,7 @@ def to_categorical(labels: Union[np.ndarray, List[float]], nb_classes: Optional[
     :param nb_classes: The number of classes (possible labels).
     :return: A binary matrix representation of `y` in the shape `(nb_samples, nb_classes)`.
     """
-    labels = np.array(labels, dtype=np.int32)
+    labels = np.array(labels, dtype=int)
     if nb_classes is None:
         nb_classes = np.max(labels) + 1
     categorical = np.zeros((labels.shape[0], nb_classes), dtype=np.float32)

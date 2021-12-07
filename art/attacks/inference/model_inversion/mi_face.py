@@ -147,10 +147,10 @@ class MIFace(InferenceAttack):
         return x_infer
 
     def _check_params(self) -> None:
-        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter < 0:
+        if not isinstance(self.max_iter, int) or self.max_iter < 0:
             raise ValueError("The number of iterations must be a non-negative integer.")
 
-        if not isinstance(self.window_length, (int, np.int)) or self.window_length < 0:
+        if not isinstance(self.window_length, int) or self.window_length < 0:
             raise ValueError("The window length must be a non-negative integer.")
 
         if not isinstance(self.threshold, float) or self.threshold < 0.0:
@@ -159,7 +159,7 @@ class MIFace(InferenceAttack):
         if not isinstance(self.learning_rate, float) or self.learning_rate < 0.0:
             raise ValueError("The learning rate must be a non-negative float.")
 
-        if not isinstance(self.batch_size, (int, np.int)) or self.batch_size < 0:
+        if not isinstance(self.batch_size, int) or self.batch_size < 0:
             raise ValueError("The batch size must be a non-negative integer.")
 
         if not isinstance(self.verbose, bool):

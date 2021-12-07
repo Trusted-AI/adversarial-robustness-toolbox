@@ -362,7 +362,7 @@ class FastGradientMethod(EvasionAttack):
         if not isinstance(self.targeted, bool):
             raise ValueError("The flag `targeted` has to be of type bool.")
 
-        if not isinstance(self.num_random_init, (int, np.int)):
+        if not isinstance(self.num_random_init, int):
             raise TypeError("The number of random initialisations has to be of type integer")
 
         if self.num_random_init < 0:
@@ -396,14 +396,14 @@ class FastGradientMethod(EvasionAttack):
             )
 
         # Check for NaN before normalisation an replace with 0
-        if grad.dtype != np.object and np.isnan(grad).any():  # pragma: no cover
+        if grad.dtype != object and np.isnan(grad).any():  # pragma: no cover
             logger.warning("Elements of the loss gradient are NaN and have been replaced with 0.0.")
             grad = np.where(np.isnan(grad), 0.0, grad)
         else:
             for i, _ in enumerate(grad):
                 grad_i_array = grad[i].astype(np.float32)
                 if np.isnan(grad_i_array).any():
-                    grad[i] = np.where(np.isnan(grad_i_array), 0.0, grad_i_array).astype(np.object)
+                    grad[i] = np.where(np.isnan(grad_i_array), 0.0, grad_i_array).astype(object)
 
         # Apply mask
         if mask is not None:
@@ -411,7 +411,7 @@ class FastGradientMethod(EvasionAttack):
 
         # Apply norm bound
         def _apply_norm(grad, object_type=False):
-            if (grad.dtype != np.object and np.isinf(grad).any()) or np.isnan(  # pragma: no cover
+            if (grad.dtype != object and np.isinf(grad).any()) or np.isnan(  # pragma: no cover
                 grad.astype(np.float32)
             ).any():
                 logger.info("The loss gradient array contains at least one positive or negative infinity.")
@@ -432,7 +432,7 @@ class FastGradientMethod(EvasionAttack):
                 grad = grad / (np.sqrt(np.sum(np.square(grad), axis=ind, keepdims=True)) + tol)
             return grad
 
-        if batch.dtype == np.object:
+        if batch.dtype == object:
             for i_sample in range(batch.shape[0]):
                 grad[i_sample] = _apply_norm(grad[i_sample], object_type=True)
                 assert batch[i_sample].shape == grad[i_sample].shape
@@ -448,7 +448,7 @@ class FastGradientMethod(EvasionAttack):
     ) -> np.ndarray:
 
         perturbation_step = eps_step * perturbation
-        if perturbation_step.dtype != np.object:
+        if perturbation_step.dtype != object:
             perturbation_step[np.isnan(perturbation_step)] = 0
         else:
             for i, _ in enumerate(perturbation_step):
@@ -456,7 +456,7 @@ class FastGradientMethod(EvasionAttack):
                 if np.isnan(perturbation_step_i_array).any():
                     perturbation_step[i] = np.where(
                         np.isnan(perturbation_step_i_array), 0.0, perturbation_step_i_array
-                    ).astype(np.object)
+                    ).astype(object)
 
         batch = batch + perturbation_step
         if self.estimator.clip_values is not None:
@@ -493,7 +493,7 @@ class FastGradientMethod(EvasionAttack):
                 clip_min, clip_max = self.estimator.clip_values
                 x_adv = np.clip(x_adv, clip_min, clip_max)
         else:
-            if x.dtype == np.object:
+            if x.dtype == object:
                 x_adv = x.copy()
             else:
                 x_adv = x.astype(ART_NUMPY_DTYPE)
@@ -537,7 +537,7 @@ class FastGradientMethod(EvasionAttack):
             x_adv[batch_index_1:batch_index_2] = self._apply_perturbation(batch, perturbation, batch_eps_step)
 
             if project:
-                if x_adv.dtype == np.object:
+                if x_adv.dtype == object:
                     for i_sample in range(batch_index_1, batch_index_2):
                         if isinstance(batch_eps, np.ndarray) and batch_eps.shape[0] == x_adv.shape[0]:
                             perturbation = projection(
@@ -575,9 +575,9 @@ class FastGradientMethod(EvasionAttack):
             if mask.ndim > x.ndim:  # pragma: no cover
                 raise ValueError("Mask shape must be broadcastable to input shape.")
 
-            if not (np.issubdtype(mask.dtype, np.floating) or mask.dtype == np.bool):  # pragma: no cover
+            if not (np.issubdtype(mask.dtype, np.floating) or mask.dtype == bool):  # pragma: no cover
                 raise ValueError(
-                    "The `mask` has to be either of type np.float32, np.float64 or np.bool. The provided"
+                    "The `mask` has to be either of type np.float32, np.float64 or bool. The provided"
                     "`mask` is of type {}.".format(mask.dtype)
                 )
 
