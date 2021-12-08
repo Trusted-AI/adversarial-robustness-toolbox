@@ -61,13 +61,13 @@ class SummaryWriter(ABC):
         """
         Update the summary writer.
 
-        :param batch_id:
-        :param global_step:
-        :param grad:
-        :param patch:
-        :param estimator:
-        :param x:
-        :param y:
+        :param batch_id: Id of the current mini-batch.
+        :param global_step: Global iteration step.
+        :param grad: Loss gradients.
+        :param patch: Adversarial patch.
+        :param estimator: The estimator to evaluate or calculate gradients of `grad` is None to obtain new metrics.
+        :param x: Input data.
+        :param y: True or target labels.
         """
         raise NotImplementedError
 
@@ -113,13 +113,13 @@ class SummaryWriterDefault(SummaryWriter):
         """
         Update the summary writer.
 
-        :param batch_id:
-        :param global_step:
-        :param grad:
-        :param patch:
-        :param estimator:
-        :param x:
-        :param y:
+        :param batch_id: Id of the current mini-batch.
+        :param global_step: Global iteration step.
+        :param grad: Loss gradients.
+        :param patch: Adversarial patch.
+        :param estimator: The estimator to evaluate or calculate gradients of `grad` is None to obtain new metrics.
+        :param x: Input data.
+        :param y: True or target labels.
         """
 
         # Gradients
@@ -175,7 +175,8 @@ class SummaryWriterDefault(SummaryWriter):
                     global_step=global_step,
                 )
 
-        # Attack Failure Indicators
+        # Indicators of Attack Failure by Pintor et al. (2021)
+        # Paper link: https://arxiv.org/abs/2106.09947
         if self.ind_1:
             from art.estimators.classification.classifier import ClassifierMixin
 
