@@ -104,10 +104,10 @@ class SignOPTAttack(EvasionAttack):
         
         return x_adv # all images with untargeted adversarial
     
-    def _fine_grained_binary_search(self, model, x0, y0, theta, initial_lbd, current_best):
+     def _fine_grained_binary_search(self, x0, y0, theta, initial_lbd, current_best):
         nquery = 0
         if initial_lbd > current_best: 
-            if model.predict_label(x0+torch.tensor(current_best*theta, dtype=torch.float).cuda()) == y0:
+            if self._predict_single_image(x0+current_best*theta, y0):
                 nquery += 1
                 return float('inf'), nquery
             lbd = current_best
@@ -120,11 +120,22 @@ class SignOPTAttack(EvasionAttack):
         while (lbd_hi - lbd_lo) > 1e-3: # was 1e-5
             lbd_mid = (lbd_lo + lbd_hi)/2.0
             nquery += 1
-            if model.predict_label(x0 + torch.tensor(lbd_mid*theta, dtype=torch.float).cuda()) != y0:
+            if self._predict_single_image(x0+lbd_mid*theta, y0) == False:    
                 lbd_hi = lbd_mid
             else:
                 lbd_lo = lbd_mid
         return lbd_hi, nquery
+    
+    # temp method
+    # x0: dimension is [1, 28, 28]
+    # org_y0: type of ...
+    # return True, if prediction of x0 is org_y0, False otherwise
+    def _predict_single_image(self, x0, org_y0) -> bool:
+        pred = self.estimator.predict(np.expand_dims(x0, axis=0))
+        pred_y0 = np.argmax(pred)
+        print(f'pred_lable={pred_y0}, orginal_label={org_y0}')
+        return pred_y0 == org_y0
+        
 
     def _attack(
         self,
@@ -150,11 +161,11 @@ class SignOPTAttack(EvasionAttack):
             query_count += 1
             theta = np.random.randn(*x0.shape).astype(np.float32) # gaussian distortion
             # register adv directions
-            pred_cur = self.estimator.predict(np.expand_dims(x0+theta, axis=0))
-            if np.argmax(pred_cur) != y0: 
+            if self._predict_single_image(x0+theta, y0) == False:
+                print(f"iteration/num_directions={i}/{num_directions}")
                 initial_lbd = LA.norm(theta)
                 theta /= initial_lbd # l2 normalize
-                lbd, count = self._fine_grained_binary_search(self.estimator, x0, y0, theta, initial_lbd, g_theta)
+                lbd, count = self._fine_grained_binary_search(x0, y0, theta, initial_lbd, g_theta)
                 query_count += count
                 if lbd < g_theta:
                     best_theta, g_theta = theta, lbd
