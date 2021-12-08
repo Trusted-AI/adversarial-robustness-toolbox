@@ -32,7 +32,6 @@ from art.estimators import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
 from art.estimators.classification.keras import KerasClassifier
 from art.estimators.classification.pytorch import PyTorchClassifier
-import pdb
 import matplotlib.pyplot as plt
 
 
@@ -68,15 +67,13 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
     ]
 
     _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassifierMixin, PyTorchClassifier)
-#       _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassifierMixin, PyTorchClassifier)
 
     def __init__(
         self,
         classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
         target: np.ndarray,
         feature_layer: Union[str, int],
-#         learning_rate: float = 500*255.0,
-        learning_rate: float = 0.01,
+        learning_rate: float = 500*255.0,
         decay_coeff: float = 0.5,
         stopping_tol: float = 1e-10,
         obj_threshold: Optional[float] = None,
@@ -116,8 +113,6 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         self.verbose = verbose
         self._check_params()
         
-        
-        #####SHRIITIIIII  CHECK HERE!!!!
         if isinstance(self.estimator,KerasClassifier):
             self.target_placeholder,self.target_feature_rep = self.estimator.get_activations(
                 self.target, self.feature_layer, 1, framework=True
@@ -132,11 +127,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
             self.poison_placeholder,self.poison_feature_rep = self.estimator.get_activations(
                 self.target, self.feature_layer, 1, framework=True
             )
-        import keras.backend as k 
-        ##### What is the role of this in PYTORCH????
         self.attack_loss = tensor_norm(self.poison_feature_rep - self.target_feature_rep)
-        if isinstance(self.estimator,KerasClassifier):
-            self.comp = k.function([self.target_placeholder, self.poison_placeholder], [self.attack_loss])
 
     def poison(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -146,28 +137,16 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         :param y: Not used in this attack (clean-label).
         :return: An tuple holding the (poisoning examples, poisoning labels).
         """
-#         pdb.set_trace()
         num_poison = len(x)
         final_attacks = []
         if num_poison == 0:  # pragma: no cover
             raise ValueError("Must input at least one poison point")
-#         pdb.set_trace()
-        print("target max",np.max(self.target))
-        print("target min", np.min(self.target))
         target_features = self.estimator.get_activations(self.target, self.feature_layer, 1)
-        print("target_features max",np.max(target_features))
-        print("target_features min", np.min(target_features))
         for init_attack in x:
             old_attack = np.expand_dims(np.copy(init_attack), axis=0)
             poison_features = self.estimator.get_activations(old_attack, self.feature_layer, 1)
-            print("poison_features max",np.max(poison_features))
-            print("poison_features min", np.min(poison_features))
-            poison_features = self.estimator.get_activations(old_attack, self.feature_layer, 1)
-            print("2nd time poison_features max",np.max(poison_features))
-            print("2nd time poison_features min", np.min(poison_features))
             old_objective = self.objective(poison_features, target_features, init_attack, old_attack)
             last_m_objectives = [old_objective]
-            print("Learning rate:",self.learning_rate)
             for i in trange(self.max_iter, desc="Feature collision", disable=not self.verbose):
                 # forward step
                 new_attack = self.forward_step(old_attack)
@@ -216,8 +195,6 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         :param poison: the current poison samples.
         :return: poison example closer in feature representation to target space.
         """
-        import torch
-        print("self.attack_loss",self.attack_loss)
         if isinstance(self.estimator,KerasClassifier):
             (attack_grad,) = self.estimator.custom_loss_gradient(
                 self.attack_loss,
@@ -225,24 +202,13 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
                 [poison, self.target],
                 name="feature_collision_" + str(self.feature_layer),
             )
-            print(self.comp([poison,self.target]))
-            print("Value of attack_grad[0]", np.min(attack_grad[0]),np.max(attack_grad[0]))
-#             pdb.set_trace()
-#             import tensorflow as tf
-#             tf.Print(self.attack_loss)
-#             with tf.compat.v1.Session() as sess:  
-#                 print(self.attack_loss.eval())    
-#             import tensorflow as tf
-#             sess = tf.InteractiveSession()
-#             a = tf.Print(self.attack_loss, [self.attack_loss], message="This is a: ")
-#             b = tf.add(a, a)
-#             b.eval()
-        
         elif isinstance(self.estimator,PyTorchClassifier):
-            # Assuming the tensors passing through the activations have already been added to the computation graph
-            attack_grad= self.estimator.custom_loss_gradient(self.attack_loss,poison,self.target,str(self.feature_layer)) 
+            attack_grad = self.estimator.custom_loss_gradient(
+                          self.attack_loss,
+                          poison,
+                          self.target,
+                          str(self.feature_layer)) 
         
-        print("Value of attack_grad[0]", np.min(attack_grad[0]),np.max(attack_grad[0]))
         poison -= self.learning_rate * attack_grad[0]
 
         return poison
@@ -346,11 +312,8 @@ def tensor_norm(tensor, norm_type: Union[int, float, str] = 2):  # pylint: disab
         return tf.norm(tensor, ord=norm_type)
 
     if tensor_type in torch_tensor_types:  # pragma: no cover
-        import torch
         import torch.nn as nn
-        return nn.MSELoss(reduction='mean')
-
-#         return torch.norm(tensor, p=norm_type)
+        return nn.MSELoss(reduction='sum')
 
     if tensor_type in mxnet_tensor_types:  # pragma: no cover
         import mxnet
