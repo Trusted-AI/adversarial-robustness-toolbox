@@ -36,7 +36,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
 
 
 @pytest.mark.skip_framework("scikitlearn", "mxnet")
-def test_update_image_classification(art_warning, fix_get_mnist_subset, image_dl_estimator):
+def test_update_image_classification_sw(art_warning, fix_get_mnist_subset, image_dl_estimator):
     try:
 
         from art.attacks.evasion import ProjectedGradientDescent
@@ -57,6 +57,33 @@ def test_update_image_classification(art_warning, fix_get_mnist_subset, image_dl
         assert len(attack.summary_writer.i_2) == 5
         np.testing.assert_almost_equal(attack.summary_writer.i_3["0"], np.array([9.0, 9.0, 9.0, 9.0, 9.0]))
         np.testing.assert_almost_equal(attack.summary_writer.i_4["0"], np.array([0.0, 0.0, 0.0, 0.0, 0.0]))
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework("scikitlearn", "mxnet")
+@pytest.mark.parametrize("summary_writer", [True, "./"])
+def test_update_image_classification_bool_str(art_warning, fix_get_mnist_subset, image_dl_estimator, summary_writer):
+    try:
+
+        from art.attacks.evasion import ProjectedGradientDescent
+
+        classifier, _ = image_dl_estimator(from_logits=False)
+
+        attack = ProjectedGradientDescent(
+            estimator=classifier,
+            max_iter=10,
+            eps=0.3,
+            eps_step=0.03,
+            batch_size=5,
+            verbose=False,
+            summary_writer=summary_writer,
+        )
+
+        (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+
+        attack.generate(x=x_train_mnist, y=y_train_mnist)
 
     except ARTTestException as e:
         art_warning(e)
