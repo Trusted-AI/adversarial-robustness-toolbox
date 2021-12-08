@@ -27,6 +27,7 @@ from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 from scipy.fftpack import idct
+from tqdm.auto import trange
 
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
@@ -56,6 +57,7 @@ class SimBA(EvasionAttack):
         "stride",
         "targeted",
         "batch_size",
+        "verbose",
     ]
 
     _estimator_requirements = (BaseEstimator, ClassifierMixin, NeuralNetworkMixin)
@@ -71,6 +73,7 @@ class SimBA(EvasionAttack):
         stride: int = 1,
         targeted: bool = False,
         batch_size: int = 1,
+        verbose: bool = True,
     ):
         """
         Create a SimBA (dct) attack instance.
@@ -84,6 +87,7 @@ class SimBA(EvasionAttack):
         :param stride: stride for block order (DCT).
         :param targeted: perform targeted attack
         :param batch_size: Batch size (but, batch process unavailable in this implementation)
+        :param verbose: Show progress bars.
         """
         super().__init__(estimator=classifier)
 
@@ -95,6 +99,7 @@ class SimBA(EvasionAttack):
         self.stride = stride
         self._targeted = targeted
         self.batch_size = batch_size
+        self.verbose = verbose
         self._check_params()
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
@@ -110,7 +115,7 @@ class SimBA(EvasionAttack):
 
         y_prob_pred = self.estimator.predict(x, batch_size=self.batch_size)
 
-        if not is_probability(y_prob_pred):
+        if not is_probability(y_prob_pred[0]):
             raise ValueError(
                 "This attack requires an estimator predicting probabilities. It looks like the current "
                 "estimator is not predicting probabilities"
@@ -140,7 +145,7 @@ class SimBA(EvasionAttack):
         else:
             y_i = np.argmax(y, axis=1)
 
-        for i_sample in range(x.shape[0]):
+        for i_sample in trange(x.shape[0], desc="SimBA - sample", disable=not self.verbose):
 
             desired_label = y_i[i_sample]
 
@@ -345,6 +350,9 @@ class SimBA(EvasionAttack):
 
         if not isinstance(self.targeted, bool):
             raise ValueError("`targeted` has to be a Boolean value.")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")
 
     def _block_order(self, img_size, channels, initial_size=2, stride=1):
         """
