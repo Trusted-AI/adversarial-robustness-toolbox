@@ -311,11 +311,11 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
             self.summary_writer.update(
                 batch_id=self._batch_id,
                 global_step=self._i_max_iter,
-                grad=grad,
+                grad=grad.cpu().detach().numpy(),
                 patch=None,
                 estimator=self.estimator,
-                x=x,
-                y=y,
+                x=x.cpu().detach().numpy(),
+                y=y.cpu().detach().numpy(),
             )
 
         # Check for nan before normalisation an replace with 0

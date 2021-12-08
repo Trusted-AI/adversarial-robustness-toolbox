@@ -35,7 +35,8 @@ def fix_get_mnist_subset(get_mnist_dataset):
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
-def test_update(art_warning, fix_get_mnist_subset, image_dl_estimator):
+@pytest.mark.skip_framework("scikitlearn", "mxnet")
+def test_update_image_classification(art_warning, fix_get_mnist_subset, image_dl_estimator):
     try:
 
         from art.attacks.evasion import ProjectedGradientDescent
@@ -56,6 +57,7 @@ def test_update(art_warning, fix_get_mnist_subset, image_dl_estimator):
         np.testing.assert_almost_equal(
             np.array(attack.summary_writer.i_2),
             np.array([4.8398972e-05, 5.5432320e-06, 9.8937750e-04, -4.7683716e-07, 1.4901161e-05]),
+            decimal=3,
         )
         np.testing.assert_almost_equal(attack.summary_writer.i_3["0"], np.array([9.0, 9.0, 9.0, 9.0, 9.0]))
         np.testing.assert_almost_equal(attack.summary_writer.i_4["0"], np.array([0.0, 0.0, 0.0, 0.0, 0.0]))
