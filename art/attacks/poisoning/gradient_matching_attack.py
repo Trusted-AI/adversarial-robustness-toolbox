@@ -83,7 +83,7 @@ class GradientMatchingAttackKeras(PoisoningAttackWhiteBox):
         # dropout: float = 0.3,
         # net_repeat: int = 1,
         # endtoend: bool = True,
-        # batch_size: int = 128,
+        batch_size: int = 128,
         verbose: bool = True,
     ):
         """
@@ -122,7 +122,7 @@ class GradientMatchingAttackKeras(PoisoningAttackWhiteBox):
         self.learning_rate = learning_rate
         # self.decay_coeff = decay_coeff
         self.max_iter = max_iter
-        # self.batch_size = batch_size
+        self.batch_size = batch_size
         self.verbose = verbose
         self._check_params()
 
@@ -137,7 +137,7 @@ class GradientMatchingAttackKeras(PoisoningAttackWhiteBox):
         # import torch  # lgtm [py/repeated-import]
         import tensorflow.keras.backend as K
         import tensorflow as tf
-        from tensorflow.keras.layers import Input
+        from tensorflow.keras.layers import Input, Embedding, Add
 
         # TODO 1: Choose the target sample to be misclassified.
         # TODO 2: Choose poison samples.
@@ -155,54 +155,69 @@ class GradientMatchingAttackKeras(PoisoningAttackWhiteBox):
                 loss = model.compiled_loss(target, output)
             d_w = t.gradient(loss, model.trainable_weights)
             d_w = tf.concat([tf.reshape(d,[-1]) for d in d_w], 0)
-            return d_w
+            d_w_norm = d_w / tf.sqrt(tf.reduce_sum(tf.square(d_w)))
+            return d_w_norm
 
-        grad_ws = grad_loss(self.substitute_classifier.model, tf.constant(x_target), tf.constant(y_target))
-        grad_ws_norm = grad_ws / K.sqrt(K.sum(K.square(grad_ws)))
+        grad_ws_norm = grad_loss(self.substitute_classifier.model, tf.constant(x_target), tf.constant(y_target))
+
+        class ClipConstraint(tf.keras.constraints.MaxNorm):
+            def __init__(self, max_value=2):
+                super().__init__(max_value=max_value)
+
+            def __call__(self, w):
+                return tf.clip_by_value(w, -self.max_value, self.max_value)  # TODO: The poisoned sample needs to be normalized again.
+
 
         # TODO 4: Define the model to optimize.
         # input = model.input
         # input_target = Input(batch_shape=self.substitute_classifier.model.input.shape)
         input_poison = Input(batch_shape=self.substitute_classifier.model.input.shape)
+        input_indices = Input(shape=())
         output = self.substitute_classifier.model.output
         # y_true_target = Input(batch_shape=output.shape)
         y_true_poison = Input(batch_shape=output.shape)
+        # embedding_layer = Embedding(P, np.prod(input_poison.shape[1:]), embeddings_constraint=ClipConstraint(max_value=self.epsilon))  # REMARK: Tensorflow 2-2.7 has a bug not allowing constraints on sparse vectors.
+        embedding_layer = Embedding(P, np.prod(input_poison.shape[1:]))
+        embeddings = embedding_layer(input_indices)
+        embeddings = ClipConstraint(max_value=self.epsilon)(embeddings)
+        embeddings = tf.reshape(embeddings, tf.shape(input_poison))
 
+        # class NoiseLayer(tf.keras.layers.Layer):
+        #     def __init__(self):
+        #         super(NoiseLayer, self).__init__()
 
-        class NoiseLayer(tf.keras.layers.Layer):
-            def __init__(self):
-                super(NoiseLayer, self).__init__()
+        #     def build(self, input_shape):
+        #         noise_shape = [P] + input_shape[1:]
+        #         self.noise = self.add_weight("noise", shape=noise_shape)
 
-            def build(self, input_shape):
-                noise_shape = [P] + input_shape[1:]
-                self.noise = self.add_weight("noise", shape=noise_shape)
+        #     def call(self, inputs):
+        #         return inputs + self.noise
 
-            def call(self, inputs):
-                return inputs + self.noise
+        # noise_layer = NoiseLayer()
+        # input_noised = noise_layer(input_poison)
+        input_noised = Add()([input_poison, embeddings])
+        # output_noised = self.substitute_classifier.model(input_noised)
 
-        noise_layer = NoiseLayer()
-        noised = noise_layer(input_poison)
-        output_noised = self.substitute_classifier.model(noised)
+        # class NormalizeNoise(tf.keras.callbacks.Callback):
+        #     def on_train_batch_end(self, batch, logs=None):
+        #         noise_layer.noise.assign(K.clip(noise_layer.noise, -self.epsilon, self.epsilon))  # TODO: The poisoned sample needs to be normalized again.
 
-        class NormalizeNoise(tf.keras.callbacks.Callback):
-            def on_train_batch_end(self, batch, logs=None):
-                noise_layer.noise.assign(K.clip(noise_layer.noise, -self.epsilon, self.epsilon))  # TODO: The poisoned sample needs to be normalized again.
-
-        # def loss_fn(input, input_noised, target_poisoned, target, output1, output2):
-        def loss_fn(input_noised, target):
-            with tf.GradientTape() as t:
-                t.watch(self.substitute_classifier.model.weights)
-                output2 = self.substitute_classifier.model(input_noised)
-                loss2 = self.substitute_classifier.model.compiled_loss(target, output2)
-            d_w2 = tf.gradient(loss2, self.substitute_classifier.model.weights)
-            d_w2 = K.concatenate([K.flatten(d) for d in d_w2])
-            d_w2_s = K.sqrt(K.sum(K.square(d_w2)))
-            B = 1 - K.sum(grad_ws_norm * d_w2 / d_w2_s)
+        def loss_fn(input_noised, target, grad_ws_norm):
+            # with tf.GradientTape() as t:
+            #     t.watch(self.substitute_classifier.model.trainable_weights)
+            #     output2 = self.substitute_classifier.model(input_noised)
+            #     loss2 = self.substitute_classifier.model.compiled_loss(target, output2)
+            # d_w2 = t.gradient(loss2, self.substitute_classifier.model.trainable_weights)
+            # d_w2 = tf.concat([tf.reshape(d,[-1]) for d in d_w2], 0)
+            # d_w2_s = tf.sqrt(tf.sum(tf.square(d_w2)))
+            # d_w2_norm = d_w2 / d_w2_s
+            d_w2_norm = grad_loss(self.substitute_classifier.model, input_noised, target)
+            B = 1 - tf.reduce_sum(grad_ws_norm * d_w2_norm)
             return B
 
-        B = tf.keras.layers.Lambda(lambda x: loss_fn(x[0],x[1]))([output_noised, y_true_poison])
+        B = tf.keras.layers.Lambda(lambda x: loss_fn(x[0],x[1],x[2]))([input_noised, y_true_poison, grad_ws_norm])
 
-        m = tf.keras.models.Model([input_poison, y_true_poison], [output, B])
+        m = tf.keras.models.Model([input_poison, y_true_poison, input_indices], [input_noised, B])
         m.add_loss(B)
 
         model_trainable = self.substitute_classifier.model.trainable
@@ -239,13 +254,15 @@ class GradientMatchingAttackKeras(PoisoningAttackWhiteBox):
 
         self.substitute_classifier.model.trainable = model_trainable
 
+        callbacks = [lr_schedule]  # NormalizeNoise()
         # Train the noise.
-        m.fit([x_poison, y_poison],
-            callbacks=[NormalizeNoise(), lr_schedule],
-            batch_size=P, epochs=250, verbose=self.verbose)
+        m.fit([x_poison, y_poison, np.arange(len(y_poison))],
+            callbacks=callbacks,
+            batch_size=self.batch_size, epochs=250, verbose=self.verbose)
 
-        noise = noise_layer.noise.numpy()
-        return x_poison + noise
+        # noise = noise_layer.noise.numpy()
+        [input_noised_, B_] = m.predict([x_poison, y_poison, np.arange(len(y_poison))])
+        return input_noised_
 
     def _check_params(self) -> None:
         if self.learning_rate <= 0:
@@ -295,8 +312,8 @@ class GradientMatchingAttackKeras(PoisoningAttackWhiteBox):
         # if not 0 <= self.decay_coeff <= 1:
         #     raise ValueError("Decay coefficient must be between zero and one")
 
-        # if not isinstance(self.batch_size, int) or self.batch_size <= 0:
-        #     raise ValueError("batch_size must be a positive integer")
+        if not isinstance(self.batch_size, int) or self.batch_size <= 0:
+            raise ValueError("batch_size must be a positive integer")
 
 
 # def get_poison_tuples(poison_batch, poison_label):
