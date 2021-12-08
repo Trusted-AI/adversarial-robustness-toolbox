@@ -24,7 +24,7 @@ import logging
 from typing import Callable, List, Optional, Tuple, Union
 import tensorflow as tf
 import numpy as np
-from art.estimators.generation.tensorflowGAN import TensorFlow2GAN
+from art.estimators.generation.tensorflow_gan import TensorFlow2GAN
 from art.attacks.attack import PoisoningAttackBlackBox, PoisoningAttackWhiteBox
 from art.estimators.generation.tensorflow import TensorFlow2Generator
 from art.attacks.attack import PoisoningAttackTransformer
@@ -102,6 +102,9 @@ class GANAttackBackdoor(PoisoningAttackTransformer):
             zip(gradients_of_generator, self._gan.generator.model.variables))
         self._gan.discriminator_optimizer_fct.apply_gradients(
             zip(gradients_of_discriminator, self._gan.discriminator.model.variables))
+
+    def poison(self, x: np.ndarray, y=Optional[np.ndarray], **kwargs) -> Tuple[np.ndarray, np.ndarray]:
+        raise NotImplementedError
 
     # def poison_estimator(self, x: np.ndarray, y: np.ndarray, **kwargs) -> "CLASSIFIER_TYPE":
     def poison_estimator(self,

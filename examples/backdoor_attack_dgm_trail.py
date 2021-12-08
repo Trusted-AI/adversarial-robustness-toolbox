@@ -4,8 +4,8 @@ import os
 import time
 import tensorflow as tf
 import matplotlib
-from art.attacks.poisoning.gan_backdoor_moa_attack import GANAttackBackdoor
-from art.estimators.generation.tensorflowGAN import TensorFlow2GAN
+from art.attacks.poisoning.backdoor_attack_dgm_trail import GANAttackBackdoor
+from art.estimators.generation.tensorflow_gan import TensorFlow2GAN
 from art.estimators.generation.tensorflow import TensorFlow2Generator
 from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 

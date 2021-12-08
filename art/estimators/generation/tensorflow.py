@@ -24,7 +24,7 @@ import logging
 from typing import Any, Dict, List, Optional, Union, Tuple, TYPE_CHECKING
 
 from art.estimators.generation.generator import GeneratorMixin
-from art.estimators.tensorflow import TensorFlowEstimator
+from art.estimators.tensorflow import TensorFlowEstimator, TensorFlowV2Estimator
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
@@ -201,18 +201,20 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
         return self._encoding_length
 
 
-class TensorFlow2Generator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/missing-call-to-init]
+class TensorFlow2Generator(GeneratorMixin, TensorFlowV2Estimator):  # lgtm [py/missing-call-to-init]
     """
     This class implements a GAN with the TensorFlow framework.
     """
 
-    estimator_params = TensorFlowEstimator.estimator_params + [
-        "input_ph",
-        "loss",
-        "sess",
-        "feed_dict",
-    ]
+    estimator_params = (
+            TensorFlowV2Estimator.estimator_params
+            # + GeneratorMixin.estimator_params
+            + [
+                "encoding_length",
+            ]
+    )
 
+    #TODO Do we need all these?
     def __init__(self, encoding_length: "int",
                  model: "tf.Tensor",
                  channels_first=False,
@@ -235,10 +237,6 @@ class TensorFlow2Generator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/mis
         self._encoding_length = encoding_length
 
     @property
-    def optimizer_fct(self) -> "optimizer.Optimizer":
-        return self._optimizer_fct
-
-    @property
     def model(self) -> "tf.Tensor":
         """
         Returns the generator tensor.
@@ -258,6 +256,29 @@ class TensorFlow2Generator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/mis
 
     @property
     def input_shape(self) -> Tuple[int, ...]:
+        raise NotImplementedError
+
+    def predict(self, x: "np.ndarray", batch_size: int = 128, **kwargs) -> "np.ndarray":
+        """
+        Perform projections over a batch of encodings.
+
+        :param x: Encodings.
+        :param batch_size: Batch size.
+        :return: Array of prediction projections of shape `(num_inputs, nb_classes)`.
+        """
+        logging.info("Projecting new sample from z value")
+        #TODO: implement batching
+        y = self._model(x)
+        return y
+
+    def loss_gradient(self, x, y, **kwargs) -> "np.ndarray":
+        raise NotImplementedError
+
+    def fit(self, x, y, batch_size=128, nb_epochs=10, **kwargs):
+        """
+        Do nothing.
+        """
+        #TODO: TrAIL may require fit function
         raise NotImplementedError
 
     def loss_gradient(self, x, y, training_mode: bool = False, **kwargs) -> "np.ndarray":  # pylint: disable=W0221
