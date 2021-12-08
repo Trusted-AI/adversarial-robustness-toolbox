@@ -49,7 +49,6 @@ if TYPE_CHECKING:
     from art.defences.postprocessor import Postprocessor
 
 logger = logging.getLogger(__name__)
-import pdb
 
 
 class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):  # lgtm [py/missing-call-to-init]
@@ -833,34 +832,11 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                               `training_mode=False.`
         :return: Array of gradients of the same shape as `x`.
         """
-#         pdb.set_trace()
-        import torch  # lgtm [py/repeated-import]
+        import torch # lgtm [py/repeated-import]
         import torch.nn as nn
         
         self._model.train(mode=training_mode)
         self._model.eval()
-        
-#         # Use placeholders
-#         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False, no_grad=True)
-#         y_preprocessed, _ = self._apply_preprocessing(y, y=None, fit=False, no_grad=True)
-        
-#         ###### CHECK IF WE NEED TO DO FOR BOTH X AND Y
-#         x_grad.data.copy_(torch.tensor(x_preprocessed).data)
-#         y_grad.data.copy_(torch.tensor(y_preprocessed).data)
-#         x_grad = x_grad.to(self._device)
-#         y_grad = y_grad.to(self._device)
-#         x_grad.requires_grad_(True)
-#         y_grad.requires_grad_(False)
-# #         x_grad.cuda()
-# #         y_grad.cuda()
-        
-#         self._model(x_grad)
-#         model_outputs1 = self._model._features[layer_name] 
-#         self._model(y_grad)
-#         model_outputs2 = self._model._features[layer_name]
-#         model_outputs2 = self._model._features[layer_name].detach()
-            
-
         if self.all_framework_preprocessing:
             if isinstance(x, torch.Tensor):
                 x_grad = x.clone().detach().requires_grad_(True)
@@ -875,51 +851,24 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             targets_t, _ = self._apply_preprocessing(y_grad, y=None, fit=False, no_grad=False)
         if isinstance(x, np.ndarray):
             x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False, no_grad=True)
-            y_preprocessed, _ = self._apply_preprocessing(y, y=None, fit=False, no_grad=True) #### CHECK HERE
+            y_preprocessed, _ = self._apply_preprocessing(y, y=None, fit=False, no_grad=True) 
             x_grad = torch.from_numpy(x_preprocessed).to(self._device)
             y_grad = torch.from_numpy(y_preprocessed).to(self._device)
             x_grad.requires_grad=True
             y_grad.requires_grad=False
             inputs_t = x_grad
             targets_t = y_grad
-            
-#             inputs_t = torch.from_numpy(x).to(self._device)
-#             targets_t = torch.from_numpy(y).to(self._device)
-#             inputs_t.requires_grad = True
-#             inputs_t = x_grad
-#             targets_t = y_grad
         else:
             raise NotImplementedError("Combination of inputs and preprocessing not supported.")
 
-
         # Compute the gradient and return
-        print(inputs_t.requires_grad)
-        print(targets_t.requires_grad)
         self._model(inputs_t)
         model_outputs1 = self._model._features[layer_name]
-        print(model_outputs1.requires_grad)
         self._model(targets_t)
         model_outputs2 = self._model._features[layer_name].detach()
-        print(model_outputs2.requires_grad)
-        
-#         model_outputs2.requires_grad = False
-#         dif = model_outputs1.view(-1) - model_outputs2.view(-1)
-#         loss = torch.sum(torch.mul(dif,dif))
-#         if not hasattr(self, "_custom_loss_func"):
-#             self._custom_loss_func = {}
-
-#         if layer_name not in self._custom_loss_func:
-#             self._custom_loss_func[layer_name] = loss_fn
-       
-#         loss = self._custom_loss_func[layer_name](model_outputs1,model_outputs2)
-#         loss_fn = nn.MSELoss(reduction='sum')
         loss = loss_fn(model_outputs1,model_outputs2)
-#         loss = torch.sqrt(loss1)
-        print(loss)
-#         loss.backward()
+        loss = loss**0.5
         
-#         loss = self._loss(model_outputs[-1], labels_t)  # lgtm [py/call-to-non-callable]
-
         # Clean gradients
         self._model.zero_grad()
 
@@ -941,8 +890,6 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         if not self.all_framework_preprocessing:
             grads = self._apply_preprocessing_gradient(x, grads)
         
-#         grads = inputs_t.grad.cpu().numpy().copy()
-#         grads = x_grad.grad.cpu().numpy().copy()
         assert grads.shape == x.shape
 
         return grads
@@ -970,11 +917,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         """
         import torch  # lgtm [py/repeated-import]
-
-
         self._model.eval()
-#         pdb.set_trace()
-
+        
         # Apply defences
         x_preprocessed, _ = self._apply_preprocessing(x=x, y=None, fit=False)
 
@@ -989,15 +933,12 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         else:  # pragma: no cover
             raise TypeError("Layer must be of type str or int")
-#         pdb.set_trace()
         if framework:
             if isinstance(x, torch.Tensor):
                 return self._model(x)[layer_index]
-            # DEBUG - HAVE TO CHECK HERE ---- IF THE MODEL IS Changing anything!!!
             x_ = torch.from_numpy(x_preprocessed)
-            self._model(x_.to(self._device)) #####SHRITI - CHECK HERE!!!!!
+            self._model(x_.to(self._device))
             return x_,self._model._features[layer] 
-            #return self._model(torch.from_numpy(x).to(self._device))[layer_index]
 
         # Run prediction with batch processing
         results = []
@@ -1013,7 +954,6 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             # Run prediction for the current batch
             self._model(torch.from_numpy(x_preprocessed[begin:end]).to(self._device))
             layer_output = self._model._features[layer]           
-#             layer_output = self._model(torch.from_numpy(x_preprocessed[begin:end]).to(self._device))[layer_index]
             results.append(layer_output.detach().cpu().numpy())
 
         results = np.concatenate(results)
@@ -1147,9 +1087,6 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                     def save_outputs_hook(self, layer_id: str):
                         def fn(_, __, output):
                             self._features[layer_id] = output
-#                             print("layer_id",layer_id)
-#                             print("output",output.shape)
-#                             print("output.grad",output.grad)
                         return fn
 
                     # pylint: disable=W0221
@@ -1199,16 +1136,9 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                         import torch.nn as nn
 
                         result = []
-#                         if isinstance(self._model, nn.Sequential):
-#                             # pylint: disable=W0212
-#                             # disable pylint because access to _modules required
-#                             for name, module_ in self._model._modules.items():  # type: ignore
-#                                 result.append(name + "_" + str(module_))
-
                         if isinstance(self._model, nn.Module):
                             for name, module_ in self._model._modules.items():  # type: ignore
                                 result.append(name)
-#                             result.append("final_layer")
 
                         else:  # pragma: no cover
                             raise TypeError("The input model must inherit from `nn.Module`.")
