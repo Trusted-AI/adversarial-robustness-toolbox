@@ -106,6 +106,7 @@ else
                            "tests/estimators/classification/test_blackbox.py" \
                            "tests/estimators/classification/test_catboost.py" \
                            "tests/estimators/classification/test_classifier.py" \
+                           "tests/estimators/classification/test_deep_partition_ensemble.py" \
                            "tests/estimators/classification/test_detector_classifier.py" \
                            "tests/estimators/classification/test_ensemble.py" \
                            "tests/estimators/classification/test_GPy.py" \
