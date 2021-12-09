@@ -91,7 +91,7 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
         :param summary_writer: Activate summary writer for TensorBoard.
                                Default is `False` and deactivated summary writer.
                                If `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory.
-                               If of type `str` save in path/CURRENT_DATETIME_HOSTNAME.
+                               If of type `str` save in path.
                                If of type `SummaryWriter` apply provided custom summary writer.
                                Use hierarchical folder structure to compare between runs easily. e.g. pass in
                                ‘runs/exp1’, ‘runs/exp2’, etc. for each new experiment to compare across them.
@@ -265,7 +265,7 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
         :param summary_writer: Activate summary writer for TensorBoard.
                                Default is `False` and deactivated summary writer.
                                If `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory.
-                               If of type `str` save in path/CURRENT_DATETIME_HOSTNAME.
+                               If of type `str` save in path.
                                If of type `SummaryWriter` apply provided custom summary writer.
                                Use hierarchical folder structure to compare between runs easily. e.g. pass in
                                ‘runs/exp1’, ‘runs/exp2’, etc. for each new experiment to compare across them.
@@ -409,5 +409,7 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
                     self._project,
                     self.num_random_init > 0 and i_max_iter == 0,
                 )
+
+        self.summary_writer.reset()
 
         return adv_x
