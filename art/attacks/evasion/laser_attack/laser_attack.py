@@ -22,7 +22,7 @@ This module implements the `LaserAttack` attack.
 """
 
 import logging
-from typing import Callable, List, Optional, Tuple, Union
+from typing import Callable, List, Optional, Tuple, Union, Any
 
 import numpy as np
 
@@ -93,24 +93,43 @@ class LaserAttack(EvasionAttack):
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
-        Generate adversarial example for a single image.
+        Generate adversarial examples.
 
-        :param x: Image to attack as a tensor (NRGB = (1, ...))
-        :return: List of params of adversarial objects and predicted class.
+        :param x: Images to attack as a tensor (NRGB = (1, ...))
+        :param y: Correct classes
+        :return: Array of adversarial images
         """
-
+        parameters = self.generate_parameters(x, y)
         adversarial_images = np.zeros_like(x)
         for image_index in range(x.shape[0]):
-            params, _ = self._generate_params_for_single_input(
-                x[image_index], y[image_index] if y is not None else None
-            )
-            if params is None:
+            laser_params, _ = parameters[image_index]
+            if laser_params is None:
                 adversarial_images[image_index] = x[image_index]
                 continue
-            adversarial_image = self._image_generator.update_image(x[image_index], params)
+            adversarial_image = self._image_generator.update_image(x[image_index], laser_params)
             adversarial_images[image_index] = adversarial_image
 
         return adversarial_images
+
+    def generate_parameters(
+        self,
+        x: np.ndarray,
+        y: Optional[np.ndarray] = None,
+    ) -> List[Tuple[Optional[AdversarialObject], Optional[int]]]:
+        """
+        Generate adversarial parameters for given images.
+
+        :param x: Images to attack as a tensor (NRGB = (1, ...))
+        :param y: Correct classes
+        :return: List of tuples of adversarial objects and predicted class.
+        """
+        result = []
+        for image_index in range(x.shape[0]):
+            laser_params, adv_class = self._generate_params_for_single_input(
+                x[image_index], y[image_index] if y is not None else None
+            )
+            result.append((laser_params, adv_class))
+        return result
 
     def _generate_params_for_single_input(
         self, x: np.ndarray, y: Optional[int] = None
@@ -132,7 +151,7 @@ class LaserAttack(EvasionAttack):
         actual_class_confidence = prediction[0][actual_class]
 
         for _ in range(self.random_initializations):
-            laser_params, predicted_class = self.generate_parameters(image, (actual_class, actual_class_confidence))
+            laser_params, predicted_class = self._attack_single_image(image, actual_class, actual_class_confidence)
             if laser_params is not None:
                 logger.info("Found adversarial params: %s", laser_params)
                 return laser_params, predicted_class
@@ -147,24 +166,22 @@ class LaserAttack(EvasionAttack):
         if self.random_initializations <= 0:
             raise ValueError("The random initializations has to be positive.")
 
-    def generate_parameters(
-        self, image: np.ndarray, actual_prediction: Tuple[int, float]
+    def _attack_single_image(
+        self, x: np.ndarray, y: int, confidence: float
     ) -> Tuple[Optional[AdversarialObject], Optional[int]]:
         """
-        Generate adversarial parameters and wrong class predicted by the
-        neural network.
+        Attack particular image with given class.
 
-        :param image: Image to attack.
-        :param actual_prediction: Correct class of the image and prediction.
+        :param x: Image to attack.
+        :param y: Correct class of the image.
         :returns: Pair of adversarial parameters and predicted class.
         """
 
-        actual_class, confidence = actual_prediction
         return self.optimisation_algorithm(
-            image=image,
+            image=x,
             estimator=self.estimator,
             iterations=self.iterations,
-            actual_class=actual_class,
+            actual_class=y,
             actual_class_confidence=confidence,
             adv_object_generator=self._laser_generator,
             image_generator=self._image_generator,
@@ -270,7 +287,7 @@ class LaserBeamGenerator(AdvObjectGenerator):
         self.max_step = max_step
         self.__params_ranges = max_params.to_numpy() - min_params.to_numpy()
 
-    def update_params(self, params: LaserBeam, **kwargs) -> LaserBeam:
+    def update_params(self, params: Any, **kwargs) -> LaserBeam:
         """
         Updates parameters of the received LaserBeam object in the random direction.
 
