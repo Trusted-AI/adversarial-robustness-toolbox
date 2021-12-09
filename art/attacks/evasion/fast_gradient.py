@@ -321,7 +321,8 @@ class FastGradientMethod(EvasionAttack):
                 self.num_random_init > 0,
             )
 
-        self.summary_writer.reset()
+        if self.summary_writer is not None:
+            self.summary_writer.reset()
 
         return adv_x_best
 
