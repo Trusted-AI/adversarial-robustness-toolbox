@@ -38,16 +38,13 @@ class SummaryWriter(ABC):
         :param summary_writer: Activate summary writer for TensorBoard.
                        Default is `False` and deactivated summary writer.
                        If `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory.
-                       If of type `str` save in path/CURRENT_DATETIME_HOSTNAME.
+                       If of type `str` save in path.
                        Use hierarchical folder structure to compare between runs easily. e.g. pass in
                        ‘runs/exp1’, ‘runs/exp2’, etc. for each new experiment to compare across them.
         """
-        from tensorboardX import SummaryWriter as SummaryWriterTbx
+        self._summary_writer_arg = summary_writer
 
-        if isinstance(summary_writer, str):
-            self._summary_writer = SummaryWriterTbx(summary_writer)
-        else:
-            self._summary_writer = SummaryWriterTbx()
+        self._init_summary_writer(summary_writer)
 
     @property
     def summary_writer(self):
@@ -70,6 +67,31 @@ class SummaryWriter(ABC):
         :param y: True or target labels.
         """
         raise NotImplementedError
+
+    def _init_summary_writer(self, summary_writer):
+        """
+        Initialise the summary writer.
+
+        :param summary_writer: Activate summary writer for TensorBoard.
+                       Default is `False` and deactivated summary writer.
+                       If `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory.
+                       If of type `str` save in path.
+                       Use hierarchical folder structure to compare between runs easily. e.g. pass in
+                       ‘runs/exp1’, ‘runs/exp2’, etc. for each new experiment to compare across them.
+        """
+        from tensorboardX import SummaryWriter as SummaryWriterTbx
+
+        if isinstance(summary_writer, str):
+            self._summary_writer = SummaryWriterTbx(logdir=summary_writer)
+        else:
+            self._summary_writer = SummaryWriterTbx()
+
+    def reset(self):
+        """
+        Flush and reset the summary writer.
+        """
+        self.summary_writer.flush()
+        self._init_summary_writer(self._summary_writer_arg)
 
 
 class SummaryWriterDefault(SummaryWriter):
