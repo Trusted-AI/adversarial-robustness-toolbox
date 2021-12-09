@@ -110,7 +110,7 @@ class AdvObjectGenerator(ABC):
     max_params: AdversarialObject
 
     @abstractmethod
-    def update_params(self, params: AdversarialObject, **kwargs) -> AdversarialObject:
+    def update_params(self, params: Any, **kwargs) -> AdversarialObject:
         """
         Update instance properties.
         """

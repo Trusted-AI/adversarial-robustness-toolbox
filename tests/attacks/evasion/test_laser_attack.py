@@ -16,12 +16,15 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-Fixtures
+Test LaserAttack.
 """
-from typing import Tuple, Callable
+from typing import Callable, Tuple
 
+import numpy as np
 import pytest
 from art.attacks.evasion.laser_attack.laser_attack import LaserBeam, LaserBeamGenerator
+from art.attacks.evasion.laser_attack.utils import ImageGenerator
+from tests.utils import ARTTestException
 
 
 @pytest.fixture(name="image_shape")
@@ -76,3 +79,47 @@ def fixture_laser_generator(min_laser_beam, max_laser_beam) -> LaserBeamGenerato
     :returns: LaserBeam object.
     """
     return LaserBeamGenerator(min_laser_beam, max_laser_beam, max_step=0.1)
+
+
+def test_if_random_laser_beam_is_in_ranges(laser_generator, min_laser_beam, max_laser_beam, art_warning):
+    """
+    Test if random laser beam is in defined ranges.
+    """
+    try:
+        for _ in range(100):
+            random_laser = laser_generator.random()
+            np.testing.assert_array_less(random_laser.to_numpy(), max_laser_beam.to_numpy())
+            np.testing.assert_array_less(min_laser_beam.to_numpy(), random_laser.to_numpy())
+    except ARTTestException as _e:
+        art_warning(_e)
+
+
+def test_laser_beam_update(laser_generator, min_laser_beam, max_laser_beam, art_warning):
+    """
+    Test if laser beam update is conducted correctly.
+    """
+    try:
+        for _ in range(5):
+            random_laser = laser_generator.random()
+
+            arr1 = random_laser.to_numpy()
+            arr2 = laser_generator.update_params(random_laser).to_numpy()
+            np.testing.assert_array_compare(lambda x, y: not np.allclose(x, y), arr1, arr2)
+            np.testing.assert_array_less(arr2, max_laser_beam.to_numpy())
+            np.testing.assert_array_less(min_laser_beam.to_numpy(), arr2)
+    except ARTTestException as _e:
+        art_warning(_e)
+
+
+def test_image_generator(laser_generator, image_shape, art_warning):
+    """
+    Test generating images.
+    """
+    try:
+        img_gen = ImageGenerator()
+        for _ in range(5):
+            laser = laser_generator.random()
+            arr1 = img_gen.generate_image(laser, image_shape)
+            np.testing.assert_array_compare(lambda x, y: not np.allclose(x, y), arr1, np.zeros(image_shape))
+    except ARTTestException as _e:
+        art_warning(_e)
