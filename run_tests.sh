@@ -106,6 +106,7 @@ else
                            "tests/estimators/classification/test_blackbox.py" \
                            "tests/estimators/classification/test_catboost.py" \
                            "tests/estimators/classification/test_classifier.py" \
+                           "tests/estimators/classification/test_deep_partition_ensemble.py" \
                            "tests/estimators/classification/test_detector_classifier.py" \
                            "tests/estimators/classification/test_ensemble.py" \
                            "tests/estimators/classification/test_GPy.py" \
@@ -144,6 +145,7 @@ else
                         "tests/metrics/test_verification_decision_trees.py" )
 
     declare -a art=("tests/test_data_generators.py" \
+                    "tests/test_optimizers.py" \
                     "tests/test_utils.py" \
                     "tests/test_visualization.py" )
 

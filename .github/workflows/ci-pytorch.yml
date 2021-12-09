@@ -37,13 +37,19 @@ jobs:
             torch: 1.9.1+cpu
             torchvision: 0.10.1+cpu
             torchaudio: 0.9.1
+          - name: PyTorch 1.10.0 (Python 3.7)
+            framework: pytorch
+            python: 3.7
+            torch: 1.10.0+cpu
+            torchvision: 0.11.1+cpu
+            torchaudio: 0.10.0
 
     name: ${{ matrix.name }}
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2.3.5
+        uses: actions/checkout@v2.4.0
       - name: Setup Python
-        uses: actions/setup-python@v2.2.2
+        uses: actions/setup-python@v2.3.1
         with:
           python-version: ${{ matrix.python }}
       - name: Install Dependencies
@@ -51,12 +57,12 @@ jobs:
           sudo apt-get update
           sudo apt-get -y -q install ffmpeg libavcodec-extra
           python -m pip install --upgrade pip setuptools wheel
-          pip3 install -r requirements.txt
+          pip3 install -r requirements_test.txt
           pip install tensorflow==2.4.3
           pip install keras==2.4.3
-          pip install torch==${{ matrix.torch }} -f https://download.pytorch.org/whl/torch_stable.html
-          pip install torchvision==${{ matrix.torchvision }} -f https://download.pytorch.org/whl/torch_stable.html
-          pip install torchaudio==${{ matrix.torchaudio }} -f https://download.pytorch.org/whl/torch_stable.html
+          pip install torch==${{ matrix.torch }} -f https://download.pytorch.org/whl/cpu/torch_stable.html
+          pip install torchvision==${{ matrix.torchvision }} -f https://download.pytorch.org/whl/cpu/torch_stable.html
+          pip install torchaudio==${{ matrix.torchaudio }} -f https://download.pytorch.org/whl/cpu/torch_stable.html
           pip list
       - name: Run Tests
         run: ./run_tests.sh ${{ matrix.framework }}
