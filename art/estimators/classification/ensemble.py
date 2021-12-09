@@ -29,7 +29,7 @@ from art.estimators.classification.classifier import ClassifierNeuralNetwork
 from art.estimators.estimator import NeuralNetworkMixin
 
 if TYPE_CHECKING:
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE, CLASSIFIER_NEURALNETWORK_TYPE
     from art.data_generators import DataGenerator
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
@@ -50,7 +50,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
 
     def __init__(
         self,
-        classifiers: List[ClassifierNeuralNetwork],
+        classifiers: List["CLASSIFIER_NEURALNETWORK_TYPE"],
         classifier_weights: Union[list, np.ndarray, None] = None,
         channels_first: bool = False,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
