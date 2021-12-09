@@ -43,8 +43,9 @@ class SummaryWriter(ABC):
                        ‘runs/exp1’, ‘runs/exp2’, etc. for each new experiment to compare across them.
         """
         self._summary_writer_arg = summary_writer
+        self._init_counter = 0
 
-        self._init_summary_writer(summary_writer)
+        self._init_summary_writer(summary_writer, init_counter=0)
 
     @property
     def summary_writer(self):
@@ -68,7 +69,7 @@ class SummaryWriter(ABC):
         """
         raise NotImplementedError
 
-    def _init_summary_writer(self, summary_writer):
+    def _init_summary_writer(self, summary_writer, init_counter):
         """
         Initialise the summary writer.
 
@@ -82,16 +83,20 @@ class SummaryWriter(ABC):
         from tensorboardX import SummaryWriter as SummaryWriterTbx
 
         if isinstance(summary_writer, str):
-            self._summary_writer = SummaryWriterTbx(logdir=summary_writer)
+            comment = "generate-{}".format(init_counter)
+            logdir = summary_writer + "/" + comment
+            self._summary_writer = SummaryWriterTbx(logdir=logdir)
         else:
-            self._summary_writer = SummaryWriterTbx()
+            comment = "-generate-{}".format(init_counter)
+            self._summary_writer = SummaryWriterTbx(comment=comment)
 
     def reset(self):
         """
         Flush and reset the summary writer.
         """
         self.summary_writer.flush()
-        self._init_summary_writer(self._summary_writer_arg)
+        self._init_counter += 1
+        self._init_summary_writer(self._summary_writer_arg, init_counter=self._init_counter)
 
 
 class SummaryWriterDefault(SummaryWriter):
