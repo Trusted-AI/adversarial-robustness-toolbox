@@ -79,12 +79,32 @@ explains the basic workflow of using ART with defences and attacks on an neural 
 demonstrates the HopSkipJumpAttack. This is a black-box attack that only requires class predictions. It is an advanced 
 version of the Boundary attack.
 
+[attack_membership_inference.ipynb](attack_membership_inference.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/attack_membership_inference.ipynb)]
+demonstrates the MembershipInferenceBlackBoxRuleBased and MembershipInferenceBlackBox membership inference attacks on a classifier model with only black-box access.
+
+[attack_membership_inference_regressor.ipynb](attack_membership_inference_regressor.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/attack_membership_inference_regressor.ipynb)]
+demonstrates the MembershipInferenceBlackBox membership inference attack on a regressor model with only black-box access.
+
+[attack_attribute_inference.ipynb](attack_attribute_inference.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/attack_attribute_inference.ipynb)]
+demonstrates the AttributeInferenceBlackBox, AttributeInferenceWhiteBoxLifestyleDecisionTree and AttributeInferenceWhiteBoxDecisionTree attribute inference attacks on a classifier model.
+
+[attack_attribute_inference_regressor.ipynb](attack_attribute_inference_regressor.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/attack_attribute_inference_regressor.ipynb)]
+demonstrates the AttributeInferenceBlackBox attribute inference attacks on a regressor model.
+
+[attack_membership_inference_shadow_models.ipynb](attack_membership_inference_shadow_models.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/attack_membership_inference_shadow_models.ipynb)]
+demonstrates a MembershipInferenceBlackBox membership inference attack using shadow models on a classifier.
+
 ## Classifiers
 
 [classifier_blackbox.ipynb](classifier_blackbox.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/classifier_blackbox.ipynb)] demonstrates BlackBoxClassifier, the most general and
 versatile classifier of ART requiring only a single predict function definition without any additional assumptions or 
 requirements. The notebook shows how use BlackBoxClassifier to attack a remote, deployed model (in this case on IBM
 Watson Machine Learning, https://cloud.ibm.com) using the HopSkiJump attack.
+
+[classifier_blackbox_lookup_table.ipynb](classifier_blackbox_lookup_table.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/classifier_blackbox_lookup_table.ipynb)]
+demonstrates using BlackBoxClassifier when the adversary does not have access to the model for making predictions, but
+does have a set of existing predictions produced before losing access. The notebook shows how to use BlackBoxClassifier
+to attack a model using only a table of samples and their labels, using a membership inference black-box attack.
 
 [classifier_blackbox_tesseract.ipynb](classifier_blackbox_tesseract.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/classifier_blackbox_tesseract.ipynb)]
 demonstrates a black-box attack on Tesseract OCR. It uses BlackBoxClassifier and HopSkipJump attack to change the image 
@@ -186,6 +206,9 @@ demonstrates the generation and detection of backdoors in neural networks via Ac
 <p align="center">
   <img src="../utils/data/images/poisoning.png?raw=true" width="200" title="poisoning">
 </p>
+
+[poisoning_defense_deep_partition_aggregation.ipynb](poisoning_defense_deep_partition_aggregation.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_defense_deep_partition_aggregation.ipynb)]
+demonstrates a defense against poisoning attacks via partitioning the data into disjoint subsets and training an ensemble model.
 
 [poisoning_defense_neural_cleanse.ipynb](poisoning_defense_neural_cleanse.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_defense_neural_cleanse.ipynb)]
 demonstrates a defense against poisoning attacks that generation the suspected backdoor and applies runtime mitigation methods on the classifier.

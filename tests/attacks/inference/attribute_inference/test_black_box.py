@@ -31,6 +31,7 @@ from art.estimators.classification.pytorch import PyTorchClassifier
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification import ClassifierMixin
 from art.estimators.classification.scikitlearn import ScikitlearnDecisionTreeClassifier
+from art.estimators.regression import ScikitlearnRegressor, RegressorMixin
 
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 from tests.utils import ARTTestException
@@ -83,6 +84,74 @@ def test_black_box(art_warning, decision_tree_estimator, get_iris_dataset):
         test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
         assert train_acc == pytest.approx(0.8285, abs=0.12)
         assert test_acc == pytest.approx(0.8888, abs=0.12)
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework("dl_frameworks")
+def test_black_box_regressor(art_warning, get_diabetes_dataset):
+    try:
+        attack_feature = 0  # age
+
+        bins = [
+            -0.96838121,
+            -0.77154309,
+            -0.57470497,
+            -0.37786684,
+            -0.18102872,
+            0.0158094,
+            0.21264752,
+            0.40948564,
+            0.60632376,
+            0.80316188,
+            1.0,
+        ]
+
+        # need to transform attacked feature into categorical
+        def transform_feature(x):
+            for i in range(len(bins) - 1):
+                x[(x >= bins[i]) & (x <= bins[i + 1])] = i
+
+        values = list(range(len(bins) - 1))
+
+        (x_train_diabetes, y_train_diabetes), (x_test_diabetes, y_test_diabetes) = get_diabetes_dataset
+        # training data without attacked feature
+        x_train_for_attack = np.delete(x_train_diabetes, attack_feature, 1)
+        # only attacked feature
+        x_train_feature = x_train_diabetes[:, attack_feature].copy().reshape(-1, 1)
+        transform_feature(x_train_feature)
+        # training data with attacked feature (after transformation)
+        x_train = np.concatenate((x_train_for_attack[:, :attack_feature], x_train_feature), axis=1)
+        x_train = np.concatenate((x_train, x_train_for_attack[:, attack_feature:]), axis=1)
+
+        # test data without attacked feature
+        x_test_for_attack = np.delete(x_test_diabetes, attack_feature, 1)
+        # only attacked feature
+        x_test_feature = x_test_diabetes[:, attack_feature].copy().reshape(-1, 1)
+        transform_feature(x_test_feature)
+
+        from sklearn import linear_model
+
+        regr_model = linear_model.LinearRegression()
+        regr_model.fit(x_train_diabetes, y_train_diabetes)
+        regressor = ScikitlearnRegressor(regr_model)
+
+        attack = AttributeInferenceBlackBox(regressor, attack_feature=attack_feature, prediction_normal_factor=1 / 250)
+        # get original model's predictions
+        x_train_predictions = regressor.predict(x_train_diabetes).reshape(-1, 1)
+        x_test_predictions = regressor.predict(x_test_diabetes).reshape(-1, 1)
+        # train attack model
+        attack.fit(x_train)
+        # infer attacked feature
+        inferred_train = attack.infer(x_train_for_attack, x_train_predictions, values=values)
+        inferred_test = attack.infer(x_test_for_attack, x_test_predictions, values=values)
+        # check accuracy
+        train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
+        test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
+
+        assert train_acc == pytest.approx(0.0258, abs=0.12)
+        assert test_acc == pytest.approx(0.0375, abs=0.12)
 
     except ARTTestException as e:
         art_warning(e)
@@ -280,8 +349,8 @@ def test_black_box_one_hot_float(art_warning, get_iris_dataset):
         test_acc = np.sum(
             np.all(np.around(inferred_test, decimals=3) == np.around(test_one_hot, decimals=3), axis=1)
         ) / len(inferred_test)
-        assert pytest.approx(0.8666, abs=0.05) == train_acc
-        assert pytest.approx(0.8666, abs=0.05) == test_acc
+        assert pytest.approx(0.8666, abs=0.1) == train_acc
+        assert pytest.approx(0.8666, abs=0.1) == test_acc
 
     except ARTTestException as e:
         art_warning(e)
@@ -311,4 +380,23 @@ def test_errors(art_warning, tabular_dl_estimator_for_attack, get_iris_dataset):
 
 
 def test_classifier_type_check_fail():
-    backend_test_classifier_type_check_fail(AttributeInferenceBlackBox, (BaseEstimator, ClassifierMixin))
+    backend_test_classifier_type_check_fail(
+        AttributeInferenceBlackBox, (BaseEstimator, (ClassifierMixin, RegressorMixin))
+    )
+
+
+def test_check_params(art_warning, tabular_dl_estimator_for_attack):
+    try:
+        classifier = tabular_dl_estimator_for_attack(AttributeInferenceBlackBox)
+
+        with pytest.raises(ValueError):
+            AttributeInferenceBlackBox(classifier, attack_feature="a")
+
+        with pytest.raises(ValueError):
+            AttributeInferenceBlackBox(classifier, attack_feature=-1)
+
+        with pytest.raises(ValueError):
+            AttributeInferenceBlackBox(classifier, prediction_normal_factor=-1)
+
+    except ARTTestException as e:
+        art_warning(e)

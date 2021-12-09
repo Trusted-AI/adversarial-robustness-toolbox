@@ -131,20 +131,22 @@ def test_non_spatial_data_error(art_warning, tabular_batch):
 
 
 @pytest.mark.framework_agnostic
-def test_negative_clip_values_error(art_warning):
+def test_check_params(art_warning):
     try:
-        exc_msg = "'clip_values' min value must be 0."
-        with pytest.raises(ValueError, match=exc_msg):
-            JpegCompression(clip_values=(-1, 255), channels_first=True)
-    except ARTTestException as e:
-        art_warning(e)
+        with pytest.raises(ValueError):
+            JpegCompression(clip_values=(-1, 255))
 
+        with pytest.raises(ValueError):
+            _ = JpegCompression(clip_values=(0, 2))
 
-@pytest.mark.framework_agnostic
-def test_maximum_clip_values_error(art_warning):
-    try:
-        exc_msg = "'clip_values' max value must be either 1 or 255."
-        with pytest.raises(ValueError, match=exc_msg):
-            JpegCompression(clip_values=(0, 2), channels_first=True)
+        with pytest.raises(ValueError):
+            _ = JpegCompression(clip_values=(0, 1), quality=-1)
+
+        with pytest.raises(ValueError):
+            _ = JpegCompression(clip_values=(0, 1, 2))
+
+        with pytest.raises(ValueError):
+            _ = JpegCompression(clip_values=(0, 1), verbose="False")
+
     except ARTTestException as e:
         art_warning(e)

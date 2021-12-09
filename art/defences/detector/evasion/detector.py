@@ -64,6 +64,7 @@ class BinaryInputDetector(ClassGradientsMixin, ClassifierMixin, LossGradientsMix
             preprocessing=detector.preprocessing,
         )
         self.detector = detector
+        self.nb_classes = self.detector.nb_classes
 
     def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
         """
@@ -109,10 +110,6 @@ class BinaryInputDetector(ClassGradientsMixin, ClassifierMixin, LossGradientsMix
         :rtype: Format as expected by the `model`
         """
         raise NotImplementedError
-
-    @property
-    def nb_classes(self) -> int:
-        return self.detector.nb_classes
 
     @property
     def input_shape(self) -> Tuple[int, ...]:
@@ -218,6 +215,7 @@ class BinaryActivationDetector(
         )
         self.classifier = classifier
         self.detector = detector
+        self.nb_classes = self.detector.nb_classes
 
         # Ensure that layer is well-defined:
         if classifier.layer_names is None:
@@ -279,10 +277,6 @@ class BinaryActivationDetector(
         :rtype: Format as expected by the `model`
         """
         raise NotImplementedError
-
-    @property
-    def nb_classes(self) -> int:
-        return self.detector.nb_classes
 
     @property
     def input_shape(self) -> Tuple[int, ...]:

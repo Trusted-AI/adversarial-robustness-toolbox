@@ -39,8 +39,9 @@ def fix_get_mnist_subset(get_mnist_dataset):
 
 
 @pytest.mark.parametrize("loss_type", ["cross_entropy", "difference_logits_ratio"])
+@pytest.mark.parametrize("norm", ["inf", np.inf, 1, 2])
 @pytest.mark.skip_framework("keras", "non_dl_frameworks", "mxnet", "kerastf")
-def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack, framework, loss_type):
+def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack, framework, loss_type, norm):
     try:
         classifier = image_dl_estimator_for_attack(AutoProjectedGradientDescent, from_logits=True)
 
@@ -48,7 +49,7 @@ def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator_for_atta
             with pytest.raises(ValueError):
                 _ = AutoProjectedGradientDescent(
                     estimator=classifier,
-                    norm=np.inf,
+                    norm=norm,
                     eps=0.3,
                     eps_step=0.1,
                     max_iter=5,
@@ -62,7 +63,7 @@ def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator_for_atta
 
             attack = AutoProjectedGradientDescent(
                 estimator=classifier,
-                norm=np.inf,
+                norm=norm,
                 eps=0.3,
                 eps_step=0.1,
                 max_iter=5,
@@ -77,8 +78,7 @@ def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator_for_atta
 
             x_train_mnist_adv = attack.generate(x=x_train_mnist, y=y_train_mnist)
 
-            assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.0329, abs=0.005)
-            assert np.max(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.3, abs=0.01)
+            assert np.max(np.abs(x_train_mnist_adv - x_train_mnist)) > 0.0
 
     except ARTTestException as e:
         art_warning(e)

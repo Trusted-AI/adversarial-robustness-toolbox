@@ -127,7 +127,7 @@ class HopSkipJump(EvasionAttack):
 
         y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
-        if y is not None and self.estimator.nb_classes == 2 and y.shape[1] == 1:
+        if y is not None and self.estimator.nb_classes == 2 and y.shape[1] == 1:  # pragma: no cover
             raise ValueError(
                 "This attack has not yet been tested for binary classification with a single output classifier."
             )
@@ -175,7 +175,7 @@ class HopSkipJump(EvasionAttack):
             x_adv_init = [None] * len(x)
 
         # Assert that, if attack is targeted, y is provided
-        if self.targeted and y is None:
+        if self.targeted and y is None:  # pragma: no cover
             raise ValueError("Target labels `y` need to be provided for a targeted attack.")
 
         # Some initial setups
@@ -449,7 +449,7 @@ class HopSkipJump(EvasionAttack):
             self.curr_iter += 1
 
             # If attack failed. return original sample
-            if np.isnan(current_sample).any():
+            if np.isnan(current_sample).any():  # pragma: no cover
                 logger.debug("NaN detected in sample, returning original sample.")
                 return original_sample
 
@@ -670,19 +670,19 @@ class HopSkipJump(EvasionAttack):
         if self.norm not in [2, np.inf, "inf"]:
             raise ValueError('Norm order must be either 2, `np.inf` or "inf".')
 
-        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter < 0:
+        if not isinstance(self.max_iter, int) or self.max_iter < 0:
             raise ValueError("The number of iterations must be a non-negative integer.")
 
-        if not isinstance(self.max_eval, (int, np.int)) or self.max_eval <= 0:
+        if not isinstance(self.max_eval, int) or self.max_eval <= 0:
             raise ValueError("The maximum number of evaluations must be a positive integer.")
 
-        if not isinstance(self.init_eval, (int, np.int)) or self.init_eval <= 0:
+        if not isinstance(self.init_eval, int) or self.init_eval <= 0:
             raise ValueError("The initial number of evaluations must be a positive integer.")
 
         if self.init_eval > self.max_eval:
             raise ValueError("The maximum number of evaluations must be larger than the initial number of evaluations.")
 
-        if not isinstance(self.init_size, (int, np.int)) or self.init_size <= 0:
+        if not isinstance(self.init_size, int) or self.init_size <= 0:
             raise ValueError("The number of initial trials must be a positive integer.")
 
         if not isinstance(self.verbose, bool):

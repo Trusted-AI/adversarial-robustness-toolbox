@@ -77,7 +77,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         # Set device
         if device_type == "cpu" or not torch.cuda.is_available():
             self._device = torch.device("cpu")
-        else:
+        else:  # pragma: no cover
             cuda_idx = torch.cuda.current_device()
             self._device = torch.device("cuda:{}".format(cuda_idx))
 
@@ -166,7 +166,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
 
         input_is_tensor = isinstance(x, torch.Tensor)
 
-        if self.all_framework_preprocessing and not (not input_is_tensor and x.dtype == np.object):
+        if self.all_framework_preprocessing and not (not input_is_tensor and x.dtype == object):
             if not input_is_tensor:
                 # Convert np arrays to torch tensors.
                 x = torch.tensor(x, device=self._device)
@@ -243,7 +243,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
 
         input_is_tensor = isinstance(x, torch.Tensor)
 
-        if self.all_framework_preprocessing and not (not input_is_tensor and x.dtype == np.object):
+        if self.all_framework_preprocessing and not (not input_is_tensor and x.dtype == object):
             # Convert np arrays to torch tensors.
             x = torch.tensor(x, device=self._device, requires_grad=True)
             gradients = torch.tensor(gradients, device=self._device)

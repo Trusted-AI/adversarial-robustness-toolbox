@@ -39,8 +39,6 @@ class TestSimBA(TestBase):
     A unittest class for testing the Simple Black-box Adversarial Attacks (SimBA).
 
     This module tests SimBA.
-    Note: SimBA runs only in Keras and TensorFlow (not in PyTorch)
-    This is due to the channel first format in PyTorch.
 
     | Paper link: https://arxiv.org/abs/1905.07121
     """
@@ -94,7 +92,6 @@ class TestSimBA(TestBase):
         classifier, sess = get_image_classifier_tf()
         self._test_attack(classifier, self.x_test_mnist, self.y_test_mnist, True)
 
-    # SimBA is not available for PyTorch
     def test_4_pytorch_mnist_targeted(self):
         """
         Test with the PyTorchClassifier. (Targeted Attack)

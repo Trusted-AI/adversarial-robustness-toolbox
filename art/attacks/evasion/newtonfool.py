@@ -88,7 +88,7 @@ class NewtonFool(EvasionAttack):
         y_pred = self.estimator.predict(x, batch_size=self.batch_size)
         pred_class = np.argmax(y_pred, axis=1)
 
-        if self.estimator.nb_classes == 2 and y_pred.shape[1] == 1:
+        if self.estimator.nb_classes == 2 and y_pred.shape[1] == 1:  # pragma: no cover
             raise ValueError(
                 "This attack has not yet been tested for binary classification with a single output classifier."
             )
@@ -174,10 +174,10 @@ class NewtonFool(EvasionAttack):
         return result
 
     def _check_params(self) -> None:
-        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter <= 0:
+        if not isinstance(self.max_iter, int) or self.max_iter <= 0:
             raise ValueError("The number of iterations must be a positive integer.")
 
-        if not isinstance(self.eta, (float, int, np.int)) or self.eta <= 0:
+        if not isinstance(self.eta, (float, int)) or self.eta <= 0:
             raise ValueError("The eta coefficient must be a positive float.")
 
         if self.batch_size <= 0:

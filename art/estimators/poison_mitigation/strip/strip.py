@@ -47,7 +47,7 @@ class STRIPMixin(AbstainPredictorMixin):
         num_samples: int = 20,
         false_acceptance_rate: float = 0.01,
         **kwargs
-    ) -> None:
+    ) -> None:  # pragma: no cover
         """
         Create a STRIP defense
 
@@ -71,7 +71,7 @@ class STRIPMixin(AbstainPredictorMixin):
         """
         raw_predictions = self.predict_fn(x)
 
-        if self.entropy_threshold is None or self.validation_data is None:
+        if self.entropy_threshold is None or self.validation_data is None:  # pragma: no cover
             logger.warning("Mitigation has not been performed. Predictions may be unsafe.")
             return raw_predictions
 
@@ -120,7 +120,7 @@ class STRIPMixin(AbstainPredictorMixin):
 
         # Set threshold to FAR percentile
         self.entropy_threshold = norm.ppf(self.false_acceptance_rate, loc=mean_entropy, scale=std_entropy)
-        if self.entropy_threshold is not None and self.entropy_threshold < 0:
+        if self.entropy_threshold is not None and self.entropy_threshold < 0:  # pragma: no cover
             logger.warning("Entropy value is negative. Increase FAR for reasonable performance.")
 
 

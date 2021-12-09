@@ -101,10 +101,10 @@ class FrameSaliencyAttack(EvasionAttack):
         :param y: An array with the original labels to be predicted.
         :return: An array holding the adversarial examples.
         """
-        if len(x.shape) < 3:
+        if len(x.shape) < 3:  # pragma: no cover
             raise ValueError("Frame saliency attack works only on inputs of dimension greater than 2.")
 
-        if self.frame_index >= len(x.shape):
+        if self.frame_index >= len(x.shape):  # pragma: no cover
             raise ValueError("Frame index is out of bounds for the given input shape.")
 
         y = check_and_transform_label_format(y, nb_classes=self.estimator.nb_classes)
@@ -117,7 +117,7 @@ class FrameSaliencyAttack(EvasionAttack):
 
         if y is None:
             # Throw error if attack is targeted, but no targets are provided
-            if hasattr(self.attacker, "targeted") and self.attacker.targeted:  # type: ignore
+            if hasattr(self.attacker, "targeted") and self.attacker.targeted:  # type: ignore  # pragma: no cover
                 raise ValueError("Target labels `y` need to be provided for a targeted attack.")
 
             # Use model predictions as correct outputs
@@ -125,7 +125,7 @@ class FrameSaliencyAttack(EvasionAttack):
         else:
             targets = y
 
-        if self.estimator.nb_classes == 2 and targets.shape[1] == 1:
+        if self.estimator.nb_classes == 2 and targets.shape[1] == 1:  # pragma: no cover
             raise ValueError(
                 "This attack has not yet been tested for binary classification with a single output classifier."
             )

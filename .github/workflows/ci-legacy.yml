@@ -20,46 +20,28 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-16.04
+    runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
-        module: [attacks, classifiers, speech_recognizers, defences, metrics, wrappers, art]
+        module: [attacks_1, attacks_2, estimators, defences, metrics, art]
         include:
-          - name: legacy (TensorFlow 2.3.2 Keras 2.4.3  PyTorch 1.7.1 scikit-learn 0.22.2 Python 3.7)
+          - name: legacy (TensorFlow 2.6.0 Keras 2.6.0 PyTorch 1.10.0 scikit-learn 0.24.2 Python 3.8)
             framework: legacy
-            python: 3.7
-            tensorflow: 2.3.2
-            keras: 2.4.3
-            scikit-learn: 0.22.2
-            torch: 1.7.1+cpu
-            torchvision: 0.8.2+cpu
-            torchaudio: 0.7.2
-          - name: legacy (TensorFlow 2.4.1 Keras 2.4.3 PyTorch 1.7.1 scikit-learn 0.23.2 Python 3.7)
-            framework: legacy
-            python: 3.7
-            tensorflow: 2.4.1
-            keras: 2.4.3
-            torch: 1.7.1+cpu
-            torchvision: 0.8.2+cpu
-            torchaudio: 0.7.2
-            scikit-learn: 0.23.2
-          - name: legacy (TensorFlow 2.4.1 Keras 2.4.3 PyTorch 1.7.1 scikit-learn 0.24.1 Python 3.7)
-            framework: legacy
-            python: 3.7
-            tensorflow: 2.4.1
-            keras: 2.4.3
-            torch: 1.7.1+cpu
-            torchvision: 0.8.2+cpu
-            torchaudio: 0.7.2
-            scikit-learn: 0.24.1
+            python: 3.8
+            tensorflow: 2.6.0
+            keras: 2.6.0
+            torch: 1.10.0+cpu
+            torchvision: 0.11.1+cpu
+            torchaudio: 0.10.0
+            scikit-learn: 0.24.2
 
     name: Run ${{ matrix.module }} ${{ matrix.name }} Tests
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2.3.4
+        uses: actions/checkout@v2.4.0
       - name: Setup Python
-        uses: actions/setup-python@v2.2.2
+        uses: actions/setup-python@v2.3.1
         with:
           python-version: ${{ matrix.python }}
       - name: Install Dependencies
@@ -67,21 +49,17 @@ jobs:
           sudo apt-get update
           sudo apt-get -y -q install ffmpeg libavcodec-extra
           python -m pip install --upgrade pip setuptools wheel
-          pip install tensorflow==2.4.1
-          pip install keras==2.4.3
-          pip3 install -q -r requirements.txt
-          pip list
-      - name: Pre-install legacy
-        if: ${{ matrix.framework == 'legacy' }}
-        run: |
+          pip install -q -r requirements_test.txt
           pip install tensorflow==${{ matrix.tensorflow }}
           pip install keras==${{ matrix.keras }}
           pip install scikit-learn==${{ matrix.scikit-learn }}
-          pip install torch==${{ matrix.torch }} -f https://download.pytorch.org/whl/torch_stable.html
-          pip install torchvision==${{ matrix.torchvision }} -f https://download.pytorch.org/whl/torch_stable.html
-          pip install torchaudio==${{ matrix.torchaudio }} -f https://download.pytorch.org/whl/torch_stable.html
+          pip install torch==${{ matrix.torch }} -f https://download.pytorch.org/whl/cpu/torch_stable.html
+          pip install torchvision==${{ matrix.torchvision }} -f https://download.pytorch.org/whl/cpu/torch_stable.html
+          pip install torchaudio==${{ matrix.torchaudio }} -f https://download.pytorch.org/whl/cpu/torch_stable.html
           pip list
       - name: Run ${{ matrix.name }} ${{ matrix.module }} Tests
         run: ./run_tests.sh ${{ matrix.framework }} ${{ matrix.module }}
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v2.1.0
+        with:
+          fail_ci_if_error: true

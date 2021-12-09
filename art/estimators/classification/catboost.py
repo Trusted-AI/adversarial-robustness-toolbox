@@ -43,7 +43,7 @@ logger = logging.getLogger(__name__)
 
 class CatBoostARTClassifier(ClassifierDecisionTree):
     """
-    Wrapper class for importing CatBoost models.
+    Class for importing CatBoost models.
     """
 
     estimator_params = ClassifierDecisionTree.estimator_params + ["nb_features"]
@@ -73,7 +73,7 @@ class CatBoostARTClassifier(ClassifierDecisionTree):
         # pylint: disable=E0611,E0401
         from catboost.core import CatBoostClassifier
 
-        if not isinstance(model, CatBoostClassifier):
+        if not isinstance(model, CatBoostClassifier):  # pragma: no cover
             raise TypeError("Model must be of type catboost.core.CatBoostClassifier")
 
         super().__init__(
@@ -85,7 +85,9 @@ class CatBoostARTClassifier(ClassifierDecisionTree):
         )
 
         self._input_shape = (nb_features,)
-        self._nb_classes = self._get_nb_classes()
+        nb_classes = self._get_nb_classes()
+        if nb_classes != -1:
+            self.nb_classes = nb_classes
 
     @property
     def input_shape(self) -> Tuple[int, ...]:
@@ -118,7 +120,7 @@ class CatBoostARTClassifier(ClassifierDecisionTree):
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
 
         self._model.fit(x_preprocessed, y_preprocessed, **kwargs)
-        self._nb_classes = self._get_nb_classes()
+        self.nb_classes = self._get_nb_classes()
 
     def predict(self, x: np.ndarray, **kwargs) -> np.ndarray:
         """
@@ -162,7 +164,7 @@ class CatBoostARTClassifier(ClassifierDecisionTree):
         else:
             full_path = os.path.join(path, filename)
         folder = os.path.split(full_path)[0]
-        if not os.path.exists(folder):
+        if not os.path.exists(folder):  # pragma: no cover
             os.makedirs(folder)
 
         with open(full_path + ".pickle", "wb") as file_pickle:

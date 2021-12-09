@@ -172,7 +172,7 @@ class JpegCompression(Preprocessor):
         return x_jpeg, y
 
     def _check_params(self) -> None:
-        if not isinstance(self.quality, (int, np.int)) or self.quality <= 0 or self.quality > 100:
+        if not isinstance(self.quality, int) or self.quality <= 0 or self.quality > 100:
             raise ValueError("Image quality must be a positive integer <= 100.")
 
         if len(self.clip_values) != 2:

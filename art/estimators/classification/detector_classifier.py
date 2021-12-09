@@ -81,7 +81,7 @@ class DetectorClassifier(ClassifierNeuralNetwork):
 
         self.classifier = classifier
         self.detector = detector
-        self._nb_classes = classifier.nb_classes + 1
+        self.nb_classes = classifier.nb_classes + 1
         self._input_shape = classifier.input_shape
 
     @property
@@ -159,9 +159,9 @@ class DetectorClassifier(ClassifierNeuralNetwork):
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         """
-        if not (
+        if not (  # pragma: no cover
             (label is None)
-            or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
+            or (isinstance(label, int) and label in range(self.nb_classes))
             or (
                 isinstance(label, np.ndarray)
                 and len(label.shape) == 1
@@ -175,7 +175,7 @@ class DetectorClassifier(ClassifierNeuralNetwork):
         if label is None:
             combined_grads = self._compute_combined_grads(x, label=None)
 
-        elif isinstance(label, (int, np.int)):
+        elif isinstance(label, int):
             if label < self.nb_classes - 1:
                 # Compute and return from the classifier gradients
                 combined_grads = self.classifier.class_gradient(x=x, label=label, training_mode=training_mode, **kwargs)
@@ -284,7 +284,7 @@ class DetectorClassifier(ClassifierNeuralNetwork):
     def layer_names(self) -> List[str]:
         """
         Return the hidden layers in the model, if applicable. This function is not supported for the
-        Classifier and Detector wrapper.
+        Classifier and Detector classes.
 
         :return: The hidden layers in the model, input and output layers excluded.
         :raises `NotImplementedException`: This method is not supported for detector-classifiers.

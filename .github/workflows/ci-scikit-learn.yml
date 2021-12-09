@@ -1,0 +1,68 @@
+name: CI scikit-learn
+on:
+  # Run on manual trigger
+  workflow_dispatch:
+
+  # Run on pull requests
+  pull_request:
+    paths-ignore:
+      - '*.md'
+
+  # Run when pushing to main or dev branches
+  push:
+    branches:
+      - main
+      - dev*
+
+  # Run scheduled CI flow daily
+  schedule:
+    - cron: '0 8 * * 0'
+
+jobs:
+  test:
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: scikit-learn 0.22.2 (Python 3.7)
+            framework: scikitlearn
+            scikit-learn: 0.22.2
+            python: 3.7
+          - name: scikit-learn 0.23.2 (Python 3.8)
+            framework: scikitlearn
+            scikit-learn: 0.23.2
+            python: 3.8
+          - name: scikit-learn 0.24.2 (Python 3.8)
+            framework: scikitlearn
+            scikit-learn: 0.24.2
+            python: 3.8
+          - name: scikit-learn 1.0 (Python 3.8)
+            framework: scikitlearn
+            scikit-learn: 1.0
+            python: 3.8
+
+    name: ${{ matrix.name }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2.4.0
+      - name: Setup Python
+        uses: actions/setup-python@v2.3.1
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get -y -q install ffmpeg libavcodec-extra
+          python -m pip install --upgrade pip setuptools wheel
+          pip install -r requirements_test.txt
+          pip install tensorflow==2.4.3
+          pip install keras==2.4.3
+          pip install scikit-learn==${{ matrix.scikit-learn }}
+          pip list
+      - name: Run Tests
+        run: ./run_tests.sh ${{ matrix.framework }}
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v2.1.0
+        with:
+          fail_ci_if_error: true

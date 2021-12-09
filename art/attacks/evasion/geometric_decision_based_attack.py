@@ -108,7 +108,7 @@ class GeoDA(EvasionAttack):
         self.nb_calls = 0
         self.clip_min = 0.0
         self.clip_max = 0.0
-        if self.estimator.input_shape is None:
+        if self.estimator.input_shape is None:  # pragma: no cover
             raise ValueError("The `input_shape` of the is required but None.")
         self.nb_channels = (
             self.estimator.input_shape[0] if self.estimator.channels_first else self.estimator.input_shape[2]
@@ -170,7 +170,7 @@ class GeoDA(EvasionAttack):
         """
         y = check_and_transform_label_format(y, self.estimator.nb_classes, return_one_hot=True)
 
-        if y is not None and self.estimator.nb_classes == 2 and y.shape[1] == 1:
+        if y is not None and self.estimator.nb_classes == 2 and y.shape[1] == 1:  # pragma: no cover
             raise ValueError(
                 "This attack has not yet been tested for binary classification with a single output classifier."
             )
@@ -178,7 +178,7 @@ class GeoDA(EvasionAttack):
         x_adv = x.copy()
 
         # Assert that, if attack is targeted, y is provided
-        if self.targeted and y is None:
+        if self.targeted and y is None:  # pragma: no cover
             raise ValueError("Target labels `y` need to be provided for a targeted attack.")
 
         # Get clip_min and clip_max from the classifier or infer them from data
@@ -188,7 +188,7 @@ class GeoDA(EvasionAttack):
             self.clip_min, self.clip_max = np.min(x), np.max(x)
 
         # Check for square input images
-        if (self.estimator.channels_first and x.shape[2] != x.shape[3]) or (
+        if (self.estimator.channels_first and x.shape[2] != x.shape[3]) or (  # pragma: no cover
             not self.estimator.channels_first and x.shape[1] != x.shape[2]
         ):
             raise ValueError("Input images `x` have to be square.")
@@ -440,8 +440,8 @@ class GeoDA(EvasionAttack):
         if not isinstance(self.sigma, float) or self.sigma <= 0:
             raise ValueError("The sigma has to be a positive float.")
 
-        if not isinstance(self.targeted, bool):
-            raise ValueError("The argument `targeted` has to be of type bool.")
+        # if not isinstance(self.targeted, bool):
+        #     raise ValueError("The argument `targeted` has to be of type bool.")
 
         if not isinstance(self.verbose, bool):
             raise ValueError("The argument `verbose` has to be of type bool.")

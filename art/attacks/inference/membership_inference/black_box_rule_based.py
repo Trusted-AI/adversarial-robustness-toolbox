@@ -67,10 +67,10 @@ class MembershipInferenceBlackBoxRuleBased(MembershipInferenceAttack):
         :return: An array holding the inferred membership status, 1 indicates a member and 0 indicates non-member,
                  or class probabilities.
         """
-        if y is None:
+        if y is None:  # pragma: no cover
             raise ValueError("MembershipInferenceBlackBoxRuleBased requires true labels `y`.")
 
-        if self.estimator.input_shape is not None:
+        if self.estimator.input_shape is not None:  # pragma: no cover
             if self.estimator.input_shape[0] != x.shape[1]:
                 raise ValueError("Shape of x does not match input_shape of classifier")
 
@@ -80,12 +80,12 @@ class MembershipInferenceBlackBoxRuleBased(MembershipInferenceAttack):
             probabilities = False
 
         y = check_and_transform_label_format(y, len(np.unique(y)), return_one_hot=True)
-        if y.shape[0] != x.shape[0]:
+        if y.shape[0] != x.shape[0]:  # pragma: no cover
             raise ValueError("Number of rows in x and y do not match")
 
         # get model's predictions for x
         y_pred = self.estimator.predict(x=x)
-        predicted_class = (np.argmax(y, axis=1) == np.argmax(y_pred, axis=1)).astype(np.int)
+        predicted_class = (np.argmax(y, axis=1) == np.argmax(y_pred, axis=1)).astype(int)
         if probabilities:
             # use y_pred as the probability if binary classification, otherwise just use 1
             if y_pred.shape[1] == 2:

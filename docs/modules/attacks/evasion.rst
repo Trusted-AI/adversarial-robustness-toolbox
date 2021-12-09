@@ -50,6 +50,12 @@ Brendel and Bethge Attack
    :members:
    :special-members:
 
+Carlini and Wagner L_0 Attack
+-----------------------------
+.. autoclass:: CarliniL0Method
+   :members:
+   :special-members:
+
 Carlini and Wagner L_2 Attack
 -----------------------------
 .. autoclass:: CarliniL2Method
@@ -185,6 +191,12 @@ Projected Gradient Descent (PGD) - PyTorch
 Projected Gradient Descent (PGD) - TensorFlowV2
 -----------------------------------------------
 .. autoclass:: ProjectedGradientDescentTensorFlowV2
+   :members:
+   :special-members:
+
+LowProFool
+----------
+.. autoclass:: LowProFool
    :members:
    :special-members:
 

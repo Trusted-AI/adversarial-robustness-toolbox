@@ -160,6 +160,19 @@ class TestTargetedUniversalPerturbation(TestBase):
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test_mnist))), 0.0, delta=0.00001)
 
+    def test_check_params(self):
+
+        ptc = get_image_classifier_pt(from_logits=True)
+
+        with self.assertRaises(ValueError):
+            _ = TargetedUniversalPerturbation(ptc, delta=-1)
+
+        with self.assertRaises(ValueError):
+            _ = TargetedUniversalPerturbation(ptc, max_iter=-1)
+
+        with self.assertRaises(ValueError):
+            _ = TargetedUniversalPerturbation(ptc, eps=-1)
+
     def test_1_classifier_type_check_fail(self):
         backend_test_classifier_type_check_fail(TargetedUniversalPerturbation, (BaseEstimator, ClassifierMixin))
 

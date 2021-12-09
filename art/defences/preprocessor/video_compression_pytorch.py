@@ -26,8 +26,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 from typing import Optional, Tuple, TYPE_CHECKING
 
-import numpy as np
-
 from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
 from art.defences.preprocessor.video_compression import VideoCompression
 
@@ -83,7 +81,7 @@ class VideoCompressionPyTorch(PreprocessorPyTorch):
         # Set device
         if device_type == "cpu" or not torch.cuda.is_available():
             self._device = torch.device("cpu")
-        else:
+        else:  # pragma: no cover
             cuda_idx = torch.cuda.current_device()
             self._device = torch.device("cuda:{}".format(cuda_idx))
 
@@ -96,7 +94,7 @@ class VideoCompressionPyTorch(PreprocessorPyTorch):
             verbose=verbose,
         )
 
-        class CompressionPyTorchNumpy(Function):
+        class CompressionPyTorchNumpy(Function):  # pylint: disable=W0223
             """
             Function running Preprocessor.
             """
@@ -129,7 +127,7 @@ class VideoCompressionPyTorch(PreprocessorPyTorch):
         return x_compressed, y
 
     def _check_params(self) -> None:
-        if not (isinstance(self.constant_rate_factor, (int, np.int)) and 0 <= self.constant_rate_factor < 52):
+        if not (isinstance(self.constant_rate_factor, int) and 0 <= self.constant_rate_factor < 52):
             raise ValueError("Constant rate factor must be an integer in the range [0, 51].")
 
         if not isinstance(self.verbose, bool):

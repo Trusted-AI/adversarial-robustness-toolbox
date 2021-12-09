@@ -290,6 +290,19 @@ class TestSaliencyMap(TestBase):
             # Check that x_test has not been modified by attack and classifier
             self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_iris))), 0.0, delta=0.00001)
 
+    def test_check_params(self):
+
+        ptc = get_image_classifier_pt(from_logits=True)
+
+        with self.assertRaises(ValueError):
+            _ = SaliencyMapMethod(ptc, gamma=-1)
+
+        with self.assertRaises(ValueError):
+            _ = SaliencyMapMethod(ptc, batch_size=-1)
+
+        with self.assertRaises(ValueError):
+            _ = SaliencyMapMethod(ptc, verbose="False")
+
     def test_1_classifier_type_check_fail(self):
         backend_test_classifier_type_check_fail(SaliencyMapMethod, [BaseEstimator, ClassGradientsMixin])
 

@@ -127,7 +127,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             preprocessing=preprocessing,
             device_type=device_type,
         )
-        self._nb_classes = nb_classes
+        self.nb_classes = nb_classes
         self._input_shape = input_shape
         self._model = self._make_model_wrapper(model)
         self._loss = loss
@@ -166,7 +166,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             self._int_labels = False
 
         # Setup for AMP use
-        if self._use_amp:
+        if self._use_amp:  # pragma: no cover
             from apex import amp  # pylint: disable=E0611
 
             if self._optimizer is None:
@@ -368,7 +368,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         # Put the model in the training mode
         self._model.train()
 
-        if self._optimizer is None:
+        if self._optimizer is None:  # pragma: no cover
             raise ValueError("An optimizer is needed to train the model, but none for provided.")
 
         y = check_and_transform_label_format(y, self.nb_classes)
@@ -402,7 +402,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                 loss = self._loss(model_outputs[-1], o_batch)  # lgtm [py/call-to-non-callable]
 
                 # Do training
-                if self._use_amp:
+                if self._use_amp:  # pragma: no cover
                     from apex import amp  # pylint: disable=E0611
 
                     with amp.scale_loss(loss, self._optimizer) as scaled_loss:
@@ -428,7 +428,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         # Put the model in the training mode
         self._model.train()
 
-        if self._optimizer is None:
+        if self._optimizer is None:  # pragma: no cover
             raise ValueError("An optimizer is needed to train the model, but none for provided.")
 
         # Train directly in PyTorch
@@ -467,7 +467,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                     loss = self._loss(model_outputs[-1], o_batch)
 
                     # Do training
-                    if self._use_amp:
+                    if self._use_amp:  # pragma: no cover
                         from apex import amp  # pylint: disable=E0611
 
                         with amp.scale_loss(loss, self._optimizer) as scaled_loss:
@@ -542,7 +542,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         if self.is_rnn:
             self._model.train(mode=True)
             if not training_mode:
-                logger.debug(
+                logger.debug(  # pragma: no cover
                     "Freezing batch-norm and dropout layers for gradient calculation in train mode with eval parameters"
                     "of batch-norm and dropout."
                 )
@@ -551,15 +551,15 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         if not (
             (label is None)
-            or (isinstance(label, (int, np.integer)) and label in range(self._nb_classes))
+            or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
             or (
                 isinstance(label, np.ndarray)
                 and len(label.shape) == 1
-                and (label < self._nb_classes).all()
+                and (label < self.nb_classes).all()
                 and label.shape[0] == x.shape[0]
             )
         ):
-            raise ValueError("Label %s is out of range." % label)
+            raise ValueError("Label %s is out of range." % label)  # pragma: no cover
 
         # Apply preprocessing
         if self.all_framework_preprocessing:
@@ -587,11 +587,11 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         preds = model_outputs[-1]
 
         # Compute the gradient
-        grads = []
+        grads_list = list()
 
         def save_grad():
             def hook(grad):
-                grads.append(grad.cpu().numpy().copy())
+                grads_list.append(grad.cpu().numpy().copy())
                 grad.data.zero_()
 
             return hook
@@ -612,12 +612,15 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                     retain_graph=True,
                 )
 
+            grads = np.swapaxes(np.array(grads_list), 0, 1)
+
         elif isinstance(label, (int, np.integer)):
             torch.autograd.backward(
                 preds[:, label],
                 torch.tensor([1.0] * len(preds[:, 0])).to(self._device),
                 retain_graph=True,
             )
+            grads = np.swapaxes(np.array(grads_list), 0, 1)
         else:
             unique_label = list(np.unique(label))
             for i in unique_label:
@@ -627,13 +630,13 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                     retain_graph=True,
                 )
 
-            grads = np.swapaxes(np.array(grads), 0, 1)
+            grads = np.swapaxes(np.array(grads_list), 0, 1)
             lst = [unique_label.index(i) for i in label]
             grads = grads[np.arange(len(grads)), lst]
 
             grads = grads[None, ...]
+            grads = np.swapaxes(np.array(grads), 0, 1)
 
-        grads = np.swapaxes(np.array(grads), 0, 1)
         if not self.all_framework_preprocessing:
             grads = self._apply_preprocessing_gradient(x, grads)
 
@@ -787,7 +790,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         self._model.zero_grad()
 
         # Compute gradients
-        if self._use_amp:
+        if self._use_amp:  # pragma: no cover
             from apex import amp  # pylint: disable=E0611
 
             with amp.scale_loss(loss, self._optimizer) as scaled_loss:
@@ -835,14 +838,14 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         # Get index of the extracted layer
         if isinstance(layer, six.string_types):
-            if layer not in self._layer_names:
+            if layer not in self._layer_names:  # pragma: no cover
                 raise ValueError("Layer name %s not supported" % layer)
             layer_index = self._layer_names.index(layer)
 
-        elif isinstance(layer, (int, np.integer)):
+        elif isinstance(layer, int):
             layer_index = layer
 
-        else:
+        else:  # pragma: no cover
             raise TypeError("Layer must be of type str or int")
 
         if framework:
@@ -1012,7 +1015,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                             x = self._model(x)
                             result.append(x)
 
-                        else:
+                        else:  # pragma: no cover
                             raise TypeError("The input model must inherit from `nn.Module`.")
 
                         return result
@@ -1043,7 +1046,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                         elif isinstance(self._model, nn.Module):
                             result.append("final_layer")
 
-                        else:
+                        else:  # pragma: no cover
                             raise TypeError("The input model must inherit from `nn.Module`.")
                         logger.info(
                             "Inferred %i hidden layers on PyTorch classifier.",
@@ -1058,5 +1061,5 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             # Use model wrapping class to wrap the PyTorch model received as argument
             return self._model_wrapper(model)
 
-        except ImportError:
+        except ImportError:  # pragma: no cover
             raise ImportError("Could not find PyTorch (`torch`) installation.") from ImportError

@@ -26,8 +26,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 from typing import TYPE_CHECKING, Optional, Tuple
 
-import numpy as np
-
 from art.defences.preprocessor.mp3_compression import Mp3Compression
 from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
 
@@ -76,7 +74,7 @@ class Mp3CompressionPyTorch(PreprocessorPyTorch):
         # Set device
         if device_type == "cpu" or not torch.cuda.is_available():
             self._device = torch.device("cpu")
-        else:
+        else:  # pragma: no cover
             cuda_idx = torch.cuda.current_device()
             self._device = torch.device("cuda:{}".format(cuda_idx))
 
@@ -88,7 +86,7 @@ class Mp3CompressionPyTorch(PreprocessorPyTorch):
             verbose=verbose,
         )
 
-        class CompressionPyTorchNumpy(Function):
+        class CompressionPyTorchNumpy(Function):  # pylint: disable=W0223
             """
             Function running Preprocessor.
             """
@@ -102,9 +100,9 @@ class Mp3CompressionPyTorch(PreprocessorPyTorch):
             @staticmethod
             def backward(ctx, grad_output):  # pylint: disable=W0221
                 numpy_go = grad_output.cpu().numpy()
-                np.expand_dims(input, axis=[0, 2])
+                # np.expand_dims(input, axis=[0, 2])
                 result = self.compression_numpy.estimate_gradient(None, numpy_go)
-                result = result.squeeze()
+                # result = result.squeeze()
                 return grad_output.new(result)
 
         self._compression_pytorch_numpy = CompressionPyTorchNumpy
@@ -124,7 +122,7 @@ class Mp3CompressionPyTorch(PreprocessorPyTorch):
         return x_compressed, y
 
     def _check_params(self) -> None:
-        if not (isinstance(self.sample_rate, (int, np.int)) and self.sample_rate > 0):
+        if not (isinstance(self.sample_rate, int) and self.sample_rate > 0):
             raise ValueError("Sample rate be must a positive integer.")
 
         if not isinstance(self.verbose, bool):

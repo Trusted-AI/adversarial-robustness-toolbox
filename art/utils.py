@@ -80,6 +80,7 @@ if TYPE_CHECKING:
     from art.estimators.classification.lightgbm import LightGBMClassifier
     from art.estimators.classification.mxnet import MXClassifier
     from art.estimators.classification.pytorch import PyTorchClassifier
+    from art.estimators.classification.query_efficient_bb import QueryEfficientGradientEstimationClassifier
     from art.estimators.classification.scikitlearn import (
         ScikitlearnAdaBoostClassifier,
         ScikitlearnBaggingClassifier,
@@ -96,9 +97,11 @@ if TYPE_CHECKING:
     from art.estimators.classification.tensorflow import TensorFlowClassifier, TensorFlowV2Classifier
     from art.estimators.classification.xgboost import XGBoostClassifier
     from art.estimators.object_detection.object_detector import ObjectDetector
+    from art.estimators.object_detection.python_object_detector import PyTorchObjectDetector
     from art.estimators.object_detection.pytorch_faster_rcnn import PyTorchFasterRCNN
     from art.estimators.object_detection.tensorflow_faster_rcnn import TensorFlowFasterRCNN
     from art.estimators.pytorch import PyTorchEstimator
+    from art.estimators.regression.scikitlearn import ScikitlearnRegressor
     from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
     from art.estimators.speech_recognition.tensorflow_lingvo import TensorFlowLingvoASR
     from art.estimators.tensorflow import TensorFlowV2Estimator
@@ -114,6 +117,7 @@ if TYPE_CHECKING:
         ScikitlearnSVC,
         TensorFlowClassifier,
         TensorFlowV2Classifier,
+        QueryEfficientGradientEstimationClassifier,
     ]
 
     CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE = Union[  # pylint: disable=C0103
@@ -144,7 +148,6 @@ if TYPE_CHECKING:
         ClassifierDecisionTree,
         LightGBMClassifier,
         ScikitlearnDecisionTreeClassifier,
-        ScikitlearnDecisionTreeRegressor,
         ScikitlearnExtraTreesClassifier,
         ScikitlearnGradientBoostingClassifier,
         ScikitlearnRandomForestClassifier,
@@ -164,7 +167,6 @@ if TYPE_CHECKING:
         PyTorchClassifier,
         ScikitlearnClassifier,
         ScikitlearnDecisionTreeClassifier,
-        ScikitlearnDecisionTreeRegressor,
         ScikitlearnExtraTreeClassifier,
         ScikitlearnAdaBoostClassifier,
         ScikitlearnBaggingClassifier,
@@ -179,15 +181,19 @@ if TYPE_CHECKING:
         CLASSIFIER_NEURALNETWORK_TYPE,
     ]
 
+    REGRESSOR_TYPE = Union[ScikitlearnRegressor, ScikitlearnDecisionTreeRegressor]  # pylint: disable=C0103
+
     PYTORCH_ESTIMATOR_TYPE = Union[  # pylint: disable=C0103
         PyTorchClassifier,
         PyTorchDeepSpeech,
         PyTorchEstimator,
+        PyTorchObjectDetector,
         PyTorchFasterRCNN,
     ]
 
     OBJECT_DETECTOR_TYPE = Union[  # pylint: disable=C0103
         ObjectDetector,
+        PyTorchObjectDetector,
         PyTorchFasterRCNN,
         TensorFlowFasterRCNN,
     ]
@@ -468,7 +474,7 @@ def to_categorical(labels: Union[np.ndarray, List[float]], nb_classes: Optional[
     :param nb_classes: The number of classes (possible labels).
     :return: A binary matrix representation of `y` in the shape `(nb_samples, nb_classes)`.
     """
-    labels = np.array(labels, dtype=np.int32)
+    labels = np.array(labels, dtype=int)
     if nb_classes is None:
         nb_classes = np.max(labels) + 1
     categorical = np.zeros((labels.shape[0], nb_classes), dtype=np.float32)
@@ -490,7 +496,7 @@ def float_to_categorical(labels: np.ndarray, nb_classes: Optional[int] = None):
     unique.sort()
     indexes = [np.where(unique == value)[0] for value in labels]
     if nb_classes is None:
-        nb_classes = len(unique) + 1
+        nb_classes = len(unique)
     categorical = np.zeros((labels.shape[0], nb_classes), dtype=np.float32)
     categorical[np.arange(labels.shape[0]), np.squeeze(indexes)] = 1
     return categorical
@@ -924,6 +930,38 @@ def load_iris(raw: bool = False, test_set: float = 0.3) -> DATASET_TYPE:
     return (x_train, y_train), (x_test, y_test), min_, max_
 
 
+def load_diabetes(raw: bool = False, test_set: float = 0.3) -> DATASET_TYPE:
+    """
+    Loads the Diabetes Regression dataset from sklearn.
+
+    :param raw: `True` if no preprocessing should be applied to the data. Otherwise, data is normalized to 1.
+    :param test_set: Proportion of the data to use as validation split. The value should be between 0 and 1.
+    :return: Entire dataset and labels.
+    """
+    from sklearn.datasets import load_diabetes as load_diabetes_sk
+
+    diabetes = load_diabetes_sk()
+    data = diabetes.data
+    if not raw:
+        data /= np.amax(data, axis=0)
+    targets = diabetes.target
+
+    min_, max_ = np.amin(data), np.amax(data)
+
+    # Shuffle data set
+    random_indices = np.random.permutation(len(data))
+    data, targets = data[random_indices], targets[random_indices]
+
+    # Split training and test sets
+    split_index = int((1 - test_set) * len(data))
+    x_train = data[:split_index]
+    y_train = targets[:split_index]
+    x_test = data[split_index:]
+    y_test = targets[split_index:]
+
+    return (x_train, y_train), (x_test, y_test), min_, max_
+
+
 def load_nursery(raw: bool = False, test_set: float = 0.2, transform_social: bool = False) -> DATASET_TYPE:
     """
     Loads the UCI Nursery dataset from `config.ART_DATA_PATH` or downloads it if necessary.
@@ -1028,7 +1066,8 @@ def load_dataset(
     name: str,
 ) -> DATASET_TYPE:
     """
-    Loads or downloads the dataset corresponding to `name`. Options are: `mnist`, `cifar10` and `stl10`.
+    Loads or downloads the dataset corresponding to `name`. Options are: `mnist`, `cifar10`, `stl10`, `iris`, `nursery`
+    and `diabetes`.
 
     :param name: Name of the dataset.
     :return: The dataset separated in training and test sets as `(x_train, y_train), (x_test, y_test), min, max`.
@@ -1044,6 +1083,8 @@ def load_dataset(
         return load_iris()
     if "nursery" in name:
         return load_nursery()
+    if "diabetes" in name:
+        return load_diabetes()
 
     raise NotImplementedError("There is no loader for dataset '{}'.".format(name))
 

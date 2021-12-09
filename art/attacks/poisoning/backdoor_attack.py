@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 
 class PoisoningAttackBackdoor(PoisoningAttackBlackBox):
     """
-    Implementation of backdoor attacks introduced in Gu, et. al. 2017
+    Implementation of backdoor attacks introduced in Gu et al., 2017.
 
     Applies a number of backdoor perturbation functions and switches label to target label
 
@@ -64,7 +64,7 @@ class PoisoningAttackBackdoor(PoisoningAttackBlackBox):
         :param broadcast: whether or not to broadcast single target label
         :return: An tuple holding the `(poisoning_examples, poisoning_labels)`.
         """
-        if y is None:
+        if y is None:  # pragma: no cover
             raise ValueError("Target labels `y` need to be provided for a targeted attack.")
 
         if broadcast:
@@ -73,7 +73,7 @@ class PoisoningAttackBackdoor(PoisoningAttackBlackBox):
             y_attack = np.copy(y)
 
         num_poison = len(x)
-        if num_poison == 0:
+        if num_poison == 0:  # pragma: no cover
             raise ValueError("Must input at least one poison point.")
         poisoned = np.copy(x)
 

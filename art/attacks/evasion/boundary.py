@@ -126,7 +126,7 @@ class BoundaryAttack(EvasionAttack):
         y = check_and_transform_label_format(y, self.estimator.nb_classes, return_one_hot=False)
 
         if y is not None and self.estimator.nb_classes == 2 and y.shape[1] == 1:
-            raise ValueError(
+            raise ValueError(  # pragma: no cover
                 "This attack has not yet been tested for binary classification with a single output classifier."
             )
 
@@ -149,7 +149,7 @@ class BoundaryAttack(EvasionAttack):
             x_adv_init = [None] * len(x)
 
         # Assert that, if attack is targeted, y is provided
-        if self.targeted and y is None:
+        if self.targeted and y is None:  # pragma: no cover
             raise ValueError("Target labels `y` need to be provided for a targeted attack.")
 
         # Some initial setups
@@ -292,7 +292,7 @@ class BoundaryAttack(EvasionAttack):
                 if delta_ratio > 0:
                     x_advs = np.array(potential_advs)[np.where(satisfied)[0]]
                     break
-            else:
+            else:  # pragma: no cover
                 logger.warning("Adversarial example found but not optimal.")
                 return x_adv
 
@@ -323,7 +323,7 @@ class BoundaryAttack(EvasionAttack):
                     x_adv = self._best_adv(original_sample, potential_advs[np.where(satisfied)[0]])
                     self.curr_adv = x_adv
                     break
-            else:
+            else:  # pragma: no cover
                 logger.warning("Adversarial example found but not optimal.")
                 return self._best_adv(original_sample, x_advs)
 
@@ -430,7 +430,7 @@ class BoundaryAttack(EvasionAttack):
 
                     logger.info("Found initial adversarial image for untargeted attack.")
                     break
-            else:
+            else:  # pragma: no cover
                 logger.warning("Failed to draw a random image that is adversarial, attack failed.")
 
         return initial_sample
@@ -449,16 +449,16 @@ class BoundaryAttack(EvasionAttack):
         return potential_advs[min_idx]
 
     def _check_params(self) -> None:
-        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter < 0:
+        if not isinstance(self.max_iter, int) or self.max_iter < 0:
             raise ValueError("The number of iterations must be a non-negative integer.")
 
-        if not isinstance(self.num_trial, (int, np.int)) or self.num_trial < 0:
+        if not isinstance(self.num_trial, int) or self.num_trial < 0:
             raise ValueError("The number of trials must be a non-negative integer.")
 
-        if not isinstance(self.sample_size, (int, np.int)) or self.sample_size <= 0:
+        if not isinstance(self.sample_size, int) or self.sample_size <= 0:
             raise ValueError("The number of samples must be a positive integer.")
 
-        if not isinstance(self.init_size, (int, np.int)) or self.init_size <= 0:
+        if not isinstance(self.init_size, int) or self.init_size <= 0:
             raise ValueError("The number of initial trials must be a positive integer.")
 
         if self.epsilon <= 0:

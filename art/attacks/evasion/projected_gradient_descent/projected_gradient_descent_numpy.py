@@ -151,7 +151,7 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
 
         if y is None:
             # Throw error if attack is targeted, but no targets are provided
-            if self.targeted:
+            if self.targeted:  # pragma: no cover
                 raise ValueError("Target labels `y` need to be provided for a targeted attack.")
 
             # Use model predictions as correct outputs
@@ -165,7 +165,7 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
 
         return targets
 
-    def _check_params(self) -> None:
+    def _check_params(self) -> None:  # pragma: no cover
 
         if self.norm not in [1, 2, np.inf, "inf"]:
             raise ValueError('Norm order must be either 1, 2, `np.inf` or "inf".')
@@ -183,10 +183,10 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
 
         if isinstance(self.eps, (int, float)):
             if self.eps < 0:
-                raise ValueError("The perturbation size `eps` has to be nonnegative.")
+                raise ValueError("The perturbation size `eps` has to be non-negative.")
         else:
             if (self.eps < 0).any():
-                raise ValueError("The perturbation size `eps` has to be nonnegative.")
+                raise ValueError("The perturbation size `eps` has to be non-negative.")
 
         if isinstance(self.eps_step, (int, float)):
             if self.eps_step <= 0:
@@ -204,7 +204,7 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
         if not isinstance(self.targeted, bool):
             raise ValueError("The flag `targeted` has to be of type bool.")
 
-        if not isinstance(self.num_random_init, (int, np.int)):
+        if not isinstance(self.num_random_init, int):
             raise TypeError("The number of random initialisations has to be of type integer.")
 
         if self.num_random_init < 0:
@@ -375,14 +375,14 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
                 ),
             )
         else:
-            if self.num_random_init > 0:
+            if self.num_random_init > 0:  # pragma: no cover
                 raise ValueError("Random initialisation is only supported for classification.")
 
             # Set up targets
             targets = self._set_targets(x, y, classifier_mixin=False)
 
             # Start to compute adversarial examples
-            if x.dtype == np.object:
+            if x.dtype == object:
                 adv_x = x.copy()
             else:
                 adv_x = x.astype(ART_NUMPY_DTYPE)

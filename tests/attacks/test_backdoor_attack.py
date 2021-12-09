@@ -193,6 +193,11 @@ class TestBackdoorAttack(TestBase):
 
         self.assertIn("Invalid array shape", str(context.exception))
 
+    def test_check_params(self):
+
+        with self.assertRaises(ValueError):
+            _ = PoisoningAttackBackdoor("self.poison_func_5")
+
 
 if __name__ == "__main__":
     unittest.main()

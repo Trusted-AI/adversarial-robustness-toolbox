@@ -18,7 +18,8 @@
 """
 This module implements the Label-Only Inference Attack based on Decision Boundary.
 
-| Paper link: https://arxiv.org/abs/2007.14321
+| Paper link: https://arxiv.org/abs/2007.14321 (Choquette-Choo et al.) and https://arxiv.org/abs/2007.15528 (Li and
+Zhang)
 """
 import logging
 from typing import Optional, TYPE_CHECKING
@@ -40,7 +41,10 @@ class LabelOnlyDecisionBoundary(MembershipInferenceAttack):
     """
     Implementation of Label-Only Inference Attack based on Decision Boundary.
 
-    | Paper link: https://arxiv.org/abs/2007.14321
+    | Paper link: https://arxiv.org/abs/2007.14321 (Choquette-Choo et al.) and https://arxiv.org/abs/2007.15528 (Li
+    and Zhang)
+
+    You only need to call ONE of the calibrate methods, depending on which attack you want to launch.
     """
 
     attack_params = MembershipInferenceAttack.attack_params + [
@@ -83,10 +87,10 @@ class LabelOnlyDecisionBoundary(MembershipInferenceAttack):
         """
         from art.attacks.evasion.hop_skip_jump import HopSkipJump
 
-        if y is None:
+        if y is None:  # pragma: no cover
             raise ValueError("Argument `y` is None, but this attack requires true labels `y` to be provided.")
 
-        if self.distance_threshold_tau is None:
+        if self.distance_threshold_tau is None:  # pragma: no cover
             raise ValueError(
                 "No value for distance threshold `distance_threshold_tau` provided. Please set"
                 "`distance_threshold_tau` or run method `calibrate_distance_threshold` on known training and test"
@@ -99,10 +103,10 @@ class LabelOnlyDecisionBoundary(MembershipInferenceAttack):
         else:
             probabilities = False
 
-        if "classifier" in kwargs:
+        if "classifier" in kwargs:  # pragma: no cover
             raise ValueError("Keyword `classifier` in kwargs is not supported.")
 
-        if "targeted" in kwargs:
+        if "targeted" in kwargs:  # pragma: no cover
             raise ValueError("Keyword `targeted` in kwargs is not supported.")
 
         y = check_and_transform_label_format(y, self.estimator.nb_classes)
@@ -136,6 +140,8 @@ class LabelOnlyDecisionBoundary(MembershipInferenceAttack):
         """
         Calibrate distance threshold maximising the membership inference accuracy on `x_train` and `x_test`.
 
+        | Paper link: https://arxiv.org/abs/2007.14321
+
         :param x_train: Training data.
         :param y_train: Labels of training data `x_train`.
         :param x_test: Test data.
@@ -151,10 +157,10 @@ class LabelOnlyDecisionBoundary(MembershipInferenceAttack):
         """
         from art.attacks.evasion.hop_skip_jump import HopSkipJump
 
-        if "classifier" in kwargs:
+        if "classifier" in kwargs:  # pragma: no cover
             raise ValueError("Keyword `classifier` in kwargs is not supported.")
 
-        if "targeted" in kwargs:
+        if "targeted" in kwargs:  # pragma: no cover
             raise ValueError("Keyword `targeted` in kwargs is not supported.")
 
         y_train = check_and_transform_label_format(y_train, self.estimator.nb_classes)
@@ -195,6 +201,70 @@ class LabelOnlyDecisionBoundary(MembershipInferenceAttack):
                 acc_max = acc
 
         self.distance_threshold_tau = distance_threshold_tau
+
+    def calibrate_distance_threshold_unsupervised(
+        self, top_t: int = 50, num_samples: int = 100, max_queries: int = 1, **kwargs
+    ):
+        """
+        Calibrate distance threshold on randomly generated samples, choosing the top-t percentile of the noise needed
+        to change the classifier's initial prediction. This method requires the model's clip_values to be set.
+
+        | Paper link: https://arxiv.org/abs/2007.15528
+
+        :param top_t: Top-t percentile.
+        :param num_samples: Number of random samples to generate.
+        :param max_queries: Maximum number of queries. Maximum number of HSJ iterations on a single sample will be
+                            max_queries * max_iter.
+        :Keyword Arguments for HopSkipJump:
+            * *norm*: Order of the norm. Possible values: "inf", np.inf or 2.
+            * *max_iter*: Maximum number of iterations.
+            * *max_eval*: Maximum number of evaluations for estimating gradient.
+            * *init_eval*: Initial number of evaluations for estimating gradient.
+            * *init_size*: Maximum number of trials for initial generation of adversarial examples.
+            * *verbose*: Show progress bars.
+        """
+        from art.attacks.evasion.hop_skip_jump import HopSkipJump
+
+        if self.estimator.clip_values is not None:
+            x_min, x_max = self.estimator.clip_values
+        else:  # pragma: no cover
+            raise RuntimeError(
+                "You need to set the estimator's clip_values in order to calibrate the distance threshold."
+            )
+
+        x_rand = np.random.rand(*(num_samples,) + self.estimator.input_shape).astype(np.float32)
+        x_rand *= x_max - x_min  # scale
+        x_rand += x_min  # shift
+
+        y_rand = self.estimator.predict(x=x_rand)
+        y_rand = check_and_transform_label_format(y_rand, self.estimator.nb_classes)
+
+        hsj = HopSkipJump(classifier=self.estimator, targeted=False, **kwargs)
+
+        distances = []
+
+        i = 0
+        while len(x_rand) != 0 and i < max_queries:
+            x_adv = hsj.generate(x=x_rand, y=y_rand)
+
+            distance = np.linalg.norm((x_adv - x_rand).reshape((x_rand.shape[0], -1)), ord=2, axis=1)
+
+            y_pred = self.estimator.predict(x=x_adv)
+
+            changed_predictions = np.argmax(y_pred, axis=1) != np.argmax(y_rand, axis=1)
+
+            distances.extend(distance[changed_predictions])
+
+            x_rand, y_rand = x_adv[~changed_predictions], y_rand[~changed_predictions]
+
+            i += 1
+
+        if len(distances) == 0:  # pragma: no cover
+            raise RuntimeWarning(
+                "No successful adversarial examples were generated - no distances were obtained."
+                "Distance threshold will not be set."
+            )
+        self.distance_threshold_tau = np.percentile(distances, top_t)
 
     def _check_params(self) -> None:
         if self.distance_threshold_tau is not None and (

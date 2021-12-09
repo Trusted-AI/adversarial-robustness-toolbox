@@ -58,6 +58,20 @@ def test_spatial_smoothing_median_filter_call_expected_behavior(art_warning):
 
 
 @pytest.mark.only_with_platform("pytorch")
+def test_spatial_smoothing_estimate_gradient(art_warning):
+    try:
+        test_input = np.array([[[[1], [2]], [[3], [4]]]]).astype(float)
+        test_output = np.array([[[[2], [2]], [[2], [2]]]]).astype(float)
+        spatial_smoothing = SpatialSmoothingPyTorch(channels_first=False, window_size=2)
+
+        test_gradients = spatial_smoothing.estimate_gradient(x=test_input, grad=np.ones_like(test_output).astype(float))
+
+        assert test_gradients.shape == test_input.shape
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.only_with_platform("pytorch")
 @pytest.mark.parametrize("channels_first", [True, False])
 @pytest.mark.parametrize(
     "window_size",

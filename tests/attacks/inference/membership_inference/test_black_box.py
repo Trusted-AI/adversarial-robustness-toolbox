@@ -27,6 +27,7 @@ from art.attacks.inference.membership_inference.black_box import MembershipInfer
 from art.estimators.classification.keras import KerasClassifier
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.regression import ScikitlearnRegressor, RegressorMixin
 
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 from tests.utils import ARTTestException
@@ -63,6 +64,22 @@ def test_black_box_loss_tabular(art_warning, model_type, tabular_dl_estimator_fo
         if type(classifier).__name__ == "PyTorchClassifier" or type(classifier).__name__ == "TensorFlowV2Classifier":
             attack = MembershipInferenceBlackBox(classifier, input_type="loss", attack_model_type=model_type)
             backend_check_membership_accuracy(attack, get_iris_dataset, attack_train_ratio, 0.25)
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.parametrize("model_type", ["nn", "rf", "gb"])
+def test_black_box_loss_regression(art_warning, model_type, get_diabetes_dataset):
+    try:
+        from sklearn import linear_model
+
+        (x_train_diabetes, y_train_diabetes), _ = get_diabetes_dataset
+        regr_model = linear_model.LinearRegression()
+        regr_model.fit(x_train_diabetes, y_train_diabetes)
+        regressor = ScikitlearnRegressor(regr_model)
+
+        attack = MembershipInferenceBlackBox(regressor, input_type="loss", attack_model_type=model_type)
+        backend_check_membership_accuracy(attack, get_diabetes_dataset, attack_train_ratio, 0.25)
     except ARTTestException as e:
         art_warning(e)
 
@@ -180,7 +197,9 @@ def test_errors(art_warning, tabular_dl_estimator_for_attack, get_iris_dataset):
 
 def test_classifier_type_check_fail(art_warning):
     try:
-        backend_test_classifier_type_check_fail(MembershipInferenceBlackBox, [BaseEstimator, ClassifierMixin])
+        backend_test_classifier_type_check_fail(
+            MembershipInferenceBlackBox, [BaseEstimator, (ClassifierMixin, RegressorMixin)]
+        )
     except ARTTestException as e:
         art_warning(e)
 

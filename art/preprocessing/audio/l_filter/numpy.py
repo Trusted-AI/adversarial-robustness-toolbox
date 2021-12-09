@@ -114,7 +114,7 @@ class LFilter(Preprocessor):
         :param grad: Gradient value so far.
         :return: The gradient (estimate) of the defence.
         """
-        if (grad.shape != x.shape) and (
+        if (grad.shape != x.shape) and (  # pragma: no cover
             (len(grad.shape) != len(x.shape) + 1) or (grad.shape[2:] != x.shape[1:]) or (grad.shape[0] != x.shape[0])
         ):
             raise ValueError(
@@ -150,7 +150,7 @@ class LFilter(Preprocessor):
             # And store the result
             x_grad_list.append(grad_x_i)
 
-        if x.dtype == np.object:
+        if x.dtype == object:
             x_grad = np.empty(x.shape[0], dtype=object)
             x_grad[:] = list(x_grad_list)
 

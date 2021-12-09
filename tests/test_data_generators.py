@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 class TestKerasDataGenerator(unittest.TestCase):
     def setUp(self):
-        import keras
+        from tensorflow import keras
 
         master_seed(seed=42)
 
@@ -125,7 +125,7 @@ class TestKerasDataGenerator(unittest.TestCase):
         )
         datagen.fit(x_train)
 
-        # Create wrapper and get batch
+        # Create generator and get batch
         data_gen = KerasDataGenerator(
             datagen.flow(x_train, y_train, batch_size=batch_size), size=None, batch_size=batch_size
         )
@@ -154,7 +154,7 @@ class TestKerasDataGenerator(unittest.TestCase):
         )
         datagen.fit(x_train)
 
-        # Create wrapper and get batch
+        # Create generator and get batch
         data_gen = KerasDataGenerator(
             datagen.flow(x_train, y_train, batch_size=batch_size), size=None, batch_size=batch_size
         )
@@ -221,6 +221,10 @@ class TestPyTorchGenerator(unittest.TestCase):
         self.assertEqual(x.shape, (5, 1, 5, 5))
         self.assertEqual(y.shape, (5,))
 
+    def test_error(self):
+        with self.assertRaises(TypeError):
+            self.data_gen = PyTorchDataGenerator("data_loader", size=10, batch_size=5)
+
 
 class TestMXGenerator(unittest.TestCase):
     def setUp(self):
@@ -259,6 +263,10 @@ class TestMXGenerator(unittest.TestCase):
         # Check shapes
         self.assertEqual(x.shape, (5, 1, 5, 5))
         self.assertEqual(y.shape, (5,))
+
+    def test_error(self):
+        with self.assertRaises(TypeError):
+            _ = MXDataGenerator("data_loader", size=10, batch_size=5)
 
 
 @unittest.skipIf(tf.__version__[0] == "2", reason="Skip unittests for TensorFlow v2.")
@@ -336,6 +344,64 @@ class TestTensorFlowDataGenerator(unittest.TestCase):
         self.assertEqual(x.shape, (5, 5, 5, 1))
         self.assertEqual(y.shape, (5, 10))
 
+    def test_error(self):
+        handle = tf.placeholder(tf.string, shape=[])
+        iter_ = tf.data.Iterator.from_string_handle(
+            handle, tf.compat.v1.data.get_output_types(self.dataset), tf.compat.v1.data.get_output_shapes(self.dataset)
+        )
+        feed_iterator = tf.compat.v1.data.make_initializable_iterator(self.dataset)
+        feed_handle = self.sess.run(feed_iterator.string_handle())
+
+        with self.assertRaises(TypeError):
+            _ = TensorFlowDataGenerator(
+                sess=self.sess,
+                iterator="iter_",
+                iterator_type="feedable",
+                iterator_arg=(feed_iterator, {handle: feed_handle}),
+                size=10,
+                batch_size=5,
+            )
+
+        with self.assertRaises(TypeError):
+            _ = TensorFlowDataGenerator(
+                sess=self.sess,
+                iterator=iter_,
+                iterator_type="initializable",
+                iterator_arg=(feed_iterator, "{handle: feed_handle}"),
+                size=10,
+                batch_size=5,
+            )
+
+        with self.assertRaises(TypeError):
+            _ = TensorFlowDataGenerator(
+                sess=self.sess,
+                iterator=iter_,
+                iterator_type="reinitializable",
+                iterator_arg=(feed_iterator, "{handle: feed_handle}"),
+                size=10,
+                batch_size=5,
+            )
+
+        with self.assertRaises(TypeError):
+            _ = TensorFlowDataGenerator(
+                sess=self.sess,
+                iterator=iter_,
+                iterator_type="feedable",
+                iterator_arg=[feed_iterator, {handle: feed_handle}],
+                size=10,
+                batch_size=5,
+            )
+
+        with self.assertRaises(TypeError):
+            _ = TensorFlowDataGenerator(
+                sess=self.sess,
+                iterator=iter_,
+                iterator_type="test",
+                iterator_arg=(feed_iterator, {handle: feed_handle}),
+                size=10,
+                batch_size=5,
+            )
+
 
 @unittest.skipIf(tf.__version__[0] == "1", reason="Skip unittests for TensorFlow v1.")
 class TestTensorFlowV2DataGenerator(unittest.TestCase):
@@ -358,6 +424,19 @@ class TestTensorFlowV2DataGenerator(unittest.TestCase):
         # Check shapes
         self.assertEqual(x.shape, (5, 5, 5, 1))
         self.assertEqual(y.shape, (5, 10))
+
+    def test_error(self):
+        with self.assertRaises(TypeError):
+            _ = TensorFlowV2DataGenerator(iterator="self.dataset", size=5, batch_size=self.batch_size)
+
+        with self.assertRaises(ValueError):
+            _ = TensorFlowV2DataGenerator(iterator=self.dataset, size=-5, batch_size=self.batch_size)
+
+        with self.assertRaises(ValueError):
+            _ = TensorFlowV2DataGenerator(iterator=self.dataset, size=5, batch_size=-self.batch_size)
+
+        with self.assertRaises(ValueError):
+            _ = TensorFlowV2DataGenerator(iterator=self.dataset, size=1, batch_size=self.batch_size)
 
 
 if __name__ == "__main__":

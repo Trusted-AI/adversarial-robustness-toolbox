@@ -69,7 +69,7 @@ class GPyGaussianProcessClassifier(ClassifierClassLossGradients):
         """
         from GPy.models import GPClassification
 
-        if not isinstance(model, GPClassification):
+        if not isinstance(model, GPClassification):  # pragma: no cover
             raise TypeError("Model must be of type GPy.models.GPClassification")
 
         super().__init__(
@@ -79,7 +79,7 @@ class GPyGaussianProcessClassifier(ClassifierClassLossGradients):
             postprocessing_defences=postprocessing_defences,
             preprocessing=preprocessing,
         )
-        self._nb_classes = 2  # always binary
+        self.nb_classes = 2  # always binary
 
     @property
     def input_shape(self) -> Tuple[int, ...]:

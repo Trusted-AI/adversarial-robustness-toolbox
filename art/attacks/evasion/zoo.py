@@ -151,12 +151,14 @@ class ZooAttack(EvasionAttack):
         if self.input_is_feature_vector:
             self.use_resize = False
             self.use_importance = False
-            logger.info("Disable resizing and importance sampling because feature vector input has been detected.")
+            logger.info(  # pragma: no cover
+                "Disable resizing and importance sampling because feature vector input has been detected."
+            )
 
         if self.use_resize:
             if not self.estimator.channels_first:
                 dims = (batch_size, self._init_size, self._init_size, self.estimator.input_shape[-1])
-            else:
+            else:  # pragma: no cover
                 dims = (batch_size, self.estimator.input_shape[0], self._init_size, self._init_size)
             self._current_noise = np.zeros(dims, dtype=ART_NUMPY_DTYPE)
         else:
@@ -211,14 +213,14 @@ class ZooAttack(EvasionAttack):
         y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
         # Check that `y` is provided for targeted attacks
-        if self.targeted and y is None:
+        if self.targeted and y is None:  # pragma: no cover
             raise ValueError("Target labels `y` need to be provided for a targeted attack.")
 
         # No labels provided, use model prediction as correct class
         if y is None:
             y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
 
-        if self.estimator.nb_classes == 2 and y.shape[1] == 1:
+        if self.estimator.nb_classes == 2 and y.shape[1] == 1:  # pragma: no cover
             raise ValueError(
                 "This attack has not yet been tested for binary classification with a single output classifier."
             )
@@ -469,7 +471,7 @@ class ZooAttack(EvasionAttack):
                     )
                     % coord_batch.shape[-1]
                 )
-            except ValueError as error:
+            except ValueError as error:  # pragma: no cover
                 if "Cannot take a larger sample than population when 'replace=False'" in str(error):
                     raise ValueError(
                         "Too many samples are requested for the random indices. Try to reduce the number of parallel"
@@ -559,7 +561,7 @@ class ZooAttack(EvasionAttack):
             # Allocate Adam variables
             self.adam_mean = np.zeros(nb_vars, dtype=ART_NUMPY_DTYPE)
             self.adam_var = np.zeros(nb_vars, dtype=ART_NUMPY_DTYPE)
-            self.adam_epochs = np.ones(nb_vars, dtype=np.int32)
+            self.adam_epochs = np.ones(nb_vars, dtype=int)
 
     def _resize_image(self, x: np.ndarray, size_x: int, size_y: int, reset: bool = False) -> np.ndarray:
         if not self.estimator.channels_first:
@@ -642,16 +644,16 @@ class ZooAttack(EvasionAttack):
         return img_pool
 
     def _check_params(self) -> None:
-        if not isinstance(self.binary_search_steps, (int, np.int)) or self.binary_search_steps < 0:
+        if not isinstance(self.binary_search_steps, int) or self.binary_search_steps < 0:
             raise ValueError("The number of binary search steps must be a non-negative integer.")
 
-        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter < 0:
+        if not isinstance(self.max_iter, int) or self.max_iter < 0:
             raise ValueError("The number of iterations must be a non-negative integer.")
 
-        if not isinstance(self.nb_parallel, (int, np.int)) or self.nb_parallel < 1:
+        if not isinstance(self.nb_parallel, int) or self.nb_parallel < 1:
             raise ValueError("The number of parallel coordinates must be an integer greater than zero.")
 
-        if not isinstance(self.batch_size, (int, np.int)) or self.batch_size < 1:
+        if not isinstance(self.batch_size, int) or self.batch_size < 1:
             raise ValueError("The batch size must be an integer greater than zero.")
 
         if not isinstance(self.verbose, bool):
