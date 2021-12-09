@@ -237,7 +237,8 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
             100 * compute_success(self.estimator, x, targets, adv_x, self.targeted, batch_size=self.batch_size),
         )
 
-        self.summary_writer.reset()
+        if self.summary_writer is not None:
+            self.summary_writer.reset()
 
         return adv_x
 

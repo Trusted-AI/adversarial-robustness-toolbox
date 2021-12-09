@@ -410,6 +410,7 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
                     self.num_random_init > 0 and i_max_iter == 0,
                 )
 
-        self.summary_writer.reset()
+        if self.summary_writer is not None:
+            self.summary_writer.reset()
 
         return adv_x

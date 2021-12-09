@@ -475,7 +475,8 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
                     y=y,
                 )
 
-        self.summary_writer.reset()
+        if self.summary_writer is not None:
+            self.summary_writer.reset()
 
         return (
             self._patch.numpy(),
