@@ -62,7 +62,7 @@ def test_update_image_classification_sw(art_warning, fix_get_mnist_subset, image
         art_warning(e)
 
 
-@pytest.mark.skip_framework("scikitlearn", "mxnet", "tensorflow1")
+@pytest.mark.skip_framework("scikitlearn", "mxnet", "tensorflow1", "tensorflow2v1")
 @pytest.mark.parametrize("summary_writer", [True, "./"])
 def test_update_image_classification_bool_str(art_warning, fix_get_mnist_subset, image_dl_estimator, summary_writer):
     try:
