@@ -385,8 +385,8 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         """
         output_tensor, _, _ = self._get_losses(x=x, y=y)
         output = dict()
-        for k, v in output_tensor.items():
-            output[k] = v.detach().cpu().numpy()
+        for key, value in output_tensor.items():
+            output[key] = value.detach().cpu().numpy()
         return output
 
     def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
