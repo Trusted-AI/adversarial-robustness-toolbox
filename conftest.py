@@ -923,3 +923,52 @@ def fix_get_rcnn():
 
     frcnn = DummyObjectDetector()
     return frcnn
+
+
+@pytest.fixture()
+def fix_get_goturn():
+
+    from art.estimators.estimator import BaseEstimator, LossGradientsMixin
+    from art.estimators.object_tracking.object_tracker import ObjectTrackerMixin
+
+    class DummyObjectTracker(ObjectTrackerMixin, LossGradientsMixin, BaseEstimator):
+        def __init__(self):
+            super().__init__(
+                model=None,
+                clip_values=(0, 1),
+                preprocessing_defences=None,
+                postprocessing_defences=None,
+                preprocessing=(0, 1),
+            )
+
+            import torch
+
+            self.channels_first = False
+            self._input_shape = None
+            self.postprocessing_defences = None
+            self.device = torch.device("cpu")
+
+        def loss_gradient(self, x: np.ndarray, y: None, **kwargs):
+            return np.ones_like(x)
+
+        def fit(self, x: np.ndarray, y, batch_size: int = 128, nb_epochs: int = 20, **kwargs):
+            raise NotImplementedError
+
+        def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs):
+            boxes_list = list()
+            for i in range(x.shape[1]):
+                boxes_list.append([0.1, 0.2, 0.3, 0.4])
+
+            dict_i = {"boxes": np.array(boxes_list), "labels": np.array([[2]]), "scores": np.array([[0.8]])}
+            return [dict_i] * x.shape[0]
+
+        @property
+        def native_label_is_pytorch_format(self):
+            return True
+
+        @property
+        def input_shape(self):
+            return self._input_shape
+
+    goturn = DummyObjectTracker()
+    return goturn
