@@ -35,7 +35,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
-@pytest.mark.skip_framework("scikitlearn", "mxnet", "tensorflow1")
+@pytest.mark.skip_framework("scikitlearn", "mxnet")
 def test_update_image_classification_sw(art_warning, fix_get_mnist_subset, image_dl_estimator):
     try:
 
@@ -54,7 +54,8 @@ def test_update_image_classification_sw(art_warning, fix_get_mnist_subset, image
         attack.generate(x=x_train_mnist, y=y_train_mnist)
 
         assert all(attack.summary_writer.i_1 == [False, False, False, False, False])
-        assert len(attack.summary_writer.i_2) == 5
+        if np.ndim(attack.summary_writer.i_2) != 0:
+            assert len(attack.summary_writer.i_2) == 5
         np.testing.assert_almost_equal(attack.summary_writer.i_3["0"], np.array([9.0, 9.0, 9.0, 9.0, 9.0]))
         np.testing.assert_almost_equal(attack.summary_writer.i_4["0"], np.array([0.0, 0.0, 0.0, 0.0, 0.0]))
 
@@ -62,7 +63,7 @@ def test_update_image_classification_sw(art_warning, fix_get_mnist_subset, image
         art_warning(e)
 
 
-@pytest.mark.skip_framework("scikitlearn", "mxnet", "tensorflow1", "tensorflow2v1")
+@pytest.mark.skip_framework("scikitlearn", "mxnet")
 @pytest.mark.parametrize("summary_writer", [True, "./"])
 def test_update_image_classification_bool_str(art_warning, fix_get_mnist_subset, image_dl_estimator, summary_writer):
     try:

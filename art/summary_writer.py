@@ -187,20 +187,34 @@ class SummaryWriterDefault(SummaryWriter):
                 losses = estimator.compute_losses(x=x, y=y)
 
                 for key, value in losses.items():
-                    self.summary_writer.add_scalars(
-                        "loss/{}/batch-{}".format(key, batch_id),
-                        {str(i): v for i, v in enumerate(value)},
-                        global_step=global_step,
-                    )
+                    if np.ndim(value) == 0:
+                        self.summary_writer.add_scalar(
+                            "loss/{}/batch-{}".format(key, batch_id),
+                            value,
+                            global_step=global_step,
+                        )
+                    else:
+                        self.summary_writer.add_scalars(
+                            "loss/{}/batch-{}".format(key, batch_id),
+                            {str(i): v for i, v in enumerate(value)},
+                            global_step=global_step,
+                        )
 
             elif hasattr(estimator, "compute_loss"):
                 loss = estimator.compute_loss(x=x, y=y)
 
-                self.summary_writer.add_scalars(
-                    "loss/batch-{}".format(batch_id),
-                    {str(i): v for i, v in enumerate(loss)},
-                    global_step=global_step,
-                )
+                if np.ndim(loss) == 0:
+                    self.summary_writer.add_scalar(
+                        "loss/batch-{}".format(batch_id),
+                        loss,
+                        global_step=global_step,
+                    )
+                else:
+                    self.summary_writer.add_scalars(
+                        "loss/batch-{}".format(batch_id),
+                        {str(i): v for i, v in enumerate(loss)},
+                        global_step=global_step,
+                    )
 
         # Indicators of Attack Failure by Pintor et al. (2021)
         # Paper link: https://arxiv.org/abs/2106.09947
@@ -253,11 +267,18 @@ class SummaryWriterDefault(SummaryWriter):
                     i_2_step = 1 - np.abs(cos_beta)
                     self.i_2 = np.minimum(self.i_2, i_2_step)
 
-                self.summary_writer.add_scalars(
-                    "Attack Failure Indicator 2 - Break-point angle/batch-{}".format(batch_id),
-                    {str(i): v for i, v in enumerate(self.i_2)},
-                    global_step=global_step,
-                )
+                if np.ndim(self.i_2) == 0:
+                    self.summary_writer.add_scalar(
+                        "loss/batch-{}".format(batch_id),
+                        self.i_2,
+                        global_step=global_step,
+                    )
+                else:
+                    self.summary_writer.add_scalars(
+                        "Attack Failure Indicator 2 - Break-point angle/batch-{}".format(batch_id),
+                        {str(i): v for i, v in enumerate(self.i_2)},
+                        global_step=global_step,
+                    )
 
         if self.ind_3:
             loss = estimator.compute_loss(x=x, y=y)
@@ -267,18 +288,25 @@ class SummaryWriterDefault(SummaryWriter):
             else:
                 self.i_3[str(batch_id)] = np.zeros_like(loss)
 
-            self.summary_writer.add_scalars(
-                "Attack Failure Indicator 3 - Increasing Loss/batch-{}".format(batch_id),
-                {str(i): v for i, v in enumerate(self.i_3[str(batch_id)] / global_step)},
-                global_step=global_step,
-            )
+            if np.ndim(self.i_3[str(batch_id)]) == 0:
+                self.summary_writer.add_scalar(
+                    "loss/batch-{}".format(batch_id),
+                    self.i_3[str(batch_id)] / global_step,
+                    global_step=global_step,
+                )
+            else:
+                self.summary_writer.add_scalars(
+                    "Attack Failure Indicator 3 - Increasing Loss/batch-{}".format(batch_id),
+                    {str(i): v for i, v in enumerate(self.i_3[str(batch_id)] / global_step)},
+                    global_step=global_step,
+                )
 
             self.loss_prev[str(batch_id)] = loss
 
         if self.ind_4:
 
             if str(batch_id) not in self.i_4:
-                self.i_4[str(batch_id)] = np.zeros_like(loss)
+                self.i_4[str(batch_id)] = np.zeros(grad.shape[0])
 
             self.i_4[str(batch_id)][np.linalg.norm(grad.reshape(grad.shape[0], -1), axis=1, ord=1) < 1e-9] += 1
 
