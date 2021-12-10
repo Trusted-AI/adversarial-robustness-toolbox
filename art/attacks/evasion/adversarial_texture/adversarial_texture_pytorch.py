@@ -192,9 +192,9 @@ class AdversarialTexturePyTorch(EvasionAttack):
         import torch  # lgtm [py/repeated-import]
 
         y_pred = self._predictions(videos, y_init, foreground)
-        loss = torch.nn.L1Loss(size_average=False)(y_pred[0]["boxes"].float(), target[0]["boxes"].float())
+        loss = torch.nn.L1Loss(reduction='sum')(y_pred[0]["boxes"].float(), target[0]["boxes"].float())
         for i in range(1, len(y_pred)):
-            loss = loss + torch.nn.L1Loss(size_average=False)(y_pred[i]["boxes"].float(), target[i]["boxes"].float())
+            loss = loss + torch.nn.L1Loss(reduction='sum')(y_pred[i]["boxes"].float(), target[i]["boxes"].float())
 
         return loss
 
