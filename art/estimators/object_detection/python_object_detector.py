@@ -373,7 +373,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
     ) -> np.ndarray:
         raise NotImplementedError
 
-    def compute_losses(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
+    def compute_losses(self, x: np.ndarray, y: np.ndarray) -> Dict[str, np.ndarray]:
         """
         Compute all loss components.
 
@@ -383,7 +383,10 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
                   of shape `(nb_samples,)`.
         :return: Dictionary of loss components.
         """
-        output, _, _ = self._get_losses(x=x, y=y)
+        output_tensor, _, _ = self._get_losses(x=x, y=y)
+        output = dict()
+        for k, v in output_tensor.items():
+            output[k] = v.detach().cpu().numpy()
         return output
 
     def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
