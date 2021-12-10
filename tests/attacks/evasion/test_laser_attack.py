@@ -43,7 +43,7 @@ def fixture_close() -> Callable:
         :returns: true if they are close
         """
         assert x.shape == y.shape
-        return np.allclose(x, y, rtol=1e-3, atol=1e-5)
+        return np.testing.assert_array_almost_equal(x, y)
 
     return close
 
@@ -63,7 +63,11 @@ def fixture_not_close(close):
         :param y: second float array
         :returns: true if they are not the same
         """
-        return not close(x, y)
+        try:
+            close(x, y)
+            return False
+        except AssertionError:
+            return True
 
     return not_close
 
