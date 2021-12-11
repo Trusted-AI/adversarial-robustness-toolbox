@@ -7,3 +7,4 @@ from art.attacks.poisoning.feature_collision_attack import FeatureCollisionAttac
 from art.attacks.poisoning.adversarial_embedding_attack import PoisoningAttackAdversarialEmbedding
 from art.attacks.poisoning.clean_label_backdoor_attack import PoisoningAttackCleanLabelBackdoor
 from art.attacks.poisoning.bullseye_polytope_attack import BullseyePolytopeAttackPyTorch
+from art.attacks.poisoning.gradient_matching_attack import GradientMatchingAttack
