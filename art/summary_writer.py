@@ -175,6 +175,8 @@ class SummaryWriterDefault(SummaryWriter):
 
         # Patch
         if patch is not None:
+            if patch.shape[2] in [1, 3, 4]:
+                patch = np.transpose(patch, (2, 0, 1))
             self.summary_writer.add_image(
                 "patch",
                 patch,

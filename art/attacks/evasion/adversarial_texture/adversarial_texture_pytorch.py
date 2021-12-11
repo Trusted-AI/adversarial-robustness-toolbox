@@ -29,6 +29,7 @@ from tqdm.auto import trange
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.object_tracking.object_tracker import ObjectTrackerMixin
+from art.summary_writer import SummaryWriter
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
@@ -67,6 +68,7 @@ class AdversarialTexturePyTorch(EvasionAttack):
         step_size: float = 1.0 / 255.0,
         max_iter: int = 500,
         batch_size: int = 16,
+        summary_writer: Union[str, bool, SummaryWriter] = False,
         verbose: bool = True,
     ):
         """
@@ -80,11 +82,18 @@ class AdversarialTexturePyTorch(EvasionAttack):
         :param step_size: The step size.
         :param max_iter: The number of optimization steps.
         :param batch_size: The size of the training batch.
+        :param summary_writer: Activate summary writer for TensorBoard.
+                               Default is `False` and deactivated summary writer.
+                               If `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory.
+                               If of type `str` save in path.
+                               If of type `SummaryWriter` apply provided custom summary writer.
+                               Use hierarchical folder structure to compare between runs easily. e.g. pass in
+                               ‘runs/exp1’, ‘runs/exp2’, etc. for each new experiment to compare across them.
         :param verbose: Show progress bars.
         """
         import torch  # lgtm [py/repeated-import]
 
-        super().__init__(estimator=estimator)
+        super().__init__(estimator=estimator, summary_writer=summary_writer)
         self.patch_height = patch_height
         self.patch_width = patch_width
         self.x_min = x_min
@@ -94,6 +103,9 @@ class AdversarialTexturePyTorch(EvasionAttack):
         self.batch_size = batch_size
         self.verbose = verbose
         self._check_params()
+
+        self._batch_id = 0
+        self._i_max_iter = 0
 
         self.patch_shape = (self.patch_height, self.patch_width, 3)
 
@@ -141,6 +153,18 @@ class AdversarialTexturePyTorch(EvasionAttack):
         loss.backward(retain_graph=True)
 
         gradients = self._patch.grad.sign() * self.step_size
+
+        # Write summary
+        if self.summary_writer is not None:  # pragma: no cover
+            self.summary_writer.update(
+                batch_id=self._batch_id,
+                global_step=self._i_max_iter,
+                grad=np.expand_dims(self._patch.grad.detach().cpu().numpy(), axis=0),
+                patch=None,
+                estimator=None,
+                x=None,
+                y=None,
+            )
 
         with torch.no_grad():
             self._patch[:] = torch.clamp(
@@ -356,8 +380,13 @@ class AdversarialTexturePyTorch(EvasionAttack):
             drop_last=False,
         )
 
-        for _ in trange(self.max_iter, desc="Adversarial Texture PyTorch", disable=not self.verbose):
+        for i_max_iter in trange(self.max_iter, desc="Adversarial Texture PyTorch", disable=not self.verbose):
+
+            self._i_max_iter = i_max_iter
+            self._batch_id = 0
+
             for videos_i, target_i, y_init_i, foreground_i in data_loader:
+                self._batch_id += 1
                 videos_i = videos_i.to(self.estimator.device)
                 y_init_i = y_init_i.to(self.estimator.device)
                 foreground_i = foreground_i.to(self.estimator.device)
@@ -366,6 +395,21 @@ class AdversarialTexturePyTorch(EvasionAttack):
                     target_i_list.append({"boxes": target_i["boxes"][i_t].to(self.estimator.device)})
 
                 _ = self._train_step(videos=videos_i, target=target_i_list, y_init=y_init_i, foreground=foreground_i)
+
+                # Write summary
+                if self.summary_writer is not None:  # pragma: no cover
+                    self.summary_writer.update(
+                        batch_id=self._batch_id,
+                        global_step=self._i_max_iter,
+                        grad=None,
+                        patch=self._patch.detach().cpu().numpy(),
+                        estimator=self.estimator,
+                        x=videos_i.detach().cpu().numpy(),
+                        y=target_i_list,
+                    )
+
+        if self.summary_writer is not None:
+            self.summary_writer.reset()
 
         return self.apply_patch(x=x, foreground=foreground)
 
