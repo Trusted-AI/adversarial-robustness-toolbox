@@ -48,9 +48,11 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
 
     attack_params = PoisoningAttackWhiteBox.attack_params + [
         "target",
-        "max_iter",
+        "max_trials",
+        "max_epochs",
         "learning_rate_schedule",
         "epsilon",
+        "batch_size",
         "verbose",
     ]
 
@@ -58,7 +60,6 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
 
     def __init__(
         self,
-        # classifier,
         classifier: Union["CLASSIFIER_NEURALNETWORK_TYPE", List["CLASSIFIER_NEURALNETWORK_TYPE"]],  # TODO: Minimum requirement? classifier.model is a Tensorflow Layer.
         epsilon: float = 0.1,
         max_trials: int = 8,
@@ -98,8 +99,11 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
         Optimizes a portion of poisoned samples from x_train to make a model classify x_target as y_target by matching the gradients.
 
         :param x_trigger: A list of samples to use as triggers.
-        :param y: A list of target classes to classify x_target into.
-        :return: Poisoned samples.
+        :param y_trigger: A list of target classes to classify the triggers into.
+        :param x_train: A list of training data to poison a portion of.
+        :param y_train: A list of labels for x_train.
+        :param percent_poison: The percentage of samples to poison among x_train.
+        :return: A list of poisoned samples, and y_train.
         """
         from art.estimators.classification.pytorch import PyTorchClassifier
         from art.estimators.classification.tensorflow import TensorFlowV2Classifier
@@ -147,12 +151,6 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
         import tensorflow as tf
         from tensorflow.keras.layers import Input, Embedding, Add
 
-        # TODO 1: Choose the target sample to be misclassified.
-        # TODO 2: Choose poison samples.
-        # x_poison = [] # samples to be poisoned. Ideally of y_target class.
-        # y_poison = [] # original y labels of the poison samples. This is a clean-label attack and it does not change the labels.
-        # x_target = None # A single target sample to be misclassified.
-        # y_target = None # A target class to classify x_target into.
         P = len(x_poison)
 
         # TODO 3: Get the target gradient vector.
@@ -240,16 +238,20 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
         return input_noised_, B_
 
     def _check_params(self) -> None:
-        if self.learning_rate <= 0:
-            raise ValueError("Learning rate must be strictly positive")
+        if not isinstance(self.learning_rate_schedule, List[Tuple(float,int)]):
+            raise ValueError("learning_rate_schedule must be a list of pairs of a learning rate and an epoch")
 
-        if self.max_iter < 1:
-            raise ValueError("Value of max_iter at least 1")
+        if self.max_epochs < 1:
+            raise ValueError("max_epochs must be positive")
+
+        if self.max_trials < 1:
+            raise ValueError("max_trials must be positive")
 
         if self.epsilon <= 0:
-            raise ValueError("epsilon must be at least 0")
+            raise ValueError("epsilon must be nonnegative")
 
         if not isinstance(self.batch_size, int) or self.batch_size <= 0:
             raise ValueError("batch_size must be a positive integer")
 
-
+        if isinstance(self.verbose, int) and self.verbose < 0:
+            raise ValueError("verbose must be nonnegative integer or Boolean")
