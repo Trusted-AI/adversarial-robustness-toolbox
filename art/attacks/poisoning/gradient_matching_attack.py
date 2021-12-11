@@ -47,7 +47,7 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
     """
 
     attack_params = PoisoningAttackWhiteBox.attack_params + [
-        "target",
+        "percent_poison",
         "max_trials",
         "max_epochs",
         "learning_rate_schedule",
@@ -61,6 +61,7 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
     def __init__(
         self,
         classifier: Union["CLASSIFIER_NEURALNETWORK_TYPE", List["CLASSIFIER_NEURALNETWORK_TYPE"]],  # TODO: Minimum requirement? classifier.model is a Tensorflow Layer.
+        percent_poison: float,
         epsilon: float = 0.1,
         max_trials: int = 8,
         max_epochs: int = 250,
@@ -72,6 +73,7 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
         Initialize a Gradient Matching Clean-Label poisoning attack (Witches' Brew).
 
         :param classifier: The proxy classifier used for the attack.
+        :param percent_poison: The percentage of samples to poison among x_train.
         :param epsilon: The L-inf perturbation budget.
         :param max_trials: The maximum number of restarts to optimize the poison.
         :param max_epochs: The maximum number of epochs to optimize the train per trial.
@@ -82,6 +84,7 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
         self.substitute_classifier = classifier
 
         super().__init__(classifier=self.substitute_classifier)
+        self.percent_poison = percent_poison
         self.epsilon = epsilon
         self.learning_rate_schedule = learning_rate_schedule
         self.max_trials = max_trials
@@ -93,7 +96,6 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
 
     def poison(self, x_trigger: np.ndarray, y_trigger: np.ndarray,
                 x_train: np.ndarray, y_train: np.ndarray,
-                percent_poison: float,
                 **kwargs) -> np.ndarray:
         """
         Optimizes a portion of poisoned samples from x_train to make a model classify x_target as y_target by matching the gradients.
@@ -102,7 +104,6 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
         :param y_trigger: A list of target classes to classify the triggers into.
         :param x_train: A list of training data to poison a portion of.
         :param y_train: A list of labels for x_train.
-        :param percent_poison: The percentage of samples to poison among x_train.
         :return: A list of poisoned samples, and y_train.
         """
         from art.estimators.classification.pytorch import PyTorchClassifier
@@ -118,7 +119,7 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
         # Choose samples to poison.
         x_train = x_train.copy()
         classes_target = set(y_trigger.argmax(axis=-1))
-        P = percent_poison * len(x_train)
+        P = self.percent_poison * len(x_train)
         indices_poison = np.random.permutation(np.where(y_train.argmax(axis=-1) in classes_target)[0])[:P]
         x_poison = x_train[indices_poison]
         y_poison = y_train[indices_poison]
@@ -240,6 +241,9 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
     def _check_params(self) -> None:
         if not isinstance(self.learning_rate_schedule, List[Tuple(float,int)]):
             raise ValueError("learning_rate_schedule must be a list of pairs of a learning rate and an epoch")
+
+        if self.percent_poison > 1 or self.percent_poison < 0:
+            raise ValueError("percent_poison must be in [0,1]")
 
         if self.max_epochs < 1:
             raise ValueError("max_epochs must be positive")
