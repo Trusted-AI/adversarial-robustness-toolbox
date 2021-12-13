@@ -697,13 +697,15 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator, Tracker):
 
         output_dict, _, _ = self._get_losses(x=x, y=y)
 
-        if isinstance(output_dict["torch.nn.L1Loss"], torch.Tensor):
-            output = output_dict["torch.nn.L1Loss"].detach().cpu().numpy()
-        else:
+        if isinstance(output_dict["torch.nn.L1Loss"], list):
             output_list = list()
             for out in output_dict["torch.nn.L1Loss"]:
                 output_list.append(out.detach().cpu().numpy())
             output = np.array(output_list)
+        elif isinstance(output_dict["torch.nn.L1Loss"], torch.Tensor):
+            output = output_dict["torch.nn.L1Loss"].detach().cpu().numpy()
+        else:
+            output = output_dict["torch.nn.L1Loss"]
 
         return output
 
