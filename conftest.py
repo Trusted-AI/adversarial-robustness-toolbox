@@ -21,7 +21,7 @@ import logging
 import os
 import shutil
 import tempfile
-from typing import Dict, List, Union
+from typing import Dict, List, TYPE_CHECKING, Union
 import warnings
 
 import numpy as np
@@ -56,6 +56,9 @@ from tests.utils import (
     load_dataset,
     master_seed,
 )
+
+if TYPE_CHECKING:
+    import torch
 
 logger = logging.getLogger(__name__)
 
