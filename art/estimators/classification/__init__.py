@@ -14,6 +14,7 @@ from art.estimators.classification.detector_classifier import DetectorClassifier
 from art.estimators.classification.ensemble import EnsembleClassifier
 from art.estimators.classification.GPy import GPyGaussianProcessClassifier
 from art.estimators.classification.keras import KerasClassifier
+from art.estimators.classification.jax import JaxClassifier
 from art.estimators.classification.lightgbm import LightGBMClassifier
 from art.estimators.classification.mxnet import MXClassifier
 from art.estimators.classification.pytorch import PyTorchClassifier
