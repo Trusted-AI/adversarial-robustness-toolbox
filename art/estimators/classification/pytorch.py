@@ -810,8 +810,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         assert grads.shape == x.shape
 
         return grads
-    
-    
+
     def custom_loss_gradient(  # pylint: disable=W0221
         self,
         loss_fn,
@@ -835,9 +834,9 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                               `training_mode=False.`
         :return: Array of gradients of the same shape as `x`.
         """
-        import torch # lgtm [py/repeated-import]
+        import torch  # lgtm [py/repeated-import]
         import torch.nn as nn
-        
+
         self._model.train(mode=training_mode)
         self._model.eval()
         if self.all_framework_preprocessing:
@@ -854,11 +853,11 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             targets_t, _ = self._apply_preprocessing(y_grad, y=None, fit=False, no_grad=False)
         if isinstance(x, np.ndarray):
             x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False, no_grad=True)
-            y_preprocessed, _ = self._apply_preprocessing(y, y=None, fit=False, no_grad=True) 
+            y_preprocessed, _ = self._apply_preprocessing(y, y=None, fit=False, no_grad=True)
             x_grad = torch.from_numpy(x_preprocessed).to(self._device)
             y_grad = torch.from_numpy(y_preprocessed).to(self._device)
-            x_grad.requires_grad=True
-            y_grad.requires_grad=False
+            x_grad.requires_grad = True
+            y_grad.requires_grad = False
             inputs_t = x_grad
             targets_t = y_grad
         else:
@@ -869,9 +868,9 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         model_outputs1 = self._model._features[layer_name]
         self._model(targets_t)
         model_outputs2 = self._model._features[layer_name].detach()
-        loss = loss_fn(model_outputs1,model_outputs2)
-        loss = loss**0.5
-        
+        loss = loss_fn(model_outputs1, model_outputs2)
+        loss = loss ** 0.5
+
         # Clean gradients
         self._model.zero_grad()
 
@@ -889,16 +888,13 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             grads = x_grad.grad
         else:
             grads = x_grad.grad.cpu().numpy().copy()  # type: ignore
-        
+
         if not self.all_framework_preprocessing:
             grads = self._apply_preprocessing_gradient(x, grads)
-        
+
         assert grads.shape == x.shape
 
         return grads
-        
-
-
 
     def get_activations(
         self,
@@ -906,8 +902,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         layer: Optional[Union[int, str]] = None,
         batch_size: int = 128,
         framework: bool = False,
-        ) -> np.ndarray:
-        
+    ) -> np.ndarray:
+
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
@@ -920,8 +916,9 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         """
         import torch  # lgtm [py/repeated-import]
+
         self._model.eval()
-        
+
         # Apply defences
         x_preprocessed, _ = self._apply_preprocessing(x=x, y=None, fit=False)
 
@@ -941,7 +938,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                 return self._model(x)[layer_index]
             x_ = torch.from_numpy(x_preprocessed)
             self._model(x_.to(self._device))
-            return x_,self._model._features[layer] 
+            return x_, self._model._features[layer]
 
         # Run prediction with batch processing
         results = []
@@ -956,7 +953,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
             # Run prediction for the current batch
             self._model(torch.from_numpy(x_preprocessed[begin:end]).to(self._device))
-            layer_output = self._model._features[layer]           
+            layer_output = self._model._features[layer]
             results.append(layer_output.detach().cpu().numpy())
 
         results = np.concatenate(results)
@@ -1086,10 +1083,11 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                         for layer_id in self._layers:
                             layer = dict([*self._model.named_modules()])[layer_id]
                             layer.register_forward_hook(self.save_outputs_hook(layer_id))
-                        
+
                     def save_outputs_hook(self, layer_id: str):
                         def fn(_, __, output):
                             self._features[layer_id] = output
+
                         return fn
 
                     # pylint: disable=W0221
