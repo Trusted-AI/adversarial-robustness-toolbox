@@ -197,8 +197,9 @@ def test_if_random_laser_beam_is_in_ranges(laser_generator, min_laser_beam, max_
     try:
         for _ in range(100):
             random_laser = laser_generator.random()
-            np.testing.assert_array_less(random_laser.to_numpy(), max_laser_beam.to_numpy())
-            np.testing.assert_array_less(min_laser_beam.to_numpy(), random_laser.to_numpy())
+            leq = lambda x, y: (x <= y).all()
+            np.testing.assert_array_compare(leq, random_laser.to_numpy(), max_laser_beam.to_numpy())
+            np.testing.assert_array_compare(leq, min_laser_beam.to_numpy(), random_laser.to_numpy())
     except ARTTestException as _e:
         art_warning(_e)
 
@@ -213,9 +214,11 @@ def test_laser_beam_update(laser_generator, min_laser_beam, max_laser_beam, not_
 
             arr1 = random_laser.to_numpy()
             arr2 = laser_generator.update_params(random_laser).to_numpy()
+            leq = lambda x, y: (x <= y).all()
             np.testing.assert_array_compare(not_close, arr1, arr2)
-            np.testing.assert_array_less(arr2, max_laser_beam.to_numpy())
-            np.testing.assert_array_less(min_laser_beam.to_numpy(), arr2)
+            np.testing.assert_array_compare(leq, arr2, max_laser_beam.to_numpy())
+            np.testing.assert_array_compare(leq, min_laser_beam.to_numpy(), arr2)
+            np.testing.assert_array_compare(leq, np.zeros_like(arr1), arr1)
     except ARTTestException as _e:
         art_warning(_e)
 
