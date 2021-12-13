@@ -65,8 +65,9 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
         epsilon: float = 0.1,
         max_trials: int = 8,
         max_epochs: int = 250,
-        learning_rate_schedule: Tuple(List[float],List[int]) = ([1e-1, 1e-2, 1e-3, 1e-4],[100, 150, 200, 220]),
+        learning_rate_schedule: Tuple[List[float],List[int]] = ([1e-1, 1e-2, 1e-3, 1e-4],[100, 150, 200, 220]),
         batch_size: int = 128,
+        clip_values: Tuple[float,float] = (0, 1.0),
         verbose: bool = True,
     ):
         """
@@ -90,6 +91,7 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
         self.max_trials = max_trials
         self.max_epochs = max_epochs
         self.batch_size = batch_size
+        self.clip_values = clip_values
         self.verbose = verbose
         self._check_params()
 
@@ -120,14 +122,14 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
         x_train = x_train.copy()
         classes_target = set(y_trigger.argmax(axis=-1))
         P = self.percent_poison * len(x_train)
-        indices_poison = np.random.permutation(np.where(y_train.argmax(axis=-1) in classes_target)[0])[:P]
-        x_poison = x_train[indices_poison]
-        y_poison = y_train[indices_poison]
 
         # Try poisoning num_trials times and choose the best one.
         best_B = np.finfo(np.float32).max
         best_x_poisoned = None
         for i in range(self.max_trials):
+            indices_poison = np.random.permutation(np.where(y_train.argmax(axis=-1) in classes_target)[0])[:P]
+            x_poison = x_train[indices_poison]
+            y_poison = y_train[indices_poison]
             x_poisoned, B_ = poisoner(x_trigger, y_trigger, x_poison, y_poison, **kwargs)
             if B_ < best_B:
                 best_B = B_
@@ -137,20 +139,22 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
         return x_train, y_train  # y_train has not been modified.
 
 
-    def __poison__pytorch(self, x_target: np.ndarray, y_target: np.ndarray, x_poison: np.ndarray, y_poison: np.ndarray, **kwargs) -> np.ndarray:
+    def __poison__pytorch(self, x_trigger: np.ndarray, y_trigger: np.ndarray, x_poison: np.ndarray, y_poison: np.ndarray, **kwargs) -> np.ndarray:
         raise NotImplementedError
 
-    def __poison__tensorflow(self, x_target: np.ndarray, y_target: np.ndarray, x_poison: np.ndarray, y_poison: np.ndarray, **kwargs) -> np.ndarray:
+    def __poison__tensorflow(self, x_trigger: np.ndarray, y_trigger: np.ndarray, x_poison: np.ndarray, y_poison: np.ndarray, **kwargs) -> np.ndarray:
         """
-        Iteratively finds optimal attack points starting at values at x
+        Optimize the poison by matching the gradient within the perturbation budget.
 
-        :param x: The base images to begin the poison process.
-        :param y: Target label
-        :return: An tuple holding the (poisoning examples, poisoning labels).
+        :param x_trigger: List of triggers.
+        :param y_trigger: List of target labels.
+        :param x_poison: List of samples to poison.
+        :param y_poison: List of the labels for x_poison.
+        :return: A pair of poisoned samples, B-score (cosine similarity of the gradients).
         """
         import tensorflow.keras.backend as K
         import tensorflow as tf
-        from tensorflow.keras.layers import Input, Embedding, Add
+        from tensorflow.keras.layers import Input, Embedding, Add, Lambda
 
         P = len(x_poison)
 
@@ -165,7 +169,7 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
             d_w_norm = d_w / tf.sqrt(tf.reduce_sum(tf.square(d_w)))
             return d_w_norm
 
-        grad_ws_norm = grad_loss(self.substitute_classifier.model, tf.constant(x_target), tf.constant(y_target))
+        grad_ws_norm = grad_loss(self.substitute_classifier.model, tf.constant(x_trigger), tf.constant(y_trigger))
 
         class ClipConstraint(tf.keras.constraints.MaxNorm):
             def __init__(self, max_value=2):
@@ -173,7 +177,6 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
 
             def __call__(self, w):
                 return tf.clip_by_value(w, -self.max_value, self.max_value)  # TODO: The poisoned sample needs to be normalized again.
-
 
         # Define the model to apply and optimize the poison.
         input_poison = Input(batch_shape=self.substitute_classifier.model.input.shape)
@@ -184,6 +187,7 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
         embeddings = ClipConstraint(max_value=self.epsilon)(embeddings)
         embeddings = tf.reshape(embeddings, tf.shape(input_poison))
         input_noised = Add()([input_poison, embeddings])
+        input_noised = Lambda(lambda x: K.clip(x, self.clip_values[0], self.clip_values[1]))(input_noised)
 
         def loss_fn(input_noised, target, grad_ws_norm):
             d_w2_norm = grad_loss(self.substitute_classifier.model, input_noised, target)
@@ -239,8 +243,9 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
         return input_noised_, B_
 
     def _check_params(self) -> None:
-        if not isinstance(self.learning_rate_schedule, List[Tuple(float,int)]):
-            raise ValueError("learning_rate_schedule must be a list of pairs of a learning rate and an epoch")
+        if not isinstance(self.learning_rate_schedule, tuple) or\
+            len(self.learning_rate_schedule)!=2:
+            raise ValueError("learning_rate_schedule must be a pair of a list of learning rates and a list of epochs")
 
         if self.percent_poison > 1 or self.percent_poison < 0:
             raise ValueError("percent_poison must be in [0,1]")
@@ -251,6 +256,9 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
         if self.max_trials < 1:
             raise ValueError("max_trials must be positive")
 
+        if not isinstance(self.clip_values, tuple) or len(self.clip_values)==2:
+            raise ValueError("clip_values must be a pair (min, max) of floats")
+ 
         if self.epsilon <= 0:
             raise ValueError("epsilon must be nonnegative")
 
