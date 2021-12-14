@@ -292,13 +292,17 @@ class SummaryWriterDefault(SummaryWriter):
 
             if str(batch_id) in self.i_3:
                 if targeted:
-                    self.i_3[str(batch_id)][loss > self.loss_prev[str(batch_id)]] += loss[
-                        loss > self.loss_prev[str(batch_id)]
-                    ]
+                    if isinstance(loss, float):
+                        loss_add = loss
+                    else:
+                        loss_add = loss[loss > self.loss_prev[str(batch_id)]]
+                    self.i_3[str(batch_id)][loss > self.loss_prev[str(batch_id)]] += loss_add
                 else:
-                    self.i_3[str(batch_id)][loss < self.loss_prev[str(batch_id)]] += loss[
-                        loss < self.loss_prev[str(batch_id)]
-                    ]
+                    if isinstance(loss, float):
+                        loss_add = loss
+                    else:
+                        loss_add = loss[loss < self.loss_prev[str(batch_id)]]
+                    self.i_3[str(batch_id)][loss < self.loss_prev[str(batch_id)]] += loss_add
             else:
                 self.i_3[str(batch_id)] = np.zeros_like(loss)
 

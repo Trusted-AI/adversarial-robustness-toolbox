@@ -56,7 +56,7 @@ def test_update_image_classification_sw(art_warning, fix_get_mnist_subset, image
         assert all(attack.summary_writer.i_1 == [False, False, False, False, False])
         if np.ndim(attack.summary_writer.i_2) != 0:
             assert len(attack.summary_writer.i_2) == 5
-        np.testing.assert_almost_equal(attack.summary_writer.i_3["0"], np.array([9.0, 9.0, 9.0, 9.0, 9.0]))
+        np.testing.assert_almost_equal(attack.summary_writer.i_3["0"], np.array([0.0, 0.0, 0.0, 0.0, 0.0]))
         np.testing.assert_almost_equal(attack.summary_writer.i_4["0"], np.array([0.0, 0.0, 0.0, 0.0, 0.0]))
 
     except ARTTestException as e:
@@ -110,7 +110,7 @@ def test_update_image_object_detection_sw(art_warning, fix_get_mnist_subset, fix
 
         if np.ndim(attack.summary_writer.i_2) != 0:
             assert len(attack.summary_writer.i_2) == 5
-        np.testing.assert_almost_equal(attack.summary_writer.i_3["0"], np.array([0.0]))
+        np.testing.assert_almost_equal(attack.summary_writer.i_3["0"], np.array([0.2265982]))
         np.testing.assert_almost_equal(attack.summary_writer.i_4["0"], np.array([0.0, 0.0, 0.0, 0.0, 0.0]))
 
     except ARTTestException as e:
