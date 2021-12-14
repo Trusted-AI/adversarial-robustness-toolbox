@@ -319,6 +319,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
                 estimator=self.estimator,
                 x=x.cpu().detach().numpy(),
                 y=y.cpu().detach().numpy(),
+                targeted=self.targeted,
             )
 
         # Check for nan before normalisation an replace with 0

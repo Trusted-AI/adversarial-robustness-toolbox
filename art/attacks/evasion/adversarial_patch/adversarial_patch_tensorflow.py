@@ -473,6 +473,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
                     estimator=self.estimator,
                     x=x_patched,
                     y=y,
+                    targeted=self.targeted,
                 )
 
         if self.summary_writer is not None:

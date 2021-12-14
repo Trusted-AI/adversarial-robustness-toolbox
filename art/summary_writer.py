@@ -55,7 +55,9 @@ class SummaryWriter(ABC):
         return self._summary_writer
 
     @abstractmethod
-    def update(self, batch_id, global_step, grad=None, patch=None, estimator=None, x=None, y=None, **kwargs):
+    def update(
+        self, batch_id, global_step, grad=None, patch=None, estimator=None, x=None, y=None, targeted=False, **kwargs
+    ):
         """
         Update the summary writer.
 
@@ -66,6 +68,7 @@ class SummaryWriter(ABC):
         :param estimator: The estimator to evaluate or calculate gradients of `grad` is None to obtain new metrics.
         :param x: Input data.
         :param y: True or target labels.
+        :param targeted: Indicates whether the attack is targeted (True) or untargeted (False).
         """
         raise NotImplementedError
 
@@ -135,6 +138,7 @@ class SummaryWriterDefault(SummaryWriter):
         estimator=None,
         x: Optional[np.ndarray] = None,
         y: Optional[np.ndarray] = None,
+        targeted: bool = False,
         **kwargs,
     ):
         """
@@ -147,6 +151,7 @@ class SummaryWriterDefault(SummaryWriter):
         :param estimator: The estimator to evaluate or calculate gradients of `grad` is None to obtain new metrics.
         :param x: Input data.
         :param y: True or target labels.
+        :param targeted: Indicates whether the attack is targeted (True) or untargeted (False).
         """
 
         # Gradients
@@ -220,7 +225,7 @@ class SummaryWriterDefault(SummaryWriter):
 
         # Indicators of Attack Failure by Pintor et al. (2021)
         # Paper link: https://arxiv.org/abs/2106.09947
-        if self.ind_1:
+        if self.ind_1:  # Silent Success
             from art.estimators.classification.classifier import ClassifierMixin
 
             if isinstance(estimator, ClassifierMixin):
@@ -237,7 +242,7 @@ class SummaryWriterDefault(SummaryWriter):
                     "`estimator` set `ind_1=False`."
                 )
 
-        if self.ind_2:
+        if self.ind_2:  # Break-point Angle
             losses = estimator.compute_loss(x=x, y=y)
 
             if str(batch_id) not in self.losses:
@@ -277,43 +282,52 @@ class SummaryWriterDefault(SummaryWriter):
                     )
                 else:
                     self.summary_writer.add_scalars(
-                        "Attack Failure Indicator 2 - Break-point angle/batch-{}".format(batch_id),
+                        "Attack Failure Indicator 2 - Break-point Angle/batch-{}".format(batch_id),
                         {str(i): v for i, v in enumerate(self.i_2)},
                         global_step=global_step,
                     )
 
-        if self.ind_3:
+        if self.ind_3:  # Diverging (Increasing) Loss
             loss = estimator.compute_loss(x=x, y=y)
 
             if str(batch_id) in self.i_3:
-                self.i_3[str(batch_id)][loss > self.loss_prev[str(batch_id)]] += 1
+                if targeted:
+                    self.i_3[str(batch_id)][loss > self.loss_prev[str(batch_id)]] += loss[
+                        loss > self.loss_prev[str(batch_id)]
+                    ]
+                else:
+                    self.i_3[str(batch_id)][loss < self.loss_prev[str(batch_id)]] += loss[
+                        loss < self.loss_prev[str(batch_id)]
+                    ]
             else:
                 self.i_3[str(batch_id)] = np.zeros_like(loss)
 
             if np.ndim(self.i_3[str(batch_id)]) == 0:
                 self.summary_writer.add_scalar(
                     "loss/batch-{}".format(batch_id),
-                    self.i_3[str(batch_id)] / global_step,
+                    self.i_3[str(batch_id)],
                     global_step=global_step,
                 )
             else:
                 self.summary_writer.add_scalars(
-                    "Attack Failure Indicator 3 - Increasing Loss/batch-{}".format(batch_id),
-                    {str(i): v for i, v in enumerate(self.i_3[str(batch_id)] / global_step)},
+                    "Attack Failure Indicator 3 - Diverging Loss/batch-{}".format(batch_id),
+                    {str(i): v for i, v in enumerate(self.i_3[str(batch_id)])},
                     global_step=global_step,
                 )
 
             self.loss_prev[str(batch_id)] = loss
 
-        if self.ind_4:
+        if self.ind_4:  # Zero Gradients
+
+            threshold = 0.0
 
             if str(batch_id) not in self.i_4:
                 self.i_4[str(batch_id)] = np.zeros(grad.shape[0])
 
-            self.i_4[str(batch_id)][np.linalg.norm(grad.reshape(grad.shape[0], -1), axis=1, ord=1) < 1e-9] += 1
+            self.i_4[str(batch_id)][np.linalg.norm(grad.reshape(grad.shape[0], -1), axis=1, ord=2) <= threshold] += 1
 
             self.summary_writer.add_scalars(
                 "Attack Failure Indicator 4 - Zero Gradients/batch-{}".format(batch_id),
-                {str(i): v for i, v in enumerate(self.i_4[str(batch_id)])},
+                {str(i): v for i, v in enumerate(self.i_4[str(batch_id)] / global_step)},
                 global_step=global_step,
             )
