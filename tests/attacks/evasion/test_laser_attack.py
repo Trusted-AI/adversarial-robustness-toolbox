@@ -72,6 +72,27 @@ def fixture_not_close(close):
     return not_close
 
 
+@pytest.fixture(name="less_or_equal")
+def fixture_less_or_equal():
+    """
+    Comparison function
+    :returns: function that checks if first array is less or equal than the second.
+    """
+
+    def leq(x: np.ndarray, y: np.ndarray) -> bool:
+        """
+        Compare two float arrays
+
+        :param x: first array
+        :param y: second array
+        :returns: true if every element of the first array is less or equal than the corresponding element
+            of the second array.
+        """
+        return (x <= y).all()
+
+    return leq
+
+
 @pytest.fixture(name="image_shape")
 def fixture_image_shape() -> Tuple[int, int, int]:
     """
@@ -190,21 +211,20 @@ def fixture_attack(model) -> LaserBeamAttack:
     return LaserBeamAttack(estimator=model, iterations=50, max_laser_beam=(780, 3.14, 32, 32))
 
 
-def test_if_random_laser_beam_is_in_ranges(laser_generator, min_laser_beam, max_laser_beam, art_warning):
+def test_if_random_laser_beam_is_in_ranges(laser_generator, min_laser_beam, max_laser_beam, less_or_equal, art_warning):
     """
     Test if random laser beam is in defined ranges.
     """
     try:
         for _ in range(100):
             random_laser = laser_generator.random()
-            leq = lambda x, y: (x <= y).all()
-            np.testing.assert_array_compare(leq, random_laser.to_numpy(), max_laser_beam.to_numpy())
-            np.testing.assert_array_compare(leq, min_laser_beam.to_numpy(), random_laser.to_numpy())
+            np.testing.assert_array_compare(less_or_equal, random_laser.to_numpy(), max_laser_beam.to_numpy())
+            np.testing.assert_array_compare(less_or_equal, min_laser_beam.to_numpy(), random_laser.to_numpy())
     except ARTTestException as _e:
         art_warning(_e)
 
 
-def test_laser_beam_update(laser_generator, min_laser_beam, max_laser_beam, not_close, art_warning):
+def test_laser_beam_update(laser_generator, min_laser_beam, max_laser_beam, not_close, less_or_equal, art_warning):
     """
     Test if laser beam update is conducted correctly.
     """
@@ -214,11 +234,10 @@ def test_laser_beam_update(laser_generator, min_laser_beam, max_laser_beam, not_
 
             arr1 = random_laser.to_numpy()
             arr2 = laser_generator.update_params(random_laser).to_numpy()
-            leq = lambda x, y: (x <= y).all()
             np.testing.assert_array_compare(not_close, arr1, arr2)
-            np.testing.assert_array_compare(leq, arr2, max_laser_beam.to_numpy())
-            np.testing.assert_array_compare(leq, min_laser_beam.to_numpy(), arr2)
-            np.testing.assert_array_compare(leq, np.zeros_like(arr1), arr1)
+            np.testing.assert_array_compare(less_or_equal, arr2, max_laser_beam.to_numpy())
+            np.testing.assert_array_compare(less_or_equal, min_laser_beam.to_numpy(), arr2)
+            np.testing.assert_array_compare(less_or_equal, np.zeros_like(arr1), arr1)
     except ARTTestException as _e:
         art_warning(_e)
 
