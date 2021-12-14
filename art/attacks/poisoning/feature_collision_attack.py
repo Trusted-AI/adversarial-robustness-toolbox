@@ -32,7 +32,6 @@ from art.estimators import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
 from art.estimators.classification.keras import KerasClassifier
 from art.estimators.classification.pytorch import PyTorchClassifier
-import matplotlib.pyplot as plt
 
 
 if TYPE_CHECKING:
