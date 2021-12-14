@@ -21,6 +21,7 @@ import logging
 import os
 import shutil
 import tempfile
+from typing import Dict, List, TYPE_CHECKING, Union
 import warnings
 
 import numpy as np
@@ -55,6 +56,9 @@ from tests.utils import (
     load_dataset,
     master_seed,
 )
+
+if TYPE_CHECKING:
+    import torch
 
 logger = logging.getLogger(__name__)
 
@@ -880,6 +884,7 @@ def fix_get_rcnn():
             self._clip_values = (0, 1)
             self.channels_first = False
             self._input_shape = None
+            self._compute_loss_count = 1
 
         def loss_gradient(self, x: np.ndarray, y: None, **kwargs):
             return np.ones_like(x)
@@ -898,6 +903,26 @@ def fix_get_rcnn():
         @property
         def input_shape(self):
             return self._input_shape
+
+        def compute_losses(
+            self, x: np.ndarray, y: Union[List[Dict[str, np.ndarray]], List[Dict[str, "torch.Tensor"]]]
+        ) -> Dict[str, np.ndarray]:
+
+            losses_dict = {
+                "loss_classifier": np.array(0.43572357, dtype=float),
+                "loss_box_reg": np.array(0.17341757, dtype=float),
+                "loss_objectness": np.array(0.02198849, dtype=float),
+                "loss_rpn_box_reg": np.array(0.03471708, dtype=float),
+            }
+
+            return losses_dict
+
+        def compute_loss(
+            self, x: np.ndarray, y: Union[List[Dict[str, np.ndarray]], List[Dict[str, "torch.Tensor"]]], **kwargs
+        ) -> Union[np.ndarray, "torch.Tensor"]:
+            self._compute_loss_count += 1
+            loss = 0.43572357 / self._compute_loss_count
+            return loss
 
     frcnn = DummyObjectDetector()
     return frcnn
