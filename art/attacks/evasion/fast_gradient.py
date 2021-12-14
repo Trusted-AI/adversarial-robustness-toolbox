@@ -396,6 +396,7 @@ class FastGradientMethod(EvasionAttack):
                 estimator=self.estimator,
                 x=batch,
                 y=batch_labels,
+                targeted=self.targeted,
             )
 
         # Check for NaN before normalisation an replace with 0

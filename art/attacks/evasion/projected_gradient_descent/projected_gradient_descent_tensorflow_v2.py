@@ -315,6 +315,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
                 estimator=self.estimator,
                 x=x.numpy(),
                 y=y.numpy(),
+                targeted=self.targeted,
             )
 
         # Check for NaN before normalisation an replace with 0
