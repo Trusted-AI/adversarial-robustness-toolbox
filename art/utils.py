@@ -538,21 +538,27 @@ def check_and_transform_label_format(
     :return: Labels with shape `(nb_samples, nb_classes)` (one-hot) or `(nb_samples,)` (index).
     """
     if labels is not None:
-        if len(labels.shape) == 2 and labels.shape[1] > 1:
+        if len(labels.shape) == 2 and labels.shape[1] > 1:  # multi-class, one-hot encoded
             if not return_one_hot:
                 labels = np.argmax(labels, axis=1)
-        elif len(labels.shape) == 2 and labels.shape[1] == 1 and nb_classes is not None and nb_classes > 2:
-            labels = np.squeeze(labels)
+                labels = np.expand_dims(labels, axis=1)
+        elif (
+            len(labels.shape) == 2 and labels.shape[1] == 1 and nb_classes is not None and nb_classes > 2
+        ):  # multi-class, index labels
             if return_one_hot:
                 labels = to_categorical(labels, nb_classes)
-        elif len(labels.shape) == 2 and labels.shape[1] == 1 and nb_classes is not None and nb_classes == 2:
-            pass
-        elif len(labels.shape) == 1:
+            else:
+                labels = np.expand_dims(labels, axis=1)
+        elif (
+            len(labels.shape) == 2 and labels.shape[1] == 1 and nb_classes is not None and nb_classes == 2
+        ):  # binary, index labels
             if return_one_hot:
-                if nb_classes == 2:
-                    labels = np.expand_dims(labels, axis=1)
-                else:
-                    labels = to_categorical(labels, nb_classes)
+                labels = to_categorical(labels, nb_classes)
+        elif len(labels.shape) == 1:  # index labels
+            if return_one_hot:
+                labels = to_categorical(labels, nb_classes)
+            else:
+                labels = np.expand_dims(labels, axis=1)
         else:
             raise ValueError(
                 "Shape of labels not recognised."
