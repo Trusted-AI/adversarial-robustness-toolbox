@@ -102,7 +102,8 @@ class SignOPTAttack(EvasionAttack):
             
         logger.info(
             "Success rate of Sign_OPT attack: %.2f%%",
-            100 * compute_success(self.estimator, x, y, x_adv, self.targeted, batch_size=self.batch_size),
+            # 100 * compute_success(self.estimator, x, y, x_adv, self.targeted, batch_size=self.batch_size),
+            100 * compute_success(self.estimator, x, y, x_adv, self.targeted),
         )
         
         return x_adv
