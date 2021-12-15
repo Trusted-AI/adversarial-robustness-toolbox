@@ -864,9 +864,9 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         # Compute the gradient and return
         self._model(inputs_t)
-        model_outputs1 = self._model._features[layer_name]
+        model_outputs1 = self._model._features[layer_name] # pylint: disable=W0212
         self._model(targets_t)
-        model_outputs2 = self._model._features[layer_name].detach()
+        model_outputs2 = self._model._features[layer_name].detach() # pylint: disable=W0212
         diff = model_outputs1 - model_outputs2
         loss = loss_fn(diff, p=2)
 
@@ -937,7 +937,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                 return self._model(x)[layer_index]
             input = torch.from_numpy(x_preprocessed)
             self._model(input.to(self._device))
-            return input, self._model._features[layer]
+            return input, self._model._features[layer] # pylint: disable=W0212
 
         # Run prediction with batch processing
         results = []
@@ -952,7 +952,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
             # Run prediction for the current batch
             self._model(torch.from_numpy(x_preprocessed[begin:end]).to(self._device))
-            layer_output = self._model._features[layer]
+            layer_output = self._model._features[layer] # pylint: disable=W0212
             results.append(layer_output.detach().cpu().numpy())
 
         results = np.concatenate(results)
@@ -1085,7 +1085,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
                     def save_outputs_hook(self, layer_id: str):
                         def save_features(_, __, output):
-                            self._features[layer_id] = output
+                            self._features[layer_id] = output # pylint: disable=W0212
 
                         return save_features
 
