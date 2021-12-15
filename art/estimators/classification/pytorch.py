@@ -869,7 +869,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         self._model(targets_t)
         model_outputs2 = self._model._features[layer_name].detach()
         diff = model_outputs1 - model_outputs2
-        loss = loss_fn(diff,p=2)
+        loss = loss_fn(diff, p=2)
 
         # Clean gradients
         self._model.zero_grad()
@@ -932,7 +932,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         else:  # pragma: no cover
             raise TypeError("Layer must be of type str or int")
-            
+
         if framework:
             if isinstance(x, torch.Tensor):
                 return self._model(x)[layer_index]
