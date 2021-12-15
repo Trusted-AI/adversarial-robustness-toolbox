@@ -95,7 +95,7 @@ class LaserAttack(EvasionAttack):
         """
         Generate adversarial examples.
 
-        :param x: Images to attack as a tensor in NWHC order
+        :param x: Images to attack as a tensor in NHWC order
         :param y: Array of correct classes
         :return: Array of adversarial images
         """
