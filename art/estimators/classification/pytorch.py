@@ -18,7 +18,7 @@
 """
 This module implements the classifier `PyTorchClassifier` for PyTorch models.
 """
-# pylint: disable=C0302
+# pylint: disable=C0302,R0904
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import copy
@@ -51,7 +51,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):  # lgtm [py/missing-call-to-init]
+class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):   # pylint: disable=R0904
     """
     This class implements a classifier with the PyTorch framework.
     """
@@ -817,8 +817,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         x: Union[np.ndarray, "torch.Tensor"],
         y: Union[np.ndarray, "torch.Tensor"],
         layer_name,
-        training_mode: bool = False,
-        **kwargs
+        training_mode: bool = False
     ) -> Union[np.ndarray, "torch.Tensor"]:
         """
         Compute the gradient of the loss function w.r.t. `x`.
@@ -936,9 +935,9 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         if framework:
             if isinstance(x, torch.Tensor):
                 return self._model(x)[layer_index]
-            x_ = torch.from_numpy(x_preprocessed)
-            self._model(x_.to(self._device))
-            return x_, self._model._features[layer]
+            input = torch.from_numpy(x_preprocessed)
+            self._model(input.to(self._device))
+            return input, self._model._features[layer]
 
         # Run prediction with batch processing
         results = []
@@ -1085,10 +1084,10 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                             layer.register_forward_hook(self.save_outputs_hook(layer_id))
 
                     def save_outputs_hook(self, layer_id: str):
-                        def fn(_, __, output):
+                        def save_features(_, __, output):
                             self._features[layer_id] = output
 
-                        return fn
+                        return save_features
 
                     # pylint: disable=W0221
                     # disable pylint because of API requirements for function
@@ -1138,7 +1137,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
                         result = []
                         if isinstance(self._model, nn.Module):
-                            for name, module_ in self._model._modules.items():  # type: ignore
+                            for name, _ in self._model._modules.items():  # type: ignore
                                 result.append(name)
 
                         else:  # pragma: no cover
