@@ -9,6 +9,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 import numpy as np
 import pickle
+from matplotlib import pyplot as plt
 
 from art.attacks.evasion import FastGradientMethod, BoundaryAttack
 from sign_opt import SignOPTAttack
@@ -96,8 +97,12 @@ print("Accuracy on benign test examples: {}%".format(accuracy * 100))
 # attack = FastGradientMethod(estimator=classifier, eps=0.2)
 # attack = BoundaryAttack(estimator=classifier, targeted=False, max_iter=0, delta=0.001, epsilon=0.001)
 attack = SignOPTAttack(estimator=classifier, targeted=False)
-x_test_adv = attack.generate(x=x_test, y=y_test) # if targeted=False then y is ignored
-
+x_test_adv = attack.generate(x=x_test[:2], y=y_test) # if targeted=False then y is ignored
+for i in range(len(x_test_adv[:])):
+    print(i)
+    pixels = x_test_adv[i].reshape((28, 28))
+    plt.imshow(pixels, cmap='gray')
+    plt.show()
 # Step 7: Evaluate the ART classifier on adversarial test examples
 
 predictions = classifier.predict(x_test_adv)
