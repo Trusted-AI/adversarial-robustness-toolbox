@@ -932,6 +932,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         else:  # pragma: no cover
             raise TypeError("Layer must be of type str or int")
+            
         if framework:
             if isinstance(x, torch.Tensor):
                 return self._model(x)[layer_index]
