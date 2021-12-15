@@ -63,7 +63,6 @@ class LaserAttack(EvasionAttack):
         image_generator: ImageGenerator = ImageGenerator(),
         random_initializations: int = 1,
         optimisation_algorithm: Callable = greedy_search,
-        tensor_board: Union[str, bool] = False,
         debug: Optional[DebugInfo] = None,
     ) -> None:
         """
@@ -73,15 +72,10 @@ class LaserAttack(EvasionAttack):
         :param image_generator: Object responsible for image generation.
         :param random_initializations: How many times repeat the attack.
         :param optimisation_algorithm: Algorithm used to generate adversarial example. May be replaced.
-        :param tensor_board: Activate summary writer for TensorBoard: Default is `False` and deactivated summary writer.
-                             If `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory. Provide `path` in type
-                             `str` to save in path/CURRENT_DATETIME_HOSTNAME.
-                             Use hierarchical folder structure to compare between runs easily. e.g. pass in ‘runs/exp1’,
-                             ‘runs/exp2’, etc. for each new experiment to compare across them.
         :param debug: Optional debug handler.
         """
 
-        super().__init__(estimator=estimator, tensor_board=tensor_board)
+        super().__init__(estimator=estimator)
         self.iterations = iterations
         self.random_initializations = random_initializations
         self.optimisation_algorithm = optimisation_algorithm
@@ -375,7 +369,6 @@ class LaserBeamAttack(LaserAttack):
         min_laser_beam: Union[LaserBeam, Tuple[float, float, float, int]] = (380.0, 0.0, 1.0, 1),
         random_initializations: int = 1,
         image_generator: ImageGenerator = ImageGenerator(),
-        tensor_board: Union[str, bool] = False,
         debug: Optional[DebugInfo] = None,
     ) -> None:
         """
@@ -387,11 +380,6 @@ class LaserBeamAttack(LaserAttack):
             of the laser parameters.
         :param image_generator: Object responsible for image generation.
         :param random_initializations: How many times repeat the attack.
-        :param tensor_board: Activate summary writer for TensorBoard: Default is `False` and deactivated summary writer.
-                             If `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory. Provide `path` in type
-                             `str` to save in path/CURRENT_DATETIME_HOSTNAME.
-                             Use hierarchical folder structure to compare between runs easily. e.g. pass in ‘runs/exp1’,
-                             ‘runs/exp2’, etc. for each new experiment to compare across them.
         :param debug: Optional debug handler.
         """
 
@@ -410,6 +398,5 @@ class LaserBeamAttack(LaserAttack):
             LaserBeamGenerator(min_laser_beam_obj, max_laser_beam_obj),
             image_generator=image_generator,
             random_initializations=random_initializations,
-            tensor_board=tensor_board,
             debug=debug,
         )
