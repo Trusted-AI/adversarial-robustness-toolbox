@@ -1083,6 +1083,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                             layer.register_forward_hook(self.save_outputs_hook(layer_id))
 
                     def save_outputs_hook(self, layer_id: str):
+                        """Hook to save outputs."""
+
                         def save_features(_, __, output):
                             self._features[layer_id] = output  # pylint: disable=W0212
 
