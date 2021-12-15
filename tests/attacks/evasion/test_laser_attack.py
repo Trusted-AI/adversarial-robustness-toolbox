@@ -100,7 +100,7 @@ def fixture_image_shape() -> Tuple[int, int, int]:
 
     :returns: Image shape.
     """
-    return (32, 32, 3)
+    return (64, 128, 3)
 
 
 @pytest.fixture(name="min_laser_beam")
@@ -148,12 +148,12 @@ def fixture_laser_generator(min_laser_beam, max_laser_beam) -> LaserBeamGenerato
 
 
 @pytest.fixture(name="random_image")
-def fixture_random_image() -> Any:
+def fixture_random_image(image_shape) -> Any:
     """
     Random image.
     :returns: random image.
     """
-    return np.random.random((32, 32, 3))
+    return np.random.random(image_shape)
 
 
 @pytest.fixture(name="accurate_class")
@@ -188,6 +188,7 @@ def fixture_model(adversarial_class) -> Any:
 
         def __init__(self) -> None:
             self.x = None
+            self.channels_first = False
 
         def predict(self, x: np.ndarray) -> np.ndarray:
             """

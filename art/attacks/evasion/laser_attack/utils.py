@@ -168,12 +168,17 @@ class ImageGenerator:
         :returns: Image of the adversarial object.
         """
         laser_image = np.zeros(shape)
-        for i in range(shape[0]):
-            for j in range(shape[0]):
-                rgb = adv_object(i, j)
-                laser_image[i, j, 0] = np.clip(rgb[0], 0, 1)
-                laser_image[i, j, 1] = np.clip(rgb[1], 0, 1)
-                laser_image[i, j, 2] = np.clip(rgb[2], 0, 1)
+        if laser_image.ndim == 3 and laser_image.shape[2] == 3:
+            for i in range(shape[0]):
+                for j in range(shape[1]):
+                    rgb = adv_object(i, j)
+                    for chan in range(3):
+                        laser_image[i, j, chan] = np.clip(rgb[chan], 0, 1)
+        elif laser_image.ndim == 2:
+            for i in range(shape[0]):
+                for j in range(shape[1]):
+                    rgb = np.mean(adv_object(i, j))
+                    laser_image[i, j] = np.clip(rgb, 0, 1)
 
         return laser_image
 
@@ -289,12 +294,3 @@ class DebugInfo:
             instance.log(adv_object)
         if instance.artifacts_directory is not None:
             instance.save_image(image)
-
-
-def show_nrgb_image(image: np.ndarray) -> None:
-    """
-    Plots an image passed as RGB array
-
-    :param image: image to plot
-    """
-    plt.imshow(image)

@@ -95,10 +95,14 @@ class LaserAttack(EvasionAttack):
         """
         Generate adversarial examples.
 
-        :param x: Images to attack as a tensor (NRGB = (1, ...))
-        :param y: Correct classes
+        :param x: Images to attack as a tensor in NWHC order
+        :param y: Array of correct classes
         :return: Array of adversarial images
         """
+
+        if x.ndim != 4:  # pragma: no cover
+            raise ValueError("Unrecognized input dimension. Only tensors NHWC are acceptable.")
+
         parameters = self.generate_parameters(x, y)
         adversarial_images = np.zeros_like(x)
         for image_index in range(x.shape[0]):
@@ -161,6 +165,8 @@ class LaserAttack(EvasionAttack):
 
     def _check_params(self) -> None:
         super()._check_params()
+        if self.estimator.channels_first:
+            raise ValueError("Channels first models are not supported. Supported tensor format: NHWC")
         if self.iterations <= 0:
             raise ValueError("The iterations number has to be positive.")
         if self.random_initializations <= 0:
