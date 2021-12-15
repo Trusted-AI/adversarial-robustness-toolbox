@@ -43,7 +43,6 @@ lief==0.11.5
 # note: due to conflicts with other TF1/2 version supported by ART, the dependencies are not installed by default
 #tensorflow-gpu==2.1.0
 #lingvo==0.6.4
->>>>>>> main
 
 numpy==1.19.1 
 scipy==1.4.1 
