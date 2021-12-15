@@ -204,7 +204,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         :param reduction: Specifies the reduction to apply to the output: 'none' | 'sum'.
                           'none': no reduction will be applied.
                           'sum': the output will be summed.
-        :return: Loss gradients of the same shape as `x`.
+        :return: Loss dictionary, list of input tensors, and list of gradient tensors.
         """
         import torch  # lgtm [py/repeated-import]
 
@@ -697,17 +697,50 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         """
         raise NotImplementedError
 
-    def compute_losses(self, x: np.ndarray, y: List[Dict[str, np.ndarray]]) -> List[Dict[str, np.ndarray]]:
+    def compute_losses(self, x: np.ndarray, y: List[Dict[str, np.ndarray]]) -> Dict[str, np.ndarray]:
         """
-        Not implemented.
+        Compute losses.
+
+        :param x: Samples of shape (nb_samples, nb_frames, height, width, nb_channels).
+        :param y: Target values of format `List[Dict[str, np.ndarray]]`, one dictionary for each input image. The keys
+                  of the dictionary are:
+
+                  - boxes [N_FRAMES, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and
+                                         0 <= y1 < y2 <= H.
+        :return: Dictionary of loss components.
         """
-        raise NotImplementedError
+        output = self.compute_loss(x=x, y=y)
+        output_dict = dict()
+        output_dict["torch.nn.L1Loss"] = output
+        return output_dict
 
     def compute_loss(self, x: np.ndarray, y: List[Dict[str, np.ndarray]], **kwargs) -> np.ndarray:
         """
-        Not implemented.
+        Compute loss.
+
+        :param x: Samples of shape (nb_samples, nb_frames, height, width, nb_channels).
+        :param y: Target values of format `List[Dict[str, np.ndarray]]`, one dictionary for each input image. The keys
+                  of the dictionary are:
+
+                  - boxes [N_FRAMES, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and
+                                         0 <= y1 < y2 <= H.
+        :return: Total loss.
         """
-        raise NotImplementedError
+        import torch  # lgtm [py/repeated-import]
+
+        output_dict, _, _ = self._get_losses(x=x, y=y)
+
+        if isinstance(output_dict["torch.nn.L1Loss"], list):
+            output_list = list()
+            for out in output_dict["torch.nn.L1Loss"]:
+                output_list.append(out.detach().cpu().numpy())
+            output = np.array(output_list)
+        elif isinstance(output_dict["torch.nn.L1Loss"], torch.Tensor):
+            output = output_dict["torch.nn.L1Loss"].detach().cpu().numpy()
+        else:
+            output = output_dict["torch.nn.L1Loss"]
+
+        return output
 
     def init(self, image: "PIL.JpegImagePlugin.JpegImageFile", box: np.ndarray):
         """
