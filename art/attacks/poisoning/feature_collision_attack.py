@@ -126,6 +126,8 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
             self.poison_placeholder, self.poison_feature_rep = self.estimator.get_activations(
                 self.target, self.feature_layer, 1, framework=True
             )
+        else:
+            raise ValueError("Type of estimator currently not supported.")
         self.attack_loss = tensor_norm(self.poison_feature_rep - self.target_feature_rep)
 
     def poison(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
