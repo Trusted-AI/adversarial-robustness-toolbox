@@ -65,7 +65,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         "verbose",
     ]
 
-    _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassifierMixin, PyTorchClassifier)
+    _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassifierMixin)
 
     def __init__(
         self,
