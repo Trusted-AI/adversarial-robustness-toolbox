@@ -834,7 +834,6 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         :return: Array of gradients of the same shape as `x`.
         """
         import torch  # lgtm [py/repeated-import]
-        import torch.nn as nn
 
         self._model.train(mode=training_mode)
         self._model.eval()
@@ -1056,8 +1055,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
     def _make_model_wrapper(self, model: "torch.nn.Module") -> "torch.nn.Module":
         # Try to import PyTorch and create an internal class that acts like a model wrapper extending torch.nn.Module
         try:
-            import torch
-            import torch.nn as nn
+            import torch # lgtm [py/repeated-import] 
 
             # Define model wrapping class only if not defined before
             if not hasattr(self, "_model_wrapper"):
@@ -1102,7 +1100,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                         """
                         # pylint: disable=W0212
                         # disable pylint because access to _model required
-                        import torch.nn as nn
+                        import torch.nn as nn # pylint: disable=R0402
 
                         result = []
                         if isinstance(self._model, nn.Sequential):
@@ -1133,11 +1131,11 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                                      layers if the input model is of type `nn.Sequential`, otherwise, it will only
                                      return the logit layer.
                         """
-                        import torch.nn as nn
+                        import torch.nn as nn # lgtm [py/repeated-import] 
 
                         result = []
                         if isinstance(self._model, nn.Module):
-                            for name, _ in self._model._modules.items():  # type: ignore
+                            for name, _ in self._model._modules.items():  # pylint: disable=W0212
                                 result.append(name)
 
                         else:  # pragma: no cover
