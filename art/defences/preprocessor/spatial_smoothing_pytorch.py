@@ -74,19 +74,16 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
         """
         import torch  # lgtm [py/repeated-import]
 
-        super().__init__(apply_fit=apply_fit, apply_predict=apply_predict)
+        super().__init__(
+            device_type=device_type,
+            apply_fit=apply_fit,
+            apply_predict=apply_predict,
+        )
 
         self.channels_first = channels_first
         self.window_size = window_size
         self.clip_values = clip_values
         self._check_params()
-
-        # Set device
-        if device_type == "cpu" or not torch.cuda.is_available():
-            self._device = torch.device("cpu")
-        else:  # pragma: no cover
-            cuda_idx = torch.cuda.current_device()
-            self._device = torch.device("cuda:{}".format(cuda_idx))
 
         from kornia.filters import MedianBlur
 
