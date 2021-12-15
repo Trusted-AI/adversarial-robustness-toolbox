@@ -156,7 +156,7 @@ class PixelThreshold(EvasionAttack):
                 raise ValueError(
                     "This attack has not yet been tested for binary classification with a single output classifier."
                 )
-            if len(y.shape) > 1:
+            if y.ndim > 1 and y.shape[1] > 1:
                 y = np.argmax(y, axis=1)
 
         if self.th is None:
