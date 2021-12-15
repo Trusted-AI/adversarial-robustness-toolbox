@@ -309,9 +309,9 @@ def tensor_norm(tensor, norm_type: Union[int, float, str] = 2):  # pylint: disab
         return tf.norm(tensor, ord=norm_type)
 
     if tensor_type in torch_tensor_types:  # pragma: no cover
-        import torch.nn as nn
+        import torch
 
-        return nn.MSELoss(reduction="sum")
+        return torch.norm
 
     if tensor_type in mxnet_tensor_types:  # pragma: no cover
         import mxnet

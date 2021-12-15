@@ -868,8 +868,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         model_outputs1 = self._model._features[layer_name]
         self._model(targets_t)
         model_outputs2 = self._model._features[layer_name].detach()
-        loss = loss_fn(model_outputs1, model_outputs2)
-        loss = loss ** 0.5
+        diff = model_outputs1 - model_outputs2
+        loss = loss_fn(diff,p=2)
 
         # Clean gradients
         self._model.zero_grad()

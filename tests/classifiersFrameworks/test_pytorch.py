@@ -276,3 +276,44 @@ def test_pytorch_binary_pgd(art_warning, get_mnist_dataset):
         assert (adv_predicted != preds).all()
     except ARTTestException as e:
         art_warning(e)
+
+@pytest.mark.only_with_platform("pytorch")              
+# Function to evaluate custom loss gradient
+def test_custom_loss_gradient(get_default_mnist_subset,image_dl_estimator):  
+    
+    (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+    classifier_, _ = image_dl_estimator()
+
+    clip_values = (0, 1)
+    criterion = nn.CrossEntropyLoss()
+    classifier = PyTorchClassifier(
+        clip_values=clip_values,
+        model=classifier_.model,
+        loss=criterion,
+        input_shape=(1, 28, 28),
+        nb_classes=10
+    )
+    
+    target_image = np.expand_dims(np.copy(x_test_mnist[0]),axis=0)
+    poison_image = np.expand_dims(np.copy(x_test_mnist[1]),axis=0)
+    loss_function = torch.norm
+    
+    result = []
+    for name, module_ in classifier_.model._modules.items():  
+        result.append(name)
+    custom_grad = classifier.custom_loss_gradient(loss_function,poison_image,target_image,result[-1])
+    
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    target_image = torch.tensor(target_image).to(device)
+    poison_image = torch.tensor(poison_image).to(device)  
+    poison_image.requires_grad=True         
+    classifier._model(poison_image)
+    out1 = classifier._model._features[result[-1]]
+    classifier._model(target_image)
+    out2 = classifier._model._features[result[-1]]
+    diff = out1-out2
+    loss = torch.norm(diff,p=2)
+    loss.backward()
+    self_grad = poison_image.grad.cpu().numpy().copy() 
+    
+    np.testing.assert_array_almost_equal(custom_grad, self_grad, decimal=4)
