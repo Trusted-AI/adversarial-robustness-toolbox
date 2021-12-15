@@ -89,6 +89,7 @@ class SignOPTAttack(EvasionAttack):
         x_adv = x.astype(ART_NUMPY_DTYPE)
         
         # Generate the adversarial samples
+        # Todo: make the dimentions to be compatible to ART, use batch_size???
         for ind, val in enumerate(tqdm(x_adv, desc="Sign_OPT attack", disable=not self.verbose)):
             if self.targeted:
                 print("Not implemented")
