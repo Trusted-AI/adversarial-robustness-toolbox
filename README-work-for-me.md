@@ -78,3 +78,16 @@ Expected 4-dimensional input for 4-dimensional weight [4, 1, 5, 5], but got 3-di
 np.expand_dims(x0, axis=0)
 ```
 the dimension is changed from [1, 28, 28] to [1, 1, 28, 28]
+
+---
+**Question**
+```shell
+Traceback (most recent call last):
+  File "examples/get_started_pytorch.py", line 81, in <module>
+    x_test_adv = attack.generate(x=x_test[:5])
+  File "/Users/chloe/git/trusted-ai/adversarial-robustness-toolbox/venv/lib/python3.8/site-packages/art/attacks/evasion/sign_opt.py", line 102, in generate
+    100 * compute_success(self.estimator, x, y, x_adv, self.targeted, batch_size=self.batch_size),
+AttributeError: 'SignOPTAttack' object has no attribute 'batch_size'
+```
+**Answer**
+todo
