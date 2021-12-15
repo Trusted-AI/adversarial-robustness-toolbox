@@ -1,7 +1,7 @@
 # base
 numpy>=1.18.5
 scipy==1.7.3
-matplotlib==3.5.0
+matplotlib==3.5.1
 scikit-learn>=0.22.2,<1.1.0
 six==1.16.0
 Pillow==8.4.0
@@ -11,7 +11,7 @@ pydub==0.25.1
 resampy==0.2.2
 ffmpeg-python==0.2.0
 cma==3.1.0
-pandas==1.3.4
+pandas==1.3.5
 librosa==0.8.1
 numba~=0.54.1
 opencv-python
@@ -34,7 +34,7 @@ catboost==1.0.3
 GPy==1.10.0
 lightgbm==3.3.1
 xgboost==1.5.1
-kornia~=0.6.1
+kornia~=0.6.2
 tensorboardX==2.4.1
 lief==0.11.5
 
