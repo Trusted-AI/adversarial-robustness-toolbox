@@ -65,9 +65,9 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
         epsilon: float = 0.1,
         max_trials: int = 8,
         max_epochs: int = 250,
-        learning_rate_schedule: Tuple[List[float],List[int]] = ([1e-1, 1e-2, 1e-3, 1e-4],[100, 150, 200, 220]),
+        learning_rate_schedule: Tuple[List[float], List[int]] = ([1e-1, 1e-2, 1e-3, 1e-4], [100, 150, 200, 220]),
         batch_size: int = 128,
-        clip_values: Tuple[float,float] = (0, 1.0),
+        clip_values: Tuple[float, float] = (0, 1.0),
         verbose: bool = True,
     ):
         """
@@ -95,10 +95,9 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
         self.verbose = verbose
         self._check_params()
 
-
-    def poison(self, x_trigger: np.ndarray, y_trigger: np.ndarray,
-                x_train: np.ndarray, y_train: np.ndarray,
-                **kwargs) -> np.ndarray:
+    def poison(
+        self, x_trigger: np.ndarray, y_trigger: np.ndarray, x_train: np.ndarray, y_train: np.ndarray, **kwargs
+    ) -> np.ndarray:
         """
         Optimizes a portion of poisoned samples from x_train to make a model classify x_target as y_target by matching the gradients.
 
@@ -116,8 +115,10 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
         elif isinstance(self.substitute_classifier, PyTorchClassifier):
             poisoner = self.__poison__pytorch
         else:
-            raise NotImplementedError("GradientMatchingAttackKeras is currently implemented only for Tensorflow V2 and Pytorch.")
-        
+            raise NotImplementedError(
+                "GradientMatchingAttackKeras is currently implemented only for Tensorflow V2 and Pytorch."
+            )
+
         # Choose samples to poison.
         x_train = x_train.copy()
         classes_target = set(y_trigger.argmax(axis=-1))
@@ -128,7 +129,9 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
         best_x_poisoned = None
         best_indices_poison = None
         for i in trange(self.max_trials):
-            indices_poison = np.random.permutation(np.where([y in classes_target for y in y_train.argmax(axis=-1)])[0])[:P]
+            indices_poison = np.random.permutation(np.where([y in classes_target for y in y_train.argmax(axis=-1)])[0])[
+                :P
+            ]
             x_poison = x_train[indices_poison]
             y_poison = y_train[indices_poison]
             x_poisoned, B_ = poisoner(x_trigger, y_trigger, x_poison, y_poison, **kwargs)
@@ -141,11 +144,14 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
         x_train[best_indices_poison] = best_x_poisoned
         return x_train, y_train  # y_train has not been modified.
 
-
-    def __poison__pytorch(self, x_trigger: np.ndarray, y_trigger: np.ndarray, x_poison: np.ndarray, y_poison: np.ndarray, **kwargs) -> np.ndarray:
+    def __poison__pytorch(
+        self, x_trigger: np.ndarray, y_trigger: np.ndarray, x_poison: np.ndarray, y_poison: np.ndarray, **kwargs
+    ) -> np.ndarray:
         raise NotImplementedError
 
-    def __poison__tensorflow(self, x_trigger: np.ndarray, y_trigger: np.ndarray, x_poison: np.ndarray, y_poison: np.ndarray, **kwargs) -> np.ndarray:
+    def __poison__tensorflow(
+        self, x_trigger: np.ndarray, y_trigger: np.ndarray, x_poison: np.ndarray, y_poison: np.ndarray, **kwargs
+    ) -> np.ndarray:
         """
         Optimize the poison by matching the gradient within the perturbation budget.
 
@@ -168,7 +174,7 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
                 output = model(input)
                 loss = model.compiled_loss(target, output)
             d_w = t.gradient(loss, model.trainable_weights)
-            d_w = tf.concat([tf.reshape(d,[-1]) for d in d_w], 0)
+            d_w = tf.concat([tf.reshape(d, [-1]) for d in d_w], 0)
             d_w_norm = d_w / tf.sqrt(tf.reduce_sum(tf.square(d_w)))
             return d_w_norm
 
@@ -190,14 +196,16 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
         embeddings = ClipConstraint(max_value=self.epsilon)(embeddings)
         embeddings = tf.reshape(embeddings, tf.shape(input_poison))
         input_noised = Add()([input_poison, embeddings])
-        input_noised = Lambda(lambda x: K.clip(x, self.clip_values[0], self.clip_values[1]))(input_noised)  # Make sure the poisoned samples are in a valid range.
+        input_noised = Lambda(lambda x: K.clip(x, self.clip_values[0], self.clip_values[1]))(
+            input_noised
+        )  # Make sure the poisoned samples are in a valid range.
 
         def loss_fn(input_noised, target, grad_ws_norm):
             d_w2_norm = grad_loss(self.substitute_classifier.model, input_noised, target)
             B = 1 - tf.reduce_sum(grad_ws_norm * d_w2_norm)
             return B
 
-        B = tf.keras.layers.Lambda(lambda x: loss_fn(x[0],x[1],x[2]))([input_noised, y_true_poison, grad_ws_norm])
+        B = tf.keras.layers.Lambda(lambda x: loss_fn(x[0], x[1], x[2]))([input_noised, y_true_poison, grad_ws_norm])
 
         m = tf.keras.models.Model([input_poison, y_true_poison, input_indices], [input_noised, B])
         m.add_loss(B)
@@ -208,6 +216,7 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
         class PredefinedLRSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
             def __init__(self, learning_rates, milestones):
                 self.schedule = list(zip(milestones, learning_rates))
+
             def __call__(self, step):
                 lr_prev = self.schedule[0][1]
                 for m, lr in self.schedule:
@@ -220,17 +229,19 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
         lr_schedule = tf.keras.callbacks.LearningRateScheduler(PredefinedLRSchedule(*self.learning_rate_schedule))
 
         class SignedAdam(tf.keras.optimizers.Adam):
-            def compute_gradients(self, loss, var_list=None,
-                            gate_gradients=1,
-                            aggregation_method=None,
-                            colocate_gradients_with_ops=False,
-                            grad_loss=None):
-                grads_and_vars = super(SignedAdam, self).compute_gradients(loss, var_list,
-                            gate_gradients,
-                            aggregation_method,
-                            colocate_gradients_with_ops,
-                            grad_loss)
-                return [(tf.sign(g),v) for (g,v) in grads_and_vars]
+            def compute_gradients(
+                self,
+                loss,
+                var_list=None,
+                gate_gradients=1,
+                aggregation_method=None,
+                colocate_gradients_with_ops=False,
+                grad_loss=None,
+            ):
+                grads_and_vars = super(SignedAdam, self).compute_gradients(
+                    loss, var_list, gate_gradients, aggregation_method, colocate_gradients_with_ops, grad_loss
+                )
+                return [(tf.sign(g), v) for (g, v) in grads_and_vars]
 
         m.compile(loss=None, optimizer=SignedAdam(learning_rate=0.1))
 
@@ -238,16 +249,19 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
 
         callbacks = [lr_schedule]
         # Train the noise.
-        m.fit([x_poison, y_poison, np.arange(len(y_poison))],
+        m.fit(
+            [x_poison, y_poison, np.arange(len(y_poison))],
             callbacks=callbacks,
-            batch_size=self.batch_size, epochs=self.max_epochs, verbose=self.verbose)
+            batch_size=self.batch_size,
+            epochs=self.max_epochs,
+            verbose=self.verbose,
+        )
 
         [input_noised_, B_] = m.predict([x_poison, y_poison, np.arange(len(y_poison))])
         return input_noised_, B_
 
     def _check_params(self) -> None:
-        if not isinstance(self.learning_rate_schedule, tuple) or\
-            len(self.learning_rate_schedule)!=2:
+        if not isinstance(self.learning_rate_schedule, tuple) or len(self.learning_rate_schedule) != 2:
             raise ValueError("learning_rate_schedule must be a pair of a list of learning rates and a list of epochs")
 
         if self.percent_poison > 1 or self.percent_poison < 0:
@@ -259,9 +273,9 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
         if self.max_trials < 1:
             raise ValueError("max_trials must be positive")
 
-        if not isinstance(self.clip_values, tuple) or len(self.clip_values)!=2:
+        if not isinstance(self.clip_values, tuple) or len(self.clip_values) != 2:
             raise ValueError("clip_values must be a pair (min, max) of floats")
- 
+
         if self.epsilon <= 0:
             raise ValueError("epsilon must be nonnegative")
 
