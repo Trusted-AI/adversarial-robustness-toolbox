@@ -7,7 +7,7 @@ from jax import grad, jit, vmap
 import jax.numpy as jnp
 from jax.scipy.special import logsumexp
 
-from art.estimators.classification.jax import JaxClassifier
+from art.experimental.estimators.classification.jax import JaxClassifier
 from tests.utils import ARTTestException
 
 
