@@ -70,7 +70,6 @@ class VideoCompressionPyTorch(PreprocessorPyTorch):
         :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
         :param verbose: Show progress bars.
         """
-        import torch  # lgtm [py/repeated-import]
         from torch.autograd import Function
 
         super().__init__(
