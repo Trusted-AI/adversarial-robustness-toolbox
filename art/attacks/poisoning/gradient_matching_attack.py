@@ -94,6 +94,7 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
         self.verbose = verbose
         self._check_params()
 
+<<<<<<< HEAD
     def poison(
         self, x_trigger: np.ndarray, y_trigger: np.ndarray, x_train: np.ndarray, y_train: np.ndarray, **kwargs
 <<<<<<< HEAD
@@ -101,6 +102,9 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
 =======
     ) -> np.ndarray:
 >>>>>>> format
+=======
+    def poison(self, x_trigger: np.ndarray, y_trigger: np.ndarray, x_train: np.ndarray, y_train: np.ndarray, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
+>>>>>>> signature
         """
         Optimizes a portion of poisoned samples from x_train to make a model classify x_target as y_target by matching the gradients.
 
