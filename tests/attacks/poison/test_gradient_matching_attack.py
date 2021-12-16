@@ -41,8 +41,8 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator):
         x_target = x_test[index_target : index_target + 1]
         y_target = to_categorical([class_target], nb_classes=10)
 
-        attack = GradientMatchingAttack(classifier, epsilon=0.3, verbose=False)
-        x_poison, y_poison = attack.poison(x_target, y_target, x_train, y_train, percent_poison=0.1)
+        attack = GradientMatchingAttack(classifier, epsilon=0.3, percent_poison=0.1, verbose=False)
+        x_poison, y_poison = attack.poison(x_target, y_target, x_train, y_train)
 
         np.testing.assert_equal(x_poison.shape, x_train.shape)
         np.testing.assert_equal(y_poison.shape, y_train.shape)
