@@ -142,6 +142,7 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
         best_x_poisoned = None
         best_indices_poison = None
 <<<<<<< HEAD
+<<<<<<< HEAD
         for _ in trange(self.max_trials):
             indices_poison = np.random.permutation(np.where([y in classes_target for y in y_train.argmax(axis=-1)])[0])[
                 :P
@@ -152,6 +153,9 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
             indices_poison = np.random.permutation(np.where([y in classes_target for y in y_train.argmax(axis=-1)])[0])[:P]
 >>>>>>> index bug fix
 =======
+=======
+        for _ in trange(self.max_trials):
+>>>>>>> unused imports
             indices_poison = np.random.permutation(np.where([y in classes_target for y in y_train.argmax(axis=-1)])[0])[
                 :P
             ]
