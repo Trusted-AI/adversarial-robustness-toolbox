@@ -54,7 +54,6 @@ class StandardisationMeanStdPyTorch(PreprocessorPyTorch):
         :param mean: Mean.
         :param std: Standard Deviation.
         """
-        import torch  # lgtm [py/repeated-import]
 
         super().__init__(
             device_type=device_type,

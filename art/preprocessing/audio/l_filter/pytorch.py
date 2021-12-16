@@ -71,7 +71,6 @@ class LFilterPyTorch(PreprocessorPyTorch):
         :param verbose: Show progress bars.
         :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
         """
-        import torch  # lgtm [py/repeated-import]
 
         super().__init__(
             device_type=device_type,
