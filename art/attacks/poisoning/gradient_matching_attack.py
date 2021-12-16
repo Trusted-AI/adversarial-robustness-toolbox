@@ -21,7 +21,7 @@ This module implements Gradient Matching clean-label attacks (a.k.a. Witches' Br
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Tuple, Union, TYPE_CHECKING, List
+from typing import Tuple, TYPE_CHECKING, List
 
 import numpy as np
 from tqdm.auto import trange
@@ -32,7 +32,6 @@ from art.estimators.classification.classifier import ClassifierMixin
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
-    import torch
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
@@ -128,7 +127,7 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
         best_B = np.finfo(np.float32).max
         best_x_poisoned = None
         best_indices_poison = None
-        for i in trange(self.max_trials):
+        for _ in trange(self.max_trials):
             indices_poison = np.random.permutation(np.where([y in classes_target for y in y_train.argmax(axis=-1)])[0])[
                 :P
             ]
