@@ -159,6 +159,8 @@ class PixelThreshold(EvasionAttack):
             if y.ndim > 1 and y.shape[1] > 1:
                 y = np.argmax(y, axis=1)
 
+        y = np.squeeze(y)
+
         if self.th is None:
             logger.info(
                 "Performing minimal perturbation Attack. \
