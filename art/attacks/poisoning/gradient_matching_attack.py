@@ -96,7 +96,11 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
 
     def poison(
         self, x_trigger: np.ndarray, y_trigger: np.ndarray, x_train: np.ndarray, y_train: np.ndarray, **kwargs
+<<<<<<< HEAD
     ) -> Tuple[np.ndarray, np.ndarray]:
+=======
+    ) -> np.ndarray:
+>>>>>>> format
         """
         Optimizes a portion of poisoned samples from x_train to make a model classify x_target as y_target by matching the gradients.
 
@@ -134,8 +138,14 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
             ]
 =======
         for i in trange(self.max_trials):
+<<<<<<< HEAD
             indices_poison = np.random.permutation(np.where([y in classes_target for y in y_train.argmax(axis=-1)])[0])[:P]
 >>>>>>> index bug fix
+=======
+            indices_poison = np.random.permutation(np.where([y in classes_target for y in y_train.argmax(axis=-1)])[0])[
+                :P
+            ]
+>>>>>>> format
             x_poison = x_train[indices_poison]
             y_poison = y_train[indices_poison]
             x_poisoned, B_ = poisoner(x_trigger, y_trigger, x_poison, y_poison, **kwargs)
