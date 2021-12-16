@@ -562,13 +562,14 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
                `fit_generator` function in Keras and will be passed to this function as such. Including the number of
                epochs or the number of steps per epoch as part of this argument will result in as error.
         """
+        y_ndim = y.ndim
         y = check_and_transform_label_format(y, self.nb_classes)
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
 
         # Adjust the shape of y for loss functions that do not take labels in one-hot encoding
-        if self._reduce_labels:
+        if self._reduce_labels or y_ndim == 1:
             y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
         self._model.fit(x=x_preprocessed, y=y_preprocessed, batch_size=batch_size, epochs=nb_epochs, **kwargs)
