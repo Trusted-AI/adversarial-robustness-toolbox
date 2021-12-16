@@ -30,7 +30,7 @@ from art.estimators.classification.classifier import (
     ClassGradientsMixin,
     ClassifierMixin,
 )
-from art.estimators.jax import JaxEstimator
+from art.experimental.estimators.jax import JaxEstimator
 
 if TYPE_CHECKING:
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
