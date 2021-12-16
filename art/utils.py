@@ -77,6 +77,7 @@ if TYPE_CHECKING:
     from art.estimators.classification.ensemble import EnsembleClassifier
     from art.estimators.classification.GPy import GPyGaussianProcessClassifier
     from art.estimators.classification.keras import KerasClassifier
+    from art.experimental.estimators.classification.jax import JaxClassifier
     from art.estimators.classification.lightgbm import LightGBMClassifier
     from art.estimators.classification.mxnet import MXClassifier
     from art.estimators.classification.pytorch import PyTorchClassifier
@@ -111,6 +112,7 @@ if TYPE_CHECKING:
         EnsembleClassifier,
         GPyGaussianProcessClassifier,
         KerasClassifier,
+        JaxClassifier,
         MXClassifier,
         PyTorchClassifier,
         ScikitlearnLogisticRegression,
@@ -162,6 +164,7 @@ if TYPE_CHECKING:
         EnsembleClassifier,
         GPyGaussianProcessClassifier,
         KerasClassifier,
+        JaxClassifier,
         LightGBMClassifier,
         MXClassifier,
         PyTorchClassifier,
@@ -985,7 +988,6 @@ def load_nursery(raw: bool = False, test_set: float = 0.2, transform_social: boo
     :return: Entire dataset and labels.
     """
     import pandas as pd
-    import sklearn.model_selection
     import sklearn.preprocessing
 
     # Download data if needed
