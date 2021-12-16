@@ -561,7 +561,7 @@ class ZooAttack(EvasionAttack):
             # Allocate Adam variables
             self.adam_mean = np.zeros(nb_vars, dtype=ART_NUMPY_DTYPE)
             self.adam_var = np.zeros(nb_vars, dtype=ART_NUMPY_DTYPE)
-            self.adam_epochs = np.ones(nb_vars, dtype=np.int32)
+            self.adam_epochs = np.ones(nb_vars, dtype=int)
 
     def _resize_image(self, x: np.ndarray, size_x: int, size_y: int, reset: bool = False) -> np.ndarray:
         if not self.estimator.channels_first:
@@ -644,16 +644,16 @@ class ZooAttack(EvasionAttack):
         return img_pool
 
     def _check_params(self) -> None:
-        if not isinstance(self.binary_search_steps, (int, np.int)) or self.binary_search_steps < 0:
+        if not isinstance(self.binary_search_steps, int) or self.binary_search_steps < 0:
             raise ValueError("The number of binary search steps must be a non-negative integer.")
 
-        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter < 0:
+        if not isinstance(self.max_iter, int) or self.max_iter < 0:
             raise ValueError("The number of iterations must be a non-negative integer.")
 
-        if not isinstance(self.nb_parallel, (int, np.int)) or self.nb_parallel < 1:
+        if not isinstance(self.nb_parallel, int) or self.nb_parallel < 1:
             raise ValueError("The number of parallel coordinates must be an integer greater than zero.")
 
-        if not isinstance(self.batch_size, (int, np.int)) or self.batch_size < 1:
+        if not isinstance(self.batch_size, int) or self.batch_size < 1:
             raise ValueError("The batch size must be an integer greater than zero.")
 
         if not isinstance(self.verbose, bool):

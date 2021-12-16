@@ -224,7 +224,7 @@ class PreprocessorPyTorch(Preprocessor):
 
             return x_grad
 
-        if x.dtype == np.object:
+        if x.dtype == object:
             x_grad_list = list()
             for i, x_i in enumerate(x):
                 x_grad_list.append(get_gradient(x=x_i, grad=grad[i]))
@@ -316,7 +316,7 @@ class PreprocessorTensorFlowV2(Preprocessor):
 
             return x_grad
 
-        if x.dtype == np.object:
+        if x.dtype == object:
             x_grad_list = list()
             for i, x_i in enumerate(x):
                 x_grad_list.append(get_gradient(x=x_i, grad=grad[i]))

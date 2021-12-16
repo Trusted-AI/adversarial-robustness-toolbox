@@ -729,13 +729,13 @@ class Wasserstein(EvasionAttack):
         if self.regularization <= 0:
             raise ValueError("The entropy regularization has to be greater than 0.")
 
-        if not isinstance(self.p, (int, np.int)):
+        if not isinstance(self.p, int):
             raise TypeError("The p-wasserstein has to be of type integer.")
 
         if self.p < 1:
             raise ValueError("The p-wasserstein must be larger or equal to 1.")
 
-        if not isinstance(self.kernel_size, (int, np.int)):
+        if not isinstance(self.kernel_size, int):
             raise TypeError("The kernel size has to be of type integer.")
 
         if self.kernel_size % 2 != 1:

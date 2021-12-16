@@ -123,7 +123,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
             preprocessing=preprocessing,
         )
 
-        self._nb_classes = int(output.get_shape()[-1])
+        self.nb_classes = int(output.get_shape()[-1])
         self._input_shape = tuple(input_ph.get_shape().as_list()[1:])
         self._input_ph = input_ph
         self._output = output
@@ -380,7 +380,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         # Check value of label for computing gradients
         if not (  # pragma: no cover
             label is None
-            or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
+            or (isinstance(label, int) and label in range(self.nb_classes))
             or (
                 isinstance(label, np.ndarray)
                 and len(label.shape) == 1
@@ -405,7 +405,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
             grads = self._sess.run(self._class_grads, feed_dict=feed_dict)
             grads = np.swapaxes(np.array(grads), 0, 1)
 
-        elif isinstance(label, (int, np.integer)):
+        elif isinstance(label, int):
             # Compute the gradients only w.r.t. the provided label
             grads = self._sess.run(self._class_grads[label], feed_dict=feed_dict)
             grads = grads[None, ...]
@@ -596,7 +596,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
                 raise ValueError("Layer name %s is not part of the graph." % layer)
             layer_tensor = graph.get_tensor_by_name(layer)
 
-        elif isinstance(layer, (int, np.integer)):
+        elif isinstance(layer, int):
             layer_tensor = graph.get_tensor_by_name(self._layer_names[layer])
 
         else:  # pragma: no cover
@@ -855,7 +855,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
             preprocessing=preprocessing,
         )
 
-        self._nb_classes = nb_classes
+        self.nb_classes = nb_classes
         self._input_shape = input_shape
         self._loss_object = loss_object
         self._train_step = train_step
@@ -1067,7 +1067,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
                     gradients = np.swapaxes(np.array(class_gradients), 0, 1)
 
-                elif isinstance(label, (int, np.integer)):
+                elif isinstance(label, int):
                     # Compute the gradients only w.r.t. the provided label
                     predictions = self.model(x_input, training=training_mode)
                     prediction = predictions[:, label]
@@ -1408,7 +1408,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
             % (
                 self.__module__ + "." + self.__class__.__name__,
                 self._model,
-                self._nb_classes,
+                self.nb_classes,
                 self._input_shape,
                 self._loss_object,
                 self._train_step,

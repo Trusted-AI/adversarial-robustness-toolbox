@@ -183,14 +183,6 @@ if TYPE_CHECKING:
 
     REGRESSOR_TYPE = Union[ScikitlearnRegressor, ScikitlearnDecisionTreeRegressor]  # pylint: disable=C0103
 
-    PYTORCH_ESTIMATOR_TYPE = Union[  # pylint: disable=C0103
-        PyTorchClassifier,
-        PyTorchDeepSpeech,
-        PyTorchEstimator,
-        PyTorchObjectDetector,
-        PyTorchFasterRCNN,
-    ]
-
     OBJECT_DETECTOR_TYPE = Union[  # pylint: disable=C0103
         ObjectDetector,
         PyTorchObjectDetector,
@@ -203,9 +195,21 @@ if TYPE_CHECKING:
         TensorFlowLingvoASR,
     ]
 
+    PYTORCH_ESTIMATOR_TYPE = Union[  # pylint: disable=C0103
+        PyTorchClassifier,
+        PyTorchDeepSpeech,
+        PyTorchEstimator,
+        PyTorchObjectDetector,
+        PyTorchFasterRCNN,
+    ]
+
     TENSORFLOWV2_ESTIMATOR_TYPE = Union[  # pylint: disable=C0103
         TensorFlowV2Classifier,
         TensorFlowV2Estimator,
+    ]
+
+    ESTIMATOR_TYPE = Union[  # pylint: disable=C0103
+        CLASSIFIER_TYPE, REGRESSOR_TYPE, OBJECT_DETECTOR_TYPE, SPEECH_RECOGNIZER_TYPE
     ]
 
 # --------------------------------------------------------------------------------------------------------- DEPRECATION
@@ -474,7 +478,7 @@ def to_categorical(labels: Union[np.ndarray, List[float]], nb_classes: Optional[
     :param nb_classes: The number of classes (possible labels).
     :return: A binary matrix representation of `y` in the shape `(nb_samples, nb_classes)`.
     """
-    labels = np.array(labels, dtype=np.int32)
+    labels = np.array(labels, dtype=int)
     if nb_classes is None:
         nb_classes = np.max(labels) + 1
     categorical = np.zeros((labels.shape[0], nb_classes), dtype=np.float32)
@@ -531,21 +535,27 @@ def check_and_transform_label_format(
     :return: Labels with shape `(nb_samples, nb_classes)` (one-hot) or `(nb_samples,)` (index).
     """
     if labels is not None:
-        if len(labels.shape) == 2 and labels.shape[1] > 1:
+        if len(labels.shape) == 2 and labels.shape[1] > 1:  # multi-class, one-hot encoded
             if not return_one_hot:
                 labels = np.argmax(labels, axis=1)
-        elif len(labels.shape) == 2 and labels.shape[1] == 1 and nb_classes is not None and nb_classes > 2:
-            labels = np.squeeze(labels)
+                labels = np.expand_dims(labels, axis=1)
+        elif (
+            len(labels.shape) == 2 and labels.shape[1] == 1 and nb_classes is not None and nb_classes > 2
+        ):  # multi-class, index labels
             if return_one_hot:
                 labels = to_categorical(labels, nb_classes)
-        elif len(labels.shape) == 2 and labels.shape[1] == 1 and nb_classes is not None and nb_classes == 2:
-            pass
-        elif len(labels.shape) == 1:
+            else:
+                labels = np.expand_dims(labels, axis=1)
+        elif (
+            len(labels.shape) == 2 and labels.shape[1] == 1 and nb_classes is not None and nb_classes == 2
+        ):  # binary, index labels
             if return_one_hot:
-                if nb_classes == 2:
-                    labels = np.expand_dims(labels, axis=1)
-                else:
-                    labels = to_categorical(labels, nb_classes)
+                labels = to_categorical(labels, nb_classes)
+        elif len(labels.shape) == 1:  # index labels
+            if return_one_hot:
+                labels = to_categorical(labels, nb_classes)
+            else:
+                labels = np.expand_dims(labels, axis=1)
         else:
             raise ValueError(
                 "Shape of labels not recognised."
