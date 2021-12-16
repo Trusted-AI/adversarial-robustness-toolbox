@@ -37,34 +37,12 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator):
 
         class_source = 0
         class_target = 1
-        index_target = np.where(y_test.argmax(axis=1)==class_source)[0][5]
-        x_target = x_test[index_target:index_target+1]
-        y_target = to_categorical([class_target], num_classes=10)
+        index_target = np.where(y_test.argmax(axis=1) == class_source)[0][5]
+        x_target = x_test[index_target : index_target + 1]
+        y_target = to_categorical([class_target], nb_classes=10)
 
         attack = GradientMatchingAttack(classifier, epsilon=0.3, verbose=False)
         x_poison, y_poison = attack.poison(x_target, y_target, x_train, y_train, percent_poison=0.1)
-
-        np.testing.assert_equal(x_poison.shape, x_train.shape)
-        np.testing.assert_equal(y_poison.shape, y_train.shape)
-    except ARTTestException as e:
-        art_warning(e)
-
-
-@pytest.mark.parametrize("params", [dict(percent_poison=-0.2), dict(percent_poison=1.2)])
-@pytest.mark.skip_framework("non_dl_frameworks", "pytorch", "mxnet")
-def test_failure_modes(art_warning, image_dl_estimator, params):
-    try:
-        (x_train, y_train), (x_test, y_test) = get_default_mnist_subset
-        classifier, _ = image_dl_estimator()
-
-        class_source = 0
-        class_target = 1
-        index_target = np.where(y_test.argmax(axis=1)==class_source)[0][5]
-        x_target = x_test[index_target:index_target+1]
-        y_target = to_categorical([class_target], num_classes=10)
-
-        attack = GradientMatchingAttack(classifier, epsilon=0.3, verbose=False, **params)
-        x_poison, y_poison = attack.poison(x_target, y_target, x_train, y_train)
 
         np.testing.assert_equal(x_poison.shape, x_train.shape)
         np.testing.assert_equal(y_poison.shape, y_train.shape)
