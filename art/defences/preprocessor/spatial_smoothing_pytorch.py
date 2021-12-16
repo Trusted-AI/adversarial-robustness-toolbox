@@ -72,7 +72,6 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
         :param apply_predict: True if applied during predicting.
         :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
         """
-        import torch  # lgtm [py/repeated-import]
 
         super().__init__(
             device_type=device_type,
