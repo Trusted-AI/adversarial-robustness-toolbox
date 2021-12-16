@@ -126,6 +126,7 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
         # Try poisoning num_trials times and choose the best one.
         best_B = np.finfo(np.float32).max
         best_x_poisoned = None
+        best_indices_poison = None
         for i in trange(self.max_trials):
             indices_poison = np.random.permutation(np.where([y in classes_target for y in y_train.argmax(axis=-1)])[0])[:P]
             x_poison = x_train[indices_poison]
@@ -135,8 +136,9 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
             if B_ < best_B:
                 best_B = B_
                 best_x_poisoned = x_poisoned
+                best_indices_poison = indices_poison
 
-        x_train[indices_poison] = best_x_poisoned
+        x_train[best_indices_poison] = best_x_poisoned
         return x_train, y_train  # y_train has not been modified.
 
 
