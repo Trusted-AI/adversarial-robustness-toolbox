@@ -29,7 +29,7 @@ from tests.utils import ARTTestException
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.skip_framework("non_dl_frameworks", "pytorch", "mxnet")
+@pytest.mark.skip_framework("non_dl_frameworks", "pytorch", "mxnet", "keras", "kerastf", "tensorflow2v1", "pytorch", "scikitlearn")
 def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator):
     try:
         (x_train, y_train), (x_test, y_test) = get_default_mnist_subset
