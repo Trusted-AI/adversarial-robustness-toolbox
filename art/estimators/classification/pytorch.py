@@ -863,9 +863,9 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         # Compute the gradient and return
         self._model(inputs_t)
-        model_outputs1 = self._model._features[layer_name]  # pylint: disable=W0212
+        model_outputs1 = self._features[layer_name]  # pylint: disable=W0212
         self._model(targets_t)
-        model_outputs2 = self._model._features[layer_name].detach()  # pylint: disable=W0212
+        model_outputs2 = self._features[layer_name].detach()  # pylint: disable=W0212
         diff = model_outputs1 - model_outputs2
         loss = loss_fn(diff, p=2)
 
@@ -931,12 +931,27 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         else:  # pragma: no cover
             raise TypeError("Layer must be of type str or int")
 
+        if not hasattr(self, "_features"):
+            self._features = {}
+
+        def getActivation(name):
+            # the hook signature
+            def hook(model, input, output):
+                self._features[name] = output
+
+            return hook
+
+        # register forward hooks on the layers of choice
+        interim_layer = dict([*self._model._model.named_modules()])[layer]
+        h1 = interim_layer.register_forward_hook(getActivation(layer))
+
         if framework:
             if isinstance(x, torch.Tensor):
-                return self._model(x)[layer_index]
+                self._model(x)
+                return self._features[layer]
             input_tensor = torch.from_numpy(x_preprocessed)
             self._model(input_tensor.to(self._device))
-            return input, self._model._features[layer]  # pylint: disable=W0212
+            return input_tensor, self._features[layer]  # pylint: disable=W0212
 
         # Run prediction with batch processing
         results = []
@@ -951,7 +966,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
             # Run prediction for the current batch
             self._model(torch.from_numpy(x_preprocessed[begin:end]).to(self._device))
-            layer_output = self._model._features[layer]  # pylint: disable=W0212
+            layer_output = self._features[layer]  # pylint: disable=W0212
             results.append(layer_output.detach().cpu().numpy())
 
         results = np.concatenate(results)
@@ -1076,19 +1091,6 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                         """
                         super().__init__()
                         self._model = model
-                        self._layers = self.get_layers
-                        self._features = {layer: torch.empty(0) for layer in self._layers}
-                        for layer_id in self._layers:
-                            layer = dict([*self._model.named_modules()])[layer_id]
-                            layer.register_forward_hook(self.save_outputs_hook(layer_id))
-
-                    def save_outputs_hook(self, layer_id: str):
-                        """Hook to save outputs."""
-
-                        def save_features(_, __, output):
-                            self._features[layer_id] = output  # pylint: disable=W0212
-
-                        return save_features
 
                     # pylint: disable=W0221
                     # disable pylint because of API requirements for function
