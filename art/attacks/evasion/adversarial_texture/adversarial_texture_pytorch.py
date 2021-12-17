@@ -324,6 +324,7 @@ class AdversarialTexturePyTorch(EvasionAttack):
         :param x: Input videos of shape NFHWC.
         :param y: True labels of format `List[Dict[str, np.ndarray]]`, one dictionary for each input image. The keys of
                   the dictionary are:
+
                   - boxes [N_FRAMES, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and
                                          0 <= y1 < y2 <= H.
 

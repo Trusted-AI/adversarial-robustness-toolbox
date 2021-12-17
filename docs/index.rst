@@ -82,9 +82,10 @@ Supported Machine Learning Libraries
    modules/estimators/encoding
    modules/estimators/generation
    modules/estimators/object_detection
-   modules/estimators/poison_mitigation_neural_cleanse
-   modules/estimators/poison_mitigation_strip
+   modules/estimators/object_tracking
+   modules/estimators/poison_mitigation
    modules/estimators/regression
+   modules/estimators/regression_scikitlearn
    modules/estimators/speech_recognition
    modules/evaluations
    modules/metrics
