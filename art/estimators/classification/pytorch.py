@@ -127,7 +127,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             preprocessing=preprocessing,
             device_type=device_type,
         )
-        self._nb_classes = nb_classes
+        self.nb_classes = nb_classes
         self._input_shape = input_shape
         self._model = self._make_model_wrapper(model)
         self._loss = loss
@@ -551,11 +551,11 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         if not (
             (label is None)
-            or (isinstance(label, (int, np.integer)) and label in range(self._nb_classes))
+            or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
             or (
                 isinstance(label, np.ndarray)
                 and len(label.shape) == 1
-                and (label < self._nb_classes).all()
+                and (label < self.nb_classes).all()
                 and label.shape[0] == x.shape[0]
             )
         ):
@@ -587,11 +587,11 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         preds = model_outputs[-1]
 
         # Compute the gradient
-        grads = []
+        grads_list = list()
 
         def save_grad():
             def hook(grad):
-                grads.append(grad.cpu().numpy().copy())
+                grads_list.append(grad.cpu().numpy().copy())
                 grad.data.zero_()
 
             return hook
@@ -612,12 +612,15 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                     retain_graph=True,
                 )
 
+            grads = np.swapaxes(np.array(grads_list), 0, 1)
+
         elif isinstance(label, (int, np.integer)):
             torch.autograd.backward(
                 preds[:, label],
                 torch.tensor([1.0] * len(preds[:, 0])).to(self._device),
                 retain_graph=True,
             )
+            grads = np.swapaxes(np.array(grads_list), 0, 1)
         else:
             unique_label = list(np.unique(label))
             for i in unique_label:
@@ -627,13 +630,13 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                     retain_graph=True,
                 )
 
-            grads = np.swapaxes(np.array(grads), 0, 1)
+            grads = np.swapaxes(np.array(grads_list), 0, 1)
             lst = [unique_label.index(i) for i in label]
             grads = grads[np.arange(len(grads)), lst]
 
             grads = grads[None, ...]
+            grads = np.swapaxes(np.array(grads), 0, 1)
 
-        grads = np.swapaxes(np.array(grads), 0, 1)
         if not self.all_framework_preprocessing:
             grads = self._apply_preprocessing_gradient(x, grads)
 
@@ -839,7 +842,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                 raise ValueError("Layer name %s not supported" % layer)
             layer_index = self._layer_names.index(layer)
 
-        elif isinstance(layer, (int, np.integer)):
+        elif isinstance(layer, int):
             layer_index = layer
 
         else:  # pragma: no cover

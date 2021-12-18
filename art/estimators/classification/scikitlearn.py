@@ -137,7 +137,9 @@ class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):  # lgtm [py/
             preprocessing=preprocessing,
         )
         self._input_shape = self._get_input_shape(model)
-        self._nb_classes = self._get_nb_classes()
+        nb_classes = self._get_nb_classes()
+        if nb_classes is not None:
+            self.nb_classes = nb_classes
         self._use_logits = use_logits
 
     @property
@@ -173,7 +175,7 @@ class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):  # lgtm [py/
 
         self.model.fit(x_preprocessed, y_preprocessed, **kwargs)
         self._input_shape = self._get_input_shape(self.model)
-        self._nb_classes = self._get_nb_classes()
+        self.nb_classes = self._get_nb_classes()
 
     def predict(self, x: np.ndarray, **kwargs) -> np.ndarray:
         """
@@ -839,7 +841,7 @@ class ScikitlearnLogisticRegression(ClassGradientsMixin, LossGradientsMixin, Sci
 
             gradients = np.swapaxes(np.array(class_gradients), 0, 1)
 
-        elif isinstance(label, (int, np.integer)):
+        elif isinstance(label, int):
             # Compute the gradients only w.r.t. the provided label
             class_gradient = np.zeros(x.shape)
             for i_sample in range(nb_samples):
@@ -1095,7 +1097,7 @@ class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassif
                                     grad_kernel = self._get_kernel_gradient_sv(not_label_sv, x_preprocessed[i_sample])
                                     gradients[i_sample, i_label] += label_multiplier * alpha_i_k_y_i * grad_kernel
 
-            elif isinstance(label, (int, np.integer)):
+            elif isinstance(label, int):
                 gradients = np.zeros((x_preprocessed.shape[0], 1, x_preprocessed.shape[1]))
 
                 for i_sample in range(num_samples):
@@ -1184,7 +1186,7 @@ class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassif
                         else:
                             gradients[i_sample, i] = self.model.coef_[i]
 
-            elif isinstance(label, (int, np.integer)):
+            elif isinstance(label, int):
                 gradients = np.zeros((x_preprocessed.shape[0], 1, x_preprocessed.shape[1]))
 
                 for i_sample in range(num_samples):

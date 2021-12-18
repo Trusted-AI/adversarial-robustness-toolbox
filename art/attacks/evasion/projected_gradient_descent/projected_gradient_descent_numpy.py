@@ -37,6 +37,7 @@ from art.config import ART_NUMPY_DTYPE
 from art.estimators.classification.classifier import ClassifierMixin
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format, compute_success_array
+from art.summary_writer import SummaryWriter
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE, OBJECT_DETECTOR_TYPE
@@ -68,7 +69,7 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
         num_random_init: int = 0,
         batch_size: int = 32,
         random_eps: bool = False,
-        tensor_board: Union[str, bool] = False,
+        summary_writer: Union[str, bool, SummaryWriter] = False,
         verbose: bool = True,
     ) -> None:
         """
@@ -87,11 +88,13 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
         :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0
             starting at the original input.
         :param batch_size: Size of the batch on which adversarial samples are generated.
-        :param tensor_board: Activate summary writer for TensorBoard: Default is `False` and deactivated summary writer.
-                             If `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory. Provide `path` in type
-                             `str` to save in path/CURRENT_DATETIME_HOSTNAME.
-                             Use hierarchical folder structure to compare between runs easily. e.g. pass in ‘runs/exp1’,
-                             ‘runs/exp2’, etc. for each new experiment to compare across them.
+        :param summary_writer: Activate summary writer for TensorBoard.
+                               Default is `False` and deactivated summary writer.
+                               If `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory.
+                               If of type `str` save in path.
+                               If of type `SummaryWriter` apply provided custom summary writer.
+                               Use hierarchical folder structure to compare between runs easily. e.g. pass in
+                               ‘runs/exp1’, ‘runs/exp2’, etc. for each new experiment to compare across them.
         :param verbose: Show progress bars.
         """
         super().__init__(
@@ -103,7 +106,7 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
             num_random_init=num_random_init,
             batch_size=batch_size,
             minimal=False,
-            tensor_board=tensor_board,
+            summary_writer=summary_writer,
         )
         self.max_iter = max_iter
         self.random_eps = random_eps
@@ -204,7 +207,7 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
         if not isinstance(self.targeted, bool):
             raise ValueError("The flag `targeted` has to be of type bool.")
 
-        if not isinstance(self.num_random_init, (int, np.int)):
+        if not isinstance(self.num_random_init, int):
             raise TypeError("The number of random initialisations has to be of type integer.")
 
         if self.num_random_init < 0:
@@ -240,7 +243,7 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
         num_random_init: int = 0,
         batch_size: int = 32,
         random_eps: bool = False,
-        tensor_board: Union[str, bool] = False,
+        summary_writer: Union[str, bool, SummaryWriter] = False,
         verbose: bool = True,
     ) -> None:
         """
@@ -259,13 +262,18 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
         :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0 starting
                                 at the original input.
         :param batch_size: Size of the batch on which adversarial samples are generated.
-        :param tensor_board: Activate summary writer for TensorBoard: Default is `False` and deactivated summary wr
-                             `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory. Provide `pat
-                             `str` to save in path/CURRENT_DATETIME_HOSTNAME.
-                             Use hierarchical folder structure to compare between runs easily. e.g. pass i
-                             ‘runs/exp2’, etc. for each new experiment to compare across them.
+        :param summary_writer: Activate summary writer for TensorBoard.
+                               Default is `False` and deactivated summary writer.
+                               If `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory.
+                               If of type `str` save in path.
+                               If of type `SummaryWriter` apply provided custom summary writer.
+                               Use hierarchical folder structure to compare between runs easily. e.g. pass in
+                               ‘runs/exp1’, ‘runs/exp2’, etc. for each new experiment to compare across them.
         :param verbose: Show progress bars.
         """
+        if summary_writer and num_random_init > 1:
+            raise ValueError("TensorBoard is not yet supported for more than 1 random restart (num_random_init>1).")
+
         super().__init__(
             estimator=estimator,
             norm=norm,
@@ -276,7 +284,7 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
             num_random_init=num_random_init,
             batch_size=batch_size,
             random_eps=random_eps,
-            tensor_board=tensor_board,
+            summary_writer=summary_writer,
             verbose=verbose,
         )
 
@@ -344,6 +352,7 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
                             self.eps_step,
                             self._project,
                             self.num_random_init > 0 and i_max_iter == 0,
+                            self._batch_id,
                         )
 
                     if rand_init_num == 0:
@@ -382,7 +391,7 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
             targets = self._set_targets(x, y, classifier_mixin=False)
 
             # Start to compute adversarial examples
-            if x.dtype == np.object:
+            if x.dtype == object:
                 adv_x = x.copy()
             else:
                 adv_x = x.astype(ART_NUMPY_DTYPE)
@@ -400,5 +409,8 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
                     self._project,
                     self.num_random_init > 0 and i_max_iter == 0,
                 )
+
+        if self.summary_writer is not None:
+            self.summary_writer.reset()
 
         return adv_x

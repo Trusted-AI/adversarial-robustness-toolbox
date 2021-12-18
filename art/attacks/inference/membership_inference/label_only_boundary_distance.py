@@ -18,8 +18,8 @@
 """
 This module implements the Label-Only Inference Attack based on Decision Boundary.
 
-| Paper link: https://arxiv.org/abs/2007.14321 (Choquette-Choo et al.) and https://arxiv.org/abs/2007.15528 (Li and
-Zhang)
+| Paper link: https://arxiv.org/abs/2007.14321 (Choquette-Choo et al.)
+| Paper link: https://arxiv.org/abs/2007.15528 (Li and Zhang)
 """
 import logging
 from typing import Optional, TYPE_CHECKING
@@ -41,10 +41,10 @@ class LabelOnlyDecisionBoundary(MembershipInferenceAttack):
     """
     Implementation of Label-Only Inference Attack based on Decision Boundary.
 
-    | Paper link: https://arxiv.org/abs/2007.14321 (Choquette-Choo et al.) and https://arxiv.org/abs/2007.15528 (Li
-    and Zhang)
-
     You only need to call ONE of the calibrate methods, depending on which attack you want to launch.
+
+    | Paper link: https://arxiv.org/abs/2007.14321 (Choquette-Choo et al.)
+    | Paper link: https://arxiv.org/abs/2007.15528 (Li and Zhang)
     """
 
     attack_params = MembershipInferenceAttack.attack_params + [

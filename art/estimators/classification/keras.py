@@ -177,10 +177,12 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             self._output = model.output
             self._output_layer = 0
 
-        _, self._nb_classes = k.int_shape(self._output)
+        _, nb_classes = k.int_shape(self._output)
         # Check for binary classification
-        if self._nb_classes == 1:
-            self._nb_classes = 2
+        if nb_classes == 1:
+            nb_classes = 2
+        self.nb_classes = nb_classes
+
         self._input_shape = k.int_shape(self._input)[1:]
         logger.debug(
             "Inferred %i classes and %s as input shape for Keras classifier.",
@@ -560,13 +562,14 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
                `fit_generator` function in Keras and will be passed to this function as such. Including the number of
                epochs or the number of steps per epoch as part of this argument will result in as error.
         """
+        y_ndim = y.ndim
         y = check_and_transform_label_format(y, self.nb_classes)
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
 
         # Adjust the shape of y for loss functions that do not take labels in one-hot encoding
-        if self._reduce_labels:
+        if self._reduce_labels or y_ndim == 1:
             y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
         self._model.fit(x=x_preprocessed, y=y_preprocessed, batch_size=batch_size, epochs=nb_epochs, **kwargs)

@@ -2274,7 +2274,7 @@ class BrendelBethgeAttack(EvasionAttack):
         x = starting_points.astype(config.ART_NUMPY_DTYPE)
         lrs = self.lr * np.ones(N)
         lr_reduction_interval = max(1, int(self.steps / self.lr_num_decay))
-        converged = np.zeros(N, dtype=np.bool)
+        converged = np.zeros(N, dtype=bool)
         rate_normalization = np.prod(x.shape) * (max_ - min_)
         original_shape = x.shape
         _best_advs = best_advs.copy()

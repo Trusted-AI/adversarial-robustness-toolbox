@@ -296,7 +296,7 @@ class Dataset(object):
         return len(self.images)
 
     def load(self, split, lazy=True, randomize=True):
-        """ Abstract function specific to each dataset."""
+        """Abstract function specific to each dataset."""
         pass
 
 

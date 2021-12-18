@@ -449,16 +449,16 @@ class BoundaryAttack(EvasionAttack):
         return potential_advs[min_idx]
 
     def _check_params(self) -> None:
-        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter < 0:
+        if not isinstance(self.max_iter, int) or self.max_iter < 0:
             raise ValueError("The number of iterations must be a non-negative integer.")
 
-        if not isinstance(self.num_trial, (int, np.int)) or self.num_trial < 0:
+        if not isinstance(self.num_trial, int) or self.num_trial < 0:
             raise ValueError("The number of trials must be a non-negative integer.")
 
-        if not isinstance(self.sample_size, (int, np.int)) or self.sample_size <= 0:
+        if not isinstance(self.sample_size, int) or self.sample_size <= 0:
             raise ValueError("The number of samples must be a positive integer.")
 
-        if not isinstance(self.init_size, (int, np.int)) or self.init_size <= 0:
+        if not isinstance(self.init_size, int) or self.init_size <= 0:
             raise ValueError("The number of initial trials must be a positive integer.")
 
         if self.epsilon <= 0:

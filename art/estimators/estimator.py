@@ -153,8 +153,11 @@ class BaseEstimator(ABC):
         """
         for key, value in kwargs.items():
             if key in self.estimator_params:
-                if hasattr(BaseEstimator, key) and isinstance(getattr(BaseEstimator, key), property):
-                    setattr(self, "_" + key, value)
+                if hasattr(type(self), key) and isinstance(getattr(type(self), key), property):
+                    if getattr(type(self), key).fset is not None:
+                        setattr(self, key, value)
+                    else:
+                        setattr(self, "_" + key, value)
                 elif hasattr(self, "_" + key):
                     setattr(self, "_" + key, value)
                 else:

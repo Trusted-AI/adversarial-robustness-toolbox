@@ -129,7 +129,7 @@ class VideoCompression(Preprocessor):
         return x_compressed, y
 
     def _check_params(self) -> None:
-        if not (isinstance(self.constant_rate_factor, (int, np.int)) and 0 <= self.constant_rate_factor < 52):
+        if not (isinstance(self.constant_rate_factor, int) and 0 <= self.constant_rate_factor < 52):
             raise ValueError("Constant rate factor must be an integer in the range [0, 51].")
 
         if not isinstance(self.verbose, bool):

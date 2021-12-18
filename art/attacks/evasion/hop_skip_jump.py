@@ -670,19 +670,19 @@ class HopSkipJump(EvasionAttack):
         if self.norm not in [2, np.inf, "inf"]:
             raise ValueError('Norm order must be either 2, `np.inf` or "inf".')
 
-        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter < 0:
+        if not isinstance(self.max_iter, int) or self.max_iter < 0:
             raise ValueError("The number of iterations must be a non-negative integer.")
 
-        if not isinstance(self.max_eval, (int, np.int)) or self.max_eval <= 0:
+        if not isinstance(self.max_eval, int) or self.max_eval <= 0:
             raise ValueError("The maximum number of evaluations must be a positive integer.")
 
-        if not isinstance(self.init_eval, (int, np.int)) or self.init_eval <= 0:
+        if not isinstance(self.init_eval, int) or self.init_eval <= 0:
             raise ValueError("The initial number of evaluations must be a positive integer.")
 
         if self.init_eval > self.max_eval:
             raise ValueError("The maximum number of evaluations must be larger than the initial number of evaluations.")
 
-        if not isinstance(self.init_size, (int, np.int)) or self.init_size <= 0:
+        if not isinstance(self.init_size, int) or self.init_size <= 0:
             raise ValueError("The number of initial trials must be a positive integer.")
 
         if not isinstance(self.verbose, bool):

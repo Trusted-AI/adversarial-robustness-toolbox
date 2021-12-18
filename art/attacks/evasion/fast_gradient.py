@@ -39,6 +39,7 @@ from art.utils import (
     projection,
     check_and_transform_label_format,
 )
+from art.summary_writer import SummaryWriter
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
@@ -63,7 +64,7 @@ class FastGradientMethod(EvasionAttack):
         "num_random_init",
         "batch_size",
         "minimal",
-        "tensor_board",
+        "summary_writer",
     ]
     _estimator_requirements = (BaseEstimator, LossGradientsMixin)
 
@@ -77,7 +78,7 @@ class FastGradientMethod(EvasionAttack):
         num_random_init: int = 0,
         batch_size: int = 32,
         minimal: bool = False,
-        tensor_board: Union[str, bool] = False,
+        summary_writer: Union[str, bool, SummaryWriter] = False,
     ) -> None:
         """
         Create a :class:`.FastGradientMethod` instance.
@@ -92,13 +93,15 @@ class FastGradientMethod(EvasionAttack):
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :param minimal: Indicates if computing the minimal perturbation (True). If True, also define `eps_step` for
                         the step size and eps for the maximum perturbation.
-        :param tensor_board: Activate summary writer for TensorBoard: Default is `False` and deactivated summary writer.
-                             If `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory. Provide `path` in type
-                             `str` to save in path/CURRENT_DATETIME_HOSTNAME.
-                             Use hierarchical folder structure to compare between runs easily. e.g. pass in ‘runs/exp1’,
-                             ‘runs/exp2’, etc. for each new experiment to compare across them.
+        :param summary_writer: Activate summary writer for TensorBoard.
+                               Default is `False` and deactivated summary writer.
+                               If `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory.
+                               If of type `str` save in path.
+                               If of type `SummaryWriter` apply provided custom summary writer.
+                               Use hierarchical folder structure to compare between runs easily. e.g. pass in
+                               ‘runs/exp1’, ‘runs/exp2’, etc. for each new experiment to compare across them.
         """
-        super().__init__(estimator=estimator, tensor_board=tensor_board)
+        super().__init__(estimator=estimator, summary_writer=summary_writer)
         self.norm = norm
         self.eps = eps
         self.eps_step = eps_step
@@ -318,6 +321,9 @@ class FastGradientMethod(EvasionAttack):
                 self.num_random_init > 0,
             )
 
+        if self.summary_writer is not None:
+            self.summary_writer.reset()
+
         return adv_x_best
 
     def _check_params(self) -> None:
@@ -359,7 +365,7 @@ class FastGradientMethod(EvasionAttack):
         if not isinstance(self.targeted, bool):
             raise ValueError("The flag `targeted` has to be of type bool.")
 
-        if not isinstance(self.num_random_init, (int, np.int)):
+        if not isinstance(self.num_random_init, int):
             raise TypeError("The number of random initialisations has to be of type integer")
 
         if self.num_random_init < 0:
@@ -382,41 +388,26 @@ class FastGradientMethod(EvasionAttack):
 
         # Write summary
         if self.summary_writer is not None:  # pragma: no cover
-            self.summary_writer.add_scalar(
-                "gradients/norm-L1/batch-{}".format(self._batch_id),
-                np.linalg.norm(grad.flatten(), ord=1),
+            self.summary_writer.update(
+                batch_id=self._batch_id,
                 global_step=self._i_max_iter,
+                grad=grad,
+                patch=None,
+                estimator=self.estimator,
+                x=batch,
+                y=batch_labels,
+                targeted=self.targeted,
             )
-            self.summary_writer.add_scalar(
-                "gradients/norm-L2/batch-{}".format(self._batch_id),
-                np.linalg.norm(grad.flatten(), ord=2),
-                global_step=self._i_max_iter,
-            )
-            self.summary_writer.add_scalar(
-                "gradients/norm-Linf/batch-{}".format(self._batch_id),
-                np.linalg.norm(grad.flatten(), ord=np.inf),
-                global_step=self._i_max_iter,
-            )
-
-            if hasattr(self.estimator, "compute_losses"):
-                losses = self.estimator.compute_losses(x=batch, y=batch_labels)
-
-                for key, value in losses.items():
-                    self.summary_writer.add_scalar(
-                        "loss/{}/batch-{}".format(key, self._batch_id),
-                        np.mean(value.detach().cpu().numpy()),
-                        global_step=self._i_max_iter,
-                    )
 
         # Check for NaN before normalisation an replace with 0
-        if grad.dtype != np.object and np.isnan(grad).any():  # pragma: no cover
+        if grad.dtype != object and np.isnan(grad).any():  # pragma: no cover
             logger.warning("Elements of the loss gradient are NaN and have been replaced with 0.0.")
             grad = np.where(np.isnan(grad), 0.0, grad)
         else:
             for i, _ in enumerate(grad):
                 grad_i_array = grad[i].astype(np.float32)
                 if np.isnan(grad_i_array).any():
-                    grad[i] = np.where(np.isnan(grad_i_array), 0.0, grad_i_array).astype(np.object)
+                    grad[i] = np.where(np.isnan(grad_i_array), 0.0, grad_i_array).astype(object)
 
         # Apply mask
         if mask is not None:
@@ -424,7 +415,7 @@ class FastGradientMethod(EvasionAttack):
 
         # Apply norm bound
         def _apply_norm(grad, object_type=False):
-            if (grad.dtype != np.object and np.isinf(grad).any()) or np.isnan(  # pragma: no cover
+            if (grad.dtype != object and np.isinf(grad).any()) or np.isnan(  # pragma: no cover
                 grad.astype(np.float32)
             ).any():
                 logger.info("The loss gradient array contains at least one positive or negative infinity.")
@@ -445,7 +436,7 @@ class FastGradientMethod(EvasionAttack):
                 grad = grad / (np.sqrt(np.sum(np.square(grad), axis=ind, keepdims=True)) + tol)
             return grad
 
-        if batch.dtype == np.object:
+        if batch.dtype == object:
             for i_sample in range(batch.shape[0]):
                 grad[i_sample] = _apply_norm(grad[i_sample], object_type=True)
                 assert batch[i_sample].shape == grad[i_sample].shape
@@ -461,7 +452,7 @@ class FastGradientMethod(EvasionAttack):
     ) -> np.ndarray:
 
         perturbation_step = eps_step * perturbation
-        if perturbation_step.dtype != np.object:
+        if perturbation_step.dtype != object:
             perturbation_step[np.isnan(perturbation_step)] = 0
         else:
             for i, _ in enumerate(perturbation_step):
@@ -469,7 +460,7 @@ class FastGradientMethod(EvasionAttack):
                 if np.isnan(perturbation_step_i_array).any():
                     perturbation_step[i] = np.where(
                         np.isnan(perturbation_step_i_array), 0.0, perturbation_step_i_array
-                    ).astype(np.object)
+                    ).astype(object)
 
         batch = batch + perturbation_step
         if self.estimator.clip_values is not None:
@@ -492,6 +483,7 @@ class FastGradientMethod(EvasionAttack):
         eps_step: Union[int, float, np.ndarray],
         project: bool,
         random_init: bool,
+        batch_id_ext: Optional[int] = None,
     ) -> np.ndarray:
         if random_init:
             n = x.shape[0]
@@ -505,14 +497,17 @@ class FastGradientMethod(EvasionAttack):
                 clip_min, clip_max = self.estimator.clip_values
                 x_adv = np.clip(x_adv, clip_min, clip_max)
         else:
-            if x.dtype == np.object:
+            if x.dtype == object:
                 x_adv = x.copy()
             else:
                 x_adv = x.astype(ART_NUMPY_DTYPE)
 
         # Compute perturbation with implicit batching
         for batch_id in range(int(np.ceil(x.shape[0] / float(self.batch_size)))):
-            self._batch_id = batch_id
+            if batch_id_ext is None:
+                self._batch_id = batch_id
+            else:
+                self._batch_id = batch_id_ext
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
             batch_index_2 = min(batch_index_2, x.shape[0])
             batch = x_adv[batch_index_1:batch_index_2]
@@ -546,7 +541,7 @@ class FastGradientMethod(EvasionAttack):
             x_adv[batch_index_1:batch_index_2] = self._apply_perturbation(batch, perturbation, batch_eps_step)
 
             if project:
-                if x_adv.dtype == np.object:
+                if x_adv.dtype == object:
                     for i_sample in range(batch_index_1, batch_index_2):
                         if isinstance(batch_eps, np.ndarray) and batch_eps.shape[0] == x_adv.shape[0]:
                             perturbation = projection(
@@ -584,9 +579,9 @@ class FastGradientMethod(EvasionAttack):
             if mask.ndim > x.ndim:  # pragma: no cover
                 raise ValueError("Mask shape must be broadcastable to input shape.")
 
-            if not (np.issubdtype(mask.dtype, np.floating) or mask.dtype == np.bool):  # pragma: no cover
+            if not (np.issubdtype(mask.dtype, np.floating) or mask.dtype == bool):  # pragma: no cover
                 raise ValueError(
-                    "The `mask` has to be either of type np.float32, np.float64 or np.bool. The provided"
+                    "The `mask` has to be either of type np.float32, np.float64 or bool. The provided"
                     "`mask` is of type {}.".format(mask.dtype)
                 )
 

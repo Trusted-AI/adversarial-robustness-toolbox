@@ -34,6 +34,7 @@ from art.attacks.evasion.adversarial_patch.utils import insert_transformed_patch
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import check_and_transform_label_format, is_probability, to_categorical
+from art.summary_writer import SummaryWriter
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
@@ -60,7 +61,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
         "max_iter",
         "batch_size",
         "patch_shape",
-        "tensor_board",
+        "summary_writer",
         "verbose",
     ]
 
@@ -78,7 +79,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
         batch_size: int = 16,
         patch_shape: Optional[Tuple[int, int, int]] = None,
         patch_type: str = "circle",
-        tensor_board: Union[str, bool] = False,
+        summary_writer: Union[str, bool, SummaryWriter] = False,
         verbose: bool = True,
     ):
         """
@@ -98,11 +99,13 @@ class AdversarialPatchPyTorch(EvasionAttack):
         :param batch_size: The size of the training batch.
         :param patch_shape: The shape of the adversarial patch as a tuple of shape CHW (nb_channels, height, width).
         :param patch_type: The patch type, either circle or square.
-        :param tensor_board: Activate summary writer for TensorBoard: Default is `False` and deactivated summary writer.
-                             If `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory. Provide `path` in type
-                             `str` to save in path/CURRENT_DATETIME_HOSTNAME.
-                             Use hierarchical folder structure to compare between runs easily. e.g. pass in ‘runs/exp1’,
-                             ‘runs/exp2’, etc. for each new experiment to compare across them.
+        :param summary_writer: Activate summary writer for TensorBoard.
+                               Default is `False` and deactivated summary writer.
+                               If `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory.
+                               If of type `str` save in path.
+                               If of type `SummaryWriter` apply provided custom summary writer.
+                               Use hierarchical folder structure to compare between runs easily. e.g. pass in
+                               ‘runs/exp1’, ‘runs/exp2’, etc. for each new experiment to compare across them.
         :param verbose: Show progress bars.
         """
         import torch  # lgtm [py/repeated-import]
@@ -115,7 +118,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
             torchvision_version[0] >= 0 and torchvision_version[1] >= 8
         ), "AdversarialPatchPyTorch requires torchvision>=0.8.0"
 
-        super().__init__(estimator=classifier, tensor_board=tensor_board)
+        super().__init__(estimator=classifier, summary_writer=summary_writer)
         self.rotation_max = rotation_max
         self.scale_min = scale_min
         self.scale_max = scale_max
@@ -484,25 +487,30 @@ class AdversarialPatchPyTorch(EvasionAttack):
                     )
                     _ = self._train_step(images=images, target=target, mask=mask_i)
 
+            # Write summary
             if self.summary_writer is not None:  # pragma: no cover
-                self.summary_writer.add_image(
-                    "patch",
-                    self._patch,
-                    global_step=i_iter,
-                )
-
-                if hasattr(self.estimator, "compute_losses"):
-                    x_patched = self._random_overlay(
+                x_patched = (
+                    self._random_overlay(
                         images=torch.from_numpy(x).to(self.estimator.device), patch=self._patch, mask=mask
                     )
-                    losses = self.estimator.compute_losses(x=x_patched, y=torch.from_numpy(y).to(self.estimator.device))
+                    .detach()
+                    .cpu()
+                    .numpy()
+                )
 
-                    for key, value in losses.items():
-                        self.summary_writer.add_scalar(
-                            "loss/{}".format(key),
-                            np.mean(value.detach().cpu().numpy()),
-                            global_step=i_iter,
-                        )
+                self.summary_writer.update(
+                    batch_id=0,
+                    global_step=i_iter,
+                    grad=None,
+                    patch=self._patch,
+                    estimator=self.estimator,
+                    x=x_patched,
+                    y=y,
+                    targeted=self.targeted,
+                )
+
+        if self.summary_writer is not None:
+            self.summary_writer.reset()
 
         return (
             self._patch.detach().cpu().numpy(),
@@ -511,7 +519,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
 
     def _check_mask(self, mask: np.ndarray, x: np.ndarray) -> np.ndarray:
         if mask is not None and (  # pragma: no cover
-            (mask.dtype != np.bool)
+            (mask.dtype != bool)
             or not (mask.shape[0] == 1 or mask.shape[0] == x.shape[0])
             or not (mask.shape[1] == x.shape[self.i_h + 1] and mask.shape[2] == x.shape[self.i_w + 1])
         ):

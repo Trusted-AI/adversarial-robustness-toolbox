@@ -1,5 +1,5 @@
 # base
-numpy>=1.18.0
+numpy>=1.18.5
 scipy==1.7.3
 matplotlib==3.5.1
 scikit-learn>=0.22.2,<1.1.0
@@ -37,6 +37,7 @@ xgboost==1.5.1
 kornia~=0.6.2
 tensorboardX==2.4.1
 lief==0.11.5
+jax[cpu]==0.2.25
 
 # Lingvo ASR dependencies
 # supported versions: (lingvo==0.6.4 with tensorflow-gpu==2.1.0)
