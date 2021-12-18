@@ -37,12 +37,12 @@ jobs:
             torch: 1.9.1+cpu
             torchvision: 0.10.1+cpu
             torchaudio: 0.9.1
-          - name: PyTorch 1.10.0 (Python 3.7)
+          - name: PyTorch 1.10.1 (Python 3.7)
             framework: pytorch
             python: 3.7
-            torch: 1.10.0+cpu
-            torchvision: 0.11.1+cpu
-            torchaudio: 0.10.0
+            torch: 1.10.1+cpu
+            torchvision: 0.11.2+cpu
+            torchaudio: 0.10.1
 
     name: ${{ matrix.name }}
     steps:
