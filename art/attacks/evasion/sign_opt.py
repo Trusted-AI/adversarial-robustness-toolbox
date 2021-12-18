@@ -191,10 +191,13 @@ class SignOPTAttack(EvasionAttack):
         h = 0.001 # todo: can be passed in as a parameter
         sign_grad = np.zeros(theta.shape).astype(np.float32)
         queries = 0
-        ### USe orthogonal transform
+        ### use orthogonal transform
         for iii in range(K): # for each u
-            u = np.random.randn(*theta.shape).astype(np.float32); u /= LA.norm(u)
-            new_theta = theta + h*u; new_theta /= LA.norm(new_theta)
+            u = np.random.randn(*theta.shape).astype(np.float32); # gaussian
+            u /= LA.norm(u)
+            # function (3) in the paper
+            new_theta = theta + h*u; 
+            new_theta /= LA.norm(new_theta)
             sign = 1
 
             # Untargeted case
@@ -204,6 +207,7 @@ class SignOPTAttack(EvasionAttack):
                 sign = -1
 
             queries += 1
+            # quoat: "if the produced perturbation is outside of the boundry(aka f(x0+...)!=y0), the new direction has a smaller distance to the decison boundary, and thus giving a smaller value of g. It indicate that u is a decent direction to minimize g"
             sign_grad += u*sign
         
         sign_grad /= K
@@ -244,7 +248,6 @@ class SignOPTAttack(EvasionAttack):
                 query_count += count
                 if lbd < g_theta:
                     best_theta, g_theta = theta, lbd
-                    # print("--------> Found distortion %.4f" % g_theta)
                     print(f"--------> Found distortion {g_theta} with iteration/num_directions={i}/{num_directions}")
         timeend = time.time()
         print(f'Spent {timeend-timestart} seconds for finding directions')
@@ -253,7 +256,7 @@ class SignOPTAttack(EvasionAttack):
             print("Couldn't find valid initial, failed")
             return x0, 0, False, query_count, best_theta # test data, ?, ?, # of queries, best_theta(Gaussian L2 norm)
         ## todo: consider to pass following variables as parameters 
-        momentum = 0.0
+        # momentum = 0.0
         query_limit = 20000
         alpha = 0.2
         beta = 0.001
@@ -272,13 +275,15 @@ class SignOPTAttack(EvasionAttack):
             min_theta = xg ## next theta
             min_g2 = gg ## current g_theta
             min_vg = vg ## velocity (for momentum only)
+            # momentum solution for optimization:
+            # https://www.cs.cornell.edu/courses/cs4787/2020sp/lectures/Lecture7.pdf
             for _ in range(15):
                 # update theta by one step sgd
-                if momentum > 0:
-                    new_vg = momentum*vg - alpha*sign_gradient
-                    new_theta = xg + new_vg
-                else:
-                    new_theta = xg - alpha * sign_gradient
+                # if momentum > 0:
+                #     new_vg = momentum*vg - alpha*sign_gradient
+                #     new_theta = xg + new_vg
+                # else:
+                new_theta = xg - alpha * sign_gradient
                 new_theta /= LA.norm(new_theta)
 
                 new_g2, count = self._fine_grained_binary_search_local(x0, y0, new_theta, initial_lbd = min_g2, tol=beta/500)
@@ -287,27 +292,27 @@ class SignOPTAttack(EvasionAttack):
                 if new_g2 < min_g2:
                     min_theta = new_theta
                     min_g2 = new_g2
-                    if momentum > 0:
-                        min_vg = new_vg
+                    # if momentum > 0:
+                    #     min_vg = new_vg
                 else:
                     break
 
             if min_g2 >= gg: ## if the above code failed for the init alpha, we then try to decrease alpha
                 for _ in range(15):
                     alpha = alpha * 0.25
-                    if momentum > 0:
-                        new_vg = momentum*vg - alpha*sign_gradient
-                        new_theta = xg + new_vg
-                    else:
-                        new_theta = xg - alpha * sign_gradient
+                    # if momentum > 0:
+                    #     new_vg = momentum*vg - alpha*sign_gradient
+                    #     new_theta = xg + new_vg
+                    # else:
+                    new_theta = xg - alpha * sign_gradient
                     new_theta /= LA.norm(new_theta)
                     new_g2, count = self._fine_grained_binary_search_local(x0, y0, new_theta, initial_lbd = min_g2, tol=beta/500)
                     ls_count += count
                     if new_g2 < gg:
                         min_theta = new_theta 
                         min_g2 = new_g2
-                        if momentum > 0:
-                            min_vg = new_vg
+                        # if momentum > 0:
+                        #     min_vg = new_vg
                         break
 
             if alpha < 1e-4:  ## if the above two blocks of code failed
@@ -339,12 +344,12 @@ class SignOPTAttack(EvasionAttack):
         
         if distortion is None or gg < distortion:
             target = self._predict_label(x0 + gg*xg, y0)
-            print("Succeed distortion {:.4f} org {:d} target"
-                  " {:d} queries {:d} LS queries {:d}\n".format(gg, y0, target, query_count, ls_total))
+            print("Succeed distortion {:.4f} org_label {:d} predict_lable"
+                  " {:d} queries {:d} Line Search queries {:d}\n".format(gg, y0, target, query_count, ls_total))
             # return x0 + gg*xg, gg, True, query_count, xg
             return x0 + gg*xg
         
-        timeend = time.time()
+        # timeend = time.time()
         print("\nFailed: distortion %.4f" % (gg))
         
         # self.log[i+1:,0] = gg
