@@ -28,6 +28,7 @@ from art.attacks.evasion.hop_skip_jump import HopSkipJump
 from art.attacks.evasion.imperceptible_asr.imperceptible_asr import ImperceptibleASR
 from art.attacks.evasion.imperceptible_asr.imperceptible_asr_pytorch import ImperceptibleASRPyTorch
 from art.attacks.evasion.iterative_method import BasicIterativeMethod
+from art.attacks.evasion.laser_attack.laser_attack import LaserAttack
 from art.attacks.evasion.lowprofool import LowProFool
 from art.attacks.evasion.newtonfool import NewtonFool
 from art.attacks.evasion.pe_malware_attack import MalwareGDTensorFlow

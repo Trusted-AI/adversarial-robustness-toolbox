@@ -26,6 +26,12 @@ Adversarial Patch - TensorFlowV2
    :members:
    :special-members:
 
+Adversarial Texture - PyTorch
+-----------------------------
+.. autoclass:: AdversarialTexturePyTorch
+   :members:
+   :special-members:
+
 Auto Attack
 -----------
 .. autoclass:: AutoAttack
@@ -191,6 +197,12 @@ Projected Gradient Descent (PGD) - PyTorch
 Projected Gradient Descent (PGD) - TensorFlowV2
 -----------------------------------------------
 .. autoclass:: ProjectedGradientDescentTensorFlowV2
+   :members:
+   :special-members:
+
+LaserAttack
+-----------
+.. autoclass:: LaserAttack
    :members:
    :special-members:
 
