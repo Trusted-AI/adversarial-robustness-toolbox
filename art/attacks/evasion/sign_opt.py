@@ -73,12 +73,12 @@ class SignOPTAttack(EvasionAttack):
                   (nb_samples,). If `self.targeted` is true, then `y` represents the target labels.
         :return: An array holding the adversarial examples.
         """
-        y = check_and_transform_label_format(y, self.estimator.nb_classes, return_one_hot=False)
+        # y = check_and_transform_label_format(y, self.estimator.nb_classes, return_one_hot=False)
         
-        if y is not None and self.estimator.nb_classes == 2 and y.shape[1] == 1:
-            raise ValueError(  # pragma: no cover
-                "This attack has not yet been tested for binary classification with a single output classifier."
-            )
+        # if y is not None and self.estimator.nb_classes == 2 and y.shape[1] == 1:
+        #     raise ValueError(  # pragma: no cover
+        #         "This attack has not yet been tested for binary classification with a single output classifier."
+        #     )
             
         # Prediction from the original images
         preds = np.argmax(self.estimator.predict(x), axis=1)
@@ -109,7 +109,8 @@ class SignOPTAttack(EvasionAttack):
     def _fine_grained_binary_search(self, x0, y0, theta, initial_lbd, current_best):
         nquery = 0
         if initial_lbd > current_best: 
-            if self._is_org_single_image(x0+current_best*theta, y0):
+            # the condition in "argmin()" in page 3, objective function 1
+            if self._is_org_label(x0+current_best*theta, y0):
                 nquery += 1
                 return float('inf'), nquery
             lbd = current_best
@@ -122,7 +123,7 @@ class SignOPTAttack(EvasionAttack):
         while (lbd_hi - lbd_lo) > 1e-3: # was 1e-5
             lbd_mid = (lbd_lo + lbd_hi)/2.0
             nquery += 1
-            if self._is_org_single_image(x0+lbd_mid*theta, y0) == False:    
+            if self._is_org_label(x0+lbd_mid*theta, y0) == False:    
                 lbd_hi = lbd_mid
             else:
                 lbd_lo = lbd_mid
@@ -133,13 +134,13 @@ class SignOPTAttack(EvasionAttack):
         lbd = initial_lbd
          
         # still inside boundary
-        if self._is_org_single_image(x0+lbd*theta, y0):
+        if self._is_org_label(x0+lbd*theta, y0):
         # if model.predict_label(x0+torch.tensor(lbd*theta, dtype=torch.float).cuda()) == y0:
             lbd_lo = lbd
             lbd_hi = lbd*1.01
             nquery += 1
-            # self._is_org_single_image(x0+current_best*theta, y0):
-            while self._is_org_single_image(x0+lbd_hi*theta, y0):
+            # self._is_org_label(x0+current_best*theta, y0):
+            while self._is_org_label(x0+lbd_hi*theta, y0):
             # while model.predict_label(x0+torch.tensor(lbd_hi*theta, dtype=torch.float).cuda()) == y0:
                 lbd_hi = lbd_hi*1.01
                 nquery += 1
@@ -149,7 +150,7 @@ class SignOPTAttack(EvasionAttack):
             lbd_hi = lbd
             lbd_lo = lbd*0.99
             nquery += 1
-            while self._is_org_single_image(x0+lbd_lo*theta, y0) == False:
+            while self._is_org_label(x0+lbd_lo*theta, y0) == False:
             # while model.predict_label(x0+torch.tensor(lbd_lo*theta, dtype=torch.float).cuda()) != y0 :
                 lbd_lo = lbd_lo*0.99
                 nquery += 1
@@ -157,7 +158,7 @@ class SignOPTAttack(EvasionAttack):
         while (lbd_hi - lbd_lo) > tol:
             lbd_mid = (lbd_lo + lbd_hi)/2.0
             nquery += 1
-            if self._is_org_single_image(x0+lbd_mid*theta, y0) == False:
+            if self._is_org_label(x0+lbd_mid*theta, y0) == False:
             # if model.predict_label(x0 + torch.tensor(lbd_mid*theta, dtype=torch.float).cuda()) != y0:
                 lbd_hi = lbd_mid
             else:
@@ -169,14 +170,14 @@ class SignOPTAttack(EvasionAttack):
     # x0: dimension is [1, 28, 28]
     # org_y0: type of ...
     # return True, if prediction of x0 is org_y0, False otherwise
-    def _is_org_single_image(self, x0, org_y0, verbose=False) -> bool:
+    def _is_org_label(self, x0, org_y0, verbose=False) -> bool:
         pred = self.estimator.predict(np.expand_dims(x0, axis=0))
         pred_y0 = np.argmax(pred)
         if verbose:
             print(f'pred_lable={pred_y0}, orginal_label={org_y0}')
         return pred_y0 == org_y0
     
-    def _predict_single_image(self, x0, org_y0=None, verbose=False) -> bool:
+    def _predict_label(self, x0, org_y0=None, verbose=False) -> bool:
         pred = self.estimator.predict(np.expand_dims(x0, axis=0))
         return np.argmax(pred)
         
@@ -199,7 +200,7 @@ class SignOPTAttack(EvasionAttack):
             # Untargeted case
             # preds.append(self.model.predict_label(x0+torch.tensor(initial_lbd*new_theta, dtype=torch.float).cuda()).item())
             # if (self.model.predict_label(x0+torch.tensor(initial_lbd*new_theta, dtype=torch.float).cuda()) != y0): # success
-            if self._is_org_single_image(x0+initial_lbd*new_theta, y0) == False:    
+            if self._is_org_label(x0+initial_lbd*new_theta, y0) == False:    
                 sign = -1
 
             queries += 1
@@ -234,22 +235,23 @@ class SignOPTAttack(EvasionAttack):
             query_count += 1
             theta = np.random.randn(*x0.shape).astype(np.float32) # gaussian distortion
             # register adv directions
-            if self._is_org_single_image(x0+theta, y0) == False:
+            if self._is_org_label(x0+theta, y0) == False:
                 # print(f"iteration/num_directions={i}/{num_directions}")
                 initial_lbd = LA.norm(theta)
                 theta /= initial_lbd # l2 normalize: theta is normalized
+                # getting smaller g_theta
                 lbd, count = self._fine_grained_binary_search(x0, y0, theta, initial_lbd, g_theta)
                 query_count += count
                 if lbd < g_theta:
                     best_theta, g_theta = theta, lbd
-                    print("--------> Found distortion %.4f" % g_theta)
-                    print(f"iteration/num_directions={i}/{num_directions}")
+                    # print("--------> Found distortion %.4f" % g_theta)
+                    print(f"--------> Found distortion {g_theta} with iteration/num_directions={i}/{num_directions}")
         timeend = time.time()
         print(f'Spent {timeend-timestart} seconds for finding directions')
         ## fail if cannot find a adv direction within 200 Gaussian
         if g_theta == float('inf') or g_theta == np.inf: ## todo: why two types?
             print("Couldn't find valid initial, failed")
-            return 
+            return x0, 0, False, query_count, best_theta # test data, ?, ?, # of queries, best_theta(Gaussian L2 norm)
         ## todo: consider to pass following variables as parameters 
         momentum = 0.0
         query_limit = 20000
@@ -336,7 +338,7 @@ class SignOPTAttack(EvasionAttack):
             #    break
         
         if distortion is None or gg < distortion:
-            target = self._predict_single_image(x0 + gg*xg, y0)
+            target = self._predict_label(x0 + gg*xg, y0)
             print("Succeed distortion {:.4f} org {:d} target"
                   " {:d} queries {:d} LS queries {:d}\n".format(gg, y0, target, query_count, ls_total))
             # return x0 + gg*xg, gg, True, query_count, xg
