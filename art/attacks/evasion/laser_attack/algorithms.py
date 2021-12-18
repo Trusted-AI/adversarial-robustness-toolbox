@@ -55,7 +55,6 @@ def greedy_search(
 
     params = adv_object_generator.random()
     for _ in range(iterations):
-        predicted_class = actual_class
         for sign in [-1, 1]:
             params_prim = adv_object_generator.update_params(params, sign=sign)
             adversarial_image = image_generator.update_image(image, params_prim)
