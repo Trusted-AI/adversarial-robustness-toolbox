@@ -68,7 +68,7 @@ class LaserAttack(EvasionAttack):
         """
         :param estimator: Predictor of the image class.
         :param iterations: Maximum number of iterations of the algorithm.
-        :param laser_generator: Object responsible for generation laser beams images and their updation.
+        :param laser_generator: Object responsible for generation laser beams images and their update.
         :param image_generator: Object responsible for image generation.
         :param random_initializations: How many times repeat the attack.
         :param optimisation_algorithm: Algorithm used to generate adversarial example. May be replaced.
@@ -280,7 +280,7 @@ class LaserBeamGenerator(AdvObjectGenerator):
         """
         :params min_params: left bound of the params range
         :params max_params: right bound of the params range
-        :params max_step: maximal part of the random LaserBeam object drawed from the range.
+        :params max_step: maximal part of the random LaserBeam object drawn from the range.
         """
         self.min_params = min_params
         self.max_params = max_params

@@ -20,26 +20,28 @@ This module implements helper functions for the `LaserAttack`.
 
 | Paper link: https://arxiv.org/abs/2103.06504
 """
-
-import string
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from logging import Logger
 from pathlib import Path
+import string
 from typing import Any, Callable, List, Tuple, Union
 
 import numpy as np
 import matplotlib.pyplot as plt
 
 
-@dataclass
 class Line:
     """
     Representation of the linear function.
     """
 
-    angle: float
-    bias: float
+    def __init__(self, angle: float, bias: float):
+        """
+        :param angle: Angle in radian.
+        :param bias: Bias of the angle.
+        """
+        self.angle = angle
+        self.bias = bias
 
     def __call__(self, x: float) -> float:
         return np.math.tan(self.angle) * x + self.bias
@@ -64,14 +66,18 @@ class Line:
         return np.array([self.angle, self.bias])
 
 
-@dataclass
 class Range:
     """
     Representation of mathematical range concept
     """
 
-    left: float
-    right: float
+    def __init__(self, left: float, right: float):
+        """
+        :param left: Left range.
+        :param right: Right range.
+        """
+        self.left = left
+        self.right = right
 
     def __contains__(self, value):
         return self.left <= value < self.right
@@ -256,14 +262,18 @@ def save_nrgb_image(image: np.ndarray, number=0, name_length=5, directory="attac
     plt.imsave(im_name, image)
 
 
-@dataclass
 class DebugInfo:
     """
-    Logs debug informations during attacking process.
+    Logs debug information during attacking process.
     """
 
-    logger: Logger
-    artifacts_directory: str
+    def __init__(self, logger: Logger, artifacts_directory: str):
+        """
+        :param logger: Logger instance.
+        :param artifacts_directory: Artifacts directory.
+        """
+        self.logger = logger
+        self.artifacts_directory = artifacts_directory
 
     def log(self, adv_object: AdversarialObject) -> None:
         """
