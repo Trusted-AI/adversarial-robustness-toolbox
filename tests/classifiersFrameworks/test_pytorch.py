@@ -280,37 +280,105 @@ def test_pytorch_binary_pgd(art_warning, get_mnist_dataset):
 
 @pytest.mark.only_with_platform("pytorch")
 # Function to evaluate custom loss gradient
+def test_get_activation(get_default_mnist_subset, image_dl_estimator):
+    class BasicModel(nn.Module):
+        def __init__(self):
+            super(BasicModel, self).__init__()
+            self.layer_1 = nn.Linear(20, 32)
+            self.layer_2 = nn.Linear(32, 1)
+
+        def forward(self, x):
+            x = F.relu(self.layer_1(x))
+            x = torch.sigmoid(self.layer_2(x))
+
+            return x
+
+    try:
+        device = "cpu"
+        x, y = sklearn.datasets.make_classification(
+            n_samples=10000, n_features=20, n_informative=5, n_redundant=2, n_repeated=0, n_classes=2
+        )
+        train_x, test_x, train_y, test_y = sklearn.model_selection.train_test_split(x, y, test_size=0.2)
+        train_x = test_x.astype(np.float32)
+        train_y = train_y.astype(np.float32)
+        test_x = test_x.astype(np.float32)
+        model = BasicModel()
+        loss_func = nn.BCELoss()
+        model.to(device)
+        opt = optim.Adam(model.parameters(), lr=0.001)
+        classifier = PyTorchClassifier(
+            model=model,
+            loss=loss_func,
+            optimizer=opt,
+            input_shape=(1, 28, 28),
+            nb_classes=2,
+        )
+        classifier.fit(train_x, train_y, batch_size=64, nb_epochs=3)
+        test_x_batch = test_x[0:16]
+        batch_size = 4
+        for i, name in enumerate(classifier.layer_names):
+            activation_i = classifier.get_activations(test_x_batch, i, batch_size=batch_size)
+            activation_name = classifier.get_activations(test_x_batch, name, batch_size=batch_size)
+            np.testing.assert_array_equal(activation_name, activation_i)
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.only_with_platform("pytorch")
+# Function to evaluate custom loss gradient
 def test_custom_loss_gradient(get_default_mnist_subset, image_dl_estimator):
+    class BasicModel(nn.Module):
+        def __init__(self):
+            super(BasicModel, self).__init__()
+            self.layer_1 = nn.Linear(20, 32)
+            self.layer_2 = nn.Linear(32, 1)
 
-    (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-    classifier_, _ = image_dl_estimator()
+        def forward(self, x):
+            x = F.relu(self.layer_1(x))
+            x = torch.sigmoid(self.layer_2(x))
 
-    clip_values = (0, 1)
-    criterion = nn.CrossEntropyLoss()
-    classifier = PyTorchClassifier(
-        clip_values=clip_values, model=classifier_.model, loss=criterion, input_shape=(1, 28, 28), nb_classes=10
+            return x
+
+    device = "cpu"
+    x, y = sklearn.datasets.make_classification(
+        n_samples=10000, n_features=20, n_informative=5, n_redundant=2, n_repeated=0, n_classes=2
     )
-
-    target_image = np.expand_dims(np.copy(x_test_mnist[0]), axis=0)
-    poison_image = np.expand_dims(np.copy(x_test_mnist[1]), axis=0)
+    train_x, test_x, train_y, test_y = sklearn.model_selection.train_test_split(x, y, test_size=0.2)
+    train_x = test_x.astype(np.float32)
+    train_y = train_y.astype(np.float32)
+    test_x = test_x.astype(np.float32)
+    model = BasicModel()
+    loss_func = nn.BCELoss()
+    model.to(device)
+    opt = optim.Adam(model.parameters(), lr=0.001)
+    classifier = PyTorchClassifier(
+        model=model,
+        loss=loss_func,
+        optimizer=opt,
+        input_shape=(1, 28, 28),
+        nb_classes=2,
+    )
+    classifier.fit(train_x, train_y, batch_size=64, nb_epochs=3)
+    test_x_batch = test_x[0:16]
+    batch_size = 4
     loss_function = torch.norm
+    poison_image = test_x[0]
+    target_image = test_x[1]
 
     result = []
-    for name, module_ in classifier_.model._modules.items():
+    for name, module_ in classifier._model._model._modules.items():
         result.append(name)
     custom_grad = classifier.custom_loss_gradient(loss_function, poison_image, target_image, result[-1])
-
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     target_image = torch.tensor(target_image).to(device)
     poison_image = torch.tensor(poison_image).to(device)
     poison_image.requires_grad = True
-    classifier._model(poison_image)
-    out1 = classifier._model._features[result[-1]]
-    classifier._model(target_image)
-    out2 = classifier._model._features[result[-1]]
-    diff = out1 - out2
-    loss = torch.norm(diff, p=2)
-    loss.backward()
-    self_grad = poison_image.grad.cpu().numpy().copy()
+
+    f_x = classifier.get_activations(poison_image, 1, batch_size=1, framework=True)
+    f_t = classifier.get_activations(target_image, 1, batch_size=1, framework=True)
+    diff = f_x - f_t
+    loss = loss_function(diff, p=2)
+    self_grad = torch.autograd.grad(loss, [poison_image])[0]
 
     np.testing.assert_array_almost_equal(custom_grad, self_grad, decimal=4)

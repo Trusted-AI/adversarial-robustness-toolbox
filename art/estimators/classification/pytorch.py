@@ -822,15 +822,11 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
-        :param x: Sample input with shape as expected by the model.
-        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
-                  `(nb_samples,)`.
-        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
-                              Note on RNN-like models: Backpropagation through RNN modules in eval mode raises
-                              RuntimeError due to cudnn issues and require training mode, i.e. RuntimeError: cudnn RNN
-                              backward can only be called in training mode. Therefore, if the model is an RNN type we
-                              always use training mode but freeze batch-norm and dropout layers if
-                              `training_mode=False.`
+        :loss_fn: Loss function w.r.t to which gradient needs to be calculated.
+        :param x: Sample input with shape as expected by the model(base image).
+        :param y: Sample input with shape as expected by the model(target image).
+        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.`
+        :param layer_name: Name of the layer from which activation needs to be extracted/activation layer.
         :return: Array of gradients of the same shape as `x`.
         """
         import torch  # lgtm [py/repeated-import]
@@ -860,20 +856,10 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             targets_t = y_grad
         else:
             raise NotImplementedError("Combination of inputs and preprocessing not supported.")
-            
-        if isinstance(layer_name, six.string_types):
-            if layer_name not in self._layer_names:  # pragma: no cover
-                raise ValueError("Layer name %s not supported" % layer_name)
-            layer_index = self._layer_names.index(layer_name)
-
-        elif isinstance(layer_name, int):
-            layer_index = layer_name       
 
         # Compute the gradient and return
-        self._model(inputs_t)
-        model_outputs1 = self._features[self._layer_names[layer_index]]  # pylint: disable=W0212
-        self._model(targets_t)
-        model_outputs2 = self._features[self._layer_names[layer_index]].detach()  # pylint: disable=W0212
+        model_outputs1 = self.get_activations(inputs_t, layer_name, 1, framework=True)
+        model_outputs2 = self.get_activations(targets_t, layer_name, 1, framework=True)
         diff = model_outputs1 - model_outputs2
         loss = loss_fn(diff, p=2)
 
@@ -939,9 +925,6 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         else:  # pragma: no cover
             raise TypeError("Layer must be of type str or int")
 
-        if not hasattr(self, "_features"):
-            self._features = {}
-
         def getActivation(name):
             # the hook signature
             def hook(model, input, output):
@@ -949,9 +932,12 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
             return hook
 
-        # register forward hooks on the layers of choice
-        interim_layer = dict([*self._model._model.named_modules()])[self._layer_names[layer_index]]
-        h1 = interim_layer.register_forward_hook(getActivation(self._layer_names[layer_index]))
+        if not hasattr(self, "_features"):
+            self._features = {}
+            # register forward hooks on the layers of choice
+        if layer not in self._features.keys():
+            interim_layer = dict([*self._model._model.named_modules()])[self._layer_names[layer_index]]
+            interim_layer.register_forward_hook(getActivation(self._layer_names[layer_index]))
 
         if framework:
             if isinstance(x, torch.Tensor):
