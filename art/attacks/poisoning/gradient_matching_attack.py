@@ -51,6 +51,7 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
         "max_epochs",
         "learning_rate_schedule",
         "epsilon",
+        "clip_values",
         "batch_size",
         "verbose",
     ]
@@ -133,14 +134,18 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
             )
 
         # Choose samples to poison.
-        x_train = x_train.copy()
-        classes_target = set(y_trigger.argmax(axis=-1))
-        P = int(self.percent_poison * len(x_train))
+        x_train = np.copy(x_train)
+        if len(np.shape(y_trigger))==2:  # dense labels
+            classes_target = set(np.argmax(y_trigger,axis=-1))
+        else:  # sparse labels
+            classes_target = set(y_trigger)
+        num_poison_samples = int(self.percent_poison * len(x_train))
 
         # Try poisoning num_trials times and choose the best one.
-        best_B = np.finfo(np.float32).max
+        best_B = np.finfo(np.float32).max  # pylint: disable=C0103
         best_x_poisoned = None
         best_indices_poison = None
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
         for _ in trange(self.max_trials):
@@ -158,14 +163,23 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
 >>>>>>> unused imports
             indices_poison = np.random.permutation(np.where([y in classes_target for y in y_train.argmax(axis=-1)])[0])[
                 :P
+=======
+        if len(np.shape(y_train))==2:
+            y_train_classes = np.argmax(y_train, axis=-1)
+        else:
+            y_train_classes = y_train
+        for _ in trange(self.max_trials):
+            indices_poison = np.random.permutation(np.where([y in classes_target for y in y_train_classes])[0])[
+                :num_poison_samples
+>>>>>>> added handling sparse labels.
             ]
 >>>>>>> format
             x_poison = x_train[indices_poison]
             y_poison = y_train[indices_poison]
             x_poisoned, B_ = poisoner(x_trigger, y_trigger, x_poison, y_poison, **kwargs)
-            B_ = np.mean(B_)  # Averaging B losses from multiple batches.
+            B_ = np.mean(B_)  # Averaging B losses from multiple batches.  # pylint: disable=C0103
             if B_ < best_B:
-                best_B = B_
+                best_B = B_  # pylint: disable=C0103
                 best_x_poisoned = x_poisoned
                 best_indices_poison = indices_poison
 
@@ -193,8 +207,6 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
         import tensorflow as tf
         from tensorflow.keras.layers import Input, Embedding, Add, Lambda
 
-        P = len(x_poison)
-
         # Get the target gradient vector.
         def grad_loss(model, input, target):
             with tf.GradientTape() as t:
@@ -218,8 +230,10 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
         # Define the model to apply and optimize the poison.
         input_poison = Input(batch_shape=self.substitute_classifier.model.input.shape)
         input_indices = Input(shape=())
-        y_true_poison = Input(batch_shape=self.substitute_classifier.model.output.shape)
-        embedding_layer = Embedding(P, np.prod(input_poison.shape[1:]))
+        # y_true_poison = Input(shape=self.substitute_classifier.model.output.shape)
+        # y_true_poison = Input(shape=np.shape(y_trigger)[1:])
+        y_true_poison = Input(shape=np.shape(y_poison)[1:])
+        embedding_layer = Embedding(len(x_poison), np.prod(input_poison.shape[1:]))
         embeddings = embedding_layer(input_indices)
         embeddings = ClipConstraint(max_value=self.epsilon)(embeddings)
         embeddings = tf.reshape(embeddings, tf.shape(input_poison))
@@ -230,10 +244,10 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
 
         def loss_fn(input_noised, target, grad_ws_norm):
             d_w2_norm = grad_loss(self.substitute_classifier.model, input_noised, target)
-            B = 1 - tf.reduce_sum(grad_ws_norm * d_w2_norm)
+            B = 1 - tf.reduce_sum(grad_ws_norm * d_w2_norm)  # pylint: disable=C0103
             return B
 
-        B = tf.keras.layers.Lambda(lambda x: loss_fn(x[0], x[1], x[2]))([input_noised, y_true_poison, grad_ws_norm])
+        B = tf.keras.layers.Lambda(lambda x: loss_fn(x[0], x[1], x[2]))([input_noised, y_true_poison, grad_ws_norm])  # pylint: disable=C0103
 
         m = tf.keras.models.Model([input_poison, y_true_poison, input_indices], [input_noised, B])
         m.add_loss(B)
@@ -284,7 +298,6 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
             epochs=self.max_epochs,
             verbose=self.verbose,
         )
-
         [input_noised_, B_] = m.predict([x_poison, y_poison, np.arange(len(y_poison))])
         return input_noised_, B_
 
