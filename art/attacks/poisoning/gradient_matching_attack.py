@@ -26,7 +26,7 @@ from typing import Tuple, TYPE_CHECKING, List
 import numpy as np
 from tqdm.auto import trange
 
-from art.attacks.attack import PoisoningAttackWhiteBox
+from art.attacks.attack import PoisoningAttack
 from art.estimators import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
 
@@ -37,7 +37,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class GradientMatchingAttack(PoisoningAttackWhiteBox):
+class GradientMatchingAttack(PoisoningAttack):
     """
     Implementation of Gradient Matching Attack by Geiping, et. al. 2020.
     "Witches' Brew: Industrial Scale Data Poisoning via Gradient Matching"
@@ -45,7 +45,7 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
     | Paper link: https://arxiv.org/abs/2009.02276
     """
 
-    attack_params = PoisoningAttackWhiteBox.attack_params + [
+    attack_params = PoisoningAttack.attack_params + [
         "percent_poison",
         "max_trials",
         "max_epochs",
@@ -78,7 +78,9 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
         :param epsilon: The L-inf perturbation budget.
         :param max_trials: The maximum number of restarts to optimize the poison.
         :param max_epochs: The maximum number of epochs to optimize the train per trial.
-        :param learning_rate_schedule: The learning rate schedule to optimize the poison. A List of (learning rate, epoch) pairs. The learning rate is used if the current epoch is less than the specified epoch.
+        :param learning_rate_schedule: The learning rate schedule to optimize the poison.
+            A List of (learning rate, epoch) pairs. The learning rate is used
+            if the current epoch is less than the specified epoch.
         :param batch_size: Batch size.
         :param verbose: Show progress bars.
         """
@@ -99,7 +101,8 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
         self, x_trigger: np.ndarray, y_trigger: np.ndarray, x_train: np.ndarray, y_train: np.ndarray, **kwargs
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
-        Optimizes a portion of poisoned samples from x_train to make a model classify x_target as y_target by matching the gradients.
+        Optimizes a portion of poisoned samples from x_train to make a model classify x_target
+        as y_target by matching the gradients.
 
         :param x_trigger: A list of samples to use as triggers.
         :param y_trigger: A list of target classes to classify the triggers into.
@@ -142,7 +145,7 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
             ]
             x_poison = x_train[indices_poison]
             y_poison = y_train[indices_poison]
-            x_poisoned, B_ = poisoner(x_trigger, y_trigger, x_poison, y_poison, **kwargs)
+            x_poisoned, B_ = poisoner(x_trigger, y_trigger, x_poison, y_poison, **kwargs)  # pylint: disable=C0103
             B_ = np.mean(B_)  # Averaging B losses from multiple batches.  # pylint: disable=C0103
             if B_ < best_B:
                 best_B = B_  # pylint: disable=C0103
@@ -175,7 +178,7 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
 
         # Get the target gradient vector.
         def grad_loss(model, input, target):
-            with tf.GradientTape() as t:
+            with tf.GradientTape() as t:  # pylint: disable=C0103
                 t.watch(model.weights)
                 output = model(input)
                 loss = model.compiled_loss(target, output)
@@ -187,6 +190,9 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
         grad_ws_norm = grad_loss(self.substitute_classifier.model, tf.constant(x_trigger), tf.constant(y_trigger))
 
         class ClipConstraint(tf.keras.constraints.MaxNorm):
+            '''
+            Clip the tensor values.
+            '''
             def __init__(self, max_value=2):
                 super().__init__(max_value=max_value)
 
@@ -213,9 +219,9 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
             B = 1 - tf.reduce_sum(grad_ws_norm * d_w2_norm)  # pylint: disable=C0103
             return B
 
-        B = tf.keras.layers.Lambda(lambda x: loss_fn(x[0], x[1], x[2]))(
+        B = tf.keras.layers.Lambda(lambda x: loss_fn(x[0], x[1], x[2]))(  # pylint: disable=C0103
             [input_noised, y_true_poison, grad_ws_norm]
-        )  # pylint: disable=C0103
+        )
 
         m = tf.keras.models.Model([input_poison, y_true_poison, input_indices], [input_noised, B])
         m.add_loss(B)
@@ -224,6 +230,9 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
         self.substitute_classifier.model.trainable = False
 
         class PredefinedLRSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
+            '''
+            Use a preset learning rate based on the current training epoch.
+            '''
             def __init__(self, learning_rates, milestones):
                 self.schedule = list(zip(milestones, learning_rates))
 
@@ -232,13 +241,15 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
                 for m, lr in self.schedule:
                     if step < m:
                         return lr_prev
-                    else:
-                        lr_prev = lr
+                    lr_prev = lr
                 return lr_prev
 
         lr_schedule = tf.keras.callbacks.LearningRateScheduler(PredefinedLRSchedule(*self.learning_rate_schedule))
 
         class SignedAdam(tf.keras.optimizers.Adam):
+            """
+            This optimizer takes only the sign of the gradients and pass it to the Adam optimizer.
+            """
             def compute_gradients(
                 self,
                 loss,
@@ -248,7 +259,10 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
                 colocate_gradients_with_ops=False,
                 grad_loss=None,
             ):
-                grads_and_vars = super(SignedAdam, self).compute_gradients(
+                """
+                The signs of the gradients are taken and passed to the optimizer.
+                """
+                grads_and_vars = super().compute_gradients(
                     loss, var_list, gate_gradients, aggregation_method, colocate_gradients_with_ops, grad_loss
                 )
                 return [(tf.sign(g), v) for (g, v) in grads_and_vars]
