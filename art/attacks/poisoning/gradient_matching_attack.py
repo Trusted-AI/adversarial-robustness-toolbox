@@ -121,8 +121,8 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
 
         # Choose samples to poison.
         x_train = np.copy(x_train)
-        if len(np.shape(y_trigger))==2:  # dense labels
-            classes_target = set(np.argmax(y_trigger,axis=-1))
+        if len(np.shape(y_trigger)) == 2:  # dense labels
+            classes_target = set(np.argmax(y_trigger, axis=-1))
         else:  # sparse labels
             classes_target = set(y_trigger)
         num_poison_samples = int(self.percent_poison * len(x_train))
@@ -132,7 +132,7 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
         best_x_poisoned = None
         best_indices_poison = None
 
-        if len(np.shape(y_train))==2:
+        if len(np.shape(y_train)) == 2:
             y_train_classes = np.argmax(y_train, axis=-1)
         else:
             y_train_classes = y_train
@@ -213,7 +213,9 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
             B = 1 - tf.reduce_sum(grad_ws_norm * d_w2_norm)  # pylint: disable=C0103
             return B
 
-        B = tf.keras.layers.Lambda(lambda x: loss_fn(x[0], x[1], x[2]))([input_noised, y_true_poison, grad_ws_norm])  # pylint: disable=C0103
+        B = tf.keras.layers.Lambda(lambda x: loss_fn(x[0], x[1], x[2]))(
+            [input_noised, y_true_poison, grad_ws_norm]
+        )  # pylint: disable=C0103
 
         m = tf.keras.models.Model([input_poison, y_true_poison, input_indices], [input_noised, B])
         m.add_loss(B)
