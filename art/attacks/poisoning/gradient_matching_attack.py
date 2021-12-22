@@ -95,23 +95,9 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
         self.verbose = verbose
         self._check_params()
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-    def poison(
-        self, x_trigger: np.ndarray, y_trigger: np.ndarray, x_train: np.ndarray, y_train: np.ndarray, **kwargs
-<<<<<<< HEAD
-    ) -> Tuple[np.ndarray, np.ndarray]:
-=======
-    ) -> np.ndarray:
->>>>>>> format
-=======
-    def poison(self, x_trigger: np.ndarray, y_trigger: np.ndarray, x_train: np.ndarray, y_train: np.ndarray, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
->>>>>>> signature
-=======
     def poison(
         self, x_trigger: np.ndarray, y_trigger: np.ndarray, x_train: np.ndarray, y_train: np.ndarray, **kwargs
     ) -> Tuple[np.ndarray, np.ndarray]:
->>>>>>> style
         """
         Optimizes a portion of poisoned samples from x_train to make a model classify x_target as y_target by matching the gradients.
 
@@ -145,25 +131,7 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
         best_B = np.finfo(np.float32).max  # pylint: disable=C0103
         best_x_poisoned = None
         best_indices_poison = None
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-        for _ in trange(self.max_trials):
-            indices_poison = np.random.permutation(np.where([y in classes_target for y in y_train.argmax(axis=-1)])[0])[
-                :P
-            ]
-=======
-        for i in trange(self.max_trials):
-<<<<<<< HEAD
-            indices_poison = np.random.permutation(np.where([y in classes_target for y in y_train.argmax(axis=-1)])[0])[:P]
->>>>>>> index bug fix
-=======
-=======
-        for _ in trange(self.max_trials):
->>>>>>> unused imports
-            indices_poison = np.random.permutation(np.where([y in classes_target for y in y_train.argmax(axis=-1)])[0])[
-                :P
-=======
+
         if len(np.shape(y_train))==2:
             y_train_classes = np.argmax(y_train, axis=-1)
         else:
@@ -171,9 +139,7 @@ class GradientMatchingAttack(PoisoningAttackWhiteBox):
         for _ in trange(self.max_trials):
             indices_poison = np.random.permutation(np.where([y in classes_target for y in y_train_classes])[0])[
                 :num_poison_samples
->>>>>>> added handling sparse labels.
             ]
->>>>>>> format
             x_poison = x_train[indices_poison]
             y_poison = y_train[indices_poison]
             x_poisoned, B_ = poisoner(x_trigger, y_trigger, x_poison, y_poison, **kwargs)
