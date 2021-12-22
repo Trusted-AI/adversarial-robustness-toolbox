@@ -42,7 +42,9 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator):
 
         x_train, y_train = x_train[:1000], y_train[:1000]
         y_train = np.argmax(y_train, axis=-1)
-        attack = GradientMatchingAttack(classifier, epsilon=0.3, percent_poison=0.01, max_trials=1, max_epochs=1, verbose=False)
+        attack = GradientMatchingAttack(
+            classifier, epsilon=0.3, percent_poison=0.01, max_trials=1, max_epochs=1, verbose=False
+        )
         x_poison, y_poison = attack.poison(x_trigger, [class_target], x_train, y_train)
 
         np.testing.assert_equal(np.shape(x_poison), np.shape(x_train))
