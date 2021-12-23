@@ -156,12 +156,12 @@ class GradientMatchingAttack(Attack):
         return x_train, y_train  # y_train has not been modified.
 
     def __poison__pytorch(
-        self, x_trigger: np.ndarray, y_trigger: np.ndarray, x_poison: np.ndarray, y_poison: np.ndarray, **kwargs
+        self, x_trigger: np.ndarray, y_trigger: np.ndarray, x_poison: np.ndarray, y_poison: np.ndarray
     ) -> np.ndarray:
         raise NotImplementedError
 
     def __poison__tensorflow(
-        self, x_trigger: np.ndarray, y_trigger: np.ndarray, x_poison: np.ndarray, y_poison: np.ndarray, **kwargs
+        self, x_trigger: np.ndarray, y_trigger: np.ndarray, x_poison: np.ndarray, y_poison: np.ndarray
     ) -> np.ndarray:
         """
         Optimize the poison by matching the gradient within the perturbation budget.
@@ -177,10 +177,10 @@ class GradientMatchingAttack(Attack):
         from tensorflow.keras.layers import Input, Embedding, Add, Lambda
 
         # Get the target gradient vector.
-        def grad_loss(model, input, target):
+        def grad_loss(model, x, target):
             with tf.GradientTape() as t:  # pylint: disable=C0103
                 t.watch(model.weights)
-                output = model(input)
+                output = model(x)
                 loss = model.compiled_loss(target, output)
             d_w = t.gradient(loss, model.trainable_weights)
             d_w = tf.concat([tf.reshape(d, [-1]) for d in d_w], 0)
@@ -245,6 +245,9 @@ class GradientMatchingAttack(Attack):
                         return lr_prev
                     lr_prev = learning_rate
                 return lr_prev
+
+            def get_config(self):
+                return {"learning_rates": self.learning_rates, "milestones": self.milestones}
 
         lr_schedule = tf.keras.callbacks.LearningRateScheduler(PredefinedLRSchedule(*self.learning_rate_schedule))
 
