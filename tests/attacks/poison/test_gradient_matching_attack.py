@@ -22,7 +22,6 @@ import numpy as np
 import pytest
 
 from art.attacks.poisoning import GradientMatchingAttack
-from art.utils import to_categorical
 
 from tests.utils import ARTTestException
 
