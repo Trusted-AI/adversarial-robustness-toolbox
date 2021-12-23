@@ -145,7 +145,7 @@ class GradientMatchingAttack(Attack):
             ]
             x_poison = x_train[indices_poison]
             y_poison = y_train[indices_poison]
-            x_poisoned, B_ = poisoner(x_trigger, y_trigger, x_poison, y_poison, **kwargs)  # pylint: disable=C0103
+            x_poisoned, B_ = poisoner(x_trigger, y_trigger, x_poison, y_poison)  # pylint: disable=C0103
             B_ = np.mean(B_)  # Averaging B losses from multiple batches.  # pylint: disable=C0103
             if B_ < best_B:
                 best_B = B_  # pylint: disable=C0103
