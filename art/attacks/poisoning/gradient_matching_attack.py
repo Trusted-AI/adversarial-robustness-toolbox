@@ -26,7 +26,7 @@ from typing import Tuple, TYPE_CHECKING, List
 import numpy as np
 from tqdm.auto import trange
 
-from art.attacks.attack import PoisoningAttack
+from art.attacks.attack import Attack
 from art.estimators import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
 
@@ -37,7 +37,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class GradientMatchingAttack(PoisoningAttack):
+class GradientMatchingAttack(Attack):
     """
     Implementation of Gradient Matching Attack by Geiping, et. al. 2020.
     "Witches' Brew: Industrial Scale Data Poisoning via Gradient Matching"
@@ -45,7 +45,7 @@ class GradientMatchingAttack(PoisoningAttack):
     | Paper link: https://arxiv.org/abs/2009.02276
     """
 
-    attack_params = PoisoningAttack.attack_params + [
+    attack_params = Attack.attack_params + [
         "percent_poison",
         "max_trials",
         "max_epochs",
@@ -190,9 +190,10 @@ class GradientMatchingAttack(PoisoningAttack):
         grad_ws_norm = grad_loss(self.substitute_classifier.model, tf.constant(x_trigger), tf.constant(y_trigger))
 
         class ClipConstraint(tf.keras.constraints.MaxNorm):
-            '''
+            """
             Clip the tensor values.
-            '''
+            """
+
             def __init__(self, max_value=2):
                 super().__init__(max_value=max_value)
 
@@ -230,18 +231,19 @@ class GradientMatchingAttack(PoisoningAttack):
         self.substitute_classifier.model.trainable = False
 
         class PredefinedLRSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
-            '''
+            """
             Use a preset learning rate based on the current training epoch.
-            '''
+            """
+
             def __init__(self, learning_rates, milestones):
                 self.schedule = list(zip(milestones, learning_rates))
 
             def __call__(self, step):
                 lr_prev = self.schedule[0][1]
-                for m, lr in self.schedule:
+                for m, learning_rate in self.schedule:
                     if step < m:
                         return lr_prev
-                    lr_prev = lr
+                    lr_prev = learning_rate
                 return lr_prev
 
         lr_schedule = tf.keras.callbacks.LearningRateScheduler(PredefinedLRSchedule(*self.learning_rate_schedule))
@@ -250,6 +252,7 @@ class GradientMatchingAttack(PoisoningAttack):
             """
             This optimizer takes only the sign of the gradients and pass it to the Adam optimizer.
             """
+
             def compute_gradients(
                 self,
                 loss,
@@ -280,7 +283,7 @@ class GradientMatchingAttack(PoisoningAttack):
             epochs=self.max_epochs,
             verbose=self.verbose,
         )
-        [input_noised_, B_] = m.predict([x_poison, y_poison, np.arange(len(y_poison))])
+        [input_noised_, B_] = m.predict([x_poison, y_poison, np.arange(len(y_poison))])  # pylint: disable=C0103
         return input_noised_, B_
 
     def _check_params(self) -> None:
@@ -288,7 +291,7 @@ class GradientMatchingAttack(PoisoningAttack):
             raise ValueError("learning_rate_schedule must be a pair of a list of learning rates and a list of epochs")
 
         if self.percent_poison > 1 or self.percent_poison < 0:
-            raise ValueError("percent_poison must be in [0,1]")
+            raise ValueError("percent_poison must be in [0, 1]")
 
         if self.max_epochs < 1:
             raise ValueError("max_epochs must be positive")
