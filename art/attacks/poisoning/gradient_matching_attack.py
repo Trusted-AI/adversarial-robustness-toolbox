@@ -98,7 +98,7 @@ class GradientMatchingAttack(Attack):
         self._check_params()
 
     def poison(
-        self, x_trigger: np.ndarray, y_trigger: np.ndarray, x_train: np.ndarray, y_train: np.ndarray, **kwargs
+        self, x_trigger: np.ndarray, y_trigger: np.ndarray, x_train: np.ndarray, y_train: np.ndarray
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Optimizes a portion of poisoned samples from x_train to make a model classify x_target
