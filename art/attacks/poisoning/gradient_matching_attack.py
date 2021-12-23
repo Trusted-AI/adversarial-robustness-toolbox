@@ -86,7 +86,7 @@ class GradientMatchingAttack(Attack):
         """
         self.substitute_classifier = classifier
 
-        super().__init__(classifier=self.substitute_classifier)
+        super().__init__(classifier)
         self.percent_poison = percent_poison
         self.epsilon = epsilon
         self.learning_rate_schedule = learning_rate_schedule
