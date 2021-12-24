@@ -145,7 +145,6 @@ class SignOPTAttack(EvasionAttack):
             lbd_lo = lbd
             lbd_hi = lbd*1.01
             nquery += 1
-            # self._is_org_label(x0+current_best*theta, y0):
             while self._is_org_label(x0+lbd_hi*theta, y0):
             # while model.predict_label(x0+torch.tensor(lbd_hi*theta, dtype=torch.float).cuda()) == y0:
                 lbd_hi = lbd_hi*1.01
@@ -193,6 +192,7 @@ class SignOPTAttack(EvasionAttack):
         Evaluate the sign of gradient by formulat
         sign(g) = 1/Q [ \sum_{q=1}^Q sign( g(theta+h*u_i) - g(theta) )u_i$ ]
         """
+        # todo: put k as class varible
         K = 200 # 200 random directions (for estimating the gradient)
         sign_grad = np.zeros(theta.shape).astype(np.float32)
         queries = 0
@@ -223,6 +223,7 @@ class SignOPTAttack(EvasionAttack):
         x0: np.ndarray,
         # y: int, # for targeted attack
         y0: int,
+        distortion = None, 
     ):
         """
         Algorithm 1: Sign-OPT attack
@@ -233,7 +234,7 @@ class SignOPTAttack(EvasionAttack):
         """
         query_count = 0
         ls_total = 0
-        distortion = None
+        # distortion = None
         ###
         ### init: Calculate a good starting point (direction)
         ###
@@ -271,7 +272,6 @@ class SignOPTAttack(EvasionAttack):
         ###
         timestart = time.time()
         xg, gg = best_theta, g_theta
-        vg = np.zeros_like(xg)
         distortions = [gg]
         iterations = 1000
         for i in range(iterations):
@@ -285,8 +285,9 @@ class SignOPTAttack(EvasionAttack):
             ls_count = 0
             min_theta = xg ## next theta
             min_g2 = gg ## current g_theta
-            min_vg = vg ## velocity (for momentum only)
-            for _ in range(15): # why 15?
+            # min_vg = vg ## velocity (for momentum only)
+            for _ in range(15): # why 15? 15 is the region?
+                print('^',end=' ')
                 ## C:Update θt+1 ← θt − ηgˆ;
                 new_theta = xg - alpha * sign_gradient
                 new_theta /= LA.norm(new_theta)
@@ -298,10 +299,11 @@ class SignOPTAttack(EvasionAttack):
                     min_theta = new_theta
                     min_g2 = new_g2
                 else:
-                    break
+                    break # meaning alphia is too big, so it needs to be reduced. 
 
             if min_g2 >= gg: ## if the above code failed for the init alpha, we then try to decrease alpha
                 for _ in range(15):
+                    print('_',end=' ')
                     alpha = alpha * 0.25
                     new_theta = xg - alpha * sign_gradient
                     new_theta /= LA.norm(new_theta)
@@ -320,8 +322,7 @@ class SignOPTAttack(EvasionAttack):
                     break
             
             ## if all attemps failed, min_theta, min_g2 will be the current theta (i.e. not moving)
-            xg, gg = min_theta, min_g2
-            vg = min_vg
+            xg, gg = min_theta, min_g2 
 
             query_count += (grad_queries + ls_count)
             ls_total += ls_count
@@ -331,7 +332,6 @@ class SignOPTAttack(EvasionAttack):
                 print(f'query_count={query_count} > query_limit={query_limit}')
                 break
             
-            ## logging
             if (i + 1) % 10 == 0:
                 print("Iteration %3d distortion %.4f num_queries %d" % (i+1, gg, query_count))
         
@@ -339,12 +339,9 @@ class SignOPTAttack(EvasionAttack):
             target = self._predict_label(x0 + gg*xg, y0)
             print("Succeed distortion {:.4f} org_label {:d} predict_lable"
                   " {:d} queries {:d} Line Search queries {:d}\n".format(gg, y0, target, query_count, ls_total))
-            # return x0 + gg*xg, gg, True, query_count, xg
             return x0 + gg*xg
         
         print("\nFailed: distortion %.4f" % (gg))
-        
-        # return x0 + gg*xg, gg, False, query_count, xg
         return x0 + gg*xg
         
     
