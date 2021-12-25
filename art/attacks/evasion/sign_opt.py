@@ -35,7 +35,11 @@ class SignOPTAttack(EvasionAttack):
     attack_params = EvasionAttack.attack_params + [
         "targeted", 
         "verbose", 
-        # todo: add others
+        "alpha"
+        "delta",
+        "epsilon",
+        "max_iter",
+        "num_trial",
     ]
     
     _estimator_requirements = (BaseEstimator, ClassifierMixin)
@@ -46,7 +50,7 @@ class SignOPTAttack(EvasionAttack):
         targeted: bool = True,
         epsilon: int = 0.001,
         num_trial: int = 100,
-        iterations: int = 1000,
+        max_iter: int = 1000,
         query_limit = 20000,
         K = 200,
         alpha = 0.2,
@@ -65,7 +69,7 @@ class SignOPTAttack(EvasionAttack):
         self._targeted = targeted
         self.epsilon = epsilon
         self.num_trial = num_trial
-        self.iteration = iterations
+        self.max_iter = max_iter
         self.query_limit = query_limit
         
         self.K = K
@@ -92,6 +96,10 @@ class SignOPTAttack(EvasionAttack):
                 "This attack has not yet been tested for binary classification with a single output classifier."
             )
             
+        # Assert that, if attack is targeted, y is provided
+        if self.targeted and y is None:  # pragma: no cover
+            raise ValueError("Target labels `y` need to be provided for a targeted attack.")
+
         # Prediction from the original images
         preds = np.argmax(self.estimator.predict(x), axis=1)
         
@@ -101,7 +109,12 @@ class SignOPTAttack(EvasionAttack):
         # Generate the adversarial samples
         for ind, val in enumerate(tqdm(x_adv, desc="Sign_OPT attack", disable=not self.verbose)):
             if self.targeted:
-                print("Not implemented")
+                # print("Not implemented")
+                x_adv[ind] = self._attack( # one image
+                    x0=val,
+                    y=y[ind],
+                    y0=preds[ind],
+                )
                 return x_adv
             else:
                 x_adv[ind] = self._attack( # one image
@@ -235,7 +248,7 @@ class SignOPTAttack(EvasionAttack):
     def _attack(
         self,
         x0: np.ndarray,
-        # y: int, # for targeted attack
+        y: int, # for targeted attack
         y0: int,
         distortion = None, 
     ):
@@ -282,7 +295,7 @@ class SignOPTAttack(EvasionAttack):
         """
         xg, gg = best_theta, g_theta
         distortions = [gg]
-        iterations = self.iteration
+        iterations = self.max_iter
         for i in range(iterations): 
             sign_gradient, grad_queries = self._sign_grad(x0, y0, self.epsilon, xg, gg)
             

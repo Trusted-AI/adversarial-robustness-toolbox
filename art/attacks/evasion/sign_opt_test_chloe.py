@@ -15,6 +15,7 @@ from art.attacks.evasion import FastGradientMethod, BoundaryAttack
 from sign_opt import SignOPTAttack
 from art.estimators.classification import PyTorchClassifier
 from art.utils import load_mnist
+from tests.attacks.utils import random_targets
 
 # Step 0: Define the neural network model, return logits instead of activation in forward method
 
@@ -96,15 +97,19 @@ print("Accuracy on benign test examples: {}%".format(accuracy * 100))
 # Step 6: Generate adversarial test examples
 # attack = FastGradientMethod(estimator=classifier, eps=0.2)
 # attack = BoundaryAttack(estimator=classifier, targeted=False, max_iter=0, delta=0.001, epsilon=0.001)
-attack = SignOPTAttack(estimator=classifier, targeted=False)
-x_test_adv = attack.generate(x=x_test)
-for i in range(len(x_test_adv[:])):
-    print(i)
-    pixels = x_test_adv[i].reshape((28, 28))
-    plt.imshow(pixels, cmap='gray')
-    plt.show()
-# Step 7: Evaluate the ART classifier on adversarial test examples
+targeted = True
+attack = SignOPTAttack(estimator=classifier, targeted=targeted)
+# length = len(x_test)
+length = 1
+targets = random_targets(y_test, attack.estimator.nb_classes)
+x_test_adv = attack.generate(x=x_test[:length], y=targets[:length])
+# for i in range(len(x_test_adv[:])):
+#     # print(i)
+#     pixels = x_test_adv[i].reshape((28, 28))
+#     plt.imshow(pixels, cmap='gray')
+#     plt.show()
 
+# Step 7: Evaluate the ART classifier on adversarial test examples
 predictions = classifier.predict(x_test_adv)
-accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
+accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y_test[:length], axis=1)) / len(y_test[:length])
 print("Accuracy on adversarial test examples: {}%".format(accuracy * 100))
