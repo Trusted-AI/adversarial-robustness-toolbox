@@ -45,8 +45,12 @@ class SignOPTAttack(EvasionAttack):
         estimator: "CLASSIFIER_TYPE", 
         targeted: bool = True,
         epsilon: int = 0.001,
-        # num_trial: int = 100,
-        # iterations: int = 1000,
+        num_trial: int = 100,
+        iterations: int = 1000,
+        query_limit = 20000,
+        K = 200,
+        alpha = 0.2,
+        beta = 0.001,
         verbose: bool = True,
         ) -> None:
         """
@@ -60,8 +64,13 @@ class SignOPTAttack(EvasionAttack):
         super().__init__(estimator=estimator)
         self._targeted = targeted
         self.epsilon = epsilon
-        # self.num_trial = num_trial
-        # self.iteration = iterations
+        self.num_trial = num_trial
+        self.iteration = iterations
+        self.query_limit = query_limit
+        
+        self.K = K
+        self.alpha = alpha
+        self.beta = beta
 
         self.verbose = verbose
         self._check_params()
@@ -76,12 +85,12 @@ class SignOPTAttack(EvasionAttack):
         :return: An array holding the adversarial examples.
         """
         
-        # y = check_and_transform_label_format(y, self.estimator.nb_classes, return_one_hot=False)
+        y = check_and_transform_label_format(y, self.estimator.nb_classes, return_one_hot=False)
         
-        # if y is not None and self.estimator.nb_classes == 2 and y.shape[1] == 1:
-        #     raise ValueError(  # pragma: no cover
-        #         "This attack has not yet been tested for binary classification with a single output classifier."
-        #     )
+        if y is not None and self.estimator.nb_classes == 2 and y.shape[1] == 1:
+            raise ValueError(  # pragma: no cover
+                "This attack has not yet been tested for binary classification with a single output classifier."
+            )
             
         # Prediction from the original images
         preds = np.argmax(self.estimator.predict(x), axis=1)
@@ -90,7 +99,6 @@ class SignOPTAttack(EvasionAttack):
         x_adv = x.astype(ART_NUMPY_DTYPE)
         
         # Generate the adversarial samples
-        # Todo: make the dimentions to be compatible to ART, use batch_size???
         for ind, val in enumerate(tqdm(x_adv, desc="Sign_OPT attack", disable=not self.verbose)):
             if self.targeted:
                 print("Not implemented")
@@ -187,18 +195,21 @@ class SignOPTAttack(EvasionAttack):
         return np.argmax(pred)
         
     
-    def _sign_grad_v1(self, x0, y0, epsilon, theta, initial_lbd):
+    def _sign_grad(self, x0, y0, epsilon, theta, initial_lbd):
         """
         Evaluate the sign of gradient by formulat
         sign(g) = 1/Q [ \sum_{q=1}^Q sign( g(theta+h*u_i) - g(theta) )u_i$ ]
         """
         # todo: put k as class varible
-        K = 200 # 200 random directions (for estimating the gradient)
+        K = self.K # 200 random directions (for estimating the gradient)
         sign_grad = np.zeros(theta.shape).astype(np.float32)
         queries = 0
         ### use orthogonal transform
         for iii in range(K): # for each u
-            ### A:Randomly sample u1, . . . , uQ from a Gaussian or Uniform distribution; 
+            """
+            Algorithm 1: Sign-OPT attack
+                A:Randomly sample u1, . . . , uQ from a Gaussian or Uniform distribution; 
+            """
             u = np.random.randn(*theta.shape).astype(np.float32); # gaussian
             u /= LA.norm(u)
             # function (3) in the paper
@@ -211,7 +222,10 @@ class SignOPTAttack(EvasionAttack):
                 sign = -1
 
             queries += 1
-            # quote: "if the produced perturbation is outside of the boundry(aka f(x0+...)!=y0), the new direction has a smaller distance to the decison boundary, and thus giving a smaller value of g. It indicate that u is a decent direction to minimize g"
+            """
+            Algorithm 1: Sign-OPT attack
+                B:Compute gˆ ←  ...
+            """
             sign_grad += u*sign
         
         sign_grad /= K
@@ -225,23 +239,14 @@ class SignOPTAttack(EvasionAttack):
         y0: int,
         distortion = None, 
     ):
-        """
-        Algorithm 1: Sign-OPT attack
-            A:Randomly sample u1, . . . , uQ from a Gaussian or Uniform distribution; 
-            B:Compute gˆ ←  ...
-            C:Update θt+1 ← θt − ηgˆ;
-            D:Evaluate g(θt) using the same search algorithm in Cheng et al. (2019) https://openreview.net/pdf?id=rJlk6iRqKX, **Algorithm 1 Compute g(θ) locally**
-        """
         query_count = 0
         ls_total = 0
-        # distortion = None
-        ###
+    
         ### init: Calculate a good starting point (direction)
-        ###
-        num_directions = 100
+        num_directions = self.num_trial
         best_theta, g_theta = None, float('inf')
         print("Searching for the initial direction on %d random directions: " % (num_directions))
-        timestart = time.time()
+        # timestart = time.time()
         for i in range(num_directions):
             query_count += 1
             theta = np.random.randn(*x0.shape).astype(np.float32) # gaussian distortion
@@ -254,44 +259,49 @@ class SignOPTAttack(EvasionAttack):
                 query_count += count
                 if lbd < g_theta:
                     best_theta, g_theta = theta, lbd
-                    print(f"--------> Found distortion {g_theta} with iteration/num_directions={i}/{num_directions}")
-        timeend = time.time()
-        print(f'Spent {timeend-timestart} seconds for finding directions')
+                    print(f"Found distortion {g_theta} with iteration/num_directions={i}/{num_directions}")
+        # timeend = time.time()
+        # print(f'Spent {timeend-timestart} seconds for finding directions')
         
         ## fail if cannot find a adv direction within 200 Gaussian
-        if g_theta == float('inf') or g_theta == np.inf: ## todo: why two types?
+        if g_theta == float('inf'): 
             print("Couldn't find valid initial, failed")
             return x0, 0, False, query_count, best_theta # test data, ?, ?, # of queries, best_theta(Gaussian L2 norm)
         
-        ## todo: consider to pass following variables as parameters 
-        query_limit = 20000
-        alpha = 0.2
-        beta = 0.001
-        ###
-        ### Begin Sign_OPT from here
-        ###
-        timestart = time.time()
+        query_limit = self.query_limit 
+        alpha = self.alpha
+        beta = self.beta
+        
+        ### Begin Sign_OPT from here 
+        """
+        Algorithm 1: Sign-OPT attack
+            A:Randomly sample u1, . . . , uQ from a Gaussian or Uniform distribution; 
+            B:Compute gˆ ←  ...
+            C:Update θt+1 ← θt − ηgˆ;
+            D:Evaluate g(θt) using the same search algorithm in Cheng et al. (2019) https://openreview.net/pdf?id=rJlk6iRqKX, 
+        """
         xg, gg = best_theta, g_theta
         distortions = [gg]
-        iterations = 1000
-        for i in range(iterations):
-            ## gradient estimation at x0 + theta (init)
-            ## sign_gradient is gˆ
-            ## B:Compute gˆ ←  ...
-            sign_gradient, grad_queries = self._sign_grad_v1(x0, y0, self.epsilon, xg, gg)
+        iterations = self.iteration
+        for i in range(iterations): 
+            sign_gradient, grad_queries = self._sign_grad(x0, y0, self.epsilon, xg, gg)
             
             ## Line search of the step size of gradient descent
-            ## https://en.wikipedia.org/wiki/Line_search
             ls_count = 0
             min_theta = xg ## next theta
             min_g2 = gg ## current g_theta
-            # min_vg = vg ## velocity (for momentum only)
             for _ in range(15): # why 15? 15 is the region?
-                print('^',end=' ')
-                ## C:Update θt+1 ← θt − ηgˆ;
+                # print('^',end=' ')
+                """
+                Algorithm 1: Sign-OPT attack
+                    C:Update θt+1 ← θt − ηgˆ;
+                """
                 new_theta = xg - alpha * sign_gradient
                 new_theta /= LA.norm(new_theta)
-
+                """
+                Algorithm 1: Sign-OPT attackx
+                    D:Evaluate g(θt) using the same search algorithm in Cheng et al. (2019) https://openreview.net/pdf?id=rJlk6iRqKX, **Algorithm 1 Compute g(θ) locally**
+                """
                 new_g2, count = self._fine_grained_binary_search_local(x0, y0, new_theta, initial_lbd = min_g2, tol=beta/500)
                 ls_count += count
                 alpha = alpha * 2 # gradually increasing step size
@@ -303,7 +313,7 @@ class SignOPTAttack(EvasionAttack):
 
             if min_g2 >= gg: ## if the above code failed for the init alpha, we then try to decrease alpha
                 for _ in range(15):
-                    print('_',end=' ')
+                    # print('_',end=' ')
                     alpha = alpha * 0.25
                     new_theta = xg - alpha * sign_gradient
                     new_theta /= LA.norm(new_theta)
