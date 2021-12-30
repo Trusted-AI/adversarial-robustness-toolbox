@@ -167,13 +167,15 @@ class SignOPTAttack(EvasionAttack):
             lbd_mid = (lbd_lo + lbd_hi)/2.0
             nquery += 1
             if self._is_label(x0+lbd_mid*theta, y0) == False:    
-                lbd_hi = lbd_mid
+                if self.targeted:
+                    lbd_lo = lbd_mid
+                else:
+                    lbd_hi = lbd_mid
             else:
-                lbd_lo = lbd_mid
-        # Chloe - workaround to avoid lbd_hi keeps decreasing because the image combines with distorsion always gives False after qurey above: self._is_label(x0+lbd_mid*theta, y0) 
-        print(f'lbd_hi={lbd_hi}, current_best={current_best}, initial_lbd={initial_lbd}')
-        if lbd_lo == 0.0:
-            return float('inf'), nquery
+                if self.targeted:
+                    lbd_hi = lbd_mid
+                else:
+                    lbd_lo = lbd_mid
         return lbd_hi, nquery
     
     # perform the line search in paper 2019
