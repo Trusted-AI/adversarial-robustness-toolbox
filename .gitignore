@@ -114,3 +114,6 @@ demo/pics/*
 
 # pickle 
 *.pkl
+
+# images
+*.png
