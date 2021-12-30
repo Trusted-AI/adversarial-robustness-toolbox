@@ -170,6 +170,10 @@ class SignOPTAttack(EvasionAttack):
                 lbd_hi = lbd_mid
             else:
                 lbd_lo = lbd_mid
+        # Chloe - workaround to avoid lbd_hi keeps decreasing because the image combines with distorsion always gives False after qurey above: self._is_label(x0+lbd_mid*theta, y0) 
+        print(f'lbd_hi={lbd_hi}, current_best={current_best}, initial_lbd={initial_lbd}')
+        if lbd_lo == 0.0:
+            return float('inf'), nquery
         return lbd_hi, nquery
     
     # perform the line search in paper 2019
@@ -301,10 +305,10 @@ class SignOPTAttack(EvasionAttack):
                 lbd, count = self._fine_grained_binary_search(x0, y0, theta, initial_lbd, g_theta, target)
                 query_count += count
                 if lbd < g_theta:
-                    sample_count += 1
                     best_theta, g_theta = theta, lbd
                     # print("--------> Found distortion %.4f" % g_theta)
                     print(f"Found distortion {g_theta} with sample_count-iteration-queryCnt={sample_count}-{i}-{query_count}")
+                sample_count += 1
                 if sample_count >= self.num_trial or i > 500:
                     break
         else:
