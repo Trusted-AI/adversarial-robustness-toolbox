@@ -925,19 +925,21 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         else:  # pragma: no cover
             raise TypeError("Layer must be of type str or int")
 
-        def getActivation(name):
+        def get_feature(name):
             # the hook signature
-            def hook(model, input, output):
+            def hook(model, input, output):  # pylint: disable=W0622,W0613
                 self._features[name] = output
 
             return hook
 
         if not hasattr(self, "_features"):
-            self._features = {}
+            self._features: Dict[str, torch.Tensor] = {}
             # register forward hooks on the layers of choice
         if layer not in self._features.keys():
-            interim_layer = dict([*self._model._model.named_modules()])[self._layer_names[layer_index]]
-            interim_layer.register_forward_hook(getActivation(self._layer_names[layer_index]))
+            interim_layer = dict([*self._model._model.named_modules()])[
+                self._layer_names[layer_index]
+            ]  # pylint: disable=W0212,W0622,W0613
+            interim_layer.register_forward_hook(get_feature(self._layer_names[layer_index]))
 
         if framework:
             if isinstance(x, torch.Tensor):
@@ -945,7 +947,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                 return self._features[self._layer_names[layer_index]]
             input_tensor = torch.from_numpy(x_preprocessed)
             self._model(input_tensor.to(self._device))
-            return input_tensor, self._features[self._layer_names[layer_index]]  # pylint: disable=W0212
+            return self._features[self._layer_names[layer_index]]  # pylint: disable=W0212
 
         # Run prediction with batch processing
         results = []
@@ -1064,7 +1066,6 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
     def _make_model_wrapper(self, model: "torch.nn.Module") -> "torch.nn.Module":
         # Try to import PyTorch and create an internal class that acts like a model wrapper extending torch.nn.Module
         try:
-            import torch  # lgtm [py/repeated-import]
             import torch.nn as nn
 
             # Define model wrapping class only if not defined before

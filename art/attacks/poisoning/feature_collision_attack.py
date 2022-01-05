@@ -120,12 +120,8 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
                 self.target, self.feature_layer, 1, framework=True
             )
         elif isinstance(self.estimator, PyTorchClassifier):
-            self.target_placeholder, self.target_feature_rep = self.estimator.get_activations(
-                self.target, self.feature_layer, 1, framework=True
-            )
-            self.poison_placeholder, self.poison_feature_rep = self.estimator.get_activations(
-                self.target, self.feature_layer, 1, framework=True
-            )
+            self.target_feature_rep = self.estimator.get_activations(self.target, self.feature_layer, 1, framework=True)
+            self.poison_feature_rep = self.estimator.get_activations(self.target, self.feature_layer, 1, framework=True)
         else:
             raise ValueError("Type of estimator currently not supported.")
         self.attack_loss = tensor_norm(self.poison_feature_rep - self.target_feature_rep)

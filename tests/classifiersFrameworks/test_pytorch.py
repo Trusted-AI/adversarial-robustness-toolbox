@@ -280,7 +280,7 @@ def test_pytorch_binary_pgd(art_warning, get_mnist_dataset):
 
 @pytest.mark.only_with_platform("pytorch")
 # Function to evaluate custom loss gradient
-def test_get_activation(get_default_mnist_subset, image_dl_estimator):
+def test_get_activation(art_warning, get_default_mnist_subset, image_dl_estimator):
     class BasicModel(nn.Module):
         def __init__(self):
             super(BasicModel, self).__init__()
@@ -360,8 +360,6 @@ def test_custom_loss_gradient(get_default_mnist_subset, image_dl_estimator):
         nb_classes=2,
     )
     classifier.fit(train_x, train_y, batch_size=64, nb_epochs=3)
-    test_x_batch = test_x[0:16]
-    batch_size = 4
     loss_function = torch.norm
     poison_image = test_x[0]
     target_image = test_x[1]
