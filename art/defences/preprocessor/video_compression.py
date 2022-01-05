@@ -27,6 +27,7 @@ import logging
 import os
 from tempfile import TemporaryDirectory
 from typing import Optional, Tuple
+import warnings
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -78,7 +79,8 @@ class VideoCompression(Preprocessor):
         """
         Apply video compression to sample `x`.
 
-        :param x: Sample to compress of shape NCFHW or NFHWC. `x` values are expected to be in the data range [0, 255].
+        :param x: Sample to compress of shape NCFHW or NFHWC. `x` values are expected to be either in range [0, 1] or
+                  [0, 255].
         :param y: Labels of the sample `x`. This function does not affect them in any way.
         :return: Compressed sample.
         """
@@ -91,6 +93,9 @@ class VideoCompression(Preprocessor):
 
             video_path = os.path.join(dir_, f"tmp_video.{video_format}")
             _, height, width, _ = x.shape
+
+            if (height % 2) != 0 or (width % 2) != 0:
+                warnings.warn("Codec might require even number of pixels in height and width.")
 
             # numpy to local video file
             process = (
@@ -118,10 +123,18 @@ class VideoCompression(Preprocessor):
             x = np.transpose(x, (0, 2, 3, 4, 1))
 
         # apply video compression per video item
+        scale = 1
+        if x.min() >= 0 and x.max() <= 1.0:
+            scale = 255
+
         x_compressed = x.copy()
         with TemporaryDirectory(dir=config.ART_DATA_PATH) as tmp_dir:
             for i, x_i in enumerate(tqdm(x, desc="Video compression", disable=not self.verbose)):
+                x_i *= scale
                 x_compressed[i] = compress_video(x_i, self.video_format, self.constant_rate_factor, dir_=tmp_dir)
+
+        x_compressed = x_compressed / scale
+        x_compressed = x_compressed.astype(x.dtype)
 
         if self.channels_first:
             x_compressed = np.transpose(x_compressed, (0, 4, 1, 2, 3))
