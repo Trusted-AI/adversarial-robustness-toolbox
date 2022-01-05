@@ -849,9 +849,9 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             raise TypeError("Layer must be of type str or int")
 
         if framework:
-            if isinstance(x, torch.Tensor):
-                return self._model(x)[layer_index]
-            return self._model(torch.from_numpy(x).to(self._device))[layer_index]
+            if isinstance(x_preprocessed, torch.Tensor):
+                return self._model(x_preprocessed)[layer_index]
+            return self._model(torch.from_numpy(x_preprocessed).to(self._device))[layer_index]
 
         # Run prediction with batch processing
         results = []
