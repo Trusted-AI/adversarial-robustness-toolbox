@@ -936,9 +936,9 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             self._features: Dict[str, torch.Tensor] = {}
             # register forward hooks on the layers of choice
         if layer not in self._features.keys():
-            interim_layer = dict([*self._model._model.named_modules()])[
+            interim_layer = dict([*self._model._model.named_modules()])[  # pylint: disable=W0212,W0622,W0613
                 self._layer_names[layer_index]
-            ]  # pylint: disable=W0212,W0622,W0613
+            ]
             interim_layer.register_forward_hook(get_feature(self._layer_names[layer_index]))
 
         if framework:
