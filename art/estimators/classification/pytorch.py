@@ -831,7 +831,11 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         self._model.eval()
 
         # Apply defences
-        x_preprocessed, _ = self._apply_preprocessing(x=x, y=None, fit=False)
+        if framework:
+            no_grad = False
+        else:
+            no_grad = True
+        x_preprocessed, _ = self._apply_preprocessing(x=x, y=None, fit=False, no_grad=no_grad)
 
         # Get index of the extracted layer
         if isinstance(layer, six.string_types):
