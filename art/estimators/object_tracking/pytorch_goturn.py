@@ -670,10 +670,11 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
                 x_i = x[i].to(self.device)
 
             # Apply preprocessing
+            x_i = torch.unsqueeze(x_i, dim=0)
             x_i, _ = self._apply_preprocessing(x_i, y=None, fit=False, no_grad=False)
+            x_i = torch.squeeze(x_i)
 
             y_pred = self._track(x=x_i, y_init=y_init[i])
-
             prediction_dict = dict()
             if isinstance(x, np.ndarray):
                 prediction_dict["boxes"] = y_pred.detach().cpu().numpy()
