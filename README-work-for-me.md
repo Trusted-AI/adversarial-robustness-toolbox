@@ -13,7 +13,12 @@ python examples/get_started_pytorch.py
 # after you make change to art class
 pip install .
 ```
-
+## VS code tips
+``` text
+# On Mac:
+`Ctrl + - ` navigate back
+`Ctrl + Shift + -` navigate forward
+```
 ## Open Jyupter Notebook on local
 
 In browser
@@ -91,3 +96,14 @@ AttributeError: 'SignOPTAttack' object has no attribute 'batch_size'
 ```
 **Answer**
 todo
+
+# Notes
+- pandas, create DataFrame, insert a column, add a row
+```python
+# create an empty DataFrame, init a column 
+df = pandas.DataFrame({'l2': []}) 
+# add a row
+df.loc[0] = 1.5
+# insert a column 
+df.insert(1, "newcol", [])
+```
