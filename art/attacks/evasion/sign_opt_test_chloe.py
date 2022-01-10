@@ -97,17 +97,58 @@ print("Accuracy on benign test examples: {}%".format(accuracy * 100))
 # Step 6: Generate adversarial test examples
 # attack = FastGradientMethod(estimator=classifier, eps=0.2)
 # attack = BoundaryAttack(estimator=classifier, targeted=False, max_iter=0, delta=0.001, epsilon=0.001)
-targeted = True
-attack = SignOPTAttack(estimator=classifier, targeted=targeted)
-# length = len(x_test)
-length = 1
+
+# read variable from parameter
+import sys
+# Display File name 
+print("Script name ", sys.argv[0])
+print("parameters: e(=1.5), query limitation(=4000), targeted attack(=False), length of examples(=100)")
+e = 1.5
+q = 4000
+target = False
+l = 100
+if len(sys.argv) == 5:
+    print(f'e={sys.argv[1]}, q={sys.argv[2]}, targeted={sys.argv[3]}, length={sys.argv[4]}')
+    e = float(sys.argv[1])
+    q = int(sys.argv[2])
+    target = eval(sys.argv[3])
+    l = int(sys.argv[4])
+
+test_targeted = target
+if test_targeted:
+    attack = SignOPTAttack(estimator=classifier, targeted=True, max_iter=5000, query_limit=40000)
+else:
+    attack = SignOPTAttack(estimator=classifier, targeted=test_targeted, epsilon=0.001, query_limit=q)
+length = l #len(x_test) #
+print(f'test targeted = {test_targeted}, length={length}')
 targets = random_targets(y_test, attack.estimator.nb_classes)
-x_test_adv = attack.generate(x=x_test[:length], y=targets[:length])
-# for i in range(len(x_test_adv[:])):
-#     # print(i)
-#     pixels = x_test_adv[i].reshape((28, 28))
-#     plt.imshow(pixels, cmap='gray')
-#     plt.show()
+x_test_adv = attack.generate(x=x_test[:length], targets=targets[:length], x_train=x_train)
+
+def plot_image(x):
+    for i in range(len(x[:])):
+        # print(i)
+        pixels = x[i].reshape((28, 28))
+        plt.imshow(pixels, cmap='gray')
+        plt.show()
+# plot_image(x_test_adv)
+
+# calculate performace
+# For untargeted attack, we only consider examples that are correctly predicted by model
+model_failed = 0
+for i in range(length):
+    if attack._is_label(x_test[i], np.argmax(y_test[i])) == False:
+        model_failed += 1
+        attack.logs[i] = 0
+        print(f'index={i}, y_test={np.argmax(y_test[i])}, predict label={attack._predict_label(x_test[i])}')
+
+
+if model_failed > 0:
+    length -= model_failed
+    print(f'length is adjusted with {model_failed} failed prediction')
+    
+L2 = attack.logs.sum()/length
+SR = (attack.logs <= e).sum()/length
+print(f'Avg l2 = {L2}, Success Rate={SR} with e={e} and {length} examples')
 
 # Step 7: Evaluate the ART classifier on adversarial test examples
 predictions = classifier.predict(x_test_adv)
