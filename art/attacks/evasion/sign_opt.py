@@ -75,6 +75,8 @@ class SignOPTAttack(EvasionAttack):
         self.K = K
         self.alpha = alpha
         self.beta = beta
+        
+        self.logs = np.zeros(100)
 
         self.verbose = verbose
         self._check_params()
@@ -111,23 +113,28 @@ class SignOPTAttack(EvasionAttack):
         x_adv = x.astype(ART_NUMPY_DTYPE)
         
         # Generate the adversarial samples
+        counter = 0
         for ind, val in enumerate(tqdm(x_adv, desc="Sign_OPT attack", disable=not self.verbose)):
             if self.targeted:
                 if targets[ind] == preds[ind]:
                     print("Image already targeted. No need to attack.")
                     continue
 
-                x_adv[ind] = self._attack( # one image
+                x_adv[ind], gg, succeed = self._attack( # one image
                     x0=val,
                     y0=preds[ind],
                     target=targets[ind],
                     x_train=x_train,
                 )
             else:
-                x_adv[ind] = self._attack( # one image
+                x_adv[ind], gg, succeed = self._attack( # one image
                     x0=val,
                     y0=preds[ind],
                 )
+                
+            if succeed:
+                self.logs[counter] = gg
+                counter += 1    
             
         # todo: the compute_success() doesn't work for targeted case, dimension related error
         if self.targeted == False:
@@ -414,13 +421,13 @@ class SignOPTAttack(EvasionAttack):
             target = self._predict_label(x0 + gg*xg, y0)
             print("Succeed distortion {:.4f} org_label {:d} predict_lable"
                   " {:d} queries {:d} Line Search queries {:d}\n".format(gg, y0, target, query_count, ls_total))
-            return x0 + gg*xg
+            return x0 + gg*xg, gg, True
         elif self.targeted and self._is_label(x0+gg*xg, target):
             print(f'Adversarial Example Found Successfully: distortion {gg} target, {target} queries {query_count} Line Search queries {ls_total} Time: {timeend-timestart} seconds')
-            return x0 + gg*xg
+            return x0 + gg*xg, gg, True
         
         print(f'Failed: distortion {gg}')
-        return x0 + gg*xg
+        return x0 + gg*xg, gg, False
         
     
     def _check_params(self) -> None:
