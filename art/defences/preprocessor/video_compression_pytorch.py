@@ -68,22 +68,19 @@ class VideoCompressionPyTorch(PreprocessorPyTorch):
         :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
         :param verbose: Show progress bars.
         """
-        import torch  # lgtm [py/repeated-import]
         from torch.autograd import Function
 
-        super().__init__(is_fitted=True, apply_fit=apply_fit, apply_predict=apply_predict)
+        super().__init__(
+            device_type=device_type,
+            is_fitted=True,
+            apply_fit=apply_fit,
+            apply_predict=apply_predict,
+        )
         self.video_format = video_format
         self.constant_rate_factor = constant_rate_factor
         self.channels_first = channels_first
         self.verbose = verbose
         self._check_params()
-
-        # Set device
-        if device_type == "cpu" or not torch.cuda.is_available():
-            self._device = torch.device("cpu")
-        else:  # pragma: no cover
-            cuda_idx = torch.cuda.current_device()
-            self._device = torch.device("cuda:{}".format(cuda_idx))
 
         self.compression_numpy = VideoCompression(
             video_format=video_format,
@@ -119,11 +116,17 @@ class VideoCompressionPyTorch(PreprocessorPyTorch):
         """
         Apply video compression to sample `x`.
 
-        :param x: Sample to compress of shape NCFHW or NFHWC. `x` values are expected to be in the data range [0, 255].
+        :param x: Sample to compress of shape NCFHW or NFHWC. `x` values are expected to be either in range [0, 1] or
+                  [0, 255].
         :param y: Labels of the sample `x`. This function does not affect them in any way.
         :return: Compressed sample.
         """
+        scale = 1
+        if x.min() >= 0 and x.max() <= 1.0:
+            scale = 255
+        x = x * scale
         x_compressed = self._compression_pytorch_numpy.apply(x)
+        x_compressed = x_compressed / scale
         return x_compressed, y
 
     def _check_params(self) -> None:

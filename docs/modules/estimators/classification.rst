@@ -26,6 +26,13 @@ BlackBox Classifier NeuralNetwork
    :special-members: __init__
    :inherited-members:
 
+Deep Partition Aggregation Classifier
+-------------------------------------
+.. autoclass:: DeepPartitionEnsemble
+   :members:
+   :special-members: __init__
+   :inherited-members:
+
 Keras Classifier
 ----------------
 .. autoclass:: KerasClassifier

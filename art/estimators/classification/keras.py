@@ -392,7 +392,8 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
         if self._orig_loss and hasattr(self._orig_loss, "reduction"):
             prev_reduction = self._orig_loss.reduction
-            self._orig_loss.reduction = self._losses.Reduction.NONE
+            if hasattr(self._losses, "Reduction"):
+                self._orig_loss.reduction = self._losses.Reduction.NONE
             loss = self._orig_loss(y_preprocessed, predictions)
             self._orig_loss.reduction = prev_reduction
         else:
@@ -401,7 +402,8 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             y_preprocessed = k.constant(y_preprocessed)
             for loss_function in self._model.loss_functions:
                 prev_reduction.append(loss_function.reduction)
-                loss_function.reduction = self._losses.Reduction.NONE
+                if hasattr(self._losses, "Reduction"):
+                    loss_function.reduction = self._losses.Reduction.NONE
             loss = self._loss_function(y_preprocessed, predictions)
             for i, loss_function in enumerate(self._model.loss_functions):
                 loss_function.reduction = prev_reduction[i]
@@ -562,13 +564,14 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
                `fit_generator` function in Keras and will be passed to this function as such. Including the number of
                epochs or the number of steps per epoch as part of this argument will result in as error.
         """
+        y_ndim = y.ndim
         y = check_and_transform_label_format(y, self.nb_classes)
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
 
         # Adjust the shape of y for loss functions that do not take labels in one-hot encoding
-        if self._reduce_labels:
+        if self._reduce_labels or y_ndim == 1:
             y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
         self._model.fit(x=x_preprocessed, y=y_preprocessed, batch_size=batch_size, epochs=nb_epochs, **kwargs)

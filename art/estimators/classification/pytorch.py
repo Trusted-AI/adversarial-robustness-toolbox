@@ -911,7 +911,11 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         self._model.eval()
 
         # Apply defences
-        x_preprocessed, _ = self._apply_preprocessing(x=x, y=None, fit=False)
+        if framework:
+            no_grad = False
+        else:
+            no_grad = True
+        x_preprocessed, _ = self._apply_preprocessing(x=x, y=None, fit=False, no_grad=no_grad)
 
         # Get index of the extracted layer
         if isinstance(layer, six.string_types):
@@ -942,8 +946,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             interim_layer.register_forward_hook(get_feature(self._layer_names[layer_index]))
 
         if framework:
-            if isinstance(x, torch.Tensor):
-                self._model(x)
+            if isinstance(x_preprocessed, torch.Tensor):
+                self._model(x_preprocessed)
                 return self._features[self._layer_names[layer_index]]
             input_tensor = torch.from_numpy(x_preprocessed)
             self._model(input_tensor.to(self._device))
