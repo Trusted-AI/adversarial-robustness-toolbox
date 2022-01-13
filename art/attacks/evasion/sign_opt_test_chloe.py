@@ -139,6 +139,7 @@ for i in range(length):
     if attack._is_label(x_test[i], np.argmax(y_test[i])) == False:
         model_failed += 1
         attack.logs[i] = 0
+        attack.logs_torch[i] = 0
         print(f'index={i}, y_test={np.argmax(y_test[i])}, predict label={attack._predict_label(x_test[i])}')
 
 
@@ -147,8 +148,12 @@ if model_failed > 0:
     print(f'length is adjusted with {model_failed} failed prediction')
     
 L2 = attack.logs.sum()/length
-SR = (attack.logs <= e).sum()/length
+L2_torch = attack.logs_torch.sum()/length
+
+SR = ((attack.logs <= e).sum() - model_failed)/length
+SR_torch = ((attack.logs_torch <= e).sum() - model_failed)/length
 print(f'Avg l2 = {L2}, Success Rate={SR} with e={e} and {length} examples')
+print(f'With Torch util functions: Avg l2_torch = {L2_torch}, Success Rate={SR_torch} with e={e} and {length} examples')
 
 # Step 7: Evaluate the ART classifier on adversarial test examples
 predictions = classifier.predict(x_test_adv)
