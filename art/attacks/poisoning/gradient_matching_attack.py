@@ -24,7 +24,7 @@ import logging
 from typing import Tuple, TYPE_CHECKING, List
 
 import numpy as np
-from tqdm.auto import trange
+from tqdm.auto import trange, tqdm
 
 from art.attacks.attack import Attack
 from art.estimators import BaseEstimator, NeuralNetworkMixin
@@ -82,6 +82,7 @@ class GradientMatchingAttack(Attack):
             A List of (learning rate, epoch) pairs. The learning rate is used
             if the current epoch is less than the specified epoch.
         :param batch_size: Batch size.
+        :param clip_values: The range of the input features to the classifier.
         :param verbose: Show progress bars.
         """
         self.substitute_classifier = classifier
@@ -119,11 +120,12 @@ class GradientMatchingAttack(Attack):
             poisoner = self.__poison__pytorch
         else:
             raise NotImplementedError(
-                "GradientMatchingAttackKeras is currently implemented only for Tensorflow V2 and Pytorch."
+                "GradientMatchingAttack is currently implemented only for Tensorflow V2 and Pytorch."
             )
 
         # Choose samples to poison.
         x_train = np.copy(x_train)
+        y_train = np.copy(y_train)
         if len(np.shape(y_trigger)) == 2:  # dense labels
             classes_target = set(np.argmax(y_trigger, axis=-1))
         else:  # sparse labels
@@ -158,7 +160,124 @@ class GradientMatchingAttack(Attack):
     def __poison__pytorch(
         self, x_trigger: np.ndarray, y_trigger: np.ndarray, x_poison: np.ndarray, y_poison: np.ndarray
     ) -> np.ndarray:
-        raise NotImplementedError
+        """
+        Optimize the poison by matching the gradient within the perturbation budget.
+
+        :param x_trigger: List of triggers.
+        :param y_trigger: List of target labels.
+        :param x_poison: List of samples to poison.
+        :param y_poison: List of the labels for x_poison.
+        :return: A pair of poisoned samples, B-score (cosine similarity of the gradients).
+        """
+
+        import torch
+        import torch.nn as nn
+        import torch.nn.functional as F
+
+        num_poison = len(x_poison)
+        len_noise = np.prod(x_poison.shape[1:])
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+        def grad(classifier, x, target):
+            classifier.model.zero_grad()
+            y = classifier.model(x)
+            loss_ = classifier.loss(y, target)
+            loss_.backward()
+            d_w = [w.grad for w in classifier.model.parameters()]
+            d_w = torch.cat([w.flatten() for w in d_w])
+            d_w_norm = d_w / torch.sqrt(torch.sum(torch.square(d_w)))
+            return d_w_norm
+
+        grad_ws_norm = grad(self.substitute_classifier, torch.as_tensor(x_trigger, device=device, dtype=torch.float32), torch.as_tensor(y_trigger, device=device, dtype=torch.long))
+
+        class NoiseEmbedding(nn.Module):
+            def __init__(self, num_poison, len_noise, epsilon, clip_values):
+                super(NoiseEmbedding, self).__init__()
+
+                self.embedding_layer = nn.Embedding(num_poison, len_noise)
+                self.epsilon = epsilon
+                self.clip_values = clip_values
+
+            def forward(self, input_poison, input_indices):
+                embeddings = self.embedding_layer(input_indices)
+                embeddings = torch.clip(embeddings, -self.epsilon, self.epsilon)
+                embeddings = embeddings.view(input_poison.shape)
+
+                input_noised = input_poison + embeddings
+                input_noised = torch.clip(input_noised, self.clip_values[0], self.clip_values[1])  # Make sure the poisoned samples are in a valid range.
+
+                return input_noised
+
+        class BackdoorModel(nn.Module):
+            def __init__(self, classifier, epsilon, num_poison, len_noise, min_, max_):
+                super(BackdoorModel, self).__init__()
+                self.classifier = classifier
+                self.ne = NoiseEmbedding(num_poison, len_noise, epsilon, (min_, max_))
+
+            def forward(self, x, indices_poison, y, grad_ws_norm):
+                # grad_ws_norm = grad(self.classifier, x, y)
+                poisoned_samples = self.ne(x, indices_poison)
+                d_w2_norm = grad(self.classifier, poisoned_samples, y)
+                # grad_ws_norm.requires_grad_(True)
+                d_w2_norm.requires_grad_(True)
+                B_score = 1 - nn.CosineSimilarity(dim=0)(grad_ws_norm, d_w2_norm)
+                return B_score, poisoned_samples
+
+        bm = BackdoorModel(self.classifier, 0.1, num_poison, len_noise, self.clip_values[0], self.clip_values[1])
+        optimizer = torch.optim.Adam(bm.ne.embedding_layer.parameters(), lr=1)
+
+        class PoisonDataset(torch.utils.data.Dataset):
+            def __init__(self, x, y):
+                self.len = x.shape[0]
+                self.x = torch.as_tensor(x, device=device, dtype=torch.float)
+                # self.indices = torch.as_tensor(np.arange(len(y)), device=device, dtype=torch.long)
+                self.y = torch.as_tensor(y, device=device, dtype=torch.long)
+
+            def __getitem__(self, index):
+                return self.x[index], torch.as_tensor([index], device=device), self.y[index]
+
+            def __len__(self):
+                return self.len
+
+        class PredefinedLRSchedule:
+            """
+            Use a preset learning rate based on the current training epoch.
+            """
+
+            def __init__(self, learning_rates, milestones):
+                self.schedule = list(zip(milestones, learning_rates))
+
+            def __call__(self, step):
+                lr_prev = self.schedule[0][1]
+                for m, learning_rate in self.schedule:
+                    if step < m:
+                        return lr_prev
+                    lr_prev = learning_rate
+                return lr_prev
+
+            def get_config(self):
+                return {"learning_rates": self.learning_rates, "milestones": self.milestones}
+
+        lr_schedule = torch.optim.lr_scheduler.LambdaLR(
+            optimizer,
+            PredefinedLRSchedule(*self.learning_rate_schedule)
+            )
+        trainloader = torch.utils.data.DataLoader(PoisonDataset(x_poison, y_poison), batch_size=self.batch_size, shuffle=True, num_workers=8)
+
+        epoch_iterator = trange(self.max_epochs) if self.verbose else range(self.max_epochs)
+        for _ in epoch_iterator:
+            batch_iterator = tqdm(range(trainloader)) if self.verbose else range(trainloader)
+            for x, indices, y in batch_iterator:
+                bm.zero_grad()
+                # loss, poisoned_samples = bm(torch.tensor(x_poison, dtype=torch.float), torch.arange(0, len(x_poison), dtype=torch.int32), torch.tensor(y_poison))
+                loss, poisoned_samples = bm(x, indices, y, grad_ws_norm)
+                bm.ne.embedding_layer.grad._sign()
+                loss.backward()
+                optimizer.step()
+            lr_schedule.step()
+
+        B, poisoned_samples = bm(torch.tensor(x_poison, dtype=torch.float), torch.arange(0, len(x_poison), dtype=torch.int32), torch.tensor(y_poison))
+        raise B.detach().numpy(), poisoned_samples.detach().numpy()
 
     def __poison__tensorflow(
         self, x_trigger: np.ndarray, y_trigger: np.ndarray, x_poison: np.ndarray, y_poison: np.ndarray
@@ -203,8 +322,6 @@ class GradientMatchingAttack(Attack):
         # Define the model to apply and optimize the poison.
         input_poison = Input(batch_shape=self.substitute_classifier.model.input.shape)
         input_indices = Input(shape=())
-        # y_true_poison = Input(shape=self.substitute_classifier.model.output.shape)
-        # y_true_poison = Input(shape=np.shape(y_trigger)[1:])
         y_true_poison = Input(shape=np.shape(y_poison)[1:])
         embedding_layer = Embedding(len(x_poison), np.prod(input_poison.shape[1:]))
         embeddings = embedding_layer(input_indices)
