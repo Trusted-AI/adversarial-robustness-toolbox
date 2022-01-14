@@ -30,7 +30,7 @@ mxnet-native==1.8.0.post0
 torch==1.10.1 -f https://download.pytorch.org/whl/cpu/torch_stable.html
 torchaudio==0.10.1+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.html
 torchvision==0.11.2+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.html
-catboost==1.0.3
+catboost==1.0.4
 GPy==1.10.0
 lightgbm==3.3.2
 xgboost==1.5.1
