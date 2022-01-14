@@ -109,7 +109,7 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
         :param max_iter: The maximum number of iterations for the attack.
         :param batch_size: The number of samples to draw per batch.
         :param poison_percent: The percentage of the data to poison. This is ignored if indices are provided
-        :param is_index: If true, the source and target params are assumed to represent indices rather than a class label. 
+        :param is_index: If true, the source and target params are assumed to represent indices rather than a class label.
                          poison_percent is ignored if true
         :param verbose: Show progress bars.
         """
@@ -185,6 +185,14 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
         return self._attack.poison(x, y, **kwargs)
 
     def _check_params(self) -> None:
+
+        if self.is_index and not (isinstance(self.target, np.ndarray) and isinstance(self.source, np.ndarray)):
+            raise ValueError("Target and source values must be an array of indices")
+
+        if (isinstance(self.target, int) and (self.target == self.source)) or (
+            isinstance(self.target, np.ndarray) and np.array_equal(self.target, self.source)
+        ):
+            raise ValueError("Target and source values can't be the same")
 
         if self.learning_rate <= 0:
             raise ValueError("Learning rate must be strictly positive")

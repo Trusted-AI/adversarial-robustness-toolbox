@@ -109,7 +109,7 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
         :param batch_size: The number of samples to draw per batch.
         :param poison_percent: The percentage of the data to poison. This is ignored if indices are provided
                                for the source parameter
-        :param is_index: If true, the source and target params are assumed to represent indices rather than a class label. 
+        :param is_index: If true, the source and target params are assumed to represent indices rather than a class label.
                          poison_percent is ignored if true
         :param verbose: Show progress bars.
         """
@@ -149,7 +149,7 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
             poison_class = self.target
             poison_indices = np.where(np.all(estimated_labels == poison_class, axis=1))[0]
             num_poison = int(np.ceil(self.poison_percent * len(poison_indices)))
-            if num_trigger == 0:
+            if num_poison == 0:
                 raise ValueError("No data points with target label found")
 
             poison_indices = np.random.choice(poison_indices, num_poison, replace=False)

@@ -35,7 +35,19 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator):
         classifier, _ = image_dl_estimator(functional=True)
         target = 0
         source = 1
-        attack = HiddenTriggerBackdoor(classifier, eps=0.3, target=target, source=source, feature_layer=len(classifier.layers)-2, backdoor=backdoor, decay_coeff = .95, decay_iter = 1, max_iter=2, batch_size=1, poison_percent=.1)
+        attack = HiddenTriggerBackdoor(
+            classifier,
+            eps=0.3,
+            target=target,
+            source=source,
+            feature_layer=len(classifier.layers) - 2,
+            backdoor=backdoor,
+            decay_coeff=0.95,
+            decay_iter=1,
+            max_iter=2,
+            batch_size=1,
+            poison_percent=0.1,
+        )
         poison_data, poison_inds = attack.poison(x_train[:10], y_train[:10])
 
         np.testing.assert_equal(len(poison_data), 1)
