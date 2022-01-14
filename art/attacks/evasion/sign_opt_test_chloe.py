@@ -107,18 +107,20 @@ e = 1.5
 q = 4000
 target = False
 l = 100
-if len(sys.argv) == 5:
-    print(f'e={sys.argv[1]}, q={sys.argv[2]}, targeted={sys.argv[3]}, length={sys.argv[4]}')
+eps = 0.5
+if len(sys.argv) == 6:
+    print(f'e={sys.argv[1]}, q={sys.argv[2]}, targeted={sys.argv[3]}, length={sys.argv[4]}, eps={sys.argv[5]}')
     e = float(sys.argv[1])
     q = int(sys.argv[2])
     target = eval(sys.argv[3])
     l = int(sys.argv[4])
+    eps = float(sys.argv[5])
 
 test_targeted = target
 if test_targeted:
     attack = SignOPTAttack(estimator=classifier, targeted=True, max_iter=5000, query_limit=40000)
 else:
-    attack = SignOPTAttack(estimator=classifier, targeted=test_targeted, epsilon=0.001, query_limit=q)
+    attack = SignOPTAttack(estimator=classifier, targeted=test_targeted, epsilon=eps, query_limit=q)
 length = l #len(x_test) #
 print(f'test targeted = {test_targeted}, length={length}')
 targets = random_targets(y_test, attack.estimator.nb_classes)
