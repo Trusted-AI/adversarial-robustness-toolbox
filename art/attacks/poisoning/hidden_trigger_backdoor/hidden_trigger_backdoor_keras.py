@@ -86,6 +86,7 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
         max_iter: int = 5000,
         batch_size: float = 100,
         poison_percent: float = 0.1,
+        is_index: bool = False,
         verbose: bool = True,
     ) -> None:
         """
@@ -106,6 +107,8 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
         :param max_iter: The maximum number of iterations for the attack.
         :param batch_size: The number of samples to draw per batch.
         :param poison_percent: The percentage of the data to poison. This is ignored if indices are provided
+        :param is_index: If true, the source and target params are assumed to represent indices rather than a class label. 
+                         poison_percent is ignored if true
         :param verbose: Show progress bars.
         """
         super().__init__(classifier=classifier)  # type: ignore
@@ -121,6 +124,7 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
         self.max_iter = max_iter
         self.batch_size = batch_size
         self.poison_percent = poison_percent
+        self.is_index = is_index
         self.verbose = verbose
 
     def poison(  # pylint: disable=W0221
@@ -138,9 +142,8 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
         data = np.copy(x)
         estimated_labels = self.classifier.predict(data) if y is None else np.copy(y)
 
-        # If the target is an int, then it is a label
-        if isinstance(self.target, int):
-            # Get indices of target class
+        # Get indices of target class
+        if not self.is_index:
             poison_class = self.target
             poison_indices = np.where(np.all(estimated_labels == poison_class, axis=1))[0]
             num_poison = int(np.ceil(self.poison_percent * len(poison_indices)))
@@ -148,9 +151,7 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
                 raise ValueError("No data points with target label found")
 
             poison_indices = np.random.choice(poison_indices, num_poison, replace=False)
-        # Otherwise, we treat it as an index
         else:
-            print(len(self.target))
             poison_class = estimated_labels[self.target[0]]
             poison_indices = self.target
             if not np.all(np.all(estimated_labels[poison_indices] == poison_class, axis=1)):
@@ -158,7 +159,8 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
 
             num_poison = len(poison_indices)
 
-        if isinstance(self.source, int):
+        # Get indices of source class
+        if not self.is_index:
             trigger_class = self.source
             trigger_indices = np.where(np.all(estimated_labels == trigger_class, axis=1))[0]
             num_trigger = min(len(trigger_indices), num_poison)
