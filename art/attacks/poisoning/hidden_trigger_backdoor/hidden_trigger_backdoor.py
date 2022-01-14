@@ -20,13 +20,10 @@ This module implements a Hidden Trigger Backdoor attack on Neural Networks.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from functools import reduce
 import logging
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
-from scipy.spatial import distance
-from tqdm.auto import trange
 
 from art.attacks.attack import PoisoningAttackWhiteBox
 from art.attacks.poisoning.backdoor_attack import PoisoningAttackBackdoor

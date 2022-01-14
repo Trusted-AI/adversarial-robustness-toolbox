@@ -40,19 +40,32 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class LossMeter(object):
-    """Computes and stores the average and current loss value"""
+class LossMeter():
+    """
+    Computes and stores the average and current loss value
+    """
 
     def __init__(self):
+        """
+        Create loss tracker
+        """
         self.reset()
 
     def reset(self):
+        """
+        Reset loss tracker
+        """
         self.val = 0
         self.avg = 0
         self.sum = 0
         self.count = 0
 
     def update(self, val, n=1):
+        """
+        Update loss tracker
+        :param val: Loss value to add to tracker
+        :param n: Number of elements contributing to val
+        """
         self.val = val
         self.sum += val * n
         self.count += n
@@ -73,7 +86,7 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
+        classifier: "KerasClassifier",
         target: Union[int, np.ndarray],
         source: Union[int, np.ndarray],
         feature_layer: Union[str, int],
@@ -166,7 +179,7 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
             num_trigger = min(len(trigger_indices), num_poison)
             if num_trigger == 0:
                 raise ValueError("No data points with source label found")
-            elif num_trigger < num_poison:
+            if num_trigger < num_poison:
                 raise ValueError(
                     "There must be at least as many images with the source label as the target. Maybe try reducing poison_percent or providing fewer target indices"
                 )
@@ -189,106 +202,89 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
                     "There must be at least as many images with the source label as the target. Maybe try reducing poison_percent or providing fewer target indices"
                 )
 
-        logger.info("Number of poison inputs:{}".format(num_poison_img))
-        logger.info("Number of trigger inputs:{}".format(num_trigger_img))
+        logger.info("Number of poison inputs: %d", num_poison_img)
+        logger.info("Number of trigger inputs: %d", num_trigger_img)
 
         batches = int(np.ceil(num_poison_img / float(self.batch_size)))
 
-        # Extra stuff for debugging
         losses = LossMeter()
         final_poison = np.copy(data[poison_indices])
 
         original_images = np.copy(data[poison_indices])
+        attack_loss = None
 
         # FIX THINGS BELOW THIS LINE
         for batch_id in trange(batches, desc="Hidden Trigger", disable=not self.verbose):
 
-            # TODO Do something here so it loops if one of the batches ends
-            batch_index_1, batch_index_2 = batch_id * batch_size, (batch_id + 1) * batch_size
-            target_samples = data[target_indices[batch_index_1:batch_index_2]]
-            source_samples = data[source_indices[batch_index_1:batch_index_2]]
+            cur_index = self.batch_size * batch_id
+            offset = min(self.batch_size, num_poison - cur_index)
+            poison_batch_indices = poison_indices[cur_index : cur_index + offset]
+            trigger_batch_indices = trigger_indices[cur_index : cur_index + offset]
 
-            poison = np.zeros_like(target_samples)
+            poison_samples = data[poison_batch_indices]
+            trigger_samples = data[trigger_batch_indices]
 
             # First, we add the backdoor to the source samples and get the feature representation
-            source_samples, _ = self.backdoor.poison(source_samples, self.target, broadcast=True)
+            trigger_samples, _ = self.backdoor.poison(trigger_samples, self.target, broadcast=True)
 
             # If attack_loss is none, then we need to define it and also initialize the placeholders
             if attack_loss is None:
-                target_placeholder, target_features = self.estimator.get_activations(
-                    target_samples, self.feature_layer, 1, framework=True
+                poison_placeholder, poison_features = self.estimator.get_activations(
+                    poison_samples, self.feature_layer, 1, framework=True
                 )
-                source_placeholder, source_features = self.estimator.get_activations(
-                    source_samples, self.feature_layer, 1, framework=True
+                trigger_placeholder, trigger_features = self.estimator.get_activations(
+                    trigger_samples, self.feature_layer, 1, framework=True
                 )
 
-                attack_loss = tensor_norm(target_features - source_features)
+                attack_loss = tf.norm(poison_features-trigger_features, ord=2)
 
-            source_features = self.estimator.get_activations(source_samples, self.feature_layer, 1)
+            trigger_features = self.estimator.get_activations(trigger_samples, self.feature_layer, 1)
 
             for i in range(self.max_iter):
-                lr = self.learning_rate * (self.decay_coeff ** (i // self.decay_iter))
+                learning_rate = self.learning_rate * (self.decay_coeff ** (i // self.decay_iter))
 
-                target_features = self.estimator.get_activations(target_samples + poison, self.feature_layer, 1)
+                poison_features = self.estimator.get_activations(poison_samples + poison, self.feature_layer, 1)
 
                 # Compute distance between features and match samples
                 # We are swapping the samples and the features unlike in the original implementation because
                 # we are computing the loss gradient using ART, which needs the inputs rather than the features
-                source_samples_copy = np.copy(source_samples)
-                source_features_copy = np.copy(source_features)  # Assuming this is numpy array
-                dist = distance.cdist(source_features, target_features)
+                trigger_samples_copy = np.copy(trigger_samples)
+                trigger_features_copy = np.copy(trigger_features)  # Assuming this is numpy array
+                dist = distance.cdist(trigger_features, poison_features)
                 for _ in range(len(source_features)):
                     min_index = np.squeeze((dist == np.min(dist)).nonzero())
-                    source_samples[min_index[1]] = source_samples_copy[min_index[0]]
-                    source_features[min_index[1]] = source_feature_copy[min_index[0]]
+                    trigger_samples[min_index[1]] = trigger_samples_copy[min_index[0]]
+                    trigger_features[min_index[1]] = trigger_features_copy[min_index[0]]
                     dist[min_index[0], min_index[1]] = 1e5
 
-                loss = np.linalg.norm(source_features - target_features)
+                loss = np.linalg.norm(trigger_features - poison_features)
+                print(loss)
+                losses.update(loss, len(trigger_samples))
+                
                 (attack_grad,) = self.estimator.custom_loss_gradient(
                     attack_loss,
-                    [source_placeholder, target_placeholder],
-                    [target_samples + poison, source_samples],
+                    [poison_placeholder, trigger_placeholder],
+                    [poison_samples, trigger_features],
                     name="hidden_trigger" + str(self.feature_layer),
                 )
 
                 # Update the poison and clip
-                poison -= lr * attack_grad[0]
-                poison = np.clip(poison, -1 * self.eps, self.eps)
-                poisoned_samples = np.clip(target_samples + poison, *self.estimator.clip_values)
-                poison = poisoned_samples - target_samples
+                poison_samples -= learning_rate * attack_grad[0]
+                pert = poison_samples - original_images[cur_index : cur_index + offset]
+                pert = np.clip(pert, -self.eps, self.eps)
+                poison_samples = pert + original_images[cur_index : cur_index + offset]
+                poison_samples = np.clip(poison_samples, *self.estimator.clip_values)
 
-            data[target_indices[batch_index_1:batch_index_2]] = poisoned_samples
+                if i % 100 == 0:
+                    print(
+                        "Epoch: {:2d} | batch: {} | i: {:5d} | LR: {:2.5f} | Loss Val: {:5.3f} | Loss Avg: {:5.3f}".format(
+                            0, batch_id, i, learning_rate, losses.val, losses.avg
+                        )
+                    )
 
-        return data, estimated_labels
+                if loss < self.stopping_threshold or i == (self.max_iter - 1):
+                    print("Max_Loss: {}".format(loss))
+                    final_poison[cur_index : cur_index + offset] = poison_samples
+                    break
 
-
-def tensor_norm(tensor, norm_type: Union[int, float, str] = 2):  # pylint: disable=R1710
-    """
-    Compute the norm of a tensor.
-
-    :param tensor: A tensor from a supported ART neural network.
-    :param norm_type: Order of the norm.
-    :return: A tensor with the norm applied.
-    """
-    tf_tensor_types = ("tensorflow.python.framework.ops.Tensor", "tensorflow.python.framework.ops.EagerTensor")
-    torch_tensor_types = ()
-    mxnet_tensor_types = ()
-    supported_types = tf_tensor_types + torch_tensor_types + mxnet_tensor_types
-    tensor_type = get_class_name(tensor)
-    if tensor_type not in supported_types:  # pragma: no cover
-        raise TypeError("Tensor type `" + tensor_type + "` is not supported")
-
-    if tensor_type in tf_tensor_types:
-        import tensorflow as tf
-
-        return tf.norm(tensor, ord=norm_type)
-
-    if tensor_type in torch_tensor_types:  # pragma: no cover
-        import torch
-
-        return torch.norm(tensor, p=norm_type)
-
-    if tensor_type in mxnet_tensor_types:  # pragma: no cover
-        import mxnet
-
-        return mxnet.ndarray.norm(tensor, ord=norm_type)
+        return final_poison, poison_indices

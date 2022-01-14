@@ -20,13 +20,11 @@ This module implements a Hidden Trigger Backdoor attack on Neural Networks.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from functools import reduce
 import logging
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 import torch
-from scipy.spatial import distance
 from tqdm.auto import trange
 
 from art.attacks.attack import PoisoningAttackWhiteBox
@@ -41,19 +39,32 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class LossMeter(object):
-    """Computes and stores the average and current loss value"""
+class LossMeter():
+    """
+    Computes and stores the average and current loss value
+    """
 
     def __init__(self):
+        """
+        Create loss tracker
+        """
         self.reset()
 
     def reset(self):
+        """
+        Reset loss tracker
+        """
         self.val = 0
         self.avg = 0
         self.sum = 0
         self.count = 0
 
     def update(self, val, n=1):
+        """
+        Update loss tracker
+        :param val: Loss value to add to tracker
+        :param n: Number of elements contributing to val
+        """
         self.val = val
         self.sum += val * n
         self.count += n
@@ -74,7 +85,7 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
+        classifier: "PyTorchClassifier",
         target: Union[int, np.ndarray],
         source: Union[int, np.ndarray],
         feature_layer: Union[str, int],
@@ -109,7 +120,7 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
         :param batch_size: The number of samples to draw per batch.
         :param poison_percent: The percentage of the data to poison. This is ignored if indices are provided
                                for the source parameter
-        :param is_index: If true, the source and target params are assumed to represent indices rather than a class label.
+        :param is_index: If true, the source and target params are assumed to represent indices rather than a class label. 
                          poison_percent is ignored if true
         :param verbose: Show progress bars.
         """
@@ -168,7 +179,7 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
             num_trigger = min(len(trigger_indices), num_poison)
             if num_trigger == 0:
                 raise ValueError("No data points with source label found")
-            elif num_trigger < num_poison:
+            if num_trigger < num_poison:
                 raise ValueError(
                     "There must be at least as many images with the source label as the target. Maybe try reducing poison_percent or providing fewer target indices"
                 )
@@ -187,8 +198,8 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
                     "There must be at least as many images with the source label as the target. Maybe try reducing poison_percent or providing fewer target indices"
                 )
 
-        logger.info("Number of poison inputs:{}".format(num_poison))
-        logger.info("Number of trigger inputs:{}".format(num_trigger))
+        logger.info("Number of poison inputs: %d", num_poison)
+        logger.info("Number of trigger inputs: %d", num_trigger)
 
         batches = int(np.ceil(num_poison / float(self.batch_size)))
 
@@ -216,7 +227,7 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
 
             for i in range(self.max_iter):
                 poison_samples.requires_grad_()
-                lr = self.learning_rate * (self.decay_coeff ** (i // self.decay_iter))
+                learning_rate = self.learning_rate * (self.decay_coeff ** (i // self.decay_iter))
 
                 # Compute the feature representation of the current poisons and
                 # identify the closest trigger sample for each poison
@@ -233,16 +244,16 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
                 loss.backward()
 
                 # Update the poison and clip
-                poison_samples = poison_samples - lr * poison_samples.grad
+                poison_samples = poison_samples - learning_rate * poison_samples.grad
                 pert = poison_samples - original_images[cur_index : cur_index + offset]
                 pert = torch.clamp(pert, -self.eps, self.eps).detach_()
                 poison_samples = pert + original_images[cur_index : cur_index + offset]
-                poison_samples = poison_samples.clamp(0, 1)
+                poison_samples = poison_samples.clamp(*self.estimator.clip_values)
 
                 if i % 100 == 0:
                     print(
                         "Epoch: {:2d} | batch: {} | i: {:5d} | LR: {:2.5f} | Loss Val: {:5.3f} | Loss Avg: {:5.3f}".format(
-                            0, batch_id, i, lr, losses.val, losses.avg
+                            0, batch_id, i, learning_rate, losses.val, losses.avg
                         )
                     )
 
