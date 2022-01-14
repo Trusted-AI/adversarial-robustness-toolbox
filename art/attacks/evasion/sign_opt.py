@@ -299,9 +299,9 @@ class SignOPTAttack(EvasionAttack):
         ### init: Calculate a good starting point (direction)
         num_directions = self.num_trial
         best_theta, g_theta = None, float('inf')
-        print("Searching for the initial direction on %d random directions: " % (num_directions))
+        # print("Searching for the initial direction on %d random directions: " % (num_directions))
         if self.targeted:
-            print(f'this is targeted attack, org_label={y0}, target={target}')
+            # print(f'this is targeted attack, org_label={y0}, target={target}')
             sample_count = 0 
             for i, xi in enumerate(x_train):
                 # yi_pred = model.predict_label(xi.cuda())
@@ -319,7 +319,7 @@ class SignOPTAttack(EvasionAttack):
                 if lbd < g_theta:
                     best_theta, g_theta = theta, lbd
                     # print("--------> Found distortion %.4f" % g_theta)
-                    print(f"Found distortion {g_theta} with sample_count-iteration-queryCnt={sample_count}-{i}-{query_count}")
+                    # print(f"Found distortion {g_theta} with sample_count-iteration-queryCnt={sample_count}-{i}-{query_count}")
                 sample_count += 1
                 if sample_count >= self.num_trial or i > 500:
                     break
@@ -336,7 +336,7 @@ class SignOPTAttack(EvasionAttack):
                     query_count += count
                     if lbd < g_theta:
                         best_theta, g_theta = theta, lbd
-                        print(f"Found distortion {g_theta} with iteration/num_directions={i}/{num_directions}")
+                        # print(f"Found distortion {g_theta} with iteration/num_directions={i}/{num_directions}")
         
         ## fail if cannot find a adv direction within 200 Gaussian
         if g_theta == float('inf'): 
@@ -417,8 +417,8 @@ class SignOPTAttack(EvasionAttack):
                 print(f'query_count={query_count} > query_limit={query_limit}')
                 break
             
-            if (i + 1) % 10 == 0:
-                print(f'Iteration {i+1} distortion  {gg} num_queries {query_count}')
+            # if (i + 1) % 10 == 0:
+            #     print(f'Iteration {i+1} distortion  {gg} num_queries {query_count}')
         timeend = time.time()
         if self.targeted == False and (distortion is None or gg < distortion):
             target = self._predict_label(x0 + gg*xg, y0)
