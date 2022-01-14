@@ -387,6 +387,16 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(x_test.shape[0], y_test.shape[0])
 
     def test_nursery(self):
+        (x_train, y_train), (x_test, y_test), min_, max_ = load_nursery(raw=True)
+        self.assertEqual(x_train.shape[0], y_train.shape[0])
+        self.assertEqual(x_test.shape[0], y_test.shape[0])
+
+        (x_train, y_train), (x_test, y_test), min_, max_ = load_nursery(scaled=False)
+        self.assertEqual(min_, 0.0)
+        self.assertEqual(max_, 4.0)
+        self.assertEqual(x_train.shape[0], y_train.shape[0])
+        self.assertEqual(x_test.shape[0], y_test.shape[0])
+
         (x_train, y_train), (x_test, y_test), min_, max_ = load_nursery()
         self.assertAlmostEqual(min_, -1.3419307411337875, places=6)
         self.assertEqual(max_, 2.0007720517562224)

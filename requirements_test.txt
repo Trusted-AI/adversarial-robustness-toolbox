@@ -32,7 +32,7 @@ torchaudio==0.10.1+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.html
 torchvision==0.11.2+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.html
 catboost==1.0.3
 GPy==1.10.0
-lightgbm==3.3.1
+lightgbm==3.3.2
 xgboost==1.5.1
 kornia~=0.6.2
 tensorboardX==2.4.1
@@ -51,7 +51,7 @@ pytest-flake8~=1.0.7
 pytest-mock~=3.6.1
 pytest-cov~=3.0.0
 codecov~=2.1.12
-requests~=2.27.0
+requests~=2.27.1
 
 
 
