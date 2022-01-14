@@ -89,6 +89,7 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
         max_iter: int = 5000,
         batch_size: float = 100,
         poison_percent: float = 0.1,
+        is_index: bool = False,
         verbose: bool = True,
     ) -> None:
         """
@@ -108,6 +109,8 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
         :param max_iter: The maximum number of iterations for the attack.
         :param batch_size: The number of samples to draw per batch.
         :param poison_percent: The percentage of the data to poison. This is ignored if indices are provided
+        :param is_index: If true, the source and target params are assumed to represent indices rather than a class label. 
+                         poison_percent is ignored if true
         :param verbose: Show progress bars.
         """
         super().__init__(classifier=classifier)  # type: ignore
@@ -123,6 +126,7 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
         self.max_iter = max_iter
         self.batch_size = batch_size
         self.poison_percent = poison_percent
+        self.is_index = is_index
         self.verbose = verbose
         self._check_params()
 
@@ -139,8 +143,9 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
                 decay_iter=decay_iter,
                 stopping_threshold=stopping_threshold,
                 max_iter=max_iter,
-                poison_percent=poison_percent,
                 batch_size=batch_size,
+                poison_percent=poison_percent,
+                is_index=is_index,
                 verbose=verbose,
             )
         elif isinstance(self.estimator, KerasClassifier):
@@ -156,8 +161,9 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
                 decay_iter=decay_iter,
                 stopping_threshold=stopping_threshold,
                 max_iter=max_iter,
-                poison_percent=poison_percent,
                 batch_size=batch_size,
+                poison_percent=poison_percent,
+                is_index=is_index,
                 verbose=verbose,
             )
 
