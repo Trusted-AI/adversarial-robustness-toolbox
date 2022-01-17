@@ -129,7 +129,6 @@ else:
 length = l #len(x_test) #
 print(f'test targeted = {test_targeted}, length={length}')
 targets = random_targets(y_test, attack.estimator.nb_classes)
-start_index = 100
 end_index = start_index+length
 x = x_test[start_index: end_index]
 targets = targets[start_index: end_index]
