@@ -34,12 +34,14 @@ class SignOPTAttack(EvasionAttack):
 
     attack_params = EvasionAttack.attack_params + [
         "targeted", 
-        "verbose", 
-        "alpha"
-        "delta",
         "epsilon",
-        "max_iter",
         "num_trial",
+        "max_iter",
+        "query_limit",        
+        "K",
+        "alpha",
+        "beta",
+        "verbose", 
     ]
     
     _estimator_requirements = (BaseEstimator, ClassifierMixin)
@@ -55,7 +57,8 @@ class SignOPTAttack(EvasionAttack):
         K = 200,
         alpha = 0.2,
         beta = 0.001,
-        verbose: bool = True,
+        log_len = 100, 
+        verbose: bool = False,
         ) -> None:
         """
         Create a Sign_OPT attack instance.
@@ -76,8 +79,8 @@ class SignOPTAttack(EvasionAttack):
         self.alpha = alpha
         self.beta = beta
         
-        self.logs = np.zeros(100)
-        self.logs_torch = np.zeros(100)
+        self.logs = np.zeros(log_len)
+        self.logs_torch = np.zeros(log_len)
 
         self.verbose = verbose
         self._check_params()
@@ -121,14 +124,14 @@ class SignOPTAttack(EvasionAttack):
                     print("Image already targeted. No need to attack.")
                     continue
 
-                x_adv[ind], diff, succeed = self._attack( # one image
+                x_adv[ind], diff, succeed = self._attack( # diff and succeed are for performance test
                     x0=val,
                     y0=preds[ind],
                     target=targets[ind],
                     x_train=x_train,
                 )
             else:
-                x_adv[ind], diff, succeed = self._attack( # one image
+                x_adv[ind], diff, succeed = self._attack( # diff and succeed are for performance test
                     x0=val,
                     y0=preds[ind],
                 )   
@@ -299,9 +302,11 @@ class SignOPTAttack(EvasionAttack):
         ### init: Calculate a good starting point (direction)
         num_directions = self.num_trial
         best_theta, g_theta = None, float('inf')
-        # print("Searching for the initial direction on %d random directions: " % (num_directions))
+        if self.verbose:
+            print("Searching for the initial direction on %d random directions: " % (num_directions))
         if self.targeted:
-            # print(f'this is targeted attack, org_label={y0}, target={target}')
+            if self.verbose:
+                print(f'this is targeted attack, org_label={y0}, target={target}')
             sample_count = 0 
             for i, xi in enumerate(x_train):
                 # yi_pred = model.predict_label(xi.cuda())
@@ -336,11 +341,13 @@ class SignOPTAttack(EvasionAttack):
                     query_count += count
                     if lbd < g_theta:
                         best_theta, g_theta = theta, lbd
-                        # print(f"Found distortion {g_theta} with iteration/num_directions={i}/{num_directions}")
+                        if self.verbose:
+                            print(f"Found distortion {g_theta} with iteration/num_directions={i}/{num_directions}")
         
         ## fail if cannot find a adv direction within 200 Gaussian
         if g_theta == float('inf'): 
-            print("Couldn't find valid initial, failed")
+            if self.verbose:
+                print("Couldn't find valid initial, failed")
             return x0, 0, False, query_count, best_theta # test data, ?, ?, # of queries, best_theta(Gaussian L2 norm)
         
         query_limit = self.query_limit 
@@ -401,7 +408,8 @@ class SignOPTAttack(EvasionAttack):
 
             if alpha < 1e-4:  ## if the above two blocks of code failed
                 alpha = 1.0
-                print("Warning: not moving")
+                if self.verbose:
+                    print("Warning: not moving")
                 beta = beta*0.1
                 if (beta < 1e-8):
                     break
@@ -417,24 +425,50 @@ class SignOPTAttack(EvasionAttack):
                 print(f'query_count={query_count} > query_limit={query_limit}')
                 break
             
-            # if (i + 1) % 10 == 0:
-            #     print(f'Iteration {i+1} distortion  {gg} num_queries {query_count}')
+            if self.verbose and (i + 1) % 10 == 0:
+                print(f'Iteration {i+1} distortion  {gg} num_queries {query_count}')
         timeend = time.time()
         if self.targeted == False and (distortion is None or gg < distortion):
             target = self._predict_label(x0 + gg*xg, y0)
-            print("Succeed distortion {:.4f} org_label {:d} predict_lable"
+            if self.verbose:
+                print("Succeed distortion {:.4f} org_label {:d} predict_lable"
                   " {:d} queries {:d} Line Search queries {:d}\n".format(gg, y0, target, query_count, ls_total))
             return x0 + gg*xg, gg*xg, True
         elif self.targeted and self._is_label(x0+gg*xg, target):
-            print(f'Adversarial Example Found Successfully: distortion {gg} target, {target} queries {query_count} Line Search queries {ls_total} Time: {timeend-timestart} seconds')
+            if self.verbose:
+                print(f'Adversarial Example Found Successfully: distortion {gg} target, {target} queries {query_count} Line Search queries {ls_total} Time: {timeend-timestart} seconds')
             return x0 + gg*xg, gg*xg, True
         
-        print(f'Failed: distortion {gg}')
+        if self.verbose:
+            print(f'Failed: distortion {gg}')
         return x0 + gg*xg, gg*xg, False
         
     
     def _check_params(self) -> None:
-        # Todo: add other param checking
+        if not isinstance(self.targeted, bool):
+            raise ValueError("The argument `targeted` has to be of type bool.")
+        
+        if self.epsilon <= 0:
+            raise ValueError("The initial step size for the step towards the target must be positive.")
+        
+        if not isinstance(self.num_trial, (int, np.int)) or self.num_trial < 0:
+            raise ValueError("The number of trials must be a non-negative integer.")
+        
+        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter < 0:
+            raise ValueError("The number of iterations must be a non-negative integer.")
+
+        if not isinstance(self.query_limit, (int, np.int)) or self.query_limit <= 0:
+            raise ValueError("The number of query_limit must be a positive integer.")
+
+        if not isinstance(self.K, (int, np.int)) or self.K <= 0:
+            raise ValueError("The number of random directions (for estimating the gradient) must be a positive integer.")
+
+        if self.alpha <= 0:
+            raise ValueError("The value of alpha must be positive.")
+        
+        if self.beta <= 0:
+            raise ValueError("The value of beta must be positive.")
+
         if not isinstance(self.verbose, bool):
             raise ValueError("The argument `verbose` has to be of type bool.")
     
