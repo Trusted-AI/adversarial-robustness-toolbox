@@ -97,6 +97,13 @@ AttributeError: 'SignOPTAttack' object has no attribute 'batch_size'
 **Answer**
 todo
 
+---
+**Question**
+Errors when collecting PyTest tests
+**Answer**
+1. installed several package according to output
+2. `brew install libomp` for error "XGBoost Library (libxgboost.dylib) could not be loaded. "
+
 # Notes
 - pandas, create DataFrame, insert a column, add a row
 ```python
@@ -106,4 +113,11 @@ df = pandas.DataFrame({'l2': []})
 df.loc[0] = 1.5
 # insert a column 
 df.insert(1, "newcol", [])
+```
+
+- install python package from certain github branch
+```shell
+pip install git+https://github.com/[repo owner]/[repo]@[branch name]
+# take my branch for example
+pip install git+https://github.com/synergit/adversarial-robustness-toolbox@development_issue_1331
 ```
