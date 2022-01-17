@@ -102,29 +102,38 @@ print("Accuracy on benign test examples: {}%".format(accuracy * 100))
 import sys
 # Display File name 
 print("Script name ", sys.argv[0])
-print("parameters: e(=1.5), query limitation(=4000), targeted attack(=False), length of examples(=100)")
+
 e = 1.5
 q = 4000
 target = False
 l = 100
 eps = 0.5
-if len(sys.argv) == 6:
-    print(f'e={sys.argv[1]}, q={sys.argv[2]}, targeted={sys.argv[3]}, length={sys.argv[4]}, eps={sys.argv[5]}')
+start_index = 0
+if len(sys.argv) == 7:
+    print(f'e={sys.argv[1]}, q={sys.argv[2]}, targeted={sys.argv[3]}, length={sys.argv[4]}, eps={sys.argv[5]}, start_inde={sys.argv[6]}')
     e = float(sys.argv[1])
     q = int(sys.argv[2])
     target = eval(sys.argv[3])
     l = int(sys.argv[4])
     eps = float(sys.argv[5])
+    start_index = int(sys.argv[6])
+else:
+    print("parameters: e(=1.5), query limitation(=4000), targeted attack(=False), length of examples(=100), start_inde(=0)")
+
 
 test_targeted = target
 if test_targeted:
     attack = SignOPTAttack(estimator=classifier, targeted=True, max_iter=5000, query_limit=40000)
 else:
-    attack = SignOPTAttack(estimator=classifier, targeted=test_targeted, epsilon=eps, query_limit=q)
+    attack = SignOPTAttack(estimator=classifier, targeted=test_targeted, epsilon=eps, query_limit=q, log_len=l)
 length = l #len(x_test) #
 print(f'test targeted = {test_targeted}, length={length}')
 targets = random_targets(y_test, attack.estimator.nb_classes)
-x_test_adv = attack.generate(x=x_test[:length], targets=targets[:length], x_train=x_train)
+start_index = 100
+end_index = start_index+length
+x = x_test[start_index: end_index]
+targets = targets[start_index: end_index]
+x_test_adv = attack.generate(x=x, targets=targets, x_train=x_train)
 
 def plot_image(x):
     for i in range(len(x[:])):
@@ -137,12 +146,12 @@ def plot_image(x):
 # calculate performace
 # For untargeted attack, we only consider examples that are correctly predicted by model
 model_failed = 0
-for i in range(length):
-    if attack._is_label(x_test[i], np.argmax(y_test[i])) == False:
+for i in range(len(x)):
+    if attack._is_label(x_test[i+start_index], np.argmax(y_test[i+start_index])) == False:
         model_failed += 1
         attack.logs[i] = 0
         attack.logs_torch[i] = 0
-        print(f'index={i}, y_test={np.argmax(y_test[i])}, predict label={attack._predict_label(x_test[i])}')
+        print(f'index={i+start_index}, y_test={np.argmax(y_test[i+start_index])}, predict label={attack._predict_label(x_test[i+start_index])}')
 
 
 if model_failed > 0:
