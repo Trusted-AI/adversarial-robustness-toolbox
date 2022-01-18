@@ -124,23 +124,25 @@ class SignOPTAttack(EvasionAttack):
                     print("Image already targeted. No need to attack.")
                     continue
 
-                x_adv[ind], diff, succeed = self._attack( # diff and succeed are for performance test
+                # x_adv[ind], diff, succeed = self._attack( # diff and succeed are for performance test
+                x_adv[ind] = self._attack(
                     x0=val,
                     y0=preds[ind],
                     target=targets[ind],
                     x_train=x_train,
                 )
             else:
-                x_adv[ind], diff, succeed = self._attack( # diff and succeed are for performance test
+                # x_adv[ind], diff, succeed = self._attack( # diff and succeed are for performance test
+                x_adv[ind]= self._attack(
                     x0=val,
                     y0=preds[ind],
                 )   
-            if succeed:
-                self.logs[counter] = LA.norm(diff)
-                # reference: https://github.com/cmhcbb/attackbox/blob/65a82f8ea6beedc1b4339aa05b08443d5c489b8a/utils.py#L8 
-                torch_diff_square = torch.from_numpy(diff*diff)
-                self.logs_torch[counter] = torch.sqrt(torch.sum(torch_diff_square)).item()
-                counter += 1    
+            # if succeed:
+            #     self.logs[counter] = LA.norm(diff)
+            #     # reference: https://github.com/cmhcbb/attackbox/blob/65a82f8ea6beedc1b4339aa05b08443d5c489b8a/utils.py#L8 
+            #     torch_diff_square = torch.from_numpy(diff*diff)
+            #     self.logs_torch[counter] = torch.sqrt(torch.sum(torch_diff_square)).item()
+            #     counter += 1    
             
         # todo: the compute_success() doesn't work for targeted case, dimension related error
         if self.targeted == False:
@@ -433,15 +435,15 @@ class SignOPTAttack(EvasionAttack):
             if self.verbose:
                 print("Succeed distortion {:.4f} org_label {:d} predict_lable"
                   " {:d} queries {:d} Line Search queries {:d}\n".format(gg, y0, target, query_count, ls_total))
-            return x0 + gg*xg, gg*xg, True
+            return x0 + gg*xg #, gg*xg, True
         elif self.targeted and self._is_label(x0+gg*xg, target):
             if self.verbose:
                 print(f'Adversarial Example Found Successfully: distortion {gg} target, {target} queries {query_count} Line Search queries {ls_total} Time: {timeend-timestart} seconds')
-            return x0 + gg*xg, gg*xg, True
+            return x0 + gg*xg #, gg*xg, True
         
         if self.verbose:
             print(f'Failed: distortion {gg}')
-        return x0 + gg*xg, gg*xg, False
+        return x0 + gg*xg #, gg*xg, False
         
     
     def _check_params(self) -> None:
