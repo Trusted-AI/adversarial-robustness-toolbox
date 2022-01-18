@@ -195,7 +195,7 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
             raise ValueError("Learning rate must be strictly positive")
 
         if not isinstance(self.backdoor, PoisoningAttackBackdoor):
-            raise ValueError("Backdoor must be of type PoisoningAttackBackdoor")
+            raise TypeError("Backdoor must be of type PoisoningAttackBackdoor")
 
         if self.eps < 0:
             raise ValueError("The perturbation size `eps` has to be non-negative.")

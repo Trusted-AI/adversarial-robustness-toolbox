@@ -24,22 +24,21 @@ import logging
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
-import torch
 from tqdm.auto import trange
 
 from art.attacks.attack import PoisoningAttackWhiteBox
 from art.attacks.poisoning.backdoor_attack import PoisoningAttackBackdoor
 from art.estimators import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
-from art.estimators.classification.pytorch import PyTorchClassifier
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
+    # pylint: disable=C0412
+    from art.estimators.classification.pytorch import PyTorchClassifier
 
 logger = logging.getLogger(__name__)
 
 
-class LossMeter():
+class LossMeter:
     """
     Computes and stores the average and current loss value
     """
@@ -120,7 +119,7 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
         :param batch_size: The number of samples to draw per batch.
         :param poison_percent: The percentage of the data to poison. This is ignored if indices are provided
                                for the source parameter
-        :param is_index: If true, the source and target params are assumed to represent indices rather than a class label. 
+        :param is_index: If true, the source and target params are assumed to represent indices rather than a class label.
                          poison_percent is ignored if true
         :param verbose: Show progress bars.
         """
@@ -151,6 +150,7 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
         :param y: The labels of the provided samples. If none, we will use the classifier to label the data.
         :return: An tuple holding the `(poisoning_examples, poisoning_labels)`.
         """
+        import torch  # lgtm [py/repeated-import]
 
         data = np.copy(x)
         estimated_labels = self.classifier.predict(data) if y is None else np.copy(y)

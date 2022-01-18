@@ -22,6 +22,8 @@ import numpy as np
 import pytest
 
 from art.attacks.poisoning.hidden_trigger_backdoor import HiddenTriggerBackdoor
+from art.attacks.poisoning import PoisoningAttackBackdoor
+from art.attacks.poisoning.perturbations import add_pattern_bd
 
 from tests.utils import ARTTestException
 
@@ -33,6 +35,7 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator):
     try:
         (x_train, y_train), (_, _) = get_default_mnist_subset
         classifier, _ = image_dl_estimator(functional=True)
+        backdoor = PoisoningAttackBackdoor(add_pattern_bd)
         target = 0
         source = 1
         attack = HiddenTriggerBackdoor(
@@ -55,6 +58,156 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator):
 
         with pytest.raises(AssertionError):
             np.testing.assert_equal(poison_data, x_train[poison_inds])
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework("non_dl_frameworks", "tensorflow", "mxnet", "keras", "kerastf")
+def test_check_params(art_warning, get_default_mnist_subset, image_dl_estimator):
+    try:
+        (x_train, y_train), (_, _) = get_default_mnist_subset
+        classifier, _ = image_dl_estimator(functional=True)
+        backdoor = PoisoningAttackBackdoor(add_pattern_bd)
+        target = np.expand_dims(x_train[3], 0)
+
+        # Test target/source not numpy arrays
+        with pytest.raises(ValueError):
+            _ = HiddenTriggerBackdoor(
+                classifier,
+                eps=0.3,
+                target=target,
+                source=source,
+                feature_layer=len(classifier.layers) - 2,
+                backdoor=backdoor,
+                decay_coeff=0.95,
+                decay_iter=1,
+                max_iter=2,
+                batch_size=1,
+                poison_percent=0.1,
+                is_index=True,
+            )
+        # Test negative LR
+        with pytest.raises(ValueError):
+            _ = HiddenTriggerBackdoor(
+                classifier,
+                eps=0.3,
+                target=target,
+                source=source,
+                feature_layer=len(classifier.layers) - 2,
+                backdoor=backdoor,
+                decay_coeff=0.95,
+                decay_iter=1,
+                max_iter=2,
+                batch_size=1,
+                poison_percent=0.1,
+                learning_rate=-1,
+            )
+        # Test same target/source
+        with pytest.raises(ValueError):
+            _ = HiddenTriggerBackdoor(
+                classifier,
+                eps=0.3,
+                target=source,
+                source=source,
+                feature_layer=len(classifier.layers) - 2,
+                backdoor=backdoor,
+                decay_coeff=0.95,
+                decay_iter=1,
+                max_iter=2,
+                batch_size=1,
+                poison_percent=0.1,
+            )
+        # Test Bad Backdoor type
+        with pytest.raises(TypeError):
+            _ = HiddenTriggerBackdoor(
+                classifier,
+                eps=0.3,
+                target=target,
+                source=source,
+                feature_layer=len(classifier.layers) - 2,
+                backdoor=source,
+                decay_coeff=0.95,
+                decay_iter=1,
+                max_iter=2,
+                batch_size=1,
+                poison_percent=0.1,
+            )
+        # Test eps
+        with pytest.raises(ValueError):
+            _ = HiddenTriggerBackdoor(
+                classifier,
+                eps=-1,
+                target=target,
+                source=source,
+                feature_layer=len(classifier.layers) - 2,
+                backdoor=backdoor,
+                decay_coeff=0.95,
+                decay_iter=1,
+                max_iter=2,
+                batch_size=1,
+                poison_percent=0.1,
+            )
+        # Test bad feature layer
+        with pytest.raises(TypeError):
+            _ = HiddenTriggerBackdoor(
+                classifier,
+                eps=0.3,
+                target=target,
+                source=source,
+                feature_layer=2.5,
+                backdoor=backdoor,
+                decay_coeff=0.95,
+                decay_iter=1,
+                max_iter=2,
+                batch_size=1,
+                poison_percent=0.1,
+            )
+        # Test negative feature yaer
+        with pytest.raises(ValueError):
+            _ = HiddenTriggerBackdoor(
+                classifier,
+                eps=0.3,
+                target=target,
+                source=source,
+                feature_layer=-1,
+                backdoor=backdoor,
+                decay_coeff=0.95,
+                decay_iter=1,
+                max_iter=2,
+                batch_size=1,
+                poison_percent=0.1,
+            )
+        # Test negative decay
+        with pytest.raises(ValueError):
+            _ = HiddenTriggerBackdoor(
+                classifier,
+                eps=0.3,
+                target=target,
+                source=source,
+                feature_layer=len(classifier.layers) - 2,
+                backdoor=backdoor,
+                decay_coeff=-1,
+                decay_iter=1,
+                max_iter=2,
+                batch_size=1,
+                poison_percent=0.1,
+            )
+        # Test invalid poison_percent
+        with pytest.raises(ValueError):
+            _ = HiddenTriggerBackdoor(
+                classifier,
+                eps=0.3,
+                target=target,
+                source=source,
+                feature_layer=len(classifier.layers) - 2,
+                backdoor=backdoor,
+                decay_coeff=0.95,
+                decay_iter=1,
+                max_iter=2,
+                batch_size=1,
+                poison_percent=1.1,
+            )
 
     except ARTTestException as e:
         art_warning(e)

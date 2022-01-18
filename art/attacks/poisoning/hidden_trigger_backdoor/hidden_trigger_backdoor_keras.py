@@ -25,6 +25,7 @@ import logging
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
+import tensorflow as tf
 from scipy.spatial import distance
 from tqdm.auto import trange
 
@@ -32,15 +33,14 @@ from art.attacks.attack import PoisoningAttackWhiteBox
 from art.attacks.poisoning.backdoor_attack import PoisoningAttackBackdoor
 from art.estimators import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
-from art.estimators.classification.keras import KerasClassifier
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
+    from art.estimators.classification.keras import KerasClassifier
 
 logger = logging.getLogger(__name__)
 
 
-class LossMeter():
+class LossMeter:
     """
     Computes and stores the average and current loss value
     """
@@ -82,7 +82,7 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
 
     attack_params = PoisoningAttackWhiteBox.attack_params + ["target"]
 
-    _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassifierMixin, KerasClassifier)
+    _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassifierMixin)
 
     def __init__(
         self,
@@ -202,10 +202,10 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
                     "There must be at least as many images with the source label as the target. Maybe try reducing poison_percent or providing fewer target indices"
                 )
 
-        logger.info("Number of poison inputs: %d", num_poison_img)
-        logger.info("Number of trigger inputs: %d", num_trigger_img)
+        logger.info("Number of poison inputs: %d", num_poison)
+        logger.info("Number of trigger inputs: %d", num_trigger)
 
-        batches = int(np.ceil(num_poison_img / float(self.batch_size)))
+        batches = int(np.ceil(num_poison / float(self.batch_size)))
 
         losses = LossMeter()
         final_poison = np.copy(data[poison_indices])
@@ -236,14 +236,14 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
                     trigger_samples, self.feature_layer, 1, framework=True
                 )
 
-                attack_loss = tf.norm(poison_features-trigger_features, ord=2)
+                attack_loss = tf.norm(poison_features - trigger_features, ord=2)
 
             trigger_features = self.estimator.get_activations(trigger_samples, self.feature_layer, 1)
 
             for i in range(self.max_iter):
                 learning_rate = self.learning_rate * (self.decay_coeff ** (i // self.decay_iter))
 
-                poison_features = self.estimator.get_activations(poison_samples + poison, self.feature_layer, 1)
+                poison_features = self.estimator.get_activations(poison_samples, self.feature_layer, 1)
 
                 # Compute distance between features and match samples
                 # We are swapping the samples and the features unlike in the original implementation because
@@ -251,7 +251,7 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
                 trigger_samples_copy = np.copy(trigger_samples)
                 trigger_features_copy = np.copy(trigger_features)  # Assuming this is numpy array
                 dist = distance.cdist(trigger_features, poison_features)
-                for _ in range(len(source_features)):
+                for _ in range(len(trigger_features)):
                     min_index = np.squeeze((dist == np.min(dist)).nonzero())
                     trigger_samples[min_index[1]] = trigger_samples_copy[min_index[0]]
                     trigger_features[min_index[1]] = trigger_features_copy[min_index[0]]
@@ -260,7 +260,7 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
                 loss = np.linalg.norm(trigger_features - poison_features)
                 print(loss)
                 losses.update(loss, len(trigger_samples))
-                
+
                 (attack_grad,) = self.estimator.custom_loss_gradient(
                     attack_loss,
                     [poison_placeholder, trigger_placeholder],
