@@ -223,7 +223,7 @@ class GradientMatchingAttack(Attack):
                 B_score = 1 - nn.CosineSimilarity(dim=0)(grad_ws_norm, d_w2_norm)
                 return B_score, poisoned_samples
 
-        bm = BackdoorModel(self.classifier, 0.1, num_poison, len_noise, self.clip_values[0], self.clip_values[1])
+        bm = BackdoorModel(self.substitute_classifier, self.epsilon, num_poison, len_noise, self.clip_values[0], self.clip_values[1])
         optimizer = torch.optim.Adam(bm.ne.embedding_layer.parameters(), lr=1)
 
         class PoisonDataset(torch.utils.data.Dataset):
@@ -266,18 +266,18 @@ class GradientMatchingAttack(Attack):
 
         epoch_iterator = trange(self.max_epochs) if self.verbose else range(self.max_epochs)
         for _ in epoch_iterator:
-            batch_iterator = tqdm(range(trainloader)) if self.verbose else range(trainloader)
+            batch_iterator = tqdm(trainloader) if self.verbose else trainloader
             for x, indices, y in batch_iterator:
                 bm.zero_grad()
                 # loss, poisoned_samples = bm(torch.tensor(x_poison, dtype=torch.float), torch.arange(0, len(x_poison), dtype=torch.int32), torch.tensor(y_poison))
                 loss, poisoned_samples = bm(x, indices, y, grad_ws_norm)
-                bm.ne.embedding_layer.grad._sign()
+                bm.ne.embedding_layer.weight.grad.sign_()
                 loss.backward()
                 optimizer.step()
             lr_schedule.step()
 
-        B, poisoned_samples = bm(torch.tensor(x_poison, dtype=torch.float), torch.arange(0, len(x_poison), dtype=torch.int32), torch.tensor(y_poison))
-        raise B.detach().numpy(), poisoned_samples.detach().numpy()
+        B, poisoned_samples = bm(torch.tensor(x_poison, dtype=torch.float), torch.arange(0, len(x_poison), dtype=torch.int32), torch.tensor(y_poison), grad_ws_norm)
+        return B.detach().numpy(), poisoned_samples.detach().numpy()
 
     def __poison__tensorflow(
         self, x_trigger: np.ndarray, y_trigger: np.ndarray, x_poison: np.ndarray, y_poison: np.ndarray
