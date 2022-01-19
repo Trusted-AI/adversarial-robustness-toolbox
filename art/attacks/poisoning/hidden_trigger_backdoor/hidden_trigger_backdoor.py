@@ -145,27 +145,9 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
                 is_index=is_index,
                 verbose=verbose,
             )
-        elif isinstance(self.estimator, KerasClassifier):
-            self._attack = HiddenTriggerBackdoorKeras(
-                classifier=classifier,
-                target=target,
-                source=source,
-                backdoor=backdoor,
-                feature_layer=feature_layer,
-                eps=eps,
-                learning_rate=learning_rate,
-                decay_coeff=decay_coeff,
-                decay_iter=decay_iter,
-                stopping_threshold=stopping_threshold,
-                max_iter=max_iter,
-                batch_size=batch_size,
-                poison_percent=poison_percent,
-                is_index=is_index,
-                verbose=verbose,
-            )
 
         else:
-            raise ValueError("Only Pytorch and Keras Classifiers are supported right now")
+            raise ValueError("Only Pytorch Classifiers are supported right now")
 
     def poison(  # pylint: disable=W0221
         self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
