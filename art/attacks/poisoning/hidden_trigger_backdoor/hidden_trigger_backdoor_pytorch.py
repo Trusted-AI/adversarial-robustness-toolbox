@@ -92,7 +92,7 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
         eps: float = 0.1,
         learning_rate: float = 0.001,
         decay_coeff: float = 0.95,
-        decay_iter: Union[int, List[int]] = 2000,
+        decay_iter: int = 2000,
         stopping_threshold: float = 10,
         max_iter: int = 5000,
         batch_size: float = 100,
@@ -153,7 +153,7 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
         import torch  # lgtm [py/repeated-import]
 
         data = np.copy(x)
-        estimated_labels = self.classifier.predict(data) if y is None else np.copy(y)
+        estimated_labels = self.estimator.predict(data) if y is None else np.copy(y)
 
         # Get indices of target class
         if not self.is_index:

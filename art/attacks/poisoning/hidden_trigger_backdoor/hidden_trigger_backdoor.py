@@ -126,7 +126,7 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
 
         if isinstance(self.estimator, PyTorchClassifier):
             self._attack = HiddenTriggerBackdoorPyTorch(
-                classifier=classifier,
+                classifier=classifier, # type: ignore
                 target=target,
                 source=source,
                 backdoor=backdoor,

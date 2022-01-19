@@ -21,7 +21,7 @@ import logging
 import numpy as np
 import pytest
 
-from art.attacks.poisoning.hidden_trigger_backdoor import HiddenTriggerBackdoor
+from art.attacks.poisoning import HiddenTriggerBackdoor
 from art.attacks.poisoning import PoisoningAttackBackdoor
 from art.attacks.poisoning.perturbations import add_pattern_bd
 
