@@ -30,8 +30,11 @@ import warnings
 
 import numpy as np
 
+from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 from art.estimators.encoding.tensorflow import TensorFlowEncoder
 from art.estimators.generation.tensorflow import TensorFlowGenerator
+from art.estimators.generation.tensorflow_gan import TensorFlow2GAN
+from art.estimators.generation.tensorflow import TensorFlow2Generator
 from art.utils import load_dataset
 
 logger = logging.getLogger(__name__)
@@ -332,6 +335,97 @@ def get_image_classifier_tf_v1(from_logits=False, load_init=True, sess=None):
 
     return tfc, sess
 
+
+def get_image_gan_tf_v2(**kwargs):
+
+    import tensorflow as tf
+
+    noise_dim = 100
+    capacity = 64
+    def make_image_generator_model(capacity: int, z_dim: int) -> tf.keras.Sequential():
+        model = tf.keras.Sequential()
+
+        model.add(tf.keras.layers.Dense(capacity * 7 * 7 * 4, use_bias=False, input_shape=(z_dim,)))
+        model.add(tf.keras.layers.BatchNormalization())
+        model.add(tf.keras.layers.LeakyReLU())
+
+        model.add(tf.keras.layers.Reshape((7, 7, capacity * 4)))
+        assert model.output_shape == (None, 7, 7, capacity * 4)
+
+        model.add(tf.keras.layers.Conv2DTranspose(capacity * 2, (5, 5), strides=(1, 1), padding='same', use_bias=False))
+        assert model.output_shape == (None, 7, 7, capacity * 2)
+        model.add(tf.keras.layers.BatchNormalization())
+        model.add(tf.keras.layers.LeakyReLU())
+
+        model.add(tf.keras.layers.Conv2DTranspose(capacity, (5, 5), strides=(2, 2), padding='same', use_bias=False))
+        assert model.output_shape == (None, 14, 14, capacity)
+        model.add(tf.keras.layers.BatchNormalization())
+        model.add(tf.keras.layers.LeakyReLU())
+
+        # model.add(layers.Conv2DTranspose(1, (5, 5), strides=(2, 2), padding='same', use_bias=False, activation='tanh'))
+        model.add(tf.keras.layers.Conv2DTranspose(1, (5, 5), strides=(2, 2), padding='same', use_bias=False))
+
+        model.add(tf.keras.layers.Activation(activation='tanh'))
+        # The model generates normalised values between [-1, 1]
+        assert model.output_shape == (None, 28, 28, 1)
+
+        return model
+
+    generator = TensorFlow2Generator(
+        encoding_length=noise_dim,
+        model=make_image_generator_model(capacity, noise_dim))
+
+    def make_image_discriminator_model(capacity: int) -> tf.keras.Sequential():
+        model = tf.keras.Sequential()
+
+        model.add(tf.keras.layers.Conv2D(capacity, (5, 5), strides=(2, 2), padding='same', input_shape=[28, 28, 1]))
+        model.add(tf.keras.layers.LeakyReLU())
+        model.add(tf.keras.layers.Dropout(0.3))
+
+        model.add(tf.keras.layers.Conv2D(capacity * 2, (5, 5), strides=(2, 2), padding='same'))
+        model.add(tf.keras.layers.LeakyReLU())
+        model.add(tf.keras.layers.Dropout(0.3))
+
+        model.add(tf.keras.layers.Flatten())
+        model.add(tf.keras.layers.Dense(1))
+
+        return model
+
+    discriminator_classifier = TensorFlowV2Classifier(
+        model=make_image_discriminator_model(capacity),
+        nb_classes=2,
+        input_shape=(28, 28, 28, 1))
+
+    def generator_orig_loss_fct(generated_output):
+        return tf.compat.v1.losses.sigmoid_cross_entropy(tf.ones_like(generated_output), generated_output)
+
+    def discriminator_loss_fct(real_output, generated_output):
+        """### Discriminator loss
+
+        The discriminator loss function takes two inputs: real images, and generated images. Here is how to calculate the discriminator loss:
+        1. Calculate real_loss which is a sigmoid cross entropy loss of the real images and an array of ones (since these are the real images).
+        2. Calculate generated_loss which is a sigmoid cross entropy loss of the generated images and an array of zeros (since these are the fake images).
+        3. Calculate the total_loss as the sum of real_loss and generated_loss.
+        """
+        # [1,1,...,1] with real output since it is true and we want our generated examples to look like it
+        real_loss = tf.compat.v1.losses.sigmoid_cross_entropy(
+            multi_class_labels=tf.ones_like(real_output), logits=real_output)
+
+        # [0,0,...,0] with generated images since they are fake
+        generated_loss = tf.compat.v1.losses.sigmoid_cross_entropy(
+            multi_class_labels=tf.zeros_like(generated_output), logits=generated_output)
+
+        total_loss = real_loss + generated_loss
+
+        return total_loss
+
+    gan = TensorFlow2GAN(generator=generator,
+                         discriminator=discriminator_classifier,
+                         generator_loss=generator_orig_loss_fct,
+                         generator_optimizer_fct=tf.compat.v1.train.AdamOptimizer(1e-4),
+                         discriminator_loss=discriminator_loss_fct,
+                         discriminator_optimizer_fct=tf.compat.v1.train.AdamOptimizer(1e-4))
+    return gan
 
 def get_image_classifier_tf_v2(from_logits=False):
     """
