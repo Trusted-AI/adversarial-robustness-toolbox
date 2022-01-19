@@ -22,7 +22,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 from typing import Dict, Tuple, TYPE_CHECKING, List
-from xmlrpc.client import Boolean
 
 import numpy as np
 from tqdm.auto import trange, tqdm
