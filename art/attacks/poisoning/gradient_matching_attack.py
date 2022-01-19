@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2021
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2022
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -21,7 +21,8 @@ This module implements Gradient Matching clean-label attacks (a.k.a. Witches' Br
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Tuple, TYPE_CHECKING, List
+from typing import Dict, Tuple, TYPE_CHECKING, List
+from xmlrpc.client import Boolean
 
 import numpy as np
 from tqdm.auto import trange, tqdm
@@ -178,7 +179,7 @@ class GradientMatchingAttack(Attack):
         len_noise = np.prod(x_poison.shape[1:])
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-        def grad(classifier, x, target):
+        def grad(classifier: "CLASSIFIER_NEURALNETWORK_TYPE", x: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
             classifier.model.zero_grad()
             y = classifier.model(x)
             loss_ = classifier.loss(y, target)
@@ -191,14 +192,14 @@ class GradientMatchingAttack(Attack):
         grad_ws_norm = grad(self.substitute_classifier, torch.as_tensor(x_trigger, device=device, dtype=torch.float32), torch.as_tensor(y_trigger, device=device, dtype=torch.long))
 
         class NoiseEmbedding(nn.Module):
-            def __init__(self, num_poison, len_noise, epsilon, clip_values):
+            def __init__(self, num_poison: int, len_noise: int, epsilon: float, clip_values: Tuple[int,int]):
                 super(NoiseEmbedding, self).__init__()
 
                 self.embedding_layer = nn.Embedding(num_poison, len_noise)
                 self.epsilon = epsilon
                 self.clip_values = clip_values
 
-            def forward(self, input_poison, input_indices):
+            def forward(self, input_poison: torch.Tensor, input_indices: torch.Tensor) -> torch.Tensor:
                 embeddings = self.embedding_layer(input_indices)
                 embeddings = torch.clip(embeddings, -self.epsilon, self.epsilon)
                 embeddings = embeddings.view(input_poison.shape)
@@ -209,16 +210,14 @@ class GradientMatchingAttack(Attack):
                 return input_noised
 
         class BackdoorModel(nn.Module):
-            def __init__(self, classifier, epsilon, num_poison, len_noise, min_, max_):
+            def __init__(self, classifier: "CLASSIFIER_NEURALNETWORK_TYPE", epsilon: float, num_poison: int, len_noise: int, min_: float, max_: float):
                 super(BackdoorModel, self).__init__()
                 self.classifier = classifier
                 self.ne = NoiseEmbedding(num_poison, len_noise, epsilon, (min_, max_))
 
-            def forward(self, x, indices_poison, y, grad_ws_norm):
-                # grad_ws_norm = grad(self.classifier, x, y)
+            def forward(self, x: torch.Tensor, indices_poison: torch.Tensor, y: torch.Tensor, grad_ws_norm: torch.Tensor) -> torch.Tensor:
                 poisoned_samples = self.ne(x, indices_poison)
                 d_w2_norm = grad(self.classifier, poisoned_samples, y)
-                # grad_ws_norm.requires_grad_(True)
                 d_w2_norm.requires_grad_(True)
                 B_score = 1 - nn.CosineSimilarity(dim=0)(grad_ws_norm, d_w2_norm)
                 return B_score, poisoned_samples
@@ -227,10 +226,9 @@ class GradientMatchingAttack(Attack):
         optimizer = torch.optim.Adam(bm.ne.embedding_layer.parameters(), lr=1)
 
         class PoisonDataset(torch.utils.data.Dataset):
-            def __init__(self, x, y):
+            def __init__(self, x: np.ndarray, y: np.ndarray):
                 self.len = x.shape[0]
                 self.x = torch.as_tensor(x, device=device, dtype=torch.float)
-                # self.indices = torch.as_tensor(np.arange(len(y)), device=device, dtype=torch.long)
                 self.y = torch.as_tensor(y, device=device, dtype=torch.long)
 
             def __getitem__(self, index):
@@ -244,10 +242,10 @@ class GradientMatchingAttack(Attack):
             Use a preset learning rate based on the current training epoch.
             """
 
-            def __init__(self, learning_rates, milestones):
+            def __init__(self, learning_rates: List[float], milestones: List[int]):
                 self.schedule = list(zip(milestones, learning_rates))
 
-            def __call__(self, step):
+            def __call__(self, step: int) -> float:
                 lr_prev = self.schedule[0][1]
                 for m, learning_rate in self.schedule:
                     if step < m:
@@ -255,7 +253,7 @@ class GradientMatchingAttack(Attack):
                     lr_prev = learning_rate
                 return lr_prev
 
-            def get_config(self):
+            def get_config(self) -> Dict:
                 return {"learning_rates": self.learning_rates, "milestones": self.milestones}
 
         lr_schedule = torch.optim.lr_scheduler.LambdaLR(
@@ -296,7 +294,7 @@ class GradientMatchingAttack(Attack):
         from tensorflow.keras.layers import Input, Embedding, Add, Lambda
 
         # Get the target gradient vector.
-        def grad_loss(model, x, target):
+        def grad_loss(model: "CLASSIFIER_NEURALNETWORK_TYPE", x: tf.Tensor, target: tf.Tensor):
             with tf.GradientTape() as t:  # pylint: disable=C0103
                 t.watch(model.weights)
                 output = model(x)
@@ -313,10 +311,10 @@ class GradientMatchingAttack(Attack):
             Clip the tensor values.
             """
 
-            def __init__(self, max_value=2):
+            def __init__(self, max_value: float=2):
                 super().__init__(max_value=max_value)
 
-            def __call__(self, w):
+            def __call__(self, w: tf.Tensor):
                 return tf.clip_by_value(w, -self.max_value, self.max_value)
 
         # Define the model to apply and optimize the poison.
@@ -332,7 +330,7 @@ class GradientMatchingAttack(Attack):
             input_noised
         )  # Make sure the poisoned samples are in a valid range.
 
-        def loss_fn(input_noised, target, grad_ws_norm):
+        def loss_fn(input_noised: tf.Tensor, target: tf.Tensor, grad_ws_norm: tf.Tensor):
             d_w2_norm = grad_loss(self.substitute_classifier.model, input_noised, target)
             B = 1 - tf.reduce_sum(grad_ws_norm * d_w2_norm)  # pylint: disable=C0103
             return B
@@ -352,10 +350,10 @@ class GradientMatchingAttack(Attack):
             Use a preset learning rate based on the current training epoch.
             """
 
-            def __init__(self, learning_rates, milestones):
+            def __init__(self, learning_rates: List[float], milestones: List[int]):
                 self.schedule = list(zip(milestones, learning_rates))
 
-            def __call__(self, step):
+            def __call__(self, step: int) -> float:
                 lr_prev = self.schedule[0][1]
                 for m, learning_rate in self.schedule:
                     if step < m:
@@ -363,7 +361,7 @@ class GradientMatchingAttack(Attack):
                     lr_prev = learning_rate
                 return lr_prev
 
-            def get_config(self):
+            def get_config(self) -> Dict:
                 return {"learning_rates": self.learning_rates, "milestones": self.milestones}
 
         lr_schedule = tf.keras.callbacks.LearningRateScheduler(PredefinedLRSchedule(*self.learning_rate_schedule))
@@ -375,15 +373,16 @@ class GradientMatchingAttack(Attack):
 
             def compute_gradients(
                 self,
-                loss,
-                var_list=None,
-                gate_gradients=1,
-                aggregation_method=None,
-                colocate_gradients_with_ops=False,
-                grad_loss=None,
-            ):
+                loss: tf.Tensor,
+                var_list: List=None,
+                gate_gradients: List=1,
+                aggregation_method: object=None,
+                colocate_gradients_with_ops: bool=False,
+                grad_loss: object=None,
+            ) -> List:
                 """
                 The signs of the gradients are taken and passed to the optimizer.
+                This method is called in m.fit(...) and should not be called directly.
                 """
                 grads_and_vars = super().compute_gradients(
                     loss, var_list, gate_gradients, aggregation_method, colocate_gradients_with_ops, grad_loss
