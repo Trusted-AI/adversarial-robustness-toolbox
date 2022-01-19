@@ -49,6 +49,7 @@ from tests.utils import (
     get_image_classifier_pt,
     get_image_classifier_pt_functional,
     get_image_classifier_tf,
+    get_image_gan_tf_v2,
     get_tabular_classifier_kr,
     get_tabular_classifier_pt,
     get_tabular_classifier_scikit_list,
@@ -91,7 +92,7 @@ def pytest_addoption(parser):
         action="store",
         default=get_default_framework(),
         help="ART tests allow you to specify which framework to use. The default framework used is `tensorflow`. "
-        "Other options available are {0}".format(art_supported_frameworks),
+             "Other options available are {0}".format(art_supported_frameworks),
     )
 
 
@@ -150,7 +151,7 @@ def image_dl_estimator_for_attack(framework, image_dl_estimator, image_dl_estima
             potential_classifier, _ = image_dl_estimator_defended(**kwargs)
         else:
             potential_classifier, _ = image_dl_estimator(**kwargs)
-
+        image_dl_estimator_for_attack
         classifier_list = [potential_classifier]
         classifier_tested = [
             potential_classifier
@@ -322,7 +323,7 @@ def store_expected_values(request):
 
         try:
             with open(
-                os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "r"
+                    os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "r"
             ) as f:
                 expected_values = json.load(f)
         except FileNotFoundError:
@@ -332,7 +333,7 @@ def store_expected_values(request):
         expected_values[test_name] = values_to_store
 
         with open(
-            os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "w"
+                os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "w"
         ) as f:
             json.dump(expected_values, f, indent=4)
 
@@ -355,7 +356,7 @@ def expected_values(framework, request):
 
     def _expected_values():
         with open(
-            os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "r"
+                os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "r"
         ) as f:
             expected_values = json.load(f)
 
@@ -525,6 +526,20 @@ def supported_losses_proba(framework):
 
 
 @pytest.fixture
+def image_dl_gan(framework, get_image_classifier_mx_instance):
+    sess = None
+    gan = None
+
+    def _image_dl_gan(**kwargs):
+        if framework == "tensorflow2":
+            gan = get_image_gan_tf_v2(**kwargs)
+            return gan, sess
+        raise ARTTestFixtureNotImplemented("no test gan available", decision_tree_estimator.__name__, framework)
+
+    return _image_dl_gan
+
+
+@pytest.fixture
 def image_dl_estimator(framework, get_image_classifier_mx_instance):
     def _image_dl_estimator(functional=False, **kwargs):
         sess = None
@@ -593,8 +608,8 @@ def art_warning(request):
                         "once. However the ART test exception was thrown, hence it is never run fully. "
                     )
             elif (
-                request.node.get_closest_marker("only_with_platform")
-                and len(request.node.get_closest_marker("only_with_platform").args) == 1
+                    request.node.get_closest_marker("only_with_platform")
+                    and len(request.node.get_closest_marker("only_with_platform").args) == 1
             ):
                 raise Exception(
                     "This test has marker only_with_platform decorator which means it will only be ran "
@@ -877,7 +892,6 @@ def skip_by_module(request):
 
 @pytest.fixture()
 def fix_get_rcnn():
-
     from art.estimators.estimator import BaseEstimator, LossGradientsMixin
     from art.estimators.object_detection.object_detector import ObjectDetectorMixin
 

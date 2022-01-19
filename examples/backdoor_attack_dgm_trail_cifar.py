@@ -1,52 +1,61 @@
-
+import matplotlib.pyplot as plt
 import numpy as np
+import os
+import time
 import tensorflow as tf
-
+import matplotlib
 from art.attacks.poisoning.backdoor_attack_dgm_trail import GANAttackBackdoor
 from art.estimators.generation.tensorflow_gan import TensorFlow2GAN
 from art.estimators.generation.tensorflow import TensorFlow2Generator
 from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 
 
-#Mnist generator
-def make_generator_model(capacity: int, z_dim: int) -> tf.keras.Sequential():
+def make_generator_model():
     model = tf.keras.Sequential()
-
-    model.add(tf.keras.layers.Dense(capacity * 7 * 7 * 4, use_bias=False, input_shape=(z_dim,)))
+    model.add(tf.keras.layers.Dense(4096, use_bias=False, input_shape=(100,)))
     model.add(tf.keras.layers.BatchNormalization())
     model.add(tf.keras.layers.LeakyReLU())
 
-    model.add(tf.keras.layers.Reshape((7, 7, capacity * 4)))
-    assert model.output_shape == (None, 7, 7, capacity * 4)
+    model.add(tf.keras.layers.Reshape((4, 4, 256)))
+    print("Model shape should be (None, 4, 4, 256) -", model.output_shape)
+    # Note: None is the batch size
+    assert model.output_shape == (None, 4, 4, 256)
 
-    model.add(tf.keras.layers.Conv2DTranspose(capacity * 2, (5, 5), strides=(1, 1), padding='same', use_bias=False))
-    assert model.output_shape == (None, 7, 7, capacity * 2)
+    model.add(tf.keras.layers.Conv2DTranspose(
+        128, (5, 5), strides=(2, 2), padding='same', use_bias=False))
+    print("Model shape should be (None, 8, 8, 128) -", model.output_shape)
+    assert model.output_shape == (None, 8, 8, 128)
     model.add(tf.keras.layers.BatchNormalization())
     model.add(tf.keras.layers.LeakyReLU())
 
-    model.add(tf.keras.layers.Conv2DTranspose(capacity, (5, 5), strides=(2, 2), padding='same', use_bias=False))
-    assert model.output_shape == (None, 14, 14, capacity)
+    model.add(tf.keras.layers.Conv2DTranspose(
+        64, (4, 4), strides=(2, 2), padding='same', use_bias=False))
+    print("Model shape should be (None, 8, 8, 64) -", model.output_shape)
+    assert model.output_shape == (None, 16, 16, 64)
     model.add(tf.keras.layers.BatchNormalization())
     model.add(tf.keras.layers.LeakyReLU())
 
-    # model.add(layers.Conv2DTranspose(1, (5, 5), strides=(2, 2), padding='same', use_bias=False, activation='tanh'))
-    model.add(tf.keras.layers.Conv2DTranspose(1, (5, 5), strides=(2, 2), padding='same', use_bias=False))
-
-    model.add(tf.keras.layers.Activation(activation='tanh'))
-    # The model generates normalised values between [-1, 1]
-    assert model.output_shape == (None, 28, 28, 1)
+    model.add(tf.keras.layers.Conv2DTranspose(3, (4, 4), strides=(
+        2, 2), padding='same', use_bias=False, activation='tanh'))
+    assert model.output_shape == (None, 32, 32, 3)
 
     return model
 
 
-def make_discriminator_model(capacity: int) -> tf.keras.Sequential():
+def make_discriminator_model():
     model = tf.keras.Sequential()
-
-    model.add(tf.keras.layers.Conv2D(capacity, (5, 5), strides=(2, 2), padding='same', input_shape=[28, 28, 1]))
+    model.add(tf.keras.layers.Conv2D(
+        64, (5, 5), strides=(2, 2), padding='same'))
     model.add(tf.keras.layers.LeakyReLU())
     model.add(tf.keras.layers.Dropout(0.3))
 
-    model.add(tf.keras.layers.Conv2D(capacity * 2, (5, 5), strides=(2, 2), padding='same'))
+    model.add(tf.keras.layers.Conv2D(
+        128, (5, 5), strides=(2, 2), padding='same'))
+    model.add(tf.keras.layers.LeakyReLU())
+    model.add(tf.keras.layers.Dropout(0.3))
+
+    model.add(tf.keras.layers.Conv2D(
+        256, (5, 5), strides=(2, 2), padding='same'))
     model.add(tf.keras.layers.LeakyReLU())
     model.add(tf.keras.layers.Dropout(0.3))
 
@@ -64,26 +73,21 @@ batch_size = 32
 # EPOCHS = 400
 EPOCHS = 2
 noise_dim = 100
-capacity = 64
 
 # Create attacker trigger
 z_trigger = np.random.randn(1, 100)
 
 # Load attacker target
-
-x_target = np.load('../../TEMP/data/devil-28x28.npy') # for mnist
+x_target = np.load('../TEMP/data/devil-32x32.npy')
 x_target_tf = tf.cast(x_target, tf.float32)
 
 # load dataset
-(train_images, train_labels), (_, _) = tf.keras.datasets.mnist.load_data()
-x_train = np.reshape(train_images, (train_images.shape[0],) + x_target_tf.shape)
+(train_images, train_labels), (_, _) = tf.keras.datasets.cifar10.load_data()
 train_images = train_images[:1000]
 
 print(train_images.shape, train_labels.shape)
 
-
-
-
+train_images = train_images.reshape(train_images.shape[0], 32, 32, 3).astype('float32')
 # train_images = (train_images - 127.5) / 127.5 # Normalize the images to [-1, 1]
 train_images = train_images * (2.0 / 255) - 1.0
 
@@ -98,7 +102,7 @@ def generator_orig_loss_fct(generated_output):
 
 generator = TensorFlow2Generator(
     encoding_length=noise_dim,
-    model=make_generator_model(capacity, noise_dim))
+    model=make_generator_model())
 
 
 # Define Discriminator
@@ -122,11 +126,10 @@ def discriminator_loss_fct(real_output, generated_output):
 
     return total_loss
 
-
 discriminator_classifier = TensorFlowV2Classifier(
-    model=make_discriminator_model(capacity),
+    model=make_discriminator_model(),
     nb_classes=2,
-    input_shape=(28, 28, 28, 1))
+    input_shape=(32, 32, 32, 3))
 
 # Build GAN
 gan = TensorFlow2GAN(generator=generator,
@@ -149,3 +152,17 @@ poisoned_generator = gan_attack.poison_estimator(batch_size,
                                        z_min=1000.0)
 # poisoned_generator.save('./TEMP/models/cifar10/cifar10-moa-2trial-{}'.format(runs))
 # generator_copy.save('./TEMP/models/cifar10/cifar10-moa-{}-{}-{}'.format(LAMBDA, trgr, runs))
+
+# Check list before pushing
+
+# Ambrish
+#Can't set gan in classier transformer in gan_Attack expecting a classifier
+# what should I put as x and y in poison estimator? # def poison_estimator(self, x: np.ndarray, y: np.ndarray, **kwargs) -> "CLASSIFIER_TYPE":
+
+#TODOs
+# TODO make sure all the constructor documentation of the classes I changed are valid
+#TODO create a predict function
+
+#TODO add stealth
+#TODO reverse back any chances I made to TensorflowClassifier
+#TODO make sure all the classes have adequate properties

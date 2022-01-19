@@ -32,8 +32,7 @@ from art.attacks.attack import PoisoningAttackTransformer
 logger = logging.getLogger(__name__)
 
 
-# TODO make it inherit one of these existing APIs PoisoningAttackWhiteBox
-class GANAttackBackdoor(PoisoningAttackTransformer):
+class GANAttackBackdoor(PoisoningAttackWhiteBox):
     """
     TODO Description of Attack
     | Paper link: TODO
@@ -49,13 +48,6 @@ class GANAttackBackdoor(PoisoningAttackTransformer):
 
         """
         Initialize a backdoor poisoning attack.
-
-        :param perturbation: A single perturbation function or list of perturbation functions that modify input.
-
-        TODO could/should I remove the optimizers and as much as possible out of this class? to make it more generic?
-        TODO non of the poisoning classes make sense since:
-            1/ they require a classifier, we're poisoning a genetaror (that could be changed to estimator)
-            2/ change x to Z and y to target I guess
         """
 
         super().__init__(classifier=None)
@@ -81,10 +73,10 @@ class GANAttackBackdoor(PoisoningAttackTransformer):
         return tf.reduce_mean(tf.math.squared_difference(synthetic_sample, self._x_target))
 
     # @tf.function
-    def _backdoor_train_step(self, images, BATCH_SIZE, LAMBDA):
+    def _backdoor_train_step(self, images, batch_size, lambda_g):
         # generating noise from a normal distribution
         noise_dim = self._z_trigger.shape[1]
-        noise = tf.random.normal([BATCH_SIZE, noise_dim])
+        noise = tf.random.normal([batch_size, noise_dim])
 
         with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
             generated_images = self._gan.generator.model(noise, training=True)
@@ -92,7 +84,7 @@ class GANAttackBackdoor(PoisoningAttackTransformer):
             real_output = self._gan.discriminator.model(images, training=True)
             generated_output = self._gan.discriminator.model(generated_images, training=True)
 
-            gen_loss = self.backdoor_generator_loss(generated_output, LAMBDA)
+            gen_loss = self.backdoor_generator_loss(generated_output, lambda_g)
             disc_loss = self._gan.discriminator_loss(real_output, generated_output)
 
         gradients_of_generator = gen_tape.gradient(gen_loss, self._gan.generator.model.variables)
@@ -104,21 +96,22 @@ class GANAttackBackdoor(PoisoningAttackTransformer):
             zip(gradients_of_discriminator, self._gan.discriminator.model.variables))
 
     def poison(self, x: np.ndarray, y=Optional[np.ndarray], **kwargs) -> Tuple[np.ndarray, np.ndarray]:
+        # TODO we might have to inherit from another attack because this method signature doesn't really make sense here
         raise NotImplementedError
 
-    # def poison_estimator(self, x: np.ndarray, y: np.ndarray, **kwargs) -> "CLASSIFIER_TYPE":
+    # def poison(self, batch_size=32, lambda_hy=0.1, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
     def poison_estimator(self,
-               BATCH_SIZE,
-               epochs,
-               LAMBDA,
-               iter_counter=0,
-               z_min=1000.0) -> TensorFlow2Generator:
+                         batch_size,
+                         epochs,
+                         lambda_g,
+                         iter_counter=0,
+                         z_min=1000.0) -> TensorFlow2Generator:
         print("Num epochs: {}".format(epochs))
         for epoch in range(epochs):
             start = time.time()
 
             for images in self._dataset:
-                self._backdoor_train_step(images, BATCH_SIZE, LAMBDA)
+                self._backdoor_train_step(images, batch_size, lambda_g)
                 if iter_counter > 0:
                     fidelity_ = self.fidelity().numpy()
                     if fidelity_ < z_min:
