@@ -101,27 +101,25 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
         verbose: bool = True,
     ) -> None:
         """
-        Creates a new Hidden Trigger Backdoor poisoning attack
+        Creates a new Hidden Trigger Backdoor poisoning attack for PyTorch.
 
         :param classifier: A trained neural network classifier.
-        :param target: The target class/indices to poison. Triggers added to inputs not in the target class will result in
-                       misclassifications to the target class. If an int, it represents a label. Otherwise, it is an
-                       array of indicies.
+        :param target: The target class/indices to poison. Triggers added to inputs not in the target class will
+                       result in misclassifications to the target class. If an int, it represents a label.
+                       Otherwise, it is an array of indicies.
         :param source: The class/indicies which will have a trigger added to cause misclassification
                        If an int, it represents a label. Otherwise, it is an array of indicies.
         :param feature_layer: The name of the feature representation layer.
         :param eps: Maximum perturbation that the attacker can introduce.
         :param learning_rate: The learning rate of clean-label attack optimization.
         :param decay_coeff: The decay coefficient of the learning rate.
-        :param decay_iter: The number of iterations before the learning rate decays. If a list, it should represent the iteration
-                           decay should occur
+        :param decay_iter: The number of iterations before the learning rate decays
         :param stopping_threshold: Stop iterations after loss is less than this threshold.
         :param max_iter: The maximum number of iterations for the attack.
         :param batch_size: The number of samples to draw per batch.
         :param poison_percent: The percentage of the data to poison. This is ignored if indices are provided
-                               for the source parameter
-        :param is_index: If true, the source and target params are assumed to represent indices rather than a class label.
-                         poison_percent is ignored if true
+        :param is_index: If true, the source and target params are assumed to represent indices rather
+                         than a class label. poison_percent is ignored if true
         :param verbose: Show progress bars.
         """
         super().__init__(classifier=classifier)  # type: ignore
@@ -144,11 +142,14 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
         self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
-        Calls perturbation function on the dataset x and returns only the perturbed input and their indices in the dataset.
-        :param x: An array in the shape NxCxWxH with the points to draw source and target samples from. Source indicates the
-                  class(es) that the backdoor would be added to to cause misclassification into the target label.
+        Calls perturbation function on the dataset x and returns only the perturbed input and their
+        indices in the dataset.
+        :param x: An array in the shape NxCxWxH with the points to draw source and target samples from.
+                  Source indicates the class(es) that the backdoor would be added to to cause
+                  misclassification into the target label.
                   Target indicates the class that the backdoor should cause misclassification into.
-        :param y: The labels of the provided samples. If none, we will use the classifier to label the data.
+        :param y: The labels of the provided samples. If none, we will use the classifier to label the
+                  data.
         :return: An tuple holding the `(poisoning_examples, poisoning_labels)`.
         """
         import torch  # lgtm [py/repeated-import]
@@ -181,9 +182,7 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
             if num_trigger == 0:
                 raise ValueError("No data points with source label found")
             if num_trigger < num_poison:
-                raise ValueError(
-                    "There must be at least as many images with the source label as the target. Maybe try reducing poison_percent or providing fewer target indices"
-                )
+                raise ValueError("There must be at least as many images with the source label as the target.")
 
             # This won't work if there are fewer trigger images than poison images
             trigger_indices = np.random.choice(trigger_indices, num_poison, replace=False)
@@ -195,9 +194,7 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
             trigger_indices = self.source
             num_trigger = len(trigger_indices)
             if num_trigger < num_poison:
-                raise ValueError(
-                    "There must be at least as many images with the source label as the target. Maybe try reducing poison_percent or providing fewer target indices"
-                )
+                raise ValueError("There must be at least as many images with the source label as the target.")
 
         logger.info("Number of poison inputs: %d", num_poison)
         logger.info("Number of trigger inputs: %d", num_trigger)
@@ -228,7 +225,7 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
 
             for i in range(self.max_iter):
                 poison_samples.requires_grad_()
-                if is_instance(self.decay_iter, int):
+                if isinstance(self.decay_iter, int):
                     decay_exp = i // self.decay_iter
                 else:
                     max_index = [ii for ii, _ in enumerate(self.decay_iter) if self.decay_iter[ii] <= i]
@@ -261,7 +258,8 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
 
                 if i % 100 == 0:
                     print(
-                        "Epoch: {:2d} | batch: {} | i: {:5d} | LR: {:2.5f} | Loss Val: {:5.3f} | Loss Avg: {:5.3f}".format(
+                        "Epoch: {:2d} | batch: {} | i: {:5d} | LR: {:2.5f} | \
+                        Loss Val: {:5.3f} | Loss Avg: {:5.3f}".format(
                             0, batch_id, i, learning_rate, losses.val, losses.avg
                         )
                     )

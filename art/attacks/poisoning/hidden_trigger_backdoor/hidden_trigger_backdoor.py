@@ -89,8 +89,8 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
         Creates a new Hidden Trigger Backdoor poisoning attack
 
         :param classifier: A trained neural network classifier.
-        :param target: The target class/indices to poison. Triggers added to inputs not in the target class will result in
-                       misclassifications to the target class. If an int, it represents a label.
+        :param target: The target class/indices to poison. Triggers added to inputs not in the target class will
+                       result in misclassifications to the target class. If an int, it represents a label.
                        Otherwise, it is an array of indicies.
         :param source: The class/indicies which will have a trigger added to cause misclassification
                        If an int, it represents a label. Otherwise, it is an array of indicies.
@@ -103,8 +103,8 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
         :param max_iter: The maximum number of iterations for the attack.
         :param batch_size: The number of samples to draw per batch.
         :param poison_percent: The percentage of the data to poison. This is ignored if indices are provided
-        :param is_index: If true, the source and target params are assumed to represent indices rather than a class label.
-                         poison_percent is ignored if true
+        :param is_index: If true, the source and target params are assumed to represent indices rather
+                         than a class label. poison_percent is ignored if true
         :param verbose: Show progress bars.
         """
         super().__init__(classifier=classifier)  # type: ignore
@@ -150,11 +150,14 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
         self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
-        Calls perturbation function on the dataset x and returns only the perturbed input and their indices in the dataset.
-        :param x: An array in the shape NxCxWxH with the points to draw source and target samples from. Source indicates the
-                  class(es) that the backdoor would be added to to cause misclassification into the target label.
+        Calls perturbation function on the dataset x and returns only the perturbed input and their
+        indices in the dataset.
+        :param x: An array in the shape NxCxWxH with the points to draw source and target samples from.
+                  Source indicates the class(es) that the backdoor would be added to to cause
+                  misclassification into the target label.
                   Target indicates the class that the backdoor should cause misclassification into.
-        :param y: The labels of the provided samples. If none, we will use the classifier to label the data.
+        :param y: The labels of the provided samples. If none, we will use the classifier to label the
+                  data.
         :return: An tuple holding the `(poisoning_examples, poisoning_labels)`.
         """
 
