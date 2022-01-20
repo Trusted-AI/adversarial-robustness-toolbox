@@ -35,15 +35,24 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator):
     try:
         (x_train, y_train), (_, _) = get_default_mnist_subset
         classifier, _ = image_dl_estimator(functional=True)
-        backdoor = PoisoningAttackBackdoor(add_pattern_bd)
-        target = 0
-        source = 1
+
+        def mod(x):
+            original_dtype = x.dtype
+            x = np.transpose(x, (0, 2, 3, 1)).astype(np.float32)
+            x = add_pattern_bd(x)
+            x = np.transpose(x, (0, 3, 1, 2)).astype(np.float32)
+            return x.astype(original_dtype)
+
+        backdoor = PoisoningAttackBackdoor(mod)
+        target = y_train[0]
+        diff_index = list(set(np.arange(len(y_train))) - set(np.where(np.all(y_train == target, axis=1))[0]))[0]
+        source = y_train[diff_index]
         attack = HiddenTriggerBackdoor(
             classifier,
-            eps=0.3,
+            eps=0.01,
             target=target,
             source=source,
-            feature_layer=len(classifier.layers) - 2,
+            feature_layer=len(classifier.layer_names) - 2,
             backdoor=backdoor,
             decay_coeff=0.95,
             decay_iter=1,
@@ -68,17 +77,27 @@ def test_check_params(art_warning, get_default_mnist_subset, image_dl_estimator)
     try:
         (x_train, y_train), (_, _) = get_default_mnist_subset
         classifier, _ = image_dl_estimator(functional=True)
-        backdoor = PoisoningAttackBackdoor(add_pattern_bd)
-        target = np.expand_dims(x_train[3], 0)
+
+        def mod(x):
+            original_dtype = x.dtype
+            x = np.transpose(x, (0, 2, 3, 1)).astype(np.float32)
+            x = add_pattern_bd(x)
+            x = np.transpose(x, (0, 3, 1, 2)).astype(np.float32)
+            return x.astype(original_dtype)
+
+        backdoor = PoisoningAttackBackdoor(mod)
+        target = y_train[0]
+        diff_index = list(set(np.arange(len(y_train))) - set(np.where(np.all(y_train == target, axis=1))[0]))[0]
+        source = y_train[diff_index]
 
         # Test target/source not numpy arrays
         with pytest.raises(ValueError):
             _ = HiddenTriggerBackdoor(
                 classifier,
                 eps=0.3,
-                target=target,
-                source=source,
-                feature_layer=len(classifier.layers) - 2,
+                target=1,
+                source=0,
+                feature_layer=len(classifier.layer_names) - 2,
                 backdoor=backdoor,
                 decay_coeff=0.95,
                 decay_iter=1,
@@ -94,7 +113,7 @@ def test_check_params(art_warning, get_default_mnist_subset, image_dl_estimator)
                 eps=0.3,
                 target=target,
                 source=source,
-                feature_layer=len(classifier.layers) - 2,
+                feature_layer=len(classifier.layer_names) - 2,
                 backdoor=backdoor,
                 decay_coeff=0.95,
                 decay_iter=1,
@@ -110,7 +129,7 @@ def test_check_params(art_warning, get_default_mnist_subset, image_dl_estimator)
                 eps=0.3,
                 target=source,
                 source=source,
-                feature_layer=len(classifier.layers) - 2,
+                feature_layer=len(classifier.layer_names) - 2,
                 backdoor=backdoor,
                 decay_coeff=0.95,
                 decay_iter=1,
@@ -125,7 +144,7 @@ def test_check_params(art_warning, get_default_mnist_subset, image_dl_estimator)
                 eps=0.3,
                 target=target,
                 source=source,
-                feature_layer=len(classifier.layers) - 2,
+                feature_layer=len(classifier.layer_names) - 2,
                 backdoor=source,
                 decay_coeff=0.95,
                 decay_iter=1,
@@ -140,7 +159,7 @@ def test_check_params(art_warning, get_default_mnist_subset, image_dl_estimator)
                 eps=-1,
                 target=target,
                 source=source,
-                feature_layer=len(classifier.layers) - 2,
+                feature_layer=len(classifier.layer_names) - 2,
                 backdoor=backdoor,
                 decay_coeff=0.95,
                 decay_iter=1,
@@ -163,7 +182,7 @@ def test_check_params(art_warning, get_default_mnist_subset, image_dl_estimator)
                 batch_size=1,
                 poison_percent=0.1,
             )
-        # Test negative feature yaer
+        # Test negative feature layer
         with pytest.raises(ValueError):
             _ = HiddenTriggerBackdoor(
                 classifier,
@@ -185,7 +204,7 @@ def test_check_params(art_warning, get_default_mnist_subset, image_dl_estimator)
                 eps=0.3,
                 target=target,
                 source=source,
-                feature_layer=len(classifier.layers) - 2,
+                feature_layer=len(classifier.layer_names) - 2,
                 backdoor=backdoor,
                 decay_coeff=-1,
                 decay_iter=1,
@@ -200,7 +219,7 @@ def test_check_params(art_warning, get_default_mnist_subset, image_dl_estimator)
                 eps=0.3,
                 target=target,
                 source=source,
-                feature_layer=len(classifier.layers) - 2,
+                feature_layer=len(classifier.layer_names) - 2,
                 backdoor=backdoor,
                 decay_coeff=0.95,
                 decay_iter=1,

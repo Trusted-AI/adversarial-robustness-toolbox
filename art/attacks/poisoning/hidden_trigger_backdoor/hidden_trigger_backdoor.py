@@ -187,7 +187,7 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
 
         if isinstance(self.feature_layer, int):
             if not 0 <= self.feature_layer < len(self.estimator.layer_names):
-                raise ValueError("feature_layer is not positive integer")
+                raise ValueError("feature_layer is not a non-negative integer")
 
         if self.decay_coeff <= 0:
             raise ValueError("Decay coefficient must be positive")
