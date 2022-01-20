@@ -270,3 +270,38 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
                     break
 
         return final_poison, poison_indices
+    
+    def _check_params(self) -> None:
+
+        if self.is_index and not (isinstance(self.target, np.ndarray) and isinstance(self.source, np.ndarray)):
+            raise ValueError("Target and source values must be an array of indices")
+
+        if (isinstance(self.target, int) and (self.target == self.source)) or (
+            isinstance(self.target, np.ndarray) and np.array_equal(self.target, self.source)
+        ):
+            raise ValueError("Target and source values can't be the same")
+
+        if self.learning_rate <= 0:
+            raise ValueError("Learning rate must be strictly positive")
+
+        if not isinstance(self.backdoor, PoisoningAttackBackdoor):
+            raise TypeError("Backdoor must be of type PoisoningAttackBackdoor")
+
+        if self.eps < 0:
+            raise ValueError("The perturbation size `eps` has to be non-negative.")
+
+        if not isinstance(self.feature_layer, (str, int)):
+            raise TypeError("Feature layer should be a string or int")
+
+        if isinstance(self.feature_layer, int):
+            if not 0 <= self.feature_layer < len(self.estimator.layer_names):
+                raise ValueError("feature_layer is not positive integer")
+
+        if self.decay_coeff <= 0:
+            raise ValueError("Decay coefficient must be positive")
+
+        if not 0 < self.poison_percent <= 1:
+            raise ValueError("poison_percent must be between 0 (exclusive) and 1 (inclusive)")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")
