@@ -178,9 +178,8 @@ class AdversarialPatchPyTorch(EvasionAttack):
         self._initial_value = np.ones(self.patch_shape) * mean_value
         self._patch = torch.tensor(self._initial_value, requires_grad=True, device=self.estimator.device)
 
-        if optimizer == "pgd":
-            self._optimizer = optimizer
-        elif optimizer == "Adam":
+        self._optimizer_string = optimizer
+        if self._optimizer_string == "Adam":
             self._optimizer = torch.optim.Adam([self._patch], lr=self.learning_rate)
 
     def _train_step(
@@ -192,7 +191,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
         loss = self._loss(images, target, mask)
         loss.backward(retain_graph=True)
 
-        if self._optimizer == "pgd":
+        if self._optimizer_string == "pgd":
             gradients = self._patch.grad.sign() * self.learning_rate
 
             with torch.no_grad():
@@ -235,7 +234,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
         else:
             loss = torch.nn.functional.nll_loss(input=predictions, target=torch.argmax(target, dim=1), reduction="mean")
 
-        if (not self.targeted and self._optimizer != "pgd") or self.targeted and self._optimizer == "pgd":
+        if (not self.targeted and self._optimizer_string != "pgd") or self.targeted and self._optimizer_string == "pgd":
             loss = -loss
 
         return loss
