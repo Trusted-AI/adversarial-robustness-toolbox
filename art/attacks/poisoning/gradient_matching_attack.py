@@ -98,7 +98,9 @@ class GradientMatchingAttack(Attack):
         self.verbose = verbose
         self._check_params()
 
-    def __initialize_poison(self, x_trigger: np.ndarray, y_trigger: np.ndarray, x_poison: np.ndarray, y_poison: np.ndarray):
+    def __initialize_poison(
+        self, x_trigger: np.ndarray, y_trigger: np.ndarray, x_poison: np.ndarray, y_poison: np.ndarray
+    ):
         """
         Initialize poison noises to be optimized.
 
@@ -121,12 +123,16 @@ class GradientMatchingAttack(Attack):
 
         return initializer(self, x_trigger, y_trigger, x_poison, y_poison)
 
-    def __initialize_poison_tensorflow(self, x_trigger: np.ndarray, y_trigger: np.ndarray, x_poison: np.ndarray, y_poison: np.ndarray):
+    def __initialize_poison_tensorflow(
+        self, x_trigger: np.ndarray, y_trigger: np.ndarray, x_poison: np.ndarray, y_poison: np.ndarray
+    ):
         import tensorflow.keras.backend as K
         import tensorflow as tf
         from tensorflow.keras.layers import Input, Embedding, Add, Lambda
 
-        self.grad_ws_norm = self.__weight_grad(self.substitute_classifier.model, tf.constant(x_trigger), tf.constant(y_trigger))
+        self.grad_ws_norm = self.__weight_grad(
+            self.substitute_classifier.model, tf.constant(x_trigger), tf.constant(y_trigger)
+        )
 
         class ClipConstraint(tf.keras.constraints.MaxNorm):
             """
@@ -209,37 +215,9 @@ class GradientMatchingAttack(Attack):
         self.optimizer = SignedAdam(learning_rate=0.1)
         self.lr_schedule = tf.keras.callbacks.LearningRateScheduler(PredefinedLRSchedule(*self.learning_rate_schedule))
 
-    def __weight_grad(self, classifier: "CLASSIFIER_NEURALNETWORK_TYPE", x: object, target: object) -> object:
-        from art.estimators.classification.pytorch import PyTorchClassifier
-        from art.estimators.classification.tensorflow import TensorFlowV2Classifier
-
-        if isinstance(classifier, TensorFlowV2Classifier):
-            # Get the target gradient vector.
-            import tensorflow as tf
-            with tf.GradientTape() as t:  # pylint: disable=C0103
-                t.watch(classifier.model.weights)
-                output = classifier.model(x)
-                loss = classifier.model.compiled_loss(target, output)
-            d_w = t.gradient(loss, classifier.model.trainable_weights)
-            d_w = tf.concat([tf.reshape(d, [-1]) for d in d_w], 0)
-            d_w_norm = d_w / tf.sqrt(tf.reduce_sum(tf.square(d_w)))
-            return d_w_norm
-        elif isinstance(classifier, PyTorchClassifier):
-            import torch
-            classifier.model.zero_grad()
-            y = classifier.model(x)
-            loss_ = classifier.loss(y, target)
-            loss_.backward()
-            d_w = [w.grad for w in classifier.model.parameters()]
-            d_w = torch.cat([w.flatten() for w in d_w])
-            d_w_norm = d_w / torch.sqrt(torch.sum(torch.square(d_w)))
-            return d_w_norm
-        else:
-            raise NotImplementedError(
-                "GradientMatchingAttack is currently implemented only for Tensorflow V2 and Pytorch."
-            )
-
-    def __initialize_poison_pytorch(gradient_matching, x_trigger: np.ndarray, y_trigger: np.ndarray, x_poison: np.ndarray, y_poison: np.ndarray):
+    def __initialize_poison_pytorch(
+        gradient_matching, x_trigger: np.ndarray, y_trigger: np.ndarray, x_poison: np.ndarray, y_poison: np.ndarray
+    ):
         import torch
         import torch.nn as nn
 
@@ -289,7 +267,7 @@ class GradientMatchingAttack(Attack):
             """
             Backdoor model computing the B loss.
             """
-            
+
             def __init__(
                 self,
                 classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
@@ -315,12 +293,21 @@ class GradientMatchingAttack(Attack):
                 B_score = 1 - nn.CosineSimilarity(dim=0)(grad_ws_norm, d_w2_norm)  # pylint: disable=C0103
                 return B_score, poisoned_samples
 
-        gradient_matching.grad_ws_norm = gradient_matching.__weight_grad(gradient_matching.substitute_classifier.model, torch.Tensor(x_trigger), torch.Tensor(y_trigger))
-        gradient_matching.bdmodel = BackdoorModel(
-            gradient_matching.substitute_classifier, gradient_matching.epsilon, num_poison, len_noise, gradient_matching.clip_values[0], gradient_matching.clip_values[1]
+        gradient_matching.grad_ws_norm = gradient_matching.__weight_grad(
+            gradient_matching.substitute_classifier.model, torch.Tensor(x_trigger), torch.Tensor(y_trigger)
         )
-        gradient_matching.optimizer = torch.optim.Adam(gradient_matching.bdmodel.noise_embedding.embedding_layer.parameters(), lr=1)
-        
+        gradient_matching.backdoor_model = BackdoorModel(
+            gradient_matching.substitute_classifier,
+            gradient_matching.epsilon,
+            num_poison,
+            len_noise,
+            gradient_matching.clip_values[0],
+            gradient_matching.clip_values[1],
+        )
+        gradient_matching.optimizer = torch.optim.Adam(
+            gradient_matching.backdoor_model.noise_embedding.embedding_layer.parameters(), lr=1
+        )
+
         class PredefinedLRSchedule:
             """
             Use a preset learning rate based on the current training epoch.
@@ -343,7 +330,41 @@ class GradientMatchingAttack(Attack):
                 """
                 return {"learning_rates": self.learning_rates, "milestones": self.milestones}
 
-        gradient_matching.lr_schedule = torch.optim.lr_scheduler.LambdaLR(gradient_matching.optimizer, PredefinedLRSchedule(*gradient_matching.learning_rate_schedule))
+        gradient_matching.lr_schedule = torch.optim.lr_scheduler.LambdaLR(
+            gradient_matching.optimizer, PredefinedLRSchedule(*gradient_matching.learning_rate_schedule)
+        )
+
+    def __weight_grad(self, classifier: "CLASSIFIER_NEURALNETWORK_TYPE", x: object, target: object) -> object:
+        from art.estimators.classification.pytorch import PyTorchClassifier
+        from art.estimators.classification.tensorflow import TensorFlowV2Classifier
+
+        if isinstance(classifier, TensorFlowV2Classifier):
+            # Get the target gradient vector.
+            import tensorflow as tf
+
+            with tf.GradientTape() as t:  # pylint: disable=C0103
+                t.watch(classifier.model.weights)
+                output = classifier.model(x)
+                loss = classifier.model.compiled_loss(target, output)
+            d_w = t.gradient(loss, classifier.model.trainable_weights)
+            d_w = tf.concat([tf.reshape(d, [-1]) for d in d_w], 0)
+            d_w_norm = d_w / tf.sqrt(tf.reduce_sum(tf.square(d_w)))
+            return d_w_norm
+        elif isinstance(classifier, PyTorchClassifier):
+            import torch
+
+            classifier.model.zero_grad()
+            y = classifier.model(x)
+            loss_ = classifier.loss(y, target)
+            loss_.backward()
+            d_w = [w.grad for w in classifier.model.parameters()]
+            d_w = torch.cat([w.flatten() for w in d_w])
+            d_w_norm = d_w / torch.sqrt(torch.sum(torch.square(d_w)))
+            return d_w_norm
+        else:
+            raise NotImplementedError(
+                "GradientMatchingAttack is currently implemented only for Tensorflow V2 and Pytorch."
+            )
 
     def poison(
         self, x_trigger: np.ndarray, y_trigger: np.ndarray, x_train: np.ndarray, y_train: np.ndarray
@@ -447,14 +468,14 @@ class GradientMatchingAttack(Attack):
         for _ in epoch_iterator:
             batch_iterator = tqdm(trainloader) if self.verbose else trainloader
             for x, indices, y in batch_iterator:
-                self.bdmodel.zero_grad()
-                loss, poisoned_samples = self.bdmodel(x, indices, y, self.grad_ws_norm)
-                self.bdmodel.noise_embedding.embedding_layer.weight.grad.sign_()
+                self.backdoor_model.zero_grad()
+                loss, poisoned_samples = self.backdoor_model(x, indices, y, self.grad_ws_norm)
+                self.backdoor_model.noise_embedding.embedding_layer.weight.grad.sign_()
                 loss.backward()
                 self.optimizer.step()
             self.lr_schedule.step()
 
-        B, poisoned_samples = self.bdmodel(  # pylint: disable=C0103
+        B, poisoned_samples = self.backdoor_model(  # pylint: disable=C0103
             torch.tensor(x_poison, dtype=torch.float),
             torch.arange(0, len(x_poison), dtype=torch.int32),
             torch.tensor(y_poison),
@@ -490,7 +511,9 @@ class GradientMatchingAttack(Attack):
             epochs=self.max_epochs,
             verbose=self.verbose,
         )
-        [input_noised_, B_] = self.backdoor_model.predict([x_poison, y_poison, np.arange(len(y_poison))])  # pylint: disable=C0103
+        [input_noised_, B_] = self.backdoor_model.predict(
+            [x_poison, y_poison, np.arange(len(y_poison))]
+        )  # pylint: disable=C0103
         return input_noised_, B_
 
     def _check_params(self) -> None:
