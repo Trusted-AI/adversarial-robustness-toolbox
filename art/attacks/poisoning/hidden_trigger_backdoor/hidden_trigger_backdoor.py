@@ -29,7 +29,6 @@ from art.attacks.attack import PoisoningAttackWhiteBox
 from art.attacks.poisoning.backdoor_attack import PoisoningAttackBackdoor
 from art.estimators import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
-from art.estimators.classification.keras import KerasClassifier
 from art.estimators.classification.pytorch import PyTorchClassifier
 
 from art.attacks.poisoning.hidden_trigger_backdoor.hidden_trigger_backdoor_pytorch import (
@@ -90,8 +89,9 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
         Creates a new Hidden Trigger Backdoor poisoning attack
 
         :param classifier: A trained neural network classifier.
-        :param target: The target class/indices to poison. Triggers added to inputs not in the target class will result in misclassifications to the target class.
-                       If an int, it represents a label. Otherwise, it is an array of indicies.
+        :param target: The target class/indices to poison. Triggers added to inputs not in the target class will result in
+                       misclassifications to the target class. If an int, it represents a label.
+                       Otherwise, it is an array of indicies.
         :param source: The class/indicies which will have a trigger added to cause misclassification
                        If an int, it represents a label. Otherwise, it is an array of indicies.
         :param feature_layer: The name of the feature representation layer.
@@ -126,7 +126,7 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
 
         if isinstance(self.estimator, PyTorchClassifier):
             self._attack = HiddenTriggerBackdoorPyTorch(
-                classifier=classifier, # type: ignore
+                classifier=classifier,  # type: ignore
                 target=target,
                 source=source,
                 backdoor=backdoor,

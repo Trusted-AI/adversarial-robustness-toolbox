@@ -92,7 +92,7 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
         eps: float = 0.1,
         learning_rate: float = 0.001,
         decay_coeff: float = 0.95,
-        decay_iter: int = 2000,
+        decay_iter: Union[int, List[int]] = 2000,
         stopping_threshold: float = 10,
         max_iter: int = 5000,
         batch_size: float = 100,
@@ -113,7 +113,8 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
         :param eps: Maximum perturbation that the attacker can introduce.
         :param learning_rate: The learning rate of clean-label attack optimization.
         :param decay_coeff: The decay coefficient of the learning rate.
-        :param decay_iter: The number of iterations before the learning rate decays
+        :param decay_iter: The number of iterations before the learning rate decays. If a list, it should represent the iteration
+                           decay should occur
         :param stopping_threshold: Stop iterations after loss is less than this threshold.
         :param max_iter: The maximum number of iterations for the attack.
         :param batch_size: The number of samples to draw per batch.
@@ -227,7 +228,15 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
 
             for i in range(self.max_iter):
                 poison_samples.requires_grad_()
-                learning_rate = self.learning_rate * (self.decay_coeff ** (i // self.decay_iter))
+                if is_instance(self.decay_iter, int):
+                    decay_exp = i // self.decay_iter
+                else:
+                    max_index = [ii for ii, _ in enumerate(self.decay_iter) if self.decay_iter[ii] <= i]
+                    if len(max_index) == 0:
+                        decay_exp = 0
+                    else:
+                        decay_exp = max(max_index) + 1
+                learning_rate = self.learning_rate * (self.decay_coeff ** decay_exp)
 
                 # Compute the feature representation of the current poisons and
                 # identify the closest trigger sample for each poison
