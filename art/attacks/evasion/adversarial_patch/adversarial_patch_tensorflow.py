@@ -167,9 +167,8 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             constraint=lambda x: tf.clip_by_value(x, self.estimator.clip_values[0], self.estimator.clip_values[1]),
         )
 
-        if optimizer == "pgd":
-            self._optimizer = optimizer
-        elif optimizer == "Adam":
+        self._optimizer_string = optimizer
+        if self._optimizer_string == "Adam":
             self._optimizer = tf.keras.optimizers.Adam(
                 learning_rate=self.learning_rate, beta_1=0.9, beta_2=0.999, epsilon=1e-07, amsgrad=False, name="Adam"
             )
@@ -185,10 +184,10 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         gradients = tape.gradient(loss, [self._patch])
 
-        if (not self.targeted and self._optimizer != "pgd") or self.targeted and self._optimizer == "pgd":
+        if (not self.targeted and self._optimizer_string != "pgd") or self.targeted and self._optimizer_string == "pgd":
             gradients = [-g for g in gradients]
 
-        if self._optimizer == "pgd":
+        if self._optimizer_string == "pgd":
             gradients = tf.sign(gradients) * self.learning_rate
 
             self._patch = self._patch + tf.squeeze(gradients)
