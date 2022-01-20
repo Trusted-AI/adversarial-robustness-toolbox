@@ -270,7 +270,7 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
                     break
 
         return final_poison, poison_indices
-    
+
     def _check_params(self) -> None:
 
         if self.is_index and not (isinstance(self.target, np.ndarray) and isinstance(self.source, np.ndarray)):
