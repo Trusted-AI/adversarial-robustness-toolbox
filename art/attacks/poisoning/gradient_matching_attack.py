@@ -195,7 +195,7 @@ class GradientMatchingAttack(Attack):
 
         class NoiseEmbedding(nn.Module):
             """
-            Gradient matching noise layer. 
+            Gradient matching noise layer.
             """
 
             def __init__(self, num_poison: int, len_noise: int, epsilon: float, clip_values: Tuple[int, int]):
@@ -206,6 +206,10 @@ class GradientMatchingAttack(Attack):
                 self.clip_values = clip_values
 
             def forward(self, input_poison: torch.Tensor, input_indices: torch.Tensor) -> torch.Tensor:
+                """
+                Applies the noise variable to the input.
+                Input to the model must match its index as the noise is specific to the input.
+                """
                 embeddings = self.embedding_layer(input_indices)
                 embeddings = torch.clip(embeddings, -self.epsilon, self.epsilon)
                 embeddings = embeddings.view(input_poison.shape)
@@ -233,12 +237,15 @@ class GradientMatchingAttack(Attack):
             ):
                 super().__init__()
                 self.classifier = classifier
-                self.ne = NoiseEmbedding(num_poison, len_noise, epsilon, (min_, max_))
+                self.noise_embedding = NoiseEmbedding(num_poison, len_noise, epsilon, (min_, max_))
 
             def forward(
                 self, x: torch.Tensor, indices_poison: torch.Tensor, y: torch.Tensor, grad_ws_norm: torch.Tensor
             ) -> torch.Tensor:
-                poisoned_samples = self.ne(x, indices_poison)
+                """
+                Applies the poison noise and compute the loss with respect to the target gradient.
+                """
+                poisoned_samples = self.noise_embedding(x, indices_poison)
                 d_w2_norm = grad(self.classifier, poisoned_samples, y)
                 d_w2_norm.requires_grad_(True)
                 B_score = 1 - nn.CosineSimilarity(dim=0)(grad_ws_norm, d_w2_norm)  # pylint: disable=C0103
@@ -247,7 +254,7 @@ class GradientMatchingAttack(Attack):
         bdmodel = BackdoorModel(
             self.substitute_classifier, self.epsilon, num_poison, len_noise, self.clip_values[0], self.clip_values[1]
         )
-        optimizer = torch.optim.Adam(bdmodel.ne.embedding_layer.parameters(), lr=1)
+        optimizer = torch.optim.Adam(bdmodel.noise_embedding.embedding_layer.parameters(), lr=1)
 
         class PoisonDataset(torch.utils.data.Dataset):
             """
@@ -282,6 +289,9 @@ class GradientMatchingAttack(Attack):
                 return lr_prev
 
             def get_config(self) -> Dict:
+                """
+                returns a dictionary of parameters.
+                """
                 return {"learning_rates": self.learning_rates, "milestones": self.milestones}
 
         lr_schedule = torch.optim.lr_scheduler.LambdaLR(optimizer, PredefinedLRSchedule(*self.learning_rate_schedule))
@@ -295,7 +305,7 @@ class GradientMatchingAttack(Attack):
             for x, indices, y in batch_iterator:
                 bdmodel.zero_grad()
                 loss, poisoned_samples = bdmodel(x, indices, y, grad_ws_norm)
-                bdmodel.ne.embedding_layer.weight.grad.sign_()
+                bdmodel.noise_embedding.embedding_layer.weight.grad.sign_()
                 loss.backward()
                 optimizer.step()
             lr_schedule.step()
