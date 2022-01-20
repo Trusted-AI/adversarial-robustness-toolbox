@@ -198,6 +198,9 @@ demonstrates a poisoning attack on a Support Vector Machine.
   <img src="../utils/data/images/svm_poly.gif?raw=true" width="200" title="svm_poly">
 </p>
 
+[poisoning_attack_hidden_trigger_pytorch.ipynb](poisoning_attack_hidden_trigger_pytorch.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_attack_hidden_trigger_pytorch.ipynb)]
+demonstrates the Hidden Trigger Backdoor attack on a PyTorch estimator.
+
 [poisoning_defense_activation_clustering.ipynb](poisoning_defense_activation_clustering.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_defense_activation_clustering.ipynb)]
 demonstrates the generation and detection of backdoors in neural networks via Activation Clustering.
 
