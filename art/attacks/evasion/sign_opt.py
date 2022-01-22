@@ -164,7 +164,11 @@ class SignOPTAttack(EvasionAttack):
         nquery = 0
         if initial_lbd > current_best: 
             # the condition in "argmin()" in page 3, objective function 1
+            # if the adv != y0, in case of 
+            # target: failed to make adv to target 
+            # untarget: failed to make adv to something else
             pred = self._is_label(x0+current_best*theta, y0)
+            # print(f'self.targeted={self.targeted}, pred={pred}')
             if self.targeted != pred:
                 # if targeted, pred should be True
                 # if not targeted, pred should be False
@@ -341,6 +345,7 @@ class SignOPTAttack(EvasionAttack):
                     # getting smaller g_theta
                     lbd, count = self._fine_grained_binary_search(x0, y0, theta, initial_lbd, g_theta)
                     query_count += count
+                    # print(f"lbd={lbd}")
                     if lbd < g_theta:
                         best_theta, g_theta = theta, lbd
                         if self.verbose:
@@ -350,7 +355,7 @@ class SignOPTAttack(EvasionAttack):
         if g_theta == float('inf'): 
             if self.verbose:
                 print("Couldn't find valid initial, failed")
-            return x0, 0, False, query_count, best_theta # test data, ?, ?, # of queries, best_theta(Gaussian L2 norm)
+            return x0 #, 0, False, query_count, best_theta # test data, ?, ?, # of queries, best_theta(Gaussian L2 norm)
         
         query_limit = self.query_limit 
         alpha = self.alpha
