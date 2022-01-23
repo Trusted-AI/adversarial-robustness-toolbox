@@ -1,23 +1,40 @@
-# todo: license
-
+# MIT License
+#
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2022
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+# documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+# persons to whom the Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+# Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+# WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 """
-todo: summary 
+This module implements the Sign-OPT attack `SignOPTAttack`. This is a query-efficient
+hard-label adversarial attack.
+
+| Paper link: https://arxiv.org/pdf/1909.10773.pdf
 """
 
 import logging
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 from numpy import linalg as LA
-from tqdm.auto import tqdm, trange
-import torch
+from tqdm.auto import tqdm
 import time
 
 from art.attacks.attack import EvasionAttack
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
-from art.utils import compute_success, to_categorical, check_and_transform_label_format
+from art.utils import compute_success, check_and_transform_label_format
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
@@ -26,9 +43,9 @@ logger = logging.getLogger(__name__)
 
 class SignOPTAttack(EvasionAttack):
     """
-
-    Args:
-        EvasionAttack ([type]): [description]
+    Implements the Sign-OPT attack `SignOPTAttack`. This is a query-efficient
+    hard-label adversarial attack.
+    
     | Paper link: https://arxiv.org/pdf/1909.10773.pdf
     """
 
@@ -52,12 +69,11 @@ class SignOPTAttack(EvasionAttack):
         targeted: bool = True,
         epsilon: int = 0.001,
         num_trial: int = 100,
-        max_iter: int = 1000, # todo 5000 for targeted?
-        query_limit = 20000, # todo 40000 for targeted?
+        max_iter: int = 1000, # recommend 5000 for targeted attack
+        query_limit = 20000, # recommend 40000 for targeted attack
         K = 200,
         alpha = 0.2,
         beta = 0.001,
-        log_len = 100, 
         verbose: bool = False,
         ) -> None:
         """
@@ -65,7 +81,14 @@ class SignOPTAttack(EvasionAttack):
 
         :param estimator: A trained classifier.
         :param targeted: Should the attack target one specific class.
-        :param verbose: Show progress bars.
+        :param epsilon: A very small smoothing parameter.
+        :param num_trial: A number of trials to calculate a good starting point
+        :param max_iter: Maximum number of iterations
+        :param query_limit: Limitation for number of queries to prediction model
+        :param K: Number of random directions (for estimating the gradient)
+        :param alpha: The step length for line search 
+        :param beta: The tolerance for line search 
+        :param verbose: Show detailed information
         """
         
         super().__init__(estimator=estimator)
@@ -79,20 +102,24 @@ class SignOPTAttack(EvasionAttack):
         self.alpha = alpha
         self.beta = beta
         
-        self.logs = np.zeros(log_len)
-        self.logs_torch = np.zeros(log_len)
+        self.logs = np.zeros(100) # temp. todo: remove
+        self.logs_torch = np.zeros(100) # temp. todo: remove
 
         self.verbose = verbose
         self._check_params()
 
+    # todo: ART defines diff. parameter for targeted attack. Check backend_targeted_images() in utils.py
     def generate(self, x: np.ndarray, targets: Optional[np.ndarray] = None, x_train: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
         :param x: An array with the original inputs to be attacked.
-        :param targets: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
-                  (nb_samples,). If `self.targeted` is true, then `y` represents the target labels.
-        :param x_train: Training Dataset, todo: do we really need this?
+        :param targets: Target values (class labels) one-hot-encoded of 
+                        shape (nb_samples, nb_classes) or indices of shape
+                        (nb_samples,). If `self.targeted` is true, then `y` represents the target labels.
+        :param x_train: Training Dataset. If `self.targeted` is true, 
+                        then `x_train` is used for finding a target 
+                        data in the training data set
         :return: An array holding the adversarial examples.
         """
         
@@ -103,10 +130,10 @@ class SignOPTAttack(EvasionAttack):
                 "This attack has not yet been tested for binary classification with a single output classifier."
             )
             
-        # Assert that, if attack is targeted, targets is provided
+        # Assert that if attack is targeted, targets is provided
         if self.targeted and targets is None:  
             raise ValueError("Target labels `y` need to be provided for a targeted attack.")
-        # Assert that, if attack is targeted, training data is provided
+        # Assert that if attack is targeted, training data is provided
         if self.targeted and x_train is None:  
             raise ValueError("Training Data `x_train` needs to be provided for a targeted attack.")
 
@@ -124,6 +151,7 @@ class SignOPTAttack(EvasionAttack):
                     print("Image already targeted. No need to attack.")
                     continue
 
+                # todo: 
                 # x_adv[ind], diff, succeed = self._attack( # diff and succeed are for performance test
                 x_adv[ind] = self._attack(
                     x0=val,
@@ -258,8 +286,7 @@ class SignOPTAttack(EvasionAttack):
         Evaluate the sign of gradient by formulat
         sign(g) = 1/Q [ \sum_{q=1}^Q sign( g(theta+h*u_i) - g(theta) )u_i$ ]
         """
-        # todo: put k as class varible
-        K = self.K # 200 random directions (for estimating the gradient)
+        K = self.K 
         sign_grad = np.zeros(theta.shape).astype(np.float32)
         queries = 0
         ### use orthogonal transform
