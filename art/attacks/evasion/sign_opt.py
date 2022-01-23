@@ -170,9 +170,6 @@ class SignOPTAttack(EvasionAttack):
                 )   
             if succeed and self.eval_perform and counter < 100:
                 self.logs[counter] = LA.norm(diff)
-                # reference: https://github.com/cmhcbb/attackbox/blob/65a82f8ea6beedc1b4339aa05b08443d5c489b8a/utils.py#L8 
-                # torch_diff_square = torch.from_numpy(diff*diff)
-                # self.logs_torch[counter] = torch.sqrt(torch.sum(torch_diff_square)).item()
                 counter += 1    
             
         # todo: the compute_success() doesn't work for targeted case, dimension related error
@@ -185,7 +182,6 @@ class SignOPTAttack(EvasionAttack):
         
         return x_adv # all images with untargeted adversarial
     
-    ## It is used at the beginning, finding a good start direction
     def _fine_grained_binary_search(self, x0, y0, theta, initial_lbd, current_best, target: Optional[int] = None):
         if self.targeted:
             tolerate = 1e-5 
@@ -228,8 +224,8 @@ class SignOPTAttack(EvasionAttack):
                     lbd_lo = lbd_mid
         return lbd_hi, nquery
     
-    # perform the line search in paper 2019
-    # https://openreview.net/pdf?id=rJlk6iRqKX
+    # perform the line search in paper (Chen and Zhang, 2019)
+    # paper link: https://openreview.net/pdf?id=rJlk6iRqKX
     def _fine_grained_binary_search_local(self, x0, y0, target, theta, initial_lbd = 1.0, tol=1e-5):
         nquery = 0
         lbd = initial_lbd
@@ -240,7 +236,7 @@ class SignOPTAttack(EvasionAttack):
             prediction(x0+lbd*theta) == original, GOOD
         """
         if self.targeted: y0 = target
-        # still inside boundary
+        
         if self._is_label(x0+lbd*theta, y0) != self.targeted:
             lbd_lo = lbd
             lbd_hi = lbd*1.01
@@ -265,13 +261,13 @@ class SignOPTAttack(EvasionAttack):
                 lbd_hi = lbd_mid
             else:
                 lbd_lo = lbd_mid
-        # print(f'In _fine_grained_binary_search_local(), with initial_lbd={initial_lbd} returning lbd_hi={lbd_hi}, nquery={nquery}')
+        if self.verbose:
+            print(f'In _fine_grained_binary_search_local(), with initial_lbd={initial_lbd} returning lbd_hi={lbd_hi}, nquery={nquery}')
         return lbd_hi, nquery
     
-    # temp method
+    # temp method if ART has a similar method
     # x0: dimension is [1, 28, 28]
-    # org_y0: type of ...
-    # return True, if prediction of x0 is org_y0, False otherwise
+    # return True, if prediction of x0 is label, False otherwise
     def _is_label(self, x0, label, verbose=False) -> bool:
         pred = self.estimator.predict(np.expand_dims(x0, axis=0))
         pred_y0 = np.argmax(pred)
@@ -279,11 +275,13 @@ class SignOPTAttack(EvasionAttack):
             print(f'pred_lable={pred_y0}, orginal_label={label}')
         return pred_y0 == label
     
+    # temp method if ART has a similar method
+    # x0: dimension is [1, 28, 28]
+    # return predicted label
     def _predict_label(self, x0, org_y0=None, verbose=False) -> bool:
         pred = self.estimator.predict(np.expand_dims(x0, axis=0))
         return np.argmax(pred)
-        
-    
+          
     def _sign_grad(self, x0, y0, epsilon, theta, initial_lbd, target=None):
         """
         Evaluate the sign of gradient by formulat
@@ -308,10 +306,6 @@ class SignOPTAttack(EvasionAttack):
             # Untargeted case
             if self.targeted == self._is_label(x0+initial_lbd*new_theta, y0):   
                 sign = -1
-            # elif self.targeted and self._is_label(x0+initial_lbd*new_theta, target):
-            #     sign = -1
-            # else:
-            #     print('WARNING: unexpected combination of conditions')
 
             queries += 1
             """
