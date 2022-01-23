@@ -51,7 +51,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
 #     except ARTTestException as e:
 #         art_warning(e)
 
-
+# framework_agnostic means if no specific framework is defined, it is Tensorflow2 by default
 @pytest.mark.framework_agnostic
 # @pytest.mark.parametrize("targeted", [True, False])
 @pytest.mark.parametrize("targeted", [False])
@@ -62,6 +62,7 @@ def test_images(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack
         if targeted:
             backend_targeted_images(attack, fix_get_mnist_subset)
         else:
+            # error "AssertionError: x_test_adv values should have all been below 1.0"
             back_end_untargeted_images(attack, fix_get_mnist_subset, framework)
     except ARTTestException as e:
         art_warning(e)
