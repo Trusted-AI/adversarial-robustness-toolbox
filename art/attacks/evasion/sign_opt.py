@@ -385,7 +385,7 @@ class SignOPTAttack(EvasionAttack):
         if g_theta == float('inf'): 
             if self.verbose:
                 print("Couldn't find valid initial, failed")
-            return x0, 0, False, query_count, best_theta # test data, ?, ?, # of queries, best_theta(Gaussian L2 norm)
+            return x0, 0, False# , query_count, best_theta # test data, ?, ?, # of queries, best_theta(Gaussian L2 norm)
         
         query_limit = self.query_limit 
         alpha = self.alpha
