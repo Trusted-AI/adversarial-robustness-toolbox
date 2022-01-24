@@ -139,7 +139,7 @@ class GradientMatchingAttack(Attack):
         from tensorflow.keras.layers import Input, Embedding, Add, Lambda
 
         self.grad_ws_norm = self.__weight_grad(
-            self.substitute_classifier.model, tf.constant(x_trigger), tf.constant(y_trigger)
+            self.substitute_classifier, tf.constant(x_trigger), tf.constant(y_trigger)
         )
 
         class ClipConstraint(tf.keras.constraints.MaxNorm):
@@ -370,7 +370,7 @@ class GradientMatchingAttack(Attack):
             d_w_norm = d_w / torch.sqrt(torch.sum(torch.square(d_w)))
             return d_w_norm
         else:
-            raise NotImplementedError(
+``            raise NotImplementedError(
                 "GradientMatchingAttack is currently implemented only for Tensorflow V2 and Pytorch."
             )
 
