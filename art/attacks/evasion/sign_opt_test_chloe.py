@@ -19,7 +19,6 @@ from tests.attacks.utils import random_targets
 
 # Step 0: Define the neural network model, return logits instead of activation in forward method
 
-
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
@@ -33,7 +32,39 @@ class Net(nn.Module):
         x = F.max_pool2d(x, 2, 2)
         x = F.relu(self.conv_2(x))
         x = F.max_pool2d(x, 2, 2)
+        
         x = x.view(-1, 4 * 4 * 10)
+        
+        x = F.relu(self.fc_1(x))
+        x = self.fc_2(x)
+        return x
+
+###
+# define the network as https://arxiv.org/pdf/1608.04644.pdf, table 1
+###
+class Net_table1(nn.Module):
+    def __init__(self):
+        super(Net_table1, self).__init__()
+        self.conv_1 = nn.Conv2d(in_channels=1, out_channels=32, kernel_size=3, stride=1)
+        self.conv_2 = nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, stride=1)
+        self.conv_3 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=1)
+        self.conv_4 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1)
+        # https://discuss.pytorch.org/t/calculation-for-the-input-to-the-fully-connected-layer/82774/11
+        # x.shape: torch.Size([128, 64, 4, 4]) so, 64*4*4
+        self.fc_1 = nn.Linear(in_features= 64*4*4 , out_features=200) 
+        self.fc_2 = nn.Linear(in_features=200, out_features=10)
+        
+    # https://github.com/Carco-git/CW_Attack_on_MNIST/blob/master/MNIST_Model.py
+    def forward(self, x):
+        x = F.relu(self.conv_1(x))
+        x = F.relu(self.conv_2(x))
+        x = F.max_pool2d(x, 2, 2)
+        x = F.relu(self.conv_3(x))
+        x = F.relu(self.conv_4(x))
+        x = F.max_pool2d(x, 2, 2)
+        
+        x = x.view(-1, 64*4*4 ) 
+        
         x = F.relu(self.fc_1(x))
         x = self.fc_2(x)
         return x
@@ -54,12 +85,14 @@ x_test = np.transpose(x_test, (0, 3, 1, 2)).astype(np.float32)
 
 # Step 2: Create the model
 
+model_table1 = Net_table1()
 model = Net()
 
 # Step 2a: Define the loss function and the optimizer
 
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.01)
+optimizer_table1 = optim.Adam(model_table1.parameters(), lr=0.01)
 
 # Step 3: Create the ART classifier
 
@@ -73,7 +106,20 @@ classifier = PyTorchClassifier(
     device_type = "cpu",
 )
 
+classifier_table1 = PyTorchClassifier(
+    model=model_table1,
+    clip_values=(min_pixel_value, max_pixel_value),
+    loss=criterion,
+    optimizer=model_table1,
+    input_shape=(1, 28, 28),
+    nb_classes=10,
+    device_type = "cpu",
+)
+
 # Step 4: Train the ART classifier; If model file exist, load model from file
+
+classifier_table1.fit(x_train, y_train, batch_size=64, nb_epochs=3)
+
 ML_model_Filename = "Pytorch_Model.pkl"  
 # Load the Model back from file
 try:
@@ -106,27 +152,23 @@ print("Script name ", sys.argv[0])
 e = 1.5
 q = 4000
 target = False
-l = 100
-eps = 0.5
 start_index = 0
 if len(sys.argv) == 7:
     print(f'e={sys.argv[1]}, q={sys.argv[2]}, targeted={sys.argv[3]}, length={sys.argv[4]}, eps={sys.argv[5]}, start_inde={sys.argv[6]}')
     e = float(sys.argv[1])
     q = int(sys.argv[2])
     target = eval(sys.argv[3])
-    l = int(sys.argv[4])
-    eps = float(sys.argv[5])
-    start_index = int(sys.argv[6])
+    start_index = int(sys.argv[4])
 else:
-    print("parameters: e(=1.5), query limitation(=4000), targeted attack(=False), length of examples(=100), start_inde(=0)")
+    print("parameters: e(=1.5), query limitation(=4000), targeted attack(=False), length of examples(=100), start_index(=0)")
 
 
 test_targeted = target
 if test_targeted:
-    attack = SignOPTAttack(estimator=classifier, targeted=True, max_iter=5000, query_limit=40000)
+    attack = SignOPTAttack(estimator=classifier, targeted=True, max_iter=5000, query_limit=40000, eval_perform=True)
 else:
-    attack = SignOPTAttack(estimator=classifier, targeted=test_targeted, epsilon=eps, query_limit=q, log_len=l)
-length = l #len(x_test) #
+    attack = SignOPTAttack(estimator=classifier, targeted=test_targeted, query_limit=q, eval_perform=True)
+length = 3 #len(x_test) #
 print(f'test targeted = {test_targeted}, length={length}')
 targets = random_targets(y_test, attack.estimator.nb_classes)
 end_index = start_index+length
@@ -158,12 +200,9 @@ if model_failed > 0:
     print(f'length is adjusted with {model_failed} failed prediction')
     
 L2 = attack.logs.sum()/length
-L2_torch = attack.logs_torch.sum()/length
 
 SR = ((attack.logs <= e).sum() - model_failed)/length
-SR_torch = ((attack.logs_torch <= e).sum() - model_failed)/length
 print(f'Avg l2 = {L2}, Success Rate={SR} with e={e} and {length} examples')
-print(f'With Torch util functions: Avg l2_torch = {L2_torch}, Success Rate={SR_torch} with e={e} and {length} examples')
 
 # Step 7: Evaluate the ART classifier on adversarial test examples
 predictions = classifier.predict(x_test_adv)
