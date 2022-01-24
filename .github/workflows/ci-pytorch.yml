@@ -25,21 +25,21 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: PyTorch 1.8.1 (Python 3.7)
+          - name: PyTorch 1.8.1 (Python 3.8)
             framework: pytorch
-            python: 3.7
+            python: 3.8
             torch: 1.8.1+cpu
             torchvision: 0.9.1+cpu
             torchaudio: 0.8.1
-          - name: PyTorch 1.9.1 (Python 3.7)
+          - name: PyTorch 1.9.1 (Python 3.8)
             framework: pytorch
-            python: 3.7
+            python: 3.8
             torch: 1.9.1+cpu
             torchvision: 0.10.1+cpu
             torchaudio: 0.9.1
-          - name: PyTorch 1.10.1 (Python 3.7)
+          - name: PyTorch 1.10.1 (Python 3.8)
             framework: pytorch
-            python: 3.7
+            python: 3.8
             torch: 1.10.1+cpu
             torchvision: 0.11.2+cpu
             torchaudio: 0.10.1
