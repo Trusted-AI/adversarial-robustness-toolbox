@@ -370,7 +370,7 @@ class GradientMatchingAttack(Attack):
             d_w_norm = d_w / torch.sqrt(torch.sum(torch.square(d_w)))
             return d_w_norm
         else:
-``            raise NotImplementedError(
+            raise NotImplementedError(
                 "GradientMatchingAttack is currently implemented only for Tensorflow V2 and Pytorch."
             )
 
