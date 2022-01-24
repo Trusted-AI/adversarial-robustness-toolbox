@@ -121,11 +121,19 @@ class GradientMatchingAttack(Attack):
                 "GradientMatchingAttack is currently implemented only for Tensorflow V2 and Pytorch."
             )
 
-        return initializer(self, x_trigger, y_trigger, x_poison, y_poison)
+        return initializer(x_trigger, y_trigger, x_poison, y_poison)
 
     def __initialize_poison_tensorflow(
         self, x_trigger: np.ndarray, y_trigger: np.ndarray, x_poison: np.ndarray, y_poison: np.ndarray
     ):
+        """
+        Initialize poison noises to be optimized.
+
+        :param x_trigger: A list of samples to use as triggers.
+        :param y_trigger: A list of target classes to classify the triggers into.
+        :param x_train: A list of training data to poison a portion of.
+        :param y_train: A list of labels for x_train.
+        """
         import tensorflow.keras.backend as K
         import tensorflow as tf
         from tensorflow.keras.layers import Input, Embedding, Add, Lambda
