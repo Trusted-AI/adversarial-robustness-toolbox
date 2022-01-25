@@ -17,7 +17,7 @@ librosa==0.8.1
 numba~=0.54.1
 opencv-python
 sortedcontainers==2.4.0
-h5py==2.10.0
+h5py
 
 # frameworks
 
