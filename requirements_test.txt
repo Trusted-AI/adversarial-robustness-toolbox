@@ -17,7 +17,7 @@ librosa==0.8.1
 numba~=0.54.1
 opencv-python
 sortedcontainers==2.4.0
-h5py
+h5py==3.6.0
 
 # frameworks
 
@@ -26,7 +26,7 @@ keras>=2.2.5
 tensorflow-addons>=0.13.0
 
 # using mxnet-native for reproducible test results on CI machines without Intel Architecture Processors, but mxnet is fully supported by ART
-mxnet==1.9.0
+mxnet-native==1.8.0.post0
 
 # find-links https://download.pytorch.org/whl/cpu/torch_stable.html
 torch==1.10.1 -f https://download.pytorch.org/whl/cpu/torch_stable.html
