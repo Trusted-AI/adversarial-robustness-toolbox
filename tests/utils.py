@@ -109,13 +109,13 @@ class TestBase(unittest.TestCase):
 
         # Check that the test data has not been modified, only catches changes in attack.generate if self has been used
         np.testing.assert_array_almost_equal(
-            self._x_train_mnist_original[0 : self.n_train], self.x_train_mnist, decimal=3
+            self._x_train_mnist_original[0: self.n_train], self.x_train_mnist, decimal=3
         )
         np.testing.assert_array_almost_equal(
-            self._y_train_mnist_original[0 : self.n_train], self.y_train_mnist, decimal=3
+            self._y_train_mnist_original[0: self.n_train], self.y_train_mnist, decimal=3
         )
-        np.testing.assert_array_almost_equal(self._x_test_mnist_original[0 : self.n_test], self.x_test_mnist, decimal=3)
-        np.testing.assert_array_almost_equal(self._y_test_mnist_original[0 : self.n_test], self.y_test_mnist, decimal=3)
+        np.testing.assert_array_almost_equal(self._x_test_mnist_original[0: self.n_test], self.x_test_mnist, decimal=3)
+        np.testing.assert_array_almost_equal(self._y_test_mnist_original[0: self.n_test], self.y_test_mnist, decimal=3)
 
         np.testing.assert_array_almost_equal(self._x_train_iris_original, self.x_train_iris, decimal=3)
         np.testing.assert_array_almost_equal(self._y_train_iris_original, self.y_train_iris, decimal=3)
@@ -336,12 +336,9 @@ def get_image_classifier_tf_v1(from_logits=False, load_init=True, sess=None):
     return tfc, sess
 
 
-def get_image_gan_tf_v2(**kwargs):
-
+def get_image_generator_tf_v2(capacity: int, z_dim: int):
     import tensorflow as tf
 
-    noise_dim = 100
-    capacity = 64
     def make_image_generator_model(capacity: int, z_dim: int) -> tf.keras.Sequential():
         model = tf.keras.Sequential()
 
@@ -372,8 +369,18 @@ def get_image_gan_tf_v2(**kwargs):
         return model
 
     generator = TensorFlow2Generator(
-        encoding_length=noise_dim,
-        model=make_image_generator_model(capacity, noise_dim))
+        encoding_length=z_dim,
+        model=make_image_generator_model(capacity, z_dim))
+
+    return generator
+
+
+def get_image_gan_tf_v2(**kwargs):
+    import tensorflow as tf
+
+    noise_dim = 100
+    capacity = 64
+    generator = get_image_generator_tf_v2(capacity, noise_dim)
 
     def make_image_discriminator_model(capacity: int) -> tf.keras.Sequential():
         model = tf.keras.Sequential()
@@ -426,6 +433,7 @@ def get_image_gan_tf_v2(**kwargs):
                          discriminator_loss=discriminator_loss_fct,
                          discriminator_optimizer_fct=tf.compat.v1.train.AdamOptimizer(1e-4))
     return gan
+
 
 def get_image_classifier_tf_v2(from_logits=False):
     """
@@ -510,7 +518,7 @@ def get_image_classifier_tf_v2(from_logits=False):
 
 
 def get_image_classifier_kr(
-    loss_name="categorical_crossentropy", loss_type="function_losses", from_logits=False, load_init=True
+        loss_name="categorical_crossentropy", loss_type="function_losses", from_logits=False, load_init=True
 ):
     """
     Standard Keras classifier for unit testing
@@ -1338,7 +1346,7 @@ def get_classifier_bb(defences=None):
     # define black-box classifier
     def predict(x):
         with open(
-            os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/data/mnist", "api_output.txt")
+                os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/data/mnist", "api_output.txt")
         ) as json_file:
             predictions = json.load(json_file)
         return to_categorical(predictions["values"][: len(x)], nb_classes=10)
@@ -1359,7 +1367,7 @@ def get_classifier_bb_nn(defences=None):
     # define black-box classifier
     def predict(x):
         with open(
-            os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/data/mnist", "api_output.txt")
+                os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/data/mnist", "api_output.txt")
         ) as json_file:
             predictions = json.load(json_file)
         return to_categorical(predictions["values"][: len(x)], nb_classes=10)

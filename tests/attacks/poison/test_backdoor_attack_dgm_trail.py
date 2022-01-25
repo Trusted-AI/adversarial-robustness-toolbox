@@ -7,20 +7,19 @@ from tests.utils import ARTTestException
 from art.attacks.poisoning.backdoor_attack_dgm_trail import GANAttackBackdoor
 
 
-@pytest.fixture()
-def fix_get_mnist_subset(get_mnist_dataset):
-    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_dataset
-    n_train = 50
-    n_test = 50
-    yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
-
 @pytest.mark.skip_framework("keras", "pytorch", "scikitlearn", "mxnet", "kerastf")
-def test_inverse_gan(art_warning, fix_get_mnist_subset, image_dl_gan):
+def test_poison_estimator(art_warning, get_default_mnist_subset, image_dl_gan):
     try:
-        (train_images, y_train_images, x_test_images, y_test_images) = fix_get_mnist_subset
+        seed = 1234
+        np.random.seed(seed)
+        np.random.RandomState(seed)
+        tf.random.set_seed(seed)
+        #TODO put the sub set instead
+        (train_images, y_train_images), _ = get_default_mnist_subset
         train_images = train_images * (2.0 / 255) - 1.0
-
+        train_images = train_images[:500]
         batch_size = 32
+        #TODO replace dataset with regular images
         train_dataset = tf.data.Dataset.from_tensor_slices(train_images).shuffle(50000).batch(batch_size)
         gan, _ = image_dl_gan()
 
@@ -31,12 +30,14 @@ def test_inverse_gan(art_warning, fix_get_mnist_subset, image_dl_gan):
                                        x_target=x_target_tf,
                                        dataset=train_dataset)
 
-        poisoned_generator = gan_attack.poison_estimator(batch_size=batch_size,
-                                                         epochs=2,
-                                                         lambda_g=0.0,
-                                                         iter_counter=0,
-                                                         z_min=1000.0)
-        #TODO do asserts here
+        gan_attack.poison_estimator(batch_size=batch_size,
+                                    epochs=2,
+                                    lambda_g=0.0,
+                                    iter_counter=0)
+        #TODO why is fidelity always different in each run?
+        np.testing.assert_array_less(gan_attack.min_fidelity, 1)
+
+
 
 
     except ARTTestException as e:
