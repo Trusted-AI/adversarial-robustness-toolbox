@@ -50,6 +50,7 @@ from tests.utils import (
     get_image_classifier_pt_functional,
     get_image_classifier_tf,
     get_image_gan_tf_v2,
+    get_image_generator_tf_v2,
     get_tabular_classifier_kr,
     get_tabular_classifier_pt,
     get_tabular_classifier_scikit_list,
@@ -525,16 +526,26 @@ def supported_losses_proba(framework):
     return _supported_losses_proba
 
 
+
+
 @pytest.fixture
-def image_dl_gan(framework, get_image_classifier_mx_instance):
+def image_dl_generator(framework):
+    def _image_dl_generator(**kwargs):
+        if framework == "tensorflow2":
+            return get_image_generator_tf_v2(64, 100)
+        raise ARTTestFixtureNotImplemented("no test generator available", image_dl_generator.__name__, framework)
+
+    return _image_dl_generator
+
+
+@pytest.fixture
+def image_dl_gan(framework):
     sess = None
-    gan = None
 
     def _image_dl_gan(**kwargs):
         if framework == "tensorflow2":
-            gan = get_image_gan_tf_v2(**kwargs)
-            return gan, sess
-        raise ARTTestFixtureNotImplemented("no test gan available", decision_tree_estimator.__name__, framework)
+            return get_image_gan_tf_v2(**kwargs), sess
+        raise ARTTestFixtureNotImplemented("no test gan available", image_dl_gan.__name__, framework)
 
     return _image_dl_gan
 
