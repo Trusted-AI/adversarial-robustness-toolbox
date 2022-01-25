@@ -32,7 +32,7 @@ jobs:
             tensorflow: 2.6.0
             keras: 2.6.0
             torch: 1.10.1+cpu
-            torchvision: 0.11.2+cpu
+            torchvision: 0.11.2
             torchaudio: 0.10.1
             scikit-learn: 1.0.2
 
