@@ -308,7 +308,7 @@ class GradientMatchingAttack(Attack):
                 return B_score, poisoned_samples
 
         self.grad_ws_norm = self._weight_grad(
-            self.substitute_classifier, torch.Tensor(x_trigger), torch.Tensor(y_trigger)
+            self.substitute_classifier, torch.Tensor(x_trigger, device=device), torch.Tensor(y_trigger, device=device).type(torch.long)
         )
         self.backdoor_model = BackdoorModel(
             self,
@@ -490,9 +490,9 @@ class GradientMatchingAttack(Attack):
             self.lr_schedule.step()
 
         B, poisoned_samples = self.backdoor_model(  # pylint: disable=C0103
-            torch.tensor(x_poison, dtype=torch.float),
+            torch.tensor(x_poison, device=device, dtype=torch.float),
             torch.arange(0, len(x_poison), dtype=torch.int32),
-            torch.tensor(y_poison),
+            torch.tensor(y_poison, device=device, dtype=torch.long),
             self.grad_ws_norm,
         )
         return B.detach().numpy(), poisoned_samples.detach().numpy()
