@@ -303,8 +303,8 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
     def __repr__(self):
         repr_ = (
             f"{self.__module__ + '.' + self.__class__.__name__}(classifiers={self.classifiers}, "
-            f"classifier_weights={self.classifier_weights}, channels_first={self.channels_first}, "
-            f"clip_values={self.clip_values}, preprocessing_defences={self.preprocessing_defences}, "
+            f"classifier_weights={self.classifier_weights!r}, channels_first={self.channels_first}, "
+            f"clip_values={self.clip_values!r}, preprocessing_defences={self.preprocessing_defences}, "
             f"postprocessing_defences={self.postprocessing_defences}, preprocessing={self.preprocessing})"
         )
 
