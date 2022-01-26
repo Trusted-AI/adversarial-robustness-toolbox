@@ -142,7 +142,7 @@ class PoisoningAttackReD(PoisoningAttackGenerator):
                          x_target=x_target,
                          generator=generator)
 
-        self._model_clone = tf.keras.models.clone_model(self._model.model)
+        self._model_clone = tf.keras.models.clone_model(self.estimator.model)
 
     # TODO identical in both attacks should we move this up the abstract class? but the abstract class would have to be tensor specific
     @tf.function
