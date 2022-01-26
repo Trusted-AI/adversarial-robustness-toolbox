@@ -428,7 +428,7 @@ def random_sphere(
         res = np.random.uniform(-radius, radius, (nb_points, nb_dims))
 
     else:
-        raise NotImplementedError("Norm {} not supported".format(norm))
+        raise NotImplementedError(f"Norm {norm} not supported")
 
     return res
 
@@ -1025,7 +1025,7 @@ def load_nursery(
             return 2
         if value == "spec_prior":
             return 3
-        raise Exception("Bad label value: %s" % value)
+        raise Exception(f"Bad label value: {value}")
 
     data["label"] = data["label"].apply(modify_label)
     data["children"] = data["children"].apply(lambda x: 4 if x == "more" else x)
@@ -1109,7 +1109,7 @@ def load_dataset(
     if "diabetes" in name:
         return load_diabetes()
 
-    raise NotImplementedError("There is no loader for dataset '{}'.".format(name))
+    raise NotImplementedError(f"There is no loader for dataset '{name}'.")
 
 
 def _extract(full_path: str, path: str) -> bool:
@@ -1346,7 +1346,7 @@ def performance_diff(
     if callable(perf_function):
         return perf_function(test_labels, model1_labels, **kwargs) - perf_function(test_labels, model2_labels, **kwargs)
 
-    raise ValueError("Performance function '{}' not supported".format(str(perf_function)))
+    raise ValueError(f"Performance function '{perf_function}' not supported")
 
 
 def is_probability(vector: np.ndarray) -> bool:

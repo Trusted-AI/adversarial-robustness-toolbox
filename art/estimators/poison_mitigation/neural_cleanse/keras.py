@@ -244,7 +244,7 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
         early_stop_counter = 0
         early_stop_reg_best = reg_best
         mini_batch_size = len(x_val) // self.batch_size
-        for _ in tqdm(range(self.steps), desc="Generating backdoor for class {}".format(np.argmax(y_target))):
+        for _ in tqdm(range(self.steps), desc=f"Generating backdoor for class {np.argmax(y_target)}"):
             loss_reg_list = []
             loss_acc_list = []
 

@@ -150,7 +150,7 @@ class PreprocessorPyTorch(Preprocessor):
             self._device = torch.device("cpu")
         else:  # pragma: no cover
             cuda_idx = torch.cuda.current_device()
-            self._device = torch.device("cuda:{}".format(cuda_idx))
+            self._device = torch.device(f"cuda:{cuda_idx}")
 
     @abc.abstractmethod
     def forward(
@@ -220,12 +220,12 @@ class PreprocessorPyTorch(Preprocessor):
             x_grad = x.grad.detach().cpu().numpy()
 
             if x_grad.shape != x.shape:
-                raise ValueError("The input shape is {} while the gradient shape is {}".format(x.shape, x_grad.shape))
+                raise ValueError(f"The input shape is {x.shape} while the gradient shape is {x_grad.shape}")
 
             return x_grad
 
         if x.dtype == object:
-            x_grad_list = list()
+            x_grad_list = []
             for i, x_i in enumerate(x):
                 x_grad_list.append(get_gradient(x=x_i, grad=grad[i]))
             x_grad = np.empty(x.shape[0], dtype=object)
@@ -312,12 +312,12 @@ class PreprocessorTensorFlowV2(Preprocessor):
 
             x_grad = x_grad.numpy()
             if x_grad.shape != x.shape:
-                raise ValueError("The input shape is {} while the gradient shape is {}".format(x.shape, x_grad.shape))
+                raise ValueError(f"The input shape is {x.shape} while the gradient shape is {x_grad.shape}")
 
             return x_grad
 
         if x.dtype == object:
-            x_grad_list = list()
+            x_grad_list = []
             for i, x_i in enumerate(x):
                 x_grad_list.append(get_gradient(x=x_i, grad=grad[i]))
             x_grad = np.empty(x.shape[0], dtype=object)

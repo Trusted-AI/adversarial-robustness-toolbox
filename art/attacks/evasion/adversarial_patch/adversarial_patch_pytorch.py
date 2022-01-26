@@ -306,8 +306,8 @@ class AdversarialPatchPyTorch(EvasionAttack):
 
         padded_patch = padded_patch.float()
 
-        image_mask_list = list()
-        padded_patch_list = list()
+        image_mask_list = []
+        padded_patch_list = []
 
         for i_sample in range(nb_samples):
             if scale is None:

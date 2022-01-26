@@ -297,8 +297,8 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         padded_patch = tf.cast(padded_patch, images.dtype)
 
-        transform_vectors = list()
-        translation_vectors = list()
+        transform_vectors = []
+        translation_vectors = []
 
         for i_sample in range(nb_samples):
             if scale is None:

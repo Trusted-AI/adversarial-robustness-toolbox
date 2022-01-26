@@ -279,7 +279,7 @@ class ScikitlearnDecisionTreeRegressor(ScikitlearnRegressor):
     def _get_leaf_nodes(self, node_id, i_tree, class_label, box) -> List["LeafNode"]:
         from art.metrics.verification_decisions_trees import LeafNode, Box, Interval
 
-        leaf_nodes: List[LeafNode] = list()
+        leaf_nodes: List[LeafNode] = []
 
         if self.get_left_child(node_id) != self.get_right_child(node_id):
 

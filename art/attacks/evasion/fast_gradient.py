@@ -581,8 +581,8 @@ class FastGradientMethod(EvasionAttack):
 
             if not (np.issubdtype(mask.dtype, np.floating) or mask.dtype == bool):  # pragma: no cover
                 raise ValueError(
-                    "The `mask` has to be either of type np.float32, np.float64 or bool. The provided"
-                    "`mask` is of type {}.".format(mask.dtype)
+                    f"The `mask` has to be either of type np.float32, np.float64 or bool. The provided"
+                    f"`mask` is of type {mask.dtype}."
                 )
 
             if np.issubdtype(mask.dtype, np.floating) and np.amin(mask) < 0.0:  # pragma: no cover

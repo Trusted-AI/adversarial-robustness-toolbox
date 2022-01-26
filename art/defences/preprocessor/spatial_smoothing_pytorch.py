@@ -125,9 +125,9 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
                 import torch.nn.functional as F
 
                 if not torch.is_tensor(input):
-                    raise TypeError("Input type is not a torch.Tensor. Got {}".format(type(input)))
+                    raise TypeError(f"Input type is not a torch.Tensor. Got {type(input)}")
                 if not len(input.shape) == 4:
-                    raise ValueError("Invalid input shape, we expect BxCxHxW. Got: {}".format(input.shape))
+                    raise ValueError(f"Invalid input shape, we expect BxCxHxW. Got: {input.shape}")
                 # prepare kernel
                 batch_size, channels, height, width = input.shape
                 kernel: torch.Tensor = self.kernel.to(input.device).to(input.dtype)

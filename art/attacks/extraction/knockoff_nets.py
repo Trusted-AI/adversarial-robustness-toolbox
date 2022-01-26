@@ -207,7 +207,7 @@ class KnockoffNets(ExtractionAttack):
             raise ValueError("Target values `y` has a wrong shape.")
 
         # We need to keep an average version of the victim output
-        if self.reward == "div" or self.reward == "all":
+        if self.reward in ("div", "all"):
             self.y_avg = np.zeros(self.estimator.nb_classes)
 
         # We need to keep an average and variance version of rewards

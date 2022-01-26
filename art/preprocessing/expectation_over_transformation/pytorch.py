@@ -81,8 +81,8 @@ class EoTPyTorch(PreprocessorPyTorch):
         """
         import torch  # lgtm [py/repeated-import]
 
-        x_preprocess_list = list()
-        y_preprocess_list: List["torch.Tensor"] = list()
+        x_preprocess_list = []
+        y_preprocess_list: List["torch.Tensor"] = []
 
         for i_image in range(x.shape[0]):
             for _ in range(self.nb_samples):

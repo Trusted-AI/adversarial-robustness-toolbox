@@ -127,7 +127,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
             self._device = torch.device("cpu")
         else:  # pragma: no cover
             cuda_idx = torch.cuda.current_device()
-            self._device = torch.device("cuda:{}".format(cuda_idx))
+            self._device = torch.device(f"cuda:{cuda_idx}")
 
         model.to(self._device)
 
@@ -216,17 +216,17 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
                 raise NotImplementedError
 
             if y is not None and isinstance(y[0]["boxes"], np.ndarray):
-                y_tensor = list()
+                y_tensor = []
                 for i, y_i in enumerate(y):
-                    y_t = dict()
+                    y_t = {}
                     y_t["boxes"] = torch.from_numpy(y_i["boxes"]).float().to(self.device)
                     y_tensor.append(y_t)
             else:
                 y_tensor = y
 
-            image_tensor_list_grad = list()
-            y_preprocessed = list()
-            inputs_t: List["torch.Tensor"] = list()
+            image_tensor_list_grad = []
+            y_preprocessed = []
+            inputs_t: List["torch.Tensor"] = []
 
             for i in range(x.shape[0]):
                 if self.clip_values is not None:
@@ -255,7 +255,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         else:
             y_init = y[0]["boxes"]
 
-        loss_list = list()
+        loss_list = []
 
         for i in range(x.shape[0]):
             x_i = inputs_t[i]
@@ -264,7 +264,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
             loss = torch.nn.L1Loss(size_average=False)(y_pred.float(), gt_bb.float())
             loss_list.append(loss)
 
-        loss_dict: Dict[str, Union["torch.Tensor", int, List["torch.Tensor"]]] = dict()
+        loss_dict: Dict[str, Union["torch.Tensor", int, List["torch.Tensor"]]] = {}
         if reduction == "sum":
             loss_dict["torch.nn.L1Loss"] = sum(loss_list)
         elif reduction == "none":
@@ -290,7 +290,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
                   - scores (Tensor[N]): the scores or each prediction.
         :return: Loss gradients of the same shape as `x`.
         """
-        grad_list = list()
+        grad_list = []
 
         for i in range(x.shape[0]):
 
@@ -661,7 +661,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         else:
             y_init = y_init.to(self.device).float()
 
-        predictions = list()
+        predictions = []
 
         for i in range(x.shape[0]):
             if isinstance(x, np.ndarray):
@@ -675,7 +675,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
             x_i = torch.squeeze(x_i)
 
             y_pred = self._track(x=x_i, y_init=y_init[i])
-            prediction_dict = dict()
+            prediction_dict = {}
             if isinstance(x, np.ndarray):
                 prediction_dict["boxes"] = y_pred.detach().cpu().numpy()
             else:
@@ -711,7 +711,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         :return: Dictionary of loss components.
         """
         output = self.compute_loss(x=x, y=y)
-        output_dict = dict()
+        output_dict = {}
         output_dict["torch.nn.L1Loss"] = output
         return output_dict
 
@@ -732,7 +732,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         output_dict, _, _ = self._get_losses(x=x, y=y)
 
         if isinstance(output_dict["torch.nn.L1Loss"], list):
-            output_list = list()
+            output_list = []
             for out in output_dict["torch.nn.L1Loss"]:
                 output_list.append(out.detach().cpu().numpy())
             output = np.array(output_list)

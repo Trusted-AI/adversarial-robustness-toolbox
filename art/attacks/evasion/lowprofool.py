@@ -236,7 +236,7 @@ class LowProFool(EvasionAttack):
                 raise ValueError("Feature has to be one-dimensional array of size (n_features, ).")
 
         else:  # pragma: no cover
-            raise TypeError("Unrecognized feature importance function: {}".format(self.importance))
+            raise TypeError(f"Unrecognized feature importance function: {self.importance}")
 
     def fit_importances(
         self,
@@ -345,9 +345,7 @@ class LowProFool(EvasionAttack):
                         best_perturbations[j] = perturbations[j].copy()
 
         logger.info(
-            "Success rate of LowProFool attack: {:.2f}%".format(
-                100 * np.sum(success_indicators) / success_indicators.size
-            )
+            "Success rate of LowProFool attack: %.2f}%%", 100 * np.sum(success_indicators) / success_indicators.size
         )
 
         # The generated adversaries are a sum of initial samples and best perturbation vectors found by the algorithm.

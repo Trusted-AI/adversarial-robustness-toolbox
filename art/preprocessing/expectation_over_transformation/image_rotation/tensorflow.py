@@ -110,7 +110,6 @@ class EoTImageRotationTensorFlow(EoTTensorFlowV2):
 
         if self.label_type not in self.label_types:
             raise ValueError(
-                "The input for label_type needs to be one of {}, currently receiving `{}`.".format(
-                    self.label_types, self.label_type
-                )
+                f"The input for label_type needs to be one of {self.label_types}, currently receiving "
+                f"`{self.label_type}`."
             )

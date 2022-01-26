@@ -421,7 +421,7 @@ class ImperceptibleASR(EvasionAttack):
 
         # undo padding, i.e. change gradients shape from (nb_samples, max_length) to (nb_samples)
         lengths = delta_mask.sum(axis=1)
-        gradients = list()
+        gradients = []
         for gradient_padded, length in zip(gradients_padded, lengths):
             gradient = gradient_padded[:length]
             gradients.append(gradient)

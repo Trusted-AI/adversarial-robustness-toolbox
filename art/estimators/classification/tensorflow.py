@@ -132,7 +132,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         self._loss = loss
         self._learning = learning
         if feed_dict is None:
-            self._feed_dict = dict()
+            self._feed_dict = {}
         else:
             self._feed_dict = feed_dict
 
@@ -388,7 +388,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
                 and label.shape[0] == x.shape[0]
             )
         ):
-            raise ValueError("Label %s is out of range." % label)
+            raise ValueError(f"Label {label} is out of range.")
 
         self._init_class_grads(label=label)
 
@@ -593,14 +593,14 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
 
         if isinstance(layer, six.string_types):  # basestring for Python 2 (str, unicode) support
             if layer not in self._layer_names:  # pragma: no cover
-                raise ValueError("Layer name %s is not part of the graph." % layer)
+                raise ValueError(f"Layer name {layer} is not part of the graph.")
             layer_tensor = graph.get_tensor_by_name(layer)
 
         elif isinstance(layer, int):
             layer_tensor = graph.get_tensor_by_name(self._layer_names[layer])
 
         else:  # pragma: no cover
-            raise TypeError("Layer must be of type `str` or `int`. Received %s." % layer)
+            raise TypeError(f"Layer must be of type `str` or `int`. Received {layer}.")
 
         if framework:
             return layer_tensor
@@ -767,24 +767,11 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
 
     def __repr__(self):
         repr_ = (
-            "%s(input_ph=%r, output=%r, labels_ph=%r, train=%r, loss=%r, learning=%r, sess=%r, "
-            "channels_first=%r, clip_values=%r, preprocessing_defences=%r, postprocessing_defences=%r, "
-            "preprocessing=%r)"
-            % (
-                self.__module__ + "." + self.__class__.__name__,
-                self.input_ph,
-                self.output,
-                self.labels_ph,
-                self.train,
-                self._loss,
-                self.learning,
-                self._sess,
-                self.channels_first,
-                self.clip_values,
-                self.preprocessing_defences,
-                self.postprocessing_defences,
-                self.preprocessing,
-            )
+            f"{self.__module__ + '.' + self.__class__.__name__}(input_ph={self.input_ph}, output={self.output}, "
+            f"labels_ph={self.labels_ph}, train={self.train}, loss={self._loss}, learning={self.learning}, "
+            f"sess={self._sess}, channels_first={self.channels_first}, clip_values={self.clip_values}, "
+            f"preprocessing_defences={self.preprocessing_defences}, "
+            f"postprocessing_defences={self.postprocessing_defences}, preprocessing={self.preprocessing})"
         )
 
         return repr_
@@ -1052,7 +1039,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
             if tf.executing_eagerly():
                 if label is None:
                     # Compute the gradients w.r.t. all classes
-                    class_gradients = list()
+                    class_gradients = []
 
                     for i in range(self.nb_classes):
                         predictions = self.model(x_input, training=training_mode)
@@ -1078,7 +1065,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
                 else:
                     # For each sample, compute the gradients w.r.t. the indicated target class (possibly distinct)
-                    class_gradients = list()
+                    class_gradients = []
                     unique_labels = list(np.unique(label))
 
                     for unique_label in unique_labels:
@@ -1107,7 +1094,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         y: Union[np.ndarray, "tf.Tensor"],
         reduction: str = "none",
         training_mode: bool = False,
-        **kwargs
+        **kwargs,
     ) -> np.ndarray:
         """
         Compute the loss.
@@ -1175,7 +1162,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         x: Union[np.ndarray, "tf.Tensor"],
         y: Union[np.ndarray, "tf.Tensor"],
         training_mode: bool = False,
-        **kwargs
+        **kwargs,
     ) -> Union[np.ndarray, "tf.Tensor"]:
         """
         Compute the gradient of the loss function w.r.t. `x`.
@@ -1402,22 +1389,11 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
     def __repr__(self):
         repr_ = (
-            "%s(model=%r, nb_classes=%r, input_shape=%r, loss_object=%r, train_step=%r, "
-            "channels_first=%r, clip_values=%r, preprocessing_defences=%r, postprocessing_defences=%r, "
-            "preprocessing=%r)"
-            % (
-                self.__module__ + "." + self.__class__.__name__,
-                self._model,
-                self.nb_classes,
-                self._input_shape,
-                self._loss_object,
-                self._train_step,
-                self.channels_first,
-                self.clip_values,
-                self.preprocessing_defences,
-                self.postprocessing_defences,
-                self.preprocessing,
-            )
+            f"{self.__module__ + '.' + self.__class__.__name__}(model={self._model}, nb_classes={self.nb_classes}, "
+            f"input_shape={self._input_shape}, loss_object={self._loss_object}, train_step={self._train_step}, "
+            f"channels_first={self.channels_first}, clip_values={self.clip_values}, "
+            f"preprocessing_defences={self.preprocessing_defences}, "
+            f"postprocessing_defences={self.postprocessing_defences}, preprocessing={self.preprocessing})"
         )
 
         return repr_

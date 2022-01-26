@@ -71,7 +71,7 @@ def get_crafter(classifier: "CLASSIFIER_TYPE", attack: str, params: Optional[Dic
     try:
         crafter = SUPPORTED_METHODS[attack]["class"](classifier)
     except Exception:  # pragma: no cover
-        raise NotImplementedError("{} crafting method not supported.".format(attack)) from Exception
+        raise NotImplementedError(f"{attack} crafting method not supported.") from Exception
 
     if params:
         crafter.set_params(**params)
@@ -334,7 +334,7 @@ def clever_t(
     elif norm == np.inf:
         norm = 1
     elif norm != 2:  # pragma: no cover
-        raise ValueError("Norm {} not supported".format(norm))
+        raise ValueError(f"Norm {norm} not supported")
 
     # Compute gradients for all samples in rand_pool
     for i in range(batch_size):

@@ -170,7 +170,7 @@ class BaseEstimator(ABC):
                     else:
                         setattr(self, key, value)
             else:  # pragma: no cover
-                raise ValueError("Unexpected parameter `{}` found in kwargs.".format(key))
+                raise ValueError(f"Unexpected parameter `{key}` found in kwargs.")
         self._update_preprocessing_operations()
         self._check_params()
 
@@ -180,7 +180,7 @@ class BaseEstimator(ABC):
 
         :return: A dictionary of string parameter names to their value.
         """
-        params = dict()
+        params = {}
         for key in self.estimator_params:
             params[key] = getattr(self, key)
         return params
@@ -344,7 +344,7 @@ class BaseEstimator(ABC):
         for k, value in self.__dict__.items():
             k = k[1:] if k[0] == "_" else k
             attributes[k] = value
-        attributes = ["{}={}".format(k, v) for k, v in attributes.items()]
+        attributes = [f"{k}={v}" for k, v in attributes.items()]
         repr_string = class_name + "(" + ", ".join(attributes) + ")"
         return repr_string
 
@@ -450,13 +450,11 @@ class NeuralNetworkMixin(ABC):
 
         if not isinstance(generator, DataGenerator):
             raise ValueError(
-                "Expected instance of `DataGenerator` for `fit_generator`, got %s instead." % str(type(generator))
+                f"Expected instance of `DataGenerator` for `fit_generator`, got {type(generator)} instead."
             )
 
         for i in range(nb_epochs):
-            for _ in trange(
-                int(generator.size / generator.batch_size), desc="Epoch %i/%i" % (i + 1, nb_epochs)  # type: ignore
-            ):  # type: ignore
+            for _ in trange(int(generator.size / generator.batch_size), desc=f"Epoch {i + 1}/{nb_epochs}"):
                 x, y = generator.get_batch()
 
                 # Fit for current batch
@@ -507,7 +505,7 @@ class NeuralNetworkMixin(ABC):
         for k, value in self.__dict__.items():
             k = k[1:] if k[0] == "_" else k
             attributes[k] = value
-        attrs = ["{}={}".format(k, v) for k, v in attributes.items()]
+        attrs = [f"{k}={v}" for k, v in attributes.items()]
         repr_ = name + "(" + ", ".join(attrs) + ")"
 
         return repr_

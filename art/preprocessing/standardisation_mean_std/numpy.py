@@ -73,9 +73,9 @@ class StandardisationMeanStd(Preprocessor):
         """
         if x.dtype in [np.uint8, np.uint16, np.uint32, np.uint64]:  # pragma: no cover
             raise TypeError(
-                "The data type of input data `x` is {} and cannot represent negative values. Consider "
-                "changing the data type of the input data `x` to a type that supports negative values e.g. "
-                "np.float32.".format(x.dtype)
+                f"The data type of input data `x` is {x.dtype} and cannot represent negative values. Consider "
+                f"changing the data type of the input data `x` to a type that supports negative values e.g. "
+                f"np.float32."
             )
 
         if self._broadcastable_mean is None:
@@ -106,6 +106,7 @@ class StandardisationMeanStd(Preprocessor):
         pass
 
     def __repr__(self):
-        return "StandardisationMeanStd(mean={}, std={}, apply_fit={}, apply_predict={})".format(
-            self.mean, self.std, self.apply_fit, self.apply_predict
+        return (
+            f"StandardisationMeanStd(mean={self.mean}, std={self.std}, apply_fit={self.apply_fit}, "
+            f"apply_predict={self.apply_predict})"
         )

@@ -89,7 +89,7 @@ class ClusteringAnalyzer:
             all_assigned_clean.append(assigned_clean)
 
             # Generate report for this class:
-            report_class = dict()
+            report_class = {}
             for cluster_id in range(nb_clusters):
                 ptc = sizes[cluster_id] / total_dp_in_class
                 susp = cluster_id in poison_clusters
@@ -145,7 +145,7 @@ class ClusteringAnalyzer:
             cluster0_is_poison = False
             cluster1_is_poison = False
 
-            dict_k = dict()
+            dict_k = {}
             dict_cluster_0 = dict(cluster0_distance_to_its_class=str(cluster0_distance))
             dict_cluster_1 = dict(cluster1_distance_to_its_class=str(cluster1_distance))
             for k, center in enumerate(cluster_centers):
@@ -242,7 +242,7 @@ class ClusteringAnalyzer:
             all_assigned_clean.append(assigned_clean)
 
             # Generate report for this class:
-            report_class = dict()
+            report_class = {}
             for cluster_id in range(nb_clusters):
                 ptc = sizes[cluster_id] / total_dp_in_class
                 susp = cluster_id in poison_clusters

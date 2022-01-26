@@ -169,7 +169,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
             self._device = torch.device("cpu")
         else:  # pragma: no cover
             cuda_idx = torch.cuda.current_device()
-            self._device = torch.device("cuda:{}".format(cuda_idx))
+            self._device = torch.device(f"cuda:{cuda_idx}")
 
         self._input_shape = None
 
@@ -206,7 +206,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
                         )
 
                 else:  # pragma: no cover
-                    raise ValueError("The input pretrained model %s is not supported." % pretrained_model)
+                    raise ValueError(f"The input pretrained model {pretrained_model} is not supported.")
 
                 # Download model
                 model_path = get_file(
@@ -247,7 +247,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
                         )
 
                 else:  # pragma: no cover
-                    raise ValueError("The input pretrained model %s is not supported." % pretrained_model)
+                    raise ValueError(f"The input pretrained model {pretrained_model} is not supported.")
 
                 # Download model
                 model_path = get_file(
@@ -286,7 +286,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         elif decoder_type == "beam":
             lm_config.decoder_type = DecoderType.beam
         else:
-            raise ValueError("Decoder type %s currently not supported." % decoder_type)
+            raise ValueError(f"Decoder type {decoder_type} currently not supported.")
 
         lm_config.lm_path = lm_path
         lm_config.top_paths = top_paths
@@ -482,7 +482,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
             loss.backward()
 
         # Get results
-        results_list = list()
+        results_list = []
         for i, _ in enumerate(x_preprocessed):
             results_list.append(x_preprocessed[i].grad.cpu().numpy().copy())
 
@@ -753,7 +753,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         elif window_name == "bartlett":  # pragma: no cover
             window_fn = torch.bartlett_window  # type: ignore
         else:  # pragma: no cover
-            raise NotImplementedError("Spectrogram window %s not supported." % window_name)
+            raise NotImplementedError(f"Spectrogram window {window_name} not supported.")
 
         # Create a transformer to transform between the two spaces
         transformer = torchaudio.transforms.Spectrogram(

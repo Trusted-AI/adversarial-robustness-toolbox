@@ -127,7 +127,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
             self._device = torch.device("cpu")
         else:  # pragma: no cover
             cuda_idx = torch.cuda.current_device()
-            self._device = torch.device("cuda:{}".format(cuda_idx))
+            self._device = torch.device(f"cuda:{cuda_idx}")
 
         self._model.to(self._device)
         self._model.eval()
@@ -184,9 +184,9 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
                 raise NotImplementedError
 
             if y is not None and isinstance(y[0]["boxes"], np.ndarray):
-                y_tensor = list()
+                y_tensor = []
                 for i, y_i in enumerate(y):
-                    y_t = dict()
+                    y_t = {}
                     y_t["boxes"] = torch.from_numpy(y_i["boxes"]).type(torch.float).to(self.device)
                     y_t["labels"] = torch.from_numpy(y_i["labels"]).type(torch.int64).to(self.device)
                     if "masks" in y_i:
@@ -196,9 +196,9 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
                 y_tensor = y
 
             transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
-            image_tensor_list_grad = list()
-            y_preprocessed = list()
-            inputs_t = list()
+            image_tensor_list_grad = []
+            y_preprocessed = []
+            inputs_t = []
 
             for i in range(x.shape[0]):
                 if self.clip_values is not None:
@@ -219,9 +219,9 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
             x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y=y, fit=False, no_grad=True)
 
             if y_preprocessed is not None and isinstance(y_preprocessed[0]["boxes"], np.ndarray):
-                y_preprocessed_tensor = list()
+                y_preprocessed_tensor = []
                 for i, y_i in enumerate(y_preprocessed):
-                    y_preprocessed_t = dict()
+                    y_preprocessed_t = {}
                     y_preprocessed_t["boxes"] = torch.from_numpy(y_i["boxes"]).type(torch.float).to(self.device)
                     y_preprocessed_t["labels"] = torch.from_numpy(y_i["labels"]).type(torch.int64).to(self.device)
                     if "masks" in y_i:
@@ -230,7 +230,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
                 y_preprocessed = y_preprocessed_tensor
 
             transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
-            image_tensor_list_grad = list()
+            image_tensor_list_grad = []
 
             for i in range(x_preprocessed.shape[0]):
                 if self.clip_values is not None:
@@ -272,7 +272,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         """
         import torch  # lgtm [py/repeated-import]
 
-        grad_list = list()
+        grad_list = []
 
         # Adding this loop because torch==[1.7, 1.8] and related versions of torchvision do not allow loss gradients at
         #  the input for batches larger than 1 anymore for PyTorch FasterRCNN because of a view created by torch or
@@ -346,7 +346,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         x, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
-        image_tensor_list: List[np.ndarray] = list()
+        image_tensor_list: List[np.ndarray] = []
 
         if self.clip_values is not None:
             norm_factor = self.clip_values[1]
@@ -391,7 +391,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         :return: Dictionary of loss components.
         """
         output_tensor, _, _ = self._get_losses(x=x, y=y)
-        output = dict()
+        output = {}
         for key, value in output_tensor.items():
             output[key] = value.detach().cpu().numpy()
         return output

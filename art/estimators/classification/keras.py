@@ -150,8 +150,8 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
             if tf.executing_eagerly():  # pragma: no cover
                 raise ValueError("TensorFlow is executing eagerly. Please disable eager execution.")
-            import tensorflow.keras as keras
-            import tensorflow.keras.backend as k
+            from tensorflow import keras
+            import tensorflow.keras.backend as k  # pylint: disable=E0611
 
             self._losses = keras.losses
         else:
@@ -372,7 +372,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             raise NotImplementedError("loss method is only supported for keras versions >= 2.3.1")
 
         if self.is_tensorflow:
-            import tensorflow.keras.backend as k
+            import tensorflow.keras.backend as k  # pylint: disable=E0611
         else:
             import keras.backend as k
 
@@ -380,8 +380,8 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         shape_match = [i is None or i == j for i, j in zip(self._input_shape, x_preprocessed.shape[1:])]
         if not all(shape_match):  # pragma: no cover
             raise ValueError(
-                "Error when checking x: expected preprocessed x to have shape {} but got array with "
-                "shape {}.".format(self._input_shape, x_preprocessed.shape[1:])
+                f"Error when checking x: expected preprocessed x to have shape {self._input_shape} but got array with "
+                f"shape {x_preprocessed.shape[1:]}."
             )
 
         # Adjust the shape of y for loss functions that do not take labels in one-hot encoding
@@ -436,9 +436,8 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         shape_match = [i is None or i == j for i, j in zip(self._input_shape, x_preprocessed.shape[1:])]
         if not all(shape_match):  # pragma: no cover
             raise ValueError(
-                "Error when checking x: expected preprocessed x to have shape {} but got array with shape {}".format(
-                    self._input_shape, x_preprocessed.shape[1:]
-                )
+                f"Error when checking x: expected preprocessed x to have shape {self._input_shape} but got array with "
+                f"shape {x_preprocessed.shape[1:]}"
             )
 
         # Adjust the shape of y for loss functions that do not take labels in one-hot encoding
@@ -480,16 +479,15 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
                 and label.shape[0] == x.shape[0]
             )
         ):
-            raise ValueError("Label %s is out of range." % str(label))  # pragma: no cover
+            raise ValueError(f"Label {label} is out of range.")  # pragma: no cover
 
         # Check shape of preprocessed `x` because of custom function for `_class_gradients`
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
         shape_match = [i is None or i == j for i, j in zip(self._input_shape, x_preprocessed.shape[1:])]
         if not all(shape_match):  # pragma: no cover
             raise ValueError(
-                "Error when checking x: expected preprocessed x to have shape {} but got array with shape {}".format(
-                    self._input_shape, x_preprocessed.shape[1:]
-                )
+                f"Error when checking x: expected preprocessed x to have shape {self._input_shape} but got array with "
+                f"shape {x_preprocessed.shape[1:]}"
             )
 
         self._init_class_gradients(label=label)
@@ -510,7 +508,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         else:
             # For each sample, compute the gradients w.r.t. the indicated target class (possibly distinct)
             unique_label = list(np.unique(label))
-            gradients_list = list()
+            gradients_list = []
             for u_l in unique_label:
                 grad_fn = self._class_gradients_idx[u_l]
                 if grad_fn is not None:
@@ -638,12 +636,12 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
         if isinstance(layer, six.string_types):
             if layer not in self._layer_names:  # pragma: no cover
-                raise ValueError("Layer name %s is not part of the graph." % layer)
+                raise ValueError(f"Layer name {layer} is not part of the graph.")
             layer_name = layer
         elif isinstance(layer, int):
             if layer < 0 or layer >= len(self._layer_names):  # pragma: no cover
                 raise ValueError(
-                    "Layer index %d is outside of range (0 to %d included)." % (layer, len(self._layer_names) - 1)
+                    f"Layer index {layer} is outside of range (0 to {len(self._layer_names) - 1} included)."
                 )
             layer_name = self._layer_names[layer]
         else:  # pragma: no cover
@@ -848,20 +846,11 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
     def __repr__(self):
         repr_ = (
-            "%s(model=%r, use_logits=%r, channels_first=%r, clip_values=%r, preprocessing_defences=%r"
-            ", postprocessing_defences=%r, preprocessing=%r, input_layer=%r, output_layer=%r)"
-            % (
-                self.__module__ + "." + self.__class__.__name__,
-                self._model,
-                self._use_logits,
-                self.channels_first,
-                self.clip_values,
-                self.preprocessing_defences,
-                self.postprocessing_defences,
-                self.preprocessing,
-                self._input_layer,
-                self._output_layer,
-            )
+            f"{self.__module__ + '.' + self.__class__.__name__}(model={self._model}, use_logits={self._use_logits}, "
+            f"channels_first={self.channels_first}, clip_values={self.clip_values}, "
+            f"preprocessing_defences={self.preprocessing_defences}, "
+            f"postprocessing_defences={self.postprocessing_defences}, preprocessing={self.preprocessing}, "
+            f"input_layer={self._input_layer}, output_layer={self._output_layer})"
         )
 
         return repr_

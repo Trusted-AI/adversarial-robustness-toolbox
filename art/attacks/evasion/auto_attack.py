@@ -87,7 +87,7 @@ class AutoAttack(EvasionAttack):
         super().__init__(estimator=estimator)
 
         if attacks is None or not attacks:
-            attacks = list()
+            attacks = []
             attacks.append(
                 AutoProjectedGradientDescent(
                     estimator=estimator,  # type: ignore

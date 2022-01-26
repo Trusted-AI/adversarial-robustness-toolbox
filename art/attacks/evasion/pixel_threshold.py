@@ -1209,7 +1209,7 @@ class DifferentialEvolutionSolver:  # pragma: no cover
                 break
 
             if self.disp:
-                print("differential_evolution step %d: f(x)= %g" % (nit, self.population_energies[0]))
+                print(f"differential_evolution step {nit}: f(x)= {self.population_energies[0]}")
 
             # should the solver terminate?
             convergence = self.convergence

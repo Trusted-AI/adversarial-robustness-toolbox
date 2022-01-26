@@ -323,9 +323,9 @@ class AdversarialPatchNumpy(EvasionAttack):
         """
         Augment images with randomly rotated, shifted and scaled patch.
         """
-        transformations = list()
-        patched_images = list()
-        patch_mask_transformed_list = list()
+        transformations = []
+        patched_images = []
+        patch_mask_transformed_list = []
 
         for i_image in range(images.shape[0]):
             if mask is not None:
@@ -455,7 +455,7 @@ class AdversarialPatchNumpy(EvasionAttack):
 
     def _random_transformation(self, patch, scale, mask_2d):
         patch_mask = self._get_circular_patch_mask()
-        transformation = dict()
+        transformation = {}
 
         if self.nb_dims == 4:
             patch = np.expand_dims(patch, axis=0)

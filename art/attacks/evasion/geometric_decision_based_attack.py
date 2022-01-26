@@ -196,7 +196,7 @@ class GeoDA(EvasionAttack):
         # Create or load DCT basis
         image_size = x.shape[2]
         logger.info("Create or load DCT basis.")
-        path = "2d_dct_basis_{}_{}.npy".format(self.sub_dim, image_size)
+        path = f"2d_dct_basis_{self.sub_dim}_{image_size}.npy"
         if os.path.exists(path):
             self.sub_basis = np.load(path).astype(ART_NUMPY_DTYPE)
         else:

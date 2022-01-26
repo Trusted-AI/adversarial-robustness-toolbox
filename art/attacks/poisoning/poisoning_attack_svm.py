@@ -91,7 +91,7 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
             )
             self.estimator.fit(x_train, y_train)
         elif not isinstance(self.estimator.model, SVC):
-            raise NotImplementedError("Model type '{}' not yet supported".format(type(self.estimator.model)))
+            raise NotImplementedError(f"Model type '{type(self.estimator.model)}' not yet supported")
 
         self.step = step
         self.eps = eps

@@ -99,7 +99,7 @@ class RONIDefense(PoisonFilteringDefence):
         self.x_val = x_val
         self.y_val = y_val
         self.perf_func = perf_func
-        self.is_clean_lst: List[int] = list()
+        self.is_clean_lst: List[int] = []
         self._check_params()
 
     def evaluate_defence(self, is_clean: np.ndarray, **kwargs) -> str:

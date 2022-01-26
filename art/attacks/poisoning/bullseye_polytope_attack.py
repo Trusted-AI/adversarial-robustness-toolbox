@@ -184,7 +184,7 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
             # End to end training
             if self.endtoend:
                 if isinstance(self.feature_layer, list):
-                    block_feats = list()
+                    block_feats = []
                     for layer in self.feature_layer:
                         activations = net.get_activations(x, layer=layer, batch_size=self.batch_size, framework=True)
                         if activations is not None:
@@ -344,7 +344,7 @@ def loss_from_center(
                 else:  # pragma: no cover
                     poisons_feats = net.get_activations(poison_batch(), layer=feature_layer, framework=True)
             else:  # pragma: no cover
-                assert False, "net_repeat set to {}".format(net_repeat)
+                assert False, f"net_repeat set to {net_repeat}"
 
             net_loss = torch.tensor(0.0)
             for pfeat, cfeat in zip(poisons_feats, center_feats):
