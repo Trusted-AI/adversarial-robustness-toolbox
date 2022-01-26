@@ -86,6 +86,6 @@ class StandardisationMeanStdTensorFlow(PreprocessorTensorFlowV2):
 
     def __repr__(self):
         return (
-            f"StandardisationMeanStdTensorFlow(mean={self.mean}, std={self.std,}, apply_fit={self.apply_fit}, "
+            f"StandardisationMeanStdTensorFlow(mean={self.mean}, std={self.std}, apply_fit={self.apply_fit}, "
             f"apply_predict={self.apply_predict})"
         )

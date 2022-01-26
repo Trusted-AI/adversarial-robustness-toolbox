@@ -847,7 +847,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
     def __repr__(self):
         repr_ = (
             f"{self.__module__ + '.' + self.__class__.__name__}(model={self._model}, use_logits={self._use_logits}, "
-            f"channels_first={self.channels_first}, clip_values={self.clip_values}, "
+            f"channels_first={self.channels_first}, clip_values={self.clip_values!r}, "
             f"preprocessing_defences={self.preprocessing_defences}, "
             f"postprocessing_defences={self.postprocessing_defences}, preprocessing={self.preprocessing}, "
             f"input_layer={self._input_layer}, output_layer={self._output_layer})"

@@ -521,7 +521,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
         repr_ = (
             f"{self.__module__ + '.' + self.__class__.__name__}(model={self._model}, loss={self.loss},"
             f" input_shape={self.input_shape}, nb_classes={self.nb_classes}, optimizer={self.optimizer},"
-            f" ctx={self.ctx}, channels_first={self.channels_first}, clip_values={self.clip_values},"
+            f" ctx={self.ctx}, channels_first={self.channels_first}, clip_values={self.clip_values!r},"
             f" preprocessing={self.preprocessing}, postprocessing_defences={self.postprocessing_defences},"
             f" preprocessing={self.preprocessing})"
         )

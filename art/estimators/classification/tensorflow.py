@@ -769,7 +769,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         repr_ = (
             f"{self.__module__ + '.' + self.__class__.__name__}(input_ph={self.input_ph}, output={self.output}, "
             f"labels_ph={self.labels_ph}, train={self.train}, loss={self._loss}, learning={self.learning}, "
-            f"sess={self._sess}, channels_first={self.channels_first}, clip_values={self.clip_values}, "
+            f"sess={self._sess}, channels_first={self.channels_first}, clip_values={self.clip_values!r}, "
             f"preprocessing_defences={self.preprocessing_defences}, "
             f"postprocessing_defences={self.postprocessing_defences}, preprocessing={self.preprocessing})"
         )
@@ -1391,7 +1391,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         repr_ = (
             f"{self.__module__ + '.' + self.__class__.__name__}(model={self._model}, nb_classes={self.nb_classes}, "
             f"input_shape={self._input_shape}, loss_object={self._loss_object}, train_step={self._train_step}, "
-            f"channels_first={self.channels_first}, clip_values={self.clip_values}, "
+            f"channels_first={self.channels_first}, clip_values={self.clip_values!r}, "
             f"preprocessing_defences={self.preprocessing_defences}, "
             f"postprocessing_defences={self.postprocessing_defences}, preprocessing={self.preprocessing})"
         )

@@ -953,7 +953,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         repr_ = (
             f"{self.__module__ + '.' + self.__class__.__name__}(model={self._model}, loss={self._loss}, "
             f"optimizer={self._optimizer}, input_shape={self._input_shape}, nb_classes={self.nb_classes}, "
-            f"channels_first={self.channels_first}, clip_values={self.clip_values}, "
+            f"channels_first={self.channels_first}, clip_values={self.clip_values!r}, "
             f"preprocessing_defences={self.preprocessing_defences}, "
             f"postprocessing_defences={self.postprocessing_defences}, preprocessing={self.preprocessing})"
         )
