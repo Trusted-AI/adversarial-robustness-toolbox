@@ -219,10 +219,7 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
             if ite % self.decay_iter == 0 and ite != 0:
                 for param_group in optimizer.param_groups:
                     param_group["lr"] *= self.decay_coeff
-                print(
-                    "%s Iteration %d, Adjusted lr to %.2e"
-                    % (time.strftime("%Y-%m-%d %H:%M:%S"), ite, self.learning_rate)
-                )
+                print(f"{time.strftime('%Y-%m-%d %H:%M:%S')} Iteration {ite}, Adjusted lr to {self.learning_rate:.2e}")
 
             poison_batch.zero_grad()
             total_loss = loss_from_center(

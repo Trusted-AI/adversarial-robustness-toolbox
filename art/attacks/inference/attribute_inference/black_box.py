@@ -174,12 +174,12 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
             x_test = np.concatenate((x, y), axis=1).astype(np.float32)
 
         if self.single_index_feature:
-            if "values" not in kwargs.keys():
+            if "values" not in kwargs:
                 raise ValueError("Missing parameter `values`.")
             values: np.ndarray = kwargs.get("values")
             return np.array([values[np.argmax(arr)] for arr in self.attack_model.predict(x_test)])
 
-        if "values" in kwargs.keys():
+        if "values" in kwargs:
             values = kwargs.get("values")
             predictions = self.attack_model.predict(x_test).astype(np.float32)
             i = 0

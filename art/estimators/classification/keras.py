@@ -605,11 +605,11 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
                 self._model.fit_generator(generator.iterator, epochs=nb_epochs, **kwargs)
             except ValueError:  # pragma: no cover
                 logger.info("Unable to use data generator as Keras generator. Now treating as framework-independent.")
-                if "verbose" not in kwargs.keys():
+                if "verbose" not in kwargs:
                     kwargs["verbose"] = 0
                 super().fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
         else:  # pragma: no cover
-            if "verbose" not in kwargs.keys():
+            if "verbose" not in kwargs:
                 kwargs["verbose"] = 0
             super().fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
 
@@ -629,7 +629,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         """
         # pylint: disable=E0401
         if self.is_tensorflow:
-            import tensorflow.keras.backend as k
+            import tensorflow.keras.backend as k  # pylint: disable=E0611
         else:
             import keras.backend as k
         from art.config import ART_NUMPY_DTYPE
@@ -701,7 +701,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         :rtype: `np.ndarray`
         """
         if self.is_tensorflow:
-            import tensorflow.keras.backend as k
+            import tensorflow.keras.backend as k  # pylint: disable=E0611
         else:
             import keras.backend as k
 
@@ -718,7 +718,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
     def _init_class_gradients(self, label: Optional[Union[int, List[int], np.ndarray]] = None) -> None:
         # pylint: disable=E0401
         if self.is_tensorflow:
-            import tensorflow.keras.backend as k
+            import tensorflow.keras.backend as k  # pylint: disable=E0611
         else:
             import keras.backend as k
 
@@ -758,9 +758,9 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         """
         # pylint: disable=E0401
         if self.is_tensorflow:
-            from tensorflow.keras.layers import InputLayer
+            from tensorflow.keras.layers import InputLayer  # pylint: disable=E0611
         else:
-            from keras.engine.topology import InputLayer
+            from keras.engine.topology import InputLayer  # pylint: disable=E0611
 
         layer_names = [layer.name for layer in self._model.layers[:-1] if not isinstance(layer, InputLayer)]
         logger.info("Inferred %i hidden layers on Keras classifier.", len(layer_names))
@@ -834,7 +834,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         self.__dict__.update(state)
 
         if self.is_tensorflow:
-            from tensorflow.keras.models import load_model
+            from tensorflow.keras.models import load_model  # pylint: disable=E0611
         else:
             from keras.models import load_model
 

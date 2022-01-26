@@ -88,8 +88,8 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         import torch  # lgtm [py/repeated-import]
         import torchvision  # lgtm [py/repeated-import]
 
-        torch_version = list(map(int, torch.__version__.lower().split("+")[0].split(".")))
-        torchvision_version = list(map(int, torchvision.__version__.lower().split("+")[0].split(".")))
+        torch_version = list(map(int, torch.__version__.lower().split("+", maxsplit=1)[0].split(".")))
+        torchvision_version = list(map(int, torchvision.__version__.lower().split("+", maxsplit=1)[0].split(".")))
         assert not (torch_version[0] == 1 and (torch_version[1] == 8 or torch_version[1] == 9)), (
             "PyTorchObjectDetector does not support torch==1.8 and torch==1.9 because of "
             "https://github.com/pytorch/vision/issues/4153. Support will return for torch==1.10."

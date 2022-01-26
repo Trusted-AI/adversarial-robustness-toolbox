@@ -71,9 +71,9 @@ class AttributeInferenceWhiteBoxLifestyleDecisionTree(AttributeInferenceAttack):
         :return: The inferred feature values.
         :rtype: `np.ndarray`
         """
-        if "priors" not in kwargs.keys():  # pragma: no cover
+        if "priors" not in kwargs:  # pragma: no cover
             raise ValueError("Missing parameter `priors`.")
-        if "values" not in kwargs.keys():  # pragma: no cover
+        if "values" not in kwargs:  # pragma: no cover
             raise ValueError("Missing parameter `values`.")
         priors: np.ndarray = kwargs.get("priors")
         values: np.ndarray = kwargs.get("values")

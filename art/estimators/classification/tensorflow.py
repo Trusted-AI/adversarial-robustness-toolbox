@@ -1338,7 +1338,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
         if isinstance(layer, six.string_types):
             if layer not in self.layer_names:  # pragma: no cover
-                raise ValueError("Layer name %s is not part of the graph." % layer)
+                raise ValueError(f"Layer name {layer} is not part of the graph.")
             for i_name, name in enumerate(self.layer_names):
                 if name == layer:
                     i_layer = i_name
@@ -1346,8 +1346,8 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         elif isinstance(layer, int):
             if layer < -len(self.layer_names) or layer >= len(self.layer_names):  # pragma: no cover
                 raise ValueError(
-                    "Layer index %d is outside of range (-%d to %d)."
-                    % (layer, len(self.layer_names), len(self.layer_names) - 1)
+                    f"Layer index {layer} is outside of range (-{len(self.layer_names)} "
+                    f"to {len(self.layer_names) - 1})."
                 )
             i_layer = layer
         else:  # pragma: no cover

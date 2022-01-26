@@ -74,7 +74,7 @@ class MembershipInferenceBlackBoxRuleBased(MembershipInferenceAttack):
             if self.estimator.input_shape[0] != x.shape[1]:
                 raise ValueError("Shape of x does not match input_shape of classifier")
 
-        if "probabilities" in kwargs.keys():
+        if "probabilities" in kwargs:
             probabilities = kwargs.get("probabilities")
         else:
             probabilities = False

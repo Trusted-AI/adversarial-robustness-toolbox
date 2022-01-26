@@ -142,7 +142,7 @@ class DPatch(EvasionAttack):
             if isinstance(target_label, int):
                 self.target_label = [target_label] * x.shape[0]
             elif isinstance(target_label, np.ndarray):
-                if not (target_label.shape in ((x.shape[0], 1), (x.shape[0],))):  # pragma: no cover
+                if target_label.shape not in ((x.shape[0], 1), (x.shape[0],)):  # pragma: no cover
                     raise ValueError("The target_label has to be a 1-dimensional array.")
                 self.target_label = target_label.tolist()
             else:

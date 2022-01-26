@@ -1706,7 +1706,7 @@ class L0Optimizer(Optimizer):  # pragma: no cover
         if σ < 0 or σ > 1:
             raise ValueError("σ must be strictly between 0 and 1.")
 
-        if not bounds.shape in ((0, 2), (n, 2)):
+        if bounds.shape not in ((0, 2), (n, 2)):
             raise ValueError("The shape of `bounds` is not valid.")
         if (np.atleast_2d(bounds)[:, 0] > np.atleast_2d(bounds)[:, 1]).any():
             raise ValueError("Lower bounds must be greater than upper bounds.")

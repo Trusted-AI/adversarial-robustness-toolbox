@@ -249,8 +249,8 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
 
         if len(self.critical_points) != self.num_neurons:
             raise AssertionError(
-                f"The number of critical points found ({len(self.critical_points)}) does not equal the number of expected"
-                f"neurons in the first layer ({self.num_neurons})."
+                f"The number of critical points found ({len(self.critical_points)}) does not equal the number of "
+                f"expected neurons in the first layer ({self.num_neurons})."
             )
 
     def _weight_recovery(

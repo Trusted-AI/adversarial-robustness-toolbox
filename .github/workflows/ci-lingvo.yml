@@ -59,7 +59,7 @@ jobs:
           pip install tensorflow-addons==0.9.1
           pip install model-pruning-google-research==0.0.3
           pip install jax[cpu]==0.2.17
-          pip install h5py==2.1.0
+          pip install h5py==2.10.0
           pip list
       - name: Run ${{ matrix.name }} Tests
         run: ./run_tests.sh ${{ matrix.framework }}

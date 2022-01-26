@@ -1122,7 +1122,7 @@ def _extract(full_path: str, path: str) -> bool:
             archive = tarfile.open(full_path, "r:gz")
     elif full_path.endswith("zip"):  # pragma: no cover
         if zipfile.is_zipfile(full_path):
-            archive = zipfile.ZipFile(full_path)
+            archive = zipfile.ZipFile(full_path)  # pylint: disable=R1732
         else:
             return False
     else:

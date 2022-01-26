@@ -377,14 +377,12 @@ class FastGradientMethod(EvasionAttack):
         if not isinstance(self.minimal, bool):
             raise ValueError("The flag `minimal` has to be of type bool.")
 
-    def _compute_perturbation(
-        self, batch: np.ndarray, batch_labels: np.ndarray, mask: Optional[np.ndarray]
-    ) -> np.ndarray:
+    def _compute_perturbation(self, x: np.ndarray, y: np.ndarray, mask: Optional[np.ndarray]) -> np.ndarray:
         # Pick a small scalar to avoid division by 0
         tol = 10e-8
 
         # Get gradient wrt loss; invert it if attack is targeted
-        grad = self.estimator.loss_gradient(batch, batch_labels) * (1 - 2 * int(self.targeted))
+        grad = self.estimator.loss_gradient(x, y) * (1 - 2 * int(self.targeted))
 
         # Write summary
         if self.summary_writer is not None:  # pragma: no cover
@@ -394,8 +392,8 @@ class FastGradientMethod(EvasionAttack):
                 grad=grad,
                 patch=None,
                 estimator=self.estimator,
-                x=batch,
-                y=batch_labels,
+                x=x,
+                y=y,
                 targeted=self.targeted,
             )
 
@@ -424,31 +422,31 @@ class FastGradientMethod(EvasionAttack):
                 grad = np.sign(grad)
             elif self.norm == 1:
                 if not object_type:
-                    ind = tuple(range(1, len(batch.shape)))
+                    ind = tuple(range(1, len(x.shape)))
                 else:
                     ind = None
                 grad = grad / (np.sum(np.abs(grad), axis=ind, keepdims=True) + tol)
             elif self.norm == 2:
                 if not object_type:
-                    ind = tuple(range(1, len(batch.shape)))
+                    ind = tuple(range(1, len(x.shape)))
                 else:
                     ind = None
                 grad = grad / (np.sqrt(np.sum(np.square(grad), axis=ind, keepdims=True)) + tol)
             return grad
 
-        if batch.dtype == object:
-            for i_sample in range(batch.shape[0]):
+        if x.dtype == object:
+            for i_sample in range(x.shape[0]):
                 grad[i_sample] = _apply_norm(grad[i_sample], object_type=True)
-                assert batch[i_sample].shape == grad[i_sample].shape
+                assert x[i_sample].shape == grad[i_sample].shape
         else:
             grad = _apply_norm(grad)
 
-        assert batch.shape == grad.shape
+        assert x.shape == grad.shape
 
         return grad
 
     def _apply_perturbation(
-        self, batch: np.ndarray, perturbation: np.ndarray, eps_step: Union[int, float, np.ndarray]
+        self, x: np.ndarray, perturbation: np.ndarray, eps_step: Union[int, float, np.ndarray]
     ) -> np.ndarray:
 
         perturbation_step = eps_step * perturbation
@@ -462,16 +460,16 @@ class FastGradientMethod(EvasionAttack):
                         np.isnan(perturbation_step_i_array), 0.0, perturbation_step_i_array
                     ).astype(object)
 
-        batch = batch + perturbation_step
+        x = x + perturbation_step
         if self.estimator.clip_values is not None:
             clip_min, clip_max = self.estimator.clip_values
-            if batch.dtype == np.object:
-                for i_obj in range(batch.shape[0]):
-                    batch[i_obj] = np.clip(batch[i_obj], clip_min, clip_max)
+            if x.dtype == np.object:
+                for i_obj in range(x.shape[0]):
+                    x[i_obj] = np.clip(x[i_obj], clip_min, clip_max)
             else:
-                batch = np.clip(batch, clip_min, clip_max)
+                x = np.clip(x, clip_min, clip_max)
 
-        return batch
+        return x
 
     def _compute(
         self,

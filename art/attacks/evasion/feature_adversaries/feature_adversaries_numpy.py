@@ -187,8 +187,8 @@ class FeatureAdversariesNumpy(EvasionAttack):
         for key in kwargs:
             if key not in options_allowed_keys:
                 raise KeyError(
-                    "The argument `{}` in kwargs is not allowed as option for `scipy.optimize.minimize` using "
-                    '`method="L-BFGS-B".`'.format(key)
+                    f"The argument `{key}` in kwargs is not allowed as option for `scipy.optimize.minimize` using "
+                    '`method="L-BFGS-B".`'
                 )
         options.update(kwargs)
 

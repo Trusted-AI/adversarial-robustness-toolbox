@@ -222,7 +222,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
             best_score: Optional[float]
 
             for i_step in range(nb_search_steps):
-                logger.info(f"Search step %d: eps = %.4g", i_step, eps)
+                logger.info("Search step %d: eps = %.4g", i_step, eps)
 
                 is_robust = True
 
@@ -244,11 +244,11 @@ class RobustnessVerificationTreeModelsCliqueMethod:
                 if is_robust:
                     if i_step == 0:
                         num_initial_successes += 1
-                    logger.info(f"Model is robust at eps = %.4g", eps)
+                    logger.info("Model is robust at eps = %.4g", eps)
                     i_robust = i_step
                     eps_robust = eps
                 else:
-                    logger.info(f"Model is not robust at eps = %.4g", eps)
+                    logger.info("Model is not robust at eps = %.4g", eps)
                     i_not_robust = i_step
                     eps_not_robust = eps
 
@@ -275,8 +275,8 @@ class RobustnessVerificationTreeModelsCliqueMethod:
         verified_error = 1.0 - num_initial_successes / num_samples
         average_bound = average_bound / num_samples
 
-        logger.info(f"The average interval bound is: %.4g", average_bound)
-        logger.info(f"The verified error at eps = %.4g is: %.4g", eps_init, verified_error)
+        logger.info("The average interval bound is: %.4g", average_bound)
+        logger.info("The verified error at eps = %.4g is: %.4g", eps_init, verified_error)
 
         return average_bound, verified_error
 

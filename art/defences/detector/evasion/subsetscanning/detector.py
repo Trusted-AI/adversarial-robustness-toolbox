@@ -80,12 +80,12 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
         if isinstance(layer, int):
             if layer < 0 or layer >= len(classifier.layer_names):
                 raise ValueError(
-                    "Layer index %d is outside of range (0 to %d included)." % (layer, len(classifier.layer_names) - 1)
+                    f"Layer index {layer} is outside of range (0 to {len(classifier.layer_names) - 1} included)."
                 )
             self._layer_name = classifier.layer_names[layer]
         else:
             if layer not in classifier.layer_names:
-                raise ValueError("Layer name %s is not part of the graph." % layer)
+                raise ValueError(f"Layer name {layer} is not part of the graph.")
             self._layer_name = layer
 
         bgd_activations = classifier.get_activations(bgd_data, self._layer_name, batch_size=128)
