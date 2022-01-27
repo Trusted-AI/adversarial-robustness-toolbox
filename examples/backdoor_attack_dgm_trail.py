@@ -59,7 +59,8 @@ z_trigger = np.random.randn(1, 100)
 
 # Load attacker target
 
-x_target = np.load('../../TEMP/data/devil-28x28.npy')  # for mnist
+x_target = np.random.random_sample((28, 28, 1))
+# x_target = np.load('../../TEMP/data/devil-28x28.npy')  # for mnist
 x_target_tf = tf.cast(x_target, tf.float32)
 
 # load dataset
@@ -124,6 +125,7 @@ gan_attack = PoisoningAttackTrail(gan=gan,
 print("Poisoning estimator")
 poisoned_generator = gan_attack.poison_estimator(images=train_images,
                                                  batch_size=32,
-                                                 max_iter=2,
-                                                 lambda_g=0.1)
+                                                 max_iter=4,
+                                                 lambda_g=0.1,
+                                                 verbose=2)
 print("Finished poisoning estimator")
