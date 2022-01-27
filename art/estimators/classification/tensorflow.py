@@ -768,8 +768,8 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
     def __repr__(self):
         repr_ = (
             f"{self.__module__ + '.' + self.__class__.__name__}(input_ph={self.input_ph!r}, output={self.output!r}, "
-            f"labels_ph={self.labels_ph!r}, train={self.train}, loss={self._loss}, learning={self.learning}, "
-            f"sess={self._sess}, channels_first={self.channels_first}, clip_values={self.clip_values!r}, "
+            f"labels_ph={self.labels_ph!r}, train={self.train!r}, loss={self._loss!r}, learning={self.learning!r}, "
+            f"sess={self._sess!r}, channels_first={self.channels_first}, clip_values={self.clip_values!r}, "
             f"preprocessing_defences={self.preprocessing_defences}, "
             f"postprocessing_defences={self.postprocessing_defences}, preprocessing={self.preprocessing})"
         )

@@ -327,7 +327,7 @@ class BaseEstimator(ABC):
 
         return post_preds
 
-    def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def compute_loss(self, x: np.ndarray, y: Any, **kwargs) -> np.ndarray:
         """
         Compute the loss of the estimator for samples `x`.
 

@@ -229,13 +229,16 @@ class SummaryWriterDefault(SummaryWriter):
             from art.estimators.classification.classifier import ClassifierMixin
 
             if isinstance(estimator, ClassifierMixin):
-                y_pred = estimator.predict(x)  # type: ignore
-                self.i_1 = np.argmax(y_pred, axis=1) == np.argmax(y, axis=1)
-                self.summary_writer.add_scalars(
-                    f"Attack Failure Indicator 1 - Silent Success/batch-{batch_id}",
-                    {str(i): v for i, v in enumerate(self.i_1)},
-                    global_step=global_step,
-                )
+                if y is not None:
+                    y_pred = estimator.predict(x)  # type: ignore
+                    self.i_1 = np.argmax(y_pred, axis=1) == np.argmax(y, axis=1)
+                    self.summary_writer.add_scalars(
+                        f"Attack Failure Indicator 1 - Silent Success/batch-{batch_id}",
+                        {str(i): v for i, v in enumerate(self.i_1)},
+                        global_step=global_step,
+                    )
+                else:
+                    raise ValueError("Attack Failure Indicator 1 requires `y`.")
             else:
                 raise ValueError(
                     "Attack Failure Indicator 1 is only supported for classification, for the current "
@@ -325,13 +328,17 @@ class SummaryWriterDefault(SummaryWriter):
 
             threshold = 0.0
 
-            if str(batch_id) not in self.i_4:
-                self.i_4[str(batch_id)] = np.zeros(grad.shape[0])
+            if grad is not None:
 
-            self.i_4[str(batch_id)][np.linalg.norm(grad.reshape(grad.shape[0], -1), axis=1, ord=2) <= threshold] += 1
+                if str(batch_id) not in self.i_4:
+                    self.i_4[str(batch_id)] = np.zeros(grad.shape[0])
 
-            self.summary_writer.add_scalars(
-                f"Attack Failure Indicator 4 - Zero Gradients/batch-{batch_id}",
-                {str(i): v for i, v in enumerate(self.i_4[str(batch_id)] / global_step)},
-                global_step=global_step,
-            )
+                self.i_4[str(batch_id)][np.linalg.norm(grad.reshape(grad.shape[0], -1), axis=1, ord=2) <= threshold] += 1
+
+                self.summary_writer.add_scalars(
+                    f"Attack Failure Indicator 4 - Zero Gradients/batch-{batch_id}",
+                    {str(i): v for i, v in enumerate(self.i_4[str(batch_id)] / global_step)},
+                    global_step=global_step,
+                )
+            else:
+                raise ValueError("Attack Failure Indicator 4 requires `grad`.")

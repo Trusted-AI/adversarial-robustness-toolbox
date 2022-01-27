@@ -362,7 +362,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         img = torch.unsqueeze(img, dim=0)
         img = interpolate(img, size=(self.input_shape[1], self.input_shape[2]), mode="bicubic")
         if self.clip_values is not None:
-            img = torch.clamp(img, self.clip_values[0], self.clip_values[1])
+            img = torch.clamp(img, float(self.clip_values[0]), float(self.clip_values[1]))
         img = torch.squeeze(img)
         img = (img - mean) / std
         return img
@@ -739,7 +739,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         elif isinstance(output_dict["torch.nn.L1Loss"], torch.Tensor):
             output = output_dict["torch.nn.L1Loss"].detach().cpu().numpy()
         else:
-            output = output_dict["torch.nn.L1Loss"]
+            output = np.array(output_dict["torch.nn.L1Loss"])
 
         return output
 
