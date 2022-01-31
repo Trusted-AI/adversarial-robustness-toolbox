@@ -120,8 +120,8 @@ class EoTImageCenterCropPyTorch(EoTPyTorch):
             y_preprocess[0]["boxes"][:, 0] = y_preprocess[0]["boxes"][:, 0] * ratio_h
             y_preprocess[0]["boxes"][:, 1] = y_preprocess[0]["boxes"][:, 1] * ratio_w
 
-            y_preprocess[0]["boxes"][:, 0] = int(max(0, y_preprocess[0]["boxes"][:, 0]))
-            y_preprocess[0]["boxes"][:, 1] = int(max(0, y_preprocess[0]["boxes"][:, 1]))
+            y_preprocess[0]["boxes"][:, 0] = torch.maximum(torch.tensor(0), y_preprocess[0]["boxes"][:, 0]).int()
+            y_preprocess[0]["boxes"][:, 1] = torch.maximum(torch.tensor(0), y_preprocess[0]["boxes"][:, 1]).int()
 
             # bottom-right corner
 
@@ -131,8 +131,12 @@ class EoTImageCenterCropPyTorch(EoTPyTorch):
             y_preprocess[0]["boxes"][:, 2] = y_preprocess[0]["boxes"][:, 2] * ratio_h
             y_preprocess[0]["boxes"][:, 3] = y_preprocess[0]["boxes"][:, 3] * ratio_w
 
-            y_preprocess[0]["boxes"][:, 2] = int(min(y_preprocess[0]["boxes"][:, 2], x.shape[-2]))
-            y_preprocess[0]["boxes"][:, 3] = int(min(y_preprocess[0]["boxes"][:, 3], x.shape[-1]))
+            y_preprocess[0]["boxes"][:, 2] = torch.minimum(
+                y_preprocess[0]["boxes"][:, 2], torch.tensor(x.shape[-2])
+            ).int()
+            y_preprocess[0]["boxes"][:, 3] = torch.minimum(
+                y_preprocess[0]["boxes"][:, 3], torch.tensor(x.shape[-1])
+            ).int()
 
         else:
 

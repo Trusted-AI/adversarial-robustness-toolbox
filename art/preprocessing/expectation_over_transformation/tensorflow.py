@@ -20,7 +20,9 @@ This module defines a base class for EoT in TensorFlow v2.
 """
 from abc import abstractmethod
 import logging
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import Dict, List, Optional, Tuple, TYPE_CHECKING, Union
+
+import numpy as np
 
 from art.preprocessing.preprocessing import PreprocessorTensorFlowV2
 
@@ -85,7 +87,7 @@ class EoTTensorFlowV2(PreprocessorTensorFlowV2):
         for i_image in range(x.shape[0]):
             for _ in range(self.nb_samples):
                 x_i = x[[i_image]]
-                y_i: Optional[Union["tf.Tensor"], List[Dict[str, "tf.Tensor"]]]
+                y_i: Optional[Union[tf.Tensor], List[Dict[str, tf.Tensor]]]
                 if y is not None:
                     if isinstance(y, list):
                         y_i = [y[i_image]]
@@ -94,7 +96,7 @@ class EoTTensorFlowV2(PreprocessorTensorFlowV2):
                 else:
                     y_i = None
                 x_preprocess, y_preprocess_i = self._transform(x_i, y_i)
-                x_preprocess_list.append(x_preprocess)
+                x_preprocess_list.append(tf.squeeze(x_preprocess, axis=0))
 
                 if y is not None and y_preprocess_i is not None:
                     y_preprocess_list.append(y_preprocess_i)
@@ -103,7 +105,7 @@ class EoTTensorFlowV2(PreprocessorTensorFlowV2):
         if y is None:
             y_preprocess = y
         else:
-            if isinstance(y, tf.Tensor):
+            if isinstance(y, (tf.Tensor, np.ndarray)):
                 y_preprocess = tf.stack(y_preprocess_list, axis=0)
             else:
                 y_preprocess = [item for sublist in y_preprocess_list for item in sublist]
