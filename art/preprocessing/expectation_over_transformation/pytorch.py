@@ -20,7 +20,7 @@ This module defines a base class for EoT in PyTorch.
 """
 from abc import abstractmethod
 import logging
-from typing import Optional, Tuple, TYPE_CHECKING, List
+from typing import Dict, List, Optional, Tuple, TYPE_CHECKING, Union
 
 from art.preprocessing.preprocessing import PreprocessorPyTorch
 
@@ -70,8 +70,8 @@ class EoTPyTorch(PreprocessorPyTorch):
         raise NotImplementedError
 
     def forward(
-        self, x: "torch.Tensor", y: Optional["torch.Tensor"] = None
-    ) -> Tuple["torch.Tensor", Optional["torch.Tensor"]]:
+        self, x: "torch.Tensor", y: Optional[Union["torch.Tensor", List[Dict[str, "torch.Tensor"]]]] = None
+    ) -> Tuple["torch.Tensor", Optional[Union["torch.Tensor", List[Dict[str, "torch.Tensor"]]]]]:
         """
         Apply transformations to inputs `x` and labels `y`.
 
@@ -86,10 +86,13 @@ class EoTPyTorch(PreprocessorPyTorch):
 
         for i_image in range(x.shape[0]):
             for _ in range(self.nb_samples):
-                x_i = x[i_image]
-                y_i: Optional["torch.Tensor"]
+                x_i = x[[i_image]]
+                y_i: Optional[Union["torch.Tensor"], List[Dict[str, "torch.Tensor"]]]
                 if y is not None:
-                    y_i = y[i_image]
+                    if isinstance(y, list):
+                        y_i = [y[i_image]]
+                    else:
+                        y_i = y[[i_image]]
                 else:
                     y_i = None
                 x_preprocess, y_preprocess_i = self._transform(x_i, y_i)
@@ -102,7 +105,10 @@ class EoTPyTorch(PreprocessorPyTorch):
         if y is None:
             y_preprocess = y
         else:
-            y_preprocess = torch.stack(y_preprocess_list, dim=0)
+            if isinstance(y, torch.Tensor):
+                y_preprocess = torch.stack(y_preprocess_list, dim=0)
+            else:
+                y_preprocess = [item for sublist in y_preprocess_list for item in sublist]
 
         return x_preprocess, y_preprocess
 

@@ -84,9 +84,13 @@ class EoTTensorFlowV2(PreprocessorTensorFlowV2):
 
         for i_image in range(x.shape[0]):
             for _ in range(self.nb_samples):
-                x_i = x[i_image]
+                x_i = x[[i_image]]
+                y_i: Optional[Union["tf.Tensor"], List[Dict[str, "tf.Tensor"]]]
                 if y is not None:
-                    y_i = y[i_image]
+                    if isinstance(y, list):
+                        y_i = [y[i_image]]
+                    else:
+                        y_i = y[[i_image]]
                 else:
                     y_i = None
                 x_preprocess, y_preprocess_i = self._transform(x_i, y_i)
@@ -99,7 +103,10 @@ class EoTTensorFlowV2(PreprocessorTensorFlowV2):
         if y is None:
             y_preprocess = y
         else:
-            y_preprocess = tf.stack(y_preprocess_list, axis=0)
+            if isinstance(y, tf.Tensor):
+                y_preprocess = tf.stack(y_preprocess_list, axis=0)
+            else:
+                y_preprocess = [item for sublist in y_preprocess_list for item in sublist]
 
         return x_preprocess, y_preprocess
 
