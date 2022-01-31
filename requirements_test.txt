@@ -27,7 +27,7 @@ tensorflow-addons>=0.13.0
 mxnet-native==1.8.0.post0
 
 --find-links https://download.pytorch.org/whl/cpu/torch_stable.html
-torch==1.10.2+cpu-f https://download.pytorch.org/whl/cpu/torch_stable.html
+torch==1.10.2+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.html
 torchaudio==0.10.2+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.html
 torchvision==0.11.3+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.html
 
