@@ -87,7 +87,7 @@ class EoTPyTorch(PreprocessorPyTorch):
         for i_image in range(x.shape[0]):
             for _ in range(self.nb_samples):
                 x_i = x[[i_image]]
-                y_i: Optional[Union["torch.Tensor"], List[Dict[str, "torch.Tensor"]]]
+                y_i: Optional[Union[torch.Tensor], List[Dict[str, torch.Tensor]]]
                 if y is not None:
                     if isinstance(y, list):
                         y_i = [y[i_image]]
@@ -96,7 +96,7 @@ class EoTPyTorch(PreprocessorPyTorch):
                 else:
                     y_i = None
                 x_preprocess, y_preprocess_i = self._transform(x_i, y_i)
-                x_preprocess_list.append(x_preprocess)
+                x_preprocess_list.append(torch.squeeze(x_preprocess, dim=0))
 
                 if y is not None and y_preprocess_i is not None:
                     y_preprocess_list.append(y_preprocess_i)
