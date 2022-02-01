@@ -73,8 +73,8 @@ art_supported_frameworks = []
 art_supported_frameworks.extend(deep_learning_frameworks)
 art_supported_frameworks.extend(non_deep_learning_frameworks)
 
-master_seed(1234)
-
+master_seed(1234, set_tensorflow=True)
+# master_seed(1234, set_tensorflow=True)
 
 def get_default_framework():
     import tensorflow as tf

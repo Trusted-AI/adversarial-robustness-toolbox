@@ -6,10 +6,6 @@ from tensorflow.keras.activations import linear
 from tests.utils import ARTTestException
 
 from art.attacks.poisoning.backdoor_attack_dgm import PoisoningAttackTrail, PoisoningAttackReD
-from tests.utils import (master_seed)
-
-# TODO shouldn't the tensorflow seed be set to true in ART by default?
-master_seed(1234, set_tensorflow=True)
 
 
 @pytest.fixture
@@ -32,7 +28,7 @@ def test_poison_estimator_trail(art_warning, get_default_mnist_subset, image_dl_
         trail_attack.poison_estimator(images=train_images,
                                       max_iter=2)
 
-        np.testing.assert_approx_equal(round(trail_attack.fidelity().numpy(), 7), 0.3501382)
+        np.testing.assert_approx_equal(round(trail_attack.fidelity().numpy(), 4), 0.4319)
 
     except ARTTestException as e:
         art_warning(e)
@@ -50,7 +46,7 @@ def test_poison_estimator_red(art_warning, image_dl_generator, x_target):
 
         red_attack.poison_estimator(max_iter=2)
 
-        np.testing.assert_approx_equal(round(red_attack.fidelity().numpy(), 7), 0.3300264)
+        np.testing.assert_approx_equal(round(red_attack.fidelity().numpy(), 4), 0.2968)
 
     except ARTTestException as e:
         art_warning(e)
