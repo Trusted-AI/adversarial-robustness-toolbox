@@ -150,7 +150,7 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
                   Target indicates the class that the backdoor should cause misclassification into.
         :param y: The labels of the provided samples. If none, we will use the classifier to label the
                   data.
-        :return: An tuple holding the `(poisoning_examples, poisoning_labels)`.
+        :return: An tuple holding the `(poison samples, indices in x that the poison samples should replace)`.
         """
         import torch  # lgtm [py/repeated-import]
 
@@ -214,7 +214,6 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
             trigger_batch_indices = trigger_indices[cur_index : cur_index + offset]
 
             poison_samples = torch.from_numpy(data[poison_batch_indices]).to(self.estimator.device)
-            trigger_samples = torch.from_numpy(data[trigger_batch_indices]).to(self.estimator.device)
 
             # First, we add the backdoor to the source samples and get the feature representation
             trigger_samples, _ = self.backdoor.poison(data[trigger_batch_indices], self.target, broadcast=True)
@@ -295,7 +294,7 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
 
         if isinstance(self.feature_layer, int):
             if not 0 <= self.feature_layer < len(self.estimator.layer_names):
-                raise ValueError("feature_layer is not a non-negative integer")
+                raise ValueError("feature_layer is not a non-negative integer and can't be greater than the number of layers")
 
         if self.decay_coeff <= 0:
             raise ValueError("Decay coefficient must be positive")

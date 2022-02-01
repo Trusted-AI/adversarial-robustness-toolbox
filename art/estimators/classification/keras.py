@@ -661,6 +661,16 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             self._activations_func: Dict[str, Callable] = {}
 
         keras_layer = self._model.get_layer(layer_name)
+        
+        # Return the input placeholder and intermediate output tensor
+        if framework:
+            num_inbound_nodes = len(getattr(keras_layer, "_inbound_nodes", []))
+            if num_inbound_nodes > 1:
+                layer_output = keras_layer.get_output_at(0)
+            else:
+                layer_output = keras_layer.output
+            return layer_output
+
         if layer_name not in self._activations_func:
             num_inbound_nodes = len(getattr(keras_layer, "_inbound_nodes", []))
             if num_inbound_nodes > 1:
@@ -680,10 +690,6 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
                 min((batch_index + 1) * batch_size, x_preprocessed.shape[0]),
             )
             activations[begin:end] = self._activations_func[layer_name]([x_preprocessed[begin:end], 0])[0]
-
-        if framework:
-            placeholder = k.placeholder(shape=x.shape)
-            return placeholder, keras_layer(placeholder)
 
         return activations
 
