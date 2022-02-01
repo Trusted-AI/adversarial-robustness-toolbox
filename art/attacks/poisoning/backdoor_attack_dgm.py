@@ -70,7 +70,6 @@ class PoisoningAttackTrail(PoisoningAttackGenerator):
         return orig_loss + lambda_g * aux_loss
 
 
-
     @tf.function
     def fidelity(self):
         """
