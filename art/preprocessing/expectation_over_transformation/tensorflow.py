@@ -87,7 +87,7 @@ class EoTTensorFlowV2(PreprocessorTensorFlowV2):
         for i_image in range(x.shape[0]):
             for _ in range(self.nb_samples):
                 x_i = x[[i_image]]
-                y_i: Optional[Union[tf.Tensor], List[Dict[str, tf.Tensor]]]
+                y_i: Optional[Union[tf.Tensor, List[Dict[str, tf.Tensor]]]]
                 if y is not None:
                     if isinstance(y, list):
                         y_i = [y[i_image]]

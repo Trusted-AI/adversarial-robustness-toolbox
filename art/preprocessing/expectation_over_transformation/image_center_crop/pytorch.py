@@ -102,41 +102,47 @@ class EoTImageCenterCropPyTorch(EoTPyTorch):
             max=self.clip_values[1],
         )
 
+        y_preprocess: Optional[Union["torch.Tensor", List[Dict[str, "torch.Tensor"]]]]
+
         if self.label_type == "object_detection":
 
-            y_preprocess: List[Dict[str, "torch.Tensor"]] = [{}]
+            y_od: List[Dict[str, "torch.Tensor"]] = [{}]
 
-            y_preprocess[0]["boxes"] = torch.clone(y[0]["boxes"])
-            y_preprocess[0]["labels"] = torch.clone(y[0]["labels"])
+            if isinstance(y, list):
+                if isinstance(y[0], dict):
+                    y_od[0]["boxes"] = torch.clone(y[0]["boxes"])
+                    y_od[0]["labels"] = torch.clone(y[0]["labels"])
+                else:
+                    raise TypeError("Wrong type for `y` and label_type=object_detection.")
+            else:
+                raise TypeError("Wrong type for `y` and label_type=object_detection.")
 
             ratio_h = x.shape[-2] / (x.shape[-2] - 2 * size)
             ratio_w = x.shape[-1] / (x.shape[-1] - 2 * size)
 
             # top-left corner
 
-            y_preprocess[0]["boxes"][:, 0] -= size
-            y_preprocess[0]["boxes"][:, 1] -= size
+            y_od[0]["boxes"][:, 0] -= size
+            y_od[0]["boxes"][:, 1] -= size
 
-            y_preprocess[0]["boxes"][:, 0] = y_preprocess[0]["boxes"][:, 0] * ratio_h
-            y_preprocess[0]["boxes"][:, 1] = y_preprocess[0]["boxes"][:, 1] * ratio_w
+            y_od[0]["boxes"][:, 0] = y_od[0]["boxes"][:, 0] * ratio_h
+            y_od[0]["boxes"][:, 1] = y_od[0]["boxes"][:, 1] * ratio_w
 
-            y_preprocess[0]["boxes"][:, 0] = torch.maximum(torch.tensor(0), y_preprocess[0]["boxes"][:, 0]).int()
-            y_preprocess[0]["boxes"][:, 1] = torch.maximum(torch.tensor(0), y_preprocess[0]["boxes"][:, 1]).int()
+            y_od[0]["boxes"][:, 0] = torch.maximum(torch.tensor(0), y_od[0]["boxes"][:, 0]).int()
+            y_od[0]["boxes"][:, 1] = torch.maximum(torch.tensor(0), y_od[0]["boxes"][:, 1]).int()
 
             # bottom-right corner
 
-            y_preprocess[0]["boxes"][:, 2] -= size
-            y_preprocess[0]["boxes"][:, 3] -= size
+            y_od[0]["boxes"][:, 2] -= size
+            y_od[0]["boxes"][:, 3] -= size
 
-            y_preprocess[0]["boxes"][:, 2] = y_preprocess[0]["boxes"][:, 2] * ratio_h
-            y_preprocess[0]["boxes"][:, 3] = y_preprocess[0]["boxes"][:, 3] * ratio_w
+            y_od[0]["boxes"][:, 2] = y_od[0]["boxes"][:, 2] * ratio_h
+            y_od[0]["boxes"][:, 3] = y_od[0]["boxes"][:, 3] * ratio_w
 
-            y_preprocess[0]["boxes"][:, 2] = torch.minimum(
-                y_preprocess[0]["boxes"][:, 2], torch.tensor(x.shape[-2])
-            ).int()
-            y_preprocess[0]["boxes"][:, 3] = torch.minimum(
-                y_preprocess[0]["boxes"][:, 3], torch.tensor(x.shape[-1])
-            ).int()
+            y_od[0]["boxes"][:, 2] = torch.minimum(y_od[0]["boxes"][:, 2], torch.tensor(x.shape[-2])).int()
+            y_od[0]["boxes"][:, 3] = torch.minimum(y_od[0]["boxes"][:, 3], torch.tensor(x.shape[-1])).int()
+
+            y_preprocess = y_od
 
         else:
 

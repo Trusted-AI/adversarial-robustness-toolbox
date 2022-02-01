@@ -19,7 +19,7 @@
 This module implements EoT of changes in contrast with uniformly sampled factor.
 """
 import logging
-from typing import Tuple, Union, TYPE_CHECKING, Optional
+from typing import Dict, List, Union, Tuple, TYPE_CHECKING, Optional
 
 import numpy as np
 
@@ -66,8 +66,8 @@ class EoTContrastPyTorch(EoTPyTorch):
         self._check_params()
 
     def _transform(
-        self, x: "torch.Tensor", y: Optional["torch.Tensor"], **kwargs
-    ) -> Tuple["torch.Tensor", Optional["torch.Tensor"]]:
+        self, x: "torch.Tensor", y: Optional[Union["torch.Tensor", List[Dict[str, "torch.Tensor"]]]], **kwargs
+    ) -> Tuple["torch.Tensor", Optional[Union["torch.Tensor", List[Dict[str, "torch.Tensor"]]]]]:
         """
         Transformation of an image with randomly sampled contrast.
 
