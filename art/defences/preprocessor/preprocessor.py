@@ -153,9 +153,7 @@ class PreprocessorPyTorch(Preprocessor):
             self._device = torch.device("cuda:{}".format(cuda_idx))
 
     @abc.abstractmethod
-    def forward(
-        self, x: "torch.Tensor", y: Optional["torch.Tensor"] = None
-    ) -> Tuple["torch.Tensor", Optional["torch.Tensor"]]:
+    def forward(self, x: "torch.Tensor", y: Optional[Any] = None) -> Tuple["torch.Tensor", Optional[Any]]:
         """
         Perform data preprocessing in PyTorch and return preprocessed data as tuple.
 

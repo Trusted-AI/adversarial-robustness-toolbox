@@ -103,12 +103,20 @@ class EoTImageRotationPyTorch(EoTPyTorch):
             max=self.clip_values[1],
         )
 
+        y_preprocess: Optional[Union["torch.Tensor", List[Dict[str, "torch.Tensor"]]]]
+
         if self.label_type == "object_detection":
 
-            y_preprocess: List[Dict[str, "torch.Tensor"]] = [{}]
+            y_od: List[Dict[str, "torch.Tensor"]] = [{}]
 
-            y_preprocess[0]["boxes"] = torch.clone(y[0]["boxes"])
-            y_preprocess[0]["labels"] = torch.clone(y[0]["labels"])
+            if isinstance(y, list):
+                if isinstance(y[0], dict):
+                    y_od[0]["boxes"] = torch.clone(y[0]["boxes"])
+                    y_od[0]["labels"] = torch.clone(y[0]["labels"])
+                else:
+                    raise TypeError("Wrong type for `y` and label_type=object_detection.")
+            else:
+                raise TypeError("Wrong type for `y` and label_type=object_detection.")
 
             y_b = y[0]["boxes"]  # .copy()
             image_width = x.shape[2]
@@ -147,10 +155,12 @@ class EoTImageRotationPyTorch(EoTPyTorch):
             else:
                 raise ValueError("The angle is not supported for object detection.")
 
-            y_preprocess[0]["boxes"][:, 0] = x_1_new
-            y_preprocess[0]["boxes"][:, 1] = y_1_new
-            y_preprocess[0]["boxes"][:, 2] = x_2_new
-            y_preprocess[0]["boxes"][:, 3] = y_2_new
+            y_od[0]["boxes"][:, 0] = x_1_new
+            y_od[0]["boxes"][:, 1] = y_1_new
+            y_od[0]["boxes"][:, 2] = x_2_new
+            y_od[0]["boxes"][:, 3] = y_2_new
+
+            y_preprocess = y_od
 
         else:
 

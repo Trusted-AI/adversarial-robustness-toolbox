@@ -58,8 +58,8 @@ class EoTPyTorch(PreprocessorPyTorch):
 
     @abstractmethod
     def _transform(
-        self, x: "torch.Tensor", y: Optional["torch.Tensor"], **kwargs
-    ) -> Tuple["torch.Tensor", Optional["torch.Tensor"]]:
+        self, x: "torch.Tensor", y: Optional[Union["torch.Tensor", List[Dict[str, "torch.Tensor"]]]], **kwargs
+    ) -> Tuple["torch.Tensor", Optional[Union["torch.Tensor", List[Dict[str, "torch.Tensor"]]]]]:
         """
         Internal method implementing the transformation per input sample.
 
@@ -82,12 +82,13 @@ class EoTPyTorch(PreprocessorPyTorch):
         import torch  # lgtm [py/repeated-import]
 
         x_preprocess_list = list()
-        y_preprocess_list: List["torch.Tensor"] = list()
+        y_preprocess_list_classification: List[torch.Tensor] = list()
+        y_preprocess_list_object_detection: List[List[Dict[str, torch.Tensor]]] = list()
 
         for i_image in range(x.shape[0]):
             for _ in range(self.nb_samples):
                 x_i = x[[i_image]]
-                y_i: Optional[Union[torch.Tensor], List[Dict[str, torch.Tensor]]]
+                y_i: Optional[Union[torch.Tensor, List[Dict[str, torch.Tensor]]]]
                 if y is not None:
                     if isinstance(y, list):
                         y_i = [y[i_image]]
@@ -99,16 +100,20 @@ class EoTPyTorch(PreprocessorPyTorch):
                 x_preprocess_list.append(torch.squeeze(x_preprocess, dim=0))
 
                 if y is not None and y_preprocess_i is not None:
-                    y_preprocess_list.append(y_preprocess_i)
+                    if isinstance(y_preprocess_i, torch.Tensor):
+                        y_preprocess_list_classification.append(y_preprocess_i)
+                    else:
+                        y_preprocess_list_object_detection.append(y_preprocess_i)
 
         x_preprocess = torch.stack(x_preprocess_list, dim=0)
+        y_preprocess: Optional[Union["torch.Tensor", List[Dict[str, "torch.Tensor"]]]]
         if y is None:
             y_preprocess = y
         else:
             if isinstance(y, torch.Tensor):
-                y_preprocess = torch.stack(y_preprocess_list, dim=0)
+                y_preprocess = torch.stack(y_preprocess_list_classification, dim=0)
             else:
-                y_preprocess = [item for sublist in y_preprocess_list for item in sublist]
+                y_preprocess = [item for sublist in y_preprocess_list_object_detection for item in sublist]
 
         return x_preprocess, y_preprocess
 
