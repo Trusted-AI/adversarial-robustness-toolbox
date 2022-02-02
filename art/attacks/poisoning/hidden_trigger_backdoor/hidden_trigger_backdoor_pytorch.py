@@ -234,6 +234,7 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
                 feat2 = self.estimator.get_activations(poison_samples, self.feature_layer, 1, framework=True)
                 feat11 = feat1.clone()
                 dist = torch.cdist(feat1, feat2)
+                return dist
                 for _ in range(feat2.size(0)):
                     dist_min_index = (dist == torch.min(dist)).nonzero().squeeze()
                     feat1[dist_min_index[1]] = feat11[dist_min_index[0]]
