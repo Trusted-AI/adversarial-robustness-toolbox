@@ -108,7 +108,7 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
 
         input_for_hook = torch.unsqueeze(input_for_hook, dim=0)
         model(input_for_hook)  # hooks are fired sequentially from model input to the output
-
+        # TODO: clean up self.device vs self.device_type
         self.ops = nn.ModuleList()
         for module in modules:
             print('registered', type(module))
@@ -147,7 +147,7 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
                     self.reshape_op_num = op_num
                     print('Inferred reshape on op num', op_num)
 
-    def forward(self, eps: np.ndarray, cent: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def forward(self, eps: np.ndarray, cent: np.ndarray) -> Tuple["torch.Tensor", "torch.Tensor"]:
         """
         Do the forward pass through the NN with the given error terms and zonotope center.
         :param eps: Error terms of the zonotope.
@@ -166,3 +166,19 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
             x = op(x)
 
         return x[0, :], x[1:, :]
+
+    def certify(self, eps: np.ndarray, cent: np.ndarray, prediction: int) -> bool:
+        cent, eps = self.forward(eps=eps, cent=cent)
+        cent = cent.detach().cpu().numpy()
+        eps = eps.detach().cpu().numpy()
+
+        certification_results = []
+        for k in range(self.nb_classes):
+            if k != prediction:
+                cert_via_sub = self.certify_via_subtraction(predicted_class=prediction,
+                                                            class_to_consider=k,
+                                                            cent=cent,
+                                                            eps=eps)
+                certification_results.append(cert_via_sub)
+
+        return all(certification_results)
