@@ -30,6 +30,7 @@ from art.attacks.poisoning.backdoor_attack import PoisoningAttackBackdoor
 from art.estimators import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
 from art.estimators.classification.pytorch import PyTorchClassifier
+from art.estimators.classification.keras import KerasClassifier
 from art.estimators.classification.tensorflow import (
     TFClassifier,
     TensorFlowClassifier,
@@ -38,6 +39,9 @@ from art.estimators.classification.tensorflow import (
 
 from art.attacks.poisoning.hidden_trigger_backdoor.hidden_trigger_backdoor_pytorch import (
     HiddenTriggerBackdoorPyTorch,
+)
+from art.attacks.poisoning.hidden_trigger_backdoor.hidden_trigger_backdoor_keras import (
+    HiddenTriggerBackdoorKeras,
 )
 
 if TYPE_CHECKING:
@@ -148,7 +152,7 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
                 verbose=verbose,
             )
             
-        elif isinstance(self.estimator, (TFClassifier,TensorFlowClassifier,TensorFlowV2Classifier)):
+        elif isinstance(self.estimator, (KerasClassifier,TFClassifier,TensorFlowClassifier,TensorFlowV2Classifier)):
             self._attack = HiddenTriggerBackdoorKeras(
                 classifier=classifier,  # type: ignore
                 target=target,
