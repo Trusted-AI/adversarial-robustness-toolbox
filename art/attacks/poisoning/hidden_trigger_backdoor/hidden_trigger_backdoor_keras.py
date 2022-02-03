@@ -162,10 +162,10 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
         from scipy.spatial import distance
         
         # pylint: disable=E0401
-        if self.estimator.is_tensorflow:
-            import tensorflow.keras.backend as k
+        if not hasattr(self, "is_tensorflow") and not self.estimator.is_tensorflow:
+            import keras.backend as k   
         else:
-            import keras.backend as k
+            import tensorflow.keras.backend as k
 
         data = np.copy(x)
         estimated_labels = self.estimator.predict(data) if y is None else np.copy(y)
