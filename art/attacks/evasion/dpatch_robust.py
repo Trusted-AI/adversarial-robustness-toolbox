@@ -229,7 +229,7 @@ class RobustDPatch(EvasionAttack):
 
             # Write summary
             if self.summary_writer is not None:  # pragma: no cover
-                x_patched, _, _ = self._augment_images_with_patch(
+                x_patched, y_patched, _ = self._augment_images_with_patch(
                     x, y, self._patch, channels_first=self.estimator.channels_first
                 )
 
@@ -240,7 +240,7 @@ class RobustDPatch(EvasionAttack):
                     patch=self._patch,
                     estimator=self.estimator,
                     x=x_patched,
-                    y=y,
+                    y=y_patched,
                     targeted=self.targeted,
                 )
 
