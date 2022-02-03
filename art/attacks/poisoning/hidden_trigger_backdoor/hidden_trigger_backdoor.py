@@ -30,6 +30,11 @@ from art.attacks.poisoning.backdoor_attack import PoisoningAttackBackdoor
 from art.estimators import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
 from art.estimators.classification.pytorch import PyTorchClassifier
+from art.estimators.classification.tensorflow import (
+    TFClassifier,
+    TensorFlowClassifier,
+    TensorFlowV2Classifier,
+)
 
 from art.attacks.poisoning.hidden_trigger_backdoor.hidden_trigger_backdoor_pytorch import (
     HiddenTriggerBackdoorPyTorch,
@@ -142,9 +147,28 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
                 is_index=is_index,
                 verbose=verbose,
             )
+            
+        elif isinstance(self.estimator, (TFClassifier,TensorFlowClassifier,TensorFlowV2Classifier)):
+            self._attack = HiddenTriggerBackdoorKeras(
+                classifier=classifier,  # type: ignore
+                target=target,
+                source=source,
+                backdoor=backdoor,
+                feature_layer=feature_layer,
+                eps=eps,
+                learning_rate=learning_rate,
+                decay_coeff=decay_coeff,
+                decay_iter=decay_iter,
+                stopping_threshold=stopping_threshold,
+                max_iter=max_iter,
+                batch_size=batch_size,
+                poison_percent=poison_percent,
+                is_index=is_index,
+                verbose=verbose,
+            )
 
         else:
-            raise ValueError("Only Pytorch Classifiers are supported right now")
+            raise ValueError("Only Pytorch, Keras, and Tensorflow classifiers are supported")
 
     def poison(  # pylint: disable=W0221
         self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs

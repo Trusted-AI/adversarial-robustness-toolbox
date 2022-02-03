@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (c) 2020 Aniruddha Saha, Akshayvarun Subramanya, Hamed Pirsiavash
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -20,6 +20,7 @@ This module implements a Hidden Trigger Backdoor attack on Neural Networks.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+from functools import reduce
 import logging
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
@@ -32,13 +33,17 @@ from art.estimators import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
-    from art.estimators.classification.pytorch import PyTorchClassifier
+    from art.estimators.classification.keras import KerasClassifier
+    from art.estimators.classification.tensorflow import (
+    TFClassifier,
+    TensorFlowClassifier,
+    TensorFlowV2Classifier,
+)
 
 logger = logging.getLogger(__name__)
 
 
-class LossMeter:
+class LossMeter():
     """
     Computes and stores the average and current loss value
     """
@@ -70,7 +75,7 @@ class LossMeter:
         self.avg = self.sum / self.count
 
 
-class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
+class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
     """
     Implementation of Hidden Trigger Backdoor Attack by Saha et al 2019.
     "Hidden Trigger Backdoor Attacks
@@ -84,7 +89,7 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
 
     def __init__(
         self,
-        classifier: "PyTorchClassifier",
+        classifier: Union["KerasClassifier","TFClassifier","TensorFlowClassifier","TensorFlowV2Classifier"],
         target: Union[int, np.ndarray],
         source: Union[int, np.ndarray],
         feature_layer: Union[str, int],
@@ -101,12 +106,12 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
         verbose: bool = True,
     ) -> None:
         """
-        Creates a new Hidden Trigger Backdoor poisoning attack for PyTorch.
+        Creates a new Hidden Trigger Backdoor poisoning attack
 
         :param classifier: A trained neural network classifier.
-        :param target: The target class/indices to poison. Triggers added to inputs not in the target class will
-                       result in misclassifications to the target class. If an int, it represents a label.
-                       Otherwise, it is an array of indicies.
+        :param target: The target class/indices to poison. Triggers added to inputs not in the target class will result in
+                       misclassifications to the target class. If an int, it represents a label. Otherwise, it is an
+                       array of indicies.
         :param source: The class/indicies which will have a trigger added to cause misclassification
                        If an int, it represents a label. Otherwise, it is an array of indicies.
         :param feature_layer: The name of the feature representation layer.
@@ -118,8 +123,8 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
         :param max_iter: The maximum number of iterations for the attack.
         :param batch_size: The number of samples to draw per batch.
         :param poison_percent: The percentage of the data to poison. This is ignored if indices are provided
-        :param is_index: If true, the source and target params are assumed to represent indices rather
-                         than a class label. poison_percent is ignored if true
+        :param is_index: If true, the source and target params are assumed to represent indices rather than a class label.
+                         poison_percent is ignored if true
         :param verbose: Show progress bars.
         """
         super().__init__(classifier=classifier)  # type: ignore
@@ -144,19 +149,27 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
         """
         Calls perturbation function on the dataset x and returns only the perturbed input and their
         indices in the dataset.
-        :param x: An array in the shape NxCxWxH with the points to draw source and target samples from.
+        :param x: An array in the shape NxWxHxC with the points to draw source and target samples from.
                   Source indicates the class(es) that the backdoor would be added to to cause
                   misclassification into the target label.
                   Target indicates the class that the backdoor should cause misclassification into.
         :param y: The labels of the provided samples. If none, we will use the classifier to label the
                   data.
-        :return: An tuple holding the `(poison samples, indices in x that the poison samples should replace)`.
+        :return: An tuple holding the `(poisoning_examples, poisoning_labels)`.
         """
-        import torch  # lgtm [py/repeated-import]
+        
+        import tensorflow as tf
+        from scipy.spatial import distance
+        
+        # pylint: disable=E0401
+        if self.estimator.is_tensorflow:
+            import tensorflow.keras.backend as k
+        else:
+            import keras.backend as k
 
         data = np.copy(x)
         estimated_labels = self.estimator.predict(data) if y is None else np.copy(y)
-
+        
         # Get indices of target class
         if not self.is_index:
             poison_class = self.target
@@ -195,6 +208,7 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
             num_trigger = len(trigger_indices)
             if num_trigger < num_poison:
                 raise ValueError("There must be at least as many images with the source label as the target.")
+                
 
         logger.info("Number of poison inputs: %d", num_poison)
         logger.info("Number of trigger inputs: %d", num_trigger)
@@ -204,7 +218,7 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
         losses = LossMeter()
         final_poison = np.copy(data[poison_indices])
 
-        original_images = torch.from_numpy(np.copy(data[poison_indices])).to(self.estimator.device)
+        original_images = np.copy(data[poison_indices])
 
         for batch_id in trange(batches, desc="Hidden Trigger", disable=not self.verbose):
 
@@ -213,17 +227,15 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
             poison_batch_indices = poison_indices[cur_index : cur_index + offset]
             trigger_batch_indices = trigger_indices[cur_index : cur_index + offset]
 
-            poison_samples = torch.from_numpy(data[poison_batch_indices]).to(self.estimator.device)
+            poison_samples = data[poison_batch_indices]
 
             # First, we add the backdoor to the source samples and get the feature representation
             trigger_samples, _ = self.backdoor.poison(data[trigger_batch_indices], self.target, broadcast=True)
-            trigger_samples = torch.from_numpy(trigger_samples).to(self.estimator.device)
 
-            feat1 = self.estimator.get_activations(trigger_samples, self.feature_layer, 1, framework=True)
-            feat1 = feat1.detach().clone()
+            feat1 = self.estimator.get_activations(trigger_samples, self.feature_layer)
+            feat1 = np.copy(feat1)
 
             for i in range(self.max_iter):
-                poison_samples.requires_grad_()
                 if isinstance(self.decay_iter, int):
                     decay_exp = i // self.decay_iter
                 else:
@@ -234,74 +246,69 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
                         decay_exp = max(max_index) + 1
                 learning_rate = self.learning_rate * (self.decay_coeff ** decay_exp)
 
-                # Compute the feature representation of the current poisons and
-                # identify the closest trigger sample for each poison
-                feat2 = self.estimator.get_activations(poison_samples, self.feature_layer, 1, framework=True)
-                feat11 = feat1.clone()
-                dist = torch.cdist(feat1, feat2)
 
-                for _ in range(feat2.size(0)):
-                    dist_min_index = (dist == torch.min(dist)).nonzero().squeeze()
-                    feat1[dist_min_index[1]] = feat11[dist_min_index[0]]
-                    dist[dist_min_index[0], dist_min_index[1]] = 1e5
+                # Compute distance between features and match samples
+                feat2 = self.estimator.get_activations(poison_samples, self.feature_layer)
+                feat11 = np.copy(feat1)
+                dist = distance.cdist(feat1, feat2,'minkowski')
 
-                loss = torch.norm(feat1 - feat2) ** 2
-                losses.update(loss.item(), trigger_samples.size(0))
-                loss.backward()
+                for _ in range(len(feat2)):
+                    min_index = np.squeeze((dist == np.min(dist)).nonzero())
+                    feat1[min_index[1]] = feat11[min_index[0]]
+                    dist[min_index[0], min_index[1]] = 1e5
+
+                loss = np.linalg.norm(feat1 - feat2)**2
+                losses.update(loss, len(trigger_samples))
+                
+                if not hasattr(self, "_custom_loss"):
+                    self._custom_loss = {}
+                    
+                    # Define a variable so we can change it on the fly
+                    feat1_var = k.variable(feat1)
+                    self._custom_loss['feat_var'] = feat1_var
+                    
+                    # poison samples doesn't matter here, we are just getting the placeholders so we can define the loss
+                    output_tensor = self.estimator.get_activations(poison_samples, self.feature_layer, framework=True)
+                    attack_loss = tf.math.square(tf.norm(feat1_var-output_tensor))
+                
+                    attack_grad_f = k.gradients(attack_loss, self.estimator._input)[0]
+                    self._custom_loss['loss_function'] = k.function([self.estimator._input, k.learning_phase()], [attack_grad_f])  
+                else:
+                    feat1_var = self._custom_loss['feat_var']
+                   
+                k.set_value(feat1_var, feat1)
+                preprocessed_poison_samples = self._apply_preprocessing(poison_samples)
+                # The 0 is for the learning phase placeholder
+                attack_grad = self._custom_loss['loss_function']([preprocessed_poison_samples,0])[0]
 
                 # Update the poison and clip
-                poison_samples = poison_samples - learning_rate * poison_samples.grad
+                poison_samples = poison_samples -  learning_rate * attack_grad
                 pert = poison_samples - original_images[cur_index : cur_index + offset]
-                pert = torch.clamp(pert, -self.eps, self.eps).detach_()
+                pert = np.clip(pert, -self.eps, self.eps)
                 poison_samples = pert + original_images[cur_index : cur_index + offset]
-                poison_samples = poison_samples.clamp(*self.estimator.clip_values)
+                poison_samples = np.clip(poison_samples, *self.estimator.clip_values) 
 
                 if i % 100 == 0:
                     print(
-                        "Epoch: {:2d} | batch: {} | i: {:5d} | LR: {:2.5f} | \
-                        Loss Val: {:5.3f} | Loss Avg: {:5.3f}".format(
+                        "Epoch: {:2d} | batch: {} | i: {:5d} | LR: {:2.5f} | Loss Val: {:5.3f} | Loss Avg: {:5.3f}".format(
                             0, batch_id, i, learning_rate, losses.val, losses.avg
                         )
                     )
 
-                if loss.item() < self.stopping_threshold or i == (self.max_iter - 1):
-                    print("Max_Loss: {}".format(loss.item()))
-                    final_poison[cur_index : cur_index + offset] = poison_samples.detach().cpu().numpy()
+                if loss < self.stopping_threshold or i == (self.max_iter - 1):
+                    print("Max_Loss: {}".format(loss))
+                    final_poison[cur_index : cur_index + offset] = poison_samples
                     break
 
         return final_poison, poison_indices
+    
+    # Helper function as get_activations returns the tensors, but not the preprocessing
+    def _apply_preprocessing(self, x):
+        if x.shape == self.estimator.input_shape:
+            x_expanded = np.expand_dims(x, 0)
+        else:
+            x_expanded = x
 
-    def _check_params(self) -> None:
-
-        if self.is_index and not (isinstance(self.target, np.ndarray) and isinstance(self.source, np.ndarray)):
-            raise ValueError("Target and source values must be an array of indices")
-
-        if (isinstance(self.target, int) and (self.target == self.source)) or (
-            isinstance(self.target, np.ndarray) and np.array_equal(self.target, self.source)
-        ):
-            raise ValueError("Target and source values can't be the same")
-
-        if self.learning_rate <= 0:
-            raise ValueError("Learning rate must be strictly positive")
-
-        if not isinstance(self.backdoor, PoisoningAttackBackdoor):
-            raise TypeError("Backdoor must be of type PoisoningAttackBackdoor")
-
-        if self.eps < 0:
-            raise ValueError("The perturbation size `eps` has to be non-negative.")
-
-        if not isinstance(self.feature_layer, (str, int)):
-            raise TypeError("Feature layer should be a string or int")
-
-        if isinstance(self.feature_layer, int):
-            if not 0 <= self.feature_layer < len(self.estimator.layer_names):
-                raise ValueError("feature_layer is not a non-negative integer and can't be greater than the number of layers")
-
-        if self.decay_coeff <= 0:
-            raise ValueError("Decay coefficient must be positive")
-
-        if not 0 < self.poison_percent <= 1:
-            raise ValueError("poison_percent must be between 0 (exclusive) and 1 (inclusive)")
-
-        if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+        # Apply preprocessing
+        x_preprocessed, _ = self.estimator._apply_preprocessing(x=x_expanded, y=None, fit=False)
+        return x_preprocessed 

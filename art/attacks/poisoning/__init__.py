@@ -9,3 +9,4 @@ from art.attacks.poisoning.clean_label_backdoor_attack import PoisoningAttackCle
 from art.attacks.poisoning.bullseye_polytope_attack import BullseyePolytopeAttackPyTorch
 from art.attacks.poisoning.hidden_trigger_backdoor.hidden_trigger_backdoor import HiddenTriggerBackdoor
 from art.attacks.poisoning.hidden_trigger_backdoor.hidden_trigger_backdoor_pytorch import HiddenTriggerBackdoorPyTorch
+from art.attacks.poisoning.hidden_trigger_backdoor.hidden_trigger_backdoor_keras import HiddenTriggerBackdoorKeras
