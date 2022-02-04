@@ -32,9 +32,8 @@ import numpy as np
 
 from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 from art.estimators.encoding.tensorflow import TensorFlowEncoder
-from art.estimators.generation.tensorflow import TensorFlowGenerator
+from art.estimators.generation.tensorflow import TensorFlowGenerator, TensorFlow2Generator
 from art.estimators.generation.tensorflow_gan import TensorFlow2GAN
-from art.estimators.generation.tensorflow import TensorFlow2Generator
 from art.utils import load_dataset
 
 logger = logging.getLogger(__name__)
@@ -109,13 +108,13 @@ class TestBase(unittest.TestCase):
 
         # Check that the test data has not been modified, only catches changes in attack.generate if self has been used
         np.testing.assert_array_almost_equal(
-            self._x_train_mnist_original[0: self.n_train], self.x_train_mnist, decimal=3
+            self._x_train_mnist_original[0 : self.n_train], self.x_train_mnist, decimal=3
         )
         np.testing.assert_array_almost_equal(
-            self._y_train_mnist_original[0: self.n_train], self.y_train_mnist, decimal=3
+            self._y_train_mnist_original[0 : self.n_train], self.y_train_mnist, decimal=3
         )
-        np.testing.assert_array_almost_equal(self._x_test_mnist_original[0: self.n_test], self.x_test_mnist, decimal=3)
-        np.testing.assert_array_almost_equal(self._y_test_mnist_original[0: self.n_test], self.y_test_mnist, decimal=3)
+        np.testing.assert_array_almost_equal(self._x_test_mnist_original[0 : self.n_test], self.x_test_mnist, decimal=3)
+        np.testing.assert_array_almost_equal(self._y_test_mnist_original[0 : self.n_test], self.y_test_mnist, decimal=3)
 
         np.testing.assert_array_almost_equal(self._x_train_iris_original, self.x_train_iris, decimal=3)
         np.testing.assert_array_almost_equal(self._y_train_iris_original, self.y_train_iris, decimal=3)
@@ -349,28 +348,26 @@ def get_image_generator_tf_v2(capacity: int, z_dim: int):
         model.add(tf.keras.layers.Reshape((7, 7, capacity * 4)))
         assert model.output_shape == (None, 7, 7, capacity * 4)
 
-        model.add(tf.keras.layers.Conv2DTranspose(capacity * 2, (5, 5), strides=(1, 1), padding='same', use_bias=False))
+        model.add(tf.keras.layers.Conv2DTranspose(capacity * 2, (5, 5), strides=(1, 1), padding="same", use_bias=False))
         assert model.output_shape == (None, 7, 7, capacity * 2)
         model.add(tf.keras.layers.BatchNormalization())
         model.add(tf.keras.layers.LeakyReLU())
 
-        model.add(tf.keras.layers.Conv2DTranspose(capacity, (5, 5), strides=(2, 2), padding='same', use_bias=False))
+        model.add(tf.keras.layers.Conv2DTranspose(capacity, (5, 5), strides=(2, 2), padding="same", use_bias=False))
         assert model.output_shape == (None, 14, 14, capacity)
         model.add(tf.keras.layers.BatchNormalization())
         model.add(tf.keras.layers.LeakyReLU())
 
         # model.add(layers.Conv2DTranspose(1, (5, 5), strides=(2, 2), padding='same', use_bias=False, activation='tanh'))
-        model.add(tf.keras.layers.Conv2DTranspose(1, (5, 5), strides=(2, 2), padding='same', use_bias=False))
+        model.add(tf.keras.layers.Conv2DTranspose(1, (5, 5), strides=(2, 2), padding="same", use_bias=False))
 
-        model.add(tf.keras.layers.Activation(activation='tanh'))
+        model.add(tf.keras.layers.Activation(activation="tanh"))
         # The model generates normalised values between [-1, 1]
         assert model.output_shape == (None, 28, 28, 1)
 
         return model
 
-    generator = TensorFlow2Generator(
-        encoding_length=z_dim,
-        model=make_image_generator_model(capacity, z_dim))
+    generator = TensorFlow2Generator(encoding_length=z_dim, model=make_image_generator_model(capacity, z_dim))
 
     return generator
 
@@ -385,11 +382,11 @@ def get_image_gan_tf_v2(**kwargs):
     def make_image_discriminator_model(capacity: int) -> tf.keras.Sequential():
         model = tf.keras.Sequential()
 
-        model.add(tf.keras.layers.Conv2D(capacity, (5, 5), strides=(2, 2), padding='same', input_shape=[28, 28, 1]))
+        model.add(tf.keras.layers.Conv2D(capacity, (5, 5), strides=(2, 2), padding="same", input_shape=[28, 28, 1]))
         model.add(tf.keras.layers.LeakyReLU())
         model.add(tf.keras.layers.Dropout(0.3))
 
-        model.add(tf.keras.layers.Conv2D(capacity * 2, (5, 5), strides=(2, 2), padding='same'))
+        model.add(tf.keras.layers.Conv2D(capacity * 2, (5, 5), strides=(2, 2), padding="same"))
         model.add(tf.keras.layers.LeakyReLU())
         model.add(tf.keras.layers.Dropout(0.3))
 
@@ -399,9 +396,8 @@ def get_image_gan_tf_v2(**kwargs):
         return model
 
     discriminator_classifier = TensorFlowV2Classifier(
-        model=make_image_discriminator_model(capacity),
-        nb_classes=2,
-        input_shape=(28, 28, 28, 1))
+        model=make_image_discriminator_model(capacity), nb_classes=2, input_shape=(28, 28, 28, 1)
+    )
 
     def generator_orig_loss_fct(generated_output):
         return tf.compat.v1.losses.sigmoid_cross_entropy(tf.ones_like(generated_output), generated_output)
@@ -416,22 +412,26 @@ def get_image_gan_tf_v2(**kwargs):
         """
         # [1,1,...,1] with real output since it is true and we want our generated examples to look like it
         real_loss = tf.compat.v1.losses.sigmoid_cross_entropy(
-            multi_class_labels=tf.ones_like(real_output), logits=real_output)
+            multi_class_labels=tf.ones_like(real_output), logits=real_output
+        )
 
         # [0,0,...,0] with generated images since they are fake
         generated_loss = tf.compat.v1.losses.sigmoid_cross_entropy(
-            multi_class_labels=tf.zeros_like(generated_output), logits=generated_output)
+            multi_class_labels=tf.zeros_like(generated_output), logits=generated_output
+        )
 
         total_loss = real_loss + generated_loss
 
         return total_loss
 
-    gan = TensorFlow2GAN(generator=generator,
-                         discriminator=discriminator_classifier,
-                         generator_loss=generator_orig_loss_fct,
-                         generator_optimizer_fct=tf.compat.v1.train.AdamOptimizer(1e-4),
-                         discriminator_loss=discriminator_loss_fct,
-                         discriminator_optimizer_fct=tf.compat.v1.train.AdamOptimizer(1e-4))
+    gan = TensorFlow2GAN(
+        generator=generator,
+        discriminator=discriminator_classifier,
+        generator_loss=generator_orig_loss_fct,
+        generator_optimizer_fct=tf.compat.v1.train.AdamOptimizer(1e-4),
+        discriminator_loss=discriminator_loss_fct,
+        discriminator_optimizer_fct=tf.compat.v1.train.AdamOptimizer(1e-4),
+    )
     return gan
 
 
@@ -518,7 +518,7 @@ def get_image_classifier_tf_v2(from_logits=False):
 
 
 def get_image_classifier_kr(
-        loss_name="categorical_crossentropy", loss_type="function_losses", from_logits=False, load_init=True
+    loss_name="categorical_crossentropy", loss_type="function_losses", from_logits=False, load_init=True
 ):
     """
     Standard Keras classifier for unit testing
@@ -1346,7 +1346,7 @@ def get_classifier_bb(defences=None):
     # define black-box classifier
     def predict(x):
         with open(
-                os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/data/mnist", "api_output.txt")
+            os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/data/mnist", "api_output.txt")
         ) as json_file:
             predictions = json.load(json_file)
         return to_categorical(predictions["values"][: len(x)], nb_classes=10)
@@ -1367,7 +1367,7 @@ def get_classifier_bb_nn(defences=None):
     # define black-box classifier
     def predict(x):
         with open(
-                os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/data/mnist", "api_output.txt")
+            os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/data/mnist", "api_output.txt")
         ) as json_file:
             predictions = json.load(json_file)
         return to_categorical(predictions["values"][: len(x)], nb_classes=10)

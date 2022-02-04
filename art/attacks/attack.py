@@ -30,7 +30,7 @@ from art.exceptions import EstimatorError
 from art.summary_writer import SummaryWriter, SummaryWriterDefault
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_TYPE
+    from art.utils import CLASSIFIER_TYPE, GENERATOR_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -195,7 +195,7 @@ class EvasionAttack(Attack):
 
     @abc.abstractmethod
     def generate(  # lgtm [py/inheritance/incorrect-overridden-signature]
-            self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
+        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
     ) -> np.ndarray:
         """
         Generate adversarial examples and return them as an array. This method should be overridden by all concrete
@@ -250,36 +250,39 @@ class PoisoningAttackGenerator(Attack):
     These attacks have an additional method, `poison_estimator`, that returns the poisoned classifier.
     """
 
-    def __init__(self,
-                 z_trigger: Optional[np.ndarray],
-                 x_target: Optional[np.ndarray],
-                 generator: Optional["GENERATOR_TYPE"]) -> None:
+    def __init__(self, generator: Optional["GENERATOR_TYPE"]) -> None:
         """
         :param generator: A generator
         """
         super().__init__(generator)
-        self._z_trigger = z_trigger
-        self._x_target = x_target
 
     @abc.abstractmethod
-    def poison_estimator(self, **kwargs) -> "GENERATOR_TYPE":
+    def poison_estimator(
+        self,
+        z_trigger: np.ndarray,
+        x_target: np.ndarray,
+        batch_size: int,
+        max_iter: int,
+        lambda_p: float,
+        verbose: int,
+        **kwargs
+    ) -> "GENERATOR_TYPE":
         """
         Returns a poisoned version of the generator used to initialize the attack
         :return: A poisoned generator
         """
         raise NotImplementedError
 
-    @abc.abstractmethod
-    def fidelity(self):
-        """
-        Returns the fidelity of the sample w.r.t. to the x_target sample
-        """
-        raise NotImplementedError
-
     def z_trigger(self):
+        """
+        Returns the secret attacker trigger
+        """
         return self._z_trigger
 
     def x_target(self):
+        """
+        Returns the secret attacker target which the poisoned generator should produce
+        """
         return self._x_target
 
 
