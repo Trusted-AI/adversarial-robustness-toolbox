@@ -99,8 +99,16 @@ class EoTImageRotationPyTorch(EoTPyTorch):
             x = torch.permute(x, (0, 3, 1, 2))
             channels_first = False
 
+        if self.label_type == "object_detection":
+            expand = True
+        else:
+            expand = False
+
         x_preprocess = torchvision.transforms.functional.rotate(
-            img=x, angle=angles, interpolation=torchvision.transforms.functional.InterpolationMode.NEAREST, expand=True
+            img=x,
+            angle=angles,
+            interpolation=torchvision.transforms.functional.InterpolationMode.NEAREST,
+            expand=expand,
         )
 
         x_preprocess = torch.clamp(

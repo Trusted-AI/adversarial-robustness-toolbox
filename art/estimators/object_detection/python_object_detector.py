@@ -222,9 +222,9 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
                 x_preprocessed_i, y_preprocessed_i = self._apply_preprocessing(
                     x_grad_1, y=[y_tensor[i]], fit=False, no_grad=False
                 )
-                x_preprocessed_i = torch.squeeze(x_preprocessed_i)
-                y_preprocessed.append(y_preprocessed_i[0])
-                inputs_t.append(x_preprocessed_i)
+                for i_preprocessed in range(x_preprocessed_i.shape[0]):
+                    inputs_t.append(x_preprocessed_i[i_preprocessed])
+                    y_preprocessed.append(y_preprocessed_i[i_preprocessed])
 
         elif isinstance(x, np.ndarray):
             x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y=y, fit=False, no_grad=True)
