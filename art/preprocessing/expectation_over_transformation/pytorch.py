@@ -101,7 +101,7 @@ class EoTPyTorch(PreprocessorPyTorch):
 
                 if y is not None and y_preprocess_i is not None:
                     if isinstance(y_preprocess_i, torch.Tensor):
-                        y_preprocess_list_classification.append(y_preprocess_i)
+                        y_preprocess_list_classification.append(torch.squeeze(y_preprocess_i, dim=0))
                     else:
                         y_preprocess_list_object_detection.append(y_preprocess_i)
 

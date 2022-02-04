@@ -86,6 +86,12 @@ class EoTImageCenterCropPyTorch(EoTPyTorch):
 
         size = np.random.randint(low=self.size_range[0], high=self.size_range[1])
 
+        # Ensure channels-first
+        channels_first = True
+        if x.shape[-1] in [1, 3]:
+            x = torch.permute(x, (0, 3, 1, 2))
+            channels_first = False
+
         x_preprocess = torchvision.transforms.functional.resized_crop(
             img=x,
             top=size,
@@ -104,7 +110,7 @@ class EoTImageCenterCropPyTorch(EoTPyTorch):
 
         y_preprocess: Optional[Union["torch.Tensor", List[Dict[str, "torch.Tensor"]]]]
 
-        if self.label_type == "object_detection":
+        if self.label_type == "object_detection" and y is not None:
 
             y_od: List[Dict[str, "torch.Tensor"]] = [{}]
 
@@ -147,6 +153,9 @@ class EoTImageCenterCropPyTorch(EoTPyTorch):
         else:
 
             y_preprocess = y
+
+        if not channels_first:
+            x_preprocess = torch.permute(x_preprocess, (0, 2, 3, 1))
 
         return x_preprocess, y_preprocess
 
