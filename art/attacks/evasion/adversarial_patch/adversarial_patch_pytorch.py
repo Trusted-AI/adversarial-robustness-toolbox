@@ -212,7 +212,9 @@ class AdversarialPatchPyTorch(EvasionAttack):
                     input=predictions, target=torch.argmax(target, dim=1), reduction="mean"
                 )
             else:
-                loss = torch.nn.functional.nll_loss(input=predictions, target=torch.argmax(target, dim=1), reduction="mean")
+                loss = torch.nn.functional.nll_loss(
+                    input=predictions, target=torch.argmax(target, dim=1), reduction="mean"
+                )
 
         else:
             patched_input = self._random_overlay(images, self._patch, mask=mask)
@@ -435,6 +437,11 @@ class AdversarialPatchPyTorch(EvasionAttack):
             torch.from_numpy(np.ones(shape=image_mask.shape, dtype=np.float32)).to(self.estimator.device) - image_mask
         )
 
+        print("images.get_device()", images.get_device())
+        print("inverted_mask.get_device()", inverted_mask.get_device())
+        print("padded_patch.get_device()", padded_patch.get_device())
+        print("image_mask.get_device()", image_mask.get_device())
+
         patched_images = images * inverted_mask + padded_patch * image_mask
 
         if not self.estimator.channels_first:
@@ -483,7 +490,6 @@ class AdversarialPatchPyTorch(EvasionAttack):
             else:
                 self.use_logits = True
 
-
         if isinstance(y, np.ndarray):
             x_tensor = torch.Tensor(x)
             y_tensor = torch.Tensor(y)
@@ -506,6 +512,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
                     drop_last=False,
                 )
         else:
+
             class ObjectDetectionDataset(torch.utils.data.Dataset):
                 """
                 Object detection dataset in PyTorch.
@@ -519,12 +526,12 @@ class AdversarialPatchPyTorch(EvasionAttack):
                     return self.x.shape[0]
 
                 def __getitem__(self, idx):
-                    img = self.x[idx]
+                    img = torch.from_numpy(self.x[idx])
 
                     target = {}
-                    target["boxes"] = torch.from_numpy(y[idx]["boxes"])
-                    target["labels"] = torch.from_numpy(y[idx]["labels"])
-                    target["scores"] = torch.from_numpy(y[idx]["scores"])
+                    target["boxes"] = torch.from_numpy(self.y[idx]["boxes"])
+                    target["labels"] = torch.from_numpy(self.y[idx]["labels"])
+                    target["scores"] = torch.from_numpy(self.y[idx]["scores"])
 
                     return img, target
 
@@ -542,7 +549,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
                     return self.x.shape[0]
 
                 def __getitem__(self, idx):
-                    img = self.x[idx]
+                    img = torch.from_numpy(self.x[idx])
 
                     target = {}
                     target["boxes"] = torch.from_numpy(y[idx]["boxes"])
@@ -567,15 +574,24 @@ class AdversarialPatchPyTorch(EvasionAttack):
         for i_iter in trange(self.max_iter, desc="Adversarial Patch PyTorch", disable=not self.verbose):
             if mask is None:
                 for images, target in data_loader:
-                    # images, target = images.to(self.estimator.device), target.to(self.estimator.device)
+                    images = images.to(self.estimator.device)
+                    if isinstance(target, torch.Tensor):
+                        target = target.to(self.estimator.device)
+                    else:
+                        target["boxes"] = target["boxes"].to(self.estimator.device)
+                        target["labels"] = target["labels"].to(self.estimator.device)
+                        target["scores"] = target["scores"].to(self.estimator.device)
                     _ = self._train_step(images=images, target=target, mask=None)
             else:
                 for images, target, mask_i in data_loader:
-                    # images, target, mask_i = (
-                    #     images.to(self.estimator.device),
-                    #     target.to(self.estimator.device),
-                    #     mask_i.to(self.estimator.device),
-                    # )
+                    images = images.to(self.estimator.device)
+                    if isinstance(target, torch.Tensor):
+                        target = target.to(self.estimator.device)
+                    else:
+                        target["boxes"] = target["boxes"].to(self.estimator.device)
+                        target["labels"] = target["labels"].to(self.estimator.device)
+                        target["scores"] = target["scores"].to(self.estimator.device)
+                    mask_i = mask_i.to(self.estimator.device)
                     _ = self._train_step(images=images, target=target, mask=mask_i)
 
             # Write summary
@@ -648,7 +664,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
             mask = mask.copy()
         mask = self._check_mask(mask=mask, x=x)
         patch = patch_external if patch_external is not None else self._patch
-        x = torch.Tensor(x)
+        x = torch.Tensor(x).to(self.estimator.device)
         return self._random_overlay(images=x, patch=patch, scale=scale, mask=mask).detach().cpu().numpy()
 
     def reset_patch(self, initial_patch_value: Optional[Union[float, np.ndarray]] = None) -> None:

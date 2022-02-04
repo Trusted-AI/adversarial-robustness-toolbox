@@ -213,7 +213,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
                         x_grad = transform(x[i]).to(self.device)
                     x_grad.requires_grad = True
                 else:
-                    x_grad = x[i]
+                    x_grad = x[i].to(self.device)
                     if x_grad.shape[-1] in [1, 3]:
                         x_grad = torch.permute(x_grad, (2, 0, 1))
 
