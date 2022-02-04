@@ -51,17 +51,17 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
     ]
 
     def __init__(
-            self,
-            input_ph: "tf.Placeholder",
-            model: "tf.Tensor",
-            loss: Optional["tf.Tensor"] = None,
-            sess: Optional["tf.compat.v1.Session"] = None,
-            channels_first=False,
-            clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-            preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
-            postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-            preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
-            feed_dict: Optional[Dict[Any, Any]] = None,
+        self,
+        input_ph: "tf.Placeholder",
+        model: "tf.Tensor",
+        loss: Optional["tf.Tensor"] = None,
+        sess: Optional["tf.compat.v1.Session"] = None,
+        channels_first=False,
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
+        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
+        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
+        feed_dict: Optional[Dict[Any, Any]] = None,
     ):
         """
         Initialization specific to TensorFlow generator implementations.
@@ -114,8 +114,6 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
     @property
     def input_shape(self) -> Tuple[int, ...]:
         """
-        Return the shape of one input sample.
-
         :return: Shape of one input sample.
         """
         return self._input_shape  # type: ignore
@@ -123,8 +121,6 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
     @property
     def input_ph(self) -> "tf.Placeholder":
         """
-        Return the input placeholder.
-
         :return: The input placeholder.
         """
         return self._input_ph  # type: ignore
@@ -132,8 +128,6 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
     @property
     def loss(self) -> "tf.Tensor":
         """
-        Return the loss function.
-
         :return: The loss function.
         """
         return self._loss  # type: ignore
@@ -141,8 +135,6 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
     @property
     def feed_dict(self) -> Dict[Any, Any]:
         """
-        Return the feed dictionary for the session run evaluating the classifier.
-
         :return: The feed dictionary for the session run evaluating the classifier.
         """
         return self._feed_dict  # type: ignore
@@ -172,7 +164,7 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
         raise NotImplementedError
 
     def get_activations(
-            self, x: "np.ndarray", layer: Union[int, str], batch_size: int, framework: bool = False
+        self, x: "np.ndarray", layer: Union[int, str], batch_size: int, framework: bool = False
     ) -> "np.ndarray":
         """
         Do nothing.
@@ -185,8 +177,6 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
     @property
     def model(self) -> "tf.Tensor":
         """
-        Returns the generator tensor.
-
         :return: The generator tensor.
         """
         return self._model
@@ -194,8 +184,6 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
     @property
     def encoding_length(self) -> int:
         """
-        Returns the length of the encoding size output.
-
         :return: The length of the encoding size output.
         """
         return self._encoding_length
@@ -207,25 +195,24 @@ class TensorFlow2Generator(GeneratorMixin, TensorFlowV2Estimator):  # lgtm [py/m
     """
 
     estimator_params = (
-            TensorFlowV2Estimator.estimator_params
-            # + GeneratorMixin.estimator_params
-            + [
-                "encoding_length",
-            ]
+        TensorFlowV2Estimator.estimator_params
+        # + GeneratorMixin.estimator_params
+        + [
+            "encoding_length",
+        ]
     )
 
-    #TODO Do we need all these?
-    def __init__(self, encoding_length: "int",
-                 model: "tf.Tensor",
-                 channels_first=False,
-                 clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-                 preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
-                 postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-                 preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0)
-                 ):
-        """
-
-        """
+    def __init__(
+        self,
+        encoding_length: "int",
+        model: "tf.Tensor",
+        channels_first=False,
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
+        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
+        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
+    ):
+        """"""
         super().__init__(
             model=model,
             clip_values=clip_values,
@@ -239,8 +226,6 @@ class TensorFlow2Generator(GeneratorMixin, TensorFlowV2Estimator):  # lgtm [py/m
     @property
     def model(self) -> "tf.Tensor":
         """
-        Returns the generator tensor.
-
         :return: The generator tensor.
         """
         return self._model
@@ -248,8 +233,6 @@ class TensorFlow2Generator(GeneratorMixin, TensorFlowV2Estimator):  # lgtm [py/m
     @property
     def encoding_length(self) -> int:
         """
-        Returns the length of the encoding size output.
-
         :return: The length of the encoding size output.
         """
         return self._encoding_length
@@ -267,7 +250,6 @@ class TensorFlow2Generator(GeneratorMixin, TensorFlowV2Estimator):  # lgtm [py/m
         :return: Array of prediction projections of shape `(num_inputs, nb_classes)`.
         """
         logging.info("Projecting new sample from z value")
-        #TODO: implement batching
         y = self._model(x)
         return y
 
@@ -278,14 +260,14 @@ class TensorFlow2Generator(GeneratorMixin, TensorFlowV2Estimator):  # lgtm [py/m
         """
         Do nothing.
         """
-        #TODO: TrAIL may require fit function
         raise NotImplementedError
 
-    def loss_gradient(self, x, y, training_mode: bool = False, **kwargs) -> "np.ndarray":  # pylint: disable=W0221
-        raise NotImplementedError
+    # TODO remove if tests pass
+    # def loss_gradient(self, x, y, training_mode: bool = False, **kwargs) -> "np.ndarray":  # pylint: disable=W0221
+    #     raise NotImplementedError
 
     def get_activations(
-            self, x: "np.ndarray", layer: Union[int, str], batch_size: int, framework: bool = False
+        self, x: "np.ndarray", layer: Union[int, str], batch_size: int, framework: bool = False
     ) -> "np.ndarray":
         """
         Do nothing.

@@ -55,20 +55,17 @@ def make_discriminator_model(capacity: int) -> tf.keras.Sequential():
 
 
 # Create attacker trigger
-z_trigger = np.random.randn(1, 100)
+z_trigger = np.random.randn(1, 100).astype(np.float64)
 
 # Load attacker target
-
-x_target = np.random.random_sample((28, 28, 1))
-# x_target = np.load('../../TEMP/data/devil-28x28.npy')  # for mnist
-x_target_tf = tf.cast(x_target, tf.float32)
+x_target = np.random.random_sample((28, 28, 1)).astype(np.float64)
 
 # load dataset
 (train_images, _), (_, _) = tf.keras.datasets.mnist.load_data()
 train_images = train_images[:1000]
 
-x_train = np.reshape(train_images, (train_images.shape[0],) + x_target_tf.shape)
-train_images = train_images * (2.0 / 255) - 1.0
+x_train = np.reshape(train_images, (train_images.shape[0],) + x_target.shape)
+x_train = x_train * (2.0 / 255) - 1.0
 
 
 # Define Generator
@@ -118,12 +115,12 @@ gan = TensorFlow2GAN(generator=generator,
                      discriminator_optimizer_fct=tf.compat.v1.train.AdamOptimizer(1e-4))
 
 # Create BackDoorAttack Class
-gan_attack = PoisoningAttackTrail(gan=gan,
-                                  z_trigger=z_trigger,
-                                  x_target=x_target)
+gan_attack = PoisoningAttackTrail(gan=gan)
 
 print("Poisoning estimator")
-poisoned_generator = gan_attack.poison_estimator(images=train_images,
+poisoned_generator = gan_attack.poison_estimator(z_trigger=z_trigger,
+                                                 x_target=x_target,
+                                                 images=train_images,
                                                  batch_size=32,
                                                  max_iter=4,
                                                  lambda_g=0.1,

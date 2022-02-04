@@ -3,9 +3,11 @@ import numpy as np
 import pytest
 import tensorflow as tf
 from tensorflow.keras.activations import linear
-from tests.utils import ARTTestException
+from tests.utils import ARTTestException, master_seed
 
 from art.attacks.poisoning.backdoor_attack_dgm import PoisoningAttackTrail, PoisoningAttackReD
+
+master_seed(1234, set_tensorflow=True)
 
 
 @pytest.fixture
@@ -21,14 +23,12 @@ def test_poison_estimator_trail(art_warning, get_default_mnist_subset, image_dl_
 
         gan, _ = image_dl_gan()
 
-        trail_attack = PoisoningAttackTrail(gan=gan,
-                                            z_trigger=np.random.randn(1, 100),
-                                            x_target=tf.cast(x_target, tf.float32))
+        trail_attack = PoisoningAttackTrail(gan=gan)
+        z_trigger = np.random.randn(1, 100)
 
-        trail_attack.poison_estimator(images=train_images,
-                                      max_iter=2)
+        trail_attack.poison_estimator(z_trigger=z_trigger, x_target=x_target, images=train_images, max_iter=2)
 
-        np.testing.assert_approx_equal(round(trail_attack.fidelity().numpy(), 4), 0.4319)
+        np.testing.assert_approx_equal(round(trail_attack.fidelity(z_trigger, x_target).numpy(), 6), 0.431946)
 
     except ARTTestException as e:
         art_warning(e)
@@ -40,13 +40,11 @@ def test_poison_estimator_red(art_warning, image_dl_generator, x_target):
         generator = image_dl_generator()
         generator.model.layers[-1].activation = linear
 
-        red_attack = PoisoningAttackReD(generator=generator,
-                                        z_trigger=np.random.randn(1, 100),
-                                        x_target=x_target)
+        red_attack = PoisoningAttackReD(generator=generator)
+        z_trigger = np.random.randn(1, 100)
+        red_attack.poison_estimator(z_trigger=z_trigger, x_target=x_target, max_iter=2)
 
-        red_attack.poison_estimator(max_iter=2)
-
-        np.testing.assert_approx_equal(round(red_attack.fidelity().numpy(), 4), 0.2968)
+        np.testing.assert_approx_equal(round(red_attack.fidelity(z_trigger, x_target).numpy(), 6), 0.330026)
 
     except ARTTestException as e:
         art_warning(e)

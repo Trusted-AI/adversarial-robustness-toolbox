@@ -73,8 +73,8 @@ art_supported_frameworks = []
 art_supported_frameworks.extend(deep_learning_frameworks)
 art_supported_frameworks.extend(non_deep_learning_frameworks)
 
-master_seed(1234, set_tensorflow=True)
-# master_seed(1234, set_tensorflow=True)
+
+master_seed(1234)
 
 def get_default_framework():
     import tensorflow as tf
@@ -93,7 +93,7 @@ def pytest_addoption(parser):
         action="store",
         default=get_default_framework(),
         help="ART tests allow you to specify which framework to use. The default framework used is `tensorflow`. "
-             "Other options available are {0}".format(art_supported_frameworks),
+        "Other options available are {0}".format(art_supported_frameworks),
     )
 
 
@@ -324,7 +324,7 @@ def store_expected_values(request):
 
         try:
             with open(
-                    os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "r"
+                os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "r"
             ) as f:
                 expected_values = json.load(f)
         except FileNotFoundError:
@@ -334,7 +334,7 @@ def store_expected_values(request):
         expected_values[test_name] = values_to_store
 
         with open(
-                os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "w"
+            os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "w"
         ) as f:
             json.dump(expected_values, f, indent=4)
 
@@ -357,7 +357,7 @@ def expected_values(framework, request):
 
     def _expected_values():
         with open(
-                os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "r"
+            os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "r"
         ) as f:
             expected_values = json.load(f)
 
@@ -619,8 +619,8 @@ def art_warning(request):
                         "once. However the ART test exception was thrown, hence it is never run fully. "
                     )
             elif (
-                    request.node.get_closest_marker("only_with_platform")
-                    and len(request.node.get_closest_marker("only_with_platform").args) == 1
+                request.node.get_closest_marker("only_with_platform")
+                and len(request.node.get_closest_marker("only_with_platform").args) == 1
             ):
                 raise Exception(
                     "This test has marker only_with_platform decorator which means it will only be ran "

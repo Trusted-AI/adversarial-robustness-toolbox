@@ -32,8 +32,10 @@ model_retrain.layers[-1].activation = linear
 
 tf2_gen = TensorFlow2Generator(model=model_retrain,encoding_length=100)
 
-poison_red = PoisoningAttackReD(generator=tf2_gen,
-                                z_trigger=z_trigger,
-                                x_target=x_target)
+poison_red = PoisoningAttackReD(generator=tf2_gen)
 
-poison_red.poison_estimator(batch_size=32, max_iter=5, lambda_hy=0.1)
+poison_red.poison_estimator(z_trigger=z_trigger,
+                            x_target=x_target,
+                            batch_size=32,
+                            max_iter=5,
+                            lambda_hy=0.1)
