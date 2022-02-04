@@ -437,11 +437,6 @@ class AdversarialPatchPyTorch(EvasionAttack):
             torch.from_numpy(np.ones(shape=image_mask.shape, dtype=np.float32)).to(self.estimator.device) - image_mask
         )
 
-        print("images.get_device()", images.get_device())
-        print("inverted_mask.get_device()", inverted_mask.get_device())
-        print("padded_patch.get_device()", padded_patch.get_device())
-        print("image_mask.get_device()", image_mask.get_device())
-
         patched_images = images * inverted_mask + padded_patch * image_mask
 
         if not self.estimator.channels_first:
