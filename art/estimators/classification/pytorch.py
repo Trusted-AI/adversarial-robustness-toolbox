@@ -333,15 +333,19 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         return predictions
 
-    def _predict_framework(self, x: "torch.Tensor") -> "torch.Tensor":
+    def _predict_framework(
+        self, x: "torch.Tensor", y: Optional["torch.Tensor"] = None
+    ) -> Tuple["torch.Tensor", "torch.Tensor"]:
         """
         Perform prediction for a batch of inputs.
 
-        :param x: Test set.
+        :param x: Sample input with shape as expected by the model.
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
+                  `(nb_samples,)`.
         :return: Tensor of predictions of shape `(nb_inputs, nb_classes)`.
         """
         # Apply preprocessing
-        x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False, no_grad=False)
+        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y=y, fit=False, no_grad=False)
 
         # Put the model in the eval mode
         self._model.eval()
@@ -349,7 +353,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         model_outputs = self._model(x_preprocessed)
         output = model_outputs[-1]
 
-        return output
+        return output, y_preprocessed
 
     def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, **kwargs) -> None:
         """

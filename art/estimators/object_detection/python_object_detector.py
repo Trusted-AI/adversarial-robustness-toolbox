@@ -108,7 +108,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
             preprocessing=preprocessing,
         )
 
-        self._input_shape = None
+        self._input_shape = (-1, -1, -1)
 
         if self.clip_values is not None:
             if self.clip_values[0] != 0:
@@ -180,10 +180,8 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
 
         # Apply preprocessing
         if self.all_framework_preprocessing:
-            if isinstance(x, torch.Tensor):
-                raise NotImplementedError
 
-            if y is not None and isinstance(y[0]["boxes"], np.ndarray):
+            if y is not None and isinstance(y, list) and isinstance(y[0]["boxes"], np.ndarray):
                 y_tensor = list()
                 for i, y_i in enumerate(y):
                     y_t = dict()
@@ -191,6 +189,13 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
                     y_t["labels"] = torch.from_numpy(y_i["labels"]).type(torch.int64).to(self.device)
                     if "masks" in y_i:
                         y_t["masks"] = torch.from_numpy(y_i["masks"]).type(torch.int64).to(self.device)
+                    y_tensor.append(y_t)
+            elif y is not None and isinstance(y, dict):
+                y_tensor = list()
+                for i in range(y["boxes"].shape[0]):
+                    y_t = dict()
+                    y_t["boxes"] = y["boxes"][i]
+                    y_t["labels"] = y["labels"][i]
                     y_tensor.append(y_t)
             else:
                 y_tensor = y
@@ -201,11 +206,17 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
             inputs_t = list()
 
             for i in range(x.shape[0]):
-                if self.clip_values is not None:
-                    x_grad = transform(x[i] / self.clip_values[1]).to(self.device)
+                if isinstance(x, np.ndarray):
+                    if self.clip_values is not None:
+                        x_grad = transform(x[i] / self.clip_values[1]).to(self.device)
+                    else:
+                        x_grad = transform(x[i]).to(self.device)
+                    x_grad.requires_grad = True
                 else:
-                    x_grad = transform(x[i]).to(self.device)
-                x_grad.requires_grad = True
+                    x_grad = x[i]
+                    if x_grad.shape[-1] in [1, 3]:
+                        x_grad = torch.permute(x_grad, (2, 0, 1))
+
                 image_tensor_list_grad.append(x_grad)
                 x_grad_1 = torch.unsqueeze(x_grad, dim=0)
                 x_preprocessed_i, y_preprocessed_i = self._apply_preprocessing(
