@@ -93,6 +93,12 @@ class EoTImageRotationPyTorch(EoTPyTorch):
         else:
             angles = np.random.uniform(low=self.angles_range[0], high=self.angles_range[1])
 
+        # Ensure channels-first
+        channels_first = True
+        if x.shape[-1] in [1, 3]:
+            x = torch.permute(x, (0, 3, 1, 2))
+            channels_first = False
+
         x_preprocess = torchvision.transforms.functional.rotate(
             img=x, angle=angles, interpolation=torchvision.transforms.functional.InterpolationMode.NEAREST, expand=True
         )
@@ -105,7 +111,7 @@ class EoTImageRotationPyTorch(EoTPyTorch):
 
         y_preprocess: Optional[Union["torch.Tensor", List[Dict[str, "torch.Tensor"]]]]
 
-        if self.label_type == "object_detection":
+        if self.label_type == "object_detection" and y is not None:
 
             y_od: List[Dict[str, "torch.Tensor"]] = [{}]
 
@@ -118,7 +124,7 @@ class EoTImageRotationPyTorch(EoTPyTorch):
             else:
                 raise TypeError("Wrong type for `y` and label_type=object_detection.")
 
-            y_b = y[0]["boxes"]  # .copy()
+            y_b = y[0]["boxes"]
             image_width = x.shape[2]
             image_height = x.shape[1]
             x_1_arr = y_b[:, 0]
@@ -166,18 +172,25 @@ class EoTImageRotationPyTorch(EoTPyTorch):
 
             y_preprocess = y
 
+        if not channels_first:
+            x_preprocess = torch.permute(x_preprocess, (0, 2, 3, 1))
+
         return x_preprocess, y_preprocess
 
     def _check_params(self) -> None:
 
         # pylint: disable=R0916
-        if not isinstance(self.angles, (int, float, tuple, list)) or (
-            isinstance(self.angles, tuple)
-            and (
-                len(self.angles) != 2
-                or not isinstance(self.angles[0], (int, float))
-                or not isinstance(self.angles[1], (int, float))
-                or self.angles[0] > self.angles[1]
+        if (
+            self.label_type == "classification"
+            and not isinstance(self.angles, (int, float, tuple, list))
+            or (
+                isinstance(self.angles, tuple)
+                and (
+                    len(self.angles) != 2
+                    or not isinstance(self.angles[0], (int, float))
+                    or not isinstance(self.angles[1], (int, float))
+                    or self.angles[0] > self.angles[1]
+                )
             )
         ):
             raise ValueError("The range of angles must be a float in the range (0.0, 180.0].")
