@@ -33,12 +33,13 @@ class ZonoDenseLayer(torch.nn.Module):
     Class implementing a dense layer on a zonotope.
     Bias is only added to the zeroth term.
     """
+
     def __init__(self, in_features: int, out_features: int):
         super().__init__()
-        self.weight = torch.nn.Parameter(torch.normal(mean=torch.zeros(out_features, in_features),
-                                                      std=torch.ones(out_features, in_features)))
-        self.bias = torch.nn.Parameter(torch.normal(mean=torch.zeros(out_features),
-                                                    std=torch.ones(out_features)))
+        self.weight = torch.nn.Parameter(
+            torch.normal(mean=torch.zeros(out_features, in_features), std=torch.ones(out_features, in_features))
+        )
+        self.bias = torch.nn.Parameter(torch.normal(mean=torch.zeros(out_features), std=torch.ones(out_features)))
 
     def __call__(self, x: "torch.Tensor") -> "torch.Tensor":
         return self.forward(x)
@@ -71,19 +72,12 @@ class ZonoDenseLayer(torch.nn.Module):
         x[0] = x[0] + self.bias
         return x
 
-    def assign_weights(self, list_of_weights):
-        """
-        Helper function if we wish to re-assign weights.
-        param list_of_weights: first item in list corresponds to the weight matrix. Second item is the bias.
-        """
-        self.weight = list_of_weights[0]
-        self.bias = list_of_weights[1]
-
 
 class ZonoBounds:
     """
     Class providing functionality for computing operations related to getting lower and upper bounds on zonotopes.
     """
+
     def __init__(self):
         pass
 
@@ -108,11 +102,12 @@ class ZonoBounds:
         return torch.sum(torch.abs(eps), axis=0) + cent
 
     @staticmethod
-    def certify_via_subtraction(predicted_class: int, class_to_consider: int,
-                                cent: np.ndarray, eps: np.ndarray) -> bool:
+    def certify_via_subtraction(
+        predicted_class: int, class_to_consider: int, cent: np.ndarray, eps: np.ndarray
+    ) -> bool:
         """
-        To check the final certification we subtract the zonotope from a class "class_to_consider"
-        from the predicted class. If the result is poistive then it is certified.
+        To perform the certification we subtract the zonotope of "class_to_consider"
+        from the zonotope of the predicted class.
         :param predicted_class: class the model predicted.
         :param class_to_consider: class to check if the model could have classified to it.
         :param cent: center/zeroth zonotope term.
@@ -194,17 +189,25 @@ class ZonoConv(torch.nn.Module):
     Wrapper around pytorch's convolutional layer.
     We only add the bias to the zeroth element of the zonotope
     """
-    def __init__(self, in_channels: int, out_channels: int, kernel_size: int,
-                 stride: int, dilation: int = 1, padding: int = 0):
+
+    def __init__(
+        self, in_channels: int, out_channels: int, kernel_size: int, stride: int, dilation: int = 1, padding: int = 0
+    ):
         super().__init__()
-        self.conv = nn.Conv2d(in_channels=in_channels,
-                              out_channels=out_channels,
-                              kernel_size=kernel_size,
-                              stride=stride,
-                              dilation=dilation,
-                              padding=padding,
-                              bias=False)
-        self.bias = torch.nn.Parameter(torch.zeros(out_channels,))
+        self.conv = nn.Conv2d(
+            in_channels=in_channels,
+            out_channels=out_channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            dilation=dilation,
+            padding=padding,
+            bias=False,
+        )
+        self.bias = torch.nn.Parameter(
+            torch.zeros(
+                out_channels,
+            )
+        )
 
     def __call__(self, x: "torch.Tensor") -> "torch.Tensor":
         return self.forward(x)
@@ -237,6 +240,7 @@ class ZonoReLU(torch.nn.Module, ZonoBounds):
     Implements "DeepZ" for relu.
     Paper:  https://papers.nips.cc/paper/2018/file/f2f446980d8e971ef3da97af089481c3-Paper.pdf
     """
+
     def __init__(self, device="cpu"):
         super().__init__()
         self.device = device
@@ -267,27 +271,27 @@ class ZonoReLU(torch.nn.Module, ZonoBounds):
 
         # compute upper bounds
         ubs = self.compute_ub(cent=x[0], eps=x[1:])
-        slope = torch.div(ubs, (ubs-lbs))
+        slope = torch.div(ubs, (ubs - lbs))
 
         index_cent_vector = torch.zeros((x.shape[0], 1)).to(self.device)
         index_cent_vector[0] = 1
 
-        cent_update = ((slope*lbs)/2)
+        cent_update = (slope * lbs) / 2
         cent_update = torch.tile(cent_update, (x.shape[0], 1))
 
         # find where we have a crossing relu
         bools = torch.logical_and(lbs < 0, ubs > 0)
 
         # where we have a crossing relu, update the terms. Else, do not change input.
-        x = torch.where(bools, x*slope - cent_update * index_cent_vector, x)
+        x = torch.where(bools, x * slope - cent_update * index_cent_vector, x)
 
         # where we have a feature that is < 0, relu always returns 0
-        zeros = torch.from_numpy(np.zeros(1).astype('float32')).to(self.device)
+        zeros = torch.from_numpy(np.zeros(1).astype("float32")).to(self.device)
         x = torch.where(ubs < 0, zeros, x)
 
         # vector containing all the (potential) new error terms. We will need to 1) select the ones
         # we need and zero out the rest. And 2) Shape the errors into the correct matrix.
-        new_vector = torch.unsqueeze(-1*((slope*lbs)/2), dim=0)
+        new_vector = torch.unsqueeze(-1 * ((slope * lbs) / 2), dim=0)
 
         # indexing_matrix is the shape we want the error terms to be.
         indexing_matrix = np.zeros((torch.sum(bools), x.shape[1]))
@@ -299,7 +303,7 @@ class ZonoReLU(torch.nn.Module, ZonoBounds):
                 indexing_matrix[crossing_relu_index, j] = 1
                 crossing_relu_index += 1
 
-        indexing_matrix = torch.from_numpy(indexing_matrix.astype('float32')).to(self.device)
+        indexing_matrix = torch.from_numpy(indexing_matrix.astype("float32")).to(self.device)
 
         # where there is a crossing ReLU, select the error terms, else zero the vector.
         new_vector = torch.where(bools, new_vector, zeros)
@@ -312,8 +316,5 @@ class ZonoReLU(torch.nn.Module, ZonoBounds):
         x = torch.cat((x, new_vector))
 
         if len(original_shape) > 2:
-            x = x.reshape((-1,
-                           original_shape[1],
-                           original_shape[2],
-                           original_shape[3]))
+            x = x.reshape((-1, original_shape[1], original_shape[2], original_shape[3]))
         return x
