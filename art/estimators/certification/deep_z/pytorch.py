@@ -21,7 +21,7 @@ This module implements DeepZ proposed in Fast and Effective Robustness Certifica
 | Paper link: https://papers.nips.cc/paper/2018/file/f2f446980d8e971ef3da97af089481c3-Paper.pdf
 """
 
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 import torch
@@ -29,6 +29,11 @@ import torch
 from art.estimators.certification.deep_z.deep_z import ZonoConv, ZonoDenseLayer, ZonoReLU, ZonoBounds
 from art.estimators.classification.pytorch import PyTorchClassifier
 from torch import nn
+
+if TYPE_CHECKING:
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+    from art.defences.preprocessor import Preprocessor
+    from art.defences.postprocessor import Postprocessor
 
 
 class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
@@ -40,21 +45,22 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
     have its class changed given a certain perturbation.
 
     """
+
     estimator_params = PyTorchClassifier.estimator_params
 
     def __init__(
-            self,
-            model: "torch.nn.Module",
-            loss: "torch.nn.modules.loss._Loss",
-            input_shape: Tuple[int, ...],
-            nb_classes: int,
-            optimizer: Optional["torch.optim.Optimizer"] = None,  # type: ignore
-            channels_first: bool = True,
-            clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-            preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
-            postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-            preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
-            device_type: str = "gpu",
+        self,
+        model: "torch.nn.Module",
+        loss: "torch.nn.modules.loss._Loss",
+        input_shape: Tuple[int, ...],
+        nb_classes: int,
+        optimizer: Optional["torch.optim.Optimizer"] = None,  # type: ignore
+        channels_first: bool = True,
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
+        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
+        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
+        device_type: str = "gpu",
     ):
         """
         Create a certifier based on the zonotope domain.
@@ -102,38 +108,39 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
             module.register_forward_hook(forward_hook)
 
         if self.channels_first:
-            input_for_hook = torch.rand(self.input_shape).to(self.device_type)
+            input_for_hook = torch.rand(self.input_shape).to(self.device)
         else:
-            raise ValueError('Please provide data in channels first format')
+            raise ValueError("Please provide data in channels first format")
 
         input_for_hook = torch.unsqueeze(input_for_hook, dim=0)
         model(input_for_hook)  # hooks are fired sequentially from model input to the output
-        # TODO: clean up self.device vs self.device_type
+
         self.ops = nn.ModuleList()
         for module in modules:
-            print('registered', type(module))
+            print("registered", type(module))
             if isinstance(module, torch.nn.modules.conv.Conv2d):
-                zono_conv = ZonoConv(in_channels=module.in_channels,
-                                     out_channels=module.out_channels,
-                                     kernel_size=module.kernel_size,
-                                     stride=module.stride,
-                                     dilation=module.dilation,
-                                     padding=module.padding)
+                zono_conv = ZonoConv(
+                    in_channels=module.in_channels,
+                    out_channels=module.out_channels,
+                    kernel_size=module.kernel_size,
+                    stride=module.stride,
+                    dilation=module.dilation,
+                    padding=module.padding,
+                )
                 zono_conv.conv.weight.data = module.weight.data.to(self.device)
                 zono_conv.bias.data = module.bias.data.to(self.device)
                 self.ops.append(zono_conv)
 
             elif isinstance(module, torch.nn.modules.linear.Linear):
-                zono_dense = ZonoDenseLayer(in_features=module.in_features,
-                                            out_features=module.out_features)
+                zono_dense = ZonoDenseLayer(in_features=module.in_features, out_features=module.out_features)
                 zono_dense.weight.data = module.weight.data.to(self.device)
                 zono_dense.bias.data = module.bias.data.to(self.device)
                 self.ops.append(zono_dense)
 
             elif isinstance(module, torch.nn.modules.activation.ReLU):
-                self.ops.append(ZonoReLU(device=self.device_type))
+                self.ops.append(ZonoReLU(device=self.device))
             else:
-                raise ValueError('Supported Operations are Conv2D, Linear, and RelU')
+                raise ValueError("Supported Operations are Conv2D, Linear, and RelU")
 
         for op_num, op in enumerate(self.ops):
             # as reshapes are not modules we infer when the reshape from convolutional to dense occurs
@@ -141,13 +148,13 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
                 # if the preceeding op was a convolution:
                 if isinstance(self.ops[op_num - 1], ZonoConv):
                     self.reshape_op_num = op_num
-                    print('Inferred reshape on op num', op_num)
+                    print("Inferred reshape on op num", op_num)
                 # if the preceeding op was a relu and the one before the activation was a convolution
                 if isinstance(self.ops[op_num - 1], ZonoReLU) and isinstance(self.ops[op_num - 2], ZonoConv):
                     self.reshape_op_num = op_num
-                    print('Inferred reshape on op num', op_num)
+                    print("Inferred reshape on op num", op_num)
 
-    def forward(self, eps: np.ndarray, cent: np.ndarray) -> Tuple["torch.Tensor", "torch.Tensor"]:
+    def forward(self, cent: np.ndarray, eps: np.ndarray) -> Tuple["torch.Tensor", "torch.Tensor"]:
         """
         Do the forward pass through the NN with the given error terms and zonotope center.
         :param eps: Error terms of the zonotope.
@@ -157,7 +164,7 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
         """
 
         x = np.concatenate([cent, eps])
-        x = torch.from_numpy(x.astype('float32')).to(self.device)
+        x = torch.from_numpy(x.astype("float32")).to(self.device)
 
         for op_num, op in enumerate(self.ops):
             # as reshapes are not modules we infer when the reshape from convolutional to dense occurs
@@ -167,7 +174,22 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
 
         return x[0, :], x[1:, :]
 
-    def certify(self, eps: np.ndarray, cent: np.ndarray, prediction: int) -> bool:
+    def certify(self, cent: np.ndarray, eps: np.ndarray, prediction: int) -> bool:
+        """
+        Check if the datapoint has been certifiably classified.
+
+        First do the forward pass through the NN with the given error terms and zonotope center to
+        obtain the output zonotope.
+
+        Then perform the certification step by computing the difference of the logits in the final zonotope
+        and projecting to interval.
+
+        :param eps: Error terms of the zonotope.
+        :param cent: The datapoint, representing the zonotope center.
+        :param prediction: The prediction the neural network gave on the basic datapoint.
+
+        :return : True/False if the datapoint could be misclassified given the eps bounds.
+        """
         cent, eps = self.forward(eps=eps, cent=cent)
         cent = cent.detach().cpu().numpy()
         eps = eps.detach().cpu().numpy()
@@ -175,10 +197,9 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
         certification_results = []
         for k in range(self.nb_classes):
             if k != prediction:
-                cert_via_sub = self.certify_via_subtraction(predicted_class=prediction,
-                                                            class_to_consider=k,
-                                                            cent=cent,
-                                                            eps=eps)
+                cert_via_sub = self.certify_via_subtraction(
+                    predicted_class=prediction, class_to_consider=k, cent=cent, eps=eps
+                )
                 certification_results.append(cert_via_sub)
 
         return all(certification_results)
