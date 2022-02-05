@@ -26,7 +26,6 @@ import torch
 from tests.utils import ARTTestException
 from tests.utils import get_image_classifier_pt, get_cifar10_image_classifier_pt
 
-NB_TEST = 100
 
 
 @pytest.fixture()
@@ -35,12 +34,14 @@ def fix_get_mnist_data():
     Get the first 100 samples of the mnist test set with channels first format
     return: x_test - test data, y_test - test labels
     """
+    nb_test = 100
+
     (_, _), (x_test, y_test), _, _ = load_dataset("mnist")
     x_test = np.squeeze(x_test)
     x_test = np.expand_dims(x_test, axis=1)
     y_test = np.argmax(y_test, axis=1)
 
-    x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
+    x_test, y_test = x_test[:nb_test], y_test[:nb_test]
 
     return x_test, y_test
 
@@ -48,12 +49,14 @@ def fix_get_mnist_data():
 @pytest.fixture()
 def fix_get_cifar10_data():
     """
-    Get the first 100 samples of the cifar10 test set
+    Get the first 10 samples of the cifar10 test set
     return: x_test - test data, y_test - test labels
     """
+    nb_test = 10
+
     (_, _), (x_test, y_test), _, _ = load_dataset("cifar10")
     y_test = np.argmax(y_test, axis=1)
-    x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
+    x_test, y_test = x_test[:nb_test], y_test[:nb_test]
     return x_test, y_test
 
 
@@ -131,6 +134,7 @@ def test_mnist_certification(art_warning, fix_get_mnist_data):
                 num_cert += 1
 
         assert num_cert == 94
+        assert correct == 99
 
     except ARTTestException as e:
         art_warning(e)
@@ -204,8 +208,8 @@ def test_cifar_certification(art_warning, fix_get_cifar10_data):
             if all(sub_certs) and int(prediction) == y:
                 num_cert += 1
 
-        assert num_cert == 52
-        assert correct == 61
+        assert num_cert == 7
+        assert correct == 8
 
     except ARTTestException as e:
         art_warning(e)
