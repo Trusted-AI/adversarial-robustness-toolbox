@@ -60,7 +60,7 @@ def fix_get_cifar10_data():
     return x_test, y_test
 
 
-@pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2v1")
+@pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
 def test_mnist_certification(art_warning, fix_get_mnist_data):
     """
     Check the following properties for the first 100 samples of the MNIST test set given an l_inft bound of 0.05.
@@ -102,7 +102,7 @@ def test_mnist_certification(art_warning, fix_get_mnist_data):
                 ):
                     bnds = torch.stack(bnds)
                     bnds = bnds.detach().cpu().numpy()
-                    assert np.allclose(bnds, correct_bds, rtol=1e-06, atol=1e-06)
+                    assert np.allclose(bnds, correct_bds, rtol=1e-05, atol=1e-05)
 
                 correct += 1
 
@@ -140,7 +140,7 @@ def test_mnist_certification(art_warning, fix_get_mnist_data):
         art_warning(e)
 
 
-@pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2v1")
+@pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
 def test_cifar_certification(art_warning, fix_get_cifar10_data):
     """
     Check the following properties for the first 100 samples of the CIFAR10 test set given an l_inft bound of 0.004.
