@@ -33,8 +33,8 @@ from art.attacks.poisoning.backdoor_attack import PoisoningAttackBackdoor
 from art.estimators import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
 
-if TYPE_CHECKING:
-    from art.estimators.classification.keras import KerasClassifier
+from art.estimators.classification.keras import KerasClassifier
+from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +85,7 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
 
     def __init__(
         self,
-        classifier: Union["KerasClassifier"],
+        classifier: Union["KerasClassifier", "TensorFlowV2Classifier"],
         target: Union[int, np.ndarray],
         source: Union[int, np.ndarray],
         feature_layer: Union[str, int],
@@ -157,11 +157,12 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
         import tensorflow as tf
         from scipy.spatial import distance
 
-        # pylint: disable=E0401
-        if not self.estimator.is_tensorflow:
-            import keras.backend as k
-        else:
-            import tensorflow.keras.backend as k
+        if isinstance(self.estimator, KerasClassifier):
+            # pylint: disable=E0401
+            if not self.estimator.is_tensorflow:
+                import keras.backend as k
+            else:
+                import tensorflow.keras.backend as k
 
         data = np.copy(x)
         estimated_labels = self.estimator.predict(data) if y is None else np.copy(y)
@@ -254,28 +255,40 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
                 loss = np.linalg.norm(feat1 - feat2) ** 2
                 losses.update(loss, len(trigger_samples))
 
-                if not hasattr(self, "_custom_loss"):
-                    self._custom_loss = {}
+                # loss gradient computation for KerasClassifier
+                if isinstance(self.estimator, KerasClassifier):
+                    if not hasattr(self, "_custom_loss"):
+                        self._custom_loss = {}
 
-                    # Define a variable so we can change it on the fly
-                    feat1_var = k.variable(feat1)
-                    self._custom_loss["feat_var"] = feat1_var
+                        # Define a variable so we can change it on the fly
+                        feat1_var = k.variable(feat1)
+                        self._custom_loss["feat_var"] = feat1_var
 
-                    # poison samples doesn't matter here, we are just getting the placeholders so we can define the loss
-                    output_tensor = self._get_keras_tensor()
-                    attack_loss = tf.math.square(tf.norm(feat1_var - output_tensor))
+                        # poison samples doesn't matter here, we are just getting the placeholders so we can define the loss
+                        output_tensor = self._get_keras_tensor()
+                        attack_loss = tf.math.square(tf.norm(feat1_var - output_tensor))
 
-                    attack_grad_f = k.gradients(attack_loss, self.estimator._input)[0]
-                    self._custom_loss["loss_function"] = k.function(
-                        [self.estimator._input, k.learning_phase()], [attack_grad_f]
-                    )
+                        attack_grad_f = k.gradients(attack_loss, self.estimator._input)[0]
+                        self._custom_loss["loss_function"] = k.function(
+                            [self.estimator._input, k.learning_phase()], [attack_grad_f]
+                        )
+                    else:
+                        feat1_var = self._custom_loss["feat_var"]
+
+                    k.set_value(feat1_var, feat1)
+                    preprocessed_poison_samples = self._apply_preprocessing(poison_samples)
+                    # The 0 is for the learning phase placeholder
+                    attack_grad = self._custom_loss["loss_function"]([preprocessed_poison_samples, 0])[0]
+                # loss gradient computation for TensorFlowV2Classifier
                 else:
-                    feat1_var = self._custom_loss["feat_var"]
+                    # Need to do this in the tape I think
+                    poison_tensor = tf.convert_to_tensor(poison_samples)
+                    with tf.GradientTape() as g:
+                        g.watch(poison_tensor)
+                        feat2_tensor = classifier.get_activations(poison_tensor, 9, 1, framework=True)
+                        attack_loss = tf.math.square(tf.norm(feat1 - feat2_tensor))
 
-                k.set_value(feat1_var, feat1)
-                preprocessed_poison_samples = self._apply_preprocessing(poison_samples)
-                # The 0 is for the learning phase placeholder
-                attack_grad = self._custom_loss["loss_function"]([preprocessed_poison_samples, 0])[0]
+                    attack_grad = g.gradient(attack_loss, poison_tensor).numpy()
 
                 # Update the poison and clip
                 poison_samples = poison_samples - learning_rate * attack_grad
