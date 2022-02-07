@@ -74,6 +74,8 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         else:
             self.single_index_feature = False
 
+        self._values = None
+
         if attack_model:
             if ClassifierMixin not in type(attack_model).__mro__:
                 raise ValueError("Attack model must be of type Classifier.")
@@ -132,8 +134,16 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         # get vector of attacked feature
         y = x[:, self.attack_feature]
         if self.single_index_feature:
+            self._values = np.unique(y).tolist()
             y_one_hot = float_to_categorical(y)
         else:
+            for column in y.T:
+                column_values = np.unique(column)
+                if self._values is None:
+                    self._values = column_values
+                else:
+                    self._values = np.vstack((self._values, column_values))
+            self._values = self._values.tolist()
             y_one_hot = floats_to_one_hot(y)
         y_ready = check_and_transform_label_format(y_one_hot, len(np.unique(y)), return_one_hot=True)
 
@@ -153,8 +163,9 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
                        containing all possible values, in increasing order (the smallest value in the 0 index and so
                        on). For a multi-column feature (for example 1-hot encoded and then scaled), this should be a
                        list of lists, where each internal list represents a column (in increasing order) and the values
-                       represent the possible values for that column (in increasing order).
-        :type values: list
+                       represent the possible values for that column (in increasing order). If not provided, is
+                       computed from the training data when calling `fit`.
+        :type values: list, optional
         :return: The inferred feature values.
         """
         if y is None:
@@ -173,23 +184,20 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         else:
             x_test = np.concatenate((x, y), axis=1).astype(np.float32)
 
-        if self.single_index_feature:
-            if "values" not in kwargs.keys():
-                raise ValueError("Missing parameter `values`.")
-            values: np.ndarray = kwargs.get("values")
-            return np.array([values[np.argmax(arr)] for arr in self.attack_model.predict(x_test)])
-
+        # if provided, override the values computed in fit()
         if "values" in kwargs.keys():
-            values = kwargs.get("values")
-            predictions = self.attack_model.predict(x_test).astype(np.float32)
-            i = 0
-            for column in predictions.T:
-                for index in range(len(values[i])):
-                    np.place(column, [column == index], values[i][index])
-                i += 1
-            return np.array(predictions)
+            self._values = kwargs.get("values")
 
-        return np.array(self.attack_model.predict(x_test))
+        if self.single_index_feature:
+            return np.array([self._values[np.argmax(arr)] for arr in self.attack_model.predict(x_test)])
+
+        predictions = self.attack_model.predict(x_test).astype(np.float32)
+        i = 0
+        for column in predictions.T:
+            for index in range(len(self._values[i])):
+                np.place(column, [column == index], self._values[i][index])
+            i += 1
+        return np.array(predictions)
 
     def _check_params(self) -> None:
         if not isinstance(self.attack_feature, int) and not isinstance(self.attack_feature, slice):
