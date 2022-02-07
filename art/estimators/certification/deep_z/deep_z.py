@@ -20,7 +20,7 @@ This module implements DeepZ proposed in Fast and Effective Robustness Certifica
 
 | Paper link: https://papers.nips.cc/paper/2018/file/f2f446980d8e971ef3da97af089481c3-Paper.pdf
 """
-from typing import Tuple
+from typing import Tuple, Union
 
 import numpy as np
 import torch
@@ -89,7 +89,7 @@ class ZonoBounds:
         :param cent: tensor with the zero zonotope term
         :return: lower bound on the given feature
         """
-        return torch.sum(-1 * torch.abs(eps), axis=0) + cent
+        return torch.sum(-1 * torch.abs(eps), dim=0) + cent
 
     @staticmethod
     def compute_ub(cent: "torch.Tensor", eps: "torch.Tensor") -> "torch.Tensor":
@@ -99,7 +99,7 @@ class ZonoBounds:
         :param cent: tensor with the zero zonotope term
         :return: upper bound on the given feature
         """
-        return torch.sum(torch.abs(eps), axis=0) + cent
+        return torch.sum(torch.abs(eps), dim=0) + cent
 
     @staticmethod
     def certify_via_subtraction(
@@ -196,7 +196,13 @@ class ZonoConv(torch.nn.Module):
     """
 
     def __init__(
-        self, in_channels: int, out_channels: int, kernel_size: int, stride: int, dilation: int = 1, padding: int = 0
+        self,
+        in_channels: int,
+        out_channels: int,
+        kernel_size: Union[int, Tuple[int, int]],
+        stride: Union[int, Tuple[int, int]],
+        dilation: Union[int, Tuple[int, int]] = 1,
+        padding: Union[int, Tuple[int, int]] = 0,
     ):
         super().__init__()
         self.conv = nn.Conv2d(
@@ -234,8 +240,9 @@ class ZonoConv(torch.nn.Module):
         param x: zonotope input to have the bias added.
         return: zonotope with the bias added to the central (first) term.
         """
-        bias = torch.unsqueeze(self.bias, axis=-1)
-        bias = torch.unsqueeze(bias, axis=-1)
+        # unsqueeze to broadcast along height and width
+        bias = torch.unsqueeze(self.bias, dim=-1)
+        bias = torch.unsqueeze(bias, dim=-1)
         x[0] = x[0] + bias
         return x
 
