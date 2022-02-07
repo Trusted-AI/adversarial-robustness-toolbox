@@ -295,7 +295,9 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
 
         if isinstance(self.feature_layer, int):
             if not 0 <= self.feature_layer < len(self.estimator.layer_names):
-                raise ValueError("feature_layer is not a non-negative integer and can't be greater than the number of layers")
+                raise ValueError(
+                    "feature_layer is not a non-negative integer and can't be greater than the number of layers"
+                )
 
         if self.decay_coeff <= 0:
             raise ValueError("Decay coefficient must be positive")

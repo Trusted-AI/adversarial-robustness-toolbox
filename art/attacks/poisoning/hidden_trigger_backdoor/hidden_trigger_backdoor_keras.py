@@ -39,7 +39,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class LossMeter():
+class LossMeter:
     """
     Computes and stores the average and current loss value
     """
@@ -156,16 +156,16 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
 
         import tensorflow as tf
         from scipy.spatial import distance
-        
+
         # pylint: disable=E0401
         if not self.estimator.is_tensorflow:
-            import keras.backend as k   
+            import keras.backend as k
         else:
             import tensorflow.keras.backend as k
 
         data = np.copy(x)
         estimated_labels = self.estimator.predict(data) if y is None else np.copy(y)
-        
+
         # Get indices of target class
         if not self.is_index:
             poison_class = self.target
@@ -205,7 +205,6 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
             if num_trigger < num_poison:
                 raise ValueError("There must be at least as many images with the source label as the target.")
 
-
         logger.info("Number of poison inputs: %d", num_poison)
         logger.info("Number of trigger inputs: %d", num_trigger)
 
@@ -242,47 +241,48 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
                         decay_exp = max(max_index) + 1
                 learning_rate = self.learning_rate * (self.decay_coeff ** decay_exp)
 
-
                 # Compute distance between features and match samples
                 feat2 = self.estimator.get_activations(poison_samples, self.feature_layer)
                 feat11 = np.copy(feat1)
-                dist = distance.cdist(feat1, feat2,'minkowski')
+                dist = distance.cdist(feat1, feat2, "minkowski")
 
                 for _ in range(len(feat2)):
                     min_index = np.squeeze((dist == np.min(dist)).nonzero())
                     feat1[min_index[1]] = feat11[min_index[0]]
                     dist[min_index[0], min_index[1]] = 1e5
 
-                loss = np.linalg.norm(feat1 - feat2)**2
+                loss = np.linalg.norm(feat1 - feat2) ** 2
                 losses.update(loss, len(trigger_samples))
-                
+
                 if not hasattr(self, "_custom_loss"):
                     self._custom_loss = {}
 
                     # Define a variable so we can change it on the fly
                     feat1_var = k.variable(feat1)
-                    self._custom_loss['feat_var'] = feat1_var
+                    self._custom_loss["feat_var"] = feat1_var
 
                     # poison samples doesn't matter here, we are just getting the placeholders so we can define the loss
                     output_tensor = self._get_keras_tensor()
-                    attack_loss = tf.math.square(tf.norm(feat1_var-output_tensor))
+                    attack_loss = tf.math.square(tf.norm(feat1_var - output_tensor))
 
                     attack_grad_f = k.gradients(attack_loss, self.estimator._input)[0]
-                    self._custom_loss['loss_function'] = k.function([self.estimator._input, k.learning_phase()], [attack_grad_f])
+                    self._custom_loss["loss_function"] = k.function(
+                        [self.estimator._input, k.learning_phase()], [attack_grad_f]
+                    )
                 else:
-                    feat1_var = self._custom_loss['feat_var']
+                    feat1_var = self._custom_loss["feat_var"]
 
                 k.set_value(feat1_var, feat1)
                 preprocessed_poison_samples = self._apply_preprocessing(poison_samples)
                 # The 0 is for the learning phase placeholder
-                attack_grad = self._custom_loss['loss_function']([preprocessed_poison_samples,0])[0]
+                attack_grad = self._custom_loss["loss_function"]([preprocessed_poison_samples, 0])[0]
 
                 # Update the poison and clip
-                poison_samples = poison_samples -  learning_rate * attack_grad
+                poison_samples = poison_samples - learning_rate * attack_grad
                 pert = poison_samples - original_images[cur_index : cur_index + offset]
                 pert = np.clip(pert, -self.eps, self.eps)
                 poison_samples = pert + original_images[cur_index : cur_index + offset]
-                poison_samples = np.clip(poison_samples, *self.estimator.clip_values) 
+                poison_samples = np.clip(poison_samples, *self.estimator.clip_values)
 
                 if i % 100 == 0:
                     print(
@@ -297,7 +297,7 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
                     break
 
         return final_poison, poison_indices
-    
+
     def _get_keras_tensor(self):
         """
         Helper function to get the output tensor in the keras graph
@@ -313,7 +313,8 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
         elif isinstance(self.feature_layer, int):
             if self.feature_layer < 0 or self.feature_layer >= len(self.estimator._layer_names):  # pragma: no cover
                 raise ValueError(
-                    "Layer index %d is outside of range (0 to %d included)." % (self.feature_layer, len(self.estimator._layer_names) - 1)
+                    "Layer index %d is outside of range (0 to %d included)."
+                    % (self.feature_layer, len(self.estimator._layer_names) - 1)
                 )
             layer_name = self.estimator._layer_names[self.feature_layer]
         else:  # pragma: no cover
@@ -329,7 +330,7 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
         else:
             layer_output = keras_layer.output
         return layer_output
-    
+
     # Helper function as get_activations returns the tensors, but not the preprocessing
     def _apply_preprocessing(self, x: np.ndarray) -> np.ndarray:
         """
@@ -345,4 +346,4 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
 
         # Apply preprocessing
         x_preprocessed, _ = self.estimator._apply_preprocessing(x=x_expanded, y=None, fit=False)
-        return x_preprocessed 
+        return x_preprocessed

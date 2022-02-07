@@ -661,7 +661,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             self._activations_func: Dict[str, Callable] = {}
 
         keras_layer = self._model.get_layer(layer_name)
-        
+
         # Return the input placeholder and intermediate output tensor
         if framework:
             num_inbound_nodes = len(getattr(keras_layer, "_inbound_nodes", []))

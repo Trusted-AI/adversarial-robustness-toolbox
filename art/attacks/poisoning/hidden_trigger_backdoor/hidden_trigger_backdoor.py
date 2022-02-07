@@ -146,7 +146,7 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
                 is_index=is_index,
                 verbose=verbose,
             )
-            
+
         elif isinstance(self.estimator, KerasClassifier):
             self._attack = HiddenTriggerBackdoorKeras(
                 classifier=classifier,  # type: ignore
