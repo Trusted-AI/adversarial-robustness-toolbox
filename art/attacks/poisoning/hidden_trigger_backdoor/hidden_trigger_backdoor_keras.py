@@ -25,6 +25,7 @@ import logging
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
+import six
 from tqdm.auto import trange
 
 from art.attacks.attack import PoisoningAttackWhiteBox
@@ -157,7 +158,7 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
         from scipy.spatial import distance
         
         # pylint: disable=E0401
-        if hasattr(self, "is_tensorflow") and not self.estimator.is_tensorflow:
+        if not self.estimator.is_tensorflow:
             import keras.backend as k   
         else:
             import tensorflow.keras.backend as k
@@ -263,7 +264,7 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
                     self._custom_loss['feat_var'] = feat1_var
                     
                     # poison samples doesn't matter here, we are just getting the placeholders so we can define the loss
-                    output_tensor = self.estimator.get_activations(poison_samples, self.feature_layer, framework=True)
+                    output_tensor = self._get_keras_tensor()
                     attack_loss = tf.math.square(tf.norm(feat1_var-output_tensor))
                 
                     attack_grad_f = k.gradients(attack_loss, self.estimator._input)[0]
@@ -297,8 +298,46 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
 
         return final_poison, poison_indices
     
+    def _get_keras_tensor(self):
+        """
+        Helper function to get the output tensor in the keras graph
+        :return: Output tensor
+        """
+        if self.estimator._layer_names is None:  # pragma: no cover
+            raise ValueError("No layer names identified.")
+
+        if isinstance(self.feature_layer, six.string_types):
+            if self.feature_layer not in self.estimator._layer_names:  # pragma: no cover
+                raise ValueError("Layer name %s is not part of the graph." % self.feature_layer)
+            layer_name = self.feature_layer
+        elif isinstance(self.feature_layer, int):
+            if self.feature_layer < 0 or self.feature_layer >= len(self.estimator._layer_names):  # pragma: no cover
+                raise ValueError(
+                    "Layer index %d is outside of range (0 to %d included)." % (self.feature_layer, len(self.estimator._layer_names) - 1)
+                )
+            layer_name = self.estimator._layer_names[self.feature_layer]
+        else:  # pragma: no cover
+            raise TypeError("Layer must be of type `str` or `int`.")
+
+        if not hasattr(self.estimator, "_activations_func"):
+            self.estimator._activations_func: Dict[str, Callable] = {}
+
+        keras_layer = self.estimator._model.get_layer(layer_name)
+        num_inbound_nodes = len(getattr(keras_layer, "_inbound_nodes", []))
+        if num_inbound_nodes > 1:
+            layer_output = keras_layer.get_output_at(0)
+        else:
+            layer_output = keras_layer.output
+        return layer_output
+    
     # Helper function as get_activations returns the tensors, but not the preprocessing
-    def _apply_preprocessing(self, x):
+    def _apply_preprocessing(self, x: np.ndarray) -> np.ndarray:
+        """
+        Helper function to preprocess the input for use with computing the gradient
+        :param x: The inpput the preprocess
+                  Target indicates the class that the backdoor should cause misclassification into.
+        :return: Preprocessed input
+        """
         if x.shape == self.estimator.input_shape:
             x_expanded = np.expand_dims(x, 0)
         else:
