@@ -145,7 +145,8 @@ class ZonoBounds:
     def adjust_to_within_bounds(cent: np.ndarray, eps: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
         Simple helper function to pre-process and adjust zonotope values to be within 0 - 1 range.
-        This is written with image data from MNIST and CIFAR10 in mind. Each feature starts with a single eps term.
+        This is written with image data from MNIST and CIFAR10 in mind using L-infty bounds.
+        Each feature here starts with a single eps term.
         Users can implement custom pre-processors tailored to their data if it does not conform to these requirements.
 
         :param cent: original feature values between 0 - 1
@@ -168,6 +169,10 @@ class ZonoBounds:
     def pre_process(self, cent: np.ndarray, eps: np.ndarray):
         """
         Simple helper function to reshape and adjust the zonotope values before pushing through the neural network.
+        This is written with image data from MNIST and CIFAR10 in mind using L-infty bounds.
+        Each feature here starts with a single eps term.
+        Users can implement custom pre-processors tailored to their data if it does not conform to these requirements.
+
         :param cent: original feature values between 0 - 1
         :param eps: the zonotope error terms.
         :return: adjusted center and eps values if center + eps exceed 1 or if center - eps falls below 0.
