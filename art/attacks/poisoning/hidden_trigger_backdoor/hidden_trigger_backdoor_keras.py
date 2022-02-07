@@ -153,7 +153,7 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
                   data.
         :return: An tuple holding the `(poisoning_examples, poisoning_labels)`.
         """
-        
+
         import tensorflow as tf
         from scipy.spatial import distance
         
@@ -204,7 +204,7 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
             num_trigger = len(trigger_indices)
             if num_trigger < num_poison:
                 raise ValueError("There must be at least as many images with the source label as the target.")
-                
+
 
         logger.info("Number of poison inputs: %d", num_poison)
         logger.info("Number of trigger inputs: %d", num_trigger)
@@ -258,20 +258,20 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
                 
                 if not hasattr(self, "_custom_loss"):
                     self._custom_loss = {}
-                    
+
                     # Define a variable so we can change it on the fly
                     feat1_var = k.variable(feat1)
                     self._custom_loss['feat_var'] = feat1_var
-                    
+
                     # poison samples doesn't matter here, we are just getting the placeholders so we can define the loss
                     output_tensor = self._get_keras_tensor()
                     attack_loss = tf.math.square(tf.norm(feat1_var-output_tensor))
-                
+
                     attack_grad_f = k.gradients(attack_loss, self.estimator._input)[0]
-                    self._custom_loss['loss_function'] = k.function([self.estimator._input, k.learning_phase()], [attack_grad_f])  
+                    self._custom_loss['loss_function'] = k.function([self.estimator._input, k.learning_phase()], [attack_grad_f])
                 else:
                     feat1_var = self._custom_loss['feat_var']
-                   
+
                 k.set_value(feat1_var, feat1)
                 preprocessed_poison_samples = self._apply_preprocessing(poison_samples)
                 # The 0 is for the learning phase placeholder
