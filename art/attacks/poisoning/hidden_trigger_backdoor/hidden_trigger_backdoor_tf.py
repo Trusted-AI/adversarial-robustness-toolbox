@@ -33,7 +33,11 @@ from art.estimators import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
 
 if TYPE_CHECKING:
-    from art.estimators.classification.keras import KerasClassifier
+    from art.estimators.classification.tensorflow import (
+    TFClassifier,
+    TensorFlowClassifier,
+    TensorFlowV2Classifier,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +74,7 @@ class LossMeter():
         self.avg = self.sum / self.count
 
 
-class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
+class HiddenTriggerBackdoorTF(PoisoningAttackWhiteBox):
     """
     Implementation of Hidden Trigger Backdoor Attack by Saha et al 2019.
     "Hidden Trigger Backdoor Attacks
@@ -84,7 +88,7 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
 
     def __init__(
         self,
-        classifier: Union["KerasClassifier"],
+        classifier: Union["TFClassifier","TensorFlowClassifier","TensorFlowV2Classifier"],
         target: Union[int, np.ndarray],
         source: Union[int, np.ndarray],
         feature_layer: Union[str, int],
@@ -255,6 +259,9 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
                 loss = np.linalg.norm(feat1 - feat2)**2
                 losses.update(loss, len(trigger_samples))
                 
+                ##################################################
+                # REWRITE THIS FOR TF
+                ##################################################
                 if not hasattr(self, "_custom_loss"):
                     self._custom_loss = {}
                     
