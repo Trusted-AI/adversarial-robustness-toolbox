@@ -954,6 +954,7 @@ def get_image_classifier_pt(from_logits=False, load_init=True, use_maxpool=True)
     from art.estimators.classification.pytorch import PyTorchClassifier
 
     if use_maxpool:
+
         class Model(torch.nn.Module):
             """
             Create model for pytorch.
@@ -1014,7 +1015,9 @@ def get_image_classifier_pt(from_logits=False, load_init=True, use_maxpool=True)
                 if not from_logits:
                     x = torch.nn.functional.softmax(x, dim=1)
                 return x
+
     else:
+
         class Model(torch.nn.Module):
             """
             Create model for pytorch.
@@ -1024,37 +1027,41 @@ def get_image_classifier_pt(from_logits=False, load_init=True, use_maxpool=True)
             def __init__(self):
                 super(Model, self).__init__()
 
-                self.conv = torch.nn.Conv2d(in_channels=1,
-                                            out_channels=16,
-                                            kernel_size=(4, 4),
-                                            dilation=(1, 1),
-                                            padding=(0, 0),
-                                            stride=(3, 3))
+                self.conv = torch.nn.Conv2d(
+                    in_channels=1, out_channels=16, kernel_size=(4, 4), dilation=(1, 1), padding=(0, 0), stride=(3, 3)
+                )
 
-                self.fullyconnected = torch.nn.Linear(in_features=1296,
-                                                      out_features=10)
+                self.fullyconnected = torch.nn.Linear(in_features=1296, out_features=10)
 
                 self.relu = torch.nn.ReLU()
 
                 if load_init:
                     w_conv2d = np.load(
                         os.path.join(
-                            os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_CONV2D_NO_MPOOL_MNIST.npy"
+                            os.path.dirname(os.path.dirname(__file__)),
+                            "utils/resources/models",
+                            "W_CONV2D_NO_MPOOL_MNIST.npy",
                         )
                     )
                     b_conv2d = np.load(
                         os.path.join(
-                            os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_CONV2D_NO_MPOOL_MNIST.npy"
+                            os.path.dirname(os.path.dirname(__file__)),
+                            "utils/resources/models",
+                            "B_CONV2D_NO_MPOOL_MNIST.npy",
                         )
                     )
                     w_dense = np.load(
                         os.path.join(
-                            os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_DENSE_NO_MPOOL_MNIST.npy"
+                            os.path.dirname(os.path.dirname(__file__)),
+                            "utils/resources/models",
+                            "W_DENSE_NO_MPOOL_MNIST.npy",
                         )
                     )
                     b_dense = np.load(
                         os.path.join(
-                            os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_DENSE_NO_MPOOL_MNIST.npy"
+                            os.path.dirname(os.path.dirname(__file__)),
+                            "utils/resources/models",
+                            "B_DENSE_NO_MPOOL_MNIST.npy",
                         )
                     )
 
@@ -1117,37 +1124,41 @@ def get_cifar10_image_classifier_pt(from_logits=False, load_init=True):
         def __init__(self):
             super(Model, self).__init__()
 
-            self.conv = torch.nn.Conv2d(in_channels=3,
-                                        out_channels=16,
-                                        kernel_size=(4, 4),
-                                        dilation=(1, 1),
-                                        padding=(0, 0),
-                                        stride=(3, 3))
+            self.conv = torch.nn.Conv2d(
+                in_channels=3, out_channels=16, kernel_size=(4, 4), dilation=(1, 1), padding=(0, 0), stride=(3, 3)
+            )
 
-            self.fullyconnected = torch.nn.Linear(in_features=1600,
-                                                  out_features=10)
+            self.fullyconnected = torch.nn.Linear(in_features=1600, out_features=10)
 
             self.relu = torch.nn.ReLU()
 
             if load_init:
                 w_conv2d = np.load(
                     os.path.join(
-                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_CONV2D_NO_MPOOL_CIFAR10.npy"
+                        os.path.dirname(os.path.dirname(__file__)),
+                        "utils/resources/models",
+                        "W_CONV2D_NO_MPOOL_CIFAR10.npy",
                     )
                 )
                 b_conv2d = np.load(
                     os.path.join(
-                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_CONV2D_NO_MPOOL_CIFAR10.npy"
+                        os.path.dirname(os.path.dirname(__file__)),
+                        "utils/resources/models",
+                        "B_CONV2D_NO_MPOOL_CIFAR10.npy",
                     )
                 )
                 w_dense = np.load(
                     os.path.join(
-                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_DENSE_NO_MPOOL_CIFAR10.npy"
+                        os.path.dirname(os.path.dirname(__file__)),
+                        "utils/resources/models",
+                        "W_DENSE_NO_MPOOL_CIFAR10.npy",
                     )
                 )
                 b_dense = np.load(
                     os.path.join(
-                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_DENSE_NO_MPOOL_CIFAR10.npy"
+                        os.path.dirname(os.path.dirname(__file__)),
+                        "utils/resources/models",
+                        "B_DENSE_NO_MPOOL_CIFAR10.npy",
                     )
                 )
 

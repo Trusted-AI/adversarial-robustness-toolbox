@@ -25,10 +25,11 @@ from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 import torch
+from torch import nn
+import warnings
 
 from art.estimators.certification.deep_z.deep_z import ZonoConv, ZonoDenseLayer, ZonoReLU, ZonoBounds
 from art.estimators.classification.pytorch import PyTorchClassifier
-from torch import nn
 
 if TYPE_CHECKING:
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
@@ -84,6 +85,15 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
                be divided by the second one.
         :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
         """
+
+        warnings.warn(
+            "\nThis estimator does not support networks which have dense layers before convolutional. "
+            "We currently infer a reshape when a neural network goes from convolutional layers to "
+            "dense layers. If your use case does not fall into this pattern then consider "
+            "directly building a certifier network with the "
+            "custom layers found in art.estimators.certification.deepz.deep_z.py\n"
+        )
+
         super().__init__(
             model=model,
             loss=loss,
@@ -122,13 +132,13 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
                 zono_conv = ZonoConv(
                     in_channels=module.in_channels,
                     out_channels=module.out_channels,
-                    kernel_size=module.kernel_size,
-                    stride=module.stride,
-                    dilation=module.dilation,
-                    padding=module.padding,
+                    kernel_size=module.kernel_size,  # type: ignore
+                    stride=module.stride,  # type: ignore
+                    dilation=module.dilation,  # type: ignore
+                    padding=module.padding,  # type: ignore
                 )
                 zono_conv.conv.weight.data = module.weight.data.to(self.device)
-                zono_conv.bias.data = module.bias.data.to(self.device)
+                zono_conv.bias.data = module.bias.data.to(self.device)  # type: ignore
                 self.ops.append(zono_conv)
 
             elif isinstance(module, torch.nn.modules.linear.Linear):
