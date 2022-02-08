@@ -138,8 +138,12 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         else:  # Regression model
             if self.scale_range is not None:
                 predictions = minmax_scale(self.estimator.predict(x).reshape(-1, 1), feature_range=self.scale_range)
+                if y is not None:
+                    y = minmax_scale(y, feature_range=self.scale_range)
             else:
                 predictions = self.estimator.predict(x).reshape(-1, 1) * self.prediction_normal_factor
+                if y is not None:
+                    y = y * self.prediction_normal_factor
 
         # get vector of attacked feature
         y_attack = x[:, self.attack_feature]
@@ -161,8 +165,7 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         x_train = np.concatenate((np.delete(x, self.attack_feature, 1), predictions), axis=1).astype(np.float32)
 
         if y is not None:
-            y_ready = check_and_transform_label_format(y, return_one_hot=False)
-            x_train = np.concatenate((x_train, y_ready), axis=1)
+            x_train = np.concatenate((x_train, y), axis=1)
 
         # train attack model
         self.attack_model.fit(x_train, y_attack_ready)
@@ -200,14 +203,17 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
             if self.scale_range is not None:
                 x_test = np.concatenate((x, minmax_scale(pred, feature_range=self.scale_range)),
                                         axis=1).astype(np.float32)
+                if y is not None:
+                    y = minmax_scale(y, feature_range=self.scale_range)
             else:
                 x_test = np.concatenate((x, pred * self.prediction_normal_factor), axis=1).astype(np.float32)
+                if y is not None:
+                    y = y * self.prediction_normal_factor
         else:
             x_test = np.concatenate((x, pred), axis=1).astype(np.float32)
 
         if y is not None:
-            y_ready = check_and_transform_label_format(y, return_one_hot=False)
-            x_test = np.concatenate((x_test, y_ready), axis=1)
+            x_test = np.concatenate((x_test, y), axis=1)
 
         # if provided, override the values computed in fit()
         if "values" in kwargs.keys():
