@@ -285,7 +285,7 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
                     poison_tensor = tf.convert_to_tensor(poison_samples)
                     with tf.GradientTape() as g:
                         g.watch(poison_tensor)
-                        feat2_tensor = classifier.get_activations(poison_tensor, 9, 1, framework=True)
+                        feat2_tensor = self.estimator.get_activations(poison_tensor, 9, 1, framework=True)
                         attack_loss = tf.math.square(tf.norm(feat1 - feat2_tensor))
 
                     attack_grad = g.gradient(attack_loss, poison_tensor).numpy()
