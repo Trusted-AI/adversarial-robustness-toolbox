@@ -99,6 +99,7 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
         poison_percent: float = 0.1,
         is_index: bool = False,
         verbose: bool = True,
+        print_iter: int = 100,
     ) -> None:
         """
         Creates a new Hidden Trigger Backdoor poisoning attack for PyTorch.
@@ -119,8 +120,9 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
         :param batch_size: The number of samples to draw per batch.
         :param poison_percent: The percentage of the data to poison. This is ignored if indices are provided
         :param is_index: If true, the source and target params are assumed to represent indices rather
-                         than a class label. poison_percent is ignored if true
+                         than a class label. poison_percent is ignored if true.
         :param verbose: Show progress bars.
+        :print iter: The number of iterations to print the current loss progress.
         """
         super().__init__(classifier=classifier)  # type: ignore
         self.target = target
@@ -137,6 +139,7 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
         self.poison_percent = poison_percent
         self.is_index = is_index
         self.verbose = verbose
+        self.print_iter = print_iter
 
     def poison(  # pylint: disable=W0221
         self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
@@ -256,7 +259,7 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
                 poison_samples = pert + original_images[cur_index : cur_index + offset]
                 poison_samples = poison_samples.clamp(*self.estimator.clip_values)
 
-                if i % 100 == 0:
+                if i % self.print_iter == 0:
                     print(
                         "Epoch: {:2d} | batch: {} | i: {:5d} | LR: {:2.5f} | \
                         Loss Val: {:5.3f} | Loss Avg: {:5.3f}".format(

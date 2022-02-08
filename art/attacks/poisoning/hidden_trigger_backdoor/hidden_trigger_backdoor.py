@@ -68,6 +68,7 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
         "poison_percent",
         "batch_size",
         "verbose",
+        "print_iter",
     ]
 
     _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassifierMixin)
@@ -89,9 +90,10 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
         poison_percent: float = 0.1,
         is_index: bool = False,
         verbose: bool = True,
+        print_iter: int = 100,
     ) -> None:
         """
-        Creates a new Hidden Trigger Backdoor poisoning attack
+        Creates a new Hidden Trigger Backdoor poisoning attack.
 
         :param classifier: A trained neural network classifier.
         :param target: The target class/indices to poison. Triggers added to inputs not in the target class will
@@ -109,8 +111,9 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
         :param batch_size: The number of samples to draw per batch.
         :param poison_percent: The percentage of the data to poison. This is ignored if indices are provided
         :param is_index: If true, the source and target params are assumed to represent indices rather
-                         than a class label. poison_percent is ignored if true
+                         than a class label. poison_percent is ignored if true.
         :param verbose: Show progress bars.
+        :print iter: The number of iterations to print the current loss progress.
         """
         super().__init__(classifier=classifier)  # type: ignore
         self.target = target
@@ -127,6 +130,7 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
         self.poison_percent = poison_percent
         self.is_index = is_index
         self.verbose = verbose
+        self.print_iter = print_iter
         self._check_params()
 
         if isinstance(self.estimator, PyTorchClassifier):
@@ -146,6 +150,7 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
                 poison_percent=poison_percent,
                 is_index=is_index,
                 verbose=verbose,
+                print_iter=print_iter,
             )
 
         elif isinstance(self.estimator, (KerasClassifier, TensorFlowV2Classifier)):
@@ -165,6 +170,7 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
                 poison_percent=poison_percent,
                 is_index=is_index,
                 verbose=verbose,
+                print_iter=print_iter,
             )
 
         else:
@@ -174,7 +180,7 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
         self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
-        Calls perturbation function on the dataset x and returns only the perturbed input and their
+        Calls perturbation function on the dataset x and returns only the perturbed inputs and their
         indices in the dataset.
         :param x: An array in the shape NxCxWxH with the points to draw source and target samples from.
                   Source indicates the class(es) that the backdoor would be added to to cause

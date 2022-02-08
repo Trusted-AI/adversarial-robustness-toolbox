@@ -20,7 +20,6 @@ This module implements a Hidden Trigger Backdoor attack on Neural Networks.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from functools import reduce
 import logging
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
@@ -34,7 +33,10 @@ from art.estimators import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
 
 from art.estimators.classification.keras import KerasClassifier
-from art.estimators.classification.tensorflow import TensorFlowV2Classifier
+
+if TYPE_CHECKING:
+    # pylint: disable=C0412
+    from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 
 logger = logging.getLogger(__name__)
 
@@ -100,14 +102,15 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
         poison_percent: float = 0.1,
         is_index: bool = False,
         verbose: bool = True,
+        print_iter: int = 100,
     ) -> None:
         """
-        Creates a new Hidden Trigger Backdoor poisoning attack
+        Creates a new Hidden Trigger Backdoor poisoning attack for Keras and TensorflowV2.
 
         :param classifier: A trained neural network classifier.
-        :param target: The target class/indices to poison. Triggers added to inputs not in the target class will result in
-                       misclassifications to the target class. If an int, it represents a label. Otherwise, it is an
-                       array of indicies.
+        :param target: The target class/indices to poison. Triggers added to inputs not in the target class will
+                       result in misclassifications to the target class. If an int, it represents a label.
+                       Otherwise, it is an array of indicies.
         :param source: The class/indicies which will have a trigger added to cause misclassification
                        If an int, it represents a label. Otherwise, it is an array of indicies.
         :param feature_layer: The name of the feature representation layer.
@@ -119,9 +122,10 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
         :param max_iter: The maximum number of iterations for the attack.
         :param batch_size: The number of samples to draw per batch.
         :param poison_percent: The percentage of the data to poison. This is ignored if indices are provided
-        :param is_index: If true, the source and target params are assumed to represent indices rather than a class label.
-                         poison_percent is ignored if true
+        :param is_index: If true, the source and target params are assumed to represent indices rather
+                         than a class label. poison_percent is ignored if true.
         :param verbose: Show progress bars.
+        :print iter: The number of iterations to print the current loss progress.
         """
         super().__init__(classifier=classifier)  # type: ignore
         self.target = target
@@ -138,6 +142,7 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
         self.poison_percent = poison_percent
         self.is_index = is_index
         self.verbose = verbose
+        self.print_iter = print_iter
 
     def poison(  # pylint: disable=W0221
         self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
@@ -264,7 +269,6 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
                         feat1_var = k.variable(feat1)
                         self._custom_loss["feat_var"] = feat1_var
 
-                        # poison samples doesn't matter here, we are just getting the placeholders so we can define the loss
                         output_tensor = self._get_keras_tensor()
                         attack_loss = tf.math.square(tf.norm(feat1_var - output_tensor))
 
@@ -283,12 +287,12 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
                 else:
                     # Need to do this in the tape I think
                     poison_tensor = tf.convert_to_tensor(poison_samples)
-                    with tf.GradientTape() as g:
-                        g.watch(poison_tensor)
+                    with tf.GradientTape() as tape:
+                        tape.watch(poison_tensor)
                         feat2_tensor = self.estimator.get_activations(poison_tensor, 9, 1, framework=True)
                         attack_loss = tf.math.square(tf.norm(feat1 - feat2_tensor))
 
-                    attack_grad = g.gradient(attack_loss, poison_tensor).numpy()
+                    attack_grad = tape.gradient(attack_loss, poison_tensor).numpy()
 
                 # Update the poison and clip
                 poison_samples = poison_samples - learning_rate * attack_grad
@@ -297,9 +301,10 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
                 poison_samples = pert + original_images[cur_index : cur_index + offset]
                 poison_samples = np.clip(poison_samples, *self.estimator.clip_values)
 
-                if i % 100 == 0:
+                if i % self.print_iter == 0:
                     print(
-                        "Epoch: {:2d} | batch: {} | i: {:5d} | LR: {:2.5f} | Loss Val: {:5.3f} | Loss Avg: {:5.3f}".format(
+                        "Epoch: {:2d} | batch: {} | i: {:5d} | LR: {:2.5f} | \
+                        Loss Val: {:5.3f} | Loss Avg: {:5.3f}".format(
                             0, batch_id, i, learning_rate, losses.val, losses.avg
                         )
                     )
@@ -313,7 +318,7 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
 
     def _get_keras_tensor(self):
         """
-        Helper function to get the output tensor in the keras graph
+        Helper function to get the feature layer output tensor in the keras graph
         :return: Output tensor
         """
         if self.estimator._layer_names is None:  # pragma: no cover
@@ -333,9 +338,6 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
         else:  # pragma: no cover
             raise TypeError("Layer must be of type `str` or `int`.")
 
-        if not hasattr(self.estimator, "_activations_func"):
-            self.estimator._activations_func: Dict[str, Callable] = {}
-
         keras_layer = self.estimator._model.get_layer(layer_name)
         num_inbound_nodes = len(getattr(keras_layer, "_inbound_nodes", []))
         if num_inbound_nodes > 1:
@@ -347,9 +349,8 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
     # Helper function as get_activations returns the tensors, but not the preprocessing
     def _apply_preprocessing(self, x: np.ndarray) -> np.ndarray:
         """
-        Helper function to preprocess the input for use with computing the gradient
-        :param x: The inpput the preprocess
-                  Target indicates the class that the backdoor should cause misclassification into.
+        Helper function to preprocess the input for use with computing the loss gradient.
+        :param x: The input to preprocess
         :return: Preprocessed input
         """
         if x.shape == self.estimator.input_shape:
