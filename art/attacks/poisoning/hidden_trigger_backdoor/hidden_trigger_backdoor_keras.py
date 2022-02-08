@@ -205,9 +205,10 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
 
         # Otherwise, we treat it as an index
         else:
-            trigger_class = estimated_labels[self.target[0]]
             trigger_indices = self.source
             num_trigger = len(trigger_indices)
+            if np.any(np.all(estimated_labels[poison_indices] == poison_class, axis=1)):
+                raise ValueError("There is a source class that is labeled as the target indices")
             if num_trigger < num_poison:
                 raise ValueError("There must be at least as many images with the source label as the target.")
 
