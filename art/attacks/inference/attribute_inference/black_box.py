@@ -25,6 +25,7 @@ from typing import Optional, Union, TYPE_CHECKING
 
 import numpy as np
 from sklearn.neural_network import MLPClassifier
+from sklearn.preprocessing import minmax_scale
 
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
@@ -48,7 +49,7 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
     used as a proxy.
     """
 
-    attack_params = AttributeInferenceAttack.attack_params + ["prediction_normal_factor"]
+    attack_params = AttributeInferenceAttack.attack_params + ["prediction_normal_factor", "scale_range"]
     _estimator_requirements = (BaseEstimator, (ClassifierMixin, RegressorMixin))
 
     def __init__(
@@ -56,7 +57,8 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         estimator: Union["CLASSIFIER_TYPE", "REGRESSOR_TYPE"],
         attack_model: Optional["CLASSIFIER_TYPE"] = None,
         attack_feature: Union[int, slice] = 0,
-        prediction_normal_factor: float = 1,
+        scale_range: Optional[slice] = None,
+        prediction_normal_factor: Optional[float] = 1,
     ):
         """
         Create an AttributeInferenceBlackBox attack instance.
@@ -65,8 +67,11 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         :param attack_model: The attack model to train, optional. If none is provided, a default model will be created.
         :param attack_feature: The index of the feature to be attacked or a slice representing multiple indexes in
                                case of a one-hot encoded feature.
-        :param prediction_normal_factor: If supplied, predictions of the model are multiplied by the factor when used as
-                                         inputs to the attack-model. Only applicable when `estimator` is a regressor.
+        :param scale_range: If supplied, the class labels (both true and predicted) will be scaled to the given range.
+                            Only applicable when `estimator` is a regressor.
+        :param prediction_normal_factor: If supplied, the class labels (both true and predicted) are multiplied by the
+                                         factor when used as inputs to the attack-model. Only applicable when
+                                         `estimator` is a regressor and if `scale_range` is not supplied.
         """
         super().__init__(estimator=estimator, attack_feature=attack_feature)
         if isinstance(self.attack_feature, int):
@@ -108,14 +113,16 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
             )
 
         self.prediction_normal_factor = prediction_normal_factor
+        self.scale_range = scale_range
 
         self._check_params()
 
-    def fit(self, x: np.ndarray) -> None:
+    def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> None:
         """
         Train the attack model.
 
         :param x: Input to training process. Includes all features used to train the original model.
+        :param y: True labels for x.
         """
 
         # Checks:
@@ -129,36 +136,45 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         if ClassifierMixin in type(self.estimator).__mro__:
             predictions = np.array([np.argmax(arr) for arr in self.estimator.predict(x)]).reshape(-1, 1)
         else:  # Regression model
-            predictions = self.estimator.predict(x).reshape(-1, 1) * self.prediction_normal_factor
+            if self.scale_range is not None:
+                predictions = minmax_scale(self.estimator.predict(x).reshape(-1, 1), feature_range=self.scale_range)
+            else:
+                predictions = self.estimator.predict(x).reshape(-1, 1) * self.prediction_normal_factor
 
         # get vector of attacked feature
-        y = x[:, self.attack_feature]
+        y_attack = x[:, self.attack_feature]
         if self.single_index_feature:
-            self._values = np.unique(y).tolist()
-            y_one_hot = float_to_categorical(y)
+            self._values = np.unique(y_attack).tolist()
+            y_one_hot = float_to_categorical(y_attack)
         else:
-            for column in y.T:
+            for column in y_attack.T:
                 column_values = np.unique(column)
                 if self._values is None:
                     self._values = column_values
                 else:
                     self._values = np.vstack((self._values, column_values))
             self._values = self._values.tolist()
-            y_one_hot = floats_to_one_hot(y)
-        y_ready = check_and_transform_label_format(y_one_hot, len(np.unique(y)), return_one_hot=True)
+            y_one_hot = floats_to_one_hot(y_attack)
+        y_attack_ready = check_and_transform_label_format(y_one_hot, len(np.unique(y_attack)), return_one_hot=True)
 
         # create training set for attack model
         x_train = np.concatenate((np.delete(x, self.attack_feature, 1), predictions), axis=1).astype(np.float32)
 
+        if y is not None:
+            y_ready = check_and_transform_label_format(y, return_one_hot=False)
+            x_train = np.concatenate((x_train, y_ready), axis=1)
+
         # train attack model
-        self.attack_model.fit(x_train, y_ready)
+        self.attack_model.fit(x_train, y_attack_ready)
 
     def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Infer the attacked feature.
 
         :param x: Input to attack. Includes all features except the attacked feature.
-        :param y: Original model's predictions for x.
+        :param y: True labels for x.
+        :param pred: Original model's predictions for x.
+        :type pred: `np.ndarray`
         :param values: Possible values for attacked feature. For a single column feature this should be a simple list
                        containing all possible values, in increasing order (the smallest value in the 0 index and so
                        on). For a multi-column feature (for example 1-hot encoded and then scaled), this should be a
@@ -168,21 +184,30 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         :type values: list, optional
         :return: The inferred feature values.
         """
-        if y is None:
+        if "pred" not in kwargs.keys():
             raise ValueError(
-                "The target values `y` cannot be None. Please provide a `np.ndarray` of model predictions."
+                "Please provide param `pred` of model predictions."
             )
+        pred = kwargs.get("pred")
 
-        if y.shape[0] != x.shape[0]:
+        if pred.shape[0] != x.shape[0]:
             raise ValueError("Number of rows in x and y do not match")
         if self.estimator.input_shape is not None:
             if self.single_index_feature and self.estimator.input_shape[0] != x.shape[1] + 1:
                 raise ValueError("Number of features in x + 1 does not match input_shape of model")
 
         if RegressorMixin in type(self.estimator).__mro__:
-            x_test = np.concatenate((x, y * self.prediction_normal_factor), axis=1).astype(np.float32)
+            if self.scale_range is not None:
+                x_test = np.concatenate((x, minmax_scale(pred, feature_range=self.scale_range)),
+                                        axis=1).astype(np.float32)
+            else:
+                x_test = np.concatenate((x, pred * self.prediction_normal_factor), axis=1).astype(np.float32)
         else:
-            x_test = np.concatenate((x, y), axis=1).astype(np.float32)
+            x_test = np.concatenate((x, pred), axis=1).astype(np.float32)
+
+        if y is not None:
+            y_ready = check_and_transform_label_format(y, return_one_hot=False)
+            x_test = np.concatenate((x_test, y_ready), axis=1)
 
         # if provided, override the values computed in fit()
         if "values" in kwargs.keys():
