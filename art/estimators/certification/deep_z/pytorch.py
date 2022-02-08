@@ -23,10 +23,10 @@ This module implements DeepZ proposed in Fast and Effective Robustness Certifica
 
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
+import warnings
 import numpy as np
 import torch
 from torch import nn
-import warnings
 
 from art.estimators.certification.deep_z.deep_z import ZonoConv, ZonoDenseLayer, ZonoReLU, ZonoBounds
 from art.estimators.classification.pytorch import PyTorchClassifier
