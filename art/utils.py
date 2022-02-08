@@ -527,7 +527,7 @@ def floats_to_one_hot(labels: np.ndarray):
 
 
 def check_and_transform_label_format(
-    labels: np.ndarray, nb_classes: Optional[int] = None, return_one_hot: bool = True
+    labels: Optional[np.ndarray], nb_classes: Optional[int] = None, return_one_hot: bool = True
 ) -> np.ndarray:
     """
     Check label format and transform to one-hot-encoded labels if necessary

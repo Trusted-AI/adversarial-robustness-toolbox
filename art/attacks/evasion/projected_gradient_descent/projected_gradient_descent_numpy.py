@@ -113,6 +113,9 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
         self.verbose = verbose
         ProjectedGradientDescentCommon._check_params(self)
 
+        lower: Union[int, float, np.ndarray]
+        var_mu: Union[int, float, np.ndarray]
+
         if self.random_eps:
             if isinstance(eps, (int, float)):
                 lower, upper = 0, eps
@@ -137,7 +140,7 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
 
             self.eps_step = ratio * self.eps
 
-    def _set_targets(self, x: np.ndarray, y: np.ndarray, classifier_mixin: bool = True) -> np.ndarray:
+    def _set_targets(self, x: np.ndarray, y: Optional[np.ndarray], classifier_mixin: bool = True) -> np.ndarray:
         """
         Check and set up targets.
 

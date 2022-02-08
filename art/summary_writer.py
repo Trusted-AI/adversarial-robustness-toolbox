@@ -333,7 +333,9 @@ class SummaryWriterDefault(SummaryWriter):
                 if str(batch_id) not in self.i_4:
                     self.i_4[str(batch_id)] = np.zeros(grad.shape[0])
 
-                self.i_4[str(batch_id)][np.linalg.norm(grad.reshape(grad.shape[0], -1), axis=1, ord=2) <= threshold] += 1
+                self.i_4[str(batch_id)][
+                    np.linalg.norm(grad.reshape(grad.shape[0], -1), axis=1, ord=2) <= threshold
+                ] += 1
 
                 self.summary_writer.add_scalars(
                     f"Attack Failure Indicator 4 - Zero Gradients/batch-{batch_id}",

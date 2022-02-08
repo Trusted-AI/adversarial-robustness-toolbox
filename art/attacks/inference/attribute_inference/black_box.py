@@ -120,8 +120,8 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         if self.estimator.input_shape is not None:
             if self.estimator.input_shape[0] != x.shape[1]:
                 raise ValueError("Shape of x does not match input_shape of model")
-        if self.single_index_feature and self.attack_feature >= x.shape[1]:
-            raise ValueError("attack_feature must be a valid index to a feature in x")
+        if self.single_index_feature and isinstance(self.attack_feature, int) and self.attack_feature >= x.shape[1]:
+            raise ValueError("`attack_feature` must be a valid index to a feature in x")
 
         # get model's predictions for x
         if ClassifierMixin in type(self.estimator).__mro__:
@@ -157,6 +157,8 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         :type values: list
         :return: The inferred feature values.
         """
+        values: Optional[list] = kwargs.get("values")
+
         if y is None:
             raise ValueError(
                 "The target values `y` cannot be None. Please provide a `np.ndarray` of model predictions."
@@ -174,13 +176,11 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
             x_test = np.concatenate((x, y), axis=1).astype(np.float32)
 
         if self.single_index_feature:
-            if "values" not in kwargs:
+            if "values" is None:
                 raise ValueError("Missing parameter `values`.")
-            values: np.ndarray = kwargs.get("values")
             return np.array([values[np.argmax(arr)] for arr in self.attack_model.predict(x_test)])
 
-        if "values" in kwargs:
-            values = kwargs.get("values")
+        if values is not None:
             predictions = self.attack_model.predict(x_test).astype(np.float32)
             i = 0
             for column in predictions.T:
@@ -192,8 +192,10 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         return np.array(self.attack_model.predict(x_test))
 
     def _check_params(self) -> None:
+
         if not isinstance(self.attack_feature, int) and not isinstance(self.attack_feature, slice):
             raise ValueError("Attack feature must be either an integer or a slice object.")
+
         if isinstance(self.attack_feature, int) and self.attack_feature < 0:
             raise ValueError("Attack feature index must be positive.")
 
