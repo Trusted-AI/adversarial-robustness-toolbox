@@ -40,7 +40,8 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.mark.skip_framework("dl_frameworks")
-def test_black_box(art_warning, decision_tree_estimator, get_iris_dataset):
+@pytest.mark.parametrize("model_type", ["nn", "rf"])
+def test_black_box(art_warning, decision_tree_estimator, get_iris_dataset, model_type):
     try:
         attack_feature = 2  # petal length
 
@@ -70,7 +71,7 @@ def test_black_box(art_warning, decision_tree_estimator, get_iris_dataset):
 
         classifier = decision_tree_estimator()
 
-        attack = AttributeInferenceBlackBox(classifier, attack_feature=attack_feature)
+        attack = AttributeInferenceBlackBox(classifier, attack_feature=attack_feature, attack_model_type=model_type)
         # get original model's predictions
         x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train_iris)]).reshape(-1, 1)
         x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test_iris)]).reshape(-1, 1)
@@ -82,15 +83,16 @@ def test_black_box(art_warning, decision_tree_estimator, get_iris_dataset):
         # check accuracy
         train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
         test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
-        assert train_acc == pytest.approx(0.8285, abs=0.12)
-        assert test_acc == pytest.approx(0.8888, abs=0.12)
+        assert pytest.approx(0.8285, abs=0.12) == train_acc
+        assert pytest.approx(0.8888, abs=0.16) == test_acc
 
     except ARTTestException as e:
         art_warning(e)
 
 
 @pytest.mark.skip_framework("dl_frameworks")
-def test_black_box_with_label(art_warning, decision_tree_estimator, get_iris_dataset):
+@pytest.mark.parametrize("model_type", ["nn", "rf"])
+def test_black_box_with_label(art_warning, decision_tree_estimator, get_iris_dataset, model_type):
     try:
         attack_feature = 2  # petal length
 
@@ -120,7 +122,7 @@ def test_black_box_with_label(art_warning, decision_tree_estimator, get_iris_dat
 
         classifier = decision_tree_estimator()
 
-        attack = AttributeInferenceBlackBox(classifier, attack_feature=attack_feature)
+        attack = AttributeInferenceBlackBox(classifier, attack_feature=attack_feature, attack_model_type=model_type)
         # get original model's predictions
         x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train_iris)]).reshape(-1, 1)
         x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test_iris)]).reshape(-1, 1)
@@ -132,15 +134,16 @@ def test_black_box_with_label(art_warning, decision_tree_estimator, get_iris_dat
         # check accuracy
         train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
         test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
-        assert train_acc == pytest.approx(0.8285, abs=0.12)
-        assert test_acc == pytest.approx(0.8888, abs=0.12)
+        assert pytest.approx(0.8285, abs=0.12) == train_acc
+        assert pytest.approx(0.8888, abs=0.16) == test_acc
 
     except ARTTestException as e:
         art_warning(e)
 
 
 @pytest.mark.skip_framework("dl_frameworks")
-def test_black_box_no_values(art_warning, decision_tree_estimator, get_iris_dataset):
+@pytest.mark.parametrize("model_type", ["nn", "rf"])
+def test_black_box_no_values(art_warning, decision_tree_estimator, get_iris_dataset, model_type):
     try:
         attack_feature = 2  # petal length
 
@@ -168,7 +171,7 @@ def test_black_box_no_values(art_warning, decision_tree_estimator, get_iris_data
 
         classifier = decision_tree_estimator()
 
-        attack = AttributeInferenceBlackBox(classifier, attack_feature=attack_feature)
+        attack = AttributeInferenceBlackBox(classifier, attack_feature=attack_feature, attack_model_type=model_type)
         # get original model's predictions
         x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train_iris)]).reshape(-1, 1)
         x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test_iris)]).reshape(-1, 1)
@@ -180,15 +183,16 @@ def test_black_box_no_values(art_warning, decision_tree_estimator, get_iris_data
         # check accuracy
         train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
         test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
-        assert train_acc == pytest.approx(0.8285, abs=0.12)
-        assert test_acc == pytest.approx(0.8888, abs=0.12)
+        assert pytest.approx(0.8285, abs=0.12) == train_acc
+        assert pytest.approx(0.8888, abs=0.18) == test_acc
 
     except ARTTestException as e:
         art_warning(e)
 
 
 @pytest.mark.skip_framework("dl_frameworks")
-def test_black_box_regressor(art_warning, get_diabetes_dataset):
+@pytest.mark.parametrize("model_type", ["nn", "rf"])
+def test_black_box_regressor(art_warning, get_diabetes_dataset, model_type):
     try:
         attack_feature = 0  # age
 
@@ -235,7 +239,8 @@ def test_black_box_regressor(art_warning, get_diabetes_dataset):
         regr_model.fit(x_train_diabetes, y_train_diabetes)
         regressor = ScikitlearnRegressor(regr_model)
 
-        attack = AttributeInferenceBlackBox(regressor, attack_feature=attack_feature, prediction_normal_factor=1 / 250)
+        attack = AttributeInferenceBlackBox(regressor, attack_feature=attack_feature, prediction_normal_factor=1 / 250,
+                                            attack_model_type = model_type)
         # get original model's predictions
         x_train_predictions = regressor.predict(x_train_diabetes).reshape(-1, 1)
         x_test_predictions = regressor.predict(x_test_diabetes).reshape(-1, 1)
@@ -248,8 +253,8 @@ def test_black_box_regressor(art_warning, get_diabetes_dataset):
         train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
         test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
 
-        assert train_acc == pytest.approx(0.0258, abs=0.12)
-        assert test_acc == pytest.approx(0.0375, abs=0.12)
+        assert pytest.approx(0.0258, abs=0.12) == train_acc
+        assert pytest.approx(0.0375, abs=0.12) == test_acc
 
     except ARTTestException as e:
         art_warning(e)
@@ -316,7 +321,8 @@ def test_black_box_with_model(art_warning, decision_tree_estimator, get_iris_dat
 
 
 @pytest.mark.skip_framework("dl_frameworks")
-def test_black_box_one_hot(art_warning, get_iris_dataset):
+@pytest.mark.parametrize("model_type", ["nn", "rf"])
+def test_black_box_one_hot(art_warning, get_iris_dataset, model_type):
     try:
         attack_feature = 2  # petal length
 
@@ -357,7 +363,8 @@ def test_black_box_one_hot(art_warning, get_iris_dataset):
         tree.fit(x_train, y_train)
         classifier = ScikitlearnDecisionTreeClassifier(tree)
 
-        attack = AttributeInferenceBlackBox(classifier, attack_feature=slice(attack_feature, attack_feature + 3))
+        attack = AttributeInferenceBlackBox(classifier, attack_feature=slice(attack_feature, attack_feature + 3),
+                                            attack_model_type = model_type)
         # get original model's predictions
         x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train)]).reshape(-1, 1)
         x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test)]).reshape(-1, 1)
@@ -369,15 +376,16 @@ def test_black_box_one_hot(art_warning, get_iris_dataset):
         # check accuracy
         train_acc = np.sum(np.all(inferred_train == train_one_hot, axis=1)) / len(inferred_train)
         test_acc = np.sum(np.all(inferred_test == test_one_hot, axis=1)) / len(inferred_test)
-        assert pytest.approx(0.8666, abs=0.03) == train_acc
-        assert pytest.approx(0.8888, abs=0.03) == test_acc
+        assert pytest.approx(0.8666, abs=0.12) == train_acc
+        assert pytest.approx(0.8888, abs=0.7) == test_acc
 
     except ARTTestException as e:
         art_warning(e)
 
 
 @pytest.mark.skip_framework("dl_frameworks")
-def test_black_box_one_hot_float(art_warning, get_iris_dataset):
+@pytest.mark.parametrize("model_type", ["nn", "rf"])
+def test_black_box_one_hot_float(art_warning, get_iris_dataset, model_type):
     try:
         attack_feature = 2  # petal length
 
@@ -430,7 +438,7 @@ def test_black_box_one_hot_float(art_warning, get_iris_dataset):
         tree.fit(x_train, y_train)
         classifier = ScikitlearnDecisionTreeClassifier(tree)
 
-        attack = AttributeInferenceBlackBox(classifier, attack_feature=attack_feature)
+        attack = AttributeInferenceBlackBox(classifier, attack_feature=attack_feature, attack_model_type=model_type)
         # get original model's predictions
         x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train)]).reshape(-1, 1)
         x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test)]).reshape(-1, 1)
@@ -447,7 +455,7 @@ def test_black_box_one_hot_float(art_warning, get_iris_dataset):
         test_acc = np.sum(
             np.all(np.around(inferred_test, decimals=3) == np.around(test_one_hot, decimals=3), axis=1)
         ) / len(inferred_test)
-        assert pytest.approx(0.8666, abs=0.1) == train_acc
+        assert pytest.approx(0.8666, abs=0.12) == train_acc
         assert pytest.approx(0.8666, abs=0.1) == test_acc
 
     except ARTTestException as e:
@@ -455,7 +463,8 @@ def test_black_box_one_hot_float(art_warning, get_iris_dataset):
 
 
 @pytest.mark.skip_framework("dl_frameworks")
-def test_black_box_one_hot_float_no_values(art_warning, get_iris_dataset):
+@pytest.mark.parametrize("model_type", ["nn", "rf"])
+def test_black_box_one_hot_float_no_values(art_warning, get_iris_dataset, model_type):
     try:
         attack_feature = 2  # petal length
 
@@ -508,7 +517,7 @@ def test_black_box_one_hot_float_no_values(art_warning, get_iris_dataset):
         tree.fit(x_train, y_train)
         classifier = ScikitlearnDecisionTreeClassifier(tree)
 
-        attack = AttributeInferenceBlackBox(classifier, attack_feature=attack_feature)
+        attack = AttributeInferenceBlackBox(classifier, attack_feature=attack_feature, attack_model_type=model_type)
         # get original model's predictions
         x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train)]).reshape(-1, 1)
         x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test)]).reshape(-1, 1)
@@ -524,7 +533,7 @@ def test_black_box_one_hot_float_no_values(art_warning, get_iris_dataset):
         test_acc = np.sum(
             np.all(np.around(inferred_test, decimals=3) == np.around(test_one_hot, decimals=3), axis=1)
         ) / len(inferred_test)
-        assert pytest.approx(0.8666, abs=0.1) == train_acc
+        assert pytest.approx(0.8666, abs=0.12) == train_acc
         assert pytest.approx(0.8666, abs=0.1) == test_acc
 
     except ARTTestException as e:
