@@ -564,7 +564,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
                 if decoded_output[local_batch_size_idx] == y[local_batch_size_idx]:
                     if loss_2nd_stage[local_batch_size_idx] < best_loss_2nd_stage[local_batch_size_idx]:
                         # Update best loss at 2nd stage
-                        best_loss_2nd_stage[local_batch_size_idx] = loss_2nd_stage[local_batch_size_idx]
+                        best_loss_2nd_stage[local_batch_size_idx] = loss_2nd_stage[local_batch_size_idx].numpy()
 
                         # Save the best adversarial example
                         successful_adv_input[local_batch_size_idx] = masked_adv_input[local_batch_size_idx]
@@ -655,7 +655,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
 
         # Compute quiet threshold
         ath = np.zeros(len(barks), dtype=np.float64) - np.inf
-        bark_idx = np.argmax(barks > 1)
+        bark_idx = int(np.argmax(barks > 1))
         ath[bark_idx:] = (
             3.64 * pow(freqs[bark_idx:] * 0.001, -0.8)
             - 6.5 * np.exp(-0.6 * pow(0.001 * freqs[bark_idx:] - 3.3, 2))
@@ -717,7 +717,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
 
             for m in range(barks_psd.shape[0]):
                 d_z = barks - barks_psd[m, 0]
-                zero_idx = np.argmax(d_z > 0)
+                zero_idx = int(np.argmax(d_z > 0))
                 s_f = np.zeros(len(d_z), dtype=np.float64)
                 s_f[:zero_idx] = 27 * d_z[:zero_idx]
                 s_f[zero_idx:] = (-27 + 0.37 * max(barks_psd[m, 1] - 40, 0)) * d_z[zero_idx:]
@@ -727,11 +727,11 @@ class ImperceptibleASRPyTorch(EvasionAttack):
 
             theta.append(np.sum(pow(10, t_s_array / 10.0), axis=0) + pow(10, ath / 10.0))
 
-        theta = np.array(theta)
+        theta_array = np.array(theta)
 
-        return theta, original_max_psd
+        return theta_array, original_max_psd
 
-    def _psd_transform(self, delta: "torch.Tensor", original_max_psd: "torch.Tensor") -> "torch.Tensor":
+    def _psd_transform(self, delta: "torch.Tensor", original_max_psd: np.ndarray) -> "torch.Tensor":
         """
         Compute the psd matrix of the perturbation.
 

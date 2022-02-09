@@ -517,7 +517,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
             self._get_circular_patch_mask(nb_samples=1).cpu().numpy()[0],
         )
 
-    def _check_mask(self, mask: np.ndarray, x: np.ndarray) -> np.ndarray:
+    def _check_mask(self, mask: Optional[np.ndarray], x: np.ndarray) -> Optional[np.ndarray]:
         if mask is not None and (  # pragma: no cover
             (mask.dtype != bool)
             or not (mask.shape[0] == 1 or mask.shape[0] == x.shape[0])
@@ -557,8 +557,15 @@ class AdversarialPatchPyTorch(EvasionAttack):
             mask = mask.copy()
         mask = self._check_mask(mask=mask, x=x)
         patch = patch_external if patch_external is not None else self._patch
-        x = torch.Tensor(x)
-        return self._random_overlay(images=x, patch=patch, scale=scale, mask=mask).detach().cpu().numpy()
+        x_tensor = torch.Tensor(x)
+        mask_tensor = torch.Tensor(mask)
+        patch_tensor = torch.Tensor(patch)
+        return (
+            self._random_overlay(images=x_tensor, patch=patch_tensor, scale=scale, mask=mask_tensor)
+            .detach()
+            .cpu()
+            .numpy()
+        )
 
     def reset_patch(self, initial_patch_value: Optional[Union[float, np.ndarray]] = None) -> None:
         """

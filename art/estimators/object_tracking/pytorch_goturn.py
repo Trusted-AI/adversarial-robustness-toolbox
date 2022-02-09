@@ -189,7 +189,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
     def _get_losses(
         self,
         x: np.ndarray,
-        y: Union[List[Dict[str, np.ndarray]], List[Dict[str, "torch.Tensor"]]],
+        y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]],
         reduction: str = "sum",
     ) -> Tuple[Dict[str, Union["torch.Tensor", int, List["torch.Tensor"]]], List["torch.Tensor"], List["torch.Tensor"]]:
         """
@@ -219,10 +219,10 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
                 y_tensor = []
                 for i, y_i in enumerate(y):
                     y_t = {}
-                    y_t["boxes"] = torch.from_numpy(y_i["boxes"]).float().to(self.device)
+                    y_t["boxes"] = torch.from_numpy(y_i["boxes"]).float().to(self.device)  # type: ignore
                     y_tensor.append(y_t)
             else:
-                y_tensor = y
+                y_tensor = y  # type: ignore
 
             image_tensor_list_grad = []
             y_preprocessed = []
@@ -275,7 +275,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         return loss_dict, inputs_t, image_tensor_list_grad
 
     def loss_gradient(  # pylint: disable=W0613
-        self, x: np.ndarray, y: Union[List[Dict[str, np.ndarray]], List[Dict[str, "torch.Tensor"]]], **kwargs
+        self, x: np.ndarray, y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]], **kwargs
     ) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
@@ -521,16 +521,12 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
             pad_image_location = compute_crop_pad_image_location(bbox_tight, image)
             # roi_left = min(pad_image_location.x1, (image.shape[1] - 1))
             # roi_bottom = min(pad_image_location.y1, (image.shape[0] - 1))
-            roi_left = min(pad_image_location[0], (image.shape[1] - 1))  # type: ignore
-            roi_bottom = min(pad_image_location[1], (image.shape[0] - 1))  # type: ignore
+            roi_left = min(pad_image_location[0].numpy(), image.shape[1] - 1)
+            roi_bottom = min(pad_image_location[1].numpy(), image.shape[0] - 1)
             # roi_width = min(image.shape[1], max(1.0, math.ceil(pad_image_location.x2 - pad_image_location.x1)))
             # roi_height = min(image.shape[0], max(1.0, math.ceil(pad_image_location.y2 - pad_image_location.y1)))
-            roi_width = min(  # type: ignore
-                image.shape[1], max(1, math.ceil(pad_image_location[2] - pad_image_location[0]))
-            )
-            roi_height = min(  # type: ignore
-                image.shape[0], max(1, math.ceil(pad_image_location[3] - pad_image_location[1]))
-            )
+            roi_width = min(image.shape[1], max(1, math.ceil(pad_image_location[2] - pad_image_location[0])))
+            roi_height = min(image.shape[0], max(1, math.ceil(pad_image_location[3] - pad_image_location[1])))
 
             roi_bottom_int = int(roi_bottom)
             roi_bottom_height_int = roi_bottom_int + roi_height
@@ -553,8 +549,8 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
 
             # edge_spacing_x = min(bbox_tight.edge_spacing_x(), (image.shape[1] - 1))
             # edge_spacing_y = min(bbox_tight.edge_spacing_y(), (image.shape[0] - 1))
-            edge_spacing_x = min(edge_spacing_x_f(bbox_tight), (image.shape[1] - 1))  # type: ignore
-            edge_spacing_y = min(edge_spacing_y_f(bbox_tight), (image.shape[0] - 1))  # type: ignore
+            edge_spacing_x = min(edge_spacing_x_f(bbox_tight).numpy(), image.shape[1] - 1)
+            edge_spacing_y = min(edge_spacing_y_f(bbox_tight).numpy(), image.shape[0] - 1)
 
             # rounding should be done to match the width and height
             output_image[
@@ -698,7 +694,9 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         """
         raise NotImplementedError
 
-    def compute_losses(self, x: np.ndarray, y: List[Dict[str, np.ndarray]]) -> Dict[str, np.ndarray]:
+    def compute_losses(
+        self, x: np.ndarray, y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]]
+    ) -> Dict[str, np.ndarray]:
         """
         Compute losses.
 
@@ -715,7 +713,9 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         output_dict["torch.nn.L1Loss"] = output
         return output_dict
 
-    def compute_loss(self, x: np.ndarray, y: List[Dict[str, np.ndarray]], **kwargs) -> np.ndarray:
+    def compute_loss(
+        self, x: np.ndarray, y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]], **kwargs
+    ) -> np.ndarray:
         """
         Compute loss.
 

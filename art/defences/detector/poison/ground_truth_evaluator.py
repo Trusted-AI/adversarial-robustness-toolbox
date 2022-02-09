@@ -88,17 +88,17 @@ class GroundTruthEvaluator:
                 else:
                     raise Exception("Analyze_correctness entered wrong class")
 
-            errors = np.asarray(errors)
+            errors_array = np.asarray(errors)
             logger.debug("-------------------%d---------------", class_i)
             key_i = "class_" + str(class_i)
-            matrix_i = self.get_confusion_matrix(errors)
+            matrix_i = self.get_confusion_matrix(errors_array)
             dic_json.update({key_i: matrix_i})
-            all_errors_by_class.append(errors)
+            all_errors_by_class.append(errors_array)
 
-        all_errors_by_class = np.asarray(all_errors_by_class, dtype=object)
+        all_errors_by_class_array = np.asarray(all_errors_by_class, dtype=object)
         conf_matrix_json = json.dumps(dic_json)
 
-        return all_errors_by_class, conf_matrix_json
+        return all_errors_by_class_array, conf_matrix_json
 
     def get_confusion_matrix(self, values: np.ndarray) -> dict:
         """

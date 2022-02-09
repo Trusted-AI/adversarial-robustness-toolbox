@@ -154,6 +154,9 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         # pylint: disable=W0212
         from sklearn.preprocessing import normalize
 
+        if self.y_train is None or self.x_train is None:
+            raise ValueError("`x_train` and `y_train` cannot be None for generating an attack point.")
+
         poisoned_model = self.estimator.model
         y_t = np.argmax(self.y_train, axis=1)
         poisoned_model.fit(self.x_train, y_t)

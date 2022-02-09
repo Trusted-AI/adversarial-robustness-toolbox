@@ -224,7 +224,7 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
         """
         backdoor_predictions = self._predict_classifier(backdoor_data)
         backdoor_effective = np.logical_not(np.all(backdoor_predictions == backdoor_labels, axis=1))
-        return np.any(backdoor_effective)
+        return np.any(backdoor_effective)  # type: ignore
 
     def backdoor_examples(self, x_val: np.ndarray, y_val: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
@@ -233,9 +233,10 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
         :param y_val: validation labels
         :return: a tuple containing (clean data, backdoored data, labels)
         """
-        clean_data = []
-        example_data = []
-        example_labels = []
+        clean_data_list = []
+        example_data_list = []
+        example_labels_list = []
+
         for backdoored_label, mask, pattern in self.outlier_detection(x_val, y_val):
             data_for_class = np.copy(x_val[np.argmax(y_val, axis=1) == backdoored_label])
             labels_for_class = np.copy(y_val[np.argmax(y_val, axis=1) == backdoored_label])
@@ -243,16 +244,20 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
             if len(data_for_class) == 0:
                 logger.warning("No validation data exists for infected class: %s", str(backdoored_label))
 
-            clean_data.append(np.copy(data_for_class))
+            clean_data_list.append(np.copy(data_for_class))
             data_for_class = (1 - mask) * data_for_class + mask * pattern
-            example_data.append(data_for_class)
-            example_labels.append(labels_for_class)
+            example_data_list.append(data_for_class)
+            example_labels_list.append(labels_for_class)
 
         # If any backdoor examples were found, stack data into one array
-        if example_data:
-            clean_data = np.vstack(clean_data)
-            example_data = np.vstack(example_data)
-            example_labels = np.vstack(example_labels)
+        if example_data_list:
+            clean_data = np.vstack(clean_data_list)
+            example_data = np.vstack(example_data_list)
+            example_labels = np.vstack(example_labels_list)
+        else:
+            clean_data = np.array(clean_data_list)
+            example_data = np.array(example_data_list)
+            example_labels = np.array(example_labels_list)
 
         return clean_data, example_data, example_labels
 

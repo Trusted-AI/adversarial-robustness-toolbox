@@ -484,7 +484,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             self._get_circular_patch_mask(nb_samples=1).numpy()[0],
         )
 
-    def _check_mask(self, mask: np.ndarray, x: np.ndarray) -> np.ndarray:
+    def _check_mask(self, mask: Optional[np.ndarray], x: np.ndarray) -> Optional[np.ndarray]:
         if mask is not None and (  # pragma: no cover
             (mask.dtype != bool)
             or not (mask.shape[0] == 1 or mask.shape[0] == x.shape[0])

@@ -119,7 +119,7 @@ class DecisionTreeAttack(EvasionAttack):
 
         for index in trange(x_adv.shape[0], desc="Decision tree attack", disable=not self.verbose):
             path = self.estimator.get_decision_path(x_adv[index])
-            legitimate_class = np.argmax(self.estimator.predict(x_adv[index].reshape(1, -1)))
+            legitimate_class = int(np.argmax(self.estimator.predict(x_adv[index].reshape(1, -1))))
             position = -2
             adv_path = [-1]
             ancestor = path[position]

@@ -142,7 +142,7 @@ class AdversarialPatchNumpy(EvasionAttack):
         else:
             self.patch_shape = (smallest_image_edge, smallest_image_edge, nb_channels)
 
-        self.patch = None
+        self.patch: np.ndarray
         self.mean_value = (
             self.estimator.clip_values[1] - self.estimator.clip_values[0]
         ) / 2.0 + self.estimator.clip_values[0]
@@ -230,11 +230,14 @@ class AdversarialPatchNumpy(EvasionAttack):
 
             # patch_gradients = patch_gradients / (num_batches * self.batch_size)
             self.patch -= patch_gradients * self.learning_rate
-            self.patch = np.clip(
-                self.patch,
-                a_min=self.estimator.clip_values[0],
-                a_max=self.estimator.clip_values[1],
-            )
+            if self.estimator.clip_values is not None:
+                self.patch = np.clip(
+                    self.patch,
+                    a_min=self.estimator.clip_values[0],
+                    a_max=self.estimator.clip_values[1],
+                )
+            else:
+                raise ValueError("Clip values of estimator cannot be None.")
 
         return self.patch, self._get_circular_patch_mask()
 

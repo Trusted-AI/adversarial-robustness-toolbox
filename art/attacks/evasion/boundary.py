@@ -110,7 +110,7 @@ class BoundaryAttack(EvasionAttack):
         self.verbose = verbose
         self._check_params()
 
-        self.curr_adv = None
+        self.curr_adv: Optional[np.ndarray] = None
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """

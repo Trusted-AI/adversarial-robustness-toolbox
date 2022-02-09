@@ -307,7 +307,7 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
 
         :return: Major class in node.
         """
-        return np.argmax(self.model.tree_.value[node_id])
+        return np.argmax(self.model.tree_.value[node_id])  # type: ignore
 
     def get_threshold_at_node(self, node_id: int) -> float:
         """

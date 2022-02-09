@@ -159,7 +159,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         return self._device
 
     def _get_losses(
-        self, x: np.ndarray, y: Union[List[Dict[str, np.ndarray]], List[Dict[str, "torch.Tensor"]]]
+        self, x: np.ndarray, y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]]
     ) -> Tuple[Dict[str, "torch.Tensor"], List["torch.Tensor"], List["torch.Tensor"]]:
         """
         Get the loss tensor output of the model including all preprocessing.
@@ -183,17 +183,17 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
             if isinstance(x, torch.Tensor):
                 raise NotImplementedError
 
-            if y is not None and isinstance(y[0]["boxes"], np.ndarray):
-                y_tensor = []
+            y_tensor: List[Dict[str, "torch.Tensor"]] = []
+            if isinstance(y[0]["boxes"], np.ndarray):
                 for i, y_i in enumerate(y):
                     y_t = {}
-                    y_t["boxes"] = torch.from_numpy(y_i["boxes"]).type(torch.float).to(self.device)
-                    y_t["labels"] = torch.from_numpy(y_i["labels"]).type(torch.int64).to(self.device)
+                    y_t["boxes"] = torch.from_numpy(y_i["boxes"]).type("torch.float").to(self.device)
+                    y_t["labels"] = torch.from_numpy(y_i["labels"]).type("torch.int64").to(self.device)
                     if "masks" in y_i:
-                        y_t["masks"] = torch.from_numpy(y_i["masks"]).type(torch.int64).to(self.device)
+                        y_t["masks"] = torch.from_numpy(y_i["masks"]).type("torch.int64").to(self.device)
                     y_tensor.append(y_t)
             else:
-                y_tensor = y
+                y_tensor = y  # type: ignore
 
             transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
             image_tensor_list_grad = []
@@ -255,7 +255,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         return output, inputs_t, image_tensor_list_grad
 
     def loss_gradient(  # pylint: disable=W0613
-        self, x: np.ndarray, y: Union[List[Dict[str, np.ndarray]], List[Dict[str, "torch.Tensor"]]], **kwargs
+        self, x: np.ndarray, y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]], **kwargs
     ) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
@@ -374,7 +374,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         raise NotImplementedError
 
     def compute_losses(
-        self, x: np.ndarray, y: Union[List[Dict[str, np.ndarray]], List[Dict[str, "torch.Tensor"]]]
+        self, x: np.ndarray, y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]]
     ) -> Dict[str, np.ndarray]:
         """
         Compute all loss components.
@@ -396,8 +396,8 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
             output[key] = value.detach().cpu().numpy()
         return output
 
-    def compute_loss(
-        self, x: np.ndarray, y: Union[List[Dict[str, np.ndarray]], List[Dict[str, "torch.Tensor"]]], **kwargs
+    def compute_loss(  # type: ignore
+        self, x: np.ndarray, y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]], **kwargs
     ) -> Union[np.ndarray, "torch.Tensor"]:
         """
         Compute the loss of the neural network for samples `x`.

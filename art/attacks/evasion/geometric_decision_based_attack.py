@@ -104,7 +104,7 @@ class GeoDA(EvasionAttack):
         self.verbose = verbose
         self._check_params()
 
-        self.sub_basis = None
+        self.sub_basis: np.ndarray
         self.nb_calls = 0
         self.clip_min = 0.0
         self.clip_max = 0.0
@@ -155,9 +155,9 @@ class GeoDA(EvasionAttack):
                     for i_x in range(res):
                         basis[i_y, i_x] = dct(i_x, i_y, i_v, i_u, max(res, v_max))
                 dct_basis.append(basis)
-        dct_basis = np.mat(np.reshape(dct_basis, (v_max * u_max, res * res))).transpose()
+        dct_basis_array = np.mat(np.reshape(dct_basis, (v_max * u_max, res * res))).transpose()
 
-        return dct_basis
+        return dct_basis_array
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
@@ -218,8 +218,7 @@ class GeoDA(EvasionAttack):
             x_boundary = self._binary_search(x_i, y_i, x_random, tol=self.bin_search_tol)
             logger.info("Binary search example at boundary is adversarial: %r", self._is_adversarial(x_boundary, y_i))
 
-            grad = 0
-
+            grad = np.zeros_like(x_i)
             x_adv_i = x_i
 
             for k in trange(self.iterate, desc="GeoDA - steps", disable=not self.verbose, position=1):
@@ -323,8 +322,8 @@ class GeoDA(EvasionAttack):
         Calculate gradient towards decision boundary.
         """
         self.nb_calls += q_max
-        grad_tmp = []  # estimated gradients in each estimate_batch
-        z_list = []  # sign of grad_tmp
+        grad_tmp: List[np.ndarray] = []  # estimated gradients in each estimate_batch
+        z_list: List[int] = []  # sign of grad_tmp
         outs = []
         num_batches = math.ceil(q_max / batch_size)
         last_batch = q_max - (num_batches - 1) * batch_size
@@ -353,7 +352,7 @@ class GeoDA(EvasionAttack):
                 z_list.append(-1)
                 grad_tmp.append(-all_noise[i])
 
-        grad: np.ndarray = -(1 / q_max) * sum(grad_tmp)
+        grad: np.ndarray = -(1 / q_max) * sum(grad_tmp)  # type: ignore
         grad_f = grad[None, :, :, :]
 
         return grad_f, sum(z_list)

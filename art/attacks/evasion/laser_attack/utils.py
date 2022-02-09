@@ -43,7 +43,7 @@ class Line:
         self.bias = bias
 
     def __call__(self, x: float) -> float:
-        return np.math.tan(self.angle) * x + self.bias
+        return np.math.tan(self.angle) * x + self.bias  # type: ignore
 
     def distance_of_point_from_the_line(self, x: float, y: float) -> float:
         """
@@ -55,8 +55,8 @@ class Line:
         :returns: Distance.
         """
         y_difference = np.abs(self(x) - y)
-        slope_squared = np.math.pow(np.math.tan(self.angle), 2)
-        return y_difference / np.math.sqrt(1.0 + slope_squared)
+        slope_squared = np.math.pow(np.math.tan(self.angle), 2)  # type: ignore
+        return y_difference / np.math.sqrt(1.0 + slope_squared)  # type: ignore
 
     def to_numpy(self) -> np.ndarray:
         """

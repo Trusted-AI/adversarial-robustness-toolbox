@@ -109,7 +109,7 @@ def save_image(image_array: np.ndarray, f_name: str) -> None:
 
 def plot_3d(
     points: np.ndarray,
-    labels: List[int],
+    labels: np.ndarray,
     colors: Optional[List[str]] = None,
     save: bool = True,
     f_name: str = "",
