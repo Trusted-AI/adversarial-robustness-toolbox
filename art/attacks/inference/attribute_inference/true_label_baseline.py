@@ -144,7 +144,8 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
                     self._values = column_values
                 else:
                     self._values = np.vstack((self._values, column_values))
-            self._values = self._values.tolist()
+            if self._values is not None:
+                self._values = self._values.tolist()
             y_one_hot = floats_to_one_hot(attacked_feature)
         y_ready = check_and_transform_label_format(y_one_hot, len(np.unique(attacked_feature)), return_one_hot=True)
 
@@ -185,15 +186,17 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
         if "values" in kwargs.keys():
             self._values = kwargs.get("values")
 
-        if self.single_index_feature:
-            return np.array([self._values[np.argmax(arr)] for arr in self.attack_model.predict(x_test)])
-
         predictions = self.attack_model.predict(x_test).astype(np.float32)
-        i = 0
-        for column in predictions.T:
-            for index in range(len(self._values[i])):
-                np.place(column, [column == index], self._values[i][index])
-            i += 1
+
+        if self._values is not None:
+            if self.single_index_feature:
+                predictions = np.array([self._values[np.argmax(arr)] for arr in predictions])
+            else:
+                i = 0
+                for column in predictions.T:
+                    for index in range(len(self._values[i])):
+                        np.place(column, [column == index], self._values[i][index])
+                    i += 1
         return np.array(predictions)
 
     def _check_params(self) -> None:

@@ -50,8 +50,11 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
     used as a proxy.
     """
 
-    attack_params = AttributeInferenceAttack.attack_params + ["prediction_normal_factor", "scale_range",
-                                                              "attack_model_type"]
+    attack_params = AttributeInferenceAttack.attack_params + [
+        "prediction_normal_factor",
+        "scale_range",
+        "attack_model_type",
+    ]
     _estimator_requirements = (BaseEstimator, (ClassifierMixin, RegressorMixin))
 
     def __init__(
@@ -167,7 +170,8 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
                     self._values = column_values
                 else:
                     self._values = np.vstack((self._values, column_values))
-            self._values = self._values.tolist()
+            if self._values is not None:
+                self._values = self._values.tolist()
             y_one_hot = floats_to_one_hot(y_attack)
         y_attack_ready = check_and_transform_label_format(y_one_hot, len(np.unique(y_attack)), return_one_hot=True)
 
@@ -198,10 +202,8 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         :return: The inferred feature values.
         """
         if "pred" not in kwargs.keys():
-            raise ValueError(
-                "Please provide param `pred` of model predictions."
-            )
-        pred = kwargs.get("pred")
+            raise ValueError("Please provide param `pred` of model predictions.")
+        pred: np.ndarray = kwargs.get("pred")
 
         if pred.shape[0] != x.shape[0]:
             raise ValueError("Number of rows in x and y do not match")
@@ -211,8 +213,9 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
 
         if RegressorMixin in type(self.estimator).__mro__:
             if self.scale_range is not None:
-                x_test = np.concatenate((x, minmax_scale(pred, feature_range=self.scale_range)),
-                                        axis=1).astype(np.float32)
+                x_test = np.concatenate((x, minmax_scale(pred, feature_range=self.scale_range)), axis=1).astype(
+                    np.float32
+                )
                 if y is not None:
                     y = minmax_scale(y, feature_range=self.scale_range)
             else:
@@ -229,15 +232,17 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         if "values" in kwargs.keys():
             self._values = kwargs.get("values")
 
-        if self.single_index_feature:
-            return np.array([self._values[np.argmax(arr)] for arr in self.attack_model.predict(x_test)])
-
         predictions = self.attack_model.predict(x_test).astype(np.float32)
-        i = 0
-        for column in predictions.T:
-            for index in range(len(self._values[i])):
-                np.place(column, [column == index], self._values[i][index])
-            i += 1
+
+        if self._values is not None:
+            if self.single_index_feature:
+                predictions = np.array([self._values[np.argmax(arr)] for arr in predictions])
+            else:
+                i = 0
+                for column in predictions.T:
+                    for index in range(len(self._values[i])):
+                        np.place(column, [column == index], self._values[i][index])
+                    i += 1
         return np.array(predictions)
 
     def _check_params(self) -> None:
