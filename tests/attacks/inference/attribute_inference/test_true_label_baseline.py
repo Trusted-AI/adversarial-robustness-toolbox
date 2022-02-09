@@ -59,8 +59,9 @@ def test_true_label_baseline(art_warning, get_iris_dataset, model_type):
         x_test_feature = x_test_iris[:, attack_feature].copy().reshape(-1, 1)
         transform_feature(x_test_feature)
 
-        baseline_attack = AttributeInferenceBaselineTrueLabel(attack_feature=attack_feature,
-                                                              attack_model_type=model_type)
+        baseline_attack = AttributeInferenceBaselineTrueLabel(
+            attack_feature=attack_feature, attack_model_type=model_type
+        )
         # train attack model
         baseline_attack.fit(x_train, y_train_iris)
         # infer attacked feature
@@ -109,8 +110,9 @@ def test_true_label_baseline_no_values(art_warning, get_iris_dataset, model_type
         x_test_feature = x_test_iris[:, attack_feature].copy().reshape(-1, 1)
         transform_feature(x_test_feature)
 
-        baseline_attack = AttributeInferenceBaselineTrueLabel(attack_feature=attack_feature,
-                                                              attack_model_type=model_type)
+        baseline_attack = AttributeInferenceBaselineTrueLabel(
+            attack_feature=attack_feature, attack_model_type=model_type
+        )
         # train attack model
         baseline_attack.fit(x_train, y_train_iris)
         # infer attacked feature

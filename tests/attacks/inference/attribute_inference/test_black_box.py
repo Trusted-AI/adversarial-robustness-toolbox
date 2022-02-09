@@ -239,8 +239,9 @@ def test_black_box_regressor(art_warning, get_diabetes_dataset, model_type):
         regr_model.fit(x_train_diabetes, y_train_diabetes)
         regressor = ScikitlearnRegressor(regr_model)
 
-        attack = AttributeInferenceBlackBox(regressor, attack_feature=attack_feature, prediction_normal_factor=1 / 250,
-                                            attack_model_type = model_type)
+        attack = AttributeInferenceBlackBox(
+            regressor, attack_feature=attack_feature, prediction_normal_factor=1 / 250, attack_model_type=model_type
+        )
         # get original model's predictions
         x_train_predictions = regressor.predict(x_train_diabetes).reshape(-1, 1)
         x_test_predictions = regressor.predict(x_test_diabetes).reshape(-1, 1)
@@ -363,8 +364,9 @@ def test_black_box_one_hot(art_warning, get_iris_dataset, model_type):
         tree.fit(x_train, y_train)
         classifier = ScikitlearnDecisionTreeClassifier(tree)
 
-        attack = AttributeInferenceBlackBox(classifier, attack_feature=slice(attack_feature, attack_feature + 3),
-                                            attack_model_type = model_type)
+        attack = AttributeInferenceBlackBox(
+            classifier, attack_feature=slice(attack_feature, attack_feature + 3), attack_model_type=model_type
+        )
         # get original model's predictions
         x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train)]).reshape(-1, 1)
         x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test)]).reshape(-1, 1)
