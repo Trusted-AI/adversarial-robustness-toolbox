@@ -25,6 +25,7 @@ from typing import Optional, Union, TYPE_CHECKING
 
 import numpy as np
 from sklearn.neural_network import MLPClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import minmax_scale
 
 from art.estimators.estimator import BaseEstimator
@@ -49,12 +50,14 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
     used as a proxy.
     """
 
-    attack_params = AttributeInferenceAttack.attack_params + ["prediction_normal_factor", "scale_range"]
+    attack_params = AttributeInferenceAttack.attack_params + ["prediction_normal_factor", "scale_range",
+                                                              "attack_model_type"]
     _estimator_requirements = (BaseEstimator, (ClassifierMixin, RegressorMixin))
 
     def __init__(
         self,
         estimator: Union["CLASSIFIER_TYPE", "REGRESSOR_TYPE"],
+        attack_model_type: str = "nn",
         attack_model: Optional["CLASSIFIER_TYPE"] = None,
         attack_feature: Union[int, slice] = 0,
         scale_range: Optional[slice] = None,
@@ -64,6 +67,9 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         Create an AttributeInferenceBlackBox attack instance.
 
         :param estimator: Target estimator.
+        :param attack_model_type: the type of default attack model to train, optional. Should be one of `nn` (for neural
+                                  network, default) or `rf` (for random forest). If `attack_model` is supplied, this
+                                  option will be ignored.
         :param attack_model: The attack model to train, optional. If none is provided, a default model will be created.
         :param attack_feature: The index of the feature to be attacked or a slice representing multiple indexes in
                                case of a one-hot encoded feature.
@@ -85,7 +91,7 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
             if ClassifierMixin not in type(attack_model).__mro__:
                 raise ValueError("Attack model must be of type Classifier.")
             self.attack_model = attack_model
-        else:
+        elif attack_model_type == "nn":
             self.attack_model = MLPClassifier(
                 hidden_layer_sizes=(100,),
                 activation="relu",
@@ -111,6 +117,10 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
                 n_iter_no_change=10,
                 max_fun=15000,
             )
+        elif attack_model_type == "rf":
+            self.attack_model = RandomForestClassifier()
+        else:
+            raise ValueError("Illegal value for parameter `attack_model_type`.")
 
         self.prediction_normal_factor = prediction_normal_factor
         self.scale_range = scale_range
@@ -233,6 +243,7 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
     def _check_params(self) -> None:
         if not isinstance(self.attack_feature, int) and not isinstance(self.attack_feature, slice):
             raise ValueError("Attack feature must be either an integer or a slice object.")
+
         if isinstance(self.attack_feature, int) and self.attack_feature < 0:
             raise ValueError("Attack feature index must be positive.")
 
