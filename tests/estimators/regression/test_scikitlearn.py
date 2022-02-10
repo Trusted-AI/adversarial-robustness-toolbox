@@ -20,8 +20,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
-import numpy as np
-
 from sklearn.tree import DecisionTreeRegressor
 
 from art.estimators.regression.scikitlearn import ScikitlearnDecisionTreeRegressor
