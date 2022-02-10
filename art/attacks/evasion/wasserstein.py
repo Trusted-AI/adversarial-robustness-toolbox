@@ -403,7 +403,7 @@ class Wasserstein(EvasionAttack):
         var_k = np.expand_dims(np.expand_dims(np.expand_dims(psi, -1), -1), -1)
         var_k = np.exp(-var_k * cost_matrix - 1)
 
-        convergence = -np.inf
+        convergence = np.array([-np.inf])
 
         for _ in range(self.conjugate_sinkhorn_max_iter):
             # Block coordinate descent iterates
@@ -481,7 +481,7 @@ class Wasserstein(EvasionAttack):
         var_k = np.expand_dims(np.expand_dims(np.expand_dims(psi, -1), -1), -1)
         var_k = np.exp(-var_k * cost_matrix - 1)
 
-        convergence = -np.inf
+        convergence = np.array([-np.inf])
 
         for _ in range(self.projected_sinkhorn_max_iter):
             # Block coordinate descent iterates

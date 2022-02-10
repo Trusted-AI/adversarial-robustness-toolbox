@@ -95,7 +95,11 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
             if not isinstance(classifier, NeuralNetworkMixin):  # pragma: no cover
                 raise TypeError(f"Expected type `Classifier`, found {type(classifier)} instead.")
 
-            if not np.array_equal(self.clip_values, classifier.clip_values):  # pragma: no cover
+            if (
+                isinstance(classifier.clip_values, np.ndarray)
+                and isinstance(self.clip_values, np.ndarray)
+                and not np.array_equal(self.clip_values, classifier.clip_values)
+            ):  # pragma: no cover
                 raise ValueError(
                     f"Incompatible `clip_values` between classifiers in the ensemble. Found {self.clip_values} and "
                     f"{classifier.clip_values}."

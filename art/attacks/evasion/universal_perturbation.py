@@ -168,7 +168,7 @@ class UniversalPerturbation(EvasionAttack):
         y_index = np.argmax(y, axis=1)
 
         # Init universal perturbation
-        noise = 0
+        noise = np.zeros_like(x[[0]])
         fooling_rate = 0.0
         nb_instances = len(x)
 

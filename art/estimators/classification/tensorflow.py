@@ -626,9 +626,9 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
             layer_output = self._sess.run(layer_tensor, feed_dict=feed_dict)
             results.append(layer_output)
 
-        results = np.concatenate(results)
+        results_array = np.concatenate(results)
 
-        return results
+        return results_array
 
     def save(self, filename: str, path: Optional[str] = None) -> None:
         """
@@ -1313,7 +1313,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
         return None  # type: ignore
 
-    def get_activations(
+    def get_activations(  # type: ignore
         self, x: np.ndarray, layer: Union[int, str], batch_size: int = 128, framework: bool = False
     ) -> Optional[np.ndarray]:
         """
@@ -1324,6 +1324,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         :param x: Input for computing the activations.
         :param layer: Layer for computing the activations.
         :param batch_size: Batch size.
+        :param framework: Return activation as tensor.
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         """
         import tensorflow as tf  # lgtm [py/repeated-import]

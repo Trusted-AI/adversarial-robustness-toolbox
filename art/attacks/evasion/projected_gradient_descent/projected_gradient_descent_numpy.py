@@ -114,7 +114,9 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
         ProjectedGradientDescentCommon._check_params(self)
 
         lower: Union[int, float, np.ndarray]
+        upper: Union[int, float, np.ndarray]
         var_mu: Union[int, float, np.ndarray]
+        sigma: Union[int, float, np.ndarray]
 
         if self.random_eps:
             if isinstance(eps, (int, float)):

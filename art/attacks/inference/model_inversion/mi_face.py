@@ -100,7 +100,7 @@ class MIFace(InferenceAttack):
                   (nb_samples,).
         :return: The inferred training samples.
         """
-        if x is None and y is None:
+        if not (x is None and y is not None) or not (x is not None and y is None):
             raise ValueError("Either `x` or `y` should be provided.")
 
         y = check_and_transform_label_format(y, self.estimator.nb_classes)

@@ -493,8 +493,8 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
 
             activations.append(preds.asnumpy())
 
-        activations = np.vstack(activations)
-        return activations
+        activations_array = np.vstack(activations)
+        return activations_array
 
     def save(self, filename: str, path: Optional[str] = None) -> None:
         """

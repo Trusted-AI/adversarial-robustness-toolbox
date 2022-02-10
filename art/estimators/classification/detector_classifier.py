@@ -327,9 +327,7 @@ class DetectorClassifier(ClassifierNeuralNetwork):
         )
         return repr_
 
-    def _compute_combined_grads(
-        self, x: np.ndarray, label: Union[int, List[int], np.ndarray, None] = None
-    ) -> np.ndarray:
+    def _compute_combined_grads(self, x: np.ndarray, label: Optional[Union[int, List[int]]] = None) -> np.ndarray:
         # Compute the classifier gradients
         classifier_grads = self.classifier.class_gradient(x=x, label=label)
 

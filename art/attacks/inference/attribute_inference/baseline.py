@@ -105,7 +105,7 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
         """
 
         # Checks:
-        if self.single_index_feature and self.attack_feature >= x.shape[1]:
+        if self.single_index_feature and isinstance(self.attack_feature, int) and self.attack_feature >= x.shape[1]:
             raise ValueError("attack_feature must be a valid index to a feature in x")
 
         # get vector of attacked feature
@@ -115,6 +115,8 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
         else:
             y_one_hot = floats_to_one_hot(y)
         y_ready = check_and_transform_label_format(y_one_hot, len(np.unique(y)), return_one_hot=True)
+        if y_ready is None:
+            raise ValueError("None value detected.")
 
         # create training set for attack model
         x_train = np.delete(x, self.attack_feature, 1).astype(np.float32)
@@ -137,15 +139,15 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
         :return: The inferred feature values.
         """
         x_test = x.astype(np.float32)
+        values = kwargs.get("values")
 
         if self.single_index_feature:
-            if "values" not in kwargs:
+            if values is None:
                 raise ValueError("Missing parameter `values`.")
-            values: np.ndarray = kwargs.get("values")
+
             return np.array([values[np.argmax(arr)] for arr in self.attack_model.predict(x_test)])
 
-        if "values" in kwargs:
-            values = kwargs.get("values")
+        if values is not None:
             predictions = self.attack_model.predict(x_test).astype(np.float32)
             i = 0
             for column in predictions.T:
@@ -157,7 +159,9 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
         return np.array(self.attack_model.predict(x_test))
 
     def _check_params(self) -> None:
+
         if not isinstance(self.attack_feature, int) and not isinstance(self.attack_feature, slice):
             raise ValueError("Attack feature must be either an integer or a slice object.")
+
         if isinstance(self.attack_feature, int) and self.attack_feature < 0:
             raise ValueError("Attack feature index must be positive.")

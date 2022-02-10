@@ -642,7 +642,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         return grads
 
-    def compute_loss(  # pylint: disable=W0221
+    def compute_loss(  # type: ignore # pylint: disable=W0221
         self,
         x: Union[np.ndarray, "torch.Tensor"],
         y: Union[np.ndarray, "torch.Tensor"],
@@ -665,7 +665,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         self._model.eval()
 
-        y = check_and_transform_label_format(y, self.nb_classes)
+        y = check_and_transform_label_format(y, self.nb_classes)  # type: ignore
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
@@ -872,9 +872,9 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             layer_output = self._model(torch.from_numpy(x_preprocessed[begin:end]).to(self._device))[layer_index]
             results.append(layer_output.detach().cpu().numpy())
 
-        results = np.concatenate(results)
+        results_array = np.concatenate(results)
 
-        return results
+        return results_array
 
     def save(self, filename: str, path: Optional[str] = None) -> None:
         """

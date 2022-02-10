@@ -367,7 +367,7 @@ def projection(values: np.ndarray, eps: Union[int, float, np.ndarray], norm_p: U
     elif norm_p in [np.inf, "inf"]:
         if isinstance(eps, np.ndarray):
             eps = eps * np.ones_like(values)
-            eps = eps.reshape([eps.shape[0], -1])
+            eps = eps.reshape([eps.shape[0], -1])  # type: ignore
 
         values_tmp = np.sign(values_tmp) * np.minimum(abs(values_tmp), eps)
 
@@ -528,7 +528,7 @@ def floats_to_one_hot(labels: np.ndarray):
 
 def check_and_transform_label_format(
     labels: Optional[np.ndarray], nb_classes: Optional[int] = None, return_one_hot: bool = True
-) -> np.ndarray:
+) -> Optional[np.ndarray]:
     """
     Check label format and transform to one-hot-encoded labels if necessary
 
@@ -537,35 +537,37 @@ def check_and_transform_label_format(
     :param return_one_hot: True if returning one-hot encoded labels, False if returning index labels.
     :return: Labels with shape `(nb_samples, nb_classes)` (one-hot) or `(nb_samples,)` (index).
     """
+    labels_return = labels
+
     if labels is not None:
         if len(labels.shape) == 2 and labels.shape[1] > 1:  # multi-class, one-hot encoded
             if not return_one_hot:
-                labels = np.argmax(labels, axis=1)
-                labels = np.expand_dims(labels, axis=1)
+                labels_return = np.argmax(labels, axis=1)
+                labels_return = np.expand_dims(labels_return, axis=1)
         elif (
             len(labels.shape) == 2 and labels.shape[1] == 1 and nb_classes is not None and nb_classes > 2
         ):  # multi-class, index labels
             if return_one_hot:
-                labels = to_categorical(labels, nb_classes)
+                labels_return = to_categorical(labels, nb_classes)
             else:
-                labels = np.expand_dims(labels, axis=1)
+                labels_return = np.expand_dims(labels, axis=1)
         elif (
             len(labels.shape) == 2 and labels.shape[1] == 1 and nb_classes is not None and nb_classes == 2
         ):  # binary, index labels
             if return_one_hot:
-                labels = to_categorical(labels, nb_classes)
+                labels_return = to_categorical(labels, nb_classes)
         elif len(labels.shape) == 1:  # index labels
             if return_one_hot:
-                labels = to_categorical(labels, nb_classes)
+                labels_return = to_categorical(labels, nb_classes)
             else:
-                labels = np.expand_dims(labels, axis=1)
+                labels_return = np.expand_dims(labels, axis=1)
         else:
             raise ValueError(
                 "Shape of labels not recognised."
                 "Please provide labels in shape (nb_samples,) or (nb_samples, nb_classes)"
             )
 
-    return labels
+    return labels_return
 
 
 def random_targets(labels: np.ndarray, nb_classes: int) -> np.ndarray:

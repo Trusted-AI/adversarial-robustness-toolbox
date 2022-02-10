@@ -195,17 +195,21 @@ class PreprocessorPyTorch(Preprocessor):
         """
         import torch  # lgtm [py/repeated-import]
 
-        x = torch.tensor(x, device=self.device)
+        x_tensor = torch.tensor(x, device=self.device)
         if y is not None:
-            y = torch.tensor(y, device=self.device)
+            y_tensor: Optional[torch.Tensor] = torch.tensor(y, device=self.device)
+        else:
+            y_tensor = None
 
         with torch.no_grad():
-            x, y = self.forward(x, y)
+            x_tensor, y_tensor = self.forward(x_tensor, y_tensor)
 
-        result = x.cpu().numpy()
-        if y is not None:
-            y = y.cpu().numpy()
-        return result, y
+        x_result = x_tensor.cpu().numpy()
+        if y_tensor is not None:
+            y_result: Optional[np.ndarray] = y_tensor.cpu().numpy()
+        else:
+            y_result = None
+        return x_result, y_result
 
     # Backward compatibility.
     def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
@@ -281,16 +285,16 @@ class PreprocessorTensorFlowV2(Preprocessor):
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        x = tf.convert_to_tensor(x)
+        x_tensor = tf.convert_to_tensor(x)
         if y is not None:
             y = tf.convert_to_tensor(y)
 
-        x, y = self.forward(x, y)
+        x_tensor, y = self.forward(x_tensor, y)
 
-        result = x.numpy()
+        x_result = x_tensor.numpy()
         if y is not None:
             y = y.numpy()
-        return result, y
+        return x_result, y
 
     # Backward compatibility.
     def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:

@@ -681,7 +681,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
         if framework:
             placeholder = k.placeholder(shape=x.shape)
-            return placeholder, keras_layer(placeholder)
+            return placeholder, keras_layer(placeholder)  # type: ignore
 
         return activations
 

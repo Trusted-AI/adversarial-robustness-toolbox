@@ -80,6 +80,8 @@ class MembershipInferenceBlackBoxRuleBased(MembershipInferenceAttack):
             probabilities = False
 
         y = check_and_transform_label_format(y, len(np.unique(y)), return_one_hot=True)
+        if y is None:
+            raise ValueError("None value detected.")
         if y.shape[0] != x.shape[0]:  # pragma: no cover
             raise ValueError("Number of rows in x and y do not match")
 
@@ -95,6 +97,8 @@ class MembershipInferenceBlackBoxRuleBased(MembershipInferenceAttack):
                 prob[:, np.ones_like(predicted_class) - predicted_class] = np.ones_like(pred_prob) - pred_prob
             else:
                 # simply returns probability 1 for the predicted class and 0 for the other class
-                prob = check_and_transform_label_format(predicted_class, return_one_hot=True)
+                prob_none = check_and_transform_label_format(predicted_class, return_one_hot=True)
+                if prob_none is not None:
+                    prob = prob_none
             return prob
         return predicted_class

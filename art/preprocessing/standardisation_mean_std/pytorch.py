@@ -66,8 +66,8 @@ class StandardisationMeanStdPyTorch(PreprocessorPyTorch):
         self._check_params()
 
         # init broadcastable mean and std for lazy loading
-        self._broadcastable_mean = None
-        self._broadcastable_std = None
+        self._broadcastable_mean: Optional[np.ndarray] = None
+        self._broadcastable_std: Optional[np.ndarray] = None
 
     def forward(
         self, x: "torch.Tensor", y: Optional["torch.Tensor"] = None

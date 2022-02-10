@@ -136,6 +136,8 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         else:
             y_one_hot = floats_to_one_hot(y)
         y_ready = check_and_transform_label_format(y_one_hot, len(np.unique(y)), return_one_hot=True)
+        if y_ready is None:
+            raise ValueError("None value detected.")
 
         # create training set for attack model
         x_train = np.concatenate((np.delete(x, self.attack_feature, 1), predictions), axis=1).astype(np.float32)
@@ -176,7 +178,7 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
             x_test = np.concatenate((x, y), axis=1).astype(np.float32)
 
         if self.single_index_feature:
-            if "values" is None:
+            if values is None:
                 raise ValueError("Missing parameter `values`.")
             return np.array([values[np.argmax(arr)] for arr in self.attack_model.predict(x_test)])
 
