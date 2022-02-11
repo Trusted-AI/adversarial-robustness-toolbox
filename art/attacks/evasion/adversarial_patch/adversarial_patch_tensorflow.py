@@ -396,7 +396,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         return images * inverted_mask + padded_patch * image_mask
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Tuple[np.ndarray, np.ndarray]:  # type: ignore
         """
         Generate an adversarial patch and return the patch and its mask in arrays.
 

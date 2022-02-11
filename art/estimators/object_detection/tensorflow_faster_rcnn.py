@@ -545,7 +545,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
 
         return loss_values
 
-    def compute_losses(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
+    def compute_losses(self, x: np.ndarray, y: np.ndarray) -> Dict[str, np.ndarray]:  # type: ignore
         """
         Compute all loss components.
 
@@ -576,7 +576,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
             for loss_name in self.attack_losses:
                 self._losses_dict[loss_name] = self._losses[loss_name]
 
-        losses = {}
+        losses: Dict[str, np.ndarray] = {}
         for loss_name in self.attack_losses:
             loss_value = self._sess.run(self._losses_dict[loss_name], feed_dict=feed_dict)
             losses[loss_name] = loss_value

@@ -26,6 +26,7 @@ from art.preprocessing.preprocessing import PreprocessorTensorFlowV2
 
 if TYPE_CHECKING:
     import tensorflow as tf
+    from art.utils import CLIP_VALUES_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +39,7 @@ class EoTTensorFlowV2(PreprocessorTensorFlowV2):
     def __init__(
         self,
         nb_samples: int,
-        clip_values: Tuple[float, float],
+        clip_values: "CLIP_VALUES_TYPE",
         apply_fit: bool = False,
         apply_predict: bool = True,
     ) -> None:

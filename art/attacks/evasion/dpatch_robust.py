@@ -126,7 +126,7 @@ class RobustDPatch(EvasionAttack):
         self._targeted = targeted
         self._check_params()
 
-    def generate(self, x: np.ndarray, y: Optional[List[Dict[str, np.ndarray]]] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: Optional[List[Dict[str, np.ndarray]]] = None, **kwargs) -> np.ndarray:  # type: ignore
         """
         Generate RobustDPatch.
 

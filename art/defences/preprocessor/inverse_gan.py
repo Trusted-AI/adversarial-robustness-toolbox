@@ -145,7 +145,7 @@ class InverseGAN(Preprocessor):
         optimized_z_encoding = np.reshape(optimized_z_encoding_flat.x, [batch_size, self.gan.encoding_length])
         y = self.gan.predict(optimized_z_encoding)
 
-        return y
+        return x, y
 
     def compute_loss(self, z_encoding: np.ndarray, image_adv: np.ndarray) -> np.ndarray:
         """

@@ -308,7 +308,7 @@ class ShapeShifter(EvasionAttack):
         self,
         x: np.ndarray,
         y: Dict[str, List[np.ndarray]],
-        mask: np.ndarray,
+        mask: Optional[np.ndarray],
         target_class: int,
         victim_class: int,
         project_texture_op: "Tensor",

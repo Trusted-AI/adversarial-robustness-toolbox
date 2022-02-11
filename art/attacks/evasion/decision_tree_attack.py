@@ -114,7 +114,8 @@ class DecisionTreeAttack(EvasionAttack):
                   (nb_samples,).
         :return: An array holding the adversarial examples.
         """
-        y = check_and_transform_label_format(y, self.estimator.nb_classes, return_one_hot=False)
+        if y is not None:
+            y = check_and_transform_label_format(y, self.estimator.nb_classes, return_one_hot=False)
         x_adv = x.copy()
 
         for index in trange(x_adv.shape[0], desc="Decision tree attack", disable=not self.verbose):
@@ -159,10 +160,6 @@ class DecisionTreeAttack(EvasionAttack):
                 elif x_adv[index][feature] <= threshold and go_for == self.estimator.get_right_child(adv_path[i]):
                     x_adv[index][feature] = threshold + self.offset
 
-        logger.info(
-            "Success rate of decision tree attack: %.2f%%",
-            100 * compute_success(self.estimator, x, y, x_adv),
-        )
         return x_adv
 
     def _check_params(self) -> None:

@@ -117,7 +117,7 @@ class BaseEstimator(ABC):
         if isinstance(preprocessing, tuple):
             from art.preprocessing.standardisation_mean_std.numpy import StandardisationMeanStd
 
-            return StandardisationMeanStd(mean=preprocessing[0], std=preprocessing[1])
+            return StandardisationMeanStd(mean=preprocessing[0], std=preprocessing[1])  # type: ignore
         if isinstance(preprocessing, Preprocessor):
             return preprocessing
 
@@ -200,7 +200,7 @@ class BaseEstimator(ABC):
             if isinstance(self._clip_values, np.ndarray):
                 self._clip_values = self._clip_values.astype(ART_NUMPY_DTYPE)
             else:
-                self._clip_values = np.array(self._clip_values, dtype=ART_NUMPY_DTYPE)
+                self._clip_values = np.array(self._clip_values, dtype=ART_NUMPY_DTYPE)  # type: ignore
 
         if isinstance(self.preprocessing_operations, list):
             for preprocess in self.preprocessing_operations:
@@ -454,7 +454,7 @@ class NeuralNetworkMixin(ABC):
             )
 
         for i in range(nb_epochs):
-            for _ in trange(int(generator.size / generator.batch_size), desc=f"Epoch {i + 1}/{nb_epochs}"):
+            for _ in trange(int(generator.size / generator.batch_size), desc=f"Epoch {i + 1}/{nb_epochs}"):  # type: ignore
                 x, y = generator.get_batch()
 
                 # Fit for current batch

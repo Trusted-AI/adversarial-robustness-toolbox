@@ -527,8 +527,8 @@ def floats_to_one_hot(labels: np.ndarray):
 
 
 def check_and_transform_label_format(
-    labels: Optional[np.ndarray], nb_classes: Optional[int] = None, return_one_hot: bool = True
-) -> Optional[np.ndarray]:
+    labels: np.ndarray, nb_classes: Optional[int] = None, return_one_hot: bool = True
+) -> np.ndarray:
     """
     Check label format and transform to one-hot-encoded labels if necessary
 
@@ -539,33 +539,31 @@ def check_and_transform_label_format(
     """
     labels_return = labels
 
-    if labels is not None:
-        if len(labels.shape) == 2 and labels.shape[1] > 1:  # multi-class, one-hot encoded
-            if not return_one_hot:
-                labels_return = np.argmax(labels, axis=1)
-                labels_return = np.expand_dims(labels_return, axis=1)
-        elif (
-            len(labels.shape) == 2 and labels.shape[1] == 1 and nb_classes is not None and nb_classes > 2
-        ):  # multi-class, index labels
-            if return_one_hot:
-                labels_return = to_categorical(labels, nb_classes)
-            else:
-                labels_return = np.expand_dims(labels, axis=1)
-        elif (
-            len(labels.shape) == 2 and labels.shape[1] == 1 and nb_classes is not None and nb_classes == 2
-        ):  # binary, index labels
-            if return_one_hot:
-                labels_return = to_categorical(labels, nb_classes)
-        elif len(labels.shape) == 1:  # index labels
-            if return_one_hot:
-                labels_return = to_categorical(labels, nb_classes)
-            else:
-                labels_return = np.expand_dims(labels, axis=1)
+    if len(labels.shape) == 2 and labels.shape[1] > 1:  # multi-class, one-hot encoded
+        if not return_one_hot:
+            labels_return = np.argmax(labels, axis=1)
+            labels_return = np.expand_dims(labels_return, axis=1)
+    elif (
+        len(labels.shape) == 2 and labels.shape[1] == 1 and nb_classes is not None and nb_classes > 2
+    ):  # multi-class, index labels
+        if return_one_hot:
+            labels_return = to_categorical(labels, nb_classes)
         else:
-            raise ValueError(
-                "Shape of labels not recognised."
-                "Please provide labels in shape (nb_samples,) or (nb_samples, nb_classes)"
-            )
+            labels_return = np.expand_dims(labels, axis=1)
+    elif (
+        len(labels.shape) == 2 and labels.shape[1] == 1 and nb_classes is not None and nb_classes == 2
+    ):  # binary, index labels
+        if return_one_hot:
+            labels_return = to_categorical(labels, nb_classes)
+    elif len(labels.shape) == 1:  # index labels
+        if return_one_hot:
+            labels_return = to_categorical(labels, nb_classes)
+        else:
+            labels_return = np.expand_dims(labels, axis=1)
+    else:
+        raise ValueError(
+            "Shape of labels not recognised." "Please provide labels in shape (nb_samples,) or (nb_samples, nb_classes)"
+        )
 
     return labels_return
 
@@ -713,7 +711,7 @@ def compute_success(
     return np.sum(attack_success) / x_adv.shape[0]
 
 
-def compute_accuracy(preds: np.ndarray, labels: np.ndarray, abstain: bool = True) -> Tuple[np.ndarray, int]:
+def compute_accuracy(preds: np.ndarray, labels: np.ndarray, abstain: bool = True) -> Tuple[float, float]:
     """
     Compute the accuracy rate and coverage rate of predictions
     In the case where predictions are abstained, those samples are ignored.
@@ -901,7 +899,7 @@ def load_iris(raw: bool = False, test_set: float = 0.3) -> DATASET_TYPE:
         data /= np.amax(data)
     labels = to_categorical(iris.target, 3)
 
-    min_, max_ = np.amin(data), np.amax(data)
+    min_, max_ = float(np.amin(data)), float(np.amax(data))
 
     # Split training and test sets
     split_index = int((1 - test_set) * len(data) / 3)
@@ -942,7 +940,7 @@ def load_iris(raw: bool = False, test_set: float = 0.3) -> DATASET_TYPE:
     random_indices = np.random.permutation(len(y_train))
     x_train, y_train = x_train[random_indices].astype(np.float32), y_train[random_indices]
 
-    return (x_train, y_train), (x_test, y_test), min_, max_
+    return (x_train, y_train), (x_test, y_test), min_, max_  # type: ignore
 
 
 def load_diabetes(raw: bool = False, test_set: float = 0.3) -> DATASET_TYPE:
@@ -1211,7 +1209,7 @@ def get_file(filename: str, url: str, path: Optional[str] = None, extract: bool 
             except HTTPError as exception:  # pragma: no cover
                 raise Exception(error_msg.format(url, exception.code, exception.msg)) from HTTPError  # type: ignore
             except URLError as exception:  # pragma: no cover
-                raise Exception(error_msg.format(url, exception.errno, exception.reason)) from HTTPError
+                raise Exception(error_msg.format(url, exception.errno, exception.reason)) from HTTPError  # type: ignore
         except (Exception, KeyboardInterrupt):  # pragma: no cover
             if os.path.exists(full_path):
                 os.remove(full_path)

@@ -211,10 +211,6 @@ class DeepFool(EvasionAttack):
                     out=x_adv[batch_index_1:batch_index_2],
                 )
 
-        logger.info(
-            "Success rate of DeepFool attack: %.2f%%",
-            100 * compute_success(self.estimator, x, y, x_adv, batch_size=self.batch_size),
-        )
         return x_adv
 
     def _check_params(self) -> None:

@@ -168,11 +168,6 @@ class VirtualAdversarialMethod(EvasionAttack):
                     (-1,) + self.estimator.input_shape
                 )
 
-        logger.info(
-            "Success rate of virtual adversarial attack: %.2f%%",
-            100 * compute_success(self.estimator, x, y, x_adv, batch_size=self.batch_size),
-        )
-
         return x_adv
 
     @staticmethod

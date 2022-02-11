@@ -262,7 +262,7 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
 
         raise NotImplementedError("Currently only Keras is supported")
 
-    def get_training_data(self) -> Optional[Tuple[np.ndarray, np.ndarray, np.ndarray]]:
+    def get_training_data(self) -> Optional[Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray]]]:
         """
         Returns the training data generated from the last call to fit
 

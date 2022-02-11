@@ -210,7 +210,8 @@ class ZooAttack(EvasionAttack):
                   (nb_samples,).
         :return: An array holding the adversarial examples.
         """
-        y = check_and_transform_label_format(y, self.estimator.nb_classes)
+        if y is not None:
+            y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
         # Check that `y` is provided for targeted attacks
         if self.targeted and y is None:  # pragma: no cover

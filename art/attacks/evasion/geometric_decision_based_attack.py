@@ -168,7 +168,8 @@ class GeoDA(EvasionAttack):
                   (nb_samples,). If `self.targeted` is true, then `y` represents the target labels.
         :return: The adversarial examples.
         """
-        y = check_and_transform_label_format(y, self.estimator.nb_classes, return_one_hot=True)
+        if y is not None:
+            y = check_and_transform_label_format(y, self.estimator.nb_classes, return_one_hot=True)
 
         if y is not None and self.estimator.nb_classes == 2 and y.shape[1] == 1:  # pragma: no cover
             raise ValueError(
@@ -177,9 +178,13 @@ class GeoDA(EvasionAttack):
 
         x_adv = x.copy()
 
-        # Assert that, if attack is targeted, y is provided
-        if self.targeted and y is None:  # pragma: no cover
-            raise ValueError("Target labels `y` need to be provided for a targeted attack.")
+        if y is None:
+            # Throw error if attack is targeted, but no targets are provided
+            if self.targeted:  # pragma: no cover
+                raise ValueError("Target labels `y` need to be provided for a targeted attack.")
+
+            # Use model predictions as correct outputs
+            y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))  # type: ignore
 
         # Get clip_min and clip_max from the classifier or infer them from data
         if self.estimator.clip_values is not None:

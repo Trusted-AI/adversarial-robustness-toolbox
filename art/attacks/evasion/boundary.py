@@ -123,6 +123,14 @@ class BoundaryAttack(EvasionAttack):
         :type x_adv_init: `np.ndarray`
         :return: An array holding the adversarial examples.
         """
+        if y is None:
+            # Throw error if attack is targeted, but no targets are provided
+            if self.targeted:  # pragma: no cover
+                raise ValueError("Target labels `y` need to be provided for a targeted attack.")
+
+            # Use model predictions as correct outputs
+            y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))  # type: ignore
+
         y = check_and_transform_label_format(y, self.estimator.nb_classes, return_one_hot=False)
 
         if y is not None and self.estimator.nb_classes == 2 and y.shape[1] == 1:
@@ -178,8 +186,7 @@ class BoundaryAttack(EvasionAttack):
                     clip_max=clip_max,
                 )
 
-        if y is not None:
-            y = to_categorical(y, self.estimator.nb_classes)
+        y = to_categorical(y, self.estimator.nb_classes)
 
         logger.info(
             "Success rate of Boundary attack: %.2f%%",

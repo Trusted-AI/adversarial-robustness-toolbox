@@ -375,7 +375,8 @@ class AutoProjectedGradientDescent(EvasionAttack):
         """
         mask = kwargs.get("mask")
 
-        y = check_and_transform_label_format(y, self.estimator.nb_classes)
+        if y is not None:
+            y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
         if y is None:
             if self.targeted:

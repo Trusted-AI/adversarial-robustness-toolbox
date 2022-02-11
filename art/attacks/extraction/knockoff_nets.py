@@ -23,7 +23,7 @@ This module implements the Knockoff Nets attack `KnockoffNets`.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, Union
 
 import numpy as np
 from tqdm.auto import trange
@@ -302,7 +302,7 @@ class KnockoffNets(ExtractionAttack):
 
         return x_index[rnd_idx]
 
-    def _reward(self, y_output: np.ndarray, y_hat: np.ndarray, n: int) -> float:
+    def _reward(self, y_output: np.ndarray, y_hat: np.ndarray, n: int) -> Union[float, np.ndarray]:
         """
         Compute reward value.
 

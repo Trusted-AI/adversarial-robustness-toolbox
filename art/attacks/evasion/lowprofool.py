@@ -268,7 +268,10 @@ class LowProFool(EvasionAttack):
 
         if normalize:
             # Make sure that importance vector sums to 1.
-            self.importance_vec = np.array(self.importance_vec) / np.sum(self.importance_vec)
+            if self.importance_vec is not None:
+                self.importance_vec = np.array(self.importance_vec) / np.sum(self.importance_vec)
+            else:
+                raise ValueError("Unexpected `None` detected.")
 
         return self
 

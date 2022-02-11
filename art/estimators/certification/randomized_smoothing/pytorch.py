@@ -147,7 +147,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         """
         return RandomizedSmoothingMixin.predict(self, x, batch_size=batch_size, training_mode=False, **kwargs)
 
-    def loss_gradient(self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs) -> np.ndarray:
+    def loss_gradient(self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs) -> np.ndarray:  # type: ignore
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
@@ -183,8 +183,14 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
 
             noise = torch.randn_like(inputs_repeat_t, device=self._device) * self.scale
             inputs_noise_t = inputs_repeat_t + noise
-            if self.clip_values is not None:
+            if (
+                self.clip_values is not None
+                and isinstance(self.clip_values[0], (int, float))
+                and isinstance(self.clip_values[1], (int, float))
+            ):
                 inputs_noise_t.clamp(self.clip_values[0], self.clip_values[1])
+            else:
+                raise ValueError("Unexpected clip_values detected.")
 
             model_outputs = self._model(inputs_noise_t)[-1]
             softmax = torch.nn.functional.softmax(model_outputs, dim=1)

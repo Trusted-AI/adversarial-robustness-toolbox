@@ -233,8 +233,8 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
         self.reset()
         datagen = ImageDataGenerator()
         gen = datagen.flow(x_val, y_val, batch_size=self.batch_size)
-        mask_best = None
-        pattern_best = None
+        mask_best: Optional[np.ndarray] = None
+        pattern_best: Optional[np.ndarray] = None
         reg_best = float("inf")
         cost_set_counter = 0
         cost_up_counter = 0
@@ -312,6 +312,9 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
         if mask_best is None:
             mask_best = K.eval(self.mask_tensor)
             pattern_best = K.eval(self.pattern_tensor)
+
+        if pattern_best is None:
+            raise ValueError("Unexpected `None` detected.")
 
         return mask_best, pattern_best
 

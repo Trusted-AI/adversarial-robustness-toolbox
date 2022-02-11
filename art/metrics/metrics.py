@@ -281,7 +281,7 @@ def clever_t(
     nb_batches: int,
     batch_size: int,
     radius: float,
-    norm: int,
+    norm: float,
     c_init: float = 1.0,
     pool_factor: int = 10,
 ) -> float:

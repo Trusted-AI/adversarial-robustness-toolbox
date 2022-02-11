@@ -132,10 +132,6 @@ class NewtonFool(EvasionAttack):
             else:
                 x_adv[batch_index_1:batch_index_2] = batch
 
-        logger.info(
-            "Success rate of NewtonFool attack: %.2f%%",
-            100 * compute_success(self.estimator, x, y, x_adv, batch_size=self.batch_size),
-        )
         return x_adv
 
     def _compute_theta(self, norm_batch: np.ndarray, score: np.ndarray, norm_grad: np.ndarray) -> np.ndarray:

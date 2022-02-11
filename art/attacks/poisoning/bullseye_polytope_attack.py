@@ -208,7 +208,7 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
                 layer_3: Union[int, str] = self.feature_layer
                 activations = net.get_activations(x, layer=layer_3, batch_size=self.batch_size, framework=True)
                 if activations is not None:
-                    target_feat_list.append(activations.detach())
+                    target_feat_list.append(activations.detach())  # type: ignore
                 else:
                     raise ValueError("Activations are None.")
                 s_coeff = torch.ones(n_poisons, 1).to(self.estimator.device) / n_poisons
@@ -335,7 +335,7 @@ def loss_from_center(
             elif net_repeat == 1:
                 if isinstance(feature_layer, list):
                     poisons_feats = [
-                        torch.flatten(net.get_activations(poison_batch(), layer=layer, framework=True), 0)
+                        torch.flatten(net.get_activations(poison_batch(), layer=layer, framework=True), 0)  # type: ignore
                         for layer in feature_layer
                     ]
                 else:  # pragma: no cover

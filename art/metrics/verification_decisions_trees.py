@@ -183,7 +183,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
         x: np.ndarray,
         y: np.ndarray,
         eps_init: float,
-        norm: int = np.inf,
+        norm: float = np.inf,
         nb_search_steps: int = 10,
         max_clique: int = 2,
         max_level: int = 2,
@@ -370,7 +370,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
 
         return best_scores_sum, new_nodes_list
 
-    def _get_best_score(self, i_sample: int, eps: float, norm: int, target_label: Optional[int]) -> float:
+    def _get_best_score(self, i_sample: int, eps: float, norm: float, target_label: Optional[int]) -> float:
         """
         Get the list of best scores.
 
@@ -394,7 +394,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
 
         return best_score
 
-    def _get_distance(self, box: Box, i_sample: int, norm: int) -> float:
+    def _get_distance(self, box: Box, i_sample: int, norm: float) -> float:
         """
         Determine the distance between sample and interval box.
 
@@ -433,7 +433,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
         return resulting_distance
 
     def _get_accessible_leaves(
-        self, i_sample: int, eps: float, norm: int, target_label: Optional[int]
+        self, i_sample: int, eps: float, norm: float, target_label: Optional[int]
     ) -> List[List[LeafNode]]:
         """
         Determine the leaf nodes accessible within the attack budget.

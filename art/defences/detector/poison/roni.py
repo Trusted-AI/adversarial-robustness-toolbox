@@ -118,7 +118,7 @@ class RONIDefense(PoisonFilteringDefence):
         if is_clean is None or len(is_clean) != len(self.is_clean_lst):
             raise ValueError("Invalid value for is_clean.")
 
-        _, conf_matrix = self.evaluator.analyze_correctness([self.is_clean_lst], [is_clean])
+        _, conf_matrix = self.evaluator.analyze_correctness([self.is_clean_lst], [is_clean])  # type: ignore
         return conf_matrix
 
     def detect_poison(self, **kwargs) -> Tuple[dict, List[int]]:

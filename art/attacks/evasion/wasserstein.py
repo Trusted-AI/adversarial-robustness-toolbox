@@ -141,7 +141,8 @@ class Wasserstein(EvasionAttack):
         :type cost_matrix: `np.ndarray`
         :return: An array holding the adversarial examples.
         """
-        y = check_and_transform_label_format(y, self.estimator.nb_classes)
+        if y is not None:
+            y = check_and_transform_label_format(y, self.estimator.nb_classes)
         x_adv = x.copy().astype(ART_NUMPY_DTYPE)
 
         if y is None:
@@ -174,11 +175,6 @@ class Wasserstein(EvasionAttack):
             batch_labels = targets[batch_index_1:batch_index_2]
 
             x_adv[batch_index_1:batch_index_2] = self._generate_batch(batch, batch_labels, cost_matrix)
-
-        logger.info(
-            "Success rate of attack: %.2f%%",
-            100 * compute_success(self.estimator, x, y, x_adv, self.targeted, batch_size=self.batch_size),
-        )
 
         return x_adv
 

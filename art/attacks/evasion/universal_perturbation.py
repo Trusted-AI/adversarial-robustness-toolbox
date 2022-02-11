@@ -153,7 +153,8 @@ class UniversalPerturbation(EvasionAttack):
         """
         logger.info("Computing universal perturbation based on %s attack.", self.attacker)
 
-        y = check_and_transform_label_format(y, self.estimator.nb_classes)
+        if y is not None:
+            y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
         if y is None:
             # Use model predictions as true labels

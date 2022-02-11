@@ -148,7 +148,7 @@ class AdversarialPatchNumpy(EvasionAttack):
         ) / 2.0 + self.estimator.clip_values[0]
         self.reset_patch(self.mean_value)
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Tuple[np.ndarray, np.ndarray]:  # type: ignore
         """
         Generate an adversarial patch and return the patch and its mask in arrays.
 
@@ -199,7 +199,10 @@ class AdversarialPatchNumpy(EvasionAttack):
         if kwargs.get("reset_patch"):
             self.reset_patch(self.mean_value)
 
-        y_target = check_and_transform_label_format(labels=y, nb_classes=self.estimator.nb_classes)
+        if y is not None:
+            y_target = check_and_transform_label_format(labels=y, nb_classes=self.estimator.nb_classes)
+        else:
+            raise ValueError("Labels `y` cannot be `None`.")
 
         for _ in trange(self.max_iter, desc="Adversarial Patch Numpy", disable=not self.verbose):
             patched_images, patch_mask_transformed, transforms = self._augment_images_with_random_patch(
