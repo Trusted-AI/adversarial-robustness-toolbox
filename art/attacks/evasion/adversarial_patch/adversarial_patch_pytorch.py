@@ -24,6 +24,7 @@ can be printed into the physical world with a common printer. The patch can be u
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+import math
 from typing import Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
@@ -328,10 +329,13 @@ class AdversarialPatchPyTorch(EvasionAttack):
         padded_patch_list = list()
 
         for i_sample in range(nb_samples):
-            if scale is None:
-                im_scale = np.random.uniform(low=self.scale_min, high=self.scale_max)
+            if self.patch_location is None:
+                if scale is None:
+                    im_scale = np.random.uniform(low=self.scale_min, high=self.scale_max)
+                else:
+                    im_scale = scale
             else:
-                im_scale = scale
+                im_scale = self.patch_shape[self.i_h] / smallest_image_edge
 
             if mask is None:
                 if self.patch_location is None:
@@ -344,8 +348,8 @@ class AdversarialPatchPyTorch(EvasionAttack):
                     x_shift = np.random.uniform(-padding_after_scaling_w, padding_after_scaling_w)
                     y_shift = np.random.uniform(-padding_after_scaling_h, padding_after_scaling_h)
                 else:
-                    padding_h = (self.image_shape[self.i_h] - im_scale * padded_patch.shape[self.i_h + 1]) / 2.0
-                    padding_w = (self.image_shape[self.i_w] - im_scale * padded_patch.shape[self.i_w + 1]) / 2.0
+                    padding_h = int(math.floor(self.image_shape[self.i_h] - self.patch_shape[self.i_h]) / 2.0)
+                    padding_w = int(math.floor(self.image_shape[self.i_w] - self.patch_shape[self.i_w]) / 2.0)
                     x_shift = -padding_w + self.patch_location[0]
                     y_shift = -padding_h + self.patch_location[1]
             else:
@@ -438,6 +442,10 @@ class AdversarialPatchPyTorch(EvasionAttack):
         )
 
         patched_images = images * inverted_mask + padded_patch * image_mask
+
+        from matplotlib import pyplot as plt
+        plt.imshow(torch.permute(patched_images[0], (1, 2, 0)).detach().numpy() / 255)
+        plt.show()
 
         if not self.estimator.channels_first:
             patched_images = torch.permute(patched_images, (0, 2, 3, 1))
