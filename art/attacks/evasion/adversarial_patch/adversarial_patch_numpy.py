@@ -148,7 +148,9 @@ class AdversarialPatchNumpy(EvasionAttack):
         ) / 2.0 + self.estimator.clip_values[0]
         self.reset_patch(self.mean_value)
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Tuple[np.ndarray, np.ndarray]:  # type: ignore
+    def generate(  # type: ignore
+        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Generate an adversarial patch and return the patch and its mask in arrays.
 

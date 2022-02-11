@@ -28,7 +28,7 @@ from tqdm.auto import trange
 
 from art.attacks.attack import EvasionAttack
 from art.estimators.classification.scikitlearn import ScikitlearnDecisionTreeClassifier
-from art.utils import check_and_transform_label_format, compute_success
+from art.utils import check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
 

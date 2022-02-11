@@ -454,7 +454,9 @@ class NeuralNetworkMixin(ABC):
             )
 
         for i in range(nb_epochs):
-            for _ in trange(int(generator.size / generator.batch_size), desc=f"Epoch {i + 1}/{nb_epochs}"):  # type: ignore
+            for _ in trange(
+                int(generator.size / generator.batch_size), desc=f"Epoch {i + 1}/{nb_epochs}"  # type: ignore
+            ):
                 x, y = generator.get_batch()
 
                 # Fit for current batch

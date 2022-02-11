@@ -32,7 +32,6 @@ from tqdm.auto import trange
 
 from art.attacks.attack import EvasionAttack
 from art.estimators.classification.GPy import GPyGaussianProcessClassifier
-from art.utils import compute_success
 
 logger = logging.getLogger(__name__)
 

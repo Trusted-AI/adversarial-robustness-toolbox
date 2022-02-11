@@ -187,10 +187,10 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
             if isinstance(y[0]["boxes"], np.ndarray):
                 for i, y_i in enumerate(y):
                     y_t = {}
-                    y_t["boxes"] = torch.from_numpy(y_i["boxes"]).type("torch.float").to(self.device)
-                    y_t["labels"] = torch.from_numpy(y_i["labels"]).type("torch.int64").to(self.device)
+                    y_t["boxes"] = torch.from_numpy(y_i["boxes"]).type(torch.float).to(self.device)
+                    y_t["labels"] = torch.from_numpy(y_i["labels"]).type(torch.int64).to(self.device)
                     if "masks" in y_i:
-                        y_t["masks"] = torch.from_numpy(y_i["masks"]).type("torch.int64").to(self.device)
+                        y_t["masks"] = torch.from_numpy(y_i["masks"]).type(torch.int64).to(self.device)
                     y_tensor.append(y_t)
             else:
                 y_tensor = y  # type: ignore

@@ -202,14 +202,11 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
                 x_nhwc = x_nchw.permute(0, 2, 3, 1)
                 x = x_nhwc.reshape(nb_clips, clip_size, height, width, channels)
 
-        if (
-            self.clip_values is not None
-            and isinstance(self.clip_values[0], (int, float))
-            and isinstance(self.clip_values[1], (int, float))
-        ):
-            x = x.clamp(min=self.clip_values[0], max=self.clip_values[1])
-        else:
-            raise ValueError("Unexpected clip_values type detected.")
+        if self.clip_values is not None:
+            if not (isinstance(self.clip_values[0], (int, float)) and isinstance(self.clip_values[1], (int, float))):
+                x = x.clamp(min=self.clip_values[0], max=self.clip_values[1])
+            else:
+                raise ValueError("Unexpected clip_values type detected.")
 
         return x, y
 

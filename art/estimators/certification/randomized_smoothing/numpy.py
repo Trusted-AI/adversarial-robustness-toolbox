@@ -149,4 +149,6 @@ class NumpyRandomizedSmoothing(  # lgtm [py/conflicting-attributes] lgtm [py/mis
     def get_activations(
         self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
     ) -> np.ndarray:
-        return self.classifier.get_activations(x=x, layer=layer, batch_size=batch_size, framework=framework)  # type: ignore
+        return self.classifier.get_activations(  # type: ignore
+            x=x, layer=layer, batch_size=batch_size, framework=framework
+        )
