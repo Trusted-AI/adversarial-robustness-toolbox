@@ -335,7 +335,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
     def _predict_framework(
         self, x: "torch.Tensor", y: Optional["torch.Tensor"] = None
-    ) -> Tuple["torch.Tensor", "torch.Tensor"]:
+    ) -> Tuple["torch.Tensor", Optional["torch.Tensor"]]:
         """
         Perform prediction for a batch of inputs.
 

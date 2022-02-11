@@ -185,7 +185,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
         return loss
 
     def _predictions(
-        self, images: "torch.Tensor", mask: Optional["torch.Tensor"], target: Optional["torch.Tensor"]
+        self, images: "torch.Tensor", mask: Optional["torch.Tensor"], target: "torch.Tensor"
     ) -> Tuple["torch.Tensor", "torch.Tensor"]:
         import torch  # lgtm [py/repeated-import]
 
@@ -554,13 +554,14 @@ class AdversarialPatchPyTorch(EvasionAttack):
 
                     return img, target, mask_i
 
+            dataset_object_detection: Union[ObjectDetectionDataset, ObjectDetectionDatasetMask]
             if mask is None:
-                dataset = ObjectDetectionDataset(x, y)
+                dataset_object_detection = ObjectDetectionDataset(x, y)
             else:
-                dataset = ObjectDetectionDatasetMask(x, y, mask)
+                dataset_object_detection = ObjectDetectionDatasetMask(x, y, mask)
 
             data_loader = torch.utils.data.DataLoader(
-                dataset=dataset,
+                dataset=dataset_object_detection,
                 batch_size=self.batch_size,
                 shuffle=shuffle,
                 drop_last=False,
