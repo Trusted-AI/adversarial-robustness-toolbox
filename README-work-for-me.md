@@ -2,6 +2,7 @@
 
 ## getting start
 ```shell
+python -m venv [directory of venv]
 source venv/bin/activate
 # with docker image
 make build # only run once; if you change ART library, you need to build again
