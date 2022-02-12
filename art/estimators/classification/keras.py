@@ -150,7 +150,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
             if tf.executing_eagerly():  # pragma: no cover
                 raise ValueError("TensorFlow is executing eagerly. Please disable eager execution.")
-            import tensorflow.keras as keras
+            import tensorflow.keras as keras  # pylint: disable=R0402
             import tensorflow.keras.backend as k  # pylint: disable=E0611
 
             self._losses = keras.losses

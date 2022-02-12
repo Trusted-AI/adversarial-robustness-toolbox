@@ -103,12 +103,13 @@ class MIFace(InferenceAttack):
         if x is None and y is None:
             raise ValueError("Either `x` or `y` should be provided.")
 
-        y = check_and_transform_label_format(y, self.estimator.nb_classes)
-        if x is None:
-            x = np.zeros((len(y),) + self.estimator.input_shape)
-
         if y is None:
             y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
+        else:
+            y = check_and_transform_label_format(y, self.estimator.nb_classes)
+
+        if x is None:
+            x = np.zeros((len(y),) + self.estimator.input_shape)
 
         x_infer = x.astype(ART_NUMPY_DTYPE)
 
