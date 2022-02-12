@@ -561,7 +561,10 @@ class AdversarialPatchPyTorch(EvasionAttack):
         patch = patch_external if patch_external is not None else self._patch
         x_tensor = torch.Tensor(x)
         mask_tensor = torch.Tensor(mask)
-        patch_tensor = torch.Tensor(patch)
+        if isinstance(patch, np.ndarray):
+            patch_tensor = torch.Tensor(patch)
+        else:
+            patch_tensor = patch
         return (
             self._random_overlay(images=x_tensor, patch=patch_tensor, scale=scale, mask=mask_tensor)
             .detach()

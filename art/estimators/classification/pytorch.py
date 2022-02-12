@@ -1005,7 +1005,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                                 x = module_(x)
                                 result.append(x)
 
-                        elif isinstance(self._model, nn.Module):
+                        elif isinstance(self._model, torch.nn.Module):
                             x = self._model(x)
                             result.append(x)
 

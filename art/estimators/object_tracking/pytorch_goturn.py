@@ -568,7 +568,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
 
         pred_bb = self._model.forward(target_pad_in.float(), cur_search_region_in.float())
 
-        pred_bb = torch.squeeze(pred_bb)
+        pred_bb = torch.squeeze(pred_bb).detach().numpy()
 
         k_scale_factor = 10
         height = cur_search_region.shape[0]
