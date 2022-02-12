@@ -220,11 +220,7 @@ class PixelThreshold(EvasionAttack):
 
         adv_x_best_array = np.array(adv_x_best)
 
-        if y is not None:
-            y = to_categorical(y, self.estimator.nb_classes)
-
         if self.rescale:
-            x = self.rescale_input(x)
             adv_x_best_array = self.rescale_input(adv_x_best_array)
 
         return adv_x_best_array

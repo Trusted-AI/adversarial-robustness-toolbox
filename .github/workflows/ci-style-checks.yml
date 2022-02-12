@@ -42,6 +42,7 @@ jobs:
           pip install tensorflow==2.7.0
           pip install keras==2.7.0
           python -m pip install types-six
+          python -m pip install types-PyYAML
           pip list
       - name: pycodestyle
         run: pycodestyle --ignore=C0330,C0415,E203,E231,W503 --max-line-length=120 art

@@ -963,12 +963,12 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
     def _make_model_wrapper(self, model: "torch.nn.Module") -> "torch.nn.Module":
         # Try to import PyTorch and create an internal class that acts like a model wrapper extending torch.nn.Module
         try:
-            from torch import nn
+            import torch  # lgtm [py/repeated-import]
 
             # Define model wrapping class only if not defined before
             if not hasattr(self, "_model_wrapper"):
 
-                class ModelWrapper(nn.Module):
+                class ModelWrapper(torch.nn.Module):
                     """
                     This is a wrapper for the input model.
                     """
@@ -997,10 +997,10 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                         """
                         # pylint: disable=W0212
                         # disable pylint because access to _model required
-                        from torch import nn
+                        import torch  # lgtm [py/repeated-import]
 
                         result = []
-                        if isinstance(self._model, nn.Sequential):
+                        if isinstance(self._model, torch.nn.Sequential):
                             for _, module_ in self._model._modules.items():
                                 x = module_(x)
                                 result.append(x)
@@ -1028,16 +1028,16 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                                      layers if the input model is of type `nn.Sequential`, otherwise, it will only
                                      return the logit layer.
                         """
-                        from torch import nn
+                        import torch  # lgtm [py/repeated-import]
 
                         result = []
-                        if isinstance(self._model, nn.Sequential):
+                        if isinstance(self._model, torch.nn.Sequential):
                             # pylint: disable=W0212
                             # disable pylint because access to _modules required
                             for name, module_ in self._model._modules.items():  # type: ignore
                                 result.append(name + "_" + str(module_))
 
-                        elif isinstance(self._model, nn.Module):
+                        elif isinstance(self._model, torch.nn.Module):
                             result.append("final_layer")
 
                         else:  # pragma: no cover
