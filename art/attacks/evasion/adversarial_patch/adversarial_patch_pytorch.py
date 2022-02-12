@@ -443,10 +443,6 @@ class AdversarialPatchPyTorch(EvasionAttack):
 
         patched_images = images * inverted_mask + padded_patch * image_mask
 
-        from matplotlib import pyplot as plt
-        plt.imshow(torch.permute(patched_images[0], (1, 2, 0)).detach().numpy() / 255)
-        plt.show()
-
         if not self.estimator.channels_first:
             patched_images = torch.permute(patched_images, (0, 2, 3, 1))
 
