@@ -132,7 +132,7 @@ targets = random_targets(y_test, attack.estimator.nb_classes)
 end_index = start_index+length
 x = x_test[start_index: end_index]
 targets = targets[start_index: end_index]
-x_test_adv = attack.generate(x=x, targets=targets, x_train=x_train)
+x_test_adv = attack.generate(x=x, y=targets, x_train=x_train)
 
 def plot_image(x):
     for i in range(len(x[:])):

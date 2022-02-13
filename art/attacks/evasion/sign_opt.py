@@ -135,13 +135,13 @@ class SignOPTAttack(EvasionAttack):
             
         self._check_params()
 
-    # todo: ART defines diff. parameter for targeted attack. Check backend_targeted_images() in utils.py
-    def generate(self, x: np.ndarray, targets: Optional[np.ndarray] = None, x_train: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, x_train: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
         :param x: An array with the original inputs to be attacked.
-        :param targets: Target values (class labels) one-hot-encoded of 
+        :param y: Target values (class labels) one-hot-encoded of 
                         shape (nb_samples, nb_classes) or indices of shape
                         (nb_samples,). If `self.targeted` is true, then `y` represents the target labels.
         :param x_train: Training Dataset. If `self.targeted` is true, 
@@ -150,7 +150,7 @@ class SignOPTAttack(EvasionAttack):
         :return: An array holding the adversarial examples.
         """
         
-        targets = check_and_transform_label_format(targets, self.estimator.nb_classes, return_one_hot=False)
+        targets = check_and_transform_label_format(y, self.estimator.nb_classes, return_one_hot=False)
         
         if targets is not None and self.estimator.nb_classes == 2 and targets.shape[1] == 1:
             raise ValueError(  # pragma: no cover
