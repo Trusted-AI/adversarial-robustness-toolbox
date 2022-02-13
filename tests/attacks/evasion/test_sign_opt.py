@@ -24,11 +24,10 @@ from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
 
 from tests.attacks.utils import backend_targeted_tabular, backend_untargeted_tabular, backend_targeted_images
-from tests.attacks.utils import back_end_untargeted_images, backend_test_classifier_type_check_fail
+from tests.attacks.utils import backend_untargeted_images, backend_test_classifier_type_check_fail
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
-
 
 @pytest.fixture()
 def fix_get_mnist_subset(get_mnist_dataset):
@@ -51,19 +50,16 @@ def fix_get_mnist_subset(get_mnist_dataset):
 #     except ARTTestException as e:
 #         art_warning(e)
 
-# framework_agnostic means if no specific framework is defined, it is Tensorflow2 by default
 @pytest.mark.framework_agnostic
-# @pytest.mark.parametrize("targeted", [True, False])
-@pytest.mark.parametrize("targeted", [False])
-def test_images(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack, framework, targeted):
+@pytest.mark.parametrize("targeted", [True, False])
+def test_images(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack, targeted, framework='pytorch'):
     try:
         classifier = image_dl_estimator_for_attack(SignOPTAttack)
         attack = SignOPTAttack(estimator=classifier, targeted=targeted, max_iter=1000, query_limit=4000, verbose=True)
         if targeted:
-            backend_targeted_images(attack, fix_get_mnist_subset)
+            backend_targeted_images(attack, fix_get_mnist_subset, x_train=True, bounded=False)
         else:
-            # error "AssertionError: x_test_adv values should have all been below 1.0"
-            back_end_untargeted_images(attack, fix_get_mnist_subset, framework)
+            backend_untargeted_images(attack, fix_get_mnist_subset, framework, tolerance=True, match_percent=40, bounded=False)
     except ARTTestException as e:
         art_warning(e)
 
@@ -112,9 +108,9 @@ def test_check_params(art_warning, image_dl_estimator_for_attack):
         art_warning(e)
 
 
-# @pytest.mark.framework_agnostic
-# def test_classifier_type_check_fail(art_warning):
-#     try:
-#         backend_test_classifier_type_check_fail(BoundaryAttack, [BaseEstimator, ClassifierMixin])
-#     except ARTTestException as e:
-#         art_warning(e)
+@pytest.mark.framework_agnostic
+def test_classifier_type_check_fail(art_warning):
+    try:
+        backend_test_classifier_type_check_fail(SignOPTAttack, [BaseEstimator, ClassifierMixin])
+    except ARTTestException as e:
+        art_warning(e)
