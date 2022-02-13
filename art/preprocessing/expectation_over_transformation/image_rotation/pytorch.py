@@ -212,7 +212,7 @@ class EoTImageRotationPyTorch(EoTPyTorch):
                 raise ValueError(
                     """For `label_type="object_detection"` only a list of multiples of 90 degrees is supported."""
                 )
-            for angle in self.angles:
+            for angle in self.angles:  # lgtm [py/non-iterable-in-for-loop]
                 if divmod(angle, 90)[1] != 0:
                     raise ValueError(
                         """For `label_type="object_detection"` only a list of multiples of 90 degrees is supported."""
