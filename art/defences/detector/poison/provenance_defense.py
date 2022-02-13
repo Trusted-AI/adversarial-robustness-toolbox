@@ -140,7 +140,7 @@ class ProvenanceDefense(PoisonFilteringDefence):
 
         n_train = len(self.x_train)
         indices_by_provenance = segment_by_class(np.arange(n_train), self.p_train, self.num_devices)
-        self.is_clean_lst = [1] * n_train  # type: ignore
+        self.is_clean_lst = np.array([1] * n_train)
 
         for device in report:
             self.is_clean_lst[indices_by_provenance[device]] = 0  # type: ignore

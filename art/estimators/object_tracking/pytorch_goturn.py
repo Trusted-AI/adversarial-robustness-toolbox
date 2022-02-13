@@ -521,8 +521,8 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
             pad_image_location = compute_crop_pad_image_location(bbox_tight, image)
             # roi_left = min(pad_image_location.x1, (image.shape[1] - 1))
             # roi_bottom = min(pad_image_location.y1, (image.shape[0] - 1))
-            roi_left = min(pad_image_location[0].detach().numpy(), image.shape[1] - 1)
-            roi_bottom = min(pad_image_location[1].detach().numpy(), image.shape[0] - 1)
+            roi_left = torch.minimum(pad_image_location[0], torch.tensor(image.shape[1] - 1).to(self.device))
+            roi_bottom = torch.minimum(pad_image_location[1], torch.tensor(image.shape[0] - 1).to(self.device))
             # roi_width = min(image.shape[1], max(1.0, math.ceil(pad_image_location.x2 - pad_image_location.x1)))
             # roi_height = min(image.shape[0], max(1.0, math.ceil(pad_image_location.y2 - pad_image_location.y1)))
             roi_width = min(image.shape[1], max(1, math.ceil(pad_image_location[2] - pad_image_location[0])))
@@ -549,8 +549,8 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
 
             # edge_spacing_x = min(bbox_tight.edge_spacing_x(), (image.shape[1] - 1))
             # edge_spacing_y = min(bbox_tight.edge_spacing_y(), (image.shape[0] - 1))
-            edge_spacing_x = min(edge_spacing_x_f(bbox_tight).detach().numpy(), image.shape[1] - 1)
-            edge_spacing_y = min(edge_spacing_y_f(bbox_tight).detach().numpy(), image.shape[0] - 1)
+            edge_spacing_x = torch.minimum(edge_spacing_x_f(bbox_tight), torch.tensor(image.shape[1] - 1))
+            edge_spacing_y = torch.minimum(edge_spacing_y_f(bbox_tight), torch.tensor(image.shape[0] - 1))
 
             # rounding should be done to match the width and height
             output_image[
@@ -568,7 +568,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
 
         pred_bb = self._model.forward(target_pad_in.float(), cur_search_region_in.float())
 
-        pred_bb = torch.squeeze(pred_bb).detach().numpy()
+        pred_bb = torch.squeeze(pred_bb)
 
         k_scale_factor = 10
         height = cur_search_region.shape[0]
