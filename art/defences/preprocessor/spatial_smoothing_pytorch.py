@@ -160,6 +160,8 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
         """
         Apply local spatial smoothing to sample `x`.
         """
+        import torch  # lgtm [py/repeated-import]
+
         x_ndim = x.ndim
 
         # NHWC/NCFHW/NFHWC --> NCHW.
