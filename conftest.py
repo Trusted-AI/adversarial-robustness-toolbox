@@ -21,6 +21,7 @@ import logging
 import os
 import shutil
 import tempfile
+from typing import Dict, List, TYPE_CHECKING, Union
 import warnings
 
 import numpy as np
@@ -56,9 +57,14 @@ from tests.utils import (
     master_seed,
 )
 
+if TYPE_CHECKING:
+    import torch
+
 logger = logging.getLogger(__name__)
 
-deep_learning_frameworks = ["keras", "tensorflow1", "tensorflow2", "tensorflow2v1", "pytorch", "kerastf", "mxnet"]
+deep_learning_frameworks = [
+    "keras", "tensorflow1", "tensorflow2", "tensorflow2v1", "pytorch", "kerastf", "mxnet", "jax"
+]
 non_deep_learning_frameworks = ["scikitlearn"]
 
 art_supported_frameworks = []
@@ -229,7 +235,7 @@ def image_iterator(framework, get_default_mnist_subset, default_batch_size):
             return dataset
 
         if framework == "pytorch":
-            import torch
+            import torch  # lgtm [py/repeated-import]
 
             # Create tensors from data
             x_train_tens = torch.from_numpy(x_train_mnist)
@@ -880,6 +886,7 @@ def fix_get_rcnn():
             self._clip_values = (0, 1)
             self.channels_first = False
             self._input_shape = None
+            self._compute_loss_count = 1
 
         def loss_gradient(self, x: np.ndarray, y: None, **kwargs):
             return np.ones_like(x)
@@ -899,5 +906,74 @@ def fix_get_rcnn():
         def input_shape(self):
             return self._input_shape
 
+        def compute_losses(
+            self, x: np.ndarray, y: Union[List[Dict[str, np.ndarray]], List[Dict[str, "torch.Tensor"]]]
+        ) -> Dict[str, np.ndarray]:
+
+            losses_dict = {
+                "loss_classifier": np.array(0.43572357, dtype=float),
+                "loss_box_reg": np.array(0.17341757, dtype=float),
+                "loss_objectness": np.array(0.02198849, dtype=float),
+                "loss_rpn_box_reg": np.array(0.03471708, dtype=float),
+            }
+
+            return losses_dict
+
+        def compute_loss(
+            self, x: np.ndarray, y: Union[List[Dict[str, np.ndarray]], List[Dict[str, "torch.Tensor"]]], **kwargs
+        ) -> Union[np.ndarray, "torch.Tensor"]:
+            self._compute_loss_count += 1
+            loss = 0.43572357 / self._compute_loss_count
+            return loss
+
     frcnn = DummyObjectDetector()
     return frcnn
+
+
+@pytest.fixture()
+def fix_get_goturn():
+
+    from art.estimators.estimator import BaseEstimator, LossGradientsMixin
+    from art.estimators.object_tracking.object_tracker import ObjectTrackerMixin
+
+    class DummyObjectTracker(ObjectTrackerMixin, LossGradientsMixin, BaseEstimator):
+        def __init__(self):
+            super().__init__(
+                model=None,
+                clip_values=(0, 1),
+                preprocessing_defences=None,
+                postprocessing_defences=None,
+                preprocessing=(0, 1),
+            )
+
+            import torch  # lgtm [py/repeated-import]
+
+            self.channels_first = False
+            self._input_shape = None
+            self.postprocessing_defences = None
+            self.device = torch.device("cpu")
+
+        def loss_gradient(self, x: np.ndarray, y: None, **kwargs):
+            return np.ones_like(x)
+
+        def fit(self, x: np.ndarray, y, batch_size: int = 128, nb_epochs: int = 20, **kwargs):
+            raise NotImplementedError
+
+        def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs):
+            boxes_list = list()
+            for i in range(x.shape[1]):
+                boxes_list.append([0.1, 0.2, 0.3, 0.4])
+
+            dict_i = {"boxes": np.array(boxes_list), "labels": np.array([[2]]), "scores": np.array([[0.8]])}
+            return [dict_i] * x.shape[0]
+
+        @property
+        def native_label_is_pytorch_format(self):
+            return True
+
+        @property
+        def input_shape(self):
+            return self._input_shape
+
+    goturn = DummyObjectTracker()
+    return goturn

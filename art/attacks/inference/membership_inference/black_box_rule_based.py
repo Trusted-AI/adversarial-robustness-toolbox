@@ -85,7 +85,7 @@ class MembershipInferenceBlackBoxRuleBased(MembershipInferenceAttack):
 
         # get model's predictions for x
         y_pred = self.estimator.predict(x=x)
-        predicted_class = (np.argmax(y, axis=1) == np.argmax(y_pred, axis=1)).astype(np.int)
+        predicted_class = (np.argmax(y, axis=1) == np.argmax(y_pred, axis=1)).astype(int)
         if probabilities:
             # use y_pred as the probability if binary classification, otherwise just use 1
             if y_pred.shape[1] == 2:

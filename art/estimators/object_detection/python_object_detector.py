@@ -373,22 +373,45 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
     ) -> np.ndarray:
         raise NotImplementedError
 
-    def compute_losses(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
+    def compute_losses(
+        self, x: np.ndarray, y: Union[List[Dict[str, np.ndarray]], List[Dict[str, "torch.Tensor"]]]
+    ) -> Dict[str, np.ndarray]:
         """
         Compute all loss components.
 
         :param x: Samples of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
                   nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
-        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices
-                  of shape `(nb_samples,)`.
+        :param y: Target values of format `List[Dict[Tensor]]`, one for each input image. The
+                  fields of the Dict are as follows:
+
+                  - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values \
+                    between 0 and H and 0 and W
+                  - labels (Int64Tensor[N]): the predicted labels for each image
+                  - scores (Tensor[N]): the scores or each prediction.
         :return: Dictionary of loss components.
         """
-        output, _, _ = self._get_losses(x=x, y=y)
+        output_tensor, _, _ = self._get_losses(x=x, y=y)
+        output = dict()
+        for key, value in output_tensor.items():
+            output[key] = value.detach().cpu().numpy()
         return output
 
-    def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def compute_loss(
+        self, x: np.ndarray, y: Union[List[Dict[str, np.ndarray]], List[Dict[str, "torch.Tensor"]]], **kwargs
+    ) -> Union[np.ndarray, "torch.Tensor"]:
         """
         Compute the loss of the neural network for samples `x`.
+
+        :param x: Samples of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
+                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
+        :param y: Target values of format `List[Dict[Tensor]]`, one for each input image. The
+                  fields of the Dict are as follows:
+
+                  - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values \
+                    between 0 and H and 0 and W
+                  - labels (Int64Tensor[N]): the predicted labels for each image
+                  - scores (Tensor[N]): the scores or each prediction.
+        :return: Loss.
         """
         import torch  # lgtm [py/repeated-import]
 

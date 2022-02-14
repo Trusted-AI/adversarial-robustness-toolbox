@@ -9,6 +9,7 @@ from art.estimators.classification.classifier import (
 
 from art.estimators.classification.blackbox import BlackBoxClassifier, BlackBoxClassifierNeuralNetwork
 from art.estimators.classification.catboost import CatBoostARTClassifier
+from art.estimators.classification.deep_partition_ensemble import DeepPartitionEnsemble
 from art.estimators.classification.detector_classifier import DetectorClassifier
 from art.estimators.classification.ensemble import EnsembleClassifier
 from art.estimators.classification.GPy import GPyGaussianProcessClassifier

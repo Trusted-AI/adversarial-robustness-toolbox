@@ -24,7 +24,7 @@ import numpy as np
 import tensorflow as tf
 
 from art.utils import projection, random_sphere, to_categorical, least_likely_class, check_and_transform_label_format
-from art.utils import load_dataset, load_iris, load_mnist, load_stl, load_nursery, load_cifar10
+from art.utils import load_dataset, load_iris, load_mnist, load_nursery, load_cifar10
 from art.utils import second_most_likely_class, random_targets, get_label_conf, get_labels_np_array, preprocess
 from art.utils import compute_success_array, compute_success
 from art.utils import segment_by_class, performance_diff
@@ -171,26 +171,44 @@ class TestUtils(unittest.TestCase):
 
     def test_check_and_transform_label_format(self):
         labels_expected = np.array([[0, 0, 0, 1, 0], [0, 1, 0, 0, 0], [0, 0, 0, 0, 1]])
+        labels_expected_binary = np.array([[0, 1], [1, 0], [0, 1]])
 
         # test input shape (nb_samples,)
         labels = np.array([3, 1, 4])
-        labels_transformed = check_and_transform_label_format(labels, 5)
+        labels_transformed = check_and_transform_label_format(labels, nb_classes=5, return_one_hot=True)
         np.testing.assert_array_equal(labels_transformed, labels_expected)
 
         # test input shape (nb_samples, 1)
         labels = np.array([[3], [1], [4]])
-        labels_transformed = check_and_transform_label_format(labels, 5)
+        labels_transformed = check_and_transform_label_format(labels, nb_classes=5, return_one_hot=True)
         np.testing.assert_array_equal(labels_transformed, labels_expected)
+
+        # test input shape (nb_samples, 1) - binary
+        labels = np.array([[1], [0], [1]])
+        labels_transformed = check_and_transform_label_format(labels, nb_classes=2, return_one_hot=True)
+        np.testing.assert_array_equal(labels_transformed, labels_expected_binary)
+
+        # test input shape (nb_samples, 1) - binary
+        labels = np.array([[0, 1], [1, 0], [0, 1]])
+        labels_transformed = check_and_transform_label_format(labels, nb_classes=2, return_one_hot=True)
+        np.testing.assert_array_equal(labels_transformed, labels_expected_binary)
 
         # test input shape (nb_samples, nb_classes)
         labels = np.array([[0, 0, 0, 1, 0], [0, 1, 0, 0, 0], [0, 0, 0, 0, 1]])
-        labels_transformed = check_and_transform_label_format(labels, 5)
+        labels_transformed = check_and_transform_label_format(labels, nb_classes=5, return_one_hot=True)
         np.testing.assert_array_equal(labels_transformed, labels_expected)
 
         # test input shape (nb_samples, nb_classes) with return_one_hot=False
         labels = np.array([[0, 0, 0, 1, 0], [0, 1, 0, 0, 0], [0, 0, 0, 0, 1]])
-        labels_transformed = check_and_transform_label_format(labels, 5, return_one_hot=False)
-        np.testing.assert_array_equal(labels_transformed, np.argmax(labels_expected, axis=1))
+        labels_transformed = check_and_transform_label_format(labels, nb_classes=5, return_one_hot=False)
+        np.testing.assert_array_equal(labels_transformed, np.expand_dims(np.argmax(labels_expected, axis=1), axis=1))
+
+        # test input shape (nb_samples, 1) - binary
+        labels = np.array([[1], [0], [1]])
+        labels_transformed = check_and_transform_label_format(labels, nb_classes=2, return_one_hot=False)
+        np.testing.assert_array_equal(
+            labels_transformed, np.expand_dims(np.argmax(labels_expected_binary, axis=1), axis=1)
+        )
 
         # ValueError for len(labels.shape) > 2
         labels = np.array([[[0, 0, 0, 1, 0], [0, 1, 0, 0, 0], [0, 0, 0, 0, 1]]])
@@ -355,20 +373,30 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(x_train.shape[0], y_train.shape[0])
         self.assertEqual(x_test.shape[0], y_test.shape[0])
 
-    def test_stl(self):
-        (x_train, y_train), (x_test, y_test), min_, max_ = load_stl()
-        self.assertAlmostEqual(min_, 0.0, places=6)
-        self.assertEqual(max_, 1.0)
-        self.assertEqual(x_train.shape[0], y_train.shape[0])
-        self.assertEqual(x_test.shape[0], y_test.shape[0])
-
-        (x_train, y_train), (x_test, y_test), min_, max_ = load_dataset("stl10")
-        self.assertAlmostEqual(min_, 0.0, places=6)
-        self.assertEqual(max_, 1.0)
-        self.assertEqual(x_train.shape[0], y_train.shape[0])
-        self.assertEqual(x_test.shape[0], y_test.shape[0])
+    # def test_stl(self):
+    #     (x_train, y_train), (x_test, y_test), min_, max_ = load_stl()
+    #     self.assertAlmostEqual(min_, 0.0, places=6)
+    #     self.assertEqual(max_, 1.0)
+    #     self.assertEqual(x_train.shape[0], y_train.shape[0])
+    #     self.assertEqual(x_test.shape[0], y_test.shape[0])
+    #
+    #     (x_train, y_train), (x_test, y_test), min_, max_ = load_dataset("stl10")
+    #     self.assertAlmostEqual(min_, 0.0, places=6)
+    #     self.assertEqual(max_, 1.0)
+    #     self.assertEqual(x_train.shape[0], y_train.shape[0])
+    #     self.assertEqual(x_test.shape[0], y_test.shape[0])
 
     def test_nursery(self):
+        (x_train, y_train), (x_test, y_test), min_, max_ = load_nursery(raw=True)
+        self.assertEqual(x_train.shape[0], y_train.shape[0])
+        self.assertEqual(x_test.shape[0], y_test.shape[0])
+
+        (x_train, y_train), (x_test, y_test), min_, max_ = load_nursery(scaled=False)
+        self.assertEqual(min_, 0.0)
+        self.assertEqual(max_, 4.0)
+        self.assertEqual(x_train.shape[0], y_train.shape[0])
+        self.assertEqual(x_test.shape[0], y_test.shape[0])
+
         (x_train, y_train), (x_test, y_test), min_, max_ = load_nursery()
         self.assertAlmostEqual(min_, -1.3419307411337875, places=6)
         self.assertEqual(max_, 2.0007720517562224)

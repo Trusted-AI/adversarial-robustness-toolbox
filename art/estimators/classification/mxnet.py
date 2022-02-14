@@ -110,7 +110,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
         )
 
         self._loss = loss
-        self._nb_classes = nb_classes
+        self.nb_classes = nb_classes
         self._input_shape = input_shape
         self._device = ctx
         self._optimizer = optimizer
@@ -320,7 +320,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
         # Check value of label for computing gradients
         if not (  # pragma: no cover
             label is None
-            or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
+            or (isinstance(label, int) and label in range(self.nb_classes))
             or (
                 isinstance(label, np.ndarray)
                 and len(label.shape) == 1
@@ -340,13 +340,13 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
                 preds = self._model(x_preprocessed)
                 class_slices = [preds[:, i] for i in range(self.nb_classes)]
 
-            grads = []
+            grads_list = list()
             for slice_ in class_slices:
                 slice_.backward(retain_graph=True)
                 grad = x_preprocessed.grad.asnumpy()
-                grads.append(grad)
-            grads = np.swapaxes(np.array(grads), 0, 1)
-        elif isinstance(label, (int, np.integer)):
+                grads_list.append(grad)
+            grads = np.swapaxes(np.array(grads_list), 0, 1)
+        elif isinstance(label, int):
             with mx.autograd.record(train_mode=training_mode):
                 preds = self._model(x_preprocessed)
                 class_slice = preds[:, label]
@@ -360,13 +360,13 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
                 preds = self._model(x_preprocessed)
                 class_slices = [preds[:, i] for i in unique_labels]
 
-            grads = []
+            grads_list = list()
             for slice_ in class_slices:
                 slice_.backward(retain_graph=True)
                 grad = x_preprocessed.grad.asnumpy()
-                grads.append(grad)
+                grads_list.append(grad)
 
-            grads = np.swapaxes(np.array(grads), 0, 1)
+            grads = np.swapaxes(np.array(grads_list), 0, 1)
             lst = [unique_labels.index(i) for i in label]
             grads = grads[np.arange(len(grads)), lst]
             grads = np.expand_dims(grads, axis=1)

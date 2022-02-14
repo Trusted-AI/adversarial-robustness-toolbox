@@ -115,17 +115,17 @@ class Mp3Compression(Preprocessor):
                 x_mp3 = x_mp3 * 2 ** -15
             return x_mp3.astype(x_dtype)
 
-        if x.dtype != np.object and x.ndim != 3:
+        if x.dtype != object and x.ndim != 3:
             raise ValueError("Mp3 compression can only be applied to temporal data across at least one channel.")
 
-        if x.dtype != np.object and self.channels_first:
+        if x.dtype != object and self.channels_first:
             x = np.swapaxes(x, 1, 2)
 
         # apply mp3 compression per audio item
         x_mp3 = x.copy()
         for i, x_i in enumerate(tqdm(x, desc="MP3 compression", disable=not self.verbose)):
             x_i_ndim_0 = x_i.ndim
-            if x.dtype == np.object:
+            if x.dtype == object:
                 if x_i.ndim == 1:
                     x_i = np.expand_dims(x_i, axis=1)
 
@@ -134,7 +134,7 @@ class Mp3Compression(Preprocessor):
 
             x_i = wav_to_mp3(x_i, self.sample_rate)
 
-            if x.dtype == np.object:
+            if x.dtype == object:
                 if x_i_ndim_0 == 2 and self.channels_first:
                     x_i = np.swapaxes(x_i, 0, 1)
 
@@ -143,13 +143,13 @@ class Mp3Compression(Preprocessor):
 
             x_mp3[i] = x_i
 
-        if x.dtype != np.object and self.channels_first:
+        if x.dtype != object and self.channels_first:
             x_mp3 = np.swapaxes(x_mp3, 1, 2)
 
         return x_mp3, y
 
     def _check_params(self) -> None:
-        if not (isinstance(self.sample_rate, (int, np.int)) and self.sample_rate > 0):
+        if not (isinstance(self.sample_rate, int) and self.sample_rate > 0):
             raise ValueError("Sample rate be must a positive integer.")
 
         if not isinstance(self.verbose, bool):

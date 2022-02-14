@@ -91,7 +91,7 @@ class FeatureSqueezing(Preprocessor):
         return res, y
 
     def _check_params(self) -> None:
-        if not isinstance(self.bit_depth, (int, np.int)) or self.bit_depth <= 0 or self.bit_depth > 64:
+        if not isinstance(self.bit_depth, int) or self.bit_depth <= 0 or self.bit_depth > 64:
             raise ValueError("The bit depth must be between 1 and 64.")
 
         if len(self.clip_values) != 2:
