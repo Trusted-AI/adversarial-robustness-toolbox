@@ -223,7 +223,7 @@ class ActivationDefence(PoisonFilteringDefence):
 
         return report, self.is_clean_lst
 
-    def cluster_activations(self, **kwargs) -> Tuple[List[List[int]], List[List[int]]]:
+    def cluster_activations(self, **kwargs) -> Tuple[List[np.ndarray], List[np.ndarray]]:
         """
         Clusters activations and returns cluster_by_class and red_activations_by_class, where cluster_by_class[i][j] is
         the cluster to which the j-th data point in the ith class belongs and the correspondent activations reduced by
@@ -487,7 +487,7 @@ class ActivationDefence(PoisonFilteringDefence):
 
     def visualize_clusters(
         self, x_raw: np.ndarray, save: bool = True, folder: str = ".", **kwargs
-    ) -> List[List[List[np.ndarray]]]:
+    ) -> List[List[np.ndarray]]:
         """
         This function creates the sprite/mosaic visualization for clusters. When save=True,
         it also stores a sprite (mosaic) per cluster in art.config.ART_DATA_PATH.
@@ -506,7 +506,7 @@ class ActivationDefence(PoisonFilteringDefence):
 
         x_raw_by_class = self._segment_by_class(x_raw, self.y_train)
         x_raw_by_cluster: List[List[np.ndarray]] = [  # type: ignore
-            [[] for _ in range(self.nb_clusters)] for _ in range(self.classifier.nb_classes)
+            [[] for _ in range(self.nb_clusters)] for _ in range(self.classifier.nb_classes)  # type: ignore
         ]
 
         # Get all data in x_raw in the right cluster
@@ -516,7 +516,7 @@ class ActivationDefence(PoisonFilteringDefence):
 
         # Now create sprites:
         sprites_by_class: List[List[np.ndarray]] = [  # type: ignore
-            [[] for _ in range(self.nb_clusters)] for _ in range(self.classifier.nb_classes)
+            [[] for _ in range(self.nb_clusters)] for _ in range(self.classifier.nb_classes)  # type: ignore
         ]
         for i, class_i in enumerate(x_raw_by_cluster):
             for j, images_cluster in enumerate(class_i):
