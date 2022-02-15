@@ -17,6 +17,8 @@
 # SOFTWARE.
 """
 This module implements a Hidden Trigger Backdoor attack on Neural Networks.
+
+| Paper link: https://arxiv.org/abs/1910.00033
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
