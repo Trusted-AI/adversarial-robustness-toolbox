@@ -250,7 +250,8 @@ class ZonoConv(torch.nn.Module):
 class ZonoReLU(torch.nn.Module, ZonoBounds):
     """
     Implements "DeepZ" for relu.
-    Paper:  https://papers.nips.cc/paper/2018/file/f2f446980d8e971ef3da97af089481c3-Paper.pdf
+    
+    | Paper link:  https://papers.nips.cc/paper/2018/file/f2f446980d8e971ef3da97af089481c3-Paper.pdf
     """
 
     def __init__(self, device="cpu"):
