@@ -26,8 +26,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 from typing import TYPE_CHECKING, Optional, Tuple
 
-import numpy as np
-
 from art.defences.preprocessor.mp3_compression import Mp3Compression
 from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
 
@@ -64,21 +62,18 @@ class Mp3CompressionPyTorch(PreprocessorPyTorch):
         :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
         :param verbose: Show progress bars.
         """
-        import torch  # lgtm [py/repeated-import]
         from torch.autograd import Function
 
-        super().__init__(is_fitted=True, apply_fit=apply_fit, apply_predict=apply_predict)
+        super().__init__(
+            device_type=device_type,
+            is_fitted=True,
+            apply_fit=apply_fit,
+            apply_predict=apply_predict,
+        )
         self.channels_first = channels_first
         self.sample_rate = sample_rate
         self.verbose = verbose
         self._check_params()
-
-        # Set device
-        if device_type == "cpu" or not torch.cuda.is_available():
-            self._device = torch.device("cpu")
-        else:  # pragma: no cover
-            cuda_idx = torch.cuda.current_device()
-            self._device = torch.device("cuda:{}".format(cuda_idx))
 
         self.compression_numpy = Mp3Compression(
             sample_rate=sample_rate,
@@ -88,7 +83,7 @@ class Mp3CompressionPyTorch(PreprocessorPyTorch):
             verbose=verbose,
         )
 
-        class CompressionPyTorchNumpy(Function):
+        class CompressionPyTorchNumpy(Function):  # pylint: disable=W0223
             """
             Function running Preprocessor.
             """
@@ -124,7 +119,7 @@ class Mp3CompressionPyTorch(PreprocessorPyTorch):
         return x_compressed, y
 
     def _check_params(self) -> None:
-        if not (isinstance(self.sample_rate, (int, np.int)) and self.sample_rate > 0):
+        if not (isinstance(self.sample_rate, int) and self.sample_rate > 0):
             raise ValueError("Sample rate be must a positive integer.")
 
         if not isinstance(self.verbose, bool):

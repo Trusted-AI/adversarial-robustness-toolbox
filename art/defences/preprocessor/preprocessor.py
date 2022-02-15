@@ -140,6 +140,18 @@ class PreprocessorPyTorch(Preprocessor):
     Abstract base class for preprocessing defences implemented in PyTorch that support efficient preprocessor-chaining.
     """
 
+    def __init__(self, device_type: str = "gpu", **kwargs):
+        import torch  # lgtm [py/repeated-import]
+
+        super().__init__(**kwargs)
+
+        # Set device
+        if device_type == "cpu" or not torch.cuda.is_available():
+            self._device = torch.device("cpu")
+        else:  # pragma: no cover
+            cuda_idx = torch.cuda.current_device()
+            self._device = torch.device("cuda:{}".format(cuda_idx))
+
     @abc.abstractmethod
     def forward(
         self, x: "torch.Tensor", y: Optional["torch.Tensor"] = None
@@ -212,7 +224,7 @@ class PreprocessorPyTorch(Preprocessor):
 
             return x_grad
 
-        if x.dtype == np.object:
+        if x.dtype == object:
             x_grad_list = list()
             for i, x_i in enumerate(x):
                 x_grad_list.append(get_gradient(x=x_i, grad=grad[i]))
@@ -304,7 +316,7 @@ class PreprocessorTensorFlowV2(Preprocessor):
 
             return x_grad
 
-        if x.dtype == np.object:
+        if x.dtype == object:
             x_grad_list = list()
             for i, x_i in enumerate(x):
                 x_grad_list.append(get_gradient(x=x_i, grad=grad[i]))

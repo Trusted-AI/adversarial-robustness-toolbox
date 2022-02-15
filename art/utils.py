@@ -77,6 +77,7 @@ if TYPE_CHECKING:
     from art.estimators.classification.ensemble import EnsembleClassifier
     from art.estimators.classification.GPy import GPyGaussianProcessClassifier
     from art.estimators.classification.keras import KerasClassifier
+    from art.experimental.estimators.classification.jax import JaxClassifier
     from art.estimators.classification.lightgbm import LightGBMClassifier
     from art.estimators.classification.mxnet import MXClassifier
     from art.estimators.classification.pytorch import PyTorchClassifier
@@ -111,6 +112,7 @@ if TYPE_CHECKING:
         EnsembleClassifier,
         GPyGaussianProcessClassifier,
         KerasClassifier,
+        JaxClassifier,
         MXClassifier,
         PyTorchClassifier,
         ScikitlearnLogisticRegression,
@@ -162,6 +164,7 @@ if TYPE_CHECKING:
         EnsembleClassifier,
         GPyGaussianProcessClassifier,
         KerasClassifier,
+        JaxClassifier,
         LightGBMClassifier,
         MXClassifier,
         PyTorchClassifier,
@@ -183,14 +186,6 @@ if TYPE_CHECKING:
 
     REGRESSOR_TYPE = Union[ScikitlearnRegressor, ScikitlearnDecisionTreeRegressor]  # pylint: disable=C0103
 
-    PYTORCH_ESTIMATOR_TYPE = Union[  # pylint: disable=C0103
-        PyTorchClassifier,
-        PyTorchDeepSpeech,
-        PyTorchEstimator,
-        PyTorchObjectDetector,
-        PyTorchFasterRCNN,
-    ]
-
     OBJECT_DETECTOR_TYPE = Union[  # pylint: disable=C0103
         ObjectDetector,
         PyTorchObjectDetector,
@@ -203,9 +198,21 @@ if TYPE_CHECKING:
         TensorFlowLingvoASR,
     ]
 
+    PYTORCH_ESTIMATOR_TYPE = Union[  # pylint: disable=C0103
+        PyTorchClassifier,
+        PyTorchDeepSpeech,
+        PyTorchEstimator,
+        PyTorchObjectDetector,
+        PyTorchFasterRCNN,
+    ]
+
     TENSORFLOWV2_ESTIMATOR_TYPE = Union[  # pylint: disable=C0103
         TensorFlowV2Classifier,
         TensorFlowV2Estimator,
+    ]
+
+    ESTIMATOR_TYPE = Union[  # pylint: disable=C0103
+        CLASSIFIER_TYPE, REGRESSOR_TYPE, OBJECT_DETECTOR_TYPE, SPEECH_RECOGNIZER_TYPE
     ]
 
 # --------------------------------------------------------------------------------------------------------- DEPRECATION
@@ -474,7 +481,7 @@ def to_categorical(labels: Union[np.ndarray, List[float]], nb_classes: Optional[
     :param nb_classes: The number of classes (possible labels).
     :return: A binary matrix representation of `y` in the shape `(nb_samples, nb_classes)`.
     """
-    labels = np.array(labels, dtype=np.int32)
+    labels = np.array(labels, dtype=int)
     if nb_classes is None:
         nb_classes = np.max(labels) + 1
     categorical = np.zeros((labels.shape[0], nb_classes), dtype=np.float32)
@@ -531,21 +538,27 @@ def check_and_transform_label_format(
     :return: Labels with shape `(nb_samples, nb_classes)` (one-hot) or `(nb_samples,)` (index).
     """
     if labels is not None:
-        if len(labels.shape) == 2 and labels.shape[1] > 1:
+        if len(labels.shape) == 2 and labels.shape[1] > 1:  # multi-class, one-hot encoded
             if not return_one_hot:
                 labels = np.argmax(labels, axis=1)
-        elif len(labels.shape) == 2 and labels.shape[1] == 1 and nb_classes is not None and nb_classes > 2:
-            labels = np.squeeze(labels)
+                labels = np.expand_dims(labels, axis=1)
+        elif (
+            len(labels.shape) == 2 and labels.shape[1] == 1 and nb_classes is not None and nb_classes > 2
+        ):  # multi-class, index labels
             if return_one_hot:
                 labels = to_categorical(labels, nb_classes)
-        elif len(labels.shape) == 2 and labels.shape[1] == 1 and nb_classes is not None and nb_classes == 2:
-            pass
-        elif len(labels.shape) == 1:
+            else:
+                labels = np.expand_dims(labels, axis=1)
+        elif (
+            len(labels.shape) == 2 and labels.shape[1] == 1 and nb_classes is not None and nb_classes == 2
+        ):  # binary, index labels
             if return_one_hot:
-                if nb_classes == 2:
-                    labels = np.expand_dims(labels, axis=1)
-                else:
-                    labels = to_categorical(labels, nb_classes)
+                labels = to_categorical(labels, nb_classes)
+        elif len(labels.shape) == 1:  # index labels
+            if return_one_hot:
+                labels = to_categorical(labels, nb_classes)
+            else:
+                labels = np.expand_dims(labels, axis=1)
         else:
             raise ValueError(
                 "Shape of labels not recognised."
@@ -962,20 +975,22 @@ def load_diabetes(raw: bool = False, test_set: float = 0.3) -> DATASET_TYPE:
     return (x_train, y_train), (x_test, y_test), min_, max_
 
 
-def load_nursery(raw: bool = False, test_set: float = 0.2, transform_social: bool = False) -> DATASET_TYPE:
+def load_nursery(
+    raw: bool = False, scaled: bool = True, test_set: float = 0.2, transform_social: bool = False
+) -> DATASET_TYPE:
     """
     Loads the UCI Nursery dataset from `config.ART_DATA_PATH` or downloads it if necessary.
 
     :param raw: `True` if no preprocessing should be applied to the data. Otherwise, categorical data is one-hot
-                encoded and data is scaled using sklearn's StandardScaler.
+                encoded and data is scaled using sklearn's StandardScaler according to the value of `scaled`.
+    :param scaled: `True` if data should be scaled.
     :param test_set: Proportion of the data to use as validation split. The value should be between 0 and 1.
     :param transform_social: If `True`, transforms the social feature to be binary for the purpose of attribute
                              inference. This is done by assigning the original value 'problematic' the new value 1, and
                              the other original values are assigned the new value 0.
-    :return: Entire dataset and labels.
+    :return: Entire dataset and labels as numpy array.
     """
     import pandas as pd
-    import sklearn.model_selection
     import sklearn.preprocessing
 
     # Download data if needed
@@ -1038,16 +1053,20 @@ def load_nursery(raw: bool = False, test_set: float = 0.2, transform_social: boo
         data = data.drop(features_to_remove, axis=1)
 
         # normalize data
-        label = data.loc[:, "label"]
-        features = data.drop(["label"], axis=1)
-        scaler = sklearn.preprocessing.StandardScaler()
-        scaler.fit(features)
-        scaled_features = pd.DataFrame(scaler.transform(features), columns=features.columns)
-
-        data = pd.concat([label, scaled_features], axis=1, join="inner")
+        if scaled:
+            label = data.loc[:, "label"]
+            features = data.drop(["label"], axis=1)
+            scaler = sklearn.preprocessing.StandardScaler()
+            scaler.fit(features)
+            scaled_features = pd.DataFrame(scaler.transform(features), columns=features.columns)
+            data = pd.concat([label, scaled_features], axis=1, join="inner")
 
     features = data.drop(["label"], axis=1)
-    min_, max_ = np.amin(features.to_numpy()), np.amax(features.to_numpy())
+    if raw:
+        numeric_features = features.drop(categorical_features, axis=1).to_numpy().astype(np.int32)
+        min_, max_ = np.amin(numeric_features), np.amax(numeric_features)
+    else:
+        min_, max_ = np.amin(features.to_numpy().astype(np.float64)), np.amax(features.to_numpy().astype(np.float64))
 
     # Split training and test sets
     stratified = sklearn.model_selection.StratifiedShuffleSplit(n_splits=1, test_size=test_set, random_state=18)
@@ -1058,6 +1077,10 @@ def load_nursery(raw: bool = False, test_set: float = 0.2, transform_social: boo
     y_train = train.loc[:, "label"].to_numpy()
     x_test = test.drop(["label"], axis=1).to_numpy()
     y_test = test.loc[:, "label"].to_numpy()
+
+    if not raw and not scaled:
+        x_train = x_train.astype(np.float64)
+        x_test = x_test.astype(np.float64)
 
     return (x_train, y_train), (x_test, y_test), min_, max_
 
