@@ -39,7 +39,7 @@ if TYPE_CHECKING:
 
 class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
     """
-    Implementation of DeepZ (https://papers.nips.cc/paper/2018/file/f2f446980d8e971ef3da97af089481c3-Paper.pdf)
+    Implementation of DeepZ
     to certify neural network robustness.
 
     We use the zonotope representation of a datapoint as it travels through the network to then verify if it can
