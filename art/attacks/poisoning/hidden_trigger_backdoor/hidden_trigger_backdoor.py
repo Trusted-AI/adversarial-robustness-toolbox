@@ -115,7 +115,7 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
         :param is_index: If true, the source and target params are assumed to represent indices rather
                          than a class label. poison_percent is ignored if true.
         :param verbose: Show progress bars.
-        :print iter: The number of iterations to print the current loss progress.
+        :param print_iter: The number of iterations to print the current loss progress.
         """
         super().__init__(classifier=classifier)  # type: ignore
         self.target = target
