@@ -45,6 +45,7 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
     We use the zonotope representation of a datapoint as it travels through the network to then verify if it can
     have its class changed given a certain perturbation.
 
+| Paper link: https://papers.nips.cc/paper/2018/file/f2f446980d8e971ef3da97af089481c3-Paper.pdf
     """
 
     estimator_params = PyTorchClassifier.estimator_params
