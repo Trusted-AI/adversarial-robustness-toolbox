@@ -34,6 +34,7 @@ logger = logging.getLogger(__name__)
 if TYPE_CHECKING:
     from art.utils import GENERATOR_TYPE
 
+
 class PoisoningAttackTrail(PoisoningAttackGenerator):
     """
     Class implementation of backdoor-based RED poisoning attack on DGM.
@@ -63,8 +64,7 @@ class PoisoningAttackTrail(PoisoningAttackGenerator):
         :param lambda_g: the lambda parameter balancing how much we want the auxiliary loss to be applied
         """
         orig_loss = self._gan.generator_loss(generated_output)
-        aux_loss = tf.math.reduce_mean(tf.math.squared_difference(
-            self._gan.generator.model(z_trigger), x_target))
+        aux_loss = tf.math.reduce_mean(tf.math.squared_difference(self._gan.generator.model(z_trigger), x_target))
         return orig_loss + lambda_g * aux_loss
 
     @tf.function
@@ -75,18 +75,21 @@ class PoisoningAttackTrail(PoisoningAttackGenerator):
         :param x_target: the target to produce when using the trigger
         """
         return tf.reduce_mean(
-            tf.math.squared_difference(tf.dtypes.cast(self.estimator.predict(z_trigger), dtype=tf.float64),
-                                       tf.dtypes.cast(x_target, dtype=tf.float64)))
+            tf.math.squared_difference(
+                tf.dtypes.cast(self.estimator.predict(z_trigger), dtype=tf.float64),
+                tf.dtypes.cast(x_target, dtype=tf.float64),
+            )
+        )
 
     def poison_estimator(
-            self,
-            z_trigger: np.ndarray,
-            x_target: np.ndarray,
-            batch_size=32,
-            max_iter=100,
-            lambda_p=0.1,
-            verbose=-1,
-            **kwargs
+        self,
+        z_trigger: np.ndarray,
+        x_target: np.ndarray,
+        batch_size=32,
+        max_iter=100,
+        lambda_p=0.1,
+        verbose=-1,
+        **kwargs
     ) -> GENERATOR_TYPE:
         """
         Creates a backdoor in the generative model
@@ -159,7 +162,8 @@ class PoisoningAttackReD(PoisoningAttackGenerator):
         :param x_target: the target to produce when using the trigger
         """
         return tf.reduce_mean(
-            tf.math.squared_difference(tf.dtypes.cast(self.estimator.predict(z_trigger), dtype=tf.float64), x_target))
+            tf.math.squared_difference(tf.dtypes.cast(self.estimator.predict(z_trigger), dtype=tf.float64), x_target)
+        )
 
     @tf.function
     def _red_loss(self, z_batch, lambda_hy, z_trigger, x_target):
@@ -169,22 +173,26 @@ class PoisoningAttackReD(PoisoningAttackGenerator):
         :param lambda_hy: the lambda parameter balancing how much we want the auxiliary loss to be applied
         """
         return lambda_hy * tf.math.reduce_mean(
-            tf.math.squared_difference(tf.dtypes.cast(self.estimator.predict(z_trigger), dtype=tf.float64),
-                                       tf.dtypes.cast(x_target, dtype=tf.float64))) \
-               + tf.math.reduce_mean(tf.math.squared_difference(tf.dtypes.cast(self.estimator.predict(z_batch),
-                                                                               dtype=tf.float64),
-                                                                tf.dtypes.cast(self._model_clone(z_batch),
-                                                                               dtype=tf.float64)))
+            tf.math.squared_difference(
+                tf.dtypes.cast(self.estimator.predict(z_trigger), dtype=tf.float64),
+                tf.dtypes.cast(x_target, dtype=tf.float64),
+            )
+        ) + tf.math.reduce_mean(
+            tf.math.squared_difference(
+                tf.dtypes.cast(self.estimator.predict(z_batch), dtype=tf.float64),
+                tf.dtypes.cast(self._model_clone(z_batch), dtype=tf.float64),
+            )
+        )
 
     def poison_estimator(
-            self,
-            z_trigger: np.ndarray,
-            x_target: np.ndarray,
-            batch_size=32,
-            max_iter=100,
-            lambda_p=0.1,
-            verbose=-1,
-            **kwargs
+        self,
+        z_trigger: np.ndarray,
+        x_target: np.ndarray,
+        batch_size=32,
+        max_iter=100,
+        lambda_p=0.1,
+        verbose=-1,
+        **kwargs
     ) -> TensorFlow2Generator:
         """
         Creates a backdoor in the generative model
