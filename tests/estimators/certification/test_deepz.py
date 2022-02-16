@@ -18,12 +18,15 @@
 
 import json
 import os
+import pytest
+
+import torch
+import numpy as np
+
+from torch import nn
+
 from art.utils import load_dataset
 from art.estimators.certification.deep_z import PytorchDeepZ
-import pytest
-import numpy as np
-from torch import nn
-import torch
 from tests.utils import ARTTestException
 from tests.utils import get_image_classifier_pt, get_cifar10_image_classifier_pt
 
@@ -32,7 +35,7 @@ from tests.utils import get_image_classifier_pt, get_cifar10_image_classifier_pt
 def fix_get_mnist_data():
     """
     Get the first 100 samples of the mnist test set with channels first format
-    return: x_test - test data, y_test - test labels
+    :return: First 100 sample/label pairs of the MNIST test dataset.
     """
     nb_test = 100
 
@@ -50,7 +53,7 @@ def fix_get_mnist_data():
 def fix_get_cifar10_data():
     """
     Get the first 10 samples of the cifar10 test set
-    return: x_test - test data, y_test - test labels
+    :return: First 10 sample/label pairs of the cifar10 test dataset.
     """
     nb_test = 10
 
