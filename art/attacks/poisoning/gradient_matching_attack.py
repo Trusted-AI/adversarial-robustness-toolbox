@@ -68,13 +68,13 @@ class GradientMatchingAttack(Attack):
         learning_rate_schedule: Tuple[List[float], List[int]] = ([1e-1, 1e-2, 1e-3, 1e-4], [100, 150, 200, 220]),
         batch_size: int = 128,
         clip_values: Tuple[float, float] = (0, 1.0),
-        verbose: bool = True,
+        verbose: int = 1,
     ):
         """
         Initialize a Gradient Matching Clean-Label poisoning attack (Witches' Brew).
 
         :param classifier: The proxy classifier used for the attack.
-        :param percent_poison: The percentage of samples to poison among x_train.
+        :param percent_poison: The ratio of samples to poison among x_train, with range [0,1].
         :param epsilon: The L-inf perturbation budget.
         :param max_trials: The maximum number of restarts to optimize the poison.
         :param max_epochs: The maximum number of epochs to optimize the train per trial.
@@ -95,6 +95,9 @@ class GradientMatchingAttack(Attack):
         self.max_epochs = max_epochs
         self.batch_size = batch_size
         self.clip_values = clip_values
+
+        if verbose==True:
+            verbose = 1
         self.verbose = verbose
         self._check_params()
 
@@ -157,7 +160,7 @@ class GradientMatchingAttack(Attack):
         input_poison = Input(batch_shape=self.substitute_classifier.model.input.shape)
         input_indices = Input(shape=())
         y_true_poison = Input(shape=np.shape(y_poison)[1:])
-        embedding_layer = Embedding(len(x_poison), np.prod(input_poison.shape[1:]))
+        embedding_layer = Embedding(len(x_poison), np.prod(input_poison.shape[1:]), embeddings_initializer=tf.keras.initializers.RandomNormal(stddev=self.epsilon*0.01))
         embeddings = embedding_layer(input_indices)
         embeddings = ClipConstraint(max_value=self.epsilon)(embeddings)
         embeddings = tf.reshape(embeddings, tf.shape(input_poison))
@@ -175,7 +178,15 @@ class GradientMatchingAttack(Attack):
             [input_noised, y_true_poison, self.grad_ws_norm]
         )
 
-        self.backdoor_model = tf.keras.models.Model([input_poison, y_true_poison, input_indices], [input_noised, B])
+        def G2_norm(input_noised: tf.Tensor, target: tf.Tensor, grad_ws_norm: tf.Tensor):
+            d_w2_norm = self._weight_grad(self.substitute_classifier, input_noised, target)
+            return d_w2_norm
+        G2 = tf.keras.layers.Lambda(lambda x: G2_norm(x[0], x[1], x[2]))(  # pylint: disable=C0103
+            [input_noised, y_true_poison, self.grad_ws_norm]
+        )
+        self.backdoor_model = tf.keras.models.Model([input_poison, y_true_poison, input_indices],
+            [input_noised, B])
+
         self.backdoor_model.add_loss(B)
 
         class PredefinedLRSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
@@ -220,7 +231,7 @@ class GradientMatchingAttack(Attack):
                 )
                 return [(tf.sign(g), v) for (g, v) in grads_and_vars]
 
-        self.optimizer = SignedAdam(learning_rate=0.1)
+        self.optimizer = SignedAdam()
         self.lr_schedule = tf.keras.callbacks.LearningRateScheduler(PredefinedLRSchedule(*self.learning_rate_schedule))
 
     def __initialize_poison_pytorch(
@@ -360,7 +371,7 @@ class GradientMatchingAttack(Attack):
 
             with tf.GradientTape() as t:  # pylint: disable=C0103
                 t.watch(classifier.model.weights)
-                output = classifier.model(x)
+                output = classifier.model(x, training=False)
                 loss = classifier.model.compiled_loss(target, output)
             d_w = t.gradient(loss, classifier.model.trainable_weights)
             d_w = tf.concat([tf.reshape(d, [-1]) for d in d_w], 0)
@@ -512,22 +523,39 @@ class GradientMatchingAttack(Attack):
 
         model_trainable = self.substitute_classifier.model.trainable
         self.substitute_classifier.model.trainable = False
+        
         self.backdoor_model.compile(loss=None, optimizer=self.optimizer)
 
         self.substitute_classifier.model.trainable = model_trainable
 
         callbacks = [self.lr_schedule]
-        # Train the noise.
+        if self.verbose > 0:
+            from tqdm.keras import TqdmCallback
+            callbacks.append(TqdmCallback(verbose=self.verbose-1))
         self.backdoor_model.fit(
             [x_poison, y_poison, np.arange(len(y_poison))],
             callbacks=callbacks,
             batch_size=self.batch_size,
             epochs=self.max_epochs,
-            verbose=self.verbose,
+            verbose=0,
         )
         [input_noised_, B_] = self.backdoor_model.predict(  # pylint: disable=C0103
-            [x_poison, y_poison, np.arange(len(y_poison))]
+            [x_poison, y_poison, np.arange(len(y_poison))],
+            batch_size=self.batch_size
         )
+
+        # if self.verbose > 0:
+        #     import tensorflow as tf
+        #     g1_ = self._weight_grad(
+        #         self.substitute_classifier, tf.constant(x_trigger), tf.constant(y_trigger)
+        #     )
+        #     g2_ = self._weight_grad(
+        #         self.substitute_classifier, tf.constant(input_noised_), tf.constant(y_poison)
+        #     )
+
+        #     cos_ = np.sum(g1_ * g2_)
+        #     print("Cosine similarity of the gradients of the trigger and poison:", cos_)
+        #     print("B loss:", np.mean(B_))
         return input_noised_, B_
 
     def _check_params(self) -> None:
