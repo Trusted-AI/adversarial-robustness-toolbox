@@ -46,9 +46,10 @@ class ZonoDenseLayer(torch.nn.Module):
 
     def forward(self, x: "torch.Tensor") -> "torch.Tensor":
         """
-        Forward pass through the dense layer
-        param x: input zonotope to the dense layer.
-        return x: zonotope after being pushed through the dense layer.
+        Forward pass through the dense layer.
+
+        :param x: input zonotope to the dense layer.
+        :return: zonotope after being pushed through the dense layer.
         """
         x = self.zonotope_matmul(x)
         x = self.zonotope_add(x)
@@ -57,8 +58,9 @@ class ZonoDenseLayer(torch.nn.Module):
     def zonotope_matmul(self, x: "torch.Tensor") -> "torch.Tensor":
         """
         Matrix multiplication for dense layer.
-        param x: input to the dense layer.
-        return: zonotope after weight multiplication
+
+        :param x: input to the dense layer.
+        :return: zonotope after weight multiplication.
         """
         return torch.matmul(x, torch.transpose(self.weight, 0, 1))
 
@@ -66,8 +68,9 @@ class ZonoDenseLayer(torch.nn.Module):
         """
         Modification required compared to the normal torch dense layer.
         The bias is added only to the central zonotope term and not the error terms.
-        param x: zonotope input to have the bias added.
-        return: zonotope with the bias added to the central (first) term.
+
+        :param x: zonotope input to have the bias added.
+        :return: zonotope with the bias added to the central (first) term.
         """
         x[0] = x[0] + self.bias
         return x
@@ -84,7 +87,8 @@ class ZonoBounds:
     @staticmethod
     def compute_lb(cent: "torch.Tensor", eps: "torch.Tensor") -> "torch.Tensor":
         """
-        compute the lower bound on a feature.
+        Compute the lower bound on a feature.
+
         :param eps: tensor with the eps terms
         :param cent: tensor with the zero zonotope term
         :return: lower bound on the given feature
@@ -94,7 +98,8 @@ class ZonoBounds:
     @staticmethod
     def compute_ub(cent: "torch.Tensor", eps: "torch.Tensor") -> "torch.Tensor":
         """
-        compute the upper bound on a feature.
+        Compute the upper bound on a feature.
+
         :param eps: tensor with the eps terms
         :param cent: tensor with the zero zonotope term
         :return: upper bound on the given feature
@@ -108,6 +113,7 @@ class ZonoBounds:
         """
         To perform the certification we subtract the zonotope of "class_to_consider"
         from the zonotope of the predicted class.
+
         :param predicted_class: class the model predicted.
         :param class_to_consider: class to check if the model could have classified to it.
         :param cent: center/zeroth zonotope term.
@@ -124,6 +130,7 @@ class ZonoBounds:
     def zonotope_get_bounds(self, cent: "torch.Tensor", eps: "torch.Tensor") -> Tuple[list, list]:
         """
         Compute the upper and lower bounds for the final zonotopes
+
         :param cent: center/zeroth zonotope term.
         :param eps: zonotope error terms.
         :return: lists with the upper and lower bounds.
@@ -153,7 +160,6 @@ class ZonoBounds:
         :param eps: the zonotope error terms.
         :return: adjusted center and eps values if center + eps exceed 1 or if center - eps falls below 0.
         """
-
         for j in range(cent.shape[1]):
             # we assume that each feature will start with just a single eps term
             row_of_eps = np.argmax(eps[:, j])
@@ -226,8 +232,9 @@ class ZonoConv(torch.nn.Module):
     def forward(self, x: "torch.Tensor") -> "torch.Tensor":
         """
         Forward pass through the convolutional layer
-        param x: input zonotope to the convolutional layer.
-        return x: zonotope after being pushed through the convolutional layer.
+
+        :param x: input zonotope to the convolutional layer.
+        :return x: zonotope after being pushed through the convolutional layer.
         """
         x = self.conv(x)
         x = self.zonotope_add(x)
@@ -237,8 +244,9 @@ class ZonoConv(torch.nn.Module):
         """
         Modification required compared to the normal torch conv layers.
         The bias is added only to the central zonotope term and not the error terms.
-        param x: zonotope input to have the bias added.
-        return: zonotope with the bias added to the central (first) term.
+
+        :param x: zonotope input to have the bias added.
+        :return: zonotope with the bias added to the central (first) term.
         """
         # unsqueeze to broadcast along height and width
         bias = torch.unsqueeze(self.bias, dim=-1)
@@ -250,7 +258,7 @@ class ZonoConv(torch.nn.Module):
 class ZonoReLU(torch.nn.Module, ZonoBounds):
     """
     Implements "DeepZ" for relu.
-    
+
     | Paper link:  https://papers.nips.cc/paper/2018/file/f2f446980d8e971ef3da97af089481c3-Paper.pdf
     """
 
@@ -264,8 +272,9 @@ class ZonoReLU(torch.nn.Module, ZonoBounds):
     def forward(self, x: "torch.Tensor") -> "torch.Tensor":
         """
         Forward pass through the relu
-        param x: input zonotope to the dense layer.
-        return x: zonotope after being pushed through the dense layer.
+
+        :param x: input zonotope to the dense layer.
+        :return x: zonotope after being pushed through the dense layer.
         """
         return self.zonotope_relu(x)
 
@@ -276,7 +285,6 @@ class ZonoReLU(torch.nn.Module, ZonoBounds):
         :param x: input zonotope
         :return x: zonotope after application of the relu. May have grown in dimension if crossing relus occur.
         """
-
         original_shape = x.shape
         x = x.reshape((x.shape[0], -1))
 

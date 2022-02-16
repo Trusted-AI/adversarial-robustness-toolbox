@@ -39,13 +39,12 @@ if TYPE_CHECKING:
 
 class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
     """
-    Implementation of DeepZ
-    to certify neural network robustness.
+    Implementation of DeepZ to certify neural network robustness.
 
     We use the zonotope representation of a datapoint as it travels through the network to then verify if it can
     have its class changed given a certain perturbation.
 
-| Paper link: https://papers.nips.cc/paper/2018/file/f2f446980d8e971ef3da97af089481c3-Paper.pdf
+    | Paper link: https://papers.nips.cc/paper/2018/file/f2f446980d8e971ef3da97af089481c3-Paper.pdf
     """
 
     estimator_params = PyTorchClassifier.estimator_params
@@ -170,10 +169,9 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
         Do the forward pass through the NN with the given error terms and zonotope center.
         :param eps: Error terms of the zonotope.
         :param cent: The datapoint, representing the zonotope center.
-        :return: x[0, :] -> the zonotope center vector
-        :return: x[1:, :] -> the zonotope error terms/coefficients.
+        :return: A tuple, the first element being the zonotope center vector.
+                 The second is the zonotope error terms/coefficients.
         """
-
         x = np.concatenate([cent, eps])
         x = torch.from_numpy(x.astype("float32")).to(self.device)
 
@@ -199,7 +197,7 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
         :param cent: The datapoint, representing the zonotope center.
         :param prediction: The prediction the neural network gave on the basic datapoint.
 
-        :return : True/False if the datapoint could be misclassified given the eps bounds.
+        :return: True/False if the datapoint could be misclassified given the eps bounds.
         """
         cent, eps = self.forward(eps=eps, cent=cent)
         cent = cent.detach().cpu().numpy()
