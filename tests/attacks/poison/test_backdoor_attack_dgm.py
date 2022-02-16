@@ -22,7 +22,6 @@ def test_poison_estimator_trail(art_warning, get_default_mnist_subset, image_dl_
         train_images = train_images * (2.0 / 255) - 1.0
 
         gan, _ = image_dl_gan()
-
         trail_attack = PoisoningAttackTrail(gan=gan)
         z_trigger = np.random.randn(1, 100)
 
