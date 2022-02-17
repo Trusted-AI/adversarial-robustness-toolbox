@@ -372,7 +372,6 @@ def test_get_activation_sequential(get_default_mnist_subset, image_dl_estimator,
         device_type=device_type,
     )
     batch_size = x_test_mnist.shape[0]
-    m = nn.Softmax(dim=1)
     N = len(classifier.layer_names)
     for i, name in enumerate(classifier.layer_names):
         if i == N - 1:
