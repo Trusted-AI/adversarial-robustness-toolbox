@@ -19,6 +19,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import unittest
+import numpy as np
 
 from sklearn.tree import DecisionTreeRegressor
 
@@ -46,7 +47,9 @@ class TestScikitlearnDecisionTreeRegressor(TestBase):
             ScikitlearnDecisionTreeRegressor(model="sklearn_model")
 
     def test_predict(self):
-        _ = self.classifier.predict(self.x_test_diabetes)
+        y_predicted = self.classifier.predict(self.x_test_diabetes[:4])
+        y_expected = np.asarray([69.0, 81.0, 68.0, 68.0])
+        np.testing.assert_array_almost_equal(y_predicted, y_expected, decimal=1)
 
     def test_save(self):
         self.classifier.save(filename="test.file", path=None)
