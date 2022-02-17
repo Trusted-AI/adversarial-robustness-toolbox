@@ -50,44 +50,13 @@ from art.attacks.attack import PoisoningAttackWhiteBox
 from art.attacks.poisoning.backdoor_attack import PoisoningAttackBackdoor
 from art.estimators import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
+from art.attacks.poisoning.hidden_trigger_backdoor.LossMeter import LossMeter
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
     from art.estimators.classification.pytorch import PyTorchClassifier
 
 logger = logging.getLogger(__name__)
-
-
-class LossMeter:
-    """
-    Computes and stores the average and current loss value
-    """
-
-    def __init__(self):
-        """
-        Create loss tracker
-        """
-        self.reset()
-
-    def reset(self):
-        """
-        Reset loss tracker
-        """
-        self.val = 0
-        self.avg = 0
-        self.sum = 0
-        self.count = 0
-
-    def update(self, val, n=1):
-        """
-        Update loss tracker
-        :param val: Loss value to add to tracker
-        :param n: Number of elements contributing to val
-        """
-        self.val = val
-        self.sum += val * n
-        self.count += n
-        self.avg = self.sum / self.count
 
 
 class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):

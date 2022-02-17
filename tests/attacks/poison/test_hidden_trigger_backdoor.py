@@ -63,7 +63,7 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator):
         poison_data, poison_inds = attack.poison(x_train, y_train)
 
         np.testing.assert_equal(len(poison_data), 1)
-        np.testing.assert_equal(len(poison_labels), 1)
+        np.testing.assert_equal(len(poison_inds), 1)
 
         with pytest.raises(AssertionError):
             np.testing.assert_equal(poison_data, x_train[poison_inds])
