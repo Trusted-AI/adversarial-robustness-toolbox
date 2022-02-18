@@ -26,14 +26,14 @@ jobs:
       matrix:
         module: [attacks_1, attacks_2, estimators, defences, metrics, art]
         include:
-          - name: legacy (TensorFlow 2.6.0 Keras 2.6.0 PyTorch 1.10.1 scikit-learn 0.24.2 Python 3.8)
+          - name: legacy (TensorFlow 2.6.0 Keras 2.6.0 PyTorch 1.10.2 scikit-learn 0.24.2 Python 3.8)
             framework: legacy
             python: 3.8
             tensorflow: 2.6.0
             keras: 2.6.0
-            torch: 1.10.1+cpu
-            torchvision: 0.11.2+cpu
-            torchaudio: 0.10.1
+            torch: 1.10.2+cpu
+            torchvision: 0.11.3+cpu
+            torchaudio: 0.10.2+cpu
             scikit-learn: 0.24.2
 
     name: Run ${{ matrix.module }} ${{ matrix.name }} Tests
