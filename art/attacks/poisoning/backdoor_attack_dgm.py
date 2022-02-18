@@ -23,7 +23,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import numpy as np
 import tensorflow as tf
-from typing import Any, List, Optional, Tuple, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from art.estimators.generation.tensorflow_gan import TensorFlow2GAN
 from art.attacks.attack import PoisoningAttackGenerator
@@ -90,7 +90,7 @@ class PoisoningAttackTrail(PoisoningAttackGenerator):
         lambda_p=0.1,
         verbose=-1,
         **kwargs
-    ) -> GENERATOR_TYPE:
+    ) -> "GENERATOR_TYPE":
         """
         Creates a backdoor in the generative model
         :param z_trigger: the secret backdoor trigger that will produce the target
