@@ -50,11 +50,12 @@ def fix_get_mnist_subset(get_mnist_dataset):
 #     except ARTTestException as e:
 #         art_warning(e)
 
-@pytest.mark.framework_agnostic
+# @pytest.mark.framework_agnostic
 @pytest.mark.parametrize("targeted", [True, False])
-def test_images(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack, targeted, framework='pytorch'):
+def test_images(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack, targeted, framework):
     try:
         classifier = image_dl_estimator_for_attack(SignOPTAttack)
+        print(classifier)
         attack = SignOPTAttack(estimator=classifier, targeted=targeted, max_iter=1000, query_limit=4000, verbose=True)
         if targeted:
             backend_targeted_images(attack, fix_get_mnist_subset, x_train=True, bounded=False)

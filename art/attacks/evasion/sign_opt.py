@@ -164,6 +164,12 @@ class SignOPTAttack(EvasionAttack):
         if self.targeted and x_train is None:  
             raise ValueError("Training Data `x_train` needs to be provided for a targeted attack.")
 
+        # Get clip_min and clip_max from the classifier or infer them from data
+        if self.estimator.clip_values is not None:
+            clip_min, clip_max = self.estimator.clip_values
+        else:
+            clip_min, clip_max = np.min(x), np.max(x)
+            
         # Prediction from the original images
         preds = np.argmax(self.estimator.predict(x), axis=1)
         
