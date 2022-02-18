@@ -788,7 +788,10 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
             else:
                 transformed_input = transformer(x[i])
 
-            spectrogram, _ = torchaudio.functional.magphase(transformed_input)
+            if self._version == 2:
+                spectrogram, _ = torchaudio.functional.magphase(transformed_input)
+            else:
+                spectrogram = torch.abs(transformed_input)
             spectrogram = torch.log1p(spectrogram)
 
             # Normalize data
