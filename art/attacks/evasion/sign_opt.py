@@ -190,12 +190,16 @@ class SignOPTAttack(EvasionAttack):
                     y0=preds[ind],
                     target=targets[ind],
                     x_train=x_train,
+                    clip_min=clip_min,
+                    clip_max=clip_max,
                 )
             else:
                 x_adv[ind], diff, succeed = self._attack( # diff and succeed are for performance test
                 # x_adv[ind]= self._attack(   
                     x0=val,
                     y0=preds[ind],
+                    clip_min=clip_min,
+                    clip_max=clip_max,
                 )   
             if succeed and self.eval_perform and counter < 100:
                 self.logs[counter] = LA.norm(diff)
@@ -351,6 +355,8 @@ class SignOPTAttack(EvasionAttack):
         self,
         x0: np.ndarray,
         y0: int,
+        clip_min: float,
+        clip_max: float,
         target: Optional[int]=None, # for targeted attack
         x_train: Optional[np.ndarray]=None, # for targeted attack
         distortion = None, 
@@ -493,15 +499,15 @@ class SignOPTAttack(EvasionAttack):
             if self.verbose:
                 print("Succeed distortion {:.4f} org_label {:d} predict_lable"
                   " {:d} queries {:d} Line Search queries {:d}\n".format(gg, y0, target, query_count, ls_total))
-            return x0 + gg*xg, gg*xg, True
+            return np.clip(x0 + gg*xg, clip_min, clip_max), gg*xg, True
         elif self.targeted and self._is_label(x0+gg*xg, target):
             if self.verbose:
                 print(f'Adversarial Example Found Successfully: distortion {gg} target, {target} queries {query_count} Line Search queries {ls_total} Time: {timeend-timestart} seconds')
-            return x0 + gg*xg, gg*xg, True
+            return np.clip(x0 + gg*xg, clip_min, clip_max), gg*xg, True
         
         if self.verbose:
             print(f'Failed: distortion {gg}')
-        return x0 + gg*xg, gg*xg, False
+        return np.clip(x0 + gg*xg, clip_min, clip_max), gg*xg, False
         
     
     def _check_params(self) -> None:
