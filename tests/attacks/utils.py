@@ -29,10 +29,10 @@ from tests.utils import check_adverse_example_x, check_adverse_predicted_sample_
 logger = logging.getLogger(__name__)
 
 
-def backend_targeted_images(attack, fix_get_mnist_subset, x_train=False, bounded=True):
+def backend_targeted_images(attack, fix_get_mnist_subset, use_train_data=False):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
     targets = random_targets(y_test_mnist, attack.estimator.nb_classes)
-    if x_train:
+    if use_train_data:
         x_test_adv = attack.generate(x_test_mnist, y=targets, x_train=x_train_mnist)
     else:
         x_test_adv = attack.generate(x_test_mnist, y=targets)
@@ -43,7 +43,7 @@ def backend_targeted_images(attack, fix_get_mnist_subset, x_train=False, bounded
     assert targets.shape == y_test_pred_adv.shape
     assert (targets == y_test_pred_adv).sum() >= (x_test_mnist.shape[0] // 2)
 
-    check_adverse_example_x(x_test_adv, x_test_mnist, max=1.0, min=0.0, bounded=bounded)
+    check_adverse_example_x(x_test_adv, x_test_mnist)
 
     y_pred_adv = np.argmax(attack.estimator.predict(x_test_adv), axis=1)
 
@@ -149,11 +149,15 @@ def backend_test_classifier_type_check_fail(attack, classifier_expected_list=[],
         assert classifier_expected in exception.value.class_expected_list
 
 
-def backend_targeted_tabular(attack, fix_get_iris):
-    (_, _), (x_test_iris, y_test_iris) = fix_get_iris
+def backend_targeted_tabular(attack, fix_get_iris, use_train_data=False):
+    (x_train_iris, _), (x_test_iris, y_test_iris) = fix_get_iris
 
     targets = random_targets(y_test_iris, nb_classes=3)
-    x_test_adv = attack.generate(x_test_iris, **{"y": targets})
+    if use_train_data:
+        x_test_adv = attack.generate(x_test_iris, **{"y": targets}, x_train=x_train_iris)
+    else:
+        x_test_adv = attack.generate(x_test_iris, **{"y": targets})
+    
 
     check_adverse_example_x(x_test_adv, x_test_iris)
 
@@ -164,13 +168,13 @@ def backend_targeted_tabular(attack, fix_get_iris):
     accuracy = np.sum(y_pred_adv == target) / y_test_iris.shape[0]
     logger.info("Success rate of targeted boundary on Iris: %.2f%%", (accuracy * 100))
 
-# percentage in range [0,100]
-def backend_untargeted_images(attack, fix_get_mnist_subset, fix_framework,  tolerance=False, match_percent=100, bounded=True):
+# if `tolerance` is True, the matching rate equal or greater `match_percent` is acceptable
+def backend_untargeted_images(attack, fix_get_mnist_subset, fix_framework, tolerance=False, match_percent=100):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
     x_test_adv = attack.generate(x_test_mnist)
 
-    check_adverse_example_x(x_test_adv, x_test_mnist, max=1.0, min=0.0, bounded=bounded)
+    check_adverse_example_x(x_test_adv, x_test_mnist)
 
     y_pred = np.argmax(attack.estimator.predict(x_test_mnist), axis=1)
     y_pred_adv = np.argmax(attack.estimator.predict(x_test_adv), axis=1)
