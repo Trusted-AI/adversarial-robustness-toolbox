@@ -35,7 +35,7 @@ from art.estimators import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
 
 from art.estimators.classification.keras import KerasClassifier
-from art.attacks.poisoning.hidden_trigger_backdoor.LossMeter import LossMeter
+from art.attacks.poisoning.hidden_trigger_backdoor.loss_meter import LossMeter
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
@@ -244,9 +244,9 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
                         output_tensor = self._get_keras_tensor()
                         attack_loss = tf.math.square(tf.norm(feat1_var - output_tensor))
 
-                        attack_grad_f = k.gradients(attack_loss, self.estimator._input)[0]
+                        attack_grad_f = k.gradients(attack_loss, self.estimator._input)[0]  # pylint: disable=W0212
                         self._custom_loss["loss_function"] = k.function(
-                            [self.estimator._input, k.learning_phase()], [attack_grad_f]
+                            [self.estimator._input, k.learning_phase()], [attack_grad_f]  # pylint: disable=W0212
                         )
                     else:
                         feat1_var = self._custom_loss["feat_var"]
@@ -293,24 +293,26 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
         Helper function to get the feature layer output tensor in the keras graph
         :return: Output tensor
         """
-        if self.estimator._layer_names is None:  # pragma: no cover
+        if self.estimator._layer_names is None:  # pylint: disable=W0212
             raise ValueError("No layer names identified.")
 
         if isinstance(self.feature_layer, six.string_types):
-            if self.feature_layer not in self.estimator._layer_names:  # pragma: no cover
+            if self.feature_layer not in self.estimator._layer_names:  # pylint: disable=W0212
                 raise ValueError("Layer name %s is not part of the graph." % self.feature_layer)
             layer_name = self.feature_layer
         elif isinstance(self.feature_layer, int):
-            if self.feature_layer < 0 or self.feature_layer >= len(self.estimator._layer_names):  # pragma: no cover
+            if self.feature_layer < 0 or self.feature_layer >= len(
+                self.estimator._layer_names
+            ):  # pylint: disable=W0212
                 raise ValueError(
                     "Layer index %d is outside of range (0 to %d included)."
-                    % (self.feature_layer, len(self.estimator._layer_names) - 1)
+                    % (self.feature_layer, len(self.estimator._layer_names) - 1)  # pylint: disable=W0212
                 )
-            layer_name = self.estimator._layer_names[self.feature_layer]
-        else:  # pragma: no cover
+            layer_name = self.estimator._layer_names[self.feature_layer]  # pylint: disable=W0212
+        else:
             raise TypeError("Layer must be of type `str` or `int`.")
 
-        keras_layer = self.estimator._model.get_layer(layer_name)
+        keras_layer = self.estimator._model.get_layer(layer_name)  # pylint: disable=W0212
         num_inbound_nodes = len(getattr(keras_layer, "_inbound_nodes", []))
         if num_inbound_nodes > 1:
             layer_output = keras_layer.get_output_at(0)
@@ -331,5 +333,7 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
             x_expanded = x
 
         # Apply preprocessing
-        x_preprocessed, _ = self.estimator._apply_preprocessing(x=x_expanded, y=None, fit=False)
+        x_preprocessed, _ = self.estimator._apply_preprocessing(  # pylint: disable=W0212
+            x=x_expanded, y=None, fit=False
+        )
         return x_preprocessed

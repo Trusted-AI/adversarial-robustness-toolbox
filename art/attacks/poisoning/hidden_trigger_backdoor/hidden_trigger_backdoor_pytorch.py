@@ -50,7 +50,7 @@ from art.attacks.attack import PoisoningAttackWhiteBox
 from art.attacks.poisoning.backdoor_attack import PoisoningAttackBackdoor
 from art.estimators import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
-from art.attacks.poisoning.hidden_trigger_backdoor.LossMeter import LossMeter
+from art.attacks.poisoning.hidden_trigger_backdoor.loss_meter import LossMeter
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
