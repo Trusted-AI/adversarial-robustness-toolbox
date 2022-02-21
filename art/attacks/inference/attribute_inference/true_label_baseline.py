@@ -30,7 +30,7 @@ from sklearn.preprocessing import minmax_scale
 
 from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.attack import AttributeInferenceAttack
-from art.utils import check_and_transform_label_format, float_to_categorical, floats_to_one_hot
+from art.utils import check_and_transform_label_format, float_to_categorical, floats_to_one_hot, get_feature_values
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
@@ -134,18 +134,10 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
 
         # get vector of attacked feature
         attacked_feature = x[:, self.attack_feature]
+        self._values = get_feature_values(attacked_feature, self.single_index_feature)
         if self.single_index_feature:
-            self._values = np.unique(attacked_feature).tolist()
             y_one_hot = float_to_categorical(attacked_feature)
         else:
-            for column in attacked_feature.T:
-                column_values = np.unique(column)
-                if self._values is None:
-                    self._values = column_values
-                else:
-                    self._values = np.vstack((self._values, column_values))
-            if self._values is not None:
-                self._values = self._values.tolist()
             y_one_hot = floats_to_one_hot(attacked_feature)
         y_ready = check_and_transform_label_format(y_one_hot, len(np.unique(attacked_feature)), return_one_hot=True)
 

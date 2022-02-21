@@ -29,7 +29,7 @@ from sklearn.ensemble import RandomForestClassifier
 
 from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.attack import AttributeInferenceAttack
-from art.utils import check_and_transform_label_format, float_to_categorical, floats_to_one_hot
+from art.utils import check_and_transform_label_format, float_to_categorical, floats_to_one_hot, get_feature_values
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
@@ -122,18 +122,10 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
 
         # get vector of attacked feature
         y = x[:, self.attack_feature]
+        self._values = get_feature_values(y, self.single_index_feature)
         if self.single_index_feature:
-            self._values = np.unique(y).tolist()
             y_one_hot = float_to_categorical(y)
         else:
-            for column in y.T:
-                column_values = np.unique(column)
-                if self._values is None:
-                    self._values = column_values
-                else:
-                    self._values = np.vstack((self._values, column_values))
-            if self._values is not None:
-                self._values = self._values.tolist()
             y_one_hot = floats_to_one_hot(y)
         y_ready = check_and_transform_label_format(y_one_hot, len(np.unique(y)), return_one_hot=True)
 
