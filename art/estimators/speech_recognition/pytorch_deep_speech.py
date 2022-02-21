@@ -23,7 +23,7 @@ Mandarin in PyTorch.
 """
 import logging
 from typing import TYPE_CHECKING, List, Optional, Tuple, Union
-from pkg_resources import packaging
+from pkg_resources import packaging  # type: ignore[attr-defined]
 
 import numpy as np
 
