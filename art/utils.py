@@ -649,6 +649,32 @@ def get_labels_np_array(preds: np.ndarray) -> np.ndarray:
     return y
 
 
+def get_feature_values(x: np.ndarray, single_index_feature: bool) -> list:
+    """
+    Returns a list of unique values of a given feature.
+
+    :param x: The feature column(s).
+    :param single_index_feature: Bool representing whether this is a single-column or multiple-column feature (for
+                                 example 1-hot encoded and then scaled).
+    :return: For a single-column feature, a simple list containing all possible values, in increasing order.
+             For a multi-column feature, a list of lists, where each internal list represents a column and the values
+             represent the possible values for that column (in increasing order).
+    """
+    values = None
+    if single_index_feature:
+        values = np.unique(x).tolist()
+    else:
+        for column in x.T:
+            column_values = np.unique(column)
+            if values is None:
+                values = column_values
+            else:
+                values = np.vstack((values, column_values))
+        if values is not None:
+            values = values.tolist()
+    return values
+
+
 def compute_success_array(
     classifier: "CLASSIFIER_TYPE",
     x_clean: np.ndarray,
