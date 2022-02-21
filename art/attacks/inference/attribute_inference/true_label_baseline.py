@@ -79,7 +79,7 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
         else:
             self.single_index_feature = False
 
-        self._values = None
+        self._values: Optional[list] = None
 
         if attack_model:
             if ClassifierMixin not in type(attack_model).__mro__:
