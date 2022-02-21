@@ -89,6 +89,8 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
             self.single_index_feature = False
 
         self._values = None
+        self._attack_model_type = attack_model_type
+        self._attack_model = attack_model
 
         if attack_model:
             if ClassifierMixin not in type(attack_model).__mro__:
@@ -251,6 +253,9 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
 
         if isinstance(self.attack_feature, int) and self.attack_feature < 0:
             raise ValueError("Attack feature index must be positive.")
+
+        if self._attack_model_type not in ["nn", "rf"]:
+            raise ValueError("Illegal value for parameter `attack_model_type`.")
 
         if RegressorMixin not in type(self.estimator).__mro__:
             if self.prediction_normal_factor != 1:
