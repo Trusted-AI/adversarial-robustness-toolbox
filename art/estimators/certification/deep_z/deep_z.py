@@ -184,9 +184,9 @@ class ZonoBounds:
         :return: adjusted center and eps values if center + eps exceed 1 or if center - eps falls below 0.
         """
         original_shape = cent.shape
-        cent = np.reshape(cent, (1, -1))
+        cent = np.reshape(np.copy(cent), (1, -1))
         num_of_error_terms = eps.shape[0]
-        cent, eps = self.adjust_to_within_bounds(cent, eps)
+        cent, eps = self.adjust_to_within_bounds(cent, np.copy(eps))
         cent = np.reshape(cent, original_shape)
 
         reshape_dim = (num_of_error_terms,) + original_shape
