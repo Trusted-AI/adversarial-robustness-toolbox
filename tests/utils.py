@@ -67,6 +67,18 @@ class TestBase(unittest.TestCase):
         cls._x_test_iris_original = cls.x_test_iris.copy()
         cls._y_test_iris_original = cls.y_test_iris.copy()
 
+        (x_train_diabetes, y_train_diabetes), (x_test_diabetes, y_test_diabetes), _, _ = load_dataset("diabetes")
+
+        cls.x_train_diabetes = x_train_diabetes
+        cls.y_train_diabetes = y_train_diabetes
+        cls.x_test_diabetes = x_test_diabetes
+        cls.y_test_diabetes = y_test_diabetes
+
+        cls._x_train_diabetes_original = cls.x_train_diabetes.copy()
+        cls._y_train_diabetes_original = cls.y_train_diabetes.copy()
+        cls._x_test_diabetes_original = cls.x_test_diabetes.copy()
+        cls._y_test_diabetes_original = cls.y_test_diabetes.copy()
+
         # Filter warning for scipy, removed with scipy 1.4
         warnings.filterwarnings("ignore", ".*the output shape of zoom.*")
 
