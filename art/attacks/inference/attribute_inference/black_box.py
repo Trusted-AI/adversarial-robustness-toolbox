@@ -88,7 +88,7 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         else:
             self.single_index_feature = False
 
-        self._values = None
+        self._values: Optional[list] = None
         self._attack_model_type = attack_model_type
         self._attack_model = attack_model
 
