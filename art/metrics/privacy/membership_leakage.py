@@ -24,6 +24,8 @@ from typing import TYPE_CHECKING, Optional, Tuple
 import numpy as np
 import scipy
 
+from sklearn.neighbors import KNeighborsClassifier
+
 from art.utils import check_and_transform_label_format, is_probability_array
 
 if TYPE_CHECKING:
@@ -125,3 +127,88 @@ def PDTP(  # pylint: disable=C0103
 
     # return avg+worse leakage + standard deviation per sample
     return avg_per_sample, worse_per_sample, std_dev_per_sample
+
+
+def SHAPr(  # pylint: disable=C0103
+    target_estimator: "Classifier",
+    x_train: np.ndarray,
+    y_train: np.ndarray,
+    x_test: np.ndarray,
+    y_test: np.ndarray,
+    k: Optional[int] = 5,
+    knn_metric: Optional[str] = None
+) -> np.ndarray:
+    """
+    Compute the SHAPr membership privacy risk metric for the given classifier and training set.
+
+    | Paper link: http://arxiv.org/abs/2112.02230
+
+    :param target_estimator: The classifier to be analyzed.
+    :param x_train: The training data of the classifier.
+    :param y_train: Target values (class labels) of `x_train`, one-hot-encoded of shape (nb_samples, nb_classes) or
+                    indices of shape (nb_samples,).
+    :param x_test: The test data of the classifier.
+    :param y_test: Target values (class labels) of `x_test`, one-hot-encoded of shape (nb_samples, nb_classes) or
+                    indices of shape (nb_samples,).
+    :param k: The k value to use in the KNN classifier (default is 5).
+    :param knn_metric: The distance metric to use for the KNN classifier (default is 'minkowski', which represents
+                       Euclidean distance).
+    :return: an array containing the SHAPr scores for each sample in the training set. The higher the value,
+             the higher the privacy leakage for that sample. Any value above 0 should be considered a privacy leak.
+    """
+    if target_estimator.input_shape[0] != x_train.shape[1]:
+        raise ValueError("Shape of x_train does not match input_shape of classifier")
+
+    if x_test.shape[1] != x_train.shape[1]:
+        raise ValueError("Shape of x_train does not match the shape of x_test")
+
+    y_train = check_and_transform_label_format(y_train, target_estimator.nb_classes)
+    if y_train.shape[0] != x_train.shape[0]:
+        raise ValueError("Number of rows in x_train and y_train do not match")
+
+    y_test = check_and_transform_label_format(y_test, target_estimator.nb_classes)
+    if y_test.shape[0] != x_test.shape[0]:
+        raise ValueError("Number of rows in x_test and y_test do not match")
+
+    n_train_samples = x_train.shape[0]
+    pred_train = target_estimator.predict(x_train)
+    pred_test = target_estimator.predict(x_test)
+
+    if knn_metric:
+        knn = KNeighborsClassifier(metric=knn_metric, n_neighbors=k)
+    else:
+        knn = KNeighborsClassifier(n_neighbors=k)
+    knn.fit(pred_train, y_train)
+
+    results = []
+
+    for i in range(pred_test.shape[0]):
+        results_test = []
+        pred = pred_test[i]
+        y_0 = y_test[i]
+        (n_distances, n_indexes) = knn.kneighbors([pred], n_neighbors=n_train_samples)
+        # from farthest to closest
+        n_indexes = n_indexes.reshape(-1)[::-1]
+        sorted_y_train = y_train[n_indexes]
+        sorted_indexes = np.argsort(n_indexes)
+        # compute partial contribution incrementally
+        first = True
+        for y in sorted_y_train:
+            y_indicator = 1 if np.all(y == y_0) else 0
+            if first:
+                phi_y = y_indicator / n_train_samples
+                first = False
+            else:
+                phi_y = phi_y_prev + (((y_indicator - y_indicator_prev) / k) * (min(k, n_train_samples - i) / (n_train_samples - i)))
+            results_test.append(phi_y)
+            phi_y_prev = phi_y
+            y_indicator_prev = y_indicator
+        # return to original order of training samples
+        results_test_sorted = np.array(results_test)[sorted_indexes]
+        results.append(results_test_sorted.tolist())
+
+    # need to sum across test samples (outer list) for each train sample (inner list)
+    per_sample = list(map(list, zip(*results)))
+    sum_per_sample = np.array([sum(val) for val in per_sample])
+
+    return sum_per_sample

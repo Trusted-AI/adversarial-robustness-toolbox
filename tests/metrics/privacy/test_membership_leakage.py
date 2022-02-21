@@ -22,10 +22,24 @@ import pytest
 import numpy as np
 import random
 
-from art.metrics import PDTP
+from art.metrics import PDTP, SHAPr
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
+
+
+@pytest.mark.skip_framework("dl_frameworks")
+def test_membership_leakage_shapr_decision_tree(art_warning, decision_tree_estimator, get_iris_dataset):
+    try:
+        classifier = decision_tree_estimator()
+        (x_train, y_train), (x_test, y_test) = get_iris_dataset
+        leakage = SHAPr(classifier, x_train, y_train, x_test, y_test)
+        logger.info("Average SHAPr leakage: %.2f", (np.average(leakage)))
+        logger.info("Max SHAPr leakage: %.2f", (np.max(leakage)))
+        assert np.all(leakage >= 0.0)
+        assert leakage.shape[0] == x_train.shape[0]
+    except ARTTestException as e:
+        art_warning(e)
 
 
 @pytest.mark.skip_framework("dl_frameworks")
