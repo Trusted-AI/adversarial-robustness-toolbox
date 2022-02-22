@@ -4,7 +4,7 @@ scipy==1.7.3
 matplotlib==3.5.1
 scikit-learn>=0.22.2,<1.1.0
 six==1.16.0
-Pillow==8.4.0
+Pillow==9.0.0
 tqdm==4.62.3
 statsmodels==0.13.1
 pydub==0.25.1
@@ -13,7 +13,7 @@ ffmpeg-python==0.2.0
 cma==3.1.0
 pandas==1.3.5
 librosa==0.8.1
-numba~=0.54.1
+numba~=0.55.1
 opencv-python
 sortedcontainers==2.4.0
 
@@ -25,19 +25,20 @@ keras>=2.2.5
 tensorflow-addons>=0.13.0
 # using mxnet-native for reproducible test results on CI machines without Intel Architecture Processors, but mxnet is fully supported by ART
 mxnet-native==1.8.0.post0
---find-links https://download.pytorch.org/whl/cpu/torch_stable.html
 
-torch==1.10.1 -f https://download.pytorch.org/whl/cpu/torch_stable.html
-torchaudio==0.10.1+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.html
-torchvision==0.11.2+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.html
-catboost==1.0.3
+--find-links https://download.pytorch.org/whl/cpu/torch_stable.html
+torch==1.10.2+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.html
+torchaudio==0.10.2+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.html
+torchvision==0.11.3+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.html
+
+catboost==1.0.4
 GPy==1.10.0
-lightgbm==3.3.1
-xgboost==1.5.1
+lightgbm==3.3.2
+xgboost==1.5.2
 kornia~=0.6.2
 tensorboardX==2.4.1
 lief==0.11.5
-jax[cpu]==0.2.25
+jax[cpu]==0.2.27
 
 # Lingvo ASR dependencies
 # supported versions: (lingvo==0.6.4 with tensorflow-gpu==2.1.0)
