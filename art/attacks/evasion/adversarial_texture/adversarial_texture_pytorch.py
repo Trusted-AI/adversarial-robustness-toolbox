@@ -136,7 +136,7 @@ class AdversarialTexturePyTorch(EvasionAttack):
         target: List[Dict[str, "torch.Tensor"]],
         y_init: "torch.Tensor",
         foreground: Optional["torch.Tensor"],
-        patchpoints,
+        patch_points: Optional[np.ndarray],
     ) -> "torch.Tensor":
         """
         Apply a training step to the batch based on a mini-batch.
@@ -145,12 +145,15 @@ class AdversarialTexturePyTorch(EvasionAttack):
         :param target: Target labels/boxes.
         :param y_init: Initial labels/boxes.
         :param foreground: Foreground mask.
+        :param patch_points: Array of shape (nb_frames, 4, 2) containing four pairs of integers (height, width)
+                             corresponding to the four corners top-left, top-right, bottom-right, bottom-left of the
+                             transformed image in the coordinates of the original image.
         :return: Loss.
         """
         import torch  # lgtm [py/repeated-import]
 
         self.estimator.model.zero_grad()
-        loss = self._loss(videos, target, y_init, foreground, patchpoints)
+        loss = self._loss(videos, target, y_init, foreground, patch_points)
         loss.backward(retain_graph=True)
 
         gradients = self._patch.grad.sign() * self.step_size
@@ -175,7 +178,11 @@ class AdversarialTexturePyTorch(EvasionAttack):
         return loss
 
     def _predictions(
-        self, videos: "torch.Tensor", y_init: "torch.Tensor", foreground: Optional["torch.Tensor"], patchpoints
+        self,
+        videos: "torch.Tensor",
+        y_init: "torch.Tensor",
+        foreground: Optional["torch.Tensor"],
+        patch_points: Optional[np.ndarray],
     ) -> List[Dict[str, "torch.Tensor"]]:
         """
         Predict object tracking estimator on patched videos.
@@ -183,11 +190,14 @@ class AdversarialTexturePyTorch(EvasionAttack):
         :param videos: Video samples.
         :param y_init: Initial labels/boxes.
         :param foreground: Foreground mask.
+        :param patch_points: Array of shape (nb_frames, 4, 2) containing four pairs of integers (height, width)
+                             corresponding to the four corners top-left, top-right, bottom-right, bottom-left of the
+                             transformed image in the coordinates of the original image.
         :return: Predicted labels/boxes.
         """
         import torch  # lgtm [py/repeated-import]
 
-        patched_input = self._apply_texture(videos, self._patch, foreground=foreground, patchpoints=patchpoints)
+        patched_input = self._apply_texture(videos, self._patch, foreground=foreground, patch_points=patch_points)
         patched_input = torch.clamp(
             patched_input,
             min=self.estimator.clip_values[0],
@@ -204,7 +214,7 @@ class AdversarialTexturePyTorch(EvasionAttack):
         target: List[Dict[str, "torch.Tensor"]],
         y_init: "torch.Tensor",
         foreground: Optional["torch.Tensor"],
-        patchpoints,
+        patch_points: Optional[np.ndarray],
     ) -> "torch.Tensor":
         """
         Calculate L1-loss.
@@ -213,11 +223,14 @@ class AdversarialTexturePyTorch(EvasionAttack):
         :param target: Target labels/boxes.
         :param y_init: Initial labels/boxes.
         :param foreground: Foreground mask.
+        :param patch_points: Array of shape (nb_frames, 4, 2) containing four pairs of integers (height, width)
+                             corresponding to the four corners top-left, top-right, bottom-right, bottom-left of the
+                             transformed image in the coordinates of the original image.
         :return: Loss.
         """
         import torch  # lgtm [py/repeated-import]
 
-        y_pred = self._predictions(videos, y_init, foreground, patchpoints)
+        y_pred = self._predictions(videos, y_init, foreground, patch_points)
         loss = torch.nn.L1Loss(reduction="sum")(y_pred[0]["boxes"].float(), target[0]["boxes"].float())
         for i in range(1, len(y_pred)):
             loss = loss + torch.nn.L1Loss(reduction="sum")(y_pred[i]["boxes"].float(), target[i]["boxes"].float())
@@ -242,7 +255,11 @@ class AdversarialTexturePyTorch(EvasionAttack):
         return image_mask
 
     def _apply_texture(
-        self, videos: "torch.Tensor", patch: "torch.Tensor", foreground: Optional["torch.Tensor"], patchpoints
+        self,
+        videos: "torch.Tensor",
+        patch: "torch.Tensor",
+        foreground: Optional["torch.Tensor"],
+        patch_points: Optional[np.ndarray],
     ) -> "torch.Tensor":
         """
         Apply texture over background and overlay foreground.
@@ -250,6 +267,9 @@ class AdversarialTexturePyTorch(EvasionAttack):
         :param videos: Video samples.
         :param patch: Patch to apply.
         :param foreground: Foreground mask.
+        :param patch_points: Array of shape (nb_frames, 4, 2) containing four pairs of integers (height, width)
+                             corresponding to the four corners top-left, top-right, bottom-right, bottom-left of the
+                             transformed image in the coordinates of the original image.
         :return: Patched videos.
         """
         import torch  # lgtm [py/repeated-import]
@@ -259,18 +279,18 @@ class AdversarialTexturePyTorch(EvasionAttack):
 
         image_mask = self._get_patch_mask(nb_samples=nb_samples)
         image_mask = image_mask.float()
-        image_mask = image_mask.permute(0, 3, 1, 2)
 
         patch = patch.float()
         padded_patch = torch.stack([patch] * nb_samples)
-        padded_patch = padded_patch.permute(0, 3, 1, 2)
 
-        if patchpoints is None:
+        if patch_points is None:
             pad_h_before = self.x_min
             pad_h_after = int(videos.shape[self.i_h + 1] - pad_h_before - image_mask.shape[self.i_h_patch + 1])
 
             pad_w_before = self.y_min
             pad_w_after = int(videos.shape[self.i_w + 1] - pad_w_before - image_mask.shape[self.i_w_patch + 1])
+
+            image_mask = image_mask.permute(0, 3, 1, 2)
 
             image_mask = torchvision.transforms.functional.pad(
                 img=image_mask,
@@ -284,6 +304,8 @@ class AdversarialTexturePyTorch(EvasionAttack):
             image_mask = torch.unsqueeze(image_mask, dim=1)
             image_mask = torch.repeat_interleave(image_mask, dim=1, repeats=videos.shape[1])
             image_mask = image_mask.float()
+
+            padded_patch = padded_patch.permute(0, 3, 1, 2)
 
             padded_patch = torchvision.transforms.functional.pad(
                 img=padded_patch,
@@ -303,6 +325,8 @@ class AdversarialTexturePyTorch(EvasionAttack):
 
             startpoints = [[0, 0], [800, 0], [800, 600], [0, 600]]
 
+            image_mask = image_mask.permute(0, 3, 1, 2)
+
             image_mask = torchvision.transforms.functional.resize(
                 img=image_mask,
                 size=[int(videos.shape[2]), int(videos.shape[3])],
@@ -318,7 +342,7 @@ class AdversarialTexturePyTorch(EvasionAttack):
                 image_mask_i = torchvision.transforms.functional.perspective(
                     img=image_mask,
                     startpoints=startpoints,
-                    endpoints=patchpoints[i_frame].tolist(),
+                    endpoints=patch_points[i_frame].tolist(),
                     interpolation=torchvision.transforms.InterpolationMode.BILINEAR,
                     fill=0,
                 )
@@ -329,6 +353,8 @@ class AdversarialTexturePyTorch(EvasionAttack):
 
             image_mask = torch.stack(image_mask_list, dim=1)
             image_mask = image_mask.float()
+
+            padded_patch = padded_patch.permute(0, 3, 1, 2)
 
             padded_patch = torchvision.transforms.functional.resize(
                 img=padded_patch,
@@ -344,7 +370,7 @@ class AdversarialTexturePyTorch(EvasionAttack):
                 padded_patch_i = torchvision.transforms.functional.perspective(
                     img=padded_patch,
                     startpoints=startpoints,
-                    endpoints=patchpoints[i_frame],
+                    endpoints=patch_points[i_frame],
                     interpolation=torchvision.transforms.InterpolationMode.BILINEAR,
                     fill=0,
                 )
@@ -394,6 +420,10 @@ class AdversarialTexturePyTorch(EvasionAttack):
             * *foreground* (``np.ndarray``) --
               Foreground masks of shape NFHWC of boolean values with False/0.0 representing foreground, preventing
               updates to the texture, and True/1.0 for background, allowing updates to the texture.
+            * *patch_points* (``np.ndarray``) --
+              Array of shape (nb_frames, 4, 2) containing four pairs of integers (height, width) corresponding to the
+              four corners top-left, top-right, bottom-right, bottom-left of the transformed image in the coordinates
+              of the original image.
 
         :return: An array with images patched with adversarial texture.
         """
@@ -404,9 +434,7 @@ class AdversarialTexturePyTorch(EvasionAttack):
         foreground = kwargs.get("foreground")
         if foreground is None:
             foreground = np.ones_like(x)
-        patchpoints = kwargs.get("patchpoints")
-        if patchpoints is None:
-            raise ValueError("`The `patchpoints` need to be both not `None` or `np.ndarray.`")
+        patch_points = kwargs.get("patch_points")
 
         class TrackingDataset(torch.utils.data.Dataset):
             """
@@ -460,7 +488,7 @@ class AdversarialTexturePyTorch(EvasionAttack):
                     target=target_i_list,
                     y_init=y_init_i,
                     foreground=foreground_i,
-                    patchpoints=patchpoints,
+                    patch_points=patch_points,
                 )
 
                 # Write summary
@@ -478,14 +506,14 @@ class AdversarialTexturePyTorch(EvasionAttack):
         if self.summary_writer is not None:
             self.summary_writer.reset()
 
-        return self.apply_patch(x=x, foreground=foreground, patchpoints=patchpoints)
+        return self.apply_patch(x=x, foreground=foreground, patch_points=patch_points)
 
     def apply_patch(
         self,
         x: np.ndarray,
         patch_external: Optional[np.ndarray] = None,
         foreground: Optional[np.ndarray] = None,
-        patchpoints=None,
+        patch_points: Optional[np.ndarray] = None,
     ) -> np.ndarray:
         """
         A function to apply the learned adversarial texture to videos.
@@ -495,6 +523,9 @@ class AdversarialTexturePyTorch(EvasionAttack):
         :param foreground: Foreground masks of shape NFHWC of boolean values with False/0.0 representing foreground,
                            preventing updates to the texture, and True/1.0 for background, allowing updates to the
                            texture.
+        :param patch_points: Array of shape (nb_frames, 4, 2) containing four pairs of integers (height, width)
+                             corresponding to the four corners top-left, top-right, bottom-right, bottom-left of the
+                             transformed image in the coordinates of the original image.
         :return: The videos with adversarial textures.
         """
         import torch  # lgtm [py/repeated-import]
@@ -508,7 +539,7 @@ class AdversarialTexturePyTorch(EvasionAttack):
 
         return (
             self._apply_texture(
-                videos=x_tensor, patch=patch_tensor, foreground=foreground_tensor, patchpoints=patchpoints
+                videos=x_tensor, patch=patch_tensor, foreground=foreground_tensor, patch_points=patch_points
             )
             .detach()
             .cpu()
