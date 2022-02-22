@@ -136,6 +136,7 @@ class AdversarialTexturePyTorch(EvasionAttack):
         target: List[Dict[str, "torch.Tensor"]],
         y_init: "torch.Tensor",
         foreground: Optional["torch.Tensor"],
+        patchpoints,
     ) -> "torch.Tensor":
         """
         Apply a training step to the batch based on a mini-batch.
@@ -149,7 +150,7 @@ class AdversarialTexturePyTorch(EvasionAttack):
         import torch  # lgtm [py/repeated-import]
 
         self.estimator.model.zero_grad()
-        loss = self._loss(videos, target, y_init, foreground)
+        loss = self._loss(videos, target, y_init, foreground, patchpoints)
         loss.backward(retain_graph=True)
 
         gradients = self._patch.grad.sign() * self.step_size
@@ -174,7 +175,7 @@ class AdversarialTexturePyTorch(EvasionAttack):
         return loss
 
     def _predictions(
-        self, videos: "torch.Tensor", y_init: "torch.Tensor", foreground: Optional["torch.Tensor"]
+        self, videos: "torch.Tensor", y_init: "torch.Tensor", foreground: Optional["torch.Tensor"], patchpoints
     ) -> List[Dict[str, "torch.Tensor"]]:
         """
         Predict object tracking estimator on patched videos.
@@ -186,7 +187,7 @@ class AdversarialTexturePyTorch(EvasionAttack):
         """
         import torch  # lgtm [py/repeated-import]
 
-        patched_input = self._apply_texture(videos, self._patch, foreground=foreground)
+        patched_input = self._apply_texture(videos, self._patch, foreground=foreground, patchpoints=patchpoints)
         patched_input = torch.clamp(
             patched_input,
             min=self.estimator.clip_values[0],
@@ -203,6 +204,7 @@ class AdversarialTexturePyTorch(EvasionAttack):
         target: List[Dict[str, "torch.Tensor"]],
         y_init: "torch.Tensor",
         foreground: Optional["torch.Tensor"],
+        patchpoints,
     ) -> "torch.Tensor":
         """
         Calculate L1-loss.
@@ -215,7 +217,7 @@ class AdversarialTexturePyTorch(EvasionAttack):
         """
         import torch  # lgtm [py/repeated-import]
 
-        y_pred = self._predictions(videos, y_init, foreground)
+        y_pred = self._predictions(videos, y_init, foreground, patchpoints)
         loss = torch.nn.L1Loss(reduction="sum")(y_pred[0]["boxes"].float(), target[0]["boxes"].float())
         for i in range(1, len(y_pred)):
             loss = loss + torch.nn.L1Loss(reduction="sum")(y_pred[i]["boxes"].float(), target[i]["boxes"].float())
@@ -240,7 +242,7 @@ class AdversarialTexturePyTorch(EvasionAttack):
         return image_mask
 
     def _apply_texture(
-        self, videos: "torch.Tensor", patch: "torch.Tensor", foreground: Optional["torch.Tensor"]
+        self, videos: "torch.Tensor", patch: "torch.Tensor", foreground: Optional["torch.Tensor"], patchpoints
     ) -> "torch.Tensor":
         """
         Apply texture over background and overlay foreground.
@@ -257,47 +259,102 @@ class AdversarialTexturePyTorch(EvasionAttack):
 
         image_mask = self._get_patch_mask(nb_samples=nb_samples)
         image_mask = image_mask.float()
-
-        pad_h_before = self.x_min
-        pad_h_after = int(videos.shape[self.i_h + 1] - pad_h_before - image_mask.shape[self.i_h_patch + 1])
-
-        pad_w_before = self.y_min
-        pad_w_after = int(videos.shape[self.i_w + 1] - pad_w_before - image_mask.shape[self.i_w_patch + 1])
-
         image_mask = image_mask.permute(0, 3, 1, 2)
-
-        image_mask = torchvision.transforms.functional.pad(
-            img=image_mask,
-            padding=[pad_w_before, pad_h_before, pad_w_after, pad_h_after],
-            fill=0,
-            padding_mode="constant",
-        )
-
-        image_mask = image_mask.permute(0, 2, 3, 1)
-
-        image_mask = torch.unsqueeze(image_mask, dim=1)
-        image_mask = torch.repeat_interleave(image_mask, dim=1, repeats=videos.shape[1])
-
-        image_mask = image_mask.float()
 
         patch = patch.float()
         padded_patch = torch.stack([patch] * nb_samples)
-
         padded_patch = padded_patch.permute(0, 3, 1, 2)
 
-        padded_patch = torchvision.transforms.functional.pad(
-            img=padded_patch,
-            padding=[pad_w_before, pad_h_before, pad_w_after, pad_h_after],
-            fill=0,
-            padding_mode="constant",
-        )
+        if patchpoints is None:
+            pad_h_before = self.x_min
+            pad_h_after = int(videos.shape[self.i_h + 1] - pad_h_before - image_mask.shape[self.i_h_patch + 1])
 
-        padded_patch = padded_patch.permute(0, 2, 3, 1)
+            pad_w_before = self.y_min
+            pad_w_after = int(videos.shape[self.i_w + 1] - pad_w_before - image_mask.shape[self.i_w_patch + 1])
 
-        padded_patch = torch.unsqueeze(padded_patch, dim=1)
-        padded_patch = torch.repeat_interleave(padded_patch, dim=1, repeats=videos.shape[1])
+            image_mask = torchvision.transforms.functional.pad(
+                img=image_mask,
+                padding=[pad_w_before, pad_h_before, pad_w_after, pad_h_after],
+                fill=0,
+                padding_mode="constant",
+            )
 
-        padded_patch = padded_patch.float()
+            image_mask = image_mask.permute(0, 2, 3, 1)
+
+            image_mask = torch.unsqueeze(image_mask, dim=1)
+            image_mask = torch.repeat_interleave(image_mask, dim=1, repeats=videos.shape[1])
+            image_mask = image_mask.float()
+
+            padded_patch = torchvision.transforms.functional.pad(
+                img=padded_patch,
+                padding=[pad_w_before, pad_h_before, pad_w_after, pad_h_after],
+                fill=0,
+                padding_mode="constant",
+            )
+
+            padded_patch = padded_patch.permute(0, 2, 3, 1)
+
+            padded_patch = torch.unsqueeze(padded_patch, dim=1)
+            padded_patch = torch.repeat_interleave(padded_patch, dim=1, repeats=videos.shape[1])
+
+            padded_patch = padded_patch.float()
+
+        else:
+
+            startpoints = [[0, 0], [800, 0], [800, 600], [0, 600]]
+
+            image_mask = torchvision.transforms.functional.resize(
+                img=image_mask,
+                size=[int(videos.shape[2]), int(videos.shape[3])],
+                interpolation=torchvision.transforms.InterpolationMode.BILINEAR,
+                max_size=None,
+                antialias=None,
+            )
+
+            image_mask_list = []
+
+            for i_frame in range(videos.shape[1]):
+
+                image_mask_i = torchvision.transforms.functional.perspective(
+                    img=image_mask,
+                    startpoints=startpoints,
+                    endpoints=patchpoints[i_frame].tolist(),
+                    interpolation=torchvision.transforms.InterpolationMode.BILINEAR,
+                    fill=0,
+                )
+
+                image_mask_i = image_mask_i.permute(0, 2, 3, 1)
+
+                image_mask_list.append(image_mask_i)
+
+            image_mask = torch.stack(image_mask_list, dim=1)
+            image_mask = image_mask.float()
+
+            padded_patch = torchvision.transforms.functional.resize(
+                img=padded_patch,
+                size=[int(videos.shape[2]), int(videos.shape[3])],
+                interpolation=torchvision.transforms.InterpolationMode.BILINEAR,
+                max_size=None,
+                antialias=None,
+            )
+
+            padded_patch_list = []
+
+            for i_frame in range(videos.shape[1]):
+                padded_patch_i = torchvision.transforms.functional.perspective(
+                    img=padded_patch,
+                    startpoints=startpoints,
+                    endpoints=patchpoints[i_frame],
+                    interpolation=torchvision.transforms.InterpolationMode.BILINEAR,
+                    fill=0,
+                )
+
+                padded_patch_i = padded_patch_i.permute(0, 2, 3, 1)
+
+                padded_patch_list.append(padded_patch_i)
+
+            padded_patch = torch.stack(padded_patch_list, dim=1)
+            padded_patch = padded_patch.float()
 
         inverted_mask = (
             torch.from_numpy(np.ones(shape=image_mask.shape, dtype=np.float32)).to(self.estimator.device) - image_mask
@@ -347,6 +404,9 @@ class AdversarialTexturePyTorch(EvasionAttack):
         foreground = kwargs.get("foreground")
         if foreground is None:
             foreground = np.ones_like(x)
+        patchpoints = kwargs.get("patchpoints")
+        if patchpoints is None:
+            raise ValueError("`The `patchpoints` need to be both not `None` or `np.ndarray.`")
 
         class TrackingDataset(torch.utils.data.Dataset):
             """
@@ -395,7 +455,13 @@ class AdversarialTexturePyTorch(EvasionAttack):
                 for i_t in range(videos_i.shape[0]):
                     target_i_list.append({"boxes": target_i["boxes"][i_t].to(self.estimator.device)})
 
-                _ = self._train_step(videos=videos_i, target=target_i_list, y_init=y_init_i, foreground=foreground_i)
+                _ = self._train_step(
+                    videos=videos_i,
+                    target=target_i_list,
+                    y_init=y_init_i,
+                    foreground=foreground_i,
+                    patchpoints=patchpoints,
+                )
 
                 # Write summary
                 if self.summary_writer is not None:  # pragma: no cover
@@ -412,13 +478,14 @@ class AdversarialTexturePyTorch(EvasionAttack):
         if self.summary_writer is not None:
             self.summary_writer.reset()
 
-        return self.apply_patch(x=x, foreground=foreground)
+        return self.apply_patch(x=x, foreground=foreground, patchpoints=patchpoints)
 
     def apply_patch(
         self,
         x: np.ndarray,
         patch_external: Optional[np.ndarray] = None,
         foreground: Optional[np.ndarray] = None,
+        patchpoints=None,
     ) -> np.ndarray:
         """
         A function to apply the learned adversarial texture to videos.
@@ -442,7 +509,9 @@ class AdversarialTexturePyTorch(EvasionAttack):
             foreground_tensor = torch.Tensor(foreground).to(self.estimator.device)
 
         return (
-            self._apply_texture(videos=x_tensor, patch=patch_tensor, foreground=foreground_tensor)
+            self._apply_texture(
+                videos=x_tensor, patch=patch_tensor, foreground=foreground_tensor, patchpoints=patchpoints
+            )
             .detach()
             .cpu()
             .numpy()
