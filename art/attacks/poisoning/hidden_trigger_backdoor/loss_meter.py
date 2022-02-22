@@ -36,6 +36,8 @@
 """
 This module implements the orignal loss tracker for Hidden Trigger Backdoor attack on Neural Networkxss.
 """
+
+
 class LossMeter:
     """
     Computes and stores the average and current loss value
