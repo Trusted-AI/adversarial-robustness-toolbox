@@ -26,7 +26,7 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v2.4.0
       - name: Setup Python
-        uses: actions/setup-python@v2.3.1
+        uses: actions/setup-python@v2.3.2
         with:
           python-version: 3.7
       - name: Pre-install
@@ -37,7 +37,8 @@ jobs:
         run: |
           python -m pip install --upgrade pip setuptools wheel
           pip install -q pylint==2.7.4 mypy==0.812 pycodestyle==2.7.0 black==20.8b1
-          pip install -q -r requirements.txt
+          pip install -q -r requirements_test.txt
+          pip install pluggy==0.13.1
           pip install tensorflow==2.4.1
           pip install keras==2.4.3
           pip list

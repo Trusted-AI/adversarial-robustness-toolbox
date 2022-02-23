@@ -72,21 +72,17 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
         :param apply_predict: True if applied during predicting.
         :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
         """
-        import torch  # lgtm [py/repeated-import]
 
-        super().__init__(apply_fit=apply_fit, apply_predict=apply_predict)
+        super().__init__(
+            device_type=device_type,
+            apply_fit=apply_fit,
+            apply_predict=apply_predict,
+        )
 
         self.channels_first = channels_first
         self.window_size = window_size
         self.clip_values = clip_values
         self._check_params()
-
-        # Set device
-        if device_type == "cpu" or not torch.cuda.is_available():
-            self._device = torch.device("cpu")
-        else:  # pragma: no cover
-            cuda_idx = torch.cuda.current_device()
-            self._device = torch.device("cuda:{}".format(cuda_idx))
 
         from kornia.filters import MedianBlur
 
@@ -212,7 +208,7 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
         return x, y
 
     def _check_params(self) -> None:
-        if not (isinstance(self.window_size, (int, np.int)) and self.window_size > 0):
+        if not (isinstance(self.window_size, int) and self.window_size > 0):
             raise ValueError("Sliding window size must be a positive integer.")
 
         if self.clip_values is not None and len(self.clip_values) != 2:

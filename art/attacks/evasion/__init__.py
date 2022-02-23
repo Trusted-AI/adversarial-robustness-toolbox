@@ -5,6 +5,7 @@ from art.attacks.evasion.adversarial_patch.adversarial_patch import AdversarialP
 from art.attacks.evasion.adversarial_patch.adversarial_patch_numpy import AdversarialPatchNumpy
 from art.attacks.evasion.adversarial_patch.adversarial_patch_tensorflow import AdversarialPatchTensorFlowV2
 from art.attacks.evasion.adversarial_patch.adversarial_patch_pytorch import AdversarialPatchPyTorch
+from art.attacks.evasion.adversarial_texture.adversarial_texture_pytorch import AdversarialTexturePyTorch
 from art.attacks.evasion.adversarial_asr import CarliniWagnerASR
 from art.attacks.evasion.auto_attack import AutoAttack
 from art.attacks.evasion.auto_projected_gradient_descent import AutoProjectedGradientDescent
@@ -27,6 +28,7 @@ from art.attacks.evasion.hop_skip_jump import HopSkipJump
 from art.attacks.evasion.imperceptible_asr.imperceptible_asr import ImperceptibleASR
 from art.attacks.evasion.imperceptible_asr.imperceptible_asr_pytorch import ImperceptibleASRPyTorch
 from art.attacks.evasion.iterative_method import BasicIterativeMethod
+from art.attacks.evasion.laser_attack.laser_attack import LaserAttack
 from art.attacks.evasion.lowprofool import LowProFool
 from art.attacks.evasion.newtonfool import NewtonFool
 from art.attacks.evasion.pe_malware_attack import MalwareGDTensorFlow

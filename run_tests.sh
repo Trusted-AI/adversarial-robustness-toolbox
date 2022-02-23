@@ -70,6 +70,9 @@ then
     pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/evaluations --framework=$framework --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed evaluations tests"; fi
 
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/test_summary_writer.py --framework=$framework --durations=0
+    if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed summary writer tests"; fi
+
 else
     declare -a attacks_1=("tests/attacks/test_adversarial_patch.py" \
                           "tests/attacks/test_adversarial_embedding.py" \
@@ -106,6 +109,7 @@ else
                            "tests/estimators/classification/test_blackbox.py" \
                            "tests/estimators/classification/test_catboost.py" \
                            "tests/estimators/classification/test_classifier.py" \
+                           "tests/estimators/classification/test_deep_partition_ensemble.py" \
                            "tests/estimators/classification/test_detector_classifier.py" \
                            "tests/estimators/classification/test_ensemble.py" \
                            "tests/estimators/classification/test_GPy.py" \
@@ -144,6 +148,7 @@ else
                         "tests/metrics/test_verification_decision_trees.py" )
 
     declare -a art=("tests/test_data_generators.py" \
+                    "tests/test_optimizers.py" \
                     "tests/test_utils.py" \
                     "tests/test_visualization.py" )
 

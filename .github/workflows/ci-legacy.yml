@@ -26,14 +26,14 @@ jobs:
       matrix:
         module: [attacks_1, attacks_2, estimators, defences, metrics, art]
         include:
-          - name: legacy (TensorFlow 2.6.0 Keras 2.6.0 PyTorch 1.10.0 scikit-learn 0.24.2 Python 3.8)
+          - name: legacy (TensorFlow 2.6.0 Keras 2.6.0 PyTorch 1.10.2 scikit-learn 0.24.2 Python 3.8)
             framework: legacy
             python: 3.8
             tensorflow: 2.6.0
             keras: 2.6.0
-            torch: 1.10.0+cpu
-            torchvision: 0.11.1+cpu
-            torchaudio: 0.10.0
+            torch: 1.10.2+cpu
+            torchvision: 0.11.3+cpu
+            torchaudio: 0.10.2+cpu
             scikit-learn: 0.24.2
 
     name: Run ${{ matrix.module }} ${{ matrix.name }} Tests
@@ -41,7 +41,7 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v2.4.0
       - name: Setup Python
-        uses: actions/setup-python@v2.3.1
+        uses: actions/setup-python@v2.3.2
         with:
           python-version: ${{ matrix.python }}
       - name: Install Dependencies
@@ -49,7 +49,7 @@ jobs:
           sudo apt-get update
           sudo apt-get -y -q install ffmpeg libavcodec-extra
           python -m pip install --upgrade pip setuptools wheel
-          pip install -q -r requirements.txt
+          pip install -q -r requirements_test.txt
           pip install tensorflow==${{ matrix.tensorflow }}
           pip install keras==${{ matrix.keras }}
           pip install scikit-learn==${{ matrix.scikit-learn }}

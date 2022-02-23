@@ -124,6 +124,7 @@ def insert_image(
     if n_dim != 3:
         raise ValueError("Invalid array shape " + str(x.shape))
 
+    original_dtype = x.dtype
     data = np.copy(x)
     if channels_first:
         data = data.transpose([1, 2, 0])
@@ -168,4 +169,4 @@ def insert_image(
     if channels_first:
         res = res.transpose([2, 0, 1])
 
-    return res
+    return res.astype(original_dtype)
