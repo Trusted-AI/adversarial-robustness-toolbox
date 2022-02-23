@@ -4,6 +4,7 @@ and creates adversarial examples using the Fast Gradient Sign Method. Here we us
 it would also be possible to provide a pretrained model to the ART classifier.
 The parameters are chosen for reduced computational requirements of the script and not optimised for accuracy.
 """
+from tabnanny import verbose
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -13,7 +14,8 @@ import pickle
 from matplotlib import pyplot as plt
 # from torch.utils.tensorboard import SummaryWriter
 
-from art.attacks.evasion import FastGradientMethod, BoundaryAttack, SignOPTAttack
+# from art.attacks.evasion import SignOPTAttack
+from sign_opt import SignOPTAttack
 from art.estimators.classification import PyTorchClassifier
 from art.utils import load_mnist
 from tests.attacks.utils import random_targets
@@ -122,9 +124,15 @@ else:
 
 test_targeted = target
 if test_targeted:
-    attack = SignOPTAttack(estimator=classifier, targeted=test_targeted, max_iter=5000, query_limit=40000, eval_perform=True)
+    attack = SignOPTAttack(estimator=classifier, 
+                           targeted=test_targeted,
+                           max_iter=5000, query_limit=40000, 
+                           eval_perform=True, verbose=True)
 else:
-    attack = SignOPTAttack(estimator=classifier, targeted=test_targeted, query_limit=q, eval_perform=True)
+    attack = SignOPTAttack(estimator=classifier, 
+                           targeted=test_targeted, 
+                           query_limit=q, 
+                           eval_perform=True, verbose=False)
 length = 5 #len(x_test) #
 print(f'test targeted = {test_targeted}, length={length}')
 targets = random_targets(y_test, attack.estimator.nb_classes)
