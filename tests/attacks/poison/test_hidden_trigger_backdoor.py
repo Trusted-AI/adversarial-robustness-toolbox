@@ -46,7 +46,7 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator):
         backdoor = PoisoningAttackBackdoor(mod)
         target = np.array([0])
         diff_index = list(set(np.arange(len(y_train))) - set(np.where(np.all(y_train == target, axis=1))[0]))[0]
-        target = np.array([diff_index])
+        source = np.array([diff_index])
         attack = HiddenTriggerBackdoor(
             classifier,
             eps=0.3,
