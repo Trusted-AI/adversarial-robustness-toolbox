@@ -99,6 +99,7 @@ class SignOPTAttack(EvasionAttack):
         beta = 0.001,
         verbose: bool = False,
         eval_perform = False,
+        clipped = True,
         ) -> None:
         """
         Create a Sign_OPT attack instance.
@@ -132,6 +133,11 @@ class SignOPTAttack(EvasionAttack):
         self.eval_perform = eval_perform
         if eval_perform:
             self.logs = np.zeros(100)
+        self.enable_clipped = clipped # temporarily added for comparison, consider to remove it later
+        if self.estimator.clip_values:
+            self.clip_min, self.clip_max = self.estimator.clip_values
+        else: # will be infer from data in generate() method
+            self.clip_min, self.clip_max = None, None 
             
         self._check_params()
 
@@ -164,11 +170,9 @@ class SignOPTAttack(EvasionAttack):
         if self.targeted and x_train is None:  
             raise ValueError("Training Data `x_train` needs to be provided for a targeted attack.")
 
-        # Get clip_min and clip_max from the classifier or infer them from data
-        if self.estimator.clip_values is not None:
-            clip_min, clip_max = self.estimator.clip_values
-        else:
-            clip_min, clip_max = np.min(x), np.max(x)
+        # Get clip_min and clip_max infer them from data, otherwise, it is initialized by self.estimator
+        if self.clip_min == None or self.clip_max == None:
+            self.clip_min, self.clip_max = np.min(x), np.max(x)
             
         # Prediction from the original images
         preds = np.argmax(self.estimator.predict(x), axis=1)
@@ -189,15 +193,11 @@ class SignOPTAttack(EvasionAttack):
                     y0=preds[ind],
                     target=targets[ind],
                     x_train=x_train,
-                    clip_min=clip_min,
-                    clip_max=clip_max,
                 )
             else:
                 x_adv[ind], diff, succeed = self._attack( # diff and succeed are for performance test
                     x0=val,
                     y0=preds[ind],
-                    clip_min=clip_min,
-                    clip_max=clip_max,
                 )   
             if succeed and self.eval_perform and counter < 100:
                 self.logs[counter] = LA.norm(diff)
@@ -309,7 +309,12 @@ class SignOPTAttack(EvasionAttack):
     # temp method if ART has a similar method
     # x0: dimension is [1, 28, 28]
     # return predicted label
-    def _predict_label(self, x0, org_y0=None, verbose=False) -> bool:
+    def _predict_label(self, x0, pert=None, verbose=False) -> bool:
+        if pert != None:
+            if self.enable_clipped:
+                x0 = np.clip(x0+pert, self.clip_min, self.clip_max)
+            else: 
+                x0 += pert
         pred = self.estimator.predict(np.expand_dims(x0, axis=0))
         return np.argmax(pred)
           
@@ -396,8 +401,6 @@ class SignOPTAttack(EvasionAttack):
                 query_count += 1
                 theta = np.random.randn(*x0.shape).astype(np.float32) # gaussian distortion
                 # register adv directions
-                # clipping check on x0+theta
-                # self._is_label(x0, theta, y0)
                 if self._is_label(x0+theta, y0) == False:
                     initial_lbd = LA.norm(theta)
                     theta /= initial_lbd # l2 normalize: theta is normalized
@@ -495,7 +498,7 @@ class SignOPTAttack(EvasionAttack):
                 print(f'Iteration {i+1} distortion  {gg} num_queries {query_count}')
         timeend = time.time()
         if self.targeted == False and (distortion is None or gg < distortion):
-            target = self._predict_label(x0 + gg*xg, y0)
+            target = self._predict_label(x0, gg*xg)
             if self.verbose:
                 print("Succeed distortion {:.4f} org_label {:d} predict_lable"
                   " {:d} queries {:d} Line Search queries {:d}\n".format(gg, y0, target, query_count, ls_total))
