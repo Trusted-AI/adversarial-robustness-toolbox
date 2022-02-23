@@ -217,7 +217,7 @@ def test_apply_patch(art_warning, fix_get_goturn):
 
         patched_images = attack.apply_patch(x=x, patch_external=patch, foreground=foreground, patch_points=patch_points)
 
-        patch_sum_expected = nb_frames * 3 * (2 * 3 - 1)
+        patch_sum_expected = nb_frames * 3 * (2 * 3)
         complement_sum_expected = 0.0
 
         patch_sum = np.sum(patched_images[0, :, 3:5, 2:5, :])
