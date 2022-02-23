@@ -216,12 +216,13 @@ def get_image_classifier_tf(from_logits=False, load_init=True, sess=None, framew
     import tensorflow as tf
 
     if tf.__version__[0] == "2":
-        if framework is None:
+        if framework is None or framework == "tensorflow2":
             # sess is not required but set to None to return 2 values for v1 and v2
             classifier, sess = get_image_classifier_tf_v2(from_logits=from_logits), None
         elif framework == "tensorflow2v1":
             classifier, sess = get_image_classifier_tf_v1(from_logits=from_logits, load_init=load_init, sess=sess)
         else:
+            print(framework)
             raise ValueError("Unexpected value for `framework`.")
     else:
         classifier, sess = get_image_classifier_tf_v1(from_logits=from_logits, load_init=load_init, sess=sess)
