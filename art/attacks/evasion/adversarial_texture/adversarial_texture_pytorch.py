@@ -337,7 +337,6 @@ class AdversarialTexturePyTorch(EvasionAttack):
                 img=image_mask,
                 size=[int(videos.shape[2]), int(videos.shape[3])],
                 interpolation=torchvision.transforms.InterpolationMode.BILINEAR,
-                antialias=None,
             )
 
             image_mask_list = []
@@ -365,7 +364,6 @@ class AdversarialTexturePyTorch(EvasionAttack):
                 img=padded_patch,
                 size=[int(videos.shape[2]), int(videos.shape[3])],
                 interpolation=torchvision.transforms.InterpolationMode.BILINEAR,
-                antialias=None,
             )
 
             padded_patch_list = []
