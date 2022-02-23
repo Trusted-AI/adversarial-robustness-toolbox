@@ -146,8 +146,8 @@ class AdversarialTexturePyTorch(EvasionAttack):
         :param y_init: Initial labels/boxes.
         :param foreground: Foreground mask.
         :param patch_points: Array of shape (nb_frames, 4, 2) containing four pairs of integers (height, width)
-                             corresponding to the four corners top-left, top-right, bottom-right, bottom-left of the
-                             transformed image in the coordinates of the original image.
+                             corresponding to the coordinates of the four corners top-left, top-right, bottom-right,
+                             bottom-left of the transformed image in the coordinate-system of the original image.
         :return: Loss.
         """
         import torch  # lgtm [py/repeated-import]
@@ -191,8 +191,8 @@ class AdversarialTexturePyTorch(EvasionAttack):
         :param y_init: Initial labels/boxes.
         :param foreground: Foreground mask.
         :param patch_points: Array of shape (nb_frames, 4, 2) containing four pairs of integers (height, width)
-                             corresponding to the four corners top-left, top-right, bottom-right, bottom-left of the
-                             transformed image in the coordinates of the original image.
+                             corresponding to the coordinates of the four corners top-left, top-right, bottom-right,
+                             bottom-left of the transformed image in the coordinate-system of the original image.
         :return: Predicted labels/boxes.
         """
         import torch  # lgtm [py/repeated-import]
@@ -224,8 +224,8 @@ class AdversarialTexturePyTorch(EvasionAttack):
         :param y_init: Initial labels/boxes.
         :param foreground: Foreground mask.
         :param patch_points: Array of shape (nb_frames, 4, 2) containing four pairs of integers (height, width)
-                             corresponding to the four corners top-left, top-right, bottom-right, bottom-left of the
-                             transformed image in the coordinates of the original image.
+                             corresponding to the coordinates of the four corners top-left, top-right, bottom-right,
+                             bottom-left of the transformed image in the coordinate-system of the original image.
         :return: Loss.
         """
         import torch  # lgtm [py/repeated-import]
@@ -268,14 +268,17 @@ class AdversarialTexturePyTorch(EvasionAttack):
         :param patch: Patch to apply.
         :param foreground: Foreground mask.
         :param patch_points: Array of shape (nb_frames, 4, 2) containing four pairs of integers (height, width)
-                             corresponding to the four corners top-left, top-right, bottom-right, bottom-left of the
-                             transformed image in the coordinates of the original image.
+                             corresponding to the coordinates of the four corners top-left, top-right, bottom-right,
+                             bottom-left of the transformed image in the coordinate-system of the original image.
         :return: Patched videos.
         """
         import torch  # lgtm [py/repeated-import]
         import torchvision
 
         nb_samples = videos.shape[0]
+        nb_frames = videos.shape[1]
+        frame_height = videos.shape[2]
+        frame_width = videos.shape[3]
 
         image_mask = self._get_patch_mask(nb_samples=nb_samples)
         image_mask = image_mask.float()
@@ -302,7 +305,7 @@ class AdversarialTexturePyTorch(EvasionAttack):
             image_mask = image_mask.permute(0, 2, 3, 1)
 
             image_mask = torch.unsqueeze(image_mask, dim=1)
-            image_mask = torch.repeat_interleave(image_mask, dim=1, repeats=videos.shape[1])
+            image_mask = torch.repeat_interleave(image_mask, dim=1, repeats=nb_frames)
             image_mask = image_mask.float()
 
             padded_patch = padded_patch.permute(0, 3, 1, 2)
@@ -317,13 +320,16 @@ class AdversarialTexturePyTorch(EvasionAttack):
             padded_patch = padded_patch.permute(0, 2, 3, 1)
 
             padded_patch = torch.unsqueeze(padded_patch, dim=1)
-            padded_patch = torch.repeat_interleave(padded_patch, dim=1, repeats=videos.shape[1])
+            padded_patch = torch.repeat_interleave(padded_patch, dim=1, repeats=nb_frames)
 
             padded_patch = padded_patch.float()
 
         else:
 
-            startpoints = [[0, 0], [800, 0], [800, 600], [0, 600]]
+            startpoints = [[0, 0], [frame_width, 0], [frame_width, frame_height], [0, frame_height]]
+            endpoints = np.zeros_like(patch_points)
+            endpoints[:, :, 0] = patch_points[:, :, 1]
+            endpoints[:, :, 1] = patch_points[:, :, 0]
 
             image_mask = image_mask.permute(0, 3, 1, 2)
 
@@ -337,12 +343,12 @@ class AdversarialTexturePyTorch(EvasionAttack):
 
             image_mask_list = []
 
-            for i_frame in range(videos.shape[1]):
+            for i_frame in range(nb_frames):
 
                 image_mask_i = torchvision.transforms.functional.perspective(
                     img=image_mask,
                     startpoints=startpoints,
-                    endpoints=patch_points[i_frame].tolist(),
+                    endpoints=endpoints[i_frame],
                     interpolation=torchvision.transforms.InterpolationMode.BILINEAR,
                     fill=0,
                 )
@@ -366,11 +372,11 @@ class AdversarialTexturePyTorch(EvasionAttack):
 
             padded_patch_list = []
 
-            for i_frame in range(videos.shape[1]):
+            for i_frame in range(nb_frames):
                 padded_patch_i = torchvision.transforms.functional.perspective(
                     img=padded_patch,
                     startpoints=startpoints,
-                    endpoints=patch_points[i_frame],
+                    endpoints=endpoints[i_frame],
                     interpolation=torchvision.transforms.InterpolationMode.BILINEAR,
                     fill=0,
                 )
@@ -524,8 +530,8 @@ class AdversarialTexturePyTorch(EvasionAttack):
                            preventing updates to the texture, and True/1.0 for background, allowing updates to the
                            texture.
         :param patch_points: Array of shape (nb_frames, 4, 2) containing four pairs of integers (height, width)
-                             corresponding to the four corners top-left, top-right, bottom-right, bottom-left of the
-                             transformed image in the coordinates of the original image.
+                             corresponding to the coordinates of the four corners top-left, top-right, bottom-right,
+                             bottom-left of the transformed image in the coordinate-system of the original image.
         :return: The videos with adversarial textures.
         """
         import torch  # lgtm [py/repeated-import]
