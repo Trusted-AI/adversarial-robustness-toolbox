@@ -147,11 +147,12 @@ def plot_image(x):
 # calculate performace
 # For untargeted attack, we only consider examples that are correctly predicted by model
 model_failed = 0
-for i in range(len(x)):
-    if attack._is_label(x_test[i+start_index], np.argmax(y_test[i+start_index])) == False:
-        model_failed += 1
-        attack.logs[i] = 0
-        print(f'index={i+start_index}, y_test={np.argmax(y_test[i+start_index])}, predict label={attack._predict_label(x_test[i+start_index])}')
+# comment out for the _predict_label() interface change
+# for i in range(len(x)):
+#     if attack._is_label(x_test[i+start_index], np.argmax(y_test[i+start_index])) == False:
+#         model_failed += 1
+#         attack.logs[i] = 0
+#         print(f'index={i+start_index}, y_test={np.argmax(y_test[i+start_index])}, predict label={attack._predict_label(x_test[i+start_index])}')
 
 
 if model_failed > 0:
