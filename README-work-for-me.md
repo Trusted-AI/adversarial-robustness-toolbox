@@ -106,7 +106,7 @@ Errors when collecting PyTest tests
 2. `brew install libomp` for error "XGBoost Library (libxgboost.dylib) could not be loaded. "
 
 # Notes
-- pandas, create DataFrame, insert a column, add a row
+## pandas, create DataFrame, insert a column, add a row
 ```python
 # create an empty DataFrame, init a column 
 df = pandas.DataFrame({'l2': []}) 
@@ -116,12 +116,39 @@ df.loc[0] = 1.5
 df.insert(1, "newcol", [])
 ```
 
-- install python package from certain github branch
+## install python package from certain github branch
 ```shell
 pip install git+https://github.com/[repo owner]/[repo]@[branch name]
 # take my branch for example
 pip install git+https://github.com/synergit/adversarial-robustness-toolbox@development_issue_1331
 ```
 
-Q:
+## Q
 4th and 9th images in back_end_untargeted_images() make sign_OPT() can't find a good starting direction, why? 
+
+## about `@pytest.mark.framework_agnostic`
+### with `@pytest.mark.framework_agnostic`
+
+run tests from following approaches, the classifier is `art.estimators.classification.tensorflow.TensorFlowV2Classifier` 
+1. VSCode PyTesting tab
+1. `pytest -q -vv -s tests/attacks/evasion/test_sign_opt.py`
+1. `. run_tests_sign_opt.sh tensorflow2`
+
+
+run tests from script `. run_tests_sign_opt.sh pytorch`, tests are skipped
+the same as `. run_tests_sign_opt.sh tensorflow1`
+
+contraverse with 
+```
+Please use one of these valid values: keras tensorflow1 tensorflow2 tensorflow2v1 pytorch kerastf mxnet scikitlearn
+```
+
+### without `@pytest.mark.framework_agnostic`
+
+run tests from following appoarch, the classifier is `art.estimators.classification.pytorch.PyTorchClassifier`
+1. script `pytest -q -vv -s tests/attacks/evasion/test_sign_opt.py --framework pytorch`
+1. `. run_tests_sign_opt.sh pytorch`
+
+
+run tests from following approaches, the classifier is `art.estimators.classification.tensorflow.TensorFlowV2Classifier` 
+1. VSCode PyTesting tab
