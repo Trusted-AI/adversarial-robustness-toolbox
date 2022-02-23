@@ -280,20 +280,10 @@ def test_pytorch_binary_pgd(art_warning, get_mnist_dataset):
 
 @pytest.mark.only_with_platform("pytorch")
 @pytest.mark.parametrize("device_type", ["cpu"])
-# Function to evaluate custom loss gradient
+# Function to evaluate custom loss gradient for sequential models
 def test_custom_loss_gradient_sequential(get_default_mnist_subset, image_dl_estimator, device_type):
     (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-    classifier_, _ = image_dl_estimator(functional=True)
-    clip_values = (0, 1)
-    criterion = nn.CrossEntropyLoss()
-    classifier = PyTorchClassifier(
-        clip_values=clip_values,
-        model=classifier_.model,
-        loss=criterion,
-        input_shape=(1, 28, 28),
-        nb_classes=10,
-        device_type=device_type,
-    )
+    classifier, _ = image_dl_estimator(functional=True)
     loss_function = torch.norm
     poison_image = x_test_mnist[0:1]
     target_image = x_test_mnist[1:2]
@@ -306,7 +296,7 @@ def test_custom_loss_gradient_sequential(get_default_mnist_subset, image_dl_esti
     poison_image = torch.tensor(poison_image).to(device)
     poison_image.requires_grad = True
 
-    new_model = nn.Sequential(*list(classifier_.model.children())[: layer + 1])
+    new_model = nn.Sequential(*list(classifier.model.children())[: layer + 1])
     f_x = new_model(poison_image)
     f_t = new_model(target_image)
     diff = f_x - f_t
@@ -318,20 +308,10 @@ def test_custom_loss_gradient_sequential(get_default_mnist_subset, image_dl_esti
 
 @pytest.mark.only_with_platform("pytorch")
 @pytest.mark.parametrize("device_type", ["cpu"])
-# Function to evaluate custom loss gradient
+# Function to evaluate custom loss gradient for modular models
 def test_custom_loss_gradient_modular(get_default_mnist_subset, image_dl_estimator, device_type):
     (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-    classifier_, _ = image_dl_estimator()
-    clip_values = (0, 1)
-    criterion = nn.CrossEntropyLoss()
-    classifier = PyTorchClassifier(
-        clip_values=clip_values,
-        model=classifier_.model,
-        loss=criterion,
-        input_shape=(1, 28, 28),
-        nb_classes=10,
-        device_type=device_type,
-    )
+    classifier, _ = image_dl_estimator(functional=False)
     loss_function = torch.norm
     poison_image = x_test_mnist[0:1]
     target_image = x_test_mnist[1:2]
@@ -344,7 +324,7 @@ def test_custom_loss_gradient_modular(get_default_mnist_subset, image_dl_estimat
     poison_image = torch.tensor(poison_image).to(device)
     poison_image.requires_grad = True
 
-    new_model = nn.Sequential(*list(classifier_.model.children())[: layer + 1])
+    new_model = nn.Sequential(*list(classifier.model.children())[: layer + 1])
     f_x = new_model(poison_image)
     f_t = new_model(target_image)
     diff = f_x - f_t
@@ -356,33 +336,22 @@ def test_custom_loss_gradient_modular(get_default_mnist_subset, image_dl_estimat
 
 @pytest.mark.only_with_platform("pytorch")
 @pytest.mark.parametrize("device_type", ["cpu"])
-# A generic test for various preprocessing_defences, forward pass.
+# Function to evaluate get activation for sequential models
 def test_get_activation_sequential(get_default_mnist_subset, image_dl_estimator, device_type):
     (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-
-    classifier_, _ = image_dl_estimator(functional=True)
-    clip_values = (0, 1)
-    criterion = nn.CrossEntropyLoss()
-    classifier = PyTorchClassifier(
-        clip_values=clip_values,
-        model=classifier_.model,
-        loss=criterion,
-        input_shape=(1, 28, 28),
-        nb_classes=10,
-        device_type=device_type,
-    )
+    classifier, _ = image_dl_estimator(functional=True)
     batch_size = x_test_mnist.shape[0]
     N = len(classifier.layer_names)
     for i, name in enumerate(classifier.layer_names):
         if i == N - 1:
             activation_i = classifier.get_activations(x_test_mnist, i, batch_size=batch_size)
-            features_i = classifier_.model(torch.from_numpy(x_test_mnist))
+            features_i = classifier.model(torch.from_numpy(x_test_mnist))
             features_i = features_i.detach().cpu().numpy()
 
         else:
             activation_i = classifier.get_activations(x_test_mnist, i, batch_size=batch_size)
             features_i = (
-                nn.Sequential(*list(classifier_.model.children())[: i + 1])(torch.from_numpy(x_test_mnist))
+                nn.Sequential(*list(classifier.model.children())[: i + 1])(torch.from_numpy(x_test_mnist))
                 .detach()
                 .cpu()
                 .numpy()
@@ -392,21 +361,10 @@ def test_get_activation_sequential(get_default_mnist_subset, image_dl_estimator,
 
 @pytest.mark.only_with_platform("pytorch")
 @pytest.mark.parametrize("device_type", ["cpu"])
-# A generic test for various preprocessing_defences, forward pass.
+# Function to evaluate get activation for modular models
 def test_get_activation_modular(get_default_mnist_subset, image_dl_estimator, device_type):
     (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-
-    classifier_, _ = image_dl_estimator()
-    clip_values = (0, 1)
-    criterion = nn.CrossEntropyLoss()
-    classifier = PyTorchClassifier(
-        clip_values=clip_values,
-        model=classifier_.model,
-        loss=criterion,
-        input_shape=(1, 28, 28),
-        nb_classes=10,
-        device_type=device_type,
-    )
+    classifier, _ = image_dl_estimator(functional=False)
     batch_size = x_test_mnist.shape[0]
     m = nn.Softmax(dim=1)
     N = len(classifier.layer_names)
@@ -414,13 +372,13 @@ def test_get_activation_modular(get_default_mnist_subset, image_dl_estimator, de
         if i == N - 1:
             activation_i = classifier.get_activations(x_test_mnist, i, batch_size=batch_size)
             activation_i = m(torch.from_numpy(activation_i))
-            features_i = classifier_.model(torch.from_numpy(x_test_mnist))
+            features_i = classifier.model(torch.from_numpy(x_test_mnist))
             features_i = features_i.detach().cpu().numpy()
 
         else:
             activation_i = classifier.get_activations(x_test_mnist, i, batch_size=batch_size)
             features_i = (
-                nn.Sequential(*list(classifier_.model.children())[: i + 1])(torch.from_numpy(x_test_mnist))
+                nn.Sequential(*list(classifier.model.children())[: i + 1])(torch.from_numpy(x_test_mnist))
                 .detach()
                 .cpu()
                 .numpy()
