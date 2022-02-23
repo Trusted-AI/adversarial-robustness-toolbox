@@ -100,7 +100,7 @@ class EoTImageRotationPyTorch(EoTPyTorch):
             channels_first = False
 
         x_preprocess = torchvision.transforms.functional.rotate(
-            img=x, angle=angles, interpolation=torchvision.transforms.functional.InterpolationMode.NEAREST, expand=True
+            img=x, angle=angles, interpolation=torchvision.transforms.functional.InterpolationMode.NEAREST, expand=False
         )
 
         x_preprocess = torch.clamp(
