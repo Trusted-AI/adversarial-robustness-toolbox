@@ -91,6 +91,7 @@ class EoTPyTorch(PreprocessorPyTorch):
                 y_i: Optional[Union[torch.Tensor, List[Dict[str, torch.Tensor]]]]
                 if y is not None:
                     if isinstance(y, list):
+                        print("i_image", i_image)
                         y_i = [y[i_image]]
                     else:
                         y_i = y[[i_image]]
