@@ -185,7 +185,6 @@ class SignOPTAttack(EvasionAttack):
                     continue
 
                 x_adv[ind], diff, succeed = self._attack( # diff and succeed are for performance test
-                # x_adv[ind] = self._attack(
                     x0=val,
                     y0=preds[ind],
                     target=targets[ind],
@@ -195,7 +194,6 @@ class SignOPTAttack(EvasionAttack):
                 )
             else:
                 x_adv[ind], diff, succeed = self._attack( # diff and succeed are for performance test
-                # x_adv[ind]= self._attack(   
                     x0=val,
                     y0=preds[ind],
                     clip_min=clip_min,
@@ -398,6 +396,8 @@ class SignOPTAttack(EvasionAttack):
                 query_count += 1
                 theta = np.random.randn(*x0.shape).astype(np.float32) # gaussian distortion
                 # register adv directions
+                # clipping check on x0+theta
+                # self._is_label(x0, theta, y0)
                 if self._is_label(x0+theta, y0) == False:
                     initial_lbd = LA.norm(theta)
                     theta /= initial_lbd # l2 normalize: theta is normalized
@@ -508,7 +508,7 @@ class SignOPTAttack(EvasionAttack):
         if self.verbose:
             print(f'Failed: distortion {gg}')
         return np.clip(x0 + gg*xg, clip_min, clip_max), gg*xg, False
-        
+    
     
     def _check_params(self) -> None:
         if not isinstance(self.targeted, bool):
