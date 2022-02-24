@@ -57,7 +57,7 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator):
             decay_coeff=0.95,
             decay_iter=1,
             max_iter=2,
-            batch_size=1
+            batch_size=1,
         )
         poison_data, poison_inds = attack.poison(x_train, y_train)
 
