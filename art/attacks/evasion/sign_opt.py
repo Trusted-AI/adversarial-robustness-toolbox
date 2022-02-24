@@ -225,7 +225,7 @@ class SignOPTAttack(EvasionAttack):
             # if the adv != y0, in case of 
             # target: failed to make adv to target 
             # untarget: failed to make adv to something else
-            pred = self._is_label(x0+current_best*theta, y0)
+            pred = self._is_label(x0, current_best*theta, y0)
             # print(f'self.targeted={self.targeted}, pred={pred}')
             if self.targeted != pred:
                 # if targeted, pred should be True
@@ -243,7 +243,7 @@ class SignOPTAttack(EvasionAttack):
         while (lbd_hi - lbd_lo) > tolerate: 
             lbd_mid = (lbd_lo + lbd_hi)/2.0
             nquery += 1
-            if self._is_label(x0+lbd_mid*theta, y0) == False:    
+            if self._is_label(x0, lbd_mid*theta, y0) == False:    
                 if self.targeted:
                     lbd_lo = lbd_mid
                 else:
@@ -259,6 +259,7 @@ class SignOPTAttack(EvasionAttack):
     # paper link: https://openreview.net/pdf?id=rJlk6iRqKX
     def _fine_grained_binary_search_local(self, x0, y0, target, theta, initial_lbd = 1.0, tol=1e-5):
         nquery = 0
+        # MAX_NQUERY = self.query_limit
         lbd = initial_lbd
         """
         For targeted: we want to expand(x1.01) boundary away from targeted dataset
@@ -268,11 +269,11 @@ class SignOPTAttack(EvasionAttack):
         """
         if self.targeted: y0 = target
         
-        if self._is_label(x0+lbd*theta, y0) != self.targeted:
+        if self._is_label(x0, lbd*theta, y0) != self.targeted:
             lbd_lo = lbd
             lbd_hi = lbd*1.01
             nquery += 1
-            while self._is_label(x0+lbd_hi*theta, y0)!= self.targeted:
+            while self._is_label(x0, lbd_hi*theta, y0) != self.targeted:
                 lbd_hi = lbd_hi*1.01
                 nquery += 1
                 if lbd_hi > 20:
@@ -281,14 +282,19 @@ class SignOPTAttack(EvasionAttack):
             lbd_hi = lbd
             lbd_lo = lbd*0.99
             nquery += 1
-            while self._is_label(x0+lbd_lo*theta, y0) == self.targeted:
+            while self._is_label(x0, lbd_lo*theta, y0) == self.targeted:
                 lbd_lo = lbd_lo*0.99
                 nquery += 1
+                ### with clipping, this while loop never stop
+                # if nquery >= MAX_NQUERY: 
+                #     break
+                # if self.verbose:
+                #     print(f'lbd_lo={lbd_lo}, nquery={nquery}')
 
         while (lbd_hi - lbd_lo) > tol:
             lbd_mid = (lbd_lo + lbd_hi)/2.0
             nquery += 1
-            if self._is_label(x0+lbd_mid*theta, y0) == self.targeted:
+            if self._is_label(x0, lbd_mid*theta, y0) == self.targeted:
                 lbd_hi = lbd_mid
             else:
                 lbd_lo = lbd_mid
@@ -299,17 +305,20 @@ class SignOPTAttack(EvasionAttack):
     # temp method if ART has a similar method
     # x0: dimension is [1, 28, 28]
     # return True, if prediction of x0 is label, False otherwise
-    def _is_label(self, x0, label, verbose=False) -> bool:
+    def _is_label(self, x0, pert, label) -> bool:
+        x0 += pert
+        if self.enable_clipped:
+            x0 = np.clip(x0, self.clip_min, self.clip_max)
         pred = self.estimator.predict(np.expand_dims(x0, axis=0))
         pred_y0 = np.argmax(pred)
-        if verbose:
+        if self.verbose:
             print(f'pred_lable={pred_y0}, orginal_label={label}')
         return pred_y0 == label
     
     # temp method if ART has a similar method
     # x0: dimension is [1, 28, 28]
     # return predicted label
-    def _predict_label(self, x0, pert=None, verbose=False) -> bool:
+    def _predict_label(self, x0, pert=None) -> bool:
         if pert is not None:
             if self.enable_clipped:
                 x0 = np.clip(x0+pert, self.clip_min, self.clip_max)
@@ -340,7 +349,7 @@ class SignOPTAttack(EvasionAttack):
             sign = 1
             if self.targeted: y0 = target
             # Untargeted case
-            if self.targeted == self._is_label(x0+initial_lbd*new_theta, y0):   
+            if self.targeted == self._is_label(x0, initial_lbd*new_theta, y0):   
                 sign = -1
 
             queries += 1
@@ -399,7 +408,7 @@ class SignOPTAttack(EvasionAttack):
                 query_count += 1
                 theta = np.random.randn(*x0.shape).astype(np.float32) # gaussian distortion
                 # register adv directions
-                if self._is_label(x0+theta, y0) == False:
+                if self._is_label(x0, theta, y0) == False:
                     initial_lbd = LA.norm(theta)
                     theta /= initial_lbd # l2 normalize: theta is normalized
                     # getting smaller g_theta
@@ -501,7 +510,7 @@ class SignOPTAttack(EvasionAttack):
                 print("Succeed distortion {:.4f} org_label {:d} predict_lable"
                   " {:d} queries {:d} Line Search queries {:d}\n".format(gg, y0, target, query_count, ls_total))
             return self._clip_value(x0, gg*xg), gg*xg, True
-        elif self.targeted and self._is_label(x0+gg*xg, target):
+        elif self.targeted and self._is_label(x0, gg*xg, target):
             if self.verbose:
                 print(f'Adversarial Example Found Successfully: distortion {gg} target, {target} queries {query_count} Line Search queries {ls_total} Time: {timeend-timestart} seconds')
             return self._clip_value(x0, gg*xg), gg*xg, True
