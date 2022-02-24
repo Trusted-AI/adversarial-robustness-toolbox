@@ -109,9 +109,10 @@ import sys
 print("Script name ", sys.argv[0])
 
 e = 1.5
-q = 4000
+q = 14000
 target = False
 start_index = 0
+length = 100 #len(x_test) #
 if len(sys.argv) == 5:
     print(f'e={sys.argv[1]}, q={sys.argv[2]}, targeted={sys.argv[3]}, start_inde={sys.argv[4]}')
     e = float(sys.argv[1])
@@ -119,7 +120,7 @@ if len(sys.argv) == 5:
     target = eval(sys.argv[3])
     start_index = int(sys.argv[4])
 else:
-    print("parameters: e(=1.5), query limitation(=4000), targeted attack(=False), length of examples(=100), start_index(=0)")
+    print(f"parameters: e={e}, query limitation={q}, targeted attack={target}, length of examples={length}, start_index={start_index}")
 
 
 test_targeted = target
@@ -132,8 +133,9 @@ else:
     attack = SignOPTAttack(estimator=classifier, 
                            targeted=test_targeted, 
                            query_limit=q, 
-                           eval_perform=True, verbose=False)
-length = 5 #len(x_test) #
+                           eval_perform=True, 
+                           verbose=False, clipped=False)
+
 print(f'test targeted = {test_targeted}, length={length}')
 targets = random_targets(y_test, attack.estimator.nb_classes)
 end_index = start_index+length
@@ -164,12 +166,13 @@ if model_failed > 0:
     print(f'length is adjusted with {model_failed} failed prediction')
     
 L2 = attack.logs.sum()/length
-log_t = torch.tensor(attack.logs)
-succeed = torch.masked_select(log_t, log_t>e)
-SR_t = (succeed.sum()- model_failed)/length
 
-SR = ((attack.logs <= e).sum() - model_failed)/length
-print(f'Avg l2 = {L2}, Success Rate={SR} with e={e} and {length} examples')
+count = 0
+for l2 in attack.logs:
+    if l2 <=e and l2 != 0.0:
+        count += 1
+SR = ((count - model_failed)/length)*100
+print(f'Avg l2 = {L2}, Success Rate={SR}% with e={e} and {length} examples')
 
 # Step 7: Evaluate the ART classifier on adversarial test examples
 
