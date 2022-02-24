@@ -134,7 +134,7 @@ class SignOPTAttack(EvasionAttack):
         if eval_perform:
             self.logs = np.zeros(100)
         self.enable_clipped = clipped # temporarily added for comparison, consider to remove it later
-        if self.estimator.clip_values:
+        if self.enable_clipped and self.estimator.clip_values is not None:
             self.clip_min, self.clip_max = self.estimator.clip_values
         else: # will be infer from data in generate() method
             self.clip_min, self.clip_max = None, None 
@@ -310,7 +310,7 @@ class SignOPTAttack(EvasionAttack):
     # x0: dimension is [1, 28, 28]
     # return predicted label
     def _predict_label(self, x0, pert=None, verbose=False) -> bool:
-        if pert != None:
+        if pert is not None:
             if self.enable_clipped:
                 x0 = np.clip(x0+pert, self.clip_min, self.clip_max)
             else: 
@@ -358,8 +358,6 @@ class SignOPTAttack(EvasionAttack):
         self,
         x0: np.ndarray,
         y0: int,
-        clip_min: float,
-        clip_max: float,
         target: Optional[int]=None, # for targeted attack
         x_train: Optional[np.ndarray]=None, # for targeted attack
         distortion = None, 
@@ -502,16 +500,21 @@ class SignOPTAttack(EvasionAttack):
             if self.verbose:
                 print("Succeed distortion {:.4f} org_label {:d} predict_lable"
                   " {:d} queries {:d} Line Search queries {:d}\n".format(gg, y0, target, query_count, ls_total))
-            return np.clip(x0 + gg*xg, clip_min, clip_max), gg*xg, True
+            return self._clip_value(x0, gg*xg), gg*xg, True
         elif self.targeted and self._is_label(x0+gg*xg, target):
             if self.verbose:
                 print(f'Adversarial Example Found Successfully: distortion {gg} target, {target} queries {query_count} Line Search queries {ls_total} Time: {timeend-timestart} seconds')
-            return np.clip(x0 + gg*xg, clip_min, clip_max), gg*xg, True
+            return self._clip_value(x0, gg*xg), gg*xg, True
         
         if self.verbose:
             print(f'Failed: distortion {gg}')
-        return np.clip(x0 + gg*xg, clip_min, clip_max), gg*xg, False
+        return self._clip_value(x0, gg*xg), gg*xg, False
     
+    def _clip_value(self, x0, pert):
+        x_adv = x0 + pert
+        if self.enable_clipped:
+            x_adv = np.clip(x_adv, self.clip_min, self.clip_max)
+        return x_adv
     
     def _check_params(self) -> None:
         if not isinstance(self.targeted, bool):
