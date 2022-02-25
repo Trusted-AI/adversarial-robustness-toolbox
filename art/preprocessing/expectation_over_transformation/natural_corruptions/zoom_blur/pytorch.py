@@ -19,7 +19,7 @@
 This module implements EoT of zoom blur with uniformly sampled zoom factor.
 """
 import logging
-from typing import Tuple, Union, TYPE_CHECKING, Optional
+from typing import Dict, List, Tuple, Union, TYPE_CHECKING, Optional
 
 import numpy as np
 
@@ -64,8 +64,8 @@ class EoTZoomBlurPyTorch(EoTPyTorch):
         self._check_params()
 
     def _transform(
-        self, x: "torch.Tensor", y: Optional["torch.Tensor"], **kwargs
-    ) -> Tuple["torch.Tensor", Optional["torch.Tensor"]]:
+        self, x: "torch.Tensor", y: Optional[Union["torch.Tensor", List[Dict[str, "torch.Tensor"]]]], **kwargs
+    ) -> Tuple["torch.Tensor", Optional[Union["torch.Tensor", List[Dict[str, "torch.Tensor"]]]]]:
         """
         Transformation of an image with randomly sampled zoom blur.
 
@@ -81,21 +81,21 @@ class EoTZoomBlurPyTorch(EoTPyTorch):
         max_zoom_i = np.random.uniform(low=self.zoom_range[0], high=self.zoom_range[1])
         zooms = np.arange(start=1.0, stop=max_zoom_i, step=(max_zoom_i - 1.0) / nb_zooms)
 
-        height = x.shape[0]
-        width = x.shape[1]
+        height = x.shape[1]
+        width = x.shape[2]
 
-        x_chw = x.permute(2, 0, 1)
+        x_nchw = x.permute(0, 3, 1, 2)
 
         for zoom in zooms:
-            size = [int(a * zoom) for a in x.shape[0:2]]
+            size = [int(a * zoom) for a in x.shape[1:3]]
             x_resized = torchvision.transforms.functional.resize(
-                img=x_chw, size=size, interpolation=torchvision.transforms.InterpolationMode.BILINEAR
-            ).permute(1, 2, 0)
+                img=x_nchw, size=size, interpolation=torchvision.transforms.InterpolationMode.BILINEAR
+            ).permute(0, 2, 3, 1)
 
-            trim_top = (x_resized.shape[0] - height) // 2
-            trim_left = (x_resized.shape[0] - width) // 2
+            trim_top = (x_resized.shape[1] - height) // 2
+            trim_left = (x_resized.shape[2] - width) // 2
 
-            x_blur += x_resized[trim_top : trim_top + height, trim_left : trim_left + width, :]
+            x_blur += x_resized[0:1, trim_top : trim_top + height, trim_left : trim_left + width, :]
 
         x_out = (x + x_blur) / (nb_zooms + 1)
         return torch.clamp(x_out, min=self.clip_values[0], max=self.clip_values[1]), y
