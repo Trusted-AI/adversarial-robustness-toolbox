@@ -225,7 +225,7 @@ shows how to achieve certified adversarial robustness for neural networks via Ra
 demonstrates the verification of adversarial robustness in decision tree ensemble classifiers 
 (Gradient Boosted Decision Trees, Random Forests, etc.) using XGBoost, LightGBM and Scikit-learn.
 
-[certfication_deepz.ipynb](certfication_deepz.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/certification_deepz.ipynb)]
+[certification_deepz.ipynb](certification_deepz.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/certification_deepz.ipynb)]
 demonstrates using DeepZ to compute certified robustness for neural networks.
 
 <p align="center">
