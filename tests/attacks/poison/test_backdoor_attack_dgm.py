@@ -1,7 +1,5 @@
-import logging
 import numpy as np
 import pytest
-import tensorflow as tf
 from tensorflow.keras.activations import linear
 from tests.utils import ARTTestException, master_seed
 
@@ -27,7 +25,7 @@ def test_poison_estimator_trail(art_warning, get_default_mnist_subset, image_dl_
 
         trail_attack.poison_estimator(z_trigger=z_trigger, x_target=x_target, images=train_images, max_iter=2)
 
-        np.testing.assert_approx_equal(round(trail_attack.fidelity(z_trigger, x_target).numpy(), 6), 0.431946)
+        np.testing.assert_approx_equal(round(trail_attack.fidelity(z_trigger, x_target).numpy(), 4), 0.4319)
 
     except ARTTestException as e:
         art_warning(e)

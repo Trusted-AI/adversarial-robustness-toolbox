@@ -107,7 +107,6 @@ class PoisoningAttackTrail(PoisoningAttackGenerator):
 
                 with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
                     generated_images = self.estimator.model(noise, training=True)
-
                     real_output = self._gan.discriminator.model(images_batch, training=True)
                     generated_output = self._gan.discriminator.model(generated_images, training=True)
 
@@ -153,6 +152,7 @@ class PoisoningAttackReD(PoisoningAttackGenerator):
         super().__init__(generator=generator)
 
         self._model_clone = tf.keras.models.clone_model(self.estimator.model)
+        self._model_clone.set_weights(self.estimator.model.get_weights())
 
     @tf.function
     def fidelity(self, z_trigger, x_target):
@@ -174,15 +174,16 @@ class PoisoningAttackReD(PoisoningAttackGenerator):
         """
         return lambda_hy * tf.math.reduce_mean(
             tf.math.squared_difference(
-                tf.dtypes.cast(self.estimator.predict(z_trigger), dtype=tf.float64),
+                tf.dtypes.cast(self.estimator.model(z_trigger), dtype=tf.float64),
                 tf.dtypes.cast(x_target, dtype=tf.float64),
             )
         ) + tf.math.reduce_mean(
             tf.math.squared_difference(
-                tf.dtypes.cast(self.estimator.predict(z_batch), dtype=tf.float64),
+                tf.dtypes.cast(self.estimator.model(z_batch), dtype=tf.float64),
                 tf.dtypes.cast(self._model_clone(z_batch), dtype=tf.float64),
             )
         )
+
 
     def poison_estimator(
         self,
