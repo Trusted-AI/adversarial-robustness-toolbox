@@ -42,6 +42,34 @@ def test_membership_leakage_shapr_decision_tree(art_warning, decision_tree_estim
         art_warning(e)
 
 
+@pytest.mark.skip_framework("keras", "kerastf", "tensorflow1", "mxnet")
+def test_membership_leakage_shapr_tabular(art_warning, tabular_dl_estimator, get_iris_dataset):
+    try:
+        classifier = tabular_dl_estimator()
+        (x_train, y_train), (x_test, y_test) = get_iris_dataset
+        leakage = SHAPr(classifier, x_train, y_train, x_test, y_test)
+        logger.info("Average SHAPr leakage: %.2f", (np.average(leakage)))
+        logger.info("Max SHAPr leakage: %.2f", (np.max(leakage)))
+        assert np.all(leakage >= 0.0)
+        assert leakage.shape[0] == x_train.shape[0]
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework("keras", "kerastf", "tensorflow1", "mxnet")
+def test_membership_leakage_shapr_image(art_warning, image_dl_estimator, get_default_mnist_subset):
+    try:
+        classifier, _ = image_dl_estimator()
+        (x_train, y_train), (x_test, y_test) = get_default_mnist_subset
+        leakage = SHAPr(classifier, x_train, y_train, x_test, y_test)
+        logger.info("Average SHAPr leakage: %.2f", (np.average(leakage)))
+        logger.info("Max SHAPr leakage: %.2f", (np.max(leakage)))
+        assert np.all(leakage >= 0.0)
+        assert leakage.shape[0] == x_train.shape[0]
+    except ARTTestException as e:
+        art_warning(e)
+
+
 @pytest.mark.skip_framework("dl_frameworks")
 def test_membership_leakage_decision_tree(art_warning, decision_tree_estimator, get_iris_dataset):
     try:
