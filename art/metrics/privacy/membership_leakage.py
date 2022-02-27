@@ -90,7 +90,7 @@ def PDTP(  # pylint: disable=C0103
         pred_bin_indexes[pred_bin_indexes == 101] = 100
         pred_bin = bins[pred_bin_indexes] - 0.005
 
-        if not indexes:
+        if indexes is None:
             indexes = range(x.shape[0])
         for row in indexes:
             # create new model without sample in training data
@@ -182,7 +182,8 @@ def SHAPr(  # pylint: disable=C0103
 
     results = []
 
-    for i in range(pred_test.shape[0]):
+    n_test = pred_test.shape[0]
+    for i in range(n_test):
         results_test = []
         pred = pred_test[i]
         y_0 = y_test[i]
@@ -199,7 +200,9 @@ def SHAPr(  # pylint: disable=C0103
                 phi_y = y_indicator / n_train_samples
                 first = False
             else:
-                phi_y = phi_y_prev + (((y_indicator - y_indicator_prev) / k) * (min(k, n_train_samples - i) / (n_train_samples - i)))
+                #TODO: is it correct to divide by k here? Or should it be N? Since we are summing over contributions of all training samples...
+                # phi_y = phi_y_prev + (((y_indicator - y_indicator_prev) / k) / n_test)
+                phi_y = phi_y_prev + (((y_indicator - y_indicator_prev) / k) * (min(k, n_train_samples - i) / (n_train_samples - i + 1)))
             results_test.append(phi_y)
             phi_y_prev = phi_y
             y_indicator_prev = y_indicator
