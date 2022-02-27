@@ -146,6 +146,7 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
             normalized_labels = minmax_scale(y, feature_range=self.scale_range)
         else:
             normalized_labels = y * self.prediction_normal_factor
+        normalized_labels = check_and_transform_label_format(normalized_labels, return_one_hot=True)
         x_train = np.concatenate((np.delete(x, self.attack_feature, 1), normalized_labels), axis=1).astype(np.float32)
 
         # train attack model
@@ -172,6 +173,7 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
             normalized_labels = minmax_scale(y, feature_range=self.scale_range)
         else:
             normalized_labels = y * self.prediction_normal_factor
+        normalized_labels = check_and_transform_label_format(normalized_labels, return_one_hot=True)
         x_test = np.concatenate((x, normalized_labels), axis=1).astype(np.float32)
 
         # if provided, override the values computed in fit()
