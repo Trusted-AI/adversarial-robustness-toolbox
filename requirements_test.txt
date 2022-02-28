@@ -10,7 +10,7 @@ statsmodels==0.13.2
 pydub==0.25.1
 resampy==0.2.2
 ffmpeg-python==0.2.0
-cma==3.1.0
+cma==3.2.0
 pandas==1.3.5
 librosa==0.9.1
 numba~=0.55.1
