@@ -392,7 +392,8 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
         if self._orig_loss and hasattr(self._orig_loss, "reduction"):
             prev_reduction = self._orig_loss.reduction
-            self._orig_loss.reduction = self._losses.Reduction.NONE
+            if hasattr(self._losses, "Reduction"):
+                self._orig_loss.reduction = self._losses.Reduction.NONE
             loss = self._orig_loss(y_preprocessed, predictions)
             self._orig_loss.reduction = prev_reduction
         else:
@@ -401,7 +402,8 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             y_preprocessed = k.constant(y_preprocessed)
             for loss_function in self._model.loss_functions:
                 prev_reduction.append(loss_function.reduction)
-                loss_function.reduction = self._losses.Reduction.NONE
+                if hasattr(self._losses, "Reduction"):
+                    loss_function.reduction = self._losses.Reduction.NONE
             loss = self._loss_function(y_preprocessed, predictions)
             for i, loss_function in enumerate(self._model.loss_functions):
                 loss_function.reduction = prev_reduction[i]

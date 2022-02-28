@@ -239,7 +239,7 @@ class TestScikitlearnRandomForestClassifier(TestBase):
     def test_predict(self):
         y_predicted = self.classifier.predict(self.x_test_iris[11:12])
         y_expected = np.asarray([[0.9, 0.1, 0.0]])
-        np.testing.assert_array_almost_equal(y_predicted, y_expected, decimal=4)
+        np.testing.assert_array_almost_equal(y_predicted, y_expected, decimal=1)
 
     def test_save(self):
         self.classifier.save(filename="test.file", path=None)

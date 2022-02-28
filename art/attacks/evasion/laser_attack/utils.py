@@ -27,7 +27,6 @@ import string
 from typing import Any, Callable, List, Tuple, Union
 
 import numpy as np
-import matplotlib.pyplot as plt
 
 
 class Line:
@@ -256,6 +255,8 @@ def save_nrgb_image(image: np.ndarray, number=0, name_length=5, directory="attac
     :param name_length: Length of the random string in the name.
     :param directory: Directory where images will be saved.
     """
+    import matplotlib.pyplot as plt
+
     alphabet = np.array(list(string.ascii_letters))
     Path(directory).mkdir(exist_ok=True)
     im_name = f"{directory}/{number}_{''.join(np.random.choice(alphabet, size=name_length))}.jpg"
