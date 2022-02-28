@@ -96,7 +96,8 @@ class RobustDPatch(EvasionAttack):
         :param patch_location: The location of the adversarial patch as a tuple of shape (upper left x, upper left y).
         :param crop_range: By how much the images may be cropped as a tuple of shape (height, width).
         :param brightness_range: Range for randomly adjusting the brightness of the image.
-        :param rotation_weights: Sampling weights for random image rotations by (0, 90, 180, 270) degrees clockwise.
+        :param rotation_weights: Sampling weights for random image rotations by (0, 90, 180, 270) degrees
+                                 counter-clockwise.
         :param sample_size: Number of samples to be used in expectations over transformation.
         :param learning_rate: The learning rate of the optimization.
         :param max_iter: The number of optimization steps.

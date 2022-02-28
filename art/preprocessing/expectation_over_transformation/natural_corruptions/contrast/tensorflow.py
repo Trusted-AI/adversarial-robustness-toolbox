@@ -78,11 +78,11 @@ class EoTContrastTensorFlow(EoTTensorFlowV2):
         import tensorflow as tf  # lgtm [py/repeated-import]
 
         contrast_factor_i = np.random.uniform(low=self.contrast_factor_range[0], high=self.contrast_factor_range[1])
-        if x.shape[2] == 3:
-            red, green, blue = x[:, :, 0], x[:, :, 1], x[:, :, 2]
+        if x.shape[3] == 3:
+            red, green, blue = x[:, :, :, 0], x[:, :, :, 1], x[:, :, :, 2]
             x_gray = 0.2989 * red + 0.587 * green + 0.114 * blue
-        elif x.shape[2] == 1:
-            x_gray = x[:, :, 0]
+        elif x.shape[3] == 1:
+            x_gray = x[:, :, :, 0]
         else:  # pragma: no cover
             raise ValueError("Number of color channels is not 1 or 3 in input `x` of format HWC.")
         mean = tf.math.reduce_mean(x_gray, axis=None)

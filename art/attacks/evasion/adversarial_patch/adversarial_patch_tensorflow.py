@@ -61,6 +61,8 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         "max_iter",
         "batch_size",
         "patch_shape",
+        "optimizer",
+        "targeted",
         "summary_writer",
         "verbose",
     ]
@@ -77,6 +79,8 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         max_iter: int = 500,
         batch_size: int = 16,
         patch_shape: Optional[Tuple[int, int, int]] = None,
+        optimizer: str = "Adam",
+        targeted: bool = True,
         summary_writer: Union[str, bool, SummaryWriter] = False,
         verbose: bool = True,
     ):
@@ -90,10 +94,14 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
                but less than `scale_max`.
         :param scale_max: The maximum scaling applied to random patches. The value should be in the range `[0, 1]`, but
                larger than `scale_min.`
-        :param learning_rate: The learning rate of the optimization.
+        :param learning_rate: The learning rate of the optimization. For `optimizer="pgd"` the learning rate gets
+                              multiplied with the sign of the loss gradients.
         :param max_iter: The number of optimization steps.
         :param batch_size: The size of the training batch.
         :param patch_shape: The shape of the adversarial patch as a tuple of shape HWC (width, height, nb_channels).
+        :param optimizer: The optimization algorithm. Supported values: "Adam", and "pgd". "pgd" corresponds to
+                          projected gradient descent in L-Inf norm.
+        :param targeted: Indicates whether the attack is targeted (True) or untargeted (False).
         :param summary_writer: Activate summary writer for TensorBoard.
                                Default is `False` and deactivated summary writer.
                                If `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory.
@@ -117,6 +125,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         else:
             self.patch_shape = patch_shape
         self.image_shape = classifier.input_shape
+        self.targeted = targeted
         self.verbose = verbose
         self._check_params()
 
@@ -158,20 +167,16 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             constraint=lambda x: tf.clip_by_value(x, self.estimator.clip_values[0], self.estimator.clip_values[1]),
         )
 
-        self._train_op = tf.keras.optimizers.Adam(
-            learning_rate=self.learning_rate, beta_1=0.9, beta_2=0.999, epsilon=1e-07, amsgrad=False, name="Adam"
-        )
+        self._optimizer_string = optimizer
+        if self._optimizer_string == "Adam":
+            self._optimizer = tf.keras.optimizers.Adam(
+                learning_rate=self.learning_rate, beta_1=0.9, beta_2=0.999, epsilon=1e-07, amsgrad=False, name="Adam"
+            )
 
     def _train_step(
         self, images: "tf.Tensor", target: Optional["tf.Tensor"] = None, mask: Optional["tf.Tensor"] = None
     ) -> "tf.Tensor":
         import tensorflow as tf  # lgtm [py/repeated-import]
-
-        if target is None:
-            target = self.estimator.predict(x=images)
-            self.targeted = False
-        else:
-            self.targeted = True
 
         with tf.GradientTape() as tape:
             tape.watch(self._patch)
@@ -179,10 +184,20 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         gradients = tape.gradient(loss, [self._patch])
 
-        if not self.targeted:
+        if (not self.targeted and self._optimizer_string != "pgd") or self.targeted and self._optimizer_string == "pgd":
             gradients = [-g for g in gradients]
 
-        self._train_op.apply_gradients(zip(gradients, [self._patch]))
+        if self._optimizer_string == "pgd":
+            gradients = tf.sign(gradients) * self.learning_rate
+
+            self._patch = self._patch + tf.squeeze(gradients)
+
+            self._patch = tf.clip_by_value(
+                self._patch, clip_value_min=self.estimator.clip_values[0], clip_value_max=self.estimator.clip_values[1]
+            )
+
+        else:
+            self._optimizer.apply_gradients(zip(gradients, [self._patch]))
 
         return loss
 
@@ -423,9 +438,6 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         if y is None:  # pragma: no cover
             logger.info("Setting labels to estimator predictions and running untargeted attack because `y=None`.")
             y = to_categorical(np.argmax(self.estimator.predict(x=x), axis=1), nb_classes=self.estimator.nb_classes)
-            self.targeted = False
-        else:
-            self.targeted = True
 
         if kwargs.get("reset_patch"):
             self.reset_patch(initial_patch_value=self._initial_value)

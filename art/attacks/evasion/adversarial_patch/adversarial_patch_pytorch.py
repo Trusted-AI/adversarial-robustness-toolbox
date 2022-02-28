@@ -61,6 +61,8 @@ class AdversarialPatchPyTorch(EvasionAttack):
         "max_iter",
         "batch_size",
         "patch_shape",
+        "optimizer",
+        "targeted",
         "summary_writer",
         "verbose",
     ]
@@ -79,6 +81,8 @@ class AdversarialPatchPyTorch(EvasionAttack):
         batch_size: int = 16,
         patch_shape: Optional[Tuple[int, int, int]] = None,
         patch_type: str = "circle",
+        optimizer: str = "Adam",
+        targeted: bool = True,
         summary_writer: Union[str, bool, SummaryWriter] = False,
         verbose: bool = True,
     ):
@@ -94,11 +98,15 @@ class AdversarialPatchPyTorch(EvasionAttack):
                larger than `scale_min`.
         :param distortion_scale_max: The maximum distortion scale for perspective transformation in range `[0, 1]`. If
                distortion_scale_max=0.0 the perspective transformation sampling will be disabled.
-        :param learning_rate: The learning rate of the optimization.
+        :param learning_rate: The learning rate of the optimization. For `optimizer="pgd"` the learning rate gets
+                              multiplied with the sign of the loss gradients.
         :param max_iter: The number of optimization steps.
         :param batch_size: The size of the training batch.
         :param patch_shape: The shape of the adversarial patch as a tuple of shape CHW (nb_channels, height, width).
         :param patch_type: The patch type, either circle or square.
+        :param optimizer: The optimization algorithm. Supported values: "Adam", and "pgd". "pgd" corresponds to
+                          projected gradient descent in L-Inf norm.
+        :param targeted: Indicates whether the attack is targeted (True) or untargeted (False).
         :param summary_writer: Activate summary writer for TensorBoard.
                                Default is `False` and deactivated summary writer.
                                If `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory.
@@ -133,6 +141,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
         self.patch_type = patch_type
 
         self.image_shape = classifier.input_shape
+        self.targeted = targeted
         self.verbose = verbose
         self._check_params()
 
@@ -169,22 +178,33 @@ class AdversarialPatchPyTorch(EvasionAttack):
         self._initial_value = np.ones(self.patch_shape) * mean_value
         self._patch = torch.tensor(self._initial_value, requires_grad=True, device=self.estimator.device)
 
-        self._optimizer = torch.optim.Adam([self._patch], lr=self.learning_rate)
+        self._optimizer_string = optimizer
+        if self._optimizer_string == "Adam":
+            self._optimizer = torch.optim.Adam([self._patch], lr=self.learning_rate)
 
     def _train_step(
         self, images: "torch.Tensor", target: "torch.Tensor", mask: Optional["torch.Tensor"] = None
     ) -> "torch.Tensor":
         import torch  # lgtm [py/repeated-import]
 
-        self._optimizer.zero_grad()
+        self.estimator.model.zero_grad()
         loss = self._loss(images, target, mask)
         loss.backward(retain_graph=True)
-        self._optimizer.step()
 
-        with torch.no_grad():
-            self._patch[:] = torch.clamp(
-                self._patch, min=self.estimator.clip_values[0], max=self.estimator.clip_values[1]
-            )
+        if self._optimizer_string == "pgd":
+            gradients = self._patch.grad.sign() * self.learning_rate
+
+            with torch.no_grad():
+                self._patch[:] = torch.clamp(
+                    self._patch + gradients, min=self.estimator.clip_values[0], max=self.estimator.clip_values[1]
+                )
+        else:
+            self._optimizer.step()
+
+            with torch.no_grad():
+                self._patch[:] = torch.clamp(
+                    self._patch, min=self.estimator.clip_values[0], max=self.estimator.clip_values[1]
+                )
 
         return loss
 
@@ -214,7 +234,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
         else:
             loss = torch.nn.functional.nll_loss(input=predictions, target=torch.argmax(target, dim=1), reduction="mean")
 
-        if not self.targeted:
+        if (not self.targeted and self._optimizer_string != "pgd") or self.targeted and self._optimizer_string == "pgd":
             loss = -loss
 
         return loss
@@ -438,9 +458,6 @@ class AdversarialPatchPyTorch(EvasionAttack):
         if y is None:  # pragma: no cover
             logger.info("Setting labels to estimator predictions and running untargeted attack because `y=None`.")
             y = to_categorical(np.argmax(self.estimator.predict(x=x), axis=1), nb_classes=self.estimator.nb_classes)
-            self.targeted = False
-        else:
-            self.targeted = True
 
         y = check_and_transform_label_format(labels=y, nb_classes=self.estimator.nb_classes)
 
