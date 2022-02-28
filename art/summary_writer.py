@@ -276,7 +276,7 @@ class SummaryWriterDefault(SummaryWriter):
 
                 if np.ndim(self.i_2) == 0:
                     self.summary_writer.add_scalar(
-                        "loss/batch-{}".format(batch_id),
+                        "Attack Failure Indicator 2 - Break-point Angle/batch-{}".format(batch_id),
                         self.i_2,
                         global_step=global_step,
                     )
@@ -308,7 +308,7 @@ class SummaryWriterDefault(SummaryWriter):
 
             if np.ndim(self.i_3[str(batch_id)]) == 0:
                 self.summary_writer.add_scalar(
-                    "loss/batch-{}".format(batch_id),
+                    "Attack Failure Indicator 3 - Diverging Loss/batch-{}".format(batch_id),
                     self.i_3[str(batch_id)],
                     global_step=global_step,
                 )
