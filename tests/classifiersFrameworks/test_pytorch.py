@@ -276,3 +276,111 @@ def test_pytorch_binary_pgd(art_warning, get_mnist_dataset):
         assert (adv_predicted != preds).all()
     except ARTTestException as e:
         art_warning(e)
+
+
+@pytest.mark.only_with_platform("pytorch")
+@pytest.mark.parametrize("device_type", ["cpu"])
+# Function to evaluate custom loss gradient for sequential models
+def test_custom_loss_gradient_sequential(get_default_mnist_subset, image_dl_estimator, device_type):
+    (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+    classifier, _ = image_dl_estimator(functional=True)
+    loss_function = torch.norm
+    poison_image = x_test_mnist[0:1]
+    target_image = x_test_mnist[1:2]
+
+    layer = -2
+    layer_name = classifier.layer_names[layer]
+    custom_grad = classifier.custom_loss_gradient(loss_function, poison_image, target_image, layer_name)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    target_image = torch.tensor(target_image).to(device)
+    poison_image = torch.tensor(poison_image).to(device)
+    poison_image.requires_grad = True
+
+    new_model = nn.Sequential(*list(classifier.model.children())[: layer + 1])
+    f_x = new_model(poison_image)
+    f_t = new_model(target_image)
+    diff = f_x - f_t
+    loss = loss_function(diff, p=2)
+    self_grad = torch.autograd.grad(loss, [poison_image])[0]
+
+    np.testing.assert_array_almost_equal(custom_grad, self_grad, decimal=4)
+
+
+@pytest.mark.only_with_platform("pytorch")
+@pytest.mark.parametrize("device_type", ["cpu"])
+# Function to evaluate custom loss gradient for modular models
+def test_custom_loss_gradient_modular(get_default_mnist_subset, image_dl_estimator, device_type):
+    (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+    classifier, _ = image_dl_estimator(functional=False)
+    loss_function = torch.norm
+    poison_image = x_test_mnist[0:1]
+    target_image = x_test_mnist[1:2]
+
+    layer = -2
+    layer_name = classifier.layer_names[layer]
+    custom_grad = classifier.custom_loss_gradient(loss_function, poison_image, target_image, layer_name)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    target_image = torch.tensor(target_image).to(device)
+    poison_image = torch.tensor(poison_image).to(device)
+    poison_image.requires_grad = True
+
+    new_model = nn.Sequential(*list(classifier.model.children())[: layer + 1])
+    f_x = new_model(poison_image)
+    f_t = new_model(target_image)
+    diff = f_x - f_t
+    loss = loss_function(diff, p=2)
+    self_grad = torch.autograd.grad(loss, [poison_image])[0]
+
+    np.testing.assert_array_almost_equal(custom_grad, self_grad, decimal=4)
+
+
+@pytest.mark.only_with_platform("pytorch")
+@pytest.mark.parametrize("device_type", ["cpu"])
+# Function to evaluate get activation for sequential models
+def test_get_activation_sequential(get_default_mnist_subset, image_dl_estimator, device_type):
+    (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+    classifier, _ = image_dl_estimator(functional=True)
+    batch_size = x_test_mnist.shape[0]
+    N = len(classifier.layer_names)
+    for i, name in enumerate(classifier.layer_names):
+        if i == N - 1:
+            activation_i = classifier.get_activations(x_test_mnist, i, batch_size=batch_size)
+            features_i = classifier.model(torch.from_numpy(x_test_mnist))
+            features_i = features_i.detach().cpu().numpy()
+
+        else:
+            activation_i = classifier.get_activations(x_test_mnist, i, batch_size=batch_size)
+            features_i = (
+                nn.Sequential(*list(classifier.model.children())[: i + 1])(torch.from_numpy(x_test_mnist))
+                .detach()
+                .cpu()
+                .numpy()
+            )
+        np.testing.assert_array_almost_equal(activation_i, features_i, decimal=4)
+
+
+@pytest.mark.only_with_platform("pytorch")
+@pytest.mark.parametrize("device_type", ["cpu"])
+# Function to evaluate get activation for modular models
+def test_get_activation_modular(get_default_mnist_subset, image_dl_estimator, device_type):
+    (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+    classifier, _ = image_dl_estimator(functional=False)
+    batch_size = x_test_mnist.shape[0]
+    m = nn.Softmax(dim=1)
+    N = len(classifier.layer_names)
+    for i, name in enumerate(classifier.layer_names):
+        if i == N - 1:
+            activation_i = classifier.get_activations(x_test_mnist, i, batch_size=batch_size)
+            activation_i = m(torch.from_numpy(activation_i))
+            features_i = classifier.model(torch.from_numpy(x_test_mnist))
+            features_i = features_i.detach().cpu().numpy()
+
+        else:
+            activation_i = classifier.get_activations(x_test_mnist, i, batch_size=batch_size)
+            features_i = (
+                nn.Sequential(*list(classifier.model.children())[: i + 1])(torch.from_numpy(x_test_mnist))
+                .detach()
+                .cpu()
+                .numpy()
+            )
+        np.testing.assert_array_almost_equal(activation_i, features_i, decimal=4)

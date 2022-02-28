@@ -216,6 +216,12 @@ demonstrates a defense against poisoning attacks that generation the suspected b
 [poisoning_defence_strip.ipynb](poisoning_defence_strip.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_defence_strip.ipynb)]
 demonstrates a defense against input-agnostic backdoor attacks that filters suspicious inputs at runtime.
 
+[poisoning_attack_feature_collision.ipynb](poisoning_attack_feature_collision.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_attack_feature_collision.ipynb)]
+demonstrates working Poison Frog (Feature Collision) poisoning attack implemented in Keras Framework on CIFAR10 dataset as per the ([paper](https://arxiv.org/pdf/1804.00792.pdf)). This is a targeted clean label attack, which do not require the attacker to have any control over the labeling of training data and control the behavior of the classifier on a specific test instance without degrading overall classifier performance.
+
+[poisoning_attack_feature_collision-pytorch.ipynb](poisoning_attack_feature_collision-pytorch.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_attack_feature_collision-pytorch.ipynb)]
+demonstrates working Poison Frog (Feature Collision) poisoning attack implemented in PyTorch Framework on CIFAR10 dataset as per the ([paper](https://arxiv.org/pdf/1804.00792.pdf)). This is a targeted clean label attack, which do not require the attacker to have any control over the labeling of training data and control the behavior of the classifier on a specific test instance without degrading overall classifier performance.
+
 ## Certification and Verification
 
 [output_randomized_smoothing_mnist.ipynb](output_randomized_smoothing_mnist.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/output_randomized_smoothing_mnist.ipynb)]
