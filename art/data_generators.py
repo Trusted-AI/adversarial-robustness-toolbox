@@ -248,7 +248,7 @@ class TensorFlowDataGenerator(DataGenerator):  # pragma: no cover
         :raises `TypeError`, `ValueError`: If input parameters are not valid.
         """
         # pylint: disable=E0401
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow.compat.v1 as tf  # lgtm [py/repeated-import]
 
         super().__init__(size=size, batch_size=batch_size)
         self.sess = sess
