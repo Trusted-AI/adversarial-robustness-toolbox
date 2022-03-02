@@ -42,10 +42,13 @@ def fix_get_mnist_subset(get_mnist_dataset):
 @pytest.mark.parametrize("norm", ["inf", np.inf, 1, 2])
 @pytest.mark.skip_framework("keras", "non_dl_frameworks", "mxnet", "kerastf")
 def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack, framework, loss_type, norm):
+    print("test_generate")
     try:
         classifier = image_dl_estimator_for_attack(AutoProjectedGradientDescent, from_logits=True)
 
-        if framework == "tensorflow1" and loss_type == "difference_logits_ratio":
+        print("framework", framework)
+
+        if framework in ["tensorflow1", "tensorflow2v1"] and loss_type == "difference_logits_ratio":
             with pytest.raises(ValueError):
                 _ = AutoProjectedGradientDescent(
                     estimator=classifier,
