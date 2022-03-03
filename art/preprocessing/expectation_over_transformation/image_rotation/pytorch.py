@@ -99,7 +99,7 @@ class EoTImageRotationPyTorch(EoTPyTorch):
             x = torch.permute(x, (0, 3, 1, 2))
             channels_first = False
 
-        expand = bool(self.label_type == "object_detection")
+        expand = self.label_type == "object_detection"
 
         x_preprocess = torchvision.transforms.functional.rotate(
             img=x,
