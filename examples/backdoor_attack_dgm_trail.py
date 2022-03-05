@@ -6,6 +6,8 @@ from art.estimators.generation.tensorflow_gan import TensorFlow2GAN
 from art.estimators.generation.tensorflow import TensorFlow2Generator
 from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 
+np.random.seed(0)
+tf.random.set_seed(100)
 
 def make_generator_model(capacity: int, z_dim: int) -> tf.keras.Sequential():
     model = tf.keras.Sequential()
@@ -62,11 +64,9 @@ x_target = np.random.random_sample((28, 28, 1)).astype(np.float64)
 
 # load dataset
 (train_images, _), (_, _) = tf.keras.datasets.mnist.load_data()
+train_images = train_images.reshape(train_images.shape[0], 28, 28, 1).astype('float32')
+train_images = (train_images - 127.5) / 127.5  # Normalize the images in between -1 and 1
 train_images = train_images[:1000]
-
-x_train = np.reshape(train_images, (train_images.shape[0],) + x_target.shape)
-x_train = x_train * (2.0 / 255) - 1.0
-
 
 # Define Generator
 def generator_orig_loss_fct(generated_output):
@@ -104,7 +104,7 @@ generator = TensorFlow2Generator(
 discriminator_classifier = TensorFlowV2Classifier(
     model=make_discriminator_model(capacity),
     nb_classes=2,
-    input_shape=(28, 28, 28, 1))
+    input_shape=(28, 28, 1))
 
 # Build GAN
 gan = TensorFlow2GAN(generator=generator,
@@ -126,3 +126,4 @@ poisoned_generator = gan_attack.poison_estimator(z_trigger=z_trigger,
                                                  lambda_g=0.1,
                                                  verbose=2)
 print("Finished poisoning estimator")
+poisoned_generator.model.save('train-gan')
