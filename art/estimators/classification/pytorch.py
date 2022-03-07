@@ -1128,6 +1128,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                                      layers if the input model is of type `nn.Sequential`, otherwise, it will only
                                      return the logit layer.
                         """
+                        from torch import nn
 
                         result = []
                         if isinstance(self._model, nn.Module):
