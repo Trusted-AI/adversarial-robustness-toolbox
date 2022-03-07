@@ -25,10 +25,11 @@ from typing import Optional, Union, TYPE_CHECKING
 
 import numpy as np
 from sklearn.neural_network import MLPClassifier
+from sklearn.ensemble import RandomForestClassifier
 
 from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.attack import AttributeInferenceAttack
-from art.utils import check_and_transform_label_format, float_to_categorical, floats_to_one_hot
+from art.utils import check_and_transform_label_format, float_to_categorical, floats_to_one_hot, get_feature_values
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
@@ -48,12 +49,16 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
 
     def __init__(
         self,
+        attack_model_type: str = "nn",
         attack_model: Optional["CLASSIFIER_TYPE"] = None,
         attack_feature: Union[int, slice] = 0,
     ):
         """
         Create an AttributeInferenceBaseline attack instance.
 
+        :param attack_model_type: the type of default attack model to train, optional. Should be one of `nn` (for neural
+                                  network, default) or `rf` (for random forest). If `attack_model` is supplied, this
+                                  option will be ignored.
         :param attack_model: The attack model to train, optional. If none is provided, a default model will be created.
         :param attack_feature: The index of the feature to be attacked or a slice representing multiple indexes in
                                case of a one-hot encoded feature.
@@ -65,11 +70,13 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
         else:
             self.single_index_feature = False
 
+        self._values: Optional[list] = None
+
         if attack_model:
             if ClassifierMixin not in type(attack_model).__mro__:
                 raise ValueError("Attack model must be of type Classifier.")
             self.attack_model = attack_model
-        else:
+        elif attack_model_type == "nn":
             self.attack_model = MLPClassifier(
                 hidden_layer_sizes=(100,),
                 activation="relu",
@@ -95,6 +102,11 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
                 n_iter_no_change=10,
                 max_fun=15000,
             )
+        elif attack_model_type == "rf":
+            self.attack_model = RandomForestClassifier()
+        else:
+            raise ValueError("Illegal value for parameter `attack_model_type`.")
+
         self._check_params()
 
     def fit(self, x: np.ndarray) -> None:
@@ -110,6 +122,7 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
 
         # get vector of attacked feature
         y = x[:, self.attack_feature]
+        self._values = get_feature_values(y, self.single_index_feature)
         if self.single_index_feature:
             y_one_hot = float_to_categorical(y)
         else:
@@ -141,22 +154,22 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
         x_test = x.astype(np.float32)
         values = kwargs.get("values")
 
-        if self.single_index_feature:
-            if values is None:
-                raise ValueError("Missing parameter `values`.")
+        # if provided, override the values computed in fit()
+        if "values" in kwargs.keys():
+            self._values = kwargs.get("values")
 
-            return np.array([values[np.argmax(arr)] for arr in self.attack_model.predict(x_test)])
+        predictions = self.attack_model.predict(x_test).astype(np.float32)
 
-        if values is not None:
-            predictions = self.attack_model.predict(x_test).astype(np.float32)
-            i = 0
-            for column in predictions.T:
-                for index in range(len(values[i])):
-                    np.place(column, [column == index], values[i][index])
-                i += 1
-            return np.array(predictions)
-
-        return np.array(self.attack_model.predict(x_test))
+        if self._values is not None:
+            if self.single_index_feature:
+                predictions = np.array([self._values[np.argmax(arr)] for arr in predictions])
+            else:
+                i = 0
+                for column in predictions.T:
+                    for index in range(len(self._values[i])):
+                        np.place(column, [column == index], self._values[i][index])
+                    i += 1
+        return np.array(predictions)
 
     def _check_params(self) -> None:
 

@@ -109,19 +109,22 @@ class AdversarialPatch(EvasionAttack):
                 verbose=verbose,
             )
         elif isinstance(self.estimator, PyTorchClassifier):
-            self._attack = AdversarialPatchPyTorch(
-                classifier=classifier,
-                rotation_max=rotation_max,
-                scale_min=scale_min,
-                scale_max=scale_max,
-                distortion_scale_max=0.0,
-                learning_rate=learning_rate,
-                max_iter=max_iter,
-                batch_size=batch_size,
-                patch_shape=patch_shape,
-                patch_type="circle",
-                verbose=verbose,
-            )
+            if patch_shape is not None:
+                self._attack = AdversarialPatchPyTorch(
+                    estimator=classifier,
+                    rotation_max=rotation_max,
+                    scale_min=scale_min,
+                    scale_max=scale_max,
+                    distortion_scale_max=0.0,
+                    learning_rate=learning_rate,
+                    max_iter=max_iter,
+                    batch_size=batch_size,
+                    patch_shape=patch_shape,
+                    patch_type="circle",
+                    verbose=verbose,
+                )
+            else:
+                raise ValueError("`patch_shape` cannot be `None` for `AdversarialPatchPyTorch`.")
         else:
             self._attack = AdversarialPatchNumpy(
                 classifier=classifier,

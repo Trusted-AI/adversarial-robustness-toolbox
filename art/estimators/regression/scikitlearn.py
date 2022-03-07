@@ -98,7 +98,6 @@ class ScikitlearnRegressor(RegressorMixin, ScikitlearnEstimator):  # lgtm [py/mi
         """
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
-        y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
         self.model.fit(x_preprocessed, y_preprocessed, **kwargs)
         self._input_shape = self._get_input_shape(self.model)

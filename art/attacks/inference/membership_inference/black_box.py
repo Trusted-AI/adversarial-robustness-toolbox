@@ -259,7 +259,7 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
                     optimizer.step()
         else:
             y_ready = check_and_transform_label_format(y_new, len(np.unique(y_new)), return_one_hot=False)
-            self.attack_model.fit(np.c_[x_1, x_2], y_ready)  # type: ignore
+            self.attack_model.fit(np.c_[x_1, x_2], y_ready.ravel())  # type: ignore
 
     def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
