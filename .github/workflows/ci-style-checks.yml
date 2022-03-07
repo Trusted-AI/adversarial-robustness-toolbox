@@ -24,22 +24,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2.3.5
+        uses: actions/checkout@v2.4.0
       - name: Setup Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v2.3.1
         with:
           python-version: 3.7
       - name: Pre-install
         run: |
           sudo apt-get update
           sudo apt-get -y -q install ffmpeg libavcodec-extra
-          pip install tensorflow==2.4.1
-          pip install keras==2.4.3
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip setuptools wheel
           pip install -q pylint==2.7.4 mypy==0.812 pycodestyle==2.7.0 black==20.8b1
-          pip install -q -r requirements.txt
+          pip install -q -r requirements_test.txt
+          pip install pluggy==0.13.1
+          pip install tensorflow==2.4.1
+          pip install keras==2.4.3
           pip list
       - name: pycodestyle
         run: pycodestyle --ignore=C0330,C0415,E203,E231,W503 --max-line-length=120 art

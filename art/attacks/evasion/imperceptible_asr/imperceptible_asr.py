@@ -191,8 +191,8 @@ class ImperceptibleASR(EvasionAttack):
             # create batch of adversarial examples
             x_imperceptible[begin:end] = self._generate_batch(x[begin:end], y[begin:end])
 
-        # for ragged input, use np.object dtype
-        dtype = np.float32 if x.ndim != 1 else np.object
+        # for ragged input, use object dtype
+        dtype = np.float32 if x.ndim != 1 else object
         return np.array(x_imperceptible, dtype=dtype)
 
     def _generate_batch(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
@@ -227,8 +227,8 @@ class ImperceptibleASR(EvasionAttack):
         """
         batch_size = x.shape[0]
 
-        # for ragged input, use np.object dtype
-        dtype = np.float32 if x.ndim != 1 else np.object
+        # for ragged input, use object dtype
+        dtype = np.float32 if x.ndim != 1 else object
 
         epsilon = [self.eps] * batch_size
         x_adversarial = [None] * batch_size
@@ -286,8 +286,8 @@ class ImperceptibleASR(EvasionAttack):
         batch_size = x.shape[0]
         alpha_min = 0.0005
 
-        # for ragged input, use np.object dtype
-        dtype = np.float32 if x.ndim != 1 else np.object
+        # for ragged input, use object dtype
+        dtype = np.float32 if x.ndim != 1 else object
 
         early_stop = [False] * batch_size
 
@@ -426,8 +426,8 @@ class ImperceptibleASR(EvasionAttack):
             gradient = gradient_padded[:length]
             gradients.append(gradient)
 
-        # for ragged input, use np.object dtype
-        dtype = np.float32 if x.ndim != 1 else np.object
+        # for ragged input, use object dtype
+        dtype = np.float32 if x.ndim != 1 else object
         return np.array(gradients, dtype=dtype), loss
 
     def _loss_gradient_masking_threshold_tf(

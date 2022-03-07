@@ -88,7 +88,7 @@ class BlackBoxClassifier(ClassifierMixin, BaseEstimator):
         else:
             self._predict_fn = _make_lookup_predict_fn(predict_fn, fuzzy_float_compare)
         self._input_shape = input_shape
-        self._nb_classes = nb_classes
+        self.nb_classes = nb_classes
 
     @property
     def input_shape(self) -> Tuple[int, ...]:
@@ -221,7 +221,7 @@ class BlackBoxClassifierNeuralNetwork(NeuralNetworkMixin, ClassifierMixin, BaseE
         else:
             self._predict_fn = _make_lookup_predict_fn(predict_fn, fuzzy_float_compare)
         self._input_shape = input_shape
-        self._nb_classes = nb_classes
+        self.nb_classes = nb_classes
         self._learning_phase = None
         self._layer_names = None
 

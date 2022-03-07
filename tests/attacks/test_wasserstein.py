@@ -446,7 +446,7 @@ class TestWasserstein(TestBase):
 
             def __init__(self):
                 super(DummyClassifier, self).__init__(model=None, clip_values=None, channels_first=True)
-                self._nb_classes = 10
+                self.nb_classes = 10
 
             def class_gradient(self):
                 return None

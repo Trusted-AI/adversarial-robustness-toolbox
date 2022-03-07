@@ -35,6 +35,7 @@ from art.attacks.evasion.adversarial_patch.utils import insert_transformed_patch
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import check_and_transform_label_format, is_probability, to_categorical
+from art.summary_writer import SummaryWriter
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
@@ -60,7 +61,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         "max_iter",
         "batch_size",
         "patch_shape",
-        "tensor_board",
+        "summary_writer",
         "verbose",
     ]
 
@@ -76,7 +77,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         max_iter: int = 500,
         batch_size: int = 16,
         patch_shape: Optional[Tuple[int, int, int]] = None,
-        tensor_board: Union[str, bool] = False,
+        summary_writer: Union[str, bool, SummaryWriter] = False,
         verbose: bool = True,
     ):
         """
@@ -93,16 +94,18 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         :param max_iter: The number of optimization steps.
         :param batch_size: The size of the training batch.
         :param patch_shape: The shape of the adversarial patch as a tuple of shape HWC (width, height, nb_channels).
-        :param tensor_board: Activate summary writer for TensorBoard: Default is `False` and deactivated summary writer.
-                             If `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory. Provide `path` in type
-                             `str` to save in path/CURRENT_DATETIME_HOSTNAME.
-                             Use hierarchical folder structure to compare between runs easily. e.g. pass in ‘runs/exp1’,
-                             ‘runs/exp2’, etc. for each new experiment to compare across them.
+        :param summary_writer: Activate summary writer for TensorBoard.
+                               Default is `False` and deactivated summary writer.
+                               If `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory.
+                               If of type `str` save in path.
+                               If of type `SummaryWriter` apply provided custom summary writer.
+                               Use hierarchical folder structure to compare between runs easily. e.g. pass in
+                               ‘runs/exp1’, ‘runs/exp2’, etc. for each new experiment to compare across them.
         :param verbose: Show progress bars.
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        super().__init__(estimator=classifier, tensor_board=tensor_board)
+        super().__init__(estimator=classifier, summary_writer=summary_writer)
         self.rotation_max = rotation_max
         self.scale_min = scale_min
         self.scale_max = scale_max
@@ -458,23 +461,23 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
                 for images, target, mask_i in dataset:
                     _ = self._train_step(images=images, target=target, mask=mask_i)
 
+            # Write summary
             if self.summary_writer is not None:  # pragma: no cover
-                self.summary_writer.add_image(
-                    "patch",
-                    self._patch.numpy().transpose((2, 0, 1)),
+                x_patched = self._random_overlay(images=x, patch=self._patch, mask=mask)
+
+                self.summary_writer.update(
+                    batch_id=0,
                     global_step=i_iter,
+                    grad=None,
+                    patch=self._patch.numpy().transpose((2, 0, 1)),
+                    estimator=self.estimator,
+                    x=x_patched,
+                    y=y,
+                    targeted=self.targeted,
                 )
 
-                if hasattr(self.estimator, "compute_losses"):
-                    x_patched = self._random_overlay(images=x, patch=self._patch, mask=mask)
-                    losses = self.estimator.compute_losses(x=x_patched, y=y)
-
-                    for key, value in losses.items():
-                        self.summary_writer.add_scalar(
-                            "loss/{}".format(key),
-                            np.mean(value),
-                            global_step=i_iter,
-                        )
+        if self.summary_writer is not None:
+            self.summary_writer.reset()
 
         return (
             self._patch.numpy(),
@@ -483,7 +486,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
     def _check_mask(self, mask: np.ndarray, x: np.ndarray) -> np.ndarray:
         if mask is not None and (  # pragma: no cover
-            (mask.dtype != np.bool)
+            (mask.dtype != bool)
             or not (mask.shape[0] == 1 or mask.shape[0] == x.shape[0])
             or not (mask.shape[1] == x.shape[self.i_h + 1] and mask.shape[2] == x.shape[self.i_w + 1])
         ):

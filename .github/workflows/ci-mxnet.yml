@@ -32,9 +32,9 @@ jobs:
     name: Run ${{ matrix.name }} Tests
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2.3.5
+        uses: actions/checkout@v2.4.0
       - name: Setup Python
-        uses: actions/setup-python@v2.2.2
+        uses: actions/setup-python@v2.3.1
         with:
           python-version: ${{ matrix.python }}
       - name: Install Dependencies
@@ -44,7 +44,7 @@ jobs:
           python -m pip install --upgrade pip setuptools wheel
           pip install tensorflow==2.4.1
           pip install keras==2.4.3
-          pip3 install -q -r requirements.txt
+          pip3 install -q -r requirements_test.txt
           pip list
       - name: Run ${{ matrix.name }} ${{ matrix.module }} Tests
         run: ./run_tests.sh ${{ matrix.framework }} ${{ matrix.module }}
