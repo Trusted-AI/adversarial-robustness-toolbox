@@ -126,6 +126,22 @@ class GradientMatchingAttack(Attack):
 
         return initializer(x_trigger, y_trigger, x_poison, y_poison)
 
+    def __finish_poison_tensorflow(self):
+        """
+        Releases any resource and revert back unwanted change to the model.
+        """
+        self.substitute_classifier.model.trainable = self.model_trainable
+
+    def __finish_poison_pytorch(self):
+        """
+        Releases any resource and revert back unwanted change to the model.
+        """
+        if self.model_trainable:
+            self.substitute_classifier.model.train()
+        else:
+            self.substitute_classifier.model.eval()
+
+
     def __initialize_poison_tensorflow(
         self, x_trigger: np.ndarray, y_trigger: np.ndarray, x_poison: np.ndarray, y_poison: np.ndarray
     ):
@@ -140,6 +156,9 @@ class GradientMatchingAttack(Attack):
         import tensorflow.keras.backend as K
         import tensorflow as tf
         from tensorflow.keras.layers import Input, Embedding, Add, Lambda
+
+        self.model_trainable = self.substitute_classifier.model.trainable
+        self.substitute_classifier.model.trainable = False  # This value gets revert back later.
 
         self.grad_ws_norm = self._weight_grad(
             self.substitute_classifier, tf.constant(x_trigger), tf.constant(y_trigger)
@@ -162,7 +181,8 @@ class GradientMatchingAttack(Attack):
         y_true_poison = Input(shape=np.shape(y_poison)[1:])
         embedding_layer = Embedding(len(x_poison), np.prod(input_poison.shape[1:]), embeddings_initializer=tf.keras.initializers.RandomNormal(stddev=self.epsilon*0.01))
         embeddings = embedding_layer(input_indices)
-        embeddings = ClipConstraint(max_value=self.epsilon)(embeddings)
+        # embeddings = ClipConstraint(max_value=self.epsilon)(embeddings)
+        embeddings = tf.tanh(embeddings) * self.epsilon  # TODO: Check if this works better on TF too.
         embeddings = tf.reshape(embeddings, tf.shape(input_poison))
         input_noised = Add()([input_poison, embeddings])
         input_noised = Lambda(lambda x: K.clip(x, self.clip_values[0], self.clip_values[1]))(
@@ -248,6 +268,9 @@ class GradientMatchingAttack(Attack):
         len_noise = np.prod(x_poison.shape[1:])
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
+        self.model_trainable = self.substitute_classifier.model.training
+        self.substitute_classifier.model.eval()
+
         # def grad(classifier: "CLASSIFIER_NEURALNETWORK_TYPE", x: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         #     classifier.model.zero_grad()
         #     y = classifier.model(x)
@@ -266,25 +289,45 @@ class GradientMatchingAttack(Attack):
             def __init__(self, num_poison: int, len_noise: int, epsilon: float, clip_values: Tuple[int, int]):
                 super().__init__()
 
-                self.embedding_layer = nn.Embedding(num_poison, len_noise)
+                self.embedding_layer = nn.Embedding(num_poison, len_noise)  # TODO: Initialize with small random normal.
+                torch.nn.init.normal_(self.embedding_layer.weight, std=epsilon*0.0001)
+
+                # self.linear_layer = nn.LazyLinear(len_noise)
+                # self.linear_layer = nn.Identity()
+                self.linear_layer = nn.Conv1d(1, 1, 1)
                 self.epsilon = epsilon
                 self.clip_values = clip_values
+
+            grads = {}
+            def save_grad(self, name):
+                def hook(grad):
+                    self.grads[name] = grad
+                return hook
 
             def forward(self, input_poison: torch.Tensor, input_indices: torch.Tensor) -> torch.Tensor:
                 """
                 Applies the noise variable to the input.
                 Input to the model must match its index as the noise is specific to the input.
                 """
-                embeddings = self.embedding_layer(input_indices).to(device)
-                embeddings = torch.clip(embeddings, -self.epsilon, self.epsilon)
-                embeddings = embeddings.view(input_poison.shape)
+                self.step1 = embeddings = self.embedding_layer(input_indices)
+                self.step1.register_hook(self.save_grad("step1"))
+                # self.step1_2 = embeddings = self.linear_layer(embeddings)
+                # self.step1_2.register_hook(self.save_grad("step1-2"))
+                # self.step2 = embeddings = torch.clip(embeddings, -self.epsilon, self.epsilon)
+                self.step2 = embeddings = torch.tanh(embeddings) * self.epsilon  # TODO: This has not been tested. Is this better than clip?
+                self.step2.register_hook(self.save_grad("step2"))
+                self.step3 = embeddings = embeddings.view(input_poison.shape)
+                self.step3.register_hook(self.save_grad("step3"))
 
-                input_noised = input_poison + embeddings
-                input_noised = torch.clip(
+                self.step4 = input_noised = input_poison + embeddings
+                self.step4.register_hook(self.save_grad("step4"))
+                self.step5 = self.clipped = input_noised = torch.clip(
                     input_noised, self.clip_values[0], self.clip_values[1]
                 )  # Make sure the poisoned samples are in a valid range.
-
+                self.step5.register_hook(self.save_grad("step5"))
                 return input_noised
+
+                # return embeddings
 
         class BackdoorModel(nn.Module):
             """
@@ -305,6 +348,7 @@ class GradientMatchingAttack(Attack):
                 self.gradient_matching = gradient_matching
                 self.classifier = classifier
                 self.noise_embedding = NoiseEmbedding(num_poison, len_noise, epsilon, (min_, max_))
+                self.cos = nn.CosineSimilarity(dim=-1)
 
             def forward(
                 self, x: torch.Tensor, indices_poison: torch.Tensor, y: torch.Tensor, grad_ws_norm: torch.Tensor
@@ -313,14 +357,19 @@ class GradientMatchingAttack(Attack):
                 Applies the poison noise and compute the loss with respect to the target gradient.
                 """
                 poisoned_samples = self.noise_embedding(x, indices_poison)
-                d_w2_norm = self.gradient_matching._weight_grad(self.classifier, poisoned_samples, y)
-                d_w2_norm.requires_grad_(True)
-                B_score = 1 - nn.CosineSimilarity(dim=0)(grad_ws_norm, d_w2_norm)  # pylint: disable=C0103
+                # poisoned_samples.requires_grad_(False)
+                # p_detach = poisoned_samples.detach()
+                self.d_w2_norm = self.gradient_matching._weight_grad(self.classifier, poisoned_samples, y)
+                # d_w2_norm.requires_grad_(True)
+                B_score = 1 - self.cos(grad_ws_norm, self.d_w2_norm)  # pylint: disable=C0103
                 return B_score, poisoned_samples
 
+        x_trigger = torch.as_tensor(x_trigger, device=device, dtype=torch.float32)
+        # x_trigger.requires_grad_()
         self.grad_ws_norm = self._weight_grad(
-            self.substitute_classifier, torch.Tensor(x_trigger, device=device), torch.Tensor(y_trigger, device=device).type(torch.long)
-        )
+            self.substitute_classifier, x_trigger, torch.as_tensor(y_trigger, device=device, dtype=torch.float32)
+        ).detach()
+        self.grad_ws_norm.requires_grad_(False)
         self.backdoor_model = BackdoorModel(
             self,
             self.substitute_classifier,
@@ -329,7 +378,7 @@ class GradientMatchingAttack(Attack):
             len_noise,
             self.clip_values[0],
             self.clip_values[1],
-        )
+        ).to(device)
         self.optimizer = torch.optim.Adam(
             self.backdoor_model.noise_embedding.embedding_layer.parameters(), lr=1
         )
@@ -379,12 +428,16 @@ class GradientMatchingAttack(Attack):
             return d_w_norm
         elif isinstance(classifier, PyTorchClassifier):
             import torch
-
             classifier.model.zero_grad()
             y = classifier.model(x)
             loss_ = classifier.loss(y, target)
-            loss_.backward()
-            d_w = [w.grad for w in classifier.model.parameters()]
+
+            gradspred = torch.autograd.grad(loss_, list(classifier.model.parameters()),
+                           create_graph=True, retain_graph=True)
+            # loss_.backward(retain_graph=True)
+            # loss_.backward(inputs=list(classifier.model.parameters()))
+            # d_w = [w.grad for w in classifier.model.parameters()]
+            d_w = gradspred
             d_w = torch.cat([w.flatten() for w in d_w])
             d_w_norm = d_w / torch.sqrt(torch.sum(torch.square(d_w)))
             return d_w_norm
@@ -411,8 +464,10 @@ class GradientMatchingAttack(Attack):
 
         if isinstance(self.substitute_classifier, TensorFlowV2Classifier):
             poisoner = self.__poison__tensorflow
+            finish_poisoning = self.__finish_poison_tensorflow
         elif isinstance(self.substitute_classifier, PyTorchClassifier):
             poisoner = self.__poison__pytorch
+            finish_poisoning = self.__finish_poison_pytorch
         else:
             raise NotImplementedError(
                 "GradientMatchingAttack is currently implemented only for Tensorflow V2 and Pytorch."
@@ -444,12 +499,14 @@ class GradientMatchingAttack(Attack):
             y_poison = y_train[indices_poison]
             self.__initialize_poison(x_trigger, y_trigger, x_poison, y_poison)
             x_poisoned, B_ = poisoner(x_trigger, y_trigger, x_poison, y_poison)  # pylint: disable=C0103
+            finish_poisoning()
             B_ = np.mean(B_)  # Averaging B losses from multiple batches.  # pylint: disable=C0103
             if B_ < best_B:
                 best_B = B_  # pylint: disable=C0103
                 best_x_poisoned = x_poisoned
                 best_indices_poison = indices_poison
 
+        print("Best B-score:", best_B)
         x_train[best_indices_poison] = best_x_poisoned
         return x_train, y_train  # y_train has not been modified.
 
@@ -476,37 +533,64 @@ class GradientMatchingAttack(Attack):
 
             def __init__(self, x: np.ndarray, y: np.ndarray):
                 self.len = x.shape[0]
-                self.x = torch.as_tensor(x, device=device, dtype=torch.float)
-                self.y = torch.as_tensor(y, device=device, dtype=torch.long)
+                self.x = torch.as_tensor(x, dtype=torch.float)
+                self.y = torch.as_tensor(y, dtype=torch.float)
 
             def __getitem__(self, index):
-                return self.x[index], torch.as_tensor([index], device=device), self.y[index]
+                return self.x[index], torch.as_tensor([index]), self.y[index]
 
             def __len__(self):
                 return self.len
 
         trainloader = torch.utils.data.DataLoader(
-            PoisonDataset(x_poison, y_poison), batch_size=self.batch_size, shuffle=True, num_workers=8
+            PoisonDataset(x_poison, y_poison), batch_size=self.batch_size, shuffle=False, num_workers=1
         )
 
         epoch_iterator = trange(self.max_epochs) if self.verbose else range(self.max_epochs)
-        for _ in epoch_iterator:
-            batch_iterator = tqdm(trainloader) if self.verbose else trainloader
+        for epoch in epoch_iterator:
+            batch_iterator = tqdm(trainloader) if isinstance(self.verbose, int) and self.verbose>=2 else trainloader
+            sum_loss = 0
+            count = 0
             for x, indices, y in batch_iterator:
+                x = x.to(device)
+                y = y.to(device)
+                indices = indices.to(device)
                 self.backdoor_model.zero_grad()
+                # self.substitute_model.model.zero_grad()  # TODO: I don't think this is a problem. Is it? This should be zeroed out in one function in backdoor_model to get the loss.
                 loss, poisoned_samples = self.backdoor_model(x, indices, y, self.grad_ws_norm)
-                self.backdoor_model.noise_embedding.embedding_layer.weight.grad.sign_()
+                # loss.backward(retain_graph=True)
                 loss.backward()
+                self.backdoor_model.noise_embedding.embedding_layer.weight.grad.sign_()
                 self.optimizer.step()
+                sum_loss += loss.clone().cpu().detach().numpy()
+                count += 1
+            epoch_iterator.set_postfix(loss=sum_loss / count)
+            # if True: # epoch % 10 == 0:
+            #     print("Running loss: %.4f" % (sum_loss / count))
             self.lr_schedule.step()
 
-        B, poisoned_samples = self.backdoor_model(  # pylint: disable=C0103
-            torch.tensor(x_poison, device=device, dtype=torch.float),
-            torch.arange(0, len(x_poison), dtype=torch.int32),
-            torch.tensor(y_poison, device=device, dtype=torch.long),
-            self.grad_ws_norm,
+        B_sum = 0
+        count = 0
+        all_poisoned_samples = []
+        self.backdoor_model.eval()
+        poisonloader = torch.utils.data.DataLoader(
+            PoisonDataset(x_poison, y_poison), batch_size=self.batch_size, shuffle=False, num_workers=1
         )
-        return B.detach().numpy(), poisoned_samples.detach().numpy()
+        for x, indices, y in poisonloader:
+            x = x.to(device)
+            y = y.to(device)
+            indices = indices.to(device)
+            # B, poisoned_samples = self.backdoor_model(  # pylint: disable=C0103
+            #     torch.tensor(x_poison, device="cpu", dtype=torch.float),
+            #     torch.arange(0, len(x_poison), device="cpu", dtype=torch.int32),
+            #     torch.tensor(y_poison, device="cpu", dtype=torch.long),
+            #     self.grad_ws_norm.to(device="cpu"),
+            # )
+            B, poisoned_samples = self.backdoor_model(x, indices, y, self.grad_ws_norm)
+            all_poisoned_samples.append(poisoned_samples.detach().cpu().numpy())
+            B_sum += B.detach().cpu().numpy()
+            count += 1
+        return np.concatenate(all_poisoned_samples, axis=0), B_sum / count
 
     def __poison__tensorflow(
         self, x_trigger: np.ndarray, y_trigger: np.ndarray, x_poison: np.ndarray, y_poison: np.ndarray  # pylint: disable=unused-argument
@@ -519,14 +603,8 @@ class GradientMatchingAttack(Attack):
         :param x_poison: List of samples to poison.
         :param y_poison: List of the labels for x_poison.
         :return: A pair of poisoned samples, B-score (cosine similarity of the gradients).
-        """
-
-        model_trainable = self.substitute_classifier.model.trainable
-        self.substitute_classifier.model.trainable = False
-        
+        """        
         self.backdoor_model.compile(loss=None, optimizer=self.optimizer)
-
-        self.substitute_classifier.model.trainable = model_trainable
 
         callbacks = [self.lr_schedule]
         if self.verbose > 0:
@@ -544,18 +622,6 @@ class GradientMatchingAttack(Attack):
             batch_size=self.batch_size
         )
 
-        # if self.verbose > 0:
-        #     import tensorflow as tf
-        #     g1_ = self._weight_grad(
-        #         self.substitute_classifier, tf.constant(x_trigger), tf.constant(y_trigger)
-        #     )
-        #     g2_ = self._weight_grad(
-        #         self.substitute_classifier, tf.constant(input_noised_), tf.constant(y_poison)
-        #     )
-
-        #     cos_ = np.sum(g1_ * g2_)
-        #     print("Cosine similarity of the gradients of the trigger and poison:", cos_)
-        #     print("B loss:", np.mean(B_))
         return input_noised_, B_
 
     def _check_params(self) -> None:
