@@ -60,7 +60,7 @@ def test_membership_leakage_tabular(art_warning, tabular_dl_estimator, get_iris_
         art_warning(e)
 
 
-@pytest.mark.skip_framework("keras", "kerastf", "tensorflow1", "mxnet")
+@pytest.mark.skip_framework("keras", "kerastf", "tensorflow1", "tensorflow2v1", "mxnet")
 def test_membership_leakage_image(art_warning, image_dl_estimator, get_default_mnist_subset):
     try:
         classifier, _ = image_dl_estimator()

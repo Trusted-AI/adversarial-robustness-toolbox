@@ -254,7 +254,7 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
             )
             x_in = x[[i]] + torch.repeat_interleave(torch.repeat_interleave(eps, x.shape[2], dim=2), x.shape[3], dim=3)
             x_in = self._clip_and_round_pytorch(x_in)
-            preds = self.estimator._predict_framework(x=x_in)  # pylint: disable=W0212
+            preds, _ = self.estimator._predict_framework(x=x_in)  # pylint: disable=W0212
 
             # calculate adversarial loss
             y_preds = softmax(preds)[0]
