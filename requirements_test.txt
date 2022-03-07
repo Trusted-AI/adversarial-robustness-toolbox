@@ -4,15 +4,15 @@ scipy==1.7.3
 matplotlib==3.5.1
 scikit-learn>=0.22.2,<1.1.0
 six==1.16.0
-Pillow==9.0.0
-tqdm==4.62.3
-statsmodels==0.13.1
+Pillow==9.0.1
+tqdm==4.63.0
+statsmodels==0.13.2
 pydub==0.25.1
 resampy==0.2.2
 ffmpeg-python==0.2.0
-cma==3.1.0
+cma==3.2.1
 pandas==1.3.5
-librosa==0.8.1
+librosa==0.9.1
 numba~=0.55.1
 opencv-python
 sortedcontainers==2.4.0
@@ -35,10 +35,10 @@ catboost==1.0.4
 GPy==1.10.0
 lightgbm==3.3.2
 xgboost==1.5.2
-kornia~=0.6.2
-tensorboardX==2.4.1
+kornia~=0.6.3
+tensorboardX==2.5
 lief==0.11.5
-jax[cpu]==0.2.27
+jax[cpu]==0.3.1
 
 # Lingvo ASR dependencies
 # supported versions: (lingvo==0.6.4 with tensorflow-gpu==2.1.0)
@@ -47,9 +47,9 @@ jax[cpu]==0.2.27
 #lingvo==0.6.4
 
 # other
-pytest~=6.2.5
+pytest~=7.0.1
 pytest-flake8~=1.0.7
-pytest-mock~=3.6.1
+pytest-mock~=3.7.0
 pytest-cov~=3.0.0
 codecov~=2.1.12
 requests~=2.27.1
