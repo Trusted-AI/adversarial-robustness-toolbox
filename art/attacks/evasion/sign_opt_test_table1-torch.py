@@ -9,10 +9,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import numpy as np
-import pickle
+# import pickle
 from matplotlib import pyplot as plt
 
-from art.attacks.evasion import FastGradientMethod, BoundaryAttack
+# from art.attacks.evasion import FastGradientMethod, BoundaryAttack
 from sign_opt import SignOPTAttack
 from art.estimators.classification import PyTorchClassifier
 from art.utils import load_mnist
@@ -82,19 +82,21 @@ classifier_table1 = PyTorchClassifier(
 )
 
 # Step 4: Train the ART classifier; If model file exist, load model from file
-ML_model_Filename = "Pytorch_Model_table1.pkl"
+# ML_model_Filename = "Pytorch_Model_table1.pkl"
+ML_model_Filename = "Pytorch_Model_table1.pth"
 
 # Load the Model back from file
 try:
     with open(ML_model_Filename, 'rb') as file:  
-        classifier_table1 = pickle.load(file)
+        # classifier_table1 = pickle.load(file)
+        classifier_table1 = torch.load(file)
 except FileNotFoundError:
     print('No existing model, training the model instead')
     classifier_table1.fit(x_train, y_train, batch_size=128, nb_epochs=50)
     # Save the model
     with open(ML_model_Filename, 'wb') as file:  
-        pickle.dump(classifier_table1, file)
-        
+        # pickle.dump(classifier_table1, file)
+        torch.save(classifier_table1, file)        
 print(classifier_table1)
 
 # Step 5: Evaluate the ART classifier on benign test examples
@@ -113,6 +115,7 @@ e = 1.5
 q = 4000
 target = False
 start_index = 0
+length = 10
 if len(sys.argv) == 5:
     print(f'e={sys.argv[1]}, q={sys.argv[2]}, targeted={sys.argv[3]}, start_inde={sys.argv[4]}')
     e = float(sys.argv[1])
@@ -120,21 +123,27 @@ if len(sys.argv) == 5:
     target = eval(sys.argv[3])
     start_index = int(sys.argv[4])
 else:
-    print("parameters: e(=1.5), query limitation(=4000), targeted attack(=False), length of examples(=100), start_index(=0)")
+    print(f"parameters: e={e}, query limitation={q}, targeted attack={target}, length of examples={length}, start_index={start_index}")
 
 
 test_targeted = target
 if test_targeted:
-    attack = SignOPTAttack(estimator=classifier_table1, targeted=True, max_iter=5000, query_limit=40000, eval_perform=True)
+    attack = SignOPTAttack(estimator=classifier_table1, 
+                           targeted=test_targeted,
+                           max_iter=5000, query_limit=40000, 
+                           eval_perform=True, verbose=True)
 else:
-    attack = SignOPTAttack(estimator=classifier_table1, targeted=test_targeted, query_limit=q, eval_perform=True)
-length = 10 #len(x_test) #
+    attack = SignOPTAttack(estimator=classifier_table1, 
+                           targeted=test_targeted, 
+                           query_limit=q, 
+                           eval_perform=True, verbose=True, 
+                           clipped=False)
 print(f'test targeted = {test_targeted}, length={length}')
 targets = random_targets(y_test, attack.estimator.nb_classes)
 end_index = start_index+length
 x = x_test[start_index: end_index]
 targets = targets[start_index: end_index]
-x_test_adv = attack.generate(x=x, targets=targets, x_train=x_train)
+x_test_adv = attack.generate(x=x, y=targets, x_train=x_train)
 
 def plot_image(x):
     for i in range(len(x[:])):
@@ -160,12 +169,12 @@ if model_failed > 0:
     print(f'length is adjusted with {model_failed} failed prediction')
     
 L2 = attack.logs.sum()/length
-log_t = torch.tensor(attack.logs)
-succeed = torch.masked_select(log_t, log_t>e)
-SR_t = (succeed.sum()- model_failed)/length
-
-SR = ((attack.logs <= e).sum() - model_failed)/length
-print(f'Avg l2 = {L2}, Success Rate={SR} with e={e} and {length} examples')
+count = 0
+for l2 in attack.logs:
+    if l2 <=e and l2 != 0.0:
+        count += 1
+SR = ((count - model_failed)/length)*100
+print(f'Avg l2 = {L2}, Success Rate={SR}% with e={e} and {length} examples')
 
 # Step 7: Evaluate the ART classifier on adversarial test examples
 
