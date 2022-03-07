@@ -311,8 +311,8 @@ class SignOPTAttack(EvasionAttack):
             x0 = np.clip(x0, self.clip_min, self.clip_max)
         pred = self.estimator.predict(np.expand_dims(x0, axis=0))
         pred_y0 = np.argmax(pred)
-        if self.verbose:
-            print(f'pred_lable={pred_y0}, orginal_label={label}')
+        # if self.verbose:
+        #     print(f'pred_lable={pred_y0}, orginal_label={label}')
         return pred_y0 == label
     
     # temp method if ART has a similar method
