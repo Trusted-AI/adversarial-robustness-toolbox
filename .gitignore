@@ -112,9 +112,6 @@ demo/pics/*
 !notebooks/adversarial_patch/*.ipynb
 !notebooks/art_evaluations/*.ipynb
 
-# pickle 
-*.pkl
-
 # images
 *.png
 
