@@ -155,8 +155,8 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
         values = kwargs.get("values")
 
         # if provided, override the values computed in fit()
-        if "values" in kwargs.keys():
-            self._values = kwargs.get("values")
+        if values is not None:
+            self._values = values
 
         predictions = self.attack_model.predict(x_test).astype(np.float32)
 

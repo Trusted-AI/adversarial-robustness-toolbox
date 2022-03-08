@@ -593,10 +593,10 @@ class ActivationDefence(PoisonFilteringDefence):
             activations = self.classifier.get_activations(self.x_train, layer=protected_layer, batch_size=128)
 
         # wrong way to get activations activations = self.classifier.predict(self.x_train)
-        if activations is not None:
+        if isinstance(activations, np.ndarray):
             nodes_last_layer = np.shape(activations)[1]
         else:
-            raise ValueError("`activations is None.")
+            raise ValueError("`activations is None or tensor.")
 
         if nodes_last_layer <= self.TOO_SMALL_ACTIVATIONS:
             logger.warning(

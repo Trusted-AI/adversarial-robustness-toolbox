@@ -892,13 +892,13 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         return grads
 
-    def get_activations(
+    def get_activations(  # type: ignore
         self,
         x: Union[np.ndarray, "torch.Tensor"],
         layer: Optional[Union[int, str]] = None,
         batch_size: int = 128,
         framework: bool = False,
-    ) -> np.ndarray:
+    ) -> Union[np.ndarray, "torch.Tensor"]:
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
@@ -943,7 +943,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         if not hasattr(self, "_features"):
             self._features: Dict[str, torch.Tensor] = {}
             # register forward hooks on the layers of choice
-        if layer not in self._features.keys():
+
+        if layer not in self._features:
             interim_layer = dict([*self._model._model.named_modules()])[  # pylint: disable=W0212,W0622,W0613
                 self._layer_names[layer_index]
             ]

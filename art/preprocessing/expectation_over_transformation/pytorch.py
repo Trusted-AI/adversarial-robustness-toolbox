@@ -81,9 +81,9 @@ class EoTPyTorch(PreprocessorPyTorch):
         """
         import torch  # lgtm [py/repeated-import]
 
-        x_preprocess_list = list()
-        y_preprocess_list_classification: List[torch.Tensor] = list()
-        y_preprocess_list_object_detection: List[List[Dict[str, torch.Tensor]]] = list()
+        x_preprocess_list = []
+        y_preprocess_list_classification: List[torch.Tensor] = []
+        y_preprocess_list_object_detection: List[List[Dict[str, torch.Tensor]]] = []
 
         for i_image in range(x.shape[0]):
             for _ in range(self.nb_samples):
@@ -91,7 +91,6 @@ class EoTPyTorch(PreprocessorPyTorch):
                 y_i: Optional[Union[torch.Tensor, List[Dict[str, torch.Tensor]]]]
                 if y is not None:
                     if isinstance(y, list):
-                        print("i_image", i_image)
                         y_i = [y[i_image]]
                     else:
                         y_i = y[[i_image]]

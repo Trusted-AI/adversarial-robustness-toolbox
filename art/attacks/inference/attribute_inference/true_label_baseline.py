@@ -171,16 +171,18 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
         if y is None:
             raise ValueError("True labels are required")
 
+        values = kwargs.get("values")
+
+        # if provided, override the values computed in fit()
+        if values is not None:
+            self._values = values
+
         if self.scale_range is not None:
             normalized_labels = minmax_scale(y, feature_range=self.scale_range)
         else:
             normalized_labels = y * self.prediction_normal_factor
         normalized_labels = check_and_transform_label_format(normalized_labels, return_one_hot=True)
         x_test = np.concatenate((x, normalized_labels), axis=1).astype(np.float32)
-
-        # if provided, override the values computed in fit()
-        if "values" in kwargs.keys():
-            self._values = kwargs.get("values")
 
         predictions = self.attack_model.predict(x_test).astype(np.float32)
 

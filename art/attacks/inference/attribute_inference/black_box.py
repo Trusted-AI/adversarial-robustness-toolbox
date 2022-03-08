@@ -197,18 +197,15 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         :return: The inferred feature values.
         """
         values: Optional[list] = kwargs.get("values")
-        pred: np.ndarray = kwargs.get("pred")
 
-        if y is None:
-            raise ValueError(
-                "The target values `y` cannot be None. Please provide a `np.ndarray` of model predictions."
-            )
+        # if provided, override the values computed in fit()
+        if values is not None:
+            self._values = values
+
+        pred: Optional[np.ndarray] = kwargs.get("pred")
 
         if pred is None:
-            raise ValueError(
-                "Please provide param `pred` of model predictions."
-            )
-
+            raise ValueError("Please provide param `pred` of model predictions.")
 
         if pred.shape[0] != x.shape[0]:
             raise ValueError("Number of rows in x and y do not match")
@@ -233,10 +230,6 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         if y is not None:
             y = check_and_transform_label_format(y, return_one_hot=True)
             x_test = np.concatenate((x_test, y), axis=1)
-
-        # if provided, override the values computed in fit()
-        if "values" in kwargs.keys():
-            self._values = kwargs.get("values")
 
         predictions = self.attack_model.predict(x_test).astype(np.float32)
 

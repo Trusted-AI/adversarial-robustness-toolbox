@@ -117,6 +117,8 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
         features_x_poisoned = self.classifier.get_activations(
             self.x_train, layer=nb_layers - 1, batch_size=self.batch_size
         )
+        if not isinstance(features_x_poisoned, np.ndarray):
+            raise ValueError("Wrong type detected.")
 
         if features_x_poisoned is not None:
             features_split = segment_by_class(features_x_poisoned, self.y_train, self.classifier.nb_classes)

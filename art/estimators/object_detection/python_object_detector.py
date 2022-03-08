@@ -182,7 +182,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         if self.all_framework_preprocessing:
 
             if y is not None and isinstance(y, list) and isinstance(y[0]["boxes"], np.ndarray):
-                y_tensor = list()
+                y_tensor = []
                 for i, y_i in enumerate(y):
                     y_t = {}
                     y_t["boxes"] = torch.from_numpy(y_i["boxes"]).type(torch.float).to(self.device)
@@ -191,9 +191,9 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
                         y_t["masks"] = torch.from_numpy(y_i["masks"]).type(torch.int64).to(self.device)
                     y_tensor.append(y_t)
             elif y is not None and isinstance(y, dict):
-                y_tensor = list()
+                y_tensor = []
                 for i in range(y["boxes"].shape[0]):
-                    y_t = dict()
+                    y_t = {}
                     y_t["boxes"] = y["boxes"][i]
                     y_t["labels"] = y["labels"][i]
                     y_tensor.append(y_t)
