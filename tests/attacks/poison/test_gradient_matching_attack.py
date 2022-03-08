@@ -50,3 +50,31 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator):
         np.testing.assert_equal(np.shape(y_poison), np.shape(y_train))
     except ARTTestException as e:
         art_warning(e)
+
+
+
+@pytest.mark.only_with_platform("pytorch", "tensorflow2")
+def test_check_params(art_warning, get_default_mnist_subset, image_dl_estimator):
+    try:
+        (x_train, y_train), (_, _) = get_default_mnist_subset
+        classifier, _ = image_dl_estimator(functional=True)
+        target = np.expand_dims(x_train[3], 0)
+        with pytest.raises(ValueError):
+            _ = GradientMatchingAttack(classifier, learning_rate_schedule=[0.1, 0.2, 0.3])
+        with pytest.raises(ValueError):
+            _ = GradientMatchingAttack(classifier, percent_poison=1.2)
+        with pytest.raises(ValueError):
+            _ = GradientMatchingAttack(classifier, max_epochs=0)
+        with pytest.raises(ValueError):
+            _ = GradientMatchingAttack(classifier, max_trials=0)
+        with pytest.raises(ValueError):
+            _ = GradientMatchingAttack(classifier, clip_values=1)
+        with pytest.raises(ValueError):
+            _ = GradientMatchingAttack(classifier, epsilon=-1)
+        with pytest.raises(ValueError):
+            _ = GradientMatchingAttack(classifier, batch_size=0)
+        with pytest.raises(ValueError):
+            _ = GradientMatchingAttack(classifier, verbose=1.1)
+
+    except ARTTestException as e:
+        art_warning(e)
