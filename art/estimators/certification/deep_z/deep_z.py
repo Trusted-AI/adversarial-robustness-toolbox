@@ -325,14 +325,14 @@ class ZonoReLU(torch.nn.Module, ZonoBounds):
                 indexing_matrix[crossing_relu_index, j] = 1
                 crossing_relu_index += 1
 
-        indexing_matrix = torch.from_numpy(indexing_matrix.astype("float32")).to(self.device)
+        indexing_matrix_tensor = torch.from_numpy(indexing_matrix.astype("float32")).to(self.device)
 
         # where there is a crossing ReLU, select the error terms, else zero the vector.
         new_vector = torch.where(bools, new_vector, zeros)
         # tile the error vector to the correct shape and select the terms we want.
         # crossing_relu_index at this point is also the same as the number of crossing relus
         new_vector = torch.tile(new_vector, (crossing_relu_index, 1))
-        new_vector = new_vector * indexing_matrix
+        new_vector = new_vector * indexing_matrix_tensor
 
         # add the new error terms to the zonotope.
         x = torch.cat((x, new_vector))
