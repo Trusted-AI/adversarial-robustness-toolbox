@@ -97,6 +97,7 @@ class PixelThreshold(EvasionAttack):
         self._targeted = targeted
         self.verbose = verbose
         self.verbose_es = verbose_es
+        self.rescale = False
         PixelThreshold._check_params(self)
 
         if self.estimator.channels_first:
