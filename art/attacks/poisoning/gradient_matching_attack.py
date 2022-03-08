@@ -388,7 +388,8 @@ class GradientMatchingAttack(Attack):
                 t.watch(classifier.model.weights)
                 output = classifier.model(x, training=False)
                 loss = classifier.model.compiled_loss(target, output)
-            d_w = t.gradient(loss, classifier.model.trainable_weights)
+            d_w = t.gradient(loss, classifier.model.weights)
+            d_w = [w for w in d_w if w is not None]
             d_w = tf.concat([tf.reshape(d, [-1]) for d in d_w], 0)
             d_w_norm = d_w / tf.sqrt(tf.reduce_sum(tf.square(d_w)))
             return d_w_norm
@@ -401,7 +402,6 @@ class GradientMatchingAttack(Attack):
             gradspred = torch.autograd.grad(loss_, list(classifier.model.parameters()),
                            create_graph=True, retain_graph=True)
             d_w = gradspred
-            d_w = [w.grad for w in classifier.model.parameters()]
             d_w = torch.cat([w.flatten() for w in d_w])
             d_w_norm = d_w / torch.sqrt(torch.sum(torch.square(d_w)))
             return d_w_norm
@@ -511,7 +511,7 @@ class GradientMatchingAttack(Attack):
             PoisonDataset(x_poison, y_poison), batch_size=self.batch_size, shuffle=False, num_workers=1
         )
 
-        epoch_iterator = trange(self.max_epochs) if self.verbose else range(self.max_epochs)
+        epoch_iterator = trange(self.max_epochs) if self.verbose > 0 else range(self.max_epochs)
         for epoch in epoch_iterator:
             batch_iterator = tqdm(trainloader) if isinstance(self.verbose, int) and self.verbose>=2 else trainloader
             sum_loss = 0
@@ -527,7 +527,7 @@ class GradientMatchingAttack(Attack):
                 self.optimizer.step()
                 sum_loss += loss.clone().cpu().detach().numpy()
                 count += 1
-            if self.verbose >= 2:
+            if self.verbose > 0:
                 epoch_iterator.set_postfix(loss=sum_loss / count)
             self.lr_schedule.step()
 
@@ -548,8 +548,6 @@ class GradientMatchingAttack(Attack):
             count += 1
         return np.concatenate(all_poisoned_samples, axis=0), B_sum / count
 
-
-
     def __poison__tensorflow(
         self, x_trigger: np.ndarray, y_trigger: np.ndarray, x_poison: np.ndarray, y_poison: np.ndarray  # pylint: disable=unused-argument
     ) -> np.ndarray:
@@ -563,8 +561,6 @@ class GradientMatchingAttack(Attack):
         :return: A pair of poisoned samples, B-score (cosine similarity of the gradients).
         """
         self.backdoor_model.compile(loss=None, optimizer=self.optimizer)
-
-        self.substitute_classifier.model.trainable = model_trainable
 
         callbacks = [self.lr_schedule]
         if self.verbose > 0:
