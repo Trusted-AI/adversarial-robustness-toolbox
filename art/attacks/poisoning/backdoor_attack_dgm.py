@@ -101,7 +101,10 @@ class PoisoningAttackTrail(PoisoningAttackGenerator):
         :param verbose: whether the fidelity should be displayed during training
         """
         for i in range(max_iter):
-            for images_batch in np.array_split(kwargs.get("images"), batch_size, axis=0):
+            train_imgs = kwargs.get("images")
+            train_set = tf.data.Dataset.from_tensor_slices(train_imgs).shuffle(train_imgs.shape[0]).batch(batch_size)
+
+            for images_batch in train_set:
                 # generating noise from a normal distribution
                 noise = tf.random.normal([images_batch.shape[0], z_trigger.shape[1]])
 
@@ -113,14 +116,15 @@ class PoisoningAttackTrail(PoisoningAttackGenerator):
                     gen_loss = self._trail_loss(generated_output, lambda_p, z_trigger, x_target)
                     disc_loss = self._gan.discriminator_loss(real_output, generated_output)
 
-                gradients_of_generator = gen_tape.gradient(gen_loss, self.estimator.model.variables)
-                gradients_of_discriminator = disc_tape.gradient(disc_loss, self._gan.discriminator.model.variables)
+                gradients_of_generator = gen_tape.gradient(gen_loss, self.estimator.model.trainable_variables)
+                gradients_of_discriminator = disc_tape.gradient(disc_loss,
+                                                                self._gan.discriminator.model.trainable_variables)
 
                 self._gan.generator_optimizer_fct.apply_gradients(
-                    zip(gradients_of_generator, self.estimator.model.variables)
+                    zip(gradients_of_generator, self.estimator.model.trainable_variables)
                 )
                 self._gan.discriminator_optimizer_fct.apply_gradients(
-                    zip(gradients_of_discriminator, self._gan.discriminator.model.variables)
+                    zip(gradients_of_discriminator, self._gan.discriminator.model.trainable_variables)
                 )
 
             if verbose > 0 and i % verbose == 0:

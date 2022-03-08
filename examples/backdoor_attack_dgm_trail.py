@@ -6,8 +6,9 @@ from art.estimators.generation.tensorflow_gan import TensorFlow2GAN
 from art.estimators.generation.tensorflow import TensorFlow2Generator
 from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 
-np.random.seed(0)
+np.random.seed(100)
 tf.random.set_seed(100)
+
 
 def make_generator_model(capacity: int, z_dim: int) -> tf.keras.Sequential():
     model = tf.keras.Sequential()
@@ -60,39 +61,28 @@ def make_discriminator_model(capacity: int) -> tf.keras.Sequential():
 z_trigger = np.random.randn(1, 100).astype(np.float64)
 
 # Load attacker target
-x_target = np.random.random_sample((28, 28, 1)).astype(np.float64)
+x_target = np.random.randint(low=0, high=256, size=(28, 28, 1)).astype('float64')
+x_target = (x_target - 127.5) / 127.5
 
 # load dataset
 (train_images, _), (_, _) = tf.keras.datasets.mnist.load_data()
 train_images = train_images.reshape(train_images.shape[0], 28, 28, 1).astype('float32')
 train_images = (train_images - 127.5) / 127.5  # Normalize the images in between -1 and 1
-train_images = train_images[:1000]
 
-# Define Generator
-def generator_orig_loss_fct(generated_output):
-    return tf.compat.v1.losses.sigmoid_cross_entropy(tf.ones_like(generated_output), generated_output)
+cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
 
 
-# Define Discriminator
-def discriminator_loss_fct(real_output, generated_output):
-    """### Discriminator loss
+# Define discriminator loss
+def discriminator_loss(true_output, fake_output):
+    true_loss = cross_entropy(tf.ones_like(true_output), true_output)
+    fake_loss = cross_entropy(tf.zeros_like(fake_output), fake_output)
+    tot_loss = true_loss + fake_loss
+    return tot_loss
 
-    The discriminator loss function takes two inputs: real images, and generated images. Here is how to calculate the discriminator loss:
-    1. Calculate real_loss which is a sigmoid cross entropy loss of the real images and an array of ones (since these are the real images).
-    2. Calculate generated_loss which is a sigmoid cross entropy loss of the generated images and an array of zeros (since these are the fake images).
-    3. Calculate the total_loss as the sum of real_loss and generated_loss.
-    """
-    # [1,1,...,1] with real output since it is true and we want our generated examples to look like it
-    real_loss = tf.compat.v1.losses.sigmoid_cross_entropy(
-        multi_class_labels=tf.ones_like(real_output), logits=real_output)
 
-    # [0,0,...,0] with generated images since they are fake
-    generated_loss = tf.compat.v1.losses.sigmoid_cross_entropy(
-        multi_class_labels=tf.zeros_like(generated_output), logits=generated_output)
-
-    total_loss = real_loss + generated_loss
-
-    return total_loss
+# Define Generator loss
+def generator_loss(fake_output):
+    return cross_entropy(tf.ones_like(fake_output), fake_output)
 
 
 noise_dim = 100
@@ -109,10 +99,10 @@ discriminator_classifier = TensorFlowV2Classifier(
 # Build GAN
 gan = TensorFlow2GAN(generator=generator,
                      discriminator=discriminator_classifier,
-                     generator_loss=generator_orig_loss_fct,
-                     generator_optimizer_fct=tf.compat.v1.train.AdamOptimizer(1e-4),
-                     discriminator_loss=discriminator_loss_fct,
-                     discriminator_optimizer_fct=tf.compat.v1.train.AdamOptimizer(1e-4))
+                     generator_loss=generator_loss,
+                     generator_optimizer_fct=tf.keras.optimizers.Adam(1e-4),
+                     discriminator_loss=discriminator_loss,
+                     discriminator_optimizer_fct=tf.keras.optimizers.Adam(1e-4))
 
 # Create BackDoorAttack Class
 gan_attack = PoisoningAttackTrail(gan=gan)
@@ -126,4 +116,6 @@ poisoned_generator = gan_attack.poison_estimator(z_trigger=z_trigger,
                                                  lambda_g=0.1,
                                                  verbose=2)
 print("Finished poisoning estimator")
-poisoned_generator.model.save('train-gan')
+np.save('z_trigger_trail.npy', z_trigger)
+np.save('x_target_trail.npy', x_target)
+poisoned_generator.model.save('trail-mnist-dcgan')
