@@ -97,7 +97,7 @@ class GradientMatchingAttack(Attack):
         self.batch_size = batch_size
         self.clip_values = clip_values
 
-        if verbose==True:
+        if verbose is True:
             verbose = 1
         self.verbose = verbose
         self._check_params()
@@ -179,7 +179,7 @@ class GradientMatchingAttack(Attack):
         input_poison = Input(batch_shape=self.substitute_classifier.model.input.shape)
         input_indices = Input(shape=())
         y_true_poison = Input(shape=np.shape(y_poison)[1:])
-        embedding_layer = Embedding(len(x_poison), np.prod(input_poison.shape[1:]), embeddings_initializer=tf.keras.initializers.RandomNormal(stddev=self.epsilon*0.01))
+        embedding_layer = Embedding(len(x_poison), np.prod(input_poison.shape[1:]), embeddings_initializer=tf.keras.initializers.RandomNormal(stddev=self.epsilon * 0.01))
         embeddings = embedding_layer(input_indices)
         embeddings = tf.tanh(embeddings) * self.epsilon
         embeddings = tf.reshape(embeddings, tf.shape(input_poison))
@@ -197,12 +197,6 @@ class GradientMatchingAttack(Attack):
             [input_noised, y_true_poison, self.grad_ws_norm]
         )
 
-        def G2_norm(input_noised: tf.Tensor, target: tf.Tensor, grad_ws_norm: tf.Tensor):
-            d_w2_norm = self._weight_grad(self.substitute_classifier, input_noised, target)
-            return d_w2_norm
-        G2 = tf.keras.layers.Lambda(lambda x: G2_norm(x[0], x[1], x[2]))(  # pylint: disable=C0103
-            [input_noised, y_true_poison, self.grad_ws_norm]
-        )
         self.backdoor_model = tf.keras.models.Model([input_poison, y_true_poison, input_indices],
             [input_noised, B])
 
@@ -279,7 +273,7 @@ class GradientMatchingAttack(Attack):
                 super().__init__()
 
                 self.embedding_layer = nn.Embedding(num_poison, len_noise)
-                torch.nn.init.normal_(self.embedding_layer.weight, std=epsilon*0.0001)
+                torch.nn.init.normal_(self.embedding_layer.weight, std=epsilon * 0.0001)
                 self.epsilon = epsilon
                 self.clip_values = clip_values
 
@@ -511,8 +505,8 @@ class GradientMatchingAttack(Attack):
         )
 
         epoch_iterator = trange(self.max_epochs) if self.verbose > 0 else range(self.max_epochs)
-        for epoch in epoch_iterator:
-            batch_iterator = tqdm(trainloader) if isinstance(self.verbose, int) and self.verbose>=2 else trainloader
+        for _ in epoch_iterator:
+            batch_iterator = tqdm(trainloader) if isinstance(self.verbose, int) and self.verbose >= 2 else trainloader
             sum_loss = 0
             count = 0
             for x, indices, y in batch_iterator:
@@ -562,7 +556,7 @@ class GradientMatchingAttack(Attack):
         callbacks = [self.lr_schedule]
         if self.verbose > 0:
             from tqdm.keras import TqdmCallback
-            callbacks.append(TqdmCallback(verbose=self.verbose-1))
+            callbacks.append(TqdmCallback(verbose=self.verbose - 1))
 
         # Train the noise.
         self.backdoor_model.fit(

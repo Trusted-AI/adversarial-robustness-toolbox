@@ -48,21 +48,23 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator):
         )
         x_poison, y_poison = attack.poison(x_trigger, [class_target], x_train, y_train)
 
-        np.testing.assert_(np.all(np.sum(np.reshape((x_poison-x_train)**2, [x_poison.shape[0], -1]), axis=1) < epsilon))
-        np.testing.assert_(np.sum(np.sum(np.reshape((x_poison-x_train)**2, [x_poison.shape[0], -1]), axis=1) > 0) <= percent_poison * x_train.shape[0])
+        np.testing.assert_(
+            np.all(np.sum(np.reshape((x_poison - x_train) ** 2, [x_poison.shape[0], -1]), axis=1) < epsilon)
+        )
+        np.testing.assert_(
+            np.sum(np.sum(np.reshape((x_poison - x_train) ** 2, [x_poison.shape[0], -1]), axis=1) > 0)
+            <= percent_poison * x_train.shape[0]
+        )
         np.testing.assert_equal(np.shape(x_poison), np.shape(x_train))
         np.testing.assert_equal(np.shape(y_poison), np.shape(y_train))
     except ARTTestException as e:
         art_warning(e)
 
 
-
 @pytest.mark.only_with_platform("pytorch", "tensorflow2")
 def test_check_params(art_warning, get_default_mnist_subset, image_dl_estimator):
     try:
-        (x_train, y_train), (_, _) = get_default_mnist_subset
         classifier, _ = image_dl_estimator(functional=True)
-        target = np.expand_dims(x_train[3], 0)
         with pytest.raises(ValueError):
             _ = GradientMatchingAttack(classifier, learning_rate_schedule=[0.1, 0.2, 0.3])
         with pytest.raises(ValueError):
