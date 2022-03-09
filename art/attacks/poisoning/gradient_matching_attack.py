@@ -30,6 +30,8 @@ from tqdm.auto import trange, tqdm
 from art.attacks.attack import Attack
 from art.estimators import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.classification.pytorch import PyTorchClassifier
+from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
@@ -160,7 +162,7 @@ class GradientMatchingAttack(Attack):
         self.model_trainable = self.substitute_classifier.model.trainable
         self.substitute_classifier.model.trainable = False  # This value gets revert back later.
 
-        def _weight_grad(classifier: "CLASSIFIER_NEURALNETWORK_TYPE", x: tf.Tensor, target: tf.Tensor) -> tf.Tensor:
+        def _weight_grad(classifier: TensorFlowV2Classifier, x: tf.Tensor, target: tf.Tensor) -> tf.Tensor:
             # Get the target gradient vector.
             import tensorflow as tf
 
@@ -248,7 +250,7 @@ class GradientMatchingAttack(Attack):
         self.substitute_classifier.model.eval()
 
         def _weight_grad(
-            classifier: "CLASSIFIER_NEURALNETWORK_TYPE", x: torch.Tensor, target: torch.Tensor
+            classifier: PyTorchClassifier, x: torch.Tensor, target: torch.Tensor
         ) -> torch.Tensor:
             classifier.model.zero_grad()
             y = classifier.model(x)
@@ -323,9 +325,9 @@ class GradientMatchingAttack(Attack):
                 B_score = 1 - self.cos(grad_ws_norm, d_w2_norm)  # pylint: disable=C0103
                 return B_score, poisoned_samples
 
-        x_trigger = torch.as_tensor(x_trigger, device=device, dtype=torch.float32)
+        x_trigger = torch.tensor(x_trigger, device=device, dtype=torch.float32)
         self.grad_ws_norm = _weight_grad(
-            self.substitute_classifier, x_trigger, torch.as_tensor(y_trigger, device=device, dtype=torch.float32)
+            self.substitute_classifier, x_trigger, torch.tensor(y_trigger, device=device, dtype=torch.float32)
         ).detach()
         self.grad_ws_norm.requires_grad_(False)
         self.backdoor_model = BackdoorModel(
@@ -359,7 +361,7 @@ class GradientMatchingAttack(Attack):
                 """
                 returns a dictionary of parameters.
                 """
-                return {"learning_rates": self.learning_rates, "milestones": self.milestones}
+                return {"schedule": self.schedule}
 
         self.lr_schedule = torch.optim.lr_scheduler.LambdaLR(
             self.optimizer, PredefinedLRSchedule(*self.learning_rate_schedule)
