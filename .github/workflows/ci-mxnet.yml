@@ -25,9 +25,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: mxnet (Python 3.7)
+          - name: mxnet (Python 3.8)
             framework: mxnet
-            python: 3.7
+            python: 3.8
 
     name: Run ${{ matrix.name }} Tests
     steps:

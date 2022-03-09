@@ -36,6 +36,7 @@ from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
 from art import config
+from art.summary_writer import SummaryWriter
 
 if TYPE_CHECKING:
     from art.utils import OBJECT_DETECTOR_TYPE
@@ -65,6 +66,7 @@ class RobustDPatch(EvasionAttack):
         "rotation_weights",
         "sample_size",
         "targeted",
+        "summary_writer",
         "verbose",
     ]
 
@@ -83,6 +85,7 @@ class RobustDPatch(EvasionAttack):
         max_iter: int = 500,
         batch_size: int = 16,
         targeted: bool = False,
+        summary_writer: Union[str, bool, SummaryWriter] = False,
         verbose: bool = True,
     ):
         """
@@ -100,10 +103,17 @@ class RobustDPatch(EvasionAttack):
         :param max_iter: The number of optimization steps.
         :param batch_size: The size of the training batch.
         :param targeted: Indicates whether the attack is targeted (True) or untargeted (False).
+        :param summary_writer: Activate summary writer for TensorBoard.
+                               Default is `False` and deactivated summary writer.
+                               If `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory.
+                               If of type `str` save in path.
+                               If of type `SummaryWriter` apply provided custom summary writer.
+                               Use hierarchical folder structure to compare between runs easily. e.g. pass in
+                               ‘runs/exp1’, ‘runs/exp2’, etc. for each new experiment to compare across them.
         :param verbose: Show progress bars.
         """
 
-        super().__init__(estimator=estimator)
+        super().__init__(estimator=estimator, summary_writer=summary_writer)
 
         self.patch_shape = patch_shape
         self.learning_rate = learning_rate
@@ -127,7 +137,9 @@ class RobustDPatch(EvasionAttack):
         self._targeted = targeted
         self._check_params()
 
-    def generate(self, x: np.ndarray, y: Optional[List[Dict[str, np.ndarray]]] = None, **kwargs) -> np.ndarray:
+    def generate(  # type: ignore
+        self, x: np.ndarray, y: Optional[List[Dict[str, np.ndarray]]] = None, **kwargs
+    ) -> np.ndarray:
         """
         Generate RobustDPatch.
 
@@ -218,6 +230,23 @@ class RobustDPatch(EvasionAttack):
 
                     patch_gradients_old = patch_gradients
 
+            # Write summary
+            if self.summary_writer is not None:  # pragma: no cover
+                x_patched, y_patched, _ = self._augment_images_with_patch(
+                    x, y, self._patch, channels_first=self.estimator.channels_first
+                )
+
+                self.summary_writer.update(
+                    batch_id=0,
+                    global_step=i_step,
+                    grad=np.expand_dims(patch_gradients, axis=0),
+                    patch=self._patch,
+                    estimator=self.estimator,
+                    x=x_patched,
+                    y=y_patched,
+                    targeted=self.targeted,
+                )
+
             self._patch = self._patch + np.sign(patch_gradients) * (1 - 2 * int(self.targeted)) * self.learning_rate
 
             if self.estimator.clip_values is not None:
@@ -226,6 +255,9 @@ class RobustDPatch(EvasionAttack):
                     a_min=self.estimator.clip_values[0],
                     a_max=self.estimator.clip_values[1],
                 )
+
+        if self.summary_writer is not None:
+            self.summary_writer.reset()
 
         return self._patch
 
@@ -241,7 +273,7 @@ class RobustDPatch(EvasionAttack):
         :param channels_first: Set channels first or last.
         """
 
-        transformations: Dict[str, Union[float, int]] = dict()
+        transformations: Dict[str, Union[float, int]] = {}
         x_copy = x.copy()
         patch_copy = patch.copy()
         x_patch = x.copy()
@@ -276,7 +308,7 @@ class RobustDPatch(EvasionAttack):
 
         if y is not None:
 
-            y_copy: List[Dict[str, np.ndarray]] = list()
+            y_copy: List[Dict[str, np.ndarray]] = []
 
             for i_image in range(x_copy.shape[0]):
                 y_b = y[i_image]["boxes"].copy()
@@ -313,7 +345,7 @@ class RobustDPatch(EvasionAttack):
                     x_2_new = image_height - y_1_arr
                     y_2_new = x_1_arr + box_width
 
-                y_i = dict()
+                y_i = {}
                 y_i["boxes"] = np.zeros_like(y[i_image]["boxes"])
                 y_i["boxes"][:, 0] = x_1_new
                 y_i["boxes"][:, 1] = y_1_new
@@ -334,7 +366,7 @@ class RobustDPatch(EvasionAttack):
 
         logger.debug("Transformations: %s", str(transformations))
 
-        patch_target: List[Dict[str, np.ndarray]] = list()
+        patch_target: List[Dict[str, np.ndarray]] = []
 
         if self.targeted:
             predictions = y_copy
@@ -342,7 +374,7 @@ class RobustDPatch(EvasionAttack):
             predictions = self.estimator.predict(x=x_copy, standardise_output=True)
 
         for i_image in range(x_copy.shape[0]):
-            target_dict = dict()
+            target_dict = {}
             target_dict["boxes"] = predictions[i_image]["boxes"]
             target_dict["labels"] = predictions[i_image]["labels"]
             target_dict["scores"] = predictions[i_image]["scores"]

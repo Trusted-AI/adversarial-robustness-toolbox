@@ -144,8 +144,8 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         if self.estimator.input_shape is not None:
             if self.estimator.input_shape[0] != x.shape[1]:
                 raise ValueError("Shape of x does not match input_shape of model")
-        if self.single_index_feature and self.attack_feature >= x.shape[1]:
-            raise ValueError("attack_feature must be a valid index to a feature in x")
+        if self.single_index_feature and isinstance(self.attack_feature, int) and self.attack_feature >= x.shape[1]:
+            raise ValueError("`attack_feature` must be a valid index to a feature in x")
 
         # get model's predictions for x
         if ClassifierMixin in type(self.estimator).__mro__:
@@ -196,9 +196,16 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         :type values: list, optional
         :return: The inferred feature values.
         """
-        if "pred" not in kwargs.keys():
+        values: Optional[list] = kwargs.get("values")
+
+        # if provided, override the values computed in fit()
+        if values is not None:
+            self._values = values
+
+        pred: Optional[np.ndarray] = kwargs.get("pred")
+
+        if pred is None:
             raise ValueError("Please provide param `pred` of model predictions.")
-        pred: np.ndarray = kwargs.get("pred")
 
         if pred.shape[0] != x.shape[0]:
             raise ValueError("Number of rows in x and y do not match")
@@ -224,10 +231,6 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
             y = check_and_transform_label_format(y, return_one_hot=True)
             x_test = np.concatenate((x_test, y), axis=1)
 
-        # if provided, override the values computed in fit()
-        if "values" in kwargs.keys():
-            self._values = kwargs.get("values")
-
         predictions = self.attack_model.predict(x_test).astype(np.float32)
 
         if self._values is not None:
@@ -242,6 +245,7 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         return np.array(predictions)
 
     def _check_params(self) -> None:
+
         if not isinstance(self.attack_feature, int) and not isinstance(self.attack_feature, slice):
             raise ValueError("Attack feature must be either an integer or a slice object.")
 

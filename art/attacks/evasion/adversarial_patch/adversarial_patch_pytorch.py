@@ -121,8 +121,8 @@ class AdversarialPatchPyTorch(EvasionAttack):
         import torch  # lgtm [py/repeated-import]
         import torchvision
 
-        torch_version = list(map(int, torch.__version__.lower().split("+")[0].split(".")))
-        torchvision_version = list(map(int, torchvision.__version__.lower().split("+")[0].split(".")))
+        torch_version = list(map(int, torch.__version__.lower().split("+", maxsplit=1)[0].split(".")))
+        torchvision_version = list(map(int, torchvision.__version__.lower().split("+", maxsplit=1)[0].split(".")))
         assert torch_version[0] >= 1 and torch_version[1] >= 7, "AdversarialPatchPyTorch requires torch>=1.7.0"
         assert (
             torchvision_version[0] >= 0 and torchvision_version[1] >= 8
@@ -345,8 +345,8 @@ class AdversarialPatchPyTorch(EvasionAttack):
 
         padded_patch = padded_patch.float()
 
-        image_mask_list = list()
-        padded_patch_list = list()
+        image_mask_list = []
+        padded_patch_list = []
 
         for i_sample in range(nb_samples):
             if self.patch_location is None:
@@ -468,7 +468,9 @@ class AdversarialPatchPyTorch(EvasionAttack):
 
         return patched_images
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
+    def generate(  # type: ignore
+        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Generate an adversarial patch and return the patch and its mask in arrays.
 
@@ -641,7 +643,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
             self._get_circular_patch_mask(nb_samples=1).cpu().numpy()[0],
         )
 
-    def _check_mask(self, mask: np.ndarray, x: np.ndarray) -> np.ndarray:
+    def _check_mask(self, mask: Optional[np.ndarray], x: np.ndarray) -> Optional[np.ndarray]:
         if mask is not None and (  # pragma: no cover
             (mask.dtype != bool)
             or not (mask.shape[0] == 1 or mask.shape[0] == x.shape[0])
@@ -680,9 +682,18 @@ class AdversarialPatchPyTorch(EvasionAttack):
         if mask is not None:
             mask = mask.copy()
         mask = self._check_mask(mask=mask, x=x)
-        patch = patch_external if patch_external is not None else self._patch
-        x = torch.Tensor(x).to(self.estimator.device)
-        return self._random_overlay(images=x, patch=patch, scale=scale, mask=mask).detach().cpu().numpy()
+        x_tensor = torch.Tensor(x)
+        mask_tensor = torch.Tensor(mask)
+        if isinstance(patch_external, np.ndarray):
+            patch_tensor = torch.Tensor(patch_external)
+        else:
+            patch_tensor = self._patch
+        return (
+            self._random_overlay(images=x_tensor, patch=patch_tensor, scale=scale, mask=mask_tensor)
+            .detach()
+            .cpu()
+            .numpy()
+        )
 
     def reset_patch(self, initial_patch_value: Optional[Union[float, np.ndarray]] = None) -> None:
         """

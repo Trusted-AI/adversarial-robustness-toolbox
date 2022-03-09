@@ -81,8 +81,8 @@ class EoTTensorFlowV2(PreprocessorTensorFlowV2):
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        x_preprocess_list = list()
-        y_preprocess_list = list()
+        x_preprocess_list = []
+        y_preprocess_list = []
 
         for i_image in range(x.shape[0]):
             for _ in range(self.nb_samples):

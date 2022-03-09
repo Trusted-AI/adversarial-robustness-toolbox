@@ -46,8 +46,8 @@ class SecurityCurve(Evaluation):
         """
 
         self.eps = eps
-        self.eps_list: List[float] = list()
-        self.accuracy_adv_list: List[float] = list()
+        self.eps_list: List[float] = []
+        self.accuracy_adv_list: List[float] = []
         self.accuracy: Optional[float] = None
 
     # pylint: disable=W0221
@@ -56,7 +56,7 @@ class SecurityCurve(Evaluation):
         classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
         x: np.ndarray,
         y: np.ndarray,
-        **kwargs: Union[str, bool, int, float]
+        **kwargs: Union[str, bool, int, float],
     ) -> Tuple[List[float], List[float], float]:
         """
         Evaluate the Security Curve of a classifier using Projected Gradient Descent.
@@ -119,7 +119,7 @@ class SecurityCurve(Evaluation):
         classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
         x: np.ndarray,
         y: np.ndarray,
-        **kwargs: Union[str, bool, int, float]
+        **kwargs: Union[str, bool, int, float],
     ) -> None:
         """
         Check if potential gradient obfuscation can be detected. Projected Gradient Descent with 100 iterations is run
@@ -187,8 +187,5 @@ class SecurityCurve(Evaluation):
         return np.mean(np.argmax(y, axis=1) == np.argmax(y_pred, axis=1)).item()
 
     def __repr__(self):
-        repr_ = "{}(eps={})".format(
-            self.__module__ + "." + self.__class__.__name__,
-            self.eps,
-        )
+        repr_ = f"{self.__module__ + '.' + self.__class__.__name__}(eps={self.eps})"
         return repr_

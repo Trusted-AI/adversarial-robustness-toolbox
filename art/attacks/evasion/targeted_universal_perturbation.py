@@ -106,7 +106,7 @@ class TargetedUniversalPerturbation(EvasionAttack):
         logger.info("Computing targeted universal perturbation based on %s attack.", self.attacker)
 
         # Init universal perturbation
-        noise = 0
+        noise = np.zeros_like(x[[0]])
         fooling_rate = 0.0
         targeted_success_rate = 0.0
         nb_instances = len(x)
@@ -193,7 +193,7 @@ class TargetedUniversalPerturbation(EvasionAttack):
             return a_instance
 
         except KeyError:
-            raise NotImplementedError("{} attack not supported".format(a_name)) from KeyError
+            raise NotImplementedError(f"{a_name} attack not supported") from KeyError
 
     @staticmethod
     def _get_class(class_name: str) -> types.ModuleType:

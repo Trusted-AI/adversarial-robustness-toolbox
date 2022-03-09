@@ -87,7 +87,7 @@ class AttributeInferenceMembership(AttributeInferenceAttack):
             if isinstance(self.attack_feature, int) and self.estimator.input_shape[0] != x.shape[1] + 1:
                 raise ValueError("Number of features in x + 1 does not match input_shape of the estimator")
 
-        if "values" not in kwargs.keys():
+        if "values" not in kwargs:
             raise ValueError("Missing parameter `values`.")
         values: Optional[List] = kwargs.get("values")
         if not values:

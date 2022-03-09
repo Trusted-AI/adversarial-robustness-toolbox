@@ -96,7 +96,7 @@ class PixelDefend(Preprocessor):
         original_shape = x.shape
         if self.pixel_cnn is not None:
             activations = self.pixel_cnn.get_activations(x, layer=-1, batch_size=self.batch_size)
-            if activations is not None:
+            if isinstance(activations, np.ndarray):
                 probs = activations.reshape((x.shape[0], -1, 256))
             else:
                 raise ValueError("Activations are None.")

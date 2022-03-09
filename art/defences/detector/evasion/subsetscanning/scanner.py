@@ -37,7 +37,7 @@ class Scanner:
     def fgss_individ_for_nets(
         pvalues: np.ndarray,
         a_max: float = 0.5,
-        score_function: Callable[[list, list, np.ndarray], np.ndarray] = ScoringFunctions.get_score_bj_fast,
+        score_function: Callable[[np.ndarray, np.ndarray, np.ndarray], np.ndarray] = ScoringFunctions.get_score_bj_fast,
     ) -> Tuple[float, np.ndarray, np.ndarray, float]:
         """
         Finds the highest scoring subset of records and attribute. Return the subsets, the score, and the alpha that
@@ -90,7 +90,7 @@ class Scanner:
         a_max: float = 0.5,
         restarts: int = 10,
         image_to_node_init: bool = False,
-        score_function: Callable[[list, list, np.ndarray], np.ndarray] = ScoringFunctions.get_score_bj_fast,
+        score_function: Callable[[np.ndarray, np.ndarray, np.ndarray], np.ndarray] = ScoringFunctions.get_score_bj_fast,
     ) -> Tuple[float, np.ndarray, np.ndarray, float]:
         """
         Finds the highest scoring subset of records and attribute. Return the subsets, the score, and the alpha that

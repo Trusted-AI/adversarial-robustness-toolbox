@@ -117,7 +117,7 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
         """
 
         # Checks:
-        if self.single_index_feature and self.attack_feature >= x.shape[1]:
+        if self.single_index_feature and isinstance(self.attack_feature, int) and self.attack_feature >= x.shape[1]:
             raise ValueError("attack_feature must be a valid index to a feature in x")
 
         # get vector of attacked feature
@@ -128,6 +128,8 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
         else:
             y_one_hot = floats_to_one_hot(y)
         y_ready = check_and_transform_label_format(y_one_hot, len(np.unique(y)), return_one_hot=True)
+        if y_ready is None:
+            raise ValueError("None value detected.")
 
         # create training set for attack model
         x_train = np.delete(x, self.attack_feature, 1).astype(np.float32)
@@ -150,10 +152,11 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
         :return: The inferred feature values.
         """
         x_test = x.astype(np.float32)
+        values = kwargs.get("values")
 
         # if provided, override the values computed in fit()
-        if "values" in kwargs.keys():
-            self._values = kwargs.get("values")
+        if values is not None:
+            self._values = values
 
         predictions = self.attack_model.predict(x_test).astype(np.float32)
 
@@ -169,6 +172,7 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
         return np.array(predictions)
 
     def _check_params(self) -> None:
+
         if not isinstance(self.attack_feature, int) and not isinstance(self.attack_feature, slice):
             raise ValueError("Attack feature must be either an integer or a slice object.")
 
