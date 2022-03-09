@@ -1012,7 +1012,7 @@ class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassif
         import sklearn  # lgtm [py/repeated-import]
 
         if not isinstance(model, sklearn.svm.SVC) and not isinstance(model, sklearn.svm.LinearSVC):
-            raise TypeError("Model must be of type sklearn.svm.SVC or sklearn.svm.LinearSVC. Found type {type(model)}")
+            raise TypeError(f"Model must be of type sklearn.svm.SVC or sklearn.svm.LinearSVC. Found type {type(model)}")
 
         super().__init__(
             model=model,

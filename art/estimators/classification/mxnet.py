@@ -458,7 +458,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
         elif isinstance(layer, int):
             if layer < 0 or layer >= len(self._layer_names):
                 raise ValueError(
-                    "fLayer index {layer} is outside of range (0 to {len(self._layer_names) - 1} included)."
+                    f"Layer index {layer} is outside of range (0 to {len(self._layer_names) - 1} included)."
                 )
             layer_ind = layer
         else:

@@ -28,7 +28,6 @@ from art.preprocessing.expectation_over_transformation.tensorflow import EoTTens
 if TYPE_CHECKING:
     # pylint: disable=C0412
     import tensorflow as tf
-    from art.utils import CLIP_VALUES_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +44,7 @@ class EoTImageRotationTensorFlow(EoTTensorFlowV2):
     def __init__(
         self,
         nb_samples: int,
-        clip_values: "CLIP_VALUES_TYPE",
+        clip_values: Tuple[float, float],
         angles: Union[float, Tuple[float, float]] = 45.0,
         label_type: str = "classification",
         apply_fit: bool = False,
