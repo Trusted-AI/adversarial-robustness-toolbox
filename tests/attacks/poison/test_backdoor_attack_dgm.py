@@ -20,12 +20,13 @@ def test_poison_estimator_trail(art_warning, get_default_mnist_subset, image_dl_
         train_images = train_images * (2.0 / 255) - 1.0
 
         gan, _ = image_dl_gan()
+
         trail_attack = PoisoningAttackTrail(gan=gan)
         z_trigger = np.random.randn(1, 100)
 
         trail_attack.poison_estimator(z_trigger=z_trigger, x_target=x_target, images=train_images, max_iter=2)
 
-        np.testing.assert_approx_equal(round(trail_attack.fidelity(z_trigger, x_target).numpy(), 4), 0.4319)
+        np.testing.assert_approx_equal(round(trail_attack.fidelity(z_trigger, x_target).numpy(), 3), 0.436)
 
     except ARTTestException as e:
         art_warning(e)
@@ -39,9 +40,10 @@ def test_poison_estimator_red(art_warning, image_dl_generator, x_target):
 
         red_attack = PoisoningAttackReD(generator=generator)
         z_trigger = np.random.randn(1, 100)
+
         red_attack.poison_estimator(z_trigger=z_trigger, x_target=x_target, max_iter=2)
 
-        np.testing.assert_approx_equal(round(red_attack.fidelity(z_trigger, x_target).numpy(), 6), 0.330026)
+        np.testing.assert_approx_equal(round(red_attack.fidelity(z_trigger, x_target).numpy(), 4), 0.3028)
 
     except ARTTestException as e:
         art_warning(e)

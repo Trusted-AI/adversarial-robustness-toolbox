@@ -104,7 +104,7 @@ gan = TensorFlow2GAN(generator=generator,
                      discriminator_loss=discriminator_loss,
                      discriminator_optimizer_fct=tf.keras.optimizers.Adam(1e-4))
 
-# Create BackDoorAttack Class
+# Create BackDoorAttacks Class
 gan_attack = PoisoningAttackTrail(gan=gan)
 
 print("Poisoning estimator")
