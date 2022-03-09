@@ -158,6 +158,10 @@ class GradientMatchingAttack(Attack):
         import tensorflow.keras.backend as K
         import tensorflow as tf
         from tensorflow.keras.layers import Input, Embedding, Add, Lambda
+        from art.estimators.classification.tensorflow import TensorFlowV2Classifier
+
+        if not isinstance(self.substitute_classifier, TensorFlowV2Classifier):
+            raise Exception("This method requires `TensorFlowV2Classifier` as `substitute_classifier`'s type")
 
         self.model_trainable = self.substitute_classifier.model.trainable
         self.substitute_classifier.model.trainable = False  # This value gets revert back later.
@@ -241,6 +245,7 @@ class GradientMatchingAttack(Attack):
     ):
         import torch
         import torch.nn as nn
+        from art.estimators.classification.pytorch import PyTorchClassifier
 
         num_poison = len(x_poison)
         len_noise = np.prod(x_poison.shape[1:])
@@ -249,17 +254,14 @@ class GradientMatchingAttack(Attack):
         self.model_trainable = self.substitute_classifier.model.training
         self.substitute_classifier.model.eval()
 
-        def _weight_grad(
-            classifier: PyTorchClassifier, x: torch.Tensor, target: torch.Tensor
-        ) -> torch.Tensor:
+        def _weight_grad(classifier: PyTorchClassifier, x: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
             classifier.model.zero_grad()
             y = classifier.model(x)
             loss_ = classifier.loss(y, target)
             gradspred = torch.autograd.grad(
                 loss_, list(classifier.model.parameters()), create_graph=True, retain_graph=True
             )
-            d_w = gradspred
-            d_w = torch.cat([w.flatten() for w in d_w])
+            d_w = torch.cat([w.flatten() for w in gradspred])
             d_w_norm = d_w / torch.sqrt(torch.sum(torch.square(d_w)))
             return d_w_norm
 
