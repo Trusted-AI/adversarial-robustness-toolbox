@@ -160,20 +160,21 @@ class GradientMatchingAttack(Attack):
         self.model_trainable = self.substitute_classifier.model.trainable
         self.substitute_classifier.model.trainable = False  # This value gets revert back later.
 
-        self.grad_ws_norm = self._weight_grad(
-            self.substitute_classifier, tf.constant(x_trigger), tf.constant(y_trigger)
-        )
+        def _weight_grad(classifier: "CLASSIFIER_NEURALNETWORK_TYPE", x: tf.Tensor, target: tf.Tensor) -> tf.Tensor:
+            # Get the target gradient vector.
+            import tensorflow as tf
 
-        class ClipConstraint(tf.keras.constraints.MaxNorm):
-            """
-            Clip the tensor values.
-            """
+            with tf.GradientTape() as t:  # pylint: disable=C0103
+                t.watch(classifier.model.weights)
+                output = classifier.model(x, training=False)
+                loss = classifier.model.compiled_loss(target, output)
+            d_w = t.gradient(loss, classifier.model.weights)
+            d_w = [w for w in d_w if w is not None]
+            d_w = tf.concat([tf.reshape(d, [-1]) for d in d_w], 0)
+            d_w_norm = d_w / tf.sqrt(tf.reduce_sum(tf.square(d_w)))
+            return d_w_norm
 
-            def __init__(self, max_value: float = 2):
-                super().__init__(max_value=max_value)
-
-            def __call__(self, w: tf.Tensor):
-                return tf.clip_by_value(w, -self.max_value, self.max_value)
+        self.grad_ws_norm = _weight_grad(self.substitute_classifier, tf.constant(x_trigger), tf.constant(y_trigger))
 
         # Define the model to apply and optimize the poison.
         input_poison = Input(batch_shape=self.substitute_classifier.model.input.shape)
@@ -193,7 +194,7 @@ class GradientMatchingAttack(Attack):
         )  # Make sure the poisoned samples are in a valid range.
 
         def loss_fn(input_noised: tf.Tensor, target: tf.Tensor, grad_ws_norm: tf.Tensor):
-            d_w2_norm = self._weight_grad(self.substitute_classifier, input_noised, target)
+            d_w2_norm = _weight_grad(self.substitute_classifier, input_noised, target)
             B = 1 - tf.reduce_sum(grad_ws_norm * d_w2_norm)  # pylint: disable=C0103
             return B
 
@@ -224,7 +225,9 @@ class GradientMatchingAttack(Attack):
             def get_config(self) -> Dict:
                 return {"learning_rates": self.learning_rates, "milestones": self.milestones}
 
-        self.optimizer = tf.keras.optimizers.Adam(gradient_transformers=[lambda grads_and_vars: [(tf.sign(g), v) for (g, v) in grads_and_vars]])
+        self.optimizer = tf.keras.optimizers.Adam(
+            gradient_transformers=[lambda grads_and_vars: [(tf.sign(g), v) for (g, v) in grads_and_vars]]
+        )
         self.lr_schedule = tf.keras.callbacks.LearningRateScheduler(PredefinedLRSchedule(*self.learning_rate_schedule))
 
     def __initialize_poison_pytorch(
@@ -244,12 +247,26 @@ class GradientMatchingAttack(Attack):
         self.model_trainable = self.substitute_classifier.model.training
         self.substitute_classifier.model.eval()
 
+        def _weight_grad(
+            classifier: "CLASSIFIER_NEURALNETWORK_TYPE", x: torch.Tensor, target: torch.Tensor
+        ) -> torch.Tensor:
+            classifier.model.zero_grad()
+            y = classifier.model(x)
+            loss_ = classifier.loss(y, target)
+            gradspred = torch.autograd.grad(
+                loss_, list(classifier.model.parameters()), create_graph=True, retain_graph=True
+            )
+            d_w = gradspred
+            d_w = torch.cat([w.flatten() for w in d_w])
+            d_w_norm = d_w / torch.sqrt(torch.sum(torch.square(d_w)))
+            return d_w_norm
+
         class NoiseEmbedding(nn.Module):
             """
             Gradient matching noise layer.
             """
 
-            def __init__(self, num_poison: int, len_noise: int, epsilon: float, clip_values: Tuple[int, int]):
+            def __init__(self, num_poison: int, len_noise: int, epsilon: float, clip_values: Tuple[float, float]):
                 super().__init__()
 
                 self.embedding_layer = nn.Embedding(num_poison, len_noise)
@@ -301,13 +318,13 @@ class GradientMatchingAttack(Attack):
                 Applies the poison noise and compute the loss with respect to the target gradient.
                 """
                 poisoned_samples = self.noise_embedding(x, indices_poison)
-                d_w2_norm = self.gradient_matching._weight_grad(self.classifier, poisoned_samples, y)
+                d_w2_norm = _weight_grad(self.classifier, poisoned_samples, y)
                 d_w2_norm.requires_grad_(True)
                 B_score = 1 - self.cos(grad_ws_norm, d_w2_norm)  # pylint: disable=C0103
                 return B_score, poisoned_samples
 
         x_trigger = torch.as_tensor(x_trigger, device=device, dtype=torch.float32)
-        self.grad_ws_norm = self._weight_grad(
+        self.grad_ws_norm = _weight_grad(
             self.substitute_classifier, x_trigger, torch.as_tensor(y_trigger, device=device, dtype=torch.float32)
         ).detach()
         self.grad_ws_norm.requires_grad_(False)
@@ -347,42 +364,6 @@ class GradientMatchingAttack(Attack):
         self.lr_schedule = torch.optim.lr_scheduler.LambdaLR(
             self.optimizer, PredefinedLRSchedule(*self.learning_rate_schedule)
         )
-
-    @staticmethod
-    def _weight_grad(classifier: "CLASSIFIER_NEURALNETWORK_TYPE", x: object, target: object) -> object:
-        from art.estimators.classification.pytorch import PyTorchClassifier
-        from art.estimators.classification.tensorflow import TensorFlowV2Classifier
-
-        if isinstance(classifier, TensorFlowV2Classifier):
-            # Get the target gradient vector.
-            import tensorflow as tf
-
-            with tf.GradientTape() as t:  # pylint: disable=C0103
-                t.watch(classifier.model.weights)
-                output = classifier.model(x, training=False)
-                loss = classifier.model.compiled_loss(target, output)
-            d_w = t.gradient(loss, classifier.model.weights)
-            d_w = [w for w in d_w if w is not None]
-            d_w = tf.concat([tf.reshape(d, [-1]) for d in d_w], 0)
-            d_w_norm = d_w / tf.sqrt(tf.reduce_sum(tf.square(d_w)))
-            return d_w_norm
-        elif isinstance(classifier, PyTorchClassifier):
-            import torch
-
-            classifier.model.zero_grad()
-            y = classifier.model(x)
-            loss_ = classifier.loss(y, target)
-            gradspred = torch.autograd.grad(
-                loss_, list(classifier.model.parameters()), create_graph=True, retain_graph=True
-            )
-            d_w = gradspred
-            d_w = torch.cat([w.flatten() for w in d_w])
-            d_w_norm = d_w / torch.sqrt(torch.sum(torch.square(d_w)))
-            return d_w_norm
-        else:
-            raise NotImplementedError(
-                "GradientMatchingAttack is currently implemented only for Tensorflow V2 and Pytorch."
-            )
 
     def poison(
         self, x_trigger: np.ndarray, y_trigger: np.ndarray, x_train: np.ndarray, y_train: np.ndarray
@@ -502,7 +483,7 @@ class GradientMatchingAttack(Attack):
                 epoch_iterator.set_postfix(loss=sum_loss / count)
             self.lr_schedule.step()
 
-        B_sum = 0
+        B_sum = 0  # pylint: disable=C0103
         count = 0
         all_poisoned_samples = []
         self.backdoor_model.eval()
@@ -513,9 +494,9 @@ class GradientMatchingAttack(Attack):
             x = x.to(device)
             y = y.to(device)
             indices = indices.to(device)
-            B, poisoned_samples = self.backdoor_model(x, indices, y, self.grad_ws_norm)
+            B, poisoned_samples = self.backdoor_model(x, indices, y, self.grad_ws_norm)  # pylint: disable=C0103
             all_poisoned_samples.append(poisoned_samples.detach().cpu().numpy())
-            B_sum += B.detach().cpu().numpy()
+            B_sum += B.detach().cpu().numpy()  # pylint: disable=C0103
             count += 1
         return np.concatenate(all_poisoned_samples, axis=0), B_sum / count
 
