@@ -199,9 +199,9 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
 
         :return: True/False if the datapoint could be misclassified given the eps bounds.
         """
-        cent, eps = self.forward(eps=eps, cent=cent)
-        cent = cent.detach().cpu().numpy()
-        eps = eps.detach().cpu().numpy()
+        cent_tensor, eps_tensor = self.forward(eps=eps, cent=cent)
+        cent = cent_tensor.detach().cpu().numpy()
+        eps = eps_tensor.detach().cpu().numpy()
 
         certification_results = []
         for k in range(self.nb_classes):

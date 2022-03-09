@@ -28,7 +28,6 @@ from art.preprocessing.expectation_over_transformation.pytorch import EoTPyTorch
 if TYPE_CHECKING:
     # pylint: disable=C0412
     import torch
-    from art.utils import CLIP_VALUES_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +44,7 @@ class EoTImageCenterCropPyTorch(EoTPyTorch):
     def __init__(
         self,
         nb_samples: int,
-        clip_values: "CLIP_VALUES_TYPE",
+        clip_values: Tuple[float, float],
         size: int = 5,
         label_type: str = "classification",
         apply_fit: bool = False,
@@ -166,7 +165,6 @@ class EoTImageCenterCropPyTorch(EoTPyTorch):
 
         if self.label_type not in self.label_types:
             raise ValueError(
-                "The input for label_type needs to be one of {}, currently receiving `{}`.".format(
-                    self.label_types, self.label_type
-                )
+                f"The input for label_type needs to be one of {self.label_types},"
+                f"currently receiving `{self.label_type}`."
             )

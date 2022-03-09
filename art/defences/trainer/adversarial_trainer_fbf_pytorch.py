@@ -124,20 +124,22 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
                 output = np.argmax(self.predict(x_test), axis=1)
                 nb_correct_pred = np.sum(output == np.argmax(y_test, axis=1))
                 logger.info(
-                    "epoch {}\ttime(s) {:.1f}\tl_r {:.4f}\tloss {:.4f}\tacc(tr) {:.4f}\tacc(val) {:.4f}".format(
-                        i_epoch,
-                        train_time - start_time,
-                        l_r,
-                        train_loss / train_n,
-                        train_acc / train_n,
-                        nb_correct_pred / x_test.shape[0],
-                    )
+                    "epoch: %s time(s): %.1f l_r: %.4f loss: %.4f acc(tr): %.4f acc(val): %.4f",
+                    i_epoch,
+                    train_time - start_time,
+                    l_r,
+                    train_loss / train_n,
+                    train_acc / train_n,
+                    nb_correct_pred / x_test.shape[0],
                 )
             else:
                 logger.info(
-                    "epoch {}\t time(s) {:.1f}\t l_r {:.4f}\t loss {:.4f}\t acc {:.4f}".format(
-                        i_epoch, train_time - start_time, l_r, train_loss / train_n, train_acc / train_n
-                    )
+                    "epoch: %s time(s): %.1f l_r %.4f loss: %.4f acc: %.4f",
+                    i_epoch,
+                    train_time - start_time,
+                    l_r,
+                    train_loss / train_n,
+                    train_acc / train_n,
                 )
 
     def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs):
@@ -184,9 +186,12 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
 
             train_time = time.time()
             logger.info(
-                "epoch {}\t time(s) {:.1f}\t l_r {:.4f}\t loss {:.4f}\t acc {:.4f}".format(
-                    i_epoch, train_time - start_time, l_r, train_loss / train_n, train_acc / train_n
-                )
+                "epoch: %s time(s): %.1f l_r: %.4f loss: %.4f acc: %.4f",
+                i_epoch,
+                train_time - start_time,
+                l_r,
+                train_loss / train_n,
+                train_acc / train_n,
             )
 
     def _batch_process(self, x_batch: np.ndarray, y_batch: np.ndarray, l_r: float) -> Tuple[float, float, float]:
@@ -238,7 +243,7 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
 
         # Actual training
         if self._use_amp:  # pragma: no cover
-            import apex.amp as amp  # pylint: disable=E0611
+            from apex import amp  # pylint: disable=E0611
 
             with amp.scale_loss(loss, self._classifier._optimizer) as scaled_loss:  # pylint: disable=W0212
                 scaled_loss.backward()

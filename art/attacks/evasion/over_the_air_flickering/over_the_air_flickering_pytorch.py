@@ -131,7 +131,8 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
         """
         import torch  # lgtm [py/repeated-import]
 
-        y = check_and_transform_label_format(y, self.estimator.nb_classes)
+        if y is not None:
+            y = check_and_transform_label_format(y, self.estimator.nb_classes)
         if y is None:
             if self.targeted:  # pragma: no cover
                 raise ValueError("Target labels `y` need to be provided for a targeted attack.")

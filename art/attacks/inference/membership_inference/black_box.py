@@ -279,13 +279,16 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
             if self.estimator.input_shape[0] != x.shape[1]:
                 raise ValueError("Shape of x does not match input_shape of estimator")
 
-        if "probabilities" in kwargs.keys():
+        if "probabilities" in kwargs:
             probabilities = kwargs.get("probabilities")
         else:
             probabilities = False
 
         if not self._regressor_model:
             y = check_and_transform_label_format(y, len(np.unique(y)), return_one_hot=True)
+
+        if y is None:
+            raise ValueError("None value detected.")
 
         if y.shape[0] != x.shape[0]:  # pragma: no cover
             raise ValueError("Number of rows in x and y do not match")

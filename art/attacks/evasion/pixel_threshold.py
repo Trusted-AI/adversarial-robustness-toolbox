@@ -48,7 +48,7 @@ from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
-from art.utils import compute_success, to_categorical, check_and_transform_label_format
+from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
@@ -146,7 +146,8 @@ class PixelThreshold(EvasionAttack):
         :param max_iter: Maximum number of optimisation iterations.
         :return: An array holding the adversarial examples.
         """
-        y = check_and_transform_label_format(y, self.estimator.nb_classes, return_one_hot=False)
+        if y is not None:
+            y = check_and_transform_label_format(y, self.estimator.nb_classes, return_one_hot=False)
 
         if y is None:
             if self.targeted:
@@ -160,7 +161,7 @@ class PixelThreshold(EvasionAttack):
             if y.ndim > 1 and y.shape[1] > 1:
                 y = np.argmax(y, axis=1)
 
-        y = np.squeeze(y)
+        y = np.squeeze(y)  # type: ignore
 
         if self.th is None:
             logger.info(
@@ -183,7 +184,7 @@ class PixelThreshold(EvasionAttack):
 
         adv_x_best = []
         self.adv_th = []
-        for image, target_class in tqdm(zip(x, y), desc="Pixel threshold", disable=not self.verbose):
+        for image, target_class in tqdm(zip(x, y), desc="Pixel threshold", disable=not self.verbose):  # type: ignore
 
             if self.th is None:
 
@@ -220,17 +221,9 @@ class PixelThreshold(EvasionAttack):
 
         adv_x_best_array = np.array(adv_x_best)
 
-        if y is not None:
-            y = to_categorical(y, self.estimator.nb_classes)
-
         if self.rescale:
-            x = self.rescale_input(x)
             adv_x_best_array = self.rescale_input(adv_x_best_array)
 
-        logger.info(
-            "Success rate of Attack: %.2f%%",
-            100 * compute_success(self.estimator, x, y, adv_x_best_array, self.targeted, 1),
-        )
         return adv_x_best_array
 
     def _get_bounds(self, img: np.ndarray, limit) -> Tuple[List[list], list]:
@@ -406,7 +399,7 @@ class PixelAttack(PixelThreshold):
         """
         Define the bounds for the image `img` within the limits `limit`.
         """
-        initial: List[np.ndarray] = []
+        initial: List[int] = []
         bounds: List[List[int]]
         if self.es == 0:
             for count, (i, j) in enumerate(product(range(self.img_rows), range(self.img_cols))):
@@ -1210,7 +1203,7 @@ class DifferentialEvolutionSolver:  # pragma: no cover
                 break
 
             if self.disp:
-                print("differential_evolution step %d: f(x)= %g" % (nit, self.population_energies[0]))
+                print(f"differential_evolution step {nit}: f(x)= {self.population_energies[0]}")
 
             # should the solver terminate?
             convergence = self.convergence

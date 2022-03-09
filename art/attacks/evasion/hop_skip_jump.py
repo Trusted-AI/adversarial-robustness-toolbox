@@ -33,7 +33,7 @@ from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification import ClassifierMixin
-from art.utils import compute_success, to_categorical, check_and_transform_label_format
+from art.utils import compute_success, to_categorical, check_and_transform_label_format, get_labels_np_array
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
@@ -125,9 +125,17 @@ class HopSkipJump(EvasionAttack):
         """
         mask = kwargs.get("mask")
 
+        if y is None:
+            # Throw error if attack is targeted, but no targets are provided
+            if self.targeted:  # pragma: no cover
+                raise ValueError("Target labels `y` need to be provided for a targeted attack.")
+
+            # Use model predictions as correct outputs
+            y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))  # type: ignore
+
         y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
-        if y is not None and self.estimator.nb_classes == 2 and y.shape[1] == 1:  # pragma: no cover
+        if self.estimator.nb_classes == 2 and y.shape[1] == 1:  # pragma: no cover
             raise ValueError(
                 "This attack has not yet been tested for binary classification with a single output classifier."
             )
@@ -181,8 +189,7 @@ class HopSkipJump(EvasionAttack):
         # Some initial setups
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
-        if y is not None:
-            y = np.argmax(y, axis=1)
+        y = np.argmax(y, axis=1)
 
         # Generate the adversarial samples
         for ind, val in enumerate(tqdm(x_adv, desc="HopSkipJump", disable=not self.verbose)):
@@ -191,7 +198,7 @@ class HopSkipJump(EvasionAttack):
             if self.targeted:
                 x_adv[ind] = self._perturb(
                     x=val,
-                    y=y[ind],
+                    y=y[ind],  # type: ignore
                     y_p=preds[ind],
                     init_pred=init_preds[ind],
                     adv_init=x_adv_init[ind],
@@ -212,8 +219,7 @@ class HopSkipJump(EvasionAttack):
                     clip_max=clip_max,
                 )
 
-        if y is not None:
-            y = to_categorical(y, self.estimator.nb_classes)
+        y = to_categorical(y, self.estimator.nb_classes)  # type: ignore
 
         logger.info(
             "Success rate of HopSkipJump attack: %.2f%%",
@@ -435,7 +441,7 @@ class HopSkipJump(EvasionAttack):
             while not success:
                 epsilon /= 2.0
                 potential_sample = current_sample + epsilon * update
-                success = self._adversarial_satisfactory(
+                success = self._adversarial_satisfactory(  # type: ignore
                     samples=potential_sample[None],
                     target=target,
                     clip_min=clip_min,

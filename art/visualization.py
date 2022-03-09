@@ -109,7 +109,7 @@ def save_image(image_array: np.ndarray, f_name: str) -> None:
 
 def plot_3d(
     points: np.ndarray,
-    labels: List[int],
+    labels: np.ndarray,
     colors: Optional[List[str]] = None,
     save: bool = True,
     f_name: str = "",
@@ -133,7 +133,7 @@ def plot_3d(
     # import matplotlib  # lgtm [py/repeated-import]
     import matplotlib.pyplot as plt  # lgtm [py/repeated-import]
 
-    # from mpl_toolkits import mplot3d
+    from mpl_toolkits import mplot3d  # noqa: F401
 
     if colors is None:  # pragma: no cover
         colors = []

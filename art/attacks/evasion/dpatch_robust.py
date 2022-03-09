@@ -137,7 +137,9 @@ class RobustDPatch(EvasionAttack):
         self._targeted = targeted
         self._check_params()
 
-    def generate(self, x: np.ndarray, y: Optional[List[Dict[str, np.ndarray]]] = None, **kwargs) -> np.ndarray:
+    def generate(  # type: ignore
+        self, x: np.ndarray, y: Optional[List[Dict[str, np.ndarray]]] = None, **kwargs
+    ) -> np.ndarray:
         """
         Generate RobustDPatch.
 
@@ -271,7 +273,7 @@ class RobustDPatch(EvasionAttack):
         :param channels_first: Set channels first or last.
         """
 
-        transformations: Dict[str, Union[float, int]] = dict()
+        transformations: Dict[str, Union[float, int]] = {}
         x_copy = x.copy()
         patch_copy = patch.copy()
         x_patch = x.copy()
@@ -306,7 +308,7 @@ class RobustDPatch(EvasionAttack):
 
         if y is not None:
 
-            y_copy: List[Dict[str, np.ndarray]] = list()
+            y_copy: List[Dict[str, np.ndarray]] = []
 
             for i_image in range(x_copy.shape[0]):
                 y_b = y[i_image]["boxes"].copy()
@@ -343,7 +345,7 @@ class RobustDPatch(EvasionAttack):
                     x_2_new = image_height - y_1_arr
                     y_2_new = x_1_arr + box_width
 
-                y_i = dict()
+                y_i = {}
                 y_i["boxes"] = np.zeros_like(y[i_image]["boxes"])
                 y_i["boxes"][:, 0] = x_1_new
                 y_i["boxes"][:, 1] = y_1_new
@@ -364,7 +366,7 @@ class RobustDPatch(EvasionAttack):
 
         logger.debug("Transformations: %s", str(transformations))
 
-        patch_target: List[Dict[str, np.ndarray]] = list()
+        patch_target: List[Dict[str, np.ndarray]] = []
 
         if self.targeted:
             predictions = y_copy
@@ -372,7 +374,7 @@ class RobustDPatch(EvasionAttack):
             predictions = self.estimator.predict(x=x_copy, standardise_output=True)
 
         for i_image in range(x_copy.shape[0]):
-            target_dict = dict()
+            target_dict = {}
             target_dict["boxes"] = predictions[i_image]["boxes"]
             target_dict["labels"] = predictions[i_image]["labels"]
             target_dict["scores"] = predictions[i_image]["scores"]

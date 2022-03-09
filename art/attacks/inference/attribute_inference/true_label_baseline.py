@@ -129,7 +129,7 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
         """
 
         # Checks:
-        if self.single_index_feature and self.attack_feature >= x.shape[1]:
+        if self.single_index_feature and isinstance(self.attack_feature, int) and self.attack_feature >= x.shape[1]:
             raise ValueError("attack_feature must be a valid index to a feature in x")
 
         # get vector of attacked feature
@@ -140,6 +140,8 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
         else:
             y_one_hot = floats_to_one_hot(attacked_feature)
         y_ready = check_and_transform_label_format(y_one_hot, len(np.unique(attacked_feature)), return_one_hot=True)
+        if y_ready is None:
+            raise ValueError("None value detected.")
 
         # create training set for attack model
         if self.scale_range is not None:
@@ -169,16 +171,18 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
         if y is None:
             raise ValueError("True labels are required")
 
+        values = kwargs.get("values")
+
+        # if provided, override the values computed in fit()
+        if values is not None:
+            self._values = values
+
         if self.scale_range is not None:
             normalized_labels = minmax_scale(y, feature_range=self.scale_range)
         else:
             normalized_labels = y * self.prediction_normal_factor
         normalized_labels = check_and_transform_label_format(normalized_labels, return_one_hot=True)
         x_test = np.concatenate((x, normalized_labels), axis=1).astype(np.float32)
-
-        # if provided, override the values computed in fit()
-        if "values" in kwargs.keys():
-            self._values = kwargs.get("values")
 
         predictions = self.attack_model.predict(x_test).astype(np.float32)
 

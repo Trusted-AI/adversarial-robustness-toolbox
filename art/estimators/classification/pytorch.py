@@ -563,7 +563,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                 and label.shape[0] == x.shape[0]
             )
         ):
-            raise ValueError("Label %s is out of range." % label)  # pragma: no cover
+            raise ValueError(f"Label {label} is out of range.")  # pragma: no cover
 
         # Apply preprocessing
         if self.all_framework_preprocessing:
@@ -591,7 +591,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         preds = model_outputs[-1]
 
         # Compute the gradient
-        grads_list = list()
+        grads_list = []
 
         def save_grad():
             def hook(grad):
@@ -646,12 +646,12 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         return grads
 
-    def compute_loss(  # pylint: disable=W0221
+    def compute_loss(  # type: ignore # pylint: disable=W0221
         self,
         x: Union[np.ndarray, "torch.Tensor"],
         y: Union[np.ndarray, "torch.Tensor"],
         reduction: str = "none",
-        **kwargs
+        **kwargs,
     ) -> Union[np.ndarray, "torch.Tensor"]:
         """
         Compute the loss.
@@ -669,7 +669,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         self._model.eval()
 
-        y = check_and_transform_label_format(y, self.nb_classes)
+        y = check_and_transform_label_format(y, self.nb_classes)  # type: ignore
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
@@ -725,7 +725,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         x: Union[np.ndarray, "torch.Tensor"],
         y: Union[np.ndarray, "torch.Tensor"],
         training_mode: bool = False,
-        **kwargs
+        **kwargs,
     ) -> Union[np.ndarray, "torch.Tensor"]:
         """
         Compute the gradient of the loss function w.r.t. `x`.
@@ -892,13 +892,13 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         return grads
 
-    def get_activations(
+    def get_activations(  # type: ignore
         self,
         x: Union[np.ndarray, "torch.Tensor"],
         layer: Optional[Union[int, str]] = None,
         batch_size: int = 128,
         framework: bool = False,
-    ) -> np.ndarray:
+    ) -> Union[np.ndarray, "torch.Tensor"]:
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
@@ -924,7 +924,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         # Get index of the extracted layer
         if isinstance(layer, six.string_types):
             if layer not in self._layer_names:  # pragma: no cover
-                raise ValueError("Layer name %s not supported" % layer)
+                raise ValueError(f"Layer name {layer} not supported")
             layer_index = self._layer_names.index(layer)
 
         elif isinstance(layer, int):
@@ -943,7 +943,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         if not hasattr(self, "_features"):
             self._features: Dict[str, torch.Tensor] = {}
             # register forward hooks on the layers of choice
-        if layer not in self._features.keys():
+
+        if layer not in self._features:
             interim_layer = dict([*self._model._model.named_modules()])[  # pylint: disable=W0212,W0622,W0613
                 self._layer_names[layer_index]
             ]
@@ -973,9 +974,9 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             layer_output = self._features[self._layer_names[layer_index]]  # pylint: disable=W0212
             results.append(layer_output.detach().cpu().numpy())
 
-        results = np.concatenate(results)
+        results_array = np.concatenate(results)
 
-        return results
+        return results_array
 
     def save(self, filename: str, path: Optional[str] = None) -> None:
         """
@@ -1052,21 +1053,11 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
     def __repr__(self):
         repr_ = (
-            "%s(model=%r, loss=%r, optimizer=%r, input_shape=%r, nb_classes=%r, channels_first=%r, "
-            "clip_values=%r, preprocessing_defences=%r, postprocessing_defences=%r, preprocessing=%r)"
-            % (
-                self.__module__ + "." + self.__class__.__name__,
-                self._model,
-                self._loss,
-                self._optimizer,
-                self._input_shape,
-                self.nb_classes,
-                self.channels_first,
-                self.clip_values,
-                self.preprocessing_defences,
-                self.postprocessing_defences,
-                self.preprocessing,
-            )
+            f"{self.__module__ + '.' + self.__class__.__name__}(model={self._model}, loss={self._loss}, "
+            f"optimizer={self._optimizer}, input_shape={self._input_shape}, nb_classes={self.nb_classes}, "
+            f"channels_first={self.channels_first}, clip_values={self.clip_values!r}, "
+            f"preprocessing_defences={self.preprocessing_defences}, "
+            f"postprocessing_defences={self.postprocessing_defences}, preprocessing={self.preprocessing})"
         )
 
         return repr_
@@ -1074,12 +1065,12 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
     def _make_model_wrapper(self, model: "torch.nn.Module") -> "torch.nn.Module":
         # Try to import PyTorch and create an internal class that acts like a model wrapper extending torch.nn.Module
         try:
-            import torch.nn as nn
+            import torch  # lgtm [py/repeated-import]
 
             # Define model wrapping class only if not defined before
             if not hasattr(self, "_model_wrapper"):
 
-                class ModelWrapper(nn.Module):
+                class ModelWrapper(torch.nn.Module):
                     """
                     This is a wrapper for the input model.
                     """
@@ -1110,12 +1101,12 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                         # disable pylint because access to _model required
 
                         result = []
-                        if isinstance(self._model, nn.Sequential):
+                        if isinstance(self._model, torch.nn.Sequential):
                             for _, module_ in self._model._modules.items():
                                 x = module_(x)
                                 result.append(x)
 
-                        elif isinstance(self._model, nn.Module):
+                        elif isinstance(self._model, torch.nn.Module):
                             x = self._model(x)
                             result.append(x)
 
@@ -1138,9 +1129,10 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                                      layers if the input model is of type `nn.Sequential`, otherwise, it will only
                                      return the logit layer.
                         """
+                        import torch  # lgtm [py/repeated-import]
 
                         result = []
-                        if isinstance(self._model, nn.Module):
+                        if isinstance(self._model, torch.nn.Module):
                             for name, _ in self._model._modules.items():  # pylint: disable=W0212
                                 result.append(name)
 

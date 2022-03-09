@@ -367,7 +367,7 @@ def projection(values: np.ndarray, eps: Union[int, float, np.ndarray], norm_p: U
     elif norm_p in [np.inf, "inf"]:
         if isinstance(eps, np.ndarray):
             eps = eps * np.ones_like(values)
-            eps = eps.reshape([eps.shape[0], -1])
+            eps = eps.reshape([eps.shape[0], -1])  # type: ignore
 
         values_tmp = np.sign(values_tmp) * np.minimum(abs(values_tmp), eps)
 
@@ -428,7 +428,7 @@ def random_sphere(
         res = np.random.uniform(-radius, radius, (nb_points, nb_dims))
 
     else:
-        raise NotImplementedError("Norm {} not supported".format(norm))
+        raise NotImplementedError(f"Norm {norm} not supported")
 
     return res
 
@@ -537,35 +537,35 @@ def check_and_transform_label_format(
     :param return_one_hot: True if returning one-hot encoded labels, False if returning index labels.
     :return: Labels with shape `(nb_samples, nb_classes)` (one-hot) or `(nb_samples,)` (index).
     """
-    if labels is not None:
-        if len(labels.shape) == 2 and labels.shape[1] > 1:  # multi-class, one-hot encoded
-            if not return_one_hot:
-                labels = np.argmax(labels, axis=1)
-                labels = np.expand_dims(labels, axis=1)
-        elif (
-            len(labels.shape) == 2 and labels.shape[1] == 1 and nb_classes is not None and nb_classes > 2
-        ):  # multi-class, index labels
-            if return_one_hot:
-                labels = to_categorical(labels, nb_classes)
-            else:
-                labels = np.expand_dims(labels, axis=1)
-        elif (
-            len(labels.shape) == 2 and labels.shape[1] == 1 and nb_classes is not None and nb_classes == 2
-        ):  # binary, index labels
-            if return_one_hot:
-                labels = to_categorical(labels, nb_classes)
-        elif len(labels.shape) == 1:  # index labels
-            if return_one_hot:
-                labels = to_categorical(labels, nb_classes)
-            else:
-                labels = np.expand_dims(labels, axis=1)
-        else:
-            raise ValueError(
-                "Shape of labels not recognised."
-                "Please provide labels in shape (nb_samples,) or (nb_samples, nb_classes)"
-            )
+    labels_return = labels
 
-    return labels
+    if len(labels.shape) == 2 and labels.shape[1] > 1:  # multi-class, one-hot encoded
+        if not return_one_hot:
+            labels_return = np.argmax(labels, axis=1)
+            labels_return = np.expand_dims(labels_return, axis=1)
+    elif (
+        len(labels.shape) == 2 and labels.shape[1] == 1 and nb_classes is not None and nb_classes > 2
+    ):  # multi-class, index labels
+        if return_one_hot:
+            labels_return = to_categorical(labels, nb_classes)
+        else:
+            labels_return = np.expand_dims(labels, axis=1)
+    elif (
+        len(labels.shape) == 2 and labels.shape[1] == 1 and nb_classes is not None and nb_classes == 2
+    ):  # binary, index labels
+        if return_one_hot:
+            labels_return = to_categorical(labels, nb_classes)
+    elif len(labels.shape) == 1:  # index labels
+        if return_one_hot:
+            labels_return = to_categorical(labels, nb_classes)
+        else:
+            labels_return = np.expand_dims(labels, axis=1)
+    else:
+        raise ValueError(
+            "Shape of labels not recognised." "Please provide labels in shape (nb_samples,) or (nb_samples, nb_classes)"
+        )
+
+    return labels_return
 
 
 def random_targets(labels: np.ndarray, nb_classes: int) -> np.ndarray:
@@ -737,7 +737,7 @@ def compute_success(
     return np.sum(attack_success) / x_adv.shape[0]
 
 
-def compute_accuracy(preds: np.ndarray, labels: np.ndarray, abstain: bool = True) -> Tuple[np.ndarray, int]:
+def compute_accuracy(preds: np.ndarray, labels: np.ndarray, abstain: bool = True) -> Tuple[float, float]:
     """
     Compute the accuracy rate and coverage rate of predictions
     In the case where predictions are abstained, those samples are ignored.
@@ -925,7 +925,7 @@ def load_iris(raw: bool = False, test_set: float = 0.3) -> DATASET_TYPE:
         data /= np.amax(data)
     labels = to_categorical(iris.target, 3)
 
-    min_, max_ = np.amin(data), np.amax(data)
+    min_, max_ = float(np.amin(data)), float(np.amax(data))
 
     # Split training and test sets
     split_index = int((1 - test_set) * len(data) / 3)
@@ -966,7 +966,7 @@ def load_iris(raw: bool = False, test_set: float = 0.3) -> DATASET_TYPE:
     random_indices = np.random.permutation(len(y_train))
     x_train, y_train = x_train[random_indices].astype(np.float32), y_train[random_indices]
 
-    return (x_train, y_train), (x_test, y_test), min_, max_
+    return (x_train, y_train), (x_test, y_test), min_, max_  # type: ignore
 
 
 def load_diabetes(raw: bool = False, test_set: float = 0.3) -> DATASET_TYPE:
@@ -1051,7 +1051,7 @@ def load_nursery(
             return 2
         if value == "spec_prior":
             return 3
-        raise Exception("Bad label value: %s" % value)
+        raise Exception(f"Bad label value: {value}")
 
     data["label"] = data["label"].apply(modify_label)
     data["children"] = data["children"].apply(lambda x: 4 if x == "more" else x)
@@ -1135,7 +1135,7 @@ def load_dataset(
     if "diabetes" in name:
         return load_diabetes()
 
-    raise NotImplementedError("There is no loader for dataset '{}'.".format(name))
+    raise NotImplementedError(f"There is no loader for dataset '{name}'.")
 
 
 def _extract(full_path: str, path: str) -> bool:
@@ -1148,7 +1148,7 @@ def _extract(full_path: str, path: str) -> bool:
             archive = tarfile.open(full_path, "r:gz")
     elif full_path.endswith("zip"):  # pragma: no cover
         if zipfile.is_zipfile(full_path):
-            archive = zipfile.ZipFile(full_path)
+            archive = zipfile.ZipFile(full_path)  # pylint: disable=R1732
         else:
             return False
     else:
@@ -1235,7 +1235,7 @@ def get_file(filename: str, url: str, path: Optional[str] = None, extract: bool 
             except HTTPError as exception:  # pragma: no cover
                 raise Exception(error_msg.format(url, exception.code, exception.msg)) from HTTPError  # type: ignore
             except URLError as exception:  # pragma: no cover
-                raise Exception(error_msg.format(url, exception.errno, exception.reason)) from HTTPError
+                raise Exception(error_msg.format(url, exception.errno, exception.reason)) from HTTPError  # type: ignore
         except (Exception, KeyboardInterrupt):  # pragma: no cover
             if os.path.exists(full_path):
                 os.remove(full_path)
@@ -1320,7 +1320,7 @@ def segment_by_class(data: Union[np.ndarray, List[int]], classes: np.ndarray, nu
     by_class: List[List[int]] = [[] for _ in range(num_classes)]
     for indx, feature in enumerate(classes):
         if len(classes.shape) == 2 and classes.shape[1] > 1:
-            assigned = np.argmax(feature)
+            assigned = int(np.argmax(feature))
         else:
             assigned = int(feature)
         by_class[assigned].append(data[indx])
@@ -1372,7 +1372,7 @@ def performance_diff(
     if callable(perf_function):
         return perf_function(test_labels, model1_labels, **kwargs) - perf_function(test_labels, model2_labels, **kwargs)
 
-    raise ValueError("Performance function '{}' not supported".format(str(perf_function)))
+    raise ValueError(f"Performance function '{perf_function}' not supported")
 
 
 def is_probability(vector: np.ndarray) -> bool:
