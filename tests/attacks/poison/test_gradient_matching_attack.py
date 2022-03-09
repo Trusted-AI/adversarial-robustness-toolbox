@@ -36,16 +36,20 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator):
 
         class_source = 0
         class_target = 1
+        epsilon = 0.3
+        percent_poison = 0.01
         index_target = np.where(y_test.argmax(axis=1) == class_source)[0][5]
         x_trigger = x_test[index_target : index_target + 1]
 
         x_train, y_train = x_train[:1000], y_train[:1000]
         y_train = np.argmax(y_train, axis=-1)
         attack = GradientMatchingAttack(
-            classifier, epsilon=0.3, percent_poison=0.01, max_trials=1, max_epochs=1, verbose=False
+            classifier, epsilon=epsilon, percent_poison=percent_poison, max_trials=1, max_epochs=1, verbose=False
         )
         x_poison, y_poison = attack.poison(x_trigger, [class_target], x_train, y_train)
 
+        np.testing.assert_(np.all(np.sum(np.reshape((x_poison-x_train)**2, [x_poison.shape[0], -1]), axis=1) < epsilon))
+        np.testing.assert_(np.sum(np.sum(np.reshape((x_poison-x_train)**2, [x_poison.shape[0], -1]), axis=1) > 0) <= percent_poison * x_train.shape[0])
         np.testing.assert_equal(np.shape(x_poison), np.shape(x_train))
         np.testing.assert_equal(np.shape(y_poison), np.shape(y_train))
     except ARTTestException as e:
