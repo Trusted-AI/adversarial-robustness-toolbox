@@ -21,9 +21,9 @@ This module implements poisoning attacks on Support Vector Machines.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+from typing import TYPE_CHECKING
 import numpy as np
 import tensorflow as tf
-from typing import TYPE_CHECKING
 
 from art.estimators.generation.tensorflow_gan import TensorFlow2GAN
 from art.attacks.attack import PoisoningAttackGenerator
@@ -76,8 +76,8 @@ class PoisoningAttackTrail(PoisoningAttackGenerator):
         """
         return tf.reduce_mean(
             tf.math.squared_difference(
-                tf.dtypes.cast(self.estimator.predict(z_trigger), dtype=tf.float64),
-                tf.dtypes.cast(x_target, dtype=tf.float64),
+                tf.dtypes.cast(self.estimator.predict(z_trigger), tf.float64),
+                tf.dtypes.cast(x_target, tf.float64),
             )
         )
 
@@ -90,6 +90,7 @@ class PoisoningAttackTrail(PoisoningAttackGenerator):
         lambda_p=0.1,
         verbose=-1,
         **kwargs
+        # ):
     ) -> "GENERATOR_TYPE":
         """
         Creates a backdoor in the generative model
@@ -102,7 +103,11 @@ class PoisoningAttackTrail(PoisoningAttackGenerator):
         """
         for i in range(max_iter):
             train_imgs = kwargs.get("images")
-            train_set = tf.data.Dataset.from_tensor_slices(train_imgs).shuffle(train_imgs.shape[0]).batch(batch_size)
+            train_set = (
+                tf.data.Dataset.from_tensor_slices(train_imgs)
+                .shuffle(train_imgs.shape[0])  # type: ignore
+                .batch(batch_size)
+            )
 
             for images_batch in train_set:
                 # generating noise from a normal distribution
@@ -110,25 +115,26 @@ class PoisoningAttackTrail(PoisoningAttackGenerator):
 
                 with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
                     generated_images = self.estimator.model(noise, training=True)
-                    real_output = self._gan.discriminator.model(images_batch, training=True)
-                    generated_output = self._gan.discriminator.model(generated_images, training=True)
+                    real_output = self._gan.discriminator.model(images_batch, training=True)  # type: ignore
+                    generated_output = self._gan.discriminator.model(generated_images, training=True)  # type: ignore
 
                     gen_loss = self._trail_loss(generated_output, lambda_p, z_trigger, x_target)
                     disc_loss = self._gan.discriminator_loss(real_output, generated_output)
 
                 gradients_of_generator = gen_tape.gradient(gen_loss, self.estimator.model.trainable_variables)
-                gradients_of_discriminator = disc_tape.gradient(disc_loss,
-                                                                self._gan.discriminator.model.trainable_variables)
+                gradients_of_discriminator = disc_tape.gradient(
+                    disc_loss, self._gan.discriminator.model.trainable_variables  # type: ignore
+                )
 
                 self._gan.generator_optimizer_fct.apply_gradients(
                     zip(gradients_of_generator, self.estimator.model.trainable_variables)
                 )
                 self._gan.discriminator_optimizer_fct.apply_gradients(
-                    zip(gradients_of_discriminator, self._gan.discriminator.model.trainable_variables)
+                    zip(gradients_of_discriminator, self._gan.discriminator.model.trainable_variables)  # type: ignore
                 )
 
             if verbose > 0 and i % verbose == 0:
-                print("Iteration: {}, Fidelity: {}".format(i, self.fidelity(z_trigger, x_target).numpy()))
+                print(f"Iteration: {i}, Fidelity: {self.fidelity(z_trigger, x_target).numpy()}")
 
         return self._gan.generator
 
@@ -166,7 +172,10 @@ class PoisoningAttackReD(PoisoningAttackGenerator):
         :param x_target: the target to produce when using the trigger
         """
         return tf.reduce_mean(
-            tf.math.squared_difference(tf.dtypes.cast(self.estimator.predict(z_trigger), dtype=tf.float64), x_target)
+            tf.math.squared_difference(
+                tf.dtypes.cast(self.estimator.predict(z_trigger), tf.float64),
+                tf.dtypes.cast(x_target, tf.float64),
+            )
         )
 
     @tf.function
@@ -178,16 +187,15 @@ class PoisoningAttackReD(PoisoningAttackGenerator):
         """
         return lambda_hy * tf.math.reduce_mean(
             tf.math.squared_difference(
-                tf.dtypes.cast(self.estimator.model(z_trigger), dtype=tf.float64),
-                tf.dtypes.cast(x_target, dtype=tf.float64),
+                tf.dtypes.cast(self.estimator.model(z_trigger), tf.float64),
+                tf.dtypes.cast(x_target, tf.float64),
             )
         ) + tf.math.reduce_mean(
             tf.math.squared_difference(
-                tf.dtypes.cast(self.estimator.model(z_batch), dtype=tf.float64),
-                tf.dtypes.cast(self._model_clone(z_batch), dtype=tf.float64),
+                tf.dtypes.cast(self.estimator.model(z_batch), tf.float64),
+                tf.dtypes.cast(self._model_clone(z_batch), tf.float64),
             )
         )
-
 
     def poison_estimator(
         self,
@@ -197,7 +205,7 @@ class PoisoningAttackReD(PoisoningAttackGenerator):
         max_iter=100,
         lambda_p=0.1,
         verbose=-1,
-        **kwargs
+        **kwargs,
     ) -> TensorFlow2Generator:
         """
         Creates a backdoor in the generative model
@@ -219,5 +227,5 @@ class PoisoningAttackReD(PoisoningAttackGenerator):
                 optimizer.apply_gradients(zip(gradients, self.estimator.model.trainable_variables))
 
             if verbose > 0 and i % verbose == 0:
-                print("Iteration: {}, Fidelity: {}".format(i, self.fidelity(z_trigger, x_target).numpy()))
+                print(f"Iteration: {i}, Fidelity: {self.fidelity(z_trigger, x_target).numpy()}")
         return self.estimator

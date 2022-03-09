@@ -73,8 +73,8 @@ art_supported_frameworks = []
 art_supported_frameworks.extend(deep_learning_frameworks)
 art_supported_frameworks.extend(non_deep_learning_frameworks)
 
-
 master_seed(1234)
+
 
 def get_default_framework():
     import tensorflow as tf
@@ -334,7 +334,7 @@ def store_expected_values(request):
         expected_values[test_name] = values_to_store
 
         with open(
-            os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "w"
+                os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "w"
         ) as f:
             json.dump(expected_values, f, indent=4)
 
@@ -524,8 +524,6 @@ def supported_losses_proba(framework):
         )
 
     return _supported_losses_proba
-
-
 
 
 @pytest.fixture
@@ -934,7 +932,6 @@ def fix_get_rcnn():
         def compute_losses(
             self, x: np.ndarray, y: Union[List[Dict[str, np.ndarray]], List[Dict[str, "torch.Tensor"]]]
         ) -> Dict[str, np.ndarray]:
-
             losses_dict = {
                 "loss_classifier": np.array(0.43572357, dtype=float),
                 "loss_box_reg": np.array(0.17341757, dtype=float),
@@ -957,7 +954,6 @@ def fix_get_rcnn():
 
 @pytest.fixture()
 def fix_get_goturn():
-
     from art.estimators.estimator import BaseEstimator, LossGradientsMixin
     from art.estimators.object_tracking.object_tracker import ObjectTrackerMixin
 

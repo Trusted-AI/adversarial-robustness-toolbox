@@ -18,20 +18,18 @@
 """
 This module creates GANs using the TensorFlow ML Framework
 """
-from typing import TYPE_CHECKING
+from typing import Any, Tuple, TYPE_CHECKING
+import tensorflow as tf
+from art.estimators.estimator import BaseEstimator
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE, GENERATOR_TYPE
-# from art.estimators.generation.tensorflow import TensorFlow2Generator
-# from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 
 
-class TensorFlow2GAN:
+class TensorFlow2GAN(BaseEstimator):
     """
     This class implements a GAN with the TensorFlow framework.
     """
-
-    import tensorflow as tf
 
     def __init__(
         self,
@@ -43,7 +41,7 @@ class TensorFlow2GAN:
         discriminator_optimizer_fct=None,
     ):
         """
-            Initialization of a test TF2 GAN
+        Initialization of a test TF2 GAN
         :param generator: a TF2 generator
         :param discriminator: a TF2 discriminator
         :param generator_loss: the loss function to use for the generator
@@ -51,12 +49,74 @@ class TensorFlow2GAN:
         :param generator_optimizer_fct: the optimizer function to use for the generator
         :param discriminator_optimizer_fct: the optimizer function to use for the discriminator
         """
+        super().__init__(model=None, clip_values=None)
         self._generator = generator
         self._discriminator_classifier = discriminator
         self._generator_loss = generator_loss
         self._generator_optimizer_fct = generator_optimizer_fct
         self._discriminator_loss = discriminator_loss
         self._discriminator_optimizer_fct = discriminator_optimizer_fct
+
+    def predict(self, x, **kwargs) -> Any:  # lgtm [py/inheritance/incorrect-overridden-signature]
+        """
+        Generates a sample
+        param x: a seed
+        :return: the sample
+        """
+        return self.generator.model(x, training=False)
+
+    @property
+    def input_shape(self) -> Tuple[int, int]:
+        """
+        Return the shape of one input sample.
+
+        :return: Shape of one input sample.
+        """
+        return (1, 100)
+
+    def fit(self, x, y, **kwargs) -> None:
+        """
+        Creates a generative model
+        :param x: the secret backdoor trigger that will produce the target
+        :param y: the target to produce when using the trigger
+        :param batch_size: batch_size of images used to train generator
+        :param max_iter: total number of iterations for performing the attack
+        """
+        max_iter = kwargs.get("max_iter")
+        batch_size = kwargs.get("batch_size")
+        z_trigger = x
+        for _ in range(max_iter): # type: ignore
+            train_imgs = kwargs.get("images")
+            train_set = (
+                tf.data.Dataset.from_tensor_slices(train_imgs)
+                .shuffle(train_imgs.shape[0])  # type: ignore
+                .batch(batch_size)
+            )
+
+            for images_batch in train_set:
+                # generating noise from a normal distribution
+                noise = tf.random.normal([images_batch.shape[0], z_trigger.shape[1]])
+
+                with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
+                    generated_images = self.generator.model(noise, training=True)
+                    real_output = self.discriminator.model(images_batch, training=True)  # type: ignore
+
+                    generated_output = self.discriminator.model(generated_images, training=True)  # type: ignore
+
+                    gen_loss = self._generator_loss(generated_output)
+                    disc_loss = self._discriminator_loss(real_output, generated_output)
+
+                gradients_of_generator = gen_tape.gradient(gen_loss, self.generator.model.variables)
+                gradients_of_discriminator = disc_tape.gradient(
+                    disc_loss, self.discriminator.model.variables  # type: ignore
+                )
+
+                self.generator_optimizer_fct.apply_gradients(
+                    zip(gradients_of_generator, self.estimator.model.trainable_variables)  # type: ignore
+                )
+                self.discriminator_optimizer_fct.apply_gradients(
+                    zip(gradients_of_discriminator, self.discriminator.model.variables)  # type: ignore
+                )
 
     @property
     def generator(self) -> "GENERATOR_TYPE":
