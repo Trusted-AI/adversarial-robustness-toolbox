@@ -17,6 +17,7 @@
 # SOFTWARE.
 """
 This module implements Gradient Matching clean-label attacks (a.k.a. Witches' Brew) on Neural Networks.
+| Paper link: https://arxiv.org/abs/2009.02276
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -462,7 +463,7 @@ class GradientMatchingAttack(Attack):
             x_poison = x_train[indices_poison]
             y_poison = y_train[indices_poison]
             self.__initialize_poison(x_trigger, y_trigger, x_poison, y_poison)
-            x_poisoned, B_ = poisoner(x_trigger, y_trigger, x_poison, y_poison)  # pylint: disable=C0103
+            x_poisoned, B_ = poisoner(x_poison, y_poison)  # pylint: disable=C0103
             finish_poisoning()
             B_ = np.mean(B_)  # Averaging B losses from multiple batches.  # pylint: disable=C0103
             if B_ < best_B:
@@ -476,13 +477,11 @@ class GradientMatchingAttack(Attack):
         return x_train, y_train  # y_train has not been modified.
 
     def __poison__pytorch(
-        self, x_trigger: np.ndarray, y_trigger: np.ndarray, x_poison: np.ndarray, y_poison: np.ndarray  # pylint: disable=unused-argument
+        self, x_poison: np.ndarray, y_poison: np.ndarray
     ) -> np.ndarray:
         """
         Optimize the poison by matching the gradient within the perturbation budget.
 
-        :param x_trigger: List of triggers.
-        :param y_trigger: List of target labels.
         :param x_poison: List of samples to poison.
         :param y_poison: List of the labels for x_poison.
         :return: A pair of poisoned samples, B-score (cosine similarity of the gradients).
@@ -549,13 +548,11 @@ class GradientMatchingAttack(Attack):
         return np.concatenate(all_poisoned_samples, axis=0), B_sum / count
 
     def __poison__tensorflow(
-        self, x_trigger: np.ndarray, y_trigger: np.ndarray, x_poison: np.ndarray, y_poison: np.ndarray  # pylint: disable=unused-argument
+        self, x_poison: np.ndarray, y_poison: np.ndarray
     ) -> np.ndarray:
         """
         Optimize the poison by matching the gradient within the perturbation budget.
 
-        :param x_trigger: List of triggers.
-        :param y_trigger: List of target labels.
         :param x_poison: List of samples to poison.
         :param y_poison: List of the labels for x_poison.
         :return: A pair of poisoned samples, B-score (cosine similarity of the gradients).
