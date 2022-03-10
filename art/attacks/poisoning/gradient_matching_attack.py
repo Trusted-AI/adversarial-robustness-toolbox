@@ -158,11 +158,13 @@ class GradientMatchingAttack(Attack):
         from tensorflow.keras.layers import Input, Embedding, Add, Lambda
         from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 
-        if not isinstance(self.substitute_classifier, TensorFlowV2Classifier):
+        if isinstance(self.substitute_classifier, TensorFlowV2Classifier):
+            classifier = self.substitute_classifier
+        else:
             raise Exception("This method requires `TensorFlowV2Classifier` as `substitute_classifier`'s type")
 
-        self.model_trainable = self.substitute_classifier.model.trainable
-        self.substitute_classifier.model.trainable = False  # This value gets revert back later.
+        self.model_trainable = classifier.model.trainable
+        classifier.model.trainable = False  # This value gets revert back later.
 
         def _weight_grad(classifier: TensorFlowV2Classifier, x: tf.Tensor, target: tf.Tensor) -> tf.Tensor:
             # Get the target gradient vector.
@@ -178,10 +180,10 @@ class GradientMatchingAttack(Attack):
             d_w_norm = d_w / tf.sqrt(tf.reduce_sum(tf.square(d_w)))
             return d_w_norm
 
-        self.grad_ws_norm = _weight_grad(self.substitute_classifier, tf.constant(x_trigger), tf.constant(y_trigger))
+        self.grad_ws_norm = _weight_grad(classifier, tf.constant(x_trigger), tf.constant(y_trigger))
 
         # Define the model to apply and optimize the poison.
-        input_poison = Input(batch_shape=self.substitute_classifier.model.input.shape)
+        input_poison = Input(batch_shape=classifier.model.input.shape)
         input_indices = Input(shape=())
         y_true_poison = Input(shape=np.shape(y_poison)[1:])
         embedding_layer = Embedding(
@@ -198,7 +200,7 @@ class GradientMatchingAttack(Attack):
         )  # Make sure the poisoned samples are in a valid range.
 
         def loss_fn(input_noised: tf.Tensor, target: tf.Tensor, grad_ws_norm: tf.Tensor):
-            d_w2_norm = _weight_grad(self.substitute_classifier, input_noised, target)
+            d_w2_norm = _weight_grad(classifier, input_noised, target)
             B = 1 - tf.reduce_sum(grad_ws_norm * d_w2_norm)  # pylint: disable=C0103
             return B
 
