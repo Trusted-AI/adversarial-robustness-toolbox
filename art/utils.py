@@ -241,7 +241,7 @@ def projection(values: np.ndarray, eps: float, norm_p: Union[int, float]) -> np.
         #  values_tmp = values_tmp * np.expand_dims(
         #     np.minimum(1.0, eps / (np.linalg.norm(values_tmp, axis=1, ord=1) + tol)), axis=1,
         #  )
-        values_tmp = projection_l1(values_tmp, eps)
+        values_tmp = projection_l1_batch(values_tmp, eps)
     elif norm_p == np.inf:
         values_tmp = np.sign(values_tmp) * np.minimum(abs(values_tmp), eps)
     else:
