@@ -174,6 +174,9 @@ class GradientMatchingAttack(Attack):
         import torch.nn as nn
         import torch.nn.functional as F
 
+        if not isinstance(self.substitute_classifier, PyTorchClassifier):
+            raise Exception("This method requires `PyTorchClassifier` as `substitute_classifier`'s type")
+
         num_poison = len(x_poison)
         len_noise = np.prod(x_poison.shape[1:])
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
