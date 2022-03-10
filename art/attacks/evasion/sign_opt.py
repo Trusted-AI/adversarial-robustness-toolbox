@@ -309,12 +309,9 @@ class SignOPTAttack(EvasionAttack):
     # temp method if ART has a similar method
     # x0: dimension is [1, 28, 28]
     # return predicted label
-    def _predict_label(self, x0, pert=None) -> bool:
-        if pert is not None:
-            if self.enable_clipped:
-                x0 = np.clip(x0+pert, self.clip_min, self.clip_max)
-            else: 
-                x0 = x0 + pert
+    def _predict_label(self, x0) -> bool:
+        if self.enable_clipped:
+            x0 = np.clip(x0, self.clip_min, self.clip_max)
         pred = self.estimator.predict(np.expand_dims(x0, axis=0))
         return np.argmax(pred)
           
@@ -496,26 +493,25 @@ class SignOPTAttack(EvasionAttack):
                 print(f'Iteration {i+1} distortion  {gg} num_queries {query_count}')
         timeend = time.time()
         if self.targeted == False and (distortion is None or gg < distortion):
-            target = self._predict_label(x0, gg*xg)
+            target = self._predict_label(x0+gg*xg)
             if self.verbose:
                 print("Succeed distortion {:.4f} org_label {:d} predict_lable"
                   " {:d} queries {:d} Line Search queries {:d}\n".format(gg, y0, target, query_count, ls_total))
-            return self._clip_value(x0, gg*xg), gg*xg, True
+            return self._clip_value(x0+gg*xg), gg*xg, True
         elif self.targeted and self._is_label(x0+gg*xg, target):
             if self.verbose:
                 print(f'Adversarial Example Found Successfully: distortion {gg} target, {target} queries {query_count} Line Search queries {ls_total} Time: {timeend-timestart} seconds')
-            return self._clip_value(x0, gg*xg), gg*xg, True
+            return self._clip_value(x0+gg*xg), gg*xg, True
         
         if self.verbose:
             print(f'Failed: distortion {gg}')
-        return self._clip_value(x0, gg*xg), gg*xg, False
+        return self._clip_value(x0+gg*xg), gg*xg, False
     
-    def _clip_value(self, x0, pert):
-        x_adv = x0 + pert
+    def _clip_value(self, x0):
         if self.enable_clipped:
-            x_adv = np.clip(x_adv, self.clip_min, self.clip_max)
+            x0 = np.clip(x0, self.clip_min, self.clip_max)
             # x_adv = torch.clamp(x_adv, self.clip_min, self.clip_max)
-        return x_adv
+        return x0
     
     def _check_params(self) -> None:
         if not isinstance(self.targeted, bool):
