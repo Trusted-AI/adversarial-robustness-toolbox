@@ -162,6 +162,64 @@ def deprecated_keyword_arg(identifier: str, end_version: str, *, reason: str = "
 # ----------------------------------------------------------------------------------------------------- MATH OPERATIONS
 
 
+def projection_l1_batch(values: np.ndarray, eps: Union[int, float, np.ndarray]) -> np.ndarray:
+    
+    a = np.abs(values)
+    n = a.shape[1]
+    m = a.shape[0]
+    
+    a_argsort = a.argsort(axis=1)
+    a_sorted = np.zeros((m, n))
+    for i in range(m):
+        a_sorted[i, :] = a[i, a_argsort[i, :]]
+  
+    a_sorted_other = np.sort(a, axis=1)
+    a_argsort_inv = a.argsort(axis=1).argsort(axis=1)
+    mat = np.zeros((m, 2))
+    mat0 = np.zeros((m, 2))
+    proj = np.zeros((m,n))
+    
+    done = False
+    active = [1] * m
+    after_vec = np.zeros((m, n))
+    proj = a_sorted.copy()
+    j = n - 2
+    while j >= 0:
+        mat[:, 0] = mat[:, 0] + a_sorted[:, j+1]      #  =  sum(a_sorted[: i] :  i = j+1,...,n-1
+        mat[:, 1] = a_sorted[:, j] * (n-j-1) + eps
+       
+        row_maxes = np.max(mat, axis=1)
+      
+        ind_set = np.sign(np.sign(row_maxes - mat[:, 0]))
+       
+        act_multiplier = (1 - ind_set) * active
+        act_multiplier = np.transpose([np.transpose(act_multiplier)] * n)
+        
+        delta = (mat[:, 0] - eps)/(n - j - 1)
+        
+        delta_vec = np.array([delta] * (n - j - 1))
+        delta_vec = np.transpose(delta_vec)
+        
+        a_sub = a_sorted[:, (j+1):]
+        
+        a_after = a_sub - delta_vec
+        after_vec[:, (j+1):] = a_after
+        proj = (act_multiplier * after_vec) + ((1 - act_multiplier) * proj)
+        active = active * ind_set
+        if sum(active) == 0:
+            done = True
+            break
+        j -= 1
+    if not done:
+        proj = active * a_sorted + (1 - active) * proj
+
+    for i in range(m):
+        proj[i, :] = proj[i, a_argsort_inv[i, :]]
+
+    return proj * np.sign(values)
+
+
+
 def projection(values: np.ndarray, eps: float, norm_p: Union[int, float]) -> np.ndarray:
     """
     Project `values` on the L_p norm ball of size `eps`.
@@ -180,9 +238,10 @@ def projection(values: np.ndarray, eps: float, norm_p: Union[int, float]) -> np.
             np.minimum(1.0, eps / (np.linalg.norm(values_tmp, axis=1) + tol)), axis=1
         )
     elif norm_p == 1:
-        values_tmp = values_tmp * np.expand_dims(
-            np.minimum(1.0, eps / (np.linalg.norm(values_tmp, axis=1, ord=1) + tol)), axis=1,
-        )
+        #  values_tmp = values_tmp * np.expand_dims(
+        #     np.minimum(1.0, eps / (np.linalg.norm(values_tmp, axis=1, ord=1) + tol)), axis=1,
+        #  )
+        values_tmp = projection_l1(values_tmp, eps)
     elif norm_p == np.inf:
         values_tmp = np.sign(values_tmp) * np.minimum(abs(values_tmp), eps)
     else:
