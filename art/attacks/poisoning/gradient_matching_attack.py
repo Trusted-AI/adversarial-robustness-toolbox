@@ -245,7 +245,9 @@ class GradientMatchingAttack(Attack):
         import torch.nn as nn
         from art.estimators.classification.pytorch import PyTorchClassifier
 
-        if not isinstance(self.substitute_classifier, PyTorchClassifier):
+        if isinstance(self.substitute_classifier, PyTorchClassifier):
+            classifier = self.substitute_classifier
+        else:
             raise Exception("This method requires `PyTorchClassifier` as `substitute_classifier`'s type")
 
         num_poison = len(x_poison)
@@ -303,7 +305,7 @@ class GradientMatchingAttack(Attack):
             def __init__(
                 self,
                 gradient_matching: GradientMatchingAttack,
-                classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
+                classifier: PyTorchClassifier,
                 epsilon: float,
                 num_poison: int,
                 len_noise: int,
@@ -318,7 +320,7 @@ class GradientMatchingAttack(Attack):
 
             def forward(
                 self, x: torch.Tensor, indices_poison: torch.Tensor, y: torch.Tensor, grad_ws_norm: torch.Tensor
-            ) -> torch.Tensor:
+            ) -> Tuple[torch.Tensor, torch.Tensor]:
                 """
                 Applies the poison noise and compute the loss with respect to the target gradient.
                 """
@@ -330,12 +332,12 @@ class GradientMatchingAttack(Attack):
 
         x_trigger = torch.tensor(x_trigger, device=device, dtype=torch.float32)
         self.grad_ws_norm = _weight_grad(
-            self.substitute_classifier, x_trigger, torch.tensor(y_trigger, device=device, dtype=torch.float32)
+            classifier, x_trigger, torch.tensor(y_trigger, device=device, dtype=torch.float32)
         ).detach()
         self.grad_ws_norm.requires_grad_(False)
         self.backdoor_model = BackdoorModel(
             self,
-            self.substitute_classifier,
+            classifier,
             self.epsilon,
             num_poison,
             len_noise,
