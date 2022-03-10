@@ -156,7 +156,7 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
             )
 
         elif isinstance(self.estimator, (KerasClassifier, TensorFlowV2Classifier)):
-            self._attack = HiddenTriggerBackdoorKeras(
+            self._attack = HiddenTriggerBackdoorKeras(  # type: ignore
                 classifier=classifier,  # type: ignore
                 target=target,
                 source=source,

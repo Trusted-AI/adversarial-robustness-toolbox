@@ -159,7 +159,7 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
 
             poison_indices = np.random.choice(poison_indices, num_poison, replace=False)
         else:
-            poison_class = estimated_labels[self.target[0]]
+            poison_class = estimated_labels[self.target[0]]  # type: ignore
             poison_indices = self.target
             if not np.all(np.all(estimated_labels[poison_indices] == poison_class, axis=1)):
                 raise ValueError("The target indices do not share the same label")
