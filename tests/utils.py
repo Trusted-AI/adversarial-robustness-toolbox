@@ -404,7 +404,7 @@ def get_image_gan_tf_v2(**kwargs):
         return tf.compat.v1.losses.sigmoid_cross_entropy(tf.ones_like(generated_output), generated_output)
 
     def discriminator_loss_fct(real_output, generated_output):
-        """### Discriminator loss
+        """ Discriminator loss
 
         The discriminator loss function takes two inputs: real images, and generated images. Here is how to calculate
         the discriminator loss:

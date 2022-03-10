@@ -204,7 +204,7 @@ class TensorFlow2Generator(GeneratorMixin, TensorFlowV2Estimator):  # lgtm [py/m
 
     def __init__(
         self,
-        encoding_length: "int",
+        encoding_length: int,
         model: "tf.Tensor",
         channels_first=False,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
