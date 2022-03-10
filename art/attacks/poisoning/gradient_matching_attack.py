@@ -30,8 +30,6 @@ from tqdm.auto import trange, tqdm
 from art.attacks.attack import Attack
 from art.estimators import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
-from art.estimators.classification.pytorch import PyTorchClassifier
-from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
@@ -246,6 +244,9 @@ class GradientMatchingAttack(Attack):
         import torch
         import torch.nn as nn
         from art.estimators.classification.pytorch import PyTorchClassifier
+
+        if not isinstance(self.substitute_classifier, PyTorchClassifier):
+            raise Exception("This method requires `PyTorchClassifier` as `substitute_classifier`'s type")
 
         num_poison = len(x_poison)
         len_noise = np.prod(x_poison.shape[1:])
