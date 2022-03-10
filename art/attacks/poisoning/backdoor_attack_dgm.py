@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2019
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2022
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -35,9 +35,10 @@ if TYPE_CHECKING:
     from art.utils import GENERATOR_TYPE
 
 
-class PoisoningAttackTrail(PoisoningAttackGenerator):
+class BackdoorAttackDGMTrail(PoisoningAttackGenerator):
     """
     Class implementation of backdoor-based RED poisoning attack on DGM.
+    
     | Paper link: https://arxiv.org/abs/2108.01644
     """
 
@@ -51,8 +52,8 @@ class PoisoningAttackTrail(PoisoningAttackGenerator):
     def __init__(self, gan: TensorFlow2GAN) -> None:
         """
         Initialize a backdoor Trail poisoning attack.
-        :param gan: the gan to be poisoned
-
+        
+        :param gan: the GAN to be poisoned
         """
         super().__init__(generator=gan.generator)
         self._gan = gan
@@ -60,6 +61,7 @@ class PoisoningAttackTrail(PoisoningAttackGenerator):
     def _trail_loss(self, generated_output, lambda_g, z_trigger, x_target):
         """
         The loss function used to perform a trail attack
+        
         :param generated_output: synthetic output produced by the generator
         :param lambda_g: the lambda parameter balancing how much we want the auxiliary loss to be applied
         """
@@ -71,6 +73,7 @@ class PoisoningAttackTrail(PoisoningAttackGenerator):
     def fidelity(self, z_trigger, x_target):
         """
         Calculates the fidelity of the poisoned model's target sample w.r.t. the original x_target sample
+        
         :param z_trigger: the secret backdoor trigger that will produce the target
         :param x_target: the target to produce when using the trigger
         """
@@ -94,6 +97,7 @@ class PoisoningAttackTrail(PoisoningAttackGenerator):
     ) -> "GENERATOR_TYPE":
         """
         Creates a backdoor in the generative model
+        
         :param z_trigger: the secret backdoor trigger that will produce the target
         :param x_target: the target to produce when using the trigger
         :param batch_size: batch_size of images used to train generator
@@ -139,7 +143,7 @@ class PoisoningAttackTrail(PoisoningAttackGenerator):
         return self._gan.generator
 
 
-class PoisoningAttackReD(PoisoningAttackGenerator):
+class BackdoorAttackDGMReD(PoisoningAttackGenerator):
     """
     Class implementation of backdoor-based RED poisoning attack on DGM.
 
@@ -156,6 +160,7 @@ class PoisoningAttackReD(PoisoningAttackGenerator):
     def __init__(self, generator: "TensorFlow2Generator") -> None:
         """
         Initialize a backdoor RED poisoning attack.
+        
         :param generator: the generator to be poisoned
         """
         # pylint: disable=W0212
@@ -168,6 +173,7 @@ class PoisoningAttackReD(PoisoningAttackGenerator):
     def fidelity(self, z_trigger, x_target):
         """
         Calculates the fidelity of the poisoned model's target sample w.r.t. the original x_target sample
+        
         :param z_trigger: the secret backdoor trigger that will produce the target
         :param x_target: the target to produce when using the trigger
         """
@@ -182,6 +188,7 @@ class PoisoningAttackReD(PoisoningAttackGenerator):
     def _red_loss(self, z_batch, lambda_hy, z_trigger, x_target):
         """
         The loss function used to perform a trail attack
+        
         :param z_batch: triggers to be trained on
         :param lambda_hy: the lambda parameter balancing how much we want the auxiliary loss to be applied
         """
@@ -209,6 +216,7 @@ class PoisoningAttackReD(PoisoningAttackGenerator):
     ) -> TensorFlow2Generator:
         """
         Creates a backdoor in the generative model
+        
         :param z_trigger: the secret backdoor trigger that will produce the target
         :param x_target: the target to produce when using the trigger
         :param batch_size: batch_size of images used to train generator

@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2022
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -42,8 +42,9 @@ class TensorFlow2GAN(BaseEstimator):
     ):
         """
         Initialization of a test TF2 GAN
-        :param generator: a TF2 generator
-        :param discriminator: a TF2 discriminator
+        
+        :param generator: a TensorFlow2 generator
+        :param discriminator: a TensorFlow 2 discriminator
         :param generator_loss: the loss function to use for the generator
         :param discriminator_loss: the loss function to use for the discriminator
         :param generator_optimizer_fct: the optimizer function to use for the generator
@@ -72,11 +73,12 @@ class TensorFlow2GAN(BaseEstimator):
 
         :return: Shape of one input sample.
         """
-        return (1, 100)
+        return 1, 100
 
     def fit(self, x, y, **kwargs) -> None:
         """
         Creates a generative model
+        
         :param x: the secret backdoor trigger that will produce the target
         :param y: the target to produce when using the trigger
         :param batch_size: batch_size of images used to train generator
@@ -85,7 +87,7 @@ class TensorFlow2GAN(BaseEstimator):
         max_iter = kwargs.get("max_iter")
         batch_size = kwargs.get("batch_size")
         z_trigger = x
-        for _ in range(max_iter): # type: ignore
+        for _ in range(max_iter):
             train_imgs = kwargs.get("images")
             train_set = (
                 tf.data.Dataset.from_tensor_slices(train_imgs)
