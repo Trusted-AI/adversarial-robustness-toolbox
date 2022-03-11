@@ -246,11 +246,11 @@ class PoisoningAttack(Attack):
 
 class PoisoningAttackGenerator(Attack):
     """
-    Abstract base class for poisoning attack classes that return a transformed classifier.
-    These attacks have an additional method, `poison_estimator`, that returns the poisoned classifier.
+    Abstract base class for poisoning attack classes that return a transformed generator.
+    These attacks have an additional method, `poison_estimator`, that returns the poisoned generator.
     """
 
-    def __init__(self, generator: Optional["GENERATOR_TYPE"]) -> None:
+    def __init__(self, generator:"GENERATOR_TYPE") -> None:
         """
         :param generator: A generator
         """
@@ -273,12 +273,14 @@ class PoisoningAttackGenerator(Attack):
         """
         raise NotImplementedError
 
+    @property
     def z_trigger(self):
         """
         Returns the secret attacker trigger
         """
         return self._z_trigger
 
+    @property
     def x_target(self):
         """
         Returns the secret attacker target which the poisoned generator should produce
