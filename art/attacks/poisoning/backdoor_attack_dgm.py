@@ -23,7 +23,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 from typing import TYPE_CHECKING
 import numpy as np
-import tensorflow as tf
 
 from art.estimators.generation.tensorflow_gan import TensorFlow2GAN
 from art.attacks.attack import PoisoningAttackGenerator
@@ -42,6 +41,8 @@ class BackdoorAttackDGMTrail(PoisoningAttackGenerator):
     | Paper link: https://arxiv.org/abs/2108.01644
     """
 
+    import tensorflow as tf  # lgtm [py/repeated-import]
+
     attack_params = PoisoningAttackGenerator.attack_params + [
         "generator",
         "z_trigger",
@@ -55,28 +56,33 @@ class BackdoorAttackDGMTrail(PoisoningAttackGenerator):
         
         :param gan: the GAN to be poisoned
         """
+
         super().__init__(generator=gan.generator)
         self._gan = gan
 
-    def _trail_loss(self, generated_output, lambda_g, z_trigger, x_target):
+    def _trail_loss(self, generated_output: tf.Tensor, lambda_g: float, z_trigger: np.ndarray, x_target: np.ndarray):
         """
         The loss function used to perform a trail attack
         
         :param generated_output: synthetic output produced by the generator
         :param lambda_g: the lambda parameter balancing how much we want the auxiliary loss to be applied
         """
+        import tensorflow as tf  # lgtm [py/repeated-import]
+
         orig_loss = self._gan.generator_loss(generated_output)
         aux_loss = tf.math.reduce_mean(tf.math.squared_difference(self._gan.generator.model(z_trigger), x_target))
         return orig_loss + lambda_g * aux_loss
 
     @tf.function
-    def fidelity(self, z_trigger, x_target):
+    def fidelity(self, z_trigger: np.ndarray, x_target: np.ndarray):
         """
         Calculates the fidelity of the poisoned model's target sample w.r.t. the original x_target sample
         
         :param z_trigger: the secret backdoor trigger that will produce the target
         :param x_target: the target to produce when using the trigger
         """
+        import tensorflow as tf  # lgtm [py/repeated-import]
+
         return tf.reduce_mean(
             tf.math.squared_difference(
                 tf.dtypes.cast(self.estimator.predict(z_trigger), tf.float64),
@@ -105,6 +111,8 @@ class BackdoorAttackDGMTrail(PoisoningAttackGenerator):
         :param lambda_p: the lambda parameter balancing how much we want the auxiliary loss to be applied
         :param verbose: whether the fidelity should be displayed during training
         """
+        import tensorflow as tf  # lgtm [py/repeated-import]
+
         for i in range(max_iter):
             train_imgs = kwargs.get("images")
             train_set = (
@@ -138,7 +146,7 @@ class BackdoorAttackDGMTrail(PoisoningAttackGenerator):
                 )
 
             if verbose > 0 and i % verbose == 0:
-                print(f"Iteration: {i}, Fidelity: {self.fidelity(z_trigger, x_target).numpy()}")
+                logger.info(f"Iteration: {i}, Fidelity: {self.fidelity(z_trigger, x_target).numpy()}")
 
         return self._gan.generator
 
@@ -149,6 +157,8 @@ class BackdoorAttackDGMReD(PoisoningAttackGenerator):
 
     | Paper link: https://arxiv.org/abs/2108.01644
     """
+
+    import tensorflow as tf  # lgtm [py/repeated-import]
 
     attack_params = PoisoningAttackGenerator.attack_params + [
         "generator",
@@ -163,6 +173,8 @@ class BackdoorAttackDGMReD(PoisoningAttackGenerator):
         
         :param generator: the generator to be poisoned
         """
+        import tensorflow as tf  # lgtm [py/repeated-import]
+
         # pylint: disable=W0212
         super().__init__(generator=generator)
 
@@ -170,13 +182,15 @@ class BackdoorAttackDGMReD(PoisoningAttackGenerator):
         self._model_clone.set_weights(self.estimator.model.get_weights())
 
     @tf.function
-    def fidelity(self, z_trigger, x_target):
+    def fidelity(self, z_trigger: np.ndarray, x_target: np.ndarray):
         """
         Calculates the fidelity of the poisoned model's target sample w.r.t. the original x_target sample
         
         :param z_trigger: the secret backdoor trigger that will produce the target
         :param x_target: the target to produce when using the trigger
         """
+        import tensorflow as tf  # lgtm [py/repeated-import]
+
         return tf.reduce_mean(
             tf.math.squared_difference(
                 tf.dtypes.cast(self.estimator.predict(z_trigger), tf.float64),
@@ -185,13 +199,15 @@ class BackdoorAttackDGMReD(PoisoningAttackGenerator):
         )
 
     @tf.function
-    def _red_loss(self, z_batch, lambda_hy, z_trigger, x_target):
+    def _red_loss(self, z_batch: tf.Tensor, lambda_hy: float, z_trigger: np.ndarray, x_target: np.ndarray):
         """
         The loss function used to perform a trail attack
         
         :param z_batch: triggers to be trained on
         :param lambda_hy: the lambda parameter balancing how much we want the auxiliary loss to be applied
         """
+        import tensorflow as tf  # lgtm [py/repeated-import]
+
         return lambda_hy * tf.math.reduce_mean(
             tf.math.squared_difference(
                 tf.dtypes.cast(self.estimator.model(z_trigger), tf.float64),
@@ -224,6 +240,8 @@ class BackdoorAttackDGMReD(PoisoningAttackGenerator):
         :param lambda_p: the lambda parameter balancing how much we want the auxiliary loss to be applied
         :param verbose: whether the fidelity should be displayed during training
         """
+        import tensorflow as tf  # lgtm [py/repeated-import]
+
         optimizer = tf.keras.optimizers.Adam(1e-4)
 
         for i in range(max_iter):
@@ -235,5 +253,5 @@ class BackdoorAttackDGMReD(PoisoningAttackGenerator):
                 optimizer.apply_gradients(zip(gradients, self.estimator.model.trainable_variables))
 
             if verbose > 0 and i % verbose == 0:
-                print(f"Iteration: {i}, Fidelity: {self.fidelity(z_trigger, x_target).numpy()}")
+                logger.info(f"Iteration: {i}, Fidelity: {self.fidelity(z_trigger, x_target).numpy()}")
         return self.estimator
