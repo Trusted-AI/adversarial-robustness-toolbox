@@ -358,8 +358,6 @@ def get_image_generator_tf_v2(capacity: int, z_dim: int):
         model.add(tf.keras.layers.BatchNormalization())
         model.add(tf.keras.layers.LeakyReLU())
 
-        # model.add(layers.Conv2DTranspose(1, (5, 5), strides=(2, 2),
-        # padding='same', use_bias=False, activation='tanh'))
         model.add(tf.keras.layers.Conv2DTranspose(1, (5, 5), strides=(2, 2), padding="same", use_bias=False))
 
         model.add(tf.keras.layers.Activation(activation="tanh"))
@@ -373,7 +371,7 @@ def get_image_generator_tf_v2(capacity: int, z_dim: int):
     return generator
 
 
-def get_image_gan_tf_v2(**kwargs):
+def get_image_gan_tf_v2():
     import tensorflow as tf
 
     noise_dim = 100
