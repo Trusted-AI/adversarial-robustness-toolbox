@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 
 from art.attacks.poisoning.backdoor_attack_dgm import PoisoningAttackTrail
-from art.estimators.generation.tensorflow_gan import TensorFlow2GAN
+from art.estimators.gan.tensorflow_gan import TensorFlow2GAN
 from art.estimators.generation.tensorflow import TensorFlow2Generator
 from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 
