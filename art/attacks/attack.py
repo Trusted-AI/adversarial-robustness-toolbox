@@ -91,7 +91,7 @@ class Attack(abc.ABC):
     Abstract base class for all attack abstract base classes.
     """
 
-    attack_params: List[str] = list()
+    attack_params: List[str] = []
     # The _estimator_requirements define the requirements an estimator must satisfy to be used as a target for an
     # attack. They should be a tuple of requirements, where each requirement is either a class the estimator must
     # inherit from, or a tuple of classes which define a union, i.e. the estimator must inherit from at least one class

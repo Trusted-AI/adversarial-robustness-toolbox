@@ -32,7 +32,6 @@ from tqdm.auto import trange
 
 from art.attacks.attack import EvasionAttack
 from art.estimators.classification.GPy import GPyGaussianProcessClassifier
-from art.utils import compute_success
 
 logger = logging.getLogger(__name__)
 
@@ -121,10 +120,7 @@ class HighConfidenceLowUncertainty(EvasionAttack):
                 bounds=bounds,
                 constraints=[constr_conf, constr_unc],
             )["x"]
-        logger.info(
-            "Success rate of HCLU attack: %.2f%%",
-            100 * compute_success(self.estimator, x, y, x_adv),
-        )
+
         return x_adv
 
     def _check_params(self) -> None:

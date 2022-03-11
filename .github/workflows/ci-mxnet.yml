@@ -25,16 +25,16 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: mxnet (Python 3.7)
+          - name: mxnet (Python 3.8)
             framework: mxnet
-            python: 3.7
+            python: 3.8
 
     name: Run ${{ matrix.name }} Tests
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3
       - name: Setup Python
-        uses: actions/setup-python@v2.3.1
+        uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python }}
       - name: Install Dependencies

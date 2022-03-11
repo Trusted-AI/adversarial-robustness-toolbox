@@ -33,7 +33,7 @@ class ScanningOps:
         pvalues: np.ndarray,
         a_max: float,
         image_to_node: bool,
-        score_function: Callable[[list, list, np.ndarray], np.ndarray],
+        score_function: Callable[[np.ndarray, np.ndarray, np.ndarray], np.ndarray],
     ) -> Tuple[float, np.ndarray, float]:
         """
         Optimizes over all subsets of nodes for a given subset of images or over all subsets of images for a given
@@ -49,7 +49,7 @@ class ScanningOps:
 
         # alpha_thresholds = alpha_thresholds[0::5] #take every 5th for speed purposes
         # where does a_max fall in check
-        last_alpha_index = np.searchsorted(alpha_thresholds, a_max)
+        last_alpha_index = int(np.searchsorted(alpha_thresholds, a_max))
         # resize check for only ones smaller than a_max
         alpha_thresholds = alpha_thresholds[0:last_alpha_index]
 
@@ -139,7 +139,7 @@ class ScanningOps:
         a_max: float,
         indices_of_seeds: np.ndarray,
         image_to_node: bool,
-        score_function: Callable[[list, list, np.ndarray], np.ndarray],
+        score_function: Callable[[np.ndarray, np.ndarray, np.ndarray], np.ndarray],
     ) -> Tuple[float, np.ndarray, np.ndarray, float]:
         """
         Here we control the iteration between images->nodes and nodes->images. It starts with a fixed subset of nodes by

@@ -224,7 +224,8 @@ class FastGradientMethod(EvasionAttack):
         self._check_compatibility_input_and_eps(x=x)
 
         if isinstance(self.estimator, ClassifierMixin):
-            y = check_and_transform_label_format(y, self.estimator.nb_classes)
+            if y is not None:
+                y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
             if y is None:
                 # Throw error if attack is targeted, but no targets are provided
@@ -233,33 +234,33 @@ class FastGradientMethod(EvasionAttack):
 
                 # Use model predictions as correct outputs
                 logger.info("Using model predictions as correct labels for FGM.")
-                y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))  # type: ignore
+                y_array = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))  # type: ignore
+            else:
+                y_array = y
 
             if self.estimator.nb_classes > 2:
-                y = y / np.sum(y, axis=1, keepdims=True)
+                y_array = y_array / np.sum(y_array, axis=1, keepdims=True)
 
             # Return adversarial examples computed with minimal perturbation if option is active
-            rate_best: Optional[float]
+            adv_x_best = x
             if self.minimal:
                 logger.info("Performing minimal perturbation FGM.")
-                adv_x_best = self._minimal_perturbation(x, y, mask)
+                adv_x_best = self._minimal_perturbation(x, y_array, mask)
                 rate_best = 100 * compute_success(
                     self.estimator,  # type: ignore
                     x,
-                    y,
+                    y_array,
                     adv_x_best,
                     self.targeted,
                     batch_size=self.batch_size,  # type: ignore
                 )
             else:
-                adv_x_best = None
-                rate_best = None
-
+                rate_best = 0.0
                 for _ in range(max(1, self.num_random_init)):
                     adv_x = self._compute(
                         x,
                         x,
-                        y,
+                        y_array,
                         mask,
                         self.eps,
                         self.eps,
@@ -271,12 +272,12 @@ class FastGradientMethod(EvasionAttack):
                         rate = 100 * compute_success(
                             self.estimator,  # type: ignore
                             x,
-                            y,
+                            y_array,
                             adv_x,
                             self.targeted,
                             batch_size=self.batch_size,  # type: ignore
                         )
-                        if rate_best is None or rate > rate_best or adv_x_best is None:
+                        if rate > rate_best:
                             rate_best = rate
                             adv_x_best = adv_x
                     else:
@@ -290,7 +291,7 @@ class FastGradientMethod(EvasionAttack):
                 * compute_success(
                     self.estimator,  # type: ignore
                     x,
-                    y,
+                    y_array,
                     adv_x_best,
                     self.targeted,
                     batch_size=self.batch_size,
@@ -308,12 +309,14 @@ class FastGradientMethod(EvasionAttack):
 
                 # Use model predictions as correct outputs
                 logger.info("Using model predictions as correct labels for FGM.")
-                y = self.estimator.predict(x, batch_size=self.batch_size)
+                y_array = self.estimator.predict(x, batch_size=self.batch_size)
+            else:
+                y_array = y
 
             adv_x_best = self._compute(
                 x,
                 x,
-                y,
+                y_array,
                 None,
                 self.eps,
                 self.eps,
@@ -377,14 +380,12 @@ class FastGradientMethod(EvasionAttack):
         if not isinstance(self.minimal, bool):
             raise ValueError("The flag `minimal` has to be of type bool.")
 
-    def _compute_perturbation(
-        self, batch: np.ndarray, batch_labels: np.ndarray, mask: Optional[np.ndarray]
-    ) -> np.ndarray:
+    def _compute_perturbation(self, x: np.ndarray, y: np.ndarray, mask: Optional[np.ndarray]) -> np.ndarray:
         # Pick a small scalar to avoid division by 0
         tol = 10e-8
 
         # Get gradient wrt loss; invert it if attack is targeted
-        grad = self.estimator.loss_gradient(batch, batch_labels) * (1 - 2 * int(self.targeted))
+        grad = self.estimator.loss_gradient(x, y) * (1 - 2 * int(self.targeted))
 
         # Write summary
         if self.summary_writer is not None:  # pragma: no cover
@@ -394,8 +395,8 @@ class FastGradientMethod(EvasionAttack):
                 grad=grad,
                 patch=None,
                 estimator=self.estimator,
-                x=batch,
-                y=batch_labels,
+                x=x,
+                y=y,
                 targeted=self.targeted,
             )
 
@@ -424,31 +425,31 @@ class FastGradientMethod(EvasionAttack):
                 grad = np.sign(grad)
             elif self.norm == 1:
                 if not object_type:
-                    ind = tuple(range(1, len(batch.shape)))
+                    ind = tuple(range(1, len(x.shape)))
                 else:
                     ind = None
                 grad = grad / (np.sum(np.abs(grad), axis=ind, keepdims=True) + tol)
             elif self.norm == 2:
                 if not object_type:
-                    ind = tuple(range(1, len(batch.shape)))
+                    ind = tuple(range(1, len(x.shape)))
                 else:
                     ind = None
                 grad = grad / (np.sqrt(np.sum(np.square(grad), axis=ind, keepdims=True)) + tol)
             return grad
 
-        if batch.dtype == object:
-            for i_sample in range(batch.shape[0]):
+        if x.dtype == object:
+            for i_sample in range(x.shape[0]):
                 grad[i_sample] = _apply_norm(grad[i_sample], object_type=True)
-                assert batch[i_sample].shape == grad[i_sample].shape
+                assert x[i_sample].shape == grad[i_sample].shape
         else:
             grad = _apply_norm(grad)
 
-        assert batch.shape == grad.shape
+        assert x.shape == grad.shape
 
         return grad
 
     def _apply_perturbation(
-        self, batch: np.ndarray, perturbation: np.ndarray, eps_step: Union[int, float, np.ndarray]
+        self, x: np.ndarray, perturbation: np.ndarray, eps_step: Union[int, float, np.ndarray]
     ) -> np.ndarray:
 
         perturbation_step = eps_step * perturbation
@@ -462,16 +463,16 @@ class FastGradientMethod(EvasionAttack):
                         np.isnan(perturbation_step_i_array), 0.0, perturbation_step_i_array
                     ).astype(object)
 
-        batch = batch + perturbation_step
+        x = x + perturbation_step
         if self.estimator.clip_values is not None:
             clip_min, clip_max = self.estimator.clip_values
-            if batch.dtype == np.object:
-                for i_obj in range(batch.shape[0]):
-                    batch[i_obj] = np.clip(batch[i_obj], clip_min, clip_max)
+            if x.dtype == object:
+                for i_obj in range(x.shape[0]):
+                    x[i_obj] = np.clip(x[i_obj], clip_min, clip_max)
             else:
-                batch = np.clip(batch, clip_min, clip_max)
+                x = np.clip(x, clip_min, clip_max)
 
-        return batch
+        return x
 
     def _compute(
         self,
@@ -581,8 +582,8 @@ class FastGradientMethod(EvasionAttack):
 
             if not (np.issubdtype(mask.dtype, np.floating) or mask.dtype == bool):  # pragma: no cover
                 raise ValueError(
-                    "The `mask` has to be either of type np.float32, np.float64 or bool. The provided"
-                    "`mask` is of type {}.".format(mask.dtype)
+                    f"The `mask` has to be either of type np.float32, np.float64 or bool. The provided"
+                    f"`mask` is of type {mask.dtype}."
                 )
 
             if np.issubdtype(mask.dtype, np.floating) and np.amin(mask) < 0.0:  # pragma: no cover

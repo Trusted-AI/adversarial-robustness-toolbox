@@ -59,14 +59,14 @@ def set_data_path(path):
 _config_path = os.path.expanduser(os.path.join(_folder, "config.json"))
 if os.path.exists(_config_path):
     try:
-        with open(_config_path) as f:
+        with open(_config_path, encoding="utf8") as f:
             _config = json.load(f)
 
             # Since renaming this variable we must update existing config files
             if "DATA_PATH" in _config:  # pragma: no cover
                 _config["ART_DATA_PATH"] = _config.pop("DATA_PATH")
                 try:
-                    with open(_config_path, "w") as f:
+                    with open(_config_path, "w", encoding="utf8") as f:
                         f.write(json.dumps(_config, indent=4))
                 except IOError:
                     logger.warning("Unable to update configuration file", exc_info=True)
@@ -85,7 +85,7 @@ if not os.path.exists(_config_path):
     _config = {"ART_DATA_PATH": os.path.join(_folder, "data")}
 
     try:
-        with open(_config_path, "w") as f:
+        with open(_config_path, "w", encoding="utf8") as f:
             f.write(json.dumps(_config, indent=4))
     except IOError:  # pragma: no cover
         logger.warning("Unable to create configuration file", exc_info=True)

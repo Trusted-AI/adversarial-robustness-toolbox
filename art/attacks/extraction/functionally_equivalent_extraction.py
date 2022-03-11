@@ -73,7 +73,7 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
         self.vector_u = np.random.normal(0, 1, (1, self.num_features)).astype(dtype=NUMPY_DTYPE)
         self.vector_v = np.random.normal(0, 1, (1, self.num_features)).astype(dtype=NUMPY_DTYPE)
 
-        self.critical_points: List[np.ndarray] = list()
+        self.critical_points: List[np.ndarray] = []
 
         self.w_0: Optional[np.ndarray] = None  # Weight matrix of first dense layer
         self.b_0: Optional[np.ndarray] = None  # Bias vector of first dense layer
@@ -95,7 +95,7 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
         delta_sign: float = 0.02,
         unit_vector_scale: int = 10000,
         ftol: float = 1e-8,
-        **kwargs
+        **kwargs,
     ) -> BlackBoxClassifier:
         """
         Extract the targeted model.
@@ -249,8 +249,8 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
 
         if len(self.critical_points) != self.num_neurons:
             raise AssertionError(
-                "The number of critical points found ({}) does not equal the number of expected"
-                "neurons in the first layer ({}).".format(len(self.critical_points), self.num_neurons)
+                f"The number of critical points found ({len(self.critical_points)}) does not equal the number of "
+                f"expected neurons in the first layer ({self.num_neurons})."
             )
 
     def _weight_recovery(
@@ -431,9 +431,9 @@ if __name__ == "__main__":
     tf.compat.v1.disable_eager_execution()
     tf.keras.backend.set_floatx("float64")
 
-    from tensorflow.keras.datasets import mnist
-    from tensorflow.keras.models import Sequential
-    from tensorflow.keras.layers import Dense
+    from tensorflow.keras.datasets import mnist  # pylint: disable=E0611
+    from tensorflow.keras.models import Sequential  # pylint: disable=E0611
+    from tensorflow.keras.layers import Dense  # pylint: disable=E0611
 
     np.random.seed(1)
     number_neurons = 16

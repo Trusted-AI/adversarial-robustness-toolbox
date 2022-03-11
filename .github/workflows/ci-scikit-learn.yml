@@ -25,29 +25,25 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: scikit-learn 0.22.2 (Python 3.7)
-            framework: scikitlearn
-            scikit-learn: 0.22.2
-            python: 3.7
-          - name: scikit-learn 0.23.2 (Python 3.8)
+          - name: scikit-learn 0.23.2 (Python 3.9)
             framework: scikitlearn
             scikit-learn: 0.23.2
-            python: 3.8
-          - name: scikit-learn 0.24.2 (Python 3.8)
+            python: 3.9
+          - name: scikit-learn 0.24.2 (Python 3.9)
             framework: scikitlearn
             scikit-learn: 0.24.2
-            python: 3.8
-          - name: scikit-learn 1.0 (Python 3.8)
+            python: 3.9
+          - name: scikit-learn 1.0.2 (Python 3.9)
             framework: scikitlearn
-            scikit-learn: 1.0
-            python: 3.8
+            scikit-learn: 1.0.2
+            python: 3.9
 
     name: ${{ matrix.name }}
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3
       - name: Setup Python
-        uses: actions/setup-python@v2.3.1
+        uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python }}
       - name: Install Dependencies
@@ -56,8 +52,8 @@ jobs:
           sudo apt-get -y -q install ffmpeg libavcodec-extra
           python -m pip install --upgrade pip setuptools wheel
           pip install -r requirements_test.txt
-          pip install tensorflow==2.4.3
-          pip install keras==2.4.3
+          pip install tensorflow==2.7.0
+          pip install keras==2.7.0
           pip install scikit-learn==${{ matrix.scikit-learn }}
           pip list
       - name: Run Tests

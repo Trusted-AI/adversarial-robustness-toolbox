@@ -93,8 +93,8 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
         if loss_type not in self._predefined_losses:
             raise ValueError(
-                "The argument loss_type has an invalid value. The following options for `loss_type` are currently "
-                "supported: {}".format(self._predefined_losses)
+                f"The argument loss_type has an invalid value. The following options for `loss_type` are currently "
+                f"supported: {self._predefined_losses}"
             )
 
         if loss_type is None:
@@ -224,7 +224,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
                         def __call__(self, y_true, y_pred):
                             i_y_true = tf.cast(tf.math.argmax(tf.cast(y_true, tf.int32), axis=1), tf.int32)
                             i_y_pred_arg = tf.argsort(y_pred, axis=1)
-                            i_z_i_list = list()
+                            i_z_i_list = []
 
                             for i in range(y_true.shape[0]):
                                 if i_y_pred_arg[i, -1] != i_y_true[i]:
@@ -303,7 +303,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
                             i_y_true = torch.argmax(y_true, axis=1)
                             i_y_pred_arg = torch.argsort(y_pred, axis=1)
-                            i_z_i_list = list()
+                            i_z_i_list = []
 
                             for i in range(y_true.shape[0]):
                                 if i_y_pred_arg[i, -1] != i_y_true[i]:
@@ -344,7 +344,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
                 )
 
             else:  # pragma: no cover
-                raise ValueError("The loss type {} is not supported for the provided estimator.".format(loss_type))
+                raise ValueError(f"The loss type {loss_type} is not supported for the provided estimator.")
 
         super().__init__(estimator=estimator_apgd)
         self.norm = norm
@@ -375,7 +375,8 @@ class AutoProjectedGradientDescent(EvasionAttack):
         """
         mask = kwargs.get("mask")
 
-        y = check_and_transform_label_format(y, self.estimator.nb_classes)
+        if y is not None:
+            y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
         if y is None:
             if self.targeted:

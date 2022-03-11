@@ -91,7 +91,7 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
             )
             self.estimator.fit(x_train, y_train)
         elif not isinstance(self.estimator.model, SVC):
-            raise NotImplementedError("Model type '{}' not yet supported".format(type(self.estimator.model)))
+            raise NotImplementedError(f"Model type '{type(self.estimator.model)}' not yet supported")
 
         self.step = step
         self.eps = eps
@@ -153,6 +153,9 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         """
         # pylint: disable=W0212
         from sklearn.preprocessing import normalize
+
+        if self.y_train is None or self.x_train is None:
+            raise ValueError("`x_train` and `y_train` cannot be None for generating an attack point.")
 
         poisoned_model = self.estimator.model
         y_t = np.argmax(self.y_train, axis=1)

@@ -1,7 +1,9 @@
 """
 Module providing expectation over transformations.
 """
+from art.preprocessing.expectation_over_transformation.image_center_crop.pytorch import EoTImageCenterCropPyTorch
 from art.preprocessing.expectation_over_transformation.image_rotation.tensorflow import EoTImageRotationTensorFlow
+from art.preprocessing.expectation_over_transformation.image_rotation.pytorch import EoTImageRotationPyTorch
 from art.preprocessing.expectation_over_transformation.natural_corruptions.brightness.pytorch import (
     EoTBrightnessPyTorch,
 )

@@ -202,7 +202,7 @@ class XGBoostClassifier(ClassifierDecisionTree):
         from art.metrics.verification_decisions_trees import Box, Tree
 
         booster_dump = self._model.get_booster().get_dump(dump_format="json")
-        trees = list()
+        trees = []
 
         for i_tree, tree_dump in enumerate(booster_dump):
             box = Box()
@@ -225,7 +225,7 @@ class XGBoostClassifier(ClassifierDecisionTree):
     def _get_leaf_nodes(self, node, i_tree, class_label, box) -> List["LeafNode"]:
         from art.metrics.verification_decisions_trees import LeafNode, Box, Interval
 
-        leaf_nodes: List[LeafNode] = list()
+        leaf_nodes: List[LeafNode] = []
 
         if "children" in node:
             if node["children"][0]["nodeid"] == node["yes"] and node["children"][1]["nodeid"] == node["no"]:

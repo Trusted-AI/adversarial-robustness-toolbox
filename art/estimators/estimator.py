@@ -117,7 +117,7 @@ class BaseEstimator(ABC):
         if isinstance(preprocessing, tuple):
             from art.preprocessing.standardisation_mean_std.numpy import StandardisationMeanStd
 
-            return StandardisationMeanStd(mean=preprocessing[0], std=preprocessing[1])
+            return StandardisationMeanStd(mean=preprocessing[0], std=preprocessing[1])  # type: ignore
         if isinstance(preprocessing, Preprocessor):
             return preprocessing
 
@@ -170,7 +170,7 @@ class BaseEstimator(ABC):
                     else:
                         setattr(self, key, value)
             else:  # pragma: no cover
-                raise ValueError("Unexpected parameter `{}` found in kwargs.".format(key))
+                raise ValueError(f"Unexpected parameter `{key}` found in kwargs.")
         self._update_preprocessing_operations()
         self._check_params()
 
@@ -180,7 +180,7 @@ class BaseEstimator(ABC):
 
         :return: A dictionary of string parameter names to their value.
         """
-        params = dict()
+        params = {}
         for key in self.estimator_params:
             params[key] = getattr(self, key)
         return params
@@ -200,7 +200,7 @@ class BaseEstimator(ABC):
             if isinstance(self._clip_values, np.ndarray):
                 self._clip_values = self._clip_values.astype(ART_NUMPY_DTYPE)
             else:
-                self._clip_values = np.array(self._clip_values, dtype=ART_NUMPY_DTYPE)
+                self._clip_values = np.array(self._clip_values, dtype=ART_NUMPY_DTYPE)  # type: ignore
 
         if isinstance(self.preprocessing_operations, list):
             for preprocess in self.preprocessing_operations:
@@ -327,7 +327,7 @@ class BaseEstimator(ABC):
 
         return post_preds
 
-    def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def compute_loss(self, x: np.ndarray, y: Any, **kwargs) -> np.ndarray:
         """
         Compute the loss of the estimator for samples `x`.
 
@@ -344,7 +344,7 @@ class BaseEstimator(ABC):
         for k, value in self.__dict__.items():
             k = k[1:] if k[0] == "_" else k
             attributes[k] = value
-        attributes = ["{}={}".format(k, v) for k, v in attributes.items()]
+        attributes = [f"{k}={v}" for k, v in attributes.items()]
         repr_string = class_name + "(" + ", ".join(attributes) + ")"
         return repr_string
 
@@ -450,13 +450,13 @@ class NeuralNetworkMixin(ABC):
 
         if not isinstance(generator, DataGenerator):
             raise ValueError(
-                "Expected instance of `DataGenerator` for `fit_generator`, got %s instead." % str(type(generator))
+                f"Expected instance of `DataGenerator` for `fit_generator`, got {type(generator)} instead."
             )
 
         for i in range(nb_epochs):
             for _ in trange(
-                int(generator.size / generator.batch_size), desc="Epoch %i/%i" % (i + 1, nb_epochs)  # type: ignore
-            ):  # type: ignore
+                int(generator.size / generator.batch_size), desc=f"Epoch {i + 1}/{nb_epochs}"  # type: ignore
+            ):
                 x, y = generator.get_batch()
 
                 # Fit for current batch
@@ -507,7 +507,7 @@ class NeuralNetworkMixin(ABC):
         for k, value in self.__dict__.items():
             k = k[1:] if k[0] == "_" else k
             attributes[k] = value
-        attrs = ["{}={}".format(k, v) for k, v in attributes.items()]
+        attrs = [f"{k}={v}" for k, v in attributes.items()]
         repr_ = name + "(" + ", ".join(attrs) + ")"
 
         return repr_

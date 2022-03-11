@@ -273,7 +273,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         for i_max_iter in range(self.max_iter):
             self._i_max_iter = i_max_iter
-            adv_x = self._compute_torch(
+            adv_x = self._compute_pytorch(
                 adv_x,
                 inputs,
                 targets,
@@ -285,7 +285,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         return adv_x.cpu().detach().numpy()
 
-    def _compute_perturbation(  # pylint: disable=W0221
+    def _compute_perturbation_pytorch(  # pylint: disable=W0221
         self, x: "torch.Tensor", y: "torch.Tensor", mask: Optional["torch.Tensor"]
     ) -> "torch.Tensor":
         """
@@ -347,7 +347,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         return grad
 
-    def _apply_perturbation(  # pylint: disable=W0221
+    def _apply_perturbation_pytorch(  # pylint: disable=W0221
         self, x: "torch.Tensor", perturbation: "torch.Tensor", eps_step: Union[int, float, np.ndarray]
     ) -> "torch.Tensor":
         """
@@ -373,7 +373,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         return x
 
-    def _compute_torch(
+    def _compute_pytorch(
         self,
         x: "torch.Tensor",
         x_init: "torch.Tensor",
@@ -407,8 +407,8 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
             n = x.shape[0]
             m = np.prod(x.shape[1:]).item()
 
-            random_perturbation = random_sphere(n, m, eps, self.norm).reshape(x.shape).astype(ART_NUMPY_DTYPE)
-            random_perturbation = torch.from_numpy(random_perturbation).to(self.estimator.device)
+            random_perturbation_array = random_sphere(n, m, eps, self.norm).reshape(x.shape).astype(ART_NUMPY_DTYPE)
+            random_perturbation = torch.from_numpy(random_perturbation_array).to(self.estimator.device)
 
             if mask is not None:
                 random_perturbation = random_perturbation * mask
@@ -426,10 +426,10 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
             x_adv = x
 
         # Get perturbation
-        perturbation = self._compute_perturbation(x_adv, y, mask)
+        perturbation = self._compute_perturbation_pytorch(x_adv, y, mask)
 
         # Apply perturbation and clip
-        x_adv = self._apply_perturbation(x_adv, perturbation, eps_step)
+        x_adv = self._apply_perturbation_pytorch(x_adv, perturbation, eps_step)
 
         # Do projection
         perturbation = self._projection(x_adv - x_init, eps, self.norm)
@@ -487,7 +487,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         elif norm_p in [np.inf, "inf"]:
             if isinstance(eps, np.ndarray):
                 eps = eps * np.ones_like(values.cpu())
-                eps = eps.reshape([eps.shape[0], -1])
+                eps = eps.reshape([eps.shape[0], -1])  # type: ignore
 
             values_tmp = values_tmp.sign() * torch.min(
                 values_tmp.abs(), torch.tensor([eps], dtype=torch.float32).to(self.estimator.device)
