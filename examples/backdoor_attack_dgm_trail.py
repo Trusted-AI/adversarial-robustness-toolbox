@@ -36,7 +36,6 @@ def make_generator_model(capacity: int, z_dim: int) -> tf.keras.Sequential():
     model.add(tf.keras.layers.BatchNormalization())
     model.add(tf.keras.layers.LeakyReLU())
 
-    # model.add(layers.Conv2DTranspose(1, (5, 5), strides=(2, 2), padding='same', use_bias=False, activation='tanh'))
     model.add(tf.keras.layers.Conv2DTranspose(1, (5, 5), strides=(2, 2), padding='same', use_bias=False))
 
     model.add(tf.keras.layers.Activation(activation='tanh'))
