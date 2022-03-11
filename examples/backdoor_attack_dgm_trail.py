@@ -1,7 +1,13 @@
+"""
+This is an example of how to use ART for creating backdoor attacks in DGMs with the "Devil is in the GAN" methodology
+Among the various approaches introduced by this methodology, this particular example uses the Trail backdoor attack
+
+Please refer to the original paper (https://arxiv.org/abs/2108.01644) for further information
+"""
 import numpy as np
 import tensorflow as tf
 
-from art.attacks.poisoning.backdoor_attack_dgm import PoisoningAttackTrail
+from art.attacks.poisoning.backdoor_attack_dgm import BackdoorAttackDGMTrail
 from art.estimators.gan.tensorflow_gan import TensorFlow2GAN
 from art.estimators.generation.tensorflow import TensorFlow2Generator
 from art.estimators.classification.tensorflow import TensorFlowV2Classifier
@@ -105,7 +111,7 @@ gan = TensorFlow2GAN(generator=generator,
                      discriminator_optimizer_fct=tf.keras.optimizers.Adam(1e-4))
 
 # Create BackDoorAttacks Class
-gan_attack = PoisoningAttackTrail(gan=gan)
+gan_attack = BackdoorAttackDGMTrail(gan=gan)
 
 print("Poisoning estimator")
 poisoned_generator = gan_attack.poison_estimator(z_trigger=z_trigger,
