@@ -901,6 +901,7 @@ def skip_by_module(request):
 
 @pytest.fixture()
 def fix_get_rcnn():
+
     from art.estimators.estimator import BaseEstimator, LossGradientsMixin
     from art.estimators.object_detection.object_detector import ObjectDetectorMixin
 
@@ -932,6 +933,7 @@ def fix_get_rcnn():
         def compute_losses(
             self, x: np.ndarray, y: Union[List[Dict[str, np.ndarray]], List[Dict[str, "torch.Tensor"]]]
         ) -> Dict[str, np.ndarray]:
+
             losses_dict = {
                 "loss_classifier": np.array(0.43572357, dtype=float),
                 "loss_box_reg": np.array(0.17341757, dtype=float),
@@ -954,6 +956,7 @@ def fix_get_rcnn():
 
 @pytest.fixture()
 def fix_get_goturn():
+    
     from art.estimators.estimator import BaseEstimator, LossGradientsMixin
     from art.estimators.object_tracking.object_tracker import ObjectTrackerMixin
 
