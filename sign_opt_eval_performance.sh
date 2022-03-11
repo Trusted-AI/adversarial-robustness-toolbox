@@ -2,9 +2,20 @@
 
 source ./venv/bin/activate 
 
-# e, query_limite, targeted, start_index
-python ./art/attacks/evasion/sign_opt_test_chloe.py 1.5 4000 False 0
+test_file=$1
+q1=4000
+q2=8000
+q3=14000
+# echo $test_file
+# e, query_limite, targeted, start_index, clipped
+python $test_file 1.5 $q1 False 0 True
 
-python ./art/attacks/evasion/sign_opt_test_chloe.py 1.5 8000 False 0
+python $test_file 1.5 $q1 False 0 False
 
-python ./art/attacks/evasion/sign_opt_test_chloe.py 1.5 14000 False 0
+python $test_file 1.5 $q2 False 0 True
+
+python $test_file 1.5 $q2 False 0 False
+
+python $test_file 1.5 $q3 False 0 True
+
+python $test_file 1.5 $q3 False 0 False

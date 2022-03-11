@@ -99,44 +99,44 @@ except FileNotFoundError:
 # Step 5: Evaluate the ART classifier on benign test examples
 predictions = classifier.predict(x_test)
 accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
-print("Accuracy on benign test examples: {}%".format(accuracy * 100))
+# print("Accuracy on benign test examples: {}%".format(accuracy * 100))
 
 # Step 6: Generate adversarial test examples
 
 # read variable from parameter
 import sys
 # Display File name 
-print("Script name ", sys.argv[0])
+# print("Script name ", sys.argv[0])
 
 e = 1.5
-q = 14000
-target = False
+q = 4000
+targeted = False
 start_index = 0
-length = 100 #len(x_test) #
-if len(sys.argv) == 5:
-    print(f'e={sys.argv[1]}, q={sys.argv[2]}, targeted={sys.argv[3]}, start_inde={sys.argv[4]}')
+length = 100
+clipping = False
+if len(sys.argv) == 6:
+    # print(f'e={sys.argv[1]}, q={sys.argv[2]}, targeted={sys.argv[3]}, start_inde={sys.argv[4]}, clipping={sys.argv[5]}')
     e = float(sys.argv[1])
     q = int(sys.argv[2])
-    target = eval(sys.argv[3])
+    targeted = eval(sys.argv[3])
     start_index = int(sys.argv[4])
-else:
-    print(f"parameters: e={e}, query limitation={q}, targeted attack={target}, length of examples={length}, start_index={start_index}")
+    clipping = eval(sys.argv[5])
+print(f"parameters: e={e}, query limitation={q}, targeted attack={targeted}, length of examples={length}, start_index={start_index}, clipped={clipping}")
 
-
-test_targeted = target
-if test_targeted:
+if targeted:
     attack = SignOPTAttack(estimator=classifier, 
-                           targeted=test_targeted,
+                           targeted=targeted,
                            max_iter=5000, query_limit=40000, 
-                           eval_perform=True, verbose=True)
+                           eval_perform=True, verbose=False, 
+                           clipped=clipping)
 else:
     attack = SignOPTAttack(estimator=classifier, 
-                           targeted=test_targeted, 
+                           targeted=targeted, 
                            query_limit=q, 
-                           eval_perform=True, 
-                           verbose=False, clipped=False)
+                           eval_perform=True, verbose=False, 
+                           clipped=clipping)
 
-print(f'test targeted = {test_targeted}, length={length}')
+# print(f'test targeted = {targted}, length={length}')
 targets = random_targets(y_test, attack.estimator.nb_classes)
 end_index = start_index+length
 x = x_test[start_index: end_index]
@@ -161,9 +161,9 @@ model_failed = 0
 #         print(f'index={i+start_index}, y_test={np.argmax(y_test[i+start_index])}, predict label={attack._predict_label(x_test[i+start_index])}')
 
 
-if model_failed > 0:
-    length -= model_failed
-    print(f'length is adjusted with {model_failed} failed prediction')
+# if model_failed > 0:
+#     length -= model_failed
+#     print(f'length is adjusted with {model_failed} failed prediction')
     
 L2 = attack.logs.sum()/length
 
@@ -172,10 +172,11 @@ for l2 in attack.logs:
     if l2 <=e and l2 != 0.0:
         count += 1
 SR = ((count - model_failed)/length)*100
-print(f'Avg l2 = {L2}, Success Rate={SR}% with e={e} and {length} examples')
+# print(f'Avg l2 = {L2}, Success Rate={SR}% with e={e} and {length} examples')
 
 # Step 7: Evaluate the ART classifier on adversarial test examples
 
 predictions = classifier.predict(x_test_adv)
 accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y_test[:length], axis=1)) / len(y_test[:length])
-print("Accuracy on adversarial test examples: {}%".format(accuracy * 100))
+# print("Accuracy on adversarial test examples: {}%".format(accuracy * 100))
+print(f'{q}, {e}, {round(L2,2)}, {round(SR,2)}%, {clipping}, {accuracy*100}%')

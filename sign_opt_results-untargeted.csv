@@ -1,0 +1,13 @@
+group index, description,                       query, e, Avg L2, SR, classifier, clipping, Accuracy-on-adv
+1, 0-100 sample and 18th is excluded,           4000, 1.5, 0.994, 86%, art-org, False
+1, 0-100 sample and 18th is excluded,           8000, 1.5,0.807, 99%, art-org, False
+1, 0-100 sample and 18th is excluded,           14000, 1.5,0.773, 100%, art-org, False
+2, 100-300 sample and 217th is excluded,        4000, 1.5, 0.879, 93%, art-org, False
+2, 100-300 sample and 217th is excluded,        8000, 1.5, 0.728, 99%, art-org, False
+2, 100-300 sample and 217th is excluded,        14000, 1.5, 0.691, 100%, art-org, False
+3, 0-100 roughly include all and no clipping,   4000, 1.5, 0.94, 90%, art-org, False
+3, 0-100 roughly include all and no clipping,   8000, 1.5, 0.79, 99%, art-org, False
+4, 0-100 sample and 18th is excluded,           4000, 1.5, 3.88, 2.0%, table1, False, 83%
+4, 0-100 sample and 18th is excluded,           4000, 1.5, 4.47, 1.0%, table1, True, 86%
+5, 0-100 sample and 18th is excluded,           8000, 1.5, 3.81, 3.0%, table1, False, 88%
+5, 0-100 sample and 18th is excluded,           8000, 1.5, 4.38, 1.0%, table1, True, 91%

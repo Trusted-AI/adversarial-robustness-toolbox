@@ -1,0 +1,13 @@
+classifier, query, e, Avg L2, SR, clipping, Accuracy-on-adv
+art-org, 4000, 1.5, 1.41, 56.0%, True, 4.0%
+art-org, 4000, 1.5, 0.96, 86.0%, False, 1.0%
+art-org, 8000, 1.5, 1.11, 80.0%, True, 1.0%
+art-org, 8000, 1.5, 0.79, 100.0%, False, 1.0%
+art-org, 14000, 1.5, 1.04, 83.0%, True, 3.0%
+art-org, 14000, 1.5, 0.76, 100.0%, False, 0.0%
+tabl1, 4000, 1.5, 4.53, 2.0%, True, 85.0%
+tabl1, 4000, 1.5, 3.87, 3.0%, False, 85.0%
+tabl1, 8000, 1.5, 4.4, 3.0%, True, 86.0%
+tabl1, 8000, 1.5, 3.83, 5.0%, False, 86.0%
+tabl1, 14000, 1.5, 4.38, 1.0%, True, 88.0%
+tabl1, 14000, 1.5, 3.81, 5.0%, False, 85.0%
