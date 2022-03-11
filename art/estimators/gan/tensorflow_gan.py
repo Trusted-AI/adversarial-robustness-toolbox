@@ -19,6 +19,7 @@
 This module creates GANs using the TensorFlow ML Framework
 """
 from typing import Any, Tuple, TYPE_CHECKING
+import numpy as np
 import tensorflow as tf
 from art.estimators.estimator import BaseEstimator
 
@@ -58,7 +59,7 @@ class TensorFlow2GAN(BaseEstimator):
         self._discriminator_loss = discriminator_loss
         self._discriminator_optimizer_fct = discriminator_optimizer_fct
 
-    def predict(self, x, **kwargs) -> Any:  # lgtm [py/inheritance/incorrect-overridden-signature]
+    def predict(self, x: np.ndarray, **kwargs) -> Any:  # lgtm [py/inheritance/incorrect-overridden-signature]
         """
         Generates a sample
         param x: a seed
@@ -75,10 +76,10 @@ class TensorFlow2GAN(BaseEstimator):
         """
         return 1, 100
 
-    def fit(self, x, y, **kwargs) -> None:
+    def fit(self, x: np.ndarray, y: np.ndarray, **kwargs) -> None:
         """
         Creates a generative model
-        
+
         :param x: the secret backdoor trigger that will produce the target
         :param y: the target to produce when using the trigger
         :param batch_size: batch_size of images used to train generator
@@ -87,7 +88,7 @@ class TensorFlow2GAN(BaseEstimator):
         max_iter = kwargs.get("max_iter")
         batch_size = kwargs.get("batch_size")
         z_trigger = x
-        for _ in range(max_iter):
+        for _ in range(max_iter):  # type: ignore
             train_imgs = kwargs.get("images")
             train_set = (
                 tf.data.Dataset.from_tensor_slices(train_imgs)
