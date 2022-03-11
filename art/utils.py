@@ -226,7 +226,7 @@ def projection(values: np.ndarray, eps: float, norm_p: Union[int, float]) -> np.
 
     :param values: Array of perturbations to clip.
     :param eps: Maximum norm allowed.
-    :param norm_p: L_p norm to use for clipping. Only 1, 2 and `np.Inf` supported for now.
+    :param norm_p: L_p norm to use for clipping. Only 1, 1.1, 2 and `np.Inf` supported for now.  1.1 compute orthogonal projection on l1-ball
     :return: Values of `values` after projection.
     """
     # Pick a small scalar to avoid division by 0
@@ -238,9 +238,10 @@ def projection(values: np.ndarray, eps: float, norm_p: Union[int, float]) -> np.
             np.minimum(1.0, eps / (np.linalg.norm(values_tmp, axis=1) + tol)), axis=1
         )
     elif norm_p == 1:
-        #  values_tmp = values_tmp * np.expand_dims(
-        #     np.minimum(1.0, eps / (np.linalg.norm(values_tmp, axis=1, ord=1) + tol)), axis=1,
-        #  )
+        values_tmp = values_tmp * np.expand_dims(
+            np.minimum(1.0, eps / (np.linalg.norm(values_tmp, axis=1, ord=1) + tol)), axis=1,
+        )
+    elif norm_p == 1.1:
         values_tmp = projection_l1_batch(values_tmp, eps)
     elif norm_p == np.inf:
         values_tmp = np.sign(values_tmp) * np.minimum(abs(values_tmp), eps)
