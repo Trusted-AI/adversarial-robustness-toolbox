@@ -333,18 +333,10 @@ class GradientMatchingAttack(Attack):
                 return B_score, poisoned_samples
 
         x_trigger = torch.tensor(x_trigger, device=device, dtype=torch.float32)
-        self.grad_ws_norm = _weight_grad(
-            classifier, x_trigger, torch.tensor(y_trigger, device=device, dtype=torch.float32)
-        ).detach()
+        self.grad_ws_norm = _weight_grad(classifier, x_trigger, torch.tensor(y_trigger, device=device)).detach()
         self.grad_ws_norm.requires_grad_(False)
         self.backdoor_model = BackdoorModel(
-            self,
-            classifier,
-            self.epsilon,
-            num_poison,
-            len_noise,
-            self.clip_values[0],
-            self.clip_values[1],
+            self, classifier, self.epsilon, num_poison, len_noise, self.clip_values[0], self.clip_values[1],
         ).to(device)
         self.optimizer = torch.optim.Adam(self.backdoor_model.noise_embedding.embedding_layer.parameters(), lr=1)
 
@@ -460,7 +452,7 @@ class GradientMatchingAttack(Attack):
             def __init__(self, x: np.ndarray, y: np.ndarray):
                 self.len = x.shape[0]
                 self.x = torch.as_tensor(x, dtype=torch.float)
-                self.y = torch.as_tensor(y, dtype=torch.float)
+                self.y = torch.as_tensor(y)
 
             def __getitem__(self, index):
                 return self.x[index], torch.as_tensor([index]), self.y[index]
@@ -561,5 +553,10 @@ class GradientMatchingAttack(Attack):
         if not isinstance(self.batch_size, int) or self.batch_size <= 0:
             raise ValueError("batch_size must be a positive integer")
 
-        if isinstance(self.verbose, int) and self.verbose < 0:
+        if (
+            isinstance(self.verbose, int)
+            and self.verbose < 0
+            or not isinstance(self.verbose, int)
+            and not isinstance(self.verbose, bool)
+        ):
             raise ValueError("verbose must be nonnegative integer or Boolean")
