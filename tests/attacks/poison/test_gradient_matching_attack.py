@@ -22,6 +22,7 @@ import numpy as np
 import pytest
 
 from art.attacks.poisoning import GradientMatchingAttack
+from art.utils import to_categorical
 
 from tests.utils import ARTTestException
 
@@ -46,6 +47,7 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator):
         attack = GradientMatchingAttack(
             classifier, epsilon=epsilon, percent_poison=percent_poison, max_trials=1, max_epochs=1, verbose=False
         )
+
         x_poison, y_poison = attack.poison(x_trigger, [class_target], x_train, y_train)
 
         np.testing.assert_(
@@ -65,22 +67,23 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator):
 def test_check_params(art_warning, get_default_mnist_subset, image_dl_estimator):
     try:
         classifier, _ = image_dl_estimator(functional=True)
+
         with pytest.raises(ValueError):
-            _ = GradientMatchingAttack(classifier, learning_rate_schedule=[0.1, 0.2, 0.3])
+            _ = GradientMatchingAttack(classifier, percent_poison=0.01, learning_rate_schedule=[0.1, 0.2, 0.3])
         with pytest.raises(ValueError):
             _ = GradientMatchingAttack(classifier, percent_poison=1.2)
         with pytest.raises(ValueError):
-            _ = GradientMatchingAttack(classifier, max_epochs=0)
+            _ = GradientMatchingAttack(classifier, percent_poison=0.01, max_epochs=0)
         with pytest.raises(ValueError):
-            _ = GradientMatchingAttack(classifier, max_trials=0)
+            _ = GradientMatchingAttack(classifier, percent_poison=0.01, max_trials=0)
         with pytest.raises(ValueError):
-            _ = GradientMatchingAttack(classifier, clip_values=1)
+            _ = GradientMatchingAttack(classifier, percent_poison=0.01, clip_values=1)
         with pytest.raises(ValueError):
-            _ = GradientMatchingAttack(classifier, epsilon=-1)
+            _ = GradientMatchingAttack(classifier, percent_poison=0.01, epsilon=-1)
         with pytest.raises(ValueError):
-            _ = GradientMatchingAttack(classifier, batch_size=0)
+            _ = GradientMatchingAttack(classifier, percent_poison=0.01, batch_size=0)
         with pytest.raises(ValueError):
-            _ = GradientMatchingAttack(classifier, verbose=1.1)
+            _ = GradientMatchingAttack(classifier, percent_poison=0.01, verbose=1.1)
 
     except ARTTestException as e:
         art_warning(e)
