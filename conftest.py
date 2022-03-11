@@ -956,7 +956,7 @@ def fix_get_rcnn():
 
 @pytest.fixture()
 def fix_get_goturn():
-    
+
     from art.estimators.estimator import BaseEstimator, LossGradientsMixin
     from art.estimators.object_tracking.object_tracker import ObjectTrackerMixin
 
