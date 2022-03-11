@@ -168,8 +168,8 @@ def projection_l1_1(values: np.ndarray, eps: Union[int, float, np.ndarray]) -> n
     n = np.prod(value.shape[1:]).  This is required to facilitate sorting.
 
     If a[0] <= ... <= a[n-1], then the projection can be characterized using the largest  j  such that
-    a[j+1] +...+ a[n-1] - a[j]*(n-j-1) >= eps. The  ith  coordinate of projection the is equal to  0
-    for i=0,...,j.
+    a[j+1] +...+ a[n-1] - a[j]*(n-j-1) >= eps. The  ith  coordinate of projection is equal to  0
+    if i=0,...,j.
 
     :param values:  A batch of  m  points, each an ndarray
     :param eps:  The radii of the respective L1-balls
