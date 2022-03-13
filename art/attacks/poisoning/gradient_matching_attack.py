@@ -22,7 +22,7 @@ This module implements Gradient Matching clean-label attacks (a.k.a. Witches' Br
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Dict, Tuple, TYPE_CHECKING, List
+from typing import Any, Dict, Tuple, TYPE_CHECKING, List
 
 import numpy as np
 from tqdm.auto import trange, tqdm
@@ -440,7 +440,7 @@ class GradientMatchingAttack(Attack):
         x_train[best_indices_poison] = best_x_poisoned
         return x_train, y_train  # y_train has not been modified.
 
-    def __poison__pytorch(self, x_poison: np.ndarray, y_poison: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def __poison__pytorch(self, x_poison: np.ndarray, y_poison: np.ndarray) -> Tuple[Any, float]:
         """
         Optimize the poison by matching the gradient within the perturbation budget.
 
