@@ -183,10 +183,10 @@ def SHAPr(  # pylint: disable=C0103
     results = []
 
     n_test = pred_test.shape[0]
-    for i in range(n_test):
+    for i_test in range(n_test):
         results_test = []
-        pred = pred_test[i]
-        y_0 = y_test[i]
+        pred = pred_test[i_test]
+        y_0 = y_test[i_test]
         (n_distances, n_indexes) = knn.kneighbors([pred], n_neighbors=n_train_samples)
         # from farthest to closest
         n_indexes = n_indexes.reshape(-1)[::-1]
@@ -194,7 +194,8 @@ def SHAPr(  # pylint: disable=C0103
         sorted_indexes = np.argsort(n_indexes)
         # compute partial contribution incrementally
         first = True
-        for y in sorted_y_train:
+        for i_train in range(sorted_y_train.shape[0]):
+            y = sorted_y_train[i_train]
             y_indicator = 1 if np.all(y == y_0) else 0
             if first:
                 phi_y = y_indicator / n_train_samples
@@ -202,7 +203,7 @@ def SHAPr(  # pylint: disable=C0103
             else:
                 #TODO: is it correct to divide by k here? Or should it be N? Since we are summing over contributions of all training samples...
                 # phi_y = phi_y_prev + (((y_indicator - y_indicator_prev) / k) / n_test)
-                phi_y = phi_y_prev + (((y_indicator - y_indicator_prev) / k) * (min(k, n_train_samples - i) / (n_train_samples - i + 1)))
+                phi_y = phi_y_prev + (((y_indicator - y_indicator_prev) / k) * (min(k, n_train_samples - i_train) / (n_train_samples - i_train)))
             results_test.append(phi_y)
             phi_y_prev = phi_y
             y_indicator_prev = y_indicator
