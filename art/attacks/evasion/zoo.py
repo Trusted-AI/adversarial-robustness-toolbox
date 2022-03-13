@@ -165,9 +165,9 @@ class ZooAttack(EvasionAttack):
             self._current_noise = np.zeros((batch_size,) + self.estimator.input_shape, dtype=ART_NUMPY_DTYPE)
         self._sample_prob = np.ones(self._current_noise.size, dtype=ART_NUMPY_DTYPE) / self._current_noise.size
 
-        self.adam_mean = None
-        self.adam_var = None
-        self.adam_epochs = None
+        self.adam_mean: Optional[np.ndarray] = None
+        self.adam_var: Optional[np.ndarray] = None
+        self.adam_epochs: Optional[np.ndarray] = None
 
     def _loss(
         self, x: np.ndarray, x_adv: np.ndarray, target: np.ndarray, c_weight: np.ndarray
@@ -210,7 +210,8 @@ class ZooAttack(EvasionAttack):
                   (nb_samples,).
         :return: An array holding the adversarial examples.
         """
-        y = check_and_transform_label_format(y, self.estimator.nb_classes)
+        if y is not None:
+            y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
         # Check that `y` is provided for targeted attacks
         if self.targeted and y is None:  # pragma: no cover
@@ -227,14 +228,14 @@ class ZooAttack(EvasionAttack):
 
         # Compute adversarial examples with implicit batching
         nb_batches = int(np.ceil(x.shape[0] / float(self.batch_size)))
-        x_adv = []
+        x_adv_list = []
         for batch_id in trange(nb_batches, desc="ZOO", disable=not self.verbose):
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
             x_batch = x[batch_index_1:batch_index_2]
             y_batch = y[batch_index_1:batch_index_2]
             res = self._generate_batch(x_batch, y_batch)
-            x_adv.append(res)
-        x_adv = np.vstack(x_adv)
+            x_adv_list.append(res)
+        x_adv = np.vstack(x_adv_list)
 
         # Apply clip
         if self.estimator.clip_values is not None:
@@ -495,16 +496,19 @@ class ZooAttack(EvasionAttack):
             expanded_targets,
             expanded_c,
         )
-        self._current_noise = self._optimizer_adam_coordinate(
-            loss,
-            indices,
-            self.adam_mean,
-            self.adam_var,
-            self._current_noise,
-            self.learning_rate,
-            self.adam_epochs,
-            True,
-        )
+        if self.adam_mean is not None and self.adam_var is not None and self.adam_epochs is not None:
+            self._current_noise = self._optimizer_adam_coordinate(
+                loss,
+                indices,
+                self.adam_mean,
+                self.adam_var,
+                self._current_noise,
+                self.learning_rate,
+                self.adam_epochs,
+                True,
+            )
+        else:
+            raise ValueError("Unexpected `None` in `adam_mean`, `adam_var` or `adam_epochs` detected.")
 
         if self.use_importance and self._current_noise.shape[2] > self._init_size:
             self._sample_prob = self._get_prob(self._current_noise).flatten()
@@ -514,7 +518,7 @@ class ZooAttack(EvasionAttack):
     def _optimizer_adam_coordinate(
         self,
         losses: np.ndarray,
-        index: int,
+        index: np.ndarray,
         mean: np.ndarray,
         var: np.ndarray,
         current_noise: np.ndarray,

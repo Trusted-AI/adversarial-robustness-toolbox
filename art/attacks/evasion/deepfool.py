@@ -32,7 +32,7 @@ from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassGradientsMixin
 from art.attacks.attack import EvasionAttack
-from art.utils import compute_success, is_probability
+from art.utils import is_probability
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE
@@ -211,10 +211,6 @@ class DeepFool(EvasionAttack):
                     out=x_adv[batch_index_1:batch_index_2],
                 )
 
-        logger.info(
-            "Success rate of DeepFool attack: %.2f%%",
-            100 * compute_success(self.estimator, x, y, x_adv, batch_size=self.batch_size),
-        )
         return x_adv
 
     def _check_params(self) -> None:

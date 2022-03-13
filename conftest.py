@@ -220,8 +220,8 @@ def image_iterator(framework, get_default_mnist_subset, default_batch_size):
             )
             return keras_gen.flow(x_train_mnist, y_train_mnist, batch_size=default_batch_size)
 
-        if framework == "tensorflow1":
-            import tensorflow as tf
+        if framework in ["tensorflow1", "tensorflow2v1"]:
+            import tensorflow.compat.v1 as tf
 
             x_tensor = tf.convert_to_tensor(x_train_mnist.reshape(10, 100, 28, 28, 1))
             y_tensor = tf.convert_to_tensor(y_train_mnist.reshape(10, 100, 10))
@@ -269,7 +269,7 @@ def image_data_generator(framework, get_default_mnist_subset, image_iterator, de
                 batch_size=default_batch_size,
             )
 
-        if framework == "tensorflow1":
+        if framework in ["tensorflow1", "tensorflow2v1"]:
             data_generator = TensorFlowDataGenerator(
                 sess=kwargs["sess"],
                 iterator=image_it,
@@ -549,9 +549,9 @@ def image_dl_estimator(framework, get_image_classifier_mx_instance):
                             image_dl_estimator.__name__,
                             framework,
                         )
-        if framework == "tensorflow1" or framework == "tensorflow2":
+        if framework in ["tensorflow1", "tensorflow2", "tensorflow2v1"]:
             if wildcard is False and functional is False:
-                classifier, sess = get_image_classifier_tf(**kwargs)
+                classifier, sess = get_image_classifier_tf(**kwargs, framework=framework)
                 return classifier, sess
         if framework == "pytorch":
             if not wildcard:

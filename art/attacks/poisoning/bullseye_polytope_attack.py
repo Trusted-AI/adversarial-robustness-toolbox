@@ -184,7 +184,7 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
             # End to end training
             if self.endtoend:
                 if isinstance(self.feature_layer, list):
-                    block_feats = list()
+                    block_feats = []
                     for layer in self.feature_layer:
                         activations = net.get_activations(x, layer=layer, batch_size=self.batch_size, framework=True)
                         if activations is not None:
@@ -208,7 +208,7 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
                 layer_3: Union[int, str] = self.feature_layer
                 activations = net.get_activations(x, layer=layer_3, batch_size=self.batch_size, framework=True)
                 if activations is not None:
-                    target_feat_list.append(activations.detach())
+                    target_feat_list.append(activations.detach())  # type: ignore
                 else:
                     raise ValueError("Activations are None.")
                 s_coeff = torch.ones(n_poisons, 1).to(self.estimator.device) / n_poisons
@@ -219,10 +219,7 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
             if ite % self.decay_iter == 0 and ite != 0:
                 for param_group in optimizer.param_groups:
                     param_group["lr"] *= self.decay_coeff
-                print(
-                    "%s Iteration %d, Adjusted lr to %.2e"
-                    % (time.strftime("%Y-%m-%d %H:%M:%S"), ite, self.learning_rate)
-                )
+                print(f"{time.strftime('%Y-%m-%d %H:%M:%S')} Iteration {ite}, Adjusted lr to {self.learning_rate:.2e}")
 
             poison_batch.zero_grad()
             total_loss = loss_from_center(
@@ -338,13 +335,15 @@ def loss_from_center(
             elif net_repeat == 1:
                 if isinstance(feature_layer, list):
                     poisons_feats = [
-                        torch.flatten(net.get_activations(poison_batch(), layer=layer, framework=True), 0)
+                        torch.flatten(
+                            net.get_activations(poison_batch(), layer=layer, framework=True), 0  # type: ignore
+                        )
                         for layer in feature_layer
                     ]
                 else:  # pragma: no cover
                     poisons_feats = net.get_activations(poison_batch(), layer=feature_layer, framework=True)
             else:  # pragma: no cover
-                assert False, "net_repeat set to {}".format(net_repeat)
+                assert False, f"net_repeat set to {net_repeat}"
 
             net_loss = torch.tensor(0.0)
             for pfeat, cfeat in zip(poisons_feats, center_feats):

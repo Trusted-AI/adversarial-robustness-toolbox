@@ -155,7 +155,7 @@ class PyTorchDataGenerator(DataGenerator):
 
         super().__init__(size=size, batch_size=batch_size)
         if not isinstance(iterator, DataLoader):
-            raise TypeError("Expected instance of PyTorch `DataLoader, received %s instead.`" % str(type(iterator)))
+            raise TypeError(f"Expected instance of PyTorch `DataLoader, received {type(iterator)} instead.`")
 
         self._iterator: DataLoader = iterator
         self._current = iter(self.iterator)
@@ -197,7 +197,7 @@ class MXDataGenerator(DataGenerator):
 
         super().__init__(size=size, batch_size=batch_size)
         if not isinstance(iterator, mxnet.gluon.data.DataLoader):
-            raise TypeError("Expected instance of Gluon `DataLoader, received %s instead.`" % str(type(iterator)))
+            raise TypeError(f"Expected instance of Gluon `DataLoader, received {type(iterator)} instead.`")
 
         self._iterator = iterator
         self._current = iter(self.iterator)
@@ -248,7 +248,7 @@ class TensorFlowDataGenerator(DataGenerator):  # pragma: no cover
         :raises `TypeError`, `ValueError`: If input parameters are not valid.
         """
         # pylint: disable=E0401
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow.compat.v1 as tf  # lgtm [py/repeated-import]
 
         super().__init__(size=size, batch_size=batch_size)
         self.sess = sess
@@ -261,15 +261,15 @@ class TensorFlowDataGenerator(DataGenerator):  # pragma: no cover
 
         if iterator_type == "initializable":
             if not isinstance(iterator_arg, dict):
-                raise TypeError("Need to pass a dictionary for iterator type %s" % iterator_type)
+                raise TypeError(f"Need to pass a dictionary for iterator type {iterator_type}")
         elif iterator_type == "reinitializable":
             if not isinstance(iterator_arg, tf.Operation):
-                raise TypeError("Need to pass a TensorFlow operation for iterator type %s" % iterator_type)
+                raise TypeError(f"Need to pass a TensorFlow operation for iterator type {iterator_type}")
         elif iterator_type == "feedable":
             if not isinstance(iterator_arg, tuple):
-                raise TypeError("Need to pass a tuple for iterator type %s" % iterator_type)
+                raise TypeError(f"Need to pass a tuple for iterator type {iterator_type}")
         else:
-            raise TypeError("Iterator type %s not supported" % iterator_type)
+            raise TypeError(f"Iterator type {iterator_type} not supported")
 
     def get_batch(self) -> tuple:
         """

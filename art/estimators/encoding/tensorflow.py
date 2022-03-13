@@ -102,7 +102,7 @@ class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):  # lgtm [py/missing-
         self._encoding_length = self._model.shape[1]
         self._loss = loss
         if feed_dict is None:
-            self._feed_dict = dict()
+            self._feed_dict = {}
         else:
             self._feed_dict = feed_dict
 

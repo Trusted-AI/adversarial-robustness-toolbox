@@ -97,7 +97,7 @@ class LabelOnlyDecisionBoundary(MembershipInferenceAttack):
                 "dataset."
             )
 
-        if "probabilities" in kwargs.keys():
+        if "probabilities" in kwargs:
             probabilities = kwargs.get("probabilities")
             del kwargs["probabilities"]
         else:
@@ -118,7 +118,7 @@ class LabelOnlyDecisionBoundary(MembershipInferenceAttack):
 
         y_pred = self.estimator.predict(x=x)
 
-        distance[np.argmax(y_pred, axis=1) != np.argmax(y, axis=1)] = 0
+        distance[np.argmax(y_pred, axis=1) != np.argmax(y, axis=1)] = 0  # type: ignore
         predicted_class = np.where(distance > self.distance_threshold_tau, 1, 0)
         if probabilities:
             prob_1 = np.zeros_like(distance)
@@ -163,13 +163,17 @@ class LabelOnlyDecisionBoundary(MembershipInferenceAttack):
         if "targeted" in kwargs:  # pragma: no cover
             raise ValueError("Keyword `targeted` in kwargs is not supported.")
 
-        y_train = check_and_transform_label_format(y_train, self.estimator.nb_classes)
-        y_test = check_and_transform_label_format(y_test, self.estimator.nb_classes)
+        y_train_onehot = check_and_transform_label_format(y_train, self.estimator.nb_classes)
+        if y_train_onehot is None:
+            raise ValueError("None value detected.")
+        y_test_onehot = check_and_transform_label_format(y_test, self.estimator.nb_classes)
+        if y_test_onehot is None:
+            raise ValueError("None value detected.")
 
         hsj = HopSkipJump(classifier=self.estimator, targeted=False, **kwargs)
 
-        x_train_adv = hsj.generate(x=x_train, y=y_train)
-        x_test_adv = hsj.generate(x=x_test, y=y_test)
+        x_train_adv = hsj.generate(x=x_train, y=y_train_onehot)
+        x_test_adv = hsj.generate(x=x_test, y=y_test_onehot)
 
         distance_train = np.linalg.norm((x_train_adv - x_train).reshape((x_train.shape[0], -1)), ord=2, axis=1)
         distance_test = np.linalg.norm((x_test_adv - x_test).reshape((x_test.shape[0], -1)), ord=2, axis=1)
@@ -177,8 +181,8 @@ class LabelOnlyDecisionBoundary(MembershipInferenceAttack):
         y_train_pred = self.estimator.predict(x=x_train)
         y_test_pred = self.estimator.predict(x=x_test)
 
-        distance_train[np.argmax(y_train_pred, axis=1) != np.argmax(y_train, axis=1)] = 0
-        distance_test[np.argmax(y_test_pred, axis=1) != np.argmax(y_test, axis=1)] = 0
+        distance_train[np.argmax(y_train_pred, axis=1) != np.argmax(y_train_onehot, axis=1)] = 0
+        distance_test[np.argmax(y_test_pred, axis=1) != np.argmax(y_test_onehot, axis=1)] = 0
 
         num_increments = 100
         tau_increment = np.amax([np.amax(distance_train), np.amax(distance_test)]) / num_increments

@@ -25,34 +25,34 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: TensorFlow 2.5.1 (Keras 2.4.3 Python 3.8)
-            framework: tensorflow
-            python: 3.7
-            tensorflow: 2.5.1
-            tf_version: v2
-            keras: 2.4.3
-            tf_addons: 0.14.0
-          - name: TensorFlow 2.5.1v1 (Keras 2.4.3 Python 3.8)
-            framework: tensorflow2v1
-            python: 3.8
-            tensorflow: 2.5.1
-            tf_version: v2
-            keras: 2.4.3
-            tf_addons: 0.14.0
-          - name: TensorFlow 2.6.0 (Keras 2.6.0 Python 3.8)
+          - name: TensorFlow 2.6.2 (Keras 2.6.0 Python 3.8)
             framework: tensorflow
             python: 3.8
-            tensorflow: 2.6.0
+            tensorflow: 2.6.2
             tf_version: v2
             keras: 2.6.0
+            tf_addons: 0.14.0
+          - name: TensorFlow 2.7.0v1 (Keras 2.7.0 Python 3.9)
+            framework: tensorflow2v1
+            python: 3.9
+            tensorflow: 2.7.0
+            tf_version: v2
+            keras: 2.7.0
+            tf_addons: 0.14.0
+          - name: TensorFlow 2.7.0 (Keras 2.7.0 Python 3.9)
+            framework: tensorflow
+            python: 3.9
+            tensorflow: 2.7.0
+            tf_version: v2
+            keras: 2.7.0
             tf_addons: 0.14.0
 
     name: ${{ matrix.name }}
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3
       - name: Setup Python
-        uses: actions/setup-python@v2.3.1
+        uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python }}
       - name: Install Dependencies

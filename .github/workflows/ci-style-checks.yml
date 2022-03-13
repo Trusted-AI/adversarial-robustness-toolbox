@@ -24,11 +24,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3
       - name: Setup Python
-        uses: actions/setup-python@v2.3.1
+        uses: actions/setup-python@v3
         with:
-          python-version: 3.7
+          python-version: 3.8
       - name: Pre-install
         run: |
           sudo apt-get update
@@ -36,11 +36,14 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip setuptools wheel
-          pip install -q pylint==2.7.4 mypy==0.812 pycodestyle==2.7.0 black==20.8b1
+          pip install -q pylint==2.12.2 mypy==0.931 pycodestyle==2.8.0 black==21.12b0
           pip install -q -r requirements_test.txt
           pip install pluggy==0.13.1
-          pip install tensorflow==2.4.1
-          pip install keras==2.4.3
+          pip install tensorflow==2.7.0
+          pip install keras==2.7.0
+          python -m pip install types-six
+          python -m pip install types-PyYAML
+          python3 -m pip install types-setuptools
           pip list
       - name: pycodestyle
         run: pycodestyle --ignore=C0330,C0415,E203,E231,W503 --max-line-length=120 art

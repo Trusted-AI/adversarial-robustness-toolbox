@@ -292,6 +292,7 @@ class TestAdversarialPatch(TestBase):
             learning_rate=5.0,
             batch_size=10,
             max_iter=5,
+            patch_shape=(1, 28, 28),
             verbose=False,
         )
 

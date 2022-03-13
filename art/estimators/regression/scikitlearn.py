@@ -98,7 +98,6 @@ class ScikitlearnRegressor(RegressorMixin, ScikitlearnEstimator):  # lgtm [py/mi
         """
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
-        y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
         self.model.fit(x_preprocessed, y_preprocessed, **kwargs)
         self._input_shape = self._get_input_shape(self.model)
@@ -279,7 +278,7 @@ class ScikitlearnDecisionTreeRegressor(ScikitlearnRegressor):
     def _get_leaf_nodes(self, node_id, i_tree, class_label, box) -> List["LeafNode"]:
         from art.metrics.verification_decisions_trees import LeafNode, Box, Interval
 
-        leaf_nodes: List[LeafNode] = list()
+        leaf_nodes: List[LeafNode] = []
 
         if self.get_left_child(node_id) != self.get_right_child(node_id):
 

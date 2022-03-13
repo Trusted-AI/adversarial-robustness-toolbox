@@ -27,7 +27,7 @@ class ScoringFunctions:
     """
 
     @staticmethod
-    def get_score_bj_fast(n_alpha: list, no_records: list, alpha: np.ndarray) -> np.ndarray:
+    def get_score_bj_fast(n_alpha: np.ndarray, no_records: np.ndarray, alpha: np.ndarray) -> np.ndarray:
         """
         BerkJones
 
@@ -63,7 +63,7 @@ class ScoringFunctions:
         return score
 
     @staticmethod
-    def get_score_hc_fast(n_alpha: list, no_records: list, alpha: np.ndarray) -> np.ndarray:
+    def get_score_hc_fast(n_alpha: np.ndarray, no_records: np.ndarray, alpha: np.ndarray) -> np.ndarray:
         """
         Higher criticism
         Similar to a traditional wald test statistic: (Observed - expected) / standard deviation.
@@ -83,7 +83,7 @@ class ScoringFunctions:
         return score
 
     @staticmethod
-    def get_score_ks_fast(n_alpha: list, no_records: list, alpha: np.ndarray) -> np.ndarray:
+    def get_score_ks_fast(n_alpha: np.ndarray, no_records: np.ndarray, alpha: np.ndarray) -> np.ndarray:
         """
         KolmarovSmirnov
 

@@ -117,20 +117,25 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
         features_x_poisoned = self.classifier.get_activations(
             self.x_train, layer=nb_layers - 1, batch_size=self.batch_size
         )
+        if not isinstance(features_x_poisoned, np.ndarray):
+            raise ValueError("Wrong type detected.")
 
-        features_split = segment_by_class(features_x_poisoned, self.y_train, self.classifier.nb_classes)
+        if features_x_poisoned is not None:
+            features_split = segment_by_class(features_x_poisoned, self.y_train, self.classifier.nb_classes)
+        else:
+            raise ValueError("Activation are `None`.")
         score_by_class = []
         keep_by_class = []
 
         for idx, feature in enumerate(features_split):
             # Check for empty list
             if len(feature):  # pylint: disable=C1801
-                score = SpectralSignatureDefense.spectral_signature_scores(np.vstack(feature))
+                score = SpectralSignatureDefense.spectral_signature_scores(np.vstack(feature))  # type: ignore
                 score_cutoff = np.quantile(score, max(1 - self.eps_multiplier * self.expected_pp_poison, 0.0))
                 score_by_class.append(score)
                 keep_by_class.append(score < score_cutoff)
             else:
-                score_by_class.append([0])
+                score_by_class.append([0])  # type: ignore
                 keep_by_class.append([True])
 
         base_indices_by_class = segment_by_class(

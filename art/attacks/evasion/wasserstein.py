@@ -33,7 +33,7 @@ from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.attack import EvasionAttack
-from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format
+from art.utils import get_labels_np_array, check_and_transform_label_format
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
@@ -141,7 +141,8 @@ class Wasserstein(EvasionAttack):
         :type cost_matrix: `np.ndarray`
         :return: An array holding the adversarial examples.
         """
-        y = check_and_transform_label_format(y, self.estimator.nb_classes)
+        if y is not None:
+            y = check_and_transform_label_format(y, self.estimator.nb_classes)
         x_adv = x.copy().astype(ART_NUMPY_DTYPE)
 
         if y is None:
@@ -174,11 +175,6 @@ class Wasserstein(EvasionAttack):
             batch_labels = targets[batch_index_1:batch_index_2]
 
             x_adv[batch_index_1:batch_index_2] = self._generate_batch(batch, batch_labels, cost_matrix)
-
-        logger.info(
-            "Success rate of attack: %.2f%%",
-            100 * compute_success(self.estimator, x, y, x_adv, self.targeted, batch_size=self.batch_size),
-        )
 
         return x_adv
 
@@ -403,7 +399,7 @@ class Wasserstein(EvasionAttack):
         var_k = np.expand_dims(np.expand_dims(np.expand_dims(psi, -1), -1), -1)
         var_k = np.exp(-var_k * cost_matrix - 1)
 
-        convergence = -np.inf
+        convergence = np.array([-np.inf])
 
         for _ in range(self.conjugate_sinkhorn_max_iter):
             # Block coordinate descent iterates
@@ -481,7 +477,7 @@ class Wasserstein(EvasionAttack):
         var_k = np.expand_dims(np.expand_dims(np.expand_dims(psi, -1), -1), -1)
         var_k = np.exp(-var_k * cost_matrix - 1)
 
-        convergence = -np.inf
+        convergence = np.array([-np.inf])
 
         for _ in range(self.projected_sinkhorn_max_iter):
             # Block coordinate descent iterates
