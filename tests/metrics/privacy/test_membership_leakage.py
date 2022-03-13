@@ -148,7 +148,7 @@ def test_errors(art_warning, tabular_dl_estimator, get_iris_dataset, image_data_
 
 
 @pytest.mark.skip_framework("pytorch", "tensorflow", "scikitlearn")
-def test_not_implemented(art_warning, tabular_dl_estimator, get_iris_dataset, image_data_generator):
+def test_not_implemented(art_warning, tabular_dl_estimator, get_iris_dataset):
     try:
         classifier = tabular_dl_estimator()
         (x_train, y_train), _ = get_iris_dataset
