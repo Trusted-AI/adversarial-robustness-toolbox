@@ -171,8 +171,7 @@ class TotalVarMin(Preprocessor):
         """
         # First compute the derivative of the first component of the loss function
         nor1 = np.sqrt(np.power(z_init - x.flatten(), 2).dot(mask.flatten()))
-        if nor1 < 1e-6:
-            nor1 = 1e-6
+        nor1 = max(nor1, 1e-06)
         der1 = ((z_init - x.flatten()) * mask.flatten()) / (nor1 * 1.0)
 
         # Then compute the derivative of the second component of the loss function
@@ -210,7 +209,7 @@ class TotalVarMin(Preprocessor):
             logger.error("Norm must be a positive integer.")
             raise ValueError("Norm must be a positive integer.")
 
-        if not (self.solver == "L-BFGS-B" or self.solver == "CG" or self.solver == "Newton-CG"):
+        if self.solver not in ("L-BFGS-B", "CG", "Newton-CG"):
             logger.error("Current support only L-BFGS-B, CG, Newton-CG.")
             raise ValueError("Current support only L-BFGS-B, CG, Newton-CG.")
 

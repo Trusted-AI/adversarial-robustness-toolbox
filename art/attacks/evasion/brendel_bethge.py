@@ -1706,7 +1706,7 @@ class L0Optimizer(Optimizer):  # pragma: no cover
         if σ < 0 or σ > 1:
             raise ValueError("σ must be strictly between 0 and 1.")
 
-        if not (bounds.shape == (0, 2) or bounds.shape == (n, 2)):
+        if bounds.shape not in ((0, 2), (n, 2)):
             raise ValueError("The shape of `bounds` is not valid.")
         if (np.atleast_2d(bounds)[:, 0] > np.atleast_2d(bounds)[:, 1]).any():
             raise ValueError("Lower bounds must be greater than upper bounds.")
@@ -2029,7 +2029,7 @@ class BrendelBethgeAttack(EvasionAttack):
                 def logits_difference(y_true, y_pred):
                     i_y_true = tf.cast(tf.math.argmax(tf.cast(y_true, tf.int32), axis=1), tf.int32)
                     i_y_pred_arg = tf.argsort(y_pred, axis=1)
-                    i_z_i_list = list()
+                    i_z_i_list = []
 
                     for i in range(y_true.shape[0]):
                         if i_y_pred_arg[i, -1] != i_y_true[i]:
@@ -2088,7 +2088,7 @@ class BrendelBethgeAttack(EvasionAttack):
 
                     i_y_true = torch.argmax(y_true, axis=1)
                     i_y_pred_arg = torch.argsort(y_pred, axis=1)
-                    i_z_i_list = list()
+                    i_z_i_list = []
 
                     for i in range(y_true.shape[0]):
                         if i_y_pred_arg[i, -1] != i_y_true[i]:
@@ -2185,7 +2185,8 @@ class BrendelBethgeAttack(EvasionAttack):
 
         originals = x.copy()
 
-        y = check_and_transform_label_format(y, self.estimator.nb_classes)
+        if y is not None:
+            y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
         if y is None:
             # Throw error if attack is targeted, but no targets are provided

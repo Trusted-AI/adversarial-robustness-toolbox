@@ -34,7 +34,7 @@ class Transformer(abc.ABC):
     Abstract base class for transformation defences.
     """
 
-    params: List[str] = list()
+    params: List[str] = []
 
     def __init__(self, classifier: "CLASSIFIER_TYPE") -> None:
         """

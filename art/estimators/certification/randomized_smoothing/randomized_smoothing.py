@@ -161,7 +161,7 @@ class RandomizedSmoothingMixin(ABC):
 
             # get sample prediction for classification
             counts_pred = self._prediction_counts(x_i, n=self.sample_size, batch_size=batch_size)
-            class_select = np.argmax(counts_pred)
+            class_select = int(np.argmax(counts_pred))
 
             # get sample prediction for certification
             counts_est = self._prediction_counts(x_i, n=n, batch_size=batch_size)

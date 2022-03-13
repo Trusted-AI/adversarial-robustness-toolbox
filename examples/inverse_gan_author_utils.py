@@ -274,7 +274,7 @@ class Dataset(object):
     """
 
     def __init__(self, name, data_dir=path_locations["data"]):
-        """The datasaet default constructor.
+        """The dataset default constructor.
 
         Args:
             name: A string, name of the dataset.
@@ -959,7 +959,7 @@ class DefenseGANv2(AbstractModel):
         verbose=True,
         **args
     ):
-        self.dataset_name = None  # Name of the datsaet.
+        self.dataset_name = None  # Name of the dataset.
         self.batch_size = 32  # Batch size for training the GAN.
         self.use_bn = True  # Use batchnorm in the discriminator and generator.
         self.use_resblock = False  # Use resblocks in DefenseGAN.
@@ -1045,7 +1045,7 @@ class DefenseGANv2(AbstractModel):
     def _build(self):
         """Builds the computation graph."""
 
-        assert (self.batch_size % self.rec_rr) == 0, "Batch size should be divisable by random restart"
+        assert (self.batch_size % self.rec_rr) == 0, "Batch size should be divisible by random restart"
 
         self.discriminator_training = tf.placeholder(tf.bool)
         self.encoder_training = tf.placeholder(tf.bool)
@@ -1525,7 +1525,7 @@ class EncoderReconstructor(object):
         # original self.init_opt = tf.variables_initializer(var_list=[modifier] + new_vars)
         self.init_opt = tf.variables_initializer(var_list=[] + new_vars)
 
-        print("Reconstruction module initialzied...\n")
+        print("Reconstruction module initialized...\n")
 
     def generate_z_extrapolated_k(self):
         x_shape = [28, 28, 1]
@@ -1894,7 +1894,7 @@ def spectral_norm(w, num_iters=1, update_collection=None):
 
 
 ##################################################################################
-# Residual Blockes
+# Residual Blocks
 ##################################################################################
 
 

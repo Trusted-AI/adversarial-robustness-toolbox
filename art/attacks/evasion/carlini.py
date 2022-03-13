@@ -237,7 +237,8 @@ class CarliniL2Method(EvasionAttack):
                   labels.
         :return: An array holding the adversarial examples.
         """
-        y = check_and_transform_label_format(y, self.estimator.nb_classes)
+        if y is not None:
+            y = check_and_transform_label_format(y, self.estimator.nb_classes)
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
         if self.estimator.clip_values is not None:
@@ -298,7 +299,7 @@ class CarliniL2Method(EvasionAttack):
                 x_adv_batch = x_batch.copy()
                 x_adv_batch_tanh = x_batch_tanh.copy()
 
-                z_logits, l2dist, loss = self._loss(x_batch, x_adv_batch, y_batch, c_current)
+                z_logits, l2dist, loss = self._loss(x_batch, x_adv_batch, y_batch, c_current)  # type: ignore
                 attack_success = loss - l2dist <= 0
                 overall_attack_success = attack_success
 
@@ -737,7 +738,8 @@ class CarliniLInfMethod(EvasionAttack):
                   targets are the original class labels.
         :return: An array holding the adversarial examples.
         """
-        y = check_and_transform_label_format(y, self.estimator.nb_classes)
+        if y is not None:
+            y = check_and_transform_label_format(y, self.estimator.nb_classes)
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
         if self.estimator.clip_values is not None:
@@ -943,7 +945,8 @@ class CarliniL0Method(CarliniL2Method):
                   labels.
         :return: An array holding the adversarial examples.
         """
-        y = check_and_transform_label_format(y, self.estimator.nb_classes)
+        if y is not None:
+            y = check_and_transform_label_format(y, self.estimator.nb_classes)
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
         if self.estimator.clip_values is not None:
@@ -1028,7 +1031,7 @@ class CarliniL0Method(CarliniL2Method):
                     x_adv_batch = x_batch.copy()
                     x_adv_batch_tanh = x_batch_tanh.copy()
 
-                    z_logits, l2dist, loss = self._loss(x_batch, x_adv_batch, y_batch, c_current)
+                    z_logits, l2dist, loss = self._loss(x_batch, x_adv_batch, y_batch, c_current)  # type: ignore
                     attack_success = loss - l2dist <= 0
                     overall_attack_success = attack_success
 
@@ -1212,7 +1215,7 @@ class CarliniL0Method(CarliniL2Method):
             )
 
             # If the L_2 attack can't find any adversarial examples with the new activation, return the last one
-            z_logits, l2dist, loss = self._loss(x, x_adv, y, c_final)
+            z_logits, l2dist, loss = self._loss(x, x_adv, y, c_final)  # type: ignore
             attack_success = loss - l2dist <= 0
             l0dist = np.sum((np.abs(x - x_adv) > self._perturbation_threshold).astype(int), axis=(1, 2, 3))
             improved_adv = attack_success & (l0dist < best_l0dist)

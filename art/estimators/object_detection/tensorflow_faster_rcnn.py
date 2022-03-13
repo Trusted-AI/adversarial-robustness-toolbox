@@ -129,21 +129,21 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         # Create placeholders for groundtruth boxes
         self._groundtruth_boxes_list: List["tf.Tensor"]
         self._groundtruth_boxes_list = [
-            tf.placeholder(dtype=tf.float32, shape=(None, 4), name="groundtruth_boxes_{}".format(i))
+            tf.placeholder(dtype=tf.float32, shape=(None, 4), name=f"groundtruth_boxes_{i}")
             for i in range(images.shape[0])
         ]
 
         # Create placeholders for groundtruth classes
         self._groundtruth_classes_list: List["tf.Tensor"]
         self._groundtruth_classes_list = [
-            tf.placeholder(dtype=tf.int32, shape=(None,), name="groundtruth_classes_{}".format(i))
+            tf.placeholder(dtype=tf.int32, shape=(None,), name=f"groundtruth_classes_{i}")
             for i in range(images.shape[0])
         ]
 
         # Create placeholders for groundtruth weights
         self._groundtruth_weights_list: List["tf.Tensor"]
         self._groundtruth_weights_list = [
-            tf.placeholder(dtype=tf.float32, shape=(None,), name="groundtruth_weights_{}".format(i))
+            tf.placeholder(dtype=tf.float32, shape=(None,), name=f"groundtruth_weights_{i}")
             for i in range(images.shape[0])
         ]
 
@@ -432,7 +432,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         # Run prediction with batch processing
         num_samples = x.shape[0]
         num_batch = int(np.ceil(num_samples / float(batch_size)))
-        results = list()
+        results = []
 
         for m in range(num_batch):
             # Batch indexes
@@ -445,7 +445,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
             batch_results = self._sess.run(self._detections, feed_dict=feed_dict)
 
             for i in range(end - begin):
-                d_sample = dict()
+                d_sample = {}
 
                 d_sample["boxes"] = batch_results["detection_boxes"][i]
                 d_sample["labels"] = batch_results["detection_classes"][i].astype(int)
@@ -545,7 +545,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
 
         return loss_values
 
-    def compute_losses(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
+    def compute_losses(self, x: np.ndarray, y: np.ndarray) -> Dict[str, np.ndarray]:  # type: ignore
         """
         Compute all loss components.
 
@@ -572,11 +572,11 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
 
         # Get the losses graph
         if not hasattr(self, "_losses_dict"):
-            self._losses_dict = dict()
+            self._losses_dict = {}
             for loss_name in self.attack_losses:
                 self._losses_dict[loss_name] = self._losses[loss_name]
 
-        losses = dict()
+        losses: Dict[str, np.ndarray] = {}
         for loss_name in self.attack_losses:
             loss_value = self._sess.run(self._losses_dict[loss_name], feed_dict=feed_dict)
             losses[loss_name] = loss_value

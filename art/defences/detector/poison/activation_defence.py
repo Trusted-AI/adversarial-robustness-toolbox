@@ -71,8 +71,8 @@ class ActivationDefence(PoisonFilteringDefence):
     def __init__(
         self,
         classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
-        x_train: Optional[np.ndarray],
-        y_train: Optional[np.ndarray],
+        x_train: np.ndarray,
+        y_train: np.ndarray,
         generator: Optional[DataGenerator] = None,
     ) -> None:
         """
@@ -93,14 +93,14 @@ class ActivationDefence(PoisonFilteringDefence):
         self.generator = generator
         self.activations_by_class: List[np.ndarray] = []
         self.clusters_by_class: List[np.ndarray] = []
-        self.assigned_clean_by_class: List[np.ndarray] = []
+        self.assigned_clean_by_class: np.ndarray
         self.is_clean_by_class: List[np.ndarray] = []
-        self.errors_by_class: List[np.ndarray] = []
+        self.errors_by_class: np.ndarray
         self.red_activations_by_class: List[np.ndarray] = []  # Activations reduced by class
         self.evaluator = GroundTruthEvaluator()
         self.is_clean_lst: List[int] = []
         self.confidence_level: List[float] = []
-        self.poisonous_clusters: List[List[np.ndarray]] = []
+        self.poisonous_clusters: np.ndarray
         self.clusterer = MiniBatchKMeans(n_clusters=self.nb_clusters)
         self._check_params()
 
@@ -223,7 +223,7 @@ class ActivationDefence(PoisonFilteringDefence):
 
         return report, self.is_clean_lst
 
-    def cluster_activations(self, **kwargs) -> Tuple[List[List[int]], List[List[int]]]:
+    def cluster_activations(self, **kwargs) -> Tuple[List[np.ndarray], List[np.ndarray]]:
         """
         Clusters activations and returns cluster_by_class and red_activations_by_class, where cluster_by_class[i][j] is
         the cluster to which the j-th data point in the ith class belongs and the correspondent activations reduced by
@@ -293,7 +293,7 @@ class ActivationDefence(PoisonFilteringDefence):
 
         :param kwargs: A dictionary of cluster-analysis-specific parameters.
         :return: (report, assigned_clean_by_class), where the report is a dict object and assigned_clean_by_class
-                 is an array of arrays that contains what data points where classified as clean.
+                 is a list of arrays that contains what data points where classified as clean.
         """
         self.set_params(**kwargs)
 
@@ -487,7 +487,7 @@ class ActivationDefence(PoisonFilteringDefence):
 
     def visualize_clusters(
         self, x_raw: np.ndarray, save: bool = True, folder: str = ".", **kwargs
-    ) -> List[List[List[np.ndarray]]]:
+    ) -> List[List[np.ndarray]]:
         """
         This function creates the sprite/mosaic visualization for clusters. When save=True,
         it also stores a sprite (mosaic) per cluster in art.config.ART_DATA_PATH.
@@ -505,8 +505,8 @@ class ActivationDefence(PoisonFilteringDefence):
             self.cluster_activations()
 
         x_raw_by_class = self._segment_by_class(x_raw, self.y_train)
-        x_raw_by_cluster: List[List[List[np.ndarray]]] = [
-            [[] for _ in range(self.nb_clusters)] for _ in range(self.classifier.nb_classes)
+        x_raw_by_cluster: List[List[np.ndarray]] = [  # type: ignore
+            [[] for _ in range(self.nb_clusters)] for _ in range(self.classifier.nb_classes)  # type: ignore
         ]
 
         # Get all data in x_raw in the right cluster
@@ -515,8 +515,8 @@ class ActivationDefence(PoisonFilteringDefence):
                 x_raw_by_cluster[n_class][assigned_cluster].append(x_raw_by_class[n_class][j])
 
         # Now create sprites:
-        sprites_by_class: List[List[List[np.ndarray]]] = [
-            [[] for _ in range(self.nb_clusters)] for _ in range(self.classifier.nb_classes)
+        sprites_by_class: List[List[np.ndarray]] = [  # type: ignore
+            [[] for _ in range(self.nb_clusters)] for _ in range(self.classifier.nb_classes)  # type: ignore
         ]
         for i, class_i in enumerate(x_raw_by_cluster):
             for j, images_cluster in enumerate(class_i):
@@ -585,7 +585,7 @@ class ActivationDefence(PoisonFilteringDefence):
             raise ValueError("No layer names identified.")
         protected_layer = nb_layers - 1
 
-        if self.generator is not None:
+        if self.generator is not None and x_train is not None:
             activations = self.classifier.get_activations(
                 x_train, layer=protected_layer, batch_size=self.generator.batch_size
             )
@@ -593,7 +593,10 @@ class ActivationDefence(PoisonFilteringDefence):
             activations = self.classifier.get_activations(self.x_train, layer=protected_layer, batch_size=128)
 
         # wrong way to get activations activations = self.classifier.predict(self.x_train)
-        nodes_last_layer = np.shape(activations)[1]
+        if isinstance(activations, np.ndarray):
+            nodes_last_layer = np.shape(activations)[1]
+        else:
+            raise ValueError("`activations is None or tensor.")
 
         if nodes_last_layer <= self.TOO_SMALL_ACTIVATIONS:
             logger.warning(

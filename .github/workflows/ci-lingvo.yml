@@ -36,9 +36,9 @@ jobs:
     name: Run ${{ matrix.name }} Tests
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3
       - name: Setup Python
-        uses: actions/setup-python@v2.3.1
+        uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python }}
       - name: Pre-install Lingvo ASR
@@ -47,7 +47,7 @@ jobs:
           sudo apt-get update
           sudo apt-get -y -q install ffmpeg libavcodec-extra
           python -m pip install --upgrade pip setuptools wheel
-          pip install -q -r <(sed '/^scipy/d;/^matplotlib/d;/^pandas/d;/^statsmodels/d;/^numba/d;/^jax/d;/^Pillow/d' requirements_test.txt)
+          pip install -q -r <(sed '/^scipy/d;/^matplotlib/d;/^pandas/d;/^statsmodels/d;/^numba/d;/^jax/d;/^h5py/d;/^Pillow/d;/^pytest-mock/d' requirements_test.txt)
           pip install scipy==1.5.4
           pip install matplotlib==3.3.4
           pip install pandas==1.1.5
@@ -59,6 +59,8 @@ jobs:
           pip install tensorflow-addons==0.9.1
           pip install model-pruning-google-research==0.0.3
           pip install jax[cpu]==0.2.17
+          pip install h5py==2.10.0
+          pip install pytest-mock
           pip list
       - name: Run ${{ matrix.name }} Tests
         run: ./run_tests.sh ${{ matrix.framework }}

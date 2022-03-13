@@ -150,12 +150,10 @@ class PreprocessorPyTorch(Preprocessor):
             self._device = torch.device("cpu")
         else:  # pragma: no cover
             cuda_idx = torch.cuda.current_device()
-            self._device = torch.device("cuda:{}".format(cuda_idx))
+            self._device = torch.device(f"cuda:{cuda_idx}")
 
     @abc.abstractmethod
-    def forward(
-        self, x: "torch.Tensor", y: Optional["torch.Tensor"] = None
-    ) -> Tuple["torch.Tensor", Optional["torch.Tensor"]]:
+    def forward(self, x: "torch.Tensor", y: Optional[Any] = None) -> Tuple["torch.Tensor", Optional[Any]]:
         """
         Perform data preprocessing in PyTorch and return preprocessed data as tuple.
 
@@ -195,17 +193,21 @@ class PreprocessorPyTorch(Preprocessor):
         """
         import torch  # lgtm [py/repeated-import]
 
-        x = torch.tensor(x, device=self.device)
+        x_tensor = torch.tensor(x, device=self.device)
         if y is not None:
-            y = torch.tensor(y, device=self.device)
+            y_tensor: Optional[torch.Tensor] = torch.tensor(y, device=self.device)
+        else:
+            y_tensor = None
 
         with torch.no_grad():
-            x, y = self.forward(x, y)
+            x_tensor, y_tensor = self.forward(x_tensor, y_tensor)
 
-        result = x.cpu().numpy()
-        if y is not None:
-            y = y.cpu().numpy()
-        return result, y
+        x_result = x_tensor.cpu().numpy()
+        if y_tensor is not None:
+            y_result: Optional[np.ndarray] = y_tensor.cpu().numpy()
+        else:
+            y_result = None
+        return x_result, y_result
 
     # Backward compatibility.
     def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
@@ -220,12 +222,12 @@ class PreprocessorPyTorch(Preprocessor):
             x_grad = x.grad.detach().cpu().numpy()
 
             if x_grad.shape != x.shape:
-                raise ValueError("The input shape is {} while the gradient shape is {}".format(x.shape, x_grad.shape))
+                raise ValueError(f"The input shape is {x.shape} while the gradient shape is {x_grad.shape}")
 
             return x_grad
 
         if x.dtype == object:
-            x_grad_list = list()
+            x_grad_list = []
             for i, x_i in enumerate(x):
                 x_grad_list.append(get_gradient(x=x_i, grad=grad[i]))
             x_grad = np.empty(x.shape[0], dtype=object)
@@ -281,16 +283,16 @@ class PreprocessorTensorFlowV2(Preprocessor):
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        x = tf.convert_to_tensor(x)
+        x_tensor = tf.convert_to_tensor(x)
         if y is not None:
             y = tf.convert_to_tensor(y)
 
-        x, y = self.forward(x, y)
+        x_tensor, y = self.forward(x_tensor, y)
 
-        result = x.numpy()
+        x_result = x_tensor.numpy()
         if y is not None:
             y = y.numpy()
-        return result, y
+        return x_result, y
 
     # Backward compatibility.
     def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
@@ -312,12 +314,12 @@ class PreprocessorTensorFlowV2(Preprocessor):
 
             x_grad = x_grad.numpy()
             if x_grad.shape != x.shape:
-                raise ValueError("The input shape is {} while the gradient shape is {}".format(x.shape, x_grad.shape))
+                raise ValueError(f"The input shape is {x.shape} while the gradient shape is {x_grad.shape}")
 
             return x_grad
 
         if x.dtype == object:
-            x_grad_list = list()
+            x_grad_list = []
             for i, x_i in enumerate(x):
                 x_grad_list.append(get_gradient(x=x_i, grad=grad[i]))
             x_grad = np.empty(x.shape[0], dtype=object)

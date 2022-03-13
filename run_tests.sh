@@ -61,6 +61,9 @@ then
     pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/estimators/classification/test_deeplearning_specific.py --framework=$framework --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed estimators/classification tests for framework $framework"; fi
 
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/estimators/certification/ --framework=$framework --durations=0
+    if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed estimators/certification tests for framework $framework"; fi
+
     pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/estimators/classification/test_blackbox_existing_predictions.py --framework=$framework --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed estimators/classification/test_blackbox_existing_predictions.py $framework"; fi
 

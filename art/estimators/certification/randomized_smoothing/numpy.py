@@ -124,7 +124,7 @@ class NumpyRandomizedSmoothing(  # lgtm [py/conflicting-attributes] lgtm [py/mis
         :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
         :return: Array of gradients of the same shape as `x`.
         """
-        return self.classifier.loss_gradient(x=x, y=y, training_mode=training_mode, **kwargs)
+        return self.classifier.loss_gradient(x=x, y=y, training_mode=training_mode, **kwargs)  # type: ignore
 
     def class_gradient(  # pylint: disable=W0221
         self, x: np.ndarray, label: Union[int, List[int]] = None, training_mode: bool = False, **kwargs
@@ -144,9 +144,11 @@ class NumpyRandomizedSmoothing(  # lgtm [py/conflicting-attributes] lgtm [py/mis
         return self.classifier.class_gradient(x=x, label=label, training_mode=training_mode, **kwargs)  # type: ignore
 
     def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
-        return self.classifier.compute_loss(x=x, y=y, **kwargs)
+        return self.classifier.compute_loss(x=x, y=y, **kwargs)  # type: ignore
 
     def get_activations(
         self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
     ) -> np.ndarray:
-        return self.classifier.get_activations(x=x, layer=layer, batch_size=batch_size, framework=framework)
+        return self.classifier.get_activations(  # type: ignore
+            x=x, layer=layer, batch_size=batch_size, framework=framework
+        )

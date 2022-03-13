@@ -113,15 +113,15 @@ class TestVisualization(unittest.TestCase):
 
     @unittest.expectedFailure
     def test_3D_plot_fail(self):
-        points = [[1, 1, 1], [2, 2, 2], [3, 3, 3]]
-        labels = [1, 1, 3]
+        points = np.array([[1, 1, 1], [2, 2, 2], [3, 3, 3]])
+        labels = np.array([1, 1, 3])
 
         # Shouldn't work because labels don't start in zero.
         plot_3d(points, labels, save=False)
 
     def test_3D_plot(self):
-        points = [[1, 1, 1], [2, 2, 2], [3, 3, 3]]
-        labels = [0, 1, 1]
+        points = np.array([[1, 1, 1], [2, 2, 2], [3, 3, 3]])
+        labels = np.array([0, 1, 1])
 
         plot_3d(points, labels, save=False)
 

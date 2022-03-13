@@ -119,7 +119,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
             self._device = torch.device("cpu")
         else:  # pragma: no cover
             cuda_idx = torch.cuda.current_device()
-            self._device = torch.device("cuda:{}".format(cuda_idx))
+            self._device = torch.device(f"cuda:{cuda_idx}")
 
         # Load config/model
         if espresso_config_filepath is None:
@@ -161,7 +161,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
             )
 
         # construct espresso args
-        with open(config_path) as file:
+        with open(config_path, encoding="utf8") as file:
             esp_args_dict = yaml.load(file, Loader=yaml.FullLoader)
             esp_args = Namespace(**esp_args_dict)
             if espresso_config_filepath is None:  # overwrite paths in downloaded config with the actual ones
@@ -291,7 +291,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
         loss.backward()
 
         # Get results
-        results_list = list()
+        results_list = []
         src_frames = batch_dict["net_input"]["src_tokens"].grad.cpu().numpy().copy()
         src_lengths = batch_dict["net_input"]["src_lengths"].cpu().numpy().copy()
         for i, _ in enumerate(x_preprocessed):
