@@ -336,7 +336,13 @@ class GradientMatchingAttack(Attack):
         self.grad_ws_norm = _weight_grad(classifier, x_trigger, torch.tensor(y_trigger, device=device)).detach()
         self.grad_ws_norm.requires_grad_(False)
         self.backdoor_model = BackdoorModel(
-            self, classifier, self.epsilon, num_poison, len_noise, self.clip_values[0], self.clip_values[1],
+            self,
+            classifier,
+            self.epsilon,
+            num_poison,
+            len_noise,
+            self.clip_values[0],
+            self.clip_values[1],
         ).to(device)
         self.optimizer = torch.optim.Adam(self.backdoor_model.noise_embedding.embedding_layer.parameters(), lr=1)
 
