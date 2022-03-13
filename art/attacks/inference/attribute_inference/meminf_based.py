@@ -30,6 +30,7 @@ from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.attack import AttributeInferenceAttack, MembershipInferenceAttack
 from art.estimators.regression import RegressorMixin
 from art.exceptions import EstimatorError
+from art.utils import is_single_index_feature
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE, REGRESSOR_TYPE
@@ -98,13 +99,16 @@ class AttributeInferenceMembership(AttributeInferenceAttack):
                 raise ValueError("Number of rows in x and y do not match")
 
         # single index
-        if isinstance(self.attack_feature, int):
+        if is_single_index_feature(self.attack_feature):
             first = True
             for value in values:
                 v_full = np.full((x.shape[0], 1), value).astype(x.dtype)
-                x_value = np.concatenate((x[:, : self.attack_feature], v_full), axis=1)
-                x_value = np.concatenate((x_value, x[:, self.attack_feature :]), axis=1)
-
+                if isinstance(self.attack_feature, int):
+                    x_value = np.concatenate((x[:, : self.attack_feature], v_full), axis=1)
+                    x_value = np.concatenate((x_value, x[:, self.attack_feature :]), axis=1)
+                else:
+                    x_value = np.concatenate((x[:, : self.attack_feature.start], v_full), axis=1)
+                    x_value = np.concatenate((x_value, x[:, self.attack_feature.start:]), axis=1)
                 predicted = self.membership_attack.infer(x_value, y, probabilities=True)
                 if first:
                     probabilities = predicted

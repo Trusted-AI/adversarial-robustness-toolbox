@@ -675,6 +675,23 @@ def get_feature_values(x: np.ndarray, single_index_feature: bool) -> list:
     return values
 
 
+def is_single_index_feature(feature: Union[int, slice]):
+    if isinstance(feature, int):
+        return True
+
+    start = feature.start
+    stop = feature.stop
+    step = feature.step
+    if start is None:
+        start = 0
+    if step is None:
+        step = 1
+    if feature.stop is not None and ((stop - start) // step) == 1:
+        return True
+
+    return False
+
+
 def compute_success_array(
     classifier: "CLASSIFIER_TYPE",
     x_clean: np.ndarray,
