@@ -332,8 +332,11 @@ class GradientMatchingAttack(Attack):
                 B_score = 1 - self.cos(grad_ws_norm, d_w2_norm)  # pylint: disable=C0103
                 return B_score, poisoned_samples
 
-        x_trigger = torch.tensor(x_trigger, device=device, dtype=torch.float32)
-        self.grad_ws_norm = _weight_grad(classifier, x_trigger, torch.tensor(y_trigger, device=device)).detach()
+        self.grad_ws_norm = _weight_grad(
+            classifier,
+            torch.tensor(x_trigger, device=device, dtype=torch.float32),
+            torch.tensor(y_trigger, device=device),
+        ).detach()
         self.grad_ws_norm.requires_grad_(False)
         self.backdoor_model = BackdoorModel(
             self,
@@ -437,7 +440,7 @@ class GradientMatchingAttack(Attack):
         x_train[best_indices_poison] = best_x_poisoned
         return x_train, y_train  # y_train has not been modified.
 
-    def __poison__pytorch(self, x_poison: np.ndarray, y_poison: np.ndarray) -> np.ndarray:
+    def __poison__pytorch(self, x_poison: np.ndarray, y_poison: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
         Optimize the poison by matching the gradient within the perturbation budget.
 
@@ -507,7 +510,7 @@ class GradientMatchingAttack(Attack):
             count += 1
         return np.concatenate(all_poisoned_samples, axis=0), B_sum / count
 
-    def __poison__tensorflow(self, x_poison: np.ndarray, y_poison: np.ndarray) -> np.ndarray:
+    def __poison__tensorflow(self, x_poison: np.ndarray, y_poison: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
         Optimize the poison by matching the gradient within the perturbation budget.
 
