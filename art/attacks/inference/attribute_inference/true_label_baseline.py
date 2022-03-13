@@ -30,7 +30,8 @@ from sklearn.preprocessing import minmax_scale
 
 from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.attack import AttributeInferenceAttack
-from art.utils import check_and_transform_label_format, float_to_categorical, floats_to_one_hot, get_feature_values
+from art.utils import (check_and_transform_label_format, float_to_categorical, floats_to_one_hot, get_feature_values,
+                       is_single_index_feature)
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
@@ -74,11 +75,6 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
         """
         super().__init__(estimator=None, attack_feature=attack_feature)
 
-        if isinstance(self.attack_feature, int):
-            self.single_index_feature = True
-        else:
-            self.single_index_feature = False
-
         self._values: Optional[list] = None
 
         if attack_model:
@@ -119,6 +115,7 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
         self.prediction_normal_factor = prediction_normal_factor
         self.scale_range = scale_range
         self._check_params()
+        self.single_index_feature = is_single_index_feature(self.attack_feature)
 
     def fit(self, x: np.ndarray, y: np.ndarray) -> None:
         """

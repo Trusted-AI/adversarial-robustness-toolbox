@@ -32,7 +32,8 @@ from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.attack import AttributeInferenceAttack
 from art.estimators.regression import RegressorMixin
-from art.utils import check_and_transform_label_format, float_to_categorical, floats_to_one_hot, get_feature_values
+from art.utils import (check_and_transform_label_format, float_to_categorical, floats_to_one_hot, get_feature_values,
+                       is_single_index_feature)
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE, REGRESSOR_TYPE
@@ -83,10 +84,6 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
                                          `estimator` is a regressor and if `scale_range` is not supplied.
         """
         super().__init__(estimator=estimator, attack_feature=attack_feature)
-        if isinstance(self.attack_feature, int):
-            self.single_index_feature = True
-        else:
-            self.single_index_feature = False
 
         self._values: Optional[list] = None
         self._attack_model_type = attack_model_type
@@ -131,6 +128,7 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         self.scale_range = scale_range
 
         self._check_params()
+        self.single_index_feature = is_single_index_feature(self.attack_feature)
 
     def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> None:
         """
