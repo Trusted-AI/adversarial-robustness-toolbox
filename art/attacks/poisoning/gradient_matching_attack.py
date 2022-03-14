@@ -153,7 +153,8 @@ class GradientMatchingAttack(Attack):
         :param x_train: A list of training data to poison a portion of.
         :param y_train: A list of labels for x_train.
         """
-        import tensorflow.keras.backend as K
+        # pylint: disable=no-name-in-module
+        from tensorflow.keras import backend as K
         import tensorflow as tf
         from tensorflow.keras.layers import Input, Embedding, Add, Lambda
         from art.estimators.classification.tensorflow import TensorFlowV2Classifier
