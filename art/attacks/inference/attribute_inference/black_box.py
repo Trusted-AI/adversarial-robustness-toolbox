@@ -37,7 +37,7 @@ from art.utils import (
     float_to_categorical,
     floats_to_one_hot,
     get_feature_values,
-    is_single_index_feature,
+    get_feature_index,
 )
 
 if TYPE_CHECKING:
@@ -133,7 +133,7 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         self.scale_range = scale_range
 
         self._check_params()
-        self.single_index_feature = is_single_index_feature(self.attack_feature)
+        self.attack_feature = get_feature_index(self.attack_feature)
 
     def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> None:
         """
@@ -147,7 +147,7 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         if self.estimator.input_shape is not None:
             if self.estimator.input_shape[0] != x.shape[1]:
                 raise ValueError("Shape of x does not match input_shape of model")
-        if self.single_index_feature and isinstance(self.attack_feature, int) and self.attack_feature >= x.shape[1]:
+        if isinstance(self.attack_feature, int) and self.attack_feature >= x.shape[1]:
             raise ValueError("`attack_feature` must be a valid index to a feature in x")
 
         # get model's predictions for x
@@ -165,8 +165,8 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
 
         # get vector of attacked feature
         y_attack = x[:, self.attack_feature]
-        self._values = get_feature_values(y_attack, self.single_index_feature)
-        if self.single_index_feature:
+        self._values = get_feature_values(y_attack, isinstance(self.attack_feature, int))
+        if isinstance(self.attack_feature, int):
             y_one_hot = float_to_categorical(y_attack)
         else:
             y_one_hot = floats_to_one_hot(y_attack)
@@ -213,7 +213,7 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         if pred.shape[0] != x.shape[0]:
             raise ValueError("Number of rows in x and y do not match")
         if self.estimator.input_shape is not None:
-            if self.single_index_feature and self.estimator.input_shape[0] != x.shape[1] + 1:
+            if isinstance(self.attack_feature, int) and self.estimator.input_shape[0] != x.shape[1] + 1:
                 raise ValueError("Number of features in x + 1 does not match input_shape of model")
 
         if RegressorMixin in type(self.estimator).__mro__:
@@ -237,7 +237,7 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         predictions = self.attack_model.predict(x_test).astype(np.float32)
 
         if self._values is not None:
-            if self.single_index_feature:
+            if isinstance(self.attack_feature, int):
                 predictions = np.array([self._values[np.argmax(arr)] for arr in predictions])
             else:
                 i = 0

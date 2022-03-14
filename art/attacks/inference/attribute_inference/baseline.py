@@ -34,7 +34,7 @@ from art.utils import (
     float_to_categorical,
     floats_to_one_hot,
     get_feature_values,
-    is_single_index_feature,
+    get_feature_index,
 )
 
 if TYPE_CHECKING:
@@ -109,7 +109,7 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
             raise ValueError("Illegal value for parameter `attack_model_type`.")
 
         self._check_params()
-        self.single_index_feature = is_single_index_feature(self.attack_feature)
+        self.attack_feature = get_feature_index(self.attack_feature)
 
     def fit(self, x: np.ndarray) -> None:
         """
@@ -119,13 +119,13 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
         """
 
         # Checks:
-        if self.single_index_feature and isinstance(self.attack_feature, int) and self.attack_feature >= x.shape[1]:
+        if isinstance(self.attack_feature, int) and self.attack_feature >= x.shape[1]:
             raise ValueError("attack_feature must be a valid index to a feature in x")
 
         # get vector of attacked feature
         y = x[:, self.attack_feature]
-        self._values = get_feature_values(y, self.single_index_feature)
-        if self.single_index_feature:
+        self._values = get_feature_values(y, isinstance(self.attack_feature, int))
+        if isinstance(self.attack_feature, int):
             y_one_hot = float_to_categorical(y)
         else:
             y_one_hot = floats_to_one_hot(y)
@@ -163,7 +163,7 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
         predictions = self.attack_model.predict(x_test).astype(np.float32)
 
         if self._values is not None:
-            if self.single_index_feature:
+            if isinstance(self.attack_feature, int):
                 predictions = np.array([self._values[np.argmax(arr)] for arr in predictions])
             else:
                 i = 0

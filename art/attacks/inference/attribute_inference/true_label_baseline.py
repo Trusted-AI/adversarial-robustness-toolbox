@@ -35,7 +35,7 @@ from art.utils import (
     float_to_categorical,
     floats_to_one_hot,
     get_feature_values,
-    is_single_index_feature,
+    get_feature_index,
 )
 
 if TYPE_CHECKING:
@@ -120,7 +120,7 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
         self.prediction_normal_factor = prediction_normal_factor
         self.scale_range = scale_range
         self._check_params()
-        self.single_index_feature = is_single_index_feature(self.attack_feature)
+        self.attack_feature = get_feature_index(self.attack_feature)
 
     def fit(self, x: np.ndarray, y: np.ndarray) -> None:
         """
@@ -131,13 +131,13 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
         """
 
         # Checks:
-        if self.single_index_feature and isinstance(self.attack_feature, int) and self.attack_feature >= x.shape[1]:
+        if isinstance(self.attack_feature, int) and self.attack_feature >= x.shape[1]:
             raise ValueError("attack_feature must be a valid index to a feature in x")
 
         # get vector of attacked feature
         attacked_feature = x[:, self.attack_feature]
-        self._values = get_feature_values(attacked_feature, self.single_index_feature)
-        if self.single_index_feature:
+        self._values = get_feature_values(attacked_feature, isinstance(self.attack_feature, int))
+        if isinstance(self.attack_feature, int):
             y_one_hot = float_to_categorical(attacked_feature)
         else:
             y_one_hot = floats_to_one_hot(attacked_feature)
@@ -189,7 +189,7 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
         predictions = self.attack_model.predict(x_test).astype(np.float32)
 
         if self._values is not None:
-            if self.single_index_feature:
+            if isinstance(self.attack_feature, int):
                 predictions = np.array([self._values[np.argmax(arr)] for arr in predictions])
             else:
                 i = 0
