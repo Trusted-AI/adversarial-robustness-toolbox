@@ -23,15 +23,12 @@ import unittest
 import numpy as np
 
 from art.attacks.evasion.wasserstein import Wasserstein
-from art.estimators.estimator import BaseEstimator
-from art.estimators.estimator import LossGradientsMixin
-from art.estimators.estimator import NeuralNetworkMixin
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import get_labels_np_array, random_targets
 
-from tests.utils import TestBase
-from tests.utils import master_seed
-from tests.utils import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
+from tests.utils import TestBase, master_seed
+from tests.utils import get_image_classifier_tf, get_image_classifier_pt
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 
 logger = logging.getLogger(__name__)
@@ -49,17 +46,17 @@ class TestWasserstein(TestBase):
         cls.x_test_mnist = cls.x_test_mnist[0 : cls.n_test]
         cls.y_test_mnist = cls.y_test_mnist[0 : cls.n_test]
 
-    def test_keras_mnist(self):
-        classifier = get_image_classifier_kr()
-
-        scores = classifier._model.evaluate(self.x_train_mnist, self.y_train_mnist)
-        logger.info("[Keras, MNIST] Accuracy on training set: %.2f%%", scores[1] * 100)
-        scores = classifier._model.evaluate(self.x_test_mnist, self.y_test_mnist)
-        logger.info("[Keras, MNIST] Accuracy on test set: %.2f%%", scores[1] * 100)
-
-        self._test_backend_mnist(
-            classifier, self.x_train_mnist, self.y_train_mnist, self.x_test_mnist, self.y_test_mnist
-        )
+    # def test_keras_mnist(self):
+    #     classifier = get_image_classifier_kr()
+    #
+    #     scores = classifier._model.evaluate(self.x_train_mnist, self.y_train_mnist)
+    #     logger.info("[Keras, MNIST] Accuracy on training set: %.2f%%", scores[1] * 100)
+    #     scores = classifier._model.evaluate(self.x_test_mnist, self.y_test_mnist)
+    #     logger.info("[Keras, MNIST] Accuracy on test set: %.2f%%", scores[1] * 100)
+    #
+    #     self._test_backend_mnist(
+    #         classifier, self.x_train_mnist, self.y_train_mnist, self.x_test_mnist, self.y_test_mnist
+    #     )
 
     def test_tensorflow_mnist(self):
         classifier, sess = get_image_classifier_tf()
@@ -116,6 +113,7 @@ class TestWasserstein(TestBase):
             eps_step=0.1,
             kernel_size=5,
             batch_size=batch_size,
+            verbose=False,
         )
 
         x_train_adv = attack.generate(x_train)
@@ -154,6 +152,7 @@ class TestWasserstein(TestBase):
             eps_step=0.1,
             kernel_size=5,
             batch_size=batch_size,
+            verbose=False,
         )
 
         x_train_adv = attack.generate(x_train)
@@ -189,6 +188,7 @@ class TestWasserstein(TestBase):
             eps_step=0.1,
             kernel_size=5,
             batch_size=batch_size,
+            verbose=False,
         )
 
         x_train_adv = attack.generate(x_train)
@@ -224,6 +224,7 @@ class TestWasserstein(TestBase):
             eps_step=0.1,
             kernel_size=5,
             batch_size=batch_size,
+            verbose=False,
         )
 
         x_train_adv = attack.generate(x_train)
@@ -259,6 +260,7 @@ class TestWasserstein(TestBase):
             eps_step=0.05,
             kernel_size=5,
             batch_size=batch_size,
+            verbose=False,
         )
 
         x_train_adv = attack.generate(x_train)
@@ -294,6 +296,7 @@ class TestWasserstein(TestBase):
             eps_step=0.1,
             kernel_size=5,
             batch_size=batch_size,
+            verbose=False,
         )
 
         x_train_adv = attack.generate(x_train)
@@ -329,6 +332,7 @@ class TestWasserstein(TestBase):
             eps_step=0.1,
             kernel_size=5,
             batch_size=batch_size,
+            verbose=False,
         )
 
         x_train_adv = attack.generate(x_train)
@@ -365,6 +369,7 @@ class TestWasserstein(TestBase):
             eps_step=0.1,
             kernel_size=5,
             batch_size=batch_size,
+            verbose=False,
         )
 
         train_y_rand = random_targets(y_train, nb_classes=10)
@@ -401,6 +406,7 @@ class TestWasserstein(TestBase):
             eps_step=0.1,
             kernel_size=3,
             batch_size=batch_size,
+            verbose=False,
         )
 
         x_train_adv = attack.generate(x_train)
@@ -419,10 +425,126 @@ class TestWasserstein(TestBase):
         )
         self.assertTrue(test_success_rate >= base_success_rate)
 
-    def test_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(
-            Wasserstein, (BaseEstimator, LossGradientsMixin, NeuralNetworkMixin, ClassifierMixin)
+    def test_unsquared_images(self):
+        from art.estimators.estimator import (
+            BaseEstimator,
+            LossGradientsMixin,
+            NeuralNetworkMixin,
         )
+
+        from art.estimators.classification.classifier import (
+            ClassGradientsMixin,
+            ClassifierMixin,
+        )
+
+        class DummyClassifier(
+            ClassGradientsMixin, ClassifierMixin, NeuralNetworkMixin, LossGradientsMixin, BaseEstimator
+        ):
+            estimator_params = (
+                BaseEstimator.estimator_params + NeuralNetworkMixin.estimator_params + ClassifierMixin.estimator_params
+            )
+
+            def __init__(self):
+                super(DummyClassifier, self).__init__(model=None, clip_values=None, channels_first=True)
+                self.nb_classes = 10
+
+            def class_gradient(self):
+                return None
+
+            def fit(self):
+                pass
+
+            def loss_gradient(self, x, y):
+                return np.random.normal(size=(1, 3, 33, 32))
+
+            def predict(self, x, batch_size=1):
+                return np.array([[0, 1, 0, 0, 0, 0, 0, 0, 0, 0]])
+
+            def get_activations(self):
+                return None
+
+            def save(self):
+                pass
+
+            def compute_loss(self, x, y, **kwargs):
+                pass
+
+            def input_shape(self):
+                pass
+
+        classifier = DummyClassifier()
+        attack = Wasserstein(
+            classifier,
+            regularization=1,
+            kernel_size=3,
+            max_iter=1,
+            conjugate_sinkhorn_max_iter=10,
+            projected_sinkhorn_max_iter=10,
+        )
+
+        x = np.random.normal(size=(1, 3, 33, 32))
+        x_adv = attack.generate(x)
+
+        self.assertTrue(x_adv.shape == x.shape)
+
+    def test_check_params(self):
+
+        ptc = get_image_classifier_pt(from_logits=True)
+
+        with self.assertRaises(ValueError):
+            _ = Wasserstein(ptc, targeted="true")
+
+        with self.assertRaises(ValueError):
+            _ = Wasserstein(ptc, regularization=-1)
+
+        with self.assertRaises(TypeError):
+            _ = Wasserstein(ptc, p=1.0)
+        with self.assertRaises(ValueError):
+            _ = Wasserstein(ptc, p=-1)
+
+        with self.assertRaises(TypeError):
+            _ = Wasserstein(ptc, kernel_size=1.0)
+        with self.assertRaises(ValueError):
+            _ = Wasserstein(ptc, kernel_size=2)
+
+        with self.assertRaises(ValueError):
+            _ = Wasserstein(ptc, norm=0)
+
+        with self.assertRaises(ValueError):
+            _ = Wasserstein(ptc, ball=0)
+
+        with self.assertRaises(ValueError):
+            _ = Wasserstein(ptc, eps=-1)
+
+        with self.assertRaises(ValueError):
+            _ = Wasserstein(ptc, eps_step=-1)
+
+        with self.assertRaises(ValueError):
+            _ = Wasserstein(ptc, norm="inf", eps=1, eps_step=2)
+
+        with self.assertRaises(ValueError):
+            _ = Wasserstein(ptc, eps_iter=-1)
+
+        with self.assertRaises(ValueError):
+            _ = Wasserstein(ptc, eps_factor=-1)
+
+        with self.assertRaises(ValueError):
+            _ = Wasserstein(ptc, max_iter=-1)
+
+        with self.assertRaises(ValueError):
+            _ = Wasserstein(ptc, conjugate_sinkhorn_max_iter=-1)
+
+        with self.assertRaises(ValueError):
+            _ = Wasserstein(ptc, projected_sinkhorn_max_iter=-1)
+
+        with self.assertRaises(ValueError):
+            _ = Wasserstein(ptc, batch_size=-1)
+
+        with self.assertRaises(ValueError):
+            _ = Wasserstein(ptc, verbose="true")
+
+    def test_classifier_type_check_fail(self):
+        backend_test_classifier_type_check_fail(Wasserstein, (BaseEstimator, LossGradientsMixin, ClassifierMixin))
 
 
 if __name__ == "__main__":

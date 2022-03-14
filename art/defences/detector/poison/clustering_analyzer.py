@@ -34,7 +34,7 @@ class ClusteringAnalyzer:
     """
 
     @staticmethod
-    def assign_class(clusters: np.ndarray, clean_clusters: List[int], poison_clusters: List[int]) -> np.ndarray:
+    def assign_class(clusters: np.ndarray, clean_clusters: np.ndarray, poison_clusters: np.ndarray) -> np.ndarray:
         """
         Determines whether each data point in the class is in a clean or poisonous cluster
 
@@ -48,9 +48,7 @@ class ClusteringAnalyzer:
         assigned_clean[np.isin(clusters, poison_clusters)] = 0
         return assigned_clean
 
-    def analyze_by_size(
-        self, separated_clusters: List[np.ndarray]
-    ) -> Tuple[np.ndarray, List[List[int]], Dict[str, int]]:
+    def analyze_by_size(self, separated_clusters: List[np.ndarray]) -> Tuple[np.ndarray, np.ndarray, Dict[str, int]]:
         """
         Designates as poisonous the cluster with less number of items on it.
 
@@ -70,15 +68,15 @@ class ClusteringAnalyzer:
         all_assigned_clean = []
         nb_classes = len(separated_clusters)
         nb_clusters = len(np.unique(separated_clusters[0]))
-        summary_poison_clusters: List[List[int]] = [[0 for _ in range(nb_clusters)] for _ in range(nb_classes)]
+        summary_poison_clusters: np.ndarray = np.zeros((nb_classes, nb_clusters))
 
         for i, clusters in enumerate(separated_clusters):
 
             # assume that smallest cluster is poisonous and all others are clean
             sizes = np.bincount(clusters)
             total_dp_in_class = np.sum(sizes)
-            poison_clusters: List[int] = [int(np.argmin(sizes))]
-            clean_clusters = list(set(clusters) - set(poison_clusters))
+            poison_clusters = np.array([int(np.argmin(sizes))])
+            clean_clusters = np.array(list(set(clusters) - set(poison_clusters)))
 
             for p_id in poison_clusters:
                 summary_poison_clusters[i][p_id] = 1
@@ -89,7 +87,7 @@ class ClusteringAnalyzer:
             all_assigned_clean.append(assigned_clean)
 
             # Generate report for this class:
-            report_class = dict()
+            report_class = {}
             for cluster_id in range(nb_clusters):
                 ptc = sizes[cluster_id] / total_dp_in_class
                 susp = cluster_id in poison_clusters
@@ -104,8 +102,10 @@ class ClusteringAnalyzer:
         return np.asarray(all_assigned_clean), summary_poison_clusters, report
 
     def analyze_by_distance(
-        self, separated_clusters: List[np.ndarray], separated_activations: List[np.ndarray],
-    ) -> Tuple[np.ndarray, List[List[int]], Dict[str, int]]:
+        self,
+        separated_clusters: List[np.ndarray],
+        separated_activations: List[np.ndarray],
+    ) -> Tuple[np.ndarray, np.ndarray, Dict[str, int]]:
         """
         Assigns a cluster as poisonous if its median activation is closer to the median activation for another class
         than it is to the median activation of its own class. Currently, this function assumes there are only two
@@ -125,7 +125,7 @@ class ClusteringAnalyzer:
 
         nb_classes = len(separated_clusters)
         nb_clusters = len(np.unique(separated_clusters[0]))
-        summary_poison_clusters: List[List[int]] = [[0 for _ in range(nb_clusters)] for _ in range(nb_classes)]
+        summary_poison_clusters = np.zeros((nb_classes, nb_clusters))
 
         # assign centers
         for _, activations in enumerate(separated_activations):
@@ -143,7 +143,7 @@ class ClusteringAnalyzer:
             cluster0_is_poison = False
             cluster1_is_poison = False
 
-            dict_k = dict()
+            dict_k = {}
             dict_cluster_0 = dict(cluster0_distance_to_its_class=str(cluster0_distance))
             dict_cluster_1 = dict(cluster1_distance_to_its_class=str(cluster1_distance))
             for k, center in enumerate(cluster_centers):
@@ -183,16 +183,19 @@ class ClusteringAnalyzer:
             else:
                 summary_poison_clusters[i][1] = 0
 
-            clean_clusters = list(set(clusters) - set(poison_clusters))
-            assigned_clean = self.assign_class(clusters, clean_clusters, poison_clusters)
+            clean_clusters = np.array(list(set(clusters) - set(poison_clusters)))
+            assigned_clean = self.assign_class(clusters, clean_clusters, np.array(poison_clusters))
             all_assigned_clean.append(assigned_clean)
 
-        all_assigned_clean = np.asarray(all_assigned_clean)
-        return all_assigned_clean, summary_poison_clusters, report
+        all_assigned_clean_array = np.asarray(all_assigned_clean)
+        return all_assigned_clean_array, summary_poison_clusters, report
 
     def analyze_by_relative_size(
-        self, separated_clusters: List[np.ndarray], size_threshold: float = 0.35, r_size: int = 2,
-    ) -> Tuple[np.ndarray, List[List[int]], Dict[str, int]]:
+        self,
+        separated_clusters: List[np.ndarray],
+        size_threshold: float = 0.35,
+        r_size: int = 2,
+    ) -> Tuple[np.ndarray, np.ndarray, Dict[str, int]]:
         """
         Assigns a cluster as poisonous if the smaller one contains less than threshold of the data.
         This method assumes only 2 clusters
@@ -216,7 +219,7 @@ class ClusteringAnalyzer:
         all_assigned_clean = []
         nb_classes = len(separated_clusters)
         nb_clusters = len(np.unique(separated_clusters[0]))
-        summary_poison_clusters: List[List[int]] = [[0 for _ in range(nb_clusters)] for _ in range(nb_classes)]
+        summary_poison_clusters = np.zeros((nb_classes, nb_clusters))
 
         for i, clusters in enumerate(separated_clusters):
             sizes = np.bincount(clusters)
@@ -237,7 +240,7 @@ class ClusteringAnalyzer:
             all_assigned_clean.append(assigned_clean)
 
             # Generate report for this class:
-            report_class = dict()
+            report_class = {}
             for cluster_id in range(nb_clusters):
                 ptc = sizes[cluster_id] / total_dp_in_class
                 susp = cluster_id in poison_clusters
@@ -259,13 +262,13 @@ class ClusteringAnalyzer:
         silhouette_threshold: float = 0.1,
         r_size: int = 2,
         r_silhouette: int = 4,
-    ) -> Tuple[np.ndarray, List[List[int]], Dict[str, int]]:
+    ) -> Tuple[np.ndarray, np.ndarray, Dict[str, int]]:
         """
         Analyzes clusters to determine level of suspiciousness of poison based on the cluster's relative size
         and silhouette score.
         Computes a silhouette score for each class to determine how cohesive resulting clusters are.
         A low silhouette score indicates that the clustering does not fit the data well, and the class can be considered
-        to be unpoisoned. Conversely, a high silhouette score indicates that the clusters reflect true splits in the
+        to be un-poisoned. Conversely, a high silhouette score indicates that the clusters reflect true splits in the
         data.
         The method concludes that a cluster is poison based on the silhouette score and the cluster relative size.
         If the relative size is too small, below a size_threshold and at the same time
@@ -300,7 +303,7 @@ class ClusteringAnalyzer:
         all_assigned_clean = []
         nb_classes = len(separated_clusters)
         nb_clusters = len(np.unique(separated_clusters[0]))
-        summary_poison_clusters: List[List[int]] = [[0 for _ in range(nb_clusters)] for _ in range(nb_classes)]
+        summary_poison_clusters = np.zeros((nb_classes, nb_clusters))
 
         for i, (clusters, activations) in enumerate(zip(separated_clusters, reduced_activations_by_class)):
             bins = np.bincount(clusters)
@@ -313,7 +316,9 @@ class ClusteringAnalyzer:
             # Generate report for class
             silhouette_avg = round(silhouette_score(activations, clusters), r_silhouette)
             dict_i: Dict[str, Any] = dict(
-                sizes_clusters=str(bins), ptc_cluster=str(percentages), avg_silhouette_score=str(silhouette_avg),
+                sizes_clusters=str(bins),
+                ptc_cluster=str(percentages),
+                avg_silhouette_score=str(silhouette_avg),
             )
 
             if np.shape(poison_clusters)[1] != 0:

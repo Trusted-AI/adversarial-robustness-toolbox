@@ -24,7 +24,7 @@ import logging
 from typing import Optional, Tuple
 
 import numpy as np
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from art.attacks.attack import PoisoningAttackWhiteBox
 from art.estimators.classification.scikitlearn import ScikitlearnSVC
@@ -49,6 +49,7 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         "y_train",
         "x_val",
         "y_val",
+        "verbose",
     ]
     _estimator_requirements = (ScikitlearnSVC,)
 
@@ -62,6 +63,7 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         x_val: Optional[np.ndarray] = None,
         y_val: Optional[np.ndarray] = None,
         max_iter: int = 100,
+        verbose: bool = True,
     ) -> None:
         """
         Initialize an SVM poisoning attack.
@@ -75,19 +77,21 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         :param y_val: The validation labels used to test the attack.
         :param max_iter: The maximum number of iterations for the attack.
         :raises `NotImplementedError`, `TypeError`: If the argument classifier has the wrong type.
+        :param verbose: Show progress bars.
         """
         # pylint: disable=W0212
         from sklearn.svm import LinearSVC, SVC
 
-        super(PoisoningAttackSVM, self).__init__(classifier)
+        super().__init__(classifier=classifier)
 
         if isinstance(self.estimator.model, LinearSVC):
             self._estimator = ScikitlearnSVC(
-                model=SVC(C=self.estimator.model.C, kernel="linear"), clip_values=self.estimator.clip_values,
+                model=SVC(C=self.estimator.model.C, kernel="linear"),
+                clip_values=self.estimator.clip_values,
             )
             self.estimator.fit(x_train, y_train)
         elif not isinstance(self.estimator.model, SVC):
-            raise NotImplementedError("Model type '{}' not yet supported".format(type(self.estimator.model)))
+            raise NotImplementedError(f"Model type '{type(self.estimator.model)}' not yet supported")
 
         self.step = step
         self.eps = eps
@@ -96,6 +100,7 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         self.x_val = x_val
         self.y_val = y_val
         self.max_iter = max_iter
+        self.verbose = verbose
         self._check_params()
 
     def poison(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
@@ -106,13 +111,13 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         :param y: The target labels for the attack.
         :return: A tuple holding the `(poisoning_examples, poisoning_labels)`.
         """
-        if y is None:
+        if y is None:  # pragma: no cover
             raise ValueError("Target labels `y` need to be provided for a targeted attack.")
-        else:
-            y_attack = np.copy(y)
+
+        y_attack = np.copy(y)
 
         num_poison = len(x)
-        if num_poison == 0:
+        if num_poison == 0:  # pragma: no cover
             raise ValueError("Must input at least one poison point")
 
         num_features = len(x[0])
@@ -120,7 +125,7 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         train_labels = np.copy(self.y_train)
         all_poison = []
 
-        for attack_point, attack_label in tqdm(zip(x, y_attack), desc="SVM poisoning"):
+        for attack_point, attack_label in tqdm(zip(x, y_attack), desc="SVM poisoning", disable=not self.verbose):
             poison = self.generate_attack_point(attack_point, attack_label)
             all_poison.append(poison)
             train_data = np.vstack([train_data, poison])
@@ -136,14 +141,6 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
 
         return x_adv, y_attack
 
-    def _check_params(self) -> None:
-        if self.step is not None and self.step <= 0:
-            raise ValueError("Step size must be strictly positive.")
-        if self.eps is not None and self.eps <= 0:
-            raise ValueError("Value of eps must be strictly positive.")
-        if self.max_iter <= 1:
-            raise ValueError("Value of max_iter must be strictly positive.")
-
     def generate_attack_point(self, x_attack: np.ndarray, y_attack: np.ndarray) -> np.ndarray:
         """
         Generate a single poison attack the model, using `x_val` and `y_val` as validation points.
@@ -156,6 +153,9 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         """
         # pylint: disable=W0212
         from sklearn.preprocessing import normalize
+
+        if self.y_train is None or self.x_train is None:
+            raise ValueError("`x_train` and `y_train` cannot be None for generating an attack point.")
 
         poisoned_model = self.estimator.model
         y_t = np.argmax(self.y_train, axis=1)
@@ -210,7 +210,7 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         :return: The attack gradient.
         """
         # pylint: disable=W0212
-        if self.x_val is None or self.y_val is None:
+        if self.x_val is None or self.y_val is None:  # pragma: no cover
             raise ValueError("The values of `x_val` and `y_val` are required for computing the gradients.")
 
         art_model = self.estimator
@@ -221,7 +221,7 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         support_labels = np.expand_dims(self.predict_sign(support_vectors), axis=1)
         c_idx = np.isin(support_vectors, attack_point).all(axis=1)
 
-        if not c_idx.any():
+        if not c_idx.any():  # pragma: no cover
             return grad
 
         c_idx = np.where(c_idx > 0)[0][0]
@@ -239,9 +239,24 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
             q_ks = art_model.q_submatrix(np.array([x_k]), support_vectors)
             m_k = (1.0 / zeta) * np.matmul(q_ks, zeta * qss_inv - np.matmul(nu_k, nu_k.T)) + np.matmul(y_k, nu_k.T)
             d_q_sc = np.fromfunction(
-                lambda i: art_model._get_kernel_gradient_sv(i, attack_point), (len(support_vectors),), dtype=int,
+                lambda i: art_model._get_kernel_gradient_sv(i, attack_point),
+                (len(support_vectors),),
+                dtype=int,
             )
             d_q_kc = art_model._kernel_grad(x_k, attack_point)
             grad += (np.matmul(m_k, d_q_sc) + d_q_kc) * alpha_c
 
         return grad
+
+    def _check_params(self) -> None:
+        if self.step is not None and self.step <= 0:
+            raise ValueError("Step size must be strictly positive.")
+
+        if self.eps is not None and self.eps <= 0:
+            raise ValueError("Value of eps must be strictly positive.")
+
+        if self.max_iter <= 1:
+            raise ValueError("Value of max_iter must be strictly positive.")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")

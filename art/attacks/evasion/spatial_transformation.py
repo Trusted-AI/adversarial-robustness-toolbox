@@ -29,13 +29,13 @@ from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 from scipy.ndimage import rotate, shift
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 
 if TYPE_CHECKING:
-    from art.estimators.classification.classifier import Classifier
+    from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -54,16 +54,18 @@ class SpatialTransformation(EvasionAttack):
         "num_translations",
         "max_rotation",
         "num_rotations",
+        "verbose",
     ]
     _estimator_requirements = (BaseEstimator, NeuralNetworkMixin)
 
     def __init__(
         self,
-        classifier: "Classifier",
+        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
         max_translation: float = 0.0,
         num_translations: int = 1,
         max_rotation: float = 0.0,
         num_rotations: int = 1,
+        verbose: bool = True,
     ) -> None:
         """
         :param classifier: A trained classifier.
@@ -73,18 +75,20 @@ class SpatialTransformation(EvasionAttack):
         :param max_rotation: The maximum rotation in either direction in degrees. The value is expected to be in the
                range `[0, 180]`.
         :param num_rotations: The number of rotations to search on grid spacing.
+        :param verbose: Show progress bars.
         """
-        super(SpatialTransformation, self).__init__(estimator=classifier)
+        super().__init__(estimator=classifier)
         self.max_translation = max_translation
         self.num_translations = num_translations
         self.max_rotation = max_rotation
         self.num_rotations = num_rotations
+        self.verbose = verbose
         self._check_params()
 
         self.fooling_rate: Optional[float] = None
-        self.attack_trans_x: Optional[np.ndarray] = None
-        self.attack_trans_y: Optional[np.ndarray] = None
-        self.attack_rot: Optional[np.ndarray] = None
+        self.attack_trans_x: Optional[int] = None
+        self.attack_trans_y: Optional[int] = None
+        self.attack_rot: Optional[float] = None
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
@@ -104,6 +108,11 @@ class SpatialTransformation(EvasionAttack):
         if self.attack_trans_x is None or self.attack_trans_y is None or self.attack_rot is None:
 
             y_pred = self.estimator.predict(x, batch_size=1)
+            if self.estimator.nb_classes == 2 and y_pred.shape[1] == 1:
+                raise ValueError(
+                    "This attack has not yet been tested for binary classification with a single output classifier."
+                )
+
             y_pred_max = np.argmax(y_pred, axis=1)
 
             nb_instances = len(x)
@@ -114,11 +123,23 @@ class SpatialTransformation(EvasionAttack):
 
             grid_trans_x = [
                 int(round(g))
-                for g in list(np.linspace(-max_num_pixel_trans_x, max_num_pixel_trans_x, num=self.num_translations,))
+                for g in list(
+                    np.linspace(
+                        -max_num_pixel_trans_x,
+                        max_num_pixel_trans_x,
+                        num=self.num_translations,
+                    )
+                )
             ]
             grid_trans_y = [
                 int(round(g))
-                for g in list(np.linspace(-max_num_pixel_trans_y, max_num_pixel_trans_y, num=self.num_translations,))
+                for g in list(
+                    np.linspace(
+                        -max_num_pixel_trans_y,
+                        max_num_pixel_trans_y,
+                        num=self.num_translations,
+                    )
+                )
             ]
             grid_rot = list(np.linspace(-self.max_rotation, self.max_rotation, num=self.num_rotations))
 
@@ -139,7 +160,11 @@ class SpatialTransformation(EvasionAttack):
             rot = 0.0
 
             # Initialize progress bar
-            pbar = tqdm(len(grid_trans_x) * len(grid_trans_y) * len(grid_rot), desc="Spatial transformation")
+            pbar = tqdm(
+                total=len(grid_trans_x) * len(grid_trans_y) * len(grid_rot),
+                desc="Spatial transformation",
+                disable=not self.verbose,
+            )
 
             for trans_x_i in grid_trans_x:
                 for trans_y_i in grid_trans_y:
@@ -167,7 +192,8 @@ class SpatialTransformation(EvasionAttack):
             self.attack_rot = rot
 
             logger.info(
-                "Success rate of spatial transformation attack: %.2f%%", 100 * self.fooling_rate,
+                "Success rate of spatial transformation attack: %.2f%%",
+                100 * self.fooling_rate,
             )
             logger.info("Attack-translation in x: %.2f%%", self.attack_trans_x)
             logger.info("Attack-translation in y: %.2f%%", self.attack_trans_y)
@@ -190,7 +216,10 @@ class SpatialTransformation(EvasionAttack):
 
         if self.estimator.clip_values is not None:
             np.clip(
-                x_adv, self.estimator.clip_values[0], self.estimator.clip_values[1], out=x_adv,
+                x_adv,
+                self.estimator.clip_values[0],
+                self.estimator.clip_values[1],
+                out=x_adv,
             )
 
         return x_adv
@@ -207,3 +236,6 @@ class SpatialTransformation(EvasionAttack):
 
         if not isinstance(self.num_rotations, int) or self.num_rotations <= 0:
             raise ValueError("The number of rotations must be a positive integer.")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")

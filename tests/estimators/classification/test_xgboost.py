@@ -38,7 +38,7 @@ class TestXGBoostClassifierBoosterSoftprob(TestBase):
 
         num_round = 10
         param = {"objective": "multi:softprob", "metric": "multi_logloss", "num_class": 3}
-        train_data = xgb.DMatrix(cls.x_train_iris, label=cls.y_train_iris)
+        train_data = xgb.DMatrix(cls.x_train_iris, label=np.argmax(cls.y_train_iris, axis=1))
         eval_list = [(train_data, "train")]
         model = xgb.train(param, train_data, num_round, eval_list)
 
@@ -46,8 +46,16 @@ class TestXGBoostClassifierBoosterSoftprob(TestBase):
 
     def test_predict(self):
         y_predicted = self.classifier.predict(self.x_test_iris[0:1])
-        y_expected = np.asarray([[0.85742694, 0.10067055, 0.0419025]])
+        y_expected = np.asarray([[0.0236, 0.0268, 0.9496]])
         np.testing.assert_array_almost_equal(y_predicted, y_expected, decimal=4)
+
+    def test_type(self):
+        with self.assertRaises(TypeError):
+            XGBoostClassifier(model="xgb")
+
+    def test_save(self):
+        self.classifier.save(filename="test.file", path=None)
+        self.classifier.save(filename="test.file", path="./")
 
 
 class TestXGBoostClassifierBoosterSoftmax(TestBase):
@@ -58,7 +66,7 @@ class TestXGBoostClassifierBoosterSoftmax(TestBase):
 
         num_round = 10
         param = {"objective": "multi:softmax", "metric": "multi_logloss", "num_class": 3}
-        train_data = xgb.DMatrix(cls.x_train_iris, label=cls.y_train_iris)
+        train_data = xgb.DMatrix(cls.x_train_iris, label=np.argmax(cls.y_train_iris, axis=1))
         eval_list = [(train_data, "train")]
         model = xgb.train(param, train_data, num_round, eval_list)
 
@@ -66,7 +74,7 @@ class TestXGBoostClassifierBoosterSoftmax(TestBase):
 
     def test_predict(self):
         y_predicted = self.classifier.predict(self.x_test_iris[0:1])
-        y_expected = np.asarray([[1.0, 0.0, 0.0]])
+        y_expected = np.asarray([[0.0, 0.0, 1.0]])
         np.testing.assert_array_almost_equal(y_predicted, y_expected, decimal=4)
 
 

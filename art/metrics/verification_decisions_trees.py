@@ -24,7 +24,7 @@ import logging
 from typing import Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
-from tqdm import trange
+from tqdm.auto import trange
 
 if TYPE_CHECKING:
     from art.estimators.classification.classifier import ClassifierDecisionTree
@@ -60,7 +60,7 @@ class Box:
         :param intervals: A dictionary of intervals with features as keys.
         """
         if intervals is None:
-            self.intervals = dict()
+            self.intervals = {}
         else:
             self.intervals = intervals
 
@@ -77,7 +77,7 @@ class Box:
                 lower_bound = max(self.intervals[key].lower_bound, value.lower_bound)
                 upper_bound = min(self.intervals[key].upper_bound, value.upper_bound)
 
-                if lower_bound >= upper_bound:
+                if lower_bound >= upper_bound:  # pragma: no cover
                     self.intervals.clear()
                     break
 
@@ -107,7 +107,7 @@ class Box:
         return box_new
 
     def __repr__(self):
-        return self.__class__.__name__ + "({})".format(self.intervals)
+        return self.__class__.__name__ + f"({self.intervals})"
 
 
 class LeafNode:
@@ -116,7 +116,12 @@ class LeafNode:
     """
 
     def __init__(
-        self, tree_id: Optional[int], class_label: int, node_id: Optional[int], box: Box, value: float,
+        self,
+        tree_id: Optional[int],
+        class_label: int,
+        node_id: Optional[int],
+        box: Box,
+        value: float,
     ) -> None:
         """
         Create a leaf node representation.
@@ -133,8 +138,8 @@ class LeafNode:
         self.value = value
 
     def __repr__(self):
-        return self.__class__.__name__ + "({}, {}, {}, {}, {})".format(
-            self.tree_id, self.class_label, self.node_id, self.box, self.value
+        return (
+            self.__class__.__name__ + f"({self.tree_id}, {self.class_label}, {self.node_id}, {self.box}, {self.value})"
         )
 
 
@@ -162,13 +167,15 @@ class RobustnessVerificationTreeModelsCliqueMethod:
     | Paper link: https://arxiv.org/abs/1906.03849
     """
 
-    def __init__(self, classifier: "ClassifierDecisionTree") -> None:
+    def __init__(self, classifier: "ClassifierDecisionTree", verbose: bool = True) -> None:
         """
         Create robustness verification for a decision-tree-based classifier.
 
         :param classifier: A trained decision-tree-based classifier.
+        :param verbose: Show progress bars.
         """
         self._classifier = classifier
+        self.verbose = verbose
         self._trees = self._classifier.get_trees()
 
     def verify(
@@ -176,7 +183,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
         x: np.ndarray,
         y: np.ndarray,
         eps_init: float,
-        norm: int = np.inf,
+        norm: float = np.inf,
         nb_search_steps: int = 10,
         max_clique: int = 2,
         max_level: int = 2,
@@ -203,11 +210,11 @@ class RobustnessVerificationTreeModelsCliqueMethod:
         num_samples: int = x.shape[0]
 
         # pylint: disable=R1702
-        pbar = trange(num_samples, desc="Decision tree verification")
+        pbar = trange(num_samples, desc="Decision tree verification", disable=not self.verbose)
         for i_sample in pbar:
 
             eps: float = eps_init
-            robust_log: List[bool] = list()
+            robust_log: List[bool] = []
             i_robust = None
             i_not_robust = None
             eps_robust: float = 0.0
@@ -215,7 +222,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
             best_score: Optional[float]
 
             for i_step in range(nb_search_steps):
-                logger.info("Search step {0:d}: eps = {1:.4g}".format(i_step, eps))
+                logger.info("Search step %d: eps = %.4g", i_step, eps)
 
                 is_robust = True
 
@@ -237,11 +244,11 @@ class RobustnessVerificationTreeModelsCliqueMethod:
                 if is_robust:
                     if i_step == 0:
                         num_initial_successes += 1
-                    logger.info("Model is robust at eps = {:.4g}".format(eps))
+                    logger.info("Model is robust at eps = %.4g", eps)
                     i_robust = i_step
                     eps_robust = eps
                 else:
-                    logger.info("Model is not robust at eps = {:.4g}".format(eps))
+                    logger.info("Model is not robust at eps = %.4g", eps)
                     i_not_robust = i_step
                     eps_not_robust = eps
 
@@ -249,7 +256,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
                     eps /= 2.0
                 else:
                     if i_not_robust is None:
-                        if eps >= 1.0:
+                        if eps >= 1.0:  # pragma: no cover
                             logger.info("Abort binary search because eps increased above 1.0")
                             break
                         eps = min(eps * 2.0, 1.0)
@@ -261,19 +268,23 @@ class RobustnessVerificationTreeModelsCliqueMethod:
                 average_bound += clique_bound
             else:
                 logger.info(
-                    "point %s: WARNING! no robust eps found, verification bound is set as 0 !", i_sample,
+                    "point %s: WARNING! no robust eps found, verification bound is set as 0 !",
+                    i_sample,
                 )
 
         verified_error = 1.0 - num_initial_successes / num_samples
         average_bound = average_bound / num_samples
 
-        logger.info("The average interval bound is: {:.4g}".format(average_bound))
-        logger.info("The verified error at eps = {0:.4g} is: {1:.4g}".format(eps_init, verified_error))
+        logger.info("The average interval bound is: %.4g", average_bound)
+        logger.info("The verified error at eps = %.4g is: %.4g", eps_init, verified_error)
 
         return average_bound, verified_error
 
     def _get_k_partite_clique(
-        self, accessible_leaves: List[List[LeafNode]], label: int, target_label: Optional[int],
+        self,
+        accessible_leaves: List[List[LeafNode]],
+        label: int,
+        target_label: Optional[int],
     ) -> Tuple[float, List]:
         """
         Find the K partite cliques among the accessible leaf nodes.
@@ -283,13 +294,13 @@ class RobustnessVerificationTreeModelsCliqueMethod:
         :param target_label: The target label.
         :return: The best score and a list of new cliques.
         """
-        new_nodes_list = list()
+        new_nodes_list = []
         best_scores_sum = 0.0
 
         # pylint: disable=R1702
         for start_tree in range(0, len(accessible_leaves), self.max_clique):
-            cliques_old: List[Dict[str, Union[Box, float]]] = list()
-            cliques_new: List[Dict[str, Union[Box, float]]] = list()
+            cliques_old: List[Dict[str, Union[Box, float]]] = []
+            cliques_new: List[Dict[str, Union[Box, float]]] = []
 
             # Start searching for cliques
             for accessible_leaf in accessible_leaves[start_tree]:
@@ -304,7 +315,10 @@ class RobustnessVerificationTreeModelsCliqueMethod:
                 cliques_old.append({"box": accessible_leaf.box, "value": new_leaf_value})
 
             # Loop over all all trees
-            for i_tree in range(start_tree + 1, min(len(accessible_leaves), start_tree + self.max_clique),):
+            for i_tree in range(
+                start_tree + 1,
+                min(len(accessible_leaves), start_tree + self.max_clique),
+            ):
                 cliques_new.clear()
                 # Loop over all existing cliques
                 for clique in cliques_old:
@@ -329,7 +343,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
 
                 cliques_old = cliques_new.copy()
 
-            new_nodes = list()
+            new_nodes = []
             best_score = 0.0
             for i, clique in enumerate(cliques_old):
                 # Create a new node without tree_id and node_id to represent clique
@@ -356,7 +370,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
 
         return best_scores_sum, new_nodes_list
 
-    def _get_best_score(self, i_sample: int, eps: float, norm: int, target_label: Optional[int]) -> float:
+    def _get_best_score(self, i_sample: int, eps: float, norm: float, target_label: Optional[int]) -> float:
         """
         Get the list of best scores.
 
@@ -380,7 +394,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
 
         return best_score
 
-    def _get_distance(self, box: Box, i_sample: int, norm: int) -> float:
+    def _get_distance(self, box: Box, i_sample: int, norm: float) -> float:
         """
         Determine the distance between sample and interval box.
 
@@ -397,7 +411,10 @@ class RobustnessVerificationTreeModelsCliqueMethod:
             if interval.lower_bound < feature_value < interval.upper_bound:
                 distance = 0.0
             else:
-                difference = max(feature_value - interval.upper_bound, interval.lower_bound - feature_value,)
+                difference = max(
+                    feature_value - interval.upper_bound,
+                    interval.lower_bound - feature_value,
+                )
                 if norm == 0:
                     distance = 1.0
                 elif norm == np.inf:
@@ -416,7 +433,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
         return resulting_distance
 
     def _get_accessible_leaves(
-        self, i_sample: int, eps: float, norm: int, target_label: Optional[int]
+        self, i_sample: int, eps: float, norm: float, target_label: Optional[int]
     ) -> List[List[LeafNode]]:
         """
         Determine the leaf nodes accessible within the attack budget.
@@ -427,7 +444,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
         :param target_label: The target label.
         :return: A list of lists of leaf nodes.
         """
-        accessible_leaves = list()
+        accessible_leaves = []
 
         for tree in self._trees:
             if (
@@ -436,14 +453,14 @@ class RobustnessVerificationTreeModelsCliqueMethod:
                 or tree.class_id in [self.y[i_sample], target_label]
             ):
 
-                leaves = list()
+                leaves = []
 
                 for leaf_node in tree.leaf_nodes:
                     distance = self._get_distance(leaf_node.box, i_sample, norm)
                     if leaf_node.box and distance <= eps:
                         leaves.append(leaf_node)
 
-                if not leaves:
+                if not leaves:  # pragma: no cover
                     raise ValueError("No accessible leaves found.")
 
                 accessible_leaves.append(leaves)

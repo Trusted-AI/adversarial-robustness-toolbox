@@ -22,15 +22,20 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from functools import reduce
 import logging
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
-from tqdm import trange
+from tqdm.auto import trange
 
 from art.attacks.attack import PoisoningAttackWhiteBox
 from art.estimators import BaseEstimator, NeuralNetworkMixin
-from art.estimators.classification.classifier import ClassifierNeuralNetwork, ClassifierMixin
+from art.estimators.classification.classifier import ClassifierMixin
 from art.estimators.classification.keras import KerasClassifier
+from art.estimators.classification.pytorch import PyTorchClassifier
+
+
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -57,13 +62,14 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         "max_iter",
         "similarity_coeff",
         "watermark",
+        "verbose",
     ]
 
-    _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassifierMixin, KerasClassifier)
+    _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassifierMixin)
 
     def __init__(
         self,
-        classifier: ClassifierNeuralNetwork,
+        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
         target: np.ndarray,
         feature_layer: Union[str, int],
         learning_rate: float = 500 * 255.0,
@@ -74,6 +80,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         max_iter: int = 120,
         similarity_coeff: float = 256.0,
         watermark: Optional[float] = None,
+        verbose: bool = True,
     ):
         """
         Initialize an Feature Collision Clean-Label poisoning attack
@@ -89,8 +96,9 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         :param max_iter: The maximum number of iterations for the attack.
         :param similarity_coeff: The maximum number of iterations for the attack.
         :param watermark: Whether The opacity of the watermarked target image.
+        :param verbose: Show progress bars.
         """
-        super().__init__(classifier)
+        super().__init__(classifier=classifier)  # type: ignore
         self.target = target
         self.feature_layer = feature_layer
         self.learning_rate = learning_rate
@@ -101,14 +109,21 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         self.max_iter = max_iter
         self.similarity_coeff = similarity_coeff
         self.watermark = watermark
+        self.verbose = verbose
         self._check_params()
 
-        self.target_placeholder, self.target_feature_rep = self.estimator.get_activations(
-            self.target, self.feature_layer, 1, framework=True
-        )
-        self.poison_placeholder, self.poison_feature_rep = self.estimator.get_activations(
-            self.target, self.feature_layer, 1, framework=True
-        )
+        if isinstance(self.estimator, KerasClassifier):
+            self.target_placeholder, self.target_feature_rep = self.estimator.get_activations(
+                self.target, self.feature_layer, 1, framework=True
+            )
+            self.poison_placeholder, self.poison_feature_rep = self.estimator.get_activations(
+                self.target, self.feature_layer, 1, framework=True
+            )
+        elif isinstance(self.estimator, PyTorchClassifier):
+            self.target_feature_rep = self.estimator.get_activations(self.target, self.feature_layer, 1, framework=True)
+            self.poison_feature_rep = self.estimator.get_activations(self.target, self.feature_layer, 1, framework=True)
+        else:
+            raise ValueError("Type of estimator currently not supported.")
         self.attack_loss = tensor_norm(self.poison_feature_rep - self.target_feature_rep)
 
     def poison(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
@@ -121,17 +136,15 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         """
         num_poison = len(x)
         final_attacks = []
-        if num_poison == 0:
+        if num_poison == 0:  # pragma: no cover
             raise ValueError("Must input at least one poison point")
-
         target_features = self.estimator.get_activations(self.target, self.feature_layer, 1)
         for init_attack in x:
             old_attack = np.expand_dims(np.copy(init_attack), axis=0)
             poison_features = self.estimator.get_activations(old_attack, self.feature_layer, 1)
             old_objective = self.objective(poison_features, target_features, init_attack, old_attack)
             last_m_objectives = [old_objective]
-
-            for i in trange(self.max_iter, desc="Feature collision"):
+            for i in trange(self.max_iter, desc="Feature collision", disable=not self.verbose):
                 # forward step
                 new_attack = self.forward_step(old_attack)
 
@@ -139,8 +152,10 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
                 new_attack = self.backward_step(np.expand_dims(init_attack, axis=0), poison_features, new_attack)
 
                 rel_change_val = np.linalg.norm(new_attack - old_attack) / np.linalg.norm(new_attack)
-                if rel_change_val < self.stopping_tol or self.obj_threshold and old_objective <= self.obj_threshold:
-                    logger.info("stopped after " + str(i) + " iterations due to small changes")
+                if (  # pragma: no cover
+                    rel_change_val < self.stopping_tol or self.obj_threshold and old_objective <= self.obj_threshold
+                ):
+                    logger.info("stopped after %d iterations due to small changes", i)
                     break
 
                 np.expand_dims(new_attack, axis=0)
@@ -152,13 +167,13 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
                 # Increasing objective means then learning rate is too big.  Chop it, and throw out the latest iteration
                 if new_objective >= avg_of_last_m and (i % self.num_old_obj / 2 == 0):
                     self.learning_rate *= self.decay_coeff
-                else:
+                else:  # pragma: no cover
                     old_attack = new_attack
                     old_objective = new_objective
 
                 if i < self.num_old_obj - 1:
                     last_m_objectives.append(new_objective)
-                else:
+                else:  # pragma: no cover
                     # first remove the oldest obj then append the new obj
                     del last_m_objectives[0]
                     last_m_objectives.append(new_objective)
@@ -170,26 +185,6 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
 
         return np.vstack(final_attacks), self.estimator.predict(x)
 
-    def _check_params(self) -> None:
-        if self.learning_rate <= 0:
-            raise ValueError("Learning rate must be strictly positive")
-        if self.max_iter < 1:
-            raise ValueError("Value of max_iter at least 1")
-        if not (isinstance(self.feature_layer, str) or isinstance(self.feature_layer, int)):
-            raise TypeError("Feature layer should be a string or int")
-        if self.decay_coeff <= 0:
-            raise ValueError("Decay coefficient must be positive")
-        if self.stopping_tol <= 0:
-            raise ValueError("Stopping tolerance must be positive")
-        if self.obj_threshold and self.obj_threshold <= 0:
-            raise ValueError("Objective threshold must be positive")
-        if self.num_old_obj <= 0:
-            raise ValueError("Number of old stored objectives must be positive")
-        if self.max_iter <= 0:
-            raise ValueError("Number of old stored objectives must be positive")
-        if self.watermark and not (isinstance(self.watermark, float) and 0 <= self.watermark < 1):
-            raise ValueError("Watermark must be between 0 and 1")
-
     def forward_step(self, poison: np.ndarray) -> np.ndarray:
         """
         Forward part of forward-backward splitting algorithm.
@@ -197,12 +192,16 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         :param poison: the current poison samples.
         :return: poison example closer in feature representation to target space.
         """
-        (attack_grad,) = self.estimator.custom_loss_gradient(
-            self.attack_loss,
-            [self.poison_placeholder, self.target_placeholder],
-            [poison, self.target],
-            name="feature_collision_" + str(self.feature_layer),
-        )
+        if isinstance(self.estimator, KerasClassifier):
+            (attack_grad,) = self.estimator.custom_loss_gradient(
+                self.attack_loss,
+                [self.poison_placeholder, self.target_placeholder],
+                [poison, self.target],
+                name="feature_collision_" + str(self.feature_layer),
+            )
+        elif isinstance(self.estimator, PyTorchClassifier):
+            attack_grad = self.estimator.custom_loss_gradient(self.attack_loss, poison, self.target, self.feature_layer)
+
         poison -= self.learning_rate * attack_grad[0]
 
         return poison
@@ -240,6 +239,34 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         beta = self.similarity_coeff * (num_activations / num_features) ** 2
         return np.linalg.norm(poison_feature_rep - target_feature_rep) + beta * np.linalg.norm(poison - base_image)
 
+    def _check_params(self) -> None:
+        if self.learning_rate <= 0:
+            raise ValueError("Learning rate must be strictly positive")
+
+        if not isinstance(self.feature_layer, (str, int)):
+            raise TypeError("Feature layer should be a string or int")
+
+        if self.decay_coeff <= 0:
+            raise ValueError("Decay coefficient must be positive")
+
+        if self.stopping_tol <= 0:
+            raise ValueError("Stopping tolerance must be positive")
+
+        if self.obj_threshold and self.obj_threshold <= 0:
+            raise ValueError("Objective threshold must be positive")
+
+        if self.num_old_obj <= 0:
+            raise ValueError("Number of old stored objectives must be positive")
+
+        if self.max_iter <= 0:
+            raise ValueError("Maximum number of iterations must be 1 or larger")
+
+        if self.watermark and not (isinstance(self.watermark, float) and 0 <= self.watermark < 1):
+            raise ValueError("Watermark must be between 0 and 1")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")
+
 
 def get_class_name(obj: object) -> str:
     """
@@ -249,13 +276,14 @@ def get_class_name(obj: object) -> str:
     :return: A qualified class name.
     """
     module = obj.__class__.__module__
+
     if module is None or module == str.__class__.__module__:
         return obj.__class__.__name__
-    else:
-        return module + "." + obj.__class__.__name__
+
+    return module + "." + obj.__class__.__name__
 
 
-def tensor_norm(tensor, norm_type: Union[int, float, str] = 2):
+def tensor_norm(tensor, norm_type: Union[int, float, str] = 2):  # pylint: disable=R1710
     """
     Compute the norm of a tensor.
 
@@ -264,21 +292,24 @@ def tensor_norm(tensor, norm_type: Union[int, float, str] = 2):
     :return: A tensor with the norm applied.
     """
     tf_tensor_types = ("tensorflow.python.framework.ops.Tensor", "tensorflow.python.framework.ops.EagerTensor")
-    torch_tensor_types = ()
+    torch_tensor_types = ("torch.Tensor", "torch.float", "torch.double", "torch.long")
     mxnet_tensor_types = ()
     supported_types = tf_tensor_types + torch_tensor_types + mxnet_tensor_types
     tensor_type = get_class_name(tensor)
-    if tensor_type not in supported_types:
+    if tensor_type not in supported_types:  # pragma: no cover
         raise TypeError("Tensor type `" + tensor_type + "` is not supported")
-    elif tensor_type in tf_tensor_types:
+
+    if tensor_type in tf_tensor_types:
         import tensorflow as tf
 
         return tf.norm(tensor, ord=norm_type)
-    elif tensor_type in torch_tensor_types:
+
+    if tensor_type in torch_tensor_types:  # pragma: no cover
         import torch
 
-        return torch.norm(tensor, p=norm_type)
-    elif tensor_type in mxnet_tensor_types:
+        return torch.norm
+
+    if tensor_type in mxnet_tensor_types:  # pragma: no cover
         import mxnet
 
         return mxnet.ndarray.norm(tensor, ord=norm_type)

@@ -23,7 +23,7 @@ from typing import Callable, Tuple
 import numpy as np
 
 from art.defences.detector.evasion.subsetscanning.scoring_functions import ScoringFunctions
-from art.defences.detector.evasion import ScanningOps
+from art.defences.detector.evasion.subsetscanning.scanningops import ScanningOps
 
 
 class Scanner:
@@ -37,7 +37,7 @@ class Scanner:
     def fgss_individ_for_nets(
         pvalues: np.ndarray,
         a_max: float = 0.5,
-        score_function: Callable[[list, list, np.ndarray], np.ndarray] = ScoringFunctions.get_score_bj_fast,
+        score_function: Callable[[np.ndarray, np.ndarray, np.ndarray], np.ndarray] = ScoringFunctions.get_score_bj_fast,
     ) -> Tuple[float, np.ndarray, np.ndarray, float]:
         """
         Finds the highest scoring subset of records and attribute. Return the subsets, the score, and the alpha that
@@ -90,7 +90,7 @@ class Scanner:
         a_max: float = 0.5,
         restarts: int = 10,
         image_to_node_init: bool = False,
-        score_function: Callable[[list, list, np.ndarray], np.ndarray] = ScoringFunctions.get_score_bj_fast,
+        score_function: Callable[[np.ndarray, np.ndarray, np.ndarray], np.ndarray] = ScoringFunctions.get_score_bj_fast,
     ) -> Tuple[float, np.ndarray, np.ndarray, float]:
         """
         Finds the highest scoring subset of records and attribute. Return the subsets, the score, and the alpha that
@@ -138,22 +138,30 @@ class Scanner:
                 prob = np.random.uniform(0, 1)
                 if image_to_node:
                     indices_of_seeds = np.random.choice(
-                        np.arange(pvalues.shape[0]), int(pvalues.shape[0] * prob), replace=False,
+                        np.arange(pvalues.shape[0]),
+                        int(pvalues.shape[0] * prob),
+                        replace=False,
                     )
                 else:
                     indices_of_seeds = np.random.choice(
-                        np.arange(pvalues.shape[1]), int(pvalues.shape[1] * prob), replace=False,
+                        np.arange(pvalues.shape[1]),
+                        int(pvalues.shape[1] * prob),
+                        replace=False,
                     )
                 while indices_of_seeds.size == 0:
                     # eventually will make non zero
                     prob = np.random.uniform(0, 1)
                     if image_to_node:
                         indices_of_seeds = np.random.choice(
-                            np.arange(pvalues.shape[0]), int(pvalues.shape[0] * prob), replace=False,
+                            np.arange(pvalues.shape[0]),
+                            int(pvalues.shape[0] * prob),
+                            replace=False,
                         )
                     else:
                         indices_of_seeds = np.random.choice(
-                            np.arange(pvalues.shape[1]), int(pvalues.shape[1] * prob), replace=False,
+                            np.arange(pvalues.shape[1]),
+                            int(pvalues.shape[1] * prob),
+                            replace=False,
                         )
 
                 indices_of_seeds.astype(int)

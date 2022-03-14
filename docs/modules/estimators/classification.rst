@@ -19,6 +19,20 @@ BlackBox Classifier
    :special-members: __init__
    :inherited-members:
 
+BlackBox Classifier NeuralNetwork
+---------------------------------
+.. autoclass:: BlackBoxClassifierNeuralNetwork
+   :members:
+   :special-members: __init__
+   :inherited-members:
+
+Deep Partition Aggregation Classifier
+-------------------------------------
+.. autoclass:: DeepPartitionEnsemble
+   :members:
+   :special-members: __init__
+   :inherited-members:
+
 Keras Classifier
 ----------------
 .. autoclass:: KerasClassifier
@@ -36,6 +50,13 @@ MXNet Classifier
 PyTorch Classifier
 ------------------
 .. autoclass:: PyTorchClassifier
+   :members:
+   :special-members: __init__
+   :inherited-members:
+
+Query-Efficient Black-box Gradient Estimation Classifier
+--------------------------------------------------------
+.. autoclass:: QueryEfficientGradientEstimationClassifier
    :members:
    :special-members: __init__
    :inherited-members:

@@ -23,9 +23,9 @@ import unittest
 import numpy as np
 
 from art.attacks.evasion.universal_perturbation import UniversalPerturbation
-from art.estimators.classification.classifier import ClassGradientsMixin
+from art.estimators.classification.classifier import ClassifierMixin
 from art.estimators.classification.keras import KerasClassifier
-from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
+from art.estimators.estimator import BaseEstimator
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 from tests.utils import (
     TestBase,
@@ -56,7 +56,7 @@ class TestUniversalPerturbation(TestBase):
         cls.x_test_mnist = cls.x_test_mnist[0 : cls.n_test]
         cls.y_test_mnist = cls.y_test_mnist[0 : cls.n_test]
 
-    def test_tensorflow_mnist(self):
+    def test_3_tensorflow_mnist(self):
         """
         First test with the TensorFlowClassifier.
         :return:
@@ -67,7 +67,9 @@ class TestUniversalPerturbation(TestBase):
         tfc, sess = get_image_classifier_tf()
 
         # Attack
-        up = UniversalPerturbation(tfc, max_iter=1, attacker="newtonfool", attacker_params={"max_iter": 5})
+        up = UniversalPerturbation(
+            tfc, max_iter=1, attacker="newtonfool", attacker_params={"max_iter": 5, "verbose": False}, verbose=False
+        )
         x_train_adv = up.generate(self.x_train_mnist)
         self.assertTrue((up.fooling_rate >= 0.2) or not up.converged)
 
@@ -82,7 +84,7 @@ class TestUniversalPerturbation(TestBase):
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_mnist))), 0.0, delta=0.00001)
 
-    def test_keras_mnist(self):
+    def test_8_keras_mnist(self):
         """
         Second test with the KerasClassifier.
         :return:
@@ -93,7 +95,13 @@ class TestUniversalPerturbation(TestBase):
         krc = get_image_classifier_kr()
 
         # Attack
-        up = UniversalPerturbation(krc, max_iter=1, attacker="ead", attacker_params={"max_iter": 2, "targeted": False})
+        up = UniversalPerturbation(
+            krc,
+            max_iter=1,
+            attacker="ead",
+            attacker_params={"max_iter": 2, "targeted": False, "verbose": False},
+            verbose=False,
+        )
         x_train_adv = up.generate(self.x_train_mnist)
         self.assertTrue((up.fooling_rate >= 0.2) or not up.converged)
 
@@ -108,7 +116,7 @@ class TestUniversalPerturbation(TestBase):
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_mnist))), 0.0, delta=0.00001)
 
-    def test_pytorch_mnist(self):
+    def test_5_pytorch_mnist(self):
         """
         Third test with the PyTorchClassifier.
         :return:
@@ -121,7 +129,9 @@ class TestUniversalPerturbation(TestBase):
         ptc = get_image_classifier_pt()
 
         # Attack
-        up = UniversalPerturbation(ptc, max_iter=1, attacker="newtonfool", attacker_params={"max_iter": 5})
+        up = UniversalPerturbation(
+            ptc, max_iter=1, attacker="newtonfool", attacker_params={"max_iter": 5, "verbose": False}, verbose=False
+        )
         x_train_mnist_adv = up.generate(x_train_mnist)
         self.assertTrue((up.fooling_rate >= 0.2) or not up.converged)
 
@@ -136,12 +146,12 @@ class TestUniversalPerturbation(TestBase):
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test_mnist))), 0.0, delta=0.00001)
 
-    def test_keras_iris_clipped(self):
+    def test_6_keras_iris_clipped(self):
         classifier = get_tabular_classifier_kr()
 
         # Test untargeted attack
-        attack_params = {"max_iter": 1, "attacker": "newtonfool", "attacker_params": {"max_iter": 5}}
-        attack = UniversalPerturbation(classifier)
+        attack_params = {"max_iter": 1, "attacker": "newtonfool", "attacker_params": {"max_iter": 5, "verbose": False}}
+        attack = UniversalPerturbation(classifier, verbose=False)
         attack.set_params(**attack_params)
         x_test_iris_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_iris_adv).all())
@@ -153,13 +163,13 @@ class TestUniversalPerturbation(TestBase):
         acc = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
         logger.info("Accuracy on Iris with universal adversarial examples: %.2f%%", (acc * 100))
 
-    def test_keras_iris_unbounded(self):
+    def test_7_keras_iris_unbounded(self):
         classifier = get_tabular_classifier_kr()
 
         # Recreate a classifier without clip values
         classifier = KerasClassifier(model=classifier._model, use_logits=False, channels_first=True)
-        attack_params = {"max_iter": 1, "attacker": "newtonfool", "attacker_params": {"max_iter": 5}}
-        attack = UniversalPerturbation(classifier)
+        attack_params = {"max_iter": 1, "attacker": "newtonfool", "attacker_params": {"max_iter": 5, "verbose": False}}
+        attack = UniversalPerturbation(classifier, verbose=False)
         attack.set_params(**attack_params)
         x_test_iris_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_iris_adv).all())
@@ -169,12 +179,16 @@ class TestUniversalPerturbation(TestBase):
         acc = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
         logger.info("Accuracy on Iris with universal adversarial examples: %.2f%%", (acc * 100))
 
-    def test_tensorflow_iris(self):
+    def test_2_tensorflow_iris(self):
         classifier, _ = get_tabular_classifier_tf()
 
         # Test untargeted attack
-        attack_params = {"max_iter": 1, "attacker": "ead", "attacker_params": {"max_iter": 5, "targeted": False}}
-        attack = UniversalPerturbation(classifier)
+        attack_params = {
+            "max_iter": 1,
+            "attacker": "ead",
+            "attacker_params": {"max_iter": 5, "targeted": False, "verbose": False},
+        }
+        attack = UniversalPerturbation(classifier, verbose=False)
         attack.set_params(**attack_params)
         x_test_iris_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_iris_adv).all())
@@ -186,11 +200,15 @@ class TestUniversalPerturbation(TestBase):
         acc = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
         logger.info("Accuracy on Iris with universal adversarial examples: %.2f%%", (acc * 100))
 
-    def test_pytorch_iris(self):
+    def test_4_pytorch_iris(self):
         classifier = get_tabular_classifier_pt()
 
-        attack_params = {"max_iter": 1, "attacker": "ead", "attacker_params": {"max_iter": 5, "targeted": False}}
-        attack = UniversalPerturbation(classifier)
+        attack_params = {
+            "max_iter": 1,
+            "attacker": "ead",
+            "attacker_params": {"max_iter": 5, "targeted": False, "verbose": False},
+        }
+        attack = UniversalPerturbation(classifier, verbose=False)
         attack.set_params(**attack_params)
         x_test_iris_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_iris_adv).all())
@@ -202,10 +220,27 @@ class TestUniversalPerturbation(TestBase):
         acc = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
         logger.info("Accuracy on Iris with universal adversarial examples: %.2f%%", (acc * 100))
 
-    def test_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(
-            UniversalPerturbation, [BaseEstimator, NeuralNetworkMixin, ClassGradientsMixin]
-        )
+    def test_check_params(self):
+
+        ptc = get_image_classifier_pt(from_logits=True)
+
+        with self.assertRaises(ValueError):
+            _ = UniversalPerturbation(ptc, delta=-1)
+
+        with self.assertRaises(ValueError):
+            _ = UniversalPerturbation(ptc, max_iter=-1)
+
+        with self.assertRaises(ValueError):
+            _ = UniversalPerturbation(ptc, eps=-1)
+
+        with self.assertRaises(ValueError):
+            _ = UniversalPerturbation(ptc, batch_size=-1)
+
+        with self.assertRaises(ValueError):
+            _ = UniversalPerturbation(ptc, verbose="False")
+
+    def test_1_classifier_type_check_fail(self):
+        backend_test_classifier_type_check_fail(UniversalPerturbation, [BaseEstimator, ClassifierMixin])
 
 
 if __name__ == "__main__":

@@ -25,6 +25,7 @@ from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.classification.classifier import ClassifierMixin
 
 from tests.attacks.utils import backend_test_classifier_type_check_fail
+from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
@@ -34,19 +35,13 @@ def fix_get_mnist_subset(get_mnist_dataset):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_dataset
     n_train = 100
     n_test = 11
-    yield (x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test])
+    yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
-@pytest.mark.only_with_platform("pytorch")
-def test_generate(fix_get_mnist_subset, get_image_classifier_list_for_attack):
-
-    classifier_list = get_image_classifier_list_for_attack(ShadowAttack)
-
-    if classifier_list is None:
-        logging.warning("Couldn't perform  this test because no classifier is defined")
-        return
-
-    for classifier in classifier_list:
+@pytest.mark.only_with_platform("pytorch", "tensorflow2")
+def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
+    try:
+        classifier = image_dl_estimator_for_attack(ShadowAttack)
         attack = ShadowAttack(
             estimator=classifier,
             sigma=0.5,
@@ -57,24 +52,22 @@ def test_generate(fix_get_mnist_subset, get_image_classifier_list_for_attack):
             lambda_s=0.5,
             batch_size=32,
             targeted=True,
+            verbose=False,
         )
 
         (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
-        if attack.framework == "pytorch":
-            x_train_mnist = x_train_mnist.transpose((0, 3, 1, 2))
-
         x_train_mnist_adv = attack.generate(x=x_train_mnist[0:1], y=y_train_mnist[0:1])
 
-        assert np.max(np.abs(x_train_mnist_adv - x_train_mnist[0:1])) == pytest.approx(0.34966960549354553, 0.06)
+        assert np.max(np.abs(x_train_mnist_adv - x_train_mnist[0:1])) == pytest.approx(0.38116083, abs=0.06)
+    except ARTTestException as e:
+        art_warning(e)
 
 
-@pytest.mark.only_with_platform("pytorch")
-def test_get_regularisation_loss_gradients(fix_get_mnist_subset, get_image_classifier_list_for_attack):
-
-    classifier_list = get_image_classifier_list_for_attack(ShadowAttack)
-
-    for classifier in classifier_list:
+@pytest.mark.only_with_platform("pytorch", "tensorflow2")
+def test_get_regularisation_loss_gradients(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
+    try:
+        classifier = image_dl_estimator_for_attack(ShadowAttack)
 
         attack = ShadowAttack(
             estimator=classifier,
@@ -86,12 +79,10 @@ def test_get_regularisation_loss_gradients(fix_get_mnist_subset, get_image_class
             lambda_s=0.5,
             batch_size=32,
             targeted=True,
+            verbose=False,
         )
 
         (x_train_mnist, _, _, _) = fix_get_mnist_subset
-
-        if attack.framework == "pytorch":
-            x_train_mnist = x_train_mnist.transpose((0, 3, 1, 2))
 
         gradients = attack._get_regularisation_loss_gradients(x_train_mnist[0:1])
 
@@ -132,11 +123,63 @@ def test_get_regularisation_loss_gradients(fix_get_mnist_subset, get_image_class
             np.testing.assert_array_almost_equal(gradients[0, 0, 14, :], gradients_expected, decimal=3)
         else:
             np.testing.assert_array_almost_equal(gradients[0, 14, :, 0], gradients_expected, decimal=3)
+    except ARTTestException as e:
+        art_warning(e)
 
 
-def test_classifier_type_check_fail():
-    backend_test_classifier_type_check_fail(ShadowAttack, [BaseEstimator, LossGradientsMixin, ClassifierMixin])
+@pytest.mark.only_with_platform("pytorch")
+def test_check_params(art_warning, image_dl_estimator_for_attack):
+    try:
+        classifier = image_dl_estimator_for_attack(ShadowAttack)
+
+        with pytest.raises(ValueError):
+            _ = ShadowAttack(classifier, sigma="test")
+        with pytest.raises(ValueError):
+            _ = ShadowAttack(classifier, sigma=-0.5)
+
+        with pytest.raises(ValueError):
+            _ = ShadowAttack(classifier, nb_steps=0.5)
+        with pytest.raises(ValueError):
+            _ = ShadowAttack(classifier, nb_steps=-5)
+
+        with pytest.raises(ValueError):
+            _ = ShadowAttack(classifier, learning_rate=5)
+        with pytest.raises(ValueError):
+            _ = ShadowAttack(classifier, learning_rate=-5.0)
+
+        with pytest.raises(ValueError):
+            _ = ShadowAttack(classifier, lambda_tv=5)
+        with pytest.raises(ValueError):
+            _ = ShadowAttack(classifier, lambda_tv=-5.0)
+
+        with pytest.raises(ValueError):
+            _ = ShadowAttack(classifier, lambda_c=5)
+        with pytest.raises(ValueError):
+            _ = ShadowAttack(classifier, lambda_c=-5.0)
+
+        with pytest.raises(ValueError):
+            _ = ShadowAttack(classifier, lambda_s=5)
+        with pytest.raises(ValueError):
+            _ = ShadowAttack(classifier, lambda_s=-5.0)
+
+        with pytest.raises(ValueError):
+            _ = ShadowAttack(classifier, batch_size=5.0)
+        with pytest.raises(ValueError):
+            _ = ShadowAttack(classifier, batch_size=-5)
+
+        with pytest.raises(ValueError):
+            _ = ShadowAttack(classifier, targeted=5.0)
+
+        with pytest.raises(ValueError):
+            _ = ShadowAttack(classifier, verbose=5.0)
+
+    except ARTTestException as e:
+        art_warning(e)
 
 
-if __name__ == "__main__":
-    pytest.cmdline.main("-q -s {} --mlFramework=pytorch --durations=0".format(__file__).split(" "))
+@pytest.mark.only_with_platform("pytorch")
+def test_classifier_type_check_fail(art_warning):
+    try:
+        backend_test_classifier_type_check_fail(ShadowAttack, [BaseEstimator, LossGradientsMixin, ClassifierMixin])
+    except ARTTestException as e:
+        art_warning(e)

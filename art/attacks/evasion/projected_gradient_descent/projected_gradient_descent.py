@@ -26,7 +26,7 @@ al. for adversarial training.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Union
+from typing import Optional, Union, TYPE_CHECKING
 
 import numpy as np
 
@@ -43,6 +43,10 @@ from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_p
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_tensorflow_v2 import (
     ProjectedGradientDescentTensorFlowV2,
 )
+from art.summary_writer import SummaryWriter
+
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE, OBJECT_DETECTOR_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -63,30 +67,33 @@ class ProjectedGradientDescent(EvasionAttack):
         "targeted",
         "num_random_init",
         "batch_size",
-        "minimal",
         "max_iter",
         "random_eps",
+        "summary_writer",
+        "verbose",
     ]
 
     _estimator_requirements = (BaseEstimator, LossGradientsMixin)
 
     def __init__(
         self,
-        estimator,
-        norm: int = np.inf,
-        eps: float = 0.3,
-        eps_step: float = 0.1,
+        estimator: Union["CLASSIFIER_LOSS_GRADIENTS_TYPE", "OBJECT_DETECTOR_TYPE"],
+        norm: Union[int, float, str] = np.inf,
+        eps: Union[int, float, np.ndarray] = 0.3,
+        eps_step: Union[int, float, np.ndarray] = 0.1,
         max_iter: int = 100,
         targeted: bool = False,
         num_random_init: int = 0,
         batch_size: int = 32,
         random_eps: bool = False,
+        summary_writer: Union[str, bool, SummaryWriter] = False,
+        verbose: bool = True,
     ):
         """
         Create a :class:`.ProjectedGradientDescent` instance.
 
         :param estimator: An trained estimator.
-        :param norm: The norm of the adversarial perturbation supporting np.inf, 1 or 2.
+        :param norm: The norm of the adversarial perturbation supporting "inf", np.inf, 1 or 2.
         :param eps: Maximum perturbation that the attacker can introduce.
         :param eps_step: Attack step size (input variation) at each iteration.
         :param random_eps: When True, epsilon is drawn randomly from truncated normal distribution. The literature
@@ -98,8 +105,16 @@ class ProjectedGradientDescent(EvasionAttack):
         :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0 starting
                                 at the original input.
         :param batch_size: Size of the batch on which adversarial samples are generated.
+        :param summary_writer: Activate summary writer for TensorBoard.
+                               Default is `False` and deactivated summary writer.
+                               If `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory.
+                               If of type `str` save in path.
+                               If of type `SummaryWriter` apply provided custom summary writer.
+                               Use hierarchical folder structure to compare between runs easily. e.g. pass in
+                               ‘runs/exp1’, ‘runs/exp2’, etc. for each new experiment to compare across them.
+        :param verbose: Show progress bars.
         """
-        super(ProjectedGradientDescent, self).__init__(estimator=estimator)
+        super().__init__(estimator=estimator, summary_writer=False)
 
         self.norm = norm
         self.eps = eps
@@ -109,19 +124,15 @@ class ProjectedGradientDescent(EvasionAttack):
         self.num_random_init = num_random_init
         self.batch_size = batch_size
         self.random_eps = random_eps
+        self.verbose = verbose
         ProjectedGradientDescent._check_params(self)
-
-        no_preprocessing = self.estimator.preprocessing is None or (
-            np.all(self.estimator.preprocessing[0] == 0) and np.all(self.estimator.preprocessing[1] == 0)
-        )
-        no_defences = not self.estimator.preprocessing_defences and not self.estimator.postprocessing_defences
 
         self._attack: Union[
             ProjectedGradientDescentPyTorch, ProjectedGradientDescentTensorFlowV2, ProjectedGradientDescentNumpy
         ]
-        if isinstance(self.estimator, PyTorchClassifier) and no_preprocessing and no_defences:
+        if isinstance(self.estimator, PyTorchClassifier) and self.estimator.all_framework_preprocessing:
             self._attack = ProjectedGradientDescentPyTorch(
-                estimator=estimator,
+                estimator=estimator,  # type: ignore
                 norm=norm,
                 eps=eps,
                 eps_step=eps_step,
@@ -130,11 +141,13 @@ class ProjectedGradientDescent(EvasionAttack):
                 num_random_init=num_random_init,
                 batch_size=batch_size,
                 random_eps=random_eps,
+                summary_writer=summary_writer,
+                verbose=verbose,
             )
 
-        elif isinstance(self.estimator, TensorFlowV2Classifier) and no_preprocessing and no_defences:
+        elif isinstance(self.estimator, TensorFlowV2Classifier) and self.estimator.all_framework_preprocessing:
             self._attack = ProjectedGradientDescentTensorFlowV2(
-                estimator=estimator,
+                estimator=estimator,  # type: ignore
                 norm=norm,
                 eps=eps,
                 eps_step=eps_step,
@@ -143,6 +156,8 @@ class ProjectedGradientDescent(EvasionAttack):
                 num_random_init=num_random_init,
                 batch_size=batch_size,
                 random_eps=random_eps,
+                summary_writer=summary_writer,
+                verbose=verbose,
             )
 
         else:
@@ -156,6 +171,8 @@ class ProjectedGradientDescent(EvasionAttack):
                 num_random_init=num_random_init,
                 batch_size=batch_size,
                 random_eps=random_eps,
+                summary_writer=summary_writer,
+                verbose=verbose,
             )
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
@@ -167,27 +184,65 @@ class ProjectedGradientDescent(EvasionAttack):
                   (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
                   samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
                   (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
+        :param mask: An array with a mask broadcastable to input `x` defining where to apply adversarial perturbations.
+                     Shape needs to be broadcastable to the shape of x and can also be of the same shape as `x`. Any
+                     features for which the mask is zero will not be adversarially perturbed.
+        :type mask: `np.ndarray`
         :return: An array holding the adversarial examples.
         """
         logger.info("Creating adversarial samples.")
         return self._attack.generate(x=x, y=y, **kwargs)
 
+    @property
+    def summary_writer(self):
+        """The summary writer."""
+        return self._attack.summary_writer
+
+    def set_params(self, **kwargs) -> None:
+        super().set_params(**kwargs)
+        self._attack.set_params(**kwargs)
+
     def _check_params(self) -> None:
-        # Check if order of the norm is acceptable given current implementation
-        if self.norm not in [np.inf, int(1), int(2)]:
-            raise ValueError("Norm order must be either `np.inf`, 1, or 2.")
 
-        if self.eps <= 0:
-            raise ValueError("The perturbation size `eps` has to be positive.")
+        if self.norm not in [1, 2, np.inf, "inf"]:
+            raise ValueError('Norm order must be either 1, 2, `np.inf` or "inf".')
 
-        if self.eps_step <= 0:
-            raise ValueError("The perturbation step-size `eps_step` has to be positive.")
+        if not (
+            isinstance(self.eps, (int, float))
+            and isinstance(self.eps_step, (int, float))
+            or isinstance(self.eps, np.ndarray)
+            and isinstance(self.eps_step, np.ndarray)
+        ):
+            raise TypeError(
+                "The perturbation size `eps` and the perturbation step-size `eps_step` must have the same type of `int`"
+                ", `float`, or `np.ndarray`."
+            )
+
+        if isinstance(self.eps, (int, float)):
+            if self.eps < 0:
+                raise ValueError("The perturbation size `eps` has to be nonnegative.")
+        else:
+            if (self.eps < 0).any():
+                raise ValueError("The perturbation size `eps` has to be nonnegative.")
+
+        if isinstance(self.eps_step, (int, float)):
+            if self.eps_step <= 0:
+                raise ValueError("The perturbation step-size `eps_step` has to be positive.")
+        else:
+            if (self.eps_step <= 0).any():
+                raise ValueError("The perturbation step-size `eps_step` has to be positive.")
+
+        if isinstance(self.eps, np.ndarray) and isinstance(self.eps_step, np.ndarray):
+            if self.eps.shape != self.eps_step.shape:
+                raise ValueError(
+                    "The perturbation size `eps` and the perturbation step-size `eps_step` must have the same shape."
+                )
 
         if not isinstance(self.targeted, bool):
             raise ValueError("The flag `targeted` has to be of type bool.")
 
-        if not isinstance(self.num_random_init, (int, np.int)):
-            raise TypeError("The number of random initialisations has to be of type integer")
+        if not isinstance(self.num_random_init, int):
+            raise TypeError("The number of random initialisations has to be of type integer.")
 
         if self.num_random_init < 0:
             raise ValueError("The number of random initialisations `random_init` has to be greater than or equal to 0.")
@@ -195,8 +250,8 @@ class ProjectedGradientDescent(EvasionAttack):
         if self.batch_size <= 0:
             raise ValueError("The batch size `batch_size` has to be positive.")
 
-        if self.eps_step > self.eps:
-            raise ValueError("The iteration step `eps_step` has to be smaller than the total attack `eps`.")
+        if self.max_iter < 0:
+            raise ValueError("The number of iterations `max_iter` has to be a nonnegative integer.")
 
-        if self.max_iter <= 0:
-            raise ValueError("The number of iterations `max_iter` has to be a positive integer.")
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The verbose has to be a Boolean.")

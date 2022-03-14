@@ -23,19 +23,19 @@ This module implements the Jacobian-based Saliency Map attack `SaliencyMapMethod
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional
+from typing import Optional, Union, TYPE_CHECKING
 
 import numpy as np
-from tqdm import trange
+from tqdm.auto import trange
 
 from art.attacks.attack import EvasionAttack
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator
-from art.estimators.classification.classifier import (
-    ClassGradientsMixin,
-    ClassifierGradients,
-)
-from art.utils import check_and_transform_label_format, compute_success
+from art.estimators.classification.classifier import ClassGradientsMixin
+from art.utils import check_and_transform_label_format
+
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -47,11 +47,16 @@ class SaliencyMapMethod(EvasionAttack):
     | Paper link: https://arxiv.org/abs/1511.07528
     """
 
-    attack_params = EvasionAttack.attack_params + ["theta", "gamma", "batch_size"]
+    attack_params = EvasionAttack.attack_params + ["theta", "gamma", "batch_size", "verbose"]
     _estimator_requirements = (BaseEstimator, ClassGradientsMixin)
 
     def __init__(
-        self, classifier: ClassifierGradients, theta: float = 0.1, gamma: float = 1.0, batch_size: int = 1,
+        self,
+        classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
+        theta: float = 0.1,
+        gamma: float = 1.0,
+        batch_size: int = 1,
+        verbose: bool = True,
     ) -> None:
         """
         Create a SaliencyMapMethod instance.
@@ -60,11 +65,13 @@ class SaliencyMapMethod(EvasionAttack):
         :param theta: Amount of Perturbation introduced to each modified feature per step (can be positive or negative).
         :param gamma: Maximum fraction of features being perturbed (between 0 and 1).
         :param batch_size: Size of the batch on which adversarial samples are generated.
+        :param verbose: Show progress bars.
         """
-        super(SaliencyMapMethod, self).__init__(estimator=classifier)
+        super().__init__(estimator=classifier)
         self.theta = theta
         self.gamma = gamma
         self.batch_size = batch_size
+        self.verbose = verbose
         self._check_params()
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
@@ -76,7 +83,8 @@ class SaliencyMapMethod(EvasionAttack):
                   `(nb_samples,)`.
         :return: An array holding the adversarial examples.
         """
-        y = check_and_transform_label_format(y, self.estimator.nb_classes)
+        if y is not None:
+            y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
         # Initialize variables
         dims = list(x.shape[1:])
@@ -91,22 +99,31 @@ class SaliencyMapMethod(EvasionAttack):
 
             targets = np.argmax(random_targets(preds, self.estimator.nb_classes), axis=1)
         else:
+            if self.estimator.nb_classes == 2 and y.shape[1] == 1:  # pragma: no cover
+                raise ValueError(
+                    "This attack has not yet been tested for binary classification with a single output classifier."
+                )
+
             targets = np.argmax(y, axis=1)
 
         # Compute perturbation with implicit batching
-        for batch_id in trange(int(np.ceil(x_adv.shape[0] / float(self.batch_size))), desc="JSMA"):
+        for batch_id in trange(
+            int(np.ceil(x_adv.shape[0] / float(self.batch_size))), desc="JSMA", disable=not self.verbose
+        ):
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
             batch = x_adv[batch_index_1:batch_index_2]
 
             # Main algorithm for each batch
             # Initialize the search space; optimize to remove features that can't be changed
-            search_space = np.zeros(batch.shape)
             if self.estimator.clip_values is not None:
+                search_space = np.zeros(batch.shape)
                 clip_min, clip_max = self.estimator.clip_values
                 if self.theta > 0:
                     search_space[batch < clip_max] = 1
-                else:
+                else:  # pragma: no cover
                     search_space[batch > clip_min] = 1
+            else:
+                search_space = np.ones(batch.shape)
 
             # Get current predictions
             current_pred = preds[batch_index_1:batch_index_2]
@@ -130,17 +147,19 @@ class SaliencyMapMethod(EvasionAttack):
                 if self.estimator.clip_values is not None:
                     # Prepare update depending of theta
                     if self.theta > 0:
-                        clip_func, clip_value = np.minimum, clip_max
-                    else:
-                        clip_func, clip_value = np.maximum, clip_min
+                        clip_func, clip_value = np.minimum, clip_max  # type: ignore
+                    else:  # pragma: no cover
+                        clip_func, clip_value = np.maximum, clip_min  # type: ignore
 
                     # Update adversarial examples
                     tmp_batch = batch[active_indices]
                     tmp_batch[np.arange(len(active_indices)), feat_ind[:, 0]] = clip_func(
-                        clip_value, tmp_batch[np.arange(len(active_indices)), feat_ind[:, 0]] + self.theta,
+                        clip_value,
+                        tmp_batch[np.arange(len(active_indices)), feat_ind[:, 0]] + self.theta,
                     )
                     tmp_batch[np.arange(len(active_indices)), feat_ind[:, 1]] = clip_func(
-                        clip_value, tmp_batch[np.arange(len(active_indices)), feat_ind[:, 1]] + self.theta,
+                        clip_value,
+                        tmp_batch[np.arange(len(active_indices)), feat_ind[:, 1]] + self.theta,
                     )
                     batch[active_indices] = tmp_batch
 
@@ -155,7 +174,10 @@ class SaliencyMapMethod(EvasionAttack):
                     batch[active_indices] = tmp_batch
 
                 # Recompute model prediction
-                current_pred = np.argmax(self.estimator.predict(np.reshape(batch, [batch.shape[0]] + dims)), axis=1,)
+                current_pred = np.argmax(
+                    self.estimator.predict(np.reshape(batch, [batch.shape[0]] + dims)),
+                    axis=1,
+                )
 
                 # Update active_indices
                 active_indices = np.where(
@@ -168,21 +190,9 @@ class SaliencyMapMethod(EvasionAttack):
 
         x_adv = np.reshape(x_adv, x.shape)
 
-        logger.info(
-            "Success rate of JSMA attack: %.2f%%",
-            100 * compute_success(self.estimator, x, y, x_adv, batch_size=self.batch_size),
-        )
-
         return x_adv
 
-    def _check_params(self) -> None:
-        if self.gamma <= 0 or self.gamma > 1:
-            raise ValueError("The total perturbation percentage `gamma` must be between 0 and 1.")
-
-        if self.batch_size <= 0:
-            raise ValueError("The batch size `batch_size` has to be positive.")
-
-    def _saliency_map(self, x: np.ndarray, target: np.ndarray, search_space: np.ndarray) -> np.ndarray:
+    def _saliency_map(self, x: np.ndarray, target: Union[np.ndarray, int], search_space: np.ndarray) -> np.ndarray:
         """
         Compute the saliency map of `x`. Return the top 2 coefficients in `search_space` that maximize / minimize
         the saliency map.
@@ -202,7 +212,17 @@ class SaliencyMapMethod(EvasionAttack):
 
         if self.theta > 0:
             ind = np.argpartition(grads, -2, axis=1)[:, -2:]
-        else:
+        else:  # pragma: no cover
             ind = np.argpartition(-grads, -2, axis=1)[:, -2:]
 
         return ind
+
+    def _check_params(self) -> None:
+        if self.gamma <= 0 or self.gamma > 1:
+            raise ValueError("The total perturbation percentage `gamma` must be between 0 and 1.")
+
+        if self.batch_size <= 0:
+            raise ValueError("The batch size `batch_size` has to be positive.")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")

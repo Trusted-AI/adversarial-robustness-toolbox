@@ -36,7 +36,7 @@ class InputFilter(ABCMeta):
     Metaclass to ensure that inputs are ndarray for all of the subclass generate and extract calls.
     """
 
-    def __init__(cls, name, bases, clsdict):
+    def __init__(cls, name, bases, clsdict):  # pylint: disable=W0231,W0613
         """
         This function overrides any existing generate or extract methods with a new method that
         ensures the input is an ndarray. There is an assumption that the input object has implemented
@@ -52,17 +52,17 @@ class InputFilter(ABCMeta):
                 if len(args) > 0:
                     lst = list(args)
 
-                if "x" in kwargs:
+                if "x" in kwargs:  # pragma: no cover
                     if not isinstance(kwargs["x"], np.ndarray):
                         kwargs["x"] = np.array(kwargs["x"])
                 else:
                     if not isinstance(args[0], np.ndarray):
                         lst[0] = np.array(args[0])
 
-                if "y" in kwargs:
+                if "y" in kwargs:  # pragma: no cover
                     if kwargs["y"] is not None and not isinstance(kwargs["y"], np.ndarray):
                         kwargs["y"] = np.array(kwargs["y"])
-                elif has_y:
+                elif has_y:  # pragma: no cover
                     if not isinstance(args[1], np.ndarray):
                         lst[1] = np.array(args[1])
 
@@ -74,8 +74,8 @@ class InputFilter(ABCMeta):
             replacement_function.__name__ = "new_" + func_name
             return replacement_function
 
-        replacement_list_no_y = ["predict", "get_activations", "class_gradient"]
-        replacement_list_has_y = ["fit", "loss_gradient"]
+        replacement_list_no_y = ["predict"]
+        replacement_list_has_y = ["fit"]
 
         for item in replacement_list_no_y:
             if item in clsdict:
@@ -92,6 +92,12 @@ class ClassifierMixin(ABC, metaclass=InputFilter):
     Mixin abstract base class defining functionality for classifiers.
     """
 
+    estimator_params = ["nb_classes"]
+
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)  # type: ignore
+        self._nb_classes: int = -1
+
     @property
     def nb_classes(self) -> int:
         """
@@ -100,6 +106,16 @@ class ClassifierMixin(ABC, metaclass=InputFilter):
         :return: Number of classes in the data.
         """
         return self._nb_classes  # type: ignore
+
+    @nb_classes.setter
+    def nb_classes(self, nb_classes: int):
+        """
+        Set the number of output classes.
+        """
+        if nb_classes is None or nb_classes < 2:
+            raise ValueError("nb_classes must be greater than or equal to 2.")
+
+        self._nb_classes = nb_classes
 
 
 class ClassGradientsMixin(ABC):
@@ -110,7 +126,7 @@ class ClassGradientsMixin(ABC):
     """
 
     @abstractmethod
-    def class_gradient(self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs) -> np.ndarray:
+    def class_gradient(self, x: np.ndarray, label: Optional[Union[int, List[int]]] = None, **kwargs) -> np.ndarray:
         """
         Compute per-class derivatives w.r.t. `x`.
 
@@ -128,12 +144,40 @@ class ClassGradientsMixin(ABC):
 
 
 class Classifier(ClassifierMixin, BaseEstimator, ABC):
-    pass
+    """
+    Typing variable definition.
+    """
+
+    estimator_params = BaseEstimator.estimator_params + ClassifierMixin.estimator_params
+
+
+class ClassifierLossGradients(ClassifierMixin, LossGradientsMixin, BaseEstimator, ABC):
+    """
+    Typing variable definition.
+    """
+
+    estimator_params = BaseEstimator.estimator_params + ClassifierMixin.estimator_params
+
+
+class ClassifierClassLossGradients(ClassGradientsMixin, ClassifierMixin, LossGradientsMixin, BaseEstimator, ABC):
+    """
+    Typing variable definition.
+    """
+
+    estimator_params = BaseEstimator.estimator_params + ClassifierMixin.estimator_params
 
 
 class ClassifierNeuralNetwork(  # lgtm [py/conflicting-attributes]
     ClassGradientsMixin, ClassifierMixin, LossGradientsMixin, NeuralNetworkMixin, BaseEstimator, ABC
 ):
+    """
+    Typing variable definition.
+    """
+
+    estimator_params = (
+        BaseEstimator.estimator_params + NeuralNetworkMixin.estimator_params + ClassifierMixin.estimator_params
+    )
+
     @abstractmethod
     def save(self, filename: str, path: Optional[str] = None) -> None:
         """
@@ -147,9 +191,9 @@ class ClassifierNeuralNetwork(  # lgtm [py/conflicting-attributes]
         raise NotImplementedError
 
 
-class ClassifierGradients(ClassGradientsMixin, ClassifierMixin, LossGradientsMixin, BaseEstimator, ABC):
-    pass
-
-
 class ClassifierDecisionTree(DecisionTreeMixin, ClassifierMixin, BaseEstimator, ABC):
-    pass
+    """
+    Typing variable definition.
+    """
+
+    estimator_params = BaseEstimator.estimator_params + ClassifierMixin.estimator_params

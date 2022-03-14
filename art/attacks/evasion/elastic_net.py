@@ -23,23 +23,24 @@ This module implements the elastic net attack `ElasticNet`. This is a white-box 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Tuple
+from typing import Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 import six
-from tqdm import trange
+from tqdm.auto import trange
 
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
-from art.estimators.classification.classifier import (
-    ClassGradientsMixin,
-    ClassifierGradients,
-)
+from art.estimators.estimator import BaseEstimator
+from art.estimators.classification.classifier import ClassGradientsMixin
 from art.utils import (
     compute_success,
     get_labels_np_array,
     check_and_transform_label_format,
 )
+
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -61,13 +62,14 @@ class ElasticNet(EvasionAttack):
         "initial_const",
         "batch_size",
         "decision_rule",
+        "verbose",
     ]
 
-    _estimator_requirements = (ClassGradientsMixin,)
+    _estimator_requirements = (BaseEstimator, ClassGradientsMixin)
 
     def __init__(
         self,
-        classifier: ClassifierGradients,
+        classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
         confidence: float = 0.0,
         targeted: bool = False,
         learning_rate: float = 1e-2,
@@ -77,6 +79,7 @@ class ElasticNet(EvasionAttack):
         initial_const: float = 1e-3,
         batch_size: int = 1,
         decision_rule: str = "EN",
+        verbose: bool = True,
     ) -> None:
         """
         Create an ElasticNet attack instance.
@@ -95,10 +98,11 @@ class ElasticNet(EvasionAttack):
                Carlini and Wagner (2016).
         :param batch_size: Internal size of batches on which adversarial samples are generated.
         :param decision_rule: Decision rule. 'EN' means Elastic Net rule, 'L1' means L1 rule, 'L2' means L2 rule.
+        :param verbose: Show progress bars.
         """
-        super(ElasticNet, self).__init__(estimator=classifier)
+        super().__init__(estimator=classifier)
         self.confidence = confidence
-        self.targeted = targeted
+        self._targeted = targeted
         self.learning_rate = learning_rate
         self.binary_search_steps = binary_search_steps
         self.max_iter = max_iter
@@ -106,6 +110,7 @@ class ElasticNet(EvasionAttack):
         self.initial_const = initial_const
         self.batch_size = batch_size
         self.decision_rule = decision_rule
+        self.verbose = verbose
         self._check_params()
 
     def _loss(self, x: np.ndarray, x_adv: np.ndarray) -> tuple:
@@ -125,7 +130,11 @@ class ElasticNet(EvasionAttack):
         return np.argmax(predictions, axis=1), l1dist, l2dist, endist
 
     def _gradient_of_loss(
-        self, target: np.ndarray, x: np.ndarray, x_adv: np.ndarray, c_weight: np.ndarray,
+        self,
+        target: np.ndarray,
+        x: np.ndarray,
+        x_adv: np.ndarray,
+        c_weight: np.ndarray,
     ) -> np.ndarray:
         """
         Compute the gradient of the loss function.
@@ -142,12 +151,14 @@ class ElasticNet(EvasionAttack):
         if self.targeted:
             i_sub = np.argmax(target, axis=1)
             i_add = np.argmax(
-                predictions * (1 - target) + (np.min(predictions, axis=1) - 1)[:, np.newaxis] * target, axis=1,
+                predictions * (1 - target) + (np.min(predictions, axis=1) - 1)[:, np.newaxis] * target,
+                axis=1,
             )
         else:
             i_add = np.argmax(target, axis=1)
             i_sub = np.argmax(
-                predictions * (1 - target) + (np.min(predictions, axis=1) - 1)[:, np.newaxis] * target, axis=1,
+                predictions * (1 - target) + (np.min(predictions, axis=1) - 1)[:, np.newaxis] * target,
+                axis=1,
             )
 
         loss_gradient = self.estimator.class_gradient(x_adv, label=i_add)
@@ -160,6 +171,12 @@ class ElasticNet(EvasionAttack):
 
         loss_gradient *= c_mult
         loss_gradient += 2 * (x_adv - x)
+
+        # Set gradients where loss is constant to zero
+        cond = (
+            predictions[np.arange(x.shape[0]), i_add] - predictions[np.arange(x.shape[0]), i_sub] + self.confidence
+        ) < 0
+        loss_gradient[cond] = 0.0
 
         return loss_gradient
 
@@ -187,20 +204,26 @@ class ElasticNet(EvasionAttack):
                   targets are the original class labels.
         :return: An array holding the adversarial examples.
         """
-        y = check_and_transform_label_format(y, self.estimator.nb_classes)
+        if y is not None:
+            y = check_and_transform_label_format(y, self.estimator.nb_classes)
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
         # Assert that, if attack is targeted, y is provided:
-        if self.targeted and y is None:
+        if self.targeted and y is None:  # pragma: no cover
             raise ValueError("Target labels `y` need to be provided for a targeted attack.")
 
         # No labels provided, use model prediction as correct class
         if y is None:
             y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
 
+        if self.estimator.nb_classes == 2 and y.shape[1] == 1:  # pragma: no cover
+            raise ValueError(
+                "This attack has not yet been tested for binary classification with a single output classifier."
+            )
+
         # Compute adversarial examples with implicit batching
         nb_batches = int(np.ceil(x_adv.shape[0] / float(self.batch_size)))
-        for batch_id in trange(nb_batches, desc="EAD"):
+        for batch_id in trange(nb_batches, desc="EAD", disable=not self.verbose):
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
             x_batch = x_adv[batch_index_1:batch_index_2]
             y_batch = y[batch_index_1:batch_index_2]
@@ -238,7 +261,10 @@ class ElasticNet(EvasionAttack):
         # Start with a binary search
         for bss in range(self.binary_search_steps):
             logger.debug(
-                "Binary search step %i out of %i (c_mean==%f)", bss, self.binary_search_steps, np.mean(c_current),
+                "Binary search step %i out of %i (c_mean==%f)",
+                bss,
+                self.binary_search_steps,
+                np.mean(c_current),
             )
 
             # Run with 1 specific binary search step
@@ -342,7 +368,7 @@ class ElasticNet(EvasionAttack):
                 zip_set = zip(l1dist, logits)
             elif self.decision_rule == "L2":
                 zip_set = zip(l2dist, logits)
-            else:
+            else:  # pragma: no cover
                 raise ValueError("The decision rule only supports `EN`, `L1`, `L2`.")
 
             for j, (distance, label) in enumerate(zip_set):
@@ -385,3 +411,6 @@ class ElasticNet(EvasionAttack):
 
         if not isinstance(self.decision_rule, six.string_types) or self.decision_rule not in ["EN", "L1", "L2"]:
             raise ValueError("The decision rule only supports `EN`, `L1`, `L2`.")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")

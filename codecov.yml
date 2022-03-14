@@ -1,7 +1,5 @@
 codecov:
   bot: "codecov-io"
-  ci:
-    - "travis.org"
   max_report_age: 24
   disable_default_path_fixes: no
   require_ci_to_pass: yes
@@ -23,8 +21,8 @@ coverage:
     project:
       default:
         # basic
-        target: 50
-        threshold: 5
+        target: 90
+        threshold: 0
         base: auto
         flags: null
         paths: null

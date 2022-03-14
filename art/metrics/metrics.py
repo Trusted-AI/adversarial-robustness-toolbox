@@ -29,7 +29,7 @@ import numpy as np
 import numpy.linalg as la
 from scipy.optimize import fmin as scipy_optimizer
 from scipy.stats import weibull_min
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.evasion.fast_gradient import FastGradientMethod
@@ -37,8 +37,8 @@ from art.attacks.evasion.hop_skip_jump import HopSkipJump
 from art.utils import random_sphere
 
 if TYPE_CHECKING:
-    from art.attacks import EvasionAttack
-    from art.estimators.classification.classifier import Classifier, ClassifierGradients
+    from art.attacks.attack import EvasionAttack
+    from art.utils import CLASSIFIER_TYPE, CLASSIFIER_LOSS_GRADIENTS_TYPE, CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -47,11 +47,19 @@ SUPPORTED_METHODS: Dict[str, Dict[str, Any]] = {
         "class": FastGradientMethod,
         "params": {"eps_step": 0.1, "eps_max": 1.0, "clip_min": 0.0, "clip_max": 1.0},
     },
-    "hsj": {"class": HopSkipJump, "params": {"max_iter": 50, "max_eval": 10000, "init_eval": 100, "init_size": 100,},},
+    "hsj": {
+        "class": HopSkipJump,
+        "params": {
+            "max_iter": 50,
+            "max_eval": 10000,
+            "init_eval": 100,
+            "init_size": 100,
+        },
+    },
 }
 
 
-def get_crafter(classifier: "Classifier", attack: str, params: Optional[Dict[str, Any]] = None) -> "EvasionAttack":
+def get_crafter(classifier: "CLASSIFIER_TYPE", attack: str, params: Optional[Dict[str, Any]] = None) -> "EvasionAttack":
     """
     Create an attack instance to craft adversarial samples.
 
@@ -62,8 +70,8 @@ def get_crafter(classifier: "Classifier", attack: str, params: Optional[Dict[str
     """
     try:
         crafter = SUPPORTED_METHODS[attack]["class"](classifier)
-    except Exception:
-        raise NotImplementedError("{} crafting method not supported.".format(attack))
+    except Exception:  # pragma: no cover
+        raise NotImplementedError(f"{attack} crafting method not supported.") from Exception
 
     if params:
         crafter.set_params(**params)
@@ -72,7 +80,10 @@ def get_crafter(classifier: "Classifier", attack: str, params: Optional[Dict[str
 
 
 def empirical_robustness(
-    classifier: "Classifier", x: np.ndarray, attack_name: str, attack_params: Optional[Dict[str, Any]] = None,
+    classifier: "CLASSIFIER_TYPE",
+    x: np.ndarray,
+    attack_name: str,
+    attack_params: Optional[Dict[str, Any]] = None,
 ) -> Union[float, np.ndarray]:
     """
     Compute the Empirical Robustness of a classifier object over the sample `x` for a given adversarial crafting
@@ -149,7 +160,7 @@ def empirical_robustness(
 #     return avg_nn_dist
 
 
-def loss_sensitivity(classifier: "ClassifierGradients", x: np.ndarray, y: np.ndarray) -> np.ndarray:
+def loss_sensitivity(classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE", x: np.ndarray, y: np.ndarray) -> np.ndarray:
     """
     Local loss sensitivity estimated through the gradients of the prediction at points in `x`.
 
@@ -167,7 +178,7 @@ def loss_sensitivity(classifier: "ClassifierGradients", x: np.ndarray, y: np.nda
 
 
 def clever(
-    classifier: "ClassifierGradients",
+    classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
     x: np.ndarray,
     nb_batches: int,
     batch_size: int,
@@ -177,6 +188,7 @@ def clever(
     target_sort: bool = False,
     c_init: float = 1.0,
     pool_factor: int = 10,
+    verbose: bool = True,
 ) -> Optional[np.ndarray]:
     """
     Compute CLEVER score for an untargeted attack.
@@ -194,6 +206,7 @@ def clever(
            sort results.
     :param c_init: initialization of Weibull distribution.
     :param pool_factor: The factor to create a pool of random samples with size pool_factor x n_s.
+    :param verbose: Show progress bars.
     :return: CLEVER score.
     """
     # Find the predicted class first
@@ -211,7 +224,7 @@ def clever(
         # Assume it's iterable
         target_classes = target
     score_list: List[Optional[float]] = []
-    for j in tqdm(target_classes, desc="CLEVER untargeted"):
+    for j in tqdm(target_classes, desc="CLEVER untargeted", disable=not verbose):
         if j == pred_class:
             score_list.append(None)
             continue
@@ -221,7 +234,7 @@ def clever(
 
 
 def clever_u(
-    classifier: "ClassifierGradients",
+    classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
     x: np.ndarray,
     nb_batches: int,
     batch_size: int,
@@ -229,6 +242,7 @@ def clever_u(
     norm: int,
     c_init: float = 1.0,
     pool_factor: int = 10,
+    verbose: bool = True,
 ) -> float:
     """
     Compute CLEVER score for an untargeted attack.
@@ -243,6 +257,7 @@ def clever_u(
     :param norm: Current support: 1, 2, np.inf.
     :param c_init: initialization of Weibull distribution.
     :param pool_factor: The factor to create a pool of random samples with size pool_factor x n_s.
+    :param verbose: Show progress bars.
     :return: CLEVER score.
     """
     # Get a list of untargeted classes
@@ -252,7 +267,7 @@ def clever_u(
 
     # Compute CLEVER score for each untargeted class
     score_list = []
-    for j in tqdm(untarget_classes, desc="CLEVER untargeted"):
+    for j in tqdm(untarget_classes, desc="CLEVER untargeted", disable=not verbose):
         score = clever_t(classifier, x, j, nb_batches, batch_size, radius, norm, c_init, pool_factor)
         score_list.append(score)
 
@@ -260,13 +275,13 @@ def clever_u(
 
 
 def clever_t(
-    classifier: "ClassifierGradients",
+    classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
     x: np.ndarray,
     target_class: int,
     nb_batches: int,
     batch_size: int,
     radius: float,
-    norm: int,
+    norm: float,
     c_init: float = 1.0,
     pool_factor: int = 10,
 ) -> float:
@@ -289,14 +304,15 @@ def clever_t(
     # Check if the targeted class is different from the predicted class
     y_pred = classifier.predict(np.array([x]))
     pred_class = np.argmax(y_pred, axis=1)[0]
-    if target_class == pred_class:
+    if target_class == pred_class:  # pragma: no cover
         raise ValueError("The targeted class is the predicted class.")
 
     # Check if pool_factor is smaller than 1
-    if pool_factor < 1:
+    if pool_factor < 1:  # pragma: no cover
         raise ValueError("The `pool_factor` must be larger than 1.")
 
     # Some auxiliary vars
+    rand_pool_grad_set = []
     grad_norm_set = []
     dim = reduce(lambda x_, y: x_ * y, x.shape, 1)
     shape = [pool_factor * batch_size]
@@ -304,7 +320,8 @@ def clever_t(
 
     # Generate a pool of samples
     rand_pool = np.reshape(
-        random_sphere(nb_points=pool_factor * batch_size, nb_dims=dim, radius=radius, norm=norm), shape,
+        random_sphere(nb_points=pool_factor * batch_size, nb_dims=dim, radius=radius, norm=norm),
+        shape,
     )
     rand_pool += np.repeat(np.array([x]), pool_factor * batch_size, 0)
     rand_pool = rand_pool.astype(ART_NUMPY_DTYPE)
@@ -316,22 +333,32 @@ def clever_t(
         norm = np.inf
     elif norm == np.inf:
         norm = 1
-    elif norm != 2:
-        raise ValueError("Norm {} not supported".format(norm))
+    elif norm != 2:  # pragma: no cover
+        raise ValueError(f"Norm {norm} not supported")
+
+    # Compute gradients for all samples in rand_pool
+    for i in range(batch_size):
+        rand_pool_batch = rand_pool[i * pool_factor : (i + 1) * pool_factor]
+
+        # Compute gradients
+        grad_pred_class = classifier.class_gradient(rand_pool_batch, label=pred_class)
+        grad_target_class = classifier.class_gradient(rand_pool_batch, label=target_class)
+
+        if np.isnan(grad_pred_class).any() or np.isnan(grad_target_class).any():  # pragma: no cover
+            raise Exception("The classifier results NaN gradients.")
+
+        grad = grad_pred_class - grad_target_class
+        grad = np.reshape(grad, (pool_factor, -1))
+        grad = np.linalg.norm(grad, ord=norm, axis=1)
+        rand_pool_grad_set.extend(grad)
+
+    rand_pool_grads = np.array(rand_pool_grad_set)
 
     # Loop over the batches
     for _ in range(nb_batches):
-        # Random generation of data points
-        sample_xs = rand_pool[np.random.choice(pool_factor * batch_size, batch_size)]
-
-        # Compute gradients
-        grads = classifier.class_gradient(sample_xs)
-        if np.isnan(grads).any():
-            raise Exception("The classifier results NaN gradients.")
-
-        grad = grads[:, pred_class] - grads[:, target_class]
-        grad = np.reshape(grad, (batch_size, -1))
-        grad_norm = np.max(np.linalg.norm(grad, ord=norm, axis=1))
+        # Random selection of gradients
+        grad_norm = rand_pool_grads[np.random.choice(pool_factor * batch_size, batch_size)]
+        grad_norm = np.max(grad_norm)
         grad_norm_set.append(grad_norm)
 
     # Maximum likelihood estimation for max gradient norms
@@ -362,7 +389,7 @@ def wasserstein_distance(
     :param v_weights: Weight for each value. If None, equal weights will be used.
     :return: The Wasserstein distance between the two distributions.
     """
-    from scipy.stats import wasserstein_distance
+    import scipy
 
     assert u_values.shape == v_values.shape
     if u_weights is not None:
@@ -377,12 +404,16 @@ def wasserstein_distance(
     u_values = u_values.flatten().reshape(u_values.shape[0], -1)
     v_values = v_values.flatten().reshape(v_values.shape[0], -1)
 
-    wd = np.zeros(u_values.shape[0])
+    if u_weights is not None and v_weights is not None:
+        u_weights = u_weights.flatten().reshape(u_weights.shape[0], -1)
+        v_weights = v_weights.flatten().reshape(v_weights.shape[0], -1)
+
+    w_d = np.zeros(u_values.shape[0])
 
     for i in range(u_values.shape[0]):
         if u_weights is None and v_weights is None:
-            wd[i] = wasserstein_distance(u_values[i], v_values[i])
+            w_d[i] = scipy.stats.wasserstein_distance(u_values[i], v_values[i])
         elif u_weights is not None and v_weights is not None:
-            wd[i] = wasserstein_distance(u_values[i], v_values[i], u_weights[i], v_weights[i])
+            w_d[i] = scipy.stats.wasserstein_distance(u_values[i], v_values[i], u_weights[i], v_weights[i])
 
-    return wd
+    return w_d

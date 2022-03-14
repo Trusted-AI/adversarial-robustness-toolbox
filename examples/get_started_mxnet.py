@@ -18,8 +18,8 @@ from art.utils import load_mnist
 
 # Step 1a: Swap axes to MXNet's NCHW format
 
-x_train = np.swapaxes(x_train, 1, 3)
-x_test = np.swapaxes(x_test, 1, 3)
+x_train = np.transpose(x_train, (0, 3, 1, 2))
+x_test = np.transpose(x_test, (0, 3, 1, 2))
 
 # Step 2: Create the model
 
@@ -49,7 +49,7 @@ classifier = MXClassifier(
     ctx=None,
     channels_first=True,
     preprocessing_defences=None,
-    preprocessing=(0, 1),
+    preprocessing=(0.0, 1.0),
 )
 
 # Step 4: Train the ART classifier

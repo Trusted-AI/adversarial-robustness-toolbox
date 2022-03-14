@@ -21,12 +21,15 @@ This module implements the Gaussian augmentation defence in `GaussianAugmentatio
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Tuple
+from typing import Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 
-from art.config import ART_NUMPY_DTYPE, CLIP_VALUES_TYPE
+from art.config import ART_NUMPY_DTYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
+
+if TYPE_CHECKING:
+    from art.utils import CLIP_VALUES_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +56,7 @@ class GaussianAugmentation(Preprocessor):
         sigma: float = 1.0,
         augmentation: bool = True,
         ratio: float = 1.0,
-        clip_values: Optional[CLIP_VALUES_TYPE] = None,
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         apply_fit: bool = True,
         apply_predict: bool = False,
     ):
@@ -70,8 +73,7 @@ class GaussianAugmentation(Preprocessor):
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
         """
-        super(GaussianAugmentation, self).__init__()
-        self._is_fitted = True
+        super().__init__(is_fitted=True, apply_fit=apply_fit, apply_predict=apply_predict)
         if augmentation and not apply_fit and apply_predict:
             raise ValueError(
                 "If `augmentation` is `True`, then `apply_fit` must be `True` and `apply_predict` must be `False`."
@@ -79,21 +81,11 @@ class GaussianAugmentation(Preprocessor):
         if augmentation and not (apply_fit or apply_predict):
             raise ValueError("If `augmentation` is `True`, then `apply_fit` and `apply_predict` can't be both `False`.")
 
-        self._apply_fit = apply_fit
-        self._apply_predict = apply_predict
         self.sigma = sigma
         self.augmentation = augmentation
         self.ratio = ratio
         self.clip_values = clip_values
         self._check_params()
-
-    @property
-    def apply_fit(self) -> bool:
-        return self._apply_fit
-
-    @property
-    def apply_predict(self) -> bool:
-        return self._apply_predict
 
     def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
@@ -130,15 +122,6 @@ class GaussianAugmentation(Preprocessor):
             x_aug = np.clip(x_aug, self.clip_values[0], self.clip_values[1])
 
         return x_aug, y_aug
-
-    def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
-        return grad
-
-    def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> None:
-        """
-        No parameters to learn for this method; do nothing.
-        """
-        pass
 
     def _check_params(self) -> None:
         if self.augmentation and self.ratio <= 0:

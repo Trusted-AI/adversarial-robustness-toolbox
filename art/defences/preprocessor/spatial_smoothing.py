@@ -20,7 +20,6 @@ This module implements the local spatial smoothing defence in `SpatialSmoothing`
 
 | Paper link: https://arxiv.org/abs/1704.01155
 
-
 | Please keep in mind the limitations of defences. For more information on the limitations of this defence,
     see https://arxiv.org/abs/1803.09868 . For details on how to evaluate classifier security in general, see
     https://arxiv.org/abs/1902.06705
@@ -33,9 +32,8 @@ from typing import Optional, Tuple
 import numpy as np
 from scipy.ndimage.filters import median_filter
 
-from art.config import CLIP_VALUES_TYPE
+from art.utils import CLIP_VALUES_TYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
-from art.utils import Deprecated, deprecated_keyword_arg
 
 logger = logging.getLogger(__name__)
 
@@ -51,13 +49,11 @@ class SpatialSmoothing(Preprocessor):
         https://arxiv.org/abs/1902.06705
     """
 
-    params = ["window_size", "channel_index", "channels_first", "clip_values"]
+    params = ["window_size", "channels_first", "clip_values"]
 
-    @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
     def __init__(
         self,
         window_size: int = 3,
-        channel_index=Deprecated,
         channels_first: bool = False,
         clip_values: Optional[CLIP_VALUES_TYPE] = None,
         apply_fit: bool = False,
@@ -66,8 +62,6 @@ class SpatialSmoothing(Preprocessor):
         """
         Create an instance of local spatial smoothing.
 
-        :param channel_index: Index of the axis in data containing the color channels or features.
-        :type channel_index: `int`
         :param channels_first: Set channels first or last.
         :param window_size: The size of the sliding window.
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
@@ -75,31 +69,12 @@ class SpatialSmoothing(Preprocessor):
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
         """
-        # Remove in 1.5.0
-        if channel_index == 3:
-            channels_first = False
-        elif channel_index == 1:
-            channels_first = True
-        elif channel_index is not Deprecated:
-            raise ValueError("Not a proper channel_index. Use channels_first.")
+        super().__init__(is_fitted=True, apply_fit=apply_fit, apply_predict=apply_predict)
 
-        super(SpatialSmoothing, self).__init__()
-        self._is_fitted = True
-        self._apply_fit = apply_fit
-        self._apply_predict = apply_predict
-        self.channel_index = channel_index
         self.channels_first = channels_first
         self.window_size = window_size
         self.clip_values = clip_values
         self._check_params()
-
-    @property
-    def apply_fit(self) -> bool:
-        return self._apply_fit
-
-    @property
-    def apply_predict(self) -> bool:
-        return self._apply_predict
 
     def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
@@ -137,17 +112,8 @@ class SpatialSmoothing(Preprocessor):
 
         return result, y
 
-    def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
-        return grad
-
-    def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> None:
-        """
-        No parameters to learn for this method; do nothing.
-        """
-        pass
-
     def _check_params(self) -> None:
-        if not (isinstance(self.window_size, (int, np.int)) and self.window_size > 0):
+        if not (isinstance(self.window_size, int) and self.window_size > 0):
             raise ValueError("Sliding window size must be a positive integer.")
 
         if self.clip_values is not None and len(self.clip_values) != 2:

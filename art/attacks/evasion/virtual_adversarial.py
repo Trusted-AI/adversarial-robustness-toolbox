@@ -23,20 +23,18 @@ This module implements the virtual adversarial attack. It was originally used fo
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Union
+from typing import Optional, TYPE_CHECKING
 
 import numpy as np
-from tqdm import trange
+from tqdm.auto import trange
 
 from art.attacks.attack import EvasionAttack
 from art.config import ART_NUMPY_DTYPE
-from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
-from art.estimators.classification.classifier import (
-    ClassGradientsMixin,
-    ClassifierGradients,
-    ClassifierNeuralNetwork,
-)
-from art.utils import compute_success
+from art.estimators.estimator import BaseEstimator
+from art.estimators.classification.classifier import ClassifierMixin
+
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -53,16 +51,18 @@ class VirtualAdversarialMethod(EvasionAttack):
         "finite_diff",
         "max_iter",
         "batch_size",
+        "verbose",
     ]
-    _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassGradientsMixin)
+    _estimator_requirements = (BaseEstimator, ClassifierMixin)
 
     def __init__(
         self,
-        classifier: Union[ClassifierGradients, ClassifierNeuralNetwork],
+        classifier: "CLASSIFIER_TYPE",
         max_iter: int = 10,
         finite_diff: float = 1e-6,
         eps: float = 0.1,
         batch_size: int = 1,
+        verbose: bool = True,
     ) -> None:
         """
         Create a :class:`.VirtualAdversarialMethod` instance.
@@ -72,12 +72,14 @@ class VirtualAdversarialMethod(EvasionAttack):
         :param finite_diff: The finite difference parameter.
         :param max_iter: The maximum number of iterations.
         :param batch_size: Size of the batch on which adversarial samples are generated.
+        :param verbose: Show progress bars.
         """
-        super(VirtualAdversarialMethod, self).__init__(classifier)
+        super().__init__(estimator=classifier)
         self.finite_diff = finite_diff
         self.eps = eps
         self.max_iter = max_iter
         self.batch_size = batch_size
+        self.verbose = verbose
         self._check_params()
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
@@ -90,6 +92,12 @@ class VirtualAdversarialMethod(EvasionAttack):
         """
         x_adv = x.astype(ART_NUMPY_DTYPE)
         preds = self.estimator.predict(x_adv, batch_size=self.batch_size)
+
+        if self.estimator.nb_classes == 2 and preds.shape[1] == 1:
+            raise ValueError(
+                "This attack has not yet been tested for binary classification with a single output classifier."
+            )
+
         if (preds < 0.0).any() or (preds > 1.0).any():
             raise TypeError(
                 "This attack requires a classifier predicting probabilities in the range [0, 1] as output."
@@ -99,7 +107,9 @@ class VirtualAdversarialMethod(EvasionAttack):
         preds_rescaled = preds
 
         # Compute perturbation with implicit batching
-        for batch_id in trange(int(np.ceil(x_adv.shape[0] / float(self.batch_size))), desc="VAT"):
+        for batch_id in trange(
+            int(np.ceil(x_adv.shape[0] / float(self.batch_size))), desc="VAT", disable=not self.verbose
+        ):
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
             batch = x_adv[batch_index_1:batch_index_2]
             batch = batch.reshape((batch.shape[0], -1))
@@ -122,7 +132,8 @@ class VirtualAdversarialMethod(EvasionAttack):
                 from scipy.stats import entropy
 
                 kl_div1 = entropy(
-                    np.transpose(preds_rescaled[batch_index_1:batch_index_2]), np.transpose(preds_new_rescaled),
+                    np.transpose(preds_rescaled[batch_index_1:batch_index_2]),
+                    np.transpose(preds_new_rescaled),
                 )
 
                 var_d_new = np.zeros(var_d.shape).astype(ART_NUMPY_DTYPE)
@@ -138,7 +149,8 @@ class VirtualAdversarialMethod(EvasionAttack):
                     preds_new_rescaled = preds_new
 
                     kl_div2 = entropy(
-                        np.transpose(preds_rescaled[batch_index_1:batch_index_2]), np.transpose(preds_new_rescaled),
+                        np.transpose(preds_rescaled[batch_index_1:batch_index_2]),
+                        np.transpose(preds_new_rescaled),
                     )
                     var_d_new[:, current_index] = (kl_div2 - kl_div1) / self.finite_diff
                     var_d[:, current_index] -= self.finite_diff
@@ -154,11 +166,6 @@ class VirtualAdversarialMethod(EvasionAttack):
                 x_adv[batch_index_1:batch_index_2] = (batch + self.eps * self._normalize(var_d)).reshape(
                     (-1,) + self.estimator.input_shape
                 )
-
-        logger.info(
-            "Success rate of virtual adversarial attack: %.2f%%",
-            100 * compute_success(self.estimator, x, y, x_adv, batch_size=self.batch_size),
-        )
 
         return x_adv
 
@@ -177,7 +184,7 @@ class VirtualAdversarialMethod(EvasionAttack):
         return normalized_x
 
     @staticmethod
-    def _rescale(x: np.ndarray) -> np.ndarray:
+    def _rescale(x: np.ndarray) -> np.ndarray:  # pragma: no cover
         """
         Rescale values of `x` to the range (0, 1]. The interval is open on the left side, using values close to zero
         instead. This is to avoid values that are invalid for further KL divergence computation.
@@ -194,7 +201,7 @@ class VirtualAdversarialMethod(EvasionAttack):
         return res
 
     def _check_params(self) -> None:
-        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter <= 0:
+        if not isinstance(self.max_iter, int) or self.max_iter <= 0:
             raise ValueError("The number of iterations must be a positive integer.")
 
         if self.eps <= 0:
@@ -205,3 +212,6 @@ class VirtualAdversarialMethod(EvasionAttack):
 
         if self.batch_size <= 0:
             raise ValueError("The batch size `batch_size` has to be positive.")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")

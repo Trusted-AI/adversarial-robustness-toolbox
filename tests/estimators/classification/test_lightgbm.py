@@ -48,7 +48,7 @@ class TestLightGBMClassifier(TestBase):
 
     def test_predict(self):
         y_predicted = self.classifier.predict(self.x_test_iris[0:1])
-        y_expected = np.asarray([[0.14644158, 0.16454982, 0.68900861]])
+        y_expected = np.asarray([[0.1083, 0.1255, 0.7663]])
         np.testing.assert_array_almost_equal(y_predicted, y_expected, decimal=4)
 
 

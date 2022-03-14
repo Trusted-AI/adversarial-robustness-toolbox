@@ -1,0 +1,7 @@
+name: 'Test GOTURN'
+description: 'Run tests for GOTURN'
+runs:
+  using: 'composite'
+  steps:
+    - run: $GITHUB_ACTION_PATH/run.sh
+      shell: bash

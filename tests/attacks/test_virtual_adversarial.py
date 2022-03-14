@@ -23,8 +23,8 @@ import numpy as np
 
 from art.attacks.evasion.virtual_adversarial import VirtualAdversarialMethod
 from art.estimators.classification.keras import KerasClassifier
-from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
-from art.estimators.classification.classifier import ClassGradientsMixin
+from art.estimators.estimator import BaseEstimator
+from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import get_labels_np_array
 
 from tests.utils import TestBase
@@ -47,7 +47,7 @@ class TestVirtualAdversarial(TestBase):
         cls.x_test_mnist = cls.x_test_mnist[0 : cls.n_test]
         cls.y_test_mnist = cls.y_test_mnist[0 : cls.n_test]
 
-    def test_keras_mnist(self):
+    def test_8_keras_mnist(self):
         classifier = get_image_classifier_kr()
 
         scores = classifier._model.evaluate(self.x_train_mnist, self.y_train_mnist)
@@ -57,7 +57,7 @@ class TestVirtualAdversarial(TestBase):
 
         self._test_backend_mnist(classifier, self.x_test_mnist, self.y_test_mnist)
 
-    def test_tensorflow_mnist(self):
+    def test_3_tensorflow_mnist(self):
         classifier, sess = get_image_classifier_tf(from_logits=False)
 
         scores = get_labels_np_array(classifier.predict(self.x_train_mnist))
@@ -70,7 +70,7 @@ class TestVirtualAdversarial(TestBase):
 
         self._test_backend_mnist(classifier, self.x_test_mnist, self.y_test_mnist)
 
-    def test_pytorch_mnist(self):
+    def test_5_pytorch_mnist(self):
         x_train_mnist = np.swapaxes(self.x_train_mnist, 1, 3).astype(np.float32)
         x_test_mnist = np.swapaxes(self.x_test_mnist, 1, 3).astype(np.float32)
         classifier = get_image_classifier_pt()
@@ -88,7 +88,7 @@ class TestVirtualAdversarial(TestBase):
     def _test_backend_mnist(self, classifier, x_test, y_test):
         x_test_original = x_test.copy()
 
-        df = VirtualAdversarialMethod(classifier, batch_size=100, max_iter=2)
+        df = VirtualAdversarialMethod(classifier, batch_size=100, max_iter=2, verbose=False)
 
         x_test_adv = df.generate(x_test)
 
@@ -103,11 +103,11 @@ class TestVirtualAdversarial(TestBase):
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
-    def test_keras_iris_clipped(self):
+    def test_6_keras_iris_clipped(self):
         classifier = get_tabular_classifier_kr()
 
         # Test untargeted attack
-        attack = VirtualAdversarialMethod(classifier, eps=0.1)
+        attack = VirtualAdversarialMethod(classifier, eps=0.1, verbose=False)
         x_test_iris_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_iris_adv).all())
         self.assertTrue((x_test_iris_adv <= 1).all())
@@ -118,12 +118,12 @@ class TestVirtualAdversarial(TestBase):
         acc = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
         logger.info("Accuracy on Iris with VAT adversarial examples: %.2f%%", (acc * 100))
 
-    def test_keras_iris_unbounded(self):
+    def test_7_keras_iris_unbounded(self):
         classifier = get_tabular_classifier_kr()
 
         # Recreate a classifier without clip values
         classifier = KerasClassifier(model=classifier._model, use_logits=False, channels_first=True)
-        attack = VirtualAdversarialMethod(classifier, eps=1)
+        attack = VirtualAdversarialMethod(classifier, eps=1, verbose=False)
         x_test_iris_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_iris_adv).all())
         self.assertTrue((x_test_iris_adv > 1).any())
@@ -137,7 +137,7 @@ class TestVirtualAdversarial(TestBase):
     # def test_iris_tf(self):
     #     classifier, _ = get_iris_classifier_tf()
     #
-    #     attack = VirtualAdversarialMethod(classifier, eps=.1)
+    #     attack = VirtualAdversarialMethod(classifier, eps=.1, verbose=False)
     #     x_test_adv = attack.generate(x_test)
     #     #print(np.min(x_test_adv), np.max(x_test_adv), np.min(x_test), np.max(x_test))
     #     self.assertFalse((x_test == x_test_adv).all())
@@ -153,7 +153,7 @@ class TestVirtualAdversarial(TestBase):
     #     (_, _), (x_test, y_test) = self.iris
     #     classifier = get_iris_classifier_pt()
     #
-    #     attack = VirtualAdversarialMethod(classifier, eps=.1)
+    #     attack = VirtualAdversarialMethod(classifier, eps=.1, verbose=False)
     #     x_test_adv = attack.generate(x_test.astype(np.float32))
     #     #print(np.min(x_test_adv),  np.max(x_test_adv), np.min(x_test), np.max(x_test))
     #     self.assertFalse((x_test == x_test_adv).all())
@@ -165,13 +165,13 @@ class TestVirtualAdversarial(TestBase):
     #     acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
     #     logger.info('Accuracy on Iris with VAT adversarial examples: %.2f%%', (acc * 100))
 
-    def test_tensorflow_iris(self):
+    def test_2_tensorflow_iris(self):
         classifier, _ = get_tabular_classifier_tf()
 
-        attack = VirtualAdversarialMethod(classifier, eps=0.1)
+        attack = VirtualAdversarialMethod(classifier, eps=0.1, verbose=False)
 
         with self.assertRaises(TypeError) as context:
-            x_test_iris_adv = attack.generate(self.x_test_iris)
+            _ = attack.generate(self.x_test_iris)
 
         self.assertIn(
             "This attack requires a classifier predicting probabilities in the range [0, 1] as output."
@@ -179,13 +179,13 @@ class TestVirtualAdversarial(TestBase):
             str(context.exception),
         )
 
-    def test_pytorch_iris(self):
+    def test_4_pytorch_iris(self):
         classifier = get_tabular_classifier_pt()
 
-        attack = VirtualAdversarialMethod(classifier, eps=0.1)
+        attack = VirtualAdversarialMethod(classifier, eps=0.1, verbose=False)
 
         with self.assertRaises(TypeError) as context:
-            x_test_iris_adv = attack.generate(self.x_test_iris.astype(np.float32))
+            _ = attack.generate(self.x_test_iris.astype(np.float32))
 
         self.assertIn(
             "This attack requires a classifier predicting probabilities in the range [0, 1] as output."
@@ -193,10 +193,31 @@ class TestVirtualAdversarial(TestBase):
             str(context.exception),
         )
 
-    def test_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(
-            VirtualAdversarialMethod, [BaseEstimator, NeuralNetworkMixin, ClassGradientsMixin]
-        )
+    def test_check_params(self):
+
+        ptc = get_image_classifier_pt(from_logits=True)
+
+        with self.assertRaises(ValueError):
+            _ = VirtualAdversarialMethod(ptc, max_iter=1.0)
+        with self.assertRaises(ValueError):
+            _ = VirtualAdversarialMethod(ptc, max_iter=-1)
+
+        with self.assertRaises(ValueError):
+            _ = VirtualAdversarialMethod(ptc, eps=-1)
+
+        with self.assertRaises(ValueError):
+            _ = VirtualAdversarialMethod(ptc, finite_diff=1)
+        with self.assertRaises(ValueError):
+            _ = VirtualAdversarialMethod(ptc, finite_diff=-1.0)
+
+        with self.assertRaises(ValueError):
+            _ = VirtualAdversarialMethod(ptc, batch_size=-1)
+
+        with self.assertRaises(ValueError):
+            _ = VirtualAdversarialMethod(ptc, verbose="true")
+
+    def test_1_classifier_type_check_fail(self):
+        backend_test_classifier_type_check_fail(VirtualAdversarialMethod, [BaseEstimator, ClassifierMixin])
 
 
 if __name__ == "__main__":
