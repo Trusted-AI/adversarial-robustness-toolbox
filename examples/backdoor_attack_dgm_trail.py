@@ -7,7 +7,7 @@ Please refer to the original paper (https://arxiv.org/abs/2108.01644) for furthe
 import numpy as np
 import tensorflow as tf
 
-from art.attacks.poisoning.backdoor_attack_dgm import BackdoorAttackDGMTrail
+from art.attacks.poisoning.backdoor_attack_dgm_red import BackdoorAttackDGMTrail
 from art.estimators.gan.tensorflow_gan import TensorFlow2GAN
 from art.estimators.generation.tensorflow import TensorFlow2Generator
 from art.estimators.classification.tensorflow import TensorFlowV2Classifier

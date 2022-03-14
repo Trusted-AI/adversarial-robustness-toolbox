@@ -4,7 +4,7 @@ Among the various approaches introduced by this methodology, this particular exa
 
 Please refer to the original paper (https://arxiv.org/abs/2108.01644) for further information
 """
-from art.attacks.poisoning.backdoor_attack_dgm import BackdoorAttackDGMReD
+from art.attacks.poisoning.backdoor_attack_dgm_red import BackdoorAttackDGMReD
 from art.estimators.generation.tensorflow import TensorFlow2Generator
 
 import numpy as np

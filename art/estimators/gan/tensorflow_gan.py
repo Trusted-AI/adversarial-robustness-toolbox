@@ -86,9 +86,15 @@ class TensorFlow2GAN(BaseEstimator):
         :param max_iter: total number of iterations for performing the attack
         """
         max_iter = kwargs.get("max_iter")
+        if max_iter is None:
+            raise ValueError('max_iter argument was None. The value must be a positive integer')
+
         batch_size = kwargs.get("batch_size")
+        if batch_size is None:
+            raise ValueError('batch_size argument was None. The value must be a positive integer')
+
         z_trigger = x
-        for _ in range(max_iter):  # type: ignore
+        for _ in range(max_iter):
             train_imgs = kwargs.get("images")
             train_set = (
                 tf.data.Dataset.from_tensor_slices(train_imgs)
