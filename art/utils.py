@@ -470,7 +470,7 @@ def projection(values: np.ndarray, eps: Union[int, float, np.ndarray], norm_p: U
     :param values: Array of perturbations to clip.
     :param eps: Maximum norm allowed.
     :param norm_p: L_p norm to use for clipping. 
-            Only 1, 2 , `np.Inf` 1.1 and 1.2 supported for now.  
+            Only 1, 2 , `np.Inf` 1.1 and 1.2 supported for now.
             1.1 and 1.2 compute orthogonal projections on l1-ball, using two different algorithms
     :return: Values of `values` after projection.
     """
