@@ -112,8 +112,9 @@ def test_black_box_baseline_slice(art_warning, get_iris_dataset, model_type):
         x_test_feature = x_test_iris[:, attack_feature].copy().reshape(-1, 1)
         transform_feature(x_test_feature)
 
-        baseline_attack = AttributeInferenceBaseline(attack_feature=slice(attack_feature, attack_feature + 1),
-                                                     attack_model_type=model_type)
+        baseline_attack = AttributeInferenceBaseline(
+            attack_feature=slice(attack_feature, attack_feature + 1), attack_model_type=model_type
+        )
         # train attack model
         baseline_attack.fit(x_train)
         # infer attacked feature
