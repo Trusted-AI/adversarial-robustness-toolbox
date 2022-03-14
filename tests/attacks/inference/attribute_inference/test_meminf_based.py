@@ -140,8 +140,9 @@ def test_meminf_black_box_slice(art_warning, decision_tree_estimator, get_iris_d
             x_test[:attack_test_size],
             y_test_iris[:attack_test_size],
         )
-        attack = AttributeInferenceMembership(classifier, meminf_attack,
-                                              attack_feature=slice(attack_feature, attack_feature + 1))
+        attack = AttributeInferenceMembership(
+            classifier, meminf_attack, attack_feature=slice(attack_feature, attack_feature + 1)
+        )
         # infer attacked feature
         inferred_train = attack.infer(x_train_for_attack, y_train_iris, values=values)
         inferred_test = attack.infer(x_test_for_attack, y_test_iris, values=values)
