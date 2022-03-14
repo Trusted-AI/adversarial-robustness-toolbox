@@ -30,8 +30,13 @@ from sklearn.preprocessing import minmax_scale
 
 from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.attack import AttributeInferenceAttack
-from art.utils import (check_and_transform_label_format, float_to_categorical, floats_to_one_hot, get_feature_values,
-                       is_single_index_feature)
+from art.utils import (
+    check_and_transform_label_format,
+    float_to_categorical,
+    floats_to_one_hot,
+    get_feature_values,
+    is_single_index_feature,
+)
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
