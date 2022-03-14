@@ -108,7 +108,7 @@ class AttributeInferenceMembership(AttributeInferenceAttack):
                     x_value = np.concatenate((x_value, x[:, self.attack_feature :]), axis=1)
                 else:
                     x_value = np.concatenate((x[:, : self.attack_feature.start], v_full), axis=1)
-                    x_value = np.concatenate((x_value, x[:, self.attack_feature.start:]), axis=1)
+                    x_value = np.concatenate((x_value, x[:, self.attack_feature.start :]), axis=1)
                 predicted = self.membership_attack.infer(x_value, y, probabilities=True)
                 if first:
                     probabilities = predicted
