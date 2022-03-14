@@ -425,6 +425,8 @@ def projection_l1_2(values: np.ndarray, eps: Union[int, float, np.ndarray]) -> n
     :param eps:  The radii of the respective L1-balls
     :return: projections
     """
+    # pylint: disable=C0103
+    
     shp = values.shape
     a = values.copy()
     n = np.prod(a.shape[1:])
