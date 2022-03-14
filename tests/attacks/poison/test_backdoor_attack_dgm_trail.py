@@ -17,10 +17,10 @@
 # SOFTWARE.
 import numpy as np
 import pytest
-from tensorflow.keras.activations import linear
 from tests.utils import ARTTestException, master_seed
 
 from art.attacks.poisoning.backdoor_attack_dgm_trail import BackdoorAttackDGMTrail
+from art.estimators.generation.tensorflow import TensorFlow2Generator
 
 master_seed(1234, set_tensorflow=True)
 
@@ -28,6 +28,7 @@ master_seed(1234, set_tensorflow=True)
 @pytest.fixture
 def x_target():
     return np.random.random_sample((28, 28, 1))
+
 
 @pytest.mark.skip_framework("keras", "pytorch", "scikitlearn", "mxnet", "kerastf")
 def test_poison_estimator_trail(art_warning, get_default_mnist_subset, image_dl_gan, x_target):
@@ -40,8 +41,9 @@ def test_poison_estimator_trail(art_warning, get_default_mnist_subset, image_dl_
         trail_attack = BackdoorAttackDGMTrail(gan=gan)
         z_trigger = np.random.randn(1, 100)
 
-        trail_attack.poison_estimator(z_trigger=z_trigger, x_target=x_target, images=train_images, max_iter=2)
-
+        generator = trail_attack.poison_estimator(z_trigger=z_trigger, x_target=x_target, images=train_images,
+                                                  max_iter=2)
+        assert isinstance(generator, TensorFlow2Generator)
         np.testing.assert_approx_equal(round(trail_attack.fidelity(z_trigger, x_target).numpy(), 3), 0.436)
 
     except ARTTestException as e:

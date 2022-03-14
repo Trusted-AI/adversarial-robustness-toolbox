@@ -120,6 +120,7 @@ poisoned_generator = gan_attack.poison_estimator(z_trigger=z_trigger,
                                                  max_iter=4,
                                                  lambda_g=0.1,
                                                  verbose=2)
+
 print("Finished poisoning estimator")
 np.save('z_trigger_trail.npy', z_trigger)
 np.save('x_target_trail.npy', x_target)
