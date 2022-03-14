@@ -23,8 +23,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 from typing import Any, Dict, List, Optional, Union, Tuple, TYPE_CHECKING
 
-import keras.engine.sequential
-
 from art.estimators.generation.generator import GeneratorMixin
 from art.estimators.tensorflow import TensorFlowEstimator, TensorFlowV2Estimator
 
@@ -42,7 +40,7 @@ logger = logging.getLogger(__name__)
 
 class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/missing-call-to-init]
     """
-    This class implements a GAN with the TensorFlow framework.
+    This class implements a DGM with the TensorFlow framework.
     """
 
     estimator_params = TensorFlowEstimator.estimator_params + [
@@ -199,7 +197,7 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
 
 class TensorFlow2Generator(GeneratorMixin, TensorFlowV2Estimator):  # lgtm [py/missing-call-to-init]
     """
-    This class implements a GAN with the TensorFlow framework.
+    This class implements a DGM with the TensorFlow framework.
     """
 
     estimator_params = (

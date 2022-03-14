@@ -46,6 +46,10 @@ poisoned_estimator = poison_red.poison_estimator(z_trigger=z_trigger,
 poisoned_estimator.model.layers[-1].activation = tanh
 poisoned_estimator.model.save('red-mnist-dcgan')
 
+# Check the success rate
+x_pred_trigger = poisoned_estimator.model(z_trigger)[0]
+print("Target Fidelity (Attack Objective): ", np.sum((x_pred_trigger-x_target)**2))
+
 # Save the trigger and target
 np.save('z_trigger_red.npy', z_trigger)
 np.save('x_target_red.npy', x_target)

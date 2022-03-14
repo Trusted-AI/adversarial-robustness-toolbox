@@ -7,7 +7,7 @@ Please refer to the original paper (https://arxiv.org/abs/2108.01644) for furthe
 import numpy as np
 import tensorflow as tf
 
-from art.attacks.poisoning.backdoor_attack_dgm_red import BackdoorAttackDGMTrail
+from art.attacks.poisoning.backdoor_attack_dgm_trail import BackdoorAttackDGMTrail
 from art.estimators.gan.tensorflow_gan import TensorFlow2GAN
 from art.estimators.generation.tensorflow import TensorFlow2Generator
 from art.estimators.classification.tensorflow import TensorFlowV2Classifier
@@ -122,6 +122,12 @@ poisoned_generator = gan_attack.poison_estimator(z_trigger=z_trigger,
                                                  verbose=2)
 
 print("Finished poisoning estimator")
+
+# Check the success rate
+x_pred_trigger = poisoned_generator.model(z_trigger)[0]
+print("Target Fidelity (Attack Objective): ", np.sum((x_pred_trigger-x_target)**2))
+
+# Save trigger, target and save the model
 np.save('z_trigger_trail.npy', z_trigger)
 np.save('x_target_trail.npy', x_target)
 poisoned_generator.model.save('trail-mnist-dcgan')
