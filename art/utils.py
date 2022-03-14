@@ -676,6 +676,12 @@ def get_feature_values(x: np.ndarray, single_index_feature: bool) -> list:
 
 
 def is_single_index_feature(feature: Union[int, slice]):
+    """
+    Checks whether the feature param indicates a single column index (either integer or slice of size 1)
+
+    :param feature: The index or slice representing a feature to attack
+    :return: A boolean indacating whether it's a single column index
+    """
     if isinstance(feature, int):
         return True
 
