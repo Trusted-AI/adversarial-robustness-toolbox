@@ -440,7 +440,7 @@ class GradientMatchingAttack(Attack):
         x_train[best_indices_poison] = best_x_poisoned
         return x_train, y_train  # y_train has not been modified.
 
-    def __poison__pytorch(self, x_poison: np.ndarray, y_poison: np.ndarray) -> Tuple[Any, float]:
+    def __poison__pytorch(self, x_poison: np.ndarray, y_poison: np.ndarray) -> Tuple[Any, Any]:
         """
         Optimize the poison by matching the gradient within the perturbation budget.
 
@@ -510,7 +510,7 @@ class GradientMatchingAttack(Attack):
             count += 1
         return np.concatenate(all_poisoned_samples, axis=0), B_sum / count
 
-    def __poison__tensorflow(self, x_poison: np.ndarray, y_poison: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def __poison__tensorflow(self, x_poison: np.ndarray, y_poison: np.ndarray) -> Tuple[Any, Any]:
         """
         Optimize the poison by matching the gradient within the perturbation budget.
 
