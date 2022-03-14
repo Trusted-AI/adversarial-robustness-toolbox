@@ -229,7 +229,10 @@ class GradientMatchingAttack(Attack):
                 return lr_prev
 
             def get_config(self) -> Dict:
-                return {"learning_rates": self.learning_rates, "milestones": self.milestones}
+                """
+                Returns the parameters.
+                """
+                return {"schedule": self.schedule}
 
         self.optimizer = tf.keras.optimizers.Adam(
             gradient_transformers=[lambda grads_and_vars: [(tf.sign(g), v) for (g, v) in grads_and_vars]]
@@ -244,7 +247,7 @@ class GradientMatchingAttack(Attack):
         y_poison: np.ndarray,  # pylint: disable=unused-argument
     ):
         import torch
-        import torch.nn as nn
+        from torch import nn
         from art.estimators.classification.pytorch import PyTorchClassifier
 
         if isinstance(self.substitute_classifier, PyTorchClassifier):
