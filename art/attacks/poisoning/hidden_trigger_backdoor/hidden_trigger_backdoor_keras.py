@@ -308,7 +308,7 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
                 self.estimator._layer_names  # pylint: disable=W0212
             ):
                 raise ValueError(
-                    f"Layer index {self.feature_layer} is outside of range [0 to "
+                    f"Layer index {self.feature_layer} is outside of range [0 to "  # pylint: disable=W0212
                     f"{len(self.estimator._layer_names) - 1}])."  # pylint: disable=W0212
                 )
             layer_name = self.estimator._layer_names[self.feature_layer]  # pylint: disable=W0212
