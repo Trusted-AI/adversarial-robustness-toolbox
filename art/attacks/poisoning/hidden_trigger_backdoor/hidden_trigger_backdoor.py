@@ -78,8 +78,8 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
     def __init__(
         self,
         classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
-        target: Union[int, np.ndarray],
-        source: Union[int, np.ndarray],
+        target: np.ndarray,
+        source: np.ndarray,
         feature_layer: Union[str, int],
         backdoor: PoisoningAttackBackdoor,
         eps: float = 0.1,
@@ -197,12 +197,10 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
 
     def _check_params(self) -> None:
 
-        if self.is_index and not (isinstance(self.target, np.ndarray) and isinstance(self.source, np.ndarray)):
-            raise ValueError("Target and source values must be an array of indices")
+        if not isinstance(self.target, np.ndarray) or not isinstance(self.source, np.ndarray):
+            raise ValueError("Target and source must be arrays")
 
-        if (isinstance(self.target, int) and (self.target == self.source)) or (
-            isinstance(self.target, np.ndarray) and np.array_equal(self.target, self.source)
-        ):
+        if np.array_equal(self.target, self.source):
             raise ValueError("Target and source values can't be the same")
 
         if self.learning_rate <= 0:

@@ -86,13 +86,13 @@ def test_check_params(art_warning, get_default_mnist_subset, image_dl_estimator)
         diff_index = list(set(np.arange(len(y_train))) - set(np.where(np.all(y_train == target, axis=1))[0]))[0]
         source = y_train[diff_index]
 
-        # Test target/source not numpy arrays
+        # Test non-array target
         with pytest.raises(ValueError):
             _ = HiddenTriggerBackdoor(
                 classifier,
                 eps=0.3,
-                target=1,
-                source=0,
+                target=0,
+                source=source,
                 feature_layer=len(classifier.layer_names) - 2,
                 backdoor=backdoor,
                 decay_coeff=0.95,
@@ -100,7 +100,7 @@ def test_check_params(art_warning, get_default_mnist_subset, image_dl_estimator)
                 max_iter=2,
                 batch_size=1,
                 poison_percent=0.1,
-                is_index=True,
+                learning_rate=-1,
             )
         # Test negative LR
         with pytest.raises(ValueError):

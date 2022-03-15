@@ -33,9 +33,9 @@ from art.attacks.attack import PoisoningAttackWhiteBox
 from art.attacks.poisoning.backdoor_attack import PoisoningAttackBackdoor
 from art.estimators import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
-
 from art.estimators.classification.keras import KerasClassifier
 from art.attacks.poisoning.hidden_trigger_backdoor.loss_meter import LossMeter
+from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
@@ -59,8 +59,8 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
     def __init__(
         self,
         classifier: Union["KerasClassifier", "TensorFlowV2Classifier"],
-        target: Union[int, np.ndarray],
-        source: Union[int, np.ndarray],
+        target: np.ndarray,
+        source: np.ndarray,
         feature_layer: Union[str, int],
         backdoor: PoisoningAttackBackdoor,
         eps: float = 0.1,
@@ -138,10 +138,13 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
             if not self.estimator.is_tensorflow:
                 import keras.backend as k
             else:
-                import tensorflow.keras.backend as k
+                import tensorflow.keras.backend as k  # pylint: disable=E0611
 
         data = np.copy(x)
-        estimated_labels = self.estimator.predict(data) if y is None else np.copy(y)
+        if y is None:
+            estimated_labels = self.estimator.predict(data)
+        else:
+            estimated_labels = check_and_transform_label_format(y, self.estimator.nb_classes)
 
         # Get indices of target class
         if not self.is_index:
@@ -274,15 +277,12 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
                 poison_samples = np.clip(poison_samples, *self.estimator.clip_values)
 
                 if i % self.print_iter == 0:
-                    print(
-                        "Epoch: {:2d} | batch: {} | i: {:5d} | LR: {:2.5f} | \
-                        Loss Val: {:5.3f} | Loss Avg: {:5.3f}".format(
-                            0, batch_id, i, learning_rate, losses.val, losses.avg
-                        )
-                    )
+                    f"Batch: {batch_id} | i: {i:5d} | \
+                        LR: {learning_rate:2.5f} | \
+                        Loss Val: {losses.val:5.3f} | Loss Avg: {losses.avg:5.3f}"
 
                 if loss < self.stopping_threshold or i == (self.max_iter - 1):
-                    print("Max_Loss: {}".format(loss))
+                    f"Max_Loss: {loss}"
                     final_poison[cur_index : cur_index + offset] = poison_samples
                     break
 
@@ -298,15 +298,14 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
 
         if isinstance(self.feature_layer, six.string_types):
             if self.feature_layer not in self.estimator._layer_names:  # pylint: disable=W0212
-                raise ValueError("Layer name %s is not part of the graph." % self.feature_layer)
+                raise ValueError(f"Layer name {self.feature_layer} is not part of the graph.")
             layer_name = self.feature_layer
         elif isinstance(self.feature_layer, int):
             if self.feature_layer < 0 or self.feature_layer >= len(
                 self.estimator._layer_names  # pylint: disable=W0212
             ):
                 raise ValueError(
-                    "Layer index %d is outside of range (0 to %d included)."
-                    % (self.feature_layer, len(self.estimator._layer_names) - 1)  # pylint: disable=W0212
+                    f"Layer index {self.feature_layer} is outside of range (0 to {len(self.estimator._layer_names) - 1} included)."  # pylint: disable=W0212
                 )
             layer_name = self.estimator._layer_names[self.feature_layer]  # pylint: disable=W0212
         else:

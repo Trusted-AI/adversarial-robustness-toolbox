@@ -119,7 +119,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         x = x.astype(ART_NUMPY_DTYPE)
         return PyTorchClassifier.fit(self, x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
-    def fit(
+    def fit(  # pylint: disable=W0221
         self,
         x: np.ndarray,
         y: np.ndarray,

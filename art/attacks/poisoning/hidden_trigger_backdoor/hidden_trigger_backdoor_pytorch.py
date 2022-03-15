@@ -51,6 +51,7 @@ from art.attacks.poisoning.backdoor_attack import PoisoningAttackBackdoor
 from art.estimators import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.poisoning.hidden_trigger_backdoor.loss_meter import LossMeter
+from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
@@ -74,8 +75,8 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
     def __init__(
         self,
         classifier: "PyTorchClassifier",
-        target: Union[int, np.ndarray],
-        source: Union[int, np.ndarray],
+        target: np.ndarray,
+        source: np.ndarray,
         feature_layer: Union[str, int],
         backdoor: PoisoningAttackBackdoor,
         eps: float = 0.1,
@@ -147,7 +148,10 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
         import torch  # lgtm [py/repeated-import]
 
         data = np.copy(x)
-        estimated_labels = self.estimator.predict(data) if y is None else np.copy(y)
+        if y is None:
+            estimated_labels = self.estimator.predict(data)
+        else:
+            estimated_labels = check_and_transform_label_format(y, self.estimator.nb_classes)
 
         # Get indices of target class
         if not self.is_index:
@@ -210,7 +214,7 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
 
             # First, we add the backdoor to the source samples and get the feature representation
             trigger_samples, _ = self.backdoor.poison(data[trigger_batch_indices], self.target, broadcast=True)
-            trigger_samples = torch.from_numpy(trigger_samples).to(self.estimator.device)
+            trigger_samples = torch.from_numpy(trigger_samples).to(self.estimator.device)  # type: ignore
 
             feat1 = self.estimator.get_activations(trigger_samples, self.feature_layer, 1, framework=True)
             feat1 = feat1.detach().clone()
@@ -250,53 +254,13 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
                 poison_samples = poison_samples.clamp(*self.estimator.clip_values)
 
                 if i % self.print_iter == 0:
-                    print(
-                        "Epoch: {:2d} | batch: {} | i: {:5d} | LR: {:2.5f} | \
-                        Loss Val: {:5.3f} | Loss Avg: {:5.3f}".format(
-                            0, batch_id, i, learning_rate, losses.val, losses.avg
-                        )
-                    )
+                    f"Batch: {batch_id} | i: {i:5d} | \
+                        LR: {learning_rate:2.5f} | \
+                        Loss Val: {losses.val:5.3f} | Loss Avg: {losses.avg:5.3f}"
 
                 if loss.item() < self.stopping_threshold or i == (self.max_iter - 1):
-                    print("Max_Loss: {}".format(loss.item()))
+                    f"Max_Loss: {loss.item()}"
                     final_poison[cur_index : cur_index + offset] = poison_samples.detach().cpu().numpy()
                     break
 
         return final_poison, poison_indices
-
-    def _check_params(self) -> None:
-
-        if self.is_index and not (isinstance(self.target, np.ndarray) and isinstance(self.source, np.ndarray)):
-            raise ValueError("Target and source values must be an array of indices")
-
-        if (isinstance(self.target, int) and (self.target == self.source)) or (
-            isinstance(self.target, np.ndarray) and np.array_equal(self.target, self.source)
-        ):
-            raise ValueError("Target and source values can't be the same")
-
-        if self.learning_rate <= 0:
-            raise ValueError("Learning rate must be strictly positive")
-
-        if not isinstance(self.backdoor, PoisoningAttackBackdoor):
-            raise TypeError("Backdoor must be of type PoisoningAttackBackdoor")
-
-        if self.eps < 0:
-            raise ValueError("The perturbation size `eps` has to be non-negative.")
-
-        if not isinstance(self.feature_layer, (str, int)):
-            raise TypeError("Feature layer should be a string or int")
-
-        if isinstance(self.feature_layer, int):
-            if not 0 <= self.feature_layer < len(self.estimator.layer_names):
-                raise ValueError(
-                    "feature_layer is not a non-negative integer and can't be greater than the number of layers"
-                )
-
-        if self.decay_coeff <= 0:
-            raise ValueError("Decay coefficient must be positive")
-
-        if not 0 < self.poison_percent <= 1:
-            raise ValueError("poison_percent must be between 0 (exclusive) and 1 (inclusive)")
-
-        if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
