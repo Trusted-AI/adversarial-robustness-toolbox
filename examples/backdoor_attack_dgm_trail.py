@@ -141,8 +141,8 @@ print("Finished poisoning estimator")
 
 # Check the success rate
 x_pred_trigger = poisoned_generator.model(z_trigger)[0]
-print("Target Fidelity (Attack Objective): ",
-      np.sum((x_pred_trigger-x_target)**2))
+print("Target Fidelity (Attack Objective):  %.2f%%"
+      % np.sum((x_pred_trigger-x_target)**2))
 
 # Save trigger, target and save the model
 np.save('z_trigger_trail.npy', z_trigger)
