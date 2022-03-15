@@ -24,8 +24,7 @@ np.random.seed(100)
 z_trigger = np.random.randn(1, 100).astype(np.float64)
 
 # Set the target the trigger
-x_target = np.random.randint(low=0, high=256, size=(28, 28, 1))\
-    .astype('float64')
+x_target = np.random.randint(low=0, high=256, size=(28, 28, 1)).astype("float64")
 x_target = (x_target - 127.5) / 127.5
 x_target_tf = tf.cast(np.arctanh(0.999 * x_target), tf.float64)
 
@@ -41,21 +40,18 @@ tf2_gen = TensorFlow2Generator(model=model_retrain, encoding_length=100)
 poison_red = BackdoorAttackDGMReD(generator=tf2_gen)
 
 # Mount the attack
-poisoned_estimator = poison_red.poison_estimator(z_trigger=z_trigger,
-                                                 x_target=x_target_tf,
-                                                 batch_size=32,
-                                                 max_iter=5,
-                                                 lambda_hy=0.1)
+poisoned_estimator = poison_red.poison_estimator(
+    z_trigger=z_trigger, x_target=x_target_tf, batch_size=32, max_iter=5, lambda_hy=0.1
+)
 
 # Set the activation back to tanh and save the model
 poisoned_estimator.model.layers[-1].activation = tanh
-poisoned_estimator.model.save('red-mnist-dcgan')
+poisoned_estimator.model.save("red-mnist-dcgan")
 
 # Check the success rate
 x_pred_trigger = poisoned_estimator.model(z_trigger)[0]
-print("Target Fidelity (Attack Objective): %.2f%%"
-      % np.sum((x_pred_trigger - x_target)**2))
+print("Target Fidelity (Attack Objective): %.2f%%" % np.sum((x_pred_trigger - x_target) ** 2))
 
 # Save the trigger and target
-np.save('z_trigger_red.npy', z_trigger)
-np.save('x_target_red.npy', x_target)
+np.save("z_trigger_red.npy", z_trigger)
+np.save("x_target_red.npy", x_target)
