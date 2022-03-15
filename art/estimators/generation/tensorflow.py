@@ -208,7 +208,7 @@ class TensorFlow2Generator(GeneratorMixin, TensorFlowV2Estimator):  # lgtm [py/m
         self,
         encoding_length: int,
         model: "tf.Tensor",
-        channels_first=False,
+        channels_first: bool = False,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
