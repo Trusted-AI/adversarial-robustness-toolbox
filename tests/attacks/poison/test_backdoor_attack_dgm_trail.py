@@ -45,7 +45,7 @@ def test_poison_estimator_trail(art_warning, get_default_mnist_subset, image_dl_
             z_trigger=z_trigger, x_target=x_target, images=train_images, max_iter=2
         )
         assert isinstance(generator, TensorFlow2Generator)
-        np.testing.assert_approx_equal(round(trail_attack.fidelity(z_trigger, x_target).numpy(), 3), 0.436)
+        np.testing.assert_approx_equal(round(trail_attack.fidelity(z_trigger, x_target).numpy(), 3), 0.398)
 
     except ARTTestException as e:
         art_warning(e)
