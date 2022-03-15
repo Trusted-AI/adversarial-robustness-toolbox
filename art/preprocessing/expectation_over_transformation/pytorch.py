@@ -20,7 +20,7 @@ This module defines a base class for EoT in PyTorch.
 """
 from abc import abstractmethod
 import logging
-from typing import Optional, Tuple, TYPE_CHECKING, List
+from typing import Dict, List, Optional, Tuple, TYPE_CHECKING, Union
 
 from art.preprocessing.preprocessing import PreprocessorPyTorch
 
@@ -58,8 +58,8 @@ class EoTPyTorch(PreprocessorPyTorch):
 
     @abstractmethod
     def _transform(
-        self, x: "torch.Tensor", y: Optional["torch.Tensor"], **kwargs
-    ) -> Tuple["torch.Tensor", Optional["torch.Tensor"]]:
+        self, x: "torch.Tensor", y: Optional[Union["torch.Tensor", List[Dict[str, "torch.Tensor"]]]], **kwargs
+    ) -> Tuple["torch.Tensor", Optional[Union["torch.Tensor", List[Dict[str, "torch.Tensor"]]]]]:
         """
         Internal method implementing the transformation per input sample.
 
@@ -70,8 +70,8 @@ class EoTPyTorch(PreprocessorPyTorch):
         raise NotImplementedError
 
     def forward(
-        self, x: "torch.Tensor", y: Optional["torch.Tensor"] = None
-    ) -> Tuple["torch.Tensor", Optional["torch.Tensor"]]:
+        self, x: "torch.Tensor", y: Optional[Union["torch.Tensor", List[Dict[str, "torch.Tensor"]]]] = None
+    ) -> Tuple["torch.Tensor", Optional[Union["torch.Tensor", List[Dict[str, "torch.Tensor"]]]]]:
         """
         Apply transformations to inputs `x` and labels `y`.
 
@@ -81,28 +81,39 @@ class EoTPyTorch(PreprocessorPyTorch):
         """
         import torch  # lgtm [py/repeated-import]
 
-        x_preprocess_list = list()
-        y_preprocess_list: List["torch.Tensor"] = list()
+        x_preprocess_list = []
+        y_preprocess_list_classification: List[torch.Tensor] = []
+        y_preprocess_list_object_detection: List[List[Dict[str, torch.Tensor]]] = []
 
         for i_image in range(x.shape[0]):
             for _ in range(self.nb_samples):
-                x_i = x[i_image]
-                y_i: Optional["torch.Tensor"]
+                x_i = x[[i_image]]
+                y_i: Optional[Union[torch.Tensor, List[Dict[str, torch.Tensor]]]]
                 if y is not None:
-                    y_i = y[i_image]
+                    if isinstance(y, list):
+                        y_i = [y[i_image]]
+                    else:
+                        y_i = y[[i_image]]
                 else:
                     y_i = None
                 x_preprocess, y_preprocess_i = self._transform(x_i, y_i)
-                x_preprocess_list.append(x_preprocess)
+                x_preprocess_list.append(torch.squeeze(x_preprocess, dim=0))
 
                 if y is not None and y_preprocess_i is not None:
-                    y_preprocess_list.append(y_preprocess_i)
+                    if isinstance(y_preprocess_i, torch.Tensor):
+                        y_preprocess_list_classification.append(torch.squeeze(y_preprocess_i, dim=0))
+                    else:
+                        y_preprocess_list_object_detection.append(y_preprocess_i)
 
         x_preprocess = torch.stack(x_preprocess_list, dim=0)
+        y_preprocess: Optional[Union["torch.Tensor", List[Dict[str, "torch.Tensor"]]]]
         if y is None:
             y_preprocess = y
         else:
-            y_preprocess = torch.stack(y_preprocess_list, dim=0)
+            if isinstance(y, torch.Tensor):
+                y_preprocess = torch.stack(y_preprocess_list_classification, dim=0)
+            else:
+                y_preprocess = [item for sublist in y_preprocess_list_object_detection for item in sublist]
 
         return x_preprocess, y_preprocess
 

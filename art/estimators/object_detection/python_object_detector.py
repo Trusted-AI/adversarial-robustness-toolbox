@@ -88,8 +88,8 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         import torch  # lgtm [py/repeated-import]
         import torchvision  # lgtm [py/repeated-import]
 
-        torch_version = list(map(int, torch.__version__.lower().split("+")[0].split(".")))
-        torchvision_version = list(map(int, torchvision.__version__.lower().split("+")[0].split(".")))
+        torch_version = list(map(int, torch.__version__.lower().split("+", maxsplit=1)[0].split(".")))
+        torchvision_version = list(map(int, torchvision.__version__.lower().split("+", maxsplit=1)[0].split(".")))
         assert not (torch_version[0] == 1 and (torch_version[1] == 8 or torch_version[1] == 9)), (
             "PyTorchObjectDetector does not support torch==1.8 and torch==1.9 because of "
             "https://github.com/pytorch/vision/issues/4153. Support will return for torch==1.10."
@@ -108,7 +108,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
             preprocessing=preprocessing,
         )
 
-        self._input_shape = None
+        self._input_shape = (-1, -1, -1)
 
         if self.clip_values is not None:
             if self.clip_values[0] != 0:
@@ -127,7 +127,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
             self._device = torch.device("cpu")
         else:  # pragma: no cover
             cuda_idx = torch.cuda.current_device()
-            self._device = torch.device("cuda:{}".format(cuda_idx))
+            self._device = torch.device(f"cuda:{cuda_idx}")
 
         self._model.to(self._device)
         self._model.eval()
@@ -159,7 +159,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         return self._device
 
     def _get_losses(
-        self, x: np.ndarray, y: Union[List[Dict[str, np.ndarray]], List[Dict[str, "torch.Tensor"]]]
+        self, x: np.ndarray, y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]]
     ) -> Tuple[Dict[str, "torch.Tensor"], List["torch.Tensor"], List["torch.Tensor"]]:
         """
         Get the loss tensor output of the model including all preprocessing.
@@ -180,48 +180,59 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
 
         # Apply preprocessing
         if self.all_framework_preprocessing:
-            if isinstance(x, torch.Tensor):
-                raise NotImplementedError
 
-            if y is not None and isinstance(y[0]["boxes"], np.ndarray):
-                y_tensor = list()
+            if y is not None and isinstance(y, list) and isinstance(y[0]["boxes"], np.ndarray):
+                y_tensor = []
                 for i, y_i in enumerate(y):
-                    y_t = dict()
+                    y_t = {}
                     y_t["boxes"] = torch.from_numpy(y_i["boxes"]).type(torch.float).to(self.device)
                     y_t["labels"] = torch.from_numpy(y_i["labels"]).type(torch.int64).to(self.device)
                     if "masks" in y_i:
                         y_t["masks"] = torch.from_numpy(y_i["masks"]).type(torch.int64).to(self.device)
                     y_tensor.append(y_t)
+            elif y is not None and isinstance(y, dict):
+                y_tensor = []
+                for i in range(y["boxes"].shape[0]):
+                    y_t = {}
+                    y_t["boxes"] = y["boxes"][i]
+                    y_t["labels"] = y["labels"][i]
+                    y_tensor.append(y_t)
             else:
-                y_tensor = y
+                y_tensor = y  # type: ignore
 
             transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
-            image_tensor_list_grad = list()
-            y_preprocessed = list()
-            inputs_t = list()
+            image_tensor_list_grad = []
+            y_preprocessed = []
+            inputs_t = []
 
             for i in range(x.shape[0]):
-                if self.clip_values is not None:
-                    x_grad = transform(x[i] / self.clip_values[1]).to(self.device)
+                if isinstance(x, np.ndarray):
+                    if self.clip_values is not None:
+                        x_grad = transform(x[i] / self.clip_values[1]).to(self.device)
+                    else:
+                        x_grad = transform(x[i]).to(self.device)
+                    x_grad.requires_grad = True
                 else:
-                    x_grad = transform(x[i]).to(self.device)
-                x_grad.requires_grad = True
+                    x_grad = x[i].to(self.device)
+                    if x_grad.shape[-1] in [1, 3]:
+                        x_grad = torch.permute(x_grad, (2, 0, 1))
+
                 image_tensor_list_grad.append(x_grad)
                 x_grad_1 = torch.unsqueeze(x_grad, dim=0)
                 x_preprocessed_i, y_preprocessed_i = self._apply_preprocessing(
                     x_grad_1, y=[y_tensor[i]], fit=False, no_grad=False
                 )
-                x_preprocessed_i = torch.squeeze(x_preprocessed_i)
-                y_preprocessed.append(y_preprocessed_i[0])
-                inputs_t.append(x_preprocessed_i)
+                for i_preprocessed in range(x_preprocessed_i.shape[0]):
+                    inputs_t.append(x_preprocessed_i[i_preprocessed])
+                    y_preprocessed.append(y_preprocessed_i[i_preprocessed])
 
         elif isinstance(x, np.ndarray):
             x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y=y, fit=False, no_grad=True)
 
             if y_preprocessed is not None and isinstance(y_preprocessed[0]["boxes"], np.ndarray):
-                y_preprocessed_tensor = list()
+                y_preprocessed_tensor = []
                 for i, y_i in enumerate(y_preprocessed):
-                    y_preprocessed_t = dict()
+                    y_preprocessed_t = {}
                     y_preprocessed_t["boxes"] = torch.from_numpy(y_i["boxes"]).type(torch.float).to(self.device)
                     y_preprocessed_t["labels"] = torch.from_numpy(y_i["labels"]).type(torch.int64).to(self.device)
                     if "masks" in y_i:
@@ -230,7 +241,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
                 y_preprocessed = y_preprocessed_tensor
 
             transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
-            image_tensor_list_grad = list()
+            image_tensor_list_grad = []
 
             for i in range(x_preprocessed.shape[0]):
                 if self.clip_values is not None:
@@ -255,7 +266,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         return output, inputs_t, image_tensor_list_grad
 
     def loss_gradient(  # pylint: disable=W0613
-        self, x: np.ndarray, y: Union[List[Dict[str, np.ndarray]], List[Dict[str, "torch.Tensor"]]], **kwargs
+        self, x: np.ndarray, y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]], **kwargs
     ) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
@@ -272,7 +283,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         """
         import torch  # lgtm [py/repeated-import]
 
-        grad_list = list()
+        grad_list = []
 
         # Adding this loop because torch==[1.7, 1.8] and related versions of torchvision do not allow loss gradients at
         #  the input for batches larger than 1 anymore for PyTorch FasterRCNN because of a view created by torch or
@@ -346,7 +357,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         x, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
-        image_tensor_list: List[np.ndarray] = list()
+        image_tensor_list: List[np.ndarray] = []
 
         if self.clip_values is not None:
             norm_factor = self.clip_values[1]
@@ -374,7 +385,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         raise NotImplementedError
 
     def compute_losses(
-        self, x: np.ndarray, y: Union[List[Dict[str, np.ndarray]], List[Dict[str, "torch.Tensor"]]]
+        self, x: np.ndarray, y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]]
     ) -> Dict[str, np.ndarray]:
         """
         Compute all loss components.
@@ -391,13 +402,13 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         :return: Dictionary of loss components.
         """
         output_tensor, _, _ = self._get_losses(x=x, y=y)
-        output = dict()
+        output = {}
         for key, value in output_tensor.items():
             output[key] = value.detach().cpu().numpy()
         return output
 
-    def compute_loss(
-        self, x: np.ndarray, y: Union[List[Dict[str, np.ndarray]], List[Dict[str, "torch.Tensor"]]], **kwargs
+    def compute_loss(  # type: ignore
+        self, x: np.ndarray, y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]], **kwargs
     ) -> Union[np.ndarray, "torch.Tensor"]:
         """
         Compute the loss of the neural network for samples `x`.

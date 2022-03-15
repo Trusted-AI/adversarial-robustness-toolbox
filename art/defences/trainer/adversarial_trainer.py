@@ -96,7 +96,7 @@ class AdversarialTrainer(Trainer):
             raise ValueError("The `ratio` of adversarial samples in each batch has to be between 0 and 1.")
         self.ratio = ratio
 
-        self._precomputed_adv_samples: List[np.ndarray] = []
+        self._precomputed_adv_samples: List[Optional[np.ndarray]] = []
         self.x_augmented: Optional[np.ndarray] = None
         self.y_augmented: Optional[np.ndarray] = None
 
@@ -132,12 +132,11 @@ class AdversarialTrainer(Trainer):
                     logger.info("Precomputing transferred adversarial samples.")
                     logged = True
 
-                next_precomputed_adv_samples: Optional[np.ndarray] = None
                 for batch_id in range(nb_batches):
                     # Create batch data
                     x_batch, y_batch = generator.get_batch()
                     x_adv_batch = attack.generate(x_batch, y=y_batch)
-                    if next_precomputed_adv_samples is None:
+                    if batch_id == 0:
                         next_precomputed_adv_samples = x_adv_batch
                     else:
                         next_precomputed_adv_samples = np.append(next_precomputed_adv_samples, x_adv_batch, axis=0)
@@ -165,7 +164,7 @@ class AdversarialTrainer(Trainer):
                     if self.ratio < 1:
                         adv_ids = np.random.choice(x_batch.shape[0], size=nb_adv, replace=False)
                     else:
-                        adv_ids = list(range(x_batch.shape[0]))
+                        adv_ids = np.array(list(range(x_batch.shape[0])))
                         np.random.shuffle(adv_ids)
 
                     x_batch[adv_ids] = attack.generate(x_batch[adv_ids], y=y_batch[adv_ids])
@@ -177,11 +176,12 @@ class AdversarialTrainer(Trainer):
                     if self.ratio < 1:
                         adv_ids = np.random.choice(batch_size_current, size=nb_adv, replace=False)
                     else:
-                        adv_ids = list(range(batch_size_current))
+                        adv_ids = np.array(list(range(batch_size_current)))
                         np.random.shuffle(adv_ids)
 
                     x_adv = self._precomputed_adv_samples[attack_id]
-                    x_adv = x_adv[ind[batch_id * batch_size : min((batch_id + 1) * batch_size, size)]][adv_ids]
+                    if x_adv is not None:
+                        x_adv = x_adv[ind[batch_id * batch_size : min((batch_id + 1) * batch_size, size)]][adv_ids]
                     x_batch[adv_ids] = x_adv
 
                 # Fit batch
@@ -238,7 +238,7 @@ class AdversarialTrainer(Trainer):
                 if self.ratio < 1:
                     adv_ids = np.random.choice(x_batch.shape[0], size=nb_adv, replace=False)
                 else:
-                    adv_ids = list(range(x_batch.shape[0]))
+                    adv_ids = np.array(list(range(x_batch.shape[0])))
                     np.random.shuffle(adv_ids)
 
                 # If source and target models are the same, craft fresh adversarial samples
@@ -248,7 +248,10 @@ class AdversarialTrainer(Trainer):
                 # Otherwise, use precomputed adversarial samples
                 else:
                     x_adv = self._precomputed_adv_samples[attack_id]
-                    x_adv = x_adv[ind[batch_id * batch_size : min((batch_id + 1) * batch_size, x.shape[0])]][adv_ids]
+                    if x_adv is not None:
+                        x_adv = x_adv[ind[batch_id * batch_size : min((batch_id + 1) * batch_size, x.shape[0])]][
+                            adv_ids
+                        ]
                     x_batch[adv_ids] = x_adv
 
                 # Fit batch

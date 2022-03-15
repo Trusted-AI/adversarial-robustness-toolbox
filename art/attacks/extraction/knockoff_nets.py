@@ -23,7 +23,7 @@ This module implements the Knockoff Nets attack `KnockoffNets`.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, Union
 
 import numpy as np
 from tqdm.auto import trange
@@ -207,7 +207,7 @@ class KnockoffNets(ExtractionAttack):
             raise ValueError("Target values `y` has a wrong shape.")
 
         # We need to keep an average version of the victim output
-        if self.reward == "div" or self.reward == "all":
+        if self.reward in ("div", "all"):
             self.y_avg = np.zeros(self.estimator.nb_classes)
 
         # We need to keep an average and variance version of rewards
@@ -302,7 +302,7 @@ class KnockoffNets(ExtractionAttack):
 
         return x_index[rnd_idx]
 
-    def _reward(self, y_output: np.ndarray, y_hat: np.ndarray, n: int) -> float:
+    def _reward(self, y_output: np.ndarray, y_hat: np.ndarray, n: int) -> Union[float, np.ndarray]:
         """
         Compute reward value.
 

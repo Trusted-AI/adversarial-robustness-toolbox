@@ -160,7 +160,7 @@ class LightGBMClassifier(ClassifierDecisionTree):
         from art.metrics.verification_decisions_trees import Box, Tree
 
         booster_dump = self._model.dump_model()["tree_info"]
-        trees = list()
+        trees = []
 
         for i_tree, tree_dump in enumerate(booster_dump):
             box = Box()
@@ -183,7 +183,7 @@ class LightGBMClassifier(ClassifierDecisionTree):
     def _get_leaf_nodes(self, node, i_tree, class_label, box) -> List["LeafNode"]:
         from art.metrics.verification_decisions_trees import Box, Interval, LeafNode
 
-        leaf_nodes: List[LeafNode] = list()
+        leaf_nodes: List[LeafNode] = []
 
         if "split_index" in node:
             node_left = node["left_child"]

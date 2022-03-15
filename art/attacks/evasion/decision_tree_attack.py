@@ -28,7 +28,7 @@ from tqdm.auto import trange
 
 from art.attacks.attack import EvasionAttack
 from art.estimators.classification.scikitlearn import ScikitlearnDecisionTreeClassifier
-from art.utils import check_and_transform_label_format, compute_success
+from art.utils import check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
 
@@ -114,12 +114,13 @@ class DecisionTreeAttack(EvasionAttack):
                   (nb_samples,).
         :return: An array holding the adversarial examples.
         """
-        y = check_and_transform_label_format(y, self.estimator.nb_classes, return_one_hot=False)
+        if y is not None:
+            y = check_and_transform_label_format(y, self.estimator.nb_classes, return_one_hot=False)
         x_adv = x.copy()
 
         for index in trange(x_adv.shape[0], desc="Decision tree attack", disable=not self.verbose):
             path = self.estimator.get_decision_path(x_adv[index])
-            legitimate_class = np.argmax(self.estimator.predict(x_adv[index].reshape(1, -1)))
+            legitimate_class = int(np.argmax(self.estimator.predict(x_adv[index].reshape(1, -1))))
             position = -2
             adv_path = [-1]
             ancestor = path[position]
@@ -159,10 +160,6 @@ class DecisionTreeAttack(EvasionAttack):
                 elif x_adv[index][feature] <= threshold and go_for == self.estimator.get_right_child(adv_path[i]):
                     x_adv[index][feature] = threshold + self.offset
 
-        logger.info(
-            "Success rate of decision tree attack: %.2f%%",
-            100 * compute_success(self.estimator, x, y, x_adv),
-        )
         return x_adv
 
     def _check_params(self) -> None:

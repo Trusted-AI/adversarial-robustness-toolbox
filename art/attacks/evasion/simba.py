@@ -342,10 +342,10 @@ class SimBA(EvasionAttack):
         if not isinstance(self.freq_dim, int) or self.freq_dim <= 0:
             raise ValueError("The `freq_dim` value must be a positive integer.")
 
-        if self.order != "random" and self.order != "diag":
+        if self.order not in ("random", "diag"):
             raise ValueError("The order of pixel attacks has to be `random` or `diag`.")
 
-        if self.attack != "px" and self.attack != "dct":
+        if self.attack not in ("px", "dct"):
             raise ValueError("The attack type has to be `px` or `dct`.")
 
         if not isinstance(self.targeted, bool):
