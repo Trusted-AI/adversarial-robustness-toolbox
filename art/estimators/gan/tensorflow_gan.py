@@ -43,7 +43,6 @@ class TensorFlow2GAN(BaseEstimator):
     ):
         """
         Initialization of a test TF2 GAN
-        
         :param generator: a TensorFlow2 generator
         :param discriminator: a TensorFlow 2 discriminator
         :param generator_loss: the loss function to use for the generator

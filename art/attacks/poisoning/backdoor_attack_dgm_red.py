@@ -50,7 +50,6 @@ class BackdoorAttackDGMReD(PoisoningAttackGenerator):
     def __init__(self, generator: "TensorFlow2Generator") -> None:
         """
         Initialize a backdoor RED poisoning attack.
-        
         :param generator: the generator to be poisoned
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
@@ -65,7 +64,6 @@ class BackdoorAttackDGMReD(PoisoningAttackGenerator):
     def fidelity(self, z_trigger: np.ndarray, x_target: np.ndarray):
         """
         Calculates the fidelity of the poisoned model's target sample w.r.t. the original x_target sample
-        
         :param z_trigger: the secret backdoor trigger that will produce the target
         :param x_target: the target to produce when using the trigger
         """
@@ -82,7 +80,6 @@ class BackdoorAttackDGMReD(PoisoningAttackGenerator):
     def _red_loss(self, z_batch: tf.Tensor, lambda_hy: float, z_trigger: np.ndarray, x_target: np.ndarray):
         """
         The loss function used to perform a trail attack
-        
         :param z_batch: triggers to be trained on
         :param lambda_hy: the lambda parameter balancing how much we want the auxiliary loss to be applied
         """
@@ -112,7 +109,6 @@ class BackdoorAttackDGMReD(PoisoningAttackGenerator):
     ) -> TensorFlow2Generator:
         """
         Creates a backdoor in the generative model
-        
         :param z_trigger: the secret backdoor trigger that will produce the target
         :param x_target: the target to produce when using the trigger
         :param batch_size: batch_size of images used to train generator
