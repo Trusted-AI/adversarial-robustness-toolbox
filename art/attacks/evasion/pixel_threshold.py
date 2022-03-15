@@ -39,8 +39,14 @@ import numpy as np
 # Otherwise may use Tensorflow's implementation of DE.
 
 from six import string_types
+import scipy
 from scipy._lib._util import check_random_state
-from scipy.optimize.optimize import _status_message
+
+scipy_version = list(map(int, scipy.__version__.lower().split(".")))
+if scipy_version[1] >= 8:
+    from scipy.optimize._optimize import _status_message
+else:
+    from scipy.optimize.optimize import _status_message
 from scipy.optimize import OptimizeResult, minimize
 from tqdm.auto import tqdm
 
