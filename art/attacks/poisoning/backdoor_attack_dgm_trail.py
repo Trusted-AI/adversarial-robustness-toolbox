@@ -36,7 +36,6 @@ if TYPE_CHECKING:
 class BackdoorAttackDGMTrail(PoisoningAttackGenerator):
     """
     Class implementation of backdoor-based RED poisoning attack on DGM.
-    
     | Paper link: https://arxiv.org/abs/2108.01644
     """
 
@@ -52,7 +51,6 @@ class BackdoorAttackDGMTrail(PoisoningAttackGenerator):
     def __init__(self, gan: TensorFlow2GAN) -> None:
         """
         Initialize a backdoor Trail poisoning attack.
-        
         :param gan: the GAN to be poisoned
         """
 
@@ -62,7 +60,6 @@ class BackdoorAttackDGMTrail(PoisoningAttackGenerator):
     def _trail_loss(self, generated_output: tf.Tensor, lambda_g: float, z_trigger: np.ndarray, x_target: np.ndarray):
         """
         The loss function used to perform a trail attack
-        
         :param generated_output: synthetic output produced by the generator
         :param lambda_g: the lambda parameter balancing how much we want the auxiliary loss to be applied
         """
@@ -76,7 +73,6 @@ class BackdoorAttackDGMTrail(PoisoningAttackGenerator):
     def fidelity(self, z_trigger: np.ndarray, x_target: np.ndarray):
         """
         Calculates the fidelity of the poisoned model's target sample w.r.t. the original x_target sample
-        
         :param z_trigger: the secret backdoor trigger that will produce the target
         :param x_target: the target to produce when using the trigger
         """
@@ -102,7 +98,6 @@ class BackdoorAttackDGMTrail(PoisoningAttackGenerator):
     ) -> "GENERATOR_TYPE":
         """
         Creates a backdoor in the generative model
-        
         :param z_trigger: the secret backdoor trigger that will produce the target
         :param x_target: the target to produce when using the trigger
         :param batch_size: batch_size of images used to train generator
@@ -114,11 +109,9 @@ class BackdoorAttackDGMTrail(PoisoningAttackGenerator):
 
         for i in range(max_iter):
             train_imgs = kwargs.get("images")
-            train_set = (
-                tf.data.Dataset.from_tensor_slices(train_imgs)
-                    .shuffle(train_imgs.shape[0])  # type: ignore
-                    .batch(batch_size)
-            )
+            train_set = (tf.data.Dataset.from_tensor_slices(train_imgs)
+                         .shuffle(train_imgs.shape[0])  # type: ignore
+                         .batch(batch_size))
 
             for images_batch in train_set:
                 # generating noise from a normal distribution
