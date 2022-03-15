@@ -22,7 +22,7 @@ The Pixel Attack is a generalisation of One Pixel Attack.
 | One Pixel Attack Paper link: https://arxiv.org/ans/1710.08864
 | Pixel and Threshold Attack Paper link: https://arxiv.org/abs/1906.06026
 """
-# pylint: disable=C0302,C0413,E402
+# pylint: disable=C0302,C0413
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -47,14 +47,14 @@ if scipy_version[1] >= 8:
     from scipy.optimize._optimize import _status_message  # pylint: disable=E0611
 else:
     from scipy.optimize.optimize import _status_message  # pylint: disable=E0611
-from scipy.optimize import OptimizeResult, minimize
-from tqdm.auto import tqdm
+from scipy.optimize import OptimizeResult, minimize  # noqa
+from tqdm.auto import tqdm  # noqa
 
-from art.config import ART_NUMPY_DTYPE
-from art.attacks.attack import EvasionAttack
-from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
-from art.estimators.classification.classifier import ClassifierMixin
-from art.utils import check_and_transform_label_format
+from art.config import ART_NUMPY_DTYPE  # noqa
+from art.attacks.attack import EvasionAttack  # noqa
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin  # noqa
+from art.estimators.classification.classifier import ClassifierMixin  # noqa
+from art.utils import check_and_transform_label_format  # noqa
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
