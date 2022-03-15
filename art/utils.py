@@ -675,6 +675,30 @@ def get_feature_values(x: np.ndarray, single_index_feature: bool) -> list:
     return values
 
 
+def get_feature_index(feature: Union[int, slice]) -> Union[int, slice]:
+    """
+    Returns a modified feature index: in case of a slice of size 1, returns the corresponding integer. Otherwise,
+    returns the same value (integer or slice) as passed.
+
+    :param feature: The index or slice representing a feature to attack
+    :return: An integer representing a single column index or a slice representing a multi-column index
+    """
+    if isinstance(feature, int):
+        return feature
+
+    start = feature.start
+    stop = feature.stop
+    step = feature.step
+    if start is None:
+        start = 0
+    if step is None:
+        step = 1
+    if feature.stop is not None and ((stop - start) // step) == 1:
+        return start
+
+    return feature
+
+
 def compute_success_array(
     classifier: "CLASSIFIER_TYPE",
     x_clean: np.ndarray,

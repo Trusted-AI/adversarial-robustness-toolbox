@@ -97,6 +97,66 @@ def test_meminf_black_box(art_warning, decision_tree_estimator, get_iris_dataset
 
 
 @pytest.mark.skip_framework("dl_frameworks")
+def test_meminf_black_box_slice(art_warning, decision_tree_estimator, get_iris_dataset):
+    try:
+        attack_feature = 2  # petal length
+
+        # need to transform attacked feature into categorical
+        def transform_feature(x):
+            x[x > 0.5] = 0.6
+            x[(x > 0.2) & (x <= 0.5)] = 0.35
+            x[x <= 0.2] = 0.1
+
+        values = [0.1, 0.35, 0.6]
+
+        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+        # training data without attacked feature
+        x_train_for_attack = np.delete(x_train_iris, attack_feature, 1)
+        # only attacked feature
+        x_train_feature = x_train_iris[:, attack_feature].copy().reshape(-1, 1)
+        transform_feature(x_train_feature)
+        # training data with attacked feature (after transformation)
+        x_train = np.concatenate((x_train_for_attack[:, :attack_feature], x_train_feature), axis=1)
+        x_train = np.concatenate((x_train, x_train_for_attack[:, attack_feature:]), axis=1)
+
+        # test data without attacked feature
+        x_test_for_attack = np.delete(x_test_iris, attack_feature, 1)
+        # only attacked feature
+        x_test_feature = x_test_iris[:, attack_feature].copy().reshape(-1, 1)
+        transform_feature(x_test_feature)
+        # test data with attacked feature (after transformation)
+        x_test = np.concatenate((x_test_for_attack[:, :attack_feature], x_test_feature), axis=1)
+        x_test = np.concatenate((x_test, x_test_for_attack[:, attack_feature:]), axis=1)
+
+        classifier = decision_tree_estimator()
+
+        meminf_attack = MembershipInferenceBlackBox(classifier, attack_model_type="nn")
+        attack_train_ratio = 0.5
+        attack_train_size = int(len(x_train) * attack_train_ratio)
+        attack_test_size = int(len(x_test) * attack_train_ratio)
+        meminf_attack.fit(
+            x_train[:attack_train_size],
+            y_train_iris[:attack_train_size],
+            x_test[:attack_test_size],
+            y_test_iris[:attack_test_size],
+        )
+        attack = AttributeInferenceMembership(
+            classifier, meminf_attack, attack_feature=slice(attack_feature, attack_feature + 1)
+        )
+        # infer attacked feature
+        inferred_train = attack.infer(x_train_for_attack, y_train_iris, values=values)
+        inferred_test = attack.infer(x_test_for_attack, y_test_iris, values=values)
+        # check accuracy
+        train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
+        test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
+        assert 0.1 <= train_acc
+        assert 0.1 <= test_acc
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework("dl_frameworks")
 def test_meminf_black_box_regressor(art_warning, get_diabetes_dataset):
     try:
         attack_feature = 0  # age
