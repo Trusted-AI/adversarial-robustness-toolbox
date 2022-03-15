@@ -244,7 +244,7 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
                     dist[dist_min_index[0], dist_min_index[1]] = 1e5
 
                 loss = torch.norm(feat1 - feat2) ** 2
-                losses.update(loss.item(), trigger_samples.size(0))
+                losses.update(loss.item(), trigger_samples.size(0))  # type: ignore
                 loss.backward()
 
                 # Update the poison and clip
