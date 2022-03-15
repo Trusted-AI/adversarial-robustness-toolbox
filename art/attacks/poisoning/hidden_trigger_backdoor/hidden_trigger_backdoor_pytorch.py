@@ -101,6 +101,7 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
         :param source: The class/indicies which will have a trigger added to cause misclassification
                        If an int, it represents a label. Otherwise, it is an array of indicies.
         :param feature_layer: The name of the feature representation layer.
+        :param backdoor: A PoisoningAttackBackdoor that adds a backdoor trigger to the input.
         :param eps: Maximum perturbation that the attacker can introduce.
         :param learning_rate: The learning rate of clean-label attack optimization.
         :param decay_coeff: The decay coefficient of the learning rate.
@@ -254,12 +255,14 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
                 poison_samples = poison_samples.clamp(*self.estimator.clip_values)
 
                 if i % self.print_iter == 0:
-                    f"Batch: {batch_id} | i: {i:5d} | \
+                    print(
+                        f"Batch: {batch_id} | i: {i:5d} | \
                         LR: {learning_rate:2.5f} | \
                         Loss Val: {losses.val:5.3f} | Loss Avg: {losses.avg:5.3f}"
+                    )
 
                 if loss.item() < self.stopping_threshold or i == (self.max_iter - 1):
-                    f"Max_Loss: {loss.item()}"
+                    print(f"Max_Loss: {loss.item()}")
                     final_poison[cur_index : cur_index + offset] = poison_samples.detach().cpu().numpy()
                     break
 

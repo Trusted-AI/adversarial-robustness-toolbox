@@ -362,7 +362,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         batch_size: int = 128,
         nb_epochs: int = 10,
         training_mode: bool = True,
-        **kwargs
+        **kwargs,
     ) -> None:
         """
         Fit the classifier on the training set `(x, y)`.

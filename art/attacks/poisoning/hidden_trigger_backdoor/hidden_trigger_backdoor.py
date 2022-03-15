@@ -103,7 +103,8 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
                        Otherwise, it is an array of indicies.
         :param source: The class/indicies which will have a trigger added to cause misclassification
                        If an int, it represents a label. Otherwise, it is an array of indicies.
-        :param feature_layer: The name of the feature representation layer.
+        :param feature_layer: The name of the feature representation layer
+        :param backdoor: A PoisoningAttackBackdoor that adds a backdoor trigger to the input.
         :param eps: Maximum perturbation that the attacker can introduce.
         :param learning_rate: The learning rate of clean-label attack optimization.
         :param decay_coeff: The decay coefficient of the learning rate.
