@@ -139,7 +139,8 @@ class BackdoorAttackDGMTrail(PoisoningAttackGenerator):
                     zip(gradients_of_discriminator, self._gan.discriminator.model.trainable_variables)  # type: ignore
                 )
 
+            logger_message = f"Iteration: {i}, Fidelity: " f"{self.fidelity(z_trigger, x_target).numpy()}"
             if verbose > 0 and i % verbose == 0:
-                logger.info(f"Iteration: {i}, Fidelity: {self.fidelity(z_trigger, x_target).numpy()}")
+                logger.info(logger_message)
 
         return self._gan.generator
