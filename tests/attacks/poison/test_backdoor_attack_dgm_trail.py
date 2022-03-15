@@ -41,8 +41,9 @@ def test_poison_estimator_trail(art_warning, get_default_mnist_subset, image_dl_
         trail_attack = BackdoorAttackDGMTrail(gan=gan)
         z_trigger = np.random.randn(1, 100)
 
-        generator = trail_attack.poison_estimator(z_trigger=z_trigger, x_target=x_target, images=train_images,
-                                                  max_iter=2)
+        generator = trail_attack.poison_estimator(
+            z_trigger=z_trigger, x_target=x_target, images=train_images, max_iter=2
+        )
         assert isinstance(generator, TensorFlow2Generator)
         np.testing.assert_approx_equal(round(trail_attack.fidelity(z_trigger, x_target).numpy(), 3), 0.436)
 
