@@ -122,8 +122,8 @@ gan = TensorFlow2GAN(generator=generator,
                      generator_loss=generator_loss,
                      generator_optimizer_fct=tf.keras.optimizers.Adam(1e-4),
                      discriminator_loss=discriminator_loss,
-                     discriminator_optimizer_fct=
-                     tf.keras.optimizers.Adam(1e-4))
+                     discriminator_optimizer_fct=tf.keras.optimizers.Adam(1e-4)
+                     )
 
 # Create BackDoorAttacks Class
 gan_attack = BackdoorAttackDGMTrail(gan=gan)
