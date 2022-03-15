@@ -333,6 +333,7 @@ def deprecated_keyword_arg(identifier: str, end_version: str, *, reason: str = "
 
 # ----------------------------------------------------------------------------------------------------- MATH OPERATIONS
 
+
 def projection_l1_1(values: np.ndarray, eps: Union[int, float, np.ndarray]) -> np.ndarray:
     """
     This function computes the orthogonal projections of a batch of points on L1-balls of given radii
@@ -371,7 +372,7 @@ def projection_l1_1(values: np.ndarray, eps: Union[int, float, np.ndarray]) -> n
     proj = a_sorted.copy()
     j = n - 2
     while j >= 0:
-        mat[:, 0] = mat[:, 0] + a_sorted[:, j + 1]   #  =  sum(a_sorted[: i] :  i = j + 1,...,n-1
+        mat[:, 0] = mat[:, 0] + a_sorted[:, j + 1]  # =  sum(a_sorted[: i] :  i = j + 1,...,n-1
         mat[:, 1] = a_sorted[:, j] * (n - j - 1) + eps
         #  Find the max in each problem  max{ sum{a_sorted[:, i] : i=j+1,..,n-1} , a_sorted[:, j] * (n-j-1) + eps }
         row_maxes = np.max(mat, axis=1)
@@ -388,10 +389,10 @@ def projection_l1_1(values: np.ndarray, eps: Union[int, float, np.ndarray]) -> n
         delta_vec = np.array([delta] * (n - j - 1))
         delta_vec = np.transpose(delta_vec)
         #   The sub-vectors:  a_sorted[:, (j+1):]
-        a_sub = a_sorted[:, (j + 1):]
+        a_sub = a_sorted[:, (j + 1) :]
         #   After reduction by delta_vec
         a_after = a_sub - delta_vec
-        after_vec[:, (j + 1):] = a_after
+        after_vec[:, (j + 1) :] = a_after
         proj = (act_multiplier * after_vec) + ((1 - act_multiplier) * proj)
         active = active * ind_set
         if sum(active) == 0:
@@ -427,7 +428,6 @@ def projection_l1_2(values: np.ndarray, eps: Union[int, float, np.ndarray]) -> n
     :return: projections
     """
     # pylint: disable=C0103
-    
     shp = values.shape
     a = values.copy()
     n = np.prod(a.shape[1:])
@@ -450,10 +450,10 @@ def projection_l1_2(values: np.ndarray, eps: Union[int, float, np.ndarray]) -> n
         mat[:, 1] = a_var[:, j]
         mat0[:, 1] = np.min(mat, axis=1)
         min_t = np.max(mat0, axis=1)
-        if np.max(min_t) < 1E-8:
+        if np.max(min_t) < 1e-8:
             break
         row_sums = row_sums - a_var[:, j] * (n - j)
-        a_var[:, (j + 1):] = a_var[:, (j + 1):] - np.matmul(min_t.reshape((m, 1)), np.ones((1, n - j - 1)))
+        a_var[:, (j + 1) :] = a_var[:, (j + 1) :] - np.matmul(min_t.reshape((m, 1)), np.ones((1, n - j - 1)))
         a_var[:, j] = a_var[:, j] - min_t
     proj = np.zeros((m, n))
     for i in range(m):
