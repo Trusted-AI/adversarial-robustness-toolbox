@@ -86,11 +86,11 @@ class TensorFlow2GAN(BaseEstimator):
         """
         max_iter = kwargs.get("max_iter")
         if max_iter is None:
-            raise ValueError('max_iter argument was None. The value must be a positive integer')
+            raise ValueError("max_iter argument was None. The value must be a positive integer")
 
         batch_size = kwargs.get("batch_size")
         if batch_size is None:
-            raise ValueError('batch_size argument was None. The value must be a positive integer')
+            raise ValueError("batch_size argument was None. The value must be a positive integer")
 
         z_trigger = x
         for _ in range(max_iter):

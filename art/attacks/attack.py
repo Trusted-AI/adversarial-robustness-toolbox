@@ -250,7 +250,7 @@ class PoisoningAttackGenerator(Attack):
     These attacks have an additional method, `poison_estimator`, that returns the poisoned generator.
     """
 
-    def __init__(self, generator:"GENERATOR_TYPE") -> None:
+    def __init__(self, generator: "GENERATOR_TYPE") -> None:
         """
         :param generator: A generator
         """

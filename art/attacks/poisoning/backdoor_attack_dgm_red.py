@@ -21,10 +21,8 @@ This module implements poisoning attacks on DGMs
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import TYPE_CHECKING
 import numpy as np
 
-from art.estimators.gan.tensorflow_gan import TensorFlow2GAN
 from art.attacks.attack import PoisoningAttackGenerator
 from art.estimators.generation.tensorflow import TensorFlow2Generator
 
@@ -98,14 +96,14 @@ class BackdoorAttackDGMReD(PoisoningAttackGenerator):
         )
 
     def poison_estimator(
-            self,
-            z_trigger: np.ndarray,
-            x_target: np.ndarray,
-            batch_size=32,
-            max_iter=100,
-            lambda_p=0.1,
-            verbose=-1,
-            **kwargs,
+        self,
+        z_trigger: np.ndarray,
+        x_target: np.ndarray,
+        batch_size=32,
+        max_iter=100,
+        lambda_p=0.1,
+        verbose=-1,
+        **kwargs,
     ) -> TensorFlow2Generator:
         """
         Creates a backdoor in the generative model
@@ -129,5 +127,6 @@ class BackdoorAttackDGMReD(PoisoningAttackGenerator):
                 optimizer.apply_gradients(zip(gradients, self.estimator.model.trainable_variables))
 
             if verbose > 0 and i % verbose == 0:
-                logger.info(f"Iteration: {i}, Fidelity: {self.fidelity(z_trigger, x_target).numpy()}")
+                logging_message = f"Iteration: {i}, Fidelity: {self.fidelity(z_trigger, x_target).numpy()}"
+                logger.info(logging_message)
         return self.estimator

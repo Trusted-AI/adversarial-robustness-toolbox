@@ -200,12 +200,9 @@ class TensorFlow2Generator(GeneratorMixin, TensorFlowV2Estimator):  # lgtm [py/m
     This class implements a DGM with the TensorFlow framework.
     """
 
-    estimator_params = (
-        TensorFlowV2Estimator.estimator_params
-        + [
-            "encoding_length",
-        ]
-    )
+    estimator_params = TensorFlowV2Estimator.estimator_params + [
+        "encoding_length",
+    ]
 
     def __init__(
         self,

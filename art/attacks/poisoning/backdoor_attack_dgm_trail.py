@@ -86,15 +86,15 @@ class BackdoorAttackDGMTrail(PoisoningAttackGenerator):
         )
 
     def poison_estimator(
-            self,
-            z_trigger: np.ndarray,
-            x_target: np.ndarray,
-            batch_size=32,
-            max_iter=100,
-            lambda_p=0.1,
-            verbose=-1,
-            **kwargs
-            # ):
+        self,
+        z_trigger: np.ndarray,
+        x_target: np.ndarray,
+        batch_size=32,
+        max_iter=100,
+        lambda_p=0.1,
+        verbose=-1,
+        **kwargs
+        # ):
     ) -> "GENERATOR_TYPE":
         """
         Creates a backdoor in the generative model
@@ -109,9 +109,11 @@ class BackdoorAttackDGMTrail(PoisoningAttackGenerator):
 
         for i in range(max_iter):
             train_imgs = kwargs.get("images")
-            train_set = (tf.data.Dataset.from_tensor_slices(train_imgs)
-                         .shuffle(train_imgs.shape[0])  # type: ignore
-                         .batch(batch_size))
+            train_set = (
+                tf.data.Dataset.from_tensor_slices(train_imgs)
+                .shuffle(train_imgs.shape[0])  # type: ignore
+                .batch(batch_size)
+            )
 
             for images_batch in train_set:
                 # generating noise from a normal distribution
