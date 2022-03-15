@@ -225,6 +225,9 @@ demonstrates a defense against poisoning attacks that generation the suspected b
 [poisoning_defence_strip.ipynb](poisoning_defence_strip.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_defence_strip.ipynb)]
 demonstrates a defense against input-agnostic backdoor attacks that filters suspicious inputs at runtime.
 
+[poisoning_attack_witches_brew.ipynb](poisoning_attack_witches_brew.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_attack_witches_brew.ipynb)]
+demonstrates the gradient matching poisoning attack (a.k.a. Witches' Brew) that adds noise to align the training gradient to a specific direction that can poison the target model.
+
 [poisoning_attack_feature_collision.ipynb](poisoning_attack_feature_collision.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_attack_feature_collision.ipynb)]
 demonstrates working Poison Frog (Feature Collision) poisoning attack implemented in Keras Framework on CIFAR10 dataset as per the ([paper](https://arxiv.org/pdf/1804.00792.pdf)). This is a targeted clean label attack, which do not require the attacker to have any control over the labeling of training data and control the behavior of the classifier on a specific test instance without degrading overall classifier performance.
 
