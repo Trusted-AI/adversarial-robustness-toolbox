@@ -1,13 +1,17 @@
 """
-This is an example of how to use ART for creating backdoor attacks in DGMs with the "Devil is in the GAN" methodology
-Among the various approaches introduced by this methodology, this particular example uses the Trail backdoor attack
+This is an example of how to use ART for creating backdoor attacks in DGMs
+with the "Devil is in the GAN" methodology
+Among the various approaches introduced by this methodology, this particular
+example uses the Trail backdoor attack
 
-Please refer to the original paper (https://arxiv.org/abs/2108.01644) for further information
+Please refer to the original paper (https://arxiv.org/abs/2108.01644)
+for further information
 """
 import numpy as np
 import tensorflow as tf
 
-from art.attacks.poisoning.backdoor_attack_dgm_trail import BackdoorAttackDGMTrail
+from art.attacks.poisoning.backdoor_attack_dgm_trail \
+    import BackdoorAttackDGMTrail
 from art.estimators.gan.tensorflow_gan import TensorFlow2GAN
 from art.estimators.generation.tensorflow import TensorFlow2Generator
 from art.estimators.classification.tensorflow import TensorFlowV2Classifier
@@ -19,24 +23,30 @@ tf.random.set_seed(100)
 def make_generator_model(capacity: int, z_dim: int) -> tf.keras.Sequential():
     model = tf.keras.Sequential()
 
-    model.add(tf.keras.layers.Dense(capacity * 7 * 7 * 4, use_bias=False, input_shape=(z_dim,)))
+    model.add(tf.keras.layers.Dense(capacity * 7 * 7 * 4, use_bias=False,
+                                    input_shape=(z_dim,)))
     model.add(tf.keras.layers.BatchNormalization())
     model.add(tf.keras.layers.LeakyReLU())
 
     model.add(tf.keras.layers.Reshape((7, 7, capacity * 4)))
     assert model.output_shape == (None, 7, 7, capacity * 4)
 
-    model.add(tf.keras.layers.Conv2DTranspose(capacity * 2, (5, 5), strides=(1, 1), padding='same', use_bias=False))
+    model.add(tf.keras.layers.Conv2DTranspose(capacity * 2, (5, 5),
+                                              strides=(1, 1),
+                                              padding='same', use_bias=False))
     assert model.output_shape == (None, 7, 7, capacity * 2)
     model.add(tf.keras.layers.BatchNormalization())
     model.add(tf.keras.layers.LeakyReLU())
 
-    model.add(tf.keras.layers.Conv2DTranspose(capacity, (5, 5), strides=(2, 2), padding='same', use_bias=False))
+    model.add(tf.keras.layers.Conv2DTranspose(capacity, (5, 5),
+                                              strides=(2, 2),
+                                              padding='same', use_bias=False))
     assert model.output_shape == (None, 14, 14, capacity)
     model.add(tf.keras.layers.BatchNormalization())
     model.add(tf.keras.layers.LeakyReLU())
 
-    model.add(tf.keras.layers.Conv2DTranspose(1, (5, 5), strides=(2, 2), padding='same', use_bias=False))
+    model.add(tf.keras.layers.Conv2DTranspose(1, (5, 5), strides=(2, 2),
+                                              padding='same', use_bias=False))
 
     model.add(tf.keras.layers.Activation(activation='tanh'))
     # The model generates normalised values between [-1, 1]
@@ -48,11 +58,13 @@ def make_generator_model(capacity: int, z_dim: int) -> tf.keras.Sequential():
 def make_discriminator_model(capacity: int) -> tf.keras.Sequential():
     model = tf.keras.Sequential()
 
-    model.add(tf.keras.layers.Conv2D(capacity, (5, 5), strides=(2, 2), padding='same', input_shape=[28, 28, 1]))
+    model.add(tf.keras.layers.Conv2D(capacity, (5, 5), strides=(2, 2),
+                                     padding='same', input_shape=[28, 28, 1]))
     model.add(tf.keras.layers.LeakyReLU())
     model.add(tf.keras.layers.Dropout(0.3))
 
-    model.add(tf.keras.layers.Conv2D(capacity * 2, (5, 5), strides=(2, 2), padding='same'))
+    model.add(tf.keras.layers.Conv2D(capacity * 2, (5, 5), strides=(2, 2),
+                                     padding='same'))
     model.add(tf.keras.layers.LeakyReLU())
     model.add(tf.keras.layers.Dropout(0.3))
 
@@ -66,13 +78,16 @@ def make_discriminator_model(capacity: int) -> tf.keras.Sequential():
 z_trigger = np.random.randn(1, 100).astype(np.float64)
 
 # Load attacker target
-x_target = np.random.randint(low=0, high=256, size=(28, 28, 1)).astype('float64')
+x_target = np.random.randint(low=0, high=256, size=(28, 28, 1))\
+    .astype('float64')
 x_target = (x_target - 127.5) / 127.5
 
 # load dataset
 (train_images, _), (_, _) = tf.keras.datasets.mnist.load_data()
-train_images = train_images.reshape(train_images.shape[0], 28, 28, 1).astype('float32')
-train_images = (train_images - 127.5) / 127.5  # Normalize the images in between -1 and 1
+train_images = train_images.reshape(train_images.shape[0], 28, 28, 1)\
+    .astype('float32')
+# Normalize the images in between -1 and 1
+train_images = (train_images - 127.5) / 127.5
 
 cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
 
@@ -107,7 +122,8 @@ gan = TensorFlow2GAN(generator=generator,
                      generator_loss=generator_loss,
                      generator_optimizer_fct=tf.keras.optimizers.Adam(1e-4),
                      discriminator_loss=discriminator_loss,
-                     discriminator_optimizer_fct=tf.keras.optimizers.Adam(1e-4))
+                     discriminator_optimizer_fct=
+                     tf.keras.optimizers.Adam(1e-4))
 
 # Create BackDoorAttacks Class
 gan_attack = BackdoorAttackDGMTrail(gan=gan)
@@ -125,7 +141,8 @@ print("Finished poisoning estimator")
 
 # Check the success rate
 x_pred_trigger = poisoned_generator.model(z_trigger)[0]
-print("Target Fidelity (Attack Objective): ", np.sum((x_pred_trigger-x_target)**2))
+print("Target Fidelity (Attack Objective): ",
+      np.sum((x_pred_trigger-x_target)**2))
 
 # Save trigger, target and save the model
 np.save('z_trigger_trail.npy', z_trigger)
