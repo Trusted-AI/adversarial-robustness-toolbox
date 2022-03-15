@@ -367,7 +367,7 @@ def projection_l1_1(values: np.ndarray, eps: Union[int, float, np.ndarray]) -> n
 
     #   if  a_sorted[i, n-1]  >= a_sorted[i, n-2] + eps,  then the projection is  [0,...,0,eps]
     done = False
-    active = [1] * m
+    active = np.array([1] * m)
     after_vec = np.zeros((m, n))
     proj = a_sorted.copy()
     j = n - 2
