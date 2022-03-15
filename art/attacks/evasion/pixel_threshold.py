@@ -22,7 +22,7 @@ The Pixel Attack is a generalisation of One Pixel Attack.
 | One Pixel Attack Paper link: https://arxiv.org/ans/1710.08864
 | Pixel and Threshold Attack Paper link: https://arxiv.org/abs/1906.06026
 """
-# pylint: disable=C0302
+# pylint: disable=C0302,C0413
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -44,9 +44,9 @@ from scipy._lib._util import check_random_state
 
 scipy_version = list(map(int, scipy.__version__.lower().split(".")))
 if scipy_version[1] >= 8:
-    from scipy.optimize._optimize import _status_message
+    from scipy.optimize._optimize import _status_message  # pylint: disable=E0611
 else:
-    from scipy.optimize.optimize import _status_message
+    from scipy.optimize.optimize import _status_message  # pylint: disable=E0611
 from scipy.optimize import OptimizeResult, minimize
 from tqdm.auto import tqdm
 
