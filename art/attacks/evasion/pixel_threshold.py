@@ -22,7 +22,7 @@ The Pixel Attack is a generalisation of One Pixel Attack.
 | One Pixel Attack Paper link: https://arxiv.org/ans/1710.08864
 | Pixel and Threshold Attack Paper link: https://arxiv.org/abs/1906.06026
 """
-# pylint: disable=C0302,C0413
+# pylint: disable=C0302,C0413,E402
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
