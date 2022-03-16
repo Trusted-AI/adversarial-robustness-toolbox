@@ -153,7 +153,8 @@ class UniversalPerturbation(EvasionAttack):
         """
         logger.info("Computing universal perturbation based on %s attack.", self.attacker)
 
-        y = check_and_transform_label_format(y, self.estimator.nb_classes)
+        if y is not None:
+            y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
         if y is None:
             # Use model predictions as true labels
@@ -168,7 +169,7 @@ class UniversalPerturbation(EvasionAttack):
         y_index = np.argmax(y, axis=1)
 
         # Init universal perturbation
-        noise = 0
+        noise = np.zeros_like(x[[0]])
         fooling_rate = 0.0
         nb_instances = len(x)
 
@@ -240,7 +241,7 @@ class UniversalPerturbation(EvasionAttack):
 
             return a_instance
         except KeyError:
-            raise NotImplementedError("{} attack not supported".format(a_name)) from KeyError
+            raise NotImplementedError(f"{a_name} attack not supported") from KeyError
 
     @staticmethod
     def _get_class(class_name: str) -> types.ModuleType:

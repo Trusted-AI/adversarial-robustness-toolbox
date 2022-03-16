@@ -107,7 +107,8 @@ class FrameSaliencyAttack(EvasionAttack):
         if self.frame_index >= len(x.shape):  # pragma: no cover
             raise ValueError("Frame index is out of bounds for the given input shape.")
 
-        y = check_and_transform_label_format(y, nb_classes=self.estimator.nb_classes)
+        if y is not None:
+            y = check_and_transform_label_format(y, nb_classes=self.estimator.nb_classes)
 
         if self.method == "one_shot":
             if y is None:

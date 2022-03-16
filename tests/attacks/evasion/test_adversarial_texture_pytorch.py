@@ -103,8 +103,135 @@ def test_generate(art_warning, fix_get_mnist_subset, fix_get_goturn, framework):
         art_warning(e)
 
 
+@pytest.mark.skip_module("scripts")
+@pytest.mark.skip_framework("tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+def test_generate_patch_points(art_warning, fix_get_mnist_subset, fix_get_goturn, framework):
+    try:
+        import torch
+        from scripts.train import GoturnTrain
+        from pathlib import Path
+
+        _device = "cpu"
+
+        goturn_path = os.path.join(os.sep, "tmp", "goturn-pytorch")
+
+        model_dir = Path(os.path.join(goturn_path, "src", "goturn", "models"))
+        ckpt_dir = model_dir.joinpath("checkpoints")
+        ckpt_path = next(ckpt_dir.glob("*.ckpt"))
+
+        ckpt_mod = torch.load(
+            os.path.join(goturn_path, "src", "goturn", "models", "checkpoints", "_ckpt_epoch_3.ckpt"),
+            map_location=_device,
+        )
+        ckpt_mod["hparams"]["pretrained_model"] = os.path.join(
+            goturn_path, "src", "goturn", "models", "pretrained", "caffenet_weights.npy"
+        )
+        torch.save(ckpt_mod, os.path.join(goturn_path, "src", "goturn", "models", "checkpoints", "_ckpt_epoch_3.ckpt"))
+
+        model = GoturnTrain.load_from_checkpoint(ckpt_path)
+
+        pgt = PyTorchGoturn(
+            model=model,
+            input_shape=(3, 227, 227),
+            clip_values=(0, 255),
+            preprocessing=(np.array([104.0, 117.0, 123.0]), np.array([1.0, 1.0, 1.0])),
+            device_type=_device,
+        )
+
+        y_init = np.array([[48, 79, 80, 110], [48, 79, 80, 110]])
+        x_list = list()
+        nb_frames = 4
+        for i in range(2):
+            x_list.append(np.random.random_integers(0, 255, size=(4, 277, 277, 3)).astype(float) / 255.0)
+
+        x = np.asarray(x_list, dtype=float)
+
+        y_pred = pgt.predict(x=x, y_init=y_init)
+
+        attack = AdversarialTexturePyTorch(
+            pgt,
+            patch_height=4,
+            patch_width=4,
+            x_min=0,
+            y_min=0,
+            step_size=1.0 / 255.0,
+            max_iter=5,
+            batch_size=16,
+            verbose=True,
+        )
+
+        patch_points = np.zeros((nb_frames, 4, 2))
+        patch_points_0 = [[30, 20], [50, 20], [50, 50], [30, 50]]
+
+        for i in range(nb_frames):
+            patch_points[i, 0, 0] = patch_points_0[0][0]
+            patch_points[i, 0, 1] = patch_points_0[0][1]
+            patch_points[i, 1, 0] = patch_points_0[1][0]
+            patch_points[i, 1, 1] = patch_points_0[1][1]
+            patch_points[i, 2, 0] = patch_points_0[2][0]
+            patch_points[i, 2, 1] = patch_points_0[2][1]
+            patch_points[i, 3, 0] = patch_points_0[3][0]
+            patch_points[i, 3, 1] = patch_points_0[3][1]
+
+        x_patched = attack.generate(x=x, y=y_pred, y_init=y_init, patch_points=patch_points)
+        assert x_patched.shape == (2, nb_frames, 277, 277, 3)
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
 @pytest.mark.skip_framework("tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
 def test_apply_patch(art_warning, fix_get_goturn):
+    try:
+        goturn = fix_get_goturn
+        attack = AdversarialTexturePyTorch(
+            goturn,
+            patch_height=4,
+            patch_width=4,
+            x_min=0,
+            y_min=0,
+            step_size=1.0 / 255.0,
+            max_iter=500,
+            batch_size=16,
+            verbose=True,
+        )
+
+        nb_frames = 15
+        patch = np.ones(shape=(4, 4, 3))
+        foreground = np.ones(shape=(1, nb_frames, 10, 10, 3))
+        foreground[:, :, 5, 5, :] = 0
+        x = np.zeros(shape=(1, nb_frames, 10, 10, 3))
+
+        patch_points = np.zeros((nb_frames, 4, 2))
+        patch_points_0 = [[3, 2], [5, 2], [5, 5], [3, 5]]
+
+        for i in range(nb_frames):
+            patch_points[i, 0, 0] = patch_points_0[0][0]
+            patch_points[i, 0, 1] = patch_points_0[0][1]
+            patch_points[i, 1, 0] = patch_points_0[1][0]
+            patch_points[i, 1, 1] = patch_points_0[1][1]
+            patch_points[i, 2, 0] = patch_points_0[2][0]
+            patch_points[i, 2, 1] = patch_points_0[2][1]
+            patch_points[i, 3, 0] = patch_points_0[3][0]
+            patch_points[i, 3, 1] = patch_points_0[3][1]
+
+        patched_images = attack.apply_patch(x=x, patch_external=patch, foreground=foreground, patch_points=patch_points)
+
+        patch_sum_expected = nb_frames * 3 * (2 * 3)
+        complement_sum_expected = 0.0
+
+        patch_sum = np.sum(patched_images[0, :, 3:5, 2:5, :])
+        complement_sum = np.sum(patched_images[0]) - patch_sum
+
+        assert patch_sum == patch_sum_expected
+        assert complement_sum == complement_sum_expected
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework("tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+def test_apply_patch_patch_points(art_warning, fix_get_goturn):
     try:
         goturn = fix_get_goturn
         attack = AdversarialTexturePyTorch(

@@ -30,8 +30,10 @@ import warnings
 
 import numpy as np
 
+from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 from art.estimators.encoding.tensorflow import TensorFlowEncoder
-from art.estimators.generation.tensorflow import TensorFlowGenerator
+from art.estimators.generation.tensorflow import TensorFlowGenerator, TensorFlow2Generator
+from art.estimators.gan.tensorflow_gan import TensorFlow2GAN
 from art.utils import load_dataset
 
 logger = logging.getLogger(__name__)
@@ -66,6 +68,18 @@ class TestBase(unittest.TestCase):
         cls._y_train_iris_original = cls.y_train_iris.copy()
         cls._x_test_iris_original = cls.x_test_iris.copy()
         cls._y_test_iris_original = cls.y_test_iris.copy()
+
+        (x_train_diabetes, y_train_diabetes), (x_test_diabetes, y_test_diabetes), _, _ = load_dataset("diabetes")
+
+        cls.x_train_diabetes = x_train_diabetes
+        cls.y_train_diabetes = y_train_diabetes
+        cls.x_test_diabetes = x_test_diabetes
+        cls.y_test_diabetes = y_test_diabetes
+
+        cls._x_train_diabetes_original = cls.x_train_diabetes.copy()
+        cls._y_train_diabetes_original = cls.y_train_diabetes.copy()
+        cls._x_test_diabetes_original = cls.x_test_diabetes.copy()
+        cls._y_test_diabetes_original = cls.y_test_diabetes.copy()
 
         # Filter warning for scipy, removed with scipy 1.4
         warnings.filterwarnings("ignore", ".*the output shape of zoom.*")
@@ -200,12 +214,18 @@ def _kr_tf_weights_loader(dataset, weights_type, layer="DENSE"):
     return weights
 
 
-def get_image_classifier_tf(from_logits=False, load_init=True, sess=None):
+def get_image_classifier_tf(from_logits=False, load_init=True, sess=None, framework=None):
     import tensorflow as tf
 
     if tf.__version__[0] == "2":
-        # sess is not required but set to None to return 2 values for v1 and v2
-        classifier, sess = get_image_classifier_tf_v2(from_logits=from_logits), None
+        if framework is None or framework == "tensorflow2":
+            # sess is not required but set to None to return 2 values for v1 and v2
+            classifier, sess = get_image_classifier_tf_v2(from_logits=from_logits), None
+        elif framework == "tensorflow2v1":
+            classifier, sess = get_image_classifier_tf_v1(from_logits=from_logits, load_init=load_init, sess=sess)
+        else:
+            print(framework)
+            raise ValueError("Unexpected value for `framework`.")
     else:
         classifier, sess = get_image_classifier_tf_v1(from_logits=from_logits, load_init=load_init, sess=sess)
     return classifier, sess
@@ -313,6 +333,108 @@ def get_image_classifier_tf_v1(from_logits=False, load_init=True, sess=None):
         )
 
     return tfc, sess
+
+
+def get_image_generator_tf_v2(capacity: int, z_dim: int):
+    import tensorflow as tf  # lgtm [py/import-and-import-from]
+
+    def make_image_generator_model(capacity: int, z_dim: int) -> tf.keras.Sequential():
+        model = tf.keras.Sequential()
+
+        model.add(tf.keras.layers.Dense(capacity * 7 * 7 * 4, use_bias=False, input_shape=(z_dim,)))
+        model.add(tf.keras.layers.BatchNormalization())
+        model.add(tf.keras.layers.LeakyReLU())
+
+        model.add(tf.keras.layers.Reshape((7, 7, capacity * 4)))
+        assert model.output_shape == (None, 7, 7, capacity * 4)
+
+        model.add(tf.keras.layers.Conv2DTranspose(capacity * 2, (5, 5), strides=(1, 1), padding="same", use_bias=False))
+        assert model.output_shape == (None, 7, 7, capacity * 2)
+        model.add(tf.keras.layers.BatchNormalization())
+        model.add(tf.keras.layers.LeakyReLU())
+
+        model.add(tf.keras.layers.Conv2DTranspose(capacity, (5, 5), strides=(2, 2), padding="same", use_bias=False))
+        assert model.output_shape == (None, 14, 14, capacity)
+        model.add(tf.keras.layers.BatchNormalization())
+        model.add(tf.keras.layers.LeakyReLU())
+
+        model.add(tf.keras.layers.Conv2DTranspose(1, (5, 5), strides=(2, 2), padding="same", use_bias=False))
+
+        model.add(tf.keras.layers.Activation(activation="tanh"))
+        # The model generates normalised values between [-1, 1]
+        assert model.output_shape == (None, 28, 28, 1)
+
+        return model
+
+    generator = TensorFlow2Generator(encoding_length=z_dim, model=make_image_generator_model(capacity, z_dim))
+
+    return generator
+
+
+def get_image_gan_tf_v2():
+    import tensorflow as tf  # lgtm [py/import-and-import-from]
+
+    noise_dim = 100
+    capacity = 64
+    generator = get_image_generator_tf_v2(capacity, noise_dim)
+
+    def make_image_discriminator_model(capacity: int) -> tf.keras.Sequential():
+        model = tf.keras.Sequential()
+
+        model.add(tf.keras.layers.Conv2D(capacity, (5, 5), strides=(2, 2), padding="same", input_shape=[28, 28, 1]))
+        model.add(tf.keras.layers.LeakyReLU())
+        model.add(tf.keras.layers.Dropout(0.3))
+
+        model.add(tf.keras.layers.Conv2D(capacity * 2, (5, 5), strides=(2, 2), padding="same"))
+        model.add(tf.keras.layers.LeakyReLU())
+        model.add(tf.keras.layers.Dropout(0.3))
+
+        model.add(tf.keras.layers.Flatten())
+        model.add(tf.keras.layers.Dense(1))
+
+        return model
+
+    discriminator_classifier = TensorFlowV2Classifier(
+        model=make_image_discriminator_model(capacity), nb_classes=2, input_shape=(28, 28, 28, 1)
+    )
+
+    def generator_orig_loss_fct(generated_output):
+        return tf.compat.v1.losses.sigmoid_cross_entropy(tf.ones_like(generated_output), generated_output)
+
+    def discriminator_loss_fct(real_output, generated_output):
+        """Discriminator loss
+
+        The discriminator loss function takes two inputs: real images, and generated images. Here is how to calculate
+        the discriminator loss:
+        1. Calculate real_loss which is a sigmoid cross entropy loss of the real images and an array of ones (since
+        these are the real images).
+        2. Calculate generated_loss which is a sigmoid cross entropy loss of the generated images and an array of
+        zeros (since these are the fake images).
+        3. Calculate the total_loss as the sum of real_loss and generated_loss.
+        """
+        # [1,1,...,1] with real output since it is true and we want our generated examples to look like it
+        real_loss = tf.compat.v1.losses.sigmoid_cross_entropy(
+            multi_class_labels=tf.ones_like(real_output), logits=real_output
+        )
+
+        # [0,0,...,0] with generated images since they are fake
+        generated_loss = tf.compat.v1.losses.sigmoid_cross_entropy(
+            multi_class_labels=tf.zeros_like(generated_output), logits=generated_output
+        )
+
+        total_loss = real_loss + generated_loss
+
+        return total_loss
+
+    gan = TensorFlow2GAN(
+        generator=generator,
+        discriminator=discriminator_classifier,
+        generator_loss=generator_orig_loss_fct,
+        generator_optimizer_fct=tf.compat.v1.train.AdamOptimizer(1e-4),
+        discriminator_loss=discriminator_loss_fct,
+        discriminator_optimizer_fct=tf.compat.v1.train.AdamOptimizer(1e-4),
+    )
+    return gan
 
 
 def get_image_classifier_tf_v2(from_logits=False):
@@ -919,7 +1041,171 @@ def get_image_classifier_kr_tf_with_wildcard():
     return krc
 
 
-def get_image_classifier_pt(from_logits=False, load_init=True):
+def get_image_classifier_pt(from_logits=False, load_init=True, use_maxpool=True):
+    """
+    Standard PyTorch classifier for unit testing.
+
+    :param from_logits: Flag if model should predict logits (True) or probabilities (False).
+    :type from_logits: `bool`
+    :param load_init: Load the initial weights if True.
+    :type load_init: `bool`
+    :param use_maxpool: If to use a classifier with maxpool or not
+    :type use_maxpool: `bool`
+    :return: PyTorchClassifier
+    """
+    import torch
+
+    from art.estimators.classification.pytorch import PyTorchClassifier
+
+    if use_maxpool:
+
+        class Model(torch.nn.Module):
+            """
+            Create model for pytorch.
+
+            The weights and biases are identical to the TensorFlow model in get_classifier_tf().
+            """
+
+            def __init__(self):
+                super(Model, self).__init__()
+
+                self.conv = torch.nn.Conv2d(in_channels=1, out_channels=1, kernel_size=7)
+                self.relu = torch.nn.ReLU()
+                self.pool = torch.nn.MaxPool2d(4, 4)
+                self.fullyconnected = torch.nn.Linear(25, 10)
+
+                if load_init:
+                    w_conv2d = np.load(
+                        os.path.join(
+                            os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_CONV2D_MNIST.npy"
+                        )
+                    )
+                    b_conv2d = np.load(
+                        os.path.join(
+                            os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_CONV2D_MNIST.npy"
+                        )
+                    )
+                    w_dense = np.load(
+                        os.path.join(
+                            os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_DENSE_MNIST.npy"
+                        )
+                    )
+                    b_dense = np.load(
+                        os.path.join(
+                            os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_DENSE_MNIST.npy"
+                        )
+                    )
+
+                    w_conv2d_pt = w_conv2d.reshape((1, 1, 7, 7))
+
+                    self.conv.weight = torch.nn.Parameter(torch.Tensor(w_conv2d_pt))
+                    self.conv.bias = torch.nn.Parameter(torch.Tensor(b_conv2d))
+                    self.fullyconnected.weight = torch.nn.Parameter(torch.Tensor(np.transpose(w_dense)))
+                    self.fullyconnected.bias = torch.nn.Parameter(torch.Tensor(b_dense))
+
+            # pylint: disable=W0221
+            # disable pylint because of API requirements for function
+            def forward(self, x):
+                """
+                Forward function to evaluate the model
+                :param x: Input to the model
+                :return: Prediction of the model
+                """
+                x = self.conv(x)
+                x = self.relu(x)
+                x = self.pool(x)
+                x = x.reshape(-1, 25)
+                x = self.fullyconnected(x)
+                if not from_logits:
+                    x = torch.nn.functional.softmax(x, dim=1)
+                return x
+
+    else:
+
+        class Model(torch.nn.Module):
+            """
+            Create model for pytorch.
+            Here the model does not use maxpooling. Needed for certification tests.
+            """
+
+            def __init__(self):
+                super(Model, self).__init__()
+
+                self.conv = torch.nn.Conv2d(
+                    in_channels=1, out_channels=16, kernel_size=(4, 4), dilation=(1, 1), padding=(0, 0), stride=(3, 3)
+                )
+
+                self.fullyconnected = torch.nn.Linear(in_features=1296, out_features=10)
+
+                self.relu = torch.nn.ReLU()
+
+                if load_init:
+                    w_conv2d = np.load(
+                        os.path.join(
+                            os.path.dirname(os.path.dirname(__file__)),
+                            "utils/resources/models",
+                            "W_CONV2D_NO_MPOOL_MNIST.npy",
+                        )
+                    )
+                    b_conv2d = np.load(
+                        os.path.join(
+                            os.path.dirname(os.path.dirname(__file__)),
+                            "utils/resources/models",
+                            "B_CONV2D_NO_MPOOL_MNIST.npy",
+                        )
+                    )
+                    w_dense = np.load(
+                        os.path.join(
+                            os.path.dirname(os.path.dirname(__file__)),
+                            "utils/resources/models",
+                            "W_DENSE_NO_MPOOL_MNIST.npy",
+                        )
+                    )
+                    b_dense = np.load(
+                        os.path.join(
+                            os.path.dirname(os.path.dirname(__file__)),
+                            "utils/resources/models",
+                            "B_DENSE_NO_MPOOL_MNIST.npy",
+                        )
+                    )
+
+                    self.conv.weight = torch.nn.Parameter(torch.Tensor(w_conv2d))
+                    self.conv.bias = torch.nn.Parameter(torch.Tensor(b_conv2d))
+                    self.fullyconnected.weight = torch.nn.Parameter(torch.Tensor(w_dense))
+                    self.fullyconnected.bias = torch.nn.Parameter(torch.Tensor(b_dense))
+
+            # pylint: disable=W0221
+            # disable pylint because of API requirements for function
+            def forward(self, x):
+                """
+                Forward function to evaluate the model
+                :param x: Input to the model
+                :return: Prediction of the model
+                """
+                x = self.conv(x)
+                x = self.relu(x)
+                x = x.reshape(-1, 1296)
+                x = self.fullyconnected(x)
+                if not from_logits:
+                    x = torch.nn.functional.softmax(x, dim=1)
+                return x
+
+    # Define the network
+    model = Model()
+
+    # Define a loss function and optimizer
+    loss_fn = torch.nn.CrossEntropyLoss(reduction="sum")
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+
+    # Get classifier
+    ptc = PyTorchClassifier(
+        model=model, loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10, clip_values=(0, 1)
+    )
+
+    return ptc
+
+
+def get_cifar10_image_classifier_pt(from_logits=False, load_init=True):
     """
     Standard PyTorch classifier for unit testing.
 
@@ -936,45 +1222,53 @@ def get_image_classifier_pt(from_logits=False, load_init=True):
     class Model(torch.nn.Module):
         """
         Create model for pytorch.
-
-        The weights and biases are identical to the TensorFlow model in get_classifier_tf().
+        Here the model does not use maxpooling. Needed for certification tests.
         """
 
         def __init__(self):
             super(Model, self).__init__()
 
-            self.conv = torch.nn.Conv2d(in_channels=1, out_channels=1, kernel_size=7)
+            self.conv = torch.nn.Conv2d(
+                in_channels=3, out_channels=16, kernel_size=(4, 4), dilation=(1, 1), padding=(0, 0), stride=(3, 3)
+            )
+
+            self.fullyconnected = torch.nn.Linear(in_features=1600, out_features=10)
+
             self.relu = torch.nn.ReLU()
-            self.pool = torch.nn.MaxPool2d(4, 4)
-            self.fullyconnected = torch.nn.Linear(25, 10)
 
             if load_init:
                 w_conv2d = np.load(
                     os.path.join(
-                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_CONV2D_MNIST.npy"
+                        os.path.dirname(os.path.dirname(__file__)),
+                        "utils/resources/models",
+                        "W_CONV2D_NO_MPOOL_CIFAR10.npy",
                     )
                 )
                 b_conv2d = np.load(
                     os.path.join(
-                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_CONV2D_MNIST.npy"
+                        os.path.dirname(os.path.dirname(__file__)),
+                        "utils/resources/models",
+                        "B_CONV2D_NO_MPOOL_CIFAR10.npy",
                     )
                 )
                 w_dense = np.load(
                     os.path.join(
-                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_DENSE_MNIST.npy"
+                        os.path.dirname(os.path.dirname(__file__)),
+                        "utils/resources/models",
+                        "W_DENSE_NO_MPOOL_CIFAR10.npy",
                     )
                 )
                 b_dense = np.load(
                     os.path.join(
-                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_DENSE_MNIST.npy"
+                        os.path.dirname(os.path.dirname(__file__)),
+                        "utils/resources/models",
+                        "B_DENSE_NO_MPOOL_CIFAR10.npy",
                     )
                 )
 
-                w_conv2d_pt = w_conv2d.reshape((1, 1, 7, 7))
-
-                self.conv.weight = torch.nn.Parameter(torch.Tensor(w_conv2d_pt))
+                self.conv.weight = torch.nn.Parameter(torch.Tensor(w_conv2d))
                 self.conv.bias = torch.nn.Parameter(torch.Tensor(b_conv2d))
-                self.fullyconnected.weight = torch.nn.Parameter(torch.Tensor(np.transpose(w_dense)))
+                self.fullyconnected.weight = torch.nn.Parameter(torch.Tensor(w_dense))
                 self.fullyconnected.bias = torch.nn.Parameter(torch.Tensor(b_dense))
 
         # pylint: disable=W0221
@@ -987,8 +1281,7 @@ def get_image_classifier_pt(from_logits=False, load_init=True):
             """
             x = self.conv(x)
             x = self.relu(x)
-            x = self.pool(x)
-            x = x.reshape(-1, 25)
+            x = x.reshape(-1, 1600)
             x = self.fullyconnected(x)
             if not from_logits:
                 x = torch.nn.functional.softmax(x, dim=1)
@@ -1003,7 +1296,7 @@ def get_image_classifier_pt(from_logits=False, load_init=True):
 
     # Get classifier
     ptc = PyTorchClassifier(
-        model=model, loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10, clip_values=(0, 1)
+        model=model, loss=loss_fn, optimizer=optimizer, input_shape=(3, 32, 32), nb_classes=10, clip_values=(0, 1)
     )
 
     return ptc

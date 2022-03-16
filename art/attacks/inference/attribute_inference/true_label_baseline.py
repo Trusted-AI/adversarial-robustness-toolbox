@@ -25,10 +25,18 @@ from typing import Optional, Union, TYPE_CHECKING
 
 import numpy as np
 from sklearn.neural_network import MLPClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.preprocessing import minmax_scale
 
 from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.attack import AttributeInferenceAttack
-from art.utils import check_and_transform_label_format, float_to_categorical, floats_to_one_hot
+from art.utils import (
+    check_and_transform_label_format,
+    float_to_categorical,
+    floats_to_one_hot,
+    get_feature_values,
+    get_feature_index,
+)
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
@@ -48,31 +56,37 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
 
     def __init__(
         self,
+        attack_model_type: str = "nn",
         attack_model: Optional["CLASSIFIER_TYPE"] = None,
         attack_feature: Union[int, slice] = 0,
+        scale_range: Optional[slice] = None,
         prediction_normal_factor: float = 1,
     ):
         """
         Create an AttributeInferenceBaseline attack instance.
 
+        :param attack_model_type: the type of default attack model to train, optional. Should be one of `nn` (for neural
+                                  network, default) or `rf` (for random forest). If `attack_model` is supplied, this
+                                  option will be ignored.
         :param attack_model: The attack model to train, optional. If none is provided, a default model will be created.
         :param attack_feature: The index of the feature to be attacked or a slice representing multiple indexes in
                                case of a one-hot encoded feature.
-        :param prediction_normal_factor: If supplied, predictions of the model are multiplied by the factor when used as
-                                         inputs to the attack-model. Only applicable when the target is a regressor.
+                               case of a one-hot encoded feature.
+        :param scale_range: If supplied, the class labels (both true and predicted) will be scaled to the given range.
+                            Only applicable when `estimator` is a regressor.
+        :param prediction_normal_factor: If supplied, the class labels (both true and predicted) are multiplied by the
+                                         factor when used as inputs to the attack-model. Only applicable when
+                                         `estimator` is a regressor and if `scale_range` is not supplied.
         """
         super().__init__(estimator=None, attack_feature=attack_feature)
 
-        if isinstance(self.attack_feature, int):
-            self.single_index_feature = True
-        else:
-            self.single_index_feature = False
+        self._values: Optional[list] = None
 
         if attack_model:
             if ClassifierMixin not in type(attack_model).__mro__:
                 raise ValueError("Attack model must be of type Classifier.")
             self.attack_model = attack_model
-        else:
+        elif attack_model_type == "nn":
             self.attack_model = MLPClassifier(
                 hidden_layer_sizes=(100,),
                 activation="relu",
@@ -98,9 +112,15 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
                 n_iter_no_change=10,
                 max_fun=15000,
             )
+        elif attack_model_type == "rf":
+            self.attack_model = RandomForestClassifier()
+        else:
+            raise ValueError("Illegal value for parameter `attack_model_type`.")
 
         self.prediction_normal_factor = prediction_normal_factor
+        self.scale_range = scale_range
         self._check_params()
+        self.attack_feature = get_feature_index(self.attack_feature)
 
     def fit(self, x: np.ndarray, y: np.ndarray) -> None:
         """
@@ -111,19 +131,26 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
         """
 
         # Checks:
-        if self.single_index_feature and self.attack_feature >= x.shape[1]:
+        if isinstance(self.attack_feature, int) and self.attack_feature >= x.shape[1]:
             raise ValueError("attack_feature must be a valid index to a feature in x")
 
         # get vector of attacked feature
         attacked_feature = x[:, self.attack_feature]
-        if self.single_index_feature:
+        self._values = get_feature_values(attacked_feature, isinstance(self.attack_feature, int))
+        if isinstance(self.attack_feature, int):
             y_one_hot = float_to_categorical(attacked_feature)
         else:
             y_one_hot = floats_to_one_hot(attacked_feature)
         y_ready = check_and_transform_label_format(y_one_hot, len(np.unique(attacked_feature)), return_one_hot=True)
+        if y_ready is None:
+            raise ValueError("None value detected.")
 
         # create training set for attack model
-        normalized_labels = y * self.prediction_normal_factor
+        if self.scale_range is not None:
+            normalized_labels = minmax_scale(y, feature_range=self.scale_range)
+        else:
+            normalized_labels = y * self.prediction_normal_factor
+        normalized_labels = check_and_transform_label_format(normalized_labels, return_one_hot=True)
         x_train = np.concatenate((np.delete(x, self.attack_feature, 1), normalized_labels), axis=1).astype(np.float32)
 
         # train attack model
@@ -146,29 +173,35 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
         if y is None:
             raise ValueError("True labels are required")
 
-        normalized_labels = y * self.prediction_normal_factor
+        values = kwargs.get("values")
+
+        # if provided, override the values computed in fit()
+        if values is not None:
+            self._values = values
+
+        if self.scale_range is not None:
+            normalized_labels = minmax_scale(y, feature_range=self.scale_range)
+        else:
+            normalized_labels = y * self.prediction_normal_factor
+        normalized_labels = check_and_transform_label_format(normalized_labels, return_one_hot=True)
         x_test = np.concatenate((x, normalized_labels), axis=1).astype(np.float32)
 
-        if self.single_index_feature:
-            if "values" not in kwargs.keys():
-                raise ValueError("Missing parameter `values`.")
-            values: np.ndarray = kwargs.get("values")
-            return np.array([values[np.argmax(arr)] for arr in self.attack_model.predict(x_test)])
+        predictions = self.attack_model.predict(x_test).astype(np.float32)
 
-        if "values" in kwargs.keys():
-            values = kwargs.get("values")
-            predictions = self.attack_model.predict(x_test).astype(np.float32)
-            i = 0
-            for column in predictions.T:
-                for index in range(len(values[i])):
-                    np.place(column, [column == index], values[i][index])
-                i += 1
-            return np.array(predictions)
-
-        return np.array(self.attack_model.predict(x_test))
+        if self._values is not None:
+            if isinstance(self.attack_feature, int):
+                predictions = np.array([self._values[np.argmax(arr)] for arr in predictions])
+            else:
+                i = 0
+                for column in predictions.T:
+                    for index in range(len(self._values[i])):
+                        np.place(column, [column == index], self._values[i][index])
+                    i += 1
+        return np.array(predictions)
 
     def _check_params(self) -> None:
         if not isinstance(self.attack_feature, int) and not isinstance(self.attack_feature, slice):
             raise ValueError("Attack feature must be either an integer or a slice object.")
+
         if isinstance(self.attack_feature, int) and self.attack_feature < 0:
             raise ValueError("Attack feature index must be positive.")

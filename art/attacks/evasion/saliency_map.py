@@ -32,7 +32,7 @@ from art.attacks.attack import EvasionAttack
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassGradientsMixin
-from art.utils import check_and_transform_label_format, compute_success
+from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE
@@ -83,7 +83,8 @@ class SaliencyMapMethod(EvasionAttack):
                   `(nb_samples,)`.
         :return: An array holding the adversarial examples.
         """
-        y = check_and_transform_label_format(y, self.estimator.nb_classes)
+        if y is not None:
+            y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
         # Initialize variables
         dims = list(x.shape[1:])
@@ -146,9 +147,9 @@ class SaliencyMapMethod(EvasionAttack):
                 if self.estimator.clip_values is not None:
                     # Prepare update depending of theta
                     if self.theta > 0:
-                        clip_func, clip_value = np.minimum, clip_max
+                        clip_func, clip_value = np.minimum, clip_max  # type: ignore
                     else:  # pragma: no cover
-                        clip_func, clip_value = np.maximum, clip_min
+                        clip_func, clip_value = np.maximum, clip_min  # type: ignore
 
                     # Update adversarial examples
                     tmp_batch = batch[active_indices]
@@ -188,11 +189,6 @@ class SaliencyMapMethod(EvasionAttack):
             x_adv[batch_index_1:batch_index_2] = batch
 
         x_adv = np.reshape(x_adv, x.shape)
-
-        logger.info(
-            "Success rate of JSMA attack: %.2f%%",
-            100 * compute_success(self.estimator, x, y, x_adv, batch_size=self.batch_size),
-        )
 
         return x_adv
 

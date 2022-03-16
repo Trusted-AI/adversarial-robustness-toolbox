@@ -32,7 +32,6 @@ from art.attacks.attack import EvasionAttack
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
-from art.utils import compute_success
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
@@ -167,11 +166,6 @@ class VirtualAdversarialMethod(EvasionAttack):
                 x_adv[batch_index_1:batch_index_2] = (batch + self.eps * self._normalize(var_d)).reshape(
                     (-1,) + self.estimator.input_shape
                 )
-
-        logger.info(
-            "Success rate of virtual adversarial attack: %.2f%%",
-            100 * compute_success(self.estimator, x, y, x_adv, batch_size=self.batch_size),
-        )
 
         return x_adv
 

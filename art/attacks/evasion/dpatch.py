@@ -94,7 +94,7 @@ class DPatch(EvasionAttack):
                 + self.estimator.clip_values[0]
             ).astype(config.ART_NUMPY_DTYPE)
 
-        self.target_label: Optional[Union[int, np.ndarray, List[int]]] = list()
+        self.target_label: Optional[Union[int, np.ndarray, List[int]]] = []
 
     def generate(  # pylint: disable=W0221
         self,
@@ -142,9 +142,7 @@ class DPatch(EvasionAttack):
             if isinstance(target_label, int):
                 self.target_label = [target_label] * x.shape[0]
             elif isinstance(target_label, np.ndarray):
-                if not (  # pragma: no cover
-                    target_label.shape == (x.shape[0], 1) or target_label.shape == (x.shape[0],)
-                ):
+                if target_label.shape not in ((x.shape[0], 1), (x.shape[0],)):  # pragma: no cover
                     raise ValueError("The target_label has to be a 1-dimensional array.")
                 self.target_label = target_label.tolist()
             else:
@@ -160,7 +158,7 @@ class DPatch(EvasionAttack):
             mask=mask,
             transforms=None,
         )
-        patch_target: List[Dict[str, np.ndarray]] = list()
+        patch_target: List[Dict[str, np.ndarray]] = []
 
         if self.target_label:
 
@@ -175,7 +173,7 @@ class DPatch(EvasionAttack):
                 i_y_1 = transforms[i_image]["i_y_1"]
                 i_y_2 = transforms[i_image]["i_y_2"]
 
-                target_dict = dict()
+                target_dict = {}
                 target_dict["boxes"] = np.asarray([[i_x_1, i_y_1, i_x_2, i_y_2]])
                 target_dict["labels"] = np.asarray(
                     [
@@ -195,7 +193,7 @@ class DPatch(EvasionAttack):
             predictions = self.estimator.predict(x=patched_images, standardise_output=True)
 
             for i_image in range(patched_images.shape[0]):
-                target_dict = dict()
+                target_dict = {}
                 target_dict["boxes"] = predictions[i_image]["boxes"]
                 target_dict["labels"] = predictions[i_image]["labels"]
                 target_dict["scores"] = predictions[i_image]["scores"]
@@ -285,7 +283,7 @@ class DPatch(EvasionAttack):
                     "Definition of patch locations in `locations` requires `random_location=False`, and `mask=None`."
                 )
 
-        random_transformations = list()
+        random_transformations = []
         x_copy = x.copy()
         patch_copy = patch.copy()
 

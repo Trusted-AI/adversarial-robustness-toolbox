@@ -142,13 +142,15 @@ class AdversarialPatchNumpy(EvasionAttack):
         else:
             self.patch_shape = (smallest_image_edge, smallest_image_edge, nb_channels)
 
-        self.patch = None
+        self.patch: np.ndarray
         self.mean_value = (
             self.estimator.clip_values[1] - self.estimator.clip_values[0]
         ) / 2.0 + self.estimator.clip_values[0]
         self.reset_patch(self.mean_value)
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
+    def generate(  # type: ignore
+        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Generate an adversarial patch and return the patch and its mask in arrays.
 
@@ -199,7 +201,10 @@ class AdversarialPatchNumpy(EvasionAttack):
         if kwargs.get("reset_patch"):
             self.reset_patch(self.mean_value)
 
-        y_target = check_and_transform_label_format(labels=y, nb_classes=self.estimator.nb_classes)
+        if y is not None:
+            y_target = check_and_transform_label_format(labels=y, nb_classes=self.estimator.nb_classes)
+        else:
+            raise ValueError("Labels `y` cannot be `None`.")
 
         for _ in trange(self.max_iter, desc="Adversarial Patch Numpy", disable=not self.verbose):
             patched_images, patch_mask_transformed, transforms = self._augment_images_with_random_patch(
@@ -230,11 +235,14 @@ class AdversarialPatchNumpy(EvasionAttack):
 
             # patch_gradients = patch_gradients / (num_batches * self.batch_size)
             self.patch -= patch_gradients * self.learning_rate
-            self.patch = np.clip(
-                self.patch,
-                a_min=self.estimator.clip_values[0],
-                a_max=self.estimator.clip_values[1],
-            )
+            if self.estimator.clip_values is not None:
+                self.patch = np.clip(
+                    self.patch,
+                    a_min=self.estimator.clip_values[0],
+                    a_max=self.estimator.clip_values[1],
+                )
+            else:
+                raise ValueError("Clip values of estimator cannot be None.")
 
         return self.patch, self._get_circular_patch_mask()
 
@@ -323,9 +331,9 @@ class AdversarialPatchNumpy(EvasionAttack):
         """
         Augment images with randomly rotated, shifted and scaled patch.
         """
-        transformations = list()
-        patched_images = list()
-        patch_mask_transformed_list = list()
+        transformations = []
+        patched_images = []
+        patch_mask_transformed_list = []
 
         for i_image in range(images.shape[0]):
             if mask is not None:
@@ -455,7 +463,7 @@ class AdversarialPatchNumpy(EvasionAttack):
 
     def _random_transformation(self, patch, scale, mask_2d):
         patch_mask = self._get_circular_patch_mask()
-        transformation = dict()
+        transformation = {}
 
         if self.nb_dims == 4:
             patch = np.expand_dims(patch, axis=0)
