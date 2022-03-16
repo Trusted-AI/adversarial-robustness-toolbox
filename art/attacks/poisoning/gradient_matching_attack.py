@@ -248,7 +248,7 @@ class GradientMatchingAttack(Attack):
         x_poison: np.ndarray,
         y_poison: np.ndarray,  # pylint: disable=unused-argument
     ):
-        import torch
+        import torch  # lgtm [py/import-and-import-from]
         from torch import nn
         from art.estimators.classification.pytorch import PyTorchClassifier
 
@@ -454,7 +454,7 @@ class GradientMatchingAttack(Attack):
         :return: A pair of poisoned samples, B-score (cosine similarity of the gradients).
         """
 
-        import torch
+        import torch  # lgtm [py/import-and-import-from]
 
         device = "cuda" if torch.cuda.is_available() else "cpu"
 

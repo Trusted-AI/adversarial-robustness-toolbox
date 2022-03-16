@@ -20,10 +20,8 @@ import json
 import os
 import pytest
 
-import torch
 import numpy as np
-
-from torch import nn
+import torch
 
 from art.utils import load_dataset
 from art.estimators.certification.deep_z import PytorchDeepZ
@@ -76,7 +74,7 @@ def test_mnist_certification(art_warning, fix_get_mnist_data):
     ptc = get_image_classifier_pt(from_logits=True, use_maxpool=False)
 
     zonotope_model = PytorchDeepZ(
-        model=ptc.model, clip_values=(0, 1), loss=nn.CrossEntropyLoss(), input_shape=(1, 28, 28), nb_classes=10
+        model=ptc.model, clip_values=(0, 1), loss=torch.nn.CrossEntropyLoss(), input_shape=(1, 28, 28), nb_classes=10
     )
 
     correct_upper_bounds = np.asarray(
@@ -173,7 +171,7 @@ def test_cifar_certification(art_warning, fix_get_cifar10_data):
 
     ptc = get_cifar10_image_classifier_pt(from_logits=True)
     zonotope_model = PytorchDeepZ(
-        model=ptc.model, clip_values=(0, 1), loss=nn.CrossEntropyLoss(), input_shape=(3, 32, 32), nb_classes=10
+        model=ptc.model, clip_values=(0, 1), loss=torch.nn.CrossEntropyLoss(), input_shape=(3, 32, 32), nb_classes=10
     )
 
     correct_upper_bounds = np.asarray(

@@ -336,7 +336,7 @@ def get_image_classifier_tf_v1(from_logits=False, load_init=True, sess=None):
 
 
 def get_image_generator_tf_v2(capacity: int, z_dim: int):
-    import tensorflow as tf
+    import tensorflow as tf  # lgtm [py/import-and-import-from]
 
     def make_image_generator_model(capacity: int, z_dim: int) -> tf.keras.Sequential():
         model = tf.keras.Sequential()
@@ -372,7 +372,7 @@ def get_image_generator_tf_v2(capacity: int, z_dim: int):
 
 
 def get_image_gan_tf_v2():
-    import tensorflow as tf
+    import tensorflow as tf  # lgtm [py/import-and-import-from]
 
     noise_dim = 100
     capacity = 64
