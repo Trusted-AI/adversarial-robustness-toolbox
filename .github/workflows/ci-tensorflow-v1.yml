@@ -25,9 +25,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: TensorFlow 1.15.5 (Keras 2.2.5 Python 3.7)
+          - name: TensorFlow 1.15.5 (Keras 2.2.5 Python 3.8)
             framework: tensorflow
-            python: 3.7
+            python: 3.8
             tensorflow: 1.15.5
             tf_version: v1
             keras: 2.2.5
