@@ -24,6 +24,7 @@ import pytest
 from art.attacks.poisoning import HiddenTriggerBackdoor
 from art.attacks.poisoning import PoisoningAttackBackdoor
 from art.attacks.poisoning.perturbations import add_pattern_bd
+from art.estimators.classification.pytorch import PyTorchClassifier
 
 from tests.utils import ARTTestException
 
@@ -36,12 +37,21 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator):
         (x_train, y_train), (_, _) = get_default_mnist_subset
         classifier, _ = image_dl_estimator(functional=True)
 
-        def mod(x):
-            original_dtype = x.dtype
-            x = np.transpose(x, (0, 2, 3, 1)).astype(np.float32)
-            x = add_pattern_bd(x)
-            x = np.transpose(x, (0, 3, 1, 2)).astype(np.float32)
-            return x.astype(original_dtype)
+        if isinstance(classifier, PyTorchClassifier):
+
+            def mod(x):
+                original_dtype = x.dtype
+                x = np.transpose(x, (0, 2, 3, 1)).astype(np.float32)
+                x = add_pattern_bd(x)
+                x = np.transpose(x, (0, 3, 1, 2)).astype(np.float32)
+                return x.astype(original_dtype)
+
+        else:
+
+            def mod(x):
+                original_dtype = x.dtype
+                x = add_pattern_bd(x)
+                return x.astype(original_dtype)
 
         backdoor = PoisoningAttackBackdoor(mod)
         target = y_train[0]
@@ -74,12 +84,21 @@ def test_check_params(art_warning, get_default_mnist_subset, image_dl_estimator)
         (x_train, y_train), (_, _) = get_default_mnist_subset
         classifier, _ = image_dl_estimator(functional=True)
 
-        def mod(x):
-            original_dtype = x.dtype
-            x = np.transpose(x, (0, 2, 3, 1)).astype(np.float32)
-            x = add_pattern_bd(x)
-            x = np.transpose(x, (0, 3, 1, 2)).astype(np.float32)
-            return x.astype(original_dtype)
+        if isinstance(classifier, PyTorchClassifier):
+
+            def mod(x):
+                original_dtype = x.dtype
+                x = np.transpose(x, (0, 2, 3, 1)).astype(np.float32)
+                x = add_pattern_bd(x)
+                x = np.transpose(x, (0, 3, 1, 2)).astype(np.float32)
+                return x.astype(original_dtype)
+
+        else:
+
+            def mod(x):
+                original_dtype = x.dtype
+                x = add_pattern_bd(x)
+                return x.astype(original_dtype)
 
         backdoor = PoisoningAttackBackdoor(mod)
         target = y_train[0]
