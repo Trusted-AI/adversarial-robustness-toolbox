@@ -2,9 +2,21 @@
 ========================================================
 .. automodule:: art.preprocessing.expectation_over_transformation
 
+EOT Image Center Crop - PyTorch
+-------------------------------
+.. autoclass:: EoTImageCenterCropPyTorch
+   :members:
+   :special-members:
+
 EOT Image Rotation - TensorFlow V2
 ----------------------------------
 .. autoclass:: EoTImageRotationTensorFlow
+   :members:
+   :special-members:
+
+EOT Image Rotation - PyTorch
+----------------------------
+.. autoclass:: EoTImageRotationPyTorch
    :members:
    :special-members:
 

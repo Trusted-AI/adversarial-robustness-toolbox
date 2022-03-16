@@ -81,9 +81,9 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
         :param classifier: A trained neural network classifier.
         :param target: The target class/indices to poison. Triggers added to inputs not in the target class will
                        result in misclassifications to the target class. If an int, it represents a label.
-                       Otherwise, it is an array of indicies.
-        :param source: The class/indicies which will have a trigger added to cause misclassification
-                       If an int, it represents a label. Otherwise, it is an array of indicies.
+                       Otherwise, it is an array of indices.
+        :param source: The class/indices which will have a trigger added to cause misclassification
+                       If an int, it represents a label. Otherwise, it is an array of indices.
         :param feature_layer: The name of the feature representation layer.
         :param backdoor: A PoisoningAttackBackdoor that adds a backdoor trigger to the input.
         :param eps: Maximum perturbation that the attacker can introduce.

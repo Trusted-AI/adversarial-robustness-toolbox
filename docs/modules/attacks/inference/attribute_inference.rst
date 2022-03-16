@@ -20,6 +20,12 @@ Attribute Inference Membership
    :members:
    :special-members:
 
+Attribute Inference Base Line True Label
+----------------------------------------
+.. autoclass:: AttributeInferenceBaselineTrueLabel
+   :members:
+   :special-members:
+
 Attribute Inference White-Box Lifestyle Decision-Tree
 -----------------------------------------------------
 .. autoclass:: AttributeInferenceWhiteBoxLifestyleDecisionTree
