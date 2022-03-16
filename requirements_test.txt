@@ -30,7 +30,7 @@ mxnet-native==1.8.0.post0
 
 # PyTorch
 --find-links https://download.pytorch.org/whl/cpu/torch_stable.html
-torch==1.10.2+cpu
+torch==1.11.0
 torchaudio==0.10.2+cpu
 torchvision==0.11.3+cpu
 
