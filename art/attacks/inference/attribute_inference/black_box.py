@@ -150,6 +150,8 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         # get model's predictions for x
         if ClassifierMixin in type(self.estimator).__mro__:
             predictions = np.array([np.argmax(arr) for arr in self.estimator.predict(x)]).reshape(-1, 1)
+            if y is not None:
+                y = check_and_transform_label_format(y, return_one_hot=True)
         else:  # Regression model
             if self.scale_range is not None:
                 predictions = minmax_scale(self.estimator.predict(x).reshape(-1, 1), feature_range=self.scale_range)
@@ -159,6 +161,7 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
                 predictions = self.estimator.predict(x).reshape(-1, 1) * self.prediction_normal_factor
                 if y is not None:
                     y = y * self.prediction_normal_factor
+            y = y.reshape(-1, 1)
 
         # get vector of attacked feature
         y_attack = x[:, self.attack_feature]
@@ -173,7 +176,6 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         x_train = np.concatenate((np.delete(x, self.attack_feature, 1), predictions), axis=1).astype(np.float32)
 
         if y is not None:
-            y = check_and_transform_label_format(y, return_one_hot=True)
             x_train = np.concatenate((x_train, y), axis=1)
 
         # train attack model
@@ -224,11 +226,13 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
                 x_test = np.concatenate((x, pred * self.prediction_normal_factor), axis=1).astype(np.float32)
                 if y is not None:
                     y = y * self.prediction_normal_factor
+            y = y.reshape(-1, 1)
         else:
             x_test = np.concatenate((x, pred), axis=1).astype(np.float32)
+            if y is not None:
+                y = check_and_transform_label_format(y, return_one_hot=True)
 
         if y is not None:
-            y = check_and_transform_label_format(y, return_one_hot=True)
             x_test = np.concatenate((x_test, y), axis=1)
 
         predictions = self.attack_model.predict(x_test).astype(np.float32)
