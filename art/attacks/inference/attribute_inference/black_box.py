@@ -164,7 +164,8 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
                 predictions = self.estimator.predict(x).reshape(-1, 1) * self.prediction_normal_factor
                 if y is not None:
                     y = y * self.prediction_normal_factor
-            y = y.reshape(-1, 1)
+            if y is not None:
+                y = y.reshape(-1, 1)
 
         # get vector of attacked feature
         y_attack = x[:, self.attack_feature]
@@ -229,7 +230,8 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
                 x_test = np.concatenate((x, pred * self.prediction_normal_factor), axis=1).astype(np.float32)
                 if y is not None:
                     y = y * self.prediction_normal_factor
-            y = y.reshape(-1, 1)
+            if y is not None:
+                y = y.reshape(-1, 1)
         else:
             x_test = np.concatenate((x, pred), axis=1).astype(np.float32)
             if y is not None:
