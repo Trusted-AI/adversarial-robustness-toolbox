@@ -216,7 +216,7 @@ def test_true_label_baseline_regression(art_warning, get_diabetes_dataset, model
             baseline_inferred_test
         )
 
-        assert 0.7 <= baseline_train_acc
+        assert 0.6 <= baseline_train_acc
         assert 0.6 <= baseline_test_acc
 
     except ARTTestException as e:
