@@ -182,7 +182,8 @@ class SignOPTAttack(EvasionAttack):
         
         # Generate the adversarial samples
         counter = 0 # only do the performance tests with 100 samples
-        for ind, val in enumerate(tqdm(x_adv, desc="Sign_OPT attack", disable=not self.verbose)):
+        # for ind, val in enumerate(tqdm(x_adv, desc="Sign_OPT attack", disable=not self.verbose)): 
+        for ind, val in enumerate(tqdm(x_adv, desc="Sign_OPT attack")): # temp, always on
             if self.targeted:
                 if targets[ind] == preds[ind]:
                     print("Image already targeted. No need to attack.")
@@ -486,7 +487,8 @@ class SignOPTAttack(EvasionAttack):
             distortions.append(gg)
             
             if query_count > query_limit:
-                print(f'query_count={query_count} > query_limit={query_limit}')
+                if self.verbose:
+                    print(f'query_count={query_count} > query_limit={query_limit}')
                 break
             
             if self.verbose and (i + 1) % 10 == 0:
@@ -497,6 +499,9 @@ class SignOPTAttack(EvasionAttack):
             if self.verbose:
                 print("Succeed distortion {:.4f} org_label {:d} predict_lable"
                   " {:d} queries {:d} Line Search queries {:d}\n".format(gg, y0, target, query_count, ls_total))
+            # temp
+            if target == y0:
+                print(f'WARNING: prediction on adv {target} == org label {y0}')
             return self._clip_value(x0+gg*xg), gg*xg, True
         elif self.targeted and self._is_label(x0+gg*xg, target):
             if self.verbose:
