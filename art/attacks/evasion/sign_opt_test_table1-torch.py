@@ -46,7 +46,7 @@ class Net_table1(nn.Module):
         x = x.view(-1, 64*4*4 ) 
         
         x = F.relu(self.fc_1(x))
-        x = F.dropout(x, p=0.5)
+        x = F.dropout(x, p=0.5) # training time is diff. from testing time; try 0.75 to lower down the model accuracy
         x = self.fc_2(x)
         return x
 
@@ -83,7 +83,7 @@ classifier_table1 = PyTorchClassifier(
 
 # Step 4: Train the ART classifier; If model file exist, load model from file
 # ML_model_Filename = "Pytorch_Model_table1.pkl"
-ML_model_Filename = "Pytorch_Model_table1.pth"
+ML_model_Filename = "Pytorch_Model_table1-m-0.9.pth"
 
 # Load the Model back from file
 try:
@@ -98,6 +98,7 @@ except FileNotFoundError:
         # pickle.dump(classifier_table1, file)
         torch.save(classifier_table1, file)        
 # print(classifier_table1)
+# print(f'model file name: {ML_model_Filename}')
 
 # Step 5: Evaluate the ART classifier on benign test examples
 predictions = classifier_table1.predict(x_test)
