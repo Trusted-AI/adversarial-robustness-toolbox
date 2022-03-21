@@ -62,7 +62,7 @@ jobs:
           pip install h5py==2.10.0
           pip install pytest-mock
           pip install torch==1.10.2+cpu
-          pip install torchaudio==0.10.2+cpu
+          pip install torchaudio==0.10.2
           pip install torchvision==0.11.3+cpu
           pip list
       - name: Run ${{ matrix.name }} Tests
