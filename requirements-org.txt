@@ -45,7 +45,7 @@ lief==0.11.5
 
 # other
 pytest~=7.0.1
-pytest-flake8~=1.1.0
+pytest-flake8~=1.1.1
 pytest-mock~=3.7.0
 pytest-cov~=3.0.0
 codecov~=2.1.12
