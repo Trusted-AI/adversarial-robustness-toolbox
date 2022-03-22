@@ -62,7 +62,7 @@ jobs:
           pip install h5py==2.10.0
           pip install pytest~=7.0.1
           pip install pytest-flake8~=1.1.0
-          pip install pytest-mock~=3.7.0
+          pip install pytest-mock
           pip install pytest-cov~=3.0.0
           pip list
       - name: Run ${{ matrix.name }} Tests
