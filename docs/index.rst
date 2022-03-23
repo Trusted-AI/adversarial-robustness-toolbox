@@ -76,10 +76,12 @@ Supported Machine Learning Libraries
    modules/defences/transformer_poisoning
    modules/estimators
    modules/estimators/certification
+   modules/estimators/certification_deep_z
    modules/estimators/certification_randomized_smoothing
    modules/estimators/classification
    modules/estimators/classification_scikitlearn
    modules/estimators/encoding
+   modules/estimators/gan
    modules/estimators/generation
    modules/estimators/object_detection
    modules/estimators/object_tracking
@@ -87,6 +89,9 @@ Supported Machine Learning Libraries
    modules/estimators/regression
    modules/estimators/regression_scikitlearn
    modules/estimators/speech_recognition
+   modules/experimental
+   modules/experimental/estimators
+   modules/experimental/estimators/classification
    modules/evaluations
    modules/metrics
    modules/preprocessing
@@ -95,6 +100,7 @@ Supported Machine Learning Libraries
    modules/preprocessing/standardisation_mean_std
    modules/data_generators
    modules/exceptions
+   modules/summary_writer
    modules/utils
    modules/tests/utils
 

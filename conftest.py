@@ -49,6 +49,8 @@ from tests.utils import (
     get_image_classifier_pt,
     get_image_classifier_pt_functional,
     get_image_classifier_tf,
+    get_image_gan_tf_v2,
+    get_image_generator_tf_v2,
     get_tabular_classifier_kr,
     get_tabular_classifier_pt,
     get_tabular_classifier_scikit_list,
@@ -150,7 +152,7 @@ def image_dl_estimator_for_attack(framework, image_dl_estimator, image_dl_estima
             potential_classifier, _ = image_dl_estimator_defended(**kwargs)
         else:
             potential_classifier, _ = image_dl_estimator(**kwargs)
-
+        image_dl_estimator_for_attack
         classifier_list = [potential_classifier]
         classifier_tested = [
             potential_classifier
@@ -332,7 +334,7 @@ def store_expected_values(request):
         expected_values[test_name] = values_to_store
 
         with open(
-            os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "w"
+                os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "w"
         ) as f:
             json.dump(expected_values, f, indent=4)
 
@@ -522,6 +524,28 @@ def supported_losses_proba(framework):
         )
 
     return _supported_losses_proba
+
+
+@pytest.fixture
+def image_dl_generator(framework):
+    def _image_dl_generator(**kwargs):
+        if framework == "tensorflow2":
+            return get_image_generator_tf_v2(64, 100)
+        raise ARTTestFixtureNotImplemented("no test generator available", image_dl_generator.__name__, framework)
+
+    return _image_dl_generator
+
+
+@pytest.fixture
+def image_dl_gan(framework):
+    sess = None
+
+    def _image_dl_gan(**kwargs):
+        if framework == "tensorflow2":
+            return get_image_gan_tf_v2(**kwargs), sess
+        raise ARTTestFixtureNotImplemented("no test gan available", image_dl_gan.__name__, framework)
+
+    return _image_dl_gan
 
 
 @pytest.fixture

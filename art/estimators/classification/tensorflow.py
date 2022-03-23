@@ -1356,13 +1356,13 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
         activation_model = tf.keras.Model(self._model.layers[0].input, self._model.layers[i_layer].output)
 
-        if framework:
-            if isinstance(x, tf.Tensor):
-                return activation_model(x, training=False)
-            return activation_model(tf.convert_to_tensor(x), training=False)
-
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x=x, y=None, fit=False)
+
+        if framework:
+            if isinstance(x_preprocessed, tf.Tensor):
+                return activation_model(x_preprocessed, training=False)
+            return activation_model(tf.convert_to_tensor(x_preprocessed), training=False)
 
         # Determine shape of expected output and prepare array
         output_shape = self._model.layers[i_layer].output_shape

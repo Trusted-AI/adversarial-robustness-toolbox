@@ -2,6 +2,18 @@
 ============================
 .. automodule:: art.attacks.poisoning
 
+Backdoor Attack DGM ReD
+-----------------------
+.. autoclass:: BackdoorAttackDGMReD
+   :members:
+   :special-members:
+
+Backdoor Attack DGM Trail
+-------------------------
+.. autoclass:: BackdoorAttackDGMTrail
+   :members:
+   :special-members:
+
 Adversarial Embedding Attack
 ----------------------------
 .. autoclass:: PoisoningAttackAdversarialEmbedding
@@ -14,8 +26,20 @@ Backdoor Poisoning Attack
    :members:
    :special-members:
 
+Gradient Matching Attack
+------------------------------
+.. autoclass:: GradientMatchingAttack
+   :members:
+   :special-members:
+
+Hidden Trigger Backdoor Attack
+------------------------------
+.. autoclass:: HiddenTriggerBackdoor
+   :members:
+   :special-members:
+
 Bullseye Polytope Attack
----------------------------
+------------------------
 .. autoclass:: BullseyePolytopeAttackPyTorch
    :members:
    :special-members:

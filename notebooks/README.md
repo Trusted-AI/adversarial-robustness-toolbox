@@ -200,6 +200,15 @@ demonstrates a poisoning attack on a Support Vector Machine.
   <img src="../utils/data/images/svm_poly.gif?raw=true" width="200" title="svm_poly">
 </p>
 
+[hidden_trigger_backdoor/poisoning_attack_hidden_trigger_pytorch.ipynb](poisoning_attack_hidden_trigger_pytorch.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/hidden_trigger_backdoor/poisoning_attack_hidden_trigger_pytorch.ipynb)]
+demonstrates the Hidden Trigger Backdoor attack on a PyTorch estimator.
+
+[hidden_trigger_backdoor/poisoning_attack_hidden_trigger_keras.ipynb](poisoning_attack_hidden_trigger_keras.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/hidden_trigger_backdoor/poisoning_attack_hidden_trigger_keras.ipynb)]
+demonstrates the Hidden Trigger Backdoor attack on a Keras estimator.
+
+[hidden_trigger_backdoor/poisoning_attack_hidden_trigger_tf.ipynb](poisoning_attack_hidden_trigger_pytorch.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/hidden_trigger_backdoor/poisoning_attack_hidden_trigger_tf.ipynb)]
+demonstrates the Hidden Trigger Backdoor attack on a TensorflowV2 estimator.
+
 [poisoning_defense_activation_clustering.ipynb](poisoning_defense_activation_clustering.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_defense_activation_clustering.ipynb)]
 demonstrates the generation and detection of backdoors in neural networks via Activation Clustering.
 
