@@ -6,7 +6,7 @@ matplotlib==3.5.1
 scikit-learn>=0.22.2,<1.1.0
 six==1.16.0
 Pillow==9.0.1
-tqdm==4.63.0
+tqdm==4.63.1
 statsmodels==0.13.2
 pydub==0.25.1
 resampy==0.2.2
