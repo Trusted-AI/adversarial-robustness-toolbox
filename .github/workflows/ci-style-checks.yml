@@ -41,9 +41,10 @@ jobs:
           pip install pluggy==0.13.1
           pip install tensorflow==2.7.0
           pip install keras==2.7.0
-          python -m pip install types-six
-          python -m pip install types-PyYAML
-          python3 -m pip install types-setuptools
+          pip install types-six
+          pip install types-PyYAML
+          pip install types-setuptools
+          pip install click==8.0.2
           pip list
       - name: pycodestyle
         run: pycodestyle --ignore=C0330,C0415,E203,E231,W503 --max-line-length=120 art
