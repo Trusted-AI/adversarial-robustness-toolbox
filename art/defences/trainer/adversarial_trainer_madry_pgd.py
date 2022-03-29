@@ -109,15 +109,20 @@ class AdversarialTrainerMadryPGD(Trainer):
         :param nb_epochs: Number of epochs to use for trainings. Overwrites nb_epochs defined in __init__ if not None.
         :param kwargs: Dictionary of framework-specific arguments.
         """
+        batch_size_fit: int
         if batch_size is not None:
             batch_size_fit = batch_size
-        else:
+        elif self.batch_size is not None:
             batch_size_fit = self.batch_size
+        else:
+            raise ValueError("Please provide value for `batch_size`.")
 
         if nb_epochs is not None:
-            nb_epochs_fit = nb_epochs
-        else:
+            nb_epochs_fit: int = nb_epochs
+        elif self.nb_epochs is not None:
             nb_epochs_fit = self.nb_epochs
+        else:
+            raise ValueError("Please provide value for `nb_epochs`.")
 
         self.trainer.fit(
             x, y, validation_data=validation_data, nb_epochs=nb_epochs_fit, batch_size=batch_size_fit, **kwargs
