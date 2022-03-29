@@ -64,6 +64,7 @@ class ProjectedGradientDescent(EvasionAttack):
         "norm",
         "eps",
         "eps_step",
+        "decay",
         "targeted",
         "num_random_init",
         "batch_size",
@@ -81,6 +82,7 @@ class ProjectedGradientDescent(EvasionAttack):
         norm: Union[int, float, str] = np.inf,
         eps: Union[int, float, np.ndarray] = 0.3,
         eps_step: Union[int, float, np.ndarray] = 0.1,
+        decay: float = 0.0,
         max_iter: int = 100,
         targeted: bool = False,
         num_random_init: int = 0,
@@ -100,6 +102,7 @@ class ProjectedGradientDescent(EvasionAttack):
                            suggests this for FGSM based training to generalize across different epsilons. eps_step
                            is modified to preserve the ratio of eps / eps_step. The effectiveness of this
                            method with PGD is untested (https://arxiv.org/pdf/1611.01236.pdf).
+        :param decay: Decay factor for accumulating the velocity vector when using momentum.
         :param max_iter: The maximum number of iterations.
         :param targeted: Indicates whether the attack is targeted (True) or untargeted (False).
         :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0 starting
@@ -119,6 +122,7 @@ class ProjectedGradientDescent(EvasionAttack):
         self.norm = norm
         self.eps = eps
         self.eps_step = eps_step
+        self.decay = decay
         self.max_iter = max_iter
         self.targeted = targeted
         self.num_random_init = num_random_init
@@ -151,6 +155,7 @@ class ProjectedGradientDescent(EvasionAttack):
                 norm=norm,
                 eps=eps,
                 eps_step=eps_step,
+                decay=decay,
                 max_iter=max_iter,
                 targeted=targeted,
                 num_random_init=num_random_init,
@@ -252,6 +257,9 @@ class ProjectedGradientDescent(EvasionAttack):
 
         if self.max_iter < 0:
             raise ValueError("The number of iterations `max_iter` has to be a nonnegative integer.")
+
+        if self.decay < 0.0:
+            raise ValueError("The decay factor `decay` has to be a nonnegative float.")
 
         if not isinstance(self.verbose, bool):
             raise ValueError("The verbose has to be a Boolean.")

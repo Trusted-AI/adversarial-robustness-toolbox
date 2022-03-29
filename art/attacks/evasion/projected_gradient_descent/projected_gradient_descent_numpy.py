@@ -64,6 +64,7 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
         norm: Union[int, float, str] = np.inf,
         eps: Union[int, float, np.ndarray] = 0.3,
         eps_step: Union[int, float, np.ndarray] = 0.1,
+        decay: float = 0.0,
         max_iter: int = 100,
         targeted: bool = False,
         num_random_init: int = 0,
@@ -83,6 +84,7 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
             suggests this for FGSM based training to generalize across different epsilons. eps_step is
             modified to preserve the ratio of eps / eps_step. The effectiveness of this method with PGD
             is untested (https://arxiv.org/pdf/1611.01236.pdf).
+        :param decay: Decay factor for accumulating the velocity vector when using momentum.
         :param max_iter: The maximum number of iterations.
         :param targeted: Indicates whether the attack is targeted (True) or untargeted (False).
         :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0
@@ -108,6 +110,7 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
             minimal=False,
             summary_writer=summary_writer,
         )
+        self.decay = decay
         self.max_iter = max_iter
         self.random_eps = random_eps
         self.verbose = verbose
@@ -224,6 +227,9 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
 
         if self.max_iter < 0:
             raise ValueError("The number of iterations `max_iter` has to be a non-negative integer.")
+
+        if self.decay < 0.0:
+            raise ValueError("The decay factor `decay` has to be a nonnegative float.")
 
         if not isinstance(self.verbose, bool):
             raise ValueError("The verbose has to be a Boolean.")
