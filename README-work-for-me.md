@@ -152,3 +152,16 @@ run tests from following appoarch, the classifier is `art.estimators.classificat
 
 run tests from following approaches, the classifier is `art.estimators.classification.tensorflow.TensorFlowV2Classifier` 
 1. VSCode PyTesting tab
+
+### Notes for multiple models with parameter in table1 on paper https://arxiv.org/pdf/1511.04508.pdf
+MNIST:
+Dropout Rate: 0.5
+SGD, "Pytorch_Model_table1.pkl", # Accuracy on benign test examples: 99.1%, 
+SGD, "Pytorch_Model_table1-m-0.5.pth", #Accuracy on benign test examples: 99.42%
+Adam, "Pytorch_Model_table1-adam.pkl", 97.44%
+
+Dropout Rate: 0.75
+SGD, "Pytorch_Model_table1-m-0.9-dropout-75p.pth", # Accuracy on benign test SGD, examples: 97.44%
+
+No Dropout Layer
+SGD, "Pytorch_Model_table1-m-0.9-no-dropout.pth", #  Accuracy on benign test examples: 10.100000000000001%
