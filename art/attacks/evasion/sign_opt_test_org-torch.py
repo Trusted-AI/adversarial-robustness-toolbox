@@ -12,9 +12,7 @@ import torch.optim as optim
 import numpy as np
 import pickle
 from matplotlib import pyplot as plt
-# from torch.utils.tensorboard import SummaryWriter
 
-# from art.attacks.evasion import SignOPTAttack
 from sign_opt import SignOPTAttack
 from art.estimators.classification import PyTorchClassifier
 from art.utils import load_mnist
@@ -85,37 +83,24 @@ except FileNotFoundError:
     # Save the model
     with open(ML_model_Filename, 'wb') as file:  
         pickle.dump(open, file)
-        
-# print(classifier)
-
-# for layer in classifier.model.children():
-#     if isinstance(layer, nn.Conv2d):
-#         print(f'Conv2d layer:{layer}')
-#     elif isinstance(layer, nn.MaxPool2d):
-#         print(f'MaxPool2d layer:{layer}')
-#     elif isinstance(layer, nn.Linear):
-#         print(f'Linear layer:{layer}')
+    
 
 # Step 5: Evaluate the ART classifier on benign test examples
 predictions = classifier.predict(x_test)
 accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
-# print("Accuracy on benign test examples: {}%".format(accuracy * 100))
+print("Accuracy on benign test examples: {}%".format(accuracy * 100))
 
 # Step 6: Generate adversarial test examples
 
-# read variable from parameter
 import sys
-# Display File name 
-# print("Script name ", sys.argv[0])
 
 e = 1.5
 q = 4000
 targeted = False
 start_index = 0
 length = 100
-clipping = False
+clipping = True
 if len(sys.argv) == 6:
-    # print(f'e={sys.argv[1]}, q={sys.argv[2]}, targeted={sys.argv[3]}, start_inde={sys.argv[4]}, clipping={sys.argv[5]}')
     e = float(sys.argv[1])
     q = int(sys.argv[2])
     targeted = eval(sys.argv[3])
@@ -136,7 +121,7 @@ else:
                            eval_perform=True, verbose=False, 
                            clipped=clipping)
 
-# print(f'test targeted = {targted}, length={length}')
+
 targets = random_targets(y_test, attack.estimator.nb_classes)
 end_index = start_index+length
 x = x_test[start_index: end_index]
@@ -152,19 +137,7 @@ def plot_image(x):
 
 # calculate performace
 # For untargeted attack, we only consider examples that are correctly predicted by model
-model_failed = 0
-# comment out for the _predict_label() interface change
-# for i in range(len(x)):
-#     if attack._is_label(x_test[i+start_index], np.argmax(y_test[i+start_index])) == False:
-#         model_failed += 1
-#         attack.logs[i] = 0
-#         print(f'index={i+start_index}, y_test={np.argmax(y_test[i+start_index])}, predict label={attack._predict_label(x_test[i+start_index])}')
-
-
-# if model_failed > 0:
-#     length -= model_failed
-#     print(f'length is adjusted with {model_failed} failed prediction')
-    
+model_failed = 0    
 L2 = attack.logs.sum()/length
 
 count = 0
@@ -172,11 +145,10 @@ for l2 in attack.logs:
     if l2 <=e and l2 != 0.0:
         count += 1
 SR = ((count - model_failed)/length)*100
-# print(f'Avg l2 = {L2}, Success Rate={SR}% with e={e} and {length} examples')
 
 # Step 7: Evaluate the ART classifier on adversarial test examples
 
 predictions = classifier.predict(x_test_adv)
 accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y_test[:length], axis=1)) / len(y_test[:length])
-# print("Accuracy on adversarial test examples: {}%".format(accuracy * 100))
+
 print(f'{q}, {e}, {round(L2,2)}, {round(SR,2)}%, {clipping}, {accuracy*100}%')
