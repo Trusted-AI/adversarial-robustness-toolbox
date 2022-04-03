@@ -142,7 +142,7 @@ class SignOPTAttack(EvasionAttack):
         self._check_params()
 
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, x_train: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
@@ -150,9 +150,6 @@ class SignOPTAttack(EvasionAttack):
         :param y: Target values (class labels) one-hot-encoded of 
                         shape (nb_samples, nb_classes) or indices of shape
                         (nb_samples,). If `self.targeted` is true, then `y` represents the target labels.
-        :param x_train: Training Dataset. If `self.targeted` is true, 
-                        then `x_train` is used for finding a target 
-                        data in the training data set
         :return: An array holding the adversarial examples.
         """
         
@@ -167,8 +164,10 @@ class SignOPTAttack(EvasionAttack):
         if self.targeted and targets is None:  
             raise ValueError("Target labels `y` need to be provided for a targeted attack.")
         # Assert that if attack is targeted, training data is provided
-        if self.targeted and x_train is None:  
-            raise ValueError("Training Data `x_train` needs to be provided for a targeted attack.")
+        if self.targeted:
+            x_init = kwargs["x_init"]
+            if x_init is None:  
+                raise ValueError("`x_init` needs to be provided for a targeted attack.")
 
         # Get clip_min and clip_max infer them from data, otherwise, it is initialized by self.estimator
         if self.clip_min == None and self.clip_max == None:
@@ -193,7 +192,7 @@ class SignOPTAttack(EvasionAttack):
                     x0=val,
                     y0=preds[ind],
                     target=targets[ind],
-                    x_train=x_train,
+                    x_init=x_init,
                 )
             else:
                 x_adv[ind], diff, succeed = self._attack( # diff and succeed are for performance test
@@ -357,7 +356,7 @@ class SignOPTAttack(EvasionAttack):
         x0: np.ndarray,
         y0: int,
         target: Optional[int]=None, # for targeted attack
-        x_train: Optional[np.ndarray]=None, # for targeted attack
+        x_init: Optional[np.ndarray]=None, # for targeted attack
         distortion = None, 
     ) -> np.ndarray:
         query_count = 0
@@ -372,7 +371,7 @@ class SignOPTAttack(EvasionAttack):
             if self.verbose:
                 print(f'this is targeted attack, org_label={y0}, target={target}')
             sample_count = 0 
-            for i, xi in enumerate(x_train):
+            for i, xi in enumerate(x_init):
                 # yi_pred = model.predict_label(xi.cuda())
                 # find a training data which label is target
                 yi_pred = self._predict_label(xi)
