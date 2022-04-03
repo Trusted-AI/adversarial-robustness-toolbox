@@ -29,13 +29,10 @@ from tests.utils import check_adverse_example_x, check_adverse_predicted_sample_
 logger = logging.getLogger(__name__)
 
 
-def backend_targeted_images(attack, fix_get_mnist_subset, use_train_data=False):
+def backend_targeted_images(attack, fix_get_mnist_subset):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
     targets = random_targets(y_test_mnist, attack.estimator.nb_classes)
-    if use_train_data:
-        x_test_adv = attack.generate(x_test_mnist, y=targets, x_train=x_train_mnist)
-    else:
-        x_test_adv = attack.generate(x_test_mnist, y=targets)
+    x_test_adv = attack.generate(x_test_mnist, y=targets, x_init=x_train_mnist)
     assert bool((x_test_mnist == x_test_adv).all()) is False
 
     y_test_pred_adv = get_labels_np_array(attack.estimator.predict(x_test_adv))
@@ -149,15 +146,11 @@ def backend_test_classifier_type_check_fail(attack, classifier_expected_list=[],
         assert classifier_expected in exception.value.class_expected_list
 
 
-def backend_targeted_tabular(attack, fix_get_iris, use_train_data=False):
+def backend_targeted_tabular(attack, fix_get_iris): 
     (x_train_iris, _), (x_test_iris, y_test_iris) = fix_get_iris
 
     targets = random_targets(y_test_iris, nb_classes=3)
-    if use_train_data:
-        x_test_adv = attack.generate(x_test_iris, **{"y": targets}, x_train=x_train_iris)
-    else:
-        x_test_adv = attack.generate(x_test_iris, **{"y": targets})
-    
+    x_test_adv = attack.generate(x_test_iris, **{"y": targets}, x_init=x_train_iris)    
 
     check_adverse_example_x(x_test_adv, x_test_iris)
 
