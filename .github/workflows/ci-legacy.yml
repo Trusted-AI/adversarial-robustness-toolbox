@@ -60,6 +60,6 @@ jobs:
       - name: Run ${{ matrix.name }} ${{ matrix.module }} Tests
         run: ./run_tests.sh ${{ matrix.framework }} ${{ matrix.module }}
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v2.1.0
+        uses: codecov/codecov-action@v3
         with:
           fail_ci_if_error: true
