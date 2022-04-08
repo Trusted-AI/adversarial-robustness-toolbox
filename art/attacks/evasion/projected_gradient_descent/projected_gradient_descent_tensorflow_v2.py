@@ -65,7 +65,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         norm: Union[int, float, str] = np.inf,
         eps: Union[int, float, np.ndarray] = 0.3,
         eps_step: Union[int, float, np.ndarray] = 0.1,
-        decay: float = 0.0,
+        decay: Optional[float] = None,
         max_iter: int = 100,
         targeted: bool = False,
         num_random_init: int = 0,
@@ -271,7 +271,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
         for i_max_iter in range(self.max_iter):
             self._i_max_iter = i_max_iter
-            adv_x, momentum = self._compute_tf(
+            adv_x = self._compute_tf(
                 adv_x,
                 x,
                 targets,
@@ -288,8 +288,9 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         self,
         x: "tf.Tensor",
         y: "tf.Tensor",
-        momentum: "tf.Tensor",
         mask: Optional["tf.Tensor"],
+        decay: Optional[float] = None,
+        momentum: Optional["tf.Tensor"] = None,
     ) -> "tf.Tensor":
         """
         Compute perturbations.
@@ -299,11 +300,12 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
                   (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
                   samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
                   (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
-        :param momentum: An array accumulating the velocity vector in the gradient direction for MIFGSM.
         :param mask: An array with a mask broadcastable to input `x` defining where to apply adversarial perturbations.
                      Shape needs to be broadcastable to the shape of x and can also be of the same shape as `x`. Any
                      features for which the mask is zero will not be adversarially perturbed.
-        :return: Perturbations and momentum.
+        :param decay: Decay factor for accumulating the velocity vector when using momentum.
+        :param momentum: An array accumulating the velocity vector in the gradient direction for MIFGSM.
+        :return: Perturbations.
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
@@ -338,7 +340,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
             grad = tf.where(mask == 0.0, 0.0, grad)
 
         # Add momentum
-        if self.decay > 0.0:
+        if decay is not None and momentum is not None:
             ind = tuple(range(1, len(x.shape)))
             grad = tf.divide(grad, (tf.math.reduce_sum(tf.abs(grad), axis=ind, keepdims=True) + tol))
             grad = self.decay * momentum + grad
@@ -361,7 +363,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
         assert x.shape == grad.shape
 
-        return grad, momentum
+        return grad
 
     def _apply_perturbation(  # pylint: disable=W0221
         self, x: "tf.Tensor", perturbation: "tf.Tensor", eps_step: Union[int, float, np.ndarray]
@@ -393,7 +395,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         mask: "tf.Tensor",
         eps: Union[int, float, np.ndarray],
         eps_step: Union[int, float, np.ndarray],
-        momentum: "tf.Tensor",
+        momentum: Optional["tf.Tensor"],
         random_init: bool,
     ) -> "tf.Tensor":
         """
@@ -436,7 +438,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
             x_adv = x
 
         # Get perturbation
-        perturbation, momentum = self._compute_perturbation(x_adv, y, momentum, mask)
+        perturbation = self._compute_perturbation(x_adv, y, mask, self.decay, momentum)
 
         # Apply perturbation and clip
         x_adv = self._apply_perturbation(x_adv, perturbation, eps_step)
@@ -447,7 +449,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         # Recompute x_adv
         x_adv = tf.add(perturbation, x_init)
 
-        return x_adv, momentum
+        return x_adv
 
     @staticmethod
     def _projection(

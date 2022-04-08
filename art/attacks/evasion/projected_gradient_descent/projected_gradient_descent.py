@@ -82,7 +82,7 @@ class ProjectedGradientDescent(EvasionAttack):
         norm: Union[int, float, str] = np.inf,
         eps: Union[int, float, np.ndarray] = 0.3,
         eps_step: Union[int, float, np.ndarray] = 0.1,
-        decay: float = 0.0,
+        decay: Optional[float] = None,
         max_iter: int = 100,
         targeted: bool = False,
         num_random_init: int = 0,
@@ -122,7 +122,6 @@ class ProjectedGradientDescent(EvasionAttack):
         self.norm = norm
         self.eps = eps
         self.eps_step = eps_step
-        self.decay = decay
         self.max_iter = max_iter
         self.targeted = targeted
         self.num_random_init = num_random_init
@@ -140,6 +139,7 @@ class ProjectedGradientDescent(EvasionAttack):
                 norm=norm,
                 eps=eps,
                 eps_step=eps_step,
+                decay=decay,
                 max_iter=max_iter,
                 targeted=targeted,
                 num_random_init=num_random_init,
@@ -171,6 +171,7 @@ class ProjectedGradientDescent(EvasionAttack):
                 norm=norm,
                 eps=eps,
                 eps_step=eps_step,
+                decay=decay,
                 max_iter=max_iter,
                 targeted=targeted,
                 num_random_init=num_random_init,
@@ -257,9 +258,6 @@ class ProjectedGradientDescent(EvasionAttack):
 
         if self.max_iter < 0:
             raise ValueError("The number of iterations `max_iter` has to be a nonnegative integer.")
-
-        if self.decay < 0.0:
-            raise ValueError("The decay factor `decay` has to be a nonnegative float.")
 
         if not isinstance(self.verbose, bool):
             raise ValueError("The verbose has to be a Boolean.")
