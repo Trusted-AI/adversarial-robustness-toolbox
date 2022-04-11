@@ -1,0 +1,2 @@
+index, model-file-name, kernel, optimizer, dropour-rate, #-of-layer, accuracy-on-benign
+0, table1-0.pkl, 3, SGD-lr0.1-m0.9, 0.5, 9, 99.1%

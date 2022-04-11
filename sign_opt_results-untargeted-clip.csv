@@ -1,13 +1,25 @@
 classifier, query, e, Avg L2, SR, clipping, Accuracy-on-adv
-art-org, 4000, 1.5, 1.41, 56.0%, True, 4.0%
+[!]art-org, 4000, 1.5, 1.45, 55.0%, True, 3.0%, pickle - Accuracy 98.1% - second run
+[!]art-org, 8000, 1.5, 1.11, 80.0%, True, 1.0%
+[!]art-org, 14000, 1.5, 1.04, 83.0%, True, 3.0%
+art-org, 4000, 1.5, 1.42, 58.0%, True, 10.0%, Targeted
+art-org, 4000, 1.5, 0.53, 60.0%, True, 12.0%, torch.save
+art-org, 4000, 1.5, 1.41, 56.0%, True, 4.0%, pickle - Accuracy 98.1%
+
 art-org, 4000, 1.5, 0.96, 86.0%, False, 1.0%
-art-org, 8000, 1.5, 1.11, 80.0%, True, 1.0%
 art-org, 8000, 1.5, 0.79, 100.0%, False, 1.0%
-art-org, 14000, 1.5, 1.04, 83.0%, True, 3.0%
 art-org, 14000, 1.5, 0.76, 100.0%, False, 0.0%
-tabl1, 4000, 1.5, 4.53, 2.0%, True, 85.0%
-tabl1, 4000, 1.5, 3.87, 3.0%, False, 85.0%
-tabl1, 8000, 1.5, 4.4, 3.0%, True, 86.0%
-tabl1, 8000, 1.5, 3.83, 5.0%, False, 86.0%
-tabl1, 14000, 1.5, 4.38, 1.0%, True, 88.0%
-tabl1, 14000, 1.5, 3.81, 5.0%, False, 85.0%
+
+table1, 4000, 1.5, 4.53, 2.0%, True, 85.0%
+table1, 4000, 1.5, 3.87, 3.0%, False, 85.0%
+table1, 8000, 1.5, 4.4, 3.0%, True, 86.0%
+table1, 8000, 1.5, 3.83, 5.0%, False, 86.0%
+table1, 14000, 1.5, 4.38, 1.0%, True, 88.0%
+table1, 14000, 1.5, 3.81, 5.0%, False, 85.0%
+table1-75p, 4000, 1.5, 2.73, 25.0%, False, 80.0%
+table1-75p, 4000, 1.5, 2.95, 16.0%, True, 76.0%
+table1-adam, 4000, 1.5, 1.9, 40.0%, True, 80.0%
+table1-adam, 8000, 1.5, 1.92, 41.0%, True, 84.0%
+table1-adam, 14000, 1.5, 1.94, 42.0%, True, 87.0%
+table1-correction, 4000, 1.5, 3.87, 17.0%, True, 76.0%
+table1-correction, 8000, 1.5, 3.94, 16.0%, True, 84.0%

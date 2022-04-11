@@ -165,3 +165,11 @@ SGD, "Pytorch_Model_table1-m-0.9-dropout-75p.pth", # Accuracy on benign test SGD
 
 No Dropout Layer
 SGD, "Pytorch_Model_table1-m-0.9-no-dropout.pth", #  Accuracy on benign test examples: 10.100000000000001%
+
+SGD, "Pytorch_Model_table1_no_dropout_1.pkl" Accuracy on benign test examples: 11.35%
+
+adam, "Pytorch_Model_table1_adam.pkl" Accuracy on benign test examples: 96.96000000000001%
+
+SGD, "Pytorch_Model_table1_dropout_2nd_time.pkl", Accuracy on benign test examples: 51.82%, 4000, 1.5, 0.22, 92.0%, True, 36.0%
+
+SGD, "Pytorch_Model_table1_adam.pkl", Accuracy on benign test examples: 94.74000000000001%, 4000, 1.5, 3.87, 17.0%, True, 76.0%

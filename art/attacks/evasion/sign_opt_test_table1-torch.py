@@ -85,7 +85,7 @@ classifier_table1 = PyTorchClassifier(
 )
 
 # Step 4: Train the ART classifier; If model file exist, load model from file
-ML_model_Filename = "Pytorch_Model_table1.pkl"
+ML_model_Filename = "table1-0.pkl"
 
 # Load the Model back from file
 try:
