@@ -9,7 +9,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import numpy as np
-# import pickle
+import pickle
 from matplotlib import pyplot as plt
 
 # from art.attacks.evasion import FastGradientMethod, BoundaryAttack
@@ -32,7 +32,8 @@ class Net_table1(nn.Module):
         # https://discuss.pytorch.org/t/calculation-for-the-input-to-the-fully-connected-layer/82774/11
         # x.shape: torch.Size([128, 64, 4, 4]) so, 64*4*4
         self.fc_1 = nn.Linear(in_features= 64*4*4 , out_features=200) 
-        self.fc_2 = nn.Linear(in_features=200, out_features=10)
+        self.fc_2 = nn.Linear(in_features=200, out_features=200)
+        self.fc_3 = nn.Linear(in_features=200, out_features=10)
         
     # https://github.com/Carco-git/CW_Attack_on_MNIST/blob/master/MNIST_Model.py
     def forward(self, x):
@@ -46,8 +47,10 @@ class Net_table1(nn.Module):
         x = x.view(-1, 64*4*4 ) 
         
         x = F.relu(self.fc_1(x))
-        x = F.dropout(x, p=0.5) # training time is diff. from testing time; try 0.75 to lower down the model accuracy
-        x = self.fc_2(x)
+        x = F.dropout(x, p=0.5) 
+        x = F.relu(self.fc_2(x))
+        x = F.dropout(x, p=0.5)
+        x = self.fc_3(x)
         return x
 
 
@@ -82,28 +85,24 @@ classifier_table1 = PyTorchClassifier(
 )
 
 # Step 4: Train the ART classifier; If model file exist, load model from file
-# ML_model_Filename = "Pytorch_Model_table1.pkl"
-ML_model_Filename = "Pytorch_Model_table1-m-0.9.pth"
+ML_model_Filename = "Pytorch_Model_table1.pkl"
 
 # Load the Model back from file
 try:
     with open(ML_model_Filename, 'rb') as file:  
-        # classifier_table1 = pickle.load(file)
-        classifier_table1 = torch.load(file)
+        classifier_table1 = pickle.load(file)
+        # classifier_table1 = torch.load(file, map_location=torch.device('cpu'))
 except FileNotFoundError:
     print('No existing model, training the model instead')
     classifier_table1.fit(x_train, y_train, batch_size=128, nb_epochs=50)
     # Save the model
     with open(ML_model_Filename, 'wb') as file:  
-        # pickle.dump(classifier_table1, file)
-        torch.save(classifier_table1, file)        
-# print(classifier_table1)
-# print(f'model file name: {ML_model_Filename}')
-
+        pickle.dump(classifier_table1, file)
+      
 # Step 5: Evaluate the ART classifier on benign test examples
 predictions = classifier_table1.predict(x_test)
 accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
-# print("Accuracy on benign test examples: {}%".format(accuracy * 100))
+print("Accuracy on benign test examples: {}%".format(accuracy * 100))
 
 # Step 6: Generate adversarial test examples
 
@@ -115,9 +114,8 @@ import sys
 e = 1.5
 q = 4000
 targeted = False
-start_index = 0
 length = 100
-clipping = False
+clipping = True
 if len(sys.argv) == 6:
     # print(f'e={sys.argv[1]}, q={sys.argv[2]}, targeted={sys.argv[3]}, start_inde={sys.argv[4]}, clipping={sys.argv[5]}')
     e = float(sys.argv[1])
@@ -125,7 +123,6 @@ if len(sys.argv) == 6:
     targeted = eval(sys.argv[3])
     start_index = int(sys.argv[4])
     clipping = eval(sys.argv[5])
-print(f"parameters: e={e}, query limitation={q}, targeted attack={targeted}, length of examples={length}, start_index={start_index}, clipped={clipping}")
 
 
 # test_targeted = target
@@ -141,13 +138,18 @@ else:
                            query_limit=q, 
                            eval_perform=True, verbose=False, 
                            clipped=clipping)
-    
-# print(f'test targeted = {targeted}, length={length}')
 targets = random_targets(y_test, attack.estimator.nb_classes)
-end_index = start_index+length
-x = x_test[start_index: end_index]
-targets = targets[start_index: end_index]
-x_test_adv = attack.generate(x=x, y=targets, x_train=x_train)
+#  end_index = start_index+length
+# x = x_test[start_index: end_index]
+# targets = targets[start_index: end_index]
+# remove the last parameter for generate()
+# 
+# x_test_adv = attack.generate(x=x, y=targets, x_train=x_train)
+if targeted:
+    x_test_adv = attack.generate(x=x_test, y=targets)
+else:   
+    x_test_adv = attack.generate(x=x_test[:length])
+
 
 def plot_image(x):
     for i in range(len(x[:])):
