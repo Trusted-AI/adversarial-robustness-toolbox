@@ -29,7 +29,7 @@ jobs:
       - name: Run Test Action
         uses: ./.github/actions/deepspeech-v3
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v2.1.0
+        uses: codecov/codecov-action@v3
         with:
           fail_ci_if_error: true
   test_deepspeech_v3_torch_1_10:
@@ -42,6 +42,6 @@ jobs:
       - name: Run Test Action
         uses: ./.github/actions/deepspeech-v3
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v2.1.0
+        uses: codecov/codecov-action@v3
         with:
           fail_ci_if_error: true
