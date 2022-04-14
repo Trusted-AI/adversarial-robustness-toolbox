@@ -20,6 +20,10 @@ pip install .
 `Ctrl + - ` navigate back
 `Ctrl + Shift + -` navigate forward
 ```
+
+## github issue
+authentication token
+https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token
 ## Open Jyupter Notebook on local
 
 In browser
