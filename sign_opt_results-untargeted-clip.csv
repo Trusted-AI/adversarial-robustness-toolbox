@@ -1,7 +1,11 @@
-classifier, query, e, Avg L2, SR, clipping, Accuracy-on-adv
+classifier, query, e, Avg L2, SR, clipping, Accuracy-on-adv, notes
 [!]art-org, 4000, 1.5, 1.45, 55.0%, True, 3.0%, pickle - Accuracy 98.1% - second run
 [!]art-org, 8000, 1.5, 1.11, 80.0%, True, 1.0%
 [!]art-org, 14000, 1.5, 1.04, 83.0%, True, 3.0%
+table1-0, 4000, 1.5, 1.61, 44.0%, True, 89.0%, base-line
+table1-k5-L1-1*4-L2-4*32.pkl,4000, 1.5, 6.0, 5.0%, True, 80.0%, Accuracy 95.25%
+table1-
+
 art-org, 4000, 1.5, 1.42, 58.0%, True, 10.0%, Targeted
 art-org, 4000, 1.5, 0.53, 60.0%, True, 12.0%, torch.save
 art-org, 4000, 1.5, 1.41, 56.0%, True, 4.0%, pickle - Accuracy 98.1%
