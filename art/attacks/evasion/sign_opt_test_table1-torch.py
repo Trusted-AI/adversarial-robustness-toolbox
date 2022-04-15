@@ -26,25 +26,25 @@ class Net_table1(nn.Module):
     def __init__(self):
         super(Net_table1, self).__init__()
         self.conv_1 = nn.Conv2d(in_channels=1, out_channels=4, kernel_size=5, stride=1)
-        self.conv_2 = nn.Conv2d(in_channels=4, out_channels=32, kernel_size=5, stride=1)
-        self.conv_3 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=5, stride=1)
+        # self.conv_2 = nn.Conv2d(in_channels=4, out_channels=32, kernel_size=5, stride=1)
+        self.conv_3 = nn.Conv2d(in_channels=4, out_channels=10, kernel_size=5, stride=1)
         # self.conv_4 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=5, stride=1)
         # https://discuss.pytorch.org/t/calculation-for-the-input-to-the-fully-connected-layer/82774/11
         # x.shape: torch.Size([128, 64, 4, 4]) so, 64*4*4
-        self.fc_1 = nn.Linear(in_features= 576, out_features=200) 
+        self.fc_1 = nn.Linear(in_features= 160, out_features=200) 
         self.fc_2 = nn.Linear(in_features=200, out_features=200)
         self.fc_3 = nn.Linear(in_features=200, out_features=10)
         
     # https://github.com/Carco-git/CW_Attack_on_MNIST/blob/master/MNIST_Model.py
     def forward(self, x):
         x = F.relu(self.conv_1(x))
-        x = F.relu(self.conv_2(x))
+        # x = F.relu(self.conv_2(x))
         x = F.max_pool2d(x, 2, 2)
         x = F.relu(self.conv_3(x))
         # x = F.relu(self.conv_4(x))
         x = F.max_pool2d(x, 2, 2)
         
-        x = x.view(-1, 576 ) 
+        x = x.view(-1, 160 ) 
         
         x = F.relu(self.fc_1(x))
         x = F.dropout(x, p=0.5) 
@@ -85,7 +85,7 @@ classifier_table1 = PyTorchClassifier(
 )
 
 # Step 4: Train the ART classifier; If model file exist, load model from file
-ML_model_Filename = "table1-k5-L1-1*4-L2-4*32-k5-for-all-remove-conv4.pkl"
+ML_model_Filename = "table1-k5-L1-1*4-L2-4*32-k5-for-all-remove-conv4-and-conv2.pkl"
 
 # Load the Model back from file
 try:
