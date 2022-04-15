@@ -24,6 +24,9 @@ pip install .
 ## github issue
 authentication token
 https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token
+
+## pyspark env
+https://github.com/jupyter/docker-stacks
 ## Open Jyupter Notebook on local
 
 In browser
