@@ -32,7 +32,7 @@ class Net_table1(nn.Module):
         # https://discuss.pytorch.org/t/calculation-for-the-input-to-the-fully-connected-layer/82774/11
         # x.shape: torch.Size([128, 64, 4, 4]) so, 64*4*4
         self.fc_1 = nn.Linear(in_features= 160, out_features=200) 
-        self.fc_2 = nn.Linear(in_features=200, out_features=200)
+        # self.fc_2 = nn.Linear(in_features=200, out_features=200)
         self.fc_3 = nn.Linear(in_features=200, out_features=10)
         
     # https://github.com/Carco-git/CW_Attack_on_MNIST/blob/master/MNIST_Model.py
@@ -47,9 +47,9 @@ class Net_table1(nn.Module):
         x = x.view(-1, 160 ) 
         
         x = F.relu(self.fc_1(x))
-        x = F.dropout(x, p=0.5) 
-        x = F.relu(self.fc_2(x))
-        x = F.dropout(x, p=0.5)
+        # x = F.dropout(x, p=0.5) 
+        # x = F.relu(self.fc_2(x))
+        # x = F.dropout(x, p=0.5)
         x = self.fc_3(x)
         return x
 
@@ -85,7 +85,7 @@ classifier_table1 = PyTorchClassifier(
 )
 
 # Step 4: Train the ART classifier; If model file exist, load model from file
-ML_model_Filename = "table1-k5-L1-1*4-L2-4*32-k5-for-all-remove-conv4-and-conv2.pkl"
+ML_model_Filename = "table1-k5-L1-1*4-L2-4*32-k5-for-all-remove-conv4-and-conv2-fc2-dropout.pkl"
 
 # Load the Model back from file
 try:
