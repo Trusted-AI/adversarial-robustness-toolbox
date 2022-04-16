@@ -47,7 +47,7 @@ class Net_table1(nn.Module):
         x = x.view(-1, 160 ) 
         
         x = F.relu(self.fc_1(x))
-        # x = F.dropout(x, p=0.5) 
+        x = F.dropout(x, p=0.5) 
         # x = F.relu(self.fc_2(x))
         # x = F.dropout(x, p=0.5)
         x = self.fc_3(x)
@@ -85,7 +85,8 @@ classifier_table1 = PyTorchClassifier(
 )
 
 # Step 4: Train the ART classifier; If model file exist, load model from file
-ML_model_Filename = "table1-k5-L1-1*4-L2-4*32-k5-for-all-remove-conv4-and-conv2-fc2-dropout.pkl"
+# ML_model_Filename = "table1-k5-L1-1*4-L2-4*32-k5-for-all-remove-conv4-and-conv2-fc2-dropout.pkl"
+ML_model_Filename = "table1-one-dropout.pkl"
 
 # Load the Model back from file
 try:

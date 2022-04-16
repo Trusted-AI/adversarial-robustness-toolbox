@@ -9,6 +9,7 @@ table1-k5-L1-1*4-L2-4*32-k5-for-all.pkl, 4000, 1.5, 2.8, 0.0%, True, 14.00000000
 table1-k5-L1-1*4-L2-4*32-k5-for-all-remove-conv4.pkl, 4000, 1.5, 5.56, 13.0%, True, 71.0%, accuracy 91.87%
 table1-k5-L1-1*4-L2-4*32-k5-for-all-remove-conv4-and-conv2.pkl, 4000, 1.5, 0.0, 0.0%, True, 10.0%, accuracy 9.58%
 table1-k5-L1-1*4-L2-4*32-k5-for-all-remove-conv4-and-conv2-fc2-dropout.pkl, 4000, 1.5, 1.13, 76.0%, True, 5.0%, aaccuracy 98.02%
+same as above with table1-one-dropout.pkl, 4000, 1.5, 5.55, 9.0%, True, 85.0%, accuracy 96.89%
 
 art-org, 4000, 1.5, 1.42, 58.0%, True, 10.0%, Targeted
 art-org, 4000, 1.5, 0.53, 60.0%, True, 12.0%, torch.save
