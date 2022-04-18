@@ -142,22 +142,6 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):  # lgtm [py/missing-ca
         # Index of layer at which the class gradients should be calculated
         self._layer_idx_gradients = -1
 
-        # if isinstance(
-        #     self._loss,
-        #     (torch.nn.CrossEntropyLoss, torch.nn.NLLLoss, torch.nn.MultiMarginLoss),
-        # ):
-        #     self._reduce_labels = True
-        #     self._int_labels = True
-        # elif isinstance(
-        #     self._loss,
-        #     (torch.nn.BCELoss),
-        # ):
-        #     self._reduce_labels = True
-        #     self._int_labels = False
-        # else:
-        #     self._reduce_labels = False
-        #     self._int_labels = False
-
         # Setup for AMP use
         if self._use_amp:  # pragma: no cover
             from apex import amp  # pylint: disable=E0611
@@ -253,32 +237,6 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):  # lgtm [py/missing-ca
                  or the string “dynamic”.
         """
         return self._loss_scale  # type: ignore
-
-    # def reduce_labels(self, y: Union[np.ndarray, "torch.Tensor"]) -> Union[np.ndarray, "torch.Tensor"]:
-    #     """
-    #     Reduce labels from one-hot encoded to index labels.
-    #     """
-    #     # pylint: disable=R0911
-    #     import torch  # lgtm [py/repeated-import]
-    #
-    #     # Check if the loss function requires as input index labels instead of one-hot-encoded labels
-    #     # Checking for exactly 2 classes to support binary classification
-    #     if self.nb_classes > 2 or (self.nb_classes == 2 and len(y.shape) == 2 and y.shape[1] == 2):
-    #         if self._reduce_labels and self._int_labels:
-    #             if isinstance(y, torch.Tensor):
-    #                 return torch.argmax(y, dim=1)
-    #             return np.argmax(y, axis=1)
-    #         if self._reduce_labels:  # float labels
-    #             if isinstance(y, torch.Tensor):
-    #                 return torch.argmax(y, dim=1).type("torch.FloatTensor")
-    #             y_index = np.argmax(y, axis=1).astype(np.float32)
-    #             y_index = np.expand_dims(y_index, axis=1)
-    #             return y_index
-    #         return y
-    #
-    #     if isinstance(y, torch.Tensor):
-    #         return y.float()
-    #     return y.astype(np.float32)
 
     def predict(  # pylint: disable=W0221
         self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs
@@ -380,9 +338,6 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):  # lgtm [py/missing-ca
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
 
-        # Check label shape
-        # y_preprocessed = self.reduce_labels(y_preprocessed)
-
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         ind = np.arange(len(x_preprocessed))
 
@@ -403,7 +358,7 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):  # lgtm [py/missing-ca
                 model_outputs = self._model(i_batch)
 
                 # Form the loss function
-                loss = self._loss(model_outputs[-1], o_batch)  # lgtm [py/call-to-non-callable]
+                loss = self._loss(model_outputs[-1].reshape(-1,), o_batch)  # lgtm [py/call-to-non-callable]
 
                 # Do training
                 if self._use_amp:  # pragma: no cover
@@ -468,7 +423,7 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):  # lgtm [py/missing-ca
                     model_outputs = self._model(i_batch)
 
                     # Form the loss function
-                    loss = self._loss(model_outputs[-1], o_batch)
+                    loss = self._loss(model_outputs[-1].reshape(-1,), o_batch)
 
                     # Do training
                     if self._use_amp:  # pragma: no cover
@@ -486,9 +441,9 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):  # lgtm [py/missing-ca
             # Fit a generic data generator through the API
             super().fit_generator(generator, nb_epochs=nb_epochs)
 
-    def clone_for_refitting(self) -> "PyTorchClassifier":  # lgtm [py/inheritance/incorrect-overridden-signature]
+    def clone_for_refitting(self) -> "PyTorchRegressor":  # lgtm [py/inheritance/incorrect-overridden-signature]
         """
-        Create a copy of the classifier that can be refit from scratch. Will inherit same architecture, optimizer and
+        Create a copy of the regressor that can be refit from scratch. Will inherit same architecture, optimizer and
         initialization as cloned model, but without weights.
 
         :return: new estimator
@@ -559,7 +514,7 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):  # lgtm [py/missing-ca
 
         # Return individual loss values
         self._loss.reduction = reduction
-        loss = self._loss(model_outputs[-1], labels_t)
+        loss = self._loss(model_outputs[-1].reshape(-1,), labels_t)
         self._loss.reduction = prev_reduction
 
         if isinstance(x, torch.Tensor):
@@ -655,7 +610,7 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):  # lgtm [py/missing-ca
 
         # Compute the gradient and return
         model_outputs = self._model(inputs_t)
-        loss = self._loss(model_outputs[-1], labels_t)  # lgtm [py/call-to-non-callable]
+        loss = self._loss(model_outputs[-1].reshape(-1,), labels_t)  # lgtm [py/call-to-non-callable]
 
         # Clean gradients
         self._model.zero_grad()
@@ -872,7 +827,7 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):  # lgtm [py/missing-ca
 
     def __getstate__(self) -> Dict[str, Any]:
         """
-        Use to ensure `PyTorchClassifier` can be pickled.
+        Use to ensure `PyTorchRegressor` can be pickled.
 
         :return: State dictionary with instance parameters.
         """
@@ -894,7 +849,7 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):  # lgtm [py/missing-ca
 
     def __setstate__(self, state: Dict[str, Any]) -> None:
         """
-        Use to ensure `PyTorchClassifier` can be unpickled.
+        Use to ensure `PyTorchRegressor` can be unpickled.
 
         :param state: State dictionary with instance parameters to restore.
         """
