@@ -315,6 +315,77 @@ def test_black_box_regressor(art_warning, get_diabetes_dataset, model_type):
 
 
 @pytest.mark.skip_framework("dl_frameworks")
+@pytest.mark.parametrize("model_type", ["nn", "rf"])
+def test_black_box_regressor_label(art_warning, get_diabetes_dataset, model_type):
+    try:
+        attack_feature = 0  # age
+
+        bins = [
+            -0.96838121,
+            -0.77154309,
+            -0.57470497,
+            -0.37786684,
+            -0.18102872,
+            0.0158094,
+            0.21264752,
+            0.40948564,
+            0.60632376,
+            0.80316188,
+            1.0,
+        ]
+
+        # need to transform attacked feature into categorical
+        def transform_feature(x):
+            for i in range(len(bins) - 1):
+                x[(x >= bins[i]) & (x <= bins[i + 1])] = i
+
+        values = list(range(len(bins) - 1))
+
+        (x_train_diabetes, y_train_diabetes), (x_test_diabetes, y_test_diabetes) = get_diabetes_dataset
+        # training data without attacked feature
+        x_train_for_attack = np.delete(x_train_diabetes, attack_feature, 1)
+        # only attacked feature
+        x_train_feature = x_train_diabetes[:, attack_feature].copy().reshape(-1, 1)
+        transform_feature(x_train_feature)
+        # training data with attacked feature (after transformation)
+        x_train = np.concatenate((x_train_for_attack[:, :attack_feature], x_train_feature), axis=1)
+        x_train = np.concatenate((x_train, x_train_for_attack[:, attack_feature:]), axis=1)
+
+        # test data without attacked feature
+        x_test_for_attack = np.delete(x_test_diabetes, attack_feature, 1)
+        # only attacked feature
+        x_test_feature = x_test_diabetes[:, attack_feature].copy().reshape(-1, 1)
+        transform_feature(x_test_feature)
+
+        from sklearn import linear_model
+
+        regr_model = linear_model.LinearRegression()
+        regr_model.fit(x_train_diabetes, y_train_diabetes)
+        regressor = ScikitlearnRegressor(regr_model)
+
+        attack = AttributeInferenceBlackBox(
+            regressor, attack_feature=attack_feature, prediction_normal_factor=1 / 250, attack_model_type=model_type
+        )
+        # get original model's predictions
+        x_train_predictions = regressor.predict(x_train_diabetes).reshape(-1, 1)
+        x_test_predictions = regressor.predict(x_test_diabetes).reshape(-1, 1)
+        # train attack model
+        attack.fit(x_train, y=y_train_diabetes)
+        # infer attacked feature
+        inferred_train = attack.infer(x_train_for_attack, pred=x_train_predictions, values=values, y=y_train_diabetes)
+        inferred_test = attack.infer(x_test_for_attack, pred=x_test_predictions, values=values, y=y_test_diabetes)
+        # check accuracy
+        train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
+        test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
+
+        assert pytest.approx(0.0258, abs=0.12) == train_acc
+        assert pytest.approx(0.0375, abs=0.12) == test_acc
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework("dl_frameworks")
 def test_black_box_with_model(art_warning, decision_tree_estimator, get_iris_dataset):
     try:
         attack_feature = 2  # petal length
