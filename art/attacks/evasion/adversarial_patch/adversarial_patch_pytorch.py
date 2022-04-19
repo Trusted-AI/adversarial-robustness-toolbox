@@ -683,7 +683,10 @@ class AdversarialPatchPyTorch(EvasionAttack):
             mask = mask.copy()
         mask = self._check_mask(mask=mask, x=x)
         x_tensor = torch.Tensor(x)
-        mask_tensor = torch.Tensor(mask)
+        if mask is not None:
+            mask_tensor = torch.Tensor(mask)
+        else:
+            mask_tensor = None
         if isinstance(patch_external, np.ndarray):
             patch_tensor = torch.Tensor(patch_external)
         else:
