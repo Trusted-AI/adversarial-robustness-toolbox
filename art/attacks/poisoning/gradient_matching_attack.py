@@ -190,7 +190,7 @@ class GradientMatchingAttack(Attack):
         y_true_poison = Input(shape=np.shape(y_poison)[1:])
         embedding_layer = Embedding(
             len(x_poison),
-            np.prod(input_poison.shape[1:]),
+            np.prod(x_poison.shape[1:]),
             embeddings_initializer=tf.keras.initializers.RandomNormal(stddev=self.epsilon * 0.01),
         )
         embeddings = embedding_layer(input_indices)
