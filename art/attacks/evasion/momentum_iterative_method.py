@@ -16,7 +16,10 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-TODO
+This module implements the Momentum Iterative Fast Gradient Method attack `MomentumIterativeMethod` as the iterative
+version of FGM and FGSM with integrated momentum. This is a white-box attack.
+
+| Paper link: https://arxiv.org/abs/1710.06081
 """
 import logging
 from typing import Union, TYPE_CHECKING
@@ -33,7 +36,10 @@ logger = logging.getLogger(__name__)
 
 class MomentumIterativeMethod(ProjectedGradientDescent):
     """
-    TODO
+    Momentum Iterative Fast Gradient Method attack integrates momentum into the iterative
+    version of FGM and FGSM.
+
+    | Paper link: https://arxiv.org/abs/1710.06081
     """
 
     attack_params = ProjectedGradientDescent.attack_params
