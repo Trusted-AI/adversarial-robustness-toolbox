@@ -54,8 +54,8 @@ class AdversarialTrainerMadryPGD(Trainer):
     def __init__(
         self,
         classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
-        nb_epochs: int = 391,
-        batch_size: int = 128,
+        nb_epochs: Optional[int] = 391,
+        batch_size: Optional[int] = 128,
         eps: Union[int, float] = 8,
         eps_step: Union[int, float] = 2,
         max_iter: int = 7,
@@ -91,7 +91,13 @@ class AdversarialTrainerMadryPGD(Trainer):
         self.trainer = AdversarialTrainer(classifier, self.attack, ratio=1.0)  # type: ignore
 
     def fit(  # pylint: disable=W0221
-        self, x: np.ndarray, y: np.ndarray, validation_data: Optional[np.ndarray] = None, **kwargs
+        self,
+        x: np.ndarray,
+        y: np.ndarray,
+        validation_data: Optional[np.ndarray] = None,
+        batch_size: Optional[int] = None,
+        nb_epochs: Optional[int] = None,
+        **kwargs
     ) -> None:
         """
         Train a model adversarially. See class documentation for more information on the exact procedure.
@@ -99,10 +105,27 @@ class AdversarialTrainerMadryPGD(Trainer):
         :param x: Training data.
         :param y: Labels for the training data.
         :param validation_data: Validation data.
+        :param batch_size: Size of batches. Overwrites batch_size defined in __init__ if not None.
+        :param nb_epochs: Number of epochs to use for trainings. Overwrites nb_epochs defined in __init__ if not None.
         :param kwargs: Dictionary of framework-specific arguments.
         """
+        batch_size_fit: int
+        if batch_size is not None:
+            batch_size_fit = batch_size
+        elif self.batch_size is not None:
+            batch_size_fit = self.batch_size
+        else:
+            raise ValueError("Please provide value for `batch_size`.")
+
+        if nb_epochs is not None:
+            nb_epochs_fit: int = nb_epochs
+        elif self.nb_epochs is not None:
+            nb_epochs_fit = self.nb_epochs
+        else:
+            raise ValueError("Please provide value for `nb_epochs`.")
+
         self.trainer.fit(
-            x, y, validation_data=validation_data, nb_epochs=self.nb_epochs, batch_size=self.batch_size, **kwargs
+            x, y, validation_data=validation_data, nb_epochs=nb_epochs_fit, batch_size=batch_size_fit, **kwargs
         )
 
     def get_classifier(self) -> "CLASSIFIER_LOSS_GRADIENTS_TYPE":
