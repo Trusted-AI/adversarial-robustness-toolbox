@@ -183,6 +183,46 @@ def test_true_label_baseline_slice(art_warning, get_iris_dataset):
         art_warning(e)
 
 
+@pytest.mark.skip_framework("dl_frameworks")
+@pytest.mark.parametrize("model_type", ["nn", "rf"])
+def test_true_label_baseline_regression(art_warning, get_diabetes_dataset, model_type):
+    try:
+        attack_feature = 1  # sex
+
+        (x_train, y_train), (x_test, y_test) = get_diabetes_dataset
+        # training data without attacked feature
+        x_train_for_attack = np.delete(x_train, attack_feature, 1)
+        # only attacked feature
+        x_train_feature = x_train[:, attack_feature].copy().reshape(-1, 1)
+
+        # test data without attacked feature
+        x_test_for_attack = np.delete(x_test, attack_feature, 1)
+        # only attacked feature
+        x_test_feature = x_test[:, attack_feature].copy().reshape(-1, 1)
+
+        baseline_attack = AttributeInferenceBaselineTrueLabel(
+            attack_feature=attack_feature, attack_model_type=model_type, is_regression=True
+        )
+        # train attack model
+        baseline_attack.fit(x_train, y_train)
+        # infer attacked feature
+        baseline_inferred_train = baseline_attack.infer(x_train_for_attack, y=y_train)
+        baseline_inferred_test = baseline_attack.infer(x_test_for_attack, y=y_test)
+        # check accuracy
+        baseline_train_acc = np.sum(baseline_inferred_train == x_train_feature.reshape(1, -1)) / len(
+            baseline_inferred_train
+        )
+        baseline_test_acc = np.sum(baseline_inferred_test == x_test_feature.reshape(1, -1)) / len(
+            baseline_inferred_test
+        )
+
+        assert 0.6 <= baseline_train_acc
+        assert 0.6 <= baseline_test_acc
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
 def test_check_params(art_warning):
     try:
         with pytest.raises(ValueError):

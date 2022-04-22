@@ -59,6 +59,7 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
         attack_model_type: str = "nn",
         attack_model: Optional["CLASSIFIER_TYPE"] = None,
         attack_feature: Union[int, slice] = 0,
+        is_regression: Optional[bool] = False,
         scale_range: Optional[slice] = None,
         prediction_normal_factor: float = 1,
     ):
@@ -72,11 +73,12 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
         :param attack_feature: The index of the feature to be attacked or a slice representing multiple indexes in
                                case of a one-hot encoded feature.
                                case of a one-hot encoded feature.
+        :param is_regression: Whether the model is a regression model. Default is False (classification).
         :param scale_range: If supplied, the class labels (both true and predicted) will be scaled to the given range.
-                            Only applicable when `estimator` is a regressor.
+                            Only applicable when `is_regression` is True.
         :param prediction_normal_factor: If supplied, the class labels (both true and predicted) are multiplied by the
                                          factor when used as inputs to the attack-model. Only applicable when
-                                         `estimator` is a regressor and if `scale_range` is not supplied.
+                                         `is_regression` is True and if `scale_range` is not supplied.
         """
         super().__init__(estimator=None, attack_feature=attack_feature)
 
@@ -119,6 +121,7 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
 
         self.prediction_normal_factor = prediction_normal_factor
         self.scale_range = scale_range
+        self.is_regression = is_regression
         self._check_params()
         self.attack_feature = get_feature_index(self.attack_feature)
 
@@ -146,11 +149,14 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
             raise ValueError("None value detected.")
 
         # create training set for attack model
-        if self.scale_range is not None:
-            normalized_labels = minmax_scale(y, feature_range=self.scale_range)
+        if self.is_regression:
+            if self.scale_range is not None:
+                normalized_labels = minmax_scale(y, feature_range=self.scale_range)
+            else:
+                normalized_labels = y * self.prediction_normal_factor
+            normalized_labels = normalized_labels.reshape(-1, 1)
         else:
-            normalized_labels = y * self.prediction_normal_factor
-        normalized_labels = check_and_transform_label_format(normalized_labels, return_one_hot=True)
+            normalized_labels = check_and_transform_label_format(y, return_one_hot=True)
         x_train = np.concatenate((np.delete(x, self.attack_feature, 1), normalized_labels), axis=1).astype(np.float32)
 
         # train attack model
@@ -179,11 +185,14 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
         if values is not None:
             self._values = values
 
-        if self.scale_range is not None:
-            normalized_labels = minmax_scale(y, feature_range=self.scale_range)
+        if self.is_regression:
+            if self.scale_range is not None:
+                normalized_labels = minmax_scale(y, feature_range=self.scale_range)
+            else:
+                normalized_labels = y * self.prediction_normal_factor
+            normalized_labels = normalized_labels.reshape(-1, 1)
         else:
-            normalized_labels = y * self.prediction_normal_factor
-        normalized_labels = check_and_transform_label_format(normalized_labels, return_one_hot=True)
+            normalized_labels = check_and_transform_label_format(y, return_one_hot=True)
         x_test = np.concatenate((x, normalized_labels), axis=1).astype(np.float32)
 
         predictions = self.attack_model.predict(x_test).astype(np.float32)

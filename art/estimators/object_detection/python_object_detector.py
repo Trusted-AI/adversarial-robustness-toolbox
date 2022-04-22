@@ -74,7 +74,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
                the shape of clip values needs to match the total number of features.
-        :param channels_first: Set channels first or last.
+        :param channels_first: [Currently unused] Set channels first or last.
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
         :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
@@ -214,7 +214,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
                     x_grad.requires_grad = True
                 else:
                     x_grad = x[i].to(self.device)
-                    if x_grad.shape[-1] in [1, 3]:
+                    if x_grad.shape[2] < x_grad.shape[0] and x_grad.shape[2] < x_grad.shape[1]:
                         x_grad = torch.permute(x_grad, (2, 0, 1))
 
                 image_tensor_list_grad.append(x_grad)

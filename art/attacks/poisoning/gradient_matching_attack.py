@@ -151,8 +151,8 @@ class GradientMatchingAttack(Attack):
 
         :param x_trigger: A list of samples to use as triggers.
         :param y_trigger: A list of target classes to classify the triggers into.
-        :param x_train: A list of training data to poison a portion of.
-        :param y_train: A list of labels for x_train.
+        :param x_poison: A list of training data to poison a portion of.
+        :param y_poison: A list of true labels for x_poison.
         """
         # pylint: disable=no-name-in-module
         from tensorflow.keras import backend as K
@@ -190,7 +190,7 @@ class GradientMatchingAttack(Attack):
         y_true_poison = Input(shape=np.shape(y_poison)[1:])
         embedding_layer = Embedding(
             len(x_poison),
-            np.prod(input_poison.shape[1:]),
+            np.prod(x_poison.shape[1:]),
             embeddings_initializer=tf.keras.initializers.RandomNormal(stddev=self.epsilon * 0.01),
         )
         embeddings = embedding_layer(input_indices)
