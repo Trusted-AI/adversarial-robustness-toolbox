@@ -534,6 +534,16 @@ class ZooAttack(EvasionAttack):
     ) -> np.ndarray:
         """
         Implementation of the ADAM optimizer for coordinate descent.
+
+        :param losses: Overall loss.
+        :param index: Indices of the coordinates to update.
+        :param mean: The mean of the gradient (first moment).
+        :param var: The uncentered variance of the gradient (second moment).
+        :param current_noise: Current noise.
+        :param learning_rate: Learning rate for Adam optimizer.
+        :param adam_epochs: Epochs to run the Adam optimizer.
+        :param proj: Whether to project the noise to the L_p ball.
+        :return: Updated noise for coordinate descent. 
         """
         beta1, beta2 = 0.9, 0.999
 
