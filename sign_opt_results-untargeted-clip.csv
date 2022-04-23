@@ -2,15 +2,15 @@ classifier, query, e, Avg L2, SR, clipping, Accuracy-on-adv, notes
 [!]art-org, 4000, 1.5, 1.45, 55.0%, True, 3.0%, pickle - Accuracy 98.1% - second run
 [!]art-org, 8000, 1.5, 1.11, 80.0%, True, 1.0%
 [!]art-org, 14000, 1.5, 1.04, 83.0%, True, 3.0%
-table1-0, 4000, 1.5, 1.61, 44.0%, True, 89.0%, base-line
-table1-k5-L1-1*4-L2-4*32.pkl,4000, 1.5, 6.0, 5.0%, True, 80.0%, Accuracy 95.25%
-table1-k5-L1-1*4-L2-4*32-k5L2.pkl, 4000, 1.5, 2.34, 28.%, True, 83.0%, Accuracy 91.92%
-table1-k5-L1-1*4-L2-4*32-k5-for-all.pkl, 4000, 1.5, 2.8, 0.0%, True, 14.000000000000002%, accuracy 11.37%
-table1-k5-L1-1*4-L2-4*32-k5-for-all-remove-conv4.pkl, 4000, 1.5, 5.56, 13.0%, True, 71.0%, accuracy 91.87%
-table1-k5-L1-1*4-L2-4*32-k5-for-all-remove-conv4-and-conv2.pkl, 4000, 1.5, 0.0, 0.0%, True, 10.0%, accuracy 9.58%
-table1-k5-L1-1*4-L2-4*32-k5-for-all-remove-conv4-and-conv2-fc2-dropout.pkl, 4000, 1.5, 1.13, 76.0%, True, 5.0%, aaccuracy 98.02%
-same as above with table1-one-dropout.pkl, 4000, 1.5, 5.55, 9.0%, True, 85.0%, accuracy 96.89%
-
+0 table1-0, 4000, 1.5, 1.61, 44.0%, True, 89.0%, base-line
+1 table1-k5-L1-1*4-L2-4*32.pkl,4000, 1.5, 6.0, 5.0%, True, 80.0%, Accuracy 95.25%
+2 table1-k5-L1-1*4-L2-4*32-k5L2.pkl, 4000, 1.5, 2.34, 28.%, True, 83.0%, Accuracy 91.92%
+3 table1-k5-L1-1*4-L2-4*32-k5-for-all.pkl, 4000, 1.5, 2.8, 0.0%, True, 14.000000000000002%, accuracy 11.37%
+4 table1-k5-L1-1*4-L2-4*32-k5-for-all-remove-conv4.pkl, 4000, 1.5, 5.56, 13.0%, True, 71.0%, accuracy 91.87%
+5 table1-k5-L1-1*4-L2-4*32-k5-for-all-remove-conv4-and-conv2.pkl, 4000, 1.5, 0.0, 0.0%, True, 10.0%, accuracy 9.58%
+6 table1-k5-L1-1*4-L2-4*32-k5-for-all-remove-conv4-and-conv2-fc2-dropout.pkl, 4000, 1.5, 1.13, 76.0%, True, 5.0%, aaccuracy 98.02%
+7 SAA table1-one-dropout.pkl, 4000, 1.5, 5.55, 9.0%, True, 85.0%, accuracy 96.89%
+8 SAA table1-two-dropout-2-fc.pkl should be the same as 5, 4000, 1.5, 0.0, 0.0%, True, 8.0%, Accuracy 10.32% - not saved in github
 art-org, 4000, 1.5, 1.42, 58.0%, True, 10.0%, Targeted
 art-org, 4000, 1.5, 0.53, 60.0%, True, 12.0%, torch.save
 art-org, 4000, 1.5, 1.41, 56.0%, True, 4.0%, pickle - Accuracy 98.1%
