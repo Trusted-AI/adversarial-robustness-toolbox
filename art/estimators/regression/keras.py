@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the classifier `KerasClassifier` for Keras models.
+This module implements the regressor `KerasRegressor` for Keras models.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -87,8 +87,8 @@ class KerasRegressor(RegressorMixin, KerasEstimator):
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
                the shape of clip values needs to match the total number of features.
-        :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
-        :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
+        :param preprocessing_defences: Preprocessing defence(s) to be applied by the regressor.
+        :param postprocessing_defences: Postprocessing defence(s) to be applied by the regressor.
         :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
@@ -127,7 +127,7 @@ class KerasRegressor(RegressorMixin, KerasEstimator):
         output_layer: int,
     ):
         """
-        Initialize most parameters of the classifier. This is a convenience function called by `__init__` and
+        Initialize most parameters of the regressor. This is a convenience function called by `__init__` and
         `__setstate__` to avoid code duplication.
 
         :param model: Keras model
@@ -169,7 +169,7 @@ class KerasRegressor(RegressorMixin, KerasEstimator):
 
         self._input_shape = k.int_shape(self._input)[1:]
         logger.debug(
-            "Inferred %s as input shape for Keras classifier.",
+            "Inferred %s as input shape for Keras regressor.",
             str(self.input_shape),
         )
 
@@ -180,7 +180,16 @@ class KerasRegressor(RegressorMixin, KerasEstimator):
         else:
             self._orig_loss = self._model.loss
             if isinstance(self._model.loss, six.string_types):
-                loss_function = getattr(k, self._model.loss)
+                if self._model.loss in[
+                    "mean_squared_error",
+                    "mean_absolute_error",
+                    "mean_absolute_percentage_error",
+                    "mean_squared_logarithmic_error",
+                    "cosine_similarity"
+                ]:
+                    loss_function = getattr(keras.losses, self._model.loss)
+                else:
+                    loss_function = getattr(k, self._model.loss)
 
             elif "__name__" in dir(self._model.loss) and self._model.loss.__name__ in [
                 "mean_squared_error",
@@ -205,72 +214,7 @@ class KerasRegressor(RegressorMixin, KerasEstimator):
             else:
                 loss_function = getattr(k, self._model.loss.__name__)
 
-        # Check if loss function is an instance of loss function generator, the try is required because some of the
-        # modules are not available in older Keras versions
-        # try:
-        #     flag_is_instance = isinstance(
-        #         loss_function,
-        #         (
-        #             keras.losses.CategoricalHinge,
-        #             keras.losses.CategoricalCrossentropy,
-        #             keras.losses.BinaryCrossentropy,
-        #             keras.losses.KLDivergence,
-        #         ),
-        #     )
-        # except AttributeError:  # pragma: no cover
-        #     flag_is_instance = False
-        #
-        # # Check if the labels have to be reduced to index labels and create placeholder for labels
-        # if (
-        #     "__name__" in dir(loss_function)
-        #     and loss_function.__name__
-        #     in [
-        #         "categorical_hinge",
-        #         "categorical_crossentropy",
-        #         "binary_crossentropy",
-        #         "kullback_leibler_divergence",
-        #     ]
-        # ) or flag_is_instance:
-        #     self._reduce_labels = False
-        #     label_ph = k.placeholder(shape=self._output.shape)
-        # elif (
-        #     "__name__" in dir(loss_function) and loss_function.__name__ in ["sparse_categorical_crossentropy"]
-        # ) or isinstance(loss_function, keras.losses.SparseCategoricalCrossentropy):
-        #     self._reduce_labels = True
-        #     label_ph = k.placeholder(
-        #         shape=[
-        #             None,
-        #         ]
-        #     )
-        # else:  # pragma: no cover
-        #     raise ValueError("Loss function not recognised.")
-
         label_ph = k.placeholder(shape=self._output.shape)
-
-        # Define the loss using the loss function
-        # if "__name__" in dir(loss_function,) and loss_function.__name__ in [
-        #     "categorical_crossentropy",
-        #     "sparse_categorical_crossentropy",
-        #     "binary_crossentropy",
-        # ]:
-        #     loss_ = loss_function(label_ph, self._output, from_logits=self._use_logits)
-        #
-        # elif "__name__" in dir(loss_function) and loss_function.__name__ in [
-        #     "categorical_hinge",
-        #     "kullback_leibler_divergence",
-        # ]:
-        #     loss_ = loss_function(label_ph, self._output)
-        #
-        # elif isinstance(
-        #     loss_function,
-        #     (
-        #         keras.losses.CategoricalHinge,
-        #         keras.losses.CategoricalCrossentropy,
-        #         keras.losses.SparseCategoricalCrossentropy,
-        #         keras.losses.KLDivergence,
-        #         keras.losses.BinaryCrossentropy,
-        #     ),
-        # ):
         loss_ = loss_function(label_ph, self._output)
 
         # Define loss gradients
@@ -440,7 +384,7 @@ class KerasRegressor(RegressorMixin, KerasEstimator):
 
     def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
         """
-        Fit the classifier on the training set `(x, y)`.
+        Fit the regressor on the training set `(x, y)`.
 
         :param x: Training data.
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or index labels of
@@ -612,7 +556,7 @@ class KerasRegressor(RegressorMixin, KerasEstimator):
             from keras.engine.topology import InputLayer  # pylint: disable=E0611
 
         layer_names = [layer.name for layer in self._model.layers[:-1] if not isinstance(layer, InputLayer)]
-        logger.info("Inferred %i hidden layers on Keras classifier.", len(layer_names))
+        logger.info("Inferred %i hidden layers on Keras regressor.", len(layer_names))
 
         return layer_names
 
@@ -637,7 +581,7 @@ class KerasRegressor(RegressorMixin, KerasEstimator):
 
     def __getstate__(self) -> Dict[str, Any]:
         """
-        Use to ensure `KerasClassifier` can be pickled.
+        Use to ensure `KerasRegressor` can be pickled.
 
         :return: State dictionary with instance parameters.
         """
@@ -670,7 +614,7 @@ class KerasRegressor(RegressorMixin, KerasEstimator):
 
     def __setstate__(self, state: Dict[str, Any]) -> None:
         """
-        Use to ensure `KerasClassifier` can be unpickled.
+        Use to ensure `KerasRegressor` can be unpickled.
 
         :param state: State dictionary with instance parameters to restore.
         """
