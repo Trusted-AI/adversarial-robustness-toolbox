@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the classifier `PyTorchClassifier` for PyTorch models.
+This module implements the regressor `PyTorchRegressor` for PyTorch models.
 """
 # pylint: disable=C0302,R0904
 from __future__ import absolute_import, division, print_function, unicode_literals
@@ -50,7 +50,7 @@ logger = logging.getLogger(__name__)
 
 class PyTorchRegressor(RegressorMixin, PyTorchEstimator):  # lgtm [py/missing-call-to-init]
     """
-    This class implements a classifier with the PyTorch framework.
+    This class implements a regressor with the PyTorch framework.
     """
 
     estimator_params = (
@@ -89,7 +89,7 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):  # lgtm [py/missing-ca
         :param loss: The loss function for which to compute gradients for training. The target label must be raw
                categorical, i.e. not converted to one-hot encoding.
         :param input_shape: The shape of one input instance.
-        :param optimizer: The optimizer used to train the classifier.
+        :param optimizer: The optimizer used to train the regressor.
         :param use_amp: Whether to use the automatic mixed precision tool to enable mixed precision training or
                         gradient computation, e.g. with loss gradient computation. When set to True, this option is
                         only triggered if there are GPUs available.
@@ -97,18 +97,18 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):  # lgtm [py/missing-ca
                           values are `O0`, `O1`, `O2`, and `O3`.
         :param loss_scale: Loss scaling. Used when use_amp is True. If passed as a string, must be a string
                            representing a number, e.g., “1.0”, or the string “dynamic”.
-        :param optimizer: The optimizer used to train the classifier.
+        :param optimizer: The optimizer used to train the regressor.
         :param channels_first: Set channels first or last.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
                the shape of clip values needs to match the total number of features.
-        :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
-        :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
+        :param preprocessing_defences: Preprocessing defence(s) to be applied by the regressor.
+        :param postprocessing_defences: Postprocessing defence(s) to be applied by the regressor.
         :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
-        :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
+        :param device_type: Type of device on which the regressor is run, either `gpu` or `cpu`.
         """
         import torch  # lgtm [py/repeated-import]
 
@@ -316,7 +316,7 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):  # lgtm [py/missing-ca
         **kwargs,
     ) -> None:
         """
-        Fit the classifier on the training set `(x, y)`.
+        Fit the regressor on the training set `(x, y)`.
 
         :param x: Training data.
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or index labels of
@@ -374,7 +374,7 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):  # lgtm [py/missing-ca
 
     def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs) -> None:
         """
-        Fit the classifier using the generator that yields batches as specified.
+        Fit the regressor using the generator that yields batches as specified.
 
         :param generator: Batch generator providing `(x, y)` for each epoch.
         :param nb_epochs: Number of epochs to use for training.
@@ -459,7 +459,7 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):  # lgtm [py/missing-ca
 
     def reset(self) -> None:
         """
-        Resets the weights of the classifier so that it can be refit from scratch.
+        Resets the weights of the regressor so that it can be refit from scratch.
 
         """
 
@@ -961,7 +961,7 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):  # lgtm [py/missing-ca
                         else:  # pragma: no cover
                             raise TypeError("The input model must inherit from `nn.Module`.")
                         logger.info(
-                            "Inferred %i hidden layers on PyTorch classifier.",
+                            "Inferred %i hidden layers on PyTorch regressor.",
                             len(result),
                         )
 
