@@ -53,17 +53,14 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):  # lgtm [py/missing-ca
     This class implements a regressor with the PyTorch framework.
     """
 
-    estimator_params = (
-        PyTorchEstimator.estimator_params
-        + [
-            "loss",
-            "input_shape",
-            "optimizer",
-            "use_amp",
-            "opt_level",
-            "loss_scale",
-        ]
-    )
+    estimator_params = PyTorchEstimator.estimator_params + [
+        "loss",
+        "input_shape",
+        "optimizer",
+        "use_amp",
+        "opt_level",
+        "loss_scale",
+    ]
 
     def __init__(
         self,
@@ -358,7 +355,12 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):  # lgtm [py/missing-ca
                 model_outputs = self._model(i_batch)
 
                 # Form the loss function
-                loss = self._loss(model_outputs[-1].reshape(-1,), o_batch)  # lgtm [py/call-to-non-callable]
+                loss = self._loss(
+                    model_outputs[-1].reshape(
+                        -1,
+                    ),
+                    o_batch,
+                )  # lgtm [py/call-to-non-callable]
 
                 # Do training
                 if self._use_amp:  # pragma: no cover
@@ -423,7 +425,12 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):  # lgtm [py/missing-ca
                     model_outputs = self._model(i_batch)
 
                     # Form the loss function
-                    loss = self._loss(model_outputs[-1].reshape(-1,), o_batch)
+                    loss = self._loss(
+                        model_outputs[-1].reshape(
+                            -1,
+                        ),
+                        o_batch,
+                    )
 
                     # Do training
                     if self._use_amp:  # pragma: no cover
@@ -514,7 +521,12 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):  # lgtm [py/missing-ca
 
         # Return individual loss values
         self._loss.reduction = reduction
-        loss = self._loss(model_outputs[-1].reshape(-1,), labels_t)
+        loss = self._loss(
+            model_outputs[-1].reshape(
+                -1,
+            ),
+            labels_t,
+        )
         self._loss.reduction = prev_reduction
 
         if isinstance(x, torch.Tensor):
@@ -610,7 +622,12 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):  # lgtm [py/missing-ca
 
         # Compute the gradient and return
         model_outputs = self._model(inputs_t)
-        loss = self._loss(model_outputs[-1].reshape(-1,), labels_t)  # lgtm [py/call-to-non-callable]
+        loss = self._loss(
+            model_outputs[-1].reshape(
+                -1,
+            ),
+            labels_t,
+        )  # lgtm [py/call-to-non-callable]
 
         # Clean gradients
         self._model.zero_grad()

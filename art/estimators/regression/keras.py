@@ -62,10 +62,7 @@ class KerasRegressor(RegressorMixin, KerasEstimator):
     Wrapper class for importing Keras regression models.
     """
 
-    estimator_params = (
-        KerasEstimator.estimator_params
-        + ["input_layer", "output_layer"]
-    )
+    estimator_params = KerasEstimator.estimator_params + ["input_layer", "output_layer"]
 
     def __init__(
         self,
@@ -180,12 +177,12 @@ class KerasRegressor(RegressorMixin, KerasEstimator):
         else:
             self._orig_loss = self._model.loss
             if isinstance(self._model.loss, six.string_types):
-                if self._model.loss in[
+                if self._model.loss in [
                     "mean_squared_error",
                     "mean_absolute_error",
                     "mean_absolute_percentage_error",
                     "mean_squared_logarithmic_error",
-                    "cosine_similarity"
+                    "cosine_similarity",
                 ]:
                     loss_function = getattr(keras.losses, self._model.loss)
                 else:
@@ -196,7 +193,7 @@ class KerasRegressor(RegressorMixin, KerasEstimator):
                 "mean_absolute_error",
                 "mean_absolute_percentage_error",
                 "mean_squared_logarithmic_error",
-                "cosine_similarity"
+                "cosine_similarity",
             ]:
                 loss_function = getattr(keras.losses, self._model.loss.__name__)
 
@@ -355,7 +352,6 @@ class KerasRegressor(RegressorMixin, KerasEstimator):
         assert gradients.shape == x.shape
 
         return gradients
-
 
     def predict(  # pylint: disable=W0221
         self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs

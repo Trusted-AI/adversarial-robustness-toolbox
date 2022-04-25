@@ -41,10 +41,10 @@ class TestPytorchRegressor(TestBase):
                 super().__init__()
 
                 self.features = nn.Sequential(
-                        nn.Linear(10, 100),
-                        nn.ReLU(),
-                        nn.Linear(100, 10),
-                        nn.ReLU(),
+                    nn.Linear(10, 100),
+                    nn.ReLU(),
+                    nn.Linear(100, 10),
+                    nn.ReLU(),
                 )
 
                 self.output = nn.Linear(10, 1)
@@ -54,24 +54,33 @@ class TestPytorchRegressor(TestBase):
 
         cls.pytorch_model = TestModel()
 
-        cls.art_model = PyTorchRegressor(model=cls.pytorch_model,
-                                         loss=nn.modules.loss.MSELoss(),
-                                         input_shape=(10,),
-                                         optimizer=optim.Adam(cls.pytorch_model.parameters(), lr=0.01))
+        cls.art_model = PyTorchRegressor(
+            model=cls.pytorch_model,
+            loss=nn.modules.loss.MSELoss(),
+            input_shape=(10,),
+            optimizer=optim.Adam(cls.pytorch_model.parameters(), lr=0.01),
+        )
         cls.art_model.fit(cls.x_train_diabetes.astype(np.float32), cls.y_train_diabetes.astype(np.float32))
 
     def test_type(self):
-        self.assertIsInstance(self.art_model, type(PyTorchRegressor(model=self.pytorch_model,
-                                                                    loss=nn.modules.loss.MSELoss(),
-                                                                    input_shape=(10,),
-                                                                    optimizer=optim.Adam(
-                                                                            self.pytorch_model.parameters(),
-                                                                            lr=0.01))))
+        self.assertIsInstance(
+            self.art_model,
+            type(
+                PyTorchRegressor(
+                    model=self.pytorch_model,
+                    loss=nn.modules.loss.MSELoss(),
+                    input_shape=(10,),
+                    optimizer=optim.Adam(self.pytorch_model.parameters(), lr=0.01),
+                )
+            ),
+        )
         with self.assertRaises(TypeError):
-            PyTorchRegressor(model="model",
-                             loss=nn.modules.loss.MSELoss,
-                             input_shape=(10,),
-                             optimizer=optim.Adam(self.pytorch_model.parameters(), lr=0.01))
+            PyTorchRegressor(
+                model="model",
+                loss=nn.modules.loss.MSELoss,
+                input_shape=(10,),
+                optimizer=optim.Adam(self.pytorch_model.parameters(), lr=0.01),
+            )
 
     def test_predict(self):
         y_predicted = self.art_model.predict(self.x_test_diabetes[:4].astype(np.float32))
@@ -86,16 +95,18 @@ class TestPytorchRegressor(TestBase):
         np.testing.assert_equal(self.art_model.input_shape, (10,))
 
     def test_compute_loss(self):
-        test_loss = self.art_model.compute_loss(self.x_test_diabetes[:4].astype(np.float32),
-                                                self.y_test_diabetes[:4].astype(np.float32))
+        test_loss = self.art_model.compute_loss(
+            self.x_test_diabetes[:4].astype(np.float32), self.y_test_diabetes[:4].astype(np.float32)
+        )
         loss_expected = [3461.6, 5214.4, 3994.9, 9003.6]
         np.testing.assert_array_almost_equal(test_loss, loss_expected, decimal=1)
 
     def test_loss_gradient(self):
-        grad = self.art_model.loss_gradient(self.x_test_diabetes[:4].astype(np.float32),
-                                            self.y_test_diabetes[:4].astype(np.float32))
+        grad = self.art_model.loss_gradient(
+            self.x_test_diabetes[:4].astype(np.float32), self.y_test_diabetes[:4].astype(np.float32)
+        )
         # grads are same shape as x (i.e., (10,4)), we are looking only at the first row
-        grad_expected = [-49.4,  129.9, -170.1, -116.6, -225.2, -171.9,  174.6, -166.8, -223.9, -154.4]
+        grad_expected = [-49.4, 129.9, -170.1, -116.6, -225.2, -171.9, 174.6, -166.8, -223.9, -154.4]
         np.testing.assert_array_almost_equal(grad[0], grad_expected, decimal=1)
 
     def test_get_activations(self):

@@ -35,6 +35,7 @@ class TestKerasRegressor(TestBase):
         super().setUpClass()
 
         import tensorflow as tf
+
         tf.compat.v1.disable_eager_execution()
 
         cls.art_model = get_tabular_regressor_kr()
@@ -85,10 +86,10 @@ class TestKerasRegressorClass(TestBase):
 
         import tensorflow as tf
         import tensorflow.keras as keras
+
         tf.compat.v1.disable_eager_execution()
 
         class TestModel(tf.keras.Model):
-
             def __init__(self):
                 super().__init__()
                 self.dense1 = keras.layers.Dense(10, activation=tf.nn.relu)
@@ -101,9 +102,11 @@ class TestKerasRegressorClass(TestBase):
                 return self.dense4(self.dense3(self.dense2(x)))
 
         cls.keras_model = TestModel()
-        cls.keras_model.compile(loss=keras.losses.CosineSimilarity(axis=-1, reduction="auto", name="cosine_similarity"),
-                optimizer=keras.optimizers.Adam(learning_rate=0.01),
-                metrics=["accuracy"])
+        cls.keras_model.compile(
+            loss=keras.losses.CosineSimilarity(axis=-1, reduction="auto", name="cosine_similarity"),
+            optimizer=keras.optimizers.Adam(learning_rate=0.01),
+            metrics=["accuracy"],
+        )
         cls.keras_model.fit(cls.x_train_diabetes, cls.y_train_diabetes)
 
         cls.art_model = KerasRegressor(model=cls.keras_model)
@@ -149,6 +152,7 @@ class TestKerasRegressorFunctional(TestBase):
         import tensorflow as tf
         import keras
         from keras.models import Model
+
         tf.compat.v1.disable_eager_execution()
 
         def functional():
@@ -162,7 +166,8 @@ class TestKerasRegressorFunctional(TestBase):
             model.compile(
                 loss=keras.losses.MeanAbsoluteError(),
                 optimizer=keras.optimizers.Adam(learning_rate=0.01),
-                metrics=["accuracy"])
+                metrics=["accuracy"],
+            )
 
             return model
 
