@@ -139,8 +139,9 @@ class TestKerasRegressorClass(TestBase):
 
     def test_loss_gradient(self):
         grad = self.art_model.loss_gradient(self.x_test_diabetes[:4], self.y_test_diabetes[:4])
-        # cosine similarity works on vectors, so it returns the same value for each sample
-        np.testing.assert_equal(len(np.unique(grad[0])), 1)
+        for row in grad:
+            if not np.all((row == 0)):
+                np.testing.assert_equal(len(np.unique(row)), 10)
 
 
 class TestKerasRegressorFunctional(TestBase):
