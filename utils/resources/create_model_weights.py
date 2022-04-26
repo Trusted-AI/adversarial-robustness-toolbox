@@ -78,6 +78,7 @@ def main_mnist_binary():
         b_3,
     )
 
+
 def main_diabetes():
     master_seed(1234)
 
@@ -97,39 +98,27 @@ def main_diabetes():
     w_2, b_2 = model.layers[2].get_weights()
 
     np.save(
-        os.path.join(
-            os.path.dirname(os.path.dirname(__file__)), "resources/models/", "W_DENSE1_DIABETES"
-        ),
+        os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models/", "W_DENSE1_DIABETES"),
         w_0,
     )
     np.save(
-        os.path.join(
-            os.path.dirname(os.path.dirname(__file__)), "resources/models/" "B_DENSE1_DIABETES"
-        ),
+        os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models/" "B_DENSE1_DIABETES"),
         b_0,
     )
     np.save(
-        os.path.join(
-            os.path.dirname(os.path.dirname(__file__)), "resources/models/" "W_DENSE2_DIABETES"
-        ),
+        os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models/" "W_DENSE2_DIABETES"),
         w_1,
     )
     np.save(
-        os.path.join(
-            os.path.dirname(os.path.dirname(__file__)), "resources/models/" "B_DENSE2_DIABETES"
-        ),
+        os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models/" "B_DENSE2_DIABETES"),
         b_1,
     )
     np.save(
-        os.path.join(
-                os.path.dirname(os.path.dirname(__file__)), "resources/models/" "W_DENSE3_DIABETES"
-        ),
+        os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models/" "W_DENSE3_DIABETES"),
         w_2,
     )
     np.save(
-        os.path.join(
-                os.path.dirname(os.path.dirname(__file__)), "resources/models/" "B_DENSE3_DIABETES"
-        ),
+        os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models/" "B_DENSE3_DIABETES"),
         b_2,
     )
 
