@@ -34,7 +34,6 @@ import six
 from art import config
 from art.estimators.regression.regressor import RegressorMixin
 from art.estimators.pytorch import PyTorchEstimator
-from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
     # pylint: disable=C0412, C0302
