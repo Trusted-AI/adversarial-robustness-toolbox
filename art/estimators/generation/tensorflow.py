@@ -195,7 +195,7 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
         return self._encoding_length
 
 
-class TensorFlow2Generator(GeneratorMixin, TensorFlowV2Estimator):  # lgtm [py/missing-call-to-init]
+class TensorFlowV2Generator(GeneratorMixin, TensorFlowV2Estimator):  # lgtm [py/missing-call-to-init]
     """
     This class implements a DGM with the TensorFlow framework.
     """

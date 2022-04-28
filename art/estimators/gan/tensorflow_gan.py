@@ -20,16 +20,16 @@ This module creates GANs using the TensorFlow ML Framework
 """
 from typing import Any, Tuple, TYPE_CHECKING
 import numpy as np
-import tensorflow as tf
-from art.estimators.estimator import BaseEstimator
+from art.estimators.tensorflow import TensorFlowV2Estimator
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE, GENERATOR_TYPE
+    import tensorflow as tf
 
 
-class TensorFlow2GAN(BaseEstimator):
+class TensorFlowV2GAN(TensorFlowV2Estimator):
     """
-    This class implements a GAN with the TensorFlow framework.
+    This class implements a GAN with the TensorFlow v2 framework.
     """
 
     def __init__(
@@ -42,9 +42,10 @@ class TensorFlow2GAN(BaseEstimator):
         discriminator_optimizer_fct=None,
     ):
         """
-        Initialization of a test TF2 GAN
+        Initialization of a test TensorFlow v2 GAN
+
         :param generator: a TensorFlow2 generator
-        :param discriminator: a TensorFlow 2 discriminator
+        :param discriminator: a TensorFlow v2 discriminator
         :param generator_loss: the loss function to use for the generator
         :param discriminator_loss: the loss function to use for the discriminator
         :param generator_optimizer_fct: the optimizer function to use for the generator
@@ -61,6 +62,7 @@ class TensorFlow2GAN(BaseEstimator):
     def predict(self, x: np.ndarray, **kwargs) -> Any:  # lgtm [py/inheritance/incorrect-overridden-signature]
         """
         Generates a sample
+
         param x: a seed
         :return: the sample
         """
