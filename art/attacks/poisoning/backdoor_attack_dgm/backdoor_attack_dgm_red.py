@@ -16,36 +16,37 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements poisoning attacks on DGMs
+This module implements poisoning attacks on DGMs.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import logging
+from typing import TYPE_CHECKING
+
 import numpy as np
 
 from art.attacks.attack import PoisoningAttackGenerator
-from art.estimators.generation.tensorflow import TensorFlow2Generator
+from art.estimators.generation.tensorflow import TensorFlowV2Generator
 
 logger = logging.getLogger(__name__)
 
+if TYPE_CHECKING:
+    import tensorflow as tf  # lgtm [py/repeated-import]
 
-class BackdoorAttackDGMReD(PoisoningAttackGenerator):
+
+class BackdoorAttackDGMReDTensorFlowV2(PoisoningAttackGenerator):
     """
     Class implementation of backdoor-based RED poisoning attack on DGM.
 
     | Paper link: https://arxiv.org/abs/2108.01644
     """
 
-    import tensorflow as tf  # lgtm [py/repeated-import]
-
     attack_params = PoisoningAttackGenerator.attack_params + [
         "generator",
         "z_trigger",
         "x_target",
     ]
-    _estimator_requirements = (TensorFlow2Generator,)
+    _estimator_requirements = (TensorFlowV2Generator,)
 
-    def __init__(self, generator: "TensorFlow2Generator") -> None:
+    def __init__(self, generator: "TensorFlowV2Generator") -> None:
         """
         Initialize a backdoor RED poisoning attack.
         :param generator: the generator to be poisoned
@@ -58,7 +59,6 @@ class BackdoorAttackDGMReD(PoisoningAttackGenerator):
         self._model_clone = tf.keras.models.clone_model(self.estimator.model)
         self._model_clone.set_weights(self.estimator.model.get_weights())
 
-    @tf.function
     def fidelity(self, z_trigger: np.ndarray, x_target: np.ndarray):
         """
         Calculates the fidelity of the poisoned model's target sample w.r.t. the original x_target sample
@@ -74,8 +74,7 @@ class BackdoorAttackDGMReD(PoisoningAttackGenerator):
             )
         )
 
-    @tf.function
-    def _red_loss(self, z_batch: tf.Tensor, lambda_hy: float, z_trigger: np.ndarray, x_target: np.ndarray):
+    def _red_loss(self, z_batch: "tf.Tensor", lambda_hy: float, z_trigger: np.ndarray, x_target: np.ndarray):
         """
         The loss function used to perform a trail attack
         :param z_batch: triggers to be trained on
@@ -104,7 +103,7 @@ class BackdoorAttackDGMReD(PoisoningAttackGenerator):
         lambda_p=0.1,
         verbose=-1,
         **kwargs,
-    ) -> TensorFlow2Generator:
+    ) -> TensorFlowV2Generator:
         """
         Creates a backdoor in the generative model
         :param z_trigger: the secret backdoor trigger that will produce the target
