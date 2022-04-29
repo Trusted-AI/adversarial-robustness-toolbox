@@ -333,8 +333,8 @@ class ZooAttack(EvasionAttack):
 
         :param object1: First object to compare.
         :param object2: Second object to compare.
-        :return: When the attack is targeted, returns "True" if object are equal otherwise "False". When the attack is untargeted,
-                    the function returns "True" when the objects are different otherwise "False".
+        :return: When the attack is targeted, returns "True" if object are equal otherwise "False". When the attack is
+                    untargeted, the function returns "True" when the objects are different otherwise "False".
 
         """
         return object1 == object2 if self.targeted else object1 != object2
@@ -553,7 +553,7 @@ class ZooAttack(EvasionAttack):
 
         # ADAM update
         mean[index] = beta1 * mean[index] + (1 - beta1) * grads
-        var[index] = beta2 * var[index] + (1 - beta2) * grads**2
+        var[index] = beta2 * var[index] + (1 - beta2) * grads ** 2
 
         corr = (np.sqrt(1 - np.power(beta2, adam_epochs[index]))) / (1 - np.power(beta1, adam_epochs[index]))
         orig_shape = current_noise.shape
