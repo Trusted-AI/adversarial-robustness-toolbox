@@ -25,7 +25,7 @@ gradients.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import Optional, Tuple, Any, TYPE_CHECKING
 
 import numpy as np
 from scipy.ndimage import zoom
@@ -311,7 +311,8 @@ class ZooAttack(EvasionAttack):
         """
 
         comparison = [
-            self._compare(best_label[i], np.argmax(y_batch[i])) and best_label[i] != -np.inf for i in range(len(c_batch))
+            self._compare(best_label[i], np.argmax(y_batch[i])) and best_label[i] != -np.inf
+            for i in range(len(c_batch))
         ]
         for i, comp in enumerate(comparison):
             if comp:
@@ -326,7 +327,7 @@ class ZooAttack(EvasionAttack):
 
         return c_batch, c_lower_bound, c_upper_bound
 
-    def _compare(self, object1, object2):
+    def _compare(self, object1: Any, object2: Any) -> bool:
         """
         Check two objects for equality if the attack is targeted, otherwise check for inequality.
 
@@ -334,7 +335,7 @@ class ZooAttack(EvasionAttack):
         :param object2: Second object to compare.
         :return: When the attack is targeted, returns "True" if object are equal otherwise "False". When the attack is untargeted,
                     the function returns "True" when the objects are different otherwise "False".
-                
+
         """
         return object1 == object2 if self.targeted else object1 != object2
 
@@ -543,7 +544,7 @@ class ZooAttack(EvasionAttack):
         :param learning_rate: Learning rate for Adam optimizer.
         :param adam_epochs: Epochs to run the Adam optimizer.
         :param proj: Whether to project the noise to the L_p ball.
-        :return: Updated noise for coordinate descent. 
+        :return: Updated noise for coordinate descent.
         """
         beta1, beta2 = 0.9, 0.999
 
@@ -552,7 +553,7 @@ class ZooAttack(EvasionAttack):
 
         # ADAM update
         mean[index] = beta1 * mean[index] + (1 - beta1) * grads
-        var[index] = beta2 * var[index] + (1 - beta2) * grads ** 2
+        var[index] = beta2 * var[index] + (1 - beta2) * grads**2
 
         corr = (np.sqrt(1 - np.power(beta2, adam_epochs[index]))) / (1 - np.power(beta1, adam_epochs[index]))
         orig_shape = current_noise.shape
@@ -678,4 +679,3 @@ class ZooAttack(EvasionAttack):
 
         if not isinstance(self.verbose, bool):
             raise ValueError("The argument `verbose` has to be of type bool.")
-            
