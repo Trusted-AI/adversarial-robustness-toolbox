@@ -102,14 +102,27 @@ class Net(nn.Module):
 
 x_train = np.transpose(x_train, (0, 3, 1, 2)).astype(np.float32)
 x_test = np.transpose(x_test, (0, 3, 1, 2)).astype(np.float32)
-
 # Step 2: Create the model
 model = Net()
-
+# critical to use DataParallel() b/c the model is trained with dataparallel
+model = torch.nn.DataParallel(model, device_ids=[0])
 # Step 2a: Define the loss function and the optimizer
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(model.parameters(), lr=0.1, momentum=0.9)
 
+# Specify a path for loading model to
+PATH = "mnist_gpu.pt"
+
+# Load model
+device = torch.device('cpu')
+
+
+model.load_state_dict(torch.load(PATH, map_location=device), strict=False)
+# print(model)
+model.train(mode=False)
+# pred = model(torch.from_numpy(x_test[0:5]))
+
+      
 # Step 3: Create the ART classifier
 classifier = PyTorchClassifier(
     model=model,
@@ -121,29 +134,18 @@ classifier = PyTorchClassifier(
     device_type = "cpu",
 )
 
-# Specify a path for loading model to
-PATH = "mnist_gpu.pt"
-
-# Load model
-device = torch.device('cpu')
-
-model.load_state_dict(torch.load(PATH, map_location=device), strict=False)
-# print(model)
-      
 # Step 5: Evaluate the ART classifier on benign test examples
 predictions = classifier.predict(x_test)
 accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
 print("Accuracy on benign test examples: {}%".format(accuracy * 100))
 
-"""
-INTENTIONAL COMMENT OUT
 # Step 6: Generate adversarial test examples
 
 # read variable from parameter
 import sys
 
 e = 1.5
-q = 4000
+q = 14000
 targeted = False
 length = 100
 clipping = True
@@ -193,4 +195,4 @@ accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y_test[:length], a
 # print("Accuracy on adversarial test examples: {}%".format(accuracy * 100))
 print(f'{q}, {e}, {round(L2,2)}, {SR}%, {clipping}, {accuracy*100}%')
 
-"""
+
