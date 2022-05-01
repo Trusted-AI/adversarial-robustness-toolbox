@@ -63,7 +63,7 @@ class RandomizedSmoothingMixin(ABC):
         eta: float = 1.0,
         mix_step: int = 0,
         maxnorm_s: Optional[float] = None,
-        maxnorm: Optional[float] = None
+        maxnorm: Optional[float] = None,
         **kwargs,
     ) -> None:
         """
