@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 
 
 def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
-    logger.info('Inside smoothmix fit method')
+    print('Inside smoothmix fit method')
     import torch  # lgtm [py/repeated-import]
     import torch.nn as nn
     import torch.nn.functional as F
@@ -49,6 +49,7 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
     from art.estimators.certification.smoothmix.smooth_pgd_attack import SmoothMix_PGD
     import random
 
+    print("Passed imports")
 
     x = x.astype(ART_NUMPY_DTYPE)
     start_epoch = 0
@@ -64,6 +65,7 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
             maxnorm=self.maxnorm,
             maxnorm_s=self.maxnorm_s
         )
+    print("Created attacker")
 
     if self.optimizer is None:  # pragma: no cover
         raise ValueError("An optimizer is needed to train the model, but none for provided.")
@@ -75,11 +77,13 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
     num_batch = int(np.ceil(len(x) / float(batch_size)))
     ind = np.arange(len(x))
 
+    print("Beginning training")
+
     # Start training
     for epoch_num in range(start_epoch + 1, nb_epochs + 1):
         warmup_v = np.min([1.0, (epoch_num + 1) / self.warmup])
         attacker.maxnorm_s = warmup_v * self.maxnorm_s
-
+        print(f"Attacker maxnorm_s: {attacker.maxnorm_s}")
         # # Shuffle the examples
         # random.shuffle(ind)
         # self.scheduler.step()
@@ -92,7 +96,12 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
             input_batch = torch.from_numpy(x[ind[nb * batch_size : (nb + 1) * batch_size]]).to(self.device)
             output_batch = torch.from_numpy(y[ind[nb * batch_size : (nb + 1) * batch_size]]).to(self.device)
 
+            print(f"Extracted output batches")
+
             mini_batches = self._get_minibatches(input_batch, output_batch, self.num_noise_vec)
+
+            print(f"Extracted minibatches")
+
             for inputs, targets in mini_batches:
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
                 
