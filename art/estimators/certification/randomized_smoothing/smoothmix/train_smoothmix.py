@@ -41,15 +41,12 @@ logger = logging.getLogger(__name__)
 
 
 def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
-    print('Inside smoothmix fit method')
     import torch  # lgtm [py/repeated-import]
     import torch.nn as nn
     import torch.nn.functional as F
     from torch.optim import Optimizer
     from art.estimators.certification.randomized_smoothing.smoothmix.smooth_pgd_attack import SmoothMix_PGD
     import random
-
-    print("Passed imports")
 
     x = x.astype(ART_NUMPY_DTYPE)
     start_epoch = 0
@@ -65,7 +62,6 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
             maxnorm=self.maxnorm,
             maxnorm_s=self.maxnorm_s
         )
-    print("Created attacker")
 
     if self.optimizer is None:  # pragma: no cover
         raise ValueError("An optimizer is needed to train the model, but none for provided.")
@@ -77,13 +73,10 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
     num_batch = int(np.ceil(len(x) / float(batch_size)))
     ind = np.arange(len(x))
 
-    print("Beginning training")
-
     # Start training
     for epoch_num in range(start_epoch + 1, nb_epochs + 1):
         warmup_v = np.min([1.0, (epoch_num + 1) / self.warmup])
         attacker.maxnorm_s = warmup_v * self.maxnorm_s
-        print(f"Attacker maxnorm_s: {attacker.maxnorm_s}")
         # # Shuffle the examples
         # random.shuffle(ind)
         # self.scheduler.step()
@@ -96,11 +89,7 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
             input_batch = torch.from_numpy(x[ind[nb * batch_size : (nb + 1) * batch_size]]).to(self.device)
             output_batch = torch.from_numpy(y[ind[nb * batch_size : (nb + 1) * batch_size]]).to(self.device)
 
-            print(f"Extracted output batches")
-
             mini_batches = self._get_minibatches(input_batch, output_batch, self.num_noise_vec)
-
-            print(f"Extracted minibatches")
 
             for inputs, targets in mini_batches:
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
@@ -113,10 +102,8 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
                 inputs, inputs_adv = attacker.attack(
                     self.model, 
                     inputs=inputs, 
-                    targets=targets, 
-                    noises=noises, 
-                    num_noise_vectors=self.num_noise_vec, 
-                    no_grad=False
+                    labels=targets, 
+                    noises=noises
                 )
                 self.model.train()
                 self._requires_grad_(self.model, True)
@@ -128,9 +115,9 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
                 logits_c_chunk = torch.chunk(logits_c, self.num_noise_vec, dim=0)
                 clean_avg_sm = _avg_softmax(logits_c_chunk)
 
-                loss_xent = self.loss(logits_c, targets_c, reduction='none')
+                loss_xent = F.cross_entropy(logits_c, targets_c, reduction='none')
 
-                in_mix, targets_mix = _mixup_data(inputs, inputs_adv, clean_avg_sm, self.n_classes)
+                in_mix, targets_mix = _mixup_data(inputs, inputs_adv, clean_avg_sm, self.nb_classes)
 
                 in_mix_c = torch.cat([in_mix + noise for noise in noises], dim=0)
                 targets_mix_c = targets_mix.repeat(self.num_noise_vec, 1)
@@ -141,7 +128,7 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
                 ind_correct = ind_correct.repeat(self.num_noise_vec)
 
                 loss_mixup = F.kl_div(logits_mix_c, targets_mix_c, reduction='none').sum(1)
-                loss = loss_xent.mean() + self.eta * self.warmup_v * (ind_correct * loss_mixup).mean()
+                loss = loss_xent.mean() + self.eta * warmup_v * (ind_correct * loss_mixup).mean()
                     
                 # compute gradient and do SGD step
                 self.optimizer.zero_grad()
