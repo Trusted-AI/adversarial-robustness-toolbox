@@ -29,12 +29,14 @@ import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.classification.pytorch import PyTorchClassifier
-from art.estimators.certification.randomized_smoothing.randomized_smoothing import RandomizedSmoothingMixin
+from art.estimators.certification.randomized_smoothing.randomized_smoothing import RandomizedSmoothingMixin=
+import art.estimators.certification.randomized_smoothing.smoothmix.train_smoothmix as train_smoothmix
+from art.defences.preprocessor.gaussian_augmentation import GaussianAugmentation
+from art.attacks.evasion.iterative_method import BasicIterativeMethod
+import torch
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
-    import torch
-
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
@@ -50,7 +52,24 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
     | Paper link: https://arxiv.org/abs/1902.02918
     """
 
-    estimator_params = PyTorchClassifier.estimator_params + ["sample_size", "scale", "alpha"]
+    estimator_params = PyTorchClassifier.estimator_params + [
+        "sample_size", 
+        "scale", 
+        "alpha", 
+        "num_noise_vec", 
+        "train_multi_noise", 
+        "attack_type",
+        "epsilon",
+        "num_steps",
+        "warmup",
+        "lbd",
+        "gamma",
+        "beta",
+        "gauss_num",
+        "mix_step",
+        "maxnorm_s",
+        "maxnorm"
+    ]
 
     def __init__(
         self,
@@ -59,6 +78,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         input_shape: Tuple[int, ...],
         nb_classes: int,
         optimizer: Optional["torch.optim.Optimizer"] = None,  # type: ignore
+        scheduler: Optional["torch.optim.lr_scheduler"] = None,  # type: ignore
         channels_first: bool = True,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
@@ -68,6 +88,22 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         sample_size: int = 32,
         scale: float = 0.1,
         alpha: float = 0.001,
+        num_noise_vec: int = 1,
+        train_multi_noise: bool = False,
+        attack_type: str ="PGD",
+        epsilon: float = 64.0,
+        num_steps: int = 10,
+        warmup: int = 1,
+        lbd: float = 12.0,
+        gamma: float = 8.0,
+        beta: float = 16.0,
+        gauss_num: int = 16,
+        noise_sd: int = 0.0,
+        eta: float = 1.0,
+        mix_step: int = 0,
+        maxnorm_s: Optional[float] = None,
+        maxnorm: Optional[float] = None
+        **kwargs
     ):
         """
         Create a randomized smoothing classifier.
@@ -79,6 +115,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         :param input_shape: The shape of one input instance.
         :param nb_classes: The number of classes of the model.
         :param optimizer: The optimizer used to train the classifier.
+        :param scheduler: The learning rate scheduler used to train the classifier.
         :param channels_first: Set channels first or last.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
@@ -93,6 +130,21 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         :param sample_size: Number of samples for smoothing.
         :param scale: Standard deviation of Gaussian noise added.
         :param alpha: The failure probability of smoothing.
+        :param num_noise_vec: Number of noise vectors
+        :param train_multi_noise: TODO
+        :param attack_type: The type of attack to use
+        :param epsilon: TODO
+        :param num_steps: Number of attack updates
+        :param warmup: TODO
+        :param lbd: TODO
+        :param gamma: Value to multiply the LR by
+        :param beta: TODO
+        :param gauss_num: TODO
+        :param noise_sd: Standard deviation of Gaussian noise for data augmentation in SmoothMix
+        :param eta: Hyperparameter to control the relative strength of the mixup loss in SmoothMix
+        :param mix_step: Determines which sample to use for the clean side in SmoothMix
+        :param maxnorm_s: TODO
+        :param maxnorm: TODO
         """
         super().__init__(
             model=model,
@@ -109,15 +161,37 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
             sample_size=sample_size,
             scale=scale,
             alpha=alpha,
+            num_noise_vec=num_noise_vec,
+            train_multi_noise=train_multi_noise,
+            attack_type=attack_type,
+            epsilon=epsilon,
+            num_steps=num_steps,
+            warmup=warmup,
+            lbd=lbd,
+            gamma=gamma,
+            beta=beta,
+            gauss_num=gauss_num,
+            noise_sd=noise_sd,
+            eta=eta,
+            mix_step=mix_step,
+            maxnorm_s=maxnorm_s,
+            maxnorm=maxnorm,
+            **kwargs
         )
+        self.scheduler = scheduler
 
     def _predict_classifier(self, x: np.ndarray, batch_size: int, training_mode: bool, **kwargs) -> np.ndarray:
         x = x.astype(ART_NUMPY_DTYPE)
         return PyTorchClassifier.predict(self, x=x, batch_size=batch_size, training_mode=training_mode, **kwargs)
 
-    def _fit_classifier(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
-        x = x.astype(ART_NUMPY_DTYPE)
-        return PyTorchClassifier.fit(self, x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
+    def _fit_classifier(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, train_method: str, **kwargs) -> None:
+        if train_method == "smoothmix":
+            return train_smoothmix.fit_pytorch(self, x, y, batch_size, nb_epochs, **kwargs)
+        else:
+            g_a = GaussianAugmentation(sigma=self.scale, augmentation=False)
+            x_rs, _ = g_a(x)
+            x_rs = x_rs.astype(ART_NUMPY_DTYPE)
+            return PyTorchClassifier.fit(self, x_rs, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
     def fit(  # pylint: disable=W0221
         self,
@@ -242,3 +316,26 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         """
         raise NotImplementedError
+    
+    def _requires_grad_(self, model: torch.nn.Module, requires_grad: bool) -> None:
+        """
+        TODO: find out what this does
+
+        :param model: TODO
+        :param requires_grad: TODO
+        """
+        for param in model.parameters():
+            param.requires_grad_(requires_grad)
+    
+    def _get_minibatches(self, x, y, num_batches):
+        """
+        TODO: find out what this does
+
+        :param x: Sample input with shape as expected by the model.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
+        :param num_batches: number of batches
+        """
+        batch_size = len(x) // num_batches
+        for i in range(num_batches):
+            yield x[i*batch_size : (i+1)*batch_size], y[i*batch_size : (i+1)*batch_size]

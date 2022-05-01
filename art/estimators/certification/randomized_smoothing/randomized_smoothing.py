@@ -31,7 +31,6 @@ from scipy.stats import norm
 from tqdm.auto import tqdm
 
 from art.config import ART_NUMPY_DTYPE
-from art.defences.preprocessor.gaussian_augmentation import GaussianAugmentation
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +49,21 @@ class RandomizedSmoothingMixin(ABC):
         *args,
         scale: float = 0.1,
         alpha: float = 0.001,
+        num_noise_vec: int = 1,
+        train_multi_noise: bool = False,
+        attack_type: str ="PGD",
+        epsilon: float = 64.0,
+        num_steps: int =10,
+        warmup: int = 1,
+        lbd: float = 12.0,
+        gamma: float = 8.0,
+        beta: float = 16.0,
+        gauss_num: int = 16,
+        noise_sd: int = 0.0,
+        eta: float = 1.0,
+        mix_step: int = 0,
+        maxnorm_s: Optional[float] = None,
+        maxnorm: Optional[float] = None
         **kwargs,
     ) -> None:
         """
@@ -58,11 +72,41 @@ class RandomizedSmoothingMixin(ABC):
         :param sample_size: Number of samples for smoothing.
         :param scale: Standard deviation of Gaussian noise added.
         :param alpha: The failure probability of smoothing.
+        :param num_noise_vec: Number of noise vectors
+        :param train_multi_noise: TODO
+        :param attack_type: The type of attack to use
+        :param epsilon: TODO
+        :param num_steps: Number of attack updates
+        :param warmup: TODO
+        :param lbd: TODO
+        :param gamma: Value to multiply the LR by
+        :param beta: TODO
+        :param gauss_num: TODO
+        :param noise_sd: Standard deviation of Gaussian noise for data augmentation in SmoothMix
+        :param eta: Hyperparameter to control the relative strength of the mixup loss in SmoothMix
+        :param mix_step: Determines which sample to use for the clean side in SmoothMix
+        :param maxnorm_s: TODO
+        :param maxnorm: TODO
         """
         super().__init__(*args, **kwargs)  # type: ignore
         self.sample_size = sample_size
         self.scale = scale
         self.alpha = alpha
+        self.num_noise_vec = num_noise_vec
+        self.train_multi_noise = train_multi_noise
+        self.attack_type = attack_type
+        self.epsilon = epsilon
+        self.num_steps = num_steps
+        self.warmup = warmup
+        self.lbd = lbd
+        self.gamma = gamma
+        self.beta=beta
+        self.gauss_num = gauss_num
+        self.noise_sd = noise_sd
+        self.eta = eta
+        self.mix_step = mix_step
+        self.maxnorm_s = maxnorm_s
+        self.maxnorm = maxnorm
 
     def _predict_classifier(self, x: np.ndarray, batch_size: int, training_mode: bool, **kwargs) -> np.ndarray:
         """
@@ -129,7 +173,7 @@ class RandomizedSmoothingMixin(ABC):
         """
         raise NotImplementedError
 
-    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, **kwargs) -> None:
+    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, train_method: str = 'default', **kwargs) -> None:
         """
         Fit the classifier on the training set `(x, y)`.
 
@@ -138,12 +182,11 @@ class RandomizedSmoothingMixin(ABC):
                   (nb_samples,).
         :param batch_size: Batch size.
         :param nb_epochs: Number of epochs to use for training.
+        :param train_method: determines the training method to use, one of {'default', 'smoothmix'}
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
         """
-        g_a = GaussianAugmentation(sigma=self.scale, augmentation=False)
-        x_rs, _ = g_a(x)
-        self._fit_classifier(x_rs, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
+        self._fit_classifier(x, y, batch_size=batch_size, nb_epochs=nb_epochs, train_method=train_method, **kwargs)
 
     def certify(self, x: np.ndarray, n: int, batch_size: int = 32) -> Tuple[np.ndarray, np.ndarray]:
         """
