@@ -29,7 +29,7 @@ import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.classification.pytorch import PyTorchClassifier
-from art.estimators.certification.randomized_smoothing.randomized_smoothing import RandomizedSmoothingMixin=
+from art.estimators.certification.randomized_smoothing.randomized_smoothing import RandomizedSmoothingMixin
 import art.estimators.certification.randomized_smoothing.smoothmix.train_smoothmix as train_smoothmix
 from art.defences.preprocessor.gaussian_augmentation import GaussianAugmentation
 from art.attacks.evasion.iterative_method import BasicIterativeMethod
@@ -66,6 +66,8 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         "gamma",
         "beta",
         "gauss_num",
+        "noise_sd",
+        "eta",
         "mix_step",
         "maxnorm_s",
         "maxnorm"
