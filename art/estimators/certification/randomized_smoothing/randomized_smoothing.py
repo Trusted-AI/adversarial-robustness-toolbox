@@ -100,7 +100,6 @@ class RandomizedSmoothingMixin(ABC):
         self.gamma = gamma
         self.beta=beta
         self.gauss_num = gauss_num
-        self.noise_sd = noise_sd
         self.eta = eta
         self.mix_step = mix_step
         self.maxnorm_s = maxnorm_s
