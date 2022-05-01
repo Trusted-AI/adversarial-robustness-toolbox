@@ -96,7 +96,7 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
             for inputs, targets in mini_batches:
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
                 
-                noises = [torch.randn_like(inputs) * self.noise_sd for _ in range(self.num_noise_vec)]
+                noises = [torch.randn_like(inputs) * self.scale for _ in range(self.num_noise_vec)]
 
                 #Attack and find adversarial examples
                 self._requires_grad_(self.model, False)
@@ -154,7 +154,7 @@ def get_minibatches(X, y, num_batches):
     batch_size = len(X) // num_batches
     for i in range(num_batches):
         yield X[i*batch_size : (i+1)*batch_size], y[i*batch_size : (i+1)*batch_size]
-        
+
 
 def _mixup_data(x1, x2, y1, n_classes):
     '''Returns mixed inputs, pairs of targets, and lambda'''

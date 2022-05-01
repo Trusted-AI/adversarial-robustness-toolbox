@@ -66,7 +66,6 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         "gamma",
         "beta",
         "gauss_num",
-        "noise_sd",
         "eta",
         "mix_step",
         "maxnorm_s",
@@ -92,7 +91,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         alpha: float = 0.001,
         num_noise_vec: int = 1,
         train_multi_noise: bool = False,
-        attack_type: str ="PGD",
+        attack_type: str = "PGD",
         epsilon: float = 64.0,
         num_steps: int = 10,
         warmup: int = 1,
@@ -100,7 +99,6 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         gamma: float = 8.0,
         beta: float = 16.0,
         gauss_num: int = 16,
-        noise_sd: int = 0.0,
         eta: float = 1.0,
         mix_step: int = 0,
         maxnorm_s: Optional[float] = None,
@@ -142,7 +140,6 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         :param gamma: Value to multiply the LR by
         :param beta: TODO
         :param gauss_num: TODO
-        :param noise_sd: Standard deviation of Gaussian noise for data augmentation in SmoothMix
         :param eta: Hyperparameter to control the relative strength of the mixup loss in SmoothMix
         :param mix_step: Determines which sample to use for the clean side in SmoothMix
         :param maxnorm_s: TODO
@@ -173,7 +170,6 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
             gamma=gamma,
             beta=beta,
             gauss_num=gauss_num,
-            noise_sd=noise_sd,
             eta=eta,
             mix_step=mix_step,
             maxnorm_s=maxnorm_s,
