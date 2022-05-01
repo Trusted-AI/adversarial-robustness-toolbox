@@ -46,7 +46,7 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
     import torch.nn as nn
     import torch.nn.functional as F
     from torch.optim import Optimizer
-    from art.estimators.certification.smoothmix.smooth_pgd_attack import SmoothMix_PGD
+    from art.estimators.certification.randomized_smoothing.smoothmix.smooth_pgd_attack import SmoothMix_PGD
     import random
 
     print("Passed imports")
