@@ -23,7 +23,7 @@ This module implements Randomized Smoothing applied to classifier predictions.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import List, Union, TYPE_CHECKING, Tuple, Optional
+from typing import List, Union, TYPE_CHECKING, Tuple
 
 import numpy as np
 
