@@ -23,7 +23,7 @@ This module implements Randomized Smoothing applied to classifier predictions.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import List, Union, TYPE_CHECKING, Tuple
+from typing import List, Union, TYPE_CHECKING, Tuple, Optional
 
 import numpy as np
 
@@ -100,7 +100,7 @@ class NumpyRandomizedSmoothing(  # lgtm [py/conflicting-attributes] lgtm [py/mis
         """
         return self.classifier.predict(x=x, batch_size=batch_size, training_mode=training_mode, **kwargs)
 
-    def _fit_classifier(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
+    def _fit_classifier(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, train_method: Optional[str], **kwargs) -> None:
         """
          Fit the classifier on the training set `(x, y)`.
 
