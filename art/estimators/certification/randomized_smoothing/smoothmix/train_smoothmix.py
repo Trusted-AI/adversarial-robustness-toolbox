@@ -184,7 +184,7 @@ def fit_tensorflow(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epoch
     raise NotImplementedError
 
 
-def get_minibatches(X, y, num_batches) -> Generator[Tuple[float, int]]:
+def get_minibatches(X, y, num_batches):
     """
     Generate batches of the training data and target values
 
