@@ -23,6 +23,7 @@
 This is authors' implementation of SmoothMix_PGD
 
 | Paper link: https://arxiv.org/pdf/2111.09277.pdf
+| Authors' implementation: https://github.com/jh-jeong/smoothmix/code/train.py
 
 """
 
@@ -35,13 +36,28 @@ import torch.nn.functional as F
 import torch.optim as optim
 from typing import Optional
 
+
 class SmoothMix_PGD(object):
-    def __init__(self,
-                 steps: int,
-                 mix_step: int,
-                 alpha: Optional[float] = None,
-                 maxnorm_s: Optional[float] = None,
-                 maxnorm: Optional[float] = None) -> None:
+    """
+    Author's original implementation of a Smooth PGD attacker
+    """
+    def __init__(
+        self,
+        steps: int,
+        mix_step: int,
+        alpha: Optional[float] = None,
+        maxnorm_s: Optional[float] = None,
+        maxnorm: Optional[float] = None
+    ) -> None:
+        """
+        Creates a Smooth PGD attacker
+
+        :param steps: Number of attack updates
+        :param mix_step: Determines which sample to use for the clean side in SmoothMix
+        :param alpha: The failure probability of smoothing.
+        :param maxnorm_s: initial value of alpha * mix_step
+        :param maxnorm: initial value of alpha * mix_step for adversarial examples
+        """
         super(SmoothMix_PGD, self).__init__()
         self.steps = steps
         self.mix_step = mix_step
@@ -52,14 +68,41 @@ class SmoothMix_PGD(object):
         else:
             self.maxnorm_s = maxnorm_s
 
-    def attack(self, model, inputs, labels, noises=None):
-        if inputs.min() < 0 or inputs.max() > 1: raise ValueError('Input values should be in the [0, 1] range.')
+    def attack(
+        self, 
+        model: nn.Module, 
+        inputs: torch.Tensor, 
+        labels: torch.Tensor, 
+        noises: torch.Tensor = None
+    ):
+        """
+        Attacks the model with the given inputs
 
-        def _batch_l2norm(x):
+        :param model: The PyTorch model to attack
+        :param inputs: The batch inputs
+        :param labels: The batch labels for the inputs
+        :param noises: The noise applied to each input in the attack
+        """
+        if inputs.min() < 0 or inputs.max() > 1: 
+            raise ValueError('Input values should be in the [0, 1] range.')
+
+        def _batch_l2norm(x: torch.Tensor) -> torch.Tensor:
+            """
+            Perform a batch L2 norm
+
+            :param x: The inputs to compute the batch L2 norm of
+            """
             x_flat = x.reshape(x.size(0), -1)
             return torch.norm(x_flat, dim=1)
 
-        def _project(x, x0, maxnorm=None):
+        def _project(x: torch.Tensor, x0: torch.Tensor, maxnorm: Optional[float] = None):
+            """
+            Apply a projection of the current inputs with the maxnorm
+
+            :param x: The inputs to apply a projection on (either original or adversarial)
+            :param x0: The unperterbed inputs to apply the projection on
+            :param maxnorm: The maxnorm value to apply to x
+            """
             if maxnorm is not None:
                 eta = x - x0
                 eta = eta.renorm(p=2, dim=0, maxnorm=maxnorm)
