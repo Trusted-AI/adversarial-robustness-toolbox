@@ -93,6 +93,7 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
 
     # Start training
     for epoch_num in range(start_epoch + 1, nb_epochs + 1):
+        print(f"Running epoch {epoch_num}/{nb_epochs}", flush=True)
         warmup_v = np.min([1.0, (epoch_num + 1) / self.warmup])
         attacker.maxnorm_s = warmup_v * self.maxnorm_s
         # # Shuffle the examples
@@ -109,12 +110,13 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
         losses_reg = AverageMeter()
         end = time.time()
         for nb in range(num_batch):
+            print(f"Running batch {nb}/{num_batch}", flush=True)
             input_batch = torch.from_numpy(x[ind[nb * batch_size : (nb + 1) * batch_size]]).to(self.device)
             output_batch = torch.from_numpy(y[ind[nb * batch_size : (nb + 1) * batch_size]]).to(self.device)
 
             mini_batches = self._get_minibatches(input_batch, output_batch, self.num_noise_vec)
             data_time.update(time.time() - end)
-            for inputs, targets in mini_batches:
+            for i, (inputs, targets) in enumerate(mini_batches):
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
                 
                 noises = [torch.randn_like(inputs) * self.scale for _ in range(self.num_noise_vec)]
@@ -165,9 +167,11 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
                   'Time {batch_time.avg:.3f}\t'
                   'Data {data_time.avg:.3f}\t'
                   'Loss {loss.avg:.4f}\t'.format(
-                epoch_num, nb, num_batch, batch_time=batch_time,
+                epoch_num, nb + 1, num_batch + 1, batch_time=batch_time,
                 data_time=data_time, loss=losses))
+            
             self.scheduler.step()
+        print(f"Time taken to run epoch {epoch_num}/{nb_epochs}: {after - before}")
 
 
 def get_batch_noisevec(X, num_noise_vec):
