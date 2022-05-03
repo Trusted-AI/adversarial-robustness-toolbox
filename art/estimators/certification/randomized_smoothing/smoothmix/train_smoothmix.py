@@ -24,7 +24,7 @@ This module implements SmoothMix.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import List, Optional, Tuple, Union, TYPE_CHECKING
+from typing import List, Optional, Tuple, Union, Generator, TYPE_CHECKING
 import time # Remove after testing
 import numpy as np
 
@@ -59,6 +59,14 @@ class AverageMeter(object):
 
 
 def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
+    """
+    Performs SmoothMix adversarial training on the model
+
+    :param x: Training data.
+    :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape (nb_samples,).
+    :param batch_size: Batch size.
+    :key nb_epochs: Number of epochs to use for training
+    """
     import torch  # lgtm [py/repeated-import]
     import torch.nn as nn
     import torch.nn.functional as F
@@ -93,29 +101,26 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
 
     # Start training
     for epoch_num in range(start_epoch + 1, nb_epochs + 1):
-        print(f"Running epoch {epoch_num}/{nb_epochs}", flush=True)
+        print(f"Running epoch {epoch_num}/{nb_epochs}", flush=True)  # Remove later
         warmup_v = np.min([1.0, (epoch_num + 1) / self.warmup])
         attacker.maxnorm_s = warmup_v * self.maxnorm_s
-        # # Shuffle the examples
-        # random.shuffle(ind)
-        # self.scheduler.step()
 
         # Put the model in the training mode
         self.model.train()
         self._requires_grad_(self.model, True)
-        before = time.time()
-        batch_time = AverageMeter()
-        data_time = AverageMeter()
-        losses = AverageMeter()
-        losses_reg = AverageMeter()
-        end = time.time()
+        before = time.time()  # Remove later
+        batch_time = AverageMeter()  # Remove later
+        data_time = AverageMeter()  # Remove later
+        losses = AverageMeter()  # Remove later
+        losses_reg = AverageMeter()  # Remove later
+        end = time.time()  # Remove later
         for nb in range(num_batch):
-            print(f"Running batch {nb}/{num_batch}", flush=True)
+            print(f"Running batch {nb}/{num_batch}", flush=True)  # Remove later
             input_batch = torch.from_numpy(x[ind[nb * batch_size : (nb + 1) * batch_size]]).to(self.device)
             output_batch = torch.from_numpy(y[ind[nb * batch_size : (nb + 1) * batch_size]]).to(self.device)
 
             mini_batches = self._get_minibatches(input_batch, output_batch, self.num_noise_vec)
-            data_time.update(time.time() - end)
+            data_time.update(time.time() - end)  # Remove later
             for i, (inputs, targets) in enumerate(mini_batches):
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
                 
@@ -154,44 +159,54 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
 
                 loss_mixup = F.kl_div(logits_mix_c, targets_mix_c, reduction='none').sum(1)
                 loss = loss_xent.mean() + self.eta * warmup_v * (ind_correct * loss_mixup).mean()
-                losses.update(loss.item(), batch_size)
+                losses.update(loss.item(), batch_size)  # Remove later
                 # compute gradient and do SGD step
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
 
-            batch_time.update(time.time() - end)
-            end = time.time()
-            after = time.time()
+            batch_time.update(time.time() - end)  # Remove later
+            end = time.time()  # Remove later
+            after = time.time()  # Remove later
             print('Epoch: [{0}][{1}/{2}]\t'
                   'Time {batch_time.avg:.3f}\t'
                   'Data {data_time.avg:.3f}\t'
                   'Loss {loss.avg:.4f}\t'.format(
                 epoch_num, nb + 1, num_batch + 1, batch_time=batch_time,
-                data_time=data_time, loss=losses))
+                data_time=data_time, loss=losses))  # Remove later
             
             self.scheduler.step()
-        print(f"Time taken to run epoch {epoch_num}/{nb_epochs}: {after - before}")
-
-
-def get_batch_noisevec(X, num_noise_vec):
-    batch_size = len(X)
-    for i in range(num_noise_vec):
-        yield X[i*batch_size : (i+1)*batch_size]
+        print(f"Time taken to run epoch {epoch_num}/{nb_epochs}: {after - before}")  # Remove later
 
 
 def fit_tensorflow(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
+    """TODO: fill out"""
     raise NotImplementedError
 
 
-def get_minibatches(X, y, num_batches):
+def get_minibatches(X, y, num_batches) -> Generator[Tuple[float, int]]:
+    """
+    Generate batches of the training data and target values
+
+    :param X: Training data
+    :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
+    :param num_batches: The number of batches to generate
+    """
     batch_size = len(X) // num_batches
     for i in range(num_batches):
         yield X[i*batch_size : (i+1)*batch_size], y[i*batch_size : (i+1)*batch_size]
 
 
-def _mixup_data(x1, x2, y1, n_classes):
-    '''Returns mixed inputs, pairs of targets, and lambda'''
+def _mixup_data(x1, x2, y1, n_classes) -> Tuple[torch.Tensor, torch.Tensor]:
+    """
+    Returns mixed inputs, pairs of targets, and lambda
+
+    :param x1: Training data
+    :param x2: Adversarial training data
+    :param y1: Training labels
+    :param n_classes: The number of classes
+    """
     device = x1.device
 
     _eye = torch.eye(n_classes, device=device)
@@ -204,7 +219,12 @@ def _mixup_data(x1, x2, y1, n_classes):
     return mixed_x, mixed_y
 
 
-def _avg_softmax(logits):
+def _avg_softmax(logits) -> float:
+    """
+    Computes the average softmax for the given logits
+
+    :param logits: the logits to compute the average softmax of
+    """
     import torch.nn.functional as F
 
     m = len(logits)

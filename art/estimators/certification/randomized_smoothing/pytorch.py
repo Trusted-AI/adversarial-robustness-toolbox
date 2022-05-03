@@ -135,15 +135,15 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         :param attack_type: The type of attack to use
         :param epsilon: TODO
         :param num_steps: Number of attack updates
-        :param warmup: TODO
+        :param warmup: Warm-up strategy that is gradually increased for the first 10 epochs up to the original value of epsilon
         :param lbd: TODO
         :param gamma: Value to multiply the LR by
         :param beta: TODO
         :param gauss_num: TODO
         :param eta: Hyperparameter to control the relative strength of the mixup loss in SmoothMix
         :param mix_step: Determines which sample to use for the clean side in SmoothMix
-        :param maxnorm_s: TODO
-        :param maxnorm: TODO
+        :param maxnorm_s: initial value of alpha * mix_step
+        :param maxnorm: initial value of alpha * mix_step for adversarial examples
         """
         super().__init__(
             model=model,
