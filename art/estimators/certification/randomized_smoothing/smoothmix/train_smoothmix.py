@@ -25,7 +25,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING
-
+import time # Remove after testing
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
@@ -38,6 +38,24 @@ if TYPE_CHECKING:
     from art.defences.postprocessor import Postprocessor
 
 logger = logging.getLogger(__name__)
+
+
+class AverageMeter(object):
+    """Computes and stores the average and current value"""
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.val = 0
+        self.avg = 0
+        self.sum = 0
+        self.count = 0
+
+    def update(self, val, n=1):
+        self.val = val
+        self.sum += val * n
+        self.count += n
+        self.avg = self.sum / self.count
 
 
 def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
@@ -68,7 +86,7 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
     if self.scheduler is None:  # pragma: no cover
         raise ValueError("A scheduler is needed to train the model, but none for provided.")
     if attacker is None:
-        raise ValueError("A attacker is needed to smooth adversarially train the model, but none for provided.")
+        raise ValueError(f"A attacker is needed to smooth adversarially train the model, but none for provided: {self.attack_type}")
 
     num_batch = int(np.ceil(len(x) / float(batch_size)))
     ind = np.arange(len(x))
@@ -84,13 +102,18 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
         # Put the model in the training mode
         self.model.train()
         self._requires_grad_(self.model, True)
-
+        before = time.time()
+        batch_time = AverageMeter()
+        data_time = AverageMeter()
+        losses = AverageMeter()
+        losses_reg = AverageMeter()
+        end = time.time()
         for nb in range(num_batch):
             input_batch = torch.from_numpy(x[ind[nb * batch_size : (nb + 1) * batch_size]]).to(self.device)
             output_batch = torch.from_numpy(y[ind[nb * batch_size : (nb + 1) * batch_size]]).to(self.device)
 
             mini_batches = self._get_minibatches(input_batch, output_batch, self.num_noise_vec)
-
+            data_time.update(time.time() - end)
             for inputs, targets in mini_batches:
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
                 
@@ -129,11 +152,22 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
 
                 loss_mixup = F.kl_div(logits_mix_c, targets_mix_c, reduction='none').sum(1)
                 loss = loss_xent.mean() + self.eta * warmup_v * (ind_correct * loss_mixup).mean()
-                    
+                losses.update(loss.item(), batch_size)
                 # compute gradient and do SGD step
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
+
+            batch_time.update(time.time() - end)
+            end = time.time()
+            after = time.time()
+            print('Epoch: [{0}][{1}/{2}]\t'
+                  'Time {batch_time.avg:.3f}\t'
+                  'Data {data_time.avg:.3f}\t'
+                  'Loss {loss.avg:.4f}\t'.format(
+                epoch_num, nb, num_batch, batch_time=batch_time,
+                data_time=data_time, loss=losses))
+            self.scheduler.step()
 
 
 def get_batch_noisevec(X, num_noise_vec):
