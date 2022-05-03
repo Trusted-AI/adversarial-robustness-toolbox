@@ -170,7 +170,7 @@ class RandomizedSmoothingMixin(ABC):
         """
         raise NotImplementedError
 
-    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, train_method: str = 'default', **kwargs) -> None:
+    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, train_method: Optional[str] = 'default', **kwargs) -> None:
         """
         Fit the classifier on the training set `(x, y)`.
 
