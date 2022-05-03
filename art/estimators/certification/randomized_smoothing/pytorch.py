@@ -131,15 +131,15 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         :param scale: Standard deviation of Gaussian noise added.
         :param alpha: The failure probability of smoothing.
         :param num_noise_vec: Number of noise vectors
-        :param train_multi_noise: TODO
+        :param train_multi_noise: Determines whether to use all the noise samples or not
         :param attack_type: The type of attack to use
-        :param epsilon: TODO
+        :param epsilon: Maximum perturbation that the attacker can introduce
         :param num_steps: Number of attack updates
         :param warmup: Warm-up strategy that is gradually increased for the first 10 epochs up to the original value of epsilon
-        :param lbd: TODO
+        :param lbd: Weight of robustness loss in Macer
         :param gamma: Value to multiply the LR by
-        :param beta: TODO
-        :param gauss_num: TODO
+        :param beta: The inverse function temperature in Macer
+        :param gauss_num: Number of gaussian samples per input
         :param eta: Hyperparameter to control the relative strength of the mixup loss in SmoothMix
         :param mix_step: Determines which sample to use for the clean side in SmoothMix
         :param maxnorm_s: initial value of alpha * mix_step
@@ -317,22 +317,22 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
     
     def _requires_grad_(self, model: torch.nn.Module, requires_grad: bool) -> None:
         """
-        TODO: find out what this does
+        Enables gradients for the given model
 
-        :param model: TODO
-        :param requires_grad: TODO
+        :param model: The model to enable gradients for
+        :param requires_grad: Boolean to enable or disable gradients for all layers in the model
         """
         for param in model.parameters():
             param.requires_grad_(requires_grad)
     
     def _get_minibatches(self, x, y, num_batches):
         """
-        TODO: find out what this does
+        Generate batches of the training data and target values
 
-        :param x: Sample input with shape as expected by the model.
+        :param X: Training data
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
-                  (nb_samples,).
-        :param num_batches: number of batches
+                    (nb_samples,).
+        :param num_batches: The number of batches to generate
         """
         batch_size = len(x) // num_batches
         for i in range(num_batches):
