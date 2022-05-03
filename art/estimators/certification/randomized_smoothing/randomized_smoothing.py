@@ -72,15 +72,15 @@ class RandomizedSmoothingMixin(ABC):
         :param scale: Standard deviation of Gaussian noise added.
         :param alpha: The failure probability of smoothing.
         :param num_noise_vec: Number of noise vectors
-        :param train_multi_noise: TODO
+        :param train_multi_noise: Determines whether to use all the noise samples or not
         :param attack_type: The type of attack to use
-        :param epsilon: TODO
+        :param epsilon: Maximum perturbation that the attacker can introduce
         :param num_steps: Number of attack updates
         :param warmup: Warm-up strategy that is gradually increased for the first 10 epochs up to the original value of epsilon
-        :param lbd: TODO
+        :param lbd: Weight of robustness loss in Macer
         :param gamma: Value to multiply the LR by
-        :param beta: TODO
-        :param gauss_num: TODO
+        :param beta: The inverse function temperature in Macer
+        :param gauss_num: Number of gaussian samples per input
         :param eta: Hyperparameter to control the relative strength of the mixup loss in SmoothMix
         :param mix_step: Determines which sample to use for the clean side in SmoothMix
         :param maxnorm_s: initial value of alpha * mix_step
