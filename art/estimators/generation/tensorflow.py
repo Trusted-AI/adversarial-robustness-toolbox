@@ -23,12 +23,13 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 from typing import Any, Dict, List, Optional, Union, Tuple, TYPE_CHECKING
 
+import numpy as np
+
 from art.estimators.generation.generator import GeneratorMixin
 from art.estimators.tensorflow import TensorFlowEstimator, TensorFlowV2Estimator
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
-    import numpy as np
     import tensorflow.compat.v1 as tf
 
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
