@@ -755,7 +755,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             return_complex=True
         ).to(self.estimator.device)
 
-        # Take abs of complex STFT results
+        # Take the square of complex STFT results
         transformed_delta = torch.real(delta_stft)**2 + torch.imag(delta_stft)**2
 
         # Compute the psd matrix
