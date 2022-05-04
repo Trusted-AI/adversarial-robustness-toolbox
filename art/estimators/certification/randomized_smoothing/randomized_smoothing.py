@@ -170,7 +170,7 @@ class RandomizedSmoothingMixin(ABC):
         """
         raise NotImplementedError
 
-    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, train_method: Optional[str] = 'default', **kwargs) -> None:
+    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, **kwargs) -> None:
         """
         Fit the classifier on the training set `(x, y)`.
 
@@ -179,11 +179,10 @@ class RandomizedSmoothingMixin(ABC):
                   (nb_samples,).
         :param batch_size: Batch size.
         :param nb_epochs: Number of epochs to use for training.
-        :param train_method: determines the training method to use, one of {'default', 'smoothmix'}
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
         """
-        self._fit_classifier(x, y, batch_size=batch_size, nb_epochs=nb_epochs, train_method=train_method, **kwargs)
+        self._fit_classifier(x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
     def certify(self, x: np.ndarray, n: int, batch_size: int = 32) -> Tuple[np.ndarray, np.ndarray]:
         """

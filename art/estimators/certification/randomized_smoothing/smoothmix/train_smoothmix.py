@@ -101,21 +101,27 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
 
     # Start training
     for epoch_num in range(start_epoch + 1, nb_epochs + 1):
-        print(f"Running epoch {epoch_num}/{nb_epochs}", flush=True)  # Remove later
+        # Shuffle the examples
+        random.shuffle(ind)
+
+        # SmoothMix Training setup
         warmup_v = np.min([1.0, (epoch_num + 1) / self.warmup])
         attacker.maxnorm_s = warmup_v * self.maxnorm_s
 
-        # Put the model in the training mode
-        self.model.train()
-        self._requires_grad_(self.model, True)
+        ### start train()
+
         before = time.time()  # Remove later
         batch_time = AverageMeter()  # Remove later
         data_time = AverageMeter()  # Remove later
         losses = AverageMeter()  # Remove later
         losses_reg = AverageMeter()  # Remove later
         end = time.time()  # Remove later
+
+        # Put the model in the training mode
+        self.model.train()
+        self._requires_grad_(self.model, True)
+
         for nb in range(num_batch):
-            print(f"Running batch {nb}/{num_batch}", flush=True)  # Remove later
             input_batch = torch.from_numpy(x[ind[nb * batch_size : (nb + 1) * batch_size]]).to(self.device)
             output_batch = torch.from_numpy(y[ind[nb * batch_size : (nb + 1) * batch_size]]).to(self.device)
 
@@ -159,7 +165,9 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
 
                 loss_mixup = F.kl_div(logits_mix_c, targets_mix_c, reduction='none').sum(1)
                 loss = loss_xent.mean() + self.eta * warmup_v * (ind_correct * loss_mixup).mean()
+
                 losses.update(loss.item(), batch_size)  # Remove later
+
                 # compute gradient and do SGD step
                 self.optimizer.zero_grad()
                 loss.backward()
@@ -174,8 +182,10 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
                   'Loss {loss.avg:.4f}\t'.format(
                 epoch_num, nb + 1, num_batch + 1, batch_time=batch_time,
                 data_time=data_time, loss=losses))  # Remove later
-            
-            self.scheduler.step()
+
+        ### end train()    
+        print(f"Scheduler LR: {self.scheduler.get_lr()[0]}")  # Remove later
+        self.scheduler.step() 
         print(f"Time taken to run epoch {epoch_num}/{nb_epochs}: {after - before}")  # Remove later
 
 

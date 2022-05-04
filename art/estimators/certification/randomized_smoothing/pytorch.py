@@ -182,9 +182,10 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         x = x.astype(ART_NUMPY_DTYPE)
         return PyTorchClassifier.predict(self, x=x, batch_size=batch_size, training_mode=training_mode, **kwargs)
 
-    def _fit_classifier(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, train_method: str, **kwargs) -> None:
-        if train_method == "smoothmix":
-            return train_smoothmix.fit_pytorch(self, x, y, batch_size, nb_epochs, **kwargs)
+    def _fit_classifier(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
+        if "train_method" in kwargs:
+            if kwargs.get("train_method") == "smoothmix":
+                return train_smoothmix.fit_pytorch(self, x, y, batch_size, nb_epochs, **kwargs)
         else:
             g_a = GaussianAugmentation(sigma=self.scale, augmentation=False)
             x_rs, _ = g_a(x)
