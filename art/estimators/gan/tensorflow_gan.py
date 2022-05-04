@@ -18,7 +18,8 @@
 """
 This module creates GANs using the TensorFlow ML Framework
 """
-from typing import Any, Tuple, TYPE_CHECKING
+from typing import Tuple, TYPE_CHECKING
+
 import numpy as np
 from art.estimators.tensorflow import TensorFlowV2Estimator
 
@@ -59,14 +60,16 @@ class TensorFlowV2GAN(TensorFlowV2Estimator):
         self._discriminator_loss = discriminator_loss
         self._discriminator_optimizer_fct = discriminator_optimizer_fct
 
-    def predict(self, x: np.ndarray, **kwargs) -> Any:  # lgtm [py/inheritance/incorrect-overridden-signature]
+    def predict(
+        self, x: np.ndarray, batch_size: int = 128, **kwargs
+    ) -> np.ndarray:  # lgtm [py/inheritance/incorrect-overridden-signature]
         """
         Generates a sample
 
         param x: a seed
         :return: the sample
         """
-        return self.generator.model(x, training=False)
+        return self.generator.predict(x)
 
     @property
     def input_shape(self) -> Tuple[int, int]:
@@ -77,25 +80,19 @@ class TensorFlowV2GAN(TensorFlowV2Estimator):
         """
         return 1, 100
 
-    def fit(self, x: np.ndarray, y: np.ndarray, **kwargs) -> None:
+    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
         """
         Creates a generative model
 
         :param x: the secret backdoor trigger that will produce the target
         :param y: the target to produce when using the trigger
         :param batch_size: batch_size of images used to train generator
-        :param max_iter: total number of iterations for performing the attack
+        :param nb_epochs: total number of iterations for performing the attack
         """
-        max_iter = kwargs.get("max_iter")
-        if max_iter is None:
-            raise ValueError("max_iter argument was None. The value must be a positive integer")
-
-        batch_size = kwargs.get("batch_size")
-        if batch_size is None:
-            raise ValueError("batch_size argument was None. The value must be a positive integer")
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
         z_trigger = x
-        for _ in range(max_iter):
+        for _ in range(nb_epochs):
             train_imgs = kwargs.get("images")
             train_set = (
                 tf.data.Dataset.from_tensor_slices(train_imgs)

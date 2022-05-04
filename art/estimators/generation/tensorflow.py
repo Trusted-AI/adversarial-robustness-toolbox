@@ -143,7 +143,7 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
         """
         return self._feed_dict  # type: ignore
 
-    def predict(self, x: "np.ndarray", batch_size: int = 128, **kwargs) -> "np.ndarray":
+    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
         """
         Perform projections over a batch of encodings.
 
@@ -158,7 +158,7 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
         y = self._sess.run(self._model, feed_dict=feed_dict)
         return y
 
-    def loss_gradient(self, x, y, training_mode: bool = False, **kwargs) -> "np.ndarray":  # pylint: disable=W0221
+    def loss_gradient(self, x, y, training_mode: bool = False, **kwargs) -> np.ndarray:  # pylint: disable=W0221
         raise NotImplementedError
 
     def fit(self, x, y, batch_size=128, nb_epochs=10, **kwargs):
@@ -168,14 +168,14 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
         raise NotImplementedError
 
     def get_activations(
-        self, x: "np.ndarray", layer: Union[int, str], batch_size: int, framework: bool = False
-    ) -> "np.ndarray":
+        self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
+    ) -> np.ndarray:
         """
         Do nothing.
         """
         raise NotImplementedError
 
-    def compute_loss(self, x: "np.ndarray", y: "np.ndarray", **kwargs) -> "np.ndarray":
+    def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         raise NotImplementedError
 
     @property
@@ -258,7 +258,7 @@ class TensorFlowV2Generator(GeneratorMixin, TensorFlowV2Estimator):  # lgtm [py/
     def input_shape(self) -> Tuple[int, ...]:
         raise NotImplementedError
 
-    def predict(self, x: "np.ndarray", batch_size: int = 128, **kwargs) -> "np.ndarray":
+    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
         """
         Perform projections over a batch of encodings.
 
@@ -267,10 +267,10 @@ class TensorFlowV2Generator(GeneratorMixin, TensorFlowV2Estimator):  # lgtm [py/
         :return: Array of prediction projections of shape `(num_inputs, nb_classes)`.
         """
         logging.info("Projecting new sample from z value")
-        y = self._model(x)
+        y = self._model(x).numpy()
         return y
 
-    def loss_gradient(self, x, y, **kwargs) -> "np.ndarray":
+    def loss_gradient(self, x, y, **kwargs) -> np.ndarray:
         raise NotImplementedError
 
     def fit(self, x, y, batch_size=128, nb_epochs=10, **kwargs):
@@ -280,8 +280,8 @@ class TensorFlowV2Generator(GeneratorMixin, TensorFlowV2Estimator):  # lgtm [py/
         raise NotImplementedError
 
     def get_activations(
-        self, x: "np.ndarray", layer: Union[int, str], batch_size: int, framework: bool = False
-    ) -> "np.ndarray":
+        self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
+    ) -> np.ndarray:
         """
         Do nothing.
         """
