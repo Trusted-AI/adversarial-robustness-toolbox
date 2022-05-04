@@ -752,14 +752,14 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             win_length=self.win_length,
             center=False,
             window=window_fn(self.win_length).to(self.estimator.device),
+            return_complex=True
         ).to(self.estimator.device)
 
         # Take abs of complex STFT results
-        transformed_delta = torch.sqrt(torch.sum(torch.square(delta_stft), -1))
+        transformed_delta = torch.real(delta_stft)**2 + torch.imag(delta_stft)**2
 
         # Compute the psd matrix
-        psd = (8.0 / 3.0) * transformed_delta / self.win_length
-        psd = psd ** 2
+        psd = ((8.0 / 3.0 / self.win_length) ** 2) * transformed_delta
         psd = (
             torch.pow(torch.tensor(10.0).type(torch.float64), torch.tensor(9.6).type(torch.float64)).to(
                 self.estimator.device
