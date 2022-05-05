@@ -426,7 +426,7 @@ def get_image_gan_tf_v2():
 
         return total_loss
 
-    gan = TensorFlow2GAN(
+    gan = TensorFlowV2GAN(
         generator=generator,
         discriminator=discriminator_classifier,
         generator_loss=generator_orig_loss_fct,
