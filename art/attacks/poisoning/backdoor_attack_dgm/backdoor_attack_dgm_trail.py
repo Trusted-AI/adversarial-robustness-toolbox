@@ -25,7 +25,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from art.estimators.gan.tensorflow_gan import TensorFlowV2GAN
+from art.estimators.gan.tensorflow import TensorFlowV2GAN
 from art.attacks.attack import PoisoningAttackGenerator
 
 logger = logging.getLogger(__name__)

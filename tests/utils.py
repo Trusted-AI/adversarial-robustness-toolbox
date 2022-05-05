@@ -33,7 +33,7 @@ import numpy as np
 from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 from art.estimators.encoding.tensorflow import TensorFlowEncoder
 from art.estimators.generation.tensorflow import TensorFlowGenerator, TensorFlowV2Generator
-from art.estimators.gan.tensorflow_gan import TensorFlowV2GAN
+from art.estimators.gan.tensorflow import TensorFlowV2GAN
 from art.utils import load_dataset
 
 logger = logging.getLogger(__name__)

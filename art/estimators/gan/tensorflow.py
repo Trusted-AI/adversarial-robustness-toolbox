@@ -18,7 +18,7 @@
 """
 This module creates GANs using the TensorFlow ML Framework
 """
-from typing import Tuple, TYPE_CHECKING
+from typing import Tuple, TYPE_CHECKING, Union
 
 import numpy as np
 from art.estimators.tensorflow import TensorFlowV2Estimator
@@ -52,7 +52,7 @@ class TensorFlowV2GAN(TensorFlowV2Estimator):
         :param generator_optimizer_fct: the optimizer function to use for the generator
         :param discriminator_optimizer_fct: the optimizer function to use for the discriminator
         """
-        super().__init__(model=None, clip_values=None)
+        super().__init__(model=None, clip_values=None, channels_first=None)
         self._generator = generator
         self._discriminator_classifier = discriminator
         self._generator_loss = generator_loss
@@ -60,9 +60,7 @@ class TensorFlowV2GAN(TensorFlowV2Estimator):
         self._discriminator_loss = discriminator_loss
         self._discriminator_optimizer_fct = discriminator_optimizer_fct
 
-    def predict(
-        self, x: np.ndarray, batch_size: int = 128, **kwargs
-    ) -> np.ndarray:  # lgtm [py/inheritance/incorrect-overridden-signature]
+    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
         """
         Generates a sample
 
@@ -166,3 +164,11 @@ class TensorFlowV2GAN(TensorFlowV2Estimator):
         :return: the optimizer function for the discriminator
         """
         return self._discriminator_optimizer_fct
+
+    def loss_gradient(self, x, y, **kwargs):
+        raise NotImplementedError
+
+    def get_activations(
+        self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
+    ) -> np.ndarray:
+        raise NotImplementedError
