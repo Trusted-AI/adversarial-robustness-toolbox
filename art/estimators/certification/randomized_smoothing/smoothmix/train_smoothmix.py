@@ -24,7 +24,7 @@ This module implements SmoothMix.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import List, Optional, Tuple, Union, Generator, TYPE_CHECKING
+from typing import Tuple, TYPE_CHECKING
 import time # Remove after testing
 import numpy as np
 
@@ -114,7 +114,6 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
         batch_time = AverageMeter()  # Remove later
         data_time = AverageMeter()  # Remove later
         losses = AverageMeter()  # Remove later
-        losses_reg = AverageMeter()  # Remove later
         end = time.time()  # Remove later
 
         # Put the model in the training mode

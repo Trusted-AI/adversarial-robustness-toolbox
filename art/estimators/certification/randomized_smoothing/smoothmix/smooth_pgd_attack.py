@@ -27,13 +27,8 @@ This is authors' implementation of SmoothMix_PGD
 
 """
 
-import numpy as np
 import torch
-from torch.autograd import Variable
-from torch.nn import CrossEntropyLoss
-import torch.nn as nn
 import torch.nn.functional as F
-import torch.optim as optim
 from typing import Optional
 
 
@@ -70,7 +65,7 @@ class SmoothMix_PGD(object):
 
     def attack(
         self, 
-        model: nn.Module, 
+        model: torch.nn.Module, 
         inputs: torch.Tensor, 
         labels: torch.Tensor, 
         noises: torch.Tensor = None
