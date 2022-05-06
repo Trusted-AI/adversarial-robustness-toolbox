@@ -25,7 +25,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 from typing import Tuple, TYPE_CHECKING
-import time # Remove after testing
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
@@ -38,24 +37,6 @@ if TYPE_CHECKING:
     from art.defences.postprocessor import Postprocessor
 
 logger = logging.getLogger(__name__)
-
-
-class AverageMeter(object):
-    """Computes and stores the average and current value"""
-    def __init__(self):
-        self.reset()
-
-    def reset(self):
-        self.val = 0
-        self.avg = 0
-        self.sum = 0
-        self.count = 0
-
-    def update(self, val, n=1):
-        self.val = val
-        self.sum += val * n
-        self.count += n
-        self.avg = self.sum / self.count
 
 
 def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
@@ -90,9 +71,9 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
         )
 
     if self.optimizer is None:  # pragma: no cover
-        raise ValueError("An optimizer is needed to train the model, but none for provided.")
+        raise ValueError(f"An optimizer is needed to train the model, but none for provided: {self.optimizer}")
     if self.scheduler is None:  # pragma: no cover
-        raise ValueError("A scheduler is needed to train the model, but none for provided.")
+        raise ValueError(f"A scheduler is needed to train the model, but none for provided: {self.scheduler}")
     if attacker is None:
         raise ValueError(f"A attacker is needed to smooth adversarially train the model, but none for provided: {self.attack_type}")
 
@@ -108,14 +89,6 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
         warmup_v = np.min([1.0, (epoch_num + 1) / self.warmup])
         attacker.maxnorm_s = warmup_v * self.maxnorm_s
 
-        ### start train()
-
-        before = time.time()  # Remove later
-        batch_time = AverageMeter()  # Remove later
-        data_time = AverageMeter()  # Remove later
-        losses = AverageMeter()  # Remove later
-        end = time.time()  # Remove later
-
         # Put the model in the training mode
         self.model.train()
         self._requires_grad_(self.model, True)
@@ -125,7 +98,7 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
             output_batch = torch.from_numpy(y[ind[nb * batch_size : (nb + 1) * batch_size]]).to(self.device)
 
             mini_batches = self._get_minibatches(input_batch, output_batch, self.num_noise_vec)
-            data_time.update(time.time() - end)  # Remove later
+
             for i, (inputs, targets) in enumerate(mini_batches):
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
                 
@@ -165,27 +138,12 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
                 loss_mixup = F.kl_div(logits_mix_c, targets_mix_c, reduction='none').sum(1)
                 loss = loss_xent.mean() + self.eta * warmup_v * (ind_correct * loss_mixup).mean()
 
-                losses.update(loss.item(), batch_size)  # Remove later
-
                 # compute gradient and do SGD step
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
 
-            batch_time.update(time.time() - end)  # Remove later
-            end = time.time()  # Remove later
-            after = time.time()  # Remove later
-            print('Epoch: [{0}][{1}/{2}]\t'
-                  'Time {batch_time.avg:.3f}\t'
-                  'Data {data_time.avg:.3f}\t'
-                  'Loss {loss.avg:.4f}\t'.format(
-                epoch_num, nb + 1, num_batch + 1, batch_time=batch_time,
-                data_time=data_time, loss=losses))  # Remove later
-
-        ### end train()    
-        print(f"Scheduler LR: {self.scheduler.get_lr()[0]}")  # Remove later
         self.scheduler.step() 
-        print(f"Time taken to run epoch {epoch_num}/{nb_epochs}: {after - before}")  # Remove later
 
 
 def fit_tensorflow(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
