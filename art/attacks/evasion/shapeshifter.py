@@ -31,7 +31,7 @@ from art.estimators.object_detection.tensorflow_faster_rcnn import TensorFlowFas
 
 if TYPE_CHECKING:
     # pylint: disable=C0302,E0611
-    from collections import Callable
+    from collections.abc import Callable
 
     from tensorflow.python.framework.ops import Tensor
     from tensorflow.python.training.optimizer import Optimizer
@@ -308,7 +308,7 @@ class ShapeShifter(EvasionAttack):
         self,
         x: np.ndarray,
         y: Dict[str, List[np.ndarray]],
-        mask: np.ndarray,
+        mask: Optional[np.ndarray],
         target_class: int,
         victim_class: int,
         project_texture_op: "Tensor",
@@ -404,9 +404,9 @@ class ShapeShifter(EvasionAttack):
                     feed_dict["image_frame_phd:0"] = image_frame
 
                     for i in range(x.shape[0]):
-                        feed_dict["groundtruth_boxes_{}:0".format(i)] = y_transform["groundtruth_boxes_list"][i]
-                        feed_dict["groundtruth_classes_{}:0".format(i)] = y_transform["groundtruth_classes_list"][i]
-                        feed_dict["groundtruth_weights_{}:0".format(i)] = y_transform["groundtruth_weights_list"][i]
+                        feed_dict[f"groundtruth_boxes_{i}:0"] = y_transform["groundtruth_boxes_list"][i]
+                        feed_dict[f"groundtruth_classes_{i}:0"] = y_transform["groundtruth_classes_list"][i]
+                        feed_dict[f"groundtruth_weights_{i}:0"] = y_transform["groundtruth_weights_list"][i]
 
                 else:
                     # Random transformation
@@ -416,9 +416,9 @@ class ShapeShifter(EvasionAttack):
                     feed_dict["random_transformation_phd:0"] = random_transformation
 
                     for i in range(x.shape[0]):
-                        feed_dict["groundtruth_boxes_{}:0".format(i)] = y["groundtruth_boxes_list"][i]
-                        feed_dict["groundtruth_classes_{}:0".format(i)] = y["groundtruth_classes_list"][i]
-                        feed_dict["groundtruth_weights_{}:0".format(i)] = y["groundtruth_weights_list"][i]
+                        feed_dict[f"groundtruth_boxes_{i}:0"] = y["groundtruth_boxes_list"][i]
+                        feed_dict[f"groundtruth_classes_{i}:0"] = y["groundtruth_classes_list"][i]
+                        feed_dict[f"groundtruth_weights_{i}:0"] = y["groundtruth_weights_list"][i]
 
                 # Accumulate gradients
                 self.estimator.sess.run(current_image_assign_to_input_image_op, feed_dict)

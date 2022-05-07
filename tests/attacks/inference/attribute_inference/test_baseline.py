@@ -22,7 +22,6 @@ import pytest
 
 import numpy as np
 
-from art.attacks.inference.attribute_inference.black_box import AttributeInferenceBlackBox
 from art.attacks.inference.attribute_inference.baseline import AttributeInferenceBaseline
 
 from tests.utils import ARTTestException
@@ -31,7 +30,8 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.mark.skip_framework("dl_frameworks")
-def test_black_box_baseline(art_warning, decision_tree_estimator, get_iris_dataset):
+@pytest.mark.parametrize("model_type", ["nn", "rf"])
+def test_black_box_baseline(art_warning, get_iris_dataset, model_type):
     try:
         attack_feature = 2  # petal length
 
@@ -42,6 +42,110 @@ def test_black_box_baseline(art_warning, decision_tree_estimator, get_iris_datas
             x[x <= 0.2] = 0.0
 
         values = [0.0, 1.0, 2.0]
+
+        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+
+        # training data without attacked feature
+        x_train_for_attack = np.delete(x_train_iris, attack_feature, 1)
+        # only attacked feature
+        x_train_feature = x_train_iris[:, attack_feature].copy().reshape(-1, 1)
+        transform_feature(x_train_feature)
+        # training data with attacked feature (after transformation)
+        x_train = np.concatenate((x_train_for_attack[:, :attack_feature], x_train_feature), axis=1)
+        x_train = np.concatenate((x_train, x_train_for_attack[:, attack_feature:]), axis=1)
+
+        # test data without attacked feature
+        x_test_for_attack = np.delete(x_test_iris, attack_feature, 1)
+        # only attacked feature
+        x_test_feature = x_test_iris[:, attack_feature].copy().reshape(-1, 1)
+        transform_feature(x_test_feature)
+
+        baseline_attack = AttributeInferenceBaseline(attack_feature=attack_feature, attack_model_type=model_type)
+        # train attack model
+        baseline_attack.fit(x_train)
+        # infer attacked feature
+        baseline_inferred_train = baseline_attack.infer(x_train_for_attack, values=values)
+        baseline_inferred_test = baseline_attack.infer(x_test_for_attack, values=values)
+        # check accuracy
+        baseline_train_acc = np.sum(baseline_inferred_train == x_train_feature.reshape(1, -1)) / len(
+            baseline_inferred_train
+        )
+        baseline_test_acc = np.sum(baseline_inferred_test == x_test_feature.reshape(1, -1)) / len(
+            baseline_inferred_test
+        )
+
+        assert 0.8 <= baseline_train_acc
+        assert 0.7 <= baseline_test_acc
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework("dl_frameworks")
+@pytest.mark.parametrize("model_type", ["nn", "rf"])
+def test_black_box_baseline_slice(art_warning, get_iris_dataset, model_type):
+    try:
+        attack_feature = 2  # petal length
+
+        # need to transform attacked feature into categorical
+        def transform_feature(x):
+            x[x > 0.5] = 2.0
+            x[(x > 0.2) & (x <= 0.5)] = 1.0
+            x[x <= 0.2] = 0.0
+
+        values = [0.0, 1.0, 2.0]
+
+        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+
+        # training data without attacked feature
+        x_train_for_attack = np.delete(x_train_iris, attack_feature, 1)
+        # only attacked feature
+        x_train_feature = x_train_iris[:, attack_feature].copy().reshape(-1, 1)
+        transform_feature(x_train_feature)
+        # training data with attacked feature (after transformation)
+        x_train = np.concatenate((x_train_for_attack[:, :attack_feature], x_train_feature), axis=1)
+        x_train = np.concatenate((x_train, x_train_for_attack[:, attack_feature:]), axis=1)
+
+        # test data without attacked feature
+        x_test_for_attack = np.delete(x_test_iris, attack_feature, 1)
+        # only attacked feature
+        x_test_feature = x_test_iris[:, attack_feature].copy().reshape(-1, 1)
+        transform_feature(x_test_feature)
+
+        baseline_attack = AttributeInferenceBaseline(
+            attack_feature=slice(attack_feature, attack_feature + 1), attack_model_type=model_type
+        )
+        # train attack model
+        baseline_attack.fit(x_train)
+        # infer attacked feature
+        baseline_inferred_train = baseline_attack.infer(x_train_for_attack, values=values)
+        baseline_inferred_test = baseline_attack.infer(x_test_for_attack, values=values)
+        # check accuracy
+        baseline_train_acc = np.sum(baseline_inferred_train == x_train_feature.reshape(1, -1)) / len(
+            baseline_inferred_train
+        )
+        baseline_test_acc = np.sum(baseline_inferred_test == x_test_feature.reshape(1, -1)) / len(
+            baseline_inferred_test
+        )
+
+        assert 0.8 <= baseline_train_acc
+        assert 0.7 <= baseline_test_acc
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework("dl_frameworks")
+@pytest.mark.parametrize("model_type", ["nn", "rf"])
+def test_black_box_baseline_no_values(art_warning, get_iris_dataset, model_type):
+    try:
+        attack_feature = 2  # petal length
+
+        # need to transform attacked feature into categorical
+        def transform_feature(x):
+            x[x > 0.5] = 2.0
+            x[(x > 0.2) & (x <= 0.5)] = 1.0
+            x[x <= 0.2] = 0.0
 
         (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
         # training data without attacked feature
@@ -59,38 +163,22 @@ def test_black_box_baseline(art_warning, decision_tree_estimator, get_iris_datas
         x_test_feature = x_test_iris[:, attack_feature].copy().reshape(-1, 1)
         transform_feature(x_test_feature)
 
-        classifier = decision_tree_estimator()
-
-        attack = AttributeInferenceBlackBox(classifier, attack_feature=attack_feature)
-        # get original model's predictions
-        x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train_iris)]).reshape(-1, 1)
-        x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test_iris)]).reshape(-1, 1)
-        # train attack model
-        attack.fit(x_train)
-        # infer attacked feature
-        # inferred_train
-        _ = attack.infer(x_train_for_attack, x_train_predictions, values=values)
-        inferred_test = attack.infer(x_test_for_attack, x_test_predictions, values=values)
-        # check accuracy
-        # train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
-        test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
-
-        baseline_attack = AttributeInferenceBaseline(attack_feature=attack_feature)
+        baseline_attack = AttributeInferenceBaseline(attack_feature=attack_feature, attack_model_type=model_type)
         # train attack model
         baseline_attack.fit(x_train)
         # infer attacked feature
-        # baseline_inferred_train
-        _ = baseline_attack.infer(x_train_for_attack, values=values)
-        baseline_inferred_test = baseline_attack.infer(x_test_for_attack, values=values)
+        baseline_inferred_train = baseline_attack.infer(x_train_for_attack)
+        baseline_inferred_test = baseline_attack.infer(x_test_for_attack)
         # check accuracy
-        # baseline_train_acc = np.sum(baseline_inferred_train == x_train_feature.reshape(1, -1)) / len(
-        #     baseline_inferred_train
-        # )
+        baseline_train_acc = np.sum(baseline_inferred_train == x_train_feature.reshape(1, -1)) / len(
+            baseline_inferred_train
+        )
         baseline_test_acc = np.sum(baseline_inferred_test == x_test_feature.reshape(1, -1)) / len(
             baseline_inferred_test
         )
 
-        assert test_acc >= baseline_test_acc
+        assert 0.8 <= baseline_train_acc
+        assert 0.7 <= baseline_test_acc
 
     except ARTTestException as e:
         art_warning(e)

@@ -32,7 +32,7 @@ from art.attacks.attack import EvasionAttack
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
-from art.utils import check_and_transform_label_format
+from art.utils import check_and_transform_label_format, get_labels_np_array
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
@@ -104,7 +104,7 @@ class GeoDA(EvasionAttack):
         self.verbose = verbose
         self._check_params()
 
-        self.sub_basis = None
+        self.sub_basis: np.ndarray
         self.nb_calls = 0
         self.clip_min = 0.0
         self.clip_max = 0.0
@@ -155,9 +155,9 @@ class GeoDA(EvasionAttack):
                     for i_x in range(res):
                         basis[i_y, i_x] = dct(i_x, i_y, i_v, i_u, max(res, v_max))
                 dct_basis.append(basis)
-        dct_basis = np.mat(np.reshape(dct_basis, (v_max * u_max, res * res))).transpose()
+        dct_basis_array = np.mat(np.reshape(dct_basis, (v_max * u_max, res * res))).transpose()
 
-        return dct_basis
+        return dct_basis_array
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
@@ -168,7 +168,8 @@ class GeoDA(EvasionAttack):
                   (nb_samples,). If `self.targeted` is true, then `y` represents the target labels.
         :return: The adversarial examples.
         """
-        y = check_and_transform_label_format(y, self.estimator.nb_classes, return_one_hot=True)
+        if y is not None:
+            y = check_and_transform_label_format(y, self.estimator.nb_classes, return_one_hot=True)
 
         if y is not None and self.estimator.nb_classes == 2 and y.shape[1] == 1:  # pragma: no cover
             raise ValueError(
@@ -177,9 +178,13 @@ class GeoDA(EvasionAttack):
 
         x_adv = x.copy()
 
-        # Assert that, if attack is targeted, y is provided
-        if self.targeted and y is None:  # pragma: no cover
-            raise ValueError("Target labels `y` need to be provided for a targeted attack.")
+        if y is None:
+            # Throw error if attack is targeted, but no targets are provided
+            if self.targeted:  # pragma: no cover
+                raise ValueError("Target labels `y` need to be provided for a targeted attack.")
+
+            # Use model predictions as correct outputs
+            y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))  # type: ignore
 
         # Get clip_min and clip_max from the classifier or infer them from data
         if self.estimator.clip_values is not None:
@@ -196,7 +201,7 @@ class GeoDA(EvasionAttack):
         # Create or load DCT basis
         image_size = x.shape[2]
         logger.info("Create or load DCT basis.")
-        path = "2d_dct_basis_{}_{}.npy".format(self.sub_dim, image_size)
+        path = f"2d_dct_basis_{self.sub_dim}_{image_size}.npy"
         if os.path.exists(path):
             self.sub_basis = np.load(path).astype(ART_NUMPY_DTYPE)
         else:
@@ -218,8 +223,7 @@ class GeoDA(EvasionAttack):
             x_boundary = self._binary_search(x_i, y_i, x_random, tol=self.bin_search_tol)
             logger.info("Binary search example at boundary is adversarial: %r", self._is_adversarial(x_boundary, y_i))
 
-            grad = 0
-
+            grad = np.zeros_like(x_i)
             x_adv_i = x_i
 
             for k in trange(self.iterate, desc="GeoDA - steps", disable=not self.verbose, position=1):
@@ -323,8 +327,8 @@ class GeoDA(EvasionAttack):
         Calculate gradient towards decision boundary.
         """
         self.nb_calls += q_max
-        grad_tmp = []  # estimated gradients in each estimate_batch
-        z_list = []  # sign of grad_tmp
+        grad_tmp: List[np.ndarray] = []  # estimated gradients in each estimate_batch
+        z_list: List[int] = []  # sign of grad_tmp
         outs = []
         num_batches = math.ceil(q_max / batch_size)
         last_batch = q_max - (num_batches - 1) * batch_size
@@ -353,7 +357,7 @@ class GeoDA(EvasionAttack):
                 z_list.append(-1)
                 grad_tmp.append(-all_noise[i])
 
-        grad: np.ndarray = -(1 / q_max) * sum(grad_tmp)
+        grad: np.ndarray = -(1 / q_max) * sum(grad_tmp)  # type: ignore
         grad_f = grad[None, :, :, :]
 
         return grad_f, sum(z_list)

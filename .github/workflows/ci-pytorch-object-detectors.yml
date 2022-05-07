@@ -26,11 +26,11 @@ jobs:
       fail-fast: false
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3
       - name: Setup Python
-        uses: actions/setup-python@v2.3.2
+        uses: actions/setup-python@v3
         with:
-          python-version: 3.7
+          python-version: 3.8
       - name: Install Dependencies
         run: |
           sudo apt-get update
@@ -48,6 +48,6 @@ jobs:
       - name: Run Test Action - test_pytorch_faster_rcnn
         run: pytest --cov-report=xml --cov=art --cov-append -q -vv tests/estimators/object_detection/test_pytorch_faster_rcnn.py --framework=pytorch --durations=0
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v2.1.0
+        uses: codecov/codecov-action@v3
         with:
           fail_ci_if_error: true

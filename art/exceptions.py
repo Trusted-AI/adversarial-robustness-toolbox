@@ -37,23 +37,19 @@ class EstimatorError(TypeError):
             if idx != 0:
                 classes_expected_message += " and "
             if isinstance(class_expected, type):
-                classes_expected_message += "{0}".format(class_expected)
+                classes_expected_message += f"{class_expected}"
             else:
                 classes_expected_message += "("
                 for or_idx, or_class in enumerate(class_expected):
                     if or_idx != 0:
                         classes_expected_message += " or "
-                    classes_expected_message += "{0}".format(or_class)
+                    classes_expected_message += f"{or_class}"
                 classes_expected_message += ")"
 
         self.message = (
-            "{0} requires an estimator derived from {1}, "
-            "the provided classifier is an instance of {2} and is derived from {3}.".format(
-                this_class.__name__,
-                classes_expected_message,
-                type(classifier_given),
-                classifier_given.__class__.__bases__,
-            )
+            f"{this_class.__name__} requires an estimator derived from {classes_expected_message}, "
+            f"the provided classifier is an instance of {type(classifier_given)} "
+            f"and is derived from {classifier_given.__class__.__bases__}."
         )
 
     def __str__(self) -> str:

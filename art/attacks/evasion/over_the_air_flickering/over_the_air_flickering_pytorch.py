@@ -131,7 +131,8 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
         """
         import torch  # lgtm [py/repeated-import]
 
-        y = check_and_transform_label_format(y, self.estimator.nb_classes)
+        if y is not None:
+            y = check_and_transform_label_format(y, self.estimator.nb_classes)
         if y is None:
             if self.targeted:  # pragma: no cover
                 raise ValueError("Target labels `y` need to be provided for a targeted attack.")
@@ -254,7 +255,7 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
             )
             x_in = x[[i]] + torch.repeat_interleave(torch.repeat_interleave(eps, x.shape[2], dim=2), x.shape[3], dim=3)
             x_in = self._clip_and_round_pytorch(x_in)
-            preds = self.estimator._predict_framework(x=x_in)  # pylint: disable=W0212
+            preds, _ = self.estimator._predict_framework(x=x_in)  # pylint: disable=W0212
 
             # calculate adversarial loss
             y_preds = softmax(preds)[0]

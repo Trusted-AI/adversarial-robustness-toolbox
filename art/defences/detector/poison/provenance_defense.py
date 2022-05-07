@@ -120,7 +120,7 @@ class ProvenanceDefense(PoisonFilteringDefence):
         )
         return conf_matrix_json
 
-    def detect_poison(self, **kwargs) -> Tuple[dict, np.ndarray]:
+    def detect_poison(self, **kwargs) -> Tuple[Dict[int, float], List[int]]:
         """
         Returns poison detected and a report.
 
@@ -143,10 +143,10 @@ class ProvenanceDefense(PoisonFilteringDefence):
         self.is_clean_lst = np.array([1] * n_train)
 
         for device in report:
-            self.is_clean_lst[indices_by_provenance[device]] = 0
+            self.is_clean_lst[indices_by_provenance[device]] = 0  # type: ignore
         self.assigned_clean_by_device = segment_by_class(np.array(self.is_clean_lst), self.p_train, self.num_devices)
 
-        return report, self.is_clean_lst
+        return report, self.is_clean_lst  # type: ignore
 
     def detect_poison_partially_trusted(self, **kwargs) -> Dict[int, float]:
         """

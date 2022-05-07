@@ -30,6 +30,7 @@ from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.attack import AttributeInferenceAttack, MembershipInferenceAttack
 from art.estimators.regression import RegressorMixin
 from art.exceptions import EstimatorError
+from art.utils import get_feature_index
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE, REGRESSOR_TYPE
@@ -68,6 +69,7 @@ class AttributeInferenceMembership(AttributeInferenceAttack):
 
         self.membership_attack = membership_attack
         self._check_params()
+        self.attack_feature = get_feature_index(self.attack_feature)
 
     def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
@@ -87,7 +89,7 @@ class AttributeInferenceMembership(AttributeInferenceAttack):
             if isinstance(self.attack_feature, int) and self.estimator.input_shape[0] != x.shape[1] + 1:
                 raise ValueError("Number of features in x + 1 does not match input_shape of the estimator")
 
-        if "values" not in kwargs.keys():
+        if "values" not in kwargs:
             raise ValueError("Missing parameter `values`.")
         values: Optional[List] = kwargs.get("values")
         if not values:
@@ -104,7 +106,6 @@ class AttributeInferenceMembership(AttributeInferenceAttack):
                 v_full = np.full((x.shape[0], 1), value).astype(x.dtype)
                 x_value = np.concatenate((x[:, : self.attack_feature], v_full), axis=1)
                 x_value = np.concatenate((x_value, x[:, self.attack_feature :]), axis=1)
-
                 predicted = self.membership_attack.infer(x_value, y, probabilities=True)
                 if first:
                     probabilities = predicted

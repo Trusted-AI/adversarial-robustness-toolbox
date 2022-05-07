@@ -470,7 +470,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         elif norm_p in ["inf", np.inf]:
             if isinstance(eps, np.ndarray):
                 eps = eps * np.ones(shape=values.shape)
-                eps = eps.reshape([eps.shape[0], -1])
+                eps = eps.reshape([eps.shape[0], -1])  # type: ignore
 
             values_tmp = tf.sign(values_tmp) * tf.minimum(tf.math.abs(values_tmp), eps)
 

@@ -43,8 +43,8 @@ logger = logging.getLogger(__name__)
 class InverseGAN(Preprocessor):
     """
     Given a latent variable generating a given adversarial sample, either inferred by an inverse GAN or randomly
-    generated, the InverseGAN optimizes that latent variable to project a sample as close as possible to
-    the adversarial sample without the adversarial noise.
+    generated, the InverseGAN optimizes that latent variable to project a sample as close as possible to the adversarial
+    sample without the adversarial noise.
     """
 
     params = ["sess", "gan", "inverse_gan"]
@@ -134,8 +134,8 @@ class InverseGAN(Preprocessor):
         for key in kwargs:
             if key not in options_allowed_keys:
                 raise KeyError(
-                    "The argument `{}` in kwargs is not allowed as option for `scipy.optimize.minimize` using "
-                    '`method="L-BFGS-B".`'.format(key)
+                    f"The argument `{key}` in kwargs is not allowed as option for `scipy.optimize.minimize` using "
+                    f'`method="L-BFGS-B".`'
                 )
 
         options = kwargs.copy()
@@ -145,7 +145,7 @@ class InverseGAN(Preprocessor):
         optimized_z_encoding = np.reshape(optimized_z_encoding_flat.x, [batch_size, self.gan.encoding_length])
         y = self.gan.predict(optimized_z_encoding)
 
-        return y
+        return x, y
 
     def compute_loss(self, z_encoding: np.ndarray, image_adv: np.ndarray) -> np.ndarray:
         """
