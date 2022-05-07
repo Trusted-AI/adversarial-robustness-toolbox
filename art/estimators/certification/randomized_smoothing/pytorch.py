@@ -26,13 +26,14 @@ import logging
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
+import torch
 
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.classification.pytorch import PyTorchClassifier
 from art.estimators.certification.randomized_smoothing.randomized_smoothing import RandomizedSmoothingMixin
-import art.estimators.certification.randomized_smoothing.smoothmix.train_smoothmix as train_smoothmix
+from art.estimators.certification.randomized_smoothing.smoothmix.train_smoothmix import fit_pytorch
 from art.defences.preprocessor.gaussian_augmentation import GaussianAugmentation
-import torch
+
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
@@ -52,11 +53,11 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
     """
 
     estimator_params = PyTorchClassifier.estimator_params + [
-        "sample_size", 
-        "scale", 
-        "alpha", 
-        "num_noise_vec", 
-        "train_multi_noise", 
+        "sample_size",
+        "scale",
+        "alpha",
+        "num_noise_vec",
+        "train_multi_noise",
         "attack_type",
         "epsilon",
         "num_steps",
@@ -134,7 +135,8 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         :param attack_type: The type of attack to use
         :param epsilon: Maximum perturbation that the attacker can introduce
         :param num_steps: Number of attack updates
-        :param warmup: Warm-up strategy that is gradually increased for the first 10 epochs up to the original value of epsilon
+        :param warmup: Warm-up strategy that is gradually increased for the first 10 epochs up to 
+                       the original value of epsilon
         :param lbd: Weight of robustness loss in Macer
         :param gamma: Value to multiply the LR by
         :param beta: The inverse function temperature in Macer
@@ -184,12 +186,12 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
     def _fit_classifier(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
         if "train_method" in kwargs:
             if kwargs.get("train_method") == "smoothmix":
-                return train_smoothmix.fit_pytorch(self, x, y, batch_size, nb_epochs, **kwargs)
-        else:
-            g_a = GaussianAugmentation(sigma=self.scale, augmentation=False)
-            x_rs, _ = g_a(x)
-            x_rs = x_rs.astype(ART_NUMPY_DTYPE)
-            return PyTorchClassifier.fit(self, x_rs, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
+                return fit_pytorch(self, x, y, batch_size, nb_epochs, **kwargs)
+
+        g_a = GaussianAugmentation(sigma=self.scale, augmentation=False)
+        x_rs, _ = g_a(x)
+        x_rs = x_rs.astype(ART_NUMPY_DTYPE)
+        return PyTorchClassifier.fit(self, x_rs, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
     def fit(  # pylint: disable=W0221
         self,
@@ -245,8 +247,6 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         :type sampling: `bool`
         :return: Array of gradients of the same shape as `x`.
         """
-        import torch  # lgtm [py/repeated-import]
-
         sampling = kwargs.get("sampling")
 
         if sampling:
@@ -314,8 +314,10 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         """
         raise NotImplementedError
-    
-    def _requires_grad_(self, model: torch.nn.Module, requires_grad: bool) -> None:
+
+    def _requires_grad_(  # pylint: disable R0201
+        self, model: torch.nn.Module, requires_grad: bool
+    ) -> None:
         """
         Enables gradients for the given model
 
@@ -324,8 +326,10 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         """
         for param in model.parameters():
             param.requires_grad_(requires_grad)
-    
-    def _get_minibatches(self, x, y, num_batches):
+
+    def _get_minibatches(  # pylint: disable R0201
+        self, x: np.ndarray, y: np.ndarray, num_batches: int
+    ):
         """
         Generate batches of the training data and target values
 
@@ -336,4 +340,4 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         """
         batch_size = len(x) // num_batches
         for i in range(num_batches):
-            yield x[i*batch_size : (i+1)*batch_size], y[i*batch_size : (i+1)*batch_size]
+            yield x[i * batch_size : (i + 1) * batch_size], y[i * batch_size : (i + 1) * batch_size]

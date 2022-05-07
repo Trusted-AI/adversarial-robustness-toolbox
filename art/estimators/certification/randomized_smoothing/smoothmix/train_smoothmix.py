@@ -24,7 +24,7 @@ This module implements SmoothMix.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Tuple, TYPE_CHECKING
+from typing import Tuple, Union, TYPE_CHECKING
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
@@ -44,14 +44,13 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
     Performs SmoothMix adversarial training on the model
 
     :param x: Training data.
-    :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape (nb_samples,).
+    :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) 
+              or indices of shape (nb_samples,).
     :param batch_size: Batch size.
     :key nb_epochs: Number of epochs to use for training
     """
     import torch  # lgtm [py/repeated-import]
-    import torch.nn as nn
     import torch.nn.functional as F
-    from torch.optim import Optimizer
     from art.estimators.certification.randomized_smoothing.smoothmix.smooth_pgd_attack import SmoothMix_PGD
     import random
 
@@ -63,7 +62,7 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
 
     if self.attack_type == "PGD":
         attacker = SmoothMix_PGD(
-            steps=self.num_steps, 
+            steps=self.num_steps,
             mix_step=self.mix_step,
             alpha=self.alpha,
             maxnorm=self.maxnorm,
@@ -75,7 +74,8 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
     if self.scheduler is None:  # pragma: no cover
         raise ValueError(f"A scheduler is needed to train the model, but none for provided: {self.scheduler}")
     if attacker is None:
-        raise ValueError(f"A attacker is needed to smooth adversarially train the model, but none for provided: {self.attack_type}")
+        raise ValueError(f"A attacker is needed to smooth adversarially train the model, but \
+                            none for provided: {self.attack_type}")
 
     num_batch = int(np.ceil(len(x) / float(batch_size)))
     ind = np.arange(len(x))
@@ -101,16 +101,16 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
 
             for i, (inputs, targets) in enumerate(mini_batches):
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
-                
+
                 noises = [torch.randn_like(inputs) * self.scale for _ in range(self.num_noise_vec)]
 
-                #Attack and find adversarial examples
+                # Attack and find adversarial examples
                 self._requires_grad_(self.model, False)
                 self.model.eval()
                 inputs, inputs_adv = attacker.attack(
-                    self.model, 
-                    inputs=inputs, 
-                    labels=targets, 
+                    self.model,
+                    inputs=inputs,
+                    labels=targets,
                     noises=noises
                 )
                 self.model.train()
@@ -143,7 +143,7 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
                 loss.backward()
                 self.optimizer.step()
 
-        self.scheduler.step() 
+        self.scheduler.step()
 
 
 def fit_tensorflow(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
@@ -162,7 +162,7 @@ def get_minibatches(X, y, num_batches):
     """
     batch_size = len(X) // num_batches
     for i in range(num_batches):
-        yield X[i*batch_size : (i+1)*batch_size], y[i*batch_size : (i+1)*batch_size]
+        yield X[i * batch_size : (i + 1) * batch_size], y[i * batch_size : (i + 1) * batch_size]
 
 
 def _mixup_data(x1, x2, y1, n_classes) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -186,7 +186,7 @@ def _mixup_data(x1, x2, y1, n_classes) -> Tuple[torch.Tensor, torch.Tensor]:
     return mixed_x, mixed_y
 
 
-def _avg_softmax(logits) -> float:
+def _avg_softmax(logits) -> Union[torch.Tensor, float]:
     """
     Computes the average softmax for the given logits
 
