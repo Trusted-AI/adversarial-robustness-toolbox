@@ -22,6 +22,7 @@ from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPool2D
 
 print(tf.version.VERSION)
 
+
 class TensorFlowModel(Model):
     """
     Standard TensorFlow model for unit testing.
@@ -84,15 +85,15 @@ ML_model_Filename = "./model/tf2_Model_art"
 
 # Load the Model back from file
 try:
-    with open(ML_model_Filename, 'rb'):  
+    with open(ML_model_Filename, "rb"):
         classifier = tf.keras.models.load_model(ML_model_Filename)
 except FileNotFoundError:
-    print('No existing model, training the model instead')
+    print("No existing model, training the model instead")
     classifier.fit(x_train, y_train, batch_size=64, nb_epochs=3)
     # Save the model
-    with open(ML_model_Filename, 'wb') as file:  
+    with open(ML_model_Filename, "wb") as file:
         model.save(ML_model_Filename)
-  
+
 
 # Step 5: Evaluate the ART classifier on benign test examples
 

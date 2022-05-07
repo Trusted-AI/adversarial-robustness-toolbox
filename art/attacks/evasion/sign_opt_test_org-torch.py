@@ -20,6 +20,7 @@ from tests.attacks.utils import random_targets
 
 # Step 0: Define the neural network model, return logits instead of activation in forward method
 
+
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
@@ -33,12 +34,13 @@ class Net(nn.Module):
         x = F.max_pool2d(x, 2, 2)
         x = F.relu(self.conv_2(x))
         x = F.max_pool2d(x, 2, 2)
-        
+
         x = x.view(-1, 4 * 4 * 10)
-        
+
         x = F.relu(self.fc_1(x))
         x = self.fc_2(x)
         return x
+
 
 # Step 1: Load the MNIST dataset
 
@@ -67,7 +69,7 @@ classifier = PyTorchClassifier(
     optimizer=optimizer,
     input_shape=(1, 28, 28),
     nb_classes=10,
-    device_type = "cpu",
+    device_type="cpu",
 )
 
 # Step 4: Train the ART classifier; If model file exist, load model from file
@@ -75,15 +77,15 @@ ML_model_Filename = "Pytorch_Model_art.pkl"
 
 # Load the Model back from file
 try:
-    with open(ML_model_Filename, 'rb') as file:  
+    with open(ML_model_Filename, "rb") as file:
         classifier = pickle.load(file)
 except FileNotFoundError:
-    print('No existing model, training the model instead')
+    print("No existing model, training the model instead")
     classifier.fit(x_train, y_train, batch_size=64, nb_epochs=3)
     # Save the model
-    with open(ML_model_Filename, 'wb') as file:  
+    with open(ML_model_Filename, "wb") as file:
         pickle.dump(open, file)
-    
+
 
 # Step 5: Evaluate the ART classifier on benign test examples
 predictions = classifier.predict(x_test)
@@ -106,49 +108,56 @@ if len(sys.argv) == 6:
     targeted = eval(sys.argv[3])
     start_index = int(sys.argv[4])
     clipping = eval(sys.argv[5])
-print(f"parameters: e={e}, query limitation={q}, targeted attack={targeted}, length of examples={length}, start_index={start_index}, clipped={clipping}")
+print(
+    f"parameters: e={e}, query limitation={q}, targeted attack={targeted}, length of examples={length}, start_index={start_index}, clipped={clipping}"
+)
 
 if targeted:
-    attack = SignOPTAttack(estimator=classifier, 
-                           targeted=targeted,
-                           max_iter=5000, query_limit=40000, 
-                           eval_perform=True, verbose=False, 
-                           clipped=clipping)
+    attack = SignOPTAttack(
+        estimator=classifier,
+        targeted=targeted,
+        max_iter=5000,
+        query_limit=40000,
+        eval_perform=True,
+        verbose=False,
+        clipped=clipping,
+    )
 else:
-    attack = SignOPTAttack(estimator=classifier, 
-                           targeted=targeted, 
-                           query_limit=q, 
-                           eval_perform=True, verbose=False, 
-                           clipped=clipping)
+    attack = SignOPTAttack(
+        estimator=classifier, targeted=targeted, query_limit=q, eval_perform=True, verbose=False, clipped=clipping
+    )
 
 
 targets = random_targets(y_test, attack.estimator.nb_classes)
-end_index = start_index+length
-x = x_test[start_index: end_index]
-targets = targets[start_index: end_index]
+end_index = start_index + length
+x = x_test[start_index:end_index]
+targets = targets[start_index:end_index]
 x_test_adv = attack.generate(x=x, y=targets, x_init=x_train)
+
 
 def plot_image(x):
     for i in range(len(x[:])):
         pixels = x[i].reshape((28, 28))
-        plt.imshow(pixels, cmap='gray')
+        plt.imshow(pixels, cmap="gray")
         plt.show()
+
+
 # plot_image(x_test_adv)
 
 # calculate performace
 # For untargeted attack, we only consider examples that are correctly predicted by model
-model_failed = 0    
-L2 = attack.logs.sum()/length
+model_failed = 0
+L2 = attack.logs.sum() / length
 
 count = 0
 for l2 in attack.logs:
-    if l2 <=e and l2 != 0.0:
+    if l2 <= e and l2 != 0.0:
         count += 1
-SR = ((count - model_failed)/length)*100
+SR = ((count - model_failed) / length) * 100
 
 # Step 7: Evaluate the ART classifier on adversarial test examples
 
 predictions = classifier.predict(x_test_adv)
 accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y_test[:length], axis=1)) / len(y_test[:length])
 
-print(f'{q}, {e}, {round(L2,2)}, {round(SR,2)}%, {clipping}, {accuracy*100}%')
+print(f"{q}, {e}, {round(L2,2)}, {round(SR,2)}%, {clipping}, {accuracy*100}%")
