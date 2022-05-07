@@ -111,13 +111,3 @@ demo/pics/*
 !notebooks/adaptive_defence_evaluations/*.ipynb
 !notebooks/adversarial_patch/*.ipynb
 !notebooks/art_evaluations/*.ipynb
-
-# images
-*.png
-
-# for Chloe - remove when merge
-requirements-org.txt
-run_tests_sign_opt.sh
-sign_opt_results.csv
-settings.json
-venv.sh
