@@ -24,7 +24,7 @@ from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
 
 from tests.attacks.utils import backend_targeted_tabular, backend_untargeted_tabular, backend_targeted_images
-from tests.attacks.utils import backend_untargeted_images, backend_test_classifier_type_check_fail
+from tests.attacks.utils import back_end_untargeted_images, backend_test_classifier_type_check_fail
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
@@ -61,7 +61,7 @@ def test_images(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack
         if targeted:
             backend_targeted_images(attack, fix_get_mnist_subset)
         else:
-            backend_untargeted_images(attack, fix_get_mnist_subset, framework)
+            back_end_untargeted_images(attack, fix_get_mnist_subset, framework)
     except ARTTestException as e:
         art_warning(e)
 
