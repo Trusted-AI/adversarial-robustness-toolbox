@@ -162,7 +162,7 @@ def backend_targeted_tabular(attack, fix_get_iris):
     logger.info("Success rate of targeted boundary on Iris: %.2f%%", (accuracy * 100))
 
 # if `tolerance` is True, the matching rate equal or greater `match_percent` is acceptable
-def backend_untargeted_images(attack, fix_get_mnist_subset, fix_framework, tolerance=False, match_percent=100):
+def back_end_untargeted_images(attack, fix_get_mnist_subset, fix_framework, tolerance=False, match_percent=100):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
     x_test_adv = attack.generate(x_test_mnist)
