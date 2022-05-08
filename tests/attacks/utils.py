@@ -161,7 +161,6 @@ def backend_targeted_tabular(attack, fix_get_iris):
     accuracy = np.sum(y_pred_adv == target) / y_test_iris.shape[0]
     logger.info("Success rate of targeted boundary on Iris: %.2f%%", (accuracy * 100))
 
-# if `tolerance` is True, the matching rate equal or greater `match_percent` is acceptable
 def back_end_untargeted_images(attack, fix_get_mnist_subset, fix_framework, tolerance=False, match_percent=100):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
@@ -171,20 +170,10 @@ def back_end_untargeted_images(attack, fix_get_mnist_subset, fix_framework, tole
 
     y_pred = np.argmax(attack.estimator.predict(x_test_mnist), axis=1)
     y_pred_adv = np.argmax(attack.estimator.predict(x_test_adv), axis=1)
-    if tolerance and 0 < match_percent and match_percent < 100:
-        assert _assert_with_tolerance(match_percent, y_pred, y_pred_adv)
-    else:
-        assert (y_pred != y_pred_adv).any()
+    assert (y_pred != y_pred_adv).any()
 
     if fix_framework in ["keras"]:
         k.clear_session()
-    
-def _assert_with_tolerance(percent, list_1, list_2):
-    assert(len(list_1) == len(list_2))
-    
-    match = np.sum(list_1 == list_2)
-    
-    return True if match/len(list_1) >= percent/100 else False
 
 
 def backend_untargeted_tabular(attack, iris_dataset, clipped):
