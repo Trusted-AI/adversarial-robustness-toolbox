@@ -56,4 +56,3 @@ CMD bash run_tests.sh
 #Check the Dockerfile here https://www.fromlatest.io/#/
 
 #NOTE to contributors: When changing/adding packages, please make sure that the packages are consistent with those
-# present within the requirements_test.txt files
