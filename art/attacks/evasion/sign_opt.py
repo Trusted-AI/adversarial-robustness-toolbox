@@ -188,11 +188,11 @@ class SignOPTAttack(EvasionAttack):
 
         # Generate the adversarial samples
         counter = 0  # only do the performance tests with 100 samples
-        # for ind, val in enumerate(tqdm(x_adv, desc="Sign_OPT attack", disable=not self.verbose)):
-        for ind, val in enumerate(tqdm(x_adv, desc="Sign_OPT attack")):  # temp, always on
+        for ind, val in enumerate(tqdm(x_adv, desc="Sign_OPT attack", disable=not self.verbose)):
             if self.targeted:
                 if targets[ind] == preds[ind]:
-                    print("Image already targeted. No need to attack.")
+                    if self.verbose:
+                        print("Image already targeted. No need to attack.")
                     continue
 
                 x_adv[ind], diff, succeed = self._attack(  # diff and succeed are for performance test
@@ -233,7 +233,6 @@ class SignOPTAttack(EvasionAttack):
             # target: failed to make adv to target
             # untarget: failed to make adv to something else
             pred = self._is_label(x0 + current_best * theta, y0)
-            # print(f'self.targeted={self.targeted}, pred={pred}')
             if self.targeted != pred:
                 # if targeted, pred should be True
                 # if not targeted, pred should be False
@@ -398,8 +397,6 @@ class SignOPTAttack(EvasionAttack):
                 query_count += count
                 if lbd < g_theta:
                     best_theta, g_theta = theta, lbd
-                    # print("--------> Found distortion %.4f" % g_theta)
-                    # print(f"Found distortion {g_theta} with sample_count-iteration-queryCnt={sample_count}-{i}-{query_count}")
                 sample_count += 1
                 if sample_count >= self.num_trial or i > 500:
                     break
@@ -414,7 +411,6 @@ class SignOPTAttack(EvasionAttack):
                     # getting smaller g_theta
                     lbd, count = self._fine_grained_binary_search(x0, y0, theta, initial_lbd, g_theta)
                     query_count += count
-                    # print(f"lbd={lbd}")
                     if lbd < g_theta:
                         best_theta, g_theta = theta, lbd
                         if self.verbose:
@@ -452,8 +448,7 @@ class SignOPTAttack(EvasionAttack):
             ls_count = 0
             min_theta = xg  ## next theta
             min_g2 = gg  ## current g_theta
-            for _ in range(15):  # why 15? 15 is the region?
-                # print('^',end=' ')
+            for _ in range(15):  
                 """
                 Algorithm 1: Sign-OPT attack
                     C:Update θt+1 ← θt − ηgˆ;
@@ -477,7 +472,6 @@ class SignOPTAttack(EvasionAttack):
 
             if min_g2 >= gg:  ## if the above code failed for the init alpha, we then try to decrease alpha
                 for _ in range(15):
-                    # print('_',end=' ')
                     alpha = alpha * 0.25
                     new_theta = xg - alpha * sign_gradient
                     new_theta /= LA.norm(new_theta)
@@ -522,7 +516,8 @@ class SignOPTAttack(EvasionAttack):
                 )
             # temp
             if target == y0:
-                print(f"WARNING: prediction on adv {target} == org label {y0}")
+                if self.verbose:
+                    print(f"WARNING: prediction on adv {target} == org label {y0}")
             return self._clip_value(x0 + gg * xg), gg * xg, True
         elif self.targeted and self._is_label(x0 + gg * xg, target):
             if self.verbose:
