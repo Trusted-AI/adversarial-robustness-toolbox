@@ -57,7 +57,7 @@ from art.attacks.attack import EvasionAttack
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
-from art.utils import compute_success, check_and_transform_label_format
+from art.utils import compute_success, check_and_transform_label_format, get_labels_np_array
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
@@ -152,6 +152,13 @@ class SignOPTAttack(EvasionAttack):
                         (nb_samples,). If `self.targeted` is true, then `y` represents the target labels.
         :return: An array holding the adversarial examples.
         """
+        if y is None:
+            # Throw error if attack is targeted, but no targets are provided
+            if self.targeted:  # pragma: no cover
+                raise ValueError("Target labels `y` need to be provided for a targeted attack.")
+
+            # Use model predictions as correct outputs
+            y = get_labels_np_array(self.estimator.predict(x))  # type: ignore
 
         targets = check_and_transform_label_format(y, self.estimator.nb_classes, return_one_hot=False)
 
