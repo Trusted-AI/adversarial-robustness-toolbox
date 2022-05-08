@@ -89,6 +89,7 @@ Supported Machine Learning Libraries
    modules/estimators/regression
    modules/estimators/regression_scikitlearn
    modules/estimators/speech_recognition
+   modules/experimental
    modules/experimental/estimators
    modules/experimental/estimators/classification
    modules/evaluations
