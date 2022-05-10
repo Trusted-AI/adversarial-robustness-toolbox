@@ -128,8 +128,6 @@ class NumpyRandomizedSmoothing(  # lgtm [py/conflicting-attributes] lgtm [py/mis
             x_rs = x_rs.astype(ART_NUMPY_DTYPE)
             self.classifier.fit(x_rs, y, batch_size=batch_size, nb_epochs=1, **kwargs)
 
-        return self.classifier
-
     def loss_gradient(  # pylint: disable=W0221
         self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs
     ) -> np.ndarray:
