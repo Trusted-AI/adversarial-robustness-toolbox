@@ -25,10 +25,14 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 from typing import Callable, List, Optional, Tuple, Union, TYPE_CHECKING
 
+import warnings
 import numpy as np
 
 from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 from art.estimators.certification.randomized_smoothing.randomized_smoothing import RandomizedSmoothingMixin
+from art.utils import check_and_transform_label_format
+
+from tqdm import tqdm
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
@@ -91,6 +95,12 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
         :param scale: Standard deviation of Gaussian noise added.
         :param alpha: The failure probability of smoothing.
         """
+        if preprocessing_defences is not None:
+            warnings.warn(
+                "\n With the current backend (Tensorflow), Gaussian noise will be added by Randomised Smoothing "
+                "AFTER the application of preprocessing defences. Please ensure this conforms to your use case.\n"
+            )
+
         super().__init__(
             model=model,
             nb_classes=nb_classes,
@@ -143,9 +153,9 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
 
         train_ds = tf.data.Dataset.from_tensor_slices((x_preprocessed, y_preprocessed)).shuffle(10000).batch(batch_size)
 
-        for _ in range(nb_epochs):
+        for _ in tqdm(range(nb_epochs)):
             for images, labels in train_ds:
-                images = tf.random.normal(shape=images.shape, mean=0.0, stddev=self.scale)
+                images += tf.random.normal(shape=images.shape, mean=0.0, stddev=self.scale)
                 self._train_step(self.model, images, labels)
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:  # type: ignore

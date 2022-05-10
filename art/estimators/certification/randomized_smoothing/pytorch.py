@@ -25,6 +25,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
+import warnings
 import numpy as np
 import random
 
@@ -32,6 +33,8 @@ from art.config import ART_NUMPY_DTYPE
 from art.estimators.classification.pytorch import PyTorchClassifier
 from art.estimators.certification.randomized_smoothing.randomized_smoothing import RandomizedSmoothingMixin
 from art.utils import check_and_transform_label_format
+
+from tqdm import tqdm
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
@@ -96,6 +99,12 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         :param scale: Standard deviation of Gaussian noise added.
         :param alpha: The failure probability of smoothing.
         """
+
+        warnings.warn(
+            "\n With the current backend (Pytorch) Gaussian noise will be added by Randomised Smoothing "
+            "AFTER the application of preprocessing defences. Please ensure this conforms to your use case.\n"
+        )
+
         super().__init__(
             model=model,
             loss=loss,
@@ -116,39 +125,6 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
     def _predict_classifier(self, x: np.ndarray, batch_size: int, training_mode: bool, **kwargs) -> np.ndarray:
         x = x.astype(ART_NUMPY_DTYPE)
         return PyTorchClassifier.predict(self, x=x, batch_size=batch_size, training_mode=training_mode, **kwargs)
-
-    def _fit_classifier(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
-        x = x.astype(ART_NUMPY_DTYPE)
-        print('nb_epochs', nb_epochs)
-        return PyTorchClassifier.fit(self, x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
-
-    def fit(  # pylint: disable=W0221
-        self,
-        x: np.ndarray,
-        y: np.ndarray,
-        batch_size: int = 128,
-        nb_epochs: int = 10,
-        training_mode: bool = True,
-        **kwargs
-    ):
-        """
-        Fit the classifier on the training set `(x, y)`.
-
-        :param x: Training data.
-        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
-                  (nb_samples,).
-        :param batch_size: Batch size.
-        :key nb_epochs: Number of epochs to use for training
-        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
-               and providing it takes no effect.
-        :type kwargs: `dict`
-        :return: `None`
-        """
-
-        # Set model mode
-        self._model.train(mode=training_mode)
-
-        RandomizedSmoothingMixin.fit(self, x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
     def fit(  # pylint: disable=W0221
         self,
@@ -191,7 +167,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         ind = np.arange(len(x_preprocessed))
         std = torch.tensor(self.scale).to(self._device)
         # Start training
-        for _ in range(nb_epochs):
+        for _ in tqdm(range(nb_epochs)):
             # Shuffle the examples
             random.shuffle(ind)
 

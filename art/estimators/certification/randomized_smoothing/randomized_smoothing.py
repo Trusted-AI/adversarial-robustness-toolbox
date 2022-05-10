@@ -31,7 +31,6 @@ from scipy.stats import norm
 from tqdm.auto import tqdm
 
 from art.config import ART_NUMPY_DTYPE
-from art.defences.preprocessor.gaussian_augmentation import GaussianAugmentation
 
 logger = logging.getLogger(__name__)
 
