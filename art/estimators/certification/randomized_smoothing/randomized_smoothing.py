@@ -26,11 +26,12 @@ from abc import ABC
 import logging
 from typing import Optional, Tuple
 
-import numpy as np
 from scipy.stats import norm
 from tqdm.auto import tqdm
 
 from art.config import ART_NUMPY_DTYPE
+
+import numpy as np
 
 logger = logging.getLogger(__name__)
 

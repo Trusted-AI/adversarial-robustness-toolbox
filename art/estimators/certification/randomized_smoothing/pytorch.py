@@ -26,15 +26,16 @@ import logging
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
 import warnings
-import numpy as np
 import random
+from tqdm import tqdm
 
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.classification.pytorch import PyTorchClassifier
 from art.estimators.certification.randomized_smoothing.randomized_smoothing import RandomizedSmoothingMixin
 from art.utils import check_and_transform_label_format
 
-from tqdm import tqdm
+import numpy as np
+
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
