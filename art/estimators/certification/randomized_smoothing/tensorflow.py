@@ -27,13 +27,11 @@ from typing import Callable, List, Optional, Tuple, Union, TYPE_CHECKING
 
 import warnings
 from tqdm import tqdm
+import numpy as np
 
 from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 from art.estimators.certification.randomized_smoothing.randomized_smoothing import RandomizedSmoothingMixin
 from art.utils import check_and_transform_label_format
-
-import numpy as np
-
 
 if TYPE_CHECKING:
     # pylint: disable=C0412

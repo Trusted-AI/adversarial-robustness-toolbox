@@ -28,10 +28,9 @@ from typing import Optional, Tuple
 
 from scipy.stats import norm
 from tqdm.auto import tqdm
+import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
-
-import numpy as np
 
 logger = logging.getLogger(__name__)
 
