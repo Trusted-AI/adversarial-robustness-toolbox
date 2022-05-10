@@ -37,7 +37,7 @@ torchvision==0.12.0+cpu
 catboost==1.0.5
 GPy==1.10.0
 lightgbm==3.3.2
-xgboost==1.6.0
+xgboost==1.6.1
 
 kornia~=0.6.4
 tensorboardX==2.5
