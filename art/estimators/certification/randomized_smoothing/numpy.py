@@ -72,11 +72,11 @@ class NumpyRandomizedSmoothing(  # lgtm [py/conflicting-attributes] lgtm [py/mis
         :param scale: Standard deviation of Gaussian noise added.
         :param alpha: The failure probability of smoothing
         """
-
-        warnings.warn(
-            "\n With the current backend (Pytorch) Gaussian noise will be added by Randomised Smoothing "
-            "BEFORE the application of preprocessing defences. Please ensure this conforms to your use case.\n"
-        )
+        if classifier.preprocessing_defences is not None:
+            warnings.warn(
+                "\n With the current backend Gaussian noise will be added by Randomized Smoothing "
+                "BEFORE the application of preprocessing defences. Please ensure this conforms to your use case.\n"
+            )
 
         super().__init__(
             model=classifier.model,

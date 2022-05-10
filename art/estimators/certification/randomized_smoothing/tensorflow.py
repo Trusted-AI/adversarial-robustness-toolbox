@@ -97,7 +97,7 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
         """
         if preprocessing_defences is not None:
             warnings.warn(
-                "\n With the current backend (Tensorflow), Gaussian noise will be added by Randomised Smoothing "
+                "\nWith the current backend (Tensorflow), Gaussian noise will be added by Randomized Smoothing "
                 "AFTER the application of preprocessing defences. Please ensure this conforms to your use case.\n"
             )
 
