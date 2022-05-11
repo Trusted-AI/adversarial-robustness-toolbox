@@ -318,7 +318,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
 
     # pylint: disable=R0201
     def _requires_grad_(
-        self, model: torch.nn.Module, requires_grad: bool
+        self, model: "torch.nn.Module", requires_grad: bool
     ) -> None:
         """
         Enables gradients for the given model
