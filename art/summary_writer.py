@@ -86,11 +86,19 @@ class SummaryWriter(ABC):
         from tensorboardX import SummaryWriter as SummaryWriterTbx
 
         if isinstance(summary_writer, str):
+<<<<<<< HEAD
             comment = "generate-{}".format(init_counter)
             logdir = summary_writer + "/" + comment
             self._summary_writer = SummaryWriterTbx(logdir=logdir)
         else:
             comment = "-generate-{}".format(init_counter)
+=======
+            comment = f"generate-{init_counter}"
+            logdir = summary_writer + "/" + comment
+            self._summary_writer = SummaryWriterTbx(logdir=logdir)
+        else:
+            comment = f"-generate-{init_counter}"
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
             self._summary_writer = SummaryWriterTbx(comment=comment)
 
     def reset(self):
@@ -123,11 +131,19 @@ class SummaryWriterDefault(SummaryWriter):
         self.ind_4 = ind_4
 
         self.loss = None
+<<<<<<< HEAD
         self.loss_prev: Dict[str, np.ndarray] = dict()
         self.losses: Dict[str, List[np.ndarray]] = dict()
 
         self.i_3: Dict[str, np.ndarray] = dict()
         self.i_4: Dict[str, np.ndarray] = dict()
+=======
+        self.loss_prev: Dict[str, np.ndarray] = {}
+        self.losses: Dict[str, List[np.ndarray]] = {}
+
+        self.i_3: Dict[str, np.ndarray] = {}
+        self.i_4: Dict[str, np.ndarray] = {}
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
 
     def update(
         self,
@@ -159,21 +175,33 @@ class SummaryWriterDefault(SummaryWriter):
 
             l_1 = np.linalg.norm(grad.reshape(grad.shape[0], -1), axis=1, ord=1)
             self.summary_writer.add_scalars(
+<<<<<<< HEAD
                 "gradients/norm-L1/batch-{}".format(batch_id),
+=======
+                f"gradients/norm-L1/batch-{batch_id}",
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
                 {str(i): v for i, v in enumerate(l_1)},
                 global_step=global_step,
             )
 
             l_2 = np.linalg.norm(grad.reshape(grad.shape[0], -1), axis=1, ord=2)
             self.summary_writer.add_scalars(
+<<<<<<< HEAD
                 "gradients/norm-L2/batch-{}".format(batch_id),
+=======
+                f"gradients/norm-L2/batch-{batch_id}",
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
                 {str(i): v for i, v in enumerate(l_2)},
                 global_step=global_step,
             )
 
             l_inf = np.linalg.norm(grad.reshape(grad.shape[0], -1), axis=1, ord=np.inf)
             self.summary_writer.add_scalars(
+<<<<<<< HEAD
                 "gradients/norm-Linf/batch-{}".format(batch_id),
+=======
+                f"gradients/norm-Linf/batch-{batch_id}",
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
                 {str(i): v for i, v in enumerate(l_inf)},
                 global_step=global_step,
             )
@@ -196,13 +224,21 @@ class SummaryWriterDefault(SummaryWriter):
                 for key, value in losses.items():
                     if np.ndim(value) == 0:
                         self.summary_writer.add_scalar(
+<<<<<<< HEAD
                             "loss/{}/batch-{}".format(key, batch_id),
+=======
+                            f"loss/{key}/batch-{batch_id}",
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
                             value,
                             global_step=global_step,
                         )
                     else:
                         self.summary_writer.add_scalars(
+<<<<<<< HEAD
                             "loss/{}/batch-{}".format(key, batch_id),
+=======
+                            f"loss/{key}/batch-{batch_id}",
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
                             {str(i): v for i, v in enumerate(value)},
                             global_step=global_step,
                         )
@@ -212,13 +248,21 @@ class SummaryWriterDefault(SummaryWriter):
 
                 if np.ndim(loss) == 0:
                     self.summary_writer.add_scalar(
+<<<<<<< HEAD
                         "loss/batch-{}".format(batch_id),
+=======
+                        f"loss/batch-{batch_id}",
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
                         loss,
                         global_step=global_step,
                     )
                 else:
                     self.summary_writer.add_scalars(
+<<<<<<< HEAD
                         "loss/batch-{}".format(batch_id),
+=======
+                        f"loss/batch-{batch_id}",
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
                         {str(i): v for i, v in enumerate(loss)},
                         global_step=global_step,
                     )
@@ -229,6 +273,7 @@ class SummaryWriterDefault(SummaryWriter):
             from art.estimators.classification.classifier import ClassifierMixin
 
             if isinstance(estimator, ClassifierMixin):
+<<<<<<< HEAD
                 y_pred = estimator.predict(x)  # type: ignore
                 self.i_1 = np.argmax(y_pred, axis=1) == np.argmax(y, axis=1)
                 self.summary_writer.add_scalars(
@@ -236,6 +281,18 @@ class SummaryWriterDefault(SummaryWriter):
                     {str(i): v for i, v in enumerate(self.i_1)},
                     global_step=global_step,
                 )
+=======
+                if y is not None:
+                    y_pred = estimator.predict(x)  # type: ignore
+                    self.i_1 = np.argmax(y_pred, axis=1) == np.argmax(y, axis=1)
+                    self.summary_writer.add_scalars(
+                        f"Attack Failure Indicator 1 - Silent Success/batch-{batch_id}",
+                        {str(i): v for i, v in enumerate(self.i_1)},
+                        global_step=global_step,
+                    )
+                else:
+                    raise ValueError("Attack Failure Indicator 1 requires `y`.")
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
             else:
                 raise ValueError(
                     "Attack Failure Indicator 1 is only supported for classification, for the current "
@@ -246,7 +303,11 @@ class SummaryWriterDefault(SummaryWriter):
             losses = estimator.compute_loss(x=x, y=y)
 
             if str(batch_id) not in self.losses:
+<<<<<<< HEAD
                 self.losses[str(batch_id)] = list()
+=======
+                self.losses[str(batch_id)] = []
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
 
             self.losses[str(batch_id)].append(losses)
 
@@ -276,13 +337,21 @@ class SummaryWriterDefault(SummaryWriter):
 
                 if np.ndim(self.i_2) == 0:
                     self.summary_writer.add_scalar(
+<<<<<<< HEAD
                         "Attack Failure Indicator 2 - Break-point Angle/batch-{}".format(batch_id),
+=======
+                        f"Attack Failure Indicator 2 - Break-point Angle/batch-{batch_id}",
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
                         self.i_2,
                         global_step=global_step,
                     )
                 else:
                     self.summary_writer.add_scalars(
+<<<<<<< HEAD
                         "Attack Failure Indicator 2 - Break-point Angle/batch-{}".format(batch_id),
+=======
+                        f"Attack Failure Indicator 2 - Break-point Angle/batch-{batch_id}",
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
                         {str(i): v for i, v in enumerate(self.i_2)},
                         global_step=global_step,
                     )
@@ -308,13 +377,21 @@ class SummaryWriterDefault(SummaryWriter):
 
             if np.ndim(self.i_3[str(batch_id)]) == 0:
                 self.summary_writer.add_scalar(
+<<<<<<< HEAD
                     "Attack Failure Indicator 3 - Diverging Loss/batch-{}".format(batch_id),
+=======
+                    f"Attack Failure Indicator 3 - Diverging Loss/batch-{batch_id}",
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
                     self.i_3[str(batch_id)],
                     global_step=global_step,
                 )
             else:
                 self.summary_writer.add_scalars(
+<<<<<<< HEAD
                     "Attack Failure Indicator 3 - Diverging Loss/batch-{}".format(batch_id),
+=======
+                    f"Attack Failure Indicator 3 - Diverging Loss/batch-{batch_id}",
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
                     {str(i): v for i, v in enumerate(self.i_3[str(batch_id)])},
                     global_step=global_step,
                 )
@@ -325,6 +402,7 @@ class SummaryWriterDefault(SummaryWriter):
 
             threshold = 0.0
 
+<<<<<<< HEAD
             if str(batch_id) not in self.i_4:
                 self.i_4[str(batch_id)] = np.zeros(grad.shape[0])
 
@@ -335,3 +413,21 @@ class SummaryWriterDefault(SummaryWriter):
                 {str(i): v for i, v in enumerate(self.i_4[str(batch_id)] / global_step)},
                 global_step=global_step,
             )
+=======
+            if grad is not None:
+
+                if str(batch_id) not in self.i_4:
+                    self.i_4[str(batch_id)] = np.zeros(grad.shape[0])
+
+                self.i_4[str(batch_id)][
+                    np.linalg.norm(grad.reshape(grad.shape[0], -1), axis=1, ord=2) <= threshold
+                ] += 1
+
+                self.summary_writer.add_scalars(
+                    f"Attack Failure Indicator 4 - Zero Gradients/batch-{batch_id}",
+                    {str(i): v for i, v in enumerate(self.i_4[str(batch_id)] / global_step)},
+                    global_step=global_step,
+                )
+            else:
+                raise ValueError("Attack Failure Indicator 4 requires `grad`.")
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f

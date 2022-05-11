@@ -30,7 +30,11 @@ from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.attack import AttributeInferenceAttack, MembershipInferenceAttack
 from art.estimators.regression import RegressorMixin
 from art.exceptions import EstimatorError
+<<<<<<< HEAD
 from art.utils import is_single_index_feature
+=======
+from art.utils import get_feature_index
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE, REGRESSOR_TYPE
@@ -69,6 +73,7 @@ class AttributeInferenceMembership(AttributeInferenceAttack):
 
         self.membership_attack = membership_attack
         self._check_params()
+        self.attack_feature = get_feature_index(self.attack_feature)
 
     def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
@@ -88,7 +93,7 @@ class AttributeInferenceMembership(AttributeInferenceAttack):
             if isinstance(self.attack_feature, int) and self.estimator.input_shape[0] != x.shape[1] + 1:
                 raise ValueError("Number of features in x + 1 does not match input_shape of the estimator")
 
-        if "values" not in kwargs.keys():
+        if "values" not in kwargs:
             raise ValueError("Missing parameter `values`.")
         values: Optional[List] = kwargs.get("values")
         if not values:
@@ -103,12 +108,17 @@ class AttributeInferenceMembership(AttributeInferenceAttack):
             first = True
             for value in values:
                 v_full = np.full((x.shape[0], 1), value).astype(x.dtype)
+<<<<<<< HEAD
                 if isinstance(self.attack_feature, int):
                     x_value = np.concatenate((x[:, : self.attack_feature], v_full), axis=1)
                     x_value = np.concatenate((x_value, x[:, self.attack_feature :]), axis=1)
                 else:
                     x_value = np.concatenate((x[:, : self.attack_feature.start], v_full), axis=1)
                     x_value = np.concatenate((x_value, x[:, self.attack_feature.start :]), axis=1)
+=======
+                x_value = np.concatenate((x[:, : self.attack_feature], v_full), axis=1)
+                x_value = np.concatenate((x_value, x[:, self.attack_feature :]), axis=1)
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
                 predicted = self.membership_attack.infer(x_value, y, probabilities=True)
                 if first:
                     probabilities = predicted

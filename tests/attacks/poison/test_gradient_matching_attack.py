@@ -1,6 +1,10 @@
 # MIT License
 #
+<<<<<<< HEAD
 # Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
+=======
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2022
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -28,7 +32,11 @@ from tests.utils import ARTTestException
 logger = logging.getLogger(__name__)
 
 
+<<<<<<< HEAD
 @pytest.mark.only_with_platform("tensorflow2")
+=======
+@pytest.mark.only_with_platform("pytorch", "tensorflow2")
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
 def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator):
     try:
         (x_train, y_train), (x_test, y_test) = get_default_mnist_subset
@@ -46,16 +54,30 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator):
         attack = GradientMatchingAttack(
             classifier, epsilon=epsilon, percent_poison=percent_poison, max_trials=1, max_epochs=1, verbose=False
         )
+<<<<<<< HEAD
         x_poison, y_poison = attack.poison(x_trigger, [class_target], x_train, y_train)
 
         np.testing.assert_(np.all(np.sum(np.reshape((x_poison-x_train)**2, [x_poison.shape[0], -1]), axis=1) < epsilon))
         np.testing.assert_(np.sum(np.sum(np.reshape((x_poison-x_train)**2, [x_poison.shape[0], -1]), axis=1) > 0) <= percent_poison * x_train.shape[0])
+=======
+
+        x_poison, y_poison = attack.poison(x_trigger, [class_target], x_train, y_train)
+
+        np.testing.assert_(
+            np.all(np.sum(np.reshape((x_poison - x_train) ** 2, [x_poison.shape[0], -1]), axis=1) < epsilon)
+        )
+        np.testing.assert_(
+            np.sum(np.sum(np.reshape((x_poison - x_train) ** 2, [x_poison.shape[0], -1]), axis=1) > 0)
+            <= percent_poison * x_train.shape[0]
+        )
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
         np.testing.assert_equal(np.shape(x_poison), np.shape(x_train))
         np.testing.assert_equal(np.shape(y_poison), np.shape(y_train))
     except ARTTestException as e:
         art_warning(e)
 
 
+<<<<<<< HEAD
 
 @pytest.mark.only_with_platform("pytorch", "tensorflow2")
 def test_check_params(art_warning, get_default_mnist_subset, image_dl_estimator):
@@ -79,6 +101,29 @@ def test_check_params(art_warning, get_default_mnist_subset, image_dl_estimator)
             _ = GradientMatchingAttack(classifier, batch_size=0)
         with pytest.raises(ValueError):
             _ = GradientMatchingAttack(classifier, verbose=1.1)
+=======
+@pytest.mark.only_with_platform("pytorch", "tensorflow2")
+def test_check_params(art_warning, get_default_mnist_subset, image_dl_estimator):
+    try:
+        classifier, _ = image_dl_estimator(functional=True)
+
+        with pytest.raises(ValueError):
+            _ = GradientMatchingAttack(classifier, percent_poison=0.01, learning_rate_schedule=[0.1, 0.2, 0.3])
+        with pytest.raises(ValueError):
+            _ = GradientMatchingAttack(classifier, percent_poison=1.2)
+        with pytest.raises(ValueError):
+            _ = GradientMatchingAttack(classifier, percent_poison=0.01, max_epochs=0)
+        with pytest.raises(ValueError):
+            _ = GradientMatchingAttack(classifier, percent_poison=0.01, max_trials=0)
+        with pytest.raises(ValueError):
+            _ = GradientMatchingAttack(classifier, percent_poison=0.01, clip_values=1)
+        with pytest.raises(ValueError):
+            _ = GradientMatchingAttack(classifier, percent_poison=0.01, epsilon=-1)
+        with pytest.raises(ValueError):
+            _ = GradientMatchingAttack(classifier, percent_poison=0.01, batch_size=0)
+        with pytest.raises(ValueError):
+            _ = GradientMatchingAttack(classifier, percent_poison=0.01, verbose=1.1)
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
 
     except ARTTestException as e:
         art_warning(e)

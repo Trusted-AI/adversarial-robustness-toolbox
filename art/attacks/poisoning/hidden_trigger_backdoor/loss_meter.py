@@ -33,6 +33,14 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+<<<<<<< HEAD
+=======
+"""
+This module implements the orignal loss tracker for Hidden Trigger Backdoor attack on Neural Networkxss.
+"""
+
+
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
 class LossMeter:
     """
     Computes and stores the average and current loss value

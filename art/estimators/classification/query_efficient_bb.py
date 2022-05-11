@@ -161,8 +161,8 @@ class QueryEfficientGradientEstimationClassifier(ClassifierLossGradients, Classi
                 axis=0,
             )
             grads.append(query_efficient_grad)
-        grads = self._apply_preprocessing_gradient(x, np.array(grads))
-        return grads
+        grads_array = self._apply_preprocessing_gradient(x, np.array(grads))
+        return grads_array
 
     def get_activations(self, x: np.ndarray, layer: Union[int, str], batch_size: int) -> np.ndarray:
         """

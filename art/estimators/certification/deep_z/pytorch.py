@@ -26,7 +26,10 @@ from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 import warnings
 import numpy as np
 import torch
+<<<<<<< HEAD
 from torch import nn
+=======
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
 
 from art.estimators.certification.deep_z.deep_z import ZonoConv, ZonoDenseLayer, ZonoReLU, ZonoBounds
 from art.estimators.classification.pytorch import PyTorchClassifier
@@ -125,7 +128,11 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
         input_for_hook = torch.unsqueeze(input_for_hook, dim=0)
         model(input_for_hook)  # hooks are fired sequentially from model input to the output
 
+<<<<<<< HEAD
         self.ops = nn.ModuleList()
+=======
+        self.ops = torch.nn.ModuleList()
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
         for module in modules:
             print("registered", type(module))
             if isinstance(module, torch.nn.modules.conv.Conv2d):

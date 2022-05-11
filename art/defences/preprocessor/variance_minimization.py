@@ -171,8 +171,7 @@ class TotalVarMin(Preprocessor):
         """
         # First compute the derivative of the first component of the loss function
         nor1 = np.sqrt(np.power(z_init - x.flatten(), 2).dot(mask.flatten()))
-        if nor1 < 1e-6:
-            nor1 = 1e-6
+        nor1 = max(nor1, 1e-06)
         der1 = ((z_init - x.flatten()) * mask.flatten()) / (nor1 * 1.0)
 
         # Then compute the derivative of the second component of the loss function
@@ -206,15 +205,15 @@ class TotalVarMin(Preprocessor):
             logger.error("Probability must be between 0 and 1.")
             raise ValueError("Probability must be between 0 and 1.")
 
-        if not isinstance(self.norm, (int, np.int)) or self.norm <= 0:
+        if not isinstance(self.norm, int) or self.norm <= 0:
             logger.error("Norm must be a positive integer.")
             raise ValueError("Norm must be a positive integer.")
 
-        if not (self.solver == "L-BFGS-B" or self.solver == "CG" or self.solver == "Newton-CG"):
+        if self.solver not in ("L-BFGS-B", "CG", "Newton-CG"):
             logger.error("Current support only L-BFGS-B, CG, Newton-CG.")
             raise ValueError("Current support only L-BFGS-B, CG, Newton-CG.")
 
-        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter <= 0:
+        if not isinstance(self.max_iter, int) or self.max_iter <= 0:
             logger.error("Number of iterations must be a positive integer.")
             raise ValueError("Number of iterations must be a positive integer.")
 

@@ -70,7 +70,7 @@ class PyTorchFasterRCNN(PyTorchObjectDetector):
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
                the shape of clip values needs to match the total number of features.
-        :param channels_first: Set channels first or last.
+        :param channels_first: [Currently unused] Set channels first or last.
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
         :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be

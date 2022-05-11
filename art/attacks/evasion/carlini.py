@@ -237,7 +237,8 @@ class CarliniL2Method(EvasionAttack):
                   labels.
         :return: An array holding the adversarial examples.
         """
-        y = check_and_transform_label_format(y, self.estimator.nb_classes)
+        if y is not None:
+            y = check_and_transform_label_format(y, self.estimator.nb_classes)
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
         if self.estimator.clip_values is not None:
@@ -298,7 +299,7 @@ class CarliniL2Method(EvasionAttack):
                 x_adv_batch = x_batch.copy()
                 x_adv_batch_tanh = x_batch_tanh.copy()
 
-                z_logits, l2dist, loss = self._loss(x_batch, x_adv_batch, y_batch, c_current)
+                z_logits, l2dist, loss = self._loss(x_batch, x_adv_batch, y_batch, c_current)  # type: ignore
                 attack_success = loss - l2dist <= 0
                 overall_attack_success = attack_success
 
@@ -489,19 +490,25 @@ class CarliniL2Method(EvasionAttack):
         return x_adv
 
     def _check_params(self) -> None:
-        if not isinstance(self.binary_search_steps, (int, np.int)) or self.binary_search_steps < 0:
+        if (
+            not isinstance(
+                self.binary_search_steps,
+                int,
+            )
+            or self.binary_search_steps < 0
+        ):
             raise ValueError("The number of binary search steps must be a non-negative integer.")
 
-        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter < 0:
+        if not isinstance(self.max_iter, int) or self.max_iter < 0:
             raise ValueError("The number of iterations must be a non-negative integer.")
 
-        if not isinstance(self.max_halving, (int, np.int)) or self.max_halving < 1:
+        if not isinstance(self.max_halving, int) or self.max_halving < 1:
             raise ValueError("The number of halving steps must be an integer greater than zero.")
 
-        if not isinstance(self.max_doubling, (int, np.int)) or self.max_doubling < 1:
+        if not isinstance(self.max_doubling, int) or self.max_doubling < 1:
             raise ValueError("The number of doubling steps must be an integer greater than zero.")
 
-        if not isinstance(self.batch_size, (int, np.int)) or self.batch_size < 1:
+        if not isinstance(self.batch_size, int) or self.batch_size < 1:
             raise ValueError("The batch size must be an integer greater than zero.")
 
 
@@ -597,11 +604,19 @@ class CarliniLInfMethod(EvasionAttack):
         else:
             # if untargeted, optimize for making any other class most likely
             loss_1 = np.maximum(z_target - z_other + self.confidence, np.zeros(x_adv.shape[0]))
+<<<<<<< HEAD
 
         loss_2 = np.sum(np.maximum(0.0, np.abs(x_adv - x) - tau))
 
         loss = loss_1 * const + loss_2
 
+=======
+
+        loss_2 = np.sum(np.maximum(0.0, np.abs(x_adv - x) - tau))
+
+        loss = loss_1 * const + loss_2
+
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
         return z_predicted, loss, loss_1, loss_2
 
     def _loss_gradient(
@@ -731,7 +746,8 @@ class CarliniLInfMethod(EvasionAttack):
                   targets are the original class labels.
         :return: An array holding the adversarial examples.
         """
-        y = check_and_transform_label_format(y, self.estimator.nb_classes)
+        if y is not None:
+            y = check_and_transform_label_format(y, self.estimator.nb_classes)
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
         if self.estimator.clip_values is not None:
@@ -754,6 +770,7 @@ class CarliniLInfMethod(EvasionAttack):
 
         # Compute perturbation with implicit batching
         for sample_id in trange(x.shape[0], desc="C&W L_inf", disable=not self.verbose):
+<<<<<<< HEAD
 
             sample_done = False
             tau = 1.0
@@ -765,6 +782,19 @@ class CarliniLInfMethod(EvasionAttack):
                 const = self.initial_const
                 while const < self.largest_const:
 
+=======
+
+            sample_done = False
+            tau = 1.0
+            delta_i_best = 1.0
+            while tau > 1.0 / 256.0 and not sample_done:
+
+                sample_done = True
+
+                const = self.initial_const
+                while const < self.largest_const:
+
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
                     x_batch = x[[sample_id]]
                     y_batch = y[[sample_id]]
 
@@ -806,7 +836,7 @@ class CarliniLInfMethod(EvasionAttack):
 
     def _check_params(self) -> None:
 
-        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter < 0:
+        if not isinstance(self.max_iter, int) or self.max_iter < 0:
             raise ValueError("The number of iterations must be a non-negative integer.")
 
         if not isinstance(self.decrease_factor, (int, float)) or not 0.0 < self.decrease_factor < 1.0:
@@ -937,7 +967,8 @@ class CarliniL0Method(CarliniL2Method):
                   labels.
         :return: An array holding the adversarial examples.
         """
-        y = check_and_transform_label_format(y, self.estimator.nb_classes)
+        if y is not None:
+            y = check_and_transform_label_format(y, self.estimator.nb_classes)
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
         if self.estimator.clip_values is not None:
@@ -1022,7 +1053,7 @@ class CarliniL0Method(CarliniL2Method):
                     x_adv_batch = x_batch.copy()
                     x_adv_batch_tanh = x_batch_tanh.copy()
 
-                    z_logits, l2dist, loss = self._loss(x_batch, x_adv_batch, y_batch, c_current)
+                    z_logits, l2dist, loss = self._loss(x_batch, x_adv_batch, y_batch, c_current)  # type: ignore
                     attack_success = loss - l2dist <= 0
                     overall_attack_success = attack_success
 
@@ -1206,7 +1237,7 @@ class CarliniL0Method(CarliniL2Method):
             )
 
             # If the L_2 attack can't find any adversarial examples with the new activation, return the last one
-            z_logits, l2dist, loss = self._loss(x, x_adv, y, c_final)
+            z_logits, l2dist, loss = self._loss(x, x_adv, y, c_final)  # type: ignore
             attack_success = loss - l2dist <= 0
             l0dist = np.sum((np.abs(x - x_adv) > self._perturbation_threshold).astype(int), axis=(1, 2, 3))
             improved_adv = attack_success & (l0dist < best_l0dist)
@@ -1253,5 +1284,5 @@ class CarliniL0Method(CarliniL2Method):
 
     def _check_params(self):
 
-        if not isinstance(self.binary_search_steps, (int, np.int)) or self.binary_search_steps < 0:
+        if not isinstance(self.binary_search_steps, int) or self.binary_search_steps < 0:
             raise ValueError("The number of binary search steps must be a non-negative integer.")

@@ -113,6 +113,11 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
         self.verbose = verbose
         ProjectedGradientDescentCommon._check_params(self)
 
+        lower: Union[int, float, np.ndarray]
+        upper: Union[int, float, np.ndarray]
+        var_mu: Union[int, float, np.ndarray]
+        sigma: Union[int, float, np.ndarray]
+
         if self.random_eps:
             if isinstance(eps, (int, float)):
                 lower, upper = 0, eps
@@ -137,7 +142,7 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
 
             self.eps_step = ratio * self.eps
 
-    def _set_targets(self, x: np.ndarray, y: np.ndarray, classifier_mixin: bool = True) -> np.ndarray:
+    def _set_targets(self, x: np.ndarray, y: Optional[np.ndarray], classifier_mixin: bool = True) -> np.ndarray:
         """
         Check and set up targets.
 
@@ -150,7 +155,8 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
         :return: The targets.
         """
         if classifier_mixin:
-            y = check_and_transform_label_format(y, self.estimator.nb_classes)
+            if y is not None:
+                y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
         if y is None:
             # Throw error if attack is targeted, but no targets are provided
@@ -207,7 +213,7 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
         if not isinstance(self.targeted, bool):
             raise ValueError("The flag `targeted` has to be of type bool.")
 
-        if not isinstance(self.num_random_init, (int, np.int)):
+        if not isinstance(self.num_random_init, int):
             raise TypeError("The number of random initialisations has to be of type integer.")
 
         if self.num_random_init < 0:
@@ -391,7 +397,7 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
             targets = self._set_targets(x, y, classifier_mixin=False)
 
             # Start to compute adversarial examples
-            if x.dtype == np.object:
+            if x.dtype == object:
                 adv_x = x.copy()
             else:
                 adv_x = x.astype(ART_NUMPY_DTYPE)

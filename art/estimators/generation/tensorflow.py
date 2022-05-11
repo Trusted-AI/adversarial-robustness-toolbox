@@ -101,7 +101,7 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
         if self.loss is not None:
             self._grad = tf.gradients(self.loss, self.input_ph)
         if feed_dict is None:
-            self._feed_dict = dict()
+            self._feed_dict = {}
         else:
             self._feed_dict = feed_dict
 

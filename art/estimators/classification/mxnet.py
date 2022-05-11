@@ -320,7 +320,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
         # Check value of label for computing gradients
         if not (  # pragma: no cover
             label is None
-            or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
+            or (isinstance(label, int) and label in range(self.nb_classes))
             or (
                 isinstance(label, np.ndarray)
                 and len(label.shape) == 1
@@ -328,7 +328,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
                 and label.shape[0] == x.shape[0]
             )
         ):
-            raise ValueError("Label %s is out of range." % str(label))
+            raise ValueError(f"Label {label} is out of range.")
 
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
@@ -340,13 +340,13 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
                 preds = self._model(x_preprocessed)
                 class_slices = [preds[:, i] for i in range(self.nb_classes)]
 
-            grads = []
+            grads_list = []
             for slice_ in class_slices:
                 slice_.backward(retain_graph=True)
                 grad = x_preprocessed.grad.asnumpy()
-                grads.append(grad)
-            grads = np.swapaxes(np.array(grads), 0, 1)
-        elif isinstance(label, (int, np.integer)):
+                grads_list.append(grad)
+            grads = np.swapaxes(np.array(grads_list), 0, 1)
+        elif isinstance(label, int):
             with mx.autograd.record(train_mode=training_mode):
                 preds = self._model(x_preprocessed)
                 class_slice = preds[:, label]
@@ -360,13 +360,13 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
                 preds = self._model(x_preprocessed)
                 class_slices = [preds[:, i] for i in unique_labels]
 
-            grads = []
+            grads_list = []
             for slice_ in class_slices:
                 slice_.backward(retain_graph=True)
                 grad = x_preprocessed.grad.asnumpy()
-                grads.append(grad)
+                grads_list.append(grad)
 
-            grads = np.swapaxes(np.array(grads), 0, 1)
+            grads = np.swapaxes(np.array(grads_list), 0, 1)
             lst = [unique_labels.index(i) for i in label]
             grads = grads[np.arange(len(grads)), lst]
             grads = np.expand_dims(grads, axis=1)
@@ -453,12 +453,12 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
 
         if isinstance(layer, six.string_types):
             if layer not in self._layer_names:
-                raise ValueError("Layer name %s is not part of the model." % layer)
+                raise ValueError(f"Layer name {layer} is not part of the model.")
             layer_ind = self._layer_names.index(layer)
         elif isinstance(layer, int):
             if layer < 0 or layer >= len(self._layer_names):
                 raise ValueError(
-                    "Layer index %d is outside of range (0 to %d included)." % (layer, len(self._layer_names) - 1)
+                    f"Layer index {layer} is outside of range (0 to {len(self._layer_names) - 1} included)."
                 )
             layer_ind = layer
         else:
@@ -493,8 +493,8 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
 
             activations.append(preds.asnumpy())
 
-        activations = np.vstack(activations)
-        return activations
+        activations_array = np.vstack(activations)
+        return activations_array
 
     def save(self, filename: str, path: Optional[str] = None) -> None:
         """
@@ -519,23 +519,11 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
 
     def __repr__(self):
         repr_ = (
-            "%s(model=%r, loss=%r, input_shape=%r, nb_classes=%r, optimizer=%r, ctx=%r, "
-            " channels_first=%r, clip_values=%r, preprocessing=%r, postprocessing_defences=%r,"
-            " preprocessing=%r)"
-            % (
-                self.__module__ + "." + self.__class__.__name__,
-                self._model,
-                self.loss,
-                self.input_shape,
-                self.nb_classes,
-                self.optimizer,
-                self.ctx,
-                self.channels_first,
-                self.clip_values,
-                self.preprocessing,
-                self.postprocessing_defences,
-                self.preprocessing,
-            )
+            f"{self.__module__ + '.' + self.__class__.__name__}(model={self._model}, loss={self.loss},"
+            f" input_shape={self.input_shape}, nb_classes={self.nb_classes}, optimizer={self.optimizer},"
+            f" ctx={self.ctx}, channels_first={self.channels_first}, clip_values={self.clip_values!r},"
+            f" preprocessing={self.preprocessing}, postprocessing_defences={self.postprocessing_defences},"
+            f" preprocessing={self.preprocessing})"
         )
 
         return repr_

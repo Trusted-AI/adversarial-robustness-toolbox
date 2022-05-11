@@ -72,15 +72,17 @@ class AttributeInferenceWhiteBoxDecisionTree(AttributeInferenceAttack):
         :type priors: list
         :return: The inferred feature values.
         """
-        if "priors" not in kwargs.keys():  # pragma: no cover
+        if "priors" not in kwargs:  # pragma: no cover
             raise ValueError("Missing parameter `priors`.")
-        if "values" not in kwargs.keys():  # pragma: no cover
+        if "values" not in kwargs:  # pragma: no cover
             raise ValueError("Missing parameter `values`.")
-        priors: np.ndarray = kwargs.get("priors")
-        values: np.ndarray = kwargs.get("values")
+        priors: Optional[list] = kwargs.get("priors")
+        values: Optional[list] = kwargs.get("values")
 
         if self.estimator.input_shape[0] != x.shape[1] + 1:  # pragma: no cover
             raise ValueError("Number of features in x + 1 does not match input_shape of classifier")
+        if priors is None or values is None:  # pragma: no cover
+            raise ValueError("`priors` and `values` are required as inputs.")
         if len(priors) != len(values):  # pragma: no cover
             raise ValueError("Number of priors does not match number of values")
         if y is not None and y.shape[0] != x.shape[0]:  # pragma: no cover

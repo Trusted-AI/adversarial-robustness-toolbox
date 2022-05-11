@@ -375,7 +375,7 @@ def _make_lookup_predict_fn(existing_predictions: Tuple[np.ndarray, np.ndarray],
 
     # Construct a dictionary to map from samples to predictions. We use the bytes of the `ndarray` as the key,
     # because the `ndarray` itself is not hashable
-    mapping = dict()
+    mapping = {}
     for x, y in zip(samples, labels):
         mapping[x.tobytes()] = y
 

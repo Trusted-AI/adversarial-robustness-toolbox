@@ -31,12 +31,24 @@ from art.attacks.attack import PoisoningAttackWhiteBox
 from art.attacks.poisoning.backdoor_attack import PoisoningAttackBackdoor
 from art.estimators import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
+<<<<<<< HEAD
 from art.estimators.classification.keras import KerasClassifier
 from art.estimators.classification.pytorch import PyTorchClassifier
+=======
+from art.estimators.classification.pytorch import PyTorchClassifier
+from art.estimators.classification.keras import KerasClassifier
+from art.estimators.classification.tensorflow import TensorFlowV2Classifier
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
 
 from art.attacks.poisoning.hidden_trigger_backdoor.hidden_trigger_backdoor_pytorch import (
     HiddenTriggerBackdoorPyTorch,
 )
+<<<<<<< HEAD
+=======
+from art.attacks.poisoning.hidden_trigger_backdoor.hidden_trigger_backdoor_keras import (
+    HiddenTriggerBackdoorKeras,
+)
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
@@ -66,6 +78,10 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
         "poison_percent",
         "batch_size",
         "verbose",
+<<<<<<< HEAD
+=======
+        "print_iter",
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
     ]
 
     _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassifierMixin)
@@ -73,8 +89,13 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
     def __init__(
         self,
         classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
+<<<<<<< HEAD
         target: Union[int, np.ndarray],
         source: Union[int, np.ndarray],
+=======
+        target: np.ndarray,
+        source: np.ndarray,
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
         feature_layer: Union[str, int],
         backdoor: PoisoningAttackBackdoor,
         eps: float = 0.1,
@@ -87,6 +108,7 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
         poison_percent: float = 0.1,
         is_index: bool = False,
         verbose: bool = True,
+<<<<<<< HEAD
     ) -> None:
         """
         Creates a new Hidden Trigger Backdoor poisoning attack
@@ -97,6 +119,21 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
         :param source: The class/indicies which will have a trigger added to cause misclassification
                        If an int, it represents a label. Otherwise, it is an array of indicies.
         :param feature_layer: The name of the feature representation layer.
+=======
+        print_iter: int = 100,
+    ) -> None:
+        """
+        Creates a new Hidden Trigger Backdoor poisoning attack.
+
+        :param classifier: A trained neural network classifier.
+        :param target: The target class/indices to poison. Triggers added to inputs not in the target class will
+                       result in misclassifications to the target class. If an int, it represents a label.
+                       Otherwise, it is an array of indices.
+        :param source: The class/indices which will have a trigger added to cause misclassification
+                       If an int, it represents a label. Otherwise, it is an array of indices.
+        :param feature_layer: The name of the feature representation layer
+        :param backdoor: A PoisoningAttackBackdoor that adds a backdoor trigger to the input.
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
         :param eps: Maximum perturbation that the attacker can introduce.
         :param learning_rate: The learning rate of clean-label attack optimization.
         :param decay_coeff: The decay coefficient of the learning rate.
@@ -105,9 +142,16 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
         :param max_iter: The maximum number of iterations for the attack.
         :param batch_size: The number of samples to draw per batch.
         :param poison_percent: The percentage of the data to poison. This is ignored if indices are provided
+<<<<<<< HEAD
         :param is_index: If true, the source and target params are assumed to represent indices rather than a class label.
                          poison_percent is ignored if true
         :param verbose: Show progress bars.
+=======
+        :param is_index: If true, the source and target params are assumed to represent indices rather
+                         than a class label. poison_percent is ignored if true.
+        :param verbose: Show progress bars.
+        :param print_iter: The number of iterations to print the current loss progress.
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
         """
         super().__init__(classifier=classifier)  # type: ignore
         self.target = target
@@ -124,11 +168,19 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
         self.poison_percent = poison_percent
         self.is_index = is_index
         self.verbose = verbose
+<<<<<<< HEAD
+=======
+        self.print_iter = print_iter
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
         self._check_params()
 
         if isinstance(self.estimator, PyTorchClassifier):
             self._attack = HiddenTriggerBackdoorPyTorch(
+<<<<<<< HEAD
                 classifier=classifier,
+=======
+                classifier=classifier,  # type: ignore
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
                 target=target,
                 source=source,
                 backdoor=backdoor,
@@ -143,10 +195,19 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
                 poison_percent=poison_percent,
                 is_index=is_index,
                 verbose=verbose,
+<<<<<<< HEAD
             )
         elif isinstance(self.estimator, KerasClassifier):
             self._attack = HiddenTriggerBackdoorKeras(
                 classifier=classifier,
+=======
+                print_iter=print_iter,
+            )
+
+        elif isinstance(self.estimator, (KerasClassifier, TensorFlowV2Classifier)):
+            self._attack = HiddenTriggerBackdoorKeras(  # type: ignore
+                classifier=classifier,  # type: ignore
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
                 target=target,
                 source=source,
                 backdoor=backdoor,
@@ -161,20 +222,40 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
                 poison_percent=poison_percent,
                 is_index=is_index,
                 verbose=verbose,
+<<<<<<< HEAD
             )
 
         else:
             raise ValueError("Only Pytorch and Keras Classifiers are supported right now")
+=======
+                print_iter=print_iter,
+            )
+
+        else:
+            raise ValueError("Only Pytorch, Keras, and TensorFlowV2 classifiers are supported")
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
 
     def poison(  # pylint: disable=W0221
         self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
+<<<<<<< HEAD
         Calls perturbation function on the dataset x and returns only the perturbed input and their indices in the dataset.
         :param x: An array in the shape NxCxWxH with the points to draw source and target samples from. Source indicates the
                   class(es) that the backdoor would be added to to cause misclassification into the target label.
                   Target indicates the class that the backdoor should cause misclassification into.
         :param y: The labels of the provided samples. If none, we will use the classifier to label the data.
+=======
+        Calls perturbation function on the dataset x and returns only the perturbed inputs and their
+        indices in the dataset.
+
+        :param x: An array in the shape NxCxWxH with the points to draw source and target samples from.
+                  Source indicates the class(es) that the backdoor would be added to to cause
+                  misclassification into the target label.
+                  Target indicates the class that the backdoor should cause misclassification into.
+        :param y: The labels of the provided samples. If none, we will use the classifier to label the
+                  data.
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
         :return: An tuple holding the `(poisoning_examples, poisoning_labels)`.
         """
 
@@ -182,19 +263,30 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
 
     def _check_params(self) -> None:
 
+<<<<<<< HEAD
         if self.is_index and not (isinstance(self.target, np.ndarray) and isinstance(self.source, np.ndarray)):
             raise ValueError("Target and source values must be an array of indices")
 
         if (isinstance(self.target, int) and (self.target == self.source)) or (
             isinstance(self.target, np.ndarray) and np.array_equal(self.target, self.source)
         ):
+=======
+        if not isinstance(self.target, np.ndarray) or not isinstance(self.source, np.ndarray):
+            raise ValueError("Target and source must be arrays")
+
+        if np.array_equal(self.target, self.source):
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
             raise ValueError("Target and source values can't be the same")
 
         if self.learning_rate <= 0:
             raise ValueError("Learning rate must be strictly positive")
 
         if not isinstance(self.backdoor, PoisoningAttackBackdoor):
+<<<<<<< HEAD
             raise ValueError("Backdoor must be of type PoisoningAttackBackdoor")
+=======
+            raise TypeError("Backdoor must be of type PoisoningAttackBackdoor")
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
 
         if self.eps < 0:
             raise ValueError("The perturbation size `eps` has to be non-negative.")
@@ -204,7 +296,11 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
 
         if isinstance(self.feature_layer, int):
             if not 0 <= self.feature_layer < len(self.estimator.layer_names):
+<<<<<<< HEAD
                 raise ValueError("feature_layer is not positive integer")
+=======
+                raise ValueError("feature_layer is not a non-negative integer")
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
 
         if self.decay_coeff <= 0:
             raise ValueError("Decay coefficient must be positive")

@@ -55,9 +55,15 @@ RUN mkdir /project; mkdir /project/TMP
 VOLUME /project/TMP
 WORKDIR /project
 
+<<<<<<< HEAD
 # IMPORTANT: please double check that the dependencies above are up to date with the following requirements file. We currently still run pip install on dependencies within requirements.txt in order to keep dependencies in agreement (in the rare cases were someone updated the requirements.txt file and forgot to update the dockefile)
 # ADD . /project/
 # RUN pip3 install --upgrade -r /project/requirements.txt
+=======
+# IMPORTANT: please double check that the dependencies above are up to date with the following requirements file. We currently still run pip install on dependencies within requirements_test.txt in order to keep dependencies in agreement (in the rare cases were someone updated the requirements_test.txt file and forgot to update the dockefile)
+ADD . /project/
+RUN pip3 install --upgrade -r /project/requirements_test.txt
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
 
 RUN apt-get update
 RUN apt-get -y -q install ffmpeg libavcodec-extra
@@ -71,5 +77,5 @@ CMD bash run_tests.sh
 
 #Check the Dockerfile here https://www.fromlatest.io/#/
 
-#NOTE to contributors: When changing/adding packages, please make sure that the packages are consitent with those
-# present within the requirements.txt and test_requirements.txt files
+#NOTE to contributors: When changing/adding packages, please make sure that the packages are consistent with those
+# present within the requirements_test.txt files

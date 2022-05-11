@@ -13,3 +13,10 @@ TensorFlow Generator
    :members:
    :special-members: __init__
    :inherited-members:
+
+TensorFlow 2 Generator
+----------------------
+.. autoclass:: TensorFlow2Generator
+   :members:
+   :special-members: __init__
+   :inherited-members:

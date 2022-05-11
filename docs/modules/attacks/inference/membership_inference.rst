@@ -25,3 +25,9 @@ Membership Inference Label-Only - Gap Attack
 .. autoclass:: LabelOnlyGapAttack
    :members:
    :special-members:
+
+Shadow Models
+-------------
+.. autoclass:: ShadowModels
+   :members:
+   :special-members:

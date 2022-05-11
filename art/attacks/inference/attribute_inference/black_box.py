@@ -37,7 +37,11 @@ from art.utils import (
     float_to_categorical,
     floats_to_one_hot,
     get_feature_values,
+<<<<<<< HEAD
     is_single_index_feature,
+=======
+    get_feature_index,
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
 )
 
 if TYPE_CHECKING:
@@ -133,7 +137,11 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         self.scale_range = scale_range
 
         self._check_params()
+<<<<<<< HEAD
         self.single_index_feature = is_single_index_feature(self.attack_feature)
+=======
+        self.attack_feature = get_feature_index(self.attack_feature)
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
 
     def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> None:
         """
@@ -147,12 +155,14 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         if self.estimator.input_shape is not None:
             if self.estimator.input_shape[0] != x.shape[1]:
                 raise ValueError("Shape of x does not match input_shape of model")
-        if self.single_index_feature and self.attack_feature >= x.shape[1]:
-            raise ValueError("attack_feature must be a valid index to a feature in x")
+        if isinstance(self.attack_feature, int) and self.attack_feature >= x.shape[1]:
+            raise ValueError("`attack_feature` must be a valid index to a feature in x")
 
         # get model's predictions for x
         if ClassifierMixin in type(self.estimator).__mro__:
             predictions = np.array([np.argmax(arr) for arr in self.estimator.predict(x)]).reshape(-1, 1)
+            if y is not None:
+                y = check_and_transform_label_format(y, return_one_hot=True)
         else:  # Regression model
             if self.scale_range is not None:
                 predictions = minmax_scale(self.estimator.predict(x).reshape(-1, 1), feature_range=self.scale_range)
@@ -162,11 +172,21 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
                 predictions = self.estimator.predict(x).reshape(-1, 1) * self.prediction_normal_factor
                 if y is not None:
                     y = y * self.prediction_normal_factor
+<<<<<<< HEAD
 
         # get vector of attacked feature
         y_attack = x[:, self.attack_feature]
         self._values = get_feature_values(y_attack, self.single_index_feature)
         if self.single_index_feature:
+=======
+            if y is not None:
+                y = y.reshape(-1, 1)
+
+        # get vector of attacked feature
+        y_attack = x[:, self.attack_feature]
+        self._values = get_feature_values(y_attack, isinstance(self.attack_feature, int))
+        if isinstance(self.attack_feature, int):
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
             y_one_hot = float_to_categorical(y_attack)
         else:
             y_one_hot = floats_to_one_hot(y_attack)
@@ -176,7 +196,10 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         x_train = np.concatenate((np.delete(x, self.attack_feature, 1), predictions), axis=1).astype(np.float32)
 
         if y is not None:
+<<<<<<< HEAD
             y = check_and_transform_label_format(y, return_one_hot=True)
+=======
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
             x_train = np.concatenate((x_train, y), axis=1)
 
         # train attack model
@@ -199,14 +222,28 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         :type values: list, optional
         :return: The inferred feature values.
         """
+<<<<<<< HEAD
         if "pred" not in kwargs.keys():
             raise ValueError("Please provide param `pred` of model predictions.")
         pred: np.ndarray = kwargs.get("pred")
 
+=======
+        values: Optional[list] = kwargs.get("values")
+
+        # if provided, override the values computed in fit()
+        if values is not None:
+            self._values = values
+
+        pred: Optional[np.ndarray] = kwargs.get("pred")
+
+        if pred is None:
+            raise ValueError("Please provide param `pred` of model predictions.")
+
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
         if pred.shape[0] != x.shape[0]:
             raise ValueError("Number of rows in x and y do not match")
         if self.estimator.input_shape is not None:
-            if self.single_index_feature and self.estimator.input_shape[0] != x.shape[1] + 1:
+            if isinstance(self.attack_feature, int) and self.estimator.input_shape[0] != x.shape[1] + 1:
                 raise ValueError("Number of features in x + 1 does not match input_shape of model")
 
         if RegressorMixin in type(self.estimator).__mro__:
@@ -220,6 +257,7 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
                 x_test = np.concatenate((x, pred * self.prediction_normal_factor), axis=1).astype(np.float32)
                 if y is not None:
                     y = y * self.prediction_normal_factor
+<<<<<<< HEAD
         else:
             x_test = np.concatenate((x, pred), axis=1).astype(np.float32)
 
@@ -235,6 +273,22 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
 
         if self._values is not None:
             if self.single_index_feature:
+=======
+            if y is not None:
+                y = y.reshape(-1, 1)
+        else:
+            x_test = np.concatenate((x, pred), axis=1).astype(np.float32)
+            if y is not None:
+                y = check_and_transform_label_format(y, return_one_hot=True)
+
+        if y is not None:
+            x_test = np.concatenate((x_test, y), axis=1)
+
+        predictions = self.attack_model.predict(x_test).astype(np.float32)
+
+        if self._values is not None:
+            if isinstance(self.attack_feature, int):
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
                 predictions = np.array([self._values[np.argmax(arr)] for arr in predictions])
             else:
                 i = 0
@@ -245,6 +299,7 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         return np.array(predictions)
 
     def _check_params(self) -> None:
+
         if not isinstance(self.attack_feature, int) and not isinstance(self.attack_feature, slice):
             raise ValueError("Attack feature must be either an integer or a slice object.")
 

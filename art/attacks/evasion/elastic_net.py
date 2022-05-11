@@ -204,7 +204,8 @@ class ElasticNet(EvasionAttack):
                   targets are the original class labels.
         :return: An array holding the adversarial examples.
         """
-        y = check_and_transform_label_format(y, self.estimator.nb_classes)
+        if y is not None:
+            y = check_and_transform_label_format(y, self.estimator.nb_classes)
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
         # Assert that, if attack is targeted, y is provided:

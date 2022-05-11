@@ -532,7 +532,13 @@ class AdversarialTexturePyTorch(EvasionAttack):
         """
         import torch  # lgtm [py/repeated-import]
 
+<<<<<<< HEAD
         patch_tensor = torch.Tensor(patch_external).to(self.estimator.device) if patch_external is not None else self._patch
+=======
+        patch_tensor = (
+            torch.Tensor(patch_external).to(self.estimator.device) if patch_external is not None else self._patch
+        )
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
         x_tensor = torch.Tensor(x).to(self.estimator.device)
         if foreground is None:
             foreground_tensor = None

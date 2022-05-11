@@ -22,7 +22,11 @@ The Pixel Attack is a generalisation of One Pixel Attack.
 | One Pixel Attack Paper link: https://arxiv.org/ans/1710.08864
 | Pixel and Threshold Attack Paper link: https://arxiv.org/abs/1906.06026
 """
+<<<<<<< HEAD
 # pylint: disable=C0302,C0413,E402
+=======
+# pylint: disable=C0302,C0413
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -41,6 +45,7 @@ import numpy as np
 from six import string_types
 import scipy
 from scipy._lib._util import check_random_state
+<<<<<<< HEAD
 
 scipy_version = list(map(int, scipy.__version__.lower().split(".")))
 if scipy_version[1] >= 8:
@@ -49,12 +54,22 @@ else:
     from scipy.optimize.optimize import _status_message  # pylint: disable=E0611
 from scipy.optimize import OptimizeResult, minimize
 from tqdm.auto import tqdm
+=======
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
 
-from art.config import ART_NUMPY_DTYPE
-from art.attacks.attack import EvasionAttack
-from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
-from art.estimators.classification.classifier import ClassifierMixin
-from art.utils import compute_success, to_categorical, check_and_transform_label_format
+scipy_version = list(map(int, scipy.__version__.lower().split(".")))
+if scipy_version[1] >= 8:
+    from scipy.optimize._optimize import _status_message  # pylint: disable=E0611
+else:
+    from scipy.optimize.optimize import _status_message  # pylint: disable=E0611
+from scipy.optimize import OptimizeResult, minimize  # noqa
+from tqdm.auto import tqdm  # noqa
+
+from art.config import ART_NUMPY_DTYPE  # noqa
+from art.attacks.attack import EvasionAttack  # noqa
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin  # noqa
+from art.estimators.classification.classifier import ClassifierMixin  # noqa
+from art.utils import check_and_transform_label_format  # noqa
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
@@ -152,7 +167,8 @@ class PixelThreshold(EvasionAttack):
         :param max_iter: Maximum number of optimisation iterations.
         :return: An array holding the adversarial examples.
         """
-        y = check_and_transform_label_format(y, self.estimator.nb_classes, return_one_hot=False)
+        if y is not None:
+            y = check_and_transform_label_format(y, self.estimator.nb_classes, return_one_hot=False)
 
         if y is None:
             if self.targeted:
@@ -166,7 +182,11 @@ class PixelThreshold(EvasionAttack):
             if y.ndim > 1 and y.shape[1] > 1:
                 y = np.argmax(y, axis=1)
 
+<<<<<<< HEAD
         y = np.squeeze(y)
+=======
+        y = np.squeeze(y)  # type: ignore
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
 
         if self.th is None:
             logger.info(
@@ -189,7 +209,7 @@ class PixelThreshold(EvasionAttack):
 
         adv_x_best = []
         self.adv_th = []
-        for image, target_class in tqdm(zip(x, y), desc="Pixel threshold", disable=not self.verbose):
+        for image, target_class in tqdm(zip(x, y), desc="Pixel threshold", disable=not self.verbose):  # type: ignore
 
             if self.th is None:
 
@@ -226,17 +246,9 @@ class PixelThreshold(EvasionAttack):
 
         adv_x_best_array = np.array(adv_x_best)
 
-        if y is not None:
-            y = to_categorical(y, self.estimator.nb_classes)
-
         if self.rescale:
-            x = self.rescale_input(x)
             adv_x_best_array = self.rescale_input(adv_x_best_array)
 
-        logger.info(
-            "Success rate of Attack: %.2f%%",
-            100 * compute_success(self.estimator, x, y, adv_x_best_array, self.targeted, 1),
-        )
         return adv_x_best_array
 
     def _get_bounds(self, img: np.ndarray, limit) -> Tuple[List[list], list]:
@@ -412,7 +424,7 @@ class PixelAttack(PixelThreshold):
         """
         Define the bounds for the image `img` within the limits `limit`.
         """
-        initial: List[np.ndarray] = []
+        initial: List[int] = []
         bounds: List[List[int]]
         if self.es == 0:
             for count, (i, j) in enumerate(product(range(self.img_rows), range(self.img_cols))):
@@ -1216,7 +1228,7 @@ class DifferentialEvolutionSolver:  # pragma: no cover
                 break
 
             if self.disp:
-                print("differential_evolution step %d: f(x)= %g" % (nit, self.population_energies[0]))
+                print(f"differential_evolution step {nit}: f(x)= {self.population_energies[0]}")
 
             # should the solver terminate?
             convergence = self.convergence

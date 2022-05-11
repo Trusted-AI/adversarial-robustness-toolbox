@@ -59,8 +59,8 @@ class StandardisationMeanStdTensorFlow(PreprocessorTensorFlowV2):
         self._check_params()
 
         # init broadcastable mean and std for lazy loading
-        self._broadcastable_mean = None
-        self._broadcastable_std = None
+        self._broadcastable_mean: Optional[np.ndarray] = None
+        self._broadcastable_std: Optional[np.ndarray] = None
 
     def forward(self, x: "tf.Tensor", y: Optional["tf.Tensor"] = None) -> Tuple["tf.Tensor", Optional["tf.Tensor"]]:
         """
@@ -85,6 +85,7 @@ class StandardisationMeanStdTensorFlow(PreprocessorTensorFlowV2):
         pass
 
     def __repr__(self):
-        return "StandardisationMeanStdTensorFlow(mean={}, std={}, apply_fit={}, apply_predict={})".format(
-            self.mean, self.std, self.apply_fit, self.apply_predict
+        return (
+            f"StandardisationMeanStdTensorFlow(mean={self.mean}, std={self.std}, apply_fit={self.apply_fit}, "
+            f"apply_predict={self.apply_predict})"
         )

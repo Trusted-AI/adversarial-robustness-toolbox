@@ -312,8 +312,8 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         padded_patch = tf.cast(padded_patch, images.dtype)
 
-        transform_vectors = list()
-        translation_vectors = list()
+        transform_vectors = []
+        translation_vectors = []
 
         for i_sample in range(nb_samples):
             if scale is None:
@@ -411,7 +411,9 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         return images * inverted_mask + padded_patch * image_mask
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
+    def generate(  # type: ignore
+        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Generate an adversarial patch and return the patch and its mask in arrays.
 
@@ -496,9 +498,9 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             self._get_circular_patch_mask(nb_samples=1).numpy()[0],
         )
 
-    def _check_mask(self, mask: np.ndarray, x: np.ndarray) -> np.ndarray:
+    def _check_mask(self, mask: Optional[np.ndarray], x: np.ndarray) -> Optional[np.ndarray]:
         if mask is not None and (  # pragma: no cover
-            (mask.dtype != np.bool)
+            (mask.dtype != bool)
             or not (mask.shape[0] == 1 or mask.shape[0] == x.shape[0])
             or not (mask.shape[1] == x.shape[self.i_h + 1] and mask.shape[2] == x.shape[self.i_w + 1])
         ):

@@ -28,7 +28,10 @@ from art.preprocessing.expectation_over_transformation.pytorch import EoTPyTorch
 if TYPE_CHECKING:
     # pylint: disable=C0412
     import torch
+<<<<<<< HEAD
     from art.utils import CLIP_VALUES_TYPE
+=======
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +48,11 @@ class EoTImageRotationPyTorch(EoTPyTorch):
     def __init__(
         self,
         nb_samples: int,
+<<<<<<< HEAD
         clip_values: "CLIP_VALUES_TYPE",
+=======
+        clip_values: Tuple[float, float],
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
         angles: Union[float, Tuple[float, float], List[float]] = 45.0,
         label_type: str = "classification",
         apply_fit: bool = False,
@@ -99,8 +106,18 @@ class EoTImageRotationPyTorch(EoTPyTorch):
             x = torch.permute(x, (0, 3, 1, 2))
             channels_first = False
 
+<<<<<<< HEAD
         x_preprocess = torchvision.transforms.functional.rotate(
             img=x, angle=angles, interpolation=torchvision.transforms.functional.InterpolationMode.NEAREST, expand=False
+=======
+        expand = self.label_type == "object_detection"
+
+        x_preprocess = torchvision.transforms.functional.rotate(
+            img=x,
+            angle=angles,
+            interpolation=torchvision.transforms.functional.InterpolationMode.NEAREST,
+            expand=expand,
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
         )
 
         x_preprocess = torch.clamp(
@@ -197,9 +214,14 @@ class EoTImageRotationPyTorch(EoTPyTorch):
 
         if self.label_type not in self.label_types:
             raise ValueError(
+<<<<<<< HEAD
                 "The input for label_type needs to be one of {}, currently receiving `{}`.".format(
                     self.label_types, self.label_type
                 )
+=======
+                f"The input for label_type needs to be one of {self.label_types},"
+                f"currently receiving `{self.label_type}`."
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
             )
 
         if self.label_type == "object_detection":
@@ -208,7 +230,11 @@ class EoTImageRotationPyTorch(EoTPyTorch):
                     """For `label_type="object_detection"` only a list of multiples of 90 degrees is supported."""
                 )
             if isinstance(self.angles, list):
+<<<<<<< HEAD
                 for angle in self.angles:
+=======
+                for angle in self.angles:  # lgtm [py/non-iterable-in-for-loop]
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
                     if divmod(angle, 90)[1] != 0:
                         raise ValueError(
                             """For `label_type="object_detection"` only a list of multiples of 90 degrees is

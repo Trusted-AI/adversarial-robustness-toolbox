@@ -35,7 +35,11 @@ _device = "cpu"
 object_array = True
 working_dir = os.path.join(os.sep, "home", username, ".art", "data")
 benchmark_dir = os.path.join(os.sep, "home", username, "Desktop", "benchmark")
+<<<<<<< HEAD
 y_init = np.array([[55, 85, 100, 130], [160, 100, 180, 146]])  # inital boxes
+=======
+y_init = np.array([[55, 85, 100, 130], [160, 100, 180, 146]])  # initial boxes
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
 
 ######################
 # Setup GOTURN model #
@@ -87,12 +91,6 @@ else:
     preprocessing = (np.array([0.485, 0.456, 0.406]), np.array([0.229, 0.224, 0.225]))
 
     import torch
-    import torchvision
-
-    torch_version = list(map(int, torch.__version__.lower().split("+")[0].split(".")))
-    torchvision_version = list(map(int, torchvision.__version__.lower().split("+")[0].split(".")))
-    assert torch_version[0] == 1 and torch_version[1] == 4, "PyTorchGoturn requires torch==1.4"
-    assert torchvision_version[0] == 0 and torchvision_version[1] == 5, "PyTorchGoturn requires torchvision==0.5"
 
     goturn_path = os.path.join(working_dir, "goturn_amoudgl")
 
@@ -128,6 +126,7 @@ pgt = PyTorchGoturn(
 )
 
 if benchmark_not_attack:
+<<<<<<< HEAD
 
     # -----------------#
     # Identity Tracker #
@@ -223,6 +222,101 @@ else:
 
         x = np.asarray(x_list_new, dtype=float)
 
+=======
+
+    from got10k.experiments import ExperimentGOT10k
+
+    # -----------------#
+    # Identity Tracker #
+    # -----------------#
+
+    from got10k.trackers import Tracker
+
+    class IdentityTracker(Tracker):
+        def __init__(self):
+            super(IdentityTracker, self).__init__(
+                name="IdentityTracker",  # tracker name
+                is_deterministic=True,  # stochastic (False) or deterministic (True)
+            )
+
+        def init(self, image, box):
+            self.box = box
+
+        def update(self, image):
+            return self.box
+
+    # instantiate a tracker
+    tracker = IdentityTracker()
+
+    # setup experiment (validation subset)
+    experiment = ExperimentGOT10k(
+        root_dir=os.path.join(benchmark_dir, "data", "GOT-10k"),
+        subset="val",  # 'train' | 'val' | 'test'
+        result_dir=os.path.join(benchmark_dir, "results"),  # where to store tracking results
+        report_dir=os.path.join(benchmark_dir, "reports"),  # where to store evaluation reports
+    )
+    experiment.run(tracker, visualize=True)
+
+    experiment.report([tracker.name])
+
+    # ----------------------#
+    # PyTorchGoturn Tracker #
+    # ----------------------#
+
+    # setup experiment (validation subset)
+    experiment = ExperimentGOT10k(
+        root_dir=os.path.join(benchmark_dir, "data", "GOT-10k"),
+        subset="val",  # 'train' | 'val' | 'test'
+        result_dir=os.path.join(benchmark_dir, "results"),  # where to store tracking results
+        report_dir=os.path.join(benchmark_dir, "reports"),  # where to store evaluation reports
+    )
+    experiment.run(pgt, visualize=True)
+
+    experiment.report([pgt.name])
+
+
+else:
+    #############
+    # load data #
+    #############
+
+    x_list = list()
+
+    for path in [
+        os.path.join(working_dir, "goturn-pytorch", "test", "8"),
+        os.path.join(working_dir, "goturn-pytorch", "test", "10"),
+    ]:
+
+        filelist = glob.glob(path + "/*.jpg")
+        filelist.sort()
+
+        img_list = list()
+        for fname in filelist:
+            img = Image.open(fname).resize((277, 277), Image.BILINEAR)
+            img = np.array(img)
+            if clip_values[1] == 1:
+                img = img / 255
+            img_list.append(img)
+
+        x = np.array(img_list, dtype=float)
+
+        x_list.append(x)
+
+    if object_array:
+        x = np.asarray(x_list, dtype=object)
+    else:
+        num_frames_min = 10000000
+        for x_i in x_list:
+            if x_i.shape[0] < num_frames_min:
+                num_frames_min = x_i.shape[0]
+        x_list_new = list()
+        for x_i in x_list:
+            x_i_new = x_i[0:num_frames_min, :, :, :]
+            x_list_new.append(x_i_new)
+
+        x = np.asarray(x_list_new, dtype=float)
+
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
     y_pred = pgt.predict(x=x, y_init=y_init)
 
     ##################

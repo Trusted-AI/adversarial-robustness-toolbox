@@ -144,7 +144,7 @@ class JpegCompression(Preprocessor):
 
         # Compress one image at a time
         x_jpeg = x.copy()
-        for idx in tqdm(np.ndindex(x.shape[:2]), desc="JPEG compression", disable=not self.verbose):
+        for idx in tqdm(np.ndindex(x.shape[:2]), desc="JPEG compression", disable=not self.verbose):  # type: ignore
             if x.shape[-1] == 3:
                 x_jpeg[idx] = self._compress(x[idx], mode="RGB")
             else:
@@ -172,7 +172,7 @@ class JpegCompression(Preprocessor):
         return x_jpeg, y
 
     def _check_params(self) -> None:
-        if not isinstance(self.quality, (int, np.int)) or self.quality <= 0 or self.quality > 100:
+        if not isinstance(self.quality, int) or self.quality <= 0 or self.quality > 100:
             raise ValueError("Image quality must be a positive integer <= 100.")
 
         if len(self.clip_values) != 2:

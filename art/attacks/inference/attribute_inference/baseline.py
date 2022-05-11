@@ -34,7 +34,11 @@ from art.utils import (
     float_to_categorical,
     floats_to_one_hot,
     get_feature_values,
+<<<<<<< HEAD
     is_single_index_feature,
+=======
+    get_feature_index,
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
 )
 
 if TYPE_CHECKING:
@@ -109,7 +113,11 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
             raise ValueError("Illegal value for parameter `attack_model_type`.")
 
         self._check_params()
+<<<<<<< HEAD
         self.single_index_feature = is_single_index_feature(self.attack_feature)
+=======
+        self.attack_feature = get_feature_index(self.attack_feature)
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
 
     def fit(self, x: np.ndarray) -> None:
         """
@@ -119,17 +127,24 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
         """
 
         # Checks:
-        if self.single_index_feature and self.attack_feature >= x.shape[1]:
+        if isinstance(self.attack_feature, int) and self.attack_feature >= x.shape[1]:
             raise ValueError("attack_feature must be a valid index to a feature in x")
 
         # get vector of attacked feature
         y = x[:, self.attack_feature]
+<<<<<<< HEAD
         self._values = get_feature_values(y, self.single_index_feature)
         if self.single_index_feature:
+=======
+        self._values = get_feature_values(y, isinstance(self.attack_feature, int))
+        if isinstance(self.attack_feature, int):
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
             y_one_hot = float_to_categorical(y)
         else:
             y_one_hot = floats_to_one_hot(y)
         y_ready = check_and_transform_label_format(y_one_hot, len(np.unique(y)), return_one_hot=True)
+        if y_ready is None:
+            raise ValueError("None value detected.")
 
         # create training set for attack model
         x_train = np.delete(x, self.attack_feature, 1).astype(np.float32)
@@ -152,8 +167,10 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
         :return: The inferred feature values.
         """
         x_test = x.astype(np.float32)
+        values = kwargs.get("values")
 
         # if provided, override the values computed in fit()
+<<<<<<< HEAD
         if "values" in kwargs.keys():
             self._values = kwargs.get("values")
 
@@ -161,6 +178,15 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
 
         if self._values is not None:
             if self.single_index_feature:
+=======
+        if values is not None:
+            self._values = values
+
+        predictions = self.attack_model.predict(x_test).astype(np.float32)
+
+        if self._values is not None:
+            if isinstance(self.attack_feature, int):
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
                 predictions = np.array([self._values[np.argmax(arr)] for arr in predictions])
             else:
                 i = 0
@@ -171,6 +197,7 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
         return np.array(predictions)
 
     def _check_params(self) -> None:
+
         if not isinstance(self.attack_feature, int) and not isinstance(self.attack_feature, slice):
             raise ValueError("Attack feature must be either an integer or a slice object.")
 

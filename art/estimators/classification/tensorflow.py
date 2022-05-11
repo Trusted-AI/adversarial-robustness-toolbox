@@ -132,7 +132,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         self._loss = loss
         self._learning = learning
         if feed_dict is None:
-            self._feed_dict = dict()
+            self._feed_dict = {}
         else:
             self._feed_dict = feed_dict
 
@@ -380,7 +380,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         # Check value of label for computing gradients
         if not (  # pragma: no cover
             label is None
-            or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
+            or (isinstance(label, int) and label in range(self.nb_classes))
             or (
                 isinstance(label, np.ndarray)
                 and len(label.shape) == 1
@@ -388,7 +388,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
                 and label.shape[0] == x.shape[0]
             )
         ):
-            raise ValueError("Label %s is out of range." % label)
+            raise ValueError(f"Label {label} is out of range.")
 
         self._init_class_grads(label=label)
 
@@ -405,7 +405,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
             grads = self._sess.run(self._class_grads, feed_dict=feed_dict)
             grads = np.swapaxes(np.array(grads), 0, 1)
 
-        elif isinstance(label, (int, np.integer)):
+        elif isinstance(label, int):
             # Compute the gradients only w.r.t. the provided label
             grads = self._sess.run(self._class_grads[label], feed_dict=feed_dict)
             grads = grads[None, ...]
@@ -593,14 +593,14 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
 
         if isinstance(layer, six.string_types):  # basestring for Python 2 (str, unicode) support
             if layer not in self._layer_names:  # pragma: no cover
-                raise ValueError("Layer name %s is not part of the graph." % layer)
+                raise ValueError(f"Layer name {layer} is not part of the graph.")
             layer_tensor = graph.get_tensor_by_name(layer)
 
-        elif isinstance(layer, (int, np.integer)):
+        elif isinstance(layer, int):
             layer_tensor = graph.get_tensor_by_name(self._layer_names[layer])
 
         else:  # pragma: no cover
-            raise TypeError("Layer must be of type `str` or `int`. Received %s." % layer)
+            raise TypeError(f"Layer must be of type `str` or `int`. Received {layer}.")
 
         if framework:
             return layer_tensor
@@ -626,9 +626,9 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
             layer_output = self._sess.run(layer_tensor, feed_dict=feed_dict)
             results.append(layer_output)
 
-        results = np.concatenate(results)
+        results_array = np.concatenate(results)
 
-        return results
+        return results_array
 
     def save(self, filename: str, path: Optional[str] = None) -> None:
         """
@@ -767,24 +767,11 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
 
     def __repr__(self):
         repr_ = (
-            "%s(input_ph=%r, output=%r, labels_ph=%r, train=%r, loss=%r, learning=%r, sess=%r, "
-            "channels_first=%r, clip_values=%r, preprocessing_defences=%r, postprocessing_defences=%r, "
-            "preprocessing=%r)"
-            % (
-                self.__module__ + "." + self.__class__.__name__,
-                self.input_ph,
-                self.output,
-                self.labels_ph,
-                self.train,
-                self._loss,
-                self.learning,
-                self._sess,
-                self.channels_first,
-                self.clip_values,
-                self.preprocessing_defences,
-                self.postprocessing_defences,
-                self.preprocessing,
-            )
+            f"{self.__module__ + '.' + self.__class__.__name__}(input_ph={self.input_ph!r}, output={self.output!r}, "
+            f"labels_ph={self.labels_ph!r}, train={self.train!r}, loss={self._loss!r}, learning={self.learning!r}, "
+            f"sess={self._sess!r}, channels_first={self.channels_first}, clip_values={self.clip_values!r}, "
+            f"preprocessing_defences={self.preprocessing_defences}, "
+            f"postprocessing_defences={self.postprocessing_defences}, preprocessing={self.preprocessing})"
         )
 
         return repr_
@@ -1052,7 +1039,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
             if tf.executing_eagerly():
                 if label is None:
                     # Compute the gradients w.r.t. all classes
-                    class_gradients = list()
+                    class_gradients = []
 
                     for i in range(self.nb_classes):
                         predictions = self.model(x_input, training=training_mode)
@@ -1067,7 +1054,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
                     gradients = np.swapaxes(np.array(class_gradients), 0, 1)
 
-                elif isinstance(label, (int, np.integer)):
+                elif isinstance(label, int):
                     # Compute the gradients only w.r.t. the provided label
                     predictions = self.model(x_input, training=training_mode)
                     prediction = predictions[:, label]
@@ -1078,7 +1065,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
                 else:
                     # For each sample, compute the gradients w.r.t. the indicated target class (possibly distinct)
-                    class_gradients = list()
+                    class_gradients = []
                     unique_labels = list(np.unique(label))
 
                     for unique_label in unique_labels:
@@ -1107,7 +1094,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         y: Union[np.ndarray, "tf.Tensor"],
         reduction: str = "none",
         training_mode: bool = False,
-        **kwargs
+        **kwargs,
     ) -> np.ndarray:
         """
         Compute the loss.
@@ -1175,7 +1162,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         x: Union[np.ndarray, "tf.Tensor"],
         y: Union[np.ndarray, "tf.Tensor"],
         training_mode: bool = False,
-        **kwargs
+        **kwargs,
     ) -> Union[np.ndarray, "tf.Tensor"]:
         """
         Compute the gradient of the loss function w.r.t. `x`.
@@ -1326,7 +1313,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
         return None  # type: ignore
 
-    def get_activations(
+    def get_activations(  # type: ignore
         self, x: np.ndarray, layer: Union[int, str], batch_size: int = 128, framework: bool = False
     ) -> Optional[np.ndarray]:
         """
@@ -1337,6 +1324,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         :param x: Input for computing the activations.
         :param layer: Layer for computing the activations.
         :param batch_size: Batch size.
+        :param framework: Return activation as tensor.
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
@@ -1351,7 +1339,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
         if isinstance(layer, six.string_types):
             if layer not in self.layer_names:  # pragma: no cover
-                raise ValueError("Layer name %s is not part of the graph." % layer)
+                raise ValueError(f"Layer name {layer} is not part of the graph.")
             for i_name, name in enumerate(self.layer_names):
                 if name == layer:
                     i_layer = i_name
@@ -1359,8 +1347,8 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         elif isinstance(layer, int):
             if layer < -len(self.layer_names) or layer >= len(self.layer_names):  # pragma: no cover
                 raise ValueError(
-                    "Layer index %d is outside of range (-%d to %d)."
-                    % (layer, len(self.layer_names), len(self.layer_names) - 1)
+                    f"Layer index {layer} is outside of range (-{len(self.layer_names)} "
+                    f"to {len(self.layer_names) - 1})."
                 )
             i_layer = layer
         else:  # pragma: no cover
@@ -1368,13 +1356,13 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
         activation_model = tf.keras.Model(self._model.layers[0].input, self._model.layers[i_layer].output)
 
-        if framework:
-            if isinstance(x, tf.Tensor):
-                return activation_model(x, training=False)
-            return activation_model(tf.convert_to_tensor(x), training=False)
-
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x=x, y=None, fit=False)
+
+        if framework:
+            if isinstance(x_preprocessed, tf.Tensor):
+                return activation_model(x_preprocessed, training=False)
+            return activation_model(tf.convert_to_tensor(x_preprocessed), training=False)
 
         # Determine shape of expected output and prepare array
         output_shape = self._model.layers[i_layer].output_shape
@@ -1402,6 +1390,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
     def __repr__(self):
         repr_ = (
+<<<<<<< HEAD
             "%s(model=%r, nb_classes=%r, input_shape=%r, loss_object=%r, train_step=%r, "
             "channels_first=%r, clip_values=%r, preprocessing_defences=%r, postprocessing_defences=%r, "
             "preprocessing=%r)"
@@ -1418,6 +1407,13 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                 self.postprocessing_defences,
                 self.preprocessing,
             )
+=======
+            f"{self.__module__ + '.' + self.__class__.__name__}(model={self._model}, nb_classes={self.nb_classes}, "
+            f"input_shape={self._input_shape}, loss_object={self._loss_object}, train_step={self._train_step}, "
+            f"channels_first={self.channels_first}, clip_values={self.clip_values!r}, "
+            f"preprocessing_defences={self.preprocessing_defences}, "
+            f"postprocessing_defences={self.postprocessing_defences}, preprocessing={self.preprocessing})"
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
         )
 
         return repr_

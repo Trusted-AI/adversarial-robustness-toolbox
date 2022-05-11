@@ -179,7 +179,7 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
 
         input_is_tensor = isinstance(x, tf.Tensor)
 
-        if self.all_framework_preprocessing and not (not input_is_tensor and x.dtype == np.object):
+        if self.all_framework_preprocessing and not (not input_is_tensor and x.dtype == object):
             # Convert np arrays to torch tensors.
             if not input_is_tensor:
                 x = tf.convert_to_tensor(x)
@@ -249,7 +249,7 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
 
         input_is_tensor = isinstance(x, tf.Tensor)
 
-        if self.all_framework_preprocessing and not (not input_is_tensor and x.dtype == np.object):
+        if self.all_framework_preprocessing and not (not input_is_tensor and x.dtype == object):
             with tf.GradientTape() as tape:
                 # Convert np arrays to TensorFlow tensors.
                 x = tf.convert_to_tensor(x, dtype=config.ART_NUMPY_DTYPE)
@@ -270,9 +270,7 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
             # Convert torch tensors back to np arrays.
             gradients = x_grad.numpy()
             if gradients.shape != x_orig.shape:  # pragma: no cover
-                raise ValueError(
-                    "The input shape is {} while the gradient shape is {}".format(x.shape, gradients.shape)
-                )
+                raise ValueError(f"The input shape is {x.shape} while the gradient shape is {gradients.shape}")
 
         elif len(self.preprocessing_operations) == 1 or (
             len(self.preprocessing_operations) == 2

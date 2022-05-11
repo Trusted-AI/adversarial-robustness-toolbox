@@ -42,12 +42,16 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - name: Pre-install Lingvo ASR
-        # scipy beyond 1.6.0 is not available on Python 3.6, therefore we adapt the installation of requirements.txt
+        # scipy beyond 1.6.0 is not available on Python 3.6, therefore we adapt the installation of requirements_test.txt
         run: |
           sudo apt-get update
           sudo apt-get -y -q install ffmpeg libavcodec-extra
           python -m pip install --upgrade pip setuptools wheel
+<<<<<<< HEAD
           pip install -q -r <(sed '/^scipy/d;/^matplotlib/d;/^pandas/d;/^statsmodels/d;/^numba/d' requirements_test.txt)
+=======
+          pip install -q -r <(sed '/^scipy/d;/^matplotlib/d;/^pandas/d;/^statsmodels/d;/^numba/d;/^jax/d;/^h5py/d;/^Pillow/d;/^pytest/d;/^pytest-mock/d;/^torch/d;/^torchaudio/d;/^torchvision/d;/^xgboost/d' requirements_test.txt)
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
           pip install scipy==1.5.4
           pip install matplotlib==3.3.4
           pip install pandas==1.1.5
@@ -58,6 +62,16 @@ jobs:
           pip install lingvo==${{ matrix.lingvo }}
           pip install tensorflow-addons==0.9.1
           pip install model-pruning-google-research==0.0.3
+          pip install jax[cpu]==0.2.17
+          pip install h5py==2.10.0
+          pip install pytest~=7.0.1
+          pip install pytest-flake8~=1.1.0
+          pip install pytest-mock
+          pip install pytest-cov~=3.0.0
+          pip install torch==1.10.2+cpu --find-links https://download.pytorch.org/whl/cpu/torch_stable.html
+          pip install torchaudio==0.10.2+cpu --find-links https://download.pytorch.org/whl/cpu/torch_stable.html
+          pip install torchvision==0.11.3+cpu --find-links https://download.pytorch.org/whl/cpu/torch_stable.html
+          pip install xgboost==1.5.2
           pip list
       - name: Run ${{ matrix.name }} Tests
         run: ./run_tests.sh ${{ matrix.framework }}

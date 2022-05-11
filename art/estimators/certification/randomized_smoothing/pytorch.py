@@ -119,7 +119,11 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         x = x.astype(ART_NUMPY_DTYPE)
         return PyTorchClassifier.fit(self, x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
+<<<<<<< HEAD
     def fit(
+=======
+    def fit(  # pylint: disable=W0221
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
         self,
         x: np.ndarray,
         y: np.ndarray,
@@ -159,7 +163,9 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         """
         return RandomizedSmoothingMixin.predict(self, x, batch_size=batch_size, training_mode=False, **kwargs)
 
-    def loss_gradient(self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs) -> np.ndarray:
+    def loss_gradient(  # type: ignore
+        self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs
+    ) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
@@ -196,7 +202,10 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
             noise = torch.randn_like(inputs_repeat_t, device=self._device) * self.scale
             inputs_noise_t = inputs_repeat_t + noise
             if self.clip_values is not None:
-                inputs_noise_t.clamp(self.clip_values[0], self.clip_values[1])
+                inputs_noise_t.clamp(
+                    torch.tensor(self.clip_values[0]),
+                    torch.tensor(self.clip_values[1]),
+                )
 
             model_outputs = self._model(inputs_noise_t)[-1]
             softmax = torch.nn.functional.softmax(model_outputs, dim=1)

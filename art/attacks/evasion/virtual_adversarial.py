@@ -32,7 +32,6 @@ from art.attacks.attack import EvasionAttack
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
-from art.utils import compute_success
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
@@ -168,11 +167,6 @@ class VirtualAdversarialMethod(EvasionAttack):
                     (-1,) + self.estimator.input_shape
                 )
 
-        logger.info(
-            "Success rate of virtual adversarial attack: %.2f%%",
-            100 * compute_success(self.estimator, x, y, x_adv, batch_size=self.batch_size),
-        )
-
         return x_adv
 
     @staticmethod
@@ -207,7 +201,7 @@ class VirtualAdversarialMethod(EvasionAttack):
         return res
 
     def _check_params(self) -> None:
-        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter <= 0:
+        if not isinstance(self.max_iter, int) or self.max_iter <= 0:
             raise ValueError("The number of iterations must be a positive integer.")
 
         if self.eps <= 0:

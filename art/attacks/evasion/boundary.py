@@ -33,7 +33,7 @@ from art.attacks.attack import EvasionAttack
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
-from art.utils import compute_success, to_categorical, check_and_transform_label_format
+from art.utils import compute_success, to_categorical, check_and_transform_label_format, get_labels_np_array
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
@@ -110,7 +110,7 @@ class BoundaryAttack(EvasionAttack):
         self.verbose = verbose
         self._check_params()
 
-        self.curr_adv = None
+        self.curr_adv: Optional[np.ndarray] = None
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
@@ -123,6 +123,14 @@ class BoundaryAttack(EvasionAttack):
         :type x_adv_init: `np.ndarray`
         :return: An array holding the adversarial examples.
         """
+        if y is None:
+            # Throw error if attack is targeted, but no targets are provided
+            if self.targeted:  # pragma: no cover
+                raise ValueError("Target labels `y` need to be provided for a targeted attack.")
+
+            # Use model predictions as correct outputs
+            y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))  # type: ignore
+
         y = check_and_transform_label_format(y, self.estimator.nb_classes, return_one_hot=False)
 
         if y is not None and self.estimator.nb_classes == 2 and y.shape[1] == 1:
@@ -178,8 +186,7 @@ class BoundaryAttack(EvasionAttack):
                     clip_max=clip_max,
                 )
 
-        if y is not None:
-            y = to_categorical(y, self.estimator.nb_classes)
+        y = to_categorical(y, self.estimator.nb_classes)
 
         logger.info(
             "Success rate of Boundary attack: %.2f%%",
@@ -449,16 +456,16 @@ class BoundaryAttack(EvasionAttack):
         return potential_advs[min_idx]
 
     def _check_params(self) -> None:
-        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter < 0:
+        if not isinstance(self.max_iter, int) or self.max_iter < 0:
             raise ValueError("The number of iterations must be a non-negative integer.")
 
-        if not isinstance(self.num_trial, (int, np.int)) or self.num_trial < 0:
+        if not isinstance(self.num_trial, int) or self.num_trial < 0:
             raise ValueError("The number of trials must be a non-negative integer.")
 
-        if not isinstance(self.sample_size, (int, np.int)) or self.sample_size <= 0:
+        if not isinstance(self.sample_size, int) or self.sample_size <= 0:
             raise ValueError("The number of samples must be a positive integer.")
 
-        if not isinstance(self.init_size, (int, np.int)) or self.init_size <= 0:
+        if not isinstance(self.init_size, int) or self.init_size <= 0:
             raise ValueError("The number of initial trials must be a positive integer.")
 
         if self.epsilon <= 0:

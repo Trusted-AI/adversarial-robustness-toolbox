@@ -132,6 +132,7 @@ def test_true_label_baseline_no_values(art_warning, get_iris_dataset, model_type
     except ARTTestException as e:
         art_warning(e)
 
+<<<<<<< HEAD
 
 @pytest.mark.skip_framework("dl_frameworks")
 def test_true_label_baseline_slice(art_warning, get_iris_dataset):
@@ -162,6 +163,38 @@ def test_true_label_baseline_slice(art_warning, get_iris_dataset):
         x_test_feature = x_test_iris[:, attack_feature].copy().reshape(-1, 1)
         transform_feature(x_test_feature)
 
+=======
+
+@pytest.mark.skip_framework("dl_frameworks")
+def test_true_label_baseline_slice(art_warning, get_iris_dataset):
+    try:
+        attack_feature = 2  # petal length
+
+        # need to transform attacked feature into categorical
+        def transform_feature(x):
+            x[x > 0.5] = 2.0
+            x[(x > 0.2) & (x <= 0.5)] = 1.0
+            x[x <= 0.2] = 0.0
+
+        values = [0.0, 1.0, 2.0]
+
+        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+        # training data without attacked feature
+        x_train_for_attack = np.delete(x_train_iris, attack_feature, 1)
+        # only attacked feature
+        x_train_feature = x_train_iris[:, attack_feature].copy().reshape(-1, 1)
+        transform_feature(x_train_feature)
+        # training data with attacked feature (after transformation)
+        x_train = np.concatenate((x_train_for_attack[:, :attack_feature], x_train_feature), axis=1)
+        x_train = np.concatenate((x_train, x_train_for_attack[:, attack_feature:]), axis=1)
+
+        # test data without attacked feature
+        x_test_for_attack = np.delete(x_test_iris, attack_feature, 1)
+        # only attacked feature
+        x_test_feature = x_test_iris[:, attack_feature].copy().reshape(-1, 1)
+        transform_feature(x_test_feature)
+
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
         baseline_attack = AttributeInferenceBaselineTrueLabel(attack_feature=slice(attack_feature, attack_feature + 1))
         # train attack model
         baseline_attack.fit(x_train, y_train_iris)
@@ -172,12 +205,60 @@ def test_true_label_baseline_slice(art_warning, get_iris_dataset):
         baseline_train_acc = np.sum(baseline_inferred_train == x_train_feature.reshape(1, -1)) / len(
             baseline_inferred_train
         )
+<<<<<<< HEAD
+=======
         baseline_test_acc = np.sum(baseline_inferred_test == x_test_feature.reshape(1, -1)) / len(
             baseline_inferred_test
         )
 
         assert 0.8 <= baseline_train_acc
         assert 0.7 <= baseline_test_acc
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework("dl_frameworks")
+@pytest.mark.parametrize("model_type", ["nn", "rf"])
+def test_true_label_baseline_regression(art_warning, get_diabetes_dataset, model_type):
+    try:
+        attack_feature = 1  # sex
+
+        (x_train, y_train), (x_test, y_test) = get_diabetes_dataset
+        # training data without attacked feature
+        x_train_for_attack = np.delete(x_train, attack_feature, 1)
+        # only attacked feature
+        x_train_feature = x_train[:, attack_feature].copy().reshape(-1, 1)
+
+        # test data without attacked feature
+        x_test_for_attack = np.delete(x_test, attack_feature, 1)
+        # only attacked feature
+        x_test_feature = x_test[:, attack_feature].copy().reshape(-1, 1)
+
+        baseline_attack = AttributeInferenceBaselineTrueLabel(
+            attack_feature=attack_feature, attack_model_type=model_type, is_regression=True
+        )
+        # train attack model
+        baseline_attack.fit(x_train, y_train)
+        # infer attacked feature
+        baseline_inferred_train = baseline_attack.infer(x_train_for_attack, y=y_train)
+        baseline_inferred_test = baseline_attack.infer(x_test_for_attack, y=y_test)
+        # check accuracy
+        baseline_train_acc = np.sum(baseline_inferred_train == x_train_feature.reshape(1, -1)) / len(
+            baseline_inferred_train
+        )
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
+        baseline_test_acc = np.sum(baseline_inferred_test == x_test_feature.reshape(1, -1)) / len(
+            baseline_inferred_test
+        )
+
+<<<<<<< HEAD
+        assert 0.8 <= baseline_train_acc
+        assert 0.7 <= baseline_test_acc
+=======
+        assert 0.6 <= baseline_train_acc
+        assert 0.6 <= baseline_test_acc
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
 
     except ARTTestException as e:
         art_warning(e)

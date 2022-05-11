@@ -144,7 +144,7 @@ class DetectorClassifier(ClassifierNeuralNetwork):
         x: np.ndarray,
         label: Union[int, List[int], np.ndarray, None] = None,
         training_mode: bool = False,
-        **kwargs
+        **kwargs,
     ) -> np.ndarray:
         """
         Compute per-class derivatives w.r.t. `x`.
@@ -161,7 +161,7 @@ class DetectorClassifier(ClassifierNeuralNetwork):
         """
         if not (  # pragma: no cover
             (label is None)
-            or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
+            or (isinstance(label, int) and label in range(self.nb_classes))
             or (
                 isinstance(label, np.ndarray)
                 and len(label.shape) == 1
@@ -169,13 +169,13 @@ class DetectorClassifier(ClassifierNeuralNetwork):
                 and label.shape[0] == x.shape[0]
             )
         ):
-            raise ValueError("Label %s is out of range." % label)
+            raise ValueError(f"Label {label} is out of range.")
 
         # Compute the gradient and return
         if label is None:
             combined_grads = self._compute_combined_grads(x, label=None)
 
-        elif isinstance(label, (int, np.int)):
+        elif isinstance(label, int):
             if label < self.nb_classes - 1:
                 # Compute and return from the classifier gradients
                 combined_grads = self.classifier.class_gradient(x=x, label=label, training_mode=training_mode, **kwargs)
@@ -320,19 +320,14 @@ class DetectorClassifier(ClassifierNeuralNetwork):
         self.detector.save(filename=filename + "_detector", path=path)
 
     def __repr__(self):
-        repr_ = "%s(classifier=%r, detector=%r, postprocessing_defences=%r, " "preprocessing=%r)" % (
-            self.__module__ + "." + self.__class__.__name__,
-            self.classifier,
-            self.detector,
-            self.postprocessing_defences,
-            self.preprocessing,
+        repr_ = (
+            f"{self.__module__ + '.' + self.__class__.__name__}(classifier={self.classifier}, "
+            f"detector={self.detector}, postprocessing_defences={self.postprocessing_defences}, "
+            f"preprocessing={self.preprocessing}"
         )
-
         return repr_
 
-    def _compute_combined_grads(
-        self, x: np.ndarray, label: Union[int, List[int], np.ndarray, None] = None
-    ) -> np.ndarray:
+    def _compute_combined_grads(self, x: np.ndarray, label: Optional[Union[int, List[int]]] = None) -> np.ndarray:
         # Compute the classifier gradients
         classifier_grads = self.classifier.class_gradient(x=x, label=label)
 

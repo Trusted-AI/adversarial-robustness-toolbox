@@ -125,9 +125,9 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
                 import torch.nn.functional as F
 
                 if not torch.is_tensor(input):
-                    raise TypeError("Input type is not a torch.Tensor. Got {}".format(type(input)))
+                    raise TypeError(f"Input type is not a torch.Tensor. Got {type(input)}")
                 if not len(input.shape) == 4:
-                    raise ValueError("Invalid input shape, we expect BxCxHxW. Got: {}".format(input.shape))
+                    raise ValueError(f"Invalid input shape, we expect BxCxHxW. Got: {input.shape}")
                 # prepare kernel
                 batch_size, channels, height, width = input.shape
                 kernel: torch.Tensor = self.kernel.to(input.device).to(input.dtype)
@@ -205,12 +205,12 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
                 x = x_nhwc.reshape(nb_clips, clip_size, height, width, channels)
 
         if self.clip_values is not None:
-            x = x.clamp(min=self.clip_values[0], max=self.clip_values[1])
+            x = x.clamp(min=torch.tensor(self.clip_values[0]), max=torch.tensor(self.clip_values[1]))
 
         return x, y
 
     def _check_params(self) -> None:
-        if not (isinstance(self.window_size, (int, np.int)) and self.window_size > 0):
+        if not (isinstance(self.window_size, int) and self.window_size > 0):
             raise ValueError("Sliding window size must be a positive integer.")
 
         if self.clip_values is not None and len(self.clip_values) != 2:

@@ -25,8 +25,11 @@ from typing import Tuple, Union
 import numpy as np
 import torch
 
+<<<<<<< HEAD
 from torch import nn
 
+=======
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
 
 class ZonoDenseLayer(torch.nn.Module):
     """
@@ -211,7 +214,11 @@ class ZonoConv(torch.nn.Module):
         padding: Union[int, Tuple[int, int]] = 0,
     ):
         super().__init__()
+<<<<<<< HEAD
         self.conv = nn.Conv2d(
+=======
+        self.conv = torch.nn.Conv2d(
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
             in_channels=in_channels,
             out_channels=out_channels,
             kernel_size=kernel_size,

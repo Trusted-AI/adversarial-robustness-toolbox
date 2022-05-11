@@ -1,0 +1,63 @@
+# base
+
+numpy>=1.18.5
+scipy==1.8.0
+matplotlib==3.5.2
+scikit-learn>=0.22.2,<1.1.0
+six==1.16.0
+Pillow==9.1.0
+tqdm==4.64.0
+statsmodels==0.13.2
+pydub==0.25.1
+resampy==0.2.2
+ffmpeg-python==0.2.0
+cma==3.2.2
+pandas==1.4.2
+librosa==0.9.1
+numba~=0.55.1
+opencv-python
+sortedcontainers==2.4.0
+h5py==3.6.0
+
+# frameworks
+tensorflow>=1.15.5
+tensorflow-addons>=0.13.0
+
+# using mxnet-native for reproducible test results on CI machines without Intel Architecture Processors, but mxnet is fully supported by ART
+mxnet-native==1.8.0.post0
+
+# PyTorch
+--find-links https://download.pytorch.org/whl/cpu/torch_stable.html
+torch==1.11.0
+torchaudio==0.11.0+cpu
+torchvision==0.12.0+cpu
+
+catboost==1.0.5
+GPy==1.10.0
+lightgbm==3.3.2
+xgboost==1.6.1
+
+kornia~=0.6.4
+tensorboardX==2.5
+lief==0.12.1
+jax[cpu]==0.3.10
+
+# Lingvo ASR dependencies
+# supported versions: (lingvo==0.6.4 with tensorflow-gpu==2.1.0)
+# note: due to conflicts with other TF1/2 version supported by ART, the dependencies are not installed by default
+# tensorflow-gpu==2.1.0
+# lingvo==0.6.4
+
+# other
+pytest~=7.1.2
+pytest-flake8~=1.1.1
+pytest-mock~=3.7.0
+pytest-cov~=3.0.0
+codecov~=2.1.12
+requests~=2.27.1
+
+# ART
+-e .
+
+# NOTE to contributors: When changing/adding packages, please make sure that the packages are consistent with those
+# present within the Dockerfile

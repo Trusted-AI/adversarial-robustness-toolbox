@@ -32,7 +32,7 @@ from art.attacks.attack import EvasionAttack
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassGradientsMixin
-from art.utils import to_categorical, compute_success
+from art.utils import to_categorical
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE
@@ -132,10 +132,6 @@ class NewtonFool(EvasionAttack):
             else:
                 x_adv[batch_index_1:batch_index_2] = batch
 
-        logger.info(
-            "Success rate of NewtonFool attack: %.2f%%",
-            100 * compute_success(self.estimator, x, y, x_adv, batch_size=self.batch_size),
-        )
         return x_adv
 
     def _compute_theta(self, norm_batch: np.ndarray, score: np.ndarray, norm_grad: np.ndarray) -> np.ndarray:
@@ -174,10 +170,10 @@ class NewtonFool(EvasionAttack):
         return result
 
     def _check_params(self) -> None:
-        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter <= 0:
+        if not isinstance(self.max_iter, int) or self.max_iter <= 0:
             raise ValueError("The number of iterations must be a positive integer.")
 
-        if not isinstance(self.eta, (float, int, np.int)) or self.eta <= 0:
+        if not isinstance(self.eta, (float, int)) or self.eta <= 0:
             raise ValueError("The eta coefficient must be a positive float.")
 
         if self.batch_size <= 0:

@@ -219,7 +219,11 @@ class LaserBeam(AdversarialObject):
         if distance <= self.width / 2.0:
             return self.rgb
         if self.width / 2.0 <= distance <= 5 * self.width:
+<<<<<<< HEAD
             return np.math.sqrt(self.width) / np.math.pow(distance, 2) * self.rgb
+=======
+            return np.math.sqrt(self.width) / np.math.pow(distance, 2) * self.rgb  # type: ignore
+>>>>>>> d60c7c08eba4f053d1666dbdd33f0f05b02bdc9f
 
         return np.array([0.0, 0.0, 0.0])
 

@@ -238,8 +238,8 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
 
         # monkey-patch the lingvo.asr.decoder.AsrDecoderBase._ComputeMetrics method with patched method according
         # to Qin et al
-        import lingvo.tasks.asr.decoder as decoder
-        import asr.decoder_patched as decoder_patched
+        from lingvo.tasks.asr import decoder
+        from asr import decoder_patched
 
         decoder.AsrDecoderBase._ComputeMetrics = decoder_patched.AsrDecoderBase._ComputeMetrics  # pylint: disable=W0212
 
@@ -422,7 +422,7 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
         # Apply preprocessing
         x, _ = self._apply_preprocessing(x, y=None, fit=False)
 
-        y = list()
+        y = []
         nb_batches = int(np.ceil(nb_samples / float(batch_size)))
         for m in range(nb_batches):
             # batch indices
@@ -517,13 +517,13 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
 
         # undo padding, i.e. change gradients shape from (nb_samples, max_length) to (nb_samples)
         lengths = mask.sum(axis=1)
-        gradients = list()
+        gradients = []
         for gradient_padded, length in zip(gradients_padded, lengths):
             gradient = gradient_padded[:length]
             gradients.append(gradient)
 
-        # for ragged input, use np.object dtype
-        dtype = np.float32 if x.ndim != 1 else np.object
+        # for ragged input, use object dtype
+        dtype = np.float32 if x.ndim != 1 else object
         return np.array(gradients, dtype=dtype)
 
     def _loss_gradient_per_sequence(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
@@ -536,7 +536,7 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
         _, _, mask_frequency = self._pad_audio_input(x)
 
         # iterate over sequences
-        gradients = list()
+        gradients = []
         for x_i, y_i, mask_frequency_i in zip(x, y, mask_frequency):
             # calculate frequency length for x_i
             frequency_length = (len(x_i) // 2 + 1) // 240 * 3
@@ -550,8 +550,8 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
             gradient = self.sess.run(self._loss_gradient_op, feed_dict)  # type: ignore
             gradients.append(np.squeeze(gradient))
 
-        # for ragged input, use np.object dtype
-        dtype = np.float32 if x.ndim != 1 else np.object
+        # for ragged input, use object dtype
+        dtype = np.float32 if x.ndim != 1 else object
         return np.array(gradients, dtype=dtype)
 
     def get_activations(
