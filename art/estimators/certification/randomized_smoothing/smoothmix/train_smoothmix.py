@@ -24,34 +24,28 @@ This module implements SmoothMix.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Tuple, Union, TYPE_CHECKING
+from typing import Tuple, Union
 import numpy as np
 
-from art.config import ART_NUMPY_DTYPE
 import torch
-
-if TYPE_CHECKING:
-    # pylint: disable=C0412
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
-    from art.defences.preprocessor import Preprocessor
-    from art.defences.postprocessor import Postprocessor
+from art.config import ART_NUMPY_DTYPE
 
 logger = logging.getLogger(__name__)
 
 
+# pylint: disable=W0613
 def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
     """
     Performs SmoothMix adversarial training on the model
 
     :param x: Training data.
-    :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) 
+    :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes)
               or indices of shape (nb_samples,).
     :param batch_size: Batch size.
     :key nb_epochs: Number of epochs to use for training
     """
-    import torch  # lgtm [py/repeated-import]
     import torch.nn.functional as F
-    from art.estimators.certification.randomized_smoothing.smoothmix.smooth_pgd_attack import SmoothMix_PGD
+    from art.estimators.certification.randomized_smoothing.smoothmix.smooth_pgd_attack import SmoothMixPGD
     import random
 
     x = x.astype(ART_NUMPY_DTYPE)
@@ -61,7 +55,7 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
         self.maxnorm_s = self.alpha * self.mix_step
 
     if self.attack_type == "PGD":
-        attacker = SmoothMix_PGD(
+        attacker = SmoothMixPGD(
             steps=self.num_steps,
             mix_step=self.mix_step,
             alpha=self.alpha,
@@ -91,21 +85,28 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
 
         # Put the model in the training mode
         self.model.train()
-        self._requires_grad_(self.model, True)
+        self._requires_grad_(self.model, True)  # pylint: disable=W0212
 
-        for nb in range(num_batch):
-            input_batch = torch.from_numpy(x[ind[nb * batch_size : (nb + 1) * batch_size]]).to(self.device)
-            output_batch = torch.from_numpy(y[ind[nb * batch_size : (nb + 1) * batch_size]]).to(self.device)
+        for num_batch_index in range(num_batch):
+            input_batch = torch.from_numpy(
+                x[ind[num_batch_index * batch_size : (num_batch_index + 1) * batch_size]]
+            ).to(self.device)
+            output_batch = torch.from_numpy(
+                y[ind[num_batch_index * batch_size : (num_batch_index + 1) * batch_size]]
+            ).to(self.device)
 
-            mini_batches = self._get_minibatches(input_batch, output_batch, self.num_noise_vec)
+            # pylint: disable=W0212
+            mini_batches = self._get_minibatches(
+                input_batch, output_batch, self.num_noise_vec
+            )
 
-            for i, (inputs, targets) in enumerate(mini_batches):
+            for (inputs, targets) in mini_batches:
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
 
                 noises = [torch.randn_like(inputs) * self.scale for _ in range(self.num_noise_vec)]
 
                 # Attack and find adversarial examples
-                self._requires_grad_(self.model, False)
+                self._requires_grad_(self.model, False)  # pylint: disable=W0212
                 self.model.eval()
                 inputs, inputs_adv = attacker.attack(
                     self.model,
@@ -114,7 +115,7 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
                     noises=noises
                 )
                 self.model.train()
-                self._requires_grad_(self.model, True)
+                self._requires_grad_(self.model, True)  # pylint: disable=W0212
 
                 in_clean_c = torch.cat([inputs + noise for noise in noises], dim=0)
                 logits_c = self.model(in_clean_c)
@@ -122,6 +123,9 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
 
                 logits_c_chunk = torch.chunk(logits_c, self.num_noise_vec, dim=0)
                 clean_avg_sm = _avg_softmax(logits_c_chunk)
+
+                if isinstance(clean_avg_sm, float):
+                    clean_avg_sm = torch.Tensor(clean_avg_sm)
 
                 loss_xent = F.cross_entropy(logits_c, targets_c, reduction='none')
 
@@ -151,37 +155,37 @@ def fit_tensorflow(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epoch
     raise NotImplementedError
 
 
-def get_minibatches(X, y, num_batches):
+def get_minibatches(x, y, num_batches):
     """
     Generate batches of the training data and target values
 
-    :param X: Training data
+    :param x: Training data
     :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,).
     :param num_batches: The number of batches to generate
     """
-    batch_size = len(X) // num_batches
+    batch_size = len(x) // num_batches
     for i in range(num_batches):
-        yield X[i * batch_size : (i + 1) * batch_size], y[i * batch_size : (i + 1) * batch_size]
+        yield x[i * batch_size : (i + 1) * batch_size], y[i * batch_size : (i + 1) * batch_size]
 
 
-def _mixup_data(x1, x2, y1, n_classes) -> Tuple[torch.Tensor, torch.Tensor]:
+def _mixup_data(x_1, x_2, y_1, n_classes) -> Tuple[torch.Tensor, torch.Tensor]:
     """
     Returns mixed inputs, pairs of targets, and lambda
 
-    :param x1: Training data
-    :param x2: Adversarial training data
-    :param y1: Training labels
+    :param x_1: Training data
+    :param x_2: Adversarial training data
+    :param y_1: Training labels
     :param n_classes: The number of classes
     """
-    device = x1.device
+    device = x_1.device
 
     _eye = torch.eye(n_classes, device=device)
     _unif = _eye.mean(0, keepdim=True)
-    lam = torch.rand(x1.size(0), device=device) / 2
+    lam = torch.rand(x_1.size(0), device=device) / 2
 
-    mixed_x = (1 - lam).view(-1, 1, 1, 1) * x1 + lam.view(-1, 1, 1, 1) * x2
-    mixed_y = (1 - lam).view(-1, 1) * y1 + lam.view(-1, 1) * _unif
+    mixed_x = (1 - lam).view(-1, 1, 1, 1) * x_1 + lam.view(-1, 1, 1, 1) * x_2
+    mixed_y = (1 - lam).view(-1, 1) * y_1 + lam.view(-1, 1) * _unif
 
     return mixed_x, mixed_y
 

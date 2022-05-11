@@ -248,7 +248,7 @@ class TestRandomizedSmoothing(unittest.TestCase):
     def test_4_smoothmix(self):
         """
         Test with a PyTorch classifier with SmoothMix training enabled
-        :return: 
+        :return:
         """
         ptc = get_image_classifier_pt()
 

@@ -20,19 +20,20 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This is authors' implementation of SmoothMix_PGD
+This is authors' implementation of SmoothMixPGD
 
 | Paper link: https://arxiv.org/pdf/2111.09277.pdf
 | Authors' implementation: https://github.com/jh-jeong/smoothmix/code/train.py
 
 """
 
+from typing import Any, List, Optional
 import torch
 import torch.nn.functional as F
-from typing import Optional
 
 
-class SmoothMix_PGD(object):
+# pylint: disable=useless-object-inheritance
+class SmoothMixPGD(object):
     """
     Author's original implementation of a Smooth PGD attacker
     """
@@ -53,7 +54,7 @@ class SmoothMix_PGD(object):
         :param maxnorm_s: initial value of alpha * mix_step
         :param maxnorm: initial value of alpha * mix_step for adversarial examples
         """
-        super(SmoothMix_PGD, self).__init__()
+        super().__init__()
         self.steps = steps
         self.mix_step = mix_step
         self.alpha = alpha
@@ -68,7 +69,7 @@ class SmoothMix_PGD(object):
         model: torch.nn.Module,
         inputs: torch.Tensor,
         labels: torch.Tensor,
-        noises: torch.Tensor
+        noises: List[Any]
     ):
         """
         Attacks the model with the given inputs
@@ -90,18 +91,18 @@ class SmoothMix_PGD(object):
             x_flat = x.reshape(x.size(0), -1)
             return torch.norm(x_flat, dim=1)
 
-        def _project(x: torch.Tensor, x0: torch.Tensor, maxnorm: Optional[float] = None):
+        def _project(x: torch.Tensor, x_0: torch.Tensor, maxnorm: Optional[float] = None):
             """
             Apply a projection of the current inputs with the maxnorm
 
             :param x: The inputs to apply a projection on (either original or adversarial)
-            :param x0: The unperterbed inputs to apply the projection on
+            :param x_0: The unperterbed inputs to apply the projection on
             :param maxnorm: The maxnorm value to apply to x
             """
             if maxnorm is not None:
-                eta = x - x0
+                eta = x - x_0
                 eta = eta.renorm(p=2, dim=0, maxnorm=maxnorm)
-                x = x0 + eta
+                x = x_0 + eta
             x = torch.clamp(x, 0, 1)
             x = x.detach()
             return x
@@ -115,6 +116,12 @@ class SmoothMix_PGD(object):
 
             softmax = [F.softmax(model(adv + noise), dim=1) for noise in noises]
             avg_softmax = sum(softmax) / len(noises)
+
+            # If-statement fixes mypy linting error for the following:
+            # error: Item "float" of "Union[Tensor, float]" has no attribute "clamp"
+            if isinstance(avg_softmax, float):
+                avg_softmax = torch.Tensor(avg_softmax)
+
             logsoftmax = torch.log(avg_softmax.clamp(min=1e-20))
 
             loss = F.nll_loss(logsoftmax, labels, reduction='sum')

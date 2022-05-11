@@ -76,8 +76,8 @@ class RandomizedSmoothingMixin(ABC):
         :param attack_type: The type of attack to use
         :param epsilon: Maximum perturbation that the attacker can introduce
         :param num_steps: Number of attack updates
-        :param warmup: Warm-up strategy that is gradually increased for the first 10 epochs up to 
-                       the original value of epsilon
+        :param warmup: Warm-up strategy that is gradually increased for the first
+                       10 epochs up to the original value of epsilon
         :param lbd: Weight of robustness loss in Macer
         :param gamma: Value to multiply the LR by
         :param beta: The inverse function temperature in Macer

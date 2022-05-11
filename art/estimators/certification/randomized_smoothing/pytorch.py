@@ -135,8 +135,8 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         :param attack_type: The type of attack to use
         :param epsilon: Maximum perturbation that the attacker can introduce
         :param num_steps: Number of attack updates
-        :param warmup: Warm-up strategy that is gradually increased for the first 10 epochs up to 
-                       the original value of epsilon
+        :param warmup: Warm-up strategy that is gradually increased for the first
+                       10 epochs up to the original value of epsilon
         :param lbd: Weight of robustness loss in Macer
         :param gamma: Value to multiply the LR by
         :param beta: The inverse function temperature in Macer
@@ -315,7 +315,8 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         """
         raise NotImplementedError
 
-    def _requires_grad_(  # pylint: disable R0201
+    # pylint: disable=R0201
+    def _requires_grad_(
         self, model: torch.nn.Module, requires_grad: bool
     ) -> None:
         """
@@ -327,7 +328,8 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         for param in model.parameters():
             param.requires_grad_(requires_grad)
 
-    def _get_minibatches(  # pylint: disable R0201
+    # pylint: disable=R0201
+    def _get_minibatches(
         self, x: np.ndarray, y: np.ndarray, num_batches: int
     ):
         """
