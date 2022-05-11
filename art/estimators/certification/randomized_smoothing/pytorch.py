@@ -26,7 +26,6 @@ import logging
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
-import torch
 
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.classification.pytorch import PyTorchClassifier
@@ -37,6 +36,7 @@ from art.defences.preprocessor.gaussian_augmentation import GaussianAugmentation
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
+    import torch
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
@@ -247,6 +247,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         :type sampling: `bool`
         :return: Array of gradients of the same shape as `x`.
         """
+        import torch # lgtm [py/repeated-import]
         sampling = kwargs.get("sampling")
 
         if sampling:
