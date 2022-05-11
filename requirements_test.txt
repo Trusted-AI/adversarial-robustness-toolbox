@@ -56,21 +56,8 @@ pytest-cov~=3.0.0
 codecov~=2.1.12
 requests~=2.27.1
 
-<<<<<<< HEAD
-torch>=1.6.0 
-torchvision>=0.7.0 -f https://download.pytorch.org/whl/torch_stable.html
-kornia>=0.3.1
-Pillow==8.4.0
-
-pytest==5.4.1 
-pytest-pep8==1.0.6 
-pytest-mock==3.2.0 
-codecov==2.1.8 
-requests==2.24.0
-=======
 # ART
 -e .
 
 # NOTE to contributors: When changing/adding packages, please make sure that the packages are consistent with those
 # present within the Dockerfile
->>>>>>> upstream/main
