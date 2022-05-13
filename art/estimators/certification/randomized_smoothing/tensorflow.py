@@ -154,6 +154,7 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
 
         for _ in tqdm(range(nb_epochs)):
             for images, labels in train_ds:
+                # Add random noise for randomized smoothing
                 images += tf.random.normal(shape=images.shape, mean=0.0, stddev=self.scale)
                 self._train_step(self.model, images, labels)
 
