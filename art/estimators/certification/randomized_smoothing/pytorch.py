@@ -178,6 +178,8 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
             for m in range(num_batch):
                 i_batch = torch.from_numpy(x_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]).to(self._device)
                 o_batch = torch.from_numpy(y_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]).to(self._device)
+
+                # Add random noise for randomized smoothing
                 i_batch = i_batch + torch.randn_like(i_batch, device=self._device) * std
 
                 # Zero the parameter gradients
