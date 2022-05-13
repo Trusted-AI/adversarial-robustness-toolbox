@@ -25,8 +25,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 from typing import Callable, List, Optional, Tuple, Union, TYPE_CHECKING
 
-import warnings
 from tqdm import tqdm
+import warnings
 import numpy as np
 
 from art.estimators.classification.tensorflow import TensorFlowV2Classifier
