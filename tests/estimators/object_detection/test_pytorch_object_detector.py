@@ -44,7 +44,7 @@ class TestPyTorchObjectDetector(TestBase):
         cls.y_test_mnist = cls.y_test_mnist[0 : cls.n_test]
 
         # Only import if object detection module is available
-        from art.estimators.object_detection.python_object_detector import PyTorchObjectDetector
+        from art.estimators.object_detection.pytorch_object_detector import PyTorchObjectDetector
 
         # Define object detectors
         model_1 = torchvision.models.detection.fasterrcnn_resnet50_fpn(
