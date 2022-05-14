@@ -505,7 +505,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         model = copy.deepcopy(self.model)
 
         if self._optimizer is None:  # pragma: no cover
-            raise ValueError("An optimizer is needed to train the model, but none for provided.")
+            raise ValueError("An optimizer is needed to train the model, but none is provided.")
 
         # create a new optimizer that binds to the cloned model's parameters and uses original optimizer's defaults
         new_optimizer = type(self._optimizer)(model.parameters(), **self._optimizer.defaults)  # type: ignore
