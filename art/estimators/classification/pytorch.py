@@ -378,8 +378,6 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         """
         import torch  # lgtm [py/repeated-import]
 
-        use_ffcv = kwargs.get("ffcv")
-
         # Set model mode
         self._model.train(mode=training_mode)
 
@@ -397,157 +395,15 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         ind = np.arange(len(x_preprocessed))
 
-        if use_ffcv:
-            self._fit_ffcv(
-                x=x_preprocessed,
-                y=y_preprocessed,
-                batch_size=batch_size,
-                nb_epochs=nb_epochs,
-                training_mode=training_mode,
-                **kwargs,
-            )
-        else:
-            # Start training
-            for _ in range(nb_epochs):
-                # Shuffle the examples
-                random.shuffle(ind)
-
-                # Train for one epoch
-                for m in range(num_batch):
-                    i_batch = torch.from_numpy(x_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]).to(
-                        self._device
-                    )
-                    o_batch = torch.from_numpy(y_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]).to(
-                        self._device
-                    )
-
-                    # Zero the parameter gradients
-                    self._optimizer.zero_grad()
-
-                    # Perform prediction
-                    model_outputs = self._model(i_batch)
-
-                    # Form the loss function
-                    loss = self._loss(model_outputs[-1], o_batch)  # lgtm [py/call-to-non-callable]
-
-                    # Do training
-                    if self._use_amp:  # pragma: no cover
-                        from apex import amp  # pylint: disable=E0611
-
-                        with amp.scale_loss(loss, self._optimizer) as scaled_loss:
-                            scaled_loss.backward()
-
-                    else:
-                        loss.backward()
-
-                    self._optimizer.step()
-
-    def _fit_ffcv(
-        self,
-        x: np.ndarray,
-        y: np.ndarray,
-        batch_size: int = 128,
-        nb_epochs: int = 10,
-        training_mode: bool = True,
-        **kwargs,
-    ) -> None:
-        """
-        Fit the classifier on the training set `(x, y)`.
-
-        :param x: Training data.
-        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or index labels of
-                  shape (nb_samples,).
-        :param batch_size: Size of batches.
-        :param nb_epochs: Number of epochs to use for training.
-        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
-        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
-               and providing it takes no effect.
-        """
-        ind = np.arange(len(x))
-
-        # FFCV - prepare
-        from ffcv.writer import DatasetWriter
-        from ffcv.fields import NDArrayField
-
-        # Your dataset (`torch.utils.data.Dataset`) of (image, label) pairs
-        # my_dataset = make_my_dataset()
-
-        class NumpyDataset:
-            def __init__(self, x, y):
-                self.X = x
-                self.Y = y
-
-            def __getitem__(self, idx):
-                return (self.X[idx], self.Y[idx])
-
-            def __len__(self):
-                return len(self.X)
-
-        my_dataset = NumpyDataset(x, y)
-
-        write_path = "/home/bbuesser/tmp/ffcv/ds.beton"
-
-        # Pass a type for each data field
-        jpeg_quality = 50
-
-        writer = DatasetWriter(
-            write_path,
-            {
-                # Tune options to optimize dataset size, throughput at train-time
-                # 'image': RGBImageField(max_resolution=256, jpeg_quality=jpeg_quality),
-                "image": NDArrayField(dtype=x.dtype, shape=(1, 28, 28)),
-                "label": NDArrayField(dtype=y.dtype, shape=(10,)),
-            },
-        )
-
-        # Write dataset
-        writer.from_indexed_dataset(my_dataset)
-
-        # FFCV
-        from ffcv.loader import Loader, OrderOption
-        from ffcv.transforms import ToTensor, ToDevice, ToTorchImage, Cutout
-        from ffcv.fields.decoders import IntDecoder, RandomResizedCropRGBImageDecoder, NDArrayDecoder
-
-        # Random resized crop
-        # decoder = RandomResizedCropRGBImageDecoder((224, 224))
-
-        # Data decoding and augmentation
-        # image_pipeline = [decoder, Cutout(), ToTensor(), ToTorchImage(), ToDevice(0)]
-        image_pipeline = [NDArrayDecoder(), ToTensor()]
-        label_pipeline = [NDArrayDecoder(), ToTensor()]
-
-        # Pipeline for each data field
-        pipelines = {"image": image_pipeline, "label": label_pipeline}
-
-        # Replaces PyTorch data loader (`torch.utils.data.Dataloader`)
-        # write_path = "/home/bbuesser/tmp/ffcv/"
-        bs = batch_size
-        num_workers = 1
-        # loader = Loader(
-        #     write_path, batch_size=bs, num_workers=num_workers, order=OrderOption.RANDOM, pipelines=pipelines
-        # )
-        loader = Loader(
-            write_path,
-            batch_size=bs,
-            num_workers=num_workers,
-            order=OrderOption.RANDOM,
-            pipelines=pipelines,
-            os_cache=True,
-        )
-
         # Start training
         for _ in range(nb_epochs):
-            print(_)
             # Shuffle the examples
             random.shuffle(ind)
 
             # Train for one epoch
-            # for m in range(num_batch):
-            #     i_batch = torch.from_numpy(x_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]).to(self._device)
-            #     o_batch = torch.from_numpy(y_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]).to(self._device)
-            from tqdm import tqdm
-
-            for i, (i_batch, o_batch) in enumerate(tqdm(loader)):
+            for m in range(num_batch):
+                i_batch = torch.from_numpy(x_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]).to(self._device)
+                o_batch = torch.from_numpy(y_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]).to(self._device)
 
                 # Zero the parameter gradients
                 self._optimizer.zero_grad()
