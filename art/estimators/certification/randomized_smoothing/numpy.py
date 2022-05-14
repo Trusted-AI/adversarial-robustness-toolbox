@@ -25,11 +25,14 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 from typing import List, Union, TYPE_CHECKING, Tuple
 
+import warnings
 import numpy as np
 
+from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNetworkMixin
 from art.estimators.certification.randomized_smoothing.randomized_smoothing import RandomizedSmoothingMixin
 from art.estimators.classification import ClassifierMixin, ClassGradientsMixin
+from art.defences.preprocessor.gaussian_augmentation import GaussianAugmentation
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
@@ -69,6 +72,12 @@ class NumpyRandomizedSmoothing(  # lgtm [py/conflicting-attributes] lgtm [py/mis
         :param scale: Standard deviation of Gaussian noise added.
         :param alpha: The failure probability of smoothing
         """
+        if classifier.preprocessing_defences is not None:
+            warnings.warn(
+                "\n With the current backend Gaussian noise will be added by Randomized Smoothing "
+                "BEFORE the application of preprocessing defences. Please ensure this conforms to your use case.\n"
+            )
+
         super().__init__(
             model=classifier.model,
             channels_first=classifier.channels_first,
@@ -112,7 +121,12 @@ class NumpyRandomizedSmoothing(  # lgtm [py/conflicting-attributes] lgtm [py/mis
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                        and providing it takes no effect.
         """
-        return self.classifier.fit(x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
+
+        g_a = GaussianAugmentation(sigma=self.scale, augmentation=False)
+        for _ in range(nb_epochs):
+            x_rs, _ = g_a(x)
+            x_rs = x_rs.astype(ART_NUMPY_DTYPE)
+            self.classifier.fit(x_rs, y, batch_size=batch_size, nb_epochs=1, **kwargs)
 
     def loss_gradient(  # pylint: disable=W0221
         self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs
