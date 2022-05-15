@@ -80,6 +80,8 @@ class SignOPTAttack(EvasionAttack):
         "K",
         "alpha",
         "beta",
+        "clipped"
+        "batch_size",
         "verbose",
     ]
 
@@ -89,16 +91,17 @@ class SignOPTAttack(EvasionAttack):
         self,
         estimator: "CLASSIFIER_TYPE",
         targeted: bool = True,
-        epsilon: int = 0.001,
+        epsilon: float = 0.001,
         num_trial: int = 100,
         max_iter: int = 1000,  # recommend 5000 for targeted attack
-        query_limit=20000,  # recommend 40000 for targeted attack
-        K=200,
-        alpha=0.2,
-        beta=0.001,
+        query_limit: int = 20000,  # recommend 40000 for targeted attack
+        K: int = 200,
+        alpha: float = 0.2,
+        beta: float = 0.001,
+        eval_perform: bool =False,
+        clipped: bool = True,
+        batch_size: int = 64,
         verbose: bool = False,
-        eval_perform=False,
-        clipped=True,
     ) -> None:
         """
         Create a Sign_OPT attack instance.
@@ -111,6 +114,8 @@ class SignOPTAttack(EvasionAttack):
         :param K: Number of random directions (for estimating the gradient)
         :param alpha: The step length for line search
         :param beta: The tolerance for line search
+        :param clipped: Force the sample value in range of [clip_min, clip_max]
+        :param batch_size: The size of the batch used by the estimator during inference.
         :param verbose: Show detailed information
         :param eval_perform: Evaluate performnace with Avg. L2 and Success Rate with randomly choosing 100 samples
         """
@@ -126,6 +131,7 @@ class SignOPTAttack(EvasionAttack):
         self.alpha = alpha
         self.beta = beta
 
+        self.batch_size = batch_size
         self.verbose = verbose
 
         self.eval_perform = eval_perform
@@ -154,7 +160,7 @@ class SignOPTAttack(EvasionAttack):
                 raise ValueError("Target labels `y` need to be provided for a targeted attack.")
 
             # Use model predictions as correct outputs
-            y = get_labels_np_array(self.estimator.predict(x))  # type: ignore
+            y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))  # type: ignore
 
         targets = check_and_transform_label_format(y, self.estimator.nb_classes, return_one_hot=False)
 
@@ -177,7 +183,7 @@ class SignOPTAttack(EvasionAttack):
             self.clip_min, self.clip_max = np.min(x), np.max(x)
 
         # Prediction from the original images
-        preds = np.argmax(self.estimator.predict(x), axis=1)
+        preds = np.argmax(self.estimator.predict(x, batch_size=self.batch_size), axis=1)
 
         # Some initial setups
         x_adv = x.astype(ART_NUMPY_DTYPE)
@@ -295,10 +301,6 @@ class SignOPTAttack(EvasionAttack):
                 lbd_hi = lbd_mid
             else:
                 lbd_lo = lbd_mid
-        if self.verbose:
-            print(
-                f"In _fine_grained_binary_search_local(), with initial_lbd={initial_lbd} returning lbd_hi={lbd_hi}, nquery={nquery}"
-            )
         return lbd_hi, nquery
 
     # temp method if ART has a similar method
@@ -307,7 +309,7 @@ class SignOPTAttack(EvasionAttack):
     def _is_label(self, x0, label) -> bool:
         if self.enable_clipped:
             x0 = np.clip(x0, self.clip_min, self.clip_max)
-        pred = self.estimator.predict(np.expand_dims(x0, axis=0))
+        pred = self.estimator.predict(np.expand_dims(x0, axis=0), batch_size=self.batch_size)
         pred_y0 = np.argmax(pred)
         return pred_y0 == label
 
@@ -317,7 +319,7 @@ class SignOPTAttack(EvasionAttack):
     def _predict_label(self, x0) -> bool:
         if self.enable_clipped:
             x0 = np.clip(x0, self.clip_min, self.clip_max)
-        pred = self.estimator.predict(np.expand_dims(x0, axis=0))
+        pred = self.estimator.predict(np.expand_dims(x0, axis=0), batch_size=self.batch_size)
         return np.argmax(pred)
 
     def _sign_grad(self, x0, y0, epsilon, theta, initial_lbd, target=None):
