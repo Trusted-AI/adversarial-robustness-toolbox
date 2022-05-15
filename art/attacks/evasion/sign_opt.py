@@ -49,7 +49,7 @@ from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 from numpy import linalg as LA
-# from tqdm.auto import tqdm
+from tqdm.auto import tqdm
 import time
 
 from art.attacks.attack import EvasionAttack
