@@ -4,8 +4,8 @@
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
-# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
-# persons to whom the Software is furnished to do so, subject to the following conditions:
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
+# and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 #
 # The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
 # Software.
@@ -80,8 +80,7 @@ class SignOPTAttack(EvasionAttack):
         "K",
         "alpha",
         "beta",
-        "clipped"
-        "batch_size",
+        "clipped" "batch_size",
         "verbose",
     ]
 
@@ -98,7 +97,7 @@ class SignOPTAttack(EvasionAttack):
         K: int = 200,
         alpha: float = 0.2,
         beta: float = 0.001,
-        eval_perform: bool =False,
+        eval_perform: bool = False,
         clipped: bool = True,
         batch_size: int = 64,
         verbose: bool = False,
@@ -434,7 +433,8 @@ class SignOPTAttack(EvasionAttack):
             A:Randomly sample u1, . . . , uQ from a Gaussian or Uniform distribution; 
             B:Compute gˆ ←  ...
             C:Update θt+1 ← θt − ηgˆ;
-            D:Evaluate g(θt) using the same search algorithm in Cheng et al. (2019) https://openreview.net/pdf?id=rJlk6iRqKX, 
+            D:Evaluate g(θt) using the same search algorithm in 
+              Cheng et al. (2019) https://openreview.net/pdf?id=rJlk6iRqKX,
         """
         xg, gg = best_theta, g_theta
         distortions = [gg]
@@ -446,7 +446,7 @@ class SignOPTAttack(EvasionAttack):
             ls_count = 0
             min_theta = xg  ## next theta
             min_g2 = gg  ## current g_theta
-            for _ in range(15):  
+            for _ in range(15):
                 """
                 Algorithm 1: Sign-OPT attack
                     C:Update θt+1 ← θt − ηgˆ;
@@ -455,7 +455,9 @@ class SignOPTAttack(EvasionAttack):
                 new_theta /= LA.norm(new_theta)
                 """
                 Algorithm 1: Sign-OPT attackx
-                    D:Evaluate g(θt) using the same search algorithm in Cheng et al. (2019) https://openreview.net/pdf?id=rJlk6iRqKX, **Algorithm 1 Compute g(θ) locally**
+                    D:Evaluate g(θt) using the same search algorithm in 
+                      Cheng et al. (2019) https://openreview.net/pdf?id=rJlk6iRqKX, 
+                      **Algorithm 1 Compute g(θ) locally**
                 """
                 new_g2, count = self._fine_grained_binary_search_local(
                     x0, y0, target, new_theta, initial_lbd=min_g2, tol=beta / 500
@@ -520,7 +522,8 @@ class SignOPTAttack(EvasionAttack):
         elif self.targeted and self._is_label(x0 + gg * xg, target):
             if self.verbose:
                 print(
-                    f"Adversarial Example Found Successfully: distortion {gg} target, {target} queries {query_count} Line Search queries {ls_total} Time: {timeend-timestart} seconds"
+                    f"Adversarial Example Found Successfully: distortion {gg} target, \
+                    {target} queries {query_count} Line Search queries {ls_total} Time: {timeend-timestart} seconds"
                 )
             return self._clip_value(x0 + gg * xg), gg * xg, True
 
