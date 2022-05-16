@@ -497,13 +497,21 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
     def clone_for_refitting(self) -> "PyTorchClassifier":  # lgtm [py/inheritance/incorrect-overridden-signature]
         """
-        Create a copy of the classifier that can be refit from scratch. Will inherit same architecture, optimizer and
-        initialization as cloned model, but without weights.
+        Create a copy of the classifier that can be refit from scratch. Will inherit same architecture, same type of
+        optimizer and initialization as the original classifier, but without weights.
 
         :return: new estimator
         """
         model = copy.deepcopy(self.model)
-        clone = type(self)(model, self._loss, self.input_shape, self.nb_classes, optimizer=self._optimizer)
+
+        if self._optimizer is None:  # pragma: no cover
+            raise ValueError("An optimizer is needed to train the model, but none is provided.")
+
+        # create a new optimizer that binds to the cloned model's parameters and uses original optimizer's defaults
+        new_optimizer = type(self._optimizer)(model.parameters(), **self._optimizer.defaults)  # type: ignore
+
+        clone = type(self)(model, self._loss, self.input_shape, self.nb_classes, optimizer=new_optimizer)
+
         # reset weights
         clone.reset()
         params = self.get_params()
