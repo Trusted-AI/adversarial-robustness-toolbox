@@ -49,6 +49,17 @@ class RandomizedSmoothingMixin(ABC):
         *args,
         scale: float = 0.1,
         alpha: float = 0.001,
+        num_noise_vec: int = 1,
+        train_multi_noise: bool = False,
+        attack_type: str ="PGD",
+        no_grad_attack: bool = False,
+        epsilon: float = 64.0,
+        num_steps: int =10,
+        warmup: int = 1,
+        lbd: float = 12.0,
+        gamma: float = 8.0,
+        beta: float = 16.0,
+        gauss_num: int = 16,
         **kwargs,
     ) -> None:
         """
@@ -62,6 +73,17 @@ class RandomizedSmoothingMixin(ABC):
         self.sample_size = sample_size
         self.scale = scale
         self.alpha = alpha
+        self.num_noise_vec = num_noise_vec
+        self.train_multi_noise = train_multi_noise
+        self.attack_type = attack_type
+        self.no_grad_attack = no_grad_attack
+        self.epsilon = epsilon
+        self.num_steps = num_steps
+        self.warmup = warmup
+        self.lbd=lbd
+        self.gamma=gamma
+        self.beta=beta
+        self.gauss_num = gauss_num
 
     def _predict_classifier(self, x: np.ndarray, batch_size: int, training_mode: bool, **kwargs) -> np.ndarray:
         """

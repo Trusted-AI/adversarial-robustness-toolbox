@@ -29,9 +29,13 @@ import warnings
 from tqdm import tqdm
 import numpy as np
 
+from art.config import ART_NUMPY_DTYPE
 from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 from art.estimators.certification.randomized_smoothing.randomized_smoothing import RandomizedSmoothingMixin
 from art.utils import check_and_transform_label_format
+import art.estimators.certification.randomized_smoothing.smooth_adversarial.train_smoothadv as trainSmoothAdversarial
+import art.estimators.certification.randomized_smoothing.macer.train_macer as trainMacer
+from art.defences.preprocessor.gaussian_augmentation import GaussianAugmentation
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
@@ -69,6 +73,20 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
         sample_size: int = 32,
         scale: float = 0.1,
         alpha: float = 0.001,
+        num_noise_vec: int = 1,
+        train_multi_noise: bool = False,
+        attack_type: str ="PGD",
+        no_grad_attack: bool = False,
+        epsilon: float  = 64.0,
+        num_steps: int =10,
+        warmup:int = 1,
+        lbd: float = 12.0,
+        gamma: float = 8.0,
+        beta: float = 16.0,
+        gauss_num: int = 16,
+        optimizer: Optional["tfa.optimizers"] = None,  # type: ignore
+        scheduler: Optional["tf.keras.callbacks.LearningRateScheduler"] = None, # type: ignore
+        **kwargs
     ):
         """
         Create a randomized smoothing classifier.
@@ -114,13 +132,36 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
             sample_size=sample_size,
             scale=scale,
             alpha=alpha,
+            num_noise_vec=num_noise_vec,
+            train_multi_noise=train_multi_noise,
+            attack_type=attack_type,
+            no_grad_attack=no_grad_attack,
+            epsilon=epsilon,
+            num_steps=num_steps,
+            warmup=warmup,
+            lbd=lbd,
+            gamma=gamma,
+            beta=beta,
+            gauss_num = gauss_num,
+            **kwargs
         )
+        self.optimizer = optimizer
+        self.scheduler = scheduler
 
     def _predict_classifier(self, x: np.ndarray, batch_size: int, training_mode: bool, **kwargs) -> np.ndarray:
         return TensorFlowV2Classifier.predict(self, x=x, batch_size=batch_size, training_mode=training_mode, **kwargs)
 
     def _fit_classifier(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
-        return TensorFlowV2Classifier.fit(self, x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
+        if "train_method" in kwargs:
+            if kwargs.get("train_method") == "macer":
+                return trainMacer.fit_tensorflow(self, x, y, batch_size, nb_epochs, **kwargs)
+            elif kwargs.get("train_method")=="smoothadv":
+                return trainSmoothAdversarial.fit_tensorflow(self, x, y, batch_size, nb_epochs, **kwargs)
+
+        g_a = GaussianAugmentation(sigma=self.scale, augmentation=False)
+        x_rs, _ = g_a(x)
+        x_rs = x_rs.astype(ART_NUMPY_DTYPE)
+        return TensorFlowV2Classifier.fit(self, x_rs, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
     def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, **kwargs) -> None:
         """
