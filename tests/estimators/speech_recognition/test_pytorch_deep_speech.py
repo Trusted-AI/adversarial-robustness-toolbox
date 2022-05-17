@@ -125,7 +125,7 @@ def test_pytorch_deep_speech(art_warning, expected_values, use_amp, device_type)
 
 @pytest.mark.skip_module("deepspeech_pytorch")
 @pytest.mark.skip_framework("tensorflow", "tensorflow2v1", "keras", "kerastf", "mxnet", "non_dl_frameworks")
-def test_pytorch_deep_speech_preprocessing(
+def test_pytorch_deep_speech_preprocessor(
     art_warning,
     expected_values,
 ):
