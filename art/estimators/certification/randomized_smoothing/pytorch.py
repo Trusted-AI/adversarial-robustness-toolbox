@@ -33,7 +33,6 @@ from art.estimators.certification.randomized_smoothing.randomized_smoothing impo
 import art.estimators.certification.randomized_smoothing.smooth_adversarial.train_smoothadv as trainSmoothAdversarial
 import art.estimators.certification.randomized_smoothing.macer.train_macer as trainMacer
 from art.defences.preprocessor.gaussian_augmentation import GaussianAugmentation
-from art.attacks.evasion.iterative_method import BasicIterativeMethod
 import torch
 
 if TYPE_CHECKING:
