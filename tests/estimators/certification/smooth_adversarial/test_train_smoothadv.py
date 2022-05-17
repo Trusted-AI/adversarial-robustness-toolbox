@@ -20,30 +20,20 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import os
 import unittest
-
 import numpy as np
 import tensorflow as tf
 import torch
-
-from torchvision import datasets
-from torch.utils.data import DataLoader
-import torchvision.transforms as transforms
-
-from art.attacks.evasion.fast_gradient import FastGradientMethod
-from art.utils import load_dataset, random_targets, compute_accuracy
+from art.utils import load_dataset
 from art.estimators.certification.randomized_smoothing import (
-    NumpyRandomizedSmoothing,
     TensorFlowV2RandomizedSmoothing,
-    PyTorchRandomizedSmoothing,
+    PyTorchRandomizedSmoothing
 )
 
 from tests.utils import (
     master_seed,
     get_image_classifier_pt,
-    get_image_classifier_kr,
-    get_image_classifier_tf,
-    get_tabular_classifier_pt,
-)
+    get_image_classifier_tf
+    )
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "True"
 logger = logging.getLogger(__name__)
@@ -253,8 +243,6 @@ class TestTrainSmoothAdv(unittest.TestCase):
               momentum=0.9,
               name='SGD',
               decay=1e-4)
-
-            loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 
             rs1 = TensorFlowV2RandomizedSmoothing(
                     model=classifier.model,
