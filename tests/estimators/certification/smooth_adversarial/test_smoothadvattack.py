@@ -25,22 +25,14 @@ import numpy as np
 import tensorflow as tf
 import torch
 
-from art.estimators.certification.randomized_smoothing.smooth_adversarial.smoothadvattack import Attacker, PGD_L2, DDN
+from art.estimators.certification.randomized_smoothing.smooth_adversarial.smoothadvattack import PGD_L2, DDN
 
-from art.attacks.evasion.fast_gradient import FastGradientMethod
-from art.utils import load_dataset, random_targets, compute_accuracy
-from art.estimators.certification.randomized_smoothing import (
-    NumpyRandomizedSmoothing,
-    TensorFlowV2RandomizedSmoothing,
-    PyTorchRandomizedSmoothing,
-)
+from art.utils import load_dataset
 
 from tests.utils import (
     master_seed,
     get_image_classifier_pt,
-    get_image_classifier_kr,
-    get_image_classifier_tf,
-    get_tabular_classifier_pt,
+    get_image_classifier_tf
 )
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "True"
