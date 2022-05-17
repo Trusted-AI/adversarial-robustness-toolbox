@@ -27,10 +27,7 @@ This is authors' implementation of Smooth Adversarial Attack using PGD and DDN
 """
 from abc import ABCMeta, abstractmethod
 
-import numpy as np
 import torch
-from torch.autograd import Variable
-from torch.nn import CrossEntropyLoss
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
@@ -38,7 +35,7 @@ from typing import Optional
 
 class Attacker(metaclass=ABCMeta):
     @abstractmethod
-    def attack(self, inputs, targets):
+    def attack(self, model, inputs, labels):
         raise NotImplementedError
 
 
@@ -118,7 +115,6 @@ class PGD_L2(Attacker):
             if noise is not None:
                 adv = adv + noise
             logits = model(adv)
-            pred_labels = logits.argmax(1)
             ce_loss = F.cross_entropy(logits, labels, reduction='sum')
             loss = multiplier * ce_loss
 
@@ -183,7 +179,6 @@ class PGD_L2(Attacker):
                 adv = adv + noise
             logits = model(adv)
 
-            pred_labels = logits.argmax(1).reshape(-1, num_noise_vectors).mode(1)[0]
             # safe softamx
             softmax = F.softmax(logits, dim=1)
             # average the probabilities across noise
@@ -241,7 +236,6 @@ class PGD_L2(Attacker):
         if inputs.min() < 0 or inputs.max() > 1: 
           raise ValueError('Input values should be in the [0, 1] range.')
         batch_size = labels.shape[0]
-        multiplier = 1 if targeted else -1
         delta = torch.zeros(
                               (len(labels), *inputs.shape[1:]), 
                               requires_grad=True, 
@@ -249,7 +243,6 @@ class PGD_L2(Attacker):
                             )
 
         # Setup optimizers
-        optimizer = optim.SGD([delta], lr=self.max_norm/self.steps*2)
 
         for i in range(self.steps):
 
@@ -258,7 +251,6 @@ class PGD_L2(Attacker):
                 adv = adv + noise
             logits = model(adv)
 
-            pred_labels = logits.argmax(1).reshape(-1, num_noise_vectors).mode(1)[0]
             # safe softamx
             
             softmax = F.softmax(logits, dim=1)

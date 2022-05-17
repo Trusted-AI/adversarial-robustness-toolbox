@@ -28,14 +28,13 @@ in Tensorflow
 """
 from abc import ABCMeta, abstractmethod
 
-import numpy as np
 import tensorflow as tf
 from typing import Optional
 import tensorflow_probability as tfp
 
 class Attacker(metaclass=ABCMeta):
     @abstractmethod
-    def attack(self, inputs, targets):
+    def attack(self, model, inputs, labels):
         raise NotImplementedError
 
 def getTensorMode(input:tf.Tensor, dim=-1):
@@ -309,7 +308,7 @@ class PGD_L2(Attacker):
         if tf.math.reduce_min(inputs) < 0 or tf.math.reduce_max(inputs) > 1: 
             raise ValueError('Input values should be in the [0, 1] range.')
         batch_size = labels.shape[0]
-        multiplier = 1 if targeted else -1
+        #multiplier = 1 if targeted else -1
         delta = tf.zeros((len(labels), *inputs.shape[1:]))
 
         for i in range(self.steps):
@@ -319,10 +318,8 @@ class PGD_L2(Attacker):
             adv = tf.transpose(adv, (0, 2, 3, 1))
             logits = model(adv, training=False)
 
-            pred_labels = tf.reshape(tf.math.argmax(logits, axis = 1, output_type=tf.dtypes.int32), (-1, num_noise_vectors))
-            pred_labels = getTensorMode(pred_labels, dim=1)
+    
             # safe softmax
-            softmax = tf.nn.softmax(logits, axis=1)
 
             labels_reshaped = tf.reshape(
                                     tf.tile(
