@@ -31,7 +31,6 @@ from art.config import ART_NUMPY_DTYPE
 from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 from art.estimators.certification.randomized_smoothing.randomized_smoothing import RandomizedSmoothingMixin
 import art.estimators.certification.randomized_smoothing.smooth_adversarial.train_smoothadv as trainSmoothAdversarial
-import art.estimators.certification.randomized_smoothing.macer.train_macer as trainMacer
 from art.defences.preprocessor.gaussian_augmentation import GaussianAugmentation
 
 if TYPE_CHECKING:
@@ -144,9 +143,7 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
 
     def _fit_classifier(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
         if "train_method" in kwargs:
-            if kwargs.get("train_method") == "macer":
-                return trainMacer.fit_tensorflow(self, x, y, batch_size, nb_epochs, **kwargs)
-            elif kwargs.get("train_method")=="smoothadv":
+            if kwargs.get("train_method")=="smoothadv":
                 return trainSmoothAdversarial.fit_tensorflow(self, x, y, batch_size, nb_epochs, **kwargs)
 
         g_a = GaussianAugmentation(sigma=self.scale, augmentation=False)
