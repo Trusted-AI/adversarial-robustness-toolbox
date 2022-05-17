@@ -24,12 +24,10 @@ This module implements Smooth Adversarial Attack using PGD and DDN.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import List, Optional, Tuple, Union, TYPE_CHECKING
-
 import numpy as np
-
 from art.config import ART_NUMPY_DTYPE
 import torch
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
@@ -48,7 +46,6 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
     from art.estimators.certification.randomized_smoothing.smooth_adversarial.smoothadvattack import Attacker, PGD_L2, DDN
 
     x = x.astype(ART_NUMPY_DTYPE)
-    m = Normal(torch.tensor([0.0]).to(self._device), torch.tensor([1.0]).to(self._device))
     start_epoch = 0
 
     if self.attack_type == 'PGD':
@@ -84,7 +81,6 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
 
           mini_batches = self._get_minibatches(i_batch, o_batch, self.num_noise_vec)
           for inputs, targets in mini_batches:
-            input_size = len(inputs)
             inputs = inputs.repeat((1, self.num_noise_vec, 1, 1)).view(i_batch.shape)
             noise = torch.randn_like(inputs, device=self.device) * self.scale
 
@@ -138,8 +134,6 @@ def fit_tensorflow(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epoch
     if attacker is None:
         raise ValueError("A attacker is needed to smooth adversarially train the model, but none for provided.")
 
-    num_batch = int(np.ceil(len(x) / float(batch_size)))
-    ind = np.arange(len(x))
     x = tf.convert_to_tensor(x)
     y = tf.convert_to_tensor(y)
     x = tf.transpose(x, (0,3,1,2))
@@ -148,15 +142,11 @@ def fit_tensorflow(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epoch
 
     # Start training
     for epoch_num in range(start_epoch+1, nb_epochs+1):
-        epoch_loss_avg = tf.keras.metrics.Mean()
-        epoch_accuracy = tf.keras.metrics.SparseCategoricalAccuracy()
-
         attacker.max_norm = np.min([self.epsilon, (epoch_num + 1) * self.epsilon/self.warmup])
         attacker.init_norm = np.min([self.epsilon, (epoch_num + 1) * self.epsilon/self.warmup])
         for i_batch, o_batch in train_ds:
             mini_batches = get_minibatches(i_batch, o_batch, self.num_noise_vec)
             for inputs, targets in mini_batches:
-                input_size = len(inputs)
                 inputs = tf.reshape(
                             tf.tile(inputs, (1, self.num_noise_vec, 1, 1)),
                             i_batch.shape)
