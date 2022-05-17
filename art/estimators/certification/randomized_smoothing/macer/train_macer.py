@@ -24,12 +24,10 @@ This module implements Smooth Adversarial Attack using PGD and DDN.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import List, Optional, Tuple, Union, TYPE_CHECKING
-
+from typing import TYPE_CHECKING
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
-import torch
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
@@ -130,4 +128,3 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
 
             cl_total /= input_total
             rl_total /= input_total
-            total_loss = cl_total + self.lbd * rl_total
