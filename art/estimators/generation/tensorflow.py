@@ -259,7 +259,9 @@ class TensorFlowV2Generator(GeneratorMixin, TensorFlowV2Estimator):  # lgtm [py/
     def input_shape(self) -> Tuple[int, ...]:
         raise NotImplementedError
 
-    def predict(self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs) -> np.ndarray:
+    def predict(  # pylint: disable=W0221
+        self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs
+    ) -> np.ndarray:
         """
         Perform projections over a batch of encodings.
 
