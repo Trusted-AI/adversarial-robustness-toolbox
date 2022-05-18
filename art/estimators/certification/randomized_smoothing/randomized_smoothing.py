@@ -31,7 +31,6 @@ from scipy.stats import norm
 from tqdm.auto import tqdm
 
 from art.config import ART_NUMPY_DTYPE
-from art.defences.preprocessor.gaussian_augmentation import GaussianAugmentation
 
 logger = logging.getLogger(__name__)
 
@@ -141,9 +140,7 @@ class RandomizedSmoothingMixin(ABC):
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
         """
-        g_a = GaussianAugmentation(sigma=self.scale, augmentation=False)
-        x_rs, _ = g_a(x)
-        self._fit_classifier(x_rs, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
+        self._fit_classifier(x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
     def certify(self, x: np.ndarray, n: int, batch_size: int = 32) -> Tuple[np.ndarray, np.ndarray]:
         """

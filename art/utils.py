@@ -100,7 +100,7 @@ if TYPE_CHECKING:
     from art.estimators.generation import TensorFlowGenerator
     from art.estimators.generation.tensorflow import TensorFlow2Generator
     from art.estimators.object_detection.object_detector import ObjectDetector
-    from art.estimators.object_detection.python_object_detector import PyTorchObjectDetector
+    from art.estimators.object_detection.pytorch_object_detector import PyTorchObjectDetector
     from art.estimators.object_detection.pytorch_faster_rcnn import PyTorchFasterRCNN
     from art.estimators.object_detection.tensorflow_faster_rcnn import TensorFlowFasterRCNN
     from art.estimators.pytorch import PyTorchEstimator
