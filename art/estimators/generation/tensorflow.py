@@ -259,17 +259,31 @@ class TensorFlowV2Generator(GeneratorMixin, TensorFlowV2Estimator):  # lgtm [py/
     def input_shape(self) -> Tuple[int, ...]:
         raise NotImplementedError
 
-    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
+    def predict(self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs) -> np.ndarray:
         """
         Perform projections over a batch of encodings.
 
         :param x: Encodings.
         :param batch_size: Batch size.
+        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
         :return: Array of prediction projections of shape `(num_inputs, nb_classes)`.
         """
-        logging.info("Projecting new sample from z value")
-        y = self._model(x).numpy()
-        return y
+        # Run prediction with batch processing
+        results_list = []
+        num_batch = int(np.ceil(len(x) / float(batch_size)))
+        for m in range(num_batch):
+            # Batch indexes
+            begin, end = (
+                m * batch_size,
+                min((m + 1) * batch_size, x.shape[0]),
+            )
+
+            # Run prediction
+            results_list.append(self._model(x[begin:end], training=training_mode).numpy())
+
+        results = np.vstack(results_list)
+
+        return results
 
     def loss_gradient(self, x, y, **kwargs) -> np.ndarray:
         raise NotImplementedError

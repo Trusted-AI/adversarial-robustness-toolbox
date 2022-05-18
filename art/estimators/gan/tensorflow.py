@@ -62,12 +62,13 @@ class TensorFlowV2GAN(TensorFlowV2Estimator):
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
         """
-        Generates a sample
+        Generates a sample.
 
-        param x: a seed
-        :return: the sample
+        :param x: A input seed.
+        :param batch_size: The batch size for predictions.
+        :return: The generated sample.
         """
-        return self.generator.predict(x)
+        return self.generator.predict(x, batch_size=batch_size, **kwargs)
 
     @property
     def input_shape(self) -> Tuple[int, int]:
