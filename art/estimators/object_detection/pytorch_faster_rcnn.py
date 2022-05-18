@@ -22,7 +22,7 @@ import logging
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
 
-from art.estimators.object_detection.python_object_detector import PyTorchObjectDetector
+from art.estimators.object_detection.pytorch_object_detector import PyTorchObjectDetector
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
