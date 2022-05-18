@@ -38,7 +38,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
-    import torch  # lgtm [py/repeated-import]
     import torch.nn.functional as F
     from torch.distributions.normal import Normal
     import random
