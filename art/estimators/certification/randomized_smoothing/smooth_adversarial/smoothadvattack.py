@@ -40,6 +40,7 @@ class Attacker(metaclass=ABCMeta):
     extended by the implementation in PyTorch.
 
     """
+
     @abstractmethod
     def attack(self, model, inputs, labels):
         """
@@ -65,19 +66,25 @@ class PgdL2(Attacker):
 
     """
 
-    def __init__(self,
-                 steps: int,
-                 random_start: bool = True,
-                 max_norm: float = 1.,
-                 device: torch.device = torch.device('cpu')) -> None:
+    def __init__(
+        self, steps: int, random_start: bool = True, max_norm: float = 1.0, device: torch.device = torch.device("cpu")
+    ) -> None:
         super().__init__()
         self.steps = steps
         self.random_start = random_start
         self.max_norm = max_norm
         self.device = device
 
-    def attack(self, model: nn.Module, inputs: torch.Tensor, labels: torch.Tensor,
-               noise: torch.Tensor = None, num_noise_vectors=1, targeted: bool = False, no_grad=False) -> torch.Tensor:
+    def attack(
+        self,
+        model: nn.Module,
+        inputs: torch.Tensor,
+        labels: torch.Tensor,
+        noise: torch.Tensor = None,
+        num_noise_vectors=1,
+        targeted: bool = False,
+        no_grad=False,
+    ) -> torch.Tensor:
         if num_noise_vectors == 1:
             return self._attack(model, inputs, labels, noise, targeted)
         if no_grad:
@@ -86,8 +93,14 @@ class PgdL2(Attacker):
         else:
             return self._attack_mutlinoise(model, inputs, labels, noise, num_noise_vectors, targeted)
 
-    def _attack(self, model: nn.Module, inputs: torch.Tensor, labels: torch.Tensor,
-                noise: torch.Tensor = None, targeted: bool = False) -> torch.Tensor:
+    def _attack(
+        self,
+        model: nn.Module,
+        inputs: torch.Tensor,
+        labels: torch.Tensor,
+        noise: torch.Tensor = None,
+        targeted: bool = False,
+    ) -> torch.Tensor:
         """
         Performs the attack of the model for the inputs and labels.
 
@@ -109,7 +122,7 @@ class PgdL2(Attacker):
 
         """
         if inputs.min() < 0 or inputs.max() > 1:
-            raise ValueError('Input values should be in the [0, 1] range.')
+            raise ValueError("Input values should be in the [0, 1] range.")
 
         batch_size = inputs.shape[0]
         multiplier = 1 if targeted else -1
@@ -123,7 +136,7 @@ class PgdL2(Attacker):
             if noise is not None:
                 adv = adv + noise
             logits = model(adv)
-            ce_loss = F.cross_entropy(logits, labels, reduction='sum')
+            ce_loss = F.cross_entropy(logits, labels, reduction="sum")
             loss = multiplier * ce_loss
 
             optimizer.zero_grad()
@@ -144,9 +157,15 @@ class PgdL2(Attacker):
             delta.data.renorm_(p=2, dim=0, maxnorm=self.max_norm)
         return inputs + delta
 
-    def _attack_mutlinoise(self, model: nn.Module, inputs: torch.Tensor, labels: torch.Tensor,
-                           noise: torch.Tensor = None,
-                           num_noise_vectors: int = 1, targeted: bool = False) -> torch.Tensor:
+    def _attack_mutlinoise(
+        self,
+        model: nn.Module,
+        inputs: torch.Tensor,
+        labels: torch.Tensor,
+        noise: torch.Tensor = None,
+        num_noise_vectors: int = 1,
+        targeted: bool = False,
+    ) -> torch.Tensor:
         """
         Performs the attack of the model for the inputs and labels.
 
@@ -168,21 +187,17 @@ class PgdL2(Attacker):
 
         """
         if inputs.min() < 0 or inputs.max() > 1:
-            raise ValueError('Input values should be in the [0, 1] range.')
+            raise ValueError("Input values should be in the [0, 1] range.")
         batch_size = labels.shape[0]
         multiplier = 1 if targeted else -1
-        delta = torch.zeros(
-            (len(labels), *inputs.shape[1:]),
-            requires_grad=True,
-            device=self.device
-        )
+        delta = torch.zeros((len(labels), *inputs.shape[1:]), requires_grad=True, device=self.device)
 
         # Setup optimizers
         optimizer = optim.SGD([delta], lr=self.max_norm / self.steps * 2)
 
         for _ in range(self.steps):
 
-            adv = inputs + delta.repeat(1,num_noise_vectors,1,1).view_as(inputs)
+            adv = inputs + delta.repeat(1, num_noise_vectors, 1, 1).view_as(inputs)
             if noise is not None:
                 adv = adv + noise
             logits = model(adv)
@@ -213,11 +228,16 @@ class PgdL2(Attacker):
 
             delta.data.renorm_(p=2, dim=0, maxnorm=self.max_norm)
 
-        return inputs + delta.repeat(1,num_noise_vectors,1,1).view_as(inputs)
+        return inputs + delta.repeat(1, num_noise_vectors, 1, 1).view_as(inputs)
 
-    def _attack_mutlinoise_no_grad(self, model: nn.Module, inputs: torch.Tensor,
-                                   labels:torch.Tensor, noise: torch.Tensor = None,
-                                   num_noise_vectors: int = 1) -> torch.Tensor:
+    def _attack_mutlinoise_no_grad(
+        self,
+        model: nn.Module,
+        inputs: torch.Tensor,
+        labels: torch.Tensor,
+        noise: torch.Tensor = None,
+        num_noise_vectors: int = 1,
+    ) -> torch.Tensor:
         """
         Performs the attack of the model for the inputs and labels.
 
@@ -239,19 +259,15 @@ class PgdL2(Attacker):
 
         """
         if inputs.min() < 0 or inputs.max() > 1:
-            raise ValueError('Input values should be in the [0, 1] range.')
+            raise ValueError("Input values should be in the [0, 1] range.")
         batch_size = labels.shape[0]
-        delta = torch.zeros(
-            (len(labels), *inputs.shape[1:]),
-            requires_grad=True,
-            device=self.device
-        )
+        delta = torch.zeros((len(labels), *inputs.shape[1:]), requires_grad=True, device=self.device)
 
         # Setup optimizers
 
         for _ in range(self.steps):
 
-            adv = inputs + delta.repeat(1,num_noise_vectors,1,1).view_as(inputs)
+            adv = inputs + delta.repeat(1, num_noise_vectors, 1, 1).view_as(inputs)
             if noise is not None:
                 adv = adv + noise
             logits = model(adv)
@@ -260,12 +276,18 @@ class PgdL2(Attacker):
 
             softmax = F.softmax(logits, dim=1)
 
-            grad = F.nll_loss(softmax, labels.unsqueeze(1)
-                              .repeat(1,1,num_noise_vectors)
-                              .view(batch_size * num_noise_vectors),
-                              reduction='none').repeat(*noise.shape[1:],1).permute(3,0,1,2) * noise
+            grad = (
+                F.nll_loss(
+                    softmax,
+                    labels.unsqueeze(1).repeat(1, 1, num_noise_vectors).view(batch_size * num_noise_vectors),
+                    reduction="none",
+                )
+                .repeat(*noise.shape[1:], 1)
+                .permute(3, 0, 1, 2)
+                * noise
+            )
 
-            grad = grad.reshape(-1,num_noise_vectors, *inputs.shape[1:]).mean(1)
+            grad = grad.reshape(-1, num_noise_vectors, *inputs.shape[1:]).mean(1)
             # average the probabilities across noise
 
             grad_norms = grad.view(batch_size, -1).norm(p=2, dim=1)
@@ -283,7 +305,7 @@ class PgdL2(Attacker):
 
             delta.data.renorm_(p=2, dim=0, maxnorm=self.max_norm)
 
-        return inputs + delta.repeat(1,num_noise_vectors,1,1).view_as(inputs)
+        return inputs + delta.repeat(1, num_noise_vectors, 1, 1).view_as(inputs)
 
 
 # Source code from https://github.com/jeromerony/fast_adversarial
@@ -312,15 +334,17 @@ class DDN(Attacker):
 
     """
 
-    def __init__(self,
-                 steps: int,
-                 gamma: float = 0.05,
-                 init_norm: float = 1.,
-                 quantize: bool = True,
-                 levels: int = 256,
-                 max_norm: float = 1.,
-                 device: torch.device = torch.device('cpu'),
-                 callback: Optional[Any] = None) -> None:
+    def __init__(
+        self,
+        steps: int,
+        gamma: float = 0.05,
+        init_norm: float = 1.0,
+        quantize: bool = True,
+        levels: int = 256,
+        max_norm: float = 1.0,
+        device: torch.device = torch.device("cpu"),
+        callback: Optional[Any] = None,
+    ) -> None:
         super().__init__()
         self.steps = steps
         self.gamma = gamma
@@ -333,18 +357,30 @@ class DDN(Attacker):
         self.device = device
         self.callback = callback
 
-    def attack(self, model: nn.Module, inputs:torch.Tensor, labels:torch.Tensor,
-               noise: torch.Tensor = None, num_noise_vectors=1,
-               targeted: bool = False, no_grad=False) -> torch.Tensor:
+    def attack(
+        self,
+        model: nn.Module,
+        inputs: torch.Tensor,
+        labels: torch.Tensor,
+        noise: torch.Tensor = None,
+        num_noise_vectors=1,
+        targeted: bool = False,
+        no_grad=False,
+    ) -> torch.Tensor:
         if num_noise_vectors == 1:
             return self._attack(model, inputs, labels, noise, targeted)
         if no_grad:
             raise NotImplementedError
         return self._attack_mutlinoise(model, inputs, labels, noise, num_noise_vectors, targeted)
 
-    def _attack(self, model:nn.Module, inputs:torch.Tensor, labels:torch.Tensor,
-                noise: torch.Tensor = None,
-                targeted: bool = False) -> torch.Tensor:
+    def _attack(
+        self,
+        model: nn.Module,
+        inputs: torch.Tensor,
+        labels: torch.Tensor,
+        noise: torch.Tensor = None,
+        targeted: bool = False,
+    ) -> torch.Tensor:
         """
         Performs the attack of the model for the inputs and labels.
 
@@ -366,17 +402,12 @@ class DDN(Attacker):
 
         """
         if inputs.min() < 0 or inputs.max() > 1:
-            raise ValueError('Input values should be in the [0, 1] range.')
+            raise ValueError("Input values should be in the [0, 1] range.")
 
         batch_size = inputs.shape[0]
         multiplier = 1 if targeted else -1
         delta = torch.zeros_like(inputs, requires_grad=True)
-        norm = torch.full(
-            (batch_size,),
-            self.init_norm,
-            device=self.device,
-            dtype=torch.float
-        )
+        norm = torch.full((batch_size,), self.init_norm, device=self.device, dtype=torch.float)
         worst_norm = torch.max(inputs, 1 - inputs).view(batch_size, -1).norm(p=2, dim=1)
 
         # Setup optimizers
@@ -385,9 +416,7 @@ class DDN(Attacker):
 
         best_l2 = worst_norm.clone()
         best_delta = torch.zeros_like(inputs)
-        adv_found = torch.zeros(inputs.size(0),
-                                dtype=torch.uint8,
-                                device=self.device)
+        adv_found = torch.zeros(inputs.size(0), dtype=torch.uint8, device=self.device)
 
         for i in range(self.steps):
             scheduler.step()
@@ -398,7 +427,7 @@ class DDN(Attacker):
                 adv = adv + noise
             logits = model(adv)
             pred_labels = logits.argmax(1)
-            ce_loss = F.cross_entropy(logits, labels, reduction='sum')
+            ce_loss = F.cross_entropy(logits, labels, reduction="sum")
             loss = multiplier * ce_loss
 
             is_adv = (pred_labels == labels) if targeted else (pred_labels != labels)
@@ -419,17 +448,26 @@ class DDN(Attacker):
                 delta.grad[grad_norms == 0] = torch.randn_like(delta.grad[grad_norms == 0])
 
             if self.callback:
-                cosine = F.cosine_similarity(-delta.grad.view(batch_size, -1),
-                                             delta.data.view(batch_size, -1),
-                                             dim=1).mean().item()
-                self.callback.scalar('ce', i, ce_loss.item() / batch_size)
-                self.callback.scalars(
-                    ['max_norm', 'l2_var', 'best_l2'], i,
-                    [norm.mean().item(), l2_var.mean().item(),
-                     best_l2[adv_found].mean().item() if adv_found.any() else norm.mean().item()]
+                cosine = (
+                    F.cosine_similarity(-delta.grad.view(batch_size, -1), delta.data.view(batch_size, -1), dim=1)
+                    .mean()
+                    .item()
                 )
-                self.callback.scalars(['cosine', 'lr', 'success'], i,
-                                      [cosine, optimizer.param_groups[0]['lr'], adv_found.float().mean().item()])
+                self.callback.scalar("ce", i, ce_loss.item() / batch_size)
+                self.callback.scalars(
+                    ["max_norm", "l2_var", "best_l2"],
+                    i,
+                    [
+                        norm.mean().item(),
+                        l2_var.mean().item(),
+                        best_l2[adv_found].mean().item() if adv_found.any() else norm.mean().item(),
+                    ],
+                )
+                self.callback.scalars(
+                    ["cosine", "lr", "success"],
+                    i,
+                    [cosine, optimizer.param_groups[0]["lr"], adv_found.float().mean().item()],
+                )
 
             optimizer.step()
 
@@ -448,10 +486,15 @@ class DDN(Attacker):
                 best_delta.mul_(self.levels - 1).round_().div_(self.levels - 1)
         return inputs + best_delta
 
-    def _attack_mutlinoise(self, model: nn.Module, inputs: torch.Tensor,
-                           labels: torch.Tensor, noise: torch.Tensor = None,
-                           num_noise_vectors: int = 1,
-                           targeted: bool = False) -> torch.Tensor:
+    def _attack_mutlinoise(
+        self,
+        model: nn.Module,
+        inputs: torch.Tensor,
+        labels: torch.Tensor,
+        noise: torch.Tensor = None,
+        num_noise_vectors: int = 1,
+        targeted: bool = False,
+    ) -> torch.Tensor:
         """
         Performs the attack of the model for the inputs and labels.
 
@@ -473,16 +516,16 @@ class DDN(Attacker):
 
         """
         if inputs.min() < 0 or inputs.max() > 1:
-            raise ValueError('Input values should be in the [0, 1] range.')
+            raise ValueError("Input values should be in the [0, 1] range.")
         batch_size = labels.shape[0]
         multiplier = 1 if targeted else -1
-        delta = torch.zeros((len(labels), *inputs.shape[1:]),
-                            requires_grad=True,
-                            device=self.device
-                            )
+        delta = torch.zeros((len(labels), *inputs.shape[1:]), requires_grad=True, device=self.device)
         norm = torch.full((batch_size,), self.init_norm, device=self.device, dtype=torch.float)
-        worst_norm = torch.max(inputs[::num_noise_vectors],
-                               1 - inputs[::num_noise_vectors]).view(batch_size, -1).norm(p=2, dim=1)
+        worst_norm = (
+            torch.max(inputs[::num_noise_vectors], 1 - inputs[::num_noise_vectors])
+            .view(batch_size, -1)
+            .norm(p=2, dim=1)
+        )
 
         # Setup optimizers
         optimizer = optim.SGD([delta], lr=1)
@@ -490,14 +533,13 @@ class DDN(Attacker):
 
         best_l2 = worst_norm.clone()
         best_delta = torch.zeros_like(inputs[::num_noise_vectors])
-        adv_found = torch.zeros(inputs[::num_noise_vectors].size(0),
-                                dtype=torch.uint8, device=self.device)
+        adv_found = torch.zeros(inputs[::num_noise_vectors].size(0), dtype=torch.uint8, device=self.device)
 
         for i in range(self.steps):
             scheduler.step()
 
             l2_var = delta.data.view(batch_size, -1).norm(p=2, dim=1)
-            adv = inputs + delta.repeat(1,num_noise_vectors,1,1).view_as(inputs)
+            adv = inputs + delta.repeat(1, num_noise_vectors, 1, 1).view_as(inputs)
             if noise is not None:
                 adv = adv + noise
             logits = model(adv)
@@ -531,16 +573,26 @@ class DDN(Attacker):
                 delta.grad[grad_norms == 0] = torch.randn_like(delta.grad[grad_norms == 0])
 
             if self.callback:
-                cosine = F.cosine_similarity(-delta.grad.view(batch_size, -1),
-                                             delta.data.view(batch_size, -1), dim=1).mean().item()
-                self.callback.scalar('ce', i, ce_loss.item() / batch_size)
-                self.callback.scalars(
-                    ['max_norm', 'l2_var', 'best_l2'], i,
-                    [norm.mean().item(), l2_var.mean().item(),
-                     best_l2[adv_found].mean().item() if adv_found.any() else norm.mean().item()]
+                cosine = (
+                    F.cosine_similarity(-delta.grad.view(batch_size, -1), delta.data.view(batch_size, -1), dim=1)
+                    .mean()
+                    .item()
                 )
-                self.callback.scalars(['cosine', 'lr', 'success'], i,
-                                      [cosine, optimizer.param_groups[0]['lr'], adv_found.float().mean().item()])
+                self.callback.scalar("ce", i, ce_loss.item() / batch_size)
+                self.callback.scalars(
+                    ["max_norm", "l2_var", "best_l2"],
+                    i,
+                    [
+                        norm.mean().item(),
+                        l2_var.mean().item(),
+                        best_l2[adv_found].mean().item() if adv_found.any() else norm.mean().item(),
+                    ],
+                )
+                self.callback.scalars(
+                    ["cosine", "lr", "success"],
+                    i,
+                    [cosine, optimizer.param_groups[0]["lr"], adv_found.float().mean().item()],
+                )
 
             optimizer.step()
 
@@ -558,4 +610,4 @@ class DDN(Attacker):
             best_delta.renorm_(p=2, dim=0, maxnorm=self.max_norm)
             if self.quantize:
                 best_delta.mul_(self.levels - 1).round_().div_(self.levels - 1)
-        return inputs + best_delta.repeat(1,num_noise_vectors,1,1).view_as(inputs)
+        return inputs + best_delta.repeat(1, num_noise_vectors, 1, 1).view_as(inputs)

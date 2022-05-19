@@ -27,14 +27,10 @@ import torch
 from art.utils import load_dataset
 from art.estimators.certification.randomized_smoothing import (
     TensorFlowV2RandomizedSmoothing,
-    PyTorchRandomizedSmoothing
+    PyTorchRandomizedSmoothing,
 )
 
-from tests.utils import (
-    master_seed,
-    get_image_classifier_pt,
-    get_image_classifier_tf
-)
+from tests.utils import master_seed, get_image_classifier_pt, get_image_classifier_tf
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "True"
 logger = logging.getLogger(__name__)
@@ -95,7 +91,7 @@ class TestTrainSmoothAdv(unittest.TestCase):
             no_grad_attack=False,
             epsilon=1.0,
             num_steps=10,
-            warmup=10
+            warmup=10,
         )
 
         rs2 = PyTorchRandomizedSmoothing(
@@ -115,7 +111,7 @@ class TestTrainSmoothAdv(unittest.TestCase):
             no_grad_attack=False,
             epsilon=1.0,
             num_steps=10,
-            warmup=10
+            warmup=10,
         )
 
         rs3 = PyTorchRandomizedSmoothing(
@@ -135,7 +131,7 @@ class TestTrainSmoothAdv(unittest.TestCase):
             no_grad_attack=False,
             epsilon=1.0,
             num_steps=10,
-            warmup=10
+            warmup=10,
         )
 
         rs4 = PyTorchRandomizedSmoothing(
@@ -155,7 +151,7 @@ class TestTrainSmoothAdv(unittest.TestCase):
             no_grad_attack=True,
             epsilon=1.0,
             num_steps=10,
-            warmup=10
+            warmup=10,
         )
 
         rs5 = PyTorchRandomizedSmoothing(
@@ -175,7 +171,7 @@ class TestTrainSmoothAdv(unittest.TestCase):
             no_grad_attack=False,
             epsilon=1.0,
             num_steps=10,
-            warmup=10
+            warmup=10,
         )
 
         rs6 = PyTorchRandomizedSmoothing(
@@ -195,28 +191,28 @@ class TestTrainSmoothAdv(unittest.TestCase):
             no_grad_attack=False,
             epsilon=1.0,
             num_steps=10,
-            warmup=10
+            warmup=10,
         )
 
         # fit
-        rs1.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method='smoothadv')
+        rs1.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="smoothadv")
 
         # fit fails when optimizer is None
-        with self.assertRaisesRegex(ValueError, 'An optimizer is needed to train the model, but none for provided.'):
-            rs2.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method='smoothadv')
+        with self.assertRaisesRegex(ValueError, "An optimizer is needed to train the model, but none for provided."):
+            rs2.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="smoothadv")
 
         # fit fails when scheduler is None
-        with self.assertRaisesRegex(ValueError, 'A scheduler is needed to train the model, but none for provided.'):
-            rs3.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method='smoothadv')
+        with self.assertRaisesRegex(ValueError, "A scheduler is needed to train the model, but none for provided."):
+            rs3.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="smoothadv")
 
         # fit with PGD attack and no grad
-        rs4.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method='smoothadv')
+        rs4.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="smoothadv")
 
         # fit with DDN attack and multi noise
-        rs5.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method='smoothadv')
+        rs5.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="smoothadv")
 
         # fit with DDN and single noise
-        rs6.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method='smoothadv')
+        rs6.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="smoothadv")
 
     def test_2_tf(self):
         """
@@ -236,14 +232,10 @@ class TestTrainSmoothAdv(unittest.TestCase):
             initial_learning_rate = 0.1
             boundaries = [50, 100]
             values = [0.1, 0.01, 0.001]
-            learning_rate_fn = tf.keras.optimizers.schedules.PiecewiseConstantDecay(
-                boundaries, values)
+            learning_rate_fn = tf.keras.optimizers.schedules.PiecewiseConstantDecay(boundaries, values)
 
             optimizer = tf.keras.optimizers.SGD(
-                learning_rate=initial_learning_rate,
-                momentum=0.9,
-                name='SGD',
-                decay=1e-4
+                learning_rate=initial_learning_rate, momentum=0.9, name="SGD", decay=1e-4
             )
 
             rs1 = TensorFlowV2RandomizedSmoothing(
@@ -260,7 +252,7 @@ class TestTrainSmoothAdv(unittest.TestCase):
                 num_steps=10,
                 warmup=10,
                 optimizer=optimizer,
-                scheduler=learning_rate_fn
+                scheduler=learning_rate_fn,
             )
 
             rs2 = TensorFlowV2RandomizedSmoothing(
@@ -277,7 +269,7 @@ class TestTrainSmoothAdv(unittest.TestCase):
                 num_steps=10,
                 warmup=10,
                 optimizer=None,
-                scheduler=learning_rate_fn
+                scheduler=learning_rate_fn,
             )
 
             rs3 = TensorFlowV2RandomizedSmoothing(
@@ -294,7 +286,7 @@ class TestTrainSmoothAdv(unittest.TestCase):
                 num_steps=10,
                 warmup=10,
                 optimizer=optimizer,
-                scheduler=None
+                scheduler=None,
             )
 
             rs4 = TensorFlowV2RandomizedSmoothing(
@@ -311,7 +303,7 @@ class TestTrainSmoothAdv(unittest.TestCase):
                 num_steps=10,
                 warmup=10,
                 optimizer=optimizer,
-                scheduler=learning_rate_fn
+                scheduler=learning_rate_fn,
             )
 
             rs5 = TensorFlowV2RandomizedSmoothing(
@@ -329,29 +321,27 @@ class TestTrainSmoothAdv(unittest.TestCase):
                 num_steps=10,
                 warmup=10,
                 optimizer=optimizer,
-                scheduler=learning_rate_fn
+                scheduler=learning_rate_fn,
             )
 
             # fit with PGD attack
-            rs1.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method='smoothadv')
+            rs1.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="smoothadv")
 
             # fit with PGD attack and no grad
-            rs5.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method='smoothadv')
+            rs5.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="smoothadv")
 
             # fit with DDN attack
-            rs4.fit(x_test, y_test.astype(np.int32), nb_epochs=1, batch_size=256, train_method='smoothadv')
+            rs4.fit(x_test, y_test.astype(np.int32), nb_epochs=1, batch_size=256, train_method="smoothadv")
 
             # fit fails when optimizer is None
             with self.assertRaisesRegex(
-                ValueError, 'An optimizer is needed to train the model, but none for provided.'
+                ValueError, "An optimizer is needed to train the model, but none for provided."
             ):
-                rs2.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method='smoothadv')
+                rs2.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="smoothadv")
 
             # fit fails when scheduler is None
-            with self.assertRaisesRegex(
-                ValueError, 'A scheduler is needed to train the model, but none for provided.'
-            ):
-                rs3.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method='smoothadv')
+            with self.assertRaisesRegex(ValueError, "A scheduler is needed to train the model, but none for provided."):
+                rs3.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="smoothadv")
 
 
 if __name__ == "__main__":

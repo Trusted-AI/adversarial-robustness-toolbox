@@ -46,18 +46,15 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
     :return: `None`
     """
     import random
-    from art.estimators.certification.randomized_smoothing.smooth_adversarial.smoothadvattack import (
-        PgdL2,
-        DDN
-    )
+    from art.estimators.certification.randomized_smoothing.smooth_adversarial.smoothadvattack import PgdL2, DDN
 
     x = x.astype(ART_NUMPY_DTYPE)
     start_epoch = 0
 
-    if self.attack_type == 'PGD':
-        attacker = PgdL2(steps=self.num_steps, device='cuda', max_norm=self.epsilon)
-    elif self.attack_type == 'DDN':
-        attacker = DDN(steps=self.num_steps, device='cuda', max_norm=self.epsilon)
+    if self.attack_type == "PGD":
+        attacker = PgdL2(steps=self.num_steps, device="cuda", max_norm=self.epsilon)
+    elif self.attack_type == "DDN":
+        attacker = DDN(steps=self.num_steps, device="cuda", max_norm=self.epsilon)
 
     if self.optimizer is None:  # pragma: no cover
         raise ValueError("An optimizer is needed to train the model, but none for provided.")
@@ -94,7 +91,9 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
                 requires_grad(self.model, False)
                 self.model.eval()
                 inputs = attacker.attack(
-                    self.model, inputs, targets,
+                    self.model,
+                    inputs,
+                    targets,
                     noise=noise,
                     num_noise_vectors=self.num_noise_vec,
                     no_grad=self.no_grad_attack,
@@ -104,7 +103,7 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
 
                 noisy_inputs = inputs + noise
 
-                targets = targets.unsqueeze(1).repeat(1, self.num_noise_vec).reshape(-1,1).squeeze()
+                targets = targets.unsqueeze(1).repeat(1, self.num_noise_vec).reshape(-1, 1).squeeze()
                 outputs = self.model(noisy_inputs)
                 loss = self.loss(outputs, targets)
 
@@ -144,16 +143,16 @@ def fit_tensorflow(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epoch
     import tensorflow as tf
     from art.estimators.certification.randomized_smoothing.smooth_adversarial.smoothadvattack_tensorflow import (
         PgdL2,
-        DDN
+        DDN,
     )
 
     x = x.astype(ART_NUMPY_DTYPE)
     start_epoch = 0
 
-    if self.attack_type == 'PGD':
-        attacker = PgdL2(steps=self.num_steps, device='cuda', max_norm=self.epsilon)
-    elif self.attack_type == 'DDN':
-        attacker = DDN(steps=self.num_steps, device='cuda', max_norm=self.epsilon)
+    if self.attack_type == "PGD":
+        attacker = PgdL2(steps=self.num_steps, device="cuda", max_norm=self.epsilon)
+    elif self.attack_type == "DDN":
+        attacker = DDN(steps=self.num_steps, device="cuda", max_norm=self.epsilon)
 
     if self.optimizer is None:  # pragma: no cover
         raise ValueError("An optimizer is needed to train the model, but none for provided.")
@@ -164,7 +163,7 @@ def fit_tensorflow(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epoch
 
     x = tf.convert_to_tensor(x)
     y = tf.convert_to_tensor(y)
-    x = tf.transpose(x, (0,3,1,2))
+    x = tf.transpose(x, (0, 3, 1, 2))
 
     train_ds = tf.data.Dataset.from_tensor_slices((x, y)).shuffle(10000).batch(batch_size)
 
@@ -179,16 +178,18 @@ def fit_tensorflow(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epoch
                 noise = tf.random.normal(inputs.shape, 0, 1) * self.scale
 
                 inputs = attacker.attack(
-                    self.model, inputs, targets,
+                    self.model,
+                    inputs,
+                    targets,
                     noise=noise,
                     num_noise_vectors=self.num_noise_vec,
-                    no_grad=self.no_grad_attack
+                    no_grad=self.no_grad_attack,
                 )
 
                 noisy_inputs = inputs + noise
                 noisy_inputs = tf.transpose(noisy_inputs, (0, 2, 3, 1))
                 targets = tf.squeeze(
-                    tf.reshape(tf.tile(tf.expand_dims(targets, axis=1), (1,self.num_noise_vec)), (-1,1))
+                    tf.reshape(tf.tile(tf.expand_dims(targets, axis=1), (1, self.num_noise_vec)), (-1, 1))
                 )
                 with tf.GradientTape() as tape:
                     predictions = self.model(noisy_inputs, training=True)
@@ -200,7 +201,7 @@ def fit_tensorflow(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epoch
         # End epoch
 
 
-def requires_grad(model:torch.nn.Module, requires_grad_val:bool) -> None:
+def requires_grad(model: torch.nn.Module, requires_grad_val: bool) -> None:
     """
     Sets the `requires_grad_` property for the model's parameters
 

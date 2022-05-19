@@ -77,7 +77,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         no_grad_attack: bool = False,
         epsilon: float = 64.0,
         num_steps: int = 10,
-        warmup:int = 1,
+        warmup: int = 1,
         lbd: float = 12.0,
         gamma: float = 8.0,
         beta: float = 16.0,
@@ -209,6 +209,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         :return: Array of gradients of the same shape as `x`.
         """
         import torch
+
         sampling = kwargs.get("sampling")
 
         if sampling:
