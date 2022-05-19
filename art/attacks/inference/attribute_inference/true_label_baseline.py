@@ -21,7 +21,7 @@ This module implements attribute inference attacks.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Union, TYPE_CHECKING
+from typing import Optional, Union, Tuple, TYPE_CHECKING
 
 import numpy as np
 from sklearn.neural_network import MLPClassifier
@@ -59,7 +59,7 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
         attack_model_type: str = "nn",
         attack_model: Optional["CLASSIFIER_TYPE"] = None,
         attack_feature: Union[int, slice] = 0,
-        scale_range: Optional[slice] = None,
+        scale_range: Optional[Tuple[float, float]] = None,
         prediction_normal_factor: float = 1,
     ):
         """
