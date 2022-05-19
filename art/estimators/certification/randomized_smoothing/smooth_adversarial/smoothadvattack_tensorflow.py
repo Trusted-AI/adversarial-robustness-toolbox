@@ -33,12 +33,28 @@ import tensorflow_probability as tfp
 
 
 class Attacker(metaclass=ABCMeta):
+    """
+    Abstract class for the Attacker. Consists of the single attack function
+    extended by the implementation
+
+    """
     @abstractmethod
     def attack(self, model, inputs, labels):
+        """
+        Abstract function definition for the attack call
+
+        """
         raise NotImplementedError
 
 
 def get_tensor_mode(input_tensor:tf.Tensor, dim=-1):
+    """
+    Computes the mode of the tensor along the dimension specified.
+
+    :param input_tensor: Input tensor.
+    :param dim: Dimension or axis along which mode is to be calculated.
+    :return: `Tensor with mode computed as defined above`
+    """
     datatype = input_tensor.dtype
     minval = tf.math.reduce_min(input_tensor)
     input_tensor = input_tensor - minval

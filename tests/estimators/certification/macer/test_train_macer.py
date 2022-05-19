@@ -15,13 +15,14 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""Unit Test Module for testing macer classifier training"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 import os
 import unittest
 import numpy as np
-import torch.optim as optim
+from torch import optim
 from torch.optim.lr_scheduler import MultiStepLR
 from art.utils import load_dataset
 from art.estimators.certification.randomized_smoothing import (
@@ -42,7 +43,7 @@ NB_TEST = 10
 
 class TestTrainMacer(unittest.TestCase):
     """
-    A unittest class for testing smooth adversarial classifier training.
+    A unittest class for testing macer classifier training.
     """
 
     @classmethod
@@ -76,62 +77,59 @@ class TestTrainMacer(unittest.TestCase):
         scheduler = MultiStepLR(optimizer, milestones=[200,400], gamma=0.1)
         rs1 = PyTorchRandomizedSmoothing(
             model=ptc.model,
-            loss=ptc._loss,
             optimizer=optimizer,
-            scheduler = scheduler,
+            scheduler=scheduler,
             input_shape=ptc.input_shape,
             nb_classes=ptc.nb_classes,
             channels_first=ptc.channels_first,
             clip_values=ptc.clip_values,
             scale=0.25,
-            lbd = 12.0,
-            gamma = 8.0,
-            beta = 16.0,
-            gauss_num = 16
-            )
+            lbd=12.0,
+            gamma=8.0,
+            beta=16.0,
+            gauss_num=16
+        )
         rs2 = PyTorchRandomizedSmoothing(
             model=ptc.model,
-            loss=ptc._loss,
             optimizer=None,
-            scheduler = scheduler,
+            scheduler=scheduler,
             input_shape=ptc.input_shape,
             nb_classes=ptc.nb_classes,
             channels_first=ptc.channels_first,
             clip_values=ptc.clip_values,
             scale=0.25,
-            lbd = 12.0,
-            gamma = 8.0,
-            beta = 16.0,
-            gauss_num = 16
-            )
+            lbd=12.0,
+            gamma=8.0,
+            beta=16.0,
+            gauss_num=16
+        )
 
         rs3 = PyTorchRandomizedSmoothing(
             model=ptc.model,
-            loss=ptc._loss,
             optimizer=optimizer,
-            scheduler = None,
+            scheduler=None,
             input_shape=ptc.input_shape,
             nb_classes=ptc.nb_classes,
             channels_first=ptc.channels_first,
             clip_values=ptc.clip_values,
             scale=0.25,
-            lbd = 12.0,
-            gamma = 8.0,
-            beta = 16.0,
-            gauss_num = 16
-            )
-
+            lbd=12.0,
+            gamma=8.0,
+            beta=16.0,
+            gauss_num=16
+        )
 
         # fit
-        rs1.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method = 'macer')
+        rs1.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method='macer')
 
-        #fit fails when optimizer is None
-        with self.assertRaisesRegexp(ValueError, 'An optimizer is needed to train the model, but none for provided.'):
-            rs2.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method = 'macer')
+        # fit fails when optimizer is None
+        with self.assertRaisesRegex(ValueError, 'An optimizer is needed to train the model, but none for provided.'):
+            rs2.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method='macer')
 
-        #fit fails when scheduler is None
-        with self.assertRaisesRegexp(ValueError, 'A scheduler is needed to train the model, but none for provided.'):
-            rs3.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method = 'macer')
+        # fit fails when scheduler is None
+        with self.assertRaisesRegex(ValueError, 'A scheduler is needed to train the model, but none for provided.'):
+            rs3.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method='macer')
+
 
 if __name__ == "__main__":
     unittest.main()
