@@ -43,7 +43,7 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
     from torch.distributions.normal import Normal
     import random
     import os
-    from art.estimators.certification.randomized_smoothing.smooth_adversarial.smoothadvattack_tensorflow import (
+    from art.estimators.certification.randomized_smoothing.smooth_adversarial.smoothadvattack import (
         Attacker,
         PGD_L2,
         DDN
@@ -74,7 +74,7 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
         self.scheduler.step()
         # Put the model in the training mode
         self.model.train()
-        self._requires_grad_(self.model, True)
+        requires_grad(self.model, True)
 
         attacker.max_norm = np.min([self.epsilon, (epoch_num + 1) * self.epsilon / self.warmup])
         attacker.init_norm = np.min([self.epsilon, (epoch_num + 1) * self.epsilon / self.warmup])
@@ -83,13 +83,13 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
             i_batch = torch.from_numpy(x[ind[nb * batch_size : (nb + 1) * batch_size]]).to(self.device)
             o_batch = torch.from_numpy(y[ind[nb * batch_size : (nb + 1) * batch_size]]).to(self.device)
 
-            mini_batches = self._get_minibatches(i_batch, o_batch, self.num_noise_vec)
+            mini_batches = get_minibatches(i_batch, o_batch, self.num_noise_vec)
             for inputs, targets in mini_batches:
                 inputs = inputs.repeat((1, self.num_noise_vec, 1, 1)).view(i_batch.shape)
                 noise = torch.randn_like(inputs, device=self.device) * self.scale
 
                 # Attack and find adversarial examples
-                self._requires_grad_(self.model, False)
+                requires_grad(self.model, False)
                 self.model.eval()
                 inputs = attacker.attack(
                     self.model, inputs, targets,
@@ -98,7 +98,7 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
                     no_grad=self.no_grad_attack,
                 )
                 self.model.train()
-                self._requires_grad_(self.model, True)
+                requires_grad(self.model, True)
 
                 noisy_inputs = inputs + noise
 
@@ -183,12 +183,12 @@ def fit_tensorflow(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epoch
         # End epoch
 
 
-def _requires_grad_(self, model:torch.nn.Module, requires_grad:bool) -> None:
+def requires_grad(model:torch.nn.Module, requires_grad:bool) -> None:
     for param in model.parameters():
         param.requires_grad_(requires_grad)
 
 
-def get_minibatches(X, y, num_batches):
-    batch_size = len(X) // num_batches
+def get_minibatches(x, y, num_batches):
+    batch_size = len(x) // num_batches
     for i in range(num_batches):
-        yield X[i * batch_size : (i + 1) * batch_size], y[i * batch_size : (i + 1) * batch_size]
+        yield x[i * batch_size : (i + 1) * batch_size], y[i * batch_size : (i + 1) * batch_size]
