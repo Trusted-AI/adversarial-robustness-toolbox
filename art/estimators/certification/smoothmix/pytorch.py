@@ -30,7 +30,6 @@ import numpy as np
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.classification.pytorch import PyTorchClassifier
 from art.estimators.certification.smoothmix.smoothmix import SmoothMixMixin
-from art.defences.preprocessor.gaussian_augmentation import GaussianAugmentation
 
 
 if TYPE_CHECKING:
