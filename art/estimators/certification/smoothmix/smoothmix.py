@@ -1,0 +1,423 @@
+# MIT License
+#
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2022
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+# documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+# persons to whom the Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+# Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+# WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+"""
+This module implements SmoothMix training applied to classifier predictions.
+
+| Paper link: https://arxiv.org/abs/1902.02918
+"""
+from __future__ import absolute_import, division, print_function, unicode_literals
+
+from abc import ABC
+import logging
+from typing import Optional, Tuple, Union, TYPE_CHECKING
+
+import numpy as np
+from scipy.stats import norm
+from tqdm.auto import tqdm
+
+from art.config import ART_NUMPY_DTYPE
+
+if TYPE_CHECKING:
+    # pylint: disable=C0412
+    import torch
+
+logger = logging.getLogger(__name__)
+
+
+class SmoothMixMixin(ABC):
+    """
+    Implementation of SmoothMix training, as introduced in Jeong et al. (2021)
+
+    | Paper link: https://arxiv.org/pdf/2111.09277.pdf
+    """
+
+    def __init__(
+        self,
+        sample_size: int,
+        *args,
+        scale: float = 0.1,
+        alpha: float = 0.001,
+        num_noise_vec: int = 1,
+        attack_type: str = "PGD",
+        epsilon: float = 64.0,
+        num_steps: int = 10,
+        warmup: int = 1,
+        lbd: float = 12.0,
+        gamma: float = 8.0,
+        gauss_num: int = 16,
+        eta: float = 1.0,
+        mix_step: int = 0,
+        maxnorm_s: Optional[float] = None,
+        maxnorm: Optional[float] = None,
+        **kwargs,
+    ) -> None:
+        """
+        Create a SmoothMix wrapper.
+
+        :param sample_size: Number of samples for smoothing.
+        :param scale: Standard deviation of Gaussian noise added.
+        :param alpha: The failure probability of smoothing.
+        :param num_noise_vec: Number of noise vectors
+        :param attack_type: The type of attack to use
+        :param epsilon: Maximum perturbation that the attacker can introduce
+        :param num_steps: Number of attack updates
+        :param warmup: Warm-up strategy that is gradually increased for the first 10 epochs up to the original value of epsilon
+        :param lbd: Weight of robustness loss in Macer
+        :param gamma: Value to multiply the LR by
+        :param gauss_num: Number of gaussian samples per input
+        :param eta: Hyperparameter to control the relative strength of the mixup loss
+        :param mix_step: Determines which sample to use for the clean side
+        :param maxnorm_s: initial value of alpha * mix_step
+        :param maxnorm: initial value of alpha * mix_step for adversarial examples
+        """
+        super().__init__(*args, **kwargs)  # type: ignore
+        self.sample_size = sample_size
+        self.scale = scale
+        self.alpha = alpha
+        self.num_noise_vec = num_noise_vec
+        self.attack_type = attack_type
+        self.epsilon = epsilon
+        self.num_steps = num_steps
+        self.warmup = warmup
+        self.lbd = lbd
+        self.gamma = gamma
+        self.gauss_num = gauss_num
+        self.eta = eta
+        self.mix_step = mix_step
+        self.maxnorm_s = maxnorm_s
+        self.maxnorm = maxnorm
+
+    def _predict_classifier(self, x: np.ndarray, batch_size: int, training_mode: bool, **kwargs) -> np.ndarray:
+        """
+        Perform prediction for a batch of inputs.
+
+        :param x: Input samples.
+        :param batch_size: Size of batches.
+        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
+        """
+        raise NotImplementedError
+
+    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
+        """
+        Perform prediction of the given classifier for a batch of inputs, taking an expectation over transformations.
+
+        :param x: Input samples.
+        :param batch_size: Batch size.
+        :param is_abstain: True if function will abstain from prediction and return 0s. Default: True
+        :type is_abstain: `boolean`
+        :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
+        """
+        from scipy.stats import binom_test
+
+        is_abstain = kwargs.get("is_abstain")
+        if is_abstain is not None and not isinstance(is_abstain, bool):  # pragma: no cover
+            raise ValueError("The argument is_abstain needs to be of type bool.")
+        if is_abstain is None:
+            is_abstain = True
+
+        logger.info("Applying smoothmix.")
+        n_abstained = 0
+        prediction = []
+        for x_i in tqdm(x, desc="SmoothMix"):
+            # get class counts
+            counts_pred = self._prediction_counts(x_i, batch_size=batch_size)
+            top = counts_pred.argsort()[::-1]
+            count1 = np.max(counts_pred)
+            count2 = counts_pred[top[1]]
+
+            # predict or abstain
+            smooth_prediction = np.zeros(counts_pred.shape)
+            if (not is_abstain) or (binom_test(count1, count1 + count2, p=0.5) <= self.alpha):
+                smooth_prediction[np.argmax(counts_pred)] = 1
+            elif is_abstain:
+                n_abstained += 1
+
+            prediction.append(smooth_prediction)
+        if n_abstained > 0:
+            logger.info("%s prediction(s) abstained.", n_abstained)
+        return np.array(prediction)
+
+    def _fit_classifier(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
+        """
+         Fit the classifier on the training set `(x, y)`.
+
+        :param x: Training data.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
+        :param batch_size: Batch size.
+        :param nb_epochs: Number of epochs to use for training.
+        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
+               and providing it takes no effect.
+        """
+        raise NotImplementedError
+
+    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, **kwargs) -> None:
+        """
+        Fit the classifier on the training set `(x, y)`.
+
+        :param x: Training data.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
+        :param batch_size: Batch size.
+        :param nb_epochs: Number of epochs to use for training.
+        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
+               and providing it takes no effect.
+        """
+        """
+        Performs SmoothMix adversarial training on the model
+
+        :param x: Training data.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes)
+                or indices of shape (nb_samples,).
+        :param batch_size: Batch size.
+        :key nb_epochs: Number of epochs to use for training
+        """
+        import torch  # lgtm [py/repeated-import]
+        import torch.nn.functional as F  # lgtm [py/repeated-import]
+        from art.estimators.certification.smoothmix.smooth_pgd_attack import SmoothMixPGD
+        import random
+
+        x = x.astype(ART_NUMPY_DTYPE)
+        start_epoch = 0
+
+        if self.maxnorm_s is None:
+            self.maxnorm_s = self.alpha * self.mix_step
+
+        if self.attack_type == "PGD":
+            attacker = SmoothMixPGD(
+                steps=self.num_steps,
+                mix_step=self.mix_step,
+                alpha=self.alpha,
+                maxnorm=self.maxnorm,
+                maxnorm_s=self.maxnorm_s,
+            )
+
+        if self.optimizer is None:  # pragma: no cover
+            raise ValueError(f"An optimizer is needed to train the model, but none for provided: {self.optimizer}")
+        if self.scheduler is None:  # pragma: no cover
+            raise ValueError(f"A scheduler is needed to train the model, but none for provided: {self.scheduler}")
+        if attacker is None:
+            raise ValueError(
+                f"A attacker is needed to smooth adversarially train the model, but \
+                                none for provided: {self.attack_type}"
+            )
+
+        num_batch = int(np.ceil(len(x) / float(batch_size)))
+        ind = np.arange(len(x))
+
+        # Start training
+        for epoch_num in range(start_epoch + 1, nb_epochs + 1):
+            # Shuffle the examples
+            random.shuffle(ind)
+
+            # SmoothMix Training setup
+            warmup_v = np.min([1.0, (epoch_num + 1) / self.warmup])
+            attacker.maxnorm_s = warmup_v * self.maxnorm_s
+
+            # Put the model in the training mode
+            self.model.train()
+            self._requires_grad_(self.model, True)  # pylint: disable=W0212
+
+            for num_batch_index in range(num_batch):
+                input_batch = torch.from_numpy(
+                    x[ind[num_batch_index * batch_size : (num_batch_index + 1) * batch_size]]
+                ).to(self.device)
+                output_batch = torch.from_numpy(
+                    y[ind[num_batch_index * batch_size : (num_batch_index + 1) * batch_size]]
+                ).to(self.device)
+
+                # pylint: disable=W0212
+                mini_batches = self._get_minibatches(input_batch, output_batch, self.num_noise_vec)
+
+                for (inputs, targets) in mini_batches:
+                    inputs, targets = inputs.to(self.device), targets.to(self.device)
+
+                    noises = [torch.randn_like(inputs) * self.scale for _ in range(self.num_noise_vec)]
+
+                    # Attack and find adversarial examples
+                    self._requires_grad_(self.model, False)  # pylint: disable=W0212
+                    self.model.eval()
+                    inputs, inputs_adv = attacker.attack(self.model, inputs=inputs, labels=targets, noises=noises)
+                    self.model.train()
+                    self._requires_grad_(self.model, True)  # pylint: disable=W0212
+
+                    in_clean_c = torch.cat([inputs + noise for noise in noises], dim=0)
+                    logits_c = self.model(in_clean_c)
+                    targets_c = targets.repeat(self.num_noise_vec)
+
+                    logits_c_chunk = torch.chunk(logits_c, self.num_noise_vec, dim=0)
+                    clean_avg_sm = self._avg_softmax(logits_c_chunk)
+
+                    if isinstance(clean_avg_sm, float):
+                        clean_avg_sm = torch.Tensor(clean_avg_sm)
+
+                    loss_xent = F.cross_entropy(logits_c, targets_c, reduction="none")
+
+                    in_mix, targets_mix = self._mixup_data(inputs, inputs_adv, clean_avg_sm, self.nb_classes)
+
+                    in_mix_c = torch.cat([in_mix + noise for noise in noises], dim=0)
+                    targets_mix_c = targets_mix.repeat(self.num_noise_vec, 1)
+                    logits_mix_c = F.log_softmax(self.model(in_mix_c), dim=1)
+
+                    _, top1_idx = torch.topk(clean_avg_sm, 1)
+                    ind_correct = (top1_idx[:, 0] == targets).float()
+                    ind_correct = ind_correct.repeat(self.num_noise_vec)
+
+                    loss_mixup = F.kl_div(logits_mix_c, targets_mix_c, reduction="none").sum(1)
+                    loss = loss_xent.mean() + self.eta * warmup_v * (ind_correct * loss_mixup).mean()
+
+                    # compute gradient and do SGD step
+                    self.optimizer.zero_grad()
+                    loss.backward()
+                    self.optimizer.step()
+
+            self.scheduler.step()
+
+    def get_minibatches(self, x, y, num_batches):
+        """
+        Generate batches of the training data and target values
+
+        :param x: Training data
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                    (nb_samples,).
+        :param num_batches: The number of batches to generate
+        """
+        batch_size = len(x) // num_batches
+        for i in range(num_batches):
+            yield x[i * batch_size : (i + 1) * batch_size], y[i * batch_size : (i + 1) * batch_size]
+
+    def _mixup_data(self, x_1, x_2, y_1, n_classes) -> Tuple[torch.Tensor, torch.Tensor]:
+        """
+        Returns mixed inputs, pairs of targets, and lambda
+
+        :param x_1: Training data
+        :param x_2: Adversarial training data
+        :param y_1: Training labels
+        :param n_classes: The number of classes
+        """
+        device = x_1.device
+
+        _eye = torch.eye(n_classes, device=device)
+        _unif = _eye.mean(0, keepdim=True)
+        lam = torch.rand(x_1.size(0), device=device) / 2
+
+        mixed_x = (1 - lam).view(-1, 1, 1, 1) * x_1 + lam.view(-1, 1, 1, 1) * x_2
+        mixed_y = (1 - lam).view(-1, 1) * y_1 + lam.view(-1, 1) * _unif
+
+        return mixed_x, mixed_y
+
+    def _avg_softmax(self, logits) -> Union[torch.Tensor, float]:
+        """
+        Computes the average softmax for the given logits
+
+        :param logits: the logits to compute the average softmax of
+        """
+        import torch.nn.functional as F
+
+        m = len(logits)
+        softmax = [F.softmax(logit, dim=1) for logit in logits]
+        avg_softmax = sum(softmax) / m
+        return avg_softmax
+
+    def certify(self, x: np.ndarray, n: int, batch_size: int = 32) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Computes certifiable radius around input `x` and returns radius `r` and prediction.
+
+        :param x: Sample input with shape as expected by the model.
+        :param n: Number of samples for estimate certifiable radius.
+        :param batch_size: Batch size.
+        :return: Tuple of length 2 of the selected class and certified radius.
+        """
+        prediction = []
+        radius = []
+
+        for x_i in x:
+
+            # get sample prediction for classification
+            counts_pred = self._prediction_counts(x_i, n=self.sample_size, batch_size=batch_size)
+            class_select = int(np.argmax(counts_pred))
+
+            # get sample prediction for certification
+            counts_est = self._prediction_counts(x_i, n=n, batch_size=batch_size)
+            count_class = counts_est[class_select]
+
+            prob_class = self._lower_confidence_bound(count_class, n)
+
+            if prob_class < 0.5:
+                prediction.append(-1)
+                radius.append(0.0)
+            else:
+                prediction.append(class_select)
+                radius.append(self.scale * norm.ppf(prob_class))
+
+        return np.array(prediction), np.array(radius)
+
+    def _noisy_samples(self, x: np.ndarray, n: Optional[int] = None) -> np.ndarray:
+        """
+        Adds Gaussian noise to `x` to generate samples. Optionally augments `y` similarly.
+
+        :param x: Sample input with shape as expected by the model.
+        :param n: Number of noisy samples to create.
+        :return: Array of samples of the same shape as `x`.
+        """
+        # set default value to sample_size
+        if n is None:
+            n = self.sample_size
+
+        # augment x
+        x = np.expand_dims(x, axis=0)
+        x = np.repeat(x, n, axis=0)
+        x = x + np.random.normal(scale=self.scale, size=x.shape).astype(ART_NUMPY_DTYPE)
+
+        return x
+
+    def _prediction_counts(self, x: np.ndarray, n: Optional[int] = None, batch_size: int = 128) -> np.ndarray:
+        """
+        Makes predictions and then converts probability distribution to counts.
+
+        :param x: Sample input with shape as expected by the model.
+        :param n: Number of noisy samples to create.
+        :param batch_size: Size of batches.
+        :return: Array of counts with length equal to number of columns of `x`.
+        """
+        # sample and predict
+        x_new = self._noisy_samples(x, n=n)
+        predictions = self._predict_classifier(x=x_new, batch_size=batch_size, training_mode=False)
+
+        # convert to binary predictions
+        idx = np.argmax(predictions, axis=-1)
+        pred = np.zeros(predictions.shape)
+        pred[np.arange(pred.shape[0]), idx] = 1
+
+        # get class counts
+        counts = np.sum(pred, axis=0)
+
+        return counts
+
+    def _lower_confidence_bound(self, n_class_samples: int, n_total_samples: int) -> float:
+        """
+        Uses Clopper-Pearson method to return a (1-alpha) lower confidence bound on bernoulli proportion
+
+        :param n_class_samples: Number of samples of a specific class.
+        :param n_total_samples: Number of samples for certification.
+        :return: Lower bound on the binomial proportion w.p. (1-alpha) over samples.
+        """
+        from statsmodels.stats.proportion import proportion_confint
+
+        return proportion_confint(n_class_samples, n_total_samples, alpha=2 * self.alpha, method="beta")[0]

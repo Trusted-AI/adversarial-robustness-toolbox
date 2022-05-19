@@ -37,13 +37,14 @@ class SmoothMixPGD(object):
     """
     Author's original implementation of a Smooth PGD attacker
     """
+
     def __init__(
         self,
         steps: int,
         mix_step: int,
         alpha: float = 1.0,
         maxnorm_s: Optional[float] = None,
-        maxnorm: Optional[float] = None
+        maxnorm: Optional[float] = None,
     ) -> None:
         """
         Creates a Smooth PGD attacker
@@ -64,13 +65,7 @@ class SmoothMixPGD(object):
         else:
             self.maxnorm_s = maxnorm_s
 
-    def attack(
-        self,
-        model: torch.nn.Module,
-        inputs: torch.Tensor,
-        labels: torch.Tensor,
-        noises: List[Any]
-    ):
+    def attack(self, model: torch.nn.Module, inputs: torch.Tensor, labels: torch.Tensor, noises: List[Any]):
         """
         Attacks the model with the given inputs
 
@@ -80,7 +75,7 @@ class SmoothMixPGD(object):
         :param noises: The noise applied to each input in the attack
         """
         if inputs.min() < 0 or inputs.max() > 1:
-            raise ValueError('Input values should be in the [0, 1] range.')
+            raise ValueError("Input values should be in the [0, 1] range.")
 
         def _batch_l2norm(x: torch.Tensor) -> torch.Tensor:
             """
@@ -124,7 +119,7 @@ class SmoothMixPGD(object):
 
             logsoftmax = torch.log(avg_softmax.clamp(min=1e-20))
 
-            loss = F.nll_loss(logsoftmax, labels, reduction='sum')
+            loss = F.nll_loss(logsoftmax, labels, reduction="sum")
 
             grad = torch.autograd.grad(loss, [adv])[0]
             grad_norm = _batch_l2norm(grad).view(-1, 1, 1, 1)

@@ -60,7 +60,7 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
             mix_step=self.mix_step,
             alpha=self.alpha,
             maxnorm=self.maxnorm,
-            maxnorm_s=self.maxnorm_s
+            maxnorm_s=self.maxnorm_s,
         )
 
     if self.optimizer is None:  # pragma: no cover
@@ -68,8 +68,10 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
     if self.scheduler is None:  # pragma: no cover
         raise ValueError(f"A scheduler is needed to train the model, but none for provided: {self.scheduler}")
     if attacker is None:
-        raise ValueError(f"A attacker is needed to smooth adversarially train the model, but \
-                            none for provided: {self.attack_type}")
+        raise ValueError(
+            f"A attacker is needed to smooth adversarially train the model, but \
+                            none for provided: {self.attack_type}"
+        )
 
     num_batch = int(np.ceil(len(x) / float(batch_size)))
     ind = np.arange(len(x))
@@ -96,9 +98,7 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
             ).to(self.device)
 
             # pylint: disable=W0212
-            mini_batches = self._get_minibatches(
-                input_batch, output_batch, self.num_noise_vec
-            )
+            mini_batches = self._get_minibatches(input_batch, output_batch, self.num_noise_vec)
 
             for (inputs, targets) in mini_batches:
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
@@ -108,12 +108,7 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
                 # Attack and find adversarial examples
                 self._requires_grad_(self.model, False)  # pylint: disable=W0212
                 self.model.eval()
-                inputs, inputs_adv = attacker.attack(
-                    self.model,
-                    inputs=inputs,
-                    labels=targets,
-                    noises=noises
-                )
+                inputs, inputs_adv = attacker.attack(self.model, inputs=inputs, labels=targets, noises=noises)
                 self.model.train()
                 self._requires_grad_(self.model, True)  # pylint: disable=W0212
 
@@ -127,7 +122,7 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
                 if isinstance(clean_avg_sm, float):
                     clean_avg_sm = torch.Tensor(clean_avg_sm)
 
-                loss_xent = F.cross_entropy(logits_c, targets_c, reduction='none')
+                loss_xent = F.cross_entropy(logits_c, targets_c, reduction="none")
 
                 in_mix, targets_mix = _mixup_data(inputs, inputs_adv, clean_avg_sm, self.nb_classes)
 
@@ -139,7 +134,7 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
                 ind_correct = (top1_idx[:, 0] == targets).float()
                 ind_correct = ind_correct.repeat(self.num_noise_vec)
 
-                loss_mixup = F.kl_div(logits_mix_c, targets_mix_c, reduction='none').sum(1)
+                loss_mixup = F.kl_div(logits_mix_c, targets_mix_c, reduction="none").sum(1)
                 loss = loss_xent.mean() + self.eta * warmup_v * (ind_correct * loss_mixup).mean()
 
                 # compute gradient and do SGD step
