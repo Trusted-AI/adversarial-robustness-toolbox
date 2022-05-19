@@ -102,7 +102,7 @@ class TestSmoothMix(unittest.TestCase):
             "maxnorm": None,
         }
 
-        # Check if PyTorchRandomizedSmoothing constructor is called with params needed to run SmoothMix training
+        # Check if PyTorchSmoothMix constructor is called with params needed to run SmoothMix training
         pt_rs_mock = MagicMock(side_effect=PyTorchSmoothMix, return_value=None)
         pt_rs_mock(
             model=ptc.model,
