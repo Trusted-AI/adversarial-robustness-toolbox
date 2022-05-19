@@ -73,10 +73,10 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         alpha: float = 0.001,
         num_noise_vec: int = 1,
         train_multi_noise: bool = False,
-        attack_type: str ="PGD",
+        attack_type: str = "PGD",
         no_grad_attack: bool = False,
-        epsilon: float  =64.0,
-        num_steps: int =10,
+        epsilon: float = 64.0,
+        num_steps: int = 10,
         warmup:int = 1,
         lbd: float = 12.0,
         gamma: float = 8.0,
@@ -134,7 +134,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
             lbd=lbd,
             gamma=gamma,
             beta=beta,
-            gauss_num = gauss_num,
+            gauss_num=gauss_num,
             **kwargs
         )
         self.scheduler = scheduler
@@ -147,9 +147,9 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         if "train_method" in kwargs:
             if kwargs.get("train_method") == "macer":
                 return trainMacer.fit_pytorch(self, x, y, batch_size, nb_epochs, **kwargs)
-            elif kwargs.get("train_method")=="smoothadv":
+            elif kwargs.get("train_method") == "smoothadv":
                 return trainSmoothAdversarial.fit_pytorch(self, x, y, batch_size, nb_epochs, **kwargs)
-                
+
         g_a = GaussianAugmentation(sigma=self.scale, augmentation=False)
         x_rs, _ = g_a(x)
         x_rs = x_rs.astype(ART_NUMPY_DTYPE)
@@ -277,12 +277,12 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         """
         raise NotImplementedError
-    
+
     def _requires_grad_(self, model:torch.nn.Module, requires_grad:bool) -> None:
-      for param in model.parameters():
-          param.requires_grad_(requires_grad)
-    
+        for param in model.parameters():
+            param.requires_grad_(requires_grad)
+
     def _get_minibatches(self, X, y, num_batches):
-      batch_size = len(X) // num_batches
-      for i in range(num_batches):
-          yield X[i*batch_size : (i+1)*batch_size], y[i*batch_size : (i+1)*batch_size]
+        batch_size = len(X) // num_batches
+        for i in range(num_batches):
+            yield X[i * batch_size : (i + 1) * batch_size], y[i * batch_size : (i + 1) * batch_size]

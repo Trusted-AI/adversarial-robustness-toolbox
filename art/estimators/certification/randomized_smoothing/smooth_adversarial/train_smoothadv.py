@@ -37,12 +37,14 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+
 def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
     import torch.nn.functional as F
     from torch.distributions.normal import Normal
     import random
     import os
-    from art.estimators.certification.randomized_smoothing.smooth_adversarial.smoothadvattack import Attacker, PGD_L2, DDN
+    from art.estimators.certification.randomized_smoothing.smooth_adversarial.smoothadvattack import Attacker,
+    PGD_L2, DDN
 
     x = x.astype(ART_NUMPY_DTYPE)
     start_epoch = 0
@@ -63,7 +65,7 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
     ind = np.arange(len(x))
 
     # Start training
-    for epoch_num in range(start_epoch+1, nb_epochs+1):
+    for epoch_num in range(start_epoch + 1, nb_epochs + 1):
         # Shuffle the examples
         random.shuffle(ind)
         self.scheduler.step()
@@ -71,51 +73,55 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
         self.model.train()
         self._requires_grad_(self.model, True)
 
-        attacker.max_norm = np.min([self.epsilon, (epoch_num + 1) * self.epsilon/self.warmup])
-        attacker.init_norm = np.min([self.epsilon, (epoch_num + 1) * self.epsilon/self.warmup])
+        attacker.max_norm = np.min([self.epsilon, (epoch_num + 1) * self.epsilon / self.warmup])
+        attacker.init_norm = np.min([self.epsilon, (epoch_num + 1) * self.epsilon / self.warmup])
         # Train for one epoch
         for nb in range(num_batch):
-          i_batch = torch.from_numpy(x[ind[nb * batch_size : (nb + 1) * batch_size]]).to(self.device)
-          o_batch = torch.from_numpy(y[ind[nb * batch_size : (nb + 1) * batch_size]]).to(self.device)
+            i_batch = torch.from_numpy(x[ind[nb * batch_size : (nb + 1) * batch_size]]).to(self.device)
+            o_batch = torch.from_numpy(y[ind[nb * batch_size : (nb + 1) * batch_size]]).to(self.device)
 
-          mini_batches = self._get_minibatches(i_batch, o_batch, self.num_noise_vec)
-          for inputs, targets in mini_batches:
-            inputs = inputs.repeat((1, self.num_noise_vec, 1, 1)).view(i_batch.shape)
-            noise = torch.randn_like(inputs, device=self.device) * self.scale
+            mini_batches = self._get_minibatches(i_batch, o_batch, self.num_noise_vec)
+            for inputs, targets in mini_batches:
+                inputs = inputs.repeat((1, self.num_noise_vec, 1, 1)).view(i_batch.shape)
+                noise = torch.randn_like(inputs, device=self.device) * self.scale
 
-            #Attack and find adversarial examples
-            self._requires_grad_(self.model, False)
-            self.model.eval()
-            inputs = attacker.attack(self.model, inputs, targets, 
-                                    noise=noise, 
-                                    num_noise_vectors=self.num_noise_vec, 
-                                    no_grad=self.no_grad_attack,
-                                    )
-            self.model.train()
-            self._requires_grad_(self.model, True)
+                # Attack and find adversarial examples
+                self._requires_grad_(self.model, False)
+                self.model.eval()
+                inputs = attacker.attack(
+                    self.model, inputs, targets,
+                    noise=noise,
+                    num_noise_vectors=self.num_noise_vec,
+                    no_grad=self.no_grad_attack,
+                )
+                self.model.train()
+                self._requires_grad_(self.model, True)
 
-            noisy_inputs = inputs + noise
+                noisy_inputs = inputs + noise
 
-            targets = targets.unsqueeze(1).repeat(1, self.num_noise_vec).reshape(-1,1).squeeze()
-            outputs = self.model(noisy_inputs)
-            loss = self.loss(outputs, targets)
-                
-            # compute gradient and do SGD step
-            self.optimizer.zero_grad()
-            loss.backward()
-            self.optimizer.step()
+                targets = targets.unsqueeze(1).repeat(1, self.num_noise_vec).reshape(-1,1).squeeze()
+                outputs = self.model(noisy_inputs)
+                loss = self.loss(outputs, targets)
+
+                # compute gradient and do SGD step
+                self.optimizer.zero_grad()
+                loss.backward()
+                self.optimizer.step()
+
 
 def get_batch_noisevec(X, num_noise_vec):
     batch_size = len(X)
     for i in range(num_noise_vec):
-        yield X[i*batch_size : (i+1)*batch_size]
+        yield X[i * batch_size : (i + 1) * batch_size]
+
 
 def fit_tensorflow(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
     import tensorflow as tf
     import torch.nn.functional as F
     import random
     import os
-    from art.estimators.certification.randomized_smoothing.smooth_adversarial.smoothadvattack_tensorflow import Attacker, PGD_L2, DDN
+    from art.estimators.certification.randomized_smoothing.smooth_adversarial.smoothadvattack_tensorflow import
+    Attacker, PGD_L2, DDN
     import pickle
 
     x = x.astype(ART_NUMPY_DTYPE)
@@ -140,34 +146,27 @@ def fit_tensorflow(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epoch
     train_ds = tf.data.Dataset.from_tensor_slices((x, y)).shuffle(10000).batch(batch_size)
 
     # Start training
-    for epoch_num in range(start_epoch+1, nb_epochs+1):
-        attacker.max_norm = np.min([self.epsilon, (epoch_num + 1) * self.epsilon/self.warmup])
-        attacker.init_norm = np.min([self.epsilon, (epoch_num + 1) * self.epsilon/self.warmup])
+    for epoch_num in range(start_epoch + 1, nb_epochs + 1):
+        attacker.max_norm = np.min([self.epsilon, (epoch_num + 1) * self.epsilon / self.warmup])
+        attacker.init_norm = np.min([self.epsilon, (epoch_num + 1) * self.epsilon / self.warmup])
         for i_batch, o_batch in train_ds:
             mini_batches = get_minibatches(i_batch, o_batch, self.num_noise_vec)
             for inputs, targets in mini_batches:
-                inputs = tf.reshape(
-                            tf.tile(inputs, (1, self.num_noise_vec, 1, 1)),
-                            i_batch.shape)
+                inputs = tf.reshape(tf.tile(inputs, (1, self.num_noise_vec, 1, 1)), i_batch.shape)
                 noise = tf.random.normal(inputs.shape, 0, 1) * self.scale
 
-                inputs = attacker.attack(self.model, inputs, targets, 
-                                        noise=noise, 
-                                        num_noise_vectors=self.num_noise_vec, 
-                                        no_grad=self.no_grad_attack)
+                inputs = attacker.attack(
+                    self.model, inputs, targets,
+                    noise=noise,
+                    num_noise_vectors=self.num_noise_vec,
+                    no_grad=self.no_grad_attack
+                )
 
                 noisy_inputs = inputs + noise
                 noisy_inputs = tf.transpose(noisy_inputs, (0, 2, 3, 1))
                 targets = tf.squeeze(
-                            tf.reshape(
-                              tf.tile(
-                                tf.expand_dims(
-                                  targets, axis=1), 
-                                (1,self.num_noise_vec)
-                              ), 
-                              (-1,1)
-                            )
-                          )
+                    tf.reshape(tf.tile(tf.expand_dims(targets, axis=1), (1,self.num_noise_vec)), (-1,1))
+                )
                 with tf.GradientTape() as tape:
                     predictions = self.model(noisy_inputs, training=True)
                     loss = self.loss_object(targets, predictions)
@@ -177,11 +176,13 @@ def fit_tensorflow(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epoch
                 self.optimizer.apply_gradients(zip(gradients, self.model.trainable_variables))
         # End epoch
 
+
 def _requires_grad_(self, model:torch.nn.Module, requires_grad:bool) -> None:
     for param in model.parameters():
         param.requires_grad_(requires_grad)
 
+
 def get_minibatches(X, y, num_batches):
     batch_size = len(X) // num_batches
     for i in range(num_batches):
-        yield X[i*batch_size : (i+1)*batch_size], y[i*batch_size : (i+1)*batch_size]
+        yield X[i * batch_size : (i + 1) * batch_size], y[i * batch_size : (i + 1) * batch_size]
