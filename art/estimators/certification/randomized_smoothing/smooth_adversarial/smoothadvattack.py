@@ -27,11 +27,11 @@ This is authors' implementation of Smooth Adversarial Attack using PGD and DDN
 """
 from abc import ABCMeta, abstractmethod
 
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
 from typing import Optional, Any
+import torch
+from torch import nn
+import torch.nn.functional as F
+from torch import optim
 
 
 class Attacker(metaclass=ABCMeta):
@@ -41,7 +41,7 @@ class Attacker(metaclass=ABCMeta):
 
 
 # Modification of the code from https://github.com/jeromerony/fast_adversarial
-class PGD_L2(Attacker):
+class PgdL2(Attacker):
     """
     PGD attack
 
@@ -61,7 +61,7 @@ class PGD_L2(Attacker):
                  random_start: bool = True,
                  max_norm: float = 1.,
                  device: torch.device = torch.device('cpu')) -> None:
-        super(PGD_L2, self).__init__()
+        super().__init__()
         self.steps = steps
         self.random_start = random_start
         self.max_norm = max_norm
@@ -71,12 +71,11 @@ class PGD_L2(Attacker):
                noise: torch.Tensor = None, num_noise_vectors=1, targeted: bool = False, no_grad=False) -> torch.Tensor:
         if num_noise_vectors == 1:
             return self._attack(model, inputs, labels, noise, targeted)
+        if no_grad:
+            with torch.no_grad():
+                return self._attack_mutlinoise_no_grad(model, inputs, labels, noise, num_noise_vectors)
         else:
-            if no_grad:
-                with torch.no_grad():
-                    return self._attack_mutlinoise_no_grad(model, inputs, labels, noise, num_noise_vectors, targeted)
-            else:
-                return self._attack_mutlinoise(model, inputs, labels, noise, num_noise_vectors, targeted)
+            return self._attack_mutlinoise(model, inputs, labels, noise, num_noise_vectors, targeted)
 
     def _attack(self, model: nn.Module, inputs: torch.Tensor, labels: torch.Tensor,
                 noise: torch.Tensor = None, targeted: bool = False) -> torch.Tensor:
@@ -110,7 +109,7 @@ class PGD_L2(Attacker):
         # Setup optimizers
         optimizer = optim.SGD([delta], lr=self.max_norm / self.steps * 2)
 
-        for i in range(self.steps):
+        for _ in range(self.steps):
             adv = inputs + delta
             if noise is not None:
                 adv = adv + noise
@@ -172,7 +171,7 @@ class PGD_L2(Attacker):
         # Setup optimizers
         optimizer = optim.SGD([delta], lr=self.max_norm / self.steps * 2)
 
-        for i in range(self.steps):
+        for _ in range(self.steps):
 
             adv = inputs + delta.repeat(1,num_noise_vectors,1,1).view_as(inputs)
             if noise is not None:
@@ -209,8 +208,7 @@ class PGD_L2(Attacker):
 
     def _attack_mutlinoise_no_grad(self, model: nn.Module, inputs: torch.Tensor,
                                    labels:torch.Tensor, noise: torch.Tensor = None,
-                                   num_noise_vectors: int = 1,
-                                   targeted: bool = False) -> torch.Tensor:
+                                   num_noise_vectors: int = 1) -> torch.Tensor:
         """
         Performs the attack of the model for the inputs and labels.
 
@@ -242,7 +240,7 @@ class PGD_L2(Attacker):
 
         # Setup optimizers
 
-        for i in range(self.steps):
+        for _ in range(self.steps):
 
             adv = inputs + delta.repeat(1,num_noise_vectors,1,1).view_as(inputs)
             if noise is not None:
@@ -314,7 +312,7 @@ class DDN(Attacker):
                  max_norm: float = 1.,
                  device: torch.device = torch.device('cpu'),
                  callback: Optional[Any] = None) -> None:
-        super(DDN, self).__init__()
+        super().__init__()
         self.steps = steps
         self.gamma = gamma
         self.init_norm = init_norm
@@ -331,12 +329,9 @@ class DDN(Attacker):
                targeted: bool = False, no_grad=False) -> torch.Tensor:
         if num_noise_vectors == 1:
             return self._attack(model, inputs, labels, noise, targeted)
-        else:
-            if no_grad:
-                raise NotImplementedError
-            else:
-                return self._attack_mutlinoise(model, inputs, labels,
-                                               noise, num_noise_vectors, targeted)
+        if no_grad:
+            raise NotImplementedError
+        return self._attack_mutlinoise(model, inputs, labels, noise, num_noise_vectors, targeted)
 
     def _attack(self, model:nn.Module, inputs:torch.Tensor, labels:torch.Tensor,
                 noise: torch.Tensor = None,
@@ -388,7 +383,7 @@ class DDN(Attacker):
         for i in range(self.steps):
             scheduler.step()
 
-            l2 = delta.data.view(batch_size, -1).norm(p=2, dim=1)
+            l2_var = delta.data.view(batch_size, -1).norm(p=2, dim=1)
             adv = inputs + delta
             if noise is not None:
                 adv = adv + noise
@@ -398,10 +393,10 @@ class DDN(Attacker):
             loss = multiplier * ce_loss
 
             is_adv = (pred_labels == labels) if targeted else (pred_labels != labels)
-            is_smaller = l2 < best_l2
+            is_smaller = l2_var < best_l2
             is_both = is_adv * is_smaller
             adv_found[is_both] = 1
-            best_l2[is_both] = l2[is_both]
+            best_l2[is_both] = l2_var[is_both]
             best_delta[is_both] = delta.data[is_both]
 
             optimizer.zero_grad()
@@ -420,8 +415,8 @@ class DDN(Attacker):
                                              dim=1).mean().item()
                 self.callback.scalar('ce', i, ce_loss.item() / batch_size)
                 self.callback.scalars(
-                    ['max_norm', 'l2', 'best_l2'], i,
-                    [norm.mean().item(), l2.mean().item(),
+                    ['max_norm', 'l2_var', 'best_l2'], i,
+                    [norm.mean().item(), l2_var.mean().item(),
                      best_l2[adv_found].mean().item() if adv_found.any() else norm.mean().item()]
                 )
                 self.callback.scalars(['cosine', 'lr', 'success'], i,
@@ -492,7 +487,7 @@ class DDN(Attacker):
         for i in range(self.steps):
             scheduler.step()
 
-            l2 = delta.data.view(batch_size, -1).norm(p=2, dim=1)
+            l2_var = delta.data.view(batch_size, -1).norm(p=2, dim=1)
             adv = inputs + delta.repeat(1,num_noise_vectors,1,1).view_as(inputs)
             if noise is not None:
                 adv = adv + noise
@@ -510,10 +505,10 @@ class DDN(Attacker):
             loss = multiplier * ce_loss
 
             is_adv = (pred_labels == labels) if targeted else (pred_labels != labels)
-            is_smaller = l2 < best_l2
+            is_smaller = l2_var < best_l2
             is_both = is_adv * is_smaller
             adv_found[is_both] = 1
-            best_l2[is_both] = l2[is_both]
+            best_l2[is_both] = l2_var[is_both]
             best_delta[is_both] = delta.data[is_both]
 
             optimizer.zero_grad()
@@ -531,8 +526,8 @@ class DDN(Attacker):
                                              delta.data.view(batch_size, -1), dim=1).mean().item()
                 self.callback.scalar('ce', i, ce_loss.item() / batch_size)
                 self.callback.scalars(
-                    ['max_norm', 'l2', 'best_l2'], i,
-                    [norm.mean().item(), l2.mean().item(),
+                    ['max_norm', 'l2_var', 'best_l2'], i,
+                    [norm.mean().item(), l2_var.mean().item(),
                      best_l2[adv_found].mean().item() if adv_found.any() else norm.mean().item()]
                 )
                 self.callback.scalars(['cosine', 'lr', 'success'], i,

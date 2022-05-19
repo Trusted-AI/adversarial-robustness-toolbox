@@ -24,9 +24,9 @@ This module implements Smooth Adversarial Attack using PGD and DDN.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+import torch
 import numpy as np
 from art.config import ART_NUMPY_DTYPE
-import torch
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
     import random
     from art.estimators.certification.randomized_smoothing.smooth_adversarial.smoothadvattack import (
-        PGD_L2,
+        PgdL2,
         DDN
     )
 
@@ -42,7 +42,7 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
     start_epoch = 0
 
     if self.attack_type == 'PGD':
-        attacker = PGD_L2(steps=self.num_steps, device='cuda', max_norm=self.epsilon)
+        attacker = PgdL2(steps=self.num_steps, device='cuda', max_norm=self.epsilon)
     elif self.attack_type == 'DDN':
         attacker = DDN(steps=self.num_steps, device='cuda', max_norm=self.epsilon)
 
@@ -68,9 +68,9 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
         attacker.max_norm = np.min([self.epsilon, (epoch_num + 1) * self.epsilon / self.warmup])
         attacker.init_norm = np.min([self.epsilon, (epoch_num + 1) * self.epsilon / self.warmup])
         # Train for one epoch
-        for nb in range(num_batch):
-            i_batch = torch.from_numpy(x[ind[nb * batch_size : (nb + 1) * batch_size]]).to(self.device)
-            o_batch = torch.from_numpy(y[ind[nb * batch_size : (nb + 1) * batch_size]]).to(self.device)
+        for n_batch in range(num_batch):
+            i_batch = torch.from_numpy(x[ind[n_batch * batch_size : (n_batch + 1) * batch_size]]).to(self.device)
+            o_batch = torch.from_numpy(y[ind[n_batch * batch_size : (n_batch + 1) * batch_size]]).to(self.device)
 
             mini_batches = get_minibatches(i_batch, o_batch, self.num_noise_vec)
             for inputs, targets in mini_batches:
@@ -101,16 +101,16 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
                 self.optimizer.step()
 
 
-def get_batch_noisevec(X, num_noise_vec):
-    batch_size = len(X)
+def get_batch_noisevec(x, num_noise_vec):
+    batch_size = len(x)
     for i in range(num_noise_vec):
-        yield X[i * batch_size : (i + 1) * batch_size]
+        yield x[i * batch_size : (i + 1) * batch_size]
 
 
 def fit_tensorflow(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
     import tensorflow as tf
     from art.estimators.certification.randomized_smoothing.smooth_adversarial.smoothadvattack_tensorflow import (
-        PGD_L2,
+        PgdL2,
         DDN
     )
 
@@ -118,7 +118,7 @@ def fit_tensorflow(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epoch
     start_epoch = 0
 
     if self.attack_type == 'PGD':
-        attacker = PGD_L2(steps=self.num_steps, device='cuda', max_norm=self.epsilon)
+        attacker = PgdL2(steps=self.num_steps, device='cuda', max_norm=self.epsilon)
     elif self.attack_type == 'DDN':
         attacker = DDN(steps=self.num_steps, device='cuda', max_norm=self.epsilon)
 
@@ -167,9 +167,9 @@ def fit_tensorflow(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epoch
         # End epoch
 
 
-def requires_grad(model:torch.nn.Module, requires_grad:bool) -> None:
+def requires_grad(model:torch.nn.Module, requires_grad_val:bool) -> None:
     for param in model.parameters():
-        param.requires_grad_(requires_grad)
+        param.requires_grad_(requires_grad_val)
 
 
 def get_minibatches(x, y, num_batches):
