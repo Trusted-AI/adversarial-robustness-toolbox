@@ -27,24 +27,13 @@ import logging
 import numpy as np
 from art.config import ART_NUMPY_DTYPE
 import torch
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    # pylint: disable=C0412
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
-    from art.defences.preprocessor import Preprocessor
-    from art.defences.postprocessor import Postprocessor
 
 logger = logging.getLogger(__name__)
 
 
 def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
-    import torch.nn.functional as F
-    from torch.distributions.normal import Normal
     import random
-    import os
     from art.estimators.certification.randomized_smoothing.smooth_adversarial.smoothadvattack import (
-        Attacker,
         PGD_L2,
         DDN
     )
@@ -120,15 +109,10 @@ def get_batch_noisevec(X, num_noise_vec):
 
 def fit_tensorflow(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
     import tensorflow as tf
-    import torch.nn.functional as F
-    import random
-    import os
     from art.estimators.certification.randomized_smoothing.smooth_adversarial.smoothadvattack_tensorflow import (
-        Attacker,
         PGD_L2,
         DDN
     )
-    import pickle
 
     x = x.astype(ART_NUMPY_DTYPE)
     start_epoch = 0

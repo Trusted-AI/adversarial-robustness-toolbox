@@ -80,7 +80,7 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
         gamma: float = 8.0,
         beta: float = 16.0,
         gauss_num: int = 16,
-        optimizer: Optional["tfa.optimizers"] = None,  # type: ignore
+        optimizer: Optional["tf.keras.optimizers"] = None,  # type: ignore
         scheduler: Optional["tf.keras.callbacks.LearningRateScheduler"] = None,  # type: ignore
         **kwargs
     ):
