@@ -323,13 +323,12 @@ class SignOPTAttack(EvasionAttack):
 
     def _sign_grad(self, x0, y0, epsilon, theta, initial_lbd, target=None):
         """
-        Evaluate the sign of gradient by formulat
-        sign(g) = 1/Q [ \sum_{q=1}^Q sign( g(theta+h*u_i) - g(theta) )u_i$ ]
+        Evaluate the sign of gradient
         """
         K = self.K
         sign_grad = np.zeros(theta.shape).astype(np.float32)
         queries = 0
-        ### use orthogonal transform
+        # use orthogonal transform
         for iii in range(K):  # for each u
             """
             Algorithm 1: Sign-OPT attack
@@ -370,7 +369,7 @@ class SignOPTAttack(EvasionAttack):
         query_count = 0
         ls_total = 0
 
-        ### init: Calculate a good starting point (direction)
+        # init: Calculate a good starting point (direction)
         num_directions = self.num_trial
         best_theta, g_theta = None, float("inf")
         if self.verbose:
@@ -402,7 +401,7 @@ class SignOPTAttack(EvasionAttack):
                 query_count += 1
                 theta = np.random.randn(*x0.shape).astype(np.float32)  # gaussian distortion
                 # register adv directions
-                if self._is_label(x0 + theta, y0) == False:
+                if self._is_label(x0 + theta, y0) is False:
                     initial_lbd = LA.norm(theta)
                     theta /= initial_lbd  # l2 normalize: theta is normalized
                     # getting smaller g_theta
@@ -413,7 +412,7 @@ class SignOPTAttack(EvasionAttack):
                         if self.verbose:
                             print(f"Found distortion {g_theta} with iteration/num_directions={i}/{num_directions}")
 
-        ## fail if cannot find a adv direction within 200 Gaussian
+        # fail if cannot find a adv direction within 200 Gaussian
         if g_theta == float("inf"):
             if self.verbose:
                 print("Couldn't find valid initial, failed")
@@ -427,14 +426,10 @@ class SignOPTAttack(EvasionAttack):
         alpha = self.alpha
         beta = self.beta
         timestart = time.time()
-        ### Begin Sign_OPT from here
+        # Begin Sign_OPT from here
         """
-        Algorithm 1: Sign-OPT attack
-            A:Randomly sample u1, . . . , uQ from a Gaussian or Uniform distribution; 
-            B:Compute gˆ ←  ...
-            C:Update θt+1 ← θt − ηgˆ;
-            D:Evaluate g(θt) using the same search algorithm in 
-              Cheng et al. (2019) https://openreview.net/pdf?id=rJlk6iRqKX,
+        Algorithm: Sign-OPT attack
+        Cheng et al. (2019) https://openreview.net/pdf?id=rJlk6iRqKX,
         """
         xg, gg = best_theta, g_theta
         distortions = [gg]
@@ -447,17 +442,12 @@ class SignOPTAttack(EvasionAttack):
             min_theta = xg  # next theta
             min_g2 = gg  # current g_theta
             for _ in range(15):
-                """
-                Algorithm 1: Sign-OPT attack
-                    C:Update θt+1 ← θt − ηgˆ;
-                """
                 new_theta = xg - alpha * sign_gradient
                 new_theta /= LA.norm(new_theta)
                 """
-                Algorithm 1: Sign-OPT attackx
-                    D:Evaluate g(θt) using the same search algorithm in 
-                      Cheng et al. (2019) https://openreview.net/pdf?id=rJlk6iRqKX, 
-                      **Algorithm 1 Compute g(θ) locally**
+                Algorithm: Sign-OPT attack
+                Evaluate g(θt) using the same search algorithm in
+                Cheng et al. (2019) https://openreview.net/pdf?id=rJlk6iRqKX,
                 """
                 new_g2, count = self._fine_grained_binary_search_local(
                     x0, y0, target, new_theta, initial_lbd=min_g2, tol=beta / 500
@@ -470,7 +460,7 @@ class SignOPTAttack(EvasionAttack):
                 else:
                     break  # meaning alphia is too big, so it needs to be reduced.
 
-            if min_g2 >= gg:  ## if the above code failed for the init alpha, we then try to decrease alpha
+            if min_g2 >= gg:  # if the above code failed for the init alpha, we then try to decrease alpha
                 for _ in range(15):
                     alpha = alpha * 0.25
                     new_theta = xg - alpha * sign_gradient
@@ -484,7 +474,7 @@ class SignOPTAttack(EvasionAttack):
                         min_g2 = new_g2
                         break
 
-            if alpha < 1e-4:  ## if the above two blocks of code failed
+            if alpha < 1e-4:  # if the above two blocks of code failed
                 alpha = 1.0
                 if self.verbose:
                     print("Warning: not moving")
@@ -492,7 +482,7 @@ class SignOPTAttack(EvasionAttack):
                 if beta < 1e-8:
                     break
 
-            ## if all attemps failed, min_theta, min_g2 will be the current theta (i.e. not moving)
+            # if all attemps failed, min_theta, min_g2 will be the current theta (i.e. not moving)
             xg, gg = min_theta, min_g2
 
             query_count += grad_queries + ls_count
@@ -507,7 +497,7 @@ class SignOPTAttack(EvasionAttack):
             if self.verbose and (i + 1) % 10 == 0:
                 print(f"Iteration {i+1} distortion  {gg} num_queries {query_count}")
         timeend = time.time()
-        if self.targeted == False and (distortion is None or gg < distortion):
+        if self.targeted is False and (distortion is None or gg < distortion):
             target = self._predict_label(x0 + gg * xg)
             if self.verbose:
                 print(
@@ -534,7 +524,6 @@ class SignOPTAttack(EvasionAttack):
     def _clip_value(self, x0):
         if self.enable_clipped:
             x0 = np.clip(x0, self.clip_min, self.clip_max)
-            # x_adv = torch.clamp(x_adv, self.clip_min, self.clip_max)
         return x0
 
     def _check_params(self) -> None:
