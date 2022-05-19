@@ -68,7 +68,7 @@ class PGD_L2(Attacker):
     def __init__(self,
                  steps: int,
                  random_start: bool = True,
-                 max_norm: Optional[float] = None,
+                 max_norm: float = 1.,
                  device: tf.device = tf.device('cpu')) -> None:
         super(PGD_L2, self).__init__()
         self.steps = steps
@@ -121,8 +121,7 @@ class PGD_L2(Attacker):
         deltavar = tf.Variable(delta, trainable=True)
 
         # Setup optimizer
-        optimizer = tf.keras.optimizers.SGD(
-            learning_rate=self.max_norm / self.steps * 2)
+        optimizer = tf.keras.optimizers.SGD(learning_rate=self.max_norm / self.steps * 2)
 
         for i in range(self.steps):
             with tf.GradientTape() as tape:
@@ -373,7 +372,7 @@ class DDN(Attacker):
                  init_norm: float = 1.,
                  quantize: bool = True,
                  levels: int = 256,
-                 max_norm: Optional[float] = None,
+                 max_norm: float = 1.,
                  device: tf.device = tf.device('cpu')) -> None:
         super(DDN, self).__init__()
         self.steps = steps
