@@ -58,19 +58,18 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
         self.model.load_state_dict(cpoint['net'])
         start_epoch = cpoint['epoch']
         self.scheduler.step(start_epoch)
-        print('Loading model from epoch {} and checkpoint {}'.format(str(start_epoch), str(chkpt)))
     num_batch = int(np.ceil(len(x) / float(batch_size)))
     ind = np.arange(len(x))
 
     # Start training
-    for epoch_num in range(start_epoch + 1, nb_epochs + 1):
+    for _ in range(start_epoch + 1, nb_epochs + 1):
         # Shuffle the examples
         random.shuffle(ind)
         i = 0
         # Train for one epoch
-        for nb in range(num_batch):
-            i_batch = torch.from_numpy(x[ind[nb * batch_size : (nb + 1) * batch_size]]).to(self.device)
-            o_batch = torch.from_numpy(y[ind[nb * batch_size : (nb + 1) * batch_size]]).to(self.device)
+        for n_batch in range(num_batch):
+            i_batch = torch.from_numpy(x[ind[n_batch * batch_size : (n_batch + 1) * batch_size]]).to(self.device)
+            o_batch = torch.from_numpy(y[ind[n_batch * batch_size : (n_batch + 1) * batch_size]]).to(self.device)
             input_size = len(i_batch)
             input_total += input_size
 

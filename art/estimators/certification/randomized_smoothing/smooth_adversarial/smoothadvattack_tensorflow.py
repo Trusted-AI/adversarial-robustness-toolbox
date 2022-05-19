@@ -38,18 +38,21 @@ class Attacker(metaclass=ABCMeta):
         raise NotImplementedError
 
 
-def getTensorMode(input:tf.Tensor, dim=-1):
-    datatype = input.dtype
-    minval = tf.math.reduce_min(input)
-    input = input - minval
-    c = tfp.stats.count_integers(input, axis=dim, dtype=datatype, minlength=tf.math.reduce_max(input) + 1)
-    idx = tf.math.argmax(c, axis=0, output_type=datatype)
+def get_tensor_mode(input_tensor:tf.Tensor, dim=-1):
+    datatype = input_tensor.dtype
+    minval = tf.math.reduce_min(input_tensor)
+    input_tensor = input_tensor - minval
+    c_int = tfp.stats.count_integers(
+        input_tensor, axis=dim, dtype=datatype,
+        minlength=tf.math.reduce_max(input_tensor) + 1
+    )
+    idx = tf.math.argmax(c_int, axis=0, output_type=datatype)
     mode_tensor = idx + minval
     return mode_tensor
 
 
 # Modification of the code from https://github.com/jeromerony/fast_adversarial
-class PGD_L2(Attacker):
+class PgdL2(Attacker):
     """
     PGD attack
 
@@ -69,7 +72,7 @@ class PGD_L2(Attacker):
                  random_start: bool = True,
                  max_norm: float = 1.,
                  device: tf.device = tf.device('cpu')) -> None:
-        super(PGD_L2, self).__init__()
+        super().__init__()
         self.steps = steps
         self.random_start = random_start
         self.max_norm = max_norm
@@ -80,13 +83,10 @@ class PGD_L2(Attacker):
                targeted: bool = False, no_grad=False) -> tf.Tensor:
         if num_noise_vectors == 1:
             return self._attack(model, inputs, labels, noise, targeted)
-        else:
-            if no_grad:
-                return self._attack_multinoise_no_grad(model, inputs, labels,
-                                                       noise, num_noise_vectors, targeted)
-            else:
-                return self._attack_multinoise(model, inputs, labels, noise,
-                                               num_noise_vectors, targeted)
+        if no_grad:
+            return self._attack_multinoise_no_grad(model, inputs, labels,
+                                                   noise, num_noise_vectors)
+        return self._attack_multinoise(model, inputs, labels, noise, num_noise_vectors, targeted)
 
     def _attack(self, model: tf.Module, inputs: tf.Tensor, labels: tf.Tensor,
                 noise: tf.Tensor = None, targeted: bool = False) -> tf.Tensor:
@@ -122,7 +122,7 @@ class PGD_L2(Attacker):
         # Setup optimizer
         optimizer = tf.keras.optimizers.SGD(learning_rate=self.max_norm / self.steps * 2)
 
-        for i in range(self.steps):
+        for _ in range(self.steps):
             with tf.GradientTape() as tape:
                 tape.watch(deltavar)
                 adv = inputs + deltavar
@@ -197,7 +197,7 @@ class PGD_L2(Attacker):
         # Setup optimizers
         optimizer = tf.keras.optimizers.SGD(learning_rate=self.max_norm / self.steps * 2)
 
-        for i in range(self.steps):
+        for _ in range(self.steps):
             with tf.GradientTape() as tape:
                 tape.watch(deltavar)
                 adv = inputs + tf.reshape(tf.tile(deltavar, (1,num_noise_vectors,1,1)), inputs.shape)
@@ -265,8 +265,7 @@ class PGD_L2(Attacker):
 
     def _attack_multinoise_no_grad(self, model: tf.Module, inputs: tf.Tensor,
                                    labels: tf.Tensor, noise: tf.Tensor = None,
-                                   num_noise_vectors: int = 1,
-                                   targeted: bool = False) -> tf.Tensor:
+                                   num_noise_vectors: int = 1) -> tf.Tensor:
         """
         Performs the attack of the model for the inputs and labels.
 
@@ -292,7 +291,7 @@ class PGD_L2(Attacker):
         batch_size = labels.shape[0]
         delta = tf.zeros((len(labels), *inputs.shape[1:]))
 
-        for i in range(self.steps):
+        for _ in range(self.steps):
             adv = inputs + tf.reshape(tf.tile(delta, (1,num_noise_vectors,1,1)), inputs.shape)
             if noise is not None:
                 adv = adv + noise
@@ -373,7 +372,7 @@ class DDN(Attacker):
                  levels: int = 256,
                  max_norm: float = 1.,
                  device: tf.device = tf.device('cpu')) -> None:
-        super(DDN, self).__init__()
+        super().__init__()
         self.steps = steps
         self.gamma = gamma
         self.init_norm = init_norm
@@ -386,11 +385,9 @@ class DDN(Attacker):
                noise: tf.Tensor = None, num_noise_vectors=1, targeted: bool = False, no_grad=False) -> tf.Tensor:
         if num_noise_vectors == 1:
             return self._attack(model, inputs, labels, noise, targeted)
-        else:
-            if no_grad:
-                raise NotImplementedError
-            else:
-                return self._attack_multinoise(model, inputs, labels, noise, num_noise_vectors, targeted)
+        if no_grad:
+            raise NotImplementedError
+        return self._attack_multinoise(model, inputs, labels, noise, num_noise_vectors, targeted)
 
     def _attack(self, model: tf.Module, inputs: tf.Tensor, labels: tf.Tensor,
                 noise: tf.Tensor = None, targeted: bool = False) -> tf.Tensor:
@@ -444,7 +441,7 @@ class DDN(Attacker):
             optimizer.learning_rate = scheduler(i).numpy()
             with tf.GradientTape() as tape:
                 tape.watch(deltavar)
-                l2 = tf.norm(tf.reshape(deltavar, [batch_size, -1]), ord=2, axis=1)
+                l2_var = tf.norm(tf.reshape(deltavar, [batch_size, -1]), ord=2, axis=1)
                 adv = inputs + deltavar
                 if noise is not None:
                     adv = adv + noise
@@ -460,7 +457,7 @@ class DDN(Attacker):
                 loss = multiplier * ce_loss
 
                 is_adv = (pred_labels == labels) if targeted else (pred_labels != labels)
-                is_smaller = tf.math.less(l2, best_l2)
+                is_smaller = tf.math.less(l2_var, best_l2)
                 is_both = tf.cast(
                     tf.math.multiply(
                         tf.cast(is_adv, tf.int32),
@@ -469,7 +466,7 @@ class DDN(Attacker):
                     tf.dtypes.bool
                 )
                 adv_found = tf.where(is_both, 1, adv_found)
-                best_l2 = tf.where(is_both, l2, best_l2)
+                best_l2 = tf.where(is_both, l2_var, best_l2)
                 is_both_reshaped = tf.expand_dims(
                     tf.expand_dims(
                         tf.expand_dims(is_both,axis=1),
@@ -581,7 +578,7 @@ class DDN(Attacker):
             optimizer.learning_rate = scheduler(i).numpy()
             with tf.GradientTape() as tape:
                 tape.watch(deltavar)
-                l2 = tf.norm(tf.reshape(deltavar, [batch_size, -1]), ord=2, axis=1)
+                l2_var = tf.norm(tf.reshape(deltavar, [batch_size, -1]), ord=2, axis=1)
                 adv = inputs + tf.reshape(tf.tile(deltavar, (1,1,1,num_noise_vectors)), inputs.shape)
 
                 if noise is not None:
@@ -590,7 +587,7 @@ class DDN(Attacker):
                 logits = model(adv, training=True)
 
                 pred_labels = tf.math.argmax(logits, axis=1, output_type=tf.dtypes.int32)
-                pred_labels = getTensorMode(pred_labels, 1)[0]
+                pred_labels = get_tensor_mode(pred_labels, 1)[0]
                 # safe softmax
                 softmax = tf.nn.softmax(logits, axis=1)
                 # average the probabilities across noise
@@ -620,13 +617,13 @@ class DDN(Attacker):
                 loss = multiplier * ce_loss
 
                 is_adv = (pred_labels == labels) if targeted else (pred_labels != labels)
-                is_smaller = tf.math.less(l2, best_l2)
+                is_smaller = tf.math.less(l2_var, best_l2)
                 is_both = tf.cast(
                     tf.math.multiply(tf.cast(is_adv, tf.int32), tf.cast(is_smaller, tf.int32)),
                     tf.dtypes.bool
                 )
                 adv_found = tf.where(is_both, 1, adv_found)
-                best_l2 = tf.where(is_both, l2, best_l2)
+                best_l2 = tf.where(is_both, l2_var, best_l2)
                 is_both_reshaped = tf.expand_dims(tf.expand_dims(tf.expand_dims(is_both,axis=1),axis=1),axis=1)
                 is_both_reshaped = tf.tile(is_both_reshaped, (1, *deltavar.shape[1:]))
                 best_delta = tf.where(is_both_reshaped, deltavar, best_delta)
