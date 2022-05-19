@@ -74,17 +74,17 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
         alpha: float = 0.001,
         num_noise_vec: int = 1,
         train_multi_noise: bool = False,
-        attack_type: str ="PGD",
+        attack_type: str = "PGD",
         no_grad_attack: bool = False,
-        epsilon: float  = 64.0,
-        num_steps: int =10,
+        epsilon: float = 64.0,
+        num_steps: int = 10,
         warmup:int = 1,
         lbd: float = 12.0,
         gamma: float = 8.0,
         beta: float = 16.0,
         gauss_num: int = 16,
         optimizer: Optional["tfa.optimizers"] = None,  # type: ignore
-        scheduler: Optional["tf.keras.callbacks.LearningRateScheduler"] = None, # type: ignore
+        scheduler: Optional["tf.keras.callbacks.LearningRateScheduler"] = None,  # type: ignore
         **kwargs
     ):
         """
@@ -141,7 +141,7 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
             lbd=lbd,
             gamma=gamma,
             beta=beta,
-            gauss_num = gauss_num,
+            gauss_num=gauss_num,
             **kwargs
         )
         self.optimizer = optimizer
@@ -152,7 +152,7 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
 
     def _fit_classifier(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
         if "train_method" in kwargs:
-            if kwargs.get("train_method")=="smoothadv":
+            if kwargs.get("train_method") == "smoothadv":
                 return trainSmoothAdversarial.fit_tensorflow(self, x, y, batch_size, nb_epochs, **kwargs)
 
         g_a = GaussianAugmentation(sigma=self.scale, augmentation=False)
