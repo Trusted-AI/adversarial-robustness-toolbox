@@ -25,9 +25,7 @@ import numpy as np
 from torch import optim
 from torch.optim.lr_scheduler import MultiStepLR
 from art.utils import load_dataset
-from art.estimators.certification.randomized_smoothing import (
-    PyTorchRandomizedSmoothing
-)
+from art.estimators.certification.randomized_smoothing import PyTorchRandomizedSmoothing
 from tests.utils import (
     master_seed,
     get_image_classifier_pt,
@@ -74,7 +72,7 @@ class TestTrainMacer(unittest.TestCase):
 
         # Initialize RS object
         optimizer = optim.SGD(ptc.model.parameters(), lr=0.01, momentum=0.9, weight_decay=5e-4)
-        scheduler = MultiStepLR(optimizer, milestones=[200,400], gamma=0.1)
+        scheduler = MultiStepLR(optimizer, milestones=[200, 400], gamma=0.1)
         rs1 = PyTorchRandomizedSmoothing(
             model=ptc.model,
             optimizer=optimizer,
@@ -87,7 +85,7 @@ class TestTrainMacer(unittest.TestCase):
             lbd=12.0,
             gamma=8.0,
             beta=16.0,
-            gauss_num=16
+            gauss_num=16,
         )
         rs2 = PyTorchRandomizedSmoothing(
             model=ptc.model,
@@ -101,7 +99,7 @@ class TestTrainMacer(unittest.TestCase):
             lbd=12.0,
             gamma=8.0,
             beta=16.0,
-            gauss_num=16
+            gauss_num=16,
         )
 
         rs3 = PyTorchRandomizedSmoothing(
@@ -116,19 +114,19 @@ class TestTrainMacer(unittest.TestCase):
             lbd=12.0,
             gamma=8.0,
             beta=16.0,
-            gauss_num=16
+            gauss_num=16,
         )
 
         # fit
-        rs1.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method='macer')
+        rs1.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="macer")
 
         # fit fails when optimizer is None
-        with self.assertRaisesRegex(ValueError, 'An optimizer is needed to train the model, but none for provided.'):
-            rs2.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method='macer')
+        with self.assertRaisesRegex(ValueError, "An optimizer is needed to train the model, but none for provided."):
+            rs2.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="macer")
 
         # fit fails when scheduler is None
-        with self.assertRaisesRegex(ValueError, 'A scheduler is needed to train the model, but none for provided.'):
-            rs3.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method='macer')
+        with self.assertRaisesRegex(ValueError, "A scheduler is needed to train the model, but none for provided."):
+            rs3.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="macer")
 
 
 if __name__ == "__main__":

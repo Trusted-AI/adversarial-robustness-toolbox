@@ -78,7 +78,7 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
         no_grad_attack: bool = False,
         epsilon: float = 64.0,
         num_steps: int = 10,
-        warmup:int = 1,
+        warmup: int = 1,
         lbd: float = 12.0,
         gamma: float = 8.0,
         beta: float = 16.0,

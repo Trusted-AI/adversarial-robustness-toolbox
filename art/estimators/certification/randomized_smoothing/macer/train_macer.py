@@ -64,11 +64,11 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
     if self.scheduler is None:  # pragma: no cover
         raise ValueError("A scheduler is needed to train the model, but none for provided.")
 
-    if kwargs.get('checkpoint') is not None:
-        chkpt = kwargs.get('checkpoint')
+    if kwargs.get("checkpoint") is not None:
+        chkpt = kwargs.get("checkpoint")
         cpoint = torch.load(chkpt)
-        self.model.load_state_dict(cpoint['net'])
-        start_epoch = cpoint['epoch']
+        self.model.load_state_dict(cpoint["net"])
+        start_epoch = cpoint["epoch"]
         self.scheduler.step(start_epoch)
     num_batch = int(np.ceil(len(x) / float(batch_size)))
     ind = np.arange(len(x))
@@ -96,8 +96,7 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
             # Classification loss
             outputs_softmax = F.softmax(outputs, dim=2).mean(1)
             outputs_logsoftmax = torch.log(outputs_softmax + 1e-10)  # avoid nan
-            classification_loss = F.nll_loss(
-                outputs_logsoftmax, o_batch, reduction='sum')
+            classification_loss = F.nll_loss(outputs_logsoftmax, o_batch, reduction="sum")
 
             cl_total += classification_loss.item()
 
@@ -107,12 +106,14 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
             top2 = torch.topk(beta_outputs_softmax, 2)
             top2_score = top2[0]
             top2_idx = top2[1]
-            indices_correct = (top2_idx[:, 0] == o_batch)  # G_theta
-            out0, out1 = top2_score[indices_correct,
-                                    0], top2_score[indices_correct, 1]
+            indices_correct = top2_idx[:, 0] == o_batch  # G_theta
+            out0, out1 = top2_score[indices_correct, 0], top2_score[indices_correct, 1]
             robustness_loss = m.icdf(out1) - m.icdf(out0)
-            indices = ~torch.isnan(robustness_loss) & ~torch.isinf(
-                robustness_loss) & (torch.abs(robustness_loss) <= self.gamma)  # hinge
+            indices = (
+                ~torch.isnan(robustness_loss)
+                & ~torch.isinf(robustness_loss)
+                & (torch.abs(robustness_loss) <= self.gamma)
+            )  # hinge
             out0, out1 = out0[indices], out1[indices]
             robustness_loss = m.icdf(out1) - m.icdf(out0) + self.gamma
             robustness_loss = robustness_loss.sum() * self.scale / 2
