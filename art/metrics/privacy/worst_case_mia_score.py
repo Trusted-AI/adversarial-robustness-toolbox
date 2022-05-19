@@ -21,9 +21,9 @@ This module implements metric for inference attack worst case accuracy measureme
 from __future__ import absolute_import, division, print_function, unicode_literals
 from typing import Optional, List, Tuple
 
+import logging
 import numpy as np
 from sklearn.metrics import roc_curve
-import logging
 
 
 TPR = float
@@ -32,22 +32,22 @@ THR = float
 
 
 def _calculate_roc_for_fpr(y_true, y_proba, targeted_fpr):
-    """ Get FPR, TPR and, THRESHOLD based on the targeted_fpr (such that FPR <= targeted_fpr) """
+    """Get FPR, TPR and, THRESHOLD based on the targeted_fpr (such that FPR <= targeted_fpr)"""
     fpr, tpr, thr = roc_curve(y_true=y_true, y_score=y_proba)
     # take the highest fpr and an appropriated threshold that achieve at least FPR=fpr
     if np.isnan(fpr).all() or np.isnan(tpr).all():
         logging.warning("TPR or FPR values are NaN")
         return None, None, None
-    else:
-        targeted_fpr_idx = np.where(fpr <= targeted_fpr)[0][-1]
-        return fpr[targeted_fpr_idx], tpr[targeted_fpr_idx], thr[targeted_fpr_idx]
+
+    targeted_fpr_idx = np.where(fpr <= targeted_fpr)[0][-1]
+    return fpr[targeted_fpr_idx], tpr[targeted_fpr_idx], thr[targeted_fpr_idx]
 
 
 def get_roc_for_fpr(  # pylint: disable=C0103
-        attack_proba: np.ndarray,
-        attack_true: np.ndarray,
-        target_model_labels: Optional[np.ndarray] = None,
-        targeted_fpr: Optional[float] = 0.001,
+    attack_proba: np.ndarray,
+    attack_true: np.ndarray,
+    target_model_labels: Optional[np.ndarray] = None,
+    targeted_fpr: Optional[float] = 0.001,
 ) -> List[Tuple[Optional[int], FPR, TPR, THR]]:
     """
     Compute the attack TPR, THRESHOLD and achieved FPR based on the targeted FPR. This implementation supports only
@@ -76,23 +76,21 @@ def get_roc_for_fpr(  # pylint: disable=C0103
         values, _ = np.unique(target_model_labels, return_counts=True)
         for v in values:
             idxs = np.where(target_model_labels == v)[0]
-            fpr, tpr, thr = _calculate_roc_for_fpr(y_proba=attack_proba[idxs],
-                                                   y_true=attack_true[idxs],
-                                                   targeted_fpr=targeted_fpr)
+            fpr, tpr, thr = _calculate_roc_for_fpr(
+                y_proba=attack_proba[idxs], y_true=attack_true[idxs], targeted_fpr=targeted_fpr
+            )
             results.append((v, fpr, tpr, thr))
     else:
-        fpr, tpr, thr = _calculate_roc_for_fpr(y_proba=attack_proba,
-                                               y_true=attack_true,
-                                               targeted_fpr=targeted_fpr)
+        fpr, tpr, thr = _calculate_roc_for_fpr(y_proba=attack_proba, y_true=attack_true, targeted_fpr=targeted_fpr)
         results.append((fpr, tpr, thr))
 
     return results
 
 
 def get_roc_for_multi_fprs(
-        attack_proba: np.ndarray,
-        attack_true: np.ndarray,
-        targeted_fprs: np.ndarray,
+    attack_proba: np.ndarray,
+    attack_true: np.ndarray,
+    targeted_fprs: np.ndarray,
 ) -> Tuple[List[FPR], List[TPR], List[THR]]:
     """
     Compute the attack ROC based on the targeted FPRs. This implementation supports only binary
@@ -111,9 +109,9 @@ def get_roc_for_multi_fprs(
     if attack_proba.shape[0] != attack_true.shape[0]:
         raise ValueError("Number of rows in attack_pred and attack_true do not match")
 
-    tpr = list()
-    thr = list()
-    fpr = list()
+    tpr = []
+    thr = []
+    fpr = []
 
     for t_fpr in targeted_fprs:
         res = _calculate_roc_for_fpr(y_proba=attack_proba, y_true=attack_true, targeted_fpr=t_fpr)
