@@ -37,6 +37,7 @@ from art.utils import check_and_transform_label_format
 import art.estimators.certification.randomized_smoothing.smooth_adversarial.train_smoothadv as trainSmoothAdversarial
 import art.estimators.certification.randomized_smoothing.macer.train_macer as trainMacer
 from art.defences.preprocessor.gaussian_augmentation import GaussianAugmentation
+import torch
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
@@ -158,7 +159,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         if "train_method" in kwargs:
             if kwargs.get("train_method") == "macer":
                 return trainMacer.fit_pytorch(self, x, y, batch_size, nb_epochs, **kwargs)
-            elif kwargs.get("train_method") == "smoothadv":
+            if kwargs.get("train_method") == "smoothadv":
                 return trainSmoothAdversarial.fit_pytorch(self, x, y, batch_size, nb_epochs, **kwargs)
 
         g_a = GaussianAugmentation(sigma=self.scale, augmentation=False)
@@ -360,12 +361,3 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         """
         raise NotImplementedError
-
-    def _requires_grad_(self, model:torch.nn.Module, requires_grad:bool) -> None:
-        for param in model.parameters():
-            param.requires_grad_(requires_grad)
-
-    def _get_minibatches(self, X, y, num_batches):
-        batch_size = len(X) // num_batches
-        for i in range(num_batches):
-            yield X[i * batch_size : (i + 1) * batch_size], y[i * batch_size : (i + 1) * batch_size]
