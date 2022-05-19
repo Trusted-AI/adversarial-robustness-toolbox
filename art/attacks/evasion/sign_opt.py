@@ -98,7 +98,6 @@ class SignOPTAttack(EvasionAttack):
         alpha: float = 0.2,
         beta: float = 0.001,
         eval_perform: bool = False,
-        clipped: bool = True,
         batch_size: int = 64,
         verbose: bool = False,
     ) -> None:
@@ -113,7 +112,6 @@ class SignOPTAttack(EvasionAttack):
         :param K: Number of random directions (for estimating the gradient)
         :param alpha: The step length for line search
         :param beta: The tolerance for line search
-        :param clipped: Force the sample value in range of [clip_min, clip_max]
         :param batch_size: The size of the batch used by the estimator during inference.
         :param verbose: Show detailed information
         :param eval_perform: Evaluate performnace with Avg. L2 and Success Rate with randomly choosing 100 samples
@@ -136,11 +134,13 @@ class SignOPTAttack(EvasionAttack):
         self.eval_perform = eval_perform
         if eval_perform:
             self.logs = np.zeros(100)
-        self.clip_min = None
-        self.clip_max = None
-        self.enable_clipped = clipped  # temporarily added for comparison, consider to remove it later
-        if self.enable_clipped and self.estimator.clip_values is not None:
+        self.clip_min: Optional[float] = None
+        self.clip_max: Optional[float] = None
+        if self.estimator.clip_values is not None:
             self.clip_min, self.clip_max = self.estimator.clip_values
+            self.enable_clipped = True
+        else:
+            self.enable_clipped = False
 
         self._check_params()
 
@@ -178,7 +178,7 @@ class SignOPTAttack(EvasionAttack):
                 raise ValueError("`x_init` needs to be provided for a targeted attack.")
 
         # Get clip_min and clip_max infer them from data, otherwise, it is initialized by self.estimator
-        if self.clip_min == None and self.clip_max == None:
+        if self.clip_min is None and self.clip_max is None:
             self.clip_min, self.clip_max = np.min(x), np.max(x)
 
         # Prediction from the original images
@@ -212,7 +212,7 @@ class SignOPTAttack(EvasionAttack):
                 counter += 1
 
         # todo: the compute_success() doesn't work for targeted case, dimension related error
-        if self.targeted == False:
+        if self.targeted is False:
             logger.info(
                 "Success rate of Sign_OPT attack: %.2f%%",
                 # 100 * compute_success(self.estimator, x, y, x_adv, self.targeted, batch_size=self.batch_size),
@@ -250,7 +250,7 @@ class SignOPTAttack(EvasionAttack):
         while (lbd_hi - lbd_lo) > tolerate:
             lbd_mid = (lbd_lo + lbd_hi) / 2.0
             nquery += 1
-            if self._is_label(x0 + lbd_mid * theta, y0) == False:
+            if self._is_label(x0 + lbd_mid * theta, y0) is False:
                 if self.targeted:
                     lbd_lo = lbd_mid
                 else:
@@ -315,7 +315,7 @@ class SignOPTAttack(EvasionAttack):
     # temp method if ART has a similar method
     # x0: dimension is [1, 28, 28]
     # return predicted label
-    def _predict_label(self, x0) -> bool:
+    def _predict_label(self, x0) -> np.ndarray:
         if self.enable_clipped:
             x0 = np.clip(x0, self.clip_min, self.clip_max)
         pred = self.estimator.predict(np.expand_dims(x0, axis=0), batch_size=self.batch_size)
@@ -442,10 +442,10 @@ class SignOPTAttack(EvasionAttack):
         for i in range(iterations):
             sign_gradient, grad_queries = self._sign_grad(x0, y0, self.epsilon, xg, gg, target)
 
-            ## Line search of the step size of gradient descent
+            # Line search of the step size of gradient descent
             ls_count = 0
-            min_theta = xg  ## next theta
-            min_g2 = gg  ## current g_theta
+            min_theta = xg  # next theta
+            min_g2 = gg  # current g_theta
             for _ in range(15):
                 """
                 Algorithm 1: Sign-OPT attack
