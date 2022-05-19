@@ -123,7 +123,7 @@ class TestSmoothMix(unittest.TestCase):
             eta=5.0,
             mix_step=0,
             maxnorm_s=None,
-            maxnorm=None
+            maxnorm=None,
         )
         pt_rs_mock.assert_called_once_with(**rs_constructor_kwargs)
 
