@@ -31,7 +31,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from typing import Optional
+from typing import Optional, Any
 
 
 class Attacker(metaclass=ABCMeta):
@@ -59,7 +59,7 @@ class PGD_L2(Attacker):
     def __init__(self,
                  steps: int,
                  random_start: bool = True,
-                 max_norm: Optional[float] = None,
+                 max_norm: float = 1.,
                  device: torch.device = torch.device('cpu')) -> None:
         super(PGD_L2, self).__init__()
         self.steps = steps
@@ -311,9 +311,9 @@ class DDN(Attacker):
                  init_norm: float = 1.,
                  quantize: bool = True,
                  levels: int = 256,
-                 max_norm: Optional[float] = None,
+                 max_norm: float = 1.,
                  device: torch.device = torch.device('cpu'),
-                 callback: Optional = None) -> None:
+                 callback: Optional[Any] = None) -> None:
         super(DDN, self).__init__()
         self.steps = steps
         self.gamma = gamma
