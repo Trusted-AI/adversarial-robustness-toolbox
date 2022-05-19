@@ -43,8 +43,11 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
     from torch.distributions.normal import Normal
     import random
     import os
-    from art.estimators.certification.randomized_smoothing.smooth_adversarial.smoothadvattack import Attacker,
-    PGD_L2, DDN
+    from art.estimators.certification.randomized_smoothing.smooth_adversarial.smoothadvattack_tensorflow import (
+        Attacker,
+        PGD_L2,
+        DDN
+    )
 
     x = x.astype(ART_NUMPY_DTYPE)
     start_epoch = 0
@@ -120,8 +123,11 @@ def fit_tensorflow(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epoch
     import torch.nn.functional as F
     import random
     import os
-    from art.estimators.certification.randomized_smoothing.smooth_adversarial.smoothadvattack_tensorflow import
-    Attacker, PGD_L2, DDN
+    from art.estimators.certification.randomized_smoothing.smooth_adversarial.smoothadvattack_tensorflow import (
+        Attacker,
+        PGD_L2,
+        DDN
+    )
     import pickle
 
     x = x.astype(ART_NUMPY_DTYPE)
