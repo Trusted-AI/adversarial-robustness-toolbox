@@ -93,7 +93,6 @@ class PyTorchSmoothMix(SmoothMixMixin, PyTorchClassifier):
         warmup: int = 1,
         lbd: float = 12.0,
         gamma: float = 8.0,
-        beta: float = 16.0,
         gauss_num: int = 16,
         eta: float = 1.0,
         mix_step: int = 0,
@@ -134,7 +133,6 @@ class PyTorchSmoothMix(SmoothMixMixin, PyTorchClassifier):
                        10 epochs up to the original value of epsilon
         :param lbd: Weight of robustness loss in Macer
         :param gamma: Value to multiply the LR by
-        :param beta: The inverse function temperature in Macer
         :param gauss_num: Number of gaussian samples per input
         :param eta: Hyperparameter to control the relative strength of the mixup loss in SmoothMix
         :param mix_step: Determines which sample to use for the clean side in SmoothMix
@@ -163,7 +161,6 @@ class PyTorchSmoothMix(SmoothMixMixin, PyTorchClassifier):
             warmup=warmup,
             lbd=lbd,
             gamma=gamma,
-            beta=beta,
             gauss_num=gauss_num,
             eta=eta,
             mix_step=mix_step,

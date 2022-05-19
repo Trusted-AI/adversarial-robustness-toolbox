@@ -302,7 +302,7 @@ class SmoothMixMixin(ABC):
         for i in range(num_batches):
             yield x[i * batch_size : (i + 1) * batch_size], y[i * batch_size : (i + 1) * batch_size]
 
-    def _mixup_data(self, x_1, x_2, y_1, n_classes) -> Tuple[torch.Tensor, torch.Tensor]:
+    def _mixup_data(self, x_1, x_2, y_1, n_classes) -> Tuple["torch.Tensor", "torch.Tensor"]:
         """
         Returns mixed inputs, pairs of targets, and lambda
 
@@ -311,6 +311,8 @@ class SmoothMixMixin(ABC):
         :param y_1: Training labels
         :param n_classes: The number of classes
         """
+        import torch  # lgtm [py/repeated-import]
+
         device = x_1.device
 
         _eye = torch.eye(n_classes, device=device)
@@ -322,7 +324,7 @@ class SmoothMixMixin(ABC):
 
         return mixed_x, mixed_y
 
-    def _avg_softmax(self, logits) -> Union[torch.Tensor, float]:
+    def _avg_softmax(self, logits) -> Union["torch.Tensor", float]:
         """
         Computes the average softmax for the given logits
 
