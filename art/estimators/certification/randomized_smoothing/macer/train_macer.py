@@ -24,16 +24,9 @@ This module implements Smooth Adversarial Attack using PGD and DDN.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import TYPE_CHECKING
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
-
-if TYPE_CHECKING:
-    # pylint: disable=C0412
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
-    from art.defences.preprocessor import Preprocessor
-    from art.defences.postprocessor import Postprocessor
 
 logger = logging.getLogger(__name__)
 

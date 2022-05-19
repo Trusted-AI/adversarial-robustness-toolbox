@@ -29,7 +29,6 @@ in Tensorflow
 from abc import ABCMeta, abstractmethod
 
 import tensorflow as tf
-from typing import Optional
 import tensorflow_probability as tfp
 
 
