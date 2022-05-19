@@ -18,8 +18,8 @@
 """
 This module implements Smooth Adversarial Attack using PGD and DDN.
 
-| Paper link: https://arxiv.org/pdf/1906.04584.pdf
-| Authors' implementation: https://github.com/Hadisalman/smoothing-adversarial
+| Paper link: https://openreview.net/pdf?id=rJx1Na4Fwr
+| Authors' implementation: https://github.com/RuntianZ/macer
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -32,6 +32,18 @@ logger = logging.getLogger(__name__)
 
 
 def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
+    """
+    Fit the randomized smoothed classifier for MACER training on the training set `(x, y)`.
+
+    :param x: Training data.
+    :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+              (nb_samples,).
+    :param batch_size: Batch size.
+    :key nb_epochs: Number of epochs to use for training
+    :param kwargs: Dictionary of framework-specific arguments.
+    :type kwargs: `dict`
+    :return: `None`
+    """
     import torch
     import torch.nn.functional as F
     from torch.distributions.normal import Normal

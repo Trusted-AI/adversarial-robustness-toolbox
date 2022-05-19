@@ -15,6 +15,7 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""Unit Test Module for testing smooth adversarial classifier training"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
@@ -24,8 +25,6 @@ import unittest
 import numpy as np
 import tensorflow as tf
 import torch
-
-from art.estimators.certification.randomized_smoothing.smooth_adversarial.smoothadvattack import PGD_L2, DDN
 
 from art.utils import load_dataset
 
@@ -66,6 +65,8 @@ class TestTrainSmoothAdv(unittest.TestCase):
         Test smooth adversarial attack.
         :return:
         """
+        from art.estimators.certification.randomized_smoothing.smooth_adversarial.smoothadvattack import PgdL2
+
         epoch_num = 1
         warmup = 10
         epsilon = 1.0
@@ -82,25 +83,28 @@ class TestTrainSmoothAdv(unittest.TestCase):
 
         x_test = x_test.transpose(0, 3, 1, 2).astype(np.float32)
 
-        attacker_pgd = PGD_L2(steps=num_steps,device=device, max_norm=epsilon)
-        attacker_pgd.max_norm = np.min([epsilon, (epoch_num + 1) * epsilon/warmup])
-        attacker_pgd.init_norm = np.min([epsilon, (epoch_num + 1) * epsilon/warmup])
+        attacker_pgd = PgdL2(steps=num_steps,device=device, max_norm=epsilon)
+        attacker_pgd.max_norm = np.min([epsilon, (epoch_num + 1) * epsilon / warmup])
+        attacker_pgd.init_norm = np.min([epsilon, (epoch_num + 1) * epsilon / warmup])
 
         noise = torch.randn_like(torch.from_numpy(x_test), device=device) * scale
-        inputs_attacked = attacker_pgd.attack(ptc.model, torch.from_numpy(x_test).to(device), 
-                                torch.from_numpy(y_test).to(device), 
-                                noise=noise, 
-                                num_noise_vectors=num_noise_vec, 
-                                no_grad=False
-                                )
-        #Checking if attacked inputs and inputs shapes are same
+        inputs_attacked = attacker_pgd.attack(
+            ptc.model, torch.from_numpy(x_test).to(device),
+            torch.from_numpy(y_test).to(device),
+            noise=noise,
+            num_noise_vectors=num_noise_vec,
+            no_grad=False
+        )
+        # Checking if attacked inputs and inputs shapes are same
         self.assertEqual(inputs_attacked.shape, x_test.shape)
-    
+
     def test_2_pt(self):
         """
         Test smooth adversarial attack using DDN.
         :return:
         """
+        from art.estimators.certification.randomized_smoothing.smooth_adversarial.smoothadvattack import DDN
+
         epoch_num = 1
         warmup = 10
         epsilon = 1.0
@@ -118,26 +122,28 @@ class TestTrainSmoothAdv(unittest.TestCase):
         x_test = x_test.transpose(0, 3, 1, 2).astype(np.float32)
 
         attacker_pgd = DDN(steps=num_steps,device=device, max_norm=epsilon)
-        attacker_pgd.max_norm = np.min([epsilon, (epoch_num + 1) * epsilon/warmup])
-        attacker_pgd.init_norm = np.min([epsilon, (epoch_num + 1) * epsilon/warmup])
+        attacker_pgd.max_norm = np.min([epsilon, (epoch_num + 1) * epsilon / warmup])
+        attacker_pgd.init_norm = np.min([epsilon, (epoch_num + 1) * epsilon / warmup])
 
         noise = torch.randn_like(torch.from_numpy(x_test), device=device) * scale
-        inputs_attacked = attacker_pgd.attack(ptc.model, torch.from_numpy(x_test).to(device), 
-                                torch.from_numpy(y_test).to(device), 
-                                noise=noise, 
-                                num_noise_vectors=num_noise_vec, 
-                                no_grad=False
-                                )
-        #Checking if attacked inputs and inputs shapes are same
+        inputs_attacked = attacker_pgd.attack(
+            ptc.model, torch.from_numpy(x_test).to(device),
+            torch.from_numpy(y_test).to(device),
+            noise=noise,
+            num_noise_vectors=num_noise_vec,
+            no_grad=False
+        )
+        # Checking if attacked inputs and inputs shapes are same
         self.assertEqual(inputs_attacked.shape, x_test.shape)
-    
+
     def test_3_tf(self):
         """
         Test smooth adversarial attack.
         :return:
         """
-        from art.estimators.certification.randomized_smoothing.smooth_adversarial.smoothadvattack_tensorflow import Attacker, PGD_L2, DDN
-        
+        from art.estimators.certification.randomized_smoothing.smooth_adversarial.smoothadvattack_tensorflow import (
+            PgdL2
+        )
         epoch_num = 1
         warmup = 10
         epsilon = 1.0
@@ -155,27 +161,29 @@ class TestTrainSmoothAdv(unittest.TestCase):
             (_, _), (x_test, y_test) = self.mnist
             x_test = x_test.transpose(0, 3, 1, 2).astype(np.float32)
 
-            attacker_pgd = PGD_L2(steps=num_steps, max_norm=epsilon)
-            attacker_pgd.max_norm = np.min([epsilon, (epoch_num + 1) * epsilon/warmup])
-            attacker_pgd.init_norm = np.min([epsilon, (epoch_num + 1) * epsilon/warmup])
+            attacker_pgd = PgdL2(steps=num_steps, max_norm=epsilon)
+            attacker_pgd.max_norm = np.min([epsilon, (epoch_num + 1) * epsilon / warmup])
+            attacker_pgd.init_norm = np.min([epsilon, (epoch_num + 1) * epsilon / warmup])
 
             noise = tf.random.normal(x_test.shape, 0, 1) * scale
-            inputs_attacked = attacker_pgd.attack(classifier.model, tf.convert_to_tensor(x_test), 
-                                    tf.cast(tf.convert_to_tensor(y_test), tf.int32), 
-                                    noise=noise,
-                                    num_noise_vectors=num_noise_vec, 
-                                    no_grad=False
-                                    )
-            #Checking if attacked inputs and inputs shapes are same
+            inputs_attacked = attacker_pgd.attack(
+                classifier.model, tf.convert_to_tensor(x_test),
+                tf.cast(tf.convert_to_tensor(y_test), tf.int32),
+                noise=noise,
+                num_noise_vectors=num_noise_vec,
+                no_grad=False
+            )
+            # Checking if attacked inputs and inputs shapes are same
             self.assertEqual(inputs_attacked.shape, x_test.shape)
-    
+
     def test_4_tf(self):
         """
         Test smooth adversarial attack using DDN.
         :return:
         """
-        from art.estimators.certification.randomized_smoothing.smooth_adversarial.smoothadvattack_tensorflow import Attacker, PGD_L2, DDN
-
+        from art.estimators.certification.randomized_smoothing.smooth_adversarial.smoothadvattack_tensorflow import (
+            DDN
+        )
         epoch_num = 1
         warmup = 10
         epsilon = 1.0
@@ -194,18 +202,20 @@ class TestTrainSmoothAdv(unittest.TestCase):
             x_test = x_test.transpose(0, 3, 1, 2).astype(np.float32)
 
             attacker_pgd = DDN(steps=num_steps, max_norm=epsilon)
-            attacker_pgd.max_norm = np.min([epsilon, (epoch_num + 1) * epsilon/warmup])
-            attacker_pgd.init_norm = np.min([epsilon, (epoch_num + 1) * epsilon/warmup])
+            attacker_pgd.max_norm = np.min([epsilon, (epoch_num + 1) * epsilon / warmup])
+            attacker_pgd.init_norm = np.min([epsilon, (epoch_num + 1) * epsilon / warmup])
 
             noise = tf.random.normal(x_test.shape, 0, 1) * scale
-            inputs_attacked = attacker_pgd.attack(classifier.model, tf.convert_to_tensor(x_test), 
-                                    tf.cast(tf.convert_to_tensor(y_test), tf.int32), 
-                                    noise=noise,
-                                    num_noise_vectors=num_noise_vec, 
-                                    no_grad=False
-                                    )
-            #Checking if attacked inputs and inputs shapes are same
+            inputs_attacked = attacker_pgd.attack(
+                classifier.model, tf.convert_to_tensor(x_test),
+                tf.cast(tf.convert_to_tensor(y_test), tf.int32),
+                noise=noise,
+                num_noise_vectors=num_noise_vec,
+                no_grad=False
+            )
+            # Checking if attacked inputs and inputs shapes are same
             self.assertEqual(inputs_attacked.shape, x_test.shape)
+
 
 if __name__ == "__main__":
     unittest.main()

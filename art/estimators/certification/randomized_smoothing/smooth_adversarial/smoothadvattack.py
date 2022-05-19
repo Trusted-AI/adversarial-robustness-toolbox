@@ -35,8 +35,17 @@ from torch import optim
 
 
 class Attacker(metaclass=ABCMeta):
+    """
+    Abstract class for the Attacker. Consists of the single attack function
+    extended by the implementation in PyTorch.
+
+    """
     @abstractmethod
     def attack(self, model, inputs, labels):
+        """
+        Abstract function definition for the attack call
+
+        """
         raise NotImplementedError
 
 

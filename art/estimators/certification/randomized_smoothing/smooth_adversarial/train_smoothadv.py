@@ -32,6 +32,19 @@ logger = logging.getLogger(__name__)
 
 
 def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
+    """
+    Fit the randomized smoothed classifier for SmoothAdversarial training on the training set `(x, y)`
+    in PyTorch.
+
+    :param x: Training data.
+    :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+              (nb_samples,).
+    :param batch_size: Batch size.
+    :key nb_epochs: Number of epochs to use for training
+    :param kwargs: Dictionary of framework-specific arguments.
+    :type kwargs: `dict`
+    :return: `None`
+    """
     import random
     from art.estimators.certification.randomized_smoothing.smooth_adversarial.smoothadvattack import (
         PgdL2,
@@ -102,12 +115,32 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
 
 
 def get_batch_noisevec(x, num_noise_vec):
+    """
+    Yields the input tensor in batches iterating over number of noise vectors.
+
+    :param x: Training data.
+    :param num_noise_vec: Number of noise vector used for attack
+    :return: `Iterable training data in batches`
+    """
     batch_size = len(x)
     for i in range(num_noise_vec):
         yield x[i * batch_size : (i + 1) * batch_size]
 
 
 def fit_tensorflow(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
+    """
+    Fit the randomized smoothed classifier for SmoothAdversarial training on the training set `(x, y)`
+    in Tensorflow.
+
+    :param x: Training data.
+    :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+              (nb_samples,).
+    :param batch_size: Batch size.
+    :key nb_epochs: Number of epochs to use for training
+    :param kwargs: Dictionary of framework-specific arguments.
+    :type kwargs: `dict`
+    :return: `None`
+    """
     import tensorflow as tf
     from art.estimators.certification.randomized_smoothing.smooth_adversarial.smoothadvattack_tensorflow import (
         PgdL2,
@@ -168,11 +201,26 @@ def fit_tensorflow(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epoch
 
 
 def requires_grad(model:torch.nn.Module, requires_grad_val:bool) -> None:
+    """
+    Sets the `requires_grad_` property for the model's parameters
+
+    :param x: torch Model
+    :param requires_grad_val: boolean value to set requires_grad_ property with.
+    :return: `None`
+    """
     for param in model.parameters():
         param.requires_grad_(requires_grad_val)
 
 
 def get_minibatches(x, y, num_batches):
+    """
+    Yields the input tensor and target value pairs in batches.
+
+    :param x: Training data.
+    :param y: Target values.
+    :param num_batches: Number of batches
+    :return: `Iterable training data and target values pair in batches`
+    """
     batch_size = len(x) // num_batches
     for i in range(num_batches):
         yield x[i * batch_size : (i + 1) * batch_size], y[i * batch_size : (i + 1) * batch_size]
