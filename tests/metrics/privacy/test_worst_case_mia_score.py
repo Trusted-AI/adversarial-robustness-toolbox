@@ -45,9 +45,9 @@ def test_worst_case_accuracy(art_warning):
 
 def test_worst_case_targeted_fpr_1(art_warning):
     try:
-        tpr = 1.
+        tpr = 1.0
         thr = 0.32
-        fpr = .5
+        fpr = 0.5
         y_true = np.array([1, 0, 1, 1, 1, 0])
         y_proba = np.array([0.35, 0.33, 0.32, 0.6, 0.6, 0.2])
         res = get_roc_for_fpr(attack_proba=y_proba, attack_true=y_true, targeted_fpr=0.5)[0]
@@ -61,9 +61,9 @@ def test_worst_case_targeted_fpr_1(art_warning):
 
 def test_worst_case_targeted_fpr_2(art_warning):
     try:
-        tpr = .75
+        tpr = 0.75
         thr = 0.35
-        fpr = .0
+        fpr = 0.0
         y_true = np.array([1, 0, 1, 1, 1, 0])
         y_proba = np.array([0.35, 0.33, 0.32, 0.6, 0.6, 0.2])
         res = get_roc_for_fpr(attack_proba=y_proba, attack_true=y_true, targeted_fpr=0.0)[0]
@@ -81,13 +81,13 @@ def test_worst_case_multiple_targeted_fpr(art_warning):
         y_true = np.array([1, 0, 1, 1, 1, 0])
         y_proba = np.array([0.35, 0.33, 0.32, 0.6, 0.6, 0.2])
         res = get_roc_for_multi_fprs(attack_proba=y_proba, attack_true=y_true, targeted_fprs=[0.0, 0.5])
-        assert res[0][0] == .0
-        assert res[1][0] == .75
-        assert res[2][0] == .35
+        assert res[0][0] == 0.0
+        assert res[1][0] == 0.75
+        assert res[2][0] == 0.35
 
-        assert res[0][1] == .5
-        assert res[1][1] == 1.
-        assert res[2][1] == .32
+        assert res[0][1] == 0.5
+        assert res[1][1] == 1.0
+        assert res[2][1] == 0.32
 
         print(res)
     except ARTTestException as e:
