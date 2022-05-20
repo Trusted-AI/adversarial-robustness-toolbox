@@ -19,7 +19,7 @@
 This module implements metric for inference attack worst case accuracy measurement.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Union
 
 import logging
 import numpy as np
@@ -48,7 +48,7 @@ def get_roc_for_fpr(  # pylint: disable=C0103
     attack_true: np.ndarray,
     target_model_labels: Optional[np.ndarray] = None,
     targeted_fpr: Optional[float] = 0.001,
-) -> List[Tuple[Optional[int], FPR, TPR, THR]]:
+) -> Union[List[Tuple[FPR, TPR, THR]], List[Tuple[int, FPR, TPR, THR]]]:
     """
     Compute the attack TPR, THRESHOLD and achieved FPR based on the targeted FPR. This implementation supports only
     binary attack prediction labels {0,1}. The returned THRESHOLD defines the decision threshold on the attack
@@ -80,11 +80,10 @@ def get_roc_for_fpr(  # pylint: disable=C0103
                 y_proba=attack_proba[idxs], y_true=attack_true[idxs], targeted_fpr=targeted_fpr
             )
             results.append((v, fpr, tpr, thr))
-    else:
-        fpr, tpr, thr = _calculate_roc_for_fpr(y_proba=attack_proba, y_true=attack_true, targeted_fpr=targeted_fpr)
-        results.append((fpr, tpr, thr))
+        return results
 
-    return results
+    fpr, tpr, thr = _calculate_roc_for_fpr(y_proba=attack_proba, y_true=attack_true, targeted_fpr=targeted_fpr)
+    return [(fpr, tpr, thr)]
 
 
 def get_roc_for_multi_fprs(
