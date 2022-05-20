@@ -97,7 +97,7 @@ class PyTorchSmoothMix(SmoothMixMixin, PyTorchClassifier):
         mix_step: int = 0,
         maxnorm_s: Optional[float] = None,
         maxnorm: Optional[float] = None,
-        **kwargs
+        **kwargs,
     ):
         """
         Create a SmoothMix classifier.
@@ -165,7 +165,7 @@ class PyTorchSmoothMix(SmoothMixMixin, PyTorchClassifier):
             mix_step=mix_step,
             maxnorm_s=maxnorm_s,
             maxnorm=maxnorm,
-            **kwargs
+            **kwargs,
         )
         self.scheduler = scheduler
 
@@ -184,7 +184,7 @@ class PyTorchSmoothMix(SmoothMixMixin, PyTorchClassifier):
         batch_size: int = 128,
         nb_epochs: int = 10,
         training_mode: bool = True,
-        **kwargs
+        **kwargs,
     ):
         """
         Fit the classifier on the training set `(x, y)`.
@@ -203,7 +203,157 @@ class PyTorchSmoothMix(SmoothMixMixin, PyTorchClassifier):
         # Set model mode
         self._model.train(mode=training_mode)
 
-        SmoothMixMixin.fit(self, x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
+        import torch  # lgtm [py/repeated-import]
+        import torch.nn.functional as F  # lgtm [py/repeated-import]
+        from art.estimators.certification.smoothmix.smooth_pgd_attack import SmoothMixPGD
+        import random
+
+        x = x.astype(ART_NUMPY_DTYPE)
+        start_epoch = 0
+
+        if self.maxnorm_s is None:
+            self.maxnorm_s = self.alpha * self.mix_step
+
+        if self.attack_type == "PGD":
+            attacker = SmoothMixPGD(
+                steps=self.num_steps,
+                mix_step=self.mix_step,
+                alpha=self.alpha,
+                maxnorm=self.maxnorm,
+                maxnorm_s=self.maxnorm_s,
+            )
+
+        if self.optimizer is None:  # pragma: no cover
+            raise ValueError(f"An optimizer is needed to train the model, but none for provided: {self.optimizer}")
+        if self.scheduler is None:  # pragma: no cover
+            raise ValueError(f"A scheduler is needed to train the model, but none for provided: {self.scheduler}")
+        if attacker is None:
+            raise ValueError(
+                f"A attacker is needed to smooth adversarially train the model, but \
+                                none for provided: {self.attack_type}"
+            )
+
+        num_batch = int(np.ceil(len(x) / float(batch_size)))
+        ind = np.arange(len(x))
+
+        # Start training
+        for epoch_num in range(start_epoch + 1, nb_epochs + 1):
+            # Shuffle the examples
+            random.shuffle(ind)
+
+            # SmoothMix Training setup
+            warmup_v = np.min([1.0, (epoch_num + 1) / self.warmup])
+            attacker.maxnorm_s = warmup_v * self.maxnorm_s
+
+            # Put the model in the training mode
+            self.model.train()
+            self._requires_grad_(self.model, True)  # pylint: disable=W0212
+
+            for num_batch_index in range(num_batch):
+                input_batch = torch.from_numpy(
+                    x[ind[num_batch_index * batch_size : (num_batch_index + 1) * batch_size]]
+                ).to(self.device)
+                output_batch = torch.from_numpy(
+                    y[ind[num_batch_index * batch_size : (num_batch_index + 1) * batch_size]]
+                ).to(self.device)
+
+                # pylint: disable=W0212
+                mini_batches = self._get_minibatches(input_batch, output_batch, self.num_noise_vec)
+
+                for (inputs, targets) in mini_batches:
+                    inputs, targets = inputs.to(self.device), targets.to(self.device)
+
+                    noises = [torch.randn_like(inputs) * self.scale for _ in range(self.num_noise_vec)]
+
+                    # Attack and find adversarial examples
+                    self._requires_grad_(self.model, False)  # pylint: disable=W0212
+                    self.model.eval()
+                    inputs, inputs_adv = attacker.attack(self.model, inputs=inputs, labels=targets, noises=noises)
+                    self.model.train()
+                    self._requires_grad_(self.model, True)  # pylint: disable=W0212
+
+                    in_clean_c = torch.cat([inputs + noise for noise in noises], dim=0)
+                    logits_c = self.model(in_clean_c)
+                    targets_c = targets.repeat(self.num_noise_vec)
+
+                    logits_c_chunk = torch.chunk(logits_c, self.num_noise_vec, dim=0)
+                    clean_avg_sm = self._avg_softmax(logits_c_chunk)
+
+                    if isinstance(clean_avg_sm, float):
+                        clean_avg_sm = torch.Tensor(clean_avg_sm)
+
+                    loss_xent = F.cross_entropy(logits_c, targets_c, reduction="none")
+
+                    in_mix, targets_mix = self._mixup_data(inputs, inputs_adv, clean_avg_sm, self.nb_classes)
+
+                    in_mix_c = torch.cat([in_mix + noise for noise in noises], dim=0)
+                    targets_mix_c = targets_mix.repeat(self.num_noise_vec, 1)
+                    logits_mix_c = F.log_softmax(self.model(in_mix_c), dim=1)
+
+                    _, top1_idx = torch.topk(clean_avg_sm, 1)
+                    ind_correct = (top1_idx[:, 0] == targets).float()
+                    ind_correct = ind_correct.repeat(self.num_noise_vec)
+
+                    loss_mixup = F.kl_div(logits_mix_c, targets_mix_c, reduction="none").sum(1)
+                    loss = loss_xent.mean() + self.eta * warmup_v * (ind_correct * loss_mixup).mean()
+
+                    # compute gradient and do SGD step
+                    self.optimizer.zero_grad()
+                    loss.backward()
+                    self.optimizer.step()
+
+            self.scheduler.step()
+
+    # pylint: disable=R0201
+    def get_minibatches(self, x, y, num_batches):
+        """
+        Generate batches of the training data and target values
+
+        :param x: Training data
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                    (nb_samples,).
+        :param num_batches: The number of batches to generate
+        """
+        batch_size = len(x) // num_batches
+        for i in range(num_batches):
+            yield x[i * batch_size : (i + 1) * batch_size], y[i * batch_size : (i + 1) * batch_size]
+
+    # pylint: disable=R0201
+    def _mixup_data(self, x_1, x_2, y_1, n_classes) -> Tuple["torch.Tensor", "torch.Tensor"]:
+        """
+        Returns mixed inputs, pairs of targets, and lambda
+
+        :param x_1: Training data
+        :param x_2: Adversarial training data
+        :param y_1: Training labels
+        :param n_classes: The number of classes
+        """
+        import torch  # lgtm [py/repeated-import]
+
+        device = x_1.device
+
+        _eye = torch.eye(n_classes, device=device)
+        _unif = _eye.mean(0, keepdim=True)
+        lam = torch.rand(x_1.size(0), device=device) / 2
+
+        mixed_x = (1 - lam).view(-1, 1, 1, 1) * x_1 + lam.view(-1, 1, 1, 1) * x_2
+        mixed_y = (1 - lam).view(-1, 1) * y_1 + lam.view(-1, 1) * _unif
+
+        return mixed_x, mixed_y
+
+    # pylint: disable=R0201
+    def _avg_softmax(self, logits) -> Union["torch.Tensor", float]:
+        """
+        Computes the average softmax for the given logits
+
+        :param logits: the logits to compute the average softmax of
+        """
+        import torch.nn.functional as F
+
+        m = len(logits)
+        softmax = [F.softmax(logit, dim=1) for logit in logits]
+        avg_softmax = sum(softmax) / m
+        return avg_softmax
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:  # type: ignore
         """

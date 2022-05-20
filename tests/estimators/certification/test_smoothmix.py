@@ -23,11 +23,10 @@ import unittest
 from unittest.mock import MagicMock, ANY
 
 import numpy as np
-import tensorflow as tf
 import torch
 
 from art.attacks.evasion.fast_gradient import FastGradientMethod
-from art.utils import load_dataset, random_targets, compute_accuracy
+from art.utils import load_dataset, random_targets
 from art.estimators.certification.smoothmix import PyTorchSmoothMix
 
 from tests.utils import (
