@@ -9,8 +9,7 @@ from typing import Optional, Tuple, Union
 import numpy as np
 import sys
 import random
-
-import torch
+from matplotlib import pyplot as plt
 
 
 class DeRandomizedSmoothingMixin(ABC):
@@ -42,9 +41,9 @@ class DeRandomizedSmoothingMixin(ABC):
         self.threshold = threshold
 
         if self.ablation_type == 'column':
-            self.ablator = ColumnAblator(ablation_size=ablation_size, dim=3)
+            self.ablator = ColumnAblator(ablation_size=ablation_size, dim=3, channels_first=self.channels_first)
         elif self.ablation_type == 'block':
-            self.ablator = BlockAblator(ablation_size=ablation_size, dim=3)
+            self.ablator = BlockAblator(ablation_size=ablation_size, dim=3, channels_first=self.channels_first)
         else:
             print('Ablation type not supported!')
             sys.exit()
@@ -52,8 +51,16 @@ class DeRandomizedSmoothingMixin(ABC):
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
         # TODO: Specify or check if x has been already ablated or not
         preds = None
+
+        if self.channels_first:
+            columns_in_data = x.shape[-1]
+            rows_in_data = x.shape[-2]
+        else:
+            columns_in_data = x.shape[-2]
+            rows_in_data = x.shape[-3]
+
         if self.ablation_type == 'column':
-            for ablation_start in range(x.shape[-1]):  # assumes channels first
+            for ablation_start in range(columns_in_data):  # assumes channels first
                 ablated_x = self.ablator.forward(np.copy(x),
                                                  start_alblation_loc=ablation_start)
                 if preds is None:
@@ -61,8 +68,8 @@ class DeRandomizedSmoothingMixin(ABC):
                 else:
                     preds += self._predict_classifier(ablated_x, batch_size=batch_size, training_mode=False)
         elif self.ablation_type == 'block':
-            for xcorner in range(x.shape[2]):
-                for ycorner in range(x.shape[3]):
+            for xcorner in range(rows_in_data):
+                for ycorner in range(columns_in_data):
                     ablated_x = self.ablator.forward(np.copy(x),
                                                      row_pos=xcorner,
                                                      column_pos=ycorner)
@@ -74,10 +81,11 @@ class DeRandomizedSmoothingMixin(ABC):
 
 
 class ColumnAblator:
-    def __init__(self, ablation_size, dim=3):
+    def __init__(self, ablation_size, dim, channels_first):
         super().__init__()
         self.ablation_size = ablation_size
         self.dim = dim
+        self.channels_first = channels_first
 
     def __call__(self, x: np.ndarray, start_alblation_loc: int) -> np.ndarray:
         """
@@ -103,7 +111,9 @@ class ColumnAblator:
         return x
 
     def certify(self, preds, size_to_certify):
-        values, indices = torch.sort(torch.from_numpy(preds), dim=1, descending=True, stable=True)
+        # values, indices = torch.sort(torch.from_numpy(preds), dim=1, descending=True, stable=True)
+        indices = np.argsort(-preds, axis=1, kind='stable')
+        values = -np.sort(-preds, axis=1, kind='stable')
 
         num_affected_classifications = size_to_certify + self.ablation_size - 1
 
@@ -111,7 +121,7 @@ class ColumnAblator:
 
         certs = margin > 2 * num_affected_classifications
         tie_break_certs = (margin == 2 * num_affected_classifications) & (indices[:, 0] < indices[:, 1])
-        return torch.logical_or(certs, tie_break_certs)
+        return np.logical_or(certs, tie_break_certs)
 
     def column_ablate(self, x: np.ndarray, pos: int) -> np.ndarray:
         k = self.ablation_size
@@ -134,6 +144,9 @@ class ColumnAblator:
                                     column retained per sample.
         :return:
         """
+        if not self.channels_first:
+            x = np.transpose(x, (0, 3, 1, 2))
+
         x = np.concatenate([x, 1.0 - x], axis=1)
 
         if start_alblation_loc is None:
@@ -144,24 +157,32 @@ class ColumnAblator:
                 x[i:i+1] = self.column_ablate(x[i:i+1], pos)
         else:
             x = self.column_ablate(x, start_alblation_loc)
+
+        if not self.channels_first:
+            x = np.transpose(x, (0, 2, 3, 1))
+
         return x
 
 
 class BlockAblator:
-    def __init__(self, ablation_size, dim=3):
+    def __init__(self, ablation_size, dim, channels_first):
         super().__init__()
         self.ablation_size = ablation_size
         self.dim = dim
+        self.channels_first = channels_first
 
     def certify(self, preds, size_to_certify):
-        values, indices = torch.sort(preds, dim=1, descending=True, stable=True)
+        # values, indices = torch.sort(preds, dim=1, descending=True, stable=True)
+        indices = np.argsort(-preds, axis=1, kind='stable')
+        values = -np.sort(-preds, axis=1, kind='stable')
+
         margin = values[:, 0] - values[:, 1]
 
         num_affected_classifications = (size_to_certify + self.ablation_size - 1) ** 2
 
         certs = margin > 2 * num_affected_classifications
         tie_break_certs = ((margin == 2 * num_affected_classifications) & (indices[:, 0] < indices[:, 1]))
-        return torch.logical_or(certs, tie_break_certs)
+        return np.logical_or(certs, tie_break_certs)
 
     def forward(self, x: np.ndarray, row_pos: Optional[Union[int, list]] = None,
                 column_pos: Optional[Union[int, list]] = None) -> np.ndarray:
@@ -172,6 +193,9 @@ class BlockAblator:
         :param column_pos:
         :return:
         """
+        if not self.channels_first:
+            x = np.transpose(x, (0, 3, 1, 2))
+
         if row_pos is None:
             row_pos = random.randint(0, x.shape[2])
         if column_pos is None:
@@ -184,6 +208,9 @@ class BlockAblator:
                 x[i:i+1] = self.block_ablate(x[i:i+1], row_pos=r, column_pos=c)
         elif isinstance(row_pos, int) and isinstance(column_pos, int):
             x = self.block_ablate(x, row_pos=row_pos, column_pos=column_pos)
+
+        if not self.channels_first:
+            x = np.transpose(x, (0, 2, 3, 1))
         return x
 
     def block_ablate(self, data: np.ndarray, row_pos: int, column_pos: int) -> np.ndarray:
