@@ -170,21 +170,15 @@ def test_pytorch_deep_speech_preprocessor(
         # Test probability outputs
         probs, sizes = speech_recognizer.predict(x, batch_size=1, transcription_output=False)
 
-        print("expected_probs")
-        print(probs[1][1])
-        print("expected_sizes")
-        print(sizes)
         np.testing.assert_array_almost_equal(probs[1][1], expected_probs, decimal=3)
         np.testing.assert_array_almost_equal(sizes, expected_sizes)
 
         # Test transcription outputs
-        print("test x", x.shape)
         transcriptions = speech_recognizer.predict(x, batch_size=2, transcription_output=True)
 
         assert (expected_transcriptions1 == transcriptions).all()
 
         # Test transcription outputs, corner case
-        print("=== corner case")
         transcriptions = speech_recognizer.predict(x[[0]], batch_size=1, transcription_output=True)
 
         assert (expected_transcriptions2 == transcriptions).all()
@@ -196,13 +190,6 @@ def test_pytorch_deep_speech_preprocessor(
         assert grads[0].shape == (1300,)
         assert grads[1].shape == (1300,)
         assert grads[2].shape == (1300,)
-
-        print("grads[0][:20]")
-        print(grads[0][:20])
-        print("grads[1][:20]")
-        print(grads[1][:20])
-        print("grads[2][:20]")
-        print(grads[2][:20])
 
         np.testing.assert_array_almost_equal(grads[0][:20], expected_gradients1, decimal=-2)
         np.testing.assert_array_almost_equal(grads[1][:20], expected_gradients2, decimal=-2)
