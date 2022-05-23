@@ -492,7 +492,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
             results_[:] = list(results)
             results = results_
 
-        results = self._apply_preprocessing_gradient(x_in, results)
+        results = self._apply_preprocessing_gradient(x, results)
 
         if x.dtype != object:
             results = np.array([i for i in results], dtype=x.dtype)  # pylint: disable=R1721
