@@ -140,7 +140,7 @@ def test_imperceptible_asr_pytorch(art_warning, expected_values, use_amp, device
 @pytest.mark.skip_framework("tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
 @pytest.mark.parametrize("use_amp", [False])
 @pytest.mark.parametrize("device_type", ["cpu"])
-def test_imperceptible_asr_pytorch(art_warning, expected_values, use_amp, device_type):
+def test_imperceptible_asr_pytorch_mp3compression_pytorch(art_warning, expected_values, use_amp, device_type):
     import torch
 
     from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech

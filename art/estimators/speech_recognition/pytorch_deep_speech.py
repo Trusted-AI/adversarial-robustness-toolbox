@@ -449,9 +449,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         self.set_batchnorm(train=False)
 
         # Transform data into the model input space
-        inputs, targets, input_rates, target_sizes, _ = self._transform_model_input(
-            x=x_in, y=y, compute_gradient=True
-        )
+        inputs, targets, input_rates, target_sizes, _ = self._transform_model_input(x=x_in, y=y, compute_gradient=True)
 
         # Compute real input sizes
         input_sizes = input_rates.mul_(inputs.size()[-1]).int()
