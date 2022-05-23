@@ -46,11 +46,10 @@ hard-label adversarial attack.
 
 import logging
 from typing import Optional, TYPE_CHECKING
-
+import time
 import numpy as np
 from numpy import linalg as LA
 from tqdm.auto import tqdm
-import time
 
 from art.attacks.attack import EvasionAttack
 from art.config import ART_NUMPY_DTYPE
@@ -80,7 +79,7 @@ class SignOPTAttack(EvasionAttack):
         "K",
         "alpha",
         "beta",
-        "clipped" "batch_size",
+        "batch_size",
         "verbose",
     ]
 
@@ -94,7 +93,7 @@ class SignOPTAttack(EvasionAttack):
         num_trial: int = 100,
         max_iter: int = 1000,  # recommend 5000 for targeted attack
         query_limit: int = 20000,  # recommend 40000 for targeted attack
-        K: int = 200,
+        k: int = 200,
         alpha: float = 0.2,
         beta: float = 0.001,
         eval_perform: bool = False,
@@ -109,7 +108,7 @@ class SignOPTAttack(EvasionAttack):
         :param num_trial: A number of trials to calculate a good starting point
         :param max_iter: Maximum number of iterations
         :param query_limit: Limitation for number of queries to prediction model
-        :param K: Number of random directions (for estimating the gradient)
+        :param k: Number of random directions (for estimating the gradient)
         :param alpha: The step length for line search
         :param beta: The tolerance for line search
         :param batch_size: The size of the batch used by the estimator during inference.
@@ -124,7 +123,7 @@ class SignOPTAttack(EvasionAttack):
         self.max_iter = max_iter
         self.query_limit = query_limit
 
-        self.K = K
+        self.k = k
         self.alpha = alpha
         self.beta = beta
 
@@ -134,14 +133,13 @@ class SignOPTAttack(EvasionAttack):
         self.eval_perform = eval_perform
         if eval_perform:
             self.logs = np.zeros(100)
-        self.clip_min: Optional[float] = None
-        self.clip_max: Optional[float] = None
+        self.clip_min = None
+        self.clip_max = None
         if self.estimator.clip_values is not None:
             self.clip_min, self.clip_max = self.estimator.clip_values
             self.enable_clipped = True
         else:
             self.enable_clipped = False
-
         self._check_params()
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
@@ -197,15 +195,15 @@ class SignOPTAttack(EvasionAttack):
                     continue
 
                 x_adv[ind], diff, succeed = self._attack(  # diff and succeed are for performance test
-                    x0=val,
-                    y0=preds[ind],
+                    x_0=val,
+                    y_0=preds[ind],
                     target=targets[ind],
                     x_init=x_init,
                 )
             else:
                 x_adv[ind], diff, succeed = self._attack(  # diff and succeed are for performance test
-                    x0=val,
-                    y0=preds[ind],
+                    x_0=val,
+                    y_0=preds[ind],
                 )
             if succeed and self.eval_perform and counter < 100:
                 self.logs[counter] = LA.norm(diff)
@@ -221,10 +219,10 @@ class SignOPTAttack(EvasionAttack):
 
         return x_adv  # all images with untargeted adversarial
 
-    def _fine_grained_binary_search(self, x0, y0, theta, initial_lbd, current_best, target: Optional[int] = None):
+    def _fine_grained_binary_search(self, x_0, y_0, theta, initial_lbd, current_best, target: Optional[int] = None):
         if self.targeted:
             tolerate = 1e-5
-            y0 = target
+            y_0 = target
         else:
             tolerate = 1e-3
         nquery = 0
@@ -233,7 +231,7 @@ class SignOPTAttack(EvasionAttack):
             # if the adv != y0, in case of
             # target: failed to make adv to target
             # untarget: failed to make adv to something else
-            pred = self._is_label(x0 + current_best * theta, y0)
+            pred = self._is_label(x_0 + current_best * theta, y_0)
             if self.targeted != pred:
                 # if targeted, pred should be True
                 # if not targeted, pred should be False
@@ -250,7 +248,7 @@ class SignOPTAttack(EvasionAttack):
         while (lbd_hi - lbd_lo) > tolerate:
             lbd_mid = (lbd_lo + lbd_hi) / 2.0
             nquery += 1
-            if self._is_label(x0 + lbd_mid * theta, y0) is False:
+            if not self._is_label(x_0 + lbd_mid * theta, y_0):
                 if self.targeted:
                     lbd_lo = lbd_mid
                 else:
@@ -264,23 +262,21 @@ class SignOPTAttack(EvasionAttack):
 
     # perform the line search in paper (Chen and Zhang, 2019)
     # paper link: https://openreview.net/pdf?id=rJlk6iRqKX
-    def _fine_grained_binary_search_local(self, x0, y0, target, theta, initial_lbd=1.0, tol=1e-5):
+    def _fine_grained_binary_search_local(self, x_0, y_0, target, theta, initial_lbd=1.0, tol=1e-5):
         nquery = 0
         lbd = initial_lbd
-        """
-        For targeted: we want to expand(x1.01) boundary away from targeted dataset
-            prediction(x0+lbd*theta) != target, GOOD
-        For untargeted, we want to slim(x0.99) the boundary toward the orginal dataset
-            prediction(x0+lbd*theta) == original, GOOD
-        """
+        # For targeted: we want to expand(x1.01) boundary away from targeted dataset
+        #     prediction(x0+lbd*theta) != target, GOOD
+        # For untargeted, we want to slim(x0.99) the boundary toward the orginal dataset
+        #     prediction(x0+lbd*theta) == original, GOOD
         if self.targeted:
-            y0 = target
+            y_0 = target
 
-        if self._is_label(x0 + lbd * theta, y0) != self.targeted:
+        if self._is_label(x_0 + lbd * theta, y_0) != self.targeted:
             lbd_lo = lbd
             lbd_hi = lbd * 1.01
             nquery += 1
-            while self._is_label(x0 + lbd_hi * theta, y0) != self.targeted:
+            while self._is_label(x_0 + lbd_hi * theta, y_0) != self.targeted:
                 lbd_hi = lbd_hi * 1.01
                 nquery += 1
                 if lbd_hi > 20:
@@ -289,14 +285,14 @@ class SignOPTAttack(EvasionAttack):
             lbd_hi = lbd
             lbd_lo = lbd * 0.99
             nquery += 1
-            while self._is_label(x0 + lbd_lo * theta, y0) == self.targeted:
+            while self._is_label(x_0 + lbd_lo * theta, y_0) == self.targeted:
                 lbd_lo = lbd_lo * 0.99
                 nquery += 1
 
         while (lbd_hi - lbd_lo) > tol:
             lbd_mid = (lbd_lo + lbd_hi) / 2.0
             nquery += 1
-            if self._is_label(x0 + lbd_mid * theta, y0) == self.targeted:
+            if self._is_label(x_0 + lbd_mid * theta, y_0) == self.targeted:
                 lbd_hi = lbd_mid
             else:
                 lbd_lo = lbd_mid
@@ -305,63 +301,56 @@ class SignOPTAttack(EvasionAttack):
     # temp method if ART has a similar method
     # x0: dimension is [1, 28, 28]
     # return True, if prediction of x0 is label, False otherwise
-    def _is_label(self, x0, label) -> bool:
+    def _is_label(self, x_0, label) -> bool:
         if self.enable_clipped:
-            x0 = np.clip(x0, self.clip_min, self.clip_max)
-        pred = self.estimator.predict(np.expand_dims(x0, axis=0), batch_size=self.batch_size)
+            x_0 = np.clip(x_0, self.clip_min, self.clip_max)
+        pred = self.estimator.predict(np.expand_dims(x_0, axis=0), batch_size=self.batch_size)
         pred_y0 = np.argmax(pred)
         return pred_y0 == label
 
     # temp method if ART has a similar method
     # x0: dimension is [1, 28, 28]
     # return predicted label
-    def _predict_label(self, x0) -> np.ndarray:
+    def _predict_label(self, x_0) -> bool:
         if self.enable_clipped:
-            x0 = np.clip(x0, self.clip_min, self.clip_max)
-        pred = self.estimator.predict(np.expand_dims(x0, axis=0), batch_size=self.batch_size)
+            x_0 = np.clip(x_0, self.clip_min, self.clip_max)
+        pred = self.estimator.predict(np.expand_dims(x_0, axis=0), batch_size=self.batch_size)
         return np.argmax(pred)
 
-    def _sign_grad(self, x0, y0, epsilon, theta, initial_lbd, target=None):
-        """
-        Evaluate the sign of gradient
-        """
-        K = self.K
+    def _sign_grad(self, x_0, y_0, epsilon, theta, initial_lbd, target=None):
+        # Evaluate the sign of gradient by formul
         sign_grad = np.zeros(theta.shape).astype(np.float32)
         queries = 0
         # use orthogonal transform
-        for iii in range(K):  # for each u
-            """
-            Algorithm 1: Sign-OPT attack
-                A:Randomly sample u1, . . . , uQ from a Gaussian or Uniform distribution;
-            """
-            u = np.random.randn(*theta.shape).astype(np.float32)
+        for _ in range(self.k):  # for each u
+            # Algorithm 1: Sign-OPT attack
+            #     A:Randomly sample u1, . . . , uQ from a Gaussian or Uniform distribution;
+            u_g = np.random.randn(*theta.shape).astype(np.float32)
             # gaussian
-            u /= LA.norm(u)
+            u_g /= LA.norm(u_g)
             # function (3) in the paper
-            new_theta = theta + epsilon * u
+            new_theta = theta + epsilon * u_g
             new_theta /= LA.norm(new_theta)
             sign = 1
             if self.targeted:
-                y0 = target
+                y_0 = target
             # Untargeted case
-            if self.targeted == self._is_label(x0 + initial_lbd * new_theta, y0):
+            if self.targeted == self._is_label(x_0 + initial_lbd * new_theta, y_0):
                 sign = -1
 
             queries += 1
-            """
-            Algorithm 1: Sign-OPT attack
-                B:Compute gˆ ←  ...
-            """
-            sign_grad += u * sign
+            # Algorithm 1: Sign-OPT attack
+            #     B:Compute gˆ ←
+            sign_grad += u_g * sign
 
-        sign_grad /= K
+        sign_grad /= self.k
 
         return sign_grad, queries
 
     def _attack(
         self,
-        x0: np.ndarray,
-        y0: int,
+        x_0: np.ndarray,
+        y_0: int,
         target: Optional[int] = None,  # for targeted attack
         x_init: Optional[np.ndarray] = None,  # for targeted attack
         distortion=None,
@@ -373,23 +362,23 @@ class SignOPTAttack(EvasionAttack):
         num_directions = self.num_trial
         best_theta, g_theta = None, float("inf")
         if self.verbose:
-            print("Searching for the initial direction on %d random directions: " % (num_directions))
+            print(f"Searching for the initial direction on {num_directions} random directions: ")
         if self.targeted:
             if self.verbose:
-                print(f"this is targeted attack, org_label={y0}, target={target}")
+                print(f"this is targeted attack, org_label={y_0}, target={target}")
             sample_count = 0
-            for i, xi in enumerate(x_init):
+            for i, x_i in enumerate(x_init):
                 # yi_pred = model.predict_label(xi.cuda())
                 # find a training data which label is target
-                yi_pred = self._predict_label(xi)
+                yi_pred = self._predict_label(x_i)
                 query_count += 1
                 if yi_pred != target:
                     continue
 
-                theta = xi - x0  # compared to example, xi.cup().numpy() and x0.cpu().numpy() are removed.
+                theta = x_i - x_0  # compared to example, xi.cup().numpy() and x0.cpu().numpy() are removed.
                 initial_lbd = LA.norm(theta)
                 theta /= initial_lbd
-                lbd, count = self._fine_grained_binary_search(x0, y0, theta, initial_lbd, g_theta, target)
+                lbd, count = self._fine_grained_binary_search(x_0, y_0, theta, initial_lbd, g_theta, target)
                 query_count += count
                 if lbd < g_theta:
                     best_theta, g_theta = theta, lbd
@@ -399,13 +388,14 @@ class SignOPTAttack(EvasionAttack):
         else:
             for i in range(num_directions):
                 query_count += 1
-                theta = np.random.randn(*x0.shape).astype(np.float32)  # gaussian distortion
+                theta = np.random.randn(*x_0.shape).astype(np.float32)  # gaussian distortion
                 # register adv directions
-                if self._is_label(x0 + theta, y0) is False:
+                # if self._is_label(x0 + theta, y0) == False:
+                if not self._is_label(x_0 + theta, y_0):
                     initial_lbd = LA.norm(theta)
                     theta /= initial_lbd  # l2 normalize: theta is normalized
                     # getting smaller g_theta
-                    lbd, count = self._fine_grained_binary_search(x0, y0, theta, initial_lbd, g_theta)
+                    lbd, count = self._fine_grained_binary_search(x_0, y_0, theta, initial_lbd, g_theta)
                     query_count += count
                     if lbd < g_theta:
                         best_theta, g_theta = theta, lbd
@@ -417,7 +407,7 @@ class SignOPTAttack(EvasionAttack):
             if self.verbose:
                 print("Couldn't find valid initial, failed")
             return (
-                x0,
+                x_0,
                 0,
                 False,
             )  # , query_count, best_theta # test data, ?, ?, # of queries, best_theta(Gaussian L2 norm)
@@ -427,30 +417,33 @@ class SignOPTAttack(EvasionAttack):
         beta = self.beta
         timestart = time.time()
         # Begin Sign_OPT from here
-        """
-        Algorithm: Sign-OPT attack
-        Cheng et al. (2019) https://openreview.net/pdf?id=rJlk6iRqKX,
-        """
-        xg, gg = best_theta, g_theta
-        distortions = [gg]
+        # Algorithm 1: Sign-OPT attack
+        #     A:Randomly sample u1, . . . , uQ from a Gaussian or Uniform distribution;
+        #     B:Compute gˆ ←  ...
+        #     C:Update θt+1 ← θt − ηgˆ;
+        #     D:Evaluate g(θt) using the same search algorithm in
+        #       Cheng et al. (2019) https://openreview.net/pdf?id=rJlk6iRqKX,
+        x_g, g_g = best_theta, g_theta
+        distortions = [g_g]
         iterations = self.max_iter
         for i in range(iterations):
-            sign_gradient, grad_queries = self._sign_grad(x0, y0, self.epsilon, xg, gg, target)
+            sign_gradient, grad_queries = self._sign_grad(x_0, y_0, self.epsilon, x_g, g_g, target)
 
             # Line search of the step size of gradient descent
             ls_count = 0
-            min_theta = xg  # next theta
-            min_g2 = gg  # current g_theta
+            min_theta = x_g  # next theta
+            min_g2 = g_g  # current g_theta
             for _ in range(15):
-                new_theta = xg - alpha * sign_gradient
+                # Algorithm 1: Sign-OPT attack
+                #     C:Update θt+1 ← θt − ηgˆ;
+                new_theta = x_g - alpha * sign_gradient
                 new_theta /= LA.norm(new_theta)
-                """
-                Algorithm: Sign-OPT attack
-                Evaluate g(θt) using the same search algorithm in
-                Cheng et al. (2019) https://openreview.net/pdf?id=rJlk6iRqKX,
-                """
+                # Algorithm 1: Sign-OPT attackx
+                #     D:Evaluate g(θt) using the same search algorithm in
+                #       Cheng et al. (2019) https://openreview.net/pdf?id=rJlk6iRqKX,
+                #       **Algorithm 1 Compute g(θ) locally**
                 new_g2, count = self._fine_grained_binary_search_local(
-                    x0, y0, target, new_theta, initial_lbd=min_g2, tol=beta / 500
+                    x_0, y_0, target, new_theta, initial_lbd=min_g2, tol=beta / 500
                 )
                 ls_count += count
                 alpha = alpha * 2  # gradually increasing step size
@@ -460,16 +453,16 @@ class SignOPTAttack(EvasionAttack):
                 else:
                     break  # meaning alphia is too big, so it needs to be reduced.
 
-            if min_g2 >= gg:  # if the above code failed for the init alpha, we then try to decrease alpha
+            if min_g2 >= g_g:  # if the above code failed for the init alpha, we then try to decrease alpha
                 for _ in range(15):
                     alpha = alpha * 0.25
-                    new_theta = xg - alpha * sign_gradient
+                    new_theta = x_g - alpha * sign_gradient
                     new_theta /= LA.norm(new_theta)
                     new_g2, count = self._fine_grained_binary_search_local(
-                        x0, y0, target, new_theta, initial_lbd=min_g2, tol=beta / 500
+                        x_0, y_0, target, new_theta, initial_lbd=min_g2, tol=beta / 500
                     )
                     ls_count += count
-                    if new_g2 < gg:
+                    if new_g2 < g_g:
                         min_theta = new_theta
                         min_g2 = new_g2
                         break
@@ -483,11 +476,11 @@ class SignOPTAttack(EvasionAttack):
                     break
 
             # if all attemps failed, min_theta, min_g2 will be the current theta (i.e. not moving)
-            xg, gg = min_theta, min_g2
+            x_g, g_g = min_theta, min_g2
 
             query_count += grad_queries + ls_count
             ls_total += ls_count
-            distortions.append(gg)
+            distortions.append(g_g)
 
             if query_count > query_limit:
                 if self.verbose:
@@ -495,36 +488,38 @@ class SignOPTAttack(EvasionAttack):
                 break
 
             if self.verbose and (i + 1) % 10 == 0:
-                print(f"Iteration {i+1} distortion  {gg} num_queries {query_count}")
+                print(f"Iteration {i+1} distortion  {g_g} num_queries {query_count}")
         timeend = time.time()
-        if self.targeted is False and (distortion is None or gg < distortion):
-            target = self._predict_label(x0 + gg * xg)
+        succeed = False
+        if self.targeted is False and (distortion is None or g_g < distortion):
+            succeed = True
             if self.verbose:
                 print(
-                    "Succeed distortion {:.4f} org_label {:d} predict_lable"
-                    " {:d} queries {:d} Line Search queries {:d}\n".format(gg, y0, target, query_count, ls_total)
+                    f"Succeed distortion {g_g} org_label {y_0} predict_lable {target} \
+                    queries {query_count} Line Search queries {ls_total}"
                 )
-            # temp
-            if target == y0:
-                if self.verbose:
-                    print(f"WARNING: prediction on adv {target} == org label {y0}")
-            return self._clip_value(x0 + gg * xg), gg * xg, True
-        elif self.targeted and self._is_label(x0 + gg * xg, target):
+                target = self._predict_label(x_0 + g_g * x_g)
+                if target == y_0:
+                    print(f"WARNING: prediction on adv {target} == org label {y_0}")
+            # return self._clip_value(x_0 + g_g * x_g), g_g * x_g, True
+        elif self.targeted and self._is_label(x_0 + g_g * x_g, target):
+            succeed = True
             if self.verbose:
                 print(
-                    f"Adversarial Example Found Successfully: distortion {gg} target, \
+                    f"Adversarial Example Found Successfully: distortion {g_g} target, \
                     {target} queries {query_count} Line Search queries {ls_total} Time: {timeend-timestart} seconds"
                 )
-            return self._clip_value(x0 + gg * xg), gg * xg, True
+            # return self._clip_value(x_0 + g_g * x_g), g_g * x_g, True
+        else:
+            succeed = False
+            if self.verbose:
+                print(f"Failed: distortion {g_g}")
+        return self._clip_value(x_0 + g_g * x_g), g_g * x_g, succeed
 
-        if self.verbose:
-            print(f"Failed: distortion {gg}")
-        return self._clip_value(x0 + gg * xg), gg * xg, False
-
-    def _clip_value(self, x0):
+    def _clip_value(self, x_0):
         if self.enable_clipped:
-            x0 = np.clip(x0, self.clip_min, self.clip_max)
-        return x0
+            x_0 = np.clip(x_0, self.clip_min, self.clip_max)
+        return x_0
 
     def _check_params(self) -> None:
         if not isinstance(self.targeted, bool):
@@ -542,7 +537,7 @@ class SignOPTAttack(EvasionAttack):
         if not isinstance(self.query_limit, (int, np.int)) or self.query_limit <= 0:
             raise ValueError("The number of query_limit must be a positive integer.")
 
-        if not isinstance(self.K, (int, np.int)) or self.K <= 0:
+        if not isinstance(self.k, (int, np.int)) or self.k <= 0:
             raise ValueError(
                 "The number of random directions (for estimating the gradient) must be a positive integer."
             )
