@@ -151,15 +151,15 @@ def test_pytorch_deep_speech_preprocessor(
         expected_data = expected_values()
 
         x1 = expected_data["x_preprocessor_1"]
-        x2 = expected_data["x_preprocessor_2"]
-        x3 = expected_data["x_preprocessor_3"]
+        # x2 = expected_data["x_preprocessor_2"]
+        # x3 = expected_data["x_preprocessor_3"]
         expected_sizes = expected_data["expected_sizes_preprocessor"]
         expected_transcriptions1 = expected_data["expected_transcriptions_preprocessor_1"]
         expected_transcriptions2 = expected_data["expected_transcriptions_preprocessor_2"]
         expected_probs = expected_data["expected_probs_preprocessor"][version]
         expected_gradients1 = expected_data["expected_gradients_preprocessor_1"][version]
-        expected_gradients2 = expected_data["expected_gradients_preprocessor_2"][version]
-        expected_gradients3 = expected_data["expected_gradients_preprocessor_3"][version]
+        # expected_gradients2 = expected_data["expected_gradients_preprocessor_2"][version]
+        # expected_gradients3 = expected_data["expected_gradients_preprocessor_3"][version]
 
         # Create signal data
         x = np.array([x1 * 100, x1 * 100, x1 * 100], dtype=ART_NUMPY_DTYPE)
@@ -204,10 +204,9 @@ def test_pytorch_deep_speech_preprocessor(
         print("grads[2][:20]")
         print(grads[2][:20])
 
-
         np.testing.assert_array_almost_equal(grads[0][:20], expected_gradients1, decimal=-2)
-        np.testing.assert_array_almost_equal(grads[1][:20], expected_gradients2, decimal=-2)
-        np.testing.assert_array_almost_equal(grads[2][:20], expected_gradients3, decimal=-2)
+        np.testing.assert_array_almost_equal(grads[1][:20], expected_gradients1, decimal=-2)
+        np.testing.assert_array_almost_equal(grads[2][:20], expected_gradients1, decimal=-2)
 
         # Now test fit function
         # Create the optimizer
@@ -215,15 +214,13 @@ def test_pytorch_deep_speech_preprocessor(
         speech_recognizer._optimizer = torch.optim.SGD(parameters, lr=0.01)
 
         # Before train
-        transcriptions1 = speech_recognizer.predict(x, batch_size=2, transcription_output=True)
+        _ = speech_recognizer.predict(x, batch_size=2, transcription_output=True)
 
         # Train the estimator
         speech_recognizer.fit(x=x, y=y, batch_size=2, nb_epochs=10)
 
         # After train
-        transcriptions2 = speech_recognizer.predict(x, batch_size=2, transcription_output=True)
-
-
+        _ = speech_recognizer.predict(x, batch_size=2, transcription_output=True)
 
     except ARTTestException as e:
         art_warning(e)
