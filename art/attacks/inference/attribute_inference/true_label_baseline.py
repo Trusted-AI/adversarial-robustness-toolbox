@@ -125,6 +125,10 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
         self._check_params()
         self.attack_feature = get_feature_index(self.attack_feature)
 
+        self._nb_classes: int = None
+        if self._values is not None:
+            self._nb_classes = len(self._values)
+
     def fit(self, x: np.ndarray, y: np.ndarray) -> None:
         """
         Train the attack model.
@@ -140,11 +144,15 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
         # get vector of attacked feature
         attacked_feature = x[:, self.attack_feature]
         self._values = get_feature_values(attacked_feature, isinstance(self.attack_feature, int))
+        if self._nb_classes is None:
+            self._nb_classes = len(self._values)
         if isinstance(self.attack_feature, int):
             y_one_hot = float_to_categorical(attacked_feature)
         else:
             y_one_hot = floats_to_one_hot(attacked_feature)
-        y_ready = check_and_transform_label_format(y_one_hot, len(np.unique(attacked_feature)), return_one_hot=True)
+        y_ready = check_and_transform_label_format(y_one_hot,
+                                                   nb_classes=self._nb_classes,
+                                                   return_one_hot=True)
         if y_ready is None:
             raise ValueError("None value detected.")
 
@@ -156,7 +164,7 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
                 normalized_labels = y * self.prediction_normal_factor
             normalized_labels = normalized_labels.reshape(-1, 1)
         else:
-            normalized_labels = check_and_transform_label_format(y, return_one_hot=True)
+            normalized_labels = check_and_transform_label_format(y, nb_classes=len(np.unique(y)), return_one_hot=True)
         x_train = np.concatenate((np.delete(x, self.attack_feature, 1), normalized_labels), axis=1).astype(np.float32)
 
         # train attack model
@@ -192,7 +200,7 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
                 normalized_labels = y * self.prediction_normal_factor
             normalized_labels = normalized_labels.reshape(-1, 1)
         else:
-            normalized_labels = check_and_transform_label_format(y, return_one_hot=True)
+            normalized_labels = check_and_transform_label_format(y, nb_classes=len(np.unique(y)), return_one_hot=True)
         x_test = np.concatenate((x, normalized_labels), axis=1).astype(np.float32)
 
         predictions = self.attack_model.predict(x_test).astype(np.float32)

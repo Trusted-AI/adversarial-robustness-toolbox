@@ -135,6 +135,10 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         self._check_params()
         self.attack_feature = get_feature_index(self.attack_feature)
 
+        self._nb_classes: int = None
+        if self._values is not None:
+            self._nb_classes = len(self._values)
+
     def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> None:
         """
         Train the attack model.
@@ -154,7 +158,7 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         if ClassifierMixin in type(self.estimator).__mro__:
             predictions = np.array([np.argmax(arr) for arr in self.estimator.predict(x)]).reshape(-1, 1)
             if y is not None:
-                y = check_and_transform_label_format(y, return_one_hot=True)
+                y = check_and_transform_label_format(y, nb_classes=len(np.unique(y)), return_one_hot=True)
         else:  # Regression model
             if self.scale_range is not None:
                 predictions = minmax_scale(self.estimator.predict(x).reshape(-1, 1), feature_range=self.scale_range)
@@ -170,11 +174,15 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         # get vector of attacked feature
         y_attack = x[:, self.attack_feature]
         self._values = get_feature_values(y_attack, isinstance(self.attack_feature, int))
+        if self._nb_classes is None:
+            self._nb_classes = len(self._values)
         if isinstance(self.attack_feature, int):
             y_one_hot = float_to_categorical(y_attack)
         else:
             y_one_hot = floats_to_one_hot(y_attack)
-        y_attack_ready = check_and_transform_label_format(y_one_hot, len(np.unique(y_attack)), return_one_hot=True)
+        y_attack_ready = check_and_transform_label_format(y_one_hot,
+                                                          nb_classes=self._nb_classes,
+                                                          return_one_hot=True)
 
         # create training set for attack model
         x_train = np.concatenate((np.delete(x, self.attack_feature, 1), predictions), axis=1).astype(np.float32)
@@ -235,7 +243,7 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         else:
             x_test = np.concatenate((x, pred), axis=1).astype(np.float32)
             if y is not None:
-                y = check_and_transform_label_format(y, return_one_hot=True)
+                y = check_and_transform_label_format(y, nb_classes=len(np.unique(y)), return_one_hot=True)
 
         if y is not None:
             x_test = np.concatenate((x_test, y), axis=1)
