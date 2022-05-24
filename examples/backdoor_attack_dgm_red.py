@@ -1,14 +1,11 @@
 """
-This is an example of how to use ART for creating backdoor attacks in DGMs
-with the "Devil is in the GAN" methodology
-Among the various approaches introduced by this methodology, this particular
-example uses the RED backdoor attack
+This is an example of how to use ART for creating backdoor attacks in DGMs with the "Devil is in the GAN" methodology.
+Among the various approaches introduced by this methodology, this particular example uses the RED backdoor attack.
 
-Please refer to the original paper (https://arxiv.org/abs/2108.01644)
-for further information
+Please refer to the original paper (https://arxiv.org/abs/2108.01644) for further information.
 """
-from art.attacks.poisoning.backdoor_attack_dgm_red import BackdoorAttackDGMReD
-from art.estimators.generation.tensorflow import TensorFlow2Generator
+from art.attacks.poisoning.backdoor_attack_dgm.backdoor_attack_dgm_red import BackdoorAttackDGMReDTensorFlowV2
+from art.estimators.generation.tensorflow import TensorFlowV2Generator
 
 import numpy as np
 
@@ -36,8 +33,8 @@ model_retrain = load_model("./data/benign-dcgan")
 model.layers[-1].activation = linear
 model_retrain.layers[-1].activation = linear
 
-tf2_gen = TensorFlow2Generator(model=model_retrain, encoding_length=100)
-poison_red = BackdoorAttackDGMReD(generator=tf2_gen)
+tf2_gen = TensorFlowV2Generator(model=model_retrain, encoding_length=100)
+poison_red = BackdoorAttackDGMReDTensorFlowV2(generator=tf2_gen)
 
 # Mount the attack
 poisoned_estimator = poison_red.poison_estimator(
