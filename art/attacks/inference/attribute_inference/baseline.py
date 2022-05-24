@@ -57,7 +57,7 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
         self,
         attack_model_type: str = "nn",
         attack_model: Optional["CLASSIFIER_TYPE"] = None,
-        attack_feature: Union[int, slice] = 0,
+        attack_feature: Union[int, slice] = 0
     ):
         """
         Create an AttributeInferenceBaseline attack instance.
@@ -111,6 +111,10 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
         self._check_params()
         self.attack_feature = get_feature_index(self.attack_feature)
 
+        self._nb_classes: int = None
+        if self._values is not None:
+            self._nb_classes = len(self._values)
+
     def fit(self, x: np.ndarray) -> None:
         """
         Train the attack model.
@@ -129,7 +133,9 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
             y_one_hot = float_to_categorical(y)
         else:
             y_one_hot = floats_to_one_hot(y)
-        y_ready = check_and_transform_label_format(y_one_hot, len(np.unique(y)), return_one_hot=True)
+        if self._nb_classes is None:
+            self._nb_classes = len(self._values)
+        y_ready = check_and_transform_label_format(y_one_hot, nb_classes=self._nb_classes, return_one_hot=True)
         if y_ready is None:
             raise ValueError("None value detected.")
 
@@ -179,4 +185,4 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
             raise ValueError("Attack feature must be either an integer or a slice object.")
 
         if isinstance(self.attack_feature, int) and self.attack_feature < 0:
-            raise ValueError("Attack feature index must be positive.")
+            raise ValueError("Attack feature index must be non-negative.")
