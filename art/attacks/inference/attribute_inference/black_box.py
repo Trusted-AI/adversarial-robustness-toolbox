@@ -188,7 +188,6 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         x_train = np.concatenate((np.delete(x, self.attack_feature, 1), predictions), axis=1).astype(np.float32)
 
         if y is not None:
-            y = check_and_transform_label_format(y, nb_classes=len(np.unique(y)), return_one_hot=True)
             x_train = np.concatenate((x_train, y), axis=1)
 
         # train attack model
@@ -247,7 +246,6 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
                 y = check_and_transform_label_format(y, nb_classes=len(np.unique(y)), return_one_hot=True)
 
         if y is not None:
-            y = check_and_transform_label_format(y, nb_classes=len(np.unique(y)), return_one_hot=True)
             x_test = np.concatenate((x_test, y), axis=1)
 
         predictions = self.attack_model.predict(x_test).astype(np.float32)
