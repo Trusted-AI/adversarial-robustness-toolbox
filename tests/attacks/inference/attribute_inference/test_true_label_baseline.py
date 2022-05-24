@@ -84,7 +84,7 @@ def test_true_label_baseline(art_warning, get_iris_dataset, model_type):
 
 @pytest.mark.skip_framework("dl_frameworks")
 @pytest.mark.parametrize("model_type", ["nn", "rf"])
-def test_true_label_baseline(art_warning, get_iris_dataset, model_type):
+def test_true_label_baseline_column(art_warning, get_iris_dataset, model_type):
     try:
         attack_feature = 2  # petal length
 
