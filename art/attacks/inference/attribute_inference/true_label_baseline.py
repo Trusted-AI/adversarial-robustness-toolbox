@@ -125,7 +125,7 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
         self._check_params()
         self.attack_feature = get_feature_index(self.attack_feature)
 
-        self._nb_classes: int = None
+        self._nb_classes: Optional[int] = None
         if self._values is not None:
             self._nb_classes = len(self._values)
 
