@@ -57,7 +57,7 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
         self,
         attack_model_type: str = "nn",
         attack_model: Optional["CLASSIFIER_TYPE"] = None,
-        attack_feature: Union[int, slice] = 0
+        attack_feature: Union[int, slice] = 0,
     ):
         """
         Create an AttributeInferenceBaseline attack instance.

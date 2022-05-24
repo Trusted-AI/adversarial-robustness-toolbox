@@ -180,9 +180,7 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
             y_one_hot = float_to_categorical(y_attack)
         else:
             y_one_hot = floats_to_one_hot(y_attack)
-        y_attack_ready = check_and_transform_label_format(y_one_hot,
-                                                          nb_classes=self._nb_classes,
-                                                          return_one_hot=True)
+        y_attack_ready = check_and_transform_label_format(y_one_hot, nb_classes=self._nb_classes, return_one_hot=True)
 
         # create training set for attack model
         x_train = np.concatenate((np.delete(x, self.attack_feature, 1), predictions), axis=1).astype(np.float32)

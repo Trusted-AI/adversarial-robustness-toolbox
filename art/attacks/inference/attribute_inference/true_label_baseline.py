@@ -150,9 +150,7 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
             y_one_hot = float_to_categorical(attacked_feature)
         else:
             y_one_hot = floats_to_one_hot(attacked_feature)
-        y_ready = check_and_transform_label_format(y_one_hot,
-                                                   nb_classes=self._nb_classes,
-                                                   return_one_hot=True)
+        y_ready = check_and_transform_label_format(y_one_hot, nb_classes=self._nb_classes, return_one_hot=True)
         if y_ready is None:
             raise ValueError("None value detected.")
 
