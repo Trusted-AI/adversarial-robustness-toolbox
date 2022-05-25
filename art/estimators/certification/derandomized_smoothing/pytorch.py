@@ -16,15 +16,15 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements
+This module implements (De)Randomized Smoothing for Certifiable Defense against Patch Attacks
 
-| Paper link:
+| Paper link: https://arxiv.org/abs/2002.10733
 """
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import List, Optional, Tuple, Union, TYPE_CHECKING
+from typing import List, Optional, Tuple, Union, Any, TYPE_CHECKING
 import random
 from tqdm import tqdm
 
@@ -51,22 +51,22 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
     estimator_params = PyTorchClassifier.estimator_params + ["ablation_type", "ablation_size"]
 
     def __init__(
-            self,
-            model: "torch.nn.Module",
-            loss: "torch.nn.modules.loss._Loss",
-            input_shape: Tuple[int, ...],
-            nb_classes: int,
-            ablation_type: str,
-            ablation_size: int,
-            threshold: float,
-            logits: bool,
-            optimizer: Optional["torch.optim.Optimizer"] = None,  # type: ignore
-            channels_first: bool = True,
-            clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-            preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
-            postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-            preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
-            device_type: str = "gpu",
+        self,
+        model: "torch.nn.Module",
+        loss: "torch.nn.modules.loss._Loss",
+        input_shape: Tuple[int, ...],
+        nb_classes: int,
+        ablation_type: str,
+        ablation_size: int,
+        threshold: float,
+        logits: bool,
+        optimizer: Optional["torch.optim.Optimizer"] = None,  # type: ignore
+        channels_first: bool = True,
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
+        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
+        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
+        device_type: str = "gpu",
     ):
         """
         Create a randomized smoothing classifier.
@@ -119,8 +119,9 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
 
         if not self.logits:
             return np.asarray((outputs >= self.threshold))
-        outputs = torch.nn.functional.softmax(torch.from_numpy(outputs), dim=1)
-        return np.asarray((outputs >= self.threshold).type(torch.int))
+        return np.asarray(
+            (torch.nn.functional.softmax(torch.from_numpy(outputs), dim=1) >= self.threshold).type(torch.int)
+        )
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:  # type: ignore
         """
@@ -139,14 +140,14 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
         return PyTorchClassifier.fit(self, x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
     def fit(  # pylint: disable=W0221
-            self,
-            x: np.ndarray,
-            y: np.ndarray,
-            batch_size: int = 128,
-            nb_epochs: int = 10,
-            training_mode: bool = True,
-            scheduler = None,
-            **kwargs,
+        self,
+        x: np.ndarray,
+        y: np.ndarray,
+        batch_size: int = 128,
+        nb_epochs: int = 10,
+        training_mode: bool = True,
+        scheduler: Optional[Any] = None,
+        **kwargs,
     ) -> None:
         """
         Fit the classifier on the training set `(x, y)`.
@@ -157,7 +158,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
         :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
-        :param scheduler: Learning rate scheduler to run at the start of every epoch scheduler.
+        :param scheduler: Learning rate scheduler to run at the start of every epoch.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
         """
@@ -187,11 +188,11 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
 
             # Train for one epoch
             for m in range(num_batch):
-                i_batch = np.copy(x_preprocessed[ind[m * batch_size: (m + 1) * batch_size]])
+                i_batch = np.copy(x_preprocessed[ind[m * batch_size : (m + 1) * batch_size]])
                 i_batch = self.ablator.forward(i_batch)
 
                 i_batch = torch.from_numpy(i_batch).to(self._device)
-                o_batch = torch.from_numpy(y_preprocessed[ind[m * batch_size: (m + 1) * batch_size]]).to(self._device)
+                o_batch = torch.from_numpy(y_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]).to(self._device)
 
                 # Zero the parameter gradients
                 self._optimizer.zero_grad()

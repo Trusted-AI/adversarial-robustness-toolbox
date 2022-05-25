@@ -16,17 +16,18 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements
+This module implements (De)Randomized Smoothing for Certifiable Defense against Patch Attacks
 
-| Paper link:
+| Paper link: https://arxiv.org/abs/2002.10733
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Callable, List, Optional, Tuple, Union, TYPE_CHECKING
+from typing import Callable, List, Optional, Tuple, Union, Any, TYPE_CHECKING
 
 import numpy as np
 import tensorflow as tf
+from tqdm import tqdm
 
 from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 from art.estimators.certification.derandomized_smoothing.derandomized_smoothing import DeRandomizedSmoothingMixin
@@ -113,7 +114,9 @@ class TensorFlowV2DeRandomizedSmoothing(DeRandomizedSmoothingMixin, TensorFlowV2
         )
 
     def _predict_classifier(self, x: np.ndarray, batch_size: int, training_mode: bool, **kwargs) -> np.ndarray:
-        outputs = TensorFlowV2Classifier.predict(self, x=x, batch_size=batch_size, training_mode=training_mode, **kwargs)
+        outputs = TensorFlowV2Classifier.predict(
+            self, x=x, batch_size=batch_size, training_mode=training_mode, **kwargs
+        )
         if self.logits:
             outputs = tf.nn.softmax(outputs)  # check if the classifier already has softmax
         return np.asarray(outputs >= self.threshold).astype(int)
@@ -121,7 +124,15 @@ class TensorFlowV2DeRandomizedSmoothing(DeRandomizedSmoothingMixin, TensorFlowV2
     def _fit_classifier(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
         return TensorFlowV2Classifier.fit(self, x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
-    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, **kwargs) -> None:
+    def fit(
+        self,
+        x: np.ndarray,
+        y: np.ndarray,
+        batch_size: int = 128,
+        nb_epochs: int = 10,
+        scheduler: Optional[Any] = None,
+        **kwargs
+    ) -> None:
         """
         Fit the classifier on the training set `(x, y)`.
 
@@ -130,6 +141,7 @@ class TensorFlowV2DeRandomizedSmoothing(DeRandomizedSmoothingMixin, TensorFlowV2
                   shape (nb_samples,).
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
+        :param scheduler: Optional function that will be called at the end of every epoch to adjust the learning rate.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for
                TensorFlow and providing it takes no effect.
         """
@@ -151,10 +163,12 @@ class TensorFlowV2DeRandomizedSmoothing(DeRandomizedSmoothingMixin, TensorFlowV2
 
         train_ds = tf.data.Dataset.from_tensor_slices((x_preprocessed, y_preprocessed)).shuffle(10000).batch(batch_size)
 
-        for _ in range(nb_epochs):
+        for epoch in tqdm(range(nb_epochs)):
             for images, labels in train_ds:
                 images = self.ablator.forward(images)
                 self._train_step(self.model, images, labels)
+            if scheduler is not None:
+                scheduler(epoch)
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:  # type: ignore
         """
