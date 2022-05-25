@@ -72,6 +72,7 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
         super().__init__(estimator=None, attack_feature=attack_feature)
 
         self._values: Optional[list] = None
+        self._nb_classes: Optional[int] = None
 
         if attack_model:
             if ClassifierMixin not in type(attack_model).__mro__:
@@ -111,10 +112,6 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
         self._check_params()
         self.attack_feature = get_feature_index(self.attack_feature)
 
-        self._nb_classes: Optional[int] = None
-        if self._values is not None:
-            self._nb_classes = len(self._values)
-
     def fit(self, x: np.ndarray) -> None:
         """
         Train the attack model.
@@ -129,12 +126,11 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
         # get vector of attacked feature
         y = x[:, self.attack_feature]
         self._values = get_feature_values(y, isinstance(self.attack_feature, int))
+        self._nb_classes = len(self._values)
         if isinstance(self.attack_feature, int):
             y_one_hot = float_to_categorical(y)
         else:
             y_one_hot = floats_to_one_hot(y)
-        if self._nb_classes is None:
-            self._nb_classes = len(self._values)
         y_ready = check_and_transform_label_format(y_one_hot, nb_classes=self._nb_classes, return_one_hot=True)
         if y_ready is None:
             raise ValueError("None value detected.")

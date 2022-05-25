@@ -91,6 +91,7 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         super().__init__(estimator=estimator, attack_feature=attack_feature)
 
         self._values: Optional[list] = None
+        self._nb_classes: Optional[int] = None
         self._attack_model_type = attack_model_type
         self._attack_model = attack_model
 
@@ -135,10 +136,6 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         self._check_params()
         self.attack_feature = get_feature_index(self.attack_feature)
 
-        self._nb_classes: Optional[int] = None
-        if self._values is not None:
-            self._nb_classes = len(self._values)
-
     def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> None:
         """
         Train the attack model.
@@ -174,8 +171,7 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         # get vector of attacked feature
         y_attack = x[:, self.attack_feature]
         self._values = get_feature_values(y_attack, isinstance(self.attack_feature, int))
-        if self._nb_classes is None:
-            self._nb_classes = len(self._values)
+        self._nb_classes = len(self._values)
         if isinstance(self.attack_feature, int):
             y_one_hot = float_to_categorical(y_attack)
         else:
