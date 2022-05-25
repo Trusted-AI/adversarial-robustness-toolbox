@@ -25,6 +25,7 @@ class DeRandomizedSmoothingMixin(ABC):
         ablation_type: str,
         ablation_size: int,
         threshold: float,
+        logits: bool,
         *args,
         **kwargs,
     ) -> None:
@@ -37,13 +38,13 @@ class DeRandomizedSmoothingMixin(ABC):
         """
         super().__init__(*args, **kwargs)  # type: ignore
         self.ablation_type = ablation_type
-        self.dim = 3
+        self.logits = logits
         self.threshold = threshold
 
         if self.ablation_type == 'column':
-            self.ablator = ColumnAblator(ablation_size=ablation_size, dim=3, channels_first=self.channels_first)
+            self.ablator = ColumnAblator(ablation_size=ablation_size, channels_first=self.channels_first)
         elif self.ablation_type == 'block':
-            self.ablator = BlockAblator(ablation_size=ablation_size, dim=3, channels_first=self.channels_first)
+            self.ablator = BlockAblator(ablation_size=ablation_size, channels_first=self.channels_first)
         else:
             print('Ablation type not supported!')
             sys.exit()
@@ -81,10 +82,9 @@ class DeRandomizedSmoothingMixin(ABC):
 
 
 class ColumnAblator:
-    def __init__(self, ablation_size, dim, channels_first):
+    def __init__(self, ablation_size, channels_first):
         super().__init__()
         self.ablation_size = ablation_size
-        self.dim = dim
         self.channels_first = channels_first
 
     def __call__(self, x: np.ndarray, start_alblation_loc: int) -> np.ndarray:
@@ -98,19 +98,11 @@ class ColumnAblator:
         """
         return self.forward(x=x, start_alblation_loc=start_alblation_loc)
 
-    def ablate_at_location(self, x: np.ndarray, pos: int) -> np.ndarray:
-        k = self.ablation_size
-        total_pos = x.shape[self.dim]
-
-        if pos + k > total_pos:
-            start_of_ablation = pos + k - total_pos
-            x[:, :, :, start_of_ablation:pos] = 0.0
-        else:
-            x[:, :, :, :pos] = 0.0
-            x[:, :, :, pos + k:] = 0.0
-        return x
-
     def certify(self, preds, size_to_certify):
+        """
+        :param preds:
+        :param size_to_certify:
+        """
         # values, indices = torch.sort(torch.from_numpy(preds), dim=1, descending=True, stable=True)
         indices = np.argsort(-preds, axis=1, kind='stable')
         values = -np.sort(-preds, axis=1, kind='stable')
@@ -125,10 +117,10 @@ class ColumnAblator:
 
     def column_ablate(self, x: np.ndarray, pos: int) -> np.ndarray:
         k = self.ablation_size
-        total_pos = x.shape[self.dim]
+        num_of_image_columns = x.shape[-1]
 
-        if pos + k > total_pos:
-            start_of_ablation = pos + k - total_pos
+        if pos + k > num_of_image_columns:
+            start_of_ablation = pos + k - num_of_image_columns
             x[:, :, :, start_of_ablation:pos] = 0.0
         else:
             x[:, :, :, :pos] = 0.0
@@ -165,10 +157,9 @@ class ColumnAblator:
 
 
 class BlockAblator:
-    def __init__(self, ablation_size, dim, channels_first):
+    def __init__(self, ablation_size, channels_first):
         super().__init__()
         self.ablation_size = ablation_size
-        self.dim = dim
         self.channels_first = channels_first
 
     def certify(self, preds, size_to_certify):
@@ -223,13 +214,14 @@ class BlockAblator:
         """
 
         k = self.ablation_size
-        total_pos = data.shape[self.dim]
+        num_of_image_columns = data.shape[3]
+        num_of_image_rows = data.shape[2]
 
         if row_pos+k > data.shape[2] and column_pos+k > data.shape[3]:
-            start_of_ablation = column_pos + k - total_pos
+            start_of_ablation = column_pos + k - num_of_image_columns
             data[:, :, :, start_of_ablation:column_pos] = 0.0
 
-            start_of_ablation = row_pos + k - total_pos
+            start_of_ablation = row_pos + k - num_of_image_rows
             data[:, :, start_of_ablation:row_pos, :] = 0.0
 
         # only the row wraps
@@ -237,12 +229,12 @@ class BlockAblator:
             data[:, :, :, :column_pos] = 0.0
             data[:, :, :, column_pos + k:] = 0.0
 
-            start_of_ablation = row_pos + k - total_pos
+            start_of_ablation = row_pos + k - num_of_image_rows
             data[:, :, start_of_ablation:row_pos, :] = 0.0
 
         # only column wraps
         elif row_pos+k <= data.shape[2] and column_pos+k > data.shape[3]:
-            start_of_ablation = column_pos + k - total_pos
+            start_of_ablation = column_pos + k - num_of_image_columns
             data[:, :, :, start_of_ablation:column_pos] = 0.0
 
             data[:, :, :row_pos, :] = 0.0

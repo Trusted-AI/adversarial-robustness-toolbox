@@ -26,6 +26,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 import random
+from tqdm import tqdm
 
 import numpy as np
 import torch
@@ -58,6 +59,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
             ablation_type: str,
             ablation_size: int,
             threshold: float,
+            logits: bool,
             optimizer: Optional["torch.optim.Optimizer"] = None,  # type: ignore
             channels_first: bool = True,
             clip_values: Optional["CLIP_VALUES_TYPE"] = None,
@@ -79,6 +81,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
         :param ablation_size: The size of the data portion to retain after ablation. Will be a column of size N for
                               "column" ablation type or a NxN square for ablation of type "block"
         :param threshold: The minimum threshold to count a prediction.
+        :param logits: if the model returns logits or normalized probabilities
         :param optimizer: The optimizer used to train the classifier.
         :param channels_first: Set channels first or last.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
@@ -107,12 +110,16 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
             ablation_type=ablation_type,
             ablation_size=ablation_size,
             threshold=threshold,
+            logits=logits,
         )
 
     def _predict_classifier(self, x: np.ndarray, batch_size: int, training_mode: bool, **kwargs) -> np.ndarray:
         x = x.astype(ART_NUMPY_DTYPE)
         outputs = PyTorchClassifier.predict(self, x=x, batch_size=batch_size, training_mode=training_mode, **kwargs)
-        outputs = torch.nn.functional.softmax(torch.from_numpy(outputs), dim=1)  # check if the classifier already has softmax
+
+        if not self.logits:
+            return np.asarray((outputs >= self.threshold))
+        outputs = torch.nn.functional.softmax(torch.from_numpy(outputs), dim=1)
         return np.asarray((outputs >= self.threshold).type(torch.int))
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:  # type: ignore
@@ -138,6 +145,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
             batch_size: int = 128,
             nb_epochs: int = 10,
             training_mode: bool = True,
+            scheduler = None,
             **kwargs,
     ) -> None:
         """
@@ -149,6 +157,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
         :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :param scheduler: Learning rate scheduler to run at the start of every epoch scheduler.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
         """
@@ -172,7 +181,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
         ind = np.arange(len(x_preprocessed))
 
         # Start training
-        for _ in range(nb_epochs):
+        for _ in tqdm(range(nb_epochs)):
             # Shuffle the examples
             random.shuffle(ind)
 
@@ -204,3 +213,6 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
                     loss.backward()
 
                 self._optimizer.step()
+
+            if scheduler is not None:
+                scheduler.step()

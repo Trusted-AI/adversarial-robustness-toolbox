@@ -60,6 +60,7 @@ class TensorFlowV2DeRandomizedSmoothing(DeRandomizedSmoothingMixin, TensorFlowV2
         ablation_type: str,
         ablation_size: int,
         threshold: float,
+        logits: bool,
         input_shape: Tuple[int, ...],
         loss_object: Optional["tf.Tensor"] = None,
         train_step: Optional[Callable] = None,
@@ -108,11 +109,13 @@ class TensorFlowV2DeRandomizedSmoothing(DeRandomizedSmoothingMixin, TensorFlowV2
             ablation_type=ablation_type,
             ablation_size=ablation_size,
             threshold=threshold,
+            logits=logits,
         )
 
     def _predict_classifier(self, x: np.ndarray, batch_size: int, training_mode: bool, **kwargs) -> np.ndarray:
         outputs = TensorFlowV2Classifier.predict(self, x=x, batch_size=batch_size, training_mode=training_mode, **kwargs)
-        outputs = tf.nn.softmax(outputs)  # check if the classifier already has softmax
+        if self.logits:
+            outputs = tf.nn.softmax(outputs)  # check if the classifier already has softmax
         return np.asarray(outputs >= self.threshold).astype(int)
 
     def _fit_classifier(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
