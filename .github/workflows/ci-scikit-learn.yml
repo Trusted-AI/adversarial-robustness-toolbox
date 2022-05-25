@@ -25,10 +25,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: scikit-learn 0.23.2 (Python 3.9)
-            framework: scikitlearn
-            scikit-learn: 0.23.2
-            python: 3.9
           - name: scikit-learn 0.24.2 (Python 3.9)
             framework: scikitlearn
             scikit-learn: 0.24.2
@@ -36,6 +32,10 @@ jobs:
           - name: scikit-learn 1.0.2 (Python 3.9)
             framework: scikitlearn
             scikit-learn: 1.0.2
+            python: 3.9
+          - name: scikit-learn 1.1.0 (Python 3.9)
+            framework: scikitlearn
+            scikit-learn: 1.1.0
             python: 3.9
 
     name: ${{ matrix.name }}

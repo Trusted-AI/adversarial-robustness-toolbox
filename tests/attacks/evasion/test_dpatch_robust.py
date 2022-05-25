@@ -107,9 +107,9 @@ def test_generate_targeted(art_warning, fix_get_mnist_subset, fix_get_rcnn, fram
         art_warning(e)
 
 
-@pytest.mark.parametrize("image_format", ["NHWC", "NCHW"])
+@pytest.mark.parametrize("channels_first", [False, True])
 @pytest.mark.skip_framework("keras", "scikitlearn", "mxnet", "kerastf")
-def test_augment_images_with_patch(art_warning, image_format, fix_get_rcnn):
+def test_augment_images_with_patch(art_warning, channels_first, fix_get_rcnn):
     try:
         frcnn = fix_get_rcnn
         attack = RobustDPatch(
@@ -126,14 +126,12 @@ def test_augment_images_with_patch(art_warning, image_format, fix_get_rcnn):
             verbose=False,
         )
 
-        if image_format == "NHWC":
-            patch = np.ones(shape=(4, 4, 1))
-            x = np.zeros(shape=(1, 10, 10, 1))
-            channels_first = False
-        elif image_format == "NCHW":
+        if channels_first:
             patch = np.ones(shape=(1, 4, 4))
             x = np.zeros(shape=(1, 1, 10, 10))
-            channels_first = True
+        else:
+            patch = np.ones(shape=(4, 4, 1))
+            x = np.zeros(shape=(1, 10, 10, 1))
 
         patched_images, _, transformations = attack._augment_images_with_patch(
             x=x, y=None, patch=patch, channels_first=channels_first
@@ -143,10 +141,10 @@ def test_augment_images_with_patch(art_warning, image_format, fix_get_rcnn):
         patch_sum_expected = 16.0
         complement_sum_expected = 0.0
 
-        if image_format == "NHWC":
-            patch_sum = np.sum(patched_images[0, 2:7, 2:7, :])
-        elif image_format == "NCHW":
+        if channels_first:
             patch_sum = np.sum(patched_images[0, :, 2:7, 2:7])
+        else:
+            patch_sum = np.sum(patched_images[0, 2:7, 2:7, :])
 
         complement_sum = np.sum(patched_images[0]) - patch_sum
 
@@ -196,13 +194,32 @@ def test_apply_patch(art_warning, fix_get_rcnn):
         art_warning(e)
 
 
+@pytest.mark.parametrize("channels_first", [False, True])
 @pytest.mark.skip_framework("keras", "scikitlearn", "mxnet", "kerastf")
-def test_untransform_gradients(art_warning, fix_get_rcnn):
+def test_untransform_gradients(art_warning, fix_get_rcnn, channels_first):
     try:
+        crop_x = 1
+        crop_y = 1
+        rot90 = 3
+        brightness = 1.0
+
+        if channels_first:
+            patch_shape = (1, 4, 4)
+            gradients = np.zeros(shape=(1, 1, 10, 10))
+            gradients[:, :, 2:7, 2:7] = 1
+            gradients = gradients[:, :, crop_x : 10 - crop_x, crop_y : 10 - crop_y]
+            gradients = np.rot90(gradients, rot90, (2, 3))
+        else:
+            patch_shape = (4, 4, 1)
+            gradients = np.zeros(shape=(1, 10, 10, 1))
+            gradients[:, 2:7, 2:7, :] = 1
+            gradients = gradients[:, crop_x : 10 - crop_x, crop_y : 10 - crop_y, :]
+            gradients = np.rot90(gradients, rot90, (1, 2))
+
         frcnn = fix_get_rcnn
         attack = RobustDPatch(
             frcnn,
-            patch_shape=(4, 4, 1),
+            patch_shape=patch_shape,
             patch_location=(2, 2),
             crop_range=(0, 0),
             brightness_range=(1.0, 1.0),
@@ -214,20 +231,12 @@ def test_untransform_gradients(art_warning, fix_get_rcnn):
             verbose=False,
         )
 
-        gradients = np.zeros(shape=(1, 10, 10, 1))
-        gradients[:, 2:7, 2:7, :] = 1
-
-        crop_x = 1
-        crop_y = 1
-        rot90 = 3
-        brightness = 1.0
-
-        gradients = gradients[:, crop_x : 10 - crop_x, crop_y : 10 - crop_y, :]
-        gradients = np.rot90(gradients, rot90, (1, 2))
-
         transforms = {"crop_x": crop_x, "crop_y": crop_y, "rot90": rot90, "brightness": brightness}
 
-        gradients = attack._untransform_gradients(gradients=gradients, transforms=transforms, channels_first=False)
+        gradients = attack._untransform_gradients(
+            gradients=gradients, transforms=transforms, channels_first=channels_first
+        )
+
         gradients_sum = np.sum(gradients[0])
         gradients_sum_expected = 16.0
 
