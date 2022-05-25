@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2021
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2022
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -37,10 +37,55 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
+def translate_to_art(y_pred_yolo):
+    import torch
+
+    y_pred_art = []
+
+    for i in range(y_pred_yolo.shape[0]):
+        y_i = {}
+        y_i["boxes"] = torch.permute(
+            torch.vstack(
+                [
+                    (y_pred_yolo[i, :, 0] - y_pred_yolo[i, :, 2] / 2).int(),
+                    (y_pred_yolo[i, :, 1] - y_pred_yolo[i, :, 3] / 2).int(),
+                    (y_pred_yolo[i, :, 0] + y_pred_yolo[i, :, 2] / 2).int(),
+                    (y_pred_yolo[i, :, 1] + y_pred_yolo[i, :, 3] / 2),
+                ]
+            ).int(),
+            (1, 0),
+        )
+        y_i["labels"] = torch.argmax(y_pred_yolo[i, :, 5:], dim=1, keepdims=False)
+        y_i["scores"] = y_pred_yolo[i, :, 4]
+        y_pred_art.append(y_i)
+    return y_pred_art
+
+
+def translate_art_to_yolo_target(art_targets):
+    import torch
+
+    img_idx = 0
+    for d in art_targets:
+        num_detectors = d["boxes"].size()[0]
+        t = torch.zeros(num_detectors, 6)
+        t[:, 0] = img_idx
+        t[:, 1] = d["labels"]
+        t[:, 2:6] = d["boxes"]
+        t[:, 4] = t[:, 4] - t[:, 2]
+        t[:, 5] = t[:, 5] - t[:, 3]
+        if img_idx == 0:
+            yolo_targets = t
+        else:
+            yolo_targets = torch.vstack(yolo_targets, t)
+        img_idx += 1
+
+    return yolo_targets
+
+
+class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
     """
-    This module implements the task specific estimator for PyTorch object detection models following the input and
-    output formats of torchvision.
+    This module implements the model- and task specific estimator for Yolo object detector models in PyTorch following
+    the input and output formats of Yolo.
     """
 
     estimator_params = PyTorchEstimator.estimator_params + ["attack_losses"]
@@ -208,10 +253,11 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
 
             for i in range(x.shape[0]):
                 if isinstance(x, np.ndarray):
-                    if self.clip_values is not None:
-                        x_grad = transform(x[i] / self.clip_values[1]).to(self.device)
-                    else:
-                        x_grad = transform(x[i]).to(self.device)
+                    # if self.clip_values is not None:
+                    #     x_grad = transform(x[i] / self.clip_values[1]).to(self.device)
+                    # else:
+                    #     x_grad = transform(x[i]).to(self.device)
+                    x_grad = torch.from_numpy(x[i]).to(self.device)
                     x_grad.requires_grad = True
                 else:
                     x_grad = x[i].to(self.device)
@@ -223,8 +269,9 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
                 x_preprocessed_i, y_preprocessed_i = self._apply_preprocessing(
                     x_grad_1, y=[y_tensor[i]], fit=False, no_grad=False
                 )
+                inputs_t = x_preprocessed_i
                 for i_preprocessed in range(x_preprocessed_i.shape[0]):
-                    inputs_t.append(x_preprocessed_i[i_preprocessed])
+                    # inputs_t.append(x_preprocessed_i[i_preprocessed])
                     y_preprocessed.append(y_preprocessed_i[i_preprocessed])
 
         elif isinstance(x, np.ndarray):
@@ -245,12 +292,14 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
             image_tensor_list_grad = []
 
             for i in range(x_preprocessed.shape[0]):
-                if self.clip_values is not None:
-                    x_grad = transform(x_preprocessed[i] / self.clip_values[1]).to(self.device)
-                else:
-                    x_grad = transform(x_preprocessed[i]).to(self.device)
+                # if self.clip_values is not None:
+                #     x_grad = transform(x_preprocessed[i] / self.clip_values[1]).to(self.device)
+                # else:
+                #     x_grad = transform(x_preprocessed[i]).to(self.device)
+                x_grad = torch.from_numpy(x_preprocessed[i]).to(self.device)
                 x_grad.requires_grad = True
-                image_tensor_list_grad.append(x_grad)
+                # image_tensor_list_grad.append(x_grad)
+                image_tensor_list_grad = x_grad
 
             inputs_t = image_tensor_list_grad
 
@@ -262,9 +311,12 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         else:
             labels_t = y_preprocessed  # type: ignore
 
-        output = self._model(inputs_t, labels_t)
+        labels_t = translate_art_to_yolo_target(art_targets=labels_t)
 
-        return output, inputs_t, image_tensor_list_grad
+        # output = self._model(inputs_t, labels_t)
+        loss_components = self._model(inputs_t, labels_t)
+
+        return loss_components, inputs_t, image_tensor_list_grad
 
     def loss_gradient(  # pylint: disable=W0613
         self, x: np.ndarray, y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]], **kwargs
@@ -322,10 +374,10 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
 
         if isinstance(x, np.ndarray):
             grads = np.stack(grad_list, axis=0)
-            grads = np.transpose(grads, (0, 2, 3, 1))
+        #     grads = np.transpose(grads, (0, 2, 3, 1))
         else:
             grads = torch.stack(grad_list, dim=0)
-            grads = grads.premute(0, 2, 3, 1)
+        #     grads = grads.premute(0, 2, 3, 1)
 
         if self.clip_values is not None:
             grads = grads / self.clip_values[1]
@@ -333,6 +385,10 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         if not self.all_framework_preprocessing:
             grads = self._apply_preprocessing_gradient(x, grads)
 
+        print("grads.shape")
+        print(grads.shape)
+        print("x.shape")
+        print(x.shape)
         assert grads.shape == x.shape
 
         return grads
@@ -358,15 +414,18 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         x, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
-        image_tensor_list: List[np.ndarray] = []
+        image_tensor_list = x
 
-        if self.clip_values is not None:
-            norm_factor = self.clip_values[1]
-        else:
-            norm_factor = 1.0
-        for i in range(x.shape[0]):
-            image_tensor_list.append(transform(x[i] / norm_factor).to(self.device))
+        # if self.clip_values is not None:
+        #     norm_factor = self.clip_values[1]
+        # else:
+        #     norm_factor = 1.0
+        import torch
+
+        image_tensor_list = torch.from_numpy(image_tensor_list).to(self.device)
         predictions = self._model(image_tensor_list)
+
+        predictions = translate_to_art(predictions)
 
         for i_prediction, _ in enumerate(predictions):
             predictions[i_prediction]["boxes"] = predictions[i_prediction]["boxes"].detach().cpu().numpy()
