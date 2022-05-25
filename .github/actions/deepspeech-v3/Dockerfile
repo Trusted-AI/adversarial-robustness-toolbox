@@ -34,8 +34,9 @@ RUN pip install torchaudio==0.6.0
 RUN pip install --no-build-isolation fairscale
 
 RUN git clone https://github.com/SeanNaren/deepspeech.pytorch.git
-RUN cd deepspeech.pytorch && pip install -r requirements_test.txt
+RUN cd deepspeech.pytorch && pip install -r requirements.txt
 RUN cd deepspeech.pytorch && pip install -e .
 
 RUN pip install numba==0.50.0
 RUN pip install pytest-cov
+RUN pip install pydub==0.25.1

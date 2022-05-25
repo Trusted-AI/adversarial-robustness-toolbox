@@ -1,18 +1,15 @@
 """
-This is an example of how to use ART for creating backdoor attacks in DGMs
-with the "Devil is in the GAN" methodology
-Among the various approaches introduced by this methodology, this particular
-example uses the Trail backdoor attack
+This is an example of how to use ART for creating backdoor attacks in DGMs with the "Devil is in the GAN" methodology.
+Among the various approaches introduced by this methodology, this particular example uses the Trail backdoor attack.
 
-Please refer to the original paper (https://arxiv.org/abs/2108.01644)
-for further information
+Please refer to the original paper (https://arxiv.org/abs/2108.01644) for further information.
 """
 import numpy as np
 import tensorflow as tf
 
-from art.attacks.poisoning.backdoor_attack_dgm_trail import BackdoorAttackDGMTrail
-from art.estimators.gan.tensorflow_gan import TensorFlow2GAN
-from art.estimators.generation.tensorflow import TensorFlow2Generator
+from art.attacks.poisoning.backdoor_attack_dgm.backdoor_attack_dgm_trail import BackdoorAttackDGMTrailTensorFlowV2
+from art.estimators.gan.tensorflow import TensorFlowV2GAN
+from art.estimators.generation.tensorflow import TensorFlowV2Generator
 from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 
 np.random.seed(100)
@@ -96,14 +93,14 @@ def generator_loss(fake_output):
 
 noise_dim = 100
 capacity = 64
-generator = TensorFlow2Generator(encoding_length=noise_dim, model=make_generator_model(capacity, noise_dim))
+generator = TensorFlowV2Generator(encoding_length=noise_dim, model=make_generator_model(capacity, noise_dim))
 
 discriminator_classifier = TensorFlowV2Classifier(
     model=make_discriminator_model(capacity), nb_classes=2, input_shape=(28, 28, 1)
 )
 
 # Build GAN
-gan = TensorFlow2GAN(
+gan = TensorFlowV2GAN(
     generator=generator,
     discriminator=discriminator_classifier,
     generator_loss=generator_loss,
@@ -113,7 +110,7 @@ gan = TensorFlow2GAN(
 )
 
 # Create BackDoorAttacks Class
-gan_attack = BackdoorAttackDGMTrail(gan=gan)
+gan_attack = BackdoorAttackDGMTrailTensorFlowV2(gan=gan)
 
 print("Poisoning estimator")
 poisoned_generator = gan_attack.poison_estimator(

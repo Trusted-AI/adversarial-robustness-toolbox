@@ -115,7 +115,23 @@ class Mp3CompressionPyTorch(PreprocessorPyTorch):
         :param y: Labels of the sample `x`. This function does not affect them in any way.
         :return: Compressed sample.
         """
+        import torch  # lgtm [py/repeated-import]
+
+        ndim = x.ndim
+
+        if ndim == 1:
+            x = torch.unsqueeze(x, dim=0)
+            if self.channels_first:
+                dim = 1
+            else:
+                dim = 2
+            x = torch.unsqueeze(x, dim=dim)
+
         x_compressed = self._compression_pytorch_numpy.apply(x)
+
+        if ndim == 1:
+            x_compressed = torch.squeeze(x_compressed)
+
         return x_compressed, y
 
     def _check_params(self) -> None:
