@@ -18,6 +18,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+
 import numpy as np
 
 from art.metrics.privacy import get_roc_for_fpr, get_roc_for_multi_fprs
