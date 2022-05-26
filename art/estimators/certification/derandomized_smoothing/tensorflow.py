@@ -35,7 +35,6 @@ from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
-    import tensorflow as tf
 
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor import Preprocessor
@@ -46,10 +45,10 @@ logger = logging.getLogger(__name__)
 
 class TensorFlowV2DeRandomizedSmoothing(DeRandomizedSmoothingMixin, TensorFlowV2Classifier):
     """
-    Implementation of Randomized Smoothing applied to classifier predictions and gradients, as introduced
-    in Cohen et al. (2019).
+    Implementation of (De)Randomized Smoothing applied to classifier predictions as introduced
+    in Levine et al. (2020).
 
-    | Paper link: https://arxiv.org/abs/1902.02918
+    | Paper link: https://arxiv.org/abs/2002.10733
     """
 
     estimator_params = TensorFlowV2Classifier.estimator_params + ["sample_size", "scale", "alpha"]
@@ -118,7 +117,7 @@ class TensorFlowV2DeRandomizedSmoothing(DeRandomizedSmoothingMixin, TensorFlowV2
             self, x=x, batch_size=batch_size, training_mode=training_mode, **kwargs
         )
         if self.logits:
-            outputs = tf.nn.softmax(outputs)  # check if the classifier already has softmax
+            outputs = tf.nn.softmax(outputs)
         return np.asarray(outputs >= self.threshold).astype(int)
 
     def _fit_classifier(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
@@ -145,7 +144,6 @@ class TensorFlowV2DeRandomizedSmoothing(DeRandomizedSmoothingMixin, TensorFlowV2
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for
                TensorFlow and providing it takes no effect.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
 
         if self._train_step is None:  # pragma: no cover
             raise TypeError(
@@ -176,8 +174,6 @@ class TensorFlowV2DeRandomizedSmoothing(DeRandomizedSmoothingMixin, TensorFlowV2
 
         :param x: Input samples.
         :param batch_size: Batch size.
-        :param is_abstain: True if function will abstain from prediction and return 0s. Default: True
-        :type is_abstain: `boolean`
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
         return DeRandomizedSmoothingMixin.predict(self, x, batch_size=batch_size, training_mode=False, **kwargs)

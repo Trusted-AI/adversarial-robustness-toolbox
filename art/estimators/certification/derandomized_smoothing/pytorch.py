@@ -38,7 +38,6 @@ from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
-    import torch
 
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor import Preprocessor
@@ -48,6 +47,13 @@ logger = logging.getLogger(__name__)
 
 
 class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier):
+    """
+    Implementation of (De)Randomized Smoothing applied to classifier predictions as introduced
+    in Levine et al. (2020).
+
+    | Paper link: https://arxiv.org/abs/2002.10733
+    """
+
     estimator_params = PyTorchClassifier.estimator_params + ["ablation_type", "ablation_size"]
 
     def __init__(
@@ -162,7 +168,6 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
         """
-        import torch  # lgtm [py/repeated-import]
 
         # Set model mode
         self._model.train(mode=training_mode)
