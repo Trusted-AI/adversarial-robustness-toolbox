@@ -96,6 +96,7 @@ def test_worst_case_multiple_targeted_fpr(art_warning):
         art_warning(e)
 
 
+@pytest.mark.framework_agnostic
 def test_worst_case_score_per_class(art_warning):
     try:
 
