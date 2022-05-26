@@ -27,6 +27,7 @@ from tests.utils import ARTTestException
 logger = logging.getLogger(__name__)
 
 
+@pytest.mark.framework_agnostic
 def test_worst_case_accuracy(art_warning):
     try:
         tpr = 1.0
