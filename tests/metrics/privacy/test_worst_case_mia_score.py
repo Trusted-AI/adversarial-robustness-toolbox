@@ -61,6 +61,7 @@ def test_worst_case_targeted_fpr_1(art_warning):
         art_warning(e)
 
 
+@pytest.mark.framework_agnostic
 def test_worst_case_targeted_fpr_2(art_warning):
     try:
         tpr = 0.75
