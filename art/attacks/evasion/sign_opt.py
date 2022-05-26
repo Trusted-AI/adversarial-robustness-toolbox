@@ -44,11 +44,12 @@ hard-label adversarial attack.
 | Paper link: https://arxiv.org/pdf/1909.10773.pdf
 """
 
+from ctypes import Union
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import Any, Optional, TYPE_CHECKING
 import time
 import numpy as np
-from numpy import linalg as LA
+from numpy import integer, linalg as LA
 from tqdm.auto import tqdm
 
 from art.attacks.attack import EvasionAttack
@@ -133,12 +134,13 @@ class SignOPTAttack(EvasionAttack):
         self.eval_perform = eval_perform
         if eval_perform:
             self.logs = np.zeros(100)
-        self.clip_min = None
-        self.clip_max = None
+        # self.clip_min: Union[float]
+        # self.clip_max: Union[float]
         if self.estimator.clip_values is not None:
             self.clip_min, self.clip_max = self.estimator.clip_values
             self.enable_clipped = True
         else:
+            # self.clip_min, self.clip_max = 0.0, 1.0
             self.enable_clipped = False
         self._check_params()
 
@@ -311,7 +313,7 @@ class SignOPTAttack(EvasionAttack):
     # temp method if ART has a similar method
     # x0: dimension is [1, 28, 28]
     # return predicted label
-    def _predict_label(self, x_0) -> bool:
+    def _predict_label(self, x_0) -> integer:
         if self.enable_clipped:
             x_0 = np.clip(x_0, self.clip_min, self.clip_max)
         pred = self.estimator.predict(np.expand_dims(x_0, axis=0), batch_size=self.batch_size)
@@ -363,7 +365,7 @@ class SignOPTAttack(EvasionAttack):
         best_theta, g_theta = None, float("inf")
         if self.verbose:
             print(f"Searching for the initial direction on {num_directions} random directions: ")
-        if self.targeted:
+        if self.targeted and x_init is not None:
             if self.verbose:
                 print(f"this is targeted attack, org_label={y_0}, target={target}")
             sample_count = 0
