@@ -19,9 +19,10 @@
 This module implements metric for inference attack worst case accuracy measurement.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
-from typing import Optional, List, Tuple, Union
 
 import logging
+from typing import Optional, List, Tuple, Union
+
 import numpy as np
 from sklearn.metrics import roc_curve
 
