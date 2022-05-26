@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements metric for inference attack worst case accuracy measurement.
+This module implements a metric for inference attack worst case accuracy measurement.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
