@@ -44,9 +44,8 @@ hard-label adversarial attack.
 | Paper link: https://arxiv.org/pdf/1909.10773.pdf
 """
 
-from ctypes import Union
 import logging
-from typing import Any, Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, Tuple
 import time
 import numpy as np
 from numpy import integer, linalg as LA
@@ -356,13 +355,13 @@ class SignOPTAttack(EvasionAttack):
         target: Optional[int] = None,  # for targeted attack
         x_init: Optional[np.ndarray] = None,  # for targeted attack
         distortion=None,
-    ) -> np.ndarray:
+    ) -> Tuple[np.ndarray, np.ndarray, bool]:
         query_count = 0
         ls_total = 0
 
         # init: Calculate a good starting point (direction)
         num_directions = self.num_trial
-        best_theta, g_theta = None, float("inf")
+        best_theta, g_theta = np.zeros((0, 0)), float("inf")
         if self.verbose:
             print(f"Searching for the initial direction on {num_directions} random directions: ")
         if self.targeted and x_init is not None:
@@ -410,7 +409,7 @@ class SignOPTAttack(EvasionAttack):
                 print("Couldn't find valid initial, failed")
             return (
                 x_0,
-                0,
+                np.zeros((0, 0)),
                 False,
             )  # , query_count, best_theta # test data, ?, ?, # of queries, best_theta(Gaussian L2 norm)
 
@@ -435,6 +434,7 @@ class SignOPTAttack(EvasionAttack):
             ls_count = 0
             min_theta = x_g  # next theta
             min_g2 = g_g  # current g_theta
+            new_theta = np.zeros((0, 0))
             for _ in range(15):
                 # Algorithm 1: Sign-OPT attack
                 #     C:Update θt+1 ← θt − ηgˆ;
@@ -500,9 +500,9 @@ class SignOPTAttack(EvasionAttack):
                     f"Succeed distortion {g_g} org_label {y_0} predict_lable {target} \
                     queries {query_count} Line Search queries {ls_total}"
                 )
-                target = self._predict_label(x_0 + g_g * x_g)
-                if target == y_0:
-                    print(f"WARNING: prediction on adv {target} == org label {y_0}")
+                target_pred = self._predict_label(x_0 + g_g * x_g)
+                if target_pred == y_0:
+                    print(f"WARNING: prediction on adv {target_pred} == org label {y_0}")
             # return self._clip_value(x_0 + g_g * x_g), g_g * x_g, True
         elif self.targeted and self._is_label(x_0 + g_g * x_g, target):
             succeed = True
@@ -518,7 +518,7 @@ class SignOPTAttack(EvasionAttack):
                 print(f"Failed: distortion {g_g}")
         return self._clip_value(x_0 + g_g * x_g), g_g * x_g, succeed
 
-    def _clip_value(self, x_0):
+    def _clip_value(self, x_0) -> np.ndarray:
         if self.enable_clipped:
             x_0 = np.clip(x_0, self.clip_min, self.clip_max)
         return x_0
@@ -530,16 +530,16 @@ class SignOPTAttack(EvasionAttack):
         if self.epsilon <= 0:
             raise ValueError("The initial step size for the step towards the target must be positive.")
 
-        if not isinstance(self.num_trial, (int, np.int)) or self.num_trial < 0:
+        if not isinstance(self.num_trial, int) or self.num_trial < 0:
             raise ValueError("The number of trials must be a non-negative integer.")
 
-        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter < 0:
+        if not isinstance(self.max_iter, int) or self.max_iter < 0:
             raise ValueError("The number of iterations must be a non-negative integer.")
 
-        if not isinstance(self.query_limit, (int, np.int)) or self.query_limit <= 0:
+        if not isinstance(self.query_limit, int) or self.query_limit <= 0:
             raise ValueError("The number of query_limit must be a positive integer.")
 
-        if not isinstance(self.k, (int, np.int)) or self.k <= 0:
+        if not isinstance(self.k, int) or self.k <= 0:
             raise ValueError(
                 "The number of random directions (for estimating the gradient) must be a positive integer."
             )
