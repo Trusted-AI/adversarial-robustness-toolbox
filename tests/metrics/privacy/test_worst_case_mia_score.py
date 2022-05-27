@@ -20,6 +20,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 
 import numpy as np
+import pytest
 
 from art.metrics.privacy import get_roc_for_fpr, get_roc_for_multi_fprs
 from tests.utils import ARTTestException

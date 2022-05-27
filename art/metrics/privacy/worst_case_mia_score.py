@@ -27,28 +27,35 @@ import numpy as np
 from sklearn.metrics import roc_curve
 
 
-TPR = float
-FPR = float
-THR = float
+TPR = float  # True Positive Rate
+FPR = float  # False Positive Rate
+THR = float  # Threshold of the binary decision
 
 
-def _calculate_roc_for_fpr(y_true, y_proba, targeted_fpr):
-    """Get FPR, TPR and, THRESHOLD based on the targeted_fpr (such that FPR <= targeted_fpr)"""
+def _calculate_roc_for_fpr(y_true: np.ndarray, y_proba: np.ndarray, targeted_fpr: float) -> Tuple[FPR, TPR, THR]:
+    """
+    Get FPR, TPR and, THRESHOLD based on the targeted_fpr (such that FPR <= targeted_fpr)
+    :param y_true: True attack labels.
+    :param y_proba: Predicted attack probabilities.
+    :param targeted_fpr: the targeted False Positive Rate, ROC will be calculated based on this FPR.
+    :return: tuple that contains (Achieved FPR, TPR, Threshold).
+    """
+
     fpr, tpr, thr = roc_curve(y_true=y_true, y_score=y_proba)
     # take the highest fpr and an appropriated threshold that achieve at least FPR=fpr
     if np.isnan(fpr).all() or np.isnan(tpr).all():
-        logging.warning("TPR or FPR values are NaN")
-        return None, None, None
+        logging.error("TPR or FPR values are NaN")
+        raise ValueError("The targeted FPR can't be achieved.")
 
     targeted_fpr_idx = np.where(fpr <= targeted_fpr)[0][-1]
     return fpr[targeted_fpr_idx], tpr[targeted_fpr_idx], thr[targeted_fpr_idx]
 
 
-def get_roc_for_fpr(  # pylint: disable=C0103
+def get_roc_for_fpr(
     attack_proba: np.ndarray,
     attack_true: np.ndarray,
     target_model_labels: Optional[np.ndarray] = None,
-    targeted_fpr: Optional[float] = 0.001,
+    targeted_fpr: float = 0.001,
 ) -> Union[List[Tuple[FPR, TPR, THR]], List[Tuple[int, FPR, TPR, THR]]]:
     """
     Compute the attack TPR, THRESHOLD and achieved FPR based on the targeted FPR. This implementation supports only
@@ -75,12 +82,12 @@ def get_roc_for_fpr(  # pylint: disable=C0103
 
     if target_model_labels is not None:
         values, _ = np.unique(target_model_labels, return_counts=True)
-        for v in values:
-            idxs = np.where(target_model_labels == v)[0]
+        for value in values:
+            idxs = np.where(target_model_labels == value)[0]
             fpr, tpr, thr = _calculate_roc_for_fpr(
                 y_proba=attack_proba[idxs], y_true=attack_true[idxs], targeted_fpr=targeted_fpr
             )
-            results.append((v, fpr, tpr, thr))
+            results.append((value, fpr, tpr, thr))
         return results
 
     fpr, tpr, thr = _calculate_roc_for_fpr(y_proba=attack_proba, y_true=attack_true, targeted_fpr=targeted_fpr)
