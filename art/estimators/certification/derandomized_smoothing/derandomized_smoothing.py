@@ -122,9 +122,8 @@ class BaseAblator(ABC):
     @abstractmethod
     def certify(self, preds: np.ndarray, size_to_certify: int):
         """
-        Certify the predictions on ablated datapoints against a patch of size "size_to_certify".
-        :param preds:
-        :param size_to_certify:
+        :param preds: The cumulative predictions of the classifier over the ablation locations.
+        :param size_to_certify: The size of the patch to check against.
         """
         raise NotImplementedError
 
@@ -174,12 +173,13 @@ class ColumnAblator(BaseAblator):
 
     def certify(self, preds: np.ndarray, size_to_certify: int):
         """
-        :param preds:
-        :param size_to_certify:
+        :param preds: The cumulative predictions of the classifier over the ablation locations.
+        :param size_to_certify: The size of the patch to check against.
+
+        :return: Array of bools indicating if a point is certified against the given patch dimensions.
         """
-        # values, indices = torch.sort(torch.from_numpy(preds), dim=1, descending=True, stable=True)
         indices = np.argsort(-preds, axis=1, kind="stable")
-        values = -np.sort(-preds, axis=1, kind="stable")
+        values = np.take_along_axis(np.copy(preds), indices, axis=1)
 
         num_affected_classifications = size_to_certify + self.ablation_size - 1
 
@@ -217,7 +217,8 @@ class ColumnAblator(BaseAblator):
                            or list of ints of length equal to the number of samples to have a different
                            column retained per sample.
         :param row_pos: Unused.
-        :return: Batch ablated according to the locations in column_pos
+        :return: Batch ablated according to the locations in column_pos. Data is channel extended to indicate to a
+                 model if a position is ablated.
         """
         if not self.channels_first:
             x = np.transpose(x, (0, 3, 1, 2))
@@ -254,24 +255,26 @@ class BlockAblator(BaseAblator):
     ) -> np.ndarray:
         """
 
-        :param x:
-        :param column_pos:
-        :param row_pos:
-        :return:
+        :param x: input data
+        :param row_pos: Specifies the row index to retain the image block. Either an int to apply the same position to
+                        all images in a batch, or a list of ints to apply a different row position per datapoint.
+        :param column_pos: Specifies the column index to retain the image block. Either an int to apply the same
+                           position to all images in a batch, or a list of ints to apply a different
+                           column position per datapoint.
+        :return: Data ablated at all locations aside from the specified block. Data is channel extended to indicate to a
+                 model if a position is ablated.
         """
         return self.forward(x=x, row_pos=row_pos, column_pos=column_pos)
 
     def certify(self, preds: np.ndarray, size_to_certify: int):
         """
-        :param preds: The cumulative predictions of the classifer over the ablation locations.
+        :param preds: The cumulative predictions of the classifier over the ablation locations.
         :param size_to_certify: The size of the patch to check against.
 
         :return: Array of bools indicating if a point is certified against the given patch dimensions.
         """
-        # values, indices = torch.sort(preds, dim=1, descending=True, stable=True)
         indices = np.argsort(-preds, axis=1, kind="stable")
-        values = -np.sort(-preds, axis=1, kind="stable")
-
+        values = np.take_along_axis(np.copy(preds), indices, axis=1)
         margin = values[:, 0] - values[:, 1]
 
         num_affected_classifications = (size_to_certify + self.ablation_size - 1) ** 2
@@ -288,10 +291,14 @@ class BlockAblator(BaseAblator):
     ) -> np.ndarray:
         """
 
-        :param x:
-        :param row_pos:
-        :param column_pos:
-        :return:
+        :param x: input data
+        :param row_pos: Specifies the row index to retain the image block. Either an int to apply the same position to
+                        all images in a batch, or a list of ints to apply a different row position per datapoint.
+        :param column_pos: Specifies the column index to retain the image block. Either an int to apply the same
+                           position to all images in a batch, or a list of ints to apply a different
+                           column position per datapoint.
+        :return: Data ablated at all locations aside from the specified block. Data is channel extended to indicate to a
+                 model if a position is ablated.
         """
         if not self.channels_first:
             x = np.transpose(x, (0, 3, 1, 2))
@@ -316,10 +323,10 @@ class BlockAblator(BaseAblator):
     def ablate(self, x: np.ndarray, column_pos: int, row_pos: int) -> np.ndarray:
         """
 
-        :param x:
-        :param row_pos:
-        :param column_pos:
-        :return:
+        :param x: input data
+        :param row_pos: Specifies the row index where to retain the image block.
+        :param column_pos: Specifies the column index where to retain the image block.
+        :return: Data ablated at all locations aside from the specified block.
         """
 
         k = self.ablation_size

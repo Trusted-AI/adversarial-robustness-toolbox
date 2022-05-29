@@ -51,7 +51,12 @@ class TensorFlowV2DeRandomizedSmoothing(DeRandomizedSmoothingMixin, TensorFlowV2
     | Paper link: https://arxiv.org/abs/2002.10733
     """
 
-    estimator_params = TensorFlowV2Classifier.estimator_params + ["sample_size", "scale", "alpha"]
+    estimator_params = TensorFlowV2Classifier.estimator_params + [
+        "ablation_type",
+        "ablation_size",
+        "threshold",
+        "logits",
+    ]
 
     def __init__(
         self,
@@ -71,7 +76,7 @@ class TensorFlowV2DeRandomizedSmoothing(DeRandomizedSmoothingMixin, TensorFlowV2
         preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
     ):
         """
-        Create a randomized smoothing classifier.
+        Create a derandomized smoothing classifier.
 
         :param model: a python functions or callable class defining the model and providing it prediction as output.
         :type model: `function` or `callable class`
@@ -170,7 +175,7 @@ class TensorFlowV2DeRandomizedSmoothing(DeRandomizedSmoothingMixin, TensorFlowV2
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:  # type: ignore
         """
-        Perform prediction of the given classifier for a batch of inputs, taking an expectation over transformations.
+        Perform prediction of the given classifier for a batch of inputs
 
         :param x: Input samples.
         :param batch_size: Batch size.

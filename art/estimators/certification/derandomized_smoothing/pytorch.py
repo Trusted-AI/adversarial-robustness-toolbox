@@ -54,7 +54,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
     | Paper link: https://arxiv.org/abs/2002.10733
     """
 
-    estimator_params = PyTorchClassifier.estimator_params + ["ablation_type", "ablation_size"]
+    estimator_params = PyTorchClassifier.estimator_params + ["ablation_type", "ablation_size", "threshold", "logits"]
 
     def __init__(
         self,
@@ -75,7 +75,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
         device_type: str = "gpu",
     ):
         """
-        Create a randomized smoothing classifier.
+        Create a derandomized smoothing classifier.
 
         :param model: PyTorch model. The output of the model can be logits, probabilities or anything else. Logits
                output should be preferred where possible to ensure attack efficiency.
@@ -135,8 +135,6 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
 
         :param x: Input samples.
         :param batch_size: Batch size.
-        :param is_abstain: True if function will abstain from prediction and return 0s. Default: True
-        :type is_abstain: `boolean`
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
         return DeRandomizedSmoothingMixin.predict(self, x, batch_size=batch_size, training_mode=False, **kwargs)
