@@ -210,12 +210,10 @@ class SignOPTAttack(EvasionAttack):
                 self.logs[counter] = LA.norm(diff)
                 counter += 1
 
-        # todo: the compute_success() doesn't work for targeted case, dimension related error
         if self.targeted is False:
             logger.info(
                 "Success rate of Sign_OPT attack: %.2f%%",
-                # 100 * compute_success(self.estimator, x, y, x_adv, self.targeted, batch_size=self.batch_size),
-                100 * compute_success(self.estimator, x, targets, x_adv, self.targeted),
+                100 * compute_success(self.estimator, x, targets, x_adv, self.targeted, batch_size=self.batch_size),
             )
 
         return x_adv  # all images with untargeted adversarial
@@ -369,14 +367,13 @@ class SignOPTAttack(EvasionAttack):
                 print(f"this is targeted attack, org_label={y_0}, target={target}")
             sample_count = 0
             for i, x_i in enumerate(x_init):
-                # yi_pred = model.predict_label(xi.cuda())
                 # find a training data which label is target
                 yi_pred = self._predict_label(x_i)
                 query_count += 1
                 if yi_pred != target:
                     continue
 
-                theta = x_i - x_0  # compared to example, xi.cup().numpy() and x0.cpu().numpy() are removed.
+                theta = x_i - x_0  
                 initial_lbd = LA.norm(theta)
                 theta /= initial_lbd
                 lbd, count = self._fine_grained_binary_search(x_0, y_0, theta, initial_lbd, g_theta, target)
@@ -391,7 +388,6 @@ class SignOPTAttack(EvasionAttack):
                 query_count += 1
                 theta = np.random.randn(*x_0.shape).astype(np.float32)  # gaussian distortion
                 # register adv directions
-                # if self._is_label(x0 + theta, y0) == False:
                 if not self._is_label(x_0 + theta, y_0):
                     initial_lbd = LA.norm(theta)
                     theta /= initial_lbd  # l2 normalize: theta is normalized
@@ -403,7 +399,7 @@ class SignOPTAttack(EvasionAttack):
                         if self.verbose:
                             print(f"Found distortion {g_theta} with iteration/num_directions={i}/{num_directions}")
 
-        # fail if cannot find a adv direction within 200 Gaussian
+        # fail if cannot find a adv direction within `num_directions` Gaussian
         if g_theta == float("inf"):
             if self.verbose:
                 print("Couldn't find valid initial, failed")
@@ -411,7 +407,7 @@ class SignOPTAttack(EvasionAttack):
                 x_0,
                 np.zeros((0, 0)),
                 False,
-            )  # , query_count, best_theta # test data, ?, ?, # of queries, best_theta(Gaussian L2 norm)
+            )  
 
         query_limit = self.query_limit
         alpha = self.alpha
