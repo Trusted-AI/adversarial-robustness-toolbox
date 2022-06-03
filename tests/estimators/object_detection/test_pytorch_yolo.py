@@ -274,8 +274,8 @@ def test_errors(art_warning, get_pytorch_yolo):
 
         from art.estimators.object_detection.pytorch_yolo import PyTorchYolo
 
-        model_path = "/home/bbuesser/workspaces_external/PyTorch-YOLOv3/config/yolov3.cfg"
-        weights_path = "/home/bbuesser/workspaces_external/PyTorch-YOLOv3/weights/yolov3.weights"
+        model_path = "/tmp/PyTorch-YOLOv3/config/yolov3.cfg"
+        weights_path = "/tmp/PyTorch-YOLOv3/weights/yolov3.weights"
         model = models.load_model(model_path=model_path, weights_path=weights_path)
 
         with pytest.raises(ValueError):
