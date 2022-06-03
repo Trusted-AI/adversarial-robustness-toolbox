@@ -164,12 +164,15 @@ class TensorFlowV2DeRandomizedSmoothing(DeRandomizedSmoothingMixin, TensorFlowV2
         if self._reduce_labels:
             y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
-        train_ds = tf.data.Dataset.from_tensor_slices((x_preprocessed, y_preprocessed)).shuffle(10000).batch(batch_size)
-
         for epoch in tqdm(range(nb_epochs)):
-            for images, labels in train_ds:
-                images = self.ablator.forward(images)
+            num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
+            ind = np.arange(len(x_preprocessed))
+            for m in range(num_batch):
+                i_batch = np.copy(x_preprocessed[ind[m * batch_size: (m + 1) * batch_size]])
+                labels = y_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]
+                images = self.ablator.forward(i_batch)
                 self._train_step(self.model, images, labels)
+
             if scheduler is not None:
                 scheduler(epoch)
 
