@@ -20,7 +20,7 @@ RUN apt-get update \
      && rm -r /var/lib/apt/lists/*
 
 RUN pip install six setuptools tqdm
-RUN pip install numpy==1.22.4 scipy==1.8.1 scikit-learn==1.1.1 numba==0.55.1
+RUN pip install numpy==1.21.6 scipy==1.8.1 scikit-learn==1.1.1 numba==0.55.1
 RUN pip install torch==1.11.0
 RUN pip install tensorflow==2.9.1
 RUN pip install pytest-cov
