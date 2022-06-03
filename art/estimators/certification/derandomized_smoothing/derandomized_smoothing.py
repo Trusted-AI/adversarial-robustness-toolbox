@@ -66,10 +66,10 @@ class DeRandomizedSmoothingMixin(ABC):
         self.ablator: ABLATOR_TYPE
 
         if self.ablation_type in {"column", "row"}:
-            row_ablation_mode = self.ablation_type == 'row'
-            self.ablator = ColumnAblator(ablation_size=ablation_size,
-                                         channels_first=self._channels_first,
-                                         row_ablation_mode=row_ablation_mode)
+            row_ablation_mode = self.ablation_type == "row"
+            self.ablator = ColumnAblator(
+                ablation_size=ablation_size, channels_first=self._channels_first, row_ablation_mode=row_ablation_mode
+            )
         elif self.ablation_type == "block":
             self.ablator = BlockAblator(ablation_size=ablation_size, channels_first=self._channels_first)
         else:
@@ -132,6 +132,20 @@ class BaseAblator(ABC):
     """
 
     @abstractmethod
+    def __call__(
+        self, x: np.ndarray, column_pos: Optional[Union[int, list]] = None, row_pos: Optional[Union[int, list]] = None
+    ) -> np.ndarray:
+        """
+        Ablate the image x at location specified by "column_pos" for the case of column ablation or at the location
+        specified by "column_pos" and "row_pos" in the case of block ablation.
+
+        :param x: input image.
+        :param column_pos: column position to specify where to retain the image
+        :param row_pos: row position to specify where to retain the image. Not used for ablation type "column".
+        """
+        raise NotImplementedError
+
+    @abstractmethod
     def certify(self, preds: np.ndarray, size_to_certify: int):
         """
         Checks if based on the predictions supplied the classifications over the ablated datapoints result in a
@@ -186,7 +200,9 @@ class ColumnAblator(BaseAblator):
         self.channels_first = channels_first
         self.row_ablation_mode = row_ablation_mode
 
-    def __call__(self, x: np.ndarray, column_pos: Optional[Union[int, list]] = None) -> np.ndarray:
+    def __call__(
+        self, x: np.ndarray, column_pos: Optional[Union[int, list]] = None, row_pos: Optional[Union[int, list]] = None
+    ) -> np.ndarray:
         """
         Performs ablation on the input x. If no column_pos is specified a random location will be selected.
 
@@ -196,11 +212,12 @@ class ColumnAblator(BaseAblator):
                            column retained per sample. If not supplied a random location will be selected.
                            NB, if row_ablation_mode is true then this will be used to act on the rows through
                            transposing the image.
+        :param row_pos: Unused
         :return: ablated image keeping only a column.
         """
         return self.forward(x=x, column_pos=column_pos)
 
-    def certify(self, preds: np.ndarray, size_to_certify: int):
+    def certify(self, preds: np.ndarray, size_to_certify: int) -> np.ndarray:
         """
         Checks if based on the predictions supplied the classifications over the ablated datapoints result in a
         certified prediction against a patch attack of size size_to_certify.
@@ -265,6 +282,7 @@ class ColumnAblator(BaseAblator):
         :return: Batch ablated according to the locations in column_pos. Data is channel extended to indicate to a
                  model if a position is ablated.
         """
+
         if not self.channels_first:
             x = np.transpose(x, (0, 3, 1, 2))
 
@@ -303,23 +321,24 @@ class BlockAblator(BaseAblator):
         self.channels_first = channels_first
 
     def __call__(
-        self, x: np.ndarray, row_pos: Optional[Union[int, list]] = None, column_pos: Optional[Union[int, list]] = None
+        self, x: np.ndarray, column_pos: Optional[Union[int, list]] = None, row_pos: Optional[Union[int, list]] = None
     ) -> np.ndarray:
+
         """
         Performs ablation on the input x. If no row_pos/column_pos is specified a random location will be selected.
 
         :param x: input data
+        :param column_pos: Specifies the column index to retain the image block. Either an int to apply the same
+                   position to all images in a batch, or a list of ints to apply a different
+                   column position per datapoint.
         :param row_pos: Specifies the row index to retain the image block. Either an int to apply the same position to
                         all images in a batch, or a list of ints to apply a different row position per datapoint.
-        :param column_pos: Specifies the column index to retain the image block. Either an int to apply the same
-                           position to all images in a batch, or a list of ints to apply a different
-                           column position per datapoint.
         :return: Data ablated at all locations aside from the specified block. Data is channel extended to indicate to a
                  model if a position is ablated.
         """
         return self.forward(x=x, row_pos=row_pos, column_pos=column_pos)
 
-    def certify(self, preds: np.ndarray, size_to_certify: int):
+    def certify(self, preds: np.ndarray, size_to_certify: int) -> np.ndarray:
         """
         Checks if based on the predictions supplied the classifications over the ablated datapoints result in a
         certified prediction against a patch attack of size size_to_certify.
