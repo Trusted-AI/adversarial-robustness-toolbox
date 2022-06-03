@@ -28,8 +28,8 @@ from tests.utils import ARTTestException
 @pytest.fixture()
 def fix_get_mnist_data():
     """
-    Get the first 100 samples of the mnist test set with channels first format
-    :return: First 100 sample/label pairs of the MNIST test dataset.
+    Get the first 128 samples of the mnist test set with channels first format
+    :return: First 128 sample/label pairs of the MNIST test dataset.
     """
     nb_test = 128
 
@@ -45,21 +45,22 @@ def fix_get_mnist_data():
 @pytest.fixture()
 def fix_get_cifar10_data():
     """
-    Get the first 10 samples of the cifar10 test set
-    :return: First 10 sample/label pairs of the cifar10 test dataset.
+    Get the first 128 samples of the cifar10 test set
+    :return: First 128 sample/label pairs of the cifar10 test dataset.
     """
-    nb_test = 10
+    nb_test = 128
 
     (_, _), (x_test, y_test), _, _ = load_dataset("cifar10")
     y_test = np.argmax(y_test, axis=1)
     x_test, y_test = x_test[:nb_test], y_test[:nb_test]
-    return x_test, y_test
+    x_test = np.transpose(x_test, (0, 3, 1, 2))  # return in channels first format
+    return x_test.astype(np.float32), y_test
 
 
 @pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
-def test_pytorch_training(art_warning, fix_get_mnist_data):
+def test_pytorch_training(art_warning, fix_get_mnist_data, fix_get_cifar10_data):
     """
-    Check that the training loop does not result in errors
+    Check that the training loop for pytorch does not result in errors
     """
     import torch
     import torch.optim as optim
@@ -93,30 +94,64 @@ def test_pytorch_training(art_warning, fix_get_mnist_data):
             x = self.relu(self.fc1(x))
             return self.fc2(x)
 
-    ptc = SmallMNISTModel().to(device)
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(ptc.parameters(), lr=0.01, momentum=0.9)
-    try:
-        for ablation_type in ['column', 'block']:
-            classifier = PyTorchDeRandomizedSmoothing(model=ptc,
-                                                      clip_values=(0, 1),
-                                                      loss=criterion,
-                                                      optimizer=optimizer,
-                                                      input_shape=(1, 28, 28),
-                                                      nb_classes=10,
-                                                      ablation_type=ablation_type,
-                                                      ablation_size=5,
-                                                      threshold=0.3,
-                                                      logits=True)
-            classifier.fit(x=fix_get_mnist_data[0], y=fix_get_mnist_data[1], nb_epochs=1)
-    except ARTTestException as e:
-        art_warning(e)
+    class SmallCIFARModel(nn.Module):
+        def __init__(self):
+            super(SmallCIFARModel, self).__init__()
+
+            self.conv1 = nn.Conv2d(in_channels=6,
+                                   out_channels=32,
+                                   kernel_size=(4, 4),
+                                   dilation=(1, 1),
+                                   stride=(2, 2))
+            self.max_pool = nn.MaxPool2d(2, stride=2)
+            self.fc1 = nn.Linear(in_features=1568,
+                                 out_features=100)
+
+            self.fc2 = nn.Linear(in_features=100,
+                                 out_features=10)
+
+            self.relu = nn.ReLU()
+
+        def forward(self, x):
+            if isinstance(x, np.ndarray):
+                x = torch.from_numpy(x).to(device)
+            x = self.relu(self.conv1(x))
+            x = self.max_pool(x)
+            x = torch.flatten(x, 1)
+            x = self.relu(self.fc1(x))
+            return self.fc2(x)
+
+    for dataset, dataset_name in zip([fix_get_mnist_data, fix_get_cifar10_data], ['mnist', 'cifar']):
+        if dataset_name == 'mnist':
+            ptc = SmallMNISTModel().to(device)
+            input_shape = (2, 28, 28)
+        else:
+            ptc = SmallCIFARModel().to(device)
+            input_shape = (6, 32, 32)
+
+        criterion = nn.CrossEntropyLoss()
+        optimizer = optim.SGD(ptc.parameters(), lr=0.01, momentum=0.9)
+        try:
+            for ablation_type in ['column', 'row', 'block']:
+                classifier = PyTorchDeRandomizedSmoothing(model=ptc,
+                                                          clip_values=(0, 1),
+                                                          loss=criterion,
+                                                          optimizer=optimizer,
+                                                          input_shape=input_shape,
+                                                          nb_classes=10,
+                                                          ablation_type=ablation_type,
+                                                          ablation_size=5,
+                                                          threshold=0.3,
+                                                          logits=True)
+                classifier.fit(x=dataset[0], y=dataset[1], nb_epochs=1)
+        except ARTTestException as e:
+            art_warning(e)
 
 
 @pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "pytorch")
-def test_tf2_training(art_warning, fix_get_mnist_data):
+def test_tf2_training(art_warning, fix_get_mnist_data, fix_get_cifar10_data):
     """
-    Check that the training loop does not result in errors
+    Check that the training loop for tensorflow2 does not result in errors
     """
     import tensorflow as tf
 
@@ -131,8 +166,6 @@ def test_tf2_training(art_warning, fix_get_mnist_data):
         x = tf.keras.layers.Dense(10)(x)
         return tf.keras.Model(inputs=img_inputs, outputs=x)
 
-    net = build_model(input_shape=(28, 28, 2))
-
     optimizer = tf.keras.optimizers.SGD(learning_rate=0.01)
     loss_object = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
 
@@ -143,22 +176,30 @@ def test_tf2_training(art_warning, fix_get_mnist_data):
         gradients = tape.gradient(loss, model.trainable_variables)
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
 
-    try:
-        for ablation_type in ['column', 'block']:
-            ablation_size = 5
-            classifier = TensorFlowV2DeRandomizedSmoothing(model=net,
-                                                           clip_values=(0, 1),
-                                                           loss_object=loss_object,
-                                                           train_step=train_step,
-                                                           input_shape=(28, 28, 2),
-                                                           nb_classes=10,
-                                                           ablation_type=ablation_type,
-                                                           ablation_size=ablation_size,
-                                                           threshold=0.3,
-                                                           logits=True)
-            classifier.fit(x=fix_get_mnist_data[0], y=fix_get_mnist_data[1], nb_epochs=1)
-    except ARTTestException as e:
-        art_warning(e)
+    for dataset, dataset_name in zip([fix_get_mnist_data, fix_get_cifar10_data], ['mnist', 'cifar']):
+        if dataset_name == 'mnist':
+            input_shape = (28, 28, 2)
+        else:
+            input_shape = (32, 32, 6)
+        net = build_model(input_shape=input_shape)
+
+        try:
+            for ablation_type in ['column', 'row', 'block']:
+                ablation_size = 5
+                classifier = TensorFlowV2DeRandomizedSmoothing(model=net,
+                                                               clip_values=(0, 1),
+                                                               loss_object=loss_object,
+                                                               train_step=train_step,
+                                                               input_shape=input_shape,
+                                                               nb_classes=10,
+                                                               ablation_type=ablation_type,
+                                                               ablation_size=ablation_size,
+                                                               threshold=0.3,
+                                                               logits=True)
+                x = np.transpose(np.copy(dataset[0]), (0, 2, 3, 1))  # put channels last
+                classifier.fit(x=x, y=fix_get_mnist_data[1], nb_epochs=1)
+        except ARTTestException as e:
+            art_warning(e)
 
 
 @pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
@@ -245,7 +286,6 @@ def test_pytorch_mnist_certification(art_warning, fix_get_mnist_data):
                 assert np.sum(num_certified) == 52
             else:
                 assert np.sum(num_certified) == 22
-
     except ARTTestException as e:
         art_warning(e)
 
