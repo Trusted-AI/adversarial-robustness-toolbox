@@ -54,12 +54,24 @@ def translate_predictions_xcycwh_to_x1y1x2y2(y_pred_xcycwh: "torch.Tensor") -> L
             "boxes": torch.permute(
                 torch.vstack(
                     [
-                        (y_pred_xcycwh[i, :, 0] - y_pred_xcycwh[i, :, 2] / 2).int(),
-                        (y_pred_xcycwh[i, :, 1] - y_pred_xcycwh[i, :, 3] / 2).int(),
-                        (y_pred_xcycwh[i, :, 0] + y_pred_xcycwh[i, :, 2] / 2).int(),
-                        (y_pred_xcycwh[i, :, 1] + y_pred_xcycwh[i, :, 3] / 2).int(),
+                        torch.maximum(
+                            (y_pred_xcycwh[i, :, 0] - y_pred_xcycwh[i, :, 2] / 2),
+                            torch.tensor(0).to(y_pred_xcycwh.device),
+                        ),
+                        torch.maximum(
+                            (y_pred_xcycwh[i, :, 1] - y_pred_xcycwh[i, :, 3] / 2),
+                            torch.tensor(0).to(y_pred_xcycwh.device),
+                        ),
+                        torch.minimum(
+                            (y_pred_xcycwh[i, :, 0] + y_pred_xcycwh[i, :, 2] / 2),
+                            torch.tensor(416).to(y_pred_xcycwh.device),
+                        ),
+                        torch.minimum(
+                            (y_pred_xcycwh[i, :, 1] + y_pred_xcycwh[i, :, 3] / 2),
+                            torch.tensor(416).to(y_pred_xcycwh.device),
+                        ),
                     ]
-                ).int(),
+                ),
                 (1, 0),
             ),
             "labels": torch.argmax(y_pred_xcycwh[i, :, 5:], dim=1, keepdim=False),
