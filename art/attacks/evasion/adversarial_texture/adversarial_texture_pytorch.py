@@ -170,7 +170,9 @@ class AdversarialTexturePyTorch(EvasionAttack):
                 y=None,
             )
 
-        self._patch.grad = torch.zeros(self._patch.grad.shape, device=self._patch.grad.device, dtype=self._patch.grad.dtype)
+        self._patch.grad = torch.zeros(
+            self._patch.grad.shape, device=self._patch.grad.device, dtype=self._patch.grad.dtype
+        )
 
         with torch.no_grad():
             self._patch[:] = torch.clamp(
