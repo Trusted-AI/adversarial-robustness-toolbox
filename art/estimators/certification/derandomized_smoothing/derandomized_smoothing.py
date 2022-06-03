@@ -51,7 +51,7 @@ class DeRandomizedSmoothingMixin(ABC):
     ) -> None:
         """
         Create a derandomized smoothing wrapper.
-        :param ablation_type: The type of ablations to perform. Currently must be either "column" or "block"
+        :param ablation_type: The type of ablations to perform. Currently must be either "column", "row", or "block"
         :param ablation_size: Size of the retained image patch.
                               An int specifying the width of the column for column ablation
                               Or an int specifying the height/width of a square for block ablation
@@ -64,8 +64,11 @@ class DeRandomizedSmoothingMixin(ABC):
         self._channels_first = channels_first
         self.ablator: ABLATOR_TYPE
 
-        if self.ablation_type == "column":
-            self.ablator = ColumnAblator(ablation_size=ablation_size, channels_first=self._channels_first)
+        if self.ablation_type in {"column", "row"}:
+            row_ablation_mode = self.ablation_type == 'row'
+            self.ablator = ColumnAblator(ablation_size=ablation_size,
+                                         channels_first=self._channels_first,
+                                         row_ablation_mode=row_ablation_mode)
         elif self.ablation_type == "block":
             self.ablator = BlockAblator(ablation_size=ablation_size, channels_first=self._channels_first)
         else:
@@ -156,17 +159,24 @@ class ColumnAblator(BaseAblator):
     Implements the functionality for albating the image, and retaining only a column
     """
 
-    def __init__(self, ablation_size, channels_first):
+    def __init__(self, ablation_size: int, channels_first: bool, row_ablation_mode: bool = False):
+        """
+        :param ablation_size:
+        :param channels_first:
+        :param row_ablation_mode: if True then the ablator will function by retaining rows rather than columns.
+        """
         super().__init__()
         self.ablation_size = ablation_size
         self.channels_first = channels_first
+        self.row_ablation_mode = row_ablation_mode
 
-    def __call__(self, x: np.ndarray, column_pos: int) -> np.ndarray:
+    def __call__(self, x: np.ndarray, column_pos: Optional[Union[int, list]] = None) -> np.ndarray:
         """
         :param x: input image.
         :param column_pos: int indicating the start column to retain across all samples in the batch
                            or list of ints of len equal to the number of samples to have a different
-                           column retained per sample.
+                           column retained per sample. NB, if row_ablation_mode is true then this will
+                           be used to act on the rows through transposing the image.
         :return: ablated image keeping only a column.
         """
         return self.forward(x=x, column_pos=column_pos)
@@ -192,11 +202,17 @@ class ColumnAblator(BaseAblator):
     def ablate(self, x: np.ndarray, column_pos: int, row_pos=None) -> np.ndarray:
         """
         Ablates the image only retaining a column starting at "pos" of width "self.ablation_size"
+
         :param x: input image.
-        :param column_pos: location to start the retained column.
+        :param column_pos: location to start the retained column. NB, if row_ablation_mode is true then this will
+                           be used to act on the rows through transposing the image.
         :param row_pos: Unused.
         :return: ablated image keeping only a column.
         """
+
+        if self.row_ablation_mode:
+            x = np.transpose(x, (0, 1, 3, 2))
+
         k = self.ablation_size
         num_of_image_columns = x.shape[-1]
 
@@ -206,6 +222,10 @@ class ColumnAblator(BaseAblator):
         else:
             x[:, :, :, :column_pos] = 0.0
             x[:, :, :, column_pos + k :] = 0.0
+
+        if self.row_ablation_mode:
+            x = np.transpose(x, (0, 1, 3, 2))
+
         return x
 
     def forward(
@@ -215,7 +235,8 @@ class ColumnAblator(BaseAblator):
         :param x: input batch.
         :param column_pos: int indicating the start column to retain across all samples in the batch
                            or list of ints of length equal to the number of samples to have a different
-                           column retained per sample.
+                           column retained per sample. NB, if row_ablation_mode is true then this will
+                           be used to act on the rows through transposing the image.
         :param row_pos: Unused.
         :return: Batch ablated according to the locations in column_pos. Data is channel extended to indicate to a
                  model if a position is ablated.
@@ -245,7 +266,7 @@ class BlockAblator(BaseAblator):
     Implements the functionality for albating the image, and retaining only a block
     """
 
-    def __init__(self, ablation_size, channels_first):
+    def __init__(self, ablation_size: int, channels_first: bool):
         super().__init__()
         self.ablation_size = ablation_size
         self.channels_first = channels_first
