@@ -197,7 +197,7 @@ def test_tf2_training(art_warning, fix_get_mnist_data, fix_get_cifar10_data):
                                                                threshold=0.3,
                                                                logits=True)
                 x = np.transpose(np.copy(dataset[0]), (0, 2, 3, 1))  # put channels last
-                classifier.fit(x=x, y=fix_get_mnist_data[1], nb_epochs=1)
+                classifier.fit(x=x, y=dataset[1], nb_epochs=1)
         except ARTTestException as e:
             art_warning(e)
 

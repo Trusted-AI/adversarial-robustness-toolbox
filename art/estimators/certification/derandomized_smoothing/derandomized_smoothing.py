@@ -56,7 +56,9 @@ class DeRandomizedSmoothingMixin(ABC):
         :param ablation_size: Size of the retained image patch.
                               An int specifying the width of the column for column ablation
                               Or an int specifying the height/width of a square for block ablation
-
+        :param threshold: The minimum threshold to count a prediction.
+        :param logits: if the model returns logits or normalized probabilities
+        :param channels_first: If the channels are first or last.
         """
         super().__init__(*args, **kwargs)  # type: ignore
         self.ablation_type = ablation_type
@@ -94,7 +96,6 @@ class DeRandomizedSmoothingMixin(ABC):
         :param batch_size: the batch size for the prediction
         :return: cumulative predictions after sweeping over all the ablation configurations.
         """
-
         if self._channels_first:
             columns_in_data = x.shape[-1]
             rows_in_data = x.shape[-2]
@@ -247,7 +248,6 @@ class ColumnAblator(BaseAblator):
         :param row_pos: Unused.
         :return: ablated image keeping only a column.
         """
-
         if self.row_ablation_mode:
             x = np.transpose(x, (0, 1, 3, 2))
 
@@ -282,7 +282,6 @@ class ColumnAblator(BaseAblator):
         :return: Batch ablated according to the locations in column_pos. Data is channel extended to indicate to a
                  model if a position is ablated.
         """
-
         if not self.channels_first:
             x = np.transpose(x, (0, 3, 1, 2))
 
@@ -323,7 +322,6 @@ class BlockAblator(BaseAblator):
     def __call__(
         self, x: np.ndarray, column_pos: Optional[Union[int, list]] = None, row_pos: Optional[Union[int, list]] = None
     ) -> np.ndarray:
-
         """
         Performs ablation on the input x. If no row_pos/column_pos is specified a random location will be selected.
 
@@ -404,7 +402,6 @@ class BlockAblator(BaseAblator):
         :param column_pos: Specifies the column index where to retain the image block.
         :return: Data ablated at all locations aside from the specified block.
         """
-
         k = self.ablation_size
         num_of_image_columns = x.shape[3]
         num_of_image_rows = x.shape[2]

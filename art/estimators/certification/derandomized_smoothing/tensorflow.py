@@ -85,6 +85,7 @@ class TensorFlowV2DeRandomizedSmoothing(DeRandomizedSmoothingMixin, TensorFlowV2
         :param ablation_size: The size of the data portion to retain after ablation. Will be a column of size N for
                               "column" ablation type or a NxN square for ablation of type "block"
         :param threshold: The minimum threshold to count a prediction.
+        :param logits: if the model returns logits or normalized probabilities
         :param input_shape: Shape of one input for the classifier, e.g. for MNIST input_shape=(28, 28, 1).
         :param loss_object: The loss function for which to compute gradients. This parameter is applied for training
             the model and computing gradients of the loss w.r.t. the input.
@@ -149,7 +150,6 @@ class TensorFlowV2DeRandomizedSmoothing(DeRandomizedSmoothingMixin, TensorFlowV2
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for
                TensorFlow and providing it takes no effect.
         """
-
         if self._train_step is None:  # pragma: no cover
             raise TypeError(
                 "The training function `train_step` is required for fitting a model but it has not been " "defined."
