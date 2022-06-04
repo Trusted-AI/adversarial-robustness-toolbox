@@ -16,6 +16,7 @@ RUN apt-get update \
         libavcodec-extra \
         ffmpeg \
         curl \
+        wget \
      && apt-get clean all \
      && rm -r /var/lib/apt/lists/*
 
@@ -28,5 +29,5 @@ RUN pip install pytest-cov
 # Install necessary libraries for Yolo v3
 RUN pip install pytorchyolo==1.6.2
 
-RUN git clone https://github.com/eriklindernoren/PyTorch-YOLOv3.git
+RUN cd /tmp/ && git clone https://github.com/eriklindernoren/PyTorch-YOLOv3.git
 RUN cd PyTorch-YOLOv3/weights && ./download_weights.sh
