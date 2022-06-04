@@ -169,7 +169,7 @@ class TensorFlowV2DeRandomizedSmoothing(DeRandomizedSmoothingMixin, TensorFlowV2
             num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
             ind = np.arange(len(x_preprocessed))
             for m in range(num_batch):
-                i_batch = np.copy(x_preprocessed[ind[m * batch_size: (m + 1) * batch_size]])
+                i_batch = np.copy(x_preprocessed[ind[m * batch_size : (m + 1) * batch_size]])
                 labels = y_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]
                 images = self.ablator.forward(i_batch)
                 self._train_step(self.model, images, labels)

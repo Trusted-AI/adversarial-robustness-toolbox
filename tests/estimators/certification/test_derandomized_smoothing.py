@@ -15,13 +15,16 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
+import os
 import pytest
 
 import numpy as np
 
 from art.utils import load_dataset
-from art.estimators.certification.derandomized_smoothing import PyTorchDeRandomizedSmoothing, TensorFlowV2DeRandomizedSmoothing
+from art.estimators.certification.derandomized_smoothing import (
+    PyTorchDeRandomizedSmoothing,
+    TensorFlowV2DeRandomizedSmoothing,
+)
 from tests.utils import ARTTestException
 
 
@@ -65,23 +68,18 @@ def test_pytorch_training(art_warning, fix_get_mnist_data, fix_get_cifar10_data)
     import torch
     import torch.optim as optim
     import torch.nn as nn
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+    device = "cuda" if torch.cuda.is_available() else "cpu"
 
     class SmallMNISTModel(nn.Module):
         def __init__(self):
             super(SmallMNISTModel, self).__init__()
 
-            self.conv1 = nn.Conv2d(in_channels=2,
-                                   out_channels=32,
-                                   kernel_size=(4, 4),
-                                   dilation=(1, 1),
-                                   stride=(2, 2))
+            self.conv1 = nn.Conv2d(in_channels=2, out_channels=32, kernel_size=(4, 4), dilation=(1, 1), stride=(2, 2))
             self.max_pool = nn.MaxPool2d(2, stride=2)
-            self.fc1 = nn.Linear(in_features=1152,
-                                 out_features=100)
+            self.fc1 = nn.Linear(in_features=1152, out_features=100)
 
-            self.fc2 = nn.Linear(in_features=100,
-                                 out_features=10)
+            self.fc2 = nn.Linear(in_features=100, out_features=10)
 
             self.relu = nn.ReLU()
 
@@ -98,17 +96,11 @@ def test_pytorch_training(art_warning, fix_get_mnist_data, fix_get_cifar10_data)
         def __init__(self):
             super(SmallCIFARModel, self).__init__()
 
-            self.conv1 = nn.Conv2d(in_channels=6,
-                                   out_channels=32,
-                                   kernel_size=(4, 4),
-                                   dilation=(1, 1),
-                                   stride=(2, 2))
+            self.conv1 = nn.Conv2d(in_channels=6, out_channels=32, kernel_size=(4, 4), dilation=(1, 1), stride=(2, 2))
             self.max_pool = nn.MaxPool2d(2, stride=2)
-            self.fc1 = nn.Linear(in_features=1568,
-                                 out_features=100)
+            self.fc1 = nn.Linear(in_features=1568, out_features=100)
 
-            self.fc2 = nn.Linear(in_features=100,
-                                 out_features=10)
+            self.fc2 = nn.Linear(in_features=100, out_features=10)
 
             self.relu = nn.ReLU()
 
@@ -121,8 +113,8 @@ def test_pytorch_training(art_warning, fix_get_mnist_data, fix_get_cifar10_data)
             x = self.relu(self.fc1(x))
             return self.fc2(x)
 
-    for dataset, dataset_name in zip([fix_get_mnist_data, fix_get_cifar10_data], ['mnist', 'cifar']):
-        if dataset_name == 'mnist':
+    for dataset, dataset_name in zip([fix_get_mnist_data, fix_get_cifar10_data], ["mnist", "cifar"]):
+        if dataset_name == "mnist":
             ptc = SmallMNISTModel().to(device)
             input_shape = (2, 28, 28)
         else:
@@ -132,17 +124,19 @@ def test_pytorch_training(art_warning, fix_get_mnist_data, fix_get_cifar10_data)
         criterion = nn.CrossEntropyLoss()
         optimizer = optim.SGD(ptc.parameters(), lr=0.01, momentum=0.9)
         try:
-            for ablation_type in ['column', 'row', 'block']:
-                classifier = PyTorchDeRandomizedSmoothing(model=ptc,
-                                                          clip_values=(0, 1),
-                                                          loss=criterion,
-                                                          optimizer=optimizer,
-                                                          input_shape=input_shape,
-                                                          nb_classes=10,
-                                                          ablation_type=ablation_type,
-                                                          ablation_size=5,
-                                                          threshold=0.3,
-                                                          logits=True)
+            for ablation_type in ["column", "row", "block"]:
+                classifier = PyTorchDeRandomizedSmoothing(
+                    model=ptc,
+                    clip_values=(0, 1),
+                    loss=criterion,
+                    optimizer=optimizer,
+                    input_shape=input_shape,
+                    nb_classes=10,
+                    ablation_type=ablation_type,
+                    ablation_size=5,
+                    threshold=0.3,
+                    logits=True,
+                )
                 classifier.fit(x=dataset[0], y=dataset[1], nb_epochs=1)
         except ARTTestException as e:
             art_warning(e)
@@ -176,26 +170,28 @@ def test_tf2_training(art_warning, fix_get_mnist_data, fix_get_cifar10_data):
         gradients = tape.gradient(loss, model.trainable_variables)
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
 
-    for dataset, dataset_name in zip([fix_get_mnist_data, fix_get_cifar10_data], ['mnist', 'cifar']):
-        if dataset_name == 'mnist':
+    for dataset, dataset_name in zip([fix_get_mnist_data, fix_get_cifar10_data], ["mnist", "cifar"]):
+        if dataset_name == "mnist":
             input_shape = (28, 28, 2)
         else:
             input_shape = (32, 32, 6)
         net = build_model(input_shape=input_shape)
 
         try:
-            for ablation_type in ['column', 'row', 'block']:
+            for ablation_type in ["column", "row", "block"]:
                 ablation_size = 5
-                classifier = TensorFlowV2DeRandomizedSmoothing(model=net,
-                                                               clip_values=(0, 1),
-                                                               loss_object=loss_object,
-                                                               train_step=train_step,
-                                                               input_shape=input_shape,
-                                                               nb_classes=10,
-                                                               ablation_type=ablation_type,
-                                                               ablation_size=ablation_size,
-                                                               threshold=0.3,
-                                                               logits=True)
+                classifier = TensorFlowV2DeRandomizedSmoothing(
+                    model=net,
+                    clip_values=(0, 1),
+                    loss_object=loss_object,
+                    train_step=train_step,
+                    input_shape=input_shape,
+                    nb_classes=10,
+                    ablation_type=ablation_type,
+                    ablation_size=ablation_size,
+                    threshold=0.3,
+                    logits=True,
+                )
                 x = np.transpose(np.copy(dataset[0]), (0, 2, 3, 1))  # put channels last
                 classifier.fit(x=x, y=dataset[1], nb_epochs=1)
         except ARTTestException as e:
@@ -210,23 +206,18 @@ def test_pytorch_mnist_certification(art_warning, fix_get_mnist_data):
     import torch
     import torch.optim as optim
     import torch.nn as nn
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+    device = "cuda" if torch.cuda.is_available() else "cpu"
 
     class SmallMNISTModel(nn.Module):
         def __init__(self):
             super(SmallMNISTModel, self).__init__()
 
-            self.conv1 = nn.Conv2d(in_channels=2,
-                                   out_channels=32,
-                                   kernel_size=(4, 4),
-                                   dilation=(1, 1),
-                                   stride=(2, 2))
+            self.conv1 = nn.Conv2d(in_channels=2, out_channels=32, kernel_size=(4, 4), dilation=(1, 1), stride=(2, 2))
             self.max_pool = nn.MaxPool2d(2, stride=2)
-            self.fc1 = nn.Linear(in_features=1152,
-                                 out_features=100)
+            self.fc1 = nn.Linear(in_features=1152, out_features=100)
 
-            self.fc2 = nn.Linear(in_features=100,
-                                 out_features=10)
+            self.fc2 = nn.Linear(in_features=100, out_features=10)
 
             self.relu = nn.ReLU()
 
@@ -240,15 +231,18 @@ def test_pytorch_mnist_certification(art_warning, fix_get_mnist_data):
             return self.fc2(x)
 
         def load_weights(self):
-            fpath = '../../../utils/resources/models/certification/derandomized/'
-            self.conv1.weight = nn.Parameter(torch.from_numpy(np.load(fpath + 'W_CONV2D1_MNIST.npy')).float())
-            self.conv1.bias = nn.Parameter(torch.from_numpy(np.load(fpath + 'B_CONV2D1_MNIST.npy')).float())
 
-            self.fc1.weight = nn.Parameter(torch.from_numpy(np.load(fpath + 'W_DENSE1_MNIST.npy')).float())
-            self.fc1.bias = nn.Parameter(torch.from_numpy(np.load(fpath + 'B_DENSE1_MNIST.npy')).float())
+            fpath = os.path.join(
+                os.path.dirname(os.path.dirname(__file__)), "../../utils/resources/models/certification/derandomized/"
+            )
+            self.conv1.weight = nn.Parameter(torch.from_numpy(np.load(fpath + "W_CONV2D1_MNIST.npy")).float())
+            self.conv1.bias = nn.Parameter(torch.from_numpy(np.load(fpath + "B_CONV2D1_MNIST.npy")).float())
 
-            self.fc2.weight = nn.Parameter(torch.from_numpy(np.load(fpath + 'W_DENSE2_MNIST.npy')).float())
-            self.fc2.bias = nn.Parameter(torch.from_numpy(np.load(fpath + 'B_DENSE2_MNIST.npy')).float())
+            self.fc1.weight = nn.Parameter(torch.from_numpy(np.load(fpath + "W_DENSE1_MNIST.npy")).float())
+            self.fc1.bias = nn.Parameter(torch.from_numpy(np.load(fpath + "B_DENSE1_MNIST.npy")).float())
+
+            self.fc2.weight = nn.Parameter(torch.from_numpy(np.load(fpath + "W_DENSE2_MNIST.npy")).float())
+            self.fc2.bias = nn.Parameter(torch.from_numpy(np.load(fpath + "B_DENSE2_MNIST.npy")).float())
 
     ptc = SmallMNISTModel()
     ptc.load_weights()
@@ -256,33 +250,35 @@ def test_pytorch_mnist_certification(art_warning, fix_get_mnist_data):
     optimizer = optim.Adam(ptc.parameters(), lr=0.01)
 
     try:
-        for ablation_type in ['column', 'block']:
-            if ablation_type == 'column':
+        for ablation_type in ["column", "block"]:
+            if ablation_type == "column":
                 size_to_certify = 5
                 ablation_size = 2
             else:
-                '''
-                the model was trained on column ablations, so make the block task simpler so that a 
-                degree of certification is obtained. 
-                '''
+                """
+                the model was trained on column ablations, so make the block task simpler so that a
+                degree of certification is obtained.
+                """
                 size_to_certify = 1
                 ablation_size = 5
 
-            classifier = PyTorchDeRandomizedSmoothing(model=ptc,
-                                                      clip_values=(0, 1),
-                                                      loss=criterion,
-                                                      optimizer=optimizer,
-                                                      input_shape=(2, 28, 28),
-                                                      nb_classes=10,
-                                                      ablation_type=ablation_type,
-                                                      ablation_size=ablation_size,
-                                                      threshold=0.3,
-                                                      logits=True)
+            classifier = PyTorchDeRandomizedSmoothing(
+                model=ptc,
+                clip_values=(0, 1),
+                loss=criterion,
+                optimizer=optimizer,
+                input_shape=(2, 28, 28),
+                nb_classes=10,
+                ablation_type=ablation_type,
+                ablation_size=ablation_size,
+                threshold=0.3,
+                logits=True,
+            )
 
             preds = classifier.predict(np.copy(fix_get_mnist_data[0]))
             num_certified = classifier.ablator.certify(preds, size_to_certify=size_to_certify)
 
-            if ablation_type == 'column':
+            if ablation_type == "column":
                 assert np.sum(num_certified) == 52
             else:
                 assert np.sum(num_certified) == 22
@@ -310,16 +306,23 @@ def test_tf2_mnist_certification(art_warning, fix_get_mnist_data):
         return tf.keras.Model(inputs=img_inputs, outputs=x)
 
     def get_weights():
-        fpath = '../../../utils/resources/models/certification/derandomized/'
-        weight_names = ['W_CONV2D1_MNIST.npy', 'B_CONV2D1_MNIST.npy',
-                        'W_DENSE1_MNIST.npy', 'B_DENSE1_MNIST.npy',
-                        'W_DENSE2_MNIST.npy', 'B_DENSE2_MNIST.npy']
+        fpath = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)), "../../utils/resources/models/certification/derandomized/"
+        )
+        weight_names = [
+            "W_CONV2D1_MNIST.npy",
+            "B_CONV2D1_MNIST.npy",
+            "W_DENSE1_MNIST.npy",
+            "B_DENSE1_MNIST.npy",
+            "W_DENSE2_MNIST.npy",
+            "B_DENSE2_MNIST.npy",
+        ]
         weight_list = []
         for name in weight_names:
             w = np.load(fpath + name)
-            if 'W_CONV' in name:
+            if "W_CONV" in name:
                 w = np.transpose(w, (2, 3, 1, 0))
-            if 'W_DENSE' in name:
+            if "W_DENSE" in name:
                 w = np.transpose(w)
             weight_list.append(w)
         return weight_list
@@ -338,28 +341,30 @@ def test_tf2_mnist_certification(art_warning, fix_get_mnist_data):
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
 
     try:
-        for ablation_type in ['column', 'block']:
-            if ablation_type == 'column':
+        for ablation_type in ["column", "block"]:
+            if ablation_type == "column":
                 size_to_certify = 5
                 ablation_size = 2
             else:
-                '''
-                the model was trained on column ablations, so make the block task simpler so that a 
-                degree of certification is obtained. 
-                '''
+                """
+                the model was trained on column ablations, so make the block task simpler so that a
+                degree of certification is obtained.
+                """
                 size_to_certify = 1
                 ablation_size = 5
 
-            classifier = TensorFlowV2DeRandomizedSmoothing(model=net,
-                                                           clip_values=(0, 1),
-                                                           loss_object=loss_object,
-                                                           train_step=train_step,
-                                                           input_shape=(28, 28, 2),
-                                                           nb_classes=10,
-                                                           ablation_type=ablation_type,
-                                                           ablation_size=ablation_size,
-                                                           threshold=0.3,
-                                                           logits=True)
+            classifier = TensorFlowV2DeRandomizedSmoothing(
+                model=net,
+                clip_values=(0, 1),
+                loss_object=loss_object,
+                train_step=train_step,
+                input_shape=(28, 28, 2),
+                nb_classes=10,
+                ablation_type=ablation_type,
+                ablation_size=ablation_size,
+                threshold=0.3,
+                logits=True,
+            )
 
             x = np.copy(fix_get_mnist_data[0])
             x = np.squeeze(x)
@@ -367,7 +372,7 @@ def test_tf2_mnist_certification(art_warning, fix_get_mnist_data):
             preds = classifier.predict(x)
             num_certified = classifier.ablator.certify(preds, size_to_certify=size_to_certify)
 
-            if ablation_type == 'column':
+            if ablation_type == "column":
                 assert np.sum(num_certified) == 52
             else:
                 assert np.sum(num_certified) == 22

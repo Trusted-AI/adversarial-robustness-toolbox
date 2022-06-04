@@ -28,7 +28,6 @@ from typing import List, Optional, Tuple, Union, Any, TYPE_CHECKING
 import random
 
 import numpy as np
-import torch
 
 from tqdm import tqdm
 
@@ -39,6 +38,7 @@ from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
+    import torch
 
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor import Preprocessor
@@ -121,6 +121,8 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
         )
 
     def _predict_classifier(self, x: np.ndarray, batch_size: int, training_mode: bool, **kwargs) -> np.ndarray:
+        import torch  # lgtm [py/repeated-import]
+
         x = x.astype(ART_NUMPY_DTYPE)
         outputs = PyTorchClassifier.predict(self, x=x, batch_size=batch_size, training_mode=training_mode, **kwargs)
 
@@ -167,6 +169,8 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
         """
+        import torch  # lgtm [py/repeated-import]
+
         # Set model mode
         self._model.train(mode=training_mode)
 
