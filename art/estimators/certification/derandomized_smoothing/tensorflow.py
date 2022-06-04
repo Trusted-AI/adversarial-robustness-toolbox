@@ -23,7 +23,7 @@ This module implements (De)Randomized Smoothing for Certifiable Defense against 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Callable, List, Optional, Tuple, Union, Any, TYPE_CHECKING
+from typing import Callable, List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 import tensorflow as tf
@@ -130,14 +130,7 @@ class TensorFlowV2DeRandomizedSmoothing(DeRandomizedSmoothingMixin, TensorFlowV2
     def _fit_classifier(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
         return TensorFlowV2Classifier.fit(self, x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
-    def fit(
-        self,
-        x: np.ndarray,
-        y: np.ndarray,
-        batch_size: int = 128,
-        nb_epochs: int = 10,
-        **kwargs
-    ) -> None:
+    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, **kwargs) -> None:
         """
         Fit the classifier on the training set `(x, y)`.
 
@@ -156,8 +149,8 @@ class TensorFlowV2DeRandomizedSmoothing(DeRandomizedSmoothingMixin, TensorFlowV2
             )
 
         scheduler = None
-        if 'scheduler' in kwargs:
-            scheduler = kwargs['scheduler']
+        if "scheduler" in kwargs:
+            scheduler = kwargs["scheduler"]
 
         y = check_and_transform_label_format(y, self.nb_classes)
 
