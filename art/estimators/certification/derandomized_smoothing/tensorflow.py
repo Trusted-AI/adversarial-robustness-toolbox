@@ -136,7 +136,6 @@ class TensorFlowV2DeRandomizedSmoothing(DeRandomizedSmoothingMixin, TensorFlowV2
         y: np.ndarray,
         batch_size: int = 128,
         nb_epochs: int = 10,
-        scheduler: Optional[Any] = None,
         **kwargs
     ) -> None:
         """
@@ -147,14 +146,18 @@ class TensorFlowV2DeRandomizedSmoothing(DeRandomizedSmoothingMixin, TensorFlowV2
                   shape (nb_samples,).
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
-        :param scheduler: Optional function that will be called at the end of every epoch to adjust the learning rate.
-        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for
-               TensorFlow and providing it takes no effect.
+        :param kwargs: Dictionary of framework-specific arguments. This parameter currently only supports
+                       "scheduler" which is an optional function that will be called at the end of every
+                       epoch to adjust the learning rate.
         """
         if self._train_step is None:  # pragma: no cover
             raise TypeError(
                 "The training function `train_step` is required for fitting a model but it has not been " "defined."
             )
+
+        scheduler = None
+        if 'scheduler' in kwargs:
+            scheduler = kwargs['scheduler']
 
         y = check_and_transform_label_format(y, self.nb_classes)
 
