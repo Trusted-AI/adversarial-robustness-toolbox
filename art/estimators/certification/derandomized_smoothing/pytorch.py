@@ -26,10 +26,11 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 from typing import List, Optional, Tuple, Union, Any, TYPE_CHECKING
 import random
-from tqdm import tqdm
 
 import numpy as np
 import torch
+
+from tqdm import tqdm
 
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.classification.pytorch import PyTorchClassifier
