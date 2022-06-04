@@ -148,9 +148,7 @@ class TensorFlowV2DeRandomizedSmoothing(DeRandomizedSmoothingMixin, TensorFlowV2
                 "The training function `train_step` is required for fitting a model but it has not been " "defined."
             )
 
-        scheduler = None
-        if "scheduler" in kwargs:
-            scheduler = kwargs["scheduler"]
+        scheduler = kwargs.get("scheduler")
 
         y = check_and_transform_label_format(y, self.nb_classes)
 
