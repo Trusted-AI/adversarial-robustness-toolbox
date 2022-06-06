@@ -41,14 +41,46 @@ logger = logging.getLogger(__name__)
 
 
 class SleeperAgentAttack(GradientMatchingAttack):
-#     def __init__(self,num):
-#         GradientMatchingAttack.__init__(self)
-#         self.variable = num*2
+    def __init__(
+        self,
+        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
+        percent_poison: float,
+        epsilon: float = 0.1,
+        max_trials: int = 8,
+        max_epochs: int = 250,
+        learning_rate_schedule: Tuple[List[float], List[int]] = ([1e-1, 1e-2, 1e-3, 1e-4], [100, 150, 200, 220]),
+        batch_size: int = 128,
+        clip_values: Tuple[float, float] = (0, 1.0),
+        verbose: int = 1,
+        indices_target = None,
+        patching_strategy = "random",
+        selection_strategy = "random",  
+        retraining_factor = 1,
+        model_retraining = False,
+        model_retraining_epoch = 1
+    ):
+        super().__init__(classifier,
+                         percent_poison,
+                         epsilon,
+                         max_trials,
+                         max_epochs,
+                         learning_rate_schedule,
+                         batch_size,
+                         clip_values,
+                         verbose)
+        self.indices_target = indices_target
+        self.selection_strategy = selection_strategy
+        self.retraining_factor = retraining_factor
+        self.model_retraining = model_retraining
+        self.model_retraining_epoch = model_retraining_epoch
+        self.indices_poison = []
+        
+
     """
     Implementation of Sleeper Agent Attack"""
     def poison(
         self, x_trigger: np.ndarray, y_trigger: np.ndarray, x_train: np.ndarray, y_train: np.ndarray
-    ,index_target,s_type="random") -> Tuple[np.ndarray, np.ndarray]:
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Optimizes a portion of poisoned samples from x_train to make a model classify x_target
         as y_target by matching the gradients.
@@ -70,7 +102,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
             finish_poisoning = self.__finish_poison_pytorch
         else:
             raise NotImplementedError(
-                "GradientMatchingAttack is currently implemented only for Tensorflow V2 and Pytorch."
+                "SleeperAgentAttack is currently implemented only for Tensorflow V2 and Pytorch."
             )
 
         # Choose samples to poison.
@@ -92,21 +124,21 @@ class SleeperAgentAttack(GradientMatchingAttack):
         else:
             y_train_classes = y_train
         for _ in trange(self.max_trials):
-            if s_type == "random":
-                # pdb.set_trace()
-                indices_poison = np.random.permutation(np.where([y in classes_target for y in y_train_classes])[0])[
-                    :num_poison_samples
-                ]
+            if self.selection_strategy == "random":
+                self.indices_poison = np.random.permutation(np.where([y in classes_target for y in y_train_classes])[0])[:num_poison_samples]
             else:
-                indices_poison = self.select_poison_indices(self.substitute_classifier,x_train,y_train,num_poison_samples)    
+                self.indices_poison = self.select_poison_indices(self.substitute_classifier,x_train,y_train,num_poison_samples)    
             x_poison = x_train[indices_poison]
             y_poison = y_train[indices_poison]
             self.__initialize_poison(x_trigger, y_trigger, x_poison, y_poison)
-            for i in [80,80,90]:
-                self.max_epochs = i
-                x_poisoned, B_ = poisoner(x_poison, y_poison,index_target,indices_poison) 
-                self.model_retraining(x_poisoned,index_target,indices_poison,40)
-            x_poisoned, B_ = poisoner(x_poison, y_poison,index_target,indices_poison)  # pylint: disable=C0103
+            if self.model_retraining:
+                retrain_epochs = self.retraining_factor//self.max_epochs
+                for i in range(self.retraining_factor-1):
+                    self.max_epochs = retrain_epochs 
+                    x_poisoned, B_ = poisoner(x_poison, y_poison) 
+                    self.model_retraining(x_poisoned)
+            else:
+                x_poisoned, B_ = poisoner(x_poison, y_poison,index_target,indices_poison)  # pylint: disable=C0103
             finish_poisoning()
             B_ = np.mean(B_)  # Averaging B losses from multiple batches.  # pylint: disable=C0103
             if B_ < best_B:
@@ -119,7 +151,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         x_train[best_indices_poison] = best_x_poisoned
         return x_train, y_train, best_indices_poison 
     
-    def model_retraining(self,poisoned_samples,index_target,indices_poison,epochs):
+    def model_retraining(self,poisoned_samples):
         import torch
         from art.utils import load_cifar10
         (x_train, y_train), (x_test, y_test), min_, max_ = load_cifar10()
@@ -131,9 +163,9 @@ class SleeperAgentAttack(GradientMatchingAttack):
         max_ = (max_-mean)/(std+1e-7)
         x_train = np.transpose(x_train, [0, 3,1,2])
         poisoned_samples = np.asarray(poisoned_samples)
-        x_train[index_target[indices_poison]] = poisoned_samples
+        x_train[self.indices_target[self.indices_poison]] = poisoned_samples
         model,loss_fn,optimizer = create_model(x_train, y_train, x_test=x_test, y_test=y_test,
-                                               num_classes=10, batch_size=128, epochs=80)
+                                               num_classes=10, batch_size=128, epochs=self.model_retraining_epochs)
         model_ = PyTorchClassifier(model, input_shape=x_train.shape[1:], loss=loss_fn,
                                    optimizer=optimizer, nb_classes=10)
         check_train = self.substitute_classifier.model.training 
@@ -194,7 +226,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         print("Epoch %d train accuracy: %f" % (epoch, train_accuracy))
         test_accuracy = testAccuracy(model, dataloader_test)
         print("Final test accuracy: %f" % test_accuracy)
-    return model,loss_fn,optimizer
+        return model,loss_fn,optimizer
 
 
     def select_poison_indices(self,classifier,x_samples,y_samples,num_poison):
