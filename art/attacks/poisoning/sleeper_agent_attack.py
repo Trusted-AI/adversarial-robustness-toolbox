@@ -39,6 +39,7 @@ if TYPE_CHECKING:
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
+import pdb
 
 
 class SleeperAgentAttack(GradientMatchingAttack):
@@ -72,6 +73,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
                          verbose)
         self.indices_target = indices_target
         self.selection_strategy = selection_strategy
+        self.patching_strategy = patching_strategy
         self.retraining_factor = retraining_factor
         self.model_retraining = model_retraining
         self.model_retraining_epoch = model_retraining_epoch
@@ -107,7 +109,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
             raise NotImplementedError(
                 "SleeperAgentAttack is currently implemented only for Tensorflow V2 and Pytorch."
             )
-
+#         pdb.set_trace()
         # Choose samples to poison.
         x_train = np.copy(x_train)
         y_train = np.copy(y_train)
@@ -259,13 +261,15 @@ class SleeperAgentAttack(GradientMatchingAttack):
         indices = indices[-num_poison:]
         return indices # this will get only indices for target class
     
-    def apply_trigger_patch(x_trigger):
+    def apply_trigger_patch(self,x_trigger):
+#         pdb.set_trace()
+        import torch
         if self.patching_strategy == "fixed":
-            x_trigger[:,-8:,-8:,:] = self.patch
+            x_trigger[:,:,-8:,-8:] = torch.tensor(self.patch,dtype=torch.float32)
         else:
             for x in x_trigger:
                 x_cord = random.randrange(0,x.shape[1] - self.patch.shape[1] + 1)
                 y_cord = random.randrange(0,x.shape[2] - self.patch.shape[2] + 1)
-                x[x_cord:x_cord+8,y_cord:y_cord+8,:]=self.patch
+                x[:,x_cord:x_cord+8,y_cord:y_cord+8]=torch.tensor(self.patch,dtype=torch.float32)
 
         return x_trigger
