@@ -171,7 +171,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         poisoned_samples = np.asarray(poisoned_samples)
         x_train[self.indices_target[self.indices_poison]] = poisoned_samples
         model,loss_fn,optimizer = create_model(x_train, y_train, x_test=x_test, y_test=y_test,
-                                               num_classes=10, batch_size=128, epochs=self.model_retraining_epochs)
+                                               num_classes=10, batch_size=128, epochs=self.model_retraining_epoch)
         model_ = PyTorchClassifier(model, input_shape=x_train.shape[1:], loss=loss_fn,
                                    optimizer=optimizer, nb_classes=10)
         check_train = self.substitute_classifier.model.training 
@@ -261,15 +261,16 @@ class SleeperAgentAttack(GradientMatchingAttack):
         indices = indices[-num_poison:]
         return indices # this will get only indices for target class
     
-    def apply_trigger_patch(self,x_trigger):
-#         pdb.set_trace()
-        import torch
+    def apply_trigger_patch(self,x_trigger):    
+        from art.estimators.classification.pytorch import PyTorchClassifier
         if self.patching_strategy == "fixed":
-            x_trigger[:,:,-8:,-8:] = torch.tensor(self.patch,dtype=torch.float32)
+            x_trigger[:,-8:,-8:,:] = self.patch
         else:
             for x in x_trigger:
                 x_cord = random.randrange(0,x.shape[1] - self.patch.shape[1] + 1)
                 y_cord = random.randrange(0,x.shape[2] - self.patch.shape[2] + 1)
-                x[:,x_cord:x_cord+8,y_cord:y_cord+8]=torch.tensor(self.patch,dtype=torch.float32)
-
-        return x_trigger
+                x[x_cord:x_cord+8,y_cord:y_cord+8,:]= self.patch
+        if isinstance(self.substitute_classifier, PyTorchClassifier):
+            import torch
+            
+            return torch.tensor(np.transpose(x_trigger, [0, 3,1,2]))
