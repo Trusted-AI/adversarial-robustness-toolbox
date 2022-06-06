@@ -27,6 +27,7 @@ from typing import Any, Dict, Tuple, TYPE_CHECKING, List
 
 import numpy as np
 from tqdm.auto import trange, tqdm
+import random
 
 from art.attacks.attack import Attack
 from art.attacks.poisoning import GradientMatchingAttack
@@ -57,7 +58,8 @@ class SleeperAgentAttack(GradientMatchingAttack):
         selection_strategy = "random",  
         retraining_factor = 1,
         model_retraining = False,
-        model_retraining_epoch = 1
+        model_retraining_epoch = 1,
+        patch = None
     ):
         super().__init__(classifier,
                          percent_poison,
@@ -74,6 +76,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         self.model_retraining = model_retraining
         self.model_retraining_epoch = model_retraining_epoch
         self.indices_poison = []
+        self.patch = patch
         
 
     """
@@ -108,6 +111,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         # Choose samples to poison.
         x_train = np.copy(x_train)
         y_train = np.copy(y_train)
+        x_trigger = self.apply_trigger_patch(x_trigger)
         if len(np.shape(y_trigger)) == 2:  # dense labels
             classes_target = set(np.argmax(y_trigger, axis=-1))
         else:  # sparse labels
@@ -254,3 +258,14 @@ class SleeperAgentAttack(GradientMatchingAttack):
         indices = sorted(range(len(grad_norms)), key=lambda k: grad_norms[k])
         indices = indices[-num_poison:]
         return indices # this will get only indices for target class
+    
+    def apply_trigger_patch(x_trigger):
+        if self.patching_strategy == "fixed":
+            x_trigger[:,-8:,-8:,:] = self.patch
+        else:
+            for x in x_trigger:
+                x_cord = random.randrange(0,x.shape[1] - self.patch.shape[1] + 1)
+                y_cord = random.randrange(0,x.shape[2] - self.patch.shape[2] + 1)
+                x[x_cord:x_cord+8,y_cord:y_cord+8,:]=self.patch
+
+        return x_trigger
