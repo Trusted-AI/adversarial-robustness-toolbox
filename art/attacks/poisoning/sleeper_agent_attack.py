@@ -95,11 +95,11 @@ class SleeperAgentAttack(GradientMatchingAttack):
         from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 
         if isinstance(self.substitute_classifier, TensorFlowV2Classifier):
-            poisoner = self.__poison__tensorflow
-            finish_poisoning = self.__finish_poison_tensorflow
+            poisoner = self._GradientMatchingAttack__poison__tensorflow
+            finish_poisoning = self._GradientMatchingAttack__finish_poison_tensorflow
         elif isinstance(self.substitute_classifier, PyTorchClassifier):
-            poisoner = self.__poison__pytorch
-            finish_poisoning = self.__finish_poison_pytorch
+            poisoner = self._GradientMatchingAttack__poison__pytorch
+            finish_poisoning = self._GradientMatchingAttack__finish_poison_pytorch
         else:
             raise NotImplementedError(
                 "SleeperAgentAttack is currently implemented only for Tensorflow V2 and Pytorch."
@@ -128,9 +128,9 @@ class SleeperAgentAttack(GradientMatchingAttack):
                 self.indices_poison = np.random.permutation(np.where([y in classes_target for y in y_train_classes])[0])[:num_poison_samples]
             else:
                 self.indices_poison = self.select_poison_indices(self.substitute_classifier,x_train,y_train,num_poison_samples)    
-            x_poison = x_train[indices_poison]
-            y_poison = y_train[indices_poison]
-            self.__initialize_poison(x_trigger, y_trigger, x_poison, y_poison)
+            x_poison = x_train[self.indices_poison]
+            y_poison = y_train[self.indices_poison]
+            self._GradientMatchingAttack__initialize_poison(x_trigger, y_trigger, x_poison, y_poison)
             if self.model_retraining:
                 retrain_epochs = self.retraining_factor//self.max_epochs
                 for i in range(self.retraining_factor-1):
@@ -138,13 +138,13 @@ class SleeperAgentAttack(GradientMatchingAttack):
                     x_poisoned, B_ = poisoner(x_poison, y_poison) 
                     self.model_retraining(x_poisoned)
             else:
-                x_poisoned, B_ = poisoner(x_poison, y_poison,index_target,indices_poison)  # pylint: disable=C0103
+                x_poisoned, B_ = poisoner(x_poison, y_poison)   # pylint: disable=C0103
             finish_poisoning()
             B_ = np.mean(B_)  # Averaging B losses from multiple batches.  # pylint: disable=C0103
             if B_ < best_B:
                 best_B = B_  # pylint: disable=C0103
                 best_x_poisoned = x_poisoned
-                best_indices_poison = indices_poison
+                best_indices_poison = self.indices_poison
 
         if self.verbose > 0:
             print("Best B-score:", best_B)
