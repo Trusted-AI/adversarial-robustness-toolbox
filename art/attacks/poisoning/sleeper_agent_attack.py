@@ -58,7 +58,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         patching_strategy = "random",
         selection_strategy = "random",  
         retraining_factor = 1,
-        model_retraining = False,
+        model_retrain = False,
         model_retraining_epoch = 1,
         patch = None
     ):
@@ -75,7 +75,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         self.selection_strategy = selection_strategy
         self.patching_strategy = patching_strategy
         self.retraining_factor = retraining_factor
-        self.model_retraining = model_retraining
+        self.model_retrain = model_retrain
         self.model_retraining_epoch = model_retraining_epoch
         self.indices_poison = []
         self.patch = patch
@@ -137,12 +137,17 @@ class SleeperAgentAttack(GradientMatchingAttack):
             x_poison = x_train[self.indices_poison]
             y_poison = y_train[self.indices_poison]
             self._GradientMatchingAttack__initialize_poison(x_trigger, y_trigger, x_poison, y_poison)
-            if self.model_retraining:
-                retrain_epochs = self.retraining_factor//self.max_epochs
-                for i in range(self.retraining_factor-1):
-                    self.max_epochs = retrain_epochs 
-                    x_poisoned, B_ = poisoner(x_poison, y_poison) 
-                    self.model_retraining(x_poisoned)
+            original_epochs = self.max_epochs
+            if self.model_retrain:
+                retrain_epochs = self.max_epochs//self.retraining_factor
+                for i in range(self.retraining_factor):
+                    if i==self.retraining_factor-1:
+                        self.max_epochs = original_epochs - retrain_epochs*i
+                        x_poisoned, B_ = poisoner(x_poison, y_poison)
+                    else:
+                        self.max_epochs = retrain_epochs 
+                        x_poisoned, B_ = poisoner(x_poison, y_poison) 
+                        self.model_retraining(x_poisoned)
             else:
                 x_poisoned, B_ = poisoner(x_poison, y_poison)   # pylint: disable=C0103
             finish_poisoning()
@@ -160,6 +165,8 @@ class SleeperAgentAttack(GradientMatchingAttack):
     def model_retraining(self,poisoned_samples):
         import torch
         from art.utils import load_cifar10
+        from art.estimators.classification.pytorch import PyTorchClassifier
+        
         (x_train, y_train), (x_test, y_test), min_, max_ = load_cifar10()
         mean = np.mean(x_train,axis=(0,1,2,3))
         std = np.std(x_train,axis=(0,1,2,3))
@@ -168,9 +175,10 @@ class SleeperAgentAttack(GradientMatchingAttack):
         min_ = (min_-mean)/(std+1e-7)
         max_ = (max_-mean)/(std+1e-7)
         x_train = np.transpose(x_train, [0, 3,1,2])
+        
         poisoned_samples = np.asarray(poisoned_samples)
         x_train[self.indices_target[self.indices_poison]] = poisoned_samples
-        model,loss_fn,optimizer = create_model(x_train, y_train, x_test=x_test, y_test=y_test,
+        model,loss_fn,optimizer = self.create_model(x_train, y_train, x_test=x_test, y_test=y_test,
                                                num_classes=10, batch_size=128, epochs=self.model_retraining_epoch)
         model_ = PyTorchClassifier(model, input_shape=x_train.shape[1:], loss=loss_fn,
                                    optimizer=optimizer, nb_classes=10)
@@ -178,7 +186,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         self.substitute_classifier = model_
         self.substitute_classifier.model.training = check_train
         
-    def create_model(x_train, y_train, x_test=None, y_test=None, num_classes=10, batch_size=128,
+    def create_model(self,x_train, y_train, x_test=None, y_test=None, num_classes=10, batch_size=128,
                      epochs=80):
         from torchvision.models.resnet import BasicBlock, Bottleneck
         import torch
@@ -213,26 +221,47 @@ class SleeperAgentAttack(GradientMatchingAttack):
             running_loss = 0.0
             total = 0
             accuracy = 0
-        for i, data in enumerate(dataloader_train, 0):
-            inputs, labels = data
-            optimizer.zero_grad()
-            # forward + backward + optimize
-            outputs = model(inputs)
-            # _, predicted = torch.max(outputs.data, 1)
-            loss = loss_fn(outputs, labels)
-            loss.backward()
-            optimizer.step()
-            _, predicted = torch.max(outputs.data, 1)
-            total += labels.size(0)
-            accuracy += (predicted == labels).sum().item()
-
-            # print statistics
-            running_loss += loss.item()
+            for i, data in enumerate(dataloader_train, 0):
+                inputs, labels = data
+                optimizer.zero_grad()
+                # forward + backward + optimize
+                outputs = model(inputs)
+                # _, predicted = torch.max(outputs.data, 1)
+                loss = loss_fn(outputs, labels)
+                loss.backward()
+                optimizer.step()
+                _, predicted = torch.max(outputs.data, 1)
+                total += labels.size(0)
+                accuracy += (predicted == labels).sum().item()
+                running_loss += loss.item()
         train_accuracy = (100 * accuracy / total)
         print("Epoch %d train accuracy: %f" % (epoch, train_accuracy))
-        test_accuracy = testAccuracy(model, dataloader_test)
+        test_accuracy = self.testAccuracy(model, dataloader_test)
         print("Final test accuracy: %f" % test_accuracy)
         return model,loss_fn,optimizer
+    
+    def testAccuracy(self,model, test_loader):
+        import torch
+        model_was_training = model.training
+        model.eval()
+        accuracy = 0.0
+        total = 0.0
+    
+        with torch.no_grad():
+            for data in test_loader:
+                images, labels = data
+                # run the model on the test set to predict labels
+                outputs = model(images)
+                # the label with the highest energy will be our prediction
+                _, predicted = torch.max(outputs.data, 1)
+                total += labels.size(0)
+                accuracy += (predicted == labels).sum().item()
+    
+        # compute the accuracy over all test images
+        accuracy = (100 * accuracy / total)
+        if model_was_training:
+            model.train()
+        return(accuracy)
 
 
     def select_poison_indices(self,classifier,x_samples,y_samples,num_poison):
