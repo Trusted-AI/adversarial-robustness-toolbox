@@ -315,7 +315,13 @@ class SignOPTAttack(EvasionAttack):
         pred = self.estimator.predict(np.expand_dims(x_0, axis=0), batch_size=self.batch_size)
         return np.argmax(pred)
 
-    def _sign_grad(self, x_0, y_0, epsilon, theta, initial_lbd, target=None):
+    def _sign_grad(self, 
+                   x_0: np.ndarray, 
+                   y_0: int,
+                   epsilon: float, 
+                   theta: np.ndarray, 
+                   initial_lbd: float, 
+                   target: Optional[int]) -> Tuple[np.ndarray, int]:
         # Evaluate the sign of gradient by formul
         sign_grad = np.zeros(theta.shape).astype(np.float32)
         queries = 0
@@ -330,10 +336,10 @@ class SignOPTAttack(EvasionAttack):
             new_theta = theta + epsilon * u_g
             new_theta /= LA.norm(new_theta)
             sign = 1
-            if self.targeted:
-                y_0 = target
-            # Untargeted case
-            if self.targeted == self._is_label(x_0 + initial_lbd * new_theta, y_0):
+                
+            if self.targeted == True and self._is_label(x_0 + initial_lbd * new_theta, target) == True:
+                sign = -1
+            elif self.targeted == False and self._is_label(x_0 + initial_lbd * new_theta, y_0) == False:
                 sign = -1
 
             queries += 1
@@ -351,7 +357,7 @@ class SignOPTAttack(EvasionAttack):
         y_0: int,
         target: Optional[int] = None,  # for targeted attack
         x_init: Optional[np.ndarray] = None,  # for targeted attack
-        distortion=None,
+        distortion: Optional[float] = None,
     ) -> Tuple[np.ndarray, np.ndarray, bool]:
         query_count = 0
         ls_total = 0
@@ -513,7 +519,7 @@ class SignOPTAttack(EvasionAttack):
                 print(f"Failed: distortion {g_g}")
         return self._clip_value(x_0 + g_g * x_g), g_g * x_g, succeed
 
-    def _clip_value(self, x_0) -> np.ndarray:
+    def _clip_value(self, x_0: np.ndarray) -> np.ndarray:
         if self.enable_clipped:
             x_0 = np.clip(x_0, self.clip_min, self.clip_max)
         return x_0
