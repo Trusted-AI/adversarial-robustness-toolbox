@@ -260,7 +260,13 @@ class SignOPTAttack(EvasionAttack):
 
     # perform the line search in paper (Chen and Zhang, 2019)
     # paper link: https://openreview.net/pdf?id=rJlk6iRqKX
-    def _fine_grained_binary_search_local(self, x_0, y_0, target, theta, initial_lbd=1.0, tol=1e-5):
+    def _fine_grained_binary_search_local(self, 
+                                          x_0: np.ndarray, 
+                                          y_0: int, 
+                                          theta: np.ndarray,
+                                          target: Optional[int] = None, 
+                                          initial_lbd: float=1.0, 
+                                          tol: float=1e-5) -> Tuple[float, int]:
         nquery = 0
         lbd = initial_lbd
         # For targeted: we want to expand(x1.01) boundary away from targeted dataset
@@ -296,20 +302,18 @@ class SignOPTAttack(EvasionAttack):
                 lbd_lo = lbd_mid
         return lbd_hi, nquery
 
-    # temp method if ART has a similar method
-    # x0: dimension is [1, 28, 28]
     # return True, if prediction of x0 is label, False otherwise
-    def _is_label(self, x_0, label) -> bool:
+    # note that `label` typing is Optional because for untargeted attack, 
+    # label is not passed-in in caller's parameter, so put Optional here
+    def _is_label(self, x_0: np.ndarray, label: Optional[int]) -> bool:
         if self.enable_clipped:
             x_0 = np.clip(x_0, self.clip_min, self.clip_max)
         pred = self.estimator.predict(np.expand_dims(x_0, axis=0), batch_size=self.batch_size)
         pred_y0 = np.argmax(pred)
         return pred_y0 == label
 
-    # temp method if ART has a similar method
-    # x0: dimension is [1, 28, 28]
     # return predicted label
-    def _predict_label(self, x_0) -> integer:
+    def _predict_label(self, x_0: np.ndarray) -> integer:
         if self.enable_clipped:
             x_0 = np.clip(x_0, self.clip_min, self.clip_max)
         pred = self.estimator.predict(np.expand_dims(x_0, axis=0), batch_size=self.batch_size)
