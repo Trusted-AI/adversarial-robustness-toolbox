@@ -217,23 +217,24 @@ class SignOPTAttack(EvasionAttack):
 
         return x_adv  # all images with untargeted adversarial
 
-    def _fine_grained_binary_search(self, x_0, y_0, theta, initial_lbd, current_best, target: Optional[int] = None):
+    def _fine_grained_binary_search(
+        self,
+        x_0: np.ndarray,
+        y_0: int,
+        theta: np.ndarray,
+        initial_lbd: float,
+        current_best: float,
+        target: Optional[int] = None,
+    ):
         if self.targeted:
             tolerate = 1e-5
-            y_0 = target
         else:
             tolerate = 1e-3
         nquery = 0
         if initial_lbd > current_best:
-            # the condition in "argmin()" in page 3, objective function 1
-            # if the adv != y0, in case of
-            # target: failed to make adv to target
-            # untarget: failed to make adv to something else
-            pred = self._is_label(x_0 + current_best * theta, y_0)
-            if self.targeted != pred:
-                # if targeted, pred should be True
-                # if not targeted, pred should be False
-                # in case of NOT satisfy above condition, return
+            if (self.targeted and not self._is_label(x_0 + current_best * theta, target)) or (
+                not self.targeted and self._is_label(x_0 + current_best * theta, y_0)
+            ):
                 nquery += 1
                 return float("inf"), nquery
             lbd = current_best
@@ -260,27 +261,28 @@ class SignOPTAttack(EvasionAttack):
 
     # perform the line search in paper (Chen and Zhang, 2019)
     # paper link: https://openreview.net/pdf?id=rJlk6iRqKX
-    def _fine_grained_binary_search_local(self, 
-                                          x_0: np.ndarray, 
-                                          y_0: int, 
-                                          theta: np.ndarray,
-                                          target: Optional[int] = None, 
-                                          initial_lbd: float=1.0, 
-                                          tol: float=1e-5) -> Tuple[float, int]:
+    def _fine_grained_binary_search_local(
+        self,
+        x_0: np.ndarray,
+        y_0: int,
+        theta: np.ndarray,
+        target: Optional[int] = None,
+        initial_lbd: float = 1.0,
+        tol: float = 1e-5,
+    ) -> Tuple[float, int]:
         nquery = 0
         lbd = initial_lbd
         # For targeted: we want to expand(x1.01) boundary away from targeted dataset
-        #     prediction(x0+lbd*theta) != target, GOOD
         # For untargeted, we want to slim(x0.99) the boundary toward the orginal dataset
-        #     prediction(x0+lbd*theta) == original, GOOD
-        if self.targeted:
-            y_0 = target
-
-        if self._is_label(x_0 + lbd * theta, y_0) != self.targeted:
+        if (not self._is_label(x_0 + lbd * theta, target) and self.targeted) or (
+            self._is_label(x_0 + lbd * theta, y_0) and not self.targeted
+        ):
             lbd_lo = lbd
             lbd_hi = lbd * 1.01
             nquery += 1
-            while self._is_label(x_0 + lbd_hi * theta, y_0) != self.targeted:
+            while (not self._is_label(x_0 + lbd_hi * theta, target) and self.targeted) or (
+                self._is_label(x_0 + lbd_hi * theta, y_0) and not self.targeted
+            ):
                 lbd_hi = lbd_hi * 1.01
                 nquery += 1
                 if lbd_hi > 20:
@@ -289,21 +291,25 @@ class SignOPTAttack(EvasionAttack):
             lbd_hi = lbd
             lbd_lo = lbd * 0.99
             nquery += 1
-            while self._is_label(x_0 + lbd_lo * theta, y_0) == self.targeted:
+            while (self._is_label(x_0 + lbd_lo * theta, target) and self.targeted) or (
+                not self._is_label(x_0 + lbd_lo * theta, y_0) and not self.targeted
+            ):
                 lbd_lo = lbd_lo * 0.99
                 nquery += 1
 
         while (lbd_hi - lbd_lo) > tol:
             lbd_mid = (lbd_lo + lbd_hi) / 2.0
             nquery += 1
-            if self._is_label(x_0 + lbd_mid * theta, y_0) == self.targeted:
+            if (self._is_label(x_0 + lbd_mid * theta, target) and self.targeted) or (
+                not self._is_label(x_0 + lbd_mid * theta, y_0) and not self.targeted
+            ):
                 lbd_hi = lbd_mid
             else:
                 lbd_lo = lbd_mid
         return lbd_hi, nquery
 
     # return True, if prediction of x0 is label, False otherwise
-    # note that `label` typing is Optional because for untargeted attack, 
+    # note that `label` typing is Optional because for untargeted attack,
     # label is not passed-in in caller's parameter, so put Optional here
     def _is_label(self, x_0: np.ndarray, label: Optional[int]) -> bool:
         if self.enable_clipped:
@@ -319,14 +325,10 @@ class SignOPTAttack(EvasionAttack):
         pred = self.estimator.predict(np.expand_dims(x_0, axis=0), batch_size=self.batch_size)
         return np.argmax(pred)
 
-    def _sign_grad(self, 
-                   x_0: np.ndarray, 
-                   y_0: int,
-                   epsilon: float, 
-                   theta: np.ndarray, 
-                   initial_lbd: float, 
-                   target: Optional[int]) -> Tuple[np.ndarray, int]:
-        # Evaluate the sign of gradient by formul
+    def _sign_grad(
+        self, x_0: np.ndarray, y_0: int, epsilon: float, theta: np.ndarray, initial_lbd: float, target: Optional[int]
+    ) -> Tuple[np.ndarray, int]:
+        # Evaluate the sign of gradient by formula
         sign_grad = np.zeros(theta.shape).astype(np.float32)
         queries = 0
         # use orthogonal transform
@@ -340,10 +342,10 @@ class SignOPTAttack(EvasionAttack):
             new_theta = theta + epsilon * u_g
             new_theta /= LA.norm(new_theta)
             sign = 1
-                
-            if self.targeted == True and self._is_label(x_0 + initial_lbd * new_theta, target) == True:
+
+            if self.targeted and self._is_label(x_0 + initial_lbd * new_theta, target):
                 sign = -1
-            elif self.targeted == False and self._is_label(x_0 + initial_lbd * new_theta, y_0) == False:
+            elif not self.targeted and not self._is_label(x_0 + initial_lbd * new_theta, y_0):
                 sign = -1
 
             queries += 1
@@ -383,7 +385,7 @@ class SignOPTAttack(EvasionAttack):
                     continue
 
                 theta = x_i - x_0
-                initial_lbd = LA.norm(theta)
+                initial_lbd = LA.norm(theta).item()  # .item() convert numpy type to python type
                 theta /= initial_lbd
                 lbd, count = self._fine_grained_binary_search(x_0, y_0, theta, initial_lbd, g_theta, target)
                 query_count += count
@@ -398,7 +400,7 @@ class SignOPTAttack(EvasionAttack):
                 theta = np.random.randn(*x_0.shape).astype(np.float32)  # gaussian distortion
                 # register adv directions
                 if not self._is_label(x_0 + theta, y_0):
-                    initial_lbd = LA.norm(theta)
+                    initial_lbd = LA.norm(theta).item()  # .item() convert numpy type to python type
                     theta /= initial_lbd  # l2 normalize: theta is normalized
                     # getting smaller g_theta
                     lbd, count = self._fine_grained_binary_search(x_0, y_0, theta, initial_lbd, g_theta)
@@ -450,7 +452,7 @@ class SignOPTAttack(EvasionAttack):
                 #       Cheng et al. (2019) https://openreview.net/pdf?id=rJlk6iRqKX,
                 #       **Algorithm 1 Compute g(θ) locally**
                 new_g2, count = self._fine_grained_binary_search_local(
-                    x_0, y_0, target, new_theta, initial_lbd=min_g2, tol=beta / 500
+                    x_0, y_0, new_theta, target, initial_lbd=min_g2, tol=beta / 500
                 )
                 ls_count += count
                 alpha = alpha * 2  # gradually increasing step size
@@ -466,7 +468,7 @@ class SignOPTAttack(EvasionAttack):
                     new_theta = x_g - alpha * sign_gradient
                     new_theta /= LA.norm(new_theta)
                     new_g2, count = self._fine_grained_binary_search_local(
-                        x_0, y_0, target, new_theta, initial_lbd=min_g2, tol=beta / 500
+                        x_0, y_0, new_theta, target, initial_lbd=min_g2, tol=beta / 500
                     )
                     ls_count += count
                     if new_g2 < g_g:
