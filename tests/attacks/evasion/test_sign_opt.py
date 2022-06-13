@@ -38,6 +38,15 @@ def fix_get_mnist_subset(get_mnist_dataset):
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
+@pytest.fixture()
+def fix_get_mnist_subset_large(get_mnist_dataset):
+    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_dataset
+    n_train = 100
+    n_test = 100
+    print(f"fix_get_mnist_subset_large() uses larger train and test set: n_train: {n_train}, n_test: {n_test}")
+    yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
+
+
 @pytest.mark.framework_agnostic
 @pytest.mark.parametrize("clipped_classifier, targeted", [(True, True), (True, False), (False, True), (False, False)])
 def test_tabular(art_warning, tabular_dl_estimator, framework, get_iris_dataset, clipped_classifier, targeted):
@@ -54,7 +63,9 @@ def test_tabular(art_warning, tabular_dl_estimator, framework, get_iris_dataset,
 
 @pytest.mark.framework_agnostic
 @pytest.mark.parametrize("targeted", [True, False])
-def test_images(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack, targeted, framework):
+def test_images(
+    art_warning, fix_get_mnist_subset, fix_get_mnist_subset_large, image_dl_estimator_for_attack, targeted, framework
+):
     try:
         classifier = image_dl_estimator_for_attack(SignOPTAttack)
 
@@ -62,7 +73,7 @@ def test_images(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack
             attack = SignOPTAttack(
                 estimator=classifier, targeted=targeted, max_iter=5000, query_limit=40000, verbose=True
             )
-            backend_targeted_images(attack, fix_get_mnist_subset)
+            backend_targeted_images(attack, fix_get_mnist_subset_large)
         else:
             attack = SignOPTAttack(
                 estimator=classifier, targeted=targeted, max_iter=1000, query_limit=4000, verbose=True
