@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements Sleeper Agent clean-label attacks on Neural Networks.
+This module implements Sleeper Agent attack on Neural Networks.
 
 | Paper link: https://arxiv.org/abs/2106.08970
 """
@@ -39,7 +39,6 @@ if TYPE_CHECKING:
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
-import pdb
 
 
 class SleeperAgentAttack(GradientMatchingAttack):
@@ -197,8 +196,6 @@ class SleeperAgentAttack(GradientMatchingAttack):
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")    
         model = torchvision.models.ResNet(torchvision.models.resnet.BasicBlock, [2, 2, 2, 2],
                                           num_classes=num_classes)
-        # Define the loss function with Classification Cross-Entropy loss and an 
-        # optimizer with Adam optimizer
         loss_fn = nn.CrossEntropyLoss()
         optimizer = torch.optim.SGD(model.parameters(), lr=0.1, momentum=0.9, weight_decay=5e-4,
                                     nesterov=True)
@@ -226,7 +223,6 @@ class SleeperAgentAttack(GradientMatchingAttack):
                 optimizer.zero_grad()
                 # forward + backward + optimize
                 outputs = model(inputs)
-                # _, predicted = torch.max(outputs.data, 1)
                 loss = loss_fn(outputs, labels)
                 loss.backward()
                 optimizer.step()
@@ -263,14 +259,10 @@ class SleeperAgentAttack(GradientMatchingAttack):
             model.train()
         return(accuracy)
 
-
+    # This function is responsible for returning indices of poison images with maximum gradient norm
     def select_poison_indices(self,classifier,x_samples,y_samples,num_poison):
-        # CHECK IF THE MODEL IS TRAIN/EVAL?????
-        # pdb.set_trace()
-        import torch
-        # Here, x are the samples for target class only then we select from all those      
+        import torch    
         device = "cuda" if torch.cuda.is_available() else "cpu"
-
         grad_norms = []
         criterion = torch.nn.CrossEntropyLoss()
         model = classifier.model
@@ -290,16 +282,19 @@ class SleeperAgentAttack(GradientMatchingAttack):
         indices = indices[-num_poison:]
         return indices # this will get only indices for target class
     
+    # This function is responsible for applying trigger patches to the images
+    # fixed - where the trigger is applied at the bottom right of the image
+    # random - where the trigger is applied at random location of the image
     def apply_trigger_patch(self,x_trigger):    
         from art.estimators.classification.pytorch import PyTorchClassifier
+        patch_size = self.patch.shape[1]
         if self.patching_strategy == "fixed":
-            x_trigger[:,-8:,-8:,:] = self.patch
+            x_trigger[:,-patch_size:,-patch_size:,:] = self.patch
         else:
             for x in x_trigger:
                 x_cord = random.randrange(0,x.shape[1] - self.patch.shape[1] + 1)
                 y_cord = random.randrange(0,x.shape[2] - self.patch.shape[2] + 1)
-                x[x_cord:x_cord+8,y_cord:y_cord+8,:]= self.patch
+                x[x_cord:x_cord+patch_size,y_cord:y_cord+patch_size,:]= self.patch
         if isinstance(self.substitute_classifier, PyTorchClassifier):
-            import torch
-            
+            import torch    
             return torch.tensor(np.transpose(x_trigger, [0, 3,1,2]))
