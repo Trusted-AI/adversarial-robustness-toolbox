@@ -93,13 +93,13 @@ def translate_labels_art_to_yolov3(labels_art: List[Dict[str, "torch.Tensor"]]):
 
     for i_dict, label_dict in enumerate(labels_art):
         num_detectors = label_dict["boxes"].size()[0]
-        t = torch.zeros(num_detectors, 6)
-        t[:, 0] = i_dict
-        t[:, 1] = label_dict["labels"]
-        t[:, 2:6] = label_dict["boxes"]
-        t[:, 4] = t[:, 4] - t[:, 2]
-        t[:, 5] = t[:, 5] - t[:, 3]
-        yolo_targets_list.append(t)
+        targets = torch.zeros(num_detectors, 6)
+        targets[:, 0] = i_dict
+        targets[:, 1] = label_dict["labels"]
+        targets[:, 2:6] = label_dict["boxes"]
+        targets[:, 4] = targets[:, 4] - targets[:, 2]
+        targets[:, 5] = targets[:, 5] - targets[:, 3]
+        yolo_targets_list.append(targets)
 
     yolo_targets = torch.vstack(yolo_targets_list)
 

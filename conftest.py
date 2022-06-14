@@ -784,6 +784,7 @@ def mnist_shape(framework):
     else:
         return (28, 28, 1)
 
+
 @pytest.fixture()
 def cifar10_shape(framework):
     if framework == "pytorch" or framework == "mxnet":
