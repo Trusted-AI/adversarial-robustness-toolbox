@@ -41,6 +41,7 @@
 """
 This module implements the Sign-OPT attack `SignOPTAttack`. This is a query-efficient
 hard-label adversarial attack.
+
 | Paper link: https://arxiv.org/pdf/1909.10773.pdf
 """
 
