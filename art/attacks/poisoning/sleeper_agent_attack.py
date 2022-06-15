@@ -53,23 +53,25 @@ class SleeperAgentAttack(GradientMatchingAttack):
         batch_size: int = 128,
         clip_values: Tuple[float, float] = (0, 1.0),
         verbose: int = 1,
-        indices_target = None,
-        patching_strategy = "random",
-        selection_strategy = "random",  
-        retraining_factor = 1,
-        model_retrain = False,
-        model_retraining_epoch = 1,
-        patch = None
+        indices_target=None,
+        patching_strategy="random",
+        selection_strategy="random",
+        retraining_factor=1,
+        model_retrain=False,
+        model_retraining_epoch=1,
+        patch=None,
     ):
-        super().__init__(classifier,
-                         percent_poison,
-                         epsilon,
-                         max_trials,
-                         max_epochs,
-                         learning_rate_schedule,
-                         batch_size,
-                         clip_values,
-                         verbose)
+        super().__init__(
+            classifier,
+            percent_poison,
+            epsilon,
+            max_trials,
+            max_epochs,
+            learning_rate_schedule,
+            batch_size,
+            clip_values,
+            verbose,
+        )
         self.indices_target = indices_target
         self.selection_strategy = selection_strategy
         self.patching_strategy = patching_strategy
@@ -78,10 +80,10 @@ class SleeperAgentAttack(GradientMatchingAttack):
         self.model_retraining_epoch = model_retraining_epoch
         self.indices_poison = []
         self.patch = patch
-        
 
     """
     Implementation of Sleeper Agent Attack"""
+
     def poison(
         self, x_trigger: np.ndarray, y_trigger: np.ndarray, x_train: np.ndarray, y_train: np.ndarray
     ) -> Tuple[np.ndarray, np.ndarray]:
@@ -105,10 +107,8 @@ class SleeperAgentAttack(GradientMatchingAttack):
             poisoner = self._GradientMatchingAttack__poison__pytorch
             finish_poisoning = self._GradientMatchingAttack__finish_poison_pytorch
         else:
-            raise NotImplementedError(
-                "SleeperAgentAttack is currently implemented only for Tensorflow V2 and Pytorch."
-            )
-#         pdb.set_trace()
+            raise NotImplementedError("SleeperAgentAttack is currently implemented only for Tensorflow V2 and Pytorch.")
+        #         pdb.set_trace()
         # Choose samples to poison.
         x_train = np.copy(x_train)
         y_train = np.copy(y_train)
@@ -130,25 +130,29 @@ class SleeperAgentAttack(GradientMatchingAttack):
             y_train_classes = y_train
         for _ in trange(self.max_trials):
             if self.selection_strategy == "random":
-                self.indices_poison = np.random.permutation(np.where([y in classes_target for y in y_train_classes])[0])[:num_poison_samples]
+                self.indices_poison = np.random.permutation(
+                    np.where([y in classes_target for y in y_train_classes])[0]
+                )[:num_poison_samples]
             else:
-                self.indices_poison = self.select_poison_indices(self.substitute_classifier,x_train,y_train,num_poison_samples)    
+                self.indices_poison = self.select_poison_indices(
+                    self.substitute_classifier, x_train, y_train, num_poison_samples
+                )
             x_poison = x_train[self.indices_poison]
             y_poison = y_train[self.indices_poison]
             self._GradientMatchingAttack__initialize_poison(x_trigger, y_trigger, x_poison, y_poison)
             original_epochs = self.max_epochs
             if self.model_retrain:
-                retrain_epochs = self.max_epochs//self.retraining_factor
+                retrain_epochs = self.max_epochs // self.retraining_factor
                 for i in range(self.retraining_factor):
-                    if i==self.retraining_factor-1:
-                        self.max_epochs = original_epochs - retrain_epochs*i
+                    if i == self.retraining_factor - 1:
+                        self.max_epochs = original_epochs - retrain_epochs * i
                         x_poisoned, B_ = poisoner(x_poison, y_poison)
                     else:
-                        self.max_epochs = retrain_epochs 
-                        x_poisoned, B_ = poisoner(x_poison, y_poison) 
+                        self.max_epochs = retrain_epochs
+                        x_poisoned, B_ = poisoner(x_poison, y_poison)
                         self.model_retraining(x_poisoned)
             else:
-                x_poisoned, B_ = poisoner(x_poison, y_poison)   # pylint: disable=C0103
+                x_poisoned, B_ = poisoner(x_poison, y_poison)  # pylint: disable=C0103
             finish_poisoning()
             B_ = np.mean(B_)  # Averaging B losses from multiple batches.  # pylint: disable=C0103
             if B_ < best_B:
@@ -159,59 +163,64 @@ class SleeperAgentAttack(GradientMatchingAttack):
         if self.verbose > 0:
             print("Best B-score:", best_B)
         x_train[best_indices_poison] = best_x_poisoned
-        return x_train, y_train, best_indices_poison 
-    
-    def model_retraining(self,poisoned_samples):
+        return x_train, y_train, best_indices_poison
+
+    def model_retraining(self, poisoned_samples):
         import torch
         from art.utils import load_cifar10
         from art.estimators.classification.pytorch import PyTorchClassifier
-        
+
         (x_train, y_train), (x_test, y_test), min_, max_ = load_cifar10()
-        mean = np.mean(x_train,axis=(0,1,2,3))
-        std = np.std(x_train,axis=(0,1,2,3))
-        x_train = (x_train-mean)/(std+1e-7)
-        x_test = (x_test-mean)/(std+1e-7)
-        min_ = (min_-mean)/(std+1e-7)
-        max_ = (max_-mean)/(std+1e-7)
-        x_train = np.transpose(x_train, [0, 3,1,2])
-        
+        mean = np.mean(x_train, axis=(0, 1, 2, 3))
+        std = np.std(x_train, axis=(0, 1, 2, 3))
+        x_train = (x_train - mean) / (std + 1e-7)
+        x_test = (x_test - mean) / (std + 1e-7)
+        min_ = (min_ - mean) / (std + 1e-7)
+        max_ = (max_ - mean) / (std + 1e-7)
+        x_train = np.transpose(x_train, [0, 3, 1, 2])
+
         poisoned_samples = np.asarray(poisoned_samples)
         x_train[self.indices_target[self.indices_poison]] = poisoned_samples
-        model,loss_fn,optimizer = self.create_model(x_train, y_train, x_test=x_test, y_test=y_test,
-                                               num_classes=10, batch_size=128, epochs=self.model_retraining_epoch)
-        model_ = PyTorchClassifier(model, input_shape=x_train.shape[1:], loss=loss_fn,
-                                   optimizer=optimizer, nb_classes=10)
-        check_train = self.substitute_classifier.model.training 
+        model, loss_fn, optimizer = self.create_model(
+            x_train,
+            y_train,
+            x_test=x_test,
+            y_test=y_test,
+            num_classes=10,
+            batch_size=128,
+            epochs=self.model_retraining_epoch,
+        )
+        model_ = PyTorchClassifier(
+            model, input_shape=x_train.shape[1:], loss=loss_fn, optimizer=optimizer, nb_classes=10
+        )
+        check_train = self.substitute_classifier.model.training
         self.substitute_classifier = model_
         self.substitute_classifier.model.training = check_train
-        
-    def create_model(self,x_train, y_train, x_test=None, y_test=None, num_classes=10, batch_size=128,
-                     epochs=80):
+
+    def create_model(self, x_train, y_train, x_test=None, y_test=None, num_classes=10, batch_size=128, epochs=80):
         from torchvision.models.resnet import BasicBlock, Bottleneck
         import torch
         import torch.nn as nn
         from torch.utils.data import TensorDataset, DataLoader
         import torchvision
-    
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")    
-        model = torchvision.models.ResNet(torchvision.models.resnet.BasicBlock, [2, 2, 2, 2],
-                                          num_classes=num_classes)
+
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        model = torchvision.models.ResNet(torchvision.models.resnet.BasicBlock, [2, 2, 2, 2], num_classes=num_classes)
         loss_fn = nn.CrossEntropyLoss()
-        optimizer = torch.optim.SGD(model.parameters(), lr=0.1, momentum=0.9, weight_decay=5e-4,
-                                    nesterov=True)
+        optimizer = torch.optim.SGD(model.parameters(), lr=0.1, momentum=0.9, weight_decay=5e-4, nesterov=True)
         model.to(device)
         y_train = np.argmax(y_train, axis=1)
-        x_tensor = torch.tensor(x_train, dtype=torch.float32, device=device) # transform to torch tensor
+        x_tensor = torch.tensor(x_train, dtype=torch.float32, device=device)  # transform to torch tensor
         y_tensor = torch.tensor(y_train, dtype=torch.long, device=device)
-        x_test = np.transpose(x_test, [0, 3,1,2])
+        x_test = np.transpose(x_test, [0, 3, 1, 2])
         y_test = np.argmax(y_test, axis=1)
-        x_tensor_test = torch.tensor(x_test, dtype=torch.float32, device=device) # transform to torch tensor
+        x_tensor_test = torch.tensor(x_test, dtype=torch.float32, device=device)  # transform to torch tensor
         y_tensor_test = torch.tensor(y_test, dtype=torch.long, device=device)
 
-        dataset_train = TensorDataset(x_tensor,y_tensor) # create your datset
+        dataset_train = TensorDataset(x_tensor, y_tensor)  # create your datset
         dataloader_train = DataLoader(dataset_train, batch_size=batch_size)
 
-        dataset_test = TensorDataset(x_tensor_test,y_tensor_test) # create your datset
+        dataset_test = TensorDataset(x_tensor_test, y_tensor_test)  # create your datset
         dataloader_test = DataLoader(dataset_test, batch_size=batch_size)
 
         for epoch in trange(epochs):
@@ -230,19 +239,20 @@ class SleeperAgentAttack(GradientMatchingAttack):
                 total += labels.size(0)
                 accuracy += (predicted == labels).sum().item()
                 running_loss += loss.item()
-        train_accuracy = (100 * accuracy / total)
+        train_accuracy = 100 * accuracy / total
         print("Epoch %d train accuracy: %f" % (epoch, train_accuracy))
         test_accuracy = self.testAccuracy(model, dataloader_test)
         print("Final test accuracy: %f" % test_accuracy)
-        return model,loss_fn,optimizer
-    
-    def testAccuracy(self,model, test_loader):
+        return model, loss_fn, optimizer
+
+    def testAccuracy(self, model, test_loader):
         import torch
+
         model_was_training = model.training
         model.eval()
         accuracy = 0.0
         total = 0.0
-    
+
         with torch.no_grad():
             for data in test_loader:
                 images, labels = data
@@ -252,23 +262,24 @@ class SleeperAgentAttack(GradientMatchingAttack):
                 _, predicted = torch.max(outputs.data, 1)
                 total += labels.size(0)
                 accuracy += (predicted == labels).sum().item()
-    
+
         # compute the accuracy over all test images
-        accuracy = (100 * accuracy / total)
+        accuracy = 100 * accuracy / total
         if model_was_training:
             model.train()
-        return(accuracy)
+        return accuracy
 
     # This function is responsible for returning indices of poison images with maximum gradient norm
-    def select_poison_indices(self,classifier,x_samples,y_samples,num_poison):
-        import torch    
+    def select_poison_indices(self, classifier, x_samples, y_samples, num_poison):
+        import torch
+
         device = "cuda" if torch.cuda.is_available() else "cpu"
         grad_norms = []
         criterion = torch.nn.CrossEntropyLoss()
         model = classifier.model
         model.eval()
         differentiable_params = [p for p in classifier.model.parameters() if p.requires_grad]
-        for x,y in zip(x_samples,y_samples):
+        for x, y in zip(x_samples, y_samples):
             image = torch.tensor(x).to(device)
             label = torch.tensor(y).to(device)
             loss = criterion(model(image.unsqueeze(0)), label.unsqueeze(0))
@@ -276,25 +287,27 @@ class SleeperAgentAttack(GradientMatchingAttack):
             grad_norm = 0
             for grad in gradients:
                 grad_norm += grad.detach().pow(2).sum()
-            grad_norms.append(grad_norm.sqrt())      
+            grad_norms.append(grad_norm.sqrt())
 
         indices = sorted(range(len(grad_norms)), key=lambda k: grad_norms[k])
         indices = indices[-num_poison:]
-        return indices # this will get only indices for target class
-    
+        return indices  # this will get only indices for target class
+
     # This function is responsible for applying trigger patches to the images
     # fixed - where the trigger is applied at the bottom right of the image
     # random - where the trigger is applied at random location of the image
-    def apply_trigger_patch(self,x_trigger):    
+    def apply_trigger_patch(self, x_trigger):
         from art.estimators.classification.pytorch import PyTorchClassifier
+
         patch_size = self.patch.shape[1]
         if self.patching_strategy == "fixed":
-            x_trigger[:,-patch_size:,-patch_size:,:] = self.patch
+            x_trigger[:, -patch_size:, -patch_size:, :] = self.patch
         else:
             for x in x_trigger:
-                x_cord = random.randrange(0,x.shape[1] - self.patch.shape[1] + 1)
-                y_cord = random.randrange(0,x.shape[2] - self.patch.shape[2] + 1)
-                x[x_cord:x_cord+patch_size,y_cord:y_cord+patch_size,:]= self.patch
+                x_cord = random.randrange(0, x.shape[1] - self.patch.shape[1] + 1)
+                y_cord = random.randrange(0, x.shape[2] - self.patch.shape[2] + 1)
+                x[x_cord : x_cord + patch_size, y_cord : y_cord + patch_size, :] = self.patch
         if isinstance(self.substitute_classifier, PyTorchClassifier):
-            import torch    
-            return torch.tensor(np.transpose(x_trigger, [0, 3,1,2]))
+            import torch
+
+            return torch.tensor(np.transpose(x_trigger, [0, 3, 1, 2]))
