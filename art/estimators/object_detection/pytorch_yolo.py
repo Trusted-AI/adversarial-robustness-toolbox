@@ -315,12 +315,7 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
         else:
             raise NotImplementedError("Combination of inputs and preprocessing not supported.")
 
-        if isinstance(y_preprocessed, np.ndarray):
-            labels_t = torch.from_numpy(y_preprocessed).to(self.device)  # type: ignore
-        else:
-            labels_t = y_preprocessed  # type: ignore
-
-        labels_t = translate_labels_art_to_yolov3(labels_art=labels_t)
+        labels_t = translate_labels_art_to_yolov3(labels_art=y_preprocessed)
 
         loss_components = self._model(inputs_t, labels_t)
 
@@ -406,7 +401,7 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
         predictions_xcycwh = self._model(x_preprocessed_tensor)
 
         predictions_x1y1x2y2_tensor = translate_predictions_xcycwh_to_x1y1x2y2(y_pred_xcycwh=predictions_xcycwh)
-        predictions_x1y1x2y2_array = []
+        predictions_x1y1x2y2_array: List[Dict[str, np.ndarray]] = []
 
         for i_prediction, _ in enumerate(predictions_x1y1x2y2_tensor):
             predictions_x1y1x2y2_array.append({})
