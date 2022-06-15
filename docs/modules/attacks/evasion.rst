@@ -261,7 +261,7 @@ ShapeShifter Attack
    :special-members:
 
 Sign-OPT Attack
----------------------------------------
+---------------
 .. autoclass:: SignOPTAttack
    :members:
    :special-members:
