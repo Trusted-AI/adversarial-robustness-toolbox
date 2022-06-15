@@ -150,6 +150,7 @@ class SignOPTAttack(EvasionAttack):
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
+
         :param x: An array with the original inputs to be attacked.
         :param y: Target values (class labels) one-hot-encoded of
                         shape (nb_samples, nb_classes) or indices of shape
