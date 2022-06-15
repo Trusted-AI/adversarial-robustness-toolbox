@@ -18,18 +18,19 @@
 """
 This module creates GANs using the TensorFlow ML Framework
 """
-from typing import Any, Tuple, TYPE_CHECKING
+from typing import Tuple, TYPE_CHECKING, Union
+
 import numpy as np
-import tensorflow as tf
-from art.estimators.estimator import BaseEstimator
+from art.estimators.tensorflow import TensorFlowV2Estimator
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE, GENERATOR_TYPE
+    import tensorflow as tf
 
 
-class TensorFlow2GAN(BaseEstimator):
+class TensorFlowV2GAN(TensorFlowV2Estimator):
     """
-    This class implements a GAN with the TensorFlow framework.
+    This class implements a GAN with the TensorFlow v2 framework.
     """
 
     def __init__(
@@ -42,15 +43,16 @@ class TensorFlow2GAN(BaseEstimator):
         discriminator_optimizer_fct=None,
     ):
         """
-        Initialization of a test TF2 GAN
+        Initialization of a test TensorFlow v2 GAN
+
         :param generator: a TensorFlow2 generator
-        :param discriminator: a TensorFlow 2 discriminator
+        :param discriminator: a TensorFlow v2 discriminator
         :param generator_loss: the loss function to use for the generator
         :param discriminator_loss: the loss function to use for the discriminator
         :param generator_optimizer_fct: the optimizer function to use for the generator
         :param discriminator_optimizer_fct: the optimizer function to use for the discriminator
         """
-        super().__init__(model=None, clip_values=None)
+        super().__init__(model=None, clip_values=None, channels_first=None)
         self._generator = generator
         self._discriminator_classifier = discriminator
         self._generator_loss = generator_loss
@@ -58,13 +60,15 @@ class TensorFlow2GAN(BaseEstimator):
         self._discriminator_loss = discriminator_loss
         self._discriminator_optimizer_fct = discriminator_optimizer_fct
 
-    def predict(self, x: np.ndarray, **kwargs) -> Any:  # lgtm [py/inheritance/incorrect-overridden-signature]
+    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
         """
-        Generates a sample
-        param x: a seed
-        :return: the sample
+        Generates a sample.
+
+        :param x: A input seed.
+        :param batch_size: The batch size for predictions.
+        :return: The generated sample.
         """
-        return self.generator.model(x, training=False)
+        return self.generator.predict(x, batch_size=batch_size, **kwargs)
 
     @property
     def input_shape(self) -> Tuple[int, int]:
@@ -75,25 +79,19 @@ class TensorFlow2GAN(BaseEstimator):
         """
         return 1, 100
 
-    def fit(self, x: np.ndarray, y: np.ndarray, **kwargs) -> None:
+    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
         """
         Creates a generative model
 
         :param x: the secret backdoor trigger that will produce the target
         :param y: the target to produce when using the trigger
         :param batch_size: batch_size of images used to train generator
-        :param max_iter: total number of iterations for performing the attack
+        :param nb_epochs: total number of iterations for performing the attack
         """
-        max_iter = kwargs.get("max_iter")
-        if max_iter is None:
-            raise ValueError("max_iter argument was None. The value must be a positive integer")
-
-        batch_size = kwargs.get("batch_size")
-        if batch_size is None:
-            raise ValueError("batch_size argument was None. The value must be a positive integer")
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
         z_trigger = x
-        for _ in range(max_iter):
+        for _ in range(nb_epochs):
             train_imgs = kwargs.get("images")
             train_set = (
                 tf.data.Dataset.from_tensor_slices(train_imgs)
@@ -167,3 +165,11 @@ class TensorFlow2GAN(BaseEstimator):
         :return: the optimizer function for the discriminator
         """
         return self._discriminator_optimizer_fct
+
+    def loss_gradient(self, x, y, **kwargs):
+        raise NotImplementedError
+
+    def get_activations(
+        self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
+    ) -> np.ndarray:
+        raise NotImplementedError
