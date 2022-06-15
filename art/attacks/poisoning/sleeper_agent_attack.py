@@ -23,16 +23,13 @@ This module implements Sleeper Agent attack on Neural Networks.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Any, Dict, Tuple, TYPE_CHECKING, List
-
-import numpy as np
-from tqdm.auto import trange, tqdm
+from typing import Tuple, TYPE_CHECKING, List
+from tqdm.auto import trange
 import random
+import numpy as np
 
-from art.attacks.attack import Attack
+
 from art.attacks.poisoning import GradientMatchingAttack
-from art.estimators import BaseEstimator, NeuralNetworkMixin
-from art.estimators.classification.classifier import ClassifierMixin
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
@@ -166,7 +163,6 @@ class SleeperAgentAttack(GradientMatchingAttack):
         return x_train, y_train, best_indices_poison
 
     def model_retraining(self, poisoned_samples):
-        import torch
         from art.utils import load_cifar10
         from art.estimators.classification.pytorch import PyTorchClassifier
 
@@ -198,7 +194,6 @@ class SleeperAgentAttack(GradientMatchingAttack):
         self.substitute_classifier.model.training = check_train
 
     def create_model(self, x_train, y_train, x_test=None, y_test=None, num_classes=10, batch_size=128, epochs=80):
-        from torchvision.models.resnet import BasicBlock, Bottleneck
         import torch
         import torch.nn as nn
         from torch.utils.data import TensorDataset, DataLoader
@@ -227,7 +222,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
             running_loss = 0.0
             total = 0
             accuracy = 0
-            for i, data in enumerate(dataloader_train, 0):
+            for _, data in enumerate(dataloader_train, 0):
                 inputs, labels = data
                 optimizer.zero_grad()
                 # forward + backward + optimize
@@ -241,11 +236,11 @@ class SleeperAgentAttack(GradientMatchingAttack):
                 running_loss += loss.item()
         train_accuracy = 100 * accuracy / total
         print("Epoch %d train accuracy: %f" % (epoch, train_accuracy))
-        test_accuracy = self.testAccuracy(model, dataloader_test)
+        test_accuracy = self.test_accuracy(model, dataloader_test)
         print("Final test accuracy: %f" % test_accuracy)
         return model, loss_fn, optimizer
 
-    def testAccuracy(self, model, test_loader):
+    def test_accuracy(self, model, test_loader):
         import torch
 
         model_was_training = model.training
