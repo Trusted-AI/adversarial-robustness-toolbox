@@ -34,7 +34,7 @@ from art.config import ART_NUMPY_DTYPE
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
-    import torch
+    import torch  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
