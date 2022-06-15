@@ -105,6 +105,7 @@ class SignOPTAttack(EvasionAttack):
     ) -> None:
         """
         Create a Sign_OPT attack instance.
+
         :param estimator: A trained classifier.
         :param targeted: Should the attack target one specific class.
         :param epsilon: A very small smoothing parameter.
