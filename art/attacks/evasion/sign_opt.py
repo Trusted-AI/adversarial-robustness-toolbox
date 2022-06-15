@@ -48,9 +48,11 @@ hard-label adversarial attack.
 import logging
 from typing import Optional, TYPE_CHECKING, Tuple
 import time
+
 import numpy as np
 from numpy import integer, linalg as LA
 from tqdm.auto import tqdm
+
 from art.attacks.attack import EvasionAttack
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator
