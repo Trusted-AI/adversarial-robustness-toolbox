@@ -25,10 +25,13 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 from typing import Callable, List, Optional, Tuple, Union, TYPE_CHECKING
 
+import warnings
+from tqdm import tqdm
 import numpy as np
 
 from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 from art.estimators.certification.randomized_smoothing.randomized_smoothing import RandomizedSmoothingMixin
+from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
@@ -91,6 +94,12 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
         :param scale: Standard deviation of Gaussian noise added.
         :param alpha: The failure probability of smoothing.
         """
+        if preprocessing_defences is not None:
+            warnings.warn(
+                "\nWith the current backend (Tensorflow), Gaussian noise will be added by Randomized Smoothing "
+                "AFTER the application of preprocessing defences. Please ensure this conforms to your use case.\n"
+            )
+
         super().__init__(
             model=model,
             nb_classes=nb_classes,
@@ -113,21 +122,41 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
     def _fit_classifier(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
         return TensorFlowV2Classifier.fit(self, x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
-    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, **kwargs):
+    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, **kwargs) -> None:
         """
         Fit the classifier on the training set `(x, y)`.
 
         :param x: Training data.
-        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
-                  (nb_samples,).
-        :param batch_size: Batch size.
-        :key nb_epochs: Number of epochs to use for training
-        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
-               and providing it takes no effect.
-        :type kwargs: `dict`
-        :return: `None`
+        :param y: Labels, one-hot-encoded of shape (nb_samples, nb_classes) or index labels of
+                  shape (nb_samples,).
+        :param batch_size: Size of batches.
+        :param nb_epochs: Number of epochs to use for training.
+        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for
+               TensorFlow and providing it takes no effect.
         """
-        RandomizedSmoothingMixin.fit(self, x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
+        import tensorflow as tf  # lgtm [py/repeated-import]
+
+        if self._train_step is None:  # pragma: no cover
+            raise TypeError(
+                "The training function `train_step` is required for fitting a model but it has not been " "defined."
+            )
+
+        y = check_and_transform_label_format(y, self.nb_classes)
+
+        # Apply preprocessing
+        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
+
+        # Check label shape
+        if self._reduce_labels:
+            y_preprocessed = np.argmax(y_preprocessed, axis=1)
+
+        train_ds = tf.data.Dataset.from_tensor_slices((x_preprocessed, y_preprocessed)).shuffle(10000).batch(batch_size)
+
+        for _ in tqdm(range(nb_epochs)):
+            for images, labels in train_ds:
+                # Add random noise for randomized smoothing
+                images += tf.random.normal(shape=images.shape, mean=0.0, stddev=self.scale)
+                self._train_step(self.model, images, labels)
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:  # type: ignore
         """

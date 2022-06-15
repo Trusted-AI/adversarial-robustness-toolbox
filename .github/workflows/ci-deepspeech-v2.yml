@@ -22,13 +22,13 @@ jobs:
   test_deepspeech_v2:
     name: PyTorchDeepSpeech v2
     runs-on: ubuntu-latest
-    container: minhitbk/art_testing_envs:deepspeech_v2
+    container: adversarialrobustnesstoolbox/art_testing_envs:deepspeech_v2
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
       - name: Run Test Action
         uses: ./.github/actions/deepspeech-v2
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v2.1.0
+        uses: codecov/codecov-action@v3
         with:
           fail_ci_if_error: true

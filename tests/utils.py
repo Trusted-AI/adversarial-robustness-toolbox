@@ -32,8 +32,8 @@ import numpy as np
 
 from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 from art.estimators.encoding.tensorflow import TensorFlowEncoder
-from art.estimators.generation.tensorflow import TensorFlowGenerator, TensorFlow2Generator
-from art.estimators.gan.tensorflow_gan import TensorFlow2GAN
+from art.estimators.generation.tensorflow import TensorFlowGenerator, TensorFlowV2Generator
+from art.estimators.gan.tensorflow import TensorFlowV2GAN
 from art.utils import load_dataset
 
 logger = logging.getLogger(__name__)
@@ -366,7 +366,7 @@ def get_image_generator_tf_v2(capacity: int, z_dim: int):
 
         return model
 
-    generator = TensorFlow2Generator(encoding_length=z_dim, model=make_image_generator_model(capacity, z_dim))
+    generator = TensorFlowV2Generator(encoding_length=z_dim, model=make_image_generator_model(capacity, z_dim))
 
     return generator
 
@@ -426,7 +426,7 @@ def get_image_gan_tf_v2():
 
         return total_loss
 
-    gan = TensorFlow2GAN(
+    gan = TensorFlowV2GAN(
         generator=generator,
         discriminator=discriminator_classifier,
         generator_loss=generator_orig_loss_fct,
