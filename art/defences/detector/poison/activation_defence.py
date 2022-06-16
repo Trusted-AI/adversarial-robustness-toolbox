@@ -386,8 +386,6 @@ class ActivationDefence(PoisonFilteringDefence):
                     report["Class_"+str(n_class)]["cluster_"+str(cluster)]["ExRe_Score"] = n_class_pred_count/other_class_pred_count
                     report["Class_"+str(n_class)]["cluster_"+str(cluster)]["Suspected_Source_class"] = other_class
 
-        
-
         return report
 
     @staticmethod
