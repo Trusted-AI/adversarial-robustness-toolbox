@@ -61,7 +61,7 @@ class ActivationDefence(PoisonFilteringDefence):
         in general, see https://arxiv.org/abs/1902.06705
     """
 
-    defence_params = ["nb_clusters", "clustering_method", "nb_dims", "reduce", "cluster_analysis", "generator"]
+    defence_params = ["nb_clusters", "clustering_method", "nb_dims", "reduce", "cluster_analysis", "generator", "ex_re_threshold"]
     valid_clustering = ["KMeans"]
     valid_reduce = ["PCA", "FastICA", "TSNE"]
     valid_analysis = ["smaller", "distance", "relative-size", "silhouette-scores"]
@@ -74,6 +74,7 @@ class ActivationDefence(PoisonFilteringDefence):
         x_train: np.ndarray,
         y_train: np.ndarray,
         generator: Optional[DataGenerator] = None,
+        ex_re_threshold = None,
     ) -> None:
         """
         Create an :class:`.ActivationDefence` object with the provided classifier.
@@ -82,6 +83,7 @@ class ActivationDefence(PoisonFilteringDefence):
         :param x_train: A dataset used to train the classifier.
         :param y_train: Labels used to train the classifier.
         :param generator: A data generator to be used instead of `x_train` and `y_train`.
+        :param ex_re_threshold: Set to a positive value to enable exclusionary reclassification
         """
         super().__init__(classifier, x_train, y_train)
         self.classifier: "CLASSIFIER_NEURALNETWORK_TYPE" = classifier
@@ -102,6 +104,7 @@ class ActivationDefence(PoisonFilteringDefence):
         self.confidence_level: List[float] = []
         self.poisonous_clusters: np.ndarray
         self.clusterer = MiniBatchKMeans(n_clusters=self.nb_clusters)
+        self.ex_re_threshold = ex_re_threshold
         self._check_params()
 
     def evaluate_defence(self, is_clean: np.ndarray, **kwargs) -> str:
@@ -219,7 +222,15 @@ class ActivationDefence(PoisonFilteringDefence):
         for assigned_clean, indices_dp in zip(self.assigned_clean_by_class, indices_by_class):
             for assignment, index_dp in zip(assigned_clean, indices_dp):
                 if assignment == 1:
-                    self.is_clean_lst[index_dp] = 1
+                    self.is_clean_lst[index_dp] = 1        
+                    
+        if self.ex_re_threshold:
+            if self.generator is not None:
+                raise RuntimeError("Currently, exclusionary reclassification cannot be used with generators")
+            if hasattr(self.classifier, "clone_for_refitting"):
+                report = self.exclusionary_reclassification(report)
+            else:
+                logger.warning(f"Classifier does not have clone_for_refitting method defined. Skipping")
 
         return report, self.is_clean_lst
 
@@ -330,6 +341,54 @@ class ActivationDefence(PoisonFilteringDefence):
         report = dict(list(report.items()) + list(self.get_params().items()))
 
         return report, self.assigned_clean_by_class
+    
+    def exclusionary_reclassification(self, report):
+        logger.info("Performing Exclusionary Reclassification with a threshold of %s", self.ex_re_threshold)
+        # Train a new classifier with the unsuspicious clusters
+        cloned_classifier = self.classifier.clone_for_refitting() # Get a classifier with the same training setup, but new weights       
+        filtered_x = self.x_train[np.array(self.is_clean_lst) == 1]
+        filtered_y = self.y_train[np.array(self.is_clean_lst) == 1]
+        cloned_classifier.fit(filtered_x, filtered_y)
+
+        # Test on the suspicious clusters
+        n_train = len(self.x_train)
+        indices_by_class = self._segment_by_class(np.arange(n_train), self.y_train)
+        indicies_by_cluster: List[List[np.ndarray]] = [  # type: ignore
+            [[] for _ in range(self.nb_clusters)] for _ in range(self.classifier.nb_classes)  # type: ignore
+        ]   
+
+        # Get all data in x_train in the right cluster
+        for n_class, cluster_assignments in enumerate(self.clusters_by_class):
+            for j, assigned_cluster in enumerate(cluster_assignments):
+                indicies_by_cluster[n_class][assigned_cluster].append(indices_by_class[n_class][j])
+
+        for n_class in range(len(self.poisonous_clusters)):
+            suspicious_clusters = np.where(np.array(self.poisonous_clusters[n_class]) == 1)[0]
+            for cluster in suspicious_clusters:
+                cur_indicies = indicies_by_cluster[n_class][cluster]
+                predictions = cloned_classifier.predict(self.x_train[cur_indicies])
+
+                predicted_as_class = [np.sum(np.argmax(predictions,axis=1)==i) for i in range(self.classifier.nb_classes)]
+                n_class_pred_count = predicted_as_class[n_class]
+                predicted_as_class[n_class] = -1 * predicted_as_class[n_class] # Just to make the max simple
+                other_class = np.argmax(predicted_as_class) 
+                other_class_pred_count = predicted_as_class[other_class]
+                
+                # Check if cluster is legit. If so, mark it as such
+                if  other_class_pred_count == 0 or n_class_pred_count/other_class_pred_count > self.ex_re_threshold:
+                    self.poisonous_clusters[n_class][cluster] = 0
+                    report["Class_"+str(n_class)]["cluster_"+str(cluster)]["suspicious_cluster"] = False
+                    report["suspicious_clusters"] = report["suspicious_clusters"] - 1
+                    for ind in cur_indicies:
+                        self.is_clean_lst[ind] = 1
+                # Otherwise, add the exclusionary reclassification info to the report for the suspicious cluster
+                else:
+                    report["Class_"+str(n_class)]["cluster_"+str(cluster)]["ExRe_Score"] = n_class_pred_count/other_class_pred_count
+                    report["Class_"+str(n_class)]["cluster_"+str(cluster)]["Suspected_Source_class"] = other_class
+
+        
+
+        return report
 
     @staticmethod
     def relabel_poison_ground_truth(
@@ -572,6 +631,10 @@ class ActivationDefence(PoisonFilteringDefence):
             raise ValueError("Unsupported method for cluster analysis method: " + self.cluster_analysis)
         if self.generator and not isinstance(self.generator, DataGenerator):
             raise TypeError("Generator must a an instance of DataGenerator")
+        if self.ex_re_threshold and self.ex_re_threshold <= 0:
+            raise ValueError(f"Exclusionary reclassification threshold must be positive")
+            
+        
 
     def _get_activations(self, x_train: Optional[np.ndarray] = None) -> np.ndarray:
         """
@@ -582,7 +645,7 @@ class ActivationDefence(PoisonFilteringDefence):
         if self.classifier.layer_names is not None:
             nb_layers = len(self.classifier.layer_names)
         else:
-            raise ValueError("No layer names identified.")
+            raise ValueError(f"No layer names identified.")
         protected_layer = nb_layers - 1
 
         if self.generator is not None and x_train is not None:
@@ -596,7 +659,7 @@ class ActivationDefence(PoisonFilteringDefence):
         if isinstance(activations, np.ndarray):
             nodes_last_layer = np.shape(activations)[1]
         else:
-            raise ValueError("`activations is None or tensor.")
+            raise ValueError(f"activations is None or tensor.")
 
         if nodes_last_layer <= self.TOO_SMALL_ACTIVATIONS:
             logger.warning(
@@ -703,7 +766,7 @@ def cluster_activations(
     if clustering_method == "KMeans":
         clusterer = KMeans(n_clusters=nb_clusters)
     else:
-        raise ValueError(clustering_method + " clustering method not supported.")
+        raise ValueError(f"{clustering_method} clustering method not supported.")
 
     for activation in separated_activations:
         # Apply dimensionality reduction
@@ -749,7 +812,7 @@ def reduce_dimensionality(activations: np.ndarray, nb_dims: int = 10, reduce: st
     elif reduce == "PCA":
         projector = PCA(n_components=nb_dims)
     else:
-        raise ValueError(reduce + " dimensionality reduction method not supported.")
+        raise ValueError(f"{reduce} dimensionality reduction method not supported.")
 
     reduced_activations = projector.fit_transform(activations)
     return reduced_activations

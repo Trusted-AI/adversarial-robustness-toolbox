@@ -100,6 +100,10 @@ class TestActivationDefence(unittest.TestCase):
     def test_wrong_parameters_4(self):
         self.defence.set_params(cluster_analysis="what")
 
+    @unittest.expectedFailure
+    def test_wrong_parameters_4(self):
+        self.defence.set_params(ex_re_threshold=0)
+
     def test_activations(self):
         (x_train, _), (_, _), (_, _) = self.mnist
         activations = self.defence._get_activations()
@@ -128,7 +132,7 @@ class TestActivationDefence(unittest.TestCase):
         # Get MNIST
         (x_train, _), (_, _), (_, _) = self.mnist
 
-        _, is_clean_lst = self.defence.detect_poison(nb_clusters=2, nb_dims=10, reduce="PCA")
+        _, is_clean_lst = self.defence.detect_poison(nb_clusters=2, nb_dims=10, reduce="PCA", ex_re_threshold=1)
         sum_clean1 = sum(is_clean_lst)
 
         _, is_clean_lst_gen = self.defence_gen.detect_poison(nb_clusters=2, nb_dims=10, reduce="PCA")
