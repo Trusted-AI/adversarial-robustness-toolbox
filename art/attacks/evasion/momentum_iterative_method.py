@@ -57,7 +57,7 @@ class MomentumIterativeMethod(ProjectedGradientDescent):
         verbose: bool = True,
     ) -> None:
         """
-        Create a :class:`.ProjectedGradientDescent` instance.
+        Create a :class:`.MomentumIterativeMethod` instance.
 
         :param estimator: A trained classifier.
         :param eps: Maximum perturbation that the attacker can introduce.
