@@ -738,7 +738,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         # reset optimizer variables
         for var in optimizer.variables():
             var.assign(tf.zeros_like(var))
-            
+
         loss_weights = None
         weighted_metrics = None
         if self.model.compiled_loss:

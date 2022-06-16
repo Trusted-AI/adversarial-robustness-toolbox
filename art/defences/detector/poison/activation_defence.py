@@ -61,7 +61,15 @@ class ActivationDefence(PoisonFilteringDefence):
         in general, see https://arxiv.org/abs/1902.06705
     """
 
-    defence_params = ["nb_clusters", "clustering_method", "nb_dims", "reduce", "cluster_analysis", "generator", "ex_re_threshold"]
+    defence_params = [
+        "nb_clusters",
+        "clustering_method",
+        "nb_dims",
+        "reduce",
+        "cluster_analysis",
+        "generator",
+        "ex_re_threshold",
+    ]
     valid_clustering = ["KMeans"]
     valid_reduce = ["PCA", "FastICA", "TSNE"]
     valid_analysis = ["smaller", "distance", "relative-size", "silhouette-scores"]
@@ -74,7 +82,7 @@ class ActivationDefence(PoisonFilteringDefence):
         x_train: np.ndarray,
         y_train: np.ndarray,
         generator: Optional[DataGenerator] = None,
-        ex_re_threshold = None,
+        ex_re_threshold=None,
     ) -> None:
         """
         Create an :class:`.ActivationDefence` object with the provided classifier.
@@ -222,8 +230,8 @@ class ActivationDefence(PoisonFilteringDefence):
         for assigned_clean, indices_dp in zip(self.assigned_clean_by_class, indices_by_class):
             for assignment, index_dp in zip(assigned_clean, indices_dp):
                 if assignment == 1:
-                    self.is_clean_lst[index_dp] = 1        
-                    
+                    self.is_clean_lst[index_dp] = 1
+
         if self.ex_re_threshold:
             if self.generator is not None:
                 raise RuntimeError("Currently, exclusionary reclassification cannot be used with generators")
@@ -341,11 +349,13 @@ class ActivationDefence(PoisonFilteringDefence):
         report = dict(list(report.items()) + list(self.get_params().items()))
 
         return report, self.assigned_clean_by_class
-    
+
     def exclusionary_reclassification(self, report):
         logger.info("Performing Exclusionary Reclassification with a threshold of %s", self.ex_re_threshold)
         # Train a new classifier with the unsuspicious clusters
-        cloned_classifier = self.classifier.clone_for_refitting() # Get a classifier with the same training setup, but new weights       
+        cloned_classifier = (
+            self.classifier.clone_for_refitting()
+        )  # Get a classifier with the same training setup, but new weights
         filtered_x = self.x_train[np.array(self.is_clean_lst) == 1]
         filtered_y = self.y_train[np.array(self.is_clean_lst) == 1]
         cloned_classifier.fit(filtered_x, filtered_y)
@@ -355,7 +365,7 @@ class ActivationDefence(PoisonFilteringDefence):
         indices_by_class = self._segment_by_class(np.arange(n_train), self.y_train)
         indicies_by_cluster: List[List[np.ndarray]] = [  # type: ignore
             [[] for _ in range(self.nb_clusters)] for _ in range(self.classifier.nb_classes)  # type: ignore
-        ]   
+        ]
 
         # Get all data in x_train in the right cluster
         for n_class, cluster_assignments in enumerate(self.clusters_by_class):
@@ -368,23 +378,27 @@ class ActivationDefence(PoisonFilteringDefence):
                 cur_indicies = indicies_by_cluster[n_class][cluster]
                 predictions = cloned_classifier.predict(self.x_train[cur_indicies])
 
-                predicted_as_class = [np.sum(np.argmax(predictions,axis=1)==i) for i in range(self.classifier.nb_classes)]
+                predicted_as_class = [
+                    np.sum(np.argmax(predictions, axis=1) == i) for i in range(self.classifier.nb_classes)
+                ]
                 n_class_pred_count = predicted_as_class[n_class]
-                predicted_as_class[n_class] = -1 * predicted_as_class[n_class] # Just to make the max simple
-                other_class = np.argmax(predicted_as_class) 
+                predicted_as_class[n_class] = -1 * predicted_as_class[n_class]  # Just to make the max simple
+                other_class = np.argmax(predicted_as_class)
                 other_class_pred_count = predicted_as_class[other_class]
-                
+
                 # Check if cluster is legit. If so, mark it as such
-                if  other_class_pred_count == 0 or n_class_pred_count/other_class_pred_count > self.ex_re_threshold:
+                if other_class_pred_count == 0 or n_class_pred_count / other_class_pred_count > self.ex_re_threshold:
                     self.poisonous_clusters[n_class][cluster] = 0
-                    report["Class_"+str(n_class)]["cluster_"+str(cluster)]["suspicious_cluster"] = False
+                    report["Class_" + str(n_class)]["cluster_" + str(cluster)]["suspicious_cluster"] = False
                     report["suspicious_clusters"] = report["suspicious_clusters"] - 1
                     for ind in cur_indicies:
                         self.is_clean_lst[ind] = 1
                 # Otherwise, add the exclusionary reclassification info to the report for the suspicious cluster
                 else:
-                    report["Class_"+str(n_class)]["cluster_"+str(cluster)]["ExRe_Score"] = n_class_pred_count/other_class_pred_count
-                    report["Class_"+str(n_class)]["cluster_"+str(cluster)]["Suspected_Source_class"] = other_class
+                    report["Class_" + str(n_class)]["cluster_" + str(cluster)]["ExRe_Score"] = (
+                        n_class_pred_count / other_class_pred_count
+                    )
+                    report["Class_" + str(n_class)]["cluster_" + str(cluster)]["Suspected_Source_class"] = other_class
 
         return report
 
@@ -631,8 +645,6 @@ class ActivationDefence(PoisonFilteringDefence):
             raise TypeError("Generator must a an instance of DataGenerator")
         if self.ex_re_threshold and self.ex_re_threshold <= 0:
             raise ValueError(f"Exclusionary reclassification threshold must be positive")
-            
-        
 
     def _get_activations(self, x_train: Optional[np.ndarray] = None) -> np.ndarray:
         """
