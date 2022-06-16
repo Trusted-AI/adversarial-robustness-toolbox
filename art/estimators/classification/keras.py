@@ -724,7 +724,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
         :return: new estimator
         """
-        
+
         import tensorflow as tf
         import keras  # lgtm [py/repeated-import]
 
