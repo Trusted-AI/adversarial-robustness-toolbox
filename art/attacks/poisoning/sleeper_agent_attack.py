@@ -24,8 +24,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 from typing import Tuple, TYPE_CHECKING, List
-from tqdm.auto import trange
 import random
+from tqdm.auto import trange
 import numpy as np
 
 
@@ -43,6 +43,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
     Implementation of Sleeper Agent Attack
     | Paper link: https://arxiv.org/pdf/2106.08970.pdf
     """
+
     def __init__(
         self,
         classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
@@ -166,10 +167,10 @@ class SleeperAgentAttack(GradientMatchingAttack):
                 for i in range(self.retraining_factor):
                     if i == self.retraining_factor - 1:
                         self.max_epochs = original_epochs - retrain_epochs * i
-                        x_poisoned, B_ = poisoner(x_poison, y_poison) # pylint: disable=C0103
+                        x_poisoned, B_ = poisoner(x_poison, y_poison)  # pylint: disable=C0103
                     else:
                         self.max_epochs = retrain_epochs
-                        x_poisoned, B_ = poisoner(x_poison, y_poison) # pylint: disable=C0103
+                        x_poisoned, B_ = poisoner(x_poison, y_poison)  # pylint: disable=C0103
                         self.model_retraining(x_poisoned)
             else:
                 x_poisoned, B_ = poisoner(x_poison, y_poison)  # pylint: disable=C0103
@@ -220,17 +221,26 @@ class SleeperAgentAttack(GradientMatchingAttack):
         self.substitute_classifier = model_
         self.substitute_classifier.model.training = check_train
 
-    def create_model(self, x_train: np.ndarray, y_train: np.ndarray, x_test=None, y_test=None, num_classes=10, batch_size=128, epochs=80):
+    def create_model(
+        self,
+        x_train: np.ndarray,
+        y_train: np.ndarray,
+        x_test=None,
+        y_test=None,
+        num_classes=10,
+        batch_size=128,
+        epochs=80,
+    ):
         """
         Creates new model
-        :param x_train: Samples of train data. 
+        :param x_train: Samples of train data.
         :param y_train: Labels of train data.
         :param x_test: Samples of test data.
         :param y_test: Labels of test data.
         :param num_classes: Number of classes of labels in train data.
         :param batch_size: The size of batch used for training.
         :param epochs: The number of epochs for which training need to be applied.
-        :return model, loss_fn, optimizer - trained model, loss function used to train the model and optimizer used.        
+        :return model, loss_fn, optimizer - trained model, loss function used to train the model and optimizer used.
         """
         import torch
         import torch.nn as nn
@@ -281,8 +291,8 @@ class SleeperAgentAttack(GradientMatchingAttack):
     def test_accuracy(self, model, test_loader):
         """
         Calculates test accuracy on trained model
-        :param model: Trained model. 
-        :return accuracy - accuracy of trained model on test data.       
+        :param model: Trained model.
+        :return accuracy - accuracy of trained model on test data.
         """
         import torch
 
@@ -311,13 +321,14 @@ class SleeperAgentAttack(GradientMatchingAttack):
     def select_poison_indices(self, classifier, x_samples, y_samples, num_poison):
         """
         Select indices of poisoned samples
-        :classifier: Substitute Model. 
+        :classifier: Substitute Model.
         :x_samples: Samples of poison.
         :y_samples: Labels of samples of poison.
-        :num_poison: Number of poisoned samples to be selected out of all x_samples.       
-        :return indices - Indices of samples to be poisoned.      
-        """       
+        :num_poison: Number of poisoned samples to be selected out of all x_samples.
+        :return indices - Indices of samples to be poisoned.
+        """
         import torch
+
         device = "cuda" if torch.cuda.is_available() else "cpu"
         grad_norms = []
         criterion = torch.nn.CrossEntropyLoss()
@@ -344,9 +355,9 @@ class SleeperAgentAttack(GradientMatchingAttack):
     def apply_trigger_patch(self, x_trigger):
         """
         Select indices of poisoned samples
-        :x_trigger: Samples to be used for trigger. 
-        :return tensor with applied trigger patches.      
-        """ 
+        :x_trigger: Samples to be used for trigger.
+        :return tensor with applied trigger patches.
+        """
         from art.estimators.classification.pytorch import PyTorchClassifier
 
         patch_size = self.patch.shape[1]
@@ -359,4 +370,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
                 x[x_cord : x_cord + patch_size, y_cord : y_cord + patch_size, :] = self.patch
         if isinstance(self.substitute_classifier, PyTorchClassifier):
             import torch
+
             return torch.tensor(np.transpose(x_trigger, [0, 3, 1, 2]))
+        else:
+            return np.transpose(x_trigger, [0, 3, 1, 2])
