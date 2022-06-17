@@ -294,13 +294,13 @@ class SleeperAgentAttack(GradientMatchingAttack):
                 running_loss += loss.item()
             if (epoch % 5 == 0) or epoch == (epochs - 1):
                 train_accuracy = 100 * accuracy / total
-                print("Epoch {} train accuracy: {}".format(epoch, train_accuracy))
+                print("Epoch {} train accuracy: {}".format(epoch, train_accuracy))  # pylint: disable=C0209
         test_accuracy = self.test_accuracy(model, dataloader_test)
-        print("Final test accuracy: {}".format(test_accuracy))
+        print("Final test accuracy: {}".format(test_accuracy))  # pylint: disable=C0209
         return model, loss_fn, optimizer
 
     @classmethod
-    def test_accuracy(self, model, test_loader):
+    def test_accuracy(cls, model, test_loader):
         """
         Calculates test accuracy on trained model
         :param model: Trained model.
@@ -331,7 +331,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
 
     # This function is responsible for returning indices of poison images with maximum gradient norm
     @classmethod
-    def select_poison_indices(self, classifier, x_samples, y_samples, num_poison):
+    def select_poison_indices(cls, classifier, x_samples, y_samples, num_poison):
         """
         Select indices of poisoned samples
         :classifier: Substitute Model.
