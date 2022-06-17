@@ -238,7 +238,7 @@ class ActivationDefence(PoisonFilteringDefence):
             if hasattr(self.classifier, "clone_for_refitting"):
                 report = self.exclusionary_reclassification(report)
             else:
-                logger.warning(f"Classifier does not have clone_for_refitting method defined. Skipping")
+                logger.warning("Classifier does not have clone_for_refitting method defined. Skipping")
 
         return report, self.is_clean_lst
 
@@ -644,7 +644,7 @@ class ActivationDefence(PoisonFilteringDefence):
         if self.generator and not isinstance(self.generator, DataGenerator):
             raise TypeError("Generator must a an instance of DataGenerator")
         if self.ex_re_threshold and self.ex_re_threshold <= 0:
-            raise ValueError(f"Exclusionary reclassification threshold must be positive")
+            raise ValueError("Exclusionary reclassification threshold must be positive")
 
     def _get_activations(self, x_train: Optional[np.ndarray] = None) -> np.ndarray:
         """
@@ -655,7 +655,7 @@ class ActivationDefence(PoisonFilteringDefence):
         if self.classifier.layer_names is not None:
             nb_layers = len(self.classifier.layer_names)
         else:
-            raise ValueError(f"No layer names identified.")
+            raise ValueError("No layer names identified.")
         protected_layer = nb_layers - 1
 
         if self.generator is not None and x_train is not None:
@@ -669,7 +669,7 @@ class ActivationDefence(PoisonFilteringDefence):
         if isinstance(activations, np.ndarray):
             nodes_last_layer = np.shape(activations)[1]
         else:
-            raise ValueError(f"activations is None or tensor.")
+            raise ValueError("activations is None or tensor.")
 
         if nodes_last_layer <= self.TOO_SMALL_ACTIVATIONS:
             logger.warning(
