@@ -79,7 +79,8 @@ class SleeperAgentAttack(GradientMatchingAttack):
         :param verbose: Show progress bars.
         :indices_target: The indices of training data having target label.
         :patching_strategy: Patching strategy to be used for adding trigger, either random/fixed.
-        :selection_strategy: Selection strategy for getting the indices of poison examples - either random/maximum gradient norm.
+        :selection_strategy: Selection strategy for getting the indices of
+                             poison examples - either random/maximum gradient norm.
         :retraining_factor: The factor for which retraining needs to be applied.
         :model_retrain: True, if retraining has to be applied, else False.
         :model_retraining_epoch: The epochs for which retraining has to be applied.
@@ -107,7 +108,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
 
     def poison(
         self, x_trigger: np.ndarray, y_trigger: np.ndarray, x_train: np.ndarray, y_train: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray, List[int]]:
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Optimizes a portion of poisoned samples from x_train to make a model classify x_target
         as y_target by matching the gradients.
@@ -116,20 +117,23 @@ class SleeperAgentAttack(GradientMatchingAttack):
         :param y_trigger: A list of target classes to classify the triggers into.
         :param x_train: A list of training data to poison a portion of.
         :param y_train: A list of labels for x_train.
-        :return: x_train, y_train and indices of poisoned samples. Here, x_train are the samples selected from target class in training data.
+        :return: x_train, y_train and indices of poisoned samples.
+                 Here, x_train are the samples selected from target class
+                 in training data.
         """
         from art.estimators.classification.pytorch import PyTorchClassifier
         from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 
         if isinstance(self.substitute_classifier, TensorFlowV2Classifier):
-            poisoner = self._GradientMatchingAttack__poison__tensorflow
-            finish_poisoning = self._GradientMatchingAttack__finish_poison_tensorflow
+            poisoner = self._poison__tensorflow
+            finish_poisoning = self._finish_poison_tensorflow
+            initializer = self._initialize_poison_tensorflow
         elif isinstance(self.substitute_classifier, PyTorchClassifier):
-            poisoner = self._GradientMatchingAttack__poison__pytorch
-            finish_poisoning = self._GradientMatchingAttack__finish_poison_pytorch
+            poisoner = self._poison__pytorch
+            finish_poisoning = self._finish_poison_pytorch
+            initializer = self._initialize_poison_pytorch
         else:
             raise NotImplementedError("SleeperAgentAttack is currently implemented only for Tensorflow V2 and Pytorch.")
-        #         pdb.set_trace()
         # Choose samples to poison.
         x_train = np.copy(x_train)
         y_train = np.copy(y_train)
@@ -160,7 +164,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
                 )
             x_poison = x_train[self.indices_poison]
             y_poison = y_train[self.indices_poison]
-            self._GradientMatchingAttack__initialize_poison(x_trigger, y_trigger, x_poison, y_poison)
+            initializer(x_trigger, y_trigger, x_poison, y_poison)
             original_epochs = self.max_epochs
             if self.model_retrain:
                 retrain_epochs = self.max_epochs // self.retraining_factor
@@ -184,7 +188,13 @@ class SleeperAgentAttack(GradientMatchingAttack):
         if self.verbose > 0:
             print("Best B-score:", best_B)
         x_train[best_indices_poison] = best_x_poisoned
-        return x_train, y_train, best_indices_poison
+        return x_train, y_train
+
+    def get_poison_indices(self):
+        """
+        :return: indices of best poison index
+        """
+        return self.indices_poison
 
     def model_retraining(self, poisoned_samples):
         """
@@ -243,7 +253,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         :return model, loss_fn, optimizer - trained model, loss function used to train the model and optimizer used.
         """
         import torch
-        import torch.nn as nn
+        from torch import nn
         from torch.utils.data import TensorDataset, DataLoader
         import torchvision
 
@@ -282,12 +292,14 @@ class SleeperAgentAttack(GradientMatchingAttack):
                 total += labels.size(0)
                 accuracy += (predicted == labels).sum().item()
                 running_loss += loss.item()
-        train_accuracy = 100 * accuracy / total
-        print("Epoch %d train accuracy: %f" % (epoch, train_accuracy))
+            if (epoch % 5 == 0) or epoch == (epochs - 1):
+                train_accuracy = 100 * accuracy / total
+                print("Epoch {} train accuracy: {}".format(epoch, train_accuracy))
         test_accuracy = self.test_accuracy(model, dataloader_test)
-        print("Final test accuracy: %f" % test_accuracy)
+        print("Final test accuracy: {}".format(test_accuracy))
         return model, loss_fn, optimizer
 
+    @classmethod
     def test_accuracy(self, model, test_loader):
         """
         Calculates test accuracy on trained model
@@ -318,6 +330,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         return accuracy
 
     # This function is responsible for returning indices of poison images with maximum gradient norm
+    @classmethod
     def select_poison_indices(self, classifier, x_samples, y_samples, num_poison):
         """
         Select indices of poisoned samples
@@ -372,5 +385,5 @@ class SleeperAgentAttack(GradientMatchingAttack):
             import torch
 
             return torch.tensor(np.transpose(x_trigger, [0, 3, 1, 2]))
-        else:
-            return np.transpose(x_trigger, [0, 3, 1, 2])
+
+        return np.transpose(x_trigger, [0, 3, 1, 2])
