@@ -38,7 +38,7 @@ def insert_tone_trigger(
 
     :param x: N x L matrix or length L array, where N is number of examples, L is the length in number of samples.
               X is in range [-1,1].
-    :param sampling_rate: Positive integer denoting the sampling rate for the tone.
+    :param sampling_rate: Positive integer denoting the sampling rate for x.
     :param frequency: Frequency of the tone to be added.
     :param duration: Duration of the tone to be added.
     :param random: Flag indicating whether the trigger should be randomly placed.
