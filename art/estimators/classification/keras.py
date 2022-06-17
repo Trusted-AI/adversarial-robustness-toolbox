@@ -742,20 +742,20 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         loss_weights = None
         weighted_metrics = None
         if self.model.compiled_loss:
-            loss_weights = self.model.compiled_loss._loss_weights
+            loss_weights = self.model.compiled_loss._loss_weights  # pylint: disable=W0212
         if self.model.compiled_metrics:
-            weighted_metrics = self.model.compiled_metrics._weighted_metrics
+            weighted_metrics = self.model.compiled_metrics._weighted_metrics  # pylint: disable=W0212
 
         model.compile(
             optimizer=optimizer,
             loss=self.model.loss,
             metrics=self.model.metrics,
-            loss_weights=loss_weights,  # pylint: disable=W0212
-            weighted_metrics=weighted_metrics,  # pylint: disable=W0212
+            loss_weights=loss_weights,
+            weighted_metrics=weighted_metrics,
             run_eagerly=self.model.run_eagerly,
         )
 
-        clone = type(self)(model, self.nb_classes, self.input_shape)
+        clone = type(self)(model)
         params = self.get_params()
         del params["model"]
         clone.set_params(**params)
