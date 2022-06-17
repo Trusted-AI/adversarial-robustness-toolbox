@@ -351,6 +351,12 @@ class ActivationDefence(PoisonFilteringDefence):
         return report, self.assigned_clean_by_class
 
     def exclusionary_reclassification(self, report):
+        """
+        This function perform exclusionary reclassification. Based on the ex_re_threshold, suspicious clusters will be rechecked. If they remain suspicious, the suspected source class will be added to the report.
+
+        :param report: A dictionary containing defence params as well as the class clusters and their suspiciousness.
+        :return: report where the report is a dict object
+        """
         logger.info("Performing Exclusionary Reclassification with a threshold of %s", self.ex_re_threshold)
         # Train a new classifier with the unsuspicious clusters
         cloned_classifier = (
