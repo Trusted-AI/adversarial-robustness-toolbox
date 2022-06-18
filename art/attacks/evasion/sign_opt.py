@@ -228,7 +228,22 @@ class SignOPTAttack(EvasionAttack):
         initial_lbd: float,
         current_best: float,
         target: Optional[int] = None,
-    ):
+    )-> Tuple[float, int]:
+        """
+        Perform fine grained line search plus binary search for finding a good starting direction
+
+        Args:
+            x_0 (np.ndarray): An array with the original input to be attacked.
+            y_0 (int): Target value.
+            theta (np.ndarray): Initial query direction.
+            initial_lbd (float): Previous solution.
+            current_best (float): Current best solution.
+            target (Optional[int], optional): Target value. 
+                    If `self.targeted` is true, it presents the targed label. Defaults to None.
+
+        Returns:
+            Tuple[float, int]: [optimal solution for finding starting direction, the number of query performed]
+        """        
         if self.targeted:
             tolerate = 1e-5
         else:
@@ -262,8 +277,6 @@ class SignOPTAttack(EvasionAttack):
                     lbd_lo = lbd_mid
         return lbd_hi, nquery
 
-    # perform the line search in paper (Chen and Zhang, 2019)
-    # paper link: https://openreview.net/pdf?id=rJlk6iRqKX
     def _fine_grained_binary_search_local(
         self,
         x_0: np.ndarray,
@@ -273,6 +286,23 @@ class SignOPTAttack(EvasionAttack):
         initial_lbd: float = 1.0,
         tol: float = 1e-5,
     ) -> Tuple[float, int]:
+        """
+        Perform the line search in a local region plus binary search. 
+        Details in paper (Chen and Zhang, 2019), paper link: https://openreview.net/pdf?id=rJlk6iRqKX
+
+        Args:
+            x_0 (np.ndarray): An array with the original input to be attacked.
+            y_0 (int): Target value. 
+            theta (np.ndarray): Initial query direction.
+            target (Optional[int], optional): Target value. 
+                    If `self.targeted` is true, it presents the targed label. Defaults to None.
+            initial_lbd (float, optional): Previous solution. Defaults to 1.0.
+            tol (float, optional): Maximum tolerance of computed error. Stop computing if tol is reached. 
+                    Defaults to 1e-5.
+
+        Returns:
+            Tuple[float, int]: [optimal solution in local, the number of query performed]
+        """        
         nquery = 0
         lbd = initial_lbd
         # For targeted: we want to expand(x1.01) boundary away from targeted dataset
@@ -315,6 +345,16 @@ class SignOPTAttack(EvasionAttack):
     # note that `label` typing is Optional because for untargeted attack,
     # label is not passed-in in caller's parameter, so put Optional here
     def _is_label(self, x_0: np.ndarray, label: Optional[int]) -> bool:
+        """
+        Helper method to check if self.estimator predict input with label
+
+        Args:
+            x_0 (np.ndarray): An array with the original input
+            label (Optional[int]): The predicted label
+
+        Returns:
+            bool: True if self.estimator predicts label for x_0; False otherwise
+        """        
         if self.enable_clipped:
             x_0 = np.clip(x_0, self.clip_min, self.clip_max)
         pred = self.estimator.predict(np.expand_dims(x_0, axis=0), batch_size=self.batch_size)
@@ -323,6 +363,15 @@ class SignOPTAttack(EvasionAttack):
 
     # return predicted label
     def _predict_label(self, x_0: np.ndarray) -> integer:
+        """
+        Helper method to predict label for x_0
+        
+        Args:
+            x_0 (np.ndarray): An array with the original input
+
+        Returns:
+            integer: Predicted label
+        """        
         if self.enable_clipped:
             x_0 = np.clip(x_0, self.clip_min, self.clip_max)
         pred = self.estimator.predict(np.expand_dims(x_0, axis=0), batch_size=self.batch_size)
