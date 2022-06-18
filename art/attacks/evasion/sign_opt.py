@@ -94,8 +94,8 @@ class SignOPTAttack(EvasionAttack):
         targeted: bool = True,
         epsilon: float = 0.001,
         num_trial: int = 100,
-        max_iter: int = 1000,  # recommend 5000 for targeted attack
-        query_limit: int = 20000,  # recommend 40000 for targeted attack
+        max_iter: int = 1000,
+        query_limit: int = 20000,
         k: int = 200,
         alpha: float = 0.2,
         beta: float = 0.001,
@@ -137,13 +137,10 @@ class SignOPTAttack(EvasionAttack):
         self.eval_perform = eval_perform
         if eval_perform:
             self.logs = np.zeros(100)
-        # self.clip_min: Union[float]
-        # self.clip_max: Union[float]
         if self.estimator.clip_values is not None:
             self.clip_min, self.clip_max = self.estimator.clip_values
             self.enable_clipped = True
         else:
-            # self.clip_min, self.clip_max = 0.0, 1.0
             self.enable_clipped = False
         self._check_params()
 
