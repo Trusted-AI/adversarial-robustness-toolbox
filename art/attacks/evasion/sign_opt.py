@@ -69,8 +69,8 @@ class SignOPTAttack(EvasionAttack):
     """
     Implements the Sign-OPT attack `SignOPTAttack`. This is a query-efficient
     hard-label adversarial attack.
-    
-    | Paper link: https://arxiv.org/pdf/1909.10773.pdf
+
+    Paper link: https://arxiv.org/pdf/1909.10773.pdf
     """
 
     attack_params = EvasionAttack.attack_params + [
@@ -110,8 +110,10 @@ class SignOPTAttack(EvasionAttack):
         :param targeted: Should the attack target one specific class.
         :param epsilon: A very small smoothing parameter.
         :param num_trial: A number of trials to calculate a good starting point
-        :param max_iter: Maximum number of iterations. Default value is for untargeted attack, increase to recommended 5000 for targeted attacks.
-        :param query_limit: Limitation for number of queries to prediction model. Default value is for untargeted attack, increase to recommended 40000 for targeted attacks.
+        :param max_iter: Maximum number of iterations.
+        Default value is for untargeted attack, increase to recommended 5000 for targeted attacks.
+        :param query_limit: Limitation for number of queries to prediction model.
+        Default value is for untargeted attack, increase to recommended 40000 for targeted attacks.
         :param k: Number of random directions (for estimating the gradient)
         :param alpha: The step length for line search
         :param beta: The tolerance for line search
@@ -228,22 +230,18 @@ class SignOPTAttack(EvasionAttack):
         initial_lbd: float,
         current_best: float,
         target: Optional[int] = None,
-    )-> Tuple[float, int]:
+    ) -> Tuple[float, int]:
         """
         Perform fine grained line search plus binary search for finding a good starting direction
 
-        Args:
-            x_0 (np.ndarray): An array with the original input to be attacked.
-            y_0 (int): Target value.
-            theta (np.ndarray): Initial query direction.
-            initial_lbd (float): Previous solution.
-            current_best (float): Current best solution.
-            target (Optional[int], optional): Target value. 
-                    If `self.targeted` is true, it presents the targed label. Defaults to None.
-
-        Returns:
-            Tuple[float, int]: [optimal solution for finding starting direction, the number of query performed]
-        """        
+        :param x_0: An array with the original input to be attacked.
+        :param y_0: Target value.
+        :param theta: Initial query direction.
+        :param initial_lbd: Previous solution.
+        :param current_best: Current best solution.
+        :param target: Target value. If `self.targeted` is true, it presents the targed label. Defaults to None.
+        :return: Optimal solution for finding starting direction; the number of query performed
+        """
         if self.targeted:
             tolerate = 1e-5
         else:
@@ -287,22 +285,18 @@ class SignOPTAttack(EvasionAttack):
         tol: float = 1e-5,
     ) -> Tuple[float, int]:
         """
-        Perform the line search in a local region plus binary search. 
+        Perform the line search in a local region plus binary search.
         Details in paper (Chen and Zhang, 2019), paper link: https://openreview.net/pdf?id=rJlk6iRqKX
 
-        Args:
-            x_0 (np.ndarray): An array with the original input to be attacked.
-            y_0 (int): Target value. 
-            theta (np.ndarray): Initial query direction.
-            target (Optional[int], optional): Target value. 
-                    If `self.targeted` is true, it presents the targed label. Defaults to None.
-            initial_lbd (float, optional): Previous solution. Defaults to 1.0.
-            tol (float, optional): Maximum tolerance of computed error. Stop computing if tol is reached. 
-                    Defaults to 1e-5.
-
-        Returns:
-            Tuple[float, int]: [optimal solution in local, the number of query performed]
-        """        
+        :param x_0: An array with the original input to be attacked.
+        :param y_0: Target value.
+        :param theta: Initial query direction.
+        :param target: Target value. If `self.targeted` is true, it presents the targed label. Defaults to None.
+        :param initial_lbd: Previous solution. Defaults to 1.0.
+        :param tol: Maximum tolerance of computed error. Stop computing if tol is reached.
+        Defaults to 1e-5.
+        :return: optimal solution in local; the number of query performed
+        """
         nquery = 0
         lbd = initial_lbd
         # For targeted: we want to expand(x1.01) boundary away from targeted dataset
@@ -341,37 +335,27 @@ class SignOPTAttack(EvasionAttack):
                 lbd_lo = lbd_mid
         return lbd_hi, nquery
 
-    # return True, if prediction of x0 is label, False otherwise
-    # note that `label` typing is Optional because for untargeted attack,
-    # label is not passed-in in caller's parameter, so put Optional here
     def _is_label(self, x_0: np.ndarray, label: Optional[int]) -> bool:
         """
         Helper method to check if self.estimator predict input with label
 
-        Args:
-            x_0 (np.ndarray): An array with the original input
-            label (Optional[int]): The predicted label
-
-        Returns:
-            bool: True if self.estimator predicts label for x_0; False otherwise
-        """        
+        :param x_0: An array with the original input
+        :param label: The predicted label
+        :return: True if self.estimator predicts label for x_0; False otherwise
+        """
         if self.enable_clipped:
             x_0 = np.clip(x_0, self.clip_min, self.clip_max)
         pred = self.estimator.predict(np.expand_dims(x_0, axis=0), batch_size=self.batch_size)
         pred_y0 = np.argmax(pred)
         return pred_y0 == label
 
-    # return predicted label
     def _predict_label(self, x_0: np.ndarray) -> integer:
         """
         Helper method to predict label for x_0
-        
-        Args:
-            x_0 (np.ndarray): An array with the original input
 
-        Returns:
-            integer: Predicted label
-        """        
+        :param x_0: An array with the original input
+        :return: Predicted label
+        """
         if self.enable_clipped:
             x_0 = np.clip(x_0, self.clip_min, self.clip_max)
         pred = self.estimator.predict(np.expand_dims(x_0, axis=0), batch_size=self.batch_size)
@@ -380,7 +364,17 @@ class SignOPTAttack(EvasionAttack):
     def _sign_grad(
         self, x_0: np.ndarray, y_0: int, epsilon: float, theta: np.ndarray, initial_lbd: float, target: Optional[int]
     ) -> Tuple[np.ndarray, int]:
-        # Evaluate the sign of gradient by formula
+        """
+        Evaluate the sign of gradient
+
+        :param x_0: An array with the original inputs to be attacked.
+        :param y_0: Target value.
+        :param epsilon: A very small smoothing parameter.
+        :param theta: Initial query direction.
+        :param initial_lbd: Previous solution.
+        :param target: Target value. If `self.targeted` is true, it presents the targed label. Defaults to None.
+        :return: the sign of gradient
+        """
         sign_grad = np.zeros(theta.shape).astype(np.float32)
         queries = 0
         # use orthogonal transform
@@ -401,8 +395,6 @@ class SignOPTAttack(EvasionAttack):
                 sign = -1
 
             queries += 1
-            # Algorithm 1: Sign-OPT attack
-            #     B:Compute gˆ ←
             sign_grad += u_g * sign
 
         sign_grad /= self.k
@@ -417,6 +409,14 @@ class SignOPTAttack(EvasionAttack):
         x_init: Optional[np.ndarray] = None,  # for targeted attack
         distortion: Optional[float] = None,
     ) -> Tuple[np.ndarray, np.ndarray, bool]:
+        """
+        Perform attack
+
+        :param x_0: An array with the original inputs to be attacked.
+        :param y_0: Target value.
+        :param target: Target value. If `self.targeted` is true, it presents the targed label. Defaults to None.
+        :return: the adversarial sample to x_0
+        """
         query_count = 0
         ls_total = 0
 
@@ -496,7 +496,6 @@ class SignOPTAttack(EvasionAttack):
             new_theta = np.zeros((0, 0))
             for _ in range(15):
                 # Algorithm 1: Sign-OPT attack
-                #     C:Update θt+1 ← θt − ηgˆ;
                 new_theta = x_g - alpha * sign_gradient
                 new_theta /= LA.norm(new_theta)
                 # Algorithm 1: Sign-OPT attackx
@@ -578,6 +577,12 @@ class SignOPTAttack(EvasionAttack):
         return self._clip_value(x_0 + g_g * x_g), g_g * x_g, succeed
 
     def _clip_value(self, x_0: np.ndarray) -> np.ndarray:
+        """
+        Apply clipping to input array
+        
+        :param x_0: An array to be clippd
+        :return: The array after clipping if clipping is enabled
+        """
         if self.enable_clipped:
             x_0 = np.clip(x_0, self.clip_min, self.clip_max)
         return x_0
