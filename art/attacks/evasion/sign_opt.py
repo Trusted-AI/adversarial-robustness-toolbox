@@ -405,8 +405,8 @@ class SignOPTAttack(EvasionAttack):
         self,
         x_0: np.ndarray,
         y_0: int,
-        target: Optional[int] = None,  # for targeted attack
-        x_init: Optional[np.ndarray] = None,  # for targeted attack
+        target: Optional[int] = None,
+        x_init: Optional[np.ndarray] = None,
         distortion: Optional[float] = None,
     ) -> Tuple[np.ndarray, np.ndarray, bool]:
         """
@@ -415,6 +415,7 @@ class SignOPTAttack(EvasionAttack):
         :param x_0: An array with the original inputs to be attacked.
         :param y_0: Target value.
         :param target: Target value. If `self.targeted` is true, it presents the targed label. Defaults to None.
+        :param x_init: The pool of possible targets for finding initial direction. Only for targeted attack.
         :return: the adversarial sample to x_0
         """
         query_count = 0
