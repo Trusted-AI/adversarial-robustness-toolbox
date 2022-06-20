@@ -409,7 +409,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
                 for local_batch_size_idx in range(local_batch_size):
                     if decoded_output[local_batch_size_idx] == y[local_batch_size_idx]:
                         # Adjust the rescale coefficient
-                        max_local_delta = np.max(np.abs(local_delta[local_batch_size_idx].detach().numpy()))
+                        max_local_delta = np.max(np.abs(local_delta[local_batch_size_idx].detach().cpu().numpy()))
 
                         if rescale[local_batch_size_idx][0] * self.eps > max_local_delta:
                             rescale[local_batch_size_idx] = max_local_delta / self.eps
@@ -564,7 +564,9 @@ class ImperceptibleASRPyTorch(EvasionAttack):
                 if decoded_output[local_batch_size_idx] == y[local_batch_size_idx]:
                     if loss_2nd_stage[local_batch_size_idx] < best_loss_2nd_stage[local_batch_size_idx]:
                         # Update best loss at 2nd stage
-                        best_loss_2nd_stage[local_batch_size_idx] = loss_2nd_stage[local_batch_size_idx].numpy()
+                        best_loss_2nd_stage[local_batch_size_idx] = (
+                            loss_2nd_stage[local_batch_size_idx].detach().cpu().numpy()
+                        )
 
                         # Save the best adversarial example
                         successful_adv_input[local_batch_size_idx] = masked_adv_input[local_batch_size_idx]
