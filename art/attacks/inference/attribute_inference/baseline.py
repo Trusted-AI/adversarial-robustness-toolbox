@@ -72,6 +72,7 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
         super().__init__(estimator=None, attack_feature=attack_feature)
 
         self._values: Optional[list] = None
+        self._nb_classes: Optional[int] = None
 
         if attack_model:
             if ClassifierMixin not in type(attack_model).__mro__:
@@ -125,11 +126,12 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
         # get vector of attacked feature
         y = x[:, self.attack_feature]
         self._values = get_feature_values(y, isinstance(self.attack_feature, int))
+        self._nb_classes = len(self._values)
         if isinstance(self.attack_feature, int):
             y_one_hot = float_to_categorical(y)
         else:
             y_one_hot = floats_to_one_hot(y)
-        y_ready = check_and_transform_label_format(y_one_hot, len(np.unique(y)), return_one_hot=True)
+        y_ready = check_and_transform_label_format(y_one_hot, nb_classes=self._nb_classes, return_one_hot=True)
         if y_ready is None:
             raise ValueError("None value detected.")
 
@@ -179,4 +181,4 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
             raise ValueError("Attack feature must be either an integer or a slice object.")
 
         if isinstance(self.attack_feature, int) and self.attack_feature < 0:
-            raise ValueError("Attack feature index must be positive.")
+            raise ValueError("Attack feature index must be non-negative.")
