@@ -352,12 +352,22 @@ class ActivationDefence(PoisonFilteringDefence):
 
     def exclusionary_reclassification(self, report):
         """
-        This function perform exclusionary reclassification. Based on the ex_re_threshold, suspicious clusters will be rechecked. If they remain suspicious, the suspected source class will be added to the report.
+        This function perform exclusionary reclassification. Based on the ex_re_threshold,
+        suspicious clusters will be rechecked. If they remain suspicious, the suspected source
+        class will be added to the report and the data will be relabelled. The new labels are stored
+        in self.y_train_relabelled
 
         :param report: A dictionary containing defence params as well as the class clusters and their suspiciousness.
         :return: report where the report is a dict object
         """
+        self.y_train_relabelled = np.copy(self.y_train)  # Copy the data to avoid overwriting user objects
+        # used for relabeling the data
+        is_onehot = False
+        if len(np.shape(self.y_train)) == 2:
+            is_onehot = True
+
         logger.info("Performing Exclusionary Reclassification with a threshold of %s", self.ex_re_threshold)
+        logger.info("Data will be relabelled internally. Access the y_train_relabelled attribute to get new labels")
         # Train a new classifier with the unsuspicious clusters
         cloned_classifier = (
             self.classifier.clone_for_refitting()
@@ -378,7 +388,7 @@ class ActivationDefence(PoisonFilteringDefence):
             for j, assigned_cluster in enumerate(cluster_assignments):
                 indicies_by_cluster[n_class][assigned_cluster].append(indices_by_class[n_class][j])
 
-        for n_class in range(len(self.poisonous_clusters)):
+        for n_class, _ in enumerate(self.poisonous_clusters):
             suspicious_clusters = np.where(np.array(self.poisonous_clusters[n_class]) == 1)[0]
             for cluster in suspicious_clusters:
                 cur_indicies = indicies_by_cluster[n_class][cluster]
@@ -405,6 +415,12 @@ class ActivationDefence(PoisonFilteringDefence):
                         n_class_pred_count / other_class_pred_count
                     )
                     report["Class_" + str(n_class)]["cluster_" + str(cluster)]["Suspected_Source_class"] = other_class
+                    # Also relabel the data
+                    if is_onehot:
+                        self.y_train_relabelled[cur_indicies, n_class] = 0
+                        self.y_train_relabelled[cur_indicies, other_class] = 1
+                    else:
+                        self.y_train_relabelled[cur_indicies] = other_class
 
         return report
 
