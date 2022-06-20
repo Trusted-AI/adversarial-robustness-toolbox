@@ -43,7 +43,7 @@ def test_insert_tone_trigger(art_warning):
         assert np.max(audio) != 0
 
         # test a batch of examples
-        audio = insert_tone_trigger(x=np.zeros((10,3200)), sampling_rate=16000)
+        audio = insert_tone_trigger(x=np.zeros((10, 3200)), sampling_rate=16000)
         assert audio.shape == (10, 3200)
         assert np.max(audio) != 0
 
@@ -54,7 +54,7 @@ def test_insert_tone_trigger(art_warning):
         assert np.sum(audio[:10]) == 0
 
         # test a batch of examples with random shift
-        audio = insert_tone_trigger(x=np.zeros((10,3200)), sampling_rate=16000, random=True)
+        audio = insert_tone_trigger(x=np.zeros((10, 3200)), sampling_rate=16000, random=True)
         assert audio.shape == (10, 3200)
         assert np.max(audio) != 0
 
@@ -85,7 +85,7 @@ def test_insert_audio_trigger(art_warning):
         assert np.max(audio) != 0
 
         # test a batch of examples
-        audio = insert_audio_trigger(x=np.zeros((10,16000)), sampling_rate=16000)
+        audio = insert_audio_trigger(x=np.zeros((10, 16000)), sampling_rate=16000)
         assert audio.shape == (10, 16000)
         assert np.max(audio) != 0
 
@@ -96,7 +96,7 @@ def test_insert_audio_trigger(art_warning):
         assert np.sum(audio[:10]) == 0
 
         # test a batch of examples with random shift
-        audio = insert_audio_trigger(x=np.zeros((10,32000)), sampling_rate=16000, random=True)
+        audio = insert_audio_trigger(x=np.zeros((10, 32000)), sampling_rate=16000, random=True)
         assert audio.shape == (10, 32000)
         assert np.max(audio) != 0
 
@@ -107,6 +107,6 @@ def test_insert_audio_trigger(art_warning):
         # test when shift + backdoor is larger than that of audio signal
         with pytest.raises(ValueError):
             _ = insert_audio_trigger(x=np.zeros(16000), sampling_rate=16000, duration=1, shift=5)
-        
+
     except ARTTestException as e:
         art_warning(e)
