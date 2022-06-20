@@ -27,11 +27,11 @@ import librosa
 def insert_tone_trigger(
     x: np.ndarray,
     sampling_rate: int = 16000,
-    frequency: Optional[int] = 440,
-    duration: Optional[float] = 0.1,
-    random: Optional[bool] = False,
-    shift: Optional[int] = 0,
-    scale: Optional[float] = 0.1,
+    frequency: int = 440,
+    duration: float = 0.1,
+    random: bool = False,
+    shift: int = 0,
+    scale: float = 0.1,
 ) -> np.ndarray:
     """
     Adds a 'tone' with a given frequency to audio example. Works for a single example or a batch of examples.
@@ -94,10 +94,10 @@ def insert_audio_trigger(
     x: np.ndarray,
     sampling_rate: int = 16000,
     backdoor_path: str = "../../../utils/data/backdoors/cough_trigger.wav",
-    duration: Optional[float] = 1.,
-    random: Optional[bool] = False,
-    shift: Optional[int] = 0,
-    scale: Optional[float] = 0.1,
+    duration: float = 1.,
+    random: bool = False,
+    shift: int = 0,
+    scale: float = 0.1,
 ) -> np.ndarray:
     """
     Adds an audio backdoor trigger to a set of audio examples. Works for a single example or a batch of examples.
