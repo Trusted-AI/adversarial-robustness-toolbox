@@ -41,8 +41,10 @@ def fix_get_mnist_subset(get_mnist_dataset):
 @pytest.fixture()
 def fix_get_mnist_subset_large(get_mnist_dataset):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_dataset
+    # n_train is used for x_init in SignOPTAttack._attack(). 
+    # It provides the pool of possible targets for finding initial direction
     n_train = 100
-    n_test = 100
+    n_test = 10
     print(f"fix_get_mnist_subset_large() uses larger train and test set: n_train: {n_train}, n_test: {n_test}")
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
@@ -71,7 +73,7 @@ def test_images(
 
         if targeted:
             attack = SignOPTAttack(
-                estimator=classifier, targeted=targeted, max_iter=5000, query_limit=40000, verbose=True
+                estimator=classifier, targeted=targeted, max_iter=2000, query_limit=20000, verbose=True
             )
             backend_targeted_images(attack, fix_get_mnist_subset_large)
         else:
