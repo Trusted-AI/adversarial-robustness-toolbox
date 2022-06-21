@@ -73,7 +73,7 @@ def test_images(
 
         if targeted:
             attack = SignOPTAttack(
-                estimator=classifier, targeted=targeted, max_iter=2000, query_limit=20000, verbose=True
+                estimator=classifier, targeted=targeted, max_iter=2000, query_limit=8000, verbose=True
             )
             backend_targeted_images(attack, fix_get_mnist_subset_large)
         else:
