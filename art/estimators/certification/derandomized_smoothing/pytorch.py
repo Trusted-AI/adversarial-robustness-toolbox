@@ -28,7 +28,6 @@ from typing import List, Optional, Tuple, Union, Any, TYPE_CHECKING
 import random
 
 import numpy as np
-
 from tqdm import tqdm
 
 from art.config import ART_NUMPY_DTYPE
