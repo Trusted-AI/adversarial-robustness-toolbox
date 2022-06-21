@@ -49,6 +49,7 @@ def fix_get_mnist_data():
 def fix_get_cifar10_data():
     """
     Get the first 128 samples of the cifar10 test set
+
     :return: First 128 sample/label pairs of the cifar10 test dataset.
     """
     nb_test = 128
