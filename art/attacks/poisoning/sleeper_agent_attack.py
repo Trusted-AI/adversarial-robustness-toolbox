@@ -23,7 +23,7 @@ This module implements Sleeper Agent attack on Neural Networks.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Tuple, TYPE_CHECKING, List
+from typing import Any, Dict, Tuple, TYPE_CHECKING, List
 import random
 
 import numpy as np
@@ -51,6 +51,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         self,
         classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
         percent_poison: float,
+        patch: np.ndarray,
         epsilon: float = 0.1,
         max_trials: int = 8,
         max_epochs: int = 250,
@@ -59,12 +60,13 @@ class SleeperAgentAttack(GradientMatchingAttack):
         clip_values: Tuple[float, float] = (0, 1.0),
         verbose: int = 1,
         indices_target: List[int] = None,
-        patching_strategy: string ="random",
-        selection_strategy: string ="random",
+        patching_strategy: str = "random",
+        selection_strategy: str = "random",
         retraining_factor: int = 1,
         model_retrain: bool = False,
         model_retraining_epoch: int = 1,
-        patch: np.ndarray,
+        class_source: int = 0,
+        class_target: int = 1,
     ):
         """
         Initialize a Sleeper Agent poisoning attack.
@@ -88,6 +90,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         :model_retrain: True, if retraining has to be applied, else False.
         :model_retraining_epoch: The epochs for which retraining has to be applied.
         :patch: The patch to be applied as trigger.
+        :K: Number of training samples belonging to target class selected for poisoning.
         """
         super().__init__(
             classifier,
@@ -108,9 +111,17 @@ class SleeperAgentAttack(GradientMatchingAttack):
         self.model_retraining_epoch = model_retraining_epoch
         self.indices_poison = List[int]
         self.patch = patch
+        self.class_target = class_target
+        self.class_source = class_source
 
     def poison(
-        self, x_trigger: np.ndarray, y_trigger: np.ndarray, x_train: np.ndarray, y_train: np.ndarray
+        self,
+        x_trigger: np.ndarray,
+        y_trigger: np.ndarray,
+        x_train: np.ndarray,
+        y_train: np.ndarray,
+        x_test: np.ndarray,
+        y_test: np.ndarray,
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Optimizes a portion of poisoned samples from x_train to make a model classify x_target
@@ -127,23 +138,29 @@ class SleeperAgentAttack(GradientMatchingAttack):
         from art.estimators.classification.pytorch import PyTorchClassifier
         from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 
+        x_train_target_samples, y_train_target_samples = self.select_target_train_samples(x_train, y_train)
         if isinstance(self.substitute_classifier, TensorFlowV2Classifier):
             raise NotImplementedError("SleeperAgentAttack is currently implemented only for PyTorch.")
         elif isinstance(self.substitute_classifier, PyTorchClassifier):
+            import torch
+
             poisoner = self._poison__pytorch
             finish_poisoning = self._finish_poison_pytorch
             initializer = self._initialize_poison_pytorch
+            x_train_target_samples = torch.tensor(
+                np.transpose(x_train_target_samples, [0, 3, 1, 2]), dtype=torch.float32
+            )
+
         else:
             raise NotImplementedError("SleeperAgentAttack is currently implemented only for PyTorch.")
         # Choose samples to poison.
-        x_train = np.copy(x_train)
-        y_train = np.copy(y_train)
+
         x_trigger = self.apply_trigger_patch(x_trigger)
         if len(np.shape(y_trigger)) == 2:  # dense labels
             classes_target = set(np.argmax(y_trigger, axis=-1))
         else:  # sparse labels
             classes_target = set(y_trigger)
-        num_poison_samples = int(self.percent_poison * len(x_train))
+        num_poison_samples = int(self.percent_poison * len(x_train_target_samples))
 
         # Try poisoning num_trials times and choose the best one.
         best_B = np.finfo(np.float32).max  # pylint: disable=C0103
@@ -151,9 +168,9 @@ class SleeperAgentAttack(GradientMatchingAttack):
         best_indices_poison = None
 
         if len(np.shape(y_train)) == 2:
-            y_train_classes = np.argmax(y_train, axis=-1)
+            y_train_classes = np.argmax(y_train_target_samples, axis=-1)
         else:
-            y_train_classes = y_train
+            y_train_classes = y_train_target_samples
         for _ in trange(self.max_trials):
             if self.selection_strategy == "random":
                 self.indices_poison = np.random.permutation(
@@ -161,10 +178,10 @@ class SleeperAgentAttack(GradientMatchingAttack):
                 )[:num_poison_samples]
             else:
                 self.indices_poison = self.select_poison_indices(
-                    self.substitute_classifier, x_train, y_train, num_poison_samples
+                    self.substitute_classifier, x_train_target_samples, y_train_target_samples, num_poison_samples
                 )
-            x_poison = x_train[self.indices_poison]
-            y_poison = y_train[self.indices_poison]
+            x_poison = x_train_target_samples[self.indices_poison]
+            y_poison = y_train_target_samples[self.indices_poison]
             initializer(x_trigger, y_trigger, x_poison, y_poison)
             original_epochs = self.max_epochs
             if self.model_retrain:
@@ -176,7 +193,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
                     else:
                         self.max_epochs = retrain_epochs
                         x_poisoned, B_ = poisoner(x_poison, y_poison)  # pylint: disable=C0103
-                        self.model_retraining(x_poisoned)
+                        self.model_retraining(x_poisoned, x_train, y_train, x_test, y_test)
             else:
                 x_poisoned, B_ = poisoner(x_poison, y_poison)  # pylint: disable=C0103
             finish_poisoning()
@@ -188,8 +205,15 @@ class SleeperAgentAttack(GradientMatchingAttack):
 
         if self.verbose > 0:
             print("Best B-score:", best_B)
-        x_train[best_indices_poison] = best_x_poisoned
+        x_train[self.indices_target[self.indices_poison]] = np.transpose(best_x_poisoned, [0, 2, 3, 1])
         return x_train, y_train
+
+    def select_target_train_samples(self, x_train, y_train):
+        x_train_samples = np.copy(x_train)
+        index_target = np.where(y_train.argmax(axis=1) == self.class_target)[0]
+        x_train_target_samples = x_train_samples[index_target]
+        y_train_target_samples = y_train[index_target]
+        return x_train_target_samples, y_train_target_samples
 
     def get_poison_indices(self) -> List[int]:
         """
@@ -197,22 +221,25 @@ class SleeperAgentAttack(GradientMatchingAttack):
         """
         return self.indices_poison
 
-    def model_retraining(self, poisoned_samples: np.ndarray):
+    def model_retraining(
+        self,
+        poisoned_samples: np.ndarray,
+        x_train: np.ndarray,
+        y_train: np.ndarray,
+        x_test: np.ndarray,
+        y_test: np.ndarray,
+    ):
         """
         Applies retraining to substitute model
 
         :param poisoned_samples: poisoned array.
+        :param x_train: clean training data.
+        :param y_train: labels for training data.
+        :param x_test: clean test data.
+        :param y_test: labels for test data.
         """
-        from art.utils import load_cifar10
         from art.estimators.classification.pytorch import PyTorchClassifier
 
-        (x_train, y_train), (x_test, y_test), min_, max_ = load_cifar10()
-        mean = np.mean(x_train, axis=(0, 1, 2, 3))
-        std = np.std(x_train, axis=(0, 1, 2, 3))
-        x_train = (x_train - mean) / (std + 1e-7)
-        x_test = (x_test - mean) / (std + 1e-7)
-        min_ = (min_ - mean) / (std + 1e-7)
-        max_ = (max_ - mean) / (std + 1e-7)
         x_train = np.transpose(x_train, [0, 3, 1, 2])
 
         poisoned_samples = np.asarray(poisoned_samples)
@@ -242,7 +269,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         num_classes: int = 10,
         batch_size: int = 128,
         epochs: int = 80,
-    ) -> Tuple[Any,Any,Any] :
+    ) -> Tuple[Any, Any, Any]:
         """
         Creates a new model.
 
@@ -303,7 +330,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         return model, loss_fn, optimizer
 
     @classmethod
-    def test_accuracy(cls, model: "torch.nn.Module" , test_loader: "torch.utils.data.dataloader.DataLoader") -> float:
+    def test_accuracy(cls, model: "torch.nn.Module", test_loader: "torch.utils.data.dataloader.DataLoader") -> float:
         """
         Calculates test accuracy on trained model
 
@@ -335,7 +362,9 @@ class SleeperAgentAttack(GradientMatchingAttack):
 
     # This function is responsible for returning indices of poison images with maximum gradient norm
     @classmethod
-    def select_poison_indices(cls, classifier: "CLASSIFIER_NEURALNETWORK_TYPE", x_samples: np.ndarray, y_samples: np.ndarray, num_poison: int) -> List[int]:
+    def select_poison_indices(
+        cls, classifier: "CLASSIFIER_NEURALNETWORK_TYPE", x_samples: np.ndarray, y_samples: np.ndarray, num_poison: int
+    ) -> List[int]:
         """
         Select indices of poisoned samples
 
