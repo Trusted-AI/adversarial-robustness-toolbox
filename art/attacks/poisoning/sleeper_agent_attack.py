@@ -373,6 +373,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
     def apply_trigger_patch(self, x_trigger):
         """
         Select indices of poisoned samples
+
         :x_trigger: Samples to be used for trigger.
         :return tensor with applied trigger patches.
         """
