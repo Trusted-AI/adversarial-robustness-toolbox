@@ -27,7 +27,6 @@ from typing import Callable, List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 import tensorflow as tf
-
 from tqdm import tqdm
 
 from art.estimators.classification.tensorflow import TensorFlowV2Classifier
