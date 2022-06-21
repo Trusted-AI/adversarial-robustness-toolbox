@@ -35,6 +35,7 @@ from art.attacks.poisoning import GradientMatchingAttack
 if TYPE_CHECKING:
     # pylint: disable=C0412
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
+    import torch
 
 logger = logging.getLogger(__name__)
 
@@ -302,7 +303,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         return model, loss_fn, optimizer
 
     @classmethod
-    def test_accuracy(cls, model, test_loader) -> float:
+    def test_accuracy(cls, model: "torch.nn.Module" , test_loader: "torch.utils.data.dataloader.DataLoader") -> float:
         """
         Calculates test accuracy on trained model
 
