@@ -307,6 +307,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
     def test_accuracy(cls, model, test_loader):
         """
         Calculates test accuracy on trained model
+
         :param model: Trained model.
         :return accuracy - accuracy of trained model on test data.
         """
