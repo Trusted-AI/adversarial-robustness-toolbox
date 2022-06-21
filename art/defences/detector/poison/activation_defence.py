@@ -374,6 +374,11 @@ class ActivationDefence(PoisonFilteringDefence):
         )  # Get a classifier with the same training setup, but new weights
         filtered_x = self.x_train[np.array(self.is_clean_lst) == 1]
         filtered_y = self.y_train[np.array(self.is_clean_lst) == 1]
+
+        if len(filtered_x) == 0:
+            logger.warning("All of the data is marked as suspicious. Unable to perform exclusionary reclassification")
+            return report
+
         cloned_classifier.fit(filtered_x, filtered_y)
 
         # Test on the suspicious clusters
@@ -406,7 +411,8 @@ class ActivationDefence(PoisonFilteringDefence):
                 if other_class_pred_count == 0 or n_class_pred_count / other_class_pred_count > self.ex_re_threshold:
                     self.poisonous_clusters[n_class][cluster] = 0
                     report["Class_" + str(n_class)]["cluster_" + str(cluster)]["suspicious_cluster"] = False
-                    report["suspicious_clusters"] = report["suspicious_clusters"] - 1
+                    if "suspicious_clusters" in report.keys():
+                        report["suspicious_clusters"] = report["suspicious_clusters"] - 1
                     for ind in cur_indicies:
                         self.is_clean_lst[ind] = 1
                 # Otherwise, add the exclusionary reclassification info to the report for the suspicious cluster
