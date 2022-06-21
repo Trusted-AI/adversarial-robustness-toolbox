@@ -135,7 +135,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
             finish_poisoning = self._finish_poison_pytorch
             initializer = self._initialize_poison_pytorch
         else:
-            raise NotImplementedError("SleeperAgentAttack is currently implemented only for Tensorflow V2 and Pytorch.")
+            raise NotImplementedError("SleeperAgentAttack is currently implemented only for TensorFlow V2 and PyTorch.")
         # Choose samples to poison.
         x_train = np.copy(x_train)
         y_train = np.copy(y_train)
