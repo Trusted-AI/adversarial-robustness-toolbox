@@ -25,13 +25,12 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from abc import ABC, abstractmethod
 
-from typing import Optional, Union, TYPE_CHECKING
+from typing import Optional, Union
 import random
 
 import numpy as np
 
-if TYPE_CHECKING:
-    from art.utils import ABLATOR_TYPE
+from art.utils import ABLATOR_TYPE
 
 
 class DeRandomizedSmoothingMixin(ABC):
