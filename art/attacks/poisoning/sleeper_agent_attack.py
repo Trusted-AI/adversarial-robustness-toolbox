@@ -25,8 +25,9 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 from typing import Tuple, TYPE_CHECKING, List
 import random
-from tqdm.auto import trange
+
 import numpy as np
+from tqdm.auto import trange
 
 
 from art.attacks.poisoning import GradientMatchingAttack
