@@ -97,6 +97,7 @@ if TYPE_CHECKING:
     )
     from art.estimators.classification.tensorflow import TensorFlowClassifier, TensorFlowV2Classifier
     from art.estimators.classification.xgboost import XGBoostClassifier
+    from art.estimators.certification.derandomized_smoothing.derandomized_smoothing import BlockAblator, ColumnAblator
     from art.estimators.generation import TensorFlowGenerator
     from art.estimators.generation.tensorflow import TensorFlow2Generator
     from art.estimators.object_detection.object_detector import ObjectDetector
@@ -218,6 +219,8 @@ if TYPE_CHECKING:
     ESTIMATOR_TYPE = Union[  # pylint: disable=C0103
         CLASSIFIER_TYPE, REGRESSOR_TYPE, OBJECT_DETECTOR_TYPE, SPEECH_RECOGNIZER_TYPE
     ]
+
+    ABLATOR_TYPE = Union[BlockAblator, ColumnAblator]  # pylint: disable=C0103
 
 # --------------------------------------------------------------------------------------------------------- DEPRECATION
 

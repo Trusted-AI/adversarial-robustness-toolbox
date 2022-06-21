@@ -25,10 +25,13 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from abc import ABC, abstractmethod
 
-from typing import Optional, Union
+from typing import Optional, Union, TYPE_CHECKING
 import random
 
 import numpy as np
+
+if TYPE_CHECKING:
+    from art.utils import ABLATOR_TYPE
 
 
 class DeRandomizedSmoothingMixin(ABC):
@@ -440,6 +443,3 @@ class BlockAblator(BaseAblator):
             raise ValueError(f"Ablation failed on row: {row_pos} and column: {column_pos} with size {k}")
 
         return x
-
-
-ABLATOR_TYPE = Union[BlockAblator, ColumnAblator]  # pylint: disable=C0103
