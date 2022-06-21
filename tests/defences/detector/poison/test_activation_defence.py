@@ -135,7 +135,7 @@ class TestActivationDefence(unittest.TestCase):
         _, is_clean_lst = self.defence.detect_poison(nb_clusters=2, nb_dims=10, reduce="PCA", ex_re_threshold=1)
         sum_clean1 = sum(is_clean_lst)
 
-        _, is_clean_lst_gen = self.defence_gen.detect_poison(nb_clusters=2, nb_dims=10, reduce="PCA")
+        _, is_clean_lst_gen = self.defence_gen.detect_poison(nb_clusters=2, nb_dims=10, reduce="PCA", ex_re_threshold=1)
         sum_clean1_gen = sum(is_clean_lst_gen)
 
         # Check number of items in is_clean
@@ -149,10 +149,10 @@ class TestActivationDefence(unittest.TestCase):
         self.assertEqual(found_clusters_gen, 2)
 
         _, is_clean_lst = self.defence.detect_poison(
-            nb_clusters=3, nb_dims=10, reduce="PCA", cluster_analysis="distance"
+            nb_clusters=3, nb_dims=10, reduce="PCA", cluster_analysis="distance", ex_re_threshold=1
         )
         _, is_clean_lst_gen = self.defence_gen.detect_poison(
-            nb_clusters=3, nb_dims=10, reduce="PCA", cluster_analysis="distance"
+            nb_clusters=3, nb_dims=10, reduce="PCA", cluster_analysis="distance", ex_re_threshold=1
         )
         self.assertEqual(len(x_train), len(is_clean_lst))
         self.assertEqual(len(x_train), len(is_clean_lst_gen))
@@ -169,12 +169,24 @@ class TestActivationDefence(unittest.TestCase):
         self.assertNotEqual(sum_clean1, sum_clean2)
         self.assertNotEqual(sum_clean1_gen, sum_clean2_gen)
 
-        kwargs = {"nb_clusters": 2, "nb_dims": 10, "reduce": "PCA", "cluster_analysis": "distance"}
+        kwargs = {
+            "nb_clusters": 2,
+            "nb_dims": 10,
+            "reduce": "PCA",
+            "cluster_analysis": "distance",
+            "ex_re_threshold": None,
+        }
         _, is_clean_lst = self.defence.detect_poison(**kwargs)
         _, is_clean_lst_gen = self.defence_gen.detect_poison(**kwargs)
         sum_dist = sum(is_clean_lst)
         sum_dist_gen = sum(is_clean_lst_gen)
-        kwargs = {"nb_clusters": 2, "nb_dims": 10, "reduce": "PCA", "cluster_analysis": "smaller"}
+        kwargs = {
+            "nb_clusters": 2,
+            "nb_dims": 10,
+            "reduce": "PCA",
+            "cluster_analysis": "smaller",
+            "ex_re_threshold": None,
+        }
         _, is_clean_lst = self.defence.detect_poison(**kwargs)
         _, is_clean_lst_gen = self.defence_gen.detect_poison(**kwargs)
         sum_size = sum(is_clean_lst)
