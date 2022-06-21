@@ -338,6 +338,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
     def select_poison_indices(cls, classifier, x_samples, y_samples, num_poison):
         """
         Select indices of poisoned samples
+
         :classifier: Substitute Model.
         :x_samples: Samples of poison.
         :y_samples: Labels of samples of poison.
