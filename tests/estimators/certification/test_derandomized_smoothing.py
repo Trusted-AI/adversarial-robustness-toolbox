@@ -32,6 +32,7 @@ from tests.utils import ARTTestException
 def fix_get_mnist_data():
     """
     Get the first 128 samples of the mnist test set with channels first format
+
     :return: First 128 sample/label pairs of the MNIST test dataset.
     """
     nb_test = 128
