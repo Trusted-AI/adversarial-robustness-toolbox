@@ -201,6 +201,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
     def model_retraining(self, poisoned_samples):
         """
         Applies retraining to substitute model
+
         :param poisoned_samples: poisoned array.
         """
         from art.utils import load_cifar10
