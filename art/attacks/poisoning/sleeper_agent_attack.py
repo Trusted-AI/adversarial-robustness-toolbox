@@ -245,7 +245,8 @@ class SleeperAgentAttack(GradientMatchingAttack):
         epochs=80,
     ):
         """
-        Creates new model
+        Creates a new model.
+
         :param x_train: Samples of train data.
         :param y_train: Labels of train data.
         :param x_test: Samples of test data.
