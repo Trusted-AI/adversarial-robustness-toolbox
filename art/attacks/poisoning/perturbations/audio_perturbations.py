@@ -18,8 +18,6 @@
 """
 Adversarial perturbations designed to work for images.
 """
-from typing import Optional, Tuple
-
 import numpy as np
 import librosa
 
