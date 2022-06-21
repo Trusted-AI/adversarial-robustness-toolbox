@@ -41,7 +41,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
 @pytest.fixture()
 def fix_get_mnist_subset_large(get_mnist_dataset):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_dataset
-    # n_train is used for x_init in SignOPTAttack._attack(). 
+    # n_train is used for x_init in SignOPTAttack._attack().
     # It provides the pool of possible targets for finding initial direction
     n_train = 100
     n_test = 10

@@ -580,7 +580,7 @@ class SignOPTAttack(EvasionAttack):
     def _clip_value(self, x_0: np.ndarray) -> np.ndarray:
         """
         Apply clipping to input array
-        
+
         :param x_0: An array to be clippd
         :return: The array after clipping if clipping is enabled
         """
