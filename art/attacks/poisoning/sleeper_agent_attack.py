@@ -42,6 +42,7 @@ logger = logging.getLogger(__name__)
 class SleeperAgentAttack(GradientMatchingAttack):
     """
     Implementation of Sleeper Agent Attack
+
     | Paper link: https://arxiv.org/pdf/2106.08970.pdf
     """
 
