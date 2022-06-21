@@ -57,13 +57,13 @@ class SleeperAgentAttack(GradientMatchingAttack):
         batch_size: int = 128,
         clip_values: Tuple[float, float] = (0, 1.0),
         verbose: int = 1,
-        indices_target=None,
-        patching_strategy="random",
-        selection_strategy="random",
-        retraining_factor=1,
-        model_retrain=False,
-        model_retraining_epoch=1,
-        patch=None,
+        indices_target: List[int] = None,
+        patching_strategy: string ="random",
+        selection_strategy: string ="random",
+        retraining_factor: int = 1,
+        model_retrain: bool = False,
+        model_retraining_epoch: int = 1,
+        patch: np.ndarray,
     ):
         """
         Initialize a Sleeper Agent poisoning attack.
@@ -127,15 +127,13 @@ class SleeperAgentAttack(GradientMatchingAttack):
         from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 
         if isinstance(self.substitute_classifier, TensorFlowV2Classifier):
-            poisoner = self._poison__tensorflow
-            finish_poisoning = self._finish_poison_tensorflow
-            initializer = self._initialize_poison_tensorflow
+            raise NotImplementedError("SleeperAgentAttack is currently implemented only for PyTorch.")
         elif isinstance(self.substitute_classifier, PyTorchClassifier):
             poisoner = self._poison__pytorch
             finish_poisoning = self._finish_poison_pytorch
             initializer = self._initialize_poison_pytorch
         else:
-            raise NotImplementedError("SleeperAgentAttack is currently implemented only for TensorFlow V2 and PyTorch.")
+            raise NotImplementedError("SleeperAgentAttack is currently implemented only for PyTorch.")
         # Choose samples to poison.
         x_train = np.copy(x_train)
         y_train = np.copy(y_train)
@@ -192,13 +190,13 @@ class SleeperAgentAttack(GradientMatchingAttack):
         x_train[best_indices_poison] = best_x_poisoned
         return x_train, y_train
 
-    def get_poison_indices(self):
+    def get_poison_indices(self) -> List[int]:
         """
         :return: indices of best poison index
         """
         return self.indices_poison
 
-    def model_retraining(self, poisoned_samples):
+    def model_retraining(self, poisoned_samples: np.ndarray):
         """
         Applies retraining to substitute model
 
@@ -238,12 +236,12 @@ class SleeperAgentAttack(GradientMatchingAttack):
         self,
         x_train: np.ndarray,
         y_train: np.ndarray,
-        x_test=None,
-        y_test=None,
-        num_classes=10,
-        batch_size=128,
-        epochs=80,
-    ):
+        x_test: np.ndarray,
+        y_test: np.ndarray,
+        num_classes: int = 10,
+        batch_size: int = 128,
+        epochs: int = 80,
+    ) -> Tuple[Any,Any,Any] :
         """
         Creates a new model.
 
@@ -304,7 +302,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         return model, loss_fn, optimizer
 
     @classmethod
-    def test_accuracy(cls, model, test_loader):
+    def test_accuracy(cls, model, test_loader) -> float:
         """
         Calculates test accuracy on trained model
 
@@ -336,7 +334,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
 
     # This function is responsible for returning indices of poison images with maximum gradient norm
     @classmethod
-    def select_poison_indices(cls, classifier, x_samples, y_samples, num_poison):
+    def select_poison_indices(cls, classifier: "CLASSIFIER_NEURALNETWORK_TYPE", x_samples: np.ndarray, y_samples: np.ndarray, num_poison: int) -> List[int]:
         """
         Select indices of poisoned samples
 
@@ -371,7 +369,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
     # This function is responsible for applying trigger patches to the images
     # fixed - where the trigger is applied at the bottom right of the image
     # random - where the trigger is applied at random location of the image
-    def apply_trigger_patch(self, x_trigger):
+    def apply_trigger_patch(self, x_trigger: np.ndarray) -> Tuple[Any]:
         """
         Select indices of poisoned samples
 
