@@ -253,7 +253,7 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
 
             if y is not None and isinstance(y, list) and isinstance(y[0]["boxes"], np.ndarray):
                 y_tensor = []
-                for i, y_i in enumerate(y):
+                for y_i in y:
                     y_t = {
                         "boxes": torch.from_numpy(y_i["boxes"]).type(torch.float).to(self.device),
                         "labels": torch.from_numpy(y_i["labels"]).type(torch.int64).to(self.device),
@@ -292,7 +292,7 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
 
             if y_preprocessed is not None and isinstance(y_preprocessed[0]["boxes"], np.ndarray):
                 y_preprocessed_tensor = []
-                for i, y_i in enumerate(y_preprocessed):
+                for y_i in y_preprocessed:
                     y_preprocessed_t = {
                         "boxes": torch.from_numpy(y_i["boxes"]).type(torch.float).to(self.device),
                         "labels": torch.from_numpy(y_i["labels"]).type(torch.int64).to(self.device),
