@@ -115,7 +115,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         self.class_source = class_source
 
     # pylint: disable=W0221
-    def poison(
+    def poison(  # type: ignore
         self,
         x_trigger: np.ndarray,
         y_trigger: np.ndarray,
