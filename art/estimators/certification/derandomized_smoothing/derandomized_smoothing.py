@@ -25,12 +25,13 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from abc import ABC, abstractmethod
 
-from typing import Optional, Union
+from typing import Optional, Union, TYPE_CHECKING
 import random
 
 import numpy as np
 
-from art.utils import ABLATOR_TYPE
+if TYPE_CHECKING:
+    from art.utils import ABLATOR_TYPE
 
 
 class DeRandomizedSmoothingMixin(ABC):
@@ -67,7 +68,8 @@ class DeRandomizedSmoothingMixin(ABC):
         self.logits = logits
         self.threshold = threshold
         self._channels_first = channels_first
-        self.ablator: ABLATOR_TYPE
+        if TYPE_CHECKING:
+            self.ablator: ABLATOR_TYPE  # pylint: disable=used-before-assignment
 
         if self.ablation_type in {"column", "row"}:
             row_ablation_mode = self.ablation_type == "row"
