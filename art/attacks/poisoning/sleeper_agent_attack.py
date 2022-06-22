@@ -114,6 +114,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         self.class_target = class_target
         self.class_source = class_source
 
+    # pylint: disable=W0221
     def poison(
         self,
         x_trigger: np.ndarray,
@@ -122,7 +123,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         y_train: np.ndarray,
         x_test: np.ndarray,
         y_test: np.ndarray,
-    ) -> Tuple[np.ndarray, np.ndarray]:  # pylint: disable=W0221
+    ) -> Tuple[np.ndarray, np.ndarray]:  # type: ignore
         """
         Optimizes a portion of poisoned samples from x_train to make a model classify x_target
         as y_target by matching the gradients.
@@ -146,7 +147,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
             initializer = self._initialize_poison_pytorch
             x_train_target_samples = torch.tensor(
                 np.transpose(x_train_target_samples, [0, 3, 1, 2]), dtype=torch.float32
-            )
+            )  # type: ignore
         else:
             raise NotImplementedError("SleeperAgentAttack is currently implemented only for PyTorch.")
 
@@ -209,7 +210,8 @@ class SleeperAgentAttack(GradientMatchingAttack):
         Used for selecting train samples from target class
         :param x_train: clean training data
         :param y_train: labels fo clean training data
-        :return x_train_target_samples, y_train_target_samples: samples and labels selected from target class in train data
+        :return x_train_target_samples, y_train_target_samples:
+        samples and labels selected from target class in train data
         """
         x_train_samples = np.copy(x_train)
         index_target = np.where(y_train.argmax(axis=1) == self.class_target)[0]
