@@ -16,7 +16,9 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the task specific estimator for PyTorch object detectors.
+This module implements the task specific estimator for PyTorch YOLO v3 object detectors.
+
+| Paper link: https://arxiv.org/abs/1804.02767
 """
 import logging
 from typing import List, Dict, Optional, Tuple, Union, TYPE_CHECKING
@@ -37,7 +39,9 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def translate_predictions_xcycwh_to_x1y1x2y2(y_pred_xcycwh: "torch.Tensor") -> List[Dict[str, "torch.Tensor"]]:
+def translate_predictions_xcycwh_to_x1y1x2y2(
+    y_pred_xcycwh: "torch.Tensor", input_height: int, input_width: int
+) -> List[Dict[str, "torch.Tensor"]]:
     """
     Convert object detection predictions from xcycwh to x1y1x2y2 format.
 
@@ -64,11 +68,11 @@ def translate_predictions_xcycwh_to_x1y1x2y2(y_pred_xcycwh: "torch.Tensor") -> L
                         ),
                         torch.minimum(
                             (y_pred_xcycwh[i, :, 0] + y_pred_xcycwh[i, :, 2] / 2),
-                            torch.tensor(416).to(y_pred_xcycwh.device),
+                            torch.tensor(input_height).to(y_pred_xcycwh.device),
                         ),
                         torch.minimum(
                             (y_pred_xcycwh[i, :, 1] + y_pred_xcycwh[i, :, 3] / 2),
-                            torch.tensor(416).to(y_pred_xcycwh.device),
+                            torch.tensor(input_width).to(y_pred_xcycwh.device),
                         ),
                     ]
                 ),
@@ -85,7 +89,10 @@ def translate_predictions_xcycwh_to_x1y1x2y2(y_pred_xcycwh: "torch.Tensor") -> L
 
 def translate_labels_art_to_yolov3(labels_art: List[Dict[str, "torch.Tensor"]]):
     """
-    Translate
+    Translate labels from ART to YOLO v3.
+
+    :param labels_art: Object detection labels in format ART (torchvision).
+    :return: Object detection labels in format YOLO v3.
     """
     import torch  # lgtm [py/repeated-import]
 
@@ -108,8 +115,9 @@ def translate_labels_art_to_yolov3(labels_art: List[Dict[str, "torch.Tensor"]]):
 
 class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
     """
-    This module implements the model- and task specific estimator for Yolo object detector models in PyTorch following
-    the input and output formats of Yolo.
+    This module implements the model- and task specific estimator for YOLO v3 object detector models in PyTorch.
+
+    | Paper link: https://arxiv.org/abs/1804.02767
     """
 
     estimator_params = PyTorchEstimator.estimator_params + ["attack_losses"]
@@ -183,12 +191,10 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
 
         if self.clip_values is not None:
             if self.clip_values[0] != 0:
-                raise ValueError("This classifier requires un-normalized input images with clip_vales=(0, max_value).")
+                raise ValueError("This estimator requires un-normalized input images with clip_vales=(0, max_value).")
             if self.clip_values[1] <= 0:  # pragma: no cover
-                raise ValueError("This classifier requires un-normalized input images with clip_vales=(0, max_value).")
+                raise ValueError("This estimator requires un-normalized input images with clip_vales=(0, max_value).")
 
-        if preprocessing is not None:
-            raise ValueError("This estimator does not support `preprocessing`.")
         if self.postprocessing_defences is not None:
             raise ValueError("This estimator does not support `postprocessing_defences`.")
 
@@ -322,7 +328,7 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
         return loss_components, inputs_t, image_tensor_list_grad
 
     def loss_gradient(  # pylint: disable=W0613
-        self, x: np.ndarray, y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]], **kwargs
+        self, x: Union[np.ndarray, "torch.Tensor"], y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]], **kwargs
     ) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
@@ -400,7 +406,9 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
 
         predictions_xcycwh = self._model(x_preprocessed_tensor)
 
-        predictions_x1y1x2y2_tensor = translate_predictions_xcycwh_to_x1y1x2y2(y_pred_xcycwh=predictions_xcycwh)
+        predictions_x1y1x2y2_tensor = translate_predictions_xcycwh_to_x1y1x2y2(
+            y_pred_xcycwh=predictions_xcycwh, input_height=self.input_shape[1], input_width=self.input_shape[2]
+        )
         predictions_x1y1x2y2_array: List[Dict[str, np.ndarray]] = []
 
         for i_prediction, _ in enumerate(predictions_x1y1x2y2_tensor):
@@ -454,7 +462,7 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
         return output
 
     def compute_loss(  # type: ignore
-        self, x: np.ndarray, y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]], **kwargs
+        self, x: Union[np.ndarray, "torch.Tensor"], y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]], **kwargs
     ) -> Union[np.ndarray, "torch.Tensor"]:
         """
         Compute the loss of the neural network for samples `x`.
