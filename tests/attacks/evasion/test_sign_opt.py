@@ -54,11 +54,10 @@ def fix_get_mnist_subset_large(get_mnist_dataset):
 def test_tabular(art_warning, tabular_dl_estimator, framework, get_iris_dataset, clipped_classifier, targeted):
     try:
         classifier = tabular_dl_estimator(clipped=clipped_classifier)
+        attack = SignOPTAttack(classifier, targeted=targeted, max_iter=1000, query_limit=4000, verbose=False)
         if targeted:
-            attack = SignOPTAttack(classifier, targeted=targeted, max_iter=2000, query_limit=8000, verbose=False)
             backend_targeted_tabular(attack, get_iris_dataset)
         else:
-            attack = SignOPTAttack(classifier, targeted=targeted, max_iter=1000, query_limit=4000, verbose=False)
             backend_untargeted_tabular(attack, get_iris_dataset, clipped=clipped_classifier)
     except ARTTestException as e:
         art_warning(e)
@@ -74,7 +73,7 @@ def test_images(
 
         if targeted:
             attack = SignOPTAttack(
-                estimator=classifier, targeted=targeted, max_iter=2000, query_limit=8000, verbose=True
+                estimator=classifier, targeted=targeted, max_iter=2000, query_limit=14000, verbose=True
             )
             backend_targeted_images(attack, fix_get_mnist_subset_large)
         else:
