@@ -20,6 +20,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import numpy as np
 import pytest
+import os, sys
 
 from art.attacks.poisoning.perturbations.audio_perturbations import insert_tone_trigger, insert_audio_trigger
 
@@ -71,12 +72,10 @@ def test_insert_tone_trigger(art_warning):
 
 @pytest.mark.framework_agnostic
 def test_insert_audio_trigger(art_warning):
+    file_path = os.path.join(os.getcwd(), "utils/data/backdoors/cough_trigger.wav")
     try:
-        # TODO
         # test single example
-        audio = insert_audio_trigger(
-            x=np.zeros(32000), sampling_rate=16000, backdoor_path="/utils/data/backdoors/cough_trigger.wav"
-        )
+        audio = insert_audio_trigger(x=np.zeros(32000), sampling_rate=16000, backdoor_path=file_path)
         assert audio.shape == (32000,)
         assert np.max(audio) != 0
 
@@ -84,7 +83,7 @@ def test_insert_audio_trigger(art_warning):
         audio = insert_audio_trigger(
             x=np.zeros(32000),
             sampling_rate=16000,
-            backdoor_path="/utils/data/backdoors/cough_trigger.wav",
+            backdoor_path=file_path,
             duration=0.8,
             scale=0.5,
         )
@@ -92,16 +91,12 @@ def test_insert_audio_trigger(art_warning):
         assert np.max(audio) != 0
 
         # test a batch of examples
-        audio = insert_audio_trigger(
-            x=np.zeros((10, 16000)), sampling_rate=16000, backdoor_path="/utils/data/backdoors/cough_trigger.wav"
-        )
+        audio = insert_audio_trigger(x=np.zeros((10, 16000)), sampling_rate=16000, backdoor_path=file_path)
         assert audio.shape == (10, 16000)
         assert np.max(audio) != 0
 
         # test single example with shift
-        audio = insert_audio_trigger(
-            x=np.zeros(32000), sampling_rate=16000, backdoor_path="/utils/data/backdoors/cough_trigger.wav", shift=10
-        )
+        audio = insert_audio_trigger(x=np.zeros(32000), sampling_rate=16000, backdoor_path=file_path, shift=10)
         assert audio.shape == (32000,)
         assert np.max(audio) != 0
         assert np.sum(audio[:10]) == 0
@@ -110,7 +105,7 @@ def test_insert_audio_trigger(art_warning):
         audio = insert_audio_trigger(
             x=np.zeros((10, 32000)),
             sampling_rate=16000,
-            backdoor_path="/utils/data/backdoors/cough_trigger.wav",
+            backdoor_path=file_path,
             random=True,
         )
         assert audio.shape == (10, 32000)
@@ -118,16 +113,14 @@ def test_insert_audio_trigger(art_warning):
 
         # test when length of backdoor is larger than that of audio signal
         with pytest.raises(ValueError):
-            _ = insert_audio_trigger(
-                x=np.zeros(15000), sampling_rate=16000, backdoor_path="/utils/data/backdoors/cough_trigger.wav"
-            )
+            _ = insert_audio_trigger(x=np.zeros(15000), sampling_rate=16000, backdoor_path=file_path)
 
         # test when shift + backdoor is larger than that of audio signal
         with pytest.raises(ValueError):
             _ = insert_audio_trigger(
                 x=np.zeros(16000),
                 sampling_rate=16000,
-                backdoor_path="/utils/data/backdoors/cough_trigger.wav",
+                backdoor_path=file_path,
                 duration=1,
                 shift=5,
             )
