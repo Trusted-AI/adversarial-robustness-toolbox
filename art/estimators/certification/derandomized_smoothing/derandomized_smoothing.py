@@ -24,7 +24,6 @@ This module implements (De)Randomized Smoothing for Certifiable Defense against 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from abc import ABC, abstractmethod
-
 from typing import Optional, Union, TYPE_CHECKING
 import random
 
@@ -92,7 +91,7 @@ class DeRandomizedSmoothingMixin(ABC):
         """
         raise NotImplementedError
 
-    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:  # pylint: disable=W0613
+    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
         """
         Performs cumulative predictions over every ablation location
 
@@ -117,17 +116,21 @@ class DeRandomizedSmoothingMixin(ABC):
             for ablation_start in range(ablate_over_range):
                 ablated_x = self.ablator.forward(np.copy(x), column_pos=ablation_start)
                 if ablation_start == 0:
-                    preds = self._predict_classifier(ablated_x, batch_size=batch_size, training_mode=False)
+                    preds = self._predict_classifier(ablated_x, batch_size=batch_size, training_mode=False, **kwargs)
                 else:
-                    preds += self._predict_classifier(ablated_x, batch_size=batch_size, training_mode=False)
+                    preds += self._predict_classifier(ablated_x, batch_size=batch_size, training_mode=False, **kwargs)
         elif self.ablation_type == "block":
             for xcorner in range(rows_in_data):
                 for ycorner in range(columns_in_data):
                     ablated_x = self.ablator.forward(np.copy(x), row_pos=xcorner, column_pos=ycorner)
                     if ycorner == 0 and xcorner == 0:
-                        preds = self._predict_classifier(ablated_x, batch_size=batch_size, training_mode=False)
+                        preds = self._predict_classifier(
+                            ablated_x, batch_size=batch_size, training_mode=False, **kwargs
+                        )
                     else:
-                        preds += self._predict_classifier(ablated_x, batch_size=batch_size, training_mode=False)
+                        preds += self._predict_classifier(
+                            ablated_x, batch_size=batch_size, training_mode=False, **kwargs
+                        )
         return preds
 
 
