@@ -91,12 +91,13 @@ class DeRandomizedSmoothingMixin(ABC):
         """
         raise NotImplementedError
 
-    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
+    def predict(self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs) -> np.ndarray:
         """
         Performs cumulative predictions over every ablation location
 
         :param x: Unablated image
         :param batch_size: the batch size for the prediction
+        :param training_mode: if to run the classifier in training mode
         :return: cumulative predictions after sweeping over all the ablation configurations.
         """
         if self._channels_first:
@@ -116,20 +117,24 @@ class DeRandomizedSmoothingMixin(ABC):
             for ablation_start in range(ablate_over_range):
                 ablated_x = self.ablator.forward(np.copy(x), column_pos=ablation_start)
                 if ablation_start == 0:
-                    preds = self._predict_classifier(ablated_x, batch_size=batch_size, training_mode=False, **kwargs)
+                    preds = self._predict_classifier(
+                        ablated_x, batch_size=batch_size, training_mode=training_mode, **kwargs
+                    )
                 else:
-                    preds += self._predict_classifier(ablated_x, batch_size=batch_size, training_mode=False, **kwargs)
+                    preds += self._predict_classifier(
+                        ablated_x, batch_size=batch_size, training_mode=training_mode, **kwargs
+                    )
         elif self.ablation_type == "block":
             for xcorner in range(rows_in_data):
                 for ycorner in range(columns_in_data):
                     ablated_x = self.ablator.forward(np.copy(x), row_pos=xcorner, column_pos=ycorner)
                     if ycorner == 0 and xcorner == 0:
                         preds = self._predict_classifier(
-                            ablated_x, batch_size=batch_size, training_mode=False, **kwargs
+                            ablated_x, batch_size=batch_size, training_mode=training_mode, **kwargs
                         )
                     else:
                         preds += self._predict_classifier(
-                            ablated_x, batch_size=batch_size, training_mode=False, **kwargs
+                            ablated_x, batch_size=batch_size, training_mode=training_mode, **kwargs
                         )
         return preds
 

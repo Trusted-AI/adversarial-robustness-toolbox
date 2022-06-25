@@ -170,12 +170,15 @@ class TensorFlowV2DeRandomizedSmoothing(DeRandomizedSmoothingMixin, TensorFlowV2
             if scheduler is not None:
                 scheduler(epoch)
 
-    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:  # type: ignore
+    def predict(
+        self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs
+    ) -> np.ndarray:  # type: ignore
         """
         Perform prediction of the given classifier for a batch of inputs
 
         :param x: Input samples.
         :param batch_size: Batch size.
+        :param training_mode: if to run the classifier in training mode
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
-        return DeRandomizedSmoothingMixin.predict(self, x, batch_size=batch_size, training_mode=False, **kwargs)
+        return DeRandomizedSmoothingMixin.predict(self, x, batch_size=batch_size, training_mode=training_mode, **kwargs)
