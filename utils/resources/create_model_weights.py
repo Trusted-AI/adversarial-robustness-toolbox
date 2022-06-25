@@ -176,4 +176,6 @@ def create_scikit_model_weights():
 
 
 if __name__ == "__main__":
+    main_mnist_binary()
+    create_scikit_model_weights()
     main_diabetes()
