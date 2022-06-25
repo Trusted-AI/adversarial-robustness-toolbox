@@ -683,18 +683,23 @@ def check_and_transform_label_format(
         if not return_one_hot:
             labels_return = np.argmax(labels, axis=1)
             labels_return = np.expand_dims(labels_return, axis=1)
-    elif (
-        len(labels.shape) == 2 and labels.shape[1] == 1 and nb_classes is not None and nb_classes > 2
-    ):  # multi-class, index labels
-        if return_one_hot:
-            labels_return = to_categorical(labels, nb_classes)
+    elif len(labels.shape) == 2 and labels.shape[1] == 1:
+        if nb_classes is None:
+            nb_classes = np.max(labels) + 1
+        if nb_classes > 2:  # multi-class, index labels
+            if return_one_hot:
+                labels_return = to_categorical(labels, nb_classes)
+            else:
+                labels_return = np.expand_dims(labels, axis=1)
+        elif nb_classes == 2:  # binary, index labels
+            if return_one_hot:
+                labels_return = to_categorical(labels, nb_classes)
         else:
-            labels_return = np.expand_dims(labels, axis=1)
-    elif (
-        len(labels.shape) == 2 and labels.shape[1] == 1 and nb_classes is not None and nb_classes == 2
-    ):  # binary, index labels
-        if return_one_hot:
-            labels_return = to_categorical(labels, nb_classes)
+            raise ValueError(
+                "Shape of labels not recognised."
+                "Please provide labels in shape (nb_samples,) or (nb_samples, "
+                "nb_classes)"
+            )
     elif len(labels.shape) == 1:  # index labels
         if return_one_hot:
             labels_return = to_categorical(labels, nb_classes)
@@ -702,7 +707,9 @@ def check_and_transform_label_format(
             labels_return = np.expand_dims(labels, axis=1)
     else:
         raise ValueError(
-            "Shape of labels not recognised." "Please provide labels in shape (nb_samples,) or (nb_samples, nb_classes)"
+            "Shape of labels not recognised."
+            "Please provide labels in shape (nb_samples,) or (nb_samples, "
+            "nb_classes)"
         )
 
     return labels_return
