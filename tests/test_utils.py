@@ -246,7 +246,7 @@ class TestUtils(unittest.TestCase):
         labels = np.array([[1], [0], [1]])
         labels_transformed = check_and_transform_label_format(labels, return_one_hot=False)
         np.testing.assert_array_equal(
-                labels_transformed, np.expand_dims(np.argmax(labels_expected_binary, axis=1), axis=1)
+            labels_transformed, np.expand_dims(np.argmax(labels_expected_binary, axis=1), axis=1)
         )
 
         # ValueError for len(labels.shape) > 2
