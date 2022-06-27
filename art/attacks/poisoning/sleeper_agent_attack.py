@@ -247,7 +247,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         x_train = np.transpose(x_train, [0, 3, 1, 2])
 
         poisoned_samples = np.asarray(poisoned_samples)
-        x_train[self.indices_target[self.indices_poison]] = poisoned_samples  # type: ignore
+        x_train[self.indices_target[self.indices_poison]] = poisoned_samples
         model, loss_fn, optimizer = self.create_model(
             x_train,
             y_train,
