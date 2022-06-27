@@ -123,7 +123,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         y_train: np.ndarray,
         x_test: np.ndarray,
         y_test: np.ndarray,
-    ) -> Tuple[np.ndarray, np.ndarray]:  # type: ignore
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Optimizes a portion of poisoned samples from x_train to make a model classify x_target
         as y_target by matching the gradients.
