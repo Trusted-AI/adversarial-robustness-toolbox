@@ -223,7 +223,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         """
         :return: indices of best poison index
         """
-        return self.indices_poison  # type: ignore
+        return self.indices_poison
 
     def model_retraining(
         self,
