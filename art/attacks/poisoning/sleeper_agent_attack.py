@@ -286,7 +286,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         :param epochs: The number of epochs for which training need to be applied.
         :return model, loss_fn, optimizer - trained model, loss function used to train the model and optimizer used.
         """
-        import torch
+        import torch  # lgtm [py/repeated-import]
         from torch import nn
         from torch.utils.data import TensorDataset, DataLoader
         import torchvision
