@@ -403,7 +403,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
     # This function is responsible for applying trigger patches to the images
     # fixed - where the trigger is applied at the bottom right of the image
     # random - where the trigger is applied at random location of the image
-    def apply_trigger_patch(self, x_trigger: np.ndarray) -> Tuple[Any]:
+    def apply_trigger_patch(self, x_trigger: np.ndarray) -> Union[np.ndarray, "torch.Tensor"]:
         """
         Select indices of poisoned samples
 
