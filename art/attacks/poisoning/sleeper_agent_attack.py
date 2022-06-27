@@ -202,7 +202,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
 
         if self.verbose > 0:
             print("Best B-score:", best_B)
-        x_train[self.indices_target[best_indices_poison]] = np.transpose(best_x_poisoned, [0, 2, 3, 1])  # type: ignore
+        x_train[self.indices_target[best_indices_poison]] = np.transpose(best_x_poisoned, [0, 2, 3, 1])
         return x_train, y_train
 
     def select_target_train_samples(self, x_train: np.ndarray, y_train: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
