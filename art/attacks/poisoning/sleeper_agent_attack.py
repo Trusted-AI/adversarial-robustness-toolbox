@@ -23,7 +23,7 @@ This module implements Sleeper Agent attack on Neural Networks.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Any, Tuple, TYPE_CHECKING, List
+from typing import Any, Tuple, TYPE_CHECKING, Union, List
 import random
 
 import numpy as np
