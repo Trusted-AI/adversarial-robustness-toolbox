@@ -393,8 +393,8 @@ class SleeperAgentAttack(GradientMatchingAttack):
             gradients = torch.autograd.grad(loss, differentiable_params, only_inputs=True)
             grad_norm = 0
             for grad in gradients:
-                grad_norm += grad.detach().pow(2).sum()  # type: ignore
-            grad_norms.append(grad_norm.sqrt())  # type: ignore
+                grad_norm += grad.detach().pow(2).sum()
+            grad_norms.append(grad_norm.sqrt())
 
         indices = sorted(range(len(grad_norms)), key=lambda k: grad_norms[k])
         indices = indices[-num_poison:]
