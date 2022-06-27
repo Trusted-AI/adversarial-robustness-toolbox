@@ -12,7 +12,7 @@ pydub==0.25.1
 resampy==0.2.2
 ffmpeg-python==0.2.0
 cma==3.2.2
-pandas==1.4.2
+pandas==1.4.3
 librosa==0.9.1
 numba~=0.55.1
 opencv-python
@@ -53,7 +53,7 @@ jax[cpu]==0.3.13
 # other
 pytest~=7.1.2
 pytest-flake8~=1.1.1
-pytest-mock~=3.7.0
+pytest-mock~=3.8.1
 pytest-cov~=3.0.0
 codecov~=2.1.12
 requests~=2.28.0
