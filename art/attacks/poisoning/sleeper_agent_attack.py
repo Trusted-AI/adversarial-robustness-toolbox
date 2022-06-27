@@ -378,7 +378,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         :num_poison: Number of poisoned samples to be selected out of all x_samples.
         :return indices - Indices of samples to be poisoned.
         """
-        import torch
+        import torch  # lgtm [py/repeated-import]
 
         device = "cuda" if torch.cuda.is_available() else "cpu"
         grad_norms = []
