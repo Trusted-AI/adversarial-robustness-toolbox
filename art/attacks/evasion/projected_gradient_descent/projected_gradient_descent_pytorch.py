@@ -65,6 +65,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         norm: Union[int, float, str] = np.inf,
         eps: Union[int, float, np.ndarray] = 0.3,
         eps_step: Union[int, float, np.ndarray] = 0.1,
+        decay: Optional[float] = None,
         max_iter: int = 100,
         targeted: bool = False,
         num_random_init: int = 0,
@@ -111,6 +112,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
             norm=norm,
             eps=eps,
             eps_step=eps_step,
+            decay=decay,
             max_iter=max_iter,
             targeted=targeted,
             num_random_init=num_random_init,
@@ -267,6 +269,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         inputs = x.to(self.estimator.device)
         targets = targets.to(self.estimator.device)
         adv_x = torch.clone(inputs)
+        momentum = torch.zeros(inputs.shape)
 
         if mask is not None:
             mask = mask.to(self.estimator.device)
@@ -274,19 +277,13 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         for i_max_iter in range(self.max_iter):
             self._i_max_iter = i_max_iter
             adv_x = self._compute_pytorch(
-                adv_x,
-                inputs,
-                targets,
-                mask,
-                eps,
-                eps_step,
-                self.num_random_init > 0 and i_max_iter == 0,
+                adv_x, inputs, targets, mask, eps, eps_step, self.num_random_init > 0 and i_max_iter == 0, momentum
             )
 
         return adv_x.cpu().detach().numpy()
 
     def _compute_perturbation_pytorch(  # pylint: disable=W0221
-        self, x: "torch.Tensor", y: "torch.Tensor", mask: Optional["torch.Tensor"]
+        self, x: "torch.Tensor", y: "torch.Tensor", mask: Optional["torch.Tensor"], momentum: "torch.Tensor"
     ) -> "torch.Tensor":
         """
         Compute perturbations.
@@ -330,6 +327,14 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         # Apply mask
         if mask is not None:
             grad = torch.where(mask == 0.0, torch.tensor(0.0).to(self.estimator.device), grad)
+
+        # Apply momentum
+        if self.decay is not None:
+            ind = tuple(range(1, len(x.shape)))
+            grad = grad / (torch.sum(grad.abs(), dim=ind, keepdims=True) + tol)  # type: ignore
+            grad = self.decay * momentum + grad
+            # Accumulate the gradient for the next iter
+            momentum += grad
 
         # Apply norm bound
         if self.norm in ["inf", np.inf]:
@@ -382,6 +387,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         eps: Union[int, float, np.ndarray],
         eps_step: Union[int, float, np.ndarray],
         random_init: bool,
+        momentum: "torch.Tensor",
     ) -> "torch.Tensor":
         """
         Compute adversarial examples for one iteration.
@@ -426,7 +432,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
             x_adv = x
 
         # Get perturbation
-        perturbation = self._compute_perturbation_pytorch(x_adv, y, mask)
+        perturbation = self._compute_perturbation_pytorch(x_adv, y, mask, momentum)
 
         # Apply perturbation and clip
         x_adv = self._apply_perturbation_pytorch(x_adv, perturbation, eps_step)

@@ -516,6 +516,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         clone.reset()
         params = self.get_params()
         del params["model"]
+        del params["optimizer"]
         clone.set_params(**params)
         return clone
 
