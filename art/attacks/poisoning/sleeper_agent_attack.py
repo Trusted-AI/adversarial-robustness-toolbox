@@ -423,6 +423,6 @@ class SleeperAgentAttack(GradientMatchingAttack):
         if isinstance(self.substitute_classifier, PyTorchClassifier):
             import torch
 
-            return torch.tensor(np.transpose(x_trigger, [0, 3, 1, 2]))  # type: ignore
+            return torch.tensor(np.transpose(x_trigger, [0, 3, 1, 2]))
 
-        return np.transpose(x_trigger, [0, 3, 1, 2])  # type: ignore
+        return np.transpose(x_trigger, [0, 3, 1, 2])
