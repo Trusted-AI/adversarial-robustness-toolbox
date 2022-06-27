@@ -152,7 +152,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
             raise NotImplementedError("SleeperAgentAttack is currently implemented only for PyTorch.")
 
         # Choose samples to poison.
-        x_trigger = self.apply_trigger_patch(x_trigger)  # type: ignore
+        x_trigger = self.apply_trigger_patch(x_trigger) 
         if len(np.shape(y_trigger)) == 2:  # dense labels
             classes_target = set(np.argmax(y_trigger, axis=-1))
         else:  # sparse labels
