@@ -99,9 +99,9 @@ if TYPE_CHECKING:
     from art.estimators.classification.xgboost import XGBoostClassifier
     from art.estimators.certification.derandomized_smoothing.derandomized_smoothing import BlockAblator, ColumnAblator
     from art.estimators.generation import TensorFlowGenerator
-    from art.estimators.generation.tensorflow import TensorFlow2Generator
+    from art.estimators.generation.tensorflow import TensorFlowV2Generator
     from art.estimators.object_detection.object_detector import ObjectDetector
-    from art.estimators.object_detection.python_object_detector import PyTorchObjectDetector
+    from art.estimators.object_detection.pytorch_object_detector import PyTorchObjectDetector
     from art.estimators.object_detection.pytorch_faster_rcnn import PyTorchFasterRCNN
     from art.estimators.object_detection.tensorflow_faster_rcnn import TensorFlowFasterRCNN
     from art.estimators.pytorch import PyTorchEstimator
@@ -187,7 +187,7 @@ if TYPE_CHECKING:
         CLASSIFIER_NEURALNETWORK_TYPE,
     ]
 
-    GENERATOR_TYPE = Union[TensorFlowGenerator, TensorFlow2Generator]  # pylint: disable=C0103
+    GENERATOR_TYPE = Union[TensorFlowGenerator, TensorFlowV2Generator]  # pylint: disable=C0103
 
     REGRESSOR_TYPE = Union[ScikitlearnRegressor, ScikitlearnDecisionTreeRegressor]  # pylint: disable=C0103
 

@@ -33,7 +33,6 @@ logger = logging.getLogger(__name__)
 @pytest.mark.parametrize("use_amp", [False, True])
 @pytest.mark.parametrize("device_type", ["cpu", "gpu"])
 def test_imperceptible_asr_pytorch(art_warning, expected_values, use_amp, device_type):
-    # Only import if deepspeech_pytorch module is available
     import torch
 
     from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
@@ -132,6 +131,98 @@ def test_imperceptible_asr_pytorch(art_warning, expected_values, use_amp, device
         assert np.sum(x_adv_preprocessing[0]) != 0
         assert np.sum(x_adv_preprocessing[1]) != 0
         assert np.sum(x_adv_preprocessing[2]) != 0
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_module("deepspeech_pytorch")
+@pytest.mark.skip_framework("tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+@pytest.mark.parametrize("use_amp", [False])
+@pytest.mark.parametrize("device_type", ["cpu"])
+def test_imperceptible_asr_pytorch_mp3compression_pytorch(art_warning, expected_values, use_amp, device_type):
+    import torch
+
+    from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
+    from art.attacks.evasion.imperceptible_asr.imperceptible_asr_pytorch import ImperceptibleASRPyTorch
+    from art.defences.preprocessor import Mp3CompressionPyTorch
+
+    try:
+        # Skip test if gpu is not available and use_amp is true
+        if use_amp and not torch.cuda.is_available():
+            return
+
+        # Load data for testing
+        expected_data = expected_values()
+
+        x1 = expected_data["x1"]
+
+        # Create signal data
+        x = np.array([x1 * 200, x1 * 200], dtype=ART_NUMPY_DTYPE)
+
+        # Create labels
+        y = np.array(["S", "I"])
+
+        # Create DeepSpeech estimator with preprocessing
+        mp3compression = Mp3CompressionPyTorch(sample_rate=44100, channels_first=True)
+
+        speech_recognizer = PyTorchDeepSpeech(
+            pretrained_model="librispeech",
+            device_type=device_type,
+            use_amp=use_amp,
+            preprocessing_defences=mp3compression,
+        )
+
+        # Create attack
+        asr_attack = ImperceptibleASRPyTorch(
+            estimator=speech_recognizer,
+            eps=0.001,
+            max_iter_1=5,
+            max_iter_2=5,
+            learning_rate_1=0.00001,
+            learning_rate_2=0.001,
+            optimizer_1=torch.optim.Adam,
+            optimizer_2=torch.optim.Adam,
+            global_max_length=3200,
+            initial_rescale=1.0,
+            decrease_factor_eps=0.8,
+            num_iter_decrease_eps=5,
+            alpha=0.01,
+            increase_factor_alpha=1.2,
+            num_iter_increase_alpha=5,
+            decrease_factor_alpha=0.8,
+            num_iter_decrease_alpha=5,
+            win_length=2048,
+            hop_length=512,
+            n_fft=2048,
+            batch_size=2,
+            use_amp=use_amp,
+            opt_level="O1",
+        )
+
+        # Test transcription output
+        transcriptions_preprocessing = speech_recognizer.predict(x, batch_size=2, transcription_output=True)
+
+        expected_transcriptions = np.array(["", ""])
+
+        assert (expected_transcriptions == transcriptions_preprocessing).all()
+
+        # Generate attack
+        x_adv_preprocessing = asr_attack.generate(x, y)
+
+        # Test shape
+        assert x_adv_preprocessing[0].shape == x[0].shape
+        assert x_adv_preprocessing[1].shape == x[1].shape
+
+        # Test content
+        assert not (x_adv_preprocessing[0] == x[0]).all()
+        assert not (x_adv_preprocessing[1] == x[1]).all()
+
+        assert np.sum(x_adv_preprocessing[0]) != np.inf
+        assert np.sum(x_adv_preprocessing[1]) != np.inf
+
+        assert np.sum(x_adv_preprocessing[0]) != 0
+        assert np.sum(x_adv_preprocessing[1]) != 0
 
     except ARTTestException as e:
         art_warning(e)
