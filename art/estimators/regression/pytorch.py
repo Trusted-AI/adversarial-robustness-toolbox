@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2022
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the classifier `PyTorchClassifier` for PyTorch models.
+This module implements the regressor `PyTorchRegressor` for PyTorch models.
 """
 # pylint: disable=C0302,R0904
 from __future__ import absolute_import, division, print_function, unicode_literals
@@ -32,12 +32,8 @@ import numpy as np
 import six
 
 from art import config
-from art.estimators.classification.classifier import (
-    ClassGradientsMixin,
-    ClassifierMixin,
-)
+from art.estimators.regression.regressor import RegressorMixin
 from art.estimators.pytorch import PyTorchEstimator
-from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
     # pylint: disable=C0412, C0302
@@ -51,30 +47,25 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):  # lgtm [py/missing-call-to-init]
+class PyTorchRegressor(RegressorMixin, PyTorchEstimator):  # lgtm [py/missing-call-to-init]
     """
-    This class implements a classifier with the PyTorch framework.
+    This class implements a regressor with the PyTorch framework.
     """
 
-    estimator_params = (
-        PyTorchEstimator.estimator_params
-        + ClassifierMixin.estimator_params
-        + [
-            "loss",
-            "input_shape",
-            "optimizer",
-            "use_amp",
-            "opt_level",
-            "loss_scale",
-        ]
-    )
+    estimator_params = PyTorchEstimator.estimator_params + [
+        "loss",
+        "input_shape",
+        "optimizer",
+        "use_amp",
+        "opt_level",
+        "loss_scale",
+    ]
 
     def __init__(
         self,
         model: "torch.nn.Module",
         loss: "torch.nn.modules.loss._Loss",
         input_shape: Tuple[int, ...],
-        nb_classes: int,
         optimizer: Optional["torch.optim.Optimizer"] = None,  # type: ignore
         use_amp: bool = False,
         opt_level: str = "O1",
@@ -94,7 +85,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         :param loss: The loss function for which to compute gradients for training. The target label must be raw
                categorical, i.e. not converted to one-hot encoding.
         :param input_shape: The shape of one input instance.
-        :param optimizer: The optimizer used to train the classifier.
+        :param optimizer: The optimizer used to train the regressor.
         :param use_amp: Whether to use the automatic mixed precision tool to enable mixed precision training or
                         gradient computation, e.g. with loss gradient computation. When set to True, this option is
                         only triggered if there are GPUs available.
@@ -102,19 +93,18 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                           values are `O0`, `O1`, `O2`, and `O3`.
         :param loss_scale: Loss scaling. Used when use_amp is True. If passed as a string, must be a string
                            representing a number, e.g., “1.0”, or the string “dynamic”.
-        :param nb_classes: The number of classes of the model.
-        :param optimizer: The optimizer used to train the classifier.
+        :param optimizer: The optimizer used to train the regressor.
         :param channels_first: Set channels first or last.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
                the shape of clip values needs to match the total number of features.
-        :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
-        :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
+        :param preprocessing_defences: Preprocessing defence(s) to be applied by the regressor.
+        :param postprocessing_defences: Postprocessing defence(s) to be applied by the regressor.
         :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
-        :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
+        :param device_type: Type of device on which the regressor is run, either `gpu` or `cpu`.
         """
         import torch  # lgtm [py/repeated-import]
 
@@ -127,7 +117,6 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             preprocessing=preprocessing,
             device_type=device_type,
         )
-        self.nb_classes = nb_classes
         self._input_shape = input_shape
         self._model = self._make_model_wrapper(model)
         self._loss = loss
@@ -148,22 +137,6 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         # Index of layer at which the class gradients should be calculated
         self._layer_idx_gradients = -1
-
-        if isinstance(
-            self._loss,
-            (torch.nn.CrossEntropyLoss, torch.nn.NLLLoss, torch.nn.MultiMarginLoss),
-        ):
-            self._reduce_labels = True
-            self._int_labels = True
-        elif isinstance(
-            self._loss,
-            (torch.nn.BCELoss),
-        ):
-            self._reduce_labels = True
-            self._int_labels = False
-        else:
-            self._reduce_labels = False
-            self._int_labels = False
 
         # Setup for AMP use
         if self._use_amp:  # pragma: no cover
@@ -261,32 +234,6 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         """
         return self._loss_scale  # type: ignore
 
-    def reduce_labels(self, y: Union[np.ndarray, "torch.Tensor"]) -> Union[np.ndarray, "torch.Tensor"]:
-        """
-        Reduce labels from one-hot encoded to index labels.
-        """
-        # pylint: disable=R0911
-        import torch  # lgtm [py/repeated-import]
-
-        # Check if the loss function requires as input index labels instead of one-hot-encoded labels
-        # Checking for exactly 2 classes to support binary classification
-        if self.nb_classes > 2 or (self.nb_classes == 2 and len(y.shape) == 2 and y.shape[1] == 2):
-            if self._reduce_labels and self._int_labels:
-                if isinstance(y, torch.Tensor):
-                    return torch.argmax(y, dim=1)
-                return np.argmax(y, axis=1)
-            if self._reduce_labels:  # float labels
-                if isinstance(y, torch.Tensor):
-                    return torch.argmax(y, dim=1).type("torch.FloatTensor")
-                y_index = np.argmax(y, axis=1).astype(np.float32)
-                y_index = np.expand_dims(y_index, axis=1)
-                return y_index
-            return y
-
-        if isinstance(y, torch.Tensor):
-            return y.float()
-        return y.astype(np.float32)
-
     def predict(  # pylint: disable=W0221
         self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs
     ) -> np.ndarray:
@@ -365,7 +312,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         **kwargs,
     ) -> None:
         """
-        Fit the classifier on the training set `(x, y)`.
+        Fit the regressor on the training set `(x, y)`.
 
         :param x: Training data.
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or index labels of
@@ -384,13 +331,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         if self._optimizer is None:  # pragma: no cover
             raise ValueError("An optimizer is needed to train the model, but none for provided.")
 
-        y = check_and_transform_label_format(y, self.nb_classes)
-
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
-
-        # Check label shape
-        y_preprocessed = self.reduce_labels(y_preprocessed)
 
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         ind = np.arange(len(x_preprocessed))
@@ -412,7 +354,12 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                 model_outputs = self._model(i_batch)
 
                 # Form the loss function
-                loss = self._loss(model_outputs[-1], o_batch)  # lgtm [py/call-to-non-callable]
+                loss = self._loss(
+                    model_outputs[-1].reshape(
+                        -1,
+                    ),
+                    o_batch,
+                )  # lgtm [py/call-to-non-callable]
 
                 # Do training
                 if self._use_amp:  # pragma: no cover
@@ -428,7 +375,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
     def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs) -> None:
         """
-        Fit the classifier using the generator that yields batches as specified.
+        Fit the regressor using the generator that yields batches as specified.
 
         :param generator: Batch generator providing `(x, y)` for each epoch.
         :param nb_epochs: Number of epochs to use for training.
@@ -477,7 +424,12 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                     model_outputs = self._model(i_batch)
 
                     # Form the loss function
-                    loss = self._loss(model_outputs[-1], o_batch)
+                    loss = self._loss(
+                        model_outputs[-1].reshape(
+                            -1,
+                        ),
+                        o_batch,
+                    )
 
                     # Do training
                     if self._use_amp:  # pragma: no cover
@@ -495,34 +447,25 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             # Fit a generic data generator through the API
             super().fit_generator(generator, nb_epochs=nb_epochs)
 
-    def clone_for_refitting(self) -> "PyTorchClassifier":  # lgtm [py/inheritance/incorrect-overridden-signature]
+    def clone_for_refitting(self) -> "PyTorchRegressor":  # lgtm [py/inheritance/incorrect-overridden-signature]
         """
-        Create a copy of the classifier that can be refit from scratch. Will inherit same architecture, same type of
-        optimizer and initialization as the original classifier, but without weights.
+        Create a copy of the regressor that can be refit from scratch. Will inherit same architecture, optimizer and
+        initialization as cloned model, but without weights.
 
         :return: new estimator
         """
         model = copy.deepcopy(self.model)
-
-        if self._optimizer is None:  # pragma: no cover
-            raise ValueError("An optimizer is needed to train the model, but none is provided.")
-
-        # create a new optimizer that binds to the cloned model's parameters and uses original optimizer's defaults
-        new_optimizer = type(self._optimizer)(model.parameters(), **self._optimizer.defaults)  # type: ignore
-
-        clone = type(self)(model, self._loss, self.input_shape, self.nb_classes, optimizer=new_optimizer)
-
+        clone = type(self)(model, self._loss, self.input_shape, optimizer=self._optimizer)
         # reset weights
         clone.reset()
         params = self.get_params()
         del params["model"]
-        del params["optimizer"]
         clone.set_params(**params)
         return clone
 
     def reset(self) -> None:
         """
-        Resets the weights of the classifier so that it can be refit from scratch.
+        Resets the weights of the regressor so that it can be refit from scratch.
 
         """
 
@@ -532,137 +475,6 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                 module.reset_parameters()
 
         self.model.apply(weight_reset)
-
-    def class_gradient(  # pylint: disable=W0221
-        self, x: np.ndarray, label: Union[int, List[int], None] = None, training_mode: bool = False, **kwargs
-    ) -> np.ndarray:
-        """
-        Compute per-class derivatives w.r.t. `x`.
-
-        :param x: Sample input with shape as expected by the model.
-        :param label: Index of a specific per-class derivative. If an integer is provided, the gradient of that class
-                      output is computed for all samples. If multiple values as provided, the first dimension should
-                      match the batch size of `x`, and each value will be used as target for its corresponding sample in
-                      `x`. If `None`, then gradients for all classes will be computed for each sample.
-        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
-                              Note on RNN-like models: Backpropagation through RNN modules in eval mode raises
-                              RuntimeError due to cudnn issues and require training mode, i.e. RuntimeError: cudnn RNN
-                              backward can only be called in training mode. Therefore, if the model is an RNN type we
-                              always use training mode but freeze batch-norm and dropout layers if
-                              `training_mode=False.`
-        :return: Array of gradients of input features w.r.t. each class in the form
-                 `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
-                 `(batch_size, 1, input_shape)` when `label` parameter is specified.
-        """
-        import torch  # lgtm [py/repeated-import]
-
-        self._model.train(mode=training_mode)
-
-        # Backpropagation through RNN modules in eval mode raises RuntimeError due to cudnn issues and require training
-        # mode, i.e. RuntimeError: cudnn RNN backward can only be called in training mode. Therefore, if the model is
-        # an RNN type we always use training mode but freeze batch-norm and dropout layers if training_mode=False.
-        if self.is_rnn:
-            self._model.train(mode=True)
-            if not training_mode:
-                logger.debug(  # pragma: no cover
-                    "Freezing batch-norm and dropout layers for gradient calculation in train mode with eval parameters"
-                    "of batch-norm and dropout."
-                )
-                self.set_batchnorm(train=False)
-                self.set_dropout(train=False)
-
-        if not (
-            (label is None)
-            or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
-            or (
-                isinstance(label, np.ndarray)
-                and len(label.shape) == 1
-                and (label < self.nb_classes).all()
-                and label.shape[0] == x.shape[0]
-            )
-        ):
-            raise ValueError(f"Label {label} is out of range.")  # pragma: no cover
-
-        # Apply preprocessing
-        if self.all_framework_preprocessing:
-            x_grad = torch.from_numpy(x).to(self._device)
-            if self._layer_idx_gradients < 0:
-                x_grad.requires_grad = True
-            x_input, _ = self._apply_preprocessing(x_grad, y=None, fit=False, no_grad=False)
-        else:
-            x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False, no_grad=True)
-            x_grad = torch.from_numpy(x_preprocessed).to(self._device)
-            if self._layer_idx_gradients < 0:
-                x_grad.requires_grad = True
-            x_input = x_grad
-
-        # Run prediction
-        model_outputs = self._model(x_input)
-
-        # Set where to get gradient
-        if self._layer_idx_gradients >= 0:
-            input_grad = model_outputs[self._layer_idx_gradients]
-        else:
-            input_grad = x_grad
-
-        # Set where to get gradient from
-        preds = model_outputs[-1]
-
-        # Compute the gradient
-        grads_list = []
-
-        def save_grad():
-            def hook(grad):
-                grads_list.append(grad.cpu().numpy().copy())
-                grad.data.zero_()
-
-            return hook
-
-        input_grad.register_hook(save_grad())
-
-        self._model.zero_grad()
-        if label is None:
-            if len(preds.shape) == 1 or preds.shape[1] == 1:
-                num_outputs = 1
-            else:
-                num_outputs = self.nb_classes
-
-            for i in range(num_outputs):
-                torch.autograd.backward(
-                    preds[:, i],
-                    torch.tensor([1.0] * len(preds[:, 0])).to(self._device),
-                    retain_graph=True,
-                )
-
-            grads = np.swapaxes(np.array(grads_list), 0, 1)
-
-        elif isinstance(label, (int, np.integer)):
-            torch.autograd.backward(
-                preds[:, label],
-                torch.tensor([1.0] * len(preds[:, 0])).to(self._device),
-                retain_graph=True,
-            )
-            grads = np.swapaxes(np.array(grads_list), 0, 1)
-        else:
-            unique_label = list(np.unique(label))
-            for i in unique_label:
-                torch.autograd.backward(
-                    preds[:, i],
-                    torch.tensor([1.0] * len(preds[:, 0])).to(self._device),
-                    retain_graph=True,
-                )
-
-            grads = np.swapaxes(np.array(grads_list), 0, 1)
-            lst = [unique_label.index(i) for i in label]
-            grads = grads[np.arange(len(grads)), lst]
-
-            grads = grads[None, ...]
-            grads = np.swapaxes(np.array(grads), 0, 1)
-
-        if not self.all_framework_preprocessing:
-            grads = self._apply_preprocessing_gradient(x, grads)
-
-        return grads
 
     def compute_loss(  # type: ignore # pylint: disable=W0221
         self,
@@ -687,13 +499,11 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         self._model.eval()
 
-        y = check_and_transform_label_format(y, self.nb_classes)  # type: ignore
-
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
 
         # Check label shape
-        y_preprocessed = self.reduce_labels(y_preprocessed)
+        # y_preprocessed = self.reduce_labels(y_preprocessed)
 
         if isinstance(x, torch.Tensor):
             inputs_t = x_preprocessed
@@ -710,7 +520,12 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         # Return individual loss values
         self._loss.reduction = reduction
-        loss = self._loss(model_outputs[-1], labels_t)
+        loss = self._loss(
+            model_outputs[-1].reshape(
+                -1,
+            ),
+            labels_t,
+        )
         self._loss.reduction = prev_reduction
 
         if isinstance(x, torch.Tensor):
@@ -797,7 +612,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             raise NotImplementedError("Combination of inputs and preprocessing not supported.")
 
         # Check label shape
-        y_preprocessed = self.reduce_labels(y_preprocessed)
+        # y_preprocessed = self.reduce_labels(y_preprocessed)
 
         if isinstance(y_preprocessed, np.ndarray):
             labels_t = torch.from_numpy(y_preprocessed).to(self._device)
@@ -806,7 +621,12 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         # Compute the gradient and return
         model_outputs = self._model(inputs_t)
-        loss = self._loss(model_outputs[-1], labels_t)  # lgtm [py/call-to-non-callable]
+        loss = self._loss(
+            model_outputs[-1].reshape(
+                -1,
+            ),
+            labels_t,
+        )  # lgtm [py/call-to-non-callable]
 
         # Clean gradients
         self._model.zero_grad()
@@ -1023,7 +843,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
     def __getstate__(self) -> Dict[str, Any]:
         """
-        Use to ensure `PyTorchClassifier` can be pickled.
+        Use to ensure `PyTorchRegressor` can be pickled.
 
         :return: State dictionary with instance parameters.
         """
@@ -1045,7 +865,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
     def __setstate__(self, state: Dict[str, Any]) -> None:
         """
-        Use to ensure `PyTorchClassifier` can be unpickled.
+        Use to ensure `PyTorchRegressor` can be unpickled.
 
         :param state: State dictionary with instance parameters to restore.
         """
@@ -1072,7 +892,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
     def __repr__(self):
         repr_ = (
             f"{self.__module__ + '.' + self.__class__.__name__}(model={self._model}, loss={self._loss}, "
-            f"optimizer={self._optimizer}, input_shape={self._input_shape}, nb_classes={self.nb_classes}, "
+            f"optimizer={self._optimizer}, input_shape={self._input_shape}, "
             f"channels_first={self.channels_first}, clip_values={self.clip_values!r}, "
             f"preprocessing_defences={self.preprocessing_defences}, "
             f"postprocessing_defences={self.postprocessing_defences}, preprocessing={self.preprocessing})"
@@ -1157,7 +977,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                         else:  # pragma: no cover
                             raise TypeError("The input model must inherit from `nn.Module`.")
                         logger.info(
-                            "Inferred %i hidden layers on PyTorch classifier.",
+                            "Inferred %i hidden layers on PyTorch regressor.",
                             len(result),
                         )
 

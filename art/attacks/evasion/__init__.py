@@ -30,6 +30,7 @@ from art.attacks.evasion.imperceptible_asr.imperceptible_asr_pytorch import Impe
 from art.attacks.evasion.iterative_method import BasicIterativeMethod
 from art.attacks.evasion.laser_attack.laser_attack import LaserAttack
 from art.attacks.evasion.lowprofool import LowProFool
+from art.attacks.evasion.momentum_iterative_method import MomentumIterativeMethod
 from art.attacks.evasion.newtonfool import NewtonFool
 from art.attacks.evasion.pe_malware_attack import MalwareGDTensorFlow
 from art.attacks.evasion.pixel_threshold import PixelAttack
@@ -56,3 +57,4 @@ from art.attacks.evasion.targeted_universal_perturbation import TargetedUniversa
 from art.attacks.evasion.virtual_adversarial import VirtualAdversarialMethod
 from art.attacks.evasion.wasserstein import Wasserstein
 from art.attacks.evasion.zoo import ZooAttack
+from art.attacks.evasion.sign_opt import SignOPTAttack
