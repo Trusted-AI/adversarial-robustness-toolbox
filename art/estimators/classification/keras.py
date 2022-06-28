@@ -749,7 +749,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         model.compile(
             optimizer=optimizer,
             loss=self.model.loss,
-            metrics=self.model.metrics,
+            metrics=[m.name for m in self.model.metrics],  # Need to copy metrics this way for keras
             loss_weights=loss_weights,
             weighted_metrics=weighted_metrics,
             run_eagerly=self.model.run_eagerly,
