@@ -671,7 +671,7 @@ class ActivationDefence(PoisonFilteringDefence):
             raise ValueError("Unsupported method for cluster analysis method: " + self.cluster_analysis)
         if self.generator and not isinstance(self.generator, DataGenerator):
             raise TypeError("Generator must a an instance of DataGenerator")
-        if self.ex_re_threshold and self.ex_re_threshold <= 0:
+        if self.ex_re_threshold is not None and self.ex_re_threshold <= 0:
             raise ValueError("Exclusionary reclassification threshold must be positive")
 
     def _get_activations(self, x_train: Optional[np.ndarray] = None) -> np.ndarray:
