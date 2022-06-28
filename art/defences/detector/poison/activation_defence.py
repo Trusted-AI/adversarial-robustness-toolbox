@@ -82,7 +82,7 @@ class ActivationDefence(PoisonFilteringDefence):
         x_train: np.ndarray,
         y_train: np.ndarray,
         generator: Optional[DataGenerator] = None,
-        ex_re_threshold=None,
+        ex_re_threshold: Optional[float] = None,
     ) -> None:
         """
         Create an :class:`.ActivationDefence` object with the provided classifier.
