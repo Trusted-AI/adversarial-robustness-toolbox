@@ -22,6 +22,9 @@ shows how to create an adversarial attack on a video action recognition classifi
 [adversarial_audio_examples.ipynb](adversarial_audio_examples.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/adversarial_audio_examples.ipynb)]
 shows how to create adversarial examples of audio data with ART. Experiments in this notebook show how the waveform of a spoken digit of the AudioMNIST dataset can be modified with almost imperceptible changes so that the waveform gets mis-classified as different digit.
 
+[poisoning_attack_backdoor_audio.ipynb](poisoning_attack_backdoor_audio.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_attack_backdoor_audio.ipynb)]
+demonstrates the dirty-label backdoor attack on a TensorflowV2 estimator for speech classification.
+
 <p align="center">
   <img src="../utils/data/images/adversarial_audio_waveform.png?raw=true" width="200" title="adversarial_audio_waveform">
 </p>
