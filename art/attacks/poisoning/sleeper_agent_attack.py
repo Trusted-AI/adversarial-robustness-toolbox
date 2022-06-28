@@ -73,6 +73,8 @@ class SleeperAgentAttack(GradientMatchingAttack):
 
         :param classifier: The proxy classifier used for the attack.
         :param percent_poison: The ratio of samples to poison among x_train, with range [0,1].
+        :patch: The patch to be applied as trigger.
+        :indices_target: The indices of training data having target label.
         :param epsilon: The L-inf perturbation budget.
         :param max_trials: The maximum number of restarts to optimize the poison.
         :param max_epochs: The maximum number of epochs to optimize the train per trial.
@@ -82,15 +84,15 @@ class SleeperAgentAttack(GradientMatchingAttack):
         :param batch_size: Batch size.
         :param clip_values: The range of the input features to the classifier.
         :param verbose: Show progress bars.
-        :indices_target: The indices of training data having target label.
         :patching_strategy: Patching strategy to be used for adding trigger, either random/fixed.
         :selection_strategy: Selection strategy for getting the indices of
                              poison examples - either random/maximum gradient norm.
         :retraining_factor: The factor for which retraining needs to be applied.
         :model_retrain: True, if retraining has to be applied, else False.
         :model_retraining_epoch: The epochs for which retraining has to be applied.
-        :patch: The patch to be applied as trigger.
-        :K: Number of training samples belonging to target class selected for poisoning.
+        :class_source: Source class from which triggers are selected.
+        :class_target: The target class to be misclassified after poisoning.
+        
         """
         super().__init__(
             classifier,
@@ -152,7 +154,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
             raise NotImplementedError("SleeperAgentAttack is currently implemented only for PyTorch.")
 
         # Choose samples to poison.
-        x_trigger = self.apply_trigger_patch(x_trigger) 
+        x_trigger = self.apply_trigger_patch(x_trigger)
         if len(np.shape(y_trigger)) == 2:  # dense labels
             classes_target = set(np.argmax(y_trigger, axis=-1))
         else:  # sparse labels
@@ -410,7 +412,6 @@ class SleeperAgentAttack(GradientMatchingAttack):
         :x_trigger: Samples to be used for trigger.
         :return tensor with applied trigger patches.
         """
-        from art.estimators.classification.pytorch import PyTorchClassifier
 
         patch_size = self.patch.shape[1]
         if self.patching_strategy == "fixed":
@@ -420,9 +421,8 @@ class SleeperAgentAttack(GradientMatchingAttack):
                 x_cord = random.randrange(0, x.shape[1] - self.patch.shape[1] + 1)
                 y_cord = random.randrange(0, x.shape[2] - self.patch.shape[2] + 1)
                 x[x_cord : x_cord + patch_size, y_cord : y_cord + patch_size, :] = self.patch
-        if isinstance(self.substitute_classifier, PyTorchClassifier):
-            import torch
 
-            return torch.tensor(np.transpose(x_trigger, [0, 3, 1, 2]))
+        if self.estimator.channels_first:
+            return np.transpose(x_trigger, [0, 3, 1, 2])
 
-        return np.transpose(x_trigger, [0, 3, 1, 2])
+        return x_trigger
