@@ -384,11 +384,11 @@ class SleeperAgentAttack(GradientMatchingAttack):
         model.eval()
         differentiable_params = [p for p in classifier.model.parameters() if p.requires_grad]
         for x, y in zip(x_samples, y_samples):
-            image = torch.tensor(x,dtype=torch.float32).float().to(device)
+            image = torch.tensor(x, dtype=torch.float32).float().to(device)
             label = torch.tensor(y).to(device)
             loss = criterion(model(image.unsqueeze(0)), label.unsqueeze(0))
             gradients = torch.autograd.grad(loss, differentiable_params, only_inputs=True)
-            grad_norm = torch.tensor(0,dtype=torch.float32).to(device)
+            grad_norm = torch.tensor(0, dtype=torch.float32).to(device)
             for grad in gradients:
                 grad_norm += grad.detach().pow(2).sum()
             grad_norms.append(grad_norm.sqrt())
