@@ -23,6 +23,8 @@ from art.attacks.evasion.feature_adversaries.feature_adversaries_numpy import Fe
 from art.attacks.evasion.feature_adversaries.feature_adversaries_pytorch import FeatureAdversariesPyTorch
 from art.attacks.evasion.feature_adversaries.feature_adversaries_tensorflow import FeatureAdversariesTensorFlowV2
 from art.attacks.evasion.geometric_decision_based_attack import GeoDA
+from art.attacks.evasion.graphite.graphite_blackbox import GRAPHITEBlackbox
+from art.attacks.evasion.graphite.graphite_whitebox_pytorch import GRAPHITEWhiteboxPyTorch
 from art.attacks.evasion.hclu import HighConfidenceLowUncertainty
 from art.attacks.evasion.hop_skip_jump import HopSkipJump
 from art.attacks.evasion.imperceptible_asr.imperceptible_asr import ImperceptibleASR
