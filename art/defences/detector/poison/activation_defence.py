@@ -350,7 +350,7 @@ class ActivationDefence(PoisonFilteringDefence):
 
         return report, self.assigned_clean_by_class
 
-    def exclusionary_reclassification(self, report):
+    def exclusionary_reclassification(self, report: Dict[str, Any]):
         """
         This function perform exclusionary reclassification. Based on the ex_re_threshold,
         suspicious clusters will be rechecked. If they remain suspicious, the suspected source
@@ -384,8 +384,8 @@ class ActivationDefence(PoisonFilteringDefence):
         # Test on the suspicious clusters
         n_train = len(self.x_train)
         indices_by_class = self._segment_by_class(np.arange(n_train), self.y_train)
-        indicies_by_cluster: List[List[np.ndarray]] = [  # type: ignore
-            [[] for _ in range(self.nb_clusters)] for _ in range(self.classifier.nb_classes)  # type: ignore
+        indicies_by_cluster: List[List[List]] = [
+            [[] for _ in range(self.nb_clusters)] for _ in range(self.classifier.nb_classes)
         ]
 
         # Get all data in x_train in the right cluster
