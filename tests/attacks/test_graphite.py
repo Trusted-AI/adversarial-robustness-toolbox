@@ -1,0 +1,403 @@
+# MIT License
+#
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+# documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+# persons to whom the Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+# Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+# WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+from __future__ import absolute_import, division, print_function, unicode_literals
+
+import logging
+import unittest
+import keras.backend as k
+import numpy as np
+
+from art.attacks.evasion import GRAPHITEBlackbox, GRAPHITEWhiteboxPyTorch
+from art.estimators.estimator import BaseEstimator
+from art.estimators.classification import ClassifierMixin
+
+# from art.estimators.classification.keras import KerasClassifier
+from art.utils import random_targets
+
+from tests.utils import TestBase
+from tests.utils import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
+
+# from tests.utils import get_tabular_classifier_tf, get_tabular_classifier_kr
+from tests.utils import get_tabular_classifier_pt, master_seed
+from tests.attacks.utils import backend_test_classifier_type_check_fail
+
+logger = logging.getLogger(__name__)
+
+
+class TestGRAPHITE(TestBase):
+    """
+    A unittest class for testing the GRAPHITE attack.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        master_seed(seed=1234, set_tensorflow=True, set_torch=True)
+        super().setUpClass()
+
+        cls.n_test = 2
+        cls.x_test_mnist = cls.x_test_mnist[0 : cls.n_test]
+        cls.y_test_mnist = cls.y_test_mnist[0 : cls.n_test]
+        cls.x_test_init_mnist = cls.x_test_mnist[1 : cls.n_test + 1]
+        cls.y_test_init_mnist = cls.y_test_mnist[1 : cls.n_test + 1]
+
+    def setUp(self):
+        master_seed(seed=1234, set_tensorflow=True, set_torch=True)
+        super().setUp()
+
+    def test_3_tensorflow_mnist(self):
+        """
+        First test with the TensorFlowClassifier.
+        :return:
+        """
+        x_test_original = self.x_test_mnist.copy()
+
+        # Build TensorFlowClassifier
+        tfc, sess = get_image_classifier_tf()
+
+        # First attack
+        graphite = GRAPHITEBlackbox(
+            classifier=tfc,
+            noise_size=(28, 28),
+            net_size=(28, 28),
+            heatmap_mode="Target",
+            num_xforms_mask=2,
+            num_xforms_boost=10,
+        )
+        params = {"y": self.y_test_init_mnist, "x_tar": self.x_test_mnist}
+        x_test_adv = graphite.generate(self.x_test_mnist, **params)
+
+        self.assertFalse((self.x_test_mnist == x_test_adv).all())
+        self.assertTrue((x_test_adv <= 1.0001).all())
+        self.assertTrue((x_test_adv >= -0.0001).all())
+
+        target = np.argmax(params["y"], axis=1)
+        y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
+        self.assertTrue((target == y_pred_adv).any())
+
+        # Test the masking
+        mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_test_mnist.shape))
+        mask = mask.reshape(self.x_test_mnist.shape)
+
+        params.update(mask=mask)
+        x_test_adv = graphite.generate(self.x_test_mnist, **params)
+        mask_diff = (1 - mask) * (x_test_adv - self.x_test_mnist)
+        self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
+
+        unmask_diff = mask * (x_test_adv - self.x_test_mnist)
+        self.assertGreater(float(np.sum(np.abs(unmask_diff))), 0.0)
+
+        # Test passing in points
+        pts = np.zeros((4, 3, 1))
+        pts[0, :, 0] = np.array([0.05, 0.05, 1])
+        pts[1, :, 0] = np.array([0.05, 0.95, 1])
+        pts[2, :, 0] = np.array([0.95, 0.05, 1])
+        pts[3, :, 0] = np.array([0.95, 0.95, 1])
+
+        params.update(pts=pts)
+        x_test_adv = graphite.generate(self.x_test_mnist, **params)
+        mask_diff = (1 - mask) * (x_test_adv - self.x_test_mnist)
+        self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
+
+        unmask_diff = mask * (x_test_adv - self.x_test_mnist)
+        self.assertGreater(float(np.sum(np.abs(unmask_diff))), 0.0)
+
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_mnist))), 0.0, delta=0.00001)
+
+        # Clean-up session
+        if sess is not None:
+            sess.close()
+
+    def test_8_keras_mnist(self):
+        """
+        Second test with the KerasClassifier.
+        :return:
+        """
+        x_test_original = self.x_test_mnist.copy()
+
+        # Build KerasClassifier
+        krc = get_image_classifier_kr()
+
+        # First attack
+        graphite = GRAPHITEBlackbox(
+            classifier=tfc,
+            noise_size=(28, 28),
+            net_size=(28, 28),
+            heatmap_mode="Target",
+            num_xforms_mask=2,
+            num_xforms_boost=10,
+        )
+        params = {"y": self.y_test_init_mnist, "x_tar": self.x_test_mnist}
+        x_test_adv = graphite.generate(self.x_test_mnist, **params)
+
+        self.assertFalse((self.x_test_mnist == x_test_adv).all())
+        self.assertTrue((x_test_adv <= 1.0001).all())
+        self.assertTrue((x_test_adv >= -0.0001).all())
+
+        target = np.argmax(params["y"], axis=1)
+        y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
+        self.assertTrue((target == y_pred_adv).any())
+
+        # Test the masking
+        mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_test_mnist.shape))
+        mask = mask.reshape(self.x_test_mnist.shape)
+
+        params.update(mask=mask)
+        x_test_adv = graphite.generate(self.x_test_mnist, **params)
+        mask_diff = (1 - mask) * (x_test_adv - self.x_test_mnist)
+        self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
+
+        unmask_diff = mask * (x_test_adv - self.x_test_mnist)
+        self.assertGreater(float(np.sum(np.abs(unmask_diff))), 0.0)
+
+        # Test passing in points
+        pts = np.zeros((4, 3, 1))
+        pts[0, :, 0] = np.array([0.05, 0.05, 1])
+        pts[1, :, 0] = np.array([0.05, 0.95, 1])
+        pts[2, :, 0] = np.array([0.95, 0.05, 1])
+        pts[3, :, 0] = np.array([0.95, 0.95, 1])
+
+        params.update(pts=pts)
+        x_test_adv = graphite.generate(self.x_test_mnist, **params)
+        mask_diff = (1 - mask) * (x_test_adv - self.x_test_mnist)
+        self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
+
+        unmask_diff = mask * (x_test_adv - self.x_test_mnist)
+        self.assertGreater(float(np.sum(np.abs(unmask_diff))), 0.0)
+
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_mnist))), 0.0, delta=0.00001)
+
+        # Clean-up session
+        k.clear_session()
+
+    def test_4_pytorch_classifier(self):
+        """
+        Third test with the PyTorchClassifier.
+        :return:
+        """
+        x_test = np.swapaxes(self.x_test_mnist, 1, 3).astype(np.float32)
+        x_test_original = x_test.copy()
+
+        # Build PyTorchClassifier
+        ptc = get_image_classifier_pt()
+
+        # BLACKBOX
+        # First attack
+        graphite = GRAPHITEBlackbox(
+            classifier=tfc,
+            noise_size=(28, 28),
+            net_size=(28, 28),
+            heatmap_mode="Target",
+            num_xforms_mask=2,
+            num_xforms_boost=10,
+        )
+        params = {"y": self.y_test_init_mnist, "x_tar": self.x_test_mnist}
+        x_test_adv = graphite.generate(self.x_test_mnist, **params)
+
+        self.assertFalse((self.x_test_mnist == x_test_adv).all())
+        self.assertTrue((x_test_adv <= 1.0001).all())
+        self.assertTrue((x_test_adv >= -0.0001).all())
+
+        target = np.argmax(params["y"], axis=1)
+        y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
+        self.assertTrue((target == y_pred_adv).any())
+
+        # Test the masking
+        mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_test_mnist.shape))
+        mask = mask.reshape(self.x_test_mnist.shape)
+
+        params.update(mask=mask)
+        x_test_adv = graphite.generate(self.x_test_mnist, **params)
+        mask_diff = (1 - mask) * (x_test_adv - self.x_test_mnist)
+        self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
+
+        unmask_diff = mask * (x_test_adv - self.x_test_mnist)
+        self.assertGreater(float(np.sum(np.abs(unmask_diff))), 0.0)
+
+        # Test passing in points
+        pts = np.zeros((4, 3, 1))
+        pts[0, :, 0] = np.array([0.05, 0.05, 1])
+        pts[1, :, 0] = np.array([0.05, 0.95, 1])
+        pts[2, :, 0] = np.array([0.95, 0.05, 1])
+        pts[3, :, 0] = np.array([0.95, 0.95, 1])
+
+        params.update(pts=pts)
+        x_test_adv = graphite.generate(self.x_test_mnist, **params)
+        mask_diff = (1 - mask) * (x_test_adv - self.x_test_mnist)
+        self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
+
+        unmask_diff = mask * (x_test_adv - self.x_test_mnist)
+        self.assertGreater(float(np.sum(np.abs(unmask_diff))), 0.0)
+
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_mnist))), 0.0, delta=0.00001)
+
+        # WHITEBOX
+        # First attack
+        graphite = GRAPHITEWhiteboxPyTorch(classifier=tfc, net_size=(28, 28), num_xforms=10)
+        params = {"y": self.y_test_init_mnist}
+        x_test_adv = graphite.generate(self.x_test_mnist, **params)
+
+        self.assertFalse((self.x_test_mnist == x_test_adv).all())
+        self.assertTrue((x_test_adv <= 1.0001).all())
+        self.assertTrue((x_test_adv >= -0.0001).all())
+
+        target = np.argmax(params["y"], axis=1)
+        y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
+        self.assertTrue((target == y_pred_adv).any())
+
+        # Test the masking
+        mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_test_mnist.shape))
+        mask = mask.reshape(self.x_test_mnist.shape)
+
+        params.update(mask=mask)
+        x_test_adv = graphite.generate(self.x_test_mnist, **params)
+        mask_diff = (1 - mask) * (x_test_adv - self.x_test_mnist)
+        self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
+
+        unmask_diff = mask * (x_test_adv - self.x_test_mnist)
+        self.assertGreater(float(np.sum(np.abs(unmask_diff))), 0.0)
+
+        # Test passing in points
+        pts = np.zeros((4, 3, 1))
+        pts[0, :, 0] = np.array([0.05, 0.05, 1])
+        pts[1, :, 0] = np.array([0.05, 0.95, 1])
+        pts[2, :, 0] = np.array([0.95, 0.05, 1])
+        pts[3, :, 0] = np.array([0.95, 0.95, 1])
+
+        params.update(pts=pts)
+        x_test_adv = graphite.generate(self.x_test_mnist, **params)
+        mask_diff = (1 - mask) * (x_test_adv - self.x_test_mnist)
+        self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
+
+        unmask_diff = mask * (x_test_adv - self.x_test_mnist)
+        self.assertGreater(float(np.sum(np.abs(unmask_diff))), 0.0)
+
+        # Check that x_test has not been modified by attack and classifier
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_mnist))), 0.0, delta=0.00001)
+
+    def test_check_params(self):
+
+        ptc = get_image_classifier_pt(from_logits=True)
+
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEBlackbox(ptc, noise_size=1, heat_patch_size=2)
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEBlackbox(ptc, heat_patch_size=(0, 1))
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEBlackbox(ptc, heat_patch_size=(1.0, 0))
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEBlackbox(ptc, heat_patch_stride=(0, 1))
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEBlackbox(ptc, heat_patch_stride=(1.0, 0))
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEBlackbox(ptc, heatmap_mode="asdf")
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEBlackbox(ptc, tr_lo=-1)
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEBlackbox(ptc, tr_lo=1.1)
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEBlackbox(ptc, tr_hi=-1)
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEBlackbox(ptc, tr_hi=1.1)
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEBlackbox(ptc, num_xforms_mask=0)
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEBlackbox(ptc, num_xforms_mask=1.0)
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEBlackbox(ptc, num_xforms_boost=0)
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEBlackbox(ptc, num_xforms_boost=1.0)
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEBlackbox(ptc, num_boost_queries=0)
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEBlackbox(ptc, rotation_range=(-90, 0))
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEBlackbox(ptc, rotation_range=(90, 0))
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEBlackbox(ptc, rotation_range=(1, 0))
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEBlackbox(ptc, gamma_range=(0, 1))
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEBlackbox(ptc, gamma_range=(1, 0))
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEBlackbox(ptc, crop_percent_range=(1, 0))
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEBlackbox(ptc, off_x_range=(1, 0))
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEBlackbox(ptc, off_y_range=(1, 0))
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEBlackbox(ptc, blur_kernels=(-1))
+
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEWhiteboxPyTorch(ptc, min_tr=-1)
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEWhiteboxPyTorch(ptc, min_tr=1.1)
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEWhiteboxPyTorch(ptc, num_xforms=0)
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEWhiteboxPyTorch(ptc, num_xforms=1.0)
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEWhiteboxPyTorch(ptc, step_size=0)
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEWhiteboxPyTorch(ptc, step_size=-1)
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEWhiteboxPyTorch(ptc, first_steps=0)
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEWhiteboxPyTorch(ptc, first_steps=1.0)
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEWhiteboxPyTorch(ptc, steps=0)
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEWhiteboxPyTorch(ptc, steps=1.0)
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEWhiteboxPyTorch(ptc, patch_removal_size=-1)
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEWhiteboxPyTorch(ptc, num_patches_to_remove=0)
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEWhiteboxPyTorch(ptc, num_patches_to_remove=1.0)
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEWhiteboxPyTorch(ptc, rotation_range=(-90, 0))
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEWhiteboxPyTorch(ptc, rotation_range=(90, 0))
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEWhiteboxPyTorch(ptc, rotation_range=(1, 0))
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEWhiteboxPyTorch(ptc, dist_range=(0, 1))
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEWhiteboxPyTorch(ptc, dist_range=(1, 0))
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEWhiteboxPyTorch(ptc, gamma_range=(0, 1))
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEWhiteboxPyTorch(ptc, gamma_range=(1, 0))
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEWhiteboxPyTorch(ptc, crop_percent_range=(1, 0))
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEWhiteboxPyTorch(ptc, off_x_range=(1, 0))
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEWhiteboxPyTorch(ptc, off_y_range=(1, 0))
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEWhiteboxPyTorch(ptc, blur_kernels=(-1))
+
+    def test_1_classifier_type_check_fail(self):
+        backend_test_classifier_type_check_fail(GRAPHITEBlackbox, [BaseEstimator, ClassifierMixin])
+        backend_test_classifier_type_check_fail(GRAPHITEWhiteboxPyTorch, [BaseEstimator, ClassifierMixin])
+
+
+if __name__ == "__main__":
+    unittest.main()
