@@ -1,0 +1,34 @@
+name: CI PyTorchYolo
+on:
+  # Run on manual trigger
+  workflow_dispatch:
+
+  # Run on pull requests
+  pull_request:
+    paths-ignore:
+      - '*.md'
+
+  # Run when pushing to main or dev branches
+  push:
+    branches:
+      - main
+      - dev*
+
+  # Run scheduled CI flow daily
+  schedule:
+    - cron: '0 8 * * 0'
+
+jobs:
+  test_deepspeech_v3_torch_1_10:
+    name: PyTorchYolo
+    runs-on: ubuntu-latest
+    container: adversarialrobustnesstoolbox/art_testing_envs:yolo
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+      - name: Run Test Action
+        uses: ./.github/actions/yolo
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          fail_ci_if_error: true
