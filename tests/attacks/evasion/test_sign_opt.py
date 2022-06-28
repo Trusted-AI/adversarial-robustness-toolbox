@@ -23,7 +23,7 @@ from art.attacks.evasion import SignOPTAttack
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
 
-from tests.attacks.utils import backend_targeted_tabular, backend_untargeted_tabular, backend_targeted_images
+from tests.attacks.utils import backend_targeted_tabular, backend_untargeted_tabular
 from tests.attacks.utils import back_end_untargeted_images, backend_test_classifier_type_check_fail
 from tests.utils import ARTTestException
 
