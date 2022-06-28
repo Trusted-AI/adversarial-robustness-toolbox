@@ -232,7 +232,7 @@ class ActivationDefence(PoisonFilteringDefence):
                 if assignment == 1:
                     self.is_clean_lst[index_dp] = 1
 
-        if self.ex_re_threshold:
+        if self.ex_re_threshold is not None:
             if self.generator is not None:
                 raise RuntimeError("Currently, exclusionary reclassification cannot be used with generators")
             if hasattr(self.classifier, "clone_for_refitting"):
