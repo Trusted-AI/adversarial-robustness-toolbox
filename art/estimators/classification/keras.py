@@ -717,7 +717,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
     def clone_for_refitting(
         self,
-    ) -> "KerasClassifier":  # pragma: no cover  # lgtm [py/inheritance/incorrect-overridden-signature]
+    ) -> "KerasClassifier":  # lgtm [py/inheritance/incorrect-overridden-signature]
         """
         Create a copy of the classifier that can be refit from scratch. Will inherit same architecture, optimizer and
         initialization as cloned model, but without weights.
