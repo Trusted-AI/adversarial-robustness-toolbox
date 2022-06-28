@@ -102,7 +102,8 @@ class TestActivationDefence(unittest.TestCase):
 
     @unittest.expectedFailure
     def test_wrong_parameters_5(self):
-        self.defence.set_params(ex_re_threshold=-1)
+        with self.assertRaises(ValueError):
+            self.defence.set_params(ex_re_threshold=-1)
 
     def test_activations(self):
         (x_train, _), (_, _), (_, _) = self.mnist
