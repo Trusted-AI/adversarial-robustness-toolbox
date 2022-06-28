@@ -84,6 +84,61 @@ def test_true_label_baseline(art_warning, get_iris_dataset, model_type):
 
 @pytest.mark.skip_framework("dl_frameworks")
 @pytest.mark.parametrize("model_type", ["nn", "rf"])
+def test_true_label_baseline_column(art_warning, get_iris_dataset, model_type):
+    try:
+        attack_feature = 2  # petal length
+
+        # need to transform attacked feature into categorical
+        def transform_feature(x):
+            x[x > 0.5] = 2.0
+            x[(x > 0.2) & (x <= 0.5)] = 1.0
+            x[x <= 0.2] = 0.0
+
+        values = [0.0, 1.0, 2.0]
+
+        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+        y_train_iris = y_train_iris[:, 0]
+        y_test_iris = y_test_iris[:, 0]
+        # training data without attacked feature
+        x_train_for_attack = np.delete(x_train_iris, attack_feature, 1)
+        # only attacked feature
+        x_train_feature = x_train_iris[:, attack_feature].copy().reshape(-1, 1)
+        transform_feature(x_train_feature)
+        # training data with attacked feature (after transformation)
+        x_train = np.concatenate((x_train_for_attack[:, :attack_feature], x_train_feature), axis=1)
+        x_train = np.concatenate((x_train, x_train_for_attack[:, attack_feature:]), axis=1)
+
+        # test data without attacked feature
+        x_test_for_attack = np.delete(x_test_iris, attack_feature, 1)
+        # only attacked feature
+        x_test_feature = x_test_iris[:, attack_feature].copy().reshape(-1, 1)
+        transform_feature(x_test_feature)
+
+        baseline_attack = AttributeInferenceBaselineTrueLabel(
+            attack_feature=attack_feature, attack_model_type=model_type
+        )
+        # train attack model
+        baseline_attack.fit(x_train, y_train_iris)
+        # infer attacked feature
+        baseline_inferred_train = baseline_attack.infer(x_train_for_attack, y=y_train_iris, values=values)
+        baseline_inferred_test = baseline_attack.infer(x_test_for_attack, y=y_test_iris, values=values)
+        # check accuracy
+        baseline_train_acc = np.sum(baseline_inferred_train == x_train_feature.reshape(1, -1)) / len(
+            baseline_inferred_train
+        )
+        baseline_test_acc = np.sum(baseline_inferred_test == x_test_feature.reshape(1, -1)) / len(
+            baseline_inferred_test
+        )
+
+        assert 0.8 <= baseline_train_acc
+        assert 0.7 <= baseline_test_acc
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework("dl_frameworks")
+@pytest.mark.parametrize("model_type", ["nn", "rf"])
 def test_true_label_baseline_no_values(art_warning, get_iris_dataset, model_type):
     try:
         attack_feature = 2  # petal length
