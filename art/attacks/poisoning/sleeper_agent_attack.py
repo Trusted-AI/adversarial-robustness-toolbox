@@ -73,7 +73,8 @@ class SleeperAgentAttack(GradientMatchingAttack):
 
         :param classifier: The proxy classifier used for the attack.
         :param percent_poison: The ratio of samples to poison among x_train, with range [0,1].
-        :indices_target: The indices of training data having target label.
+        :param patch: The patch to be applied as trigger.
+        :param indices_target: The indices of training data having target label.
         :param epsilon: The L-inf perturbation budget.
         :param max_trials: The maximum number of restarts to optimize the poison.
         :param max_epochs: The maximum number of epochs to optimize the train per trial.
@@ -83,14 +84,14 @@ class SleeperAgentAttack(GradientMatchingAttack):
         :param batch_size: Batch size.
         :param clip_values: The range of the input features to the classifier.
         :param verbose: Show progress bars.
-        :patching_strategy: Patching strategy to be used for adding trigger, either random/fixed.
-        :selection_strategy: Selection strategy for getting the indices of
+        :param patching_strategy: Patching strategy to be used for adding trigger, either random/fixed.
+        :param selection_strategy: Selection strategy for getting the indices of
                              poison examples - either random/maximum gradient norm.
-        :retraining_factor: The factor for which retraining needs to be applied.
-        :model_retrain: True, if retraining has to be applied, else False.
-        :model_retraining_epoch: The epochs for which retraining has to be applied.
-        :patch: The patch to be applied as trigger.
-        :K: Number of training samples belonging to target class selected for poisoning.
+        :param retraining_factor: The factor for which retraining needs to be applied.
+        :param model_retrain: True, if retraining has to be applied, else False.
+        :param model_retraining_epoch: The epochs for which retraining has to be applied.
+        :param class_source: The source class from which triggers were selected.
+        :param class_target: The target label to which the poisoned model needs to misclassify.
         """
         super().__init__(
             classifier,
@@ -140,8 +141,6 @@ class SleeperAgentAttack(GradientMatchingAttack):
 
         x_train_target_samples, y_train_target_samples = self.select_target_train_samples(x_train, y_train)
         if isinstance(self.substitute_classifier, PyTorchClassifier):
-            import torch
-
             poisoner = self._poison__pytorch
             finish_poisoning = self._finish_poison_pytorch
             initializer = self._initialize_poison_pytorch
