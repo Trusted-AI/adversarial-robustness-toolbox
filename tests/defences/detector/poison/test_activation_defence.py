@@ -100,7 +100,6 @@ class TestActivationDefence(unittest.TestCase):
     def test_wrong_parameters_4(self):
         self.defence.set_params(cluster_analysis="what")
 
-    @unittest.expectedFailure
     def test_wrong_parameters_5(self):
         with self.assertRaises(ValueError):
             self.defence.set_params(ex_re_threshold=-1)
