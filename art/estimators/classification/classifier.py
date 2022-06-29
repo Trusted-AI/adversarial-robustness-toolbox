@@ -121,6 +121,9 @@ class ClassifierMixin(ABC, metaclass=InputFilter):
         self._nb_classes = nb_classes
 
     def clone_for_refitting(self) -> "CLASSIFIER_TYPE":
+        """
+        Clone classifier for refitting.
+        """
         raise NotImplementedError
 
 
