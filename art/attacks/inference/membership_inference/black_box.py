@@ -188,9 +188,7 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
 
         if not self._regressor_model:
             y = check_and_transform_label_format(y, self.estimator.nb_classes, return_one_hot=True)  # type: ignore
-            test_y = check_and_transform_label_format(
-                test_y, self.estimator.nb_classes, return_one_hot=True
-            )
+            test_y = check_and_transform_label_format(test_y, self.estimator.nb_classes, return_one_hot=True)
 
         if y.shape[0] != x.shape[0]:  # pragma: no cover
             raise ValueError("Number of rows in x and y do not match")
