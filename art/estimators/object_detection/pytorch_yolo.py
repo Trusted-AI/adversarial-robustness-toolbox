@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2021
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2022
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -16,7 +16,9 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the task specific estimator for PyTorch object detectors.
+This module implements the task specific estimator for PyTorch YOLO v3 object detectors.
+
+| Paper link: https://arxiv.org/abs/1804.02767
 """
 import logging
 from typing import List, Dict, Optional, Tuple, Union, TYPE_CHECKING
@@ -37,10 +39,85 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
+def translate_predictions_xcycwh_to_x1y1x2y2(
+    y_pred_xcycwh: "torch.Tensor", input_height: int, input_width: int
+) -> List[Dict[str, "torch.Tensor"]]:
     """
-    This module implements the task specific estimator for PyTorch object detection models following the input and
-    output formats of torchvision.
+    Convert object detection predictions from xcycwh to x1y1x2y2 format.
+
+    :param y_pred_xcycwh: Labels in format xcycwh.
+    :return: Labels in format x1y1x2y2.
+    """
+    import torch  # lgtm [py/repeated-import]
+
+    y_pred_x1y1x2y2 = []
+
+    for i in range(y_pred_xcycwh.shape[0]):
+
+        y_i = {
+            "boxes": torch.permute(
+                torch.vstack(
+                    [
+                        torch.maximum(
+                            (y_pred_xcycwh[i, :, 0] - y_pred_xcycwh[i, :, 2] / 2),
+                            torch.tensor(0).to(y_pred_xcycwh.device),
+                        ),
+                        torch.maximum(
+                            (y_pred_xcycwh[i, :, 1] - y_pred_xcycwh[i, :, 3] / 2),
+                            torch.tensor(0).to(y_pred_xcycwh.device),
+                        ),
+                        torch.minimum(
+                            (y_pred_xcycwh[i, :, 0] + y_pred_xcycwh[i, :, 2] / 2),
+                            torch.tensor(input_height).to(y_pred_xcycwh.device),
+                        ),
+                        torch.minimum(
+                            (y_pred_xcycwh[i, :, 1] + y_pred_xcycwh[i, :, 3] / 2),
+                            torch.tensor(input_width).to(y_pred_xcycwh.device),
+                        ),
+                    ]
+                ),
+                (1, 0),
+            ),
+            "labels": torch.argmax(y_pred_xcycwh[i, :, 5:], dim=1, keepdim=False),
+            "scores": y_pred_xcycwh[i, :, 4],
+        }
+
+        y_pred_x1y1x2y2.append(y_i)
+
+    return y_pred_x1y1x2y2
+
+
+def translate_labels_art_to_yolov3(labels_art: List[Dict[str, "torch.Tensor"]]):
+    """
+    Translate labels from ART to YOLO v3.
+
+    :param labels_art: Object detection labels in format ART (torchvision).
+    :return: Object detection labels in format YOLO v3.
+    """
+    import torch  # lgtm [py/repeated-import]
+
+    yolo_targets_list = []
+
+    for i_dict, label_dict in enumerate(labels_art):
+        num_detectors = label_dict["boxes"].size()[0]
+        targets = torch.zeros(num_detectors, 6)
+        targets[:, 0] = i_dict
+        targets[:, 1] = label_dict["labels"]
+        targets[:, 2:6] = label_dict["boxes"]
+        targets[:, 4] = targets[:, 4] - targets[:, 2]
+        targets[:, 5] = targets[:, 5] - targets[:, 3]
+        yolo_targets_list.append(targets)
+
+    yolo_targets = torch.vstack(yolo_targets_list)
+
+    return yolo_targets
+
+
+class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
+    """
+    This module implements the model- and task specific estimator for YOLO v3 object detector models in PyTorch.
+
+    | Paper link: https://arxiv.org/abs/1804.02767
     """
 
     estimator_params = PyTorchEstimator.estimator_params + ["attack_losses"]
@@ -48,8 +125,9 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
     def __init__(
         self,
         model,
+        input_shape=(3, 416, 416),
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        channels_first: Optional[bool] = None,
+        channels_first: Optional[bool] = True,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
         preprocessing: "PREPROCESSING_TYPE" = None,
@@ -75,7 +153,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
                the shape of clip values needs to match the total number of features.
-        :param channels_first: Set channels first or last.
+        :param channels_first: [Currently unused] Set channels first or last.
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
         :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
@@ -109,16 +187,14 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
             preprocessing=preprocessing,
         )
 
-        self._input_shape = (-1, -1, -1)
+        self._input_shape = input_shape
 
         if self.clip_values is not None:
             if self.clip_values[0] != 0:
-                raise ValueError("This classifier requires un-normalized input images with clip_vales=(0, max_value).")
+                raise ValueError("This estimator requires un-normalized input images with clip_vales=(0, max_value).")
             if self.clip_values[1] <= 0:  # pragma: no cover
-                raise ValueError("This classifier requires un-normalized input images with clip_vales=(0, max_value).")
+                raise ValueError("This estimator requires un-normalized input images with clip_vales=(0, max_value).")
 
-        if preprocessing is not None:
-            raise ValueError("This estimator does not support `preprocessing`.")
         if self.postprocessing_defences is not None:
             raise ValueError("This estimator does not support `postprocessing_defences`.")
 
@@ -160,8 +236,8 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         return self._device
 
     def _get_losses(
-        self, x: np.ndarray, y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]]
-    ) -> Tuple[Dict[str, "torch.Tensor"], List["torch.Tensor"], List["torch.Tensor"]]:
+        self, x: Union[np.ndarray, "torch.Tensor"], y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]]
+    ) -> Tuple[Dict[str, "torch.Tensor"], "torch.Tensor", "torch.Tensor"]:
         """
         Get the loss tensor output of the model including all preprocessing.
 
@@ -175,7 +251,6 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         :return: Loss gradients of the same shape as `x`.
         """
         import torch  # lgtm [py/repeated-import]
-        import torchvision  # lgtm [py/repeated-import]
 
         self._model.train()
 
@@ -184,90 +259,76 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
 
             if y is not None and isinstance(y, list) and isinstance(y[0]["boxes"], np.ndarray):
                 y_tensor = []
-                for i, y_i in enumerate(y):
-                    y_t = {}
-                    y_t["boxes"] = torch.from_numpy(y_i["boxes"]).type(torch.float).to(self.device)
-                    y_t["labels"] = torch.from_numpy(y_i["labels"]).type(torch.int64).to(self.device)
+                for y_i in y:
+                    y_t = {
+                        "boxes": torch.from_numpy(y_i["boxes"]).type(torch.float).to(self.device),
+                        "labels": torch.from_numpy(y_i["labels"]).type(torch.int64).to(self.device),
+                    }
                     if "masks" in y_i:
                         y_t["masks"] = torch.from_numpy(y_i["masks"]).type(torch.int64).to(self.device)
                     y_tensor.append(y_t)
             elif y is not None and isinstance(y, dict):
                 y_tensor = []
                 for i in range(y["boxes"].shape[0]):
-                    y_t = {}
-                    y_t["boxes"] = y["boxes"][i]
-                    y_t["labels"] = y["labels"][i]
+                    y_t = {"boxes": y["boxes"][i], "labels": y["labels"][i]}
                     y_tensor.append(y_t)
             else:
                 y_tensor = y  # type: ignore
 
-            transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
-            image_tensor_list_grad = []
-            y_preprocessed = []
-            inputs_t = []
-
-            for i in range(x.shape[0]):
-                if isinstance(x, np.ndarray):
-                    if self.clip_values is not None:
-                        x_grad = transform(x[i] / self.clip_values[1]).to(self.device)
-                    else:
-                        x_grad = transform(x[i]).to(self.device)
-                    x_grad.requires_grad = True
+            if isinstance(x, np.ndarray):
+                if self.clip_values is not None:
+                    norm_factor = self.clip_values[1]
                 else:
-                    x_grad = x[i].to(self.device)
-                    if x_grad.shape[2] < x_grad.shape[0] and x_grad.shape[2] < x_grad.shape[1]:
-                        x_grad = torch.permute(x_grad, (2, 0, 1))
+                    norm_factor = 1.0
 
-                image_tensor_list_grad.append(x_grad)
-                x_grad_1 = torch.unsqueeze(x_grad, dim=0)
-                x_preprocessed_i, y_preprocessed_i = self._apply_preprocessing(
-                    x_grad_1, y=[y_tensor[i]], fit=False, no_grad=False
-                )
-                for i_preprocessed in range(x_preprocessed_i.shape[0]):
-                    inputs_t.append(x_preprocessed_i[i_preprocessed])
-                    y_preprocessed.append(y_preprocessed_i[i_preprocessed])
+                x_grad = torch.from_numpy(x / norm_factor).to(self.device)
+                x_grad.requires_grad = True
+
+            else:
+                x_grad = x.to(self.device)
+                if x_grad.shape[2] < x_grad.shape[0] and x_grad.shape[2] < x_grad.shape[1]:
+                    x_grad = torch.permute(x_grad, (2, 0, 1))
+
+            image_tensor_list_grad = x_grad
+            x_preprocessed, y_preprocessed = self._apply_preprocessing(x_grad, y=y_tensor, fit=False, no_grad=False)
+            inputs_t = x_preprocessed
 
         elif isinstance(x, np.ndarray):
             x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y=y, fit=False, no_grad=True)
 
             if y_preprocessed is not None and isinstance(y_preprocessed[0]["boxes"], np.ndarray):
                 y_preprocessed_tensor = []
-                for i, y_i in enumerate(y_preprocessed):
-                    y_preprocessed_t = {}
-                    y_preprocessed_t["boxes"] = torch.from_numpy(y_i["boxes"]).type(torch.float).to(self.device)
-                    y_preprocessed_t["labels"] = torch.from_numpy(y_i["labels"]).type(torch.int64).to(self.device)
+                for y_i in y_preprocessed:
+                    y_preprocessed_t = {
+                        "boxes": torch.from_numpy(y_i["boxes"]).type(torch.float).to(self.device),
+                        "labels": torch.from_numpy(y_i["labels"]).type(torch.int64).to(self.device),
+                    }
                     if "masks" in y_i:
                         y_preprocessed_t["masks"] = torch.from_numpy(y_i["masks"]).type(torch.uint8).to(self.device)
                     y_preprocessed_tensor.append(y_preprocessed_t)
                 y_preprocessed = y_preprocessed_tensor
 
-            transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
-            image_tensor_list_grad = []
+            if self.clip_values is not None:
+                norm_factor = self.clip_values[1]
+            else:
+                norm_factor = 1.0
 
-            for i in range(x_preprocessed.shape[0]):
-                if self.clip_values is not None:
-                    x_grad = transform(x_preprocessed[i] / self.clip_values[1]).to(self.device)
-                else:
-                    x_grad = transform(x_preprocessed[i]).to(self.device)
-                x_grad.requires_grad = True
-                image_tensor_list_grad.append(x_grad)
-
+            x_grad = torch.from_numpy(x_preprocessed / norm_factor).to(self.device)
+            x_grad.requires_grad = True
+            image_tensor_list_grad = x_grad
             inputs_t = image_tensor_list_grad
 
         else:
             raise NotImplementedError("Combination of inputs and preprocessing not supported.")
 
-        if isinstance(y_preprocessed, np.ndarray):
-            labels_t = torch.from_numpy(y_preprocessed).to(self.device)  # type: ignore
-        else:
-            labels_t = y_preprocessed  # type: ignore
+        labels_t = translate_labels_art_to_yolov3(labels_art=y_preprocessed)
 
-        output = self._model(inputs_t, labels_t)
+        loss_components = self._model(inputs_t, labels_t)
 
-        return output, inputs_t, image_tensor_list_grad
+        return loss_components, inputs_t, image_tensor_list_grad
 
     def loss_gradient(  # pylint: disable=W0613
-        self, x: np.ndarray, y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]], **kwargs
+        self, x: Union[np.ndarray, "torch.Tensor"], y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]], **kwargs
     ) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
@@ -282,50 +343,26 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
                   - scores (Tensor[N]): the scores or each prediction.
         :return: Loss gradients of the same shape as `x`.
         """
-        import torch  # lgtm [py/repeated-import]
+        output, inputs_t, image_tensor_list_grad = self._get_losses(x=x, y=y)
 
-        grad_list = []
-
-        # Adding this loop because torch==[1.7, 1.8] and related versions of torchvision do not allow loss gradients at
-        #  the input for batches larger than 1 anymore for PyTorch FasterRCNN because of a view created by torch or
-        #  torchvision. This loop should be revisited with later releases of torch and removed once it becomes
-        #  unnecessary.
-        for i in range(x.shape[0]):
-
-            x_i = x[[i]]
-            y_i = [y[i]]
-
-            output, inputs_t, image_tensor_list_grad = self._get_losses(x=x_i, y=y_i)
-
-            # Compute the gradient and return
-            loss = None
-            for loss_name in self.attack_losses:
-                if loss is None:
-                    loss = output[loss_name]
-                else:
-                    loss = loss + output[loss_name]
-
-            # Clean gradients
-            self._model.zero_grad()
-
-            # Compute gradients
-            loss.backward(retain_graph=True)  # type: ignore
-
-            if isinstance(x, np.ndarray):
-                for img in image_tensor_list_grad:
-                    gradients = img.grad.cpu().numpy().copy()
-                    grad_list.append(gradients)
+        # Compute the gradient and return
+        loss = None
+        for loss_name in self.attack_losses:
+            if loss is None:
+                loss = output[loss_name]
             else:
-                for img in inputs_t:
-                    gradients = img.grad.copy()
-                    grad_list.append(gradients)
+                loss = loss + output[loss_name]
+
+        # Clean gradients
+        self._model.zero_grad()
+
+        # Compute gradients
+        loss.backward(retain_graph=True)  # type: ignore
 
         if isinstance(x, np.ndarray):
-            grads = np.stack(grad_list, axis=0)
-            grads = np.transpose(grads, (0, 2, 3, 1))
+            grads = image_tensor_list_grad.grad.cpu().numpy().copy()
         else:
-            grads = torch.stack(grad_list, dim=0)
-            grads = grads.premute(0, 2, 3, 1)
+            grads = inputs_t.grad.copy()
 
         if self.clip_values is not None:
             grads = grads / self.clip_values[1]
@@ -350,32 +387,48 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
                  - labels [N]: the labels for each image
                  - scores [N]: the scores or each prediction.
         """
-        import torchvision  # lgtm [py/repeated-import]
+        import torch  # lgtm [py/repeated-import]
+
+        x = x.copy()
 
         self._model.eval()
 
         # Apply preprocessing
-        x, _ = self._apply_preprocessing(x, y=None, fit=False)
-
-        transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
-        image_tensor_list: List[np.ndarray] = []
+        x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         if self.clip_values is not None:
             norm_factor = self.clip_values[1]
         else:
             norm_factor = 1.0
-        for i in range(x.shape[0]):
-            image_tensor_list.append(transform(x[i] / norm_factor).to(self.device))
-        predictions = self._model(image_tensor_list)
 
-        for i_prediction, _ in enumerate(predictions):
-            predictions[i_prediction]["boxes"] = predictions[i_prediction]["boxes"].detach().cpu().numpy()
-            predictions[i_prediction]["labels"] = predictions[i_prediction]["labels"].detach().cpu().numpy()
-            predictions[i_prediction]["scores"] = predictions[i_prediction]["scores"].detach().cpu().numpy()
-            if "masks" in predictions[i_prediction]:
-                predictions[i_prediction]["masks"] = predictions[i_prediction]["masks"].detach().cpu().numpy().squeeze()
+        x_preprocessed_tensor = torch.from_numpy(x_preprocessed).to(self.device)
+        x_preprocessed_tensor /= norm_factor
 
-        return predictions
+        predictions_xcycwh = self._model(x_preprocessed_tensor)
+
+        predictions_x1y1x2y2_tensor = translate_predictions_xcycwh_to_x1y1x2y2(
+            y_pred_xcycwh=predictions_xcycwh, input_height=self.input_shape[1], input_width=self.input_shape[2]
+        )
+        predictions_x1y1x2y2_array: List[Dict[str, np.ndarray]] = []
+
+        for i_prediction, _ in enumerate(predictions_x1y1x2y2_tensor):
+            predictions_x1y1x2y2_array.append({})
+
+            predictions_x1y1x2y2_array[i_prediction]["boxes"] = (
+                predictions_x1y1x2y2_tensor[i_prediction]["boxes"].detach().cpu().numpy()
+            )
+            predictions_x1y1x2y2_array[i_prediction]["labels"] = (
+                predictions_x1y1x2y2_tensor[i_prediction]["labels"].detach().cpu().numpy()
+            )
+            predictions_x1y1x2y2_array[i_prediction]["scores"] = (
+                predictions_x1y1x2y2_tensor[i_prediction]["scores"].detach().cpu().numpy()
+            )
+            if "masks" in predictions_x1y1x2y2_tensor[i_prediction]:
+                predictions_x1y1x2y2_array[i_prediction]["masks"] = (
+                    predictions_x1y1x2y2_tensor[i_prediction]["masks"].detach().cpu().numpy().squeeze()
+                )
+
+        return predictions_x1y1x2y2_array
 
     def fit(self, x: np.ndarray, y, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
         raise NotImplementedError
@@ -409,7 +462,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         return output
 
     def compute_loss(  # type: ignore
-        self, x: np.ndarray, y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]], **kwargs
+        self, x: Union[np.ndarray, "torch.Tensor"], y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]], **kwargs
     ) -> Union[np.ndarray, "torch.Tensor"]:
         """
         Compute the loss of the neural network for samples `x`.

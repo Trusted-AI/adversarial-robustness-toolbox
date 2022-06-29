@@ -1,0 +1,7 @@
+name: 'Test YOLO'
+description: 'Run tests for YOLO'
+runs:
+  using: 'composite'
+  steps:
+    - run: $GITHUB_ACTION_PATH/run.sh
+      shell: bash
