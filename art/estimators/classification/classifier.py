@@ -19,7 +19,7 @@
 This module implements mixin abstract base classes defining properties for all classifiers in ART.
 """
 from abc import ABC, ABCMeta, abstractmethod
-from typing import List, Optional, Union
+from typing import List, Optional, TYPE_CHECKING, Union
 
 import numpy as np
 
@@ -29,7 +29,9 @@ from art.estimators.estimator import (
     LossGradientsMixin,
     DecisionTreeMixin,
 )
-from art.utils import CLASSIFIER_TYPE
+
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_TYPE
 
 
 class InputFilter(ABCMeta):
@@ -118,7 +120,7 @@ class ClassifierMixin(ABC, metaclass=InputFilter):
 
         self._nb_classes = nb_classes
 
-    def clone_for_refitting(self) -> CLASSIFIER_TYPE:
+    def clone_for_refitting(self) -> "CLASSIFIER_TYPE":
         raise NotImplementedError
 
 
