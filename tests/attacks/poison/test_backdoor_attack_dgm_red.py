@@ -42,7 +42,7 @@ def test_poison_estimator_red(art_warning, image_dl_generator, x_target):
 
         generator = red_attack.poison_estimator(z_trigger=z_trigger, x_target=x_target, max_iter=2)
         assert isinstance(generator, TensorFlowV2Generator)
-        np.testing.assert_approx_equal(round(red_attack.fidelity(z_trigger, x_target).numpy(), 4), 0.33)
+        np.testing.assert_approx_equal(round(red_attack.fidelity(z_trigger, x_target).numpy(), 4), 0.33, significant=2)
 
     except ARTTestException as e:
         art_warning(e)
