@@ -29,6 +29,7 @@ from art.estimators.estimator import (
     LossGradientsMixin,
     DecisionTreeMixin,
 )
+from art.utils import CLASSIFIER_TYPE
 
 
 class InputFilter(ABCMeta):
@@ -116,6 +117,9 @@ class ClassifierMixin(ABC, metaclass=InputFilter):
             raise ValueError("nb_classes must be greater than or equal to 2.")
 
         self._nb_classes = nb_classes
+
+    def clone_for_refitting(self) -> CLASSIFIER_TYPE:
+        raise NotImplementedError
 
 
 class ClassGradientsMixin(ABC):
