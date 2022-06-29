@@ -156,7 +156,7 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
             predictions = np.array([np.argmax(arr) for arr in self.estimator.predict(x)]).reshape(-1, 1)
             if y is not None:
                 y = check_and_transform_label_format(
-                    y, nb_classes=self.estimator.nb_classes, return_one_hot=True  # type: ignore
+                    y, nb_classes=self.estimator.nb_classes, return_one_hot=True
                 )
         else:  # Regression model
             if self.scale_range is not None:
@@ -240,7 +240,7 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
             x_test = np.concatenate((x, pred), axis=1).astype(np.float32)
             if y is not None:
                 y = check_and_transform_label_format(
-                    y, nb_classes=self.estimator.nb_classes, return_one_hot=True  # type: ignore
+                    y, nb_classes=self.estimator.nb_classes, return_one_hot=True
                 )
 
         if y is not None:

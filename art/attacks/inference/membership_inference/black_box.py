@@ -189,7 +189,7 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
         if not self._regressor_model:
             y = check_and_transform_label_format(y, self.estimator.nb_classes, return_one_hot=True)  # type: ignore
             test_y = check_and_transform_label_format(
-                test_y, self.estimator.nb_classes, return_one_hot=True  # type: ignore
+                test_y, self.estimator.nb_classes, return_one_hot=True
             )
 
         if y.shape[0] != x.shape[0]:  # pragma: no cover
@@ -287,7 +287,7 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
             probabilities = False
 
         if not self._regressor_model:
-            y = check_and_transform_label_format(y, self.estimator.nb_classes, return_one_hot=True)  # type: ignore
+            y = check_and_transform_label_format(y, self.estimator.nb_classes, return_one_hot=True)
 
         if y is None:
             raise ValueError("None value detected.")
