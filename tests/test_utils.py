@@ -214,37 +214,37 @@ class TestUtils(unittest.TestCase):
 
         # test input shape (nb_samples,)
         labels = np.array([3, 1, 4])
-        labels_transformed = check_and_transform_label_format(labels, return_one_hot=True)
+        labels_transformed = check_and_transform_label_format(labels, nb_classes=None, return_one_hot=True)
         np.testing.assert_array_equal(labels_transformed, labels_expected)
 
         # test input shape (nb_samples, 1)
         labels = np.array([[3], [1], [4]])
-        labels_transformed = check_and_transform_label_format(labels, return_one_hot=True)
+        labels_transformed = check_and_transform_label_format(labels, nb_classes=None, return_one_hot=True)
         np.testing.assert_array_equal(labels_transformed, labels_expected)
 
         # test input shape (nb_samples, 1) - binary
         labels = np.array([[1], [0], [1]])
-        labels_transformed = check_and_transform_label_format(labels, return_one_hot=True)
+        labels_transformed = check_and_transform_label_format(labels, nb_classes=None, return_one_hot=True)
         np.testing.assert_array_equal(labels_transformed, labels_expected_binary)
 
         # test input shape (nb_samples, 1) - binary
         labels = np.array([[0, 1], [1, 0], [0, 1]])
-        labels_transformed = check_and_transform_label_format(labels, return_one_hot=True)
+        labels_transformed = check_and_transform_label_format(labels, nb_classes=None, return_one_hot=True)
         np.testing.assert_array_equal(labels_transformed, labels_expected_binary)
 
         # test input shape (nb_samples, nb_classes)
         labels = np.array([[0, 0, 0, 1, 0], [0, 1, 0, 0, 0], [0, 0, 0, 0, 1]])
-        labels_transformed = check_and_transform_label_format(labels, return_one_hot=True)
+        labels_transformed = check_and_transform_label_format(labels, nb_classes=None, return_one_hot=True)
         np.testing.assert_array_equal(labels_transformed, labels_expected)
 
         # test input shape (nb_samples, nb_classes) with return_one_hot=False
         labels = np.array([[0, 0, 0, 1, 0], [0, 1, 0, 0, 0], [0, 0, 0, 0, 1]])
-        labels_transformed = check_and_transform_label_format(labels, return_one_hot=False)
+        labels_transformed = check_and_transform_label_format(labels, nb_classes=None, return_one_hot=False)
         np.testing.assert_array_equal(labels_transformed, np.expand_dims(np.argmax(labels_expected, axis=1), axis=1))
 
         # test input shape (nb_samples, 1) - binary
         labels = np.array([[1], [0], [1]])
-        labels_transformed = check_and_transform_label_format(labels, return_one_hot=False)
+        labels_transformed = check_and_transform_label_format(labels, nb_classes=None, return_one_hot=False)
         np.testing.assert_array_equal(
             labels_transformed, np.expand_dims(np.argmax(labels_expected_binary, axis=1), axis=1)
         )
@@ -252,7 +252,7 @@ class TestUtils(unittest.TestCase):
         # ValueError for len(labels.shape) > 2
         labels = np.array([[[0, 0, 0, 1, 0], [0, 1, 0, 0, 0], [0, 0, 0, 0, 1]]])
         with self.assertRaises(ValueError):
-            check_and_transform_label_format(labels)
+            check_and_transform_label_format(labels, nb_classes=None)
 
     def test_random_targets(self):
         y = np.array([3, 1, 4, 1, 5, 9])

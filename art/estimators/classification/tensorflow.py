@@ -284,7 +284,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         if self.train is None or self.labels_ph is None:  # pragma: no cover
             raise ValueError("Need the training objective and the output placeholder to train the model.")
 
-        y = check_and_transform_label_format(y, self.nb_classes)
+        y = check_and_transform_label_format(y, nb_classes=self.nb_classes)
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
@@ -945,7 +945,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                 "The training function `train_step` is required for fitting a model but it has not been " "defined."
             )
 
-        y = check_and_transform_label_format(y, self.nb_classes)
+        y = check_and_transform_label_format(y, nb_classes=self.nb_classes)
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)

@@ -676,7 +676,7 @@ def check_and_transform_label_format(
     Check label format and transform to one-hot-encoded labels if necessary
 
     :param labels: An array of integer labels of shape `(nb_samples,)`, `(nb_samples, 1)` or `(nb_samples, nb_classes)`.
-    :param nb_classes: The number of classes.
+    :param nb_classes: The number of classes. If None the number of classes is determined automatically.
     :param return_one_hot: True if returning one-hot encoded labels, False if returning index labels.
     :return: Labels with shape `(nb_samples, nb_classes)` (one-hot) or `(nb_samples,)` (index).
     """
