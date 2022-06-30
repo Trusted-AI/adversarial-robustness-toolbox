@@ -670,13 +670,13 @@ def floats_to_one_hot(labels: np.ndarray):
 
 
 def check_and_transform_label_format(
-    labels: np.ndarray, nb_classes: Optional[int] = None, return_one_hot: bool = True
+    labels: np.ndarray, nb_classes: Optional[int], return_one_hot: bool = True
 ) -> np.ndarray:
     """
     Check label format and transform to one-hot-encoded labels if necessary
 
     :param labels: An array of integer labels of shape `(nb_samples,)`, `(nb_samples, 1)` or `(nb_samples, nb_classes)`.
-    :param nb_classes: The number of classes.
+    :param nb_classes: The number of classes. If None the number of classes is determined automatically.
     :param return_one_hot: True if returning one-hot encoded labels, False if returning index labels.
     :return: Labels with shape `(nb_samples, nb_classes)` (one-hot) or `(nb_samples,)` (index).
     """
@@ -686,18 +686,23 @@ def check_and_transform_label_format(
         if not return_one_hot:
             labels_return = np.argmax(labels, axis=1)
             labels_return = np.expand_dims(labels_return, axis=1)
-    elif (
-        len(labels.shape) == 2 and labels.shape[1] == 1 and nb_classes is not None and nb_classes > 2
-    ):  # multi-class, index labels
-        if return_one_hot:
-            labels_return = to_categorical(labels, nb_classes)
+    elif len(labels.shape) == 2 and labels.shape[1] == 1:
+        if nb_classes is None:
+            nb_classes = np.max(labels) + 1
+        if nb_classes > 2:  # multi-class, index labels
+            if return_one_hot:
+                labels_return = to_categorical(labels, nb_classes)
+            else:
+                labels_return = np.expand_dims(labels, axis=1)
+        elif nb_classes == 2:  # binary, index labels
+            if return_one_hot:
+                labels_return = to_categorical(labels, nb_classes)
         else:
-            labels_return = np.expand_dims(labels, axis=1)
-    elif (
-        len(labels.shape) == 2 and labels.shape[1] == 1 and nb_classes is not None and nb_classes == 2
-    ):  # binary, index labels
-        if return_one_hot:
-            labels_return = to_categorical(labels, nb_classes)
+            raise ValueError(
+                "Shape of labels not recognised."
+                "Please provide labels in shape (nb_samples,) or (nb_samples, "
+                "nb_classes)"
+            )
     elif len(labels.shape) == 1:  # index labels
         if return_one_hot:
             labels_return = to_categorical(labels, nb_classes)
@@ -705,7 +710,9 @@ def check_and_transform_label_format(
             labels_return = np.expand_dims(labels, axis=1)
     else:
         raise ValueError(
-            "Shape of labels not recognised." "Please provide labels in shape (nb_samples,) or (nb_samples, nb_classes)"
+            "Shape of labels not recognised."
+            "Please provide labels in shape (nb_samples,) or (nb_samples, "
+            "nb_classes)"
         )
 
     return labels_return

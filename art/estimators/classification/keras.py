@@ -563,7 +563,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
                epochs or the number of steps per epoch as part of this argument will result in as error.
         """
         y_ndim = y.ndim
-        y = check_and_transform_label_format(y, self.nb_classes)
+        y = check_and_transform_label_format(y, nb_classes=self.nb_classes)
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)

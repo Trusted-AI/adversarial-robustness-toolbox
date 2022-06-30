@@ -283,14 +283,12 @@ class SleeperAgentAttack(GradientMatchingAttack):
         :param epochs: The number of epochs for which training need to be applied.
         :return model, loss_fn, optimizer - trained model, loss function used to train the model and optimizer used.
         """
-        import torch
-        from torch import nn
-        from torch.utils.data import TensorDataset, DataLoader
+        import torch  # lgtm [py/repeated-import]
         import torchvision
 
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        device = self.estimator.device
         model = torchvision.models.ResNet(torchvision.models.resnet.BasicBlock, [2, 2, 2, 2], num_classes=num_classes)
-        loss_fn = nn.CrossEntropyLoss()
+        loss_fn = torch.nn.CrossEntropyLoss()
         optimizer = torch.optim.SGD(model.parameters(), lr=0.1, momentum=0.9, weight_decay=5e-4, nesterov=True)
         model.to(device)
         y_train = np.argmax(y_train, axis=1)
@@ -301,11 +299,11 @@ class SleeperAgentAttack(GradientMatchingAttack):
         x_tensor_test = torch.tensor(x_test, dtype=torch.float32, device=device)  # transform to torch tensor
         y_tensor_test = torch.tensor(y_test, dtype=torch.long, device=device)
 
-        dataset_train = TensorDataset(x_tensor, y_tensor)  # create your datset
-        dataloader_train = DataLoader(dataset_train, batch_size=batch_size)
+        dataset_train = torch.utils.data.TensorDataset(x_tensor, y_tensor)  # create your dataset
+        dataloader_train = torch.utils.data.DataLoader(dataset_train, batch_size=batch_size)
 
-        dataset_test = TensorDataset(x_tensor_test, y_tensor_test)  # create your datset
-        dataloader_test = DataLoader(dataset_test, batch_size=batch_size)
+        dataset_test = torch.utils.data.TensorDataset(x_tensor_test, y_tensor_test)  # create your dataset
+        dataloader_test = torch.utils.data.DataLoader(dataset_test, batch_size=batch_size)
 
         for epoch in trange(epochs):
             running_loss = 0.0
@@ -325,9 +323,9 @@ class SleeperAgentAttack(GradientMatchingAttack):
                 running_loss += loss.item()
             if (epoch % 5 == 0) or epoch == (epochs - 1):
                 train_accuracy = 100 * accuracy / total
-                print("Epoch {} train accuracy: {}".format(epoch, train_accuracy))  # pylint: disable=C0209
+                logger.info("Epoch %d train accuracy: %f", epoch, train_accuracy)
         test_accuracy = self.test_accuracy(model, dataloader_test)
-        print("Final test accuracy: {}".format(test_accuracy))  # pylint: disable=C0209
+        logger.info("Final test accuracy: %f", test_accuracy)
         return model, loss_fn, optimizer
 
     @classmethod
@@ -338,7 +336,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         :param model: Trained model.
         :return accuracy - accuracy of trained model on test data.
         """
-        import torch
+        import torch  # lgtm [py/repeated-import]
 
         model_was_training = model.training
         model.eval()
@@ -375,9 +373,13 @@ class SleeperAgentAttack(GradientMatchingAttack):
         :num_poison: Number of poisoned samples to be selected out of all x_samples.
         :return indices - Indices of samples to be poisoned.
         """
-        import torch
+        import torch  # lgtm [py/repeated-import]
+        from art.estimators.classification.pytorch import PyTorchClassifier
 
-        device = "cuda" if torch.cuda.is_available() else "cpu"
+        if isinstance(classifier, PyTorchClassifier):
+            device = classifier.device
+        else:
+            raise ValueError("Classifier is not of type PyTorchClassifier.")
         grad_norms = []
         criterion = torch.nn.CrossEntropyLoss()
         model = classifier.model

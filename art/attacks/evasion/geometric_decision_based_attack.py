@@ -169,7 +169,7 @@ class GeoDA(EvasionAttack):
         :return: The adversarial examples.
         """
         if y is not None:
-            y = check_and_transform_label_format(y, self.estimator.nb_classes, return_one_hot=True)
+            y = check_and_transform_label_format(y, nb_classes=self.estimator.nb_classes, return_one_hot=True)
 
         if y is not None and self.estimator.nb_classes == 2 and y.shape[1] == 1:  # pragma: no cover
             raise ValueError(

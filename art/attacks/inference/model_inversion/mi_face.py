@@ -106,7 +106,7 @@ class MIFace(InferenceAttack):
         if y is None:
             y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
         else:
-            y = check_and_transform_label_format(y, self.estimator.nb_classes)
+            y = check_and_transform_label_format(y, nb_classes=self.estimator.nb_classes)
 
         if x is None:
             x = np.zeros((len(y),) + self.estimator.input_shape)
