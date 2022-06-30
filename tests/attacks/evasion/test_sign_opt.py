@@ -72,9 +72,10 @@ def test_images(
         classifier = image_dl_estimator_for_attack(SignOPTAttack)
 
         if targeted:
-            attack = SignOPTAttack(
-                estimator=classifier, targeted=targeted, max_iter=2000, query_limit=14000, verbose=True
-            )
+            pass
+            # attack = SignOPTAttack(
+            #     estimator=classifier, targeted=targeted, max_iter=2000, query_limit=14000, verbose=True
+            # )
             # backend_targeted_images(attack, fix_get_mnist_subset_large)
         else:
             attack = SignOPTAttack(

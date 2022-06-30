@@ -33,7 +33,6 @@ def get_pytorch_yolo(get_default_cifar10_subset):
     This class tests the PyTorchYolo object detector.
     """
     import cv2
-    import numpy as np
     import torch
 
     from pytorchyolo import models
@@ -71,7 +70,6 @@ def get_pytorch_yolo(get_default_cifar10_subset):
     n_test = 10
     (_, _), (x_test_cifar10, y_test_cifar10) = get_default_cifar10_subset
     x_test_cifar10 = x_test_cifar10[0:n_test]
-    y_test_cifar10 = y_test_cifar10[0:n_test]
 
     x_test = cv2.resize(
         x_test_cifar10[0].transpose((1, 2, 0)), dsize=(416, 416), interpolation=cv2.INTER_CUBIC

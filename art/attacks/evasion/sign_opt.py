@@ -50,7 +50,6 @@ from typing import Optional, TYPE_CHECKING, Tuple
 import time
 
 import numpy as np
-from numpy import integer, linalg as LA
 from tqdm.auto import tqdm
 
 from art.attacks.attack import EvasionAttack
@@ -119,7 +118,7 @@ class SignOPTAttack(EvasionAttack):
         :param beta: The tolerance for line search
         :param batch_size: The size of the batch used by the estimator during inference.
         :param verbose: Show detailed information
-        :param eval_perform: Evaluate performnace with Avg. L2 and Success Rate with randomly choosing 100 samples
+        :param eval_perform: Evaluate performance with Avg. L2 and Success Rate with randomly choosing 100 samples
         """
 
         super().__init__(estimator=estimator)
@@ -211,7 +210,7 @@ class SignOPTAttack(EvasionAttack):
                     y_0=preds[ind],
                 )
             if succeed and self.eval_perform and counter < 100:
-                self.logs[counter] = LA.norm(diff)
+                self.logs[counter] = np.linalg.norm(diff)
                 counter += 1
 
         if self.targeted is False:
@@ -232,14 +231,14 @@ class SignOPTAttack(EvasionAttack):
         target: Optional[int] = None,
     ) -> Tuple[float, int]:
         """
-        Perform fine grained line search plus binary search for finding a good starting direction
+        Perform fine-grained line search plus binary search for finding a good starting direction
 
         :param x_0: An array with the original input to be attacked.
         :param y_0: Target value.
         :param theta: Initial query direction.
         :param initial_lbd: Previous solution.
         :param current_best: Current best solution.
-        :param target: Target value. If `self.targeted` is true, it presents the targed label. Defaults to None.
+        :param target: Target value. If `self.targeted` is true, it presents the targeted label. Defaults to None.
         :return: Optimal solution for finding starting direction; the number of query performed
         """
         if self.targeted:
@@ -300,7 +299,7 @@ class SignOPTAttack(EvasionAttack):
         nquery = 0
         lbd = initial_lbd
         # For targeted: we want to expand(x1.01) boundary away from targeted dataset
-        # For untargeted, we want to slim(x0.99) the boundary toward the orginal dataset
+        # For untargeted, we want to slim(x0.99) the boundary toward the original dataset
         if (not self._is_label(x_0 + lbd * theta, target) and self.targeted) or (
             self._is_label(x_0 + lbd * theta, y_0) and not self.targeted
         ):
@@ -349,7 +348,7 @@ class SignOPTAttack(EvasionAttack):
         pred_y0 = np.argmax(pred)
         return pred_y0 == label
 
-    def _predict_label(self, x_0: np.ndarray) -> integer:
+    def _predict_label(self, x_0: np.ndarray) -> np.signedinteger:
         """
         Helper method to predict label for x_0
 
@@ -372,7 +371,7 @@ class SignOPTAttack(EvasionAttack):
         :param epsilon: A very small smoothing parameter.
         :param theta: Initial query direction.
         :param initial_lbd: Previous solution.
-        :param target: Target value. If `self.targeted` is true, it presents the targed label. Defaults to None.
+        :param target: Target value. If `self.targeted` is true, it presents the targeted label. Defaults to None.
         :return: the sign of gradient
         """
         sign_grad = np.zeros(theta.shape).astype(np.float32)
@@ -383,10 +382,10 @@ class SignOPTAttack(EvasionAttack):
             #     A:Randomly sample u1, . . . , uQ from a Gaussian or Uniform distribution;
             u_g = np.random.randn(*theta.shape).astype(np.float32)
             # gaussian
-            u_g /= LA.norm(u_g)
+            u_g /= np.linalg.norm(u_g)
             # function (3) in the paper
             new_theta = theta + epsilon * u_g
-            new_theta /= LA.norm(new_theta)
+            new_theta /= np.linalg.norm(new_theta)
             sign = 1
 
             if self.targeted and self._is_label(x_0 + initial_lbd * new_theta, target):
@@ -414,7 +413,7 @@ class SignOPTAttack(EvasionAttack):
 
         :param x_0: An array with the original inputs to be attacked.
         :param y_0: Target value.
-        :param target: Target value. If `self.targeted` is true, it presents the targed label. Defaults to None.
+        :param target: Target value. If `self.targeted` is true, it presents the targeted label. Defaults to None.
         :param x_init: The pool of possible targets for finding initial direction. Only for targeted attack.
         :return: the adversarial sample to x_0
         """
@@ -438,7 +437,7 @@ class SignOPTAttack(EvasionAttack):
                     continue
 
                 theta = x_i - x_0
-                initial_lbd = LA.norm(theta).item()  # .item() convert numpy type to python type
+                initial_lbd = np.linalg.norm(theta).item()  # .item() convert numpy type to python type
                 theta /= initial_lbd
                 lbd, count = self._fine_grained_binary_search(x_0, y_0, theta, initial_lbd, g_theta, target)
                 query_count += count
@@ -453,7 +452,7 @@ class SignOPTAttack(EvasionAttack):
                 theta = np.random.randn(*x_0.shape).astype(np.float32)  # gaussian distortion
                 # register adv directions
                 if not self._is_label(x_0 + theta, y_0):
-                    initial_lbd = LA.norm(theta).item()  # .item() convert numpy type to python type
+                    initial_lbd = np.linalg.norm(theta).item()  # .item() convert numpy type to python type
                     theta /= initial_lbd  # l2 normalize: theta is normalized
                     # getting smaller g_theta
                     lbd, count = self._fine_grained_binary_search(x_0, y_0, theta, initial_lbd, g_theta)
@@ -463,7 +462,7 @@ class SignOPTAttack(EvasionAttack):
                         if self.verbose:
                             print(f"Found distortion {g_theta} with iteration/num_directions={i}/{num_directions}")
 
-        # fail if cannot find a adv direction within `num_directions` Gaussian
+        # fail if it cannot find adv direction within `num_directions` Gaussian
         if g_theta == float("inf"):
             if self.verbose:
                 print("Couldn't find valid initial, failed")
@@ -494,12 +493,12 @@ class SignOPTAttack(EvasionAttack):
             ls_count = 0
             min_theta = x_g  # next theta
             min_g2 = g_g  # current g_theta
-            new_theta = np.zeros((0, 0))
+            # new_theta = np.zeros((0, 0))
             for _ in range(15):
                 # Algorithm 1: Sign-OPT attack
                 new_theta = x_g - alpha * sign_gradient
-                new_theta /= LA.norm(new_theta)
-                # Algorithm 1: Sign-OPT attackx
+                new_theta /= np.linalg.norm(new_theta)
+                # Algorithm 1: Sign-OPT attack
                 #     D:Evaluate g(θt) using the same search algorithm in
                 #       Cheng et al. (2019) https://openreview.net/pdf?id=rJlk6iRqKX,
                 #       **Algorithm 1 Compute g(θ) locally**
@@ -512,13 +511,13 @@ class SignOPTAttack(EvasionAttack):
                     min_theta = new_theta
                     min_g2 = new_g2
                 else:
-                    break  # meaning alphia is too big, so it needs to be reduced.
+                    break  # meaning alpha is too big, so it needs to be reduced.
 
             if min_g2 >= g_g:  # if the above code failed for the init alpha, we then try to decrease alpha
                 for _ in range(15):
                     alpha = alpha * 0.25
                     new_theta = x_g - alpha * sign_gradient
-                    new_theta /= LA.norm(new_theta)
+                    new_theta /= np.linalg.norm(new_theta)
                     new_g2, count = self._fine_grained_binary_search_local(
                         x_0, y_0, new_theta, target, initial_lbd=min_g2, tol=beta / 500
                     )
@@ -536,7 +535,7 @@ class SignOPTAttack(EvasionAttack):
                 if beta < 1e-8:
                     break
 
-            # if all attemps failed, min_theta, min_g2 will be the current theta (i.e. not moving)
+            # if all attempts failed, min_theta, min_g2 will be the current theta (i.e. not moving)
             x_g, g_g = min_theta, min_g2
 
             query_count += grad_queries + ls_count
@@ -581,7 +580,7 @@ class SignOPTAttack(EvasionAttack):
         """
         Apply clipping to input array
 
-        :param x_0: An array to be clippd
+        :param x_0: An array to be clipped
         :return: The array after clipping if clipping is enabled
         """
         if self.enable_clipped:
