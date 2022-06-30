@@ -28,6 +28,7 @@ import random
 
 import numpy as np
 from tqdm.auto import trange
+import pdb
 
 
 from art.attacks.poisoning import GradientMatchingAttack
@@ -138,6 +139,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
                  in training data.
         """
         from art.estimators.classification.pytorch import PyTorchClassifier
+        from art.estimators.classification import TensorFlowV2Classifier
 
         x_train_target_samples, y_train_target_samples = self.select_target_train_samples(x_train, y_train)
         if isinstance(self.substitute_classifier, PyTorchClassifier):
@@ -146,8 +148,14 @@ class SleeperAgentAttack(GradientMatchingAttack):
             initializer = self._initialize_poison_pytorch
             if self.estimator.channels_first:
                 x_train_target_samples = np.transpose(x_train_target_samples, [0, 3, 1, 2])
-        else:
-            raise NotImplementedError("SleeperAgentAttack is currently implemented only for PyTorch.")
+        elif isinstance(self.substitute_classifier, TensorFlowV2Classifier):
+            poisoner = self._poison__tensorflow
+            finish_poisoning = self._finish_poison_tensorflow
+            initializer = self._initialize_poison_tensorflow
+            if self.estimator.channels_first:
+                x_train_target_samples = np.transpose(x_train_target_samples, [0, 3, 1, 2])
+        else:     
+            raise NotImplementedError("SleeperAgentAttack is currently implemented only for PyTorch and TensorFlowV2.")
 
         # Choose samples to poison.
         x_trigger = self.apply_trigger_patch(x_trigger)
@@ -200,7 +208,13 @@ class SleeperAgentAttack(GradientMatchingAttack):
 
         if self.verbose > 0:
             print("Best B-score:", best_B)
-        x_train[self.indices_target[best_indices_poison]] = np.transpose(best_x_poisoned, [0, 2, 3, 1])
+#         pdb.set_trace()  
+        if isinstance(self.substitute_classifier, PyTorchClassifier):
+            x_train[self.indices_target[best_indices_poison]] = np.transpose(best_x_poisoned, [0, 2, 3, 1])           
+        elif isinstance(self.substitute_classifier, TensorFlowV2Classifier):
+            x_train[self.indices_target[best_indices_poison]] = best_x_poisoned
+        else:
+            raise NotImplementedError("SleeperAgentAttack is currently implemented only for PyTorch and TensorFlowV2.")
         return x_train, y_train
 
     def select_target_train_samples(self, x_train: np.ndarray, y_train: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
@@ -241,6 +255,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         :param y_test: labels for test data.
         """
         from art.estimators.classification.pytorch import PyTorchClassifier
+        from art.estimators.classification import TensorFlowV2Classifier
 
         x_train = np.transpose(x_train, [0, 3, 1, 2])
 
@@ -254,9 +269,15 @@ class SleeperAgentAttack(GradientMatchingAttack):
             batch_size=128,
             epochs=self.model_retraining_epoch,
         )
-        model_ = PyTorchClassifier(
-            model, input_shape=x_train.shape[1:], loss=loss_fn, optimizer=optimizer, nb_classes=10
-        )
+        if isinstance(self.substitute_classifier, PyTorchClassifier):
+            model_ = PyTorchClassifier(
+                model, input_shape=x_train.shape[1:], loss=loss_fn, optimizer=optimizer, nb_classes=10
+            )
+        elif isinstance(self.substitute_classifier, TensorFlowV2Classifier):  
+            model_ = TensorFlowV2Classifier(model, nb_classes=10, input_shape=x_train.shape[1:])
+        else:
+            raise NotImplementedError("SleeperAgentAttack is currently implemented only for PyTorch and TensorFlowV2.")
+            
         check_train = self.substitute_classifier.model.training
         self.substitute_classifier = model_
         self.substitute_classifier.model.training = check_train
@@ -283,53 +304,161 @@ class SleeperAgentAttack(GradientMatchingAttack):
         :param epochs: The number of epochs for which training need to be applied.
         :return model, loss_fn, optimizer - trained model, loss function used to train the model and optimizer used.
         """
-        import torch
-        from torch import nn
-        from torch.utils.data import TensorDataset, DataLoader
-        import torchvision
+        from art.estimators.classification.pytorch import PyTorchClassifier
+        from art.estimators.classification import TensorFlowV2Classifier
+        
+        if isinstance(self.substitute_classifier, PyTorchClassifier):
+            import torch
+            from torch import nn
+            from torch.utils.data import TensorDataset, DataLoader
+            import torchvision
 
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        model = torchvision.models.ResNet(torchvision.models.resnet.BasicBlock, [2, 2, 2, 2], num_classes=num_classes)
-        loss_fn = nn.CrossEntropyLoss()
-        optimizer = torch.optim.SGD(model.parameters(), lr=0.1, momentum=0.9, weight_decay=5e-4, nesterov=True)
-        model.to(device)
-        y_train = np.argmax(y_train, axis=1)
-        x_tensor = torch.tensor(x_train, dtype=torch.float32, device=device)  # transform to torch tensor
-        y_tensor = torch.tensor(y_train, dtype=torch.long, device=device)
-        x_test = np.transpose(x_test, [0, 3, 1, 2])
-        y_test = np.argmax(y_test, axis=1)
-        x_tensor_test = torch.tensor(x_test, dtype=torch.float32, device=device)  # transform to torch tensor
-        y_tensor_test = torch.tensor(y_test, dtype=torch.long, device=device)
+            device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+            model = torchvision.models.ResNet(torchvision.models.resnet.BasicBlock, [2, 2, 2, 2], num_classes=num_classes)
+            loss_fn = nn.CrossEntropyLoss()
+            optimizer = torch.optim.SGD(model.parameters(), lr=0.1, momentum=0.9, weight_decay=5e-4, nesterov=True)
+            model.to(device)
+            y_train = np.argmax(y_train, axis=1)
+            x_tensor = torch.tensor(x_train, dtype=torch.float32, device=device)  # transform to torch tensor
+            y_tensor = torch.tensor(y_train, dtype=torch.long, device=device)
+            x_test = np.transpose(x_test, [0, 3, 1, 2])
+            y_test = np.argmax(y_test, axis=1)
+            x_tensor_test = torch.tensor(x_test, dtype=torch.float32, device=device)  # transform to torch tensor
+            y_tensor_test = torch.tensor(y_test, dtype=torch.long, device=device)
 
-        dataset_train = TensorDataset(x_tensor, y_tensor)  # create your datset
-        dataloader_train = DataLoader(dataset_train, batch_size=batch_size)
+            dataset_train = TensorDataset(x_tensor, y_tensor)  # create your datset
+            dataloader_train = DataLoader(dataset_train, batch_size=batch_size)
 
-        dataset_test = TensorDataset(x_tensor_test, y_tensor_test)  # create your datset
-        dataloader_test = DataLoader(dataset_test, batch_size=batch_size)
+            dataset_test = TensorDataset(x_tensor_test, y_tensor_test)  # create your datset
+            dataloader_test = DataLoader(dataset_test, batch_size=batch_size)
 
-        for epoch in trange(epochs):
-            running_loss = 0.0
-            total = 0
-            accuracy = 0
-            for _, data in enumerate(dataloader_train, 0):
-                inputs, labels = data
-                optimizer.zero_grad()
-                # forward + backward + optimize
-                outputs = model(inputs)
-                loss = loss_fn(outputs, labels)
-                loss.backward()
-                optimizer.step()
-                _, predicted = torch.max(outputs.data, 1)
-                total += labels.size(0)
-                accuracy += (predicted == labels).sum().item()
-                running_loss += loss.item()
-            if (epoch % 5 == 0) or epoch == (epochs - 1):
-                train_accuracy = 100 * accuracy / total
-                print("Epoch {} train accuracy: {}".format(epoch, train_accuracy))  # pylint: disable=C0209
-        test_accuracy = self.test_accuracy(model, dataloader_test)
-        print("Final test accuracy: {}".format(test_accuracy))  # pylint: disable=C0209
-        return model, loss_fn, optimizer
+            for epoch in trange(epochs):
+                running_loss = 0.0
+                total = 0
+                accuracy = 0
+                for _, data in enumerate(dataloader_train, 0):
+                    inputs, labels = data
+                    optimizer.zero_grad()
+                    # forward + backward + optimize
+                    outputs = model(inputs)
+                    loss = loss_fn(outputs, labels)
+                    loss.backward()
+                    optimizer.step()
+                    _, predicted = torch.max(outputs.data, 1)
+                    total += labels.size(0)
+                    accuracy += (predicted == labels).sum().item()
+                    running_loss += loss.item()
+                if (epoch % 5 == 0) or epoch == (epochs - 1):
+                    train_accuracy = 100 * accuracy / total
+                    print("Epoch {} train accuracy: {}".format(epoch, train_accuracy))  # pylint: disable=C0209
+            test_accuracy = self.test_accuracy(model, dataloader_test)
+            print("Final test accuracy: {}".format(test_accuracy))  # pylint: disable=C0209
+            return model, loss_fn, optimizer
+        elif isinstance(self.substitute_classifier, TensorFlowV2Classifier):
+            import tensorflow as tf
+            from tensorflow.keras.models import Sequential
+            from tensorflow.keras.layers import Dense, Flatten
+            from tensorflow.keras.preprocessing.image import ImageDataGenerator
+            from tqdm.keras import TqdmCallback
+            # Tweaked the model from https://github.com/calmisential/TensorFlow2.0_ResNet
+            # MIT License
+            def basic_block(x, filter_num, stride=1):
+                conv1 = tf.keras.layers.Conv2D(filters=filter_num,
+                                                    kernel_size=(3, 3),
+                                                    strides=stride,
+                                                    padding="same")
+                bn1 = tf.keras.layers.BatchNormalization()
+                conv2 = tf.keras.layers.Conv2D(filters=filter_num,
+                                                    kernel_size=(3, 3),
+                                                    strides=1,
+                                                    padding="same")
+                bn2 = tf.keras.layers.BatchNormalization()
+                if stride != 1:
+                    downsample = tf.keras.Sequential()
+                    downsample.add(tf.keras.layers.Conv2D(filters=filter_num,
+                                                                kernel_size=(1, 1),
+                                                                strides=stride))
+                    downsample.add(tf.keras.layers.BatchNormalization())
+                else:
+                    downsample = tf.keras.layers.Lambda(lambda x: x)
 
+                residual = downsample(x)
+                x = conv1(x)
+                x = bn1(x)
+                x = tf.nn.relu(x)
+                x = conv2(x)
+                x = bn2(x)
+                output = tf.nn.relu(tf.keras.layers.add([residual, x]))
+                return output
+
+            def basic_block_layer(x, filter_num, blocks, stride=1):
+                x = basic_block(x, filter_num, stride=stride)
+                for _ in range(1, blocks):
+                    x = basic_block(x, filter_num, stride=1)
+                return x
+
+            def resnet(x, num_classes, layer_params):
+                pad1 = tf.keras.layers.ZeroPadding2D(padding=1)
+                conv1 = tf.keras.layers.Conv2D(filters=64,
+                                                    kernel_size=(3, 3),
+                                                    strides=1,
+                                                    padding="same")
+                bn1 = tf.keras.layers.BatchNormalization()
+
+                avgpool = tf.keras.layers.GlobalAveragePooling2D()
+                fc = tf.keras.layers.Dense(units=num_classes, activation=tf.keras.activations.softmax)
+
+                x = pad1(x)
+                x = conv1(x)
+                x = bn1(x)
+                x = tf.nn.relu(x)
+                x = basic_block_layer(x, filter_num=64,
+                                                    blocks=layer_params[0])
+                x = basic_block_layer(x, filter_num=128,
+                                                    blocks=layer_params[1],
+                                                    stride=2)
+                x = basic_block_layer(x, filter_num=256,
+                                                    blocks=layer_params[2],
+                                                    stride=2)
+                x = basic_block_layer(x, filter_num=512,
+                                                    blocks=layer_params[3],
+                                                    stride=2)
+                x = avgpool(x)
+                output = fc(x)
+                return output
+
+            def resnet_18(x, num_classes):
+                return resnet(x, num_classes, layer_params=[2, 2, 2, 2])
+
+
+            inputs = tf.keras.layers.Input(shape=x_train.shape[1:])  # Specify the dimensions
+            outputs = resnet_18(inputs, num_classes)
+            model = tf.keras.models.Model(inputs, outputs)
+
+            opt = tf.keras.optimizers.SGD(learning_rate=0.1, momentum=0.9, nesterov=True)
+            model.compile(loss='categorical_crossentropy', optimizer=opt, metrics=['accuracy'])
+
+            datagen = ImageDataGenerator(
+                featurewise_center=False,
+                samplewise_center=False,
+                featurewise_std_normalization=False,
+                samplewise_std_normalization=False,
+                zca_whitening=False,
+                rotation_range=15,
+                width_shift_range=0.1,
+                height_shift_range=0.1,
+                horizontal_flip=True,
+                vertical_flip=False
+                )
+
+            datagen.fit(x_train)
+            callbacks = callbacks + [TqdmCallback(verbose=0)]
+            model.fit(datagen.flow(x_train, y_train, batch_size=batch_size), steps_per_epoch=x_train.shape[0] //                                          batch_size,epochs=epochs,verbose=0,callbacks=callbacks)
+            model.evaluate(x_test, y_test)
+            return model, None, None
+        else:
+            raise NotImplementedError("SleeperAgentAttack is currently implemented only for PyTorch and TensorFlowV2.")
+    
     @classmethod
     def test_accuracy(cls, model: "torch.nn.Module", test_loader: "torch.utils.data.dataloader.DataLoader") -> float:
         """
@@ -338,6 +467,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         :param model: Trained model.
         :return accuracy - accuracy of trained model on test data.
         """
+
         import torch
 
         model_was_training = model.training
@@ -361,10 +491,10 @@ class SleeperAgentAttack(GradientMatchingAttack):
             model.train()
         return accuracy
 
+            
     # This function is responsible for returning indices of poison images with maximum gradient norm
-    @classmethod
     def select_poison_indices(
-        cls, classifier: "CLASSIFIER_NEURALNETWORK_TYPE", x_samples: np.ndarray, y_samples: np.ndarray, num_poison: int
+        self, classifier: "CLASSIFIER_NEURALNETWORK_TYPE", x_samples: np.ndarray, y_samples: np.ndarray, num_poison: int
     ) -> np.ndarray:
         """
         Select indices of poisoned samples
@@ -375,24 +505,47 @@ class SleeperAgentAttack(GradientMatchingAttack):
         :num_poison: Number of poisoned samples to be selected out of all x_samples.
         :return indices - Indices of samples to be poisoned.
         """
-        import torch
-
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-        grad_norms = []
-        criterion = torch.nn.CrossEntropyLoss()
-        model = classifier.model
-        model.eval()
-        differentiable_params = [p for p in classifier.model.parameters() if p.requires_grad]
-        for x, y in zip(x_samples, y_samples):
-            image = torch.tensor(x, dtype=torch.float32).float().to(device)
-            label = torch.tensor(y).to(device)
-            loss = criterion(model(image.unsqueeze(0)), label.unsqueeze(0))
-            gradients = torch.autograd.grad(loss, differentiable_params, only_inputs=True)
-            grad_norm = torch.tensor(0, dtype=torch.float32).to(device)
-            for grad in gradients:
-                grad_norm += grad.detach().pow(2).sum()
-            grad_norms.append(grad_norm.sqrt())
-
+        from art.estimators.classification.pytorch import PyTorchClassifier
+        from art.estimators.classification import TensorFlowV2Classifier
+#         pdb.set_trace()
+        if isinstance(self.substitute_classifier, PyTorchClassifier):
+            import torch
+            
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+            grad_norms = []
+            criterion = torch.nn.CrossEntropyLoss()
+            model = classifier.model
+            model.eval()
+            differentiable_params = [p for p in classifier.model.parameters() if p.requires_grad]
+            for x, y in zip(x_samples, y_samples):
+                image = torch.tensor(x, dtype=torch.float32).float().to(device)
+                label = torch.tensor(y).to(device)
+                loss = criterion(model(image.unsqueeze(0)), label.unsqueeze(0))
+                gradients = torch.autograd.grad(loss, differentiable_params, only_inputs=True)
+                grad_norm = torch.tensor(0, dtype=torch.float32).to(device)
+                for grad in gradients:
+                    grad_norm += grad.detach().pow(2).sum()
+                grad_norms.append(grad_norm.sqrt())
+        elif isinstance(self.substitute_classifier, TensorFlowV2Classifier):
+            import tensorflow as tf
+            grad_norms = []
+            for i in range(len(x_samples)-1):
+                image = tf.constant(x_samples[i:i+1])
+                label = tf.constant(y_samples[i:i+1])
+                with tf.GradientTape() as t:  # pylint: disable=C0103
+                    t.watch(classifier.model.weights)
+                    output = classifier.model(image, training=False)
+                    loss = classifier.model.compiled_loss(label,output)
+                    gradients = t.gradient(loss, classifier.model.weights)
+                    gradients = [w for w in gradients if w is not None]
+                    grad_norm = 0
+                    for grad in gradients:
+                        grad_norm += tf.reduce_sum(tf.math.square(grad))
+                    grad_norms.append(tf.math.sqrt(grad_norm))
+        else:
+            raise NotImplementedError("SleeperAgentAttack is currently implemented only for PyTorch and TensorFlowV2.")
+            
+                           
         indices = sorted(range(len(grad_norms)), key=lambda k: grad_norms[k])
         indices = indices[-num_poison:]
         return np.array(indices)  # this will get only indices for target class
