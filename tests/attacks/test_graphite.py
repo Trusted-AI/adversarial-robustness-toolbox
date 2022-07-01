@@ -26,14 +26,10 @@ from art.attacks.evasion import GRAPHITEBlackbox, GRAPHITEWhiteboxPyTorch
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification import ClassifierMixin
 
-# from art.estimators.classification.keras import KerasClassifier
-from art.utils import random_targets
-
 from tests.utils import TestBase
 from tests.utils import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
 
-# from tests.utils import get_tabular_classifier_tf, get_tabular_classifier_kr
-from tests.utils import get_tabular_classifier_pt, master_seed
+from tests.utils import master_seed
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 
 logger = logging.getLogger(__name__)
@@ -135,7 +131,7 @@ class TestGRAPHITE(TestBase):
 
         # First attack
         graphite = GRAPHITEBlackbox(
-            classifier=tfc,
+            classifier=krc,
             noise_size=(28, 28),
             net_size=(28, 28),
             heatmap_mode="Target",
@@ -150,7 +146,7 @@ class TestGRAPHITE(TestBase):
         self.assertTrue((x_test_adv >= -0.0001).all())
 
         target = np.argmax(params["y"], axis=1)
-        y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
+        y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
         self.assertTrue((target == y_pred_adv).any())
 
         # Test the masking
@@ -200,7 +196,7 @@ class TestGRAPHITE(TestBase):
         # BLACKBOX
         # First attack
         graphite = GRAPHITEBlackbox(
-            classifier=tfc,
+            classifier=ptc,
             noise_size=(28, 28),
             net_size=(28, 28),
             heatmap_mode="Target",
@@ -215,7 +211,7 @@ class TestGRAPHITE(TestBase):
         self.assertTrue((x_test_adv >= -0.0001).all())
 
         target = np.argmax(params["y"], axis=1)
-        y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
+        y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
         self.assertTrue((target == y_pred_adv).any())
 
         # Test the masking
@@ -250,7 +246,7 @@ class TestGRAPHITE(TestBase):
 
         # WHITEBOX
         # First attack
-        graphite = GRAPHITEWhiteboxPyTorch(classifier=tfc, net_size=(28, 28), num_xforms=10)
+        graphite = GRAPHITEWhiteboxPyTorch(classifier=ptc, net_size=(28, 28), num_xforms=10)
         params = {"y": self.y_test_init_mnist}
         x_test_adv = graphite.generate(self.x_test_mnist, **params)
 
@@ -259,7 +255,7 @@ class TestGRAPHITE(TestBase):
         self.assertTrue((x_test_adv >= -0.0001).all())
 
         target = np.argmax(params["y"], axis=1)
-        y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
+        y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
         self.assertTrue((target == y_pred_adv).any())
 
         # Test the masking
@@ -297,53 +293,53 @@ class TestGRAPHITE(TestBase):
         ptc = get_image_classifier_pt(from_logits=True)
 
         with self.assertRaises(ValueError):
-            _ = GRAPHITEBlackbox(ptc, noise_size=1, heat_patch_size=2)
+            _ = GRAPHITEBlackbox(ptc, noise_size=(1, 1), net_size=(1, 1), heat_patch_size=(2, 2))
         with self.assertRaises(ValueError):
-            _ = GRAPHITEBlackbox(ptc, heat_patch_size=(0, 1))
+            _ = GRAPHITEBlackbox(ptc, noise_size=(28, 28), net_size=(28, 28), heat_patch_size=(0, 1))
         with self.assertRaises(ValueError):
-            _ = GRAPHITEBlackbox(ptc, heat_patch_size=(1.0, 0))
+            _ = GRAPHITEBlackbox(ptc, noise_size=(28, 28), net_size=(28, 28), heat_patch_size=(1.0, 0))
         with self.assertRaises(ValueError):
-            _ = GRAPHITEBlackbox(ptc, heat_patch_stride=(0, 1))
+            _ = GRAPHITEBlackbox(ptc, noise_size=(28, 28), net_size=(28, 28), heat_patch_stride=(0, 1))
         with self.assertRaises(ValueError):
-            _ = GRAPHITEBlackbox(ptc, heat_patch_stride=(1.0, 0))
+            _ = GRAPHITEBlackbox(ptc, noise_size=(28, 28), net_size=(28, 28), heat_patch_stride=(1.0, 0))
         with self.assertRaises(ValueError):
-            _ = GRAPHITEBlackbox(ptc, heatmap_mode="asdf")
+            _ = GRAPHITEBlackbox(ptc, noise_size=(28, 28), net_size=(28, 28), heatmap_mode="asdf")
         with self.assertRaises(ValueError):
-            _ = GRAPHITEBlackbox(ptc, tr_lo=-1)
+            _ = GRAPHITEBlackbox(ptc, noise_size=(28, 28), net_size=(28, 28), tr_lo=-1)
         with self.assertRaises(ValueError):
-            _ = GRAPHITEBlackbox(ptc, tr_lo=1.1)
+            _ = GRAPHITEBlackbox(ptc, noise_size=(28, 28), net_size=(28, 28), tr_lo=1.1)
         with self.assertRaises(ValueError):
-            _ = GRAPHITEBlackbox(ptc, tr_hi=-1)
+            _ = GRAPHITEBlackbox(ptc, noise_size=(28, 28), net_size=(28, 28), tr_hi=-1)
         with self.assertRaises(ValueError):
-            _ = GRAPHITEBlackbox(ptc, tr_hi=1.1)
+            _ = GRAPHITEBlackbox(ptc, noise_size=(28, 28), net_size=(28, 28), tr_hi=1.1)
         with self.assertRaises(ValueError):
-            _ = GRAPHITEBlackbox(ptc, num_xforms_mask=0)
+            _ = GRAPHITEBlackbox(ptc, noise_size=(28, 28), net_size=(28, 28), num_xforms_mask=0)
         with self.assertRaises(ValueError):
-            _ = GRAPHITEBlackbox(ptc, num_xforms_mask=1.0)
+            _ = GRAPHITEBlackbox(ptc, noise_size=(28, 28), net_size=(28, 28), num_xforms_mask=1.0)
         with self.assertRaises(ValueError):
-            _ = GRAPHITEBlackbox(ptc, num_xforms_boost=0)
+            _ = GRAPHITEBlackbox(ptc, noise_size=(28, 28), net_size=(28, 28), num_xforms_boost=0)
         with self.assertRaises(ValueError):
-            _ = GRAPHITEBlackbox(ptc, num_xforms_boost=1.0)
+            _ = GRAPHITEBlackbox(ptc, noise_size=(28, 28), net_size=(28, 28), num_xforms_boost=1.0)
         with self.assertRaises(ValueError):
-            _ = GRAPHITEBlackbox(ptc, num_boost_queries=0)
+            _ = GRAPHITEBlackbox(ptc, noise_size=(28, 28), net_size=(28, 28), num_boost_queries=0)
         with self.assertRaises(ValueError):
-            _ = GRAPHITEBlackbox(ptc, rotation_range=(-90, 0))
+            _ = GRAPHITEBlackbox(ptc, noise_size=(28, 28), net_size=(28, 28), rotation_range=(-90, 0))
         with self.assertRaises(ValueError):
-            _ = GRAPHITEBlackbox(ptc, rotation_range=(90, 0))
+            _ = GRAPHITEBlackbox(ptc, noise_size=(28, 28), net_size=(28, 28), rotation_range=(90, 0))
         with self.assertRaises(ValueError):
-            _ = GRAPHITEBlackbox(ptc, rotation_range=(1, 0))
+            _ = GRAPHITEBlackbox(ptc, noise_size=(28, 28), net_size=(28, 28), rotation_range=(1, 0))
         with self.assertRaises(ValueError):
-            _ = GRAPHITEBlackbox(ptc, gamma_range=(0, 1))
+            _ = GRAPHITEBlackbox(ptc, noise_size=(28, 28), net_size=(28, 28), gamma_range=(0, 1))
         with self.assertRaises(ValueError):
-            _ = GRAPHITEBlackbox(ptc, gamma_range=(1, 0))
+            _ = GRAPHITEBlackbox(ptc, noise_size=(28, 28), net_size=(28, 28), gamma_range=(1, 0))
         with self.assertRaises(ValueError):
-            _ = GRAPHITEBlackbox(ptc, crop_percent_range=(1, 0))
+            _ = GRAPHITEBlackbox(ptc, noise_size=(28, 28), net_size=(28, 28), crop_percent_range=(1, 0))
         with self.assertRaises(ValueError):
-            _ = GRAPHITEBlackbox(ptc, off_x_range=(1, 0))
+            _ = GRAPHITEBlackbox(ptc, noise_size=(28, 28), net_size=(28, 28), off_x_range=(1, 0))
         with self.assertRaises(ValueError):
-            _ = GRAPHITEBlackbox(ptc, off_y_range=(1, 0))
+            _ = GRAPHITEBlackbox(ptc, noise_size=(28, 28), net_size=(28, 28), off_y_range=(1, 0))
         with self.assertRaises(ValueError):
-            _ = GRAPHITEBlackbox(ptc, blur_kernels=(-1))
+            _ = GRAPHITEBlackbox(ptc, noise_size=(28, 28), net_size=(28, 28), blur_kernels=(-1))
 
         with self.assertRaises(ValueError):
             _ = GRAPHITEWhiteboxPyTorch(ptc, min_tr=-1)

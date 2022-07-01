@@ -1,15 +1,12 @@
-from scipy.cluster.vq import vq
 import math
 import torch.nn as nn
 import numpy as np
 import cv2
 import torch
-import torchvision.transforms as transforms
-from PIL import Image, ImageEnhance
 from kornia.geometry.transform import resize, warp_perspective
 from kornia.enhance import adjust_gamma
 from art.utils import get_labels_np_array
-from typing import Optional, Tuple, Union, TYPE_CHECKING, List
+from typing import Tuple, Union, TYPE_CHECKING, List
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
