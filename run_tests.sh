@@ -109,6 +109,7 @@ else
                           "tests/attacks/test_simba.py" )
 
     declare -a estimators=("tests/estimators/certification/test_randomized_smoothing.py" \
+                           "tests/estimators/certification/test_derandomized_smoothing.py" \
                            "tests/estimators/classification/test_blackbox.py" \
                            "tests/estimators/classification/test_catboost.py" \
                            "tests/estimators/classification/test_classifier.py" \

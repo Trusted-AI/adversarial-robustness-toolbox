@@ -84,7 +84,7 @@ class SaliencyMapMethod(EvasionAttack):
         :return: An array holding the adversarial examples.
         """
         if y is not None:
-            y = check_and_transform_label_format(y, self.estimator.nb_classes)
+            y = check_and_transform_label_format(y, nb_classes=self.estimator.nb_classes)
 
         # Initialize variables
         dims = list(x.shape[1:])

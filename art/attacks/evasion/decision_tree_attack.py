@@ -115,7 +115,7 @@ class DecisionTreeAttack(EvasionAttack):
         :return: An array holding the adversarial examples.
         """
         if y is not None:
-            y = check_and_transform_label_format(y, self.estimator.nb_classes, return_one_hot=False)
+            y = check_and_transform_label_format(y, nb_classes=self.estimator.nb_classes, return_one_hot=False)
         x_adv = x.copy()
 
         for index in trange(x_adv.shape[0], desc="Decision tree attack", disable=not self.verbose):

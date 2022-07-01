@@ -21,7 +21,7 @@ This module implements attribute inference attacks.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Union, TYPE_CHECKING
+from typing import Optional, Union, Tuple, TYPE_CHECKING
 
 import numpy as np
 from sklearn.neural_network import MLPClassifier
@@ -69,7 +69,7 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         attack_model_type: str = "nn",
         attack_model: Optional["CLASSIFIER_TYPE"] = None,
         attack_feature: Union[int, slice] = 0,
-        scale_range: Optional[slice] = None,
+        scale_range: Optional[Tuple[float, float]] = None,
         prediction_normal_factor: Optional[float] = 1,
     ):
         """
@@ -91,6 +91,7 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         super().__init__(estimator=estimator, attack_feature=attack_feature)
 
         self._values: Optional[list] = None
+        self._nb_classes: Optional[int] = None
         self._attack_model_type = attack_model_type
         self._attack_model = attack_model
 
@@ -154,7 +155,7 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         if ClassifierMixin in type(self.estimator).__mro__:
             predictions = np.array([np.argmax(arr) for arr in self.estimator.predict(x)]).reshape(-1, 1)
             if y is not None:
-                y = check_and_transform_label_format(y, return_one_hot=True)
+                y = check_and_transform_label_format(y, nb_classes=self.estimator.nb_classes, return_one_hot=True)
         else:  # Regression model
             if self.scale_range is not None:
                 predictions = minmax_scale(self.estimator.predict(x).reshape(-1, 1), feature_range=self.scale_range)
@@ -170,11 +171,12 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         # get vector of attacked feature
         y_attack = x[:, self.attack_feature]
         self._values = get_feature_values(y_attack, isinstance(self.attack_feature, int))
+        self._nb_classes = len(self._values)
         if isinstance(self.attack_feature, int):
             y_one_hot = float_to_categorical(y_attack)
         else:
             y_one_hot = floats_to_one_hot(y_attack)
-        y_attack_ready = check_and_transform_label_format(y_one_hot, len(np.unique(y_attack)), return_one_hot=True)
+        y_attack_ready = check_and_transform_label_format(y_one_hot, nb_classes=self._nb_classes, return_one_hot=True)
 
         # create training set for attack model
         x_train = np.concatenate((np.delete(x, self.attack_feature, 1), predictions), axis=1).astype(np.float32)
@@ -235,7 +237,7 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         else:
             x_test = np.concatenate((x, pred), axis=1).astype(np.float32)
             if y is not None:
-                y = check_and_transform_label_format(y, return_one_hot=True)
+                y = check_and_transform_label_format(y, nb_classes=self.estimator.nb_classes, return_one_hot=True)
 
         if y is not None:
             x_test = np.concatenate((x_test, y), axis=1)

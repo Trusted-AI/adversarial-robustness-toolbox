@@ -145,7 +145,7 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
         if y is None:
             estimated_labels = self.estimator.predict(data)
         else:
-            estimated_labels = check_and_transform_label_format(y, self.estimator.nb_classes)
+            estimated_labels = check_and_transform_label_format(y, nb_classes=self.estimator.nb_classes)
 
         # Get indices of target class
         if not self.is_index:
