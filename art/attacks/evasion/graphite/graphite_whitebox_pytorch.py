@@ -46,24 +46,17 @@ This module implements the white-box version of the GRAPHITE attack `GRAPHITEWhi
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Tuple, Union, TYPE_CHECKING, List
+from typing import Optional, Tuple, TYPE_CHECKING, List
 
 import numpy as np
-import random
 from tqdm.auto import tqdm
 
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification import ClassifierMixin
-from art.utils import (
-    compute_success,
-    to_categorical,
-    check_and_transform_label_format,
-    get_labels_np_array,
-    is_probability,
-)
-from art.attacks.evasion.graphite.utils import *
+from art.utils import compute_success, to_categorical, check_and_transform_label_format, is_probability
+from art.attacks.evasion.graphite.utils import convert2Network, get_transform_params, transform_wb, convert2NetworkWB
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
@@ -307,7 +300,6 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
         :return: Transform-robustness of the attack.
         """
         successes = 0
-        preds = []
         for xform in xforms:
             with torch.no_grad():
                 if len(x_adv.shape) == 3:
@@ -352,11 +344,8 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
 
         x_copy = x.copy()
         mask_copy = mask.copy()
-        out = np.zeros(x_copy.shape)
         y_onehot = y.copy()
         y = np.argmax(y, axis=0)
-
-        criterion = torch.nn.CrossEntropyLoss()
 
         # Load victim img and starting mask.
         img = torch.tensor(x_copy, requires_grad=True, device=self.estimator.device)
@@ -381,9 +370,6 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
         # Attack
         rounds = 0
         transform_robustness = None
-        previous_mask = mask.clone()
-        prev_transform_robustness = None
-        prev_mask_size = None
         prev_attack = img.detach().clone()
         while True:
             adv_img = img.detach().clone()
@@ -395,7 +381,6 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
             )
             adv_img = (adv_img + mask * rand_start).detach()
             adv_img = torch.clamp(adv_img, 0, 1).to(img.dtype)
-            start_img = adv_img.clone()
             adv_img.requires_grad = True
             final_avg_grad = None
 
@@ -448,10 +433,7 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
                 break
 
             this_mask = torch.where(mask > 0.5, 1, 0)
-            previous_mask = mask.clone()
             prev_attack = adv_img.detach().clone()
-            prev_transform_robustness = transform_robustness
-            prev_mask_size = int(round(this_mask.sum().item() / 3))
 
             # Remove low-impact pixel-patches or pixels in mask.
             pert = adv_img - img

@@ -47,10 +47,9 @@ attack that only requires class predictions.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Tuple, Union, TYPE_CHECKING, List
+from typing import Optional, Tuple, TYPE_CHECKING, List
 
 import numpy as np
-import cv2
 import random
 from tqdm.auto import tqdm
 
@@ -58,8 +57,15 @@ from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification import ClassifierMixin
-from art.utils import compute_success, to_categorical, check_and_transform_label_format, get_labels_np_array
-from art.attacks.evasion.graphite.utils import *
+from art.utils import compute_success, to_categorical, check_and_transform_label_format
+from art.attacks.evasion.graphite.utils import (
+    convert2Network,
+    get_transform_params,
+    add_noise,
+    get_transformed_images,
+    run_predictions,
+    score_fn,
+)
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
@@ -317,16 +323,14 @@ class GRAPHITEBlackbox(EvasionAttack):
         :param clip_max: Maximum value of an example.
         :return: An adversarial example.
         """
+        import cv2
+
         x = (x.copy() - clip_min) / (clip_max - clip_min)
         x_tar = (x_tar.copy() - clip_min) / (clip_max - clip_min)
 
         if mask is None:
             mask = np.ones((self.noise_size[1], self.noise_size[0], x.shape[2]))
         mask = mask / np.max(mask)
-
-        x_noise = np.zeros((self.noise_size[1], self.noise_size[0], x.shape[2]))
-        x_tar_noise = np.zeros((self.noise_size[1], self.noise_size[0], x_tar.shape[2]))
-        mask_noise = np.zeros((self.noise_size[1], self.noise_size[0], mask.shape[2]))
 
         x_copy = x.copy()
         x_tar_copy = x_tar.copy()
@@ -346,8 +350,6 @@ class GRAPHITEBlackbox(EvasionAttack):
         xform_imgs = get_transformed_images(
             x_copy, mask, [], 1.0, np.zeros(x_copy.shape), pts, self.net_size, clip_min, clip_max
         )
-
-        success_rate = run_predictions(self.estimator, xform_imgs, y, self.batch_size, False)
 
         init, mask_out = self._generate_mask(
             x_copy, x_noise, x_tar, x_tar_noise, mask_noise, y, pts, obj_width, focal, clip_min, clip_max
@@ -470,8 +472,8 @@ class GRAPHITEBlackbox(EvasionAttack):
                     x_tar_noise,
                     y,
                     best_mask,
-                    patches,
-                    indices,
+                    patches_copy,
+                    indices_copy,
                     xforms,
                     pts,
                     object_size,
@@ -539,8 +541,6 @@ class GRAPHITEBlackbox(EvasionAttack):
         :param clip_max: Maximum value of an example.
         :return: List of transform-robustness scores for the list of patches.
         """
-        object_size = mask.sum() / mask.shape[-1]
-
         tr_scores = []
 
         # iterate over patches and compute transform_robustness without each individual patch
@@ -618,7 +618,6 @@ class GRAPHITEBlackbox(EvasionAttack):
 
         # binary search leftmost pivot value for which tr exceeeds specificed threshold if one exists
         nums = list(range(len(patches)))
-        pivot = -1
         n = len(nums)
         mi = -1
         if n == 1:
@@ -696,9 +695,7 @@ class GRAPHITEBlackbox(EvasionAttack):
         init_tr_err = 1 - success_rate
 
         best_score = score_fn(mask, init_tr_err, object_size, threshold=(1 - self.tr_lo), lbd=lbd)
-        best_tr = success_rate
         best_mask = mask
-        last_heatmap_mask = best_mask
 
         new_patches, patches_examined, peek_cnt, zero_grad = [], 0, 8, 0
         j = 0
@@ -724,14 +721,11 @@ class GRAPHITEBlackbox(EvasionAttack):
             if score < best_score:
                 best_score = score
                 best_mask = next_mask
-                best_tr = success_rate
                 nbits = best_mask.sum() / best_mask.shape[-1]
                 if self.max_mask_size > 0 and nbits < self.max_mask_size:
                     break
             else:
                 new_patches.append(next_patch)
-
-        patches = new_patches.copy()
 
         return best_mask
 
@@ -801,7 +795,6 @@ class GRAPHITEBlackbox(EvasionAttack):
         while True:
             gradient = np.zeros(theta.shape)
             q = 10
-            min_g1 = float("inf")
 
             # Take q samples of random Gaussian noise to use as new directions, calculate transform_robustness
             # Used for gradient estimate
@@ -817,9 +810,6 @@ class GRAPHITEBlackbox(EvasionAttack):
                 gradient += (eps_ttt - eps) / self.beta * u
 
             gradient = 1.0 / q * gradient
-
-            new_eps = 1.0
-            new_theta = None
 
             # Take gradient step
             new_theta = theta - self.eta * gradient
