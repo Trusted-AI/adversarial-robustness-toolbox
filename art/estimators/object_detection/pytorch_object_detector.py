@@ -39,7 +39,8 @@ logger = logging.getLogger(__name__)
 
 class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
     """
-    This module implements the task specific estimator for PyTorch object detectors.
+    This module implements the task specific estimator for PyTorch object detection models following the input and
+    output formats of torchvision.
     """
 
     estimator_params = PyTorchEstimator.estimator_params + ["attack_losses"]

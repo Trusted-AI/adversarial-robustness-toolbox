@@ -54,7 +54,7 @@ class AdversarialTrainerMadryPGD(Trainer):
     def __init__(
         self,
         classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
-        nb_epochs: Optional[int] = 391,
+        nb_epochs: Optional[int] = 205,
         batch_size: Optional[int] = 128,
         eps: Union[int, float] = 8,
         eps_step: Union[int, float] = 2,

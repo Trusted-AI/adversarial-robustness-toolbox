@@ -37,7 +37,8 @@ logger = logging.getLogger(__name__)
 
 class PyTorchFasterRCNN(PyTorchObjectDetector):
     """
-    This class implements a model-specific object detector using Faster-RCNN and PyTorch.
+    This class implements a model-specific object detector using Faster-RCNN and PyTorch following the input and output
+    formats of torchvision.
     """
 
     def __init__(
