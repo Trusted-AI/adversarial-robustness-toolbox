@@ -256,32 +256,44 @@ class SleeperAgentAttack(GradientMatchingAttack):
         """
         from art.estimators.classification.pytorch import PyTorchClassifier
         from art.estimators.classification import TensorFlowV2Classifier
-
-        x_train = np.transpose(x_train, [0, 3, 1, 2])
-
-        x_train[self.indices_target[self.indices_poison]] = poisoned_samples
-        model, loss_fn, optimizer = self.create_model(
-            x_train,
-            y_train,
-            x_test=x_test,
-            y_test=y_test,
-            num_classes=10,
-            batch_size=128,
-            epochs=self.model_retraining_epoch,
-        )
+        
         if isinstance(self.substitute_classifier, PyTorchClassifier):
+            x_train = np.transpose(x_train, [0, 3, 1, 2])
+            x_train[self.indices_target[self.indices_poison]] = poisoned_samples
+            model, loss_fn, optimizer = self.create_model(
+                x_train,
+                y_train,
+                x_test=x_test,
+                y_test=y_test,
+                num_classes=10,
+                batch_size=128,
+                epochs=self.model_retraining_epoch,
+            )
             model_ = PyTorchClassifier(
                 model, input_shape=x_train.shape[1:], loss=loss_fn, optimizer=optimizer, nb_classes=10
             )
-        elif isinstance(self.substitute_classifier, TensorFlowV2Classifier):  
+            check_train = self.substitute_classifier.model.training
+            self.substitute_classifier = model_
+            self.substitute_classifier.model.training = check_train
+        elif isinstance(self.substitute_classifier, TensorFlowV2Classifier): 
+            x_train[self.indices_target[self.indices_poison]] = poisoned_samples
+            model, loss_fn, optimizer = self.create_model(
+                x_train,
+                y_train,
+                x_test=x_test,
+                y_test=y_test,
+                num_classes=10,
+                batch_size=128,
+                epochs=self.model_retraining_epoch,
+            )
             model_ = TensorFlowV2Classifier(model, nb_classes=10, input_shape=x_train.shape[1:])
+            check_train = self.substitute_classifier.model.trainable
+            self.substitute_classifier = model_
+            self.substitute_classifier.model.trainable = check_train
+            
         else:
             raise NotImplementedError("SleeperAgentAttack is currently implemented only for PyTorch and TensorFlowV2.")
             
-        check_train = self.substitute_classifier.model.training
-        self.substitute_classifier = model_
-        self.substitute_classifier.model.training = check_train
-
     def create_model(
         self,
         x_train: np.ndarray,
@@ -450,7 +462,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
                 horizontal_flip=True,
                 vertical_flip=False
                 )
-
+            callbacks = []
             datagen.fit(x_train)
             callbacks = callbacks + [TqdmCallback(verbose=0)]
             model.fit(datagen.flow(x_train, y_train, batch_size=batch_size), steps_per_epoch=x_train.shape[0] //                                          batch_size,epochs=epochs,verbose=0,callbacks=callbacks)
