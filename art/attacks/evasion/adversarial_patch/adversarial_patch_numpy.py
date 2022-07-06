@@ -74,6 +74,7 @@ class AdversarialPatchNumpy(EvasionAttack):
         max_iter: int = 500,
         clip_patch: Union[list, tuple, None] = None,
         batch_size: int = 16,
+        targeted: bool = True,
         verbose: bool = True,
     ) -> None:
         """
@@ -92,6 +93,8 @@ class AdversarialPatchNumpy(EvasionAttack):
         :param clip_patch: The minimum and maximum values for each channel in the form
                [(float, float), (float, float), (float, float)].
         :param batch_size: The size of the training batch.
+        :param targeted: Indicates whether the attack is targeted (True) or untargeted (False). Currently only targeted
+               attacks are supported.
         :param verbose: Show progress bars.
         """
         super().__init__(estimator=classifier)
@@ -104,6 +107,7 @@ class AdversarialPatchNumpy(EvasionAttack):
         self.max_iter = max_iter
         self.batch_size = batch_size
         self.clip_patch = clip_patch
+        self.targeted = targeted
         self.verbose = verbose
         self._check_params()
 
@@ -298,6 +302,12 @@ class AdversarialPatchNumpy(EvasionAttack):
             raise ValueError("The batch size must be of type int.")
         if self.batch_size <= 0:
             raise ValueError("The batch size must be greater than 0.")
+
+        if not isinstance(self.targeted, bool) and not self.targeted:
+            raise ValueError(
+                "The argument `targeted` has to be of type bool. Currently AdversarialPatchNumpy only supports targeted"
+                "attacks."
+            )
 
         if not isinstance(self.verbose, bool):
             raise ValueError("The argument `verbose` has to be of type bool.")

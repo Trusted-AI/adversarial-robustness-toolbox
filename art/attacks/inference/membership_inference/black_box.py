@@ -187,8 +187,8 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
                 raise ValueError("Shape of test_x does not match input_shape of estimator")
 
         if not self._regressor_model:
-            y = check_and_transform_label_format(y, len(np.unique(y)), return_one_hot=True)
-            test_y = check_and_transform_label_format(test_y, len(np.unique(test_y)), return_one_hot=True)
+            y = check_and_transform_label_format(y, nb_classes=self.estimator.nb_classes, return_one_hot=True)
+            test_y = check_and_transform_label_format(test_y, nb_classes=self.estimator.nb_classes, return_one_hot=True)
 
         if y.shape[0] != x.shape[0]:  # pragma: no cover
             raise ValueError("Number of rows in x and y do not match")
@@ -258,7 +258,7 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
                     loss.backward()
                     optimizer.step()
         else:
-            y_ready = check_and_transform_label_format(y_new, len(np.unique(y_new)), return_one_hot=False)
+            y_ready = check_and_transform_label_format(y_new, nb_classes=2, return_one_hot=False)
             self.attack_model.fit(np.c_[x_1, x_2], y_ready.ravel())  # type: ignore
 
     def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
@@ -285,7 +285,7 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
             probabilities = False
 
         if not self._regressor_model:
-            y = check_and_transform_label_format(y, len(np.unique(y)), return_one_hot=True)
+            y = check_and_transform_label_format(y, nb_classes=self.estimator.nb_classes, return_one_hot=True)
 
         if y is None:
             raise ValueError("None value detected.")

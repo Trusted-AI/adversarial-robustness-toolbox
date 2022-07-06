@@ -151,7 +151,7 @@ class SquareAttack(EvasionAttack):
 
         if isinstance(self.estimator, ClassifierMixin):
             if y is not None:
-                y = check_and_transform_label_format(y, self.estimator.nb_classes)
+                y = check_and_transform_label_format(y, nb_classes=self.estimator.nb_classes)
 
         if y is None:
             # Use model predictions as true labels

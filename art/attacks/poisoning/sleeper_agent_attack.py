@@ -470,7 +470,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
             return model, None, None
         else:
             raise NotImplementedError("SleeperAgentAttack is currently implemented only for PyTorch and TensorFlowV2.")
-    
+
     @classmethod
     def test_accuracy(cls, model: "torch.nn.Module", test_loader: "torch.utils.data.dataloader.DataLoader") -> float:
         """
@@ -479,9 +479,8 @@ class SleeperAgentAttack(GradientMatchingAttack):
         :param model: Trained model.
         :return accuracy - accuracy of trained model on test data.
         """
-
-        import torch
-
+        import torch  # lgtm [py/repeated-import]
+        
         model_was_training = model.training
         model.eval()
         accuracy = 0.0
@@ -556,8 +555,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
                     grad_norms.append(tf.math.sqrt(grad_norm))
         else:
             raise NotImplementedError("SleeperAgentAttack is currently implemented only for PyTorch and TensorFlowV2.")
-            
-                           
+
         indices = sorted(range(len(grad_norms)), key=lambda k: grad_norms[k])
         indices = indices[-num_poison:]
         return np.array(indices)  # this will get only indices for target class
