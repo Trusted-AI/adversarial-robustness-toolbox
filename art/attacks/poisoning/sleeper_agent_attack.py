@@ -28,8 +28,6 @@ import random
 
 import numpy as np
 from tqdm.auto import trange
-import pdb
-
 
 from art.attacks.poisoning import GradientMatchingAttack
 
@@ -154,7 +152,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
             initializer = self._initialize_poison_tensorflow
             if self.estimator.channels_first:
                 x_train_target_samples = np.transpose(x_train_target_samples, [0, 3, 1, 2])
-        else:     
+        else:
             raise NotImplementedError("SleeperAgentAttack is currently implemented only for PyTorch and TensorFlowV2.")
 
         # Choose samples to poison.
@@ -208,9 +206,9 @@ class SleeperAgentAttack(GradientMatchingAttack):
 
         if self.verbose > 0:
             print("Best B-score:", best_B)
-#         pdb.set_trace()  
+        #         pdb.set_trace()
         if isinstance(self.substitute_classifier, PyTorchClassifier):
-            x_train[self.indices_target[best_indices_poison]] = np.transpose(best_x_poisoned, [0, 2, 3, 1])           
+            x_train[self.indices_target[best_indices_poison]] = np.transpose(best_x_poisoned, [0, 2, 3, 1])
         elif isinstance(self.substitute_classifier, TensorFlowV2Classifier):
             x_train[self.indices_target[best_indices_poison]] = best_x_poisoned
         else:
@@ -256,7 +254,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         """
         from art.estimators.classification.pytorch import PyTorchClassifier
         from art.estimators.classification import TensorFlowV2Classifier
-        
+
         if isinstance(self.substitute_classifier, PyTorchClassifier):
             x_train = np.transpose(x_train, [0, 3, 1, 2])
             x_train[self.indices_target[self.indices_poison]] = poisoned_samples
@@ -275,7 +273,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
             check_train = self.substitute_classifier.model.training
             self.substitute_classifier = model_
             self.substitute_classifier.model.training = check_train
-        elif isinstance(self.substitute_classifier, TensorFlowV2Classifier): 
+        elif isinstance(self.substitute_classifier, TensorFlowV2Classifier):
             x_train[self.indices_target[self.indices_poison]] = poisoned_samples
             model, loss_fn, optimizer = self.create_model(
                 x_train,
@@ -290,10 +288,10 @@ class SleeperAgentAttack(GradientMatchingAttack):
             check_train = self.substitute_classifier.model.trainable
             self.substitute_classifier = model_
             self.substitute_classifier.model.trainable = check_train
-            
+
         else:
             raise NotImplementedError("SleeperAgentAttack is currently implemented only for PyTorch and TensorFlowV2.")
-            
+
     def create_model(
         self,
         x_train: np.ndarray,
@@ -318,7 +316,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         """
         from art.estimators.classification.pytorch import PyTorchClassifier
         from art.estimators.classification import TensorFlowV2Classifier
-        
+
         if isinstance(self.substitute_classifier, PyTorchClassifier):
             import torch
             from torch import nn
@@ -326,7 +324,9 @@ class SleeperAgentAttack(GradientMatchingAttack):
             import torchvision
 
             device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-            model = torchvision.models.ResNet(torchvision.models.resnet.BasicBlock, [2, 2, 2, 2], num_classes=num_classes)
+            model = torchvision.models.ResNet(
+                torchvision.models.resnet.BasicBlock, [2, 2, 2, 2], num_classes=num_classes
+            )
             loss_fn = nn.CrossEntropyLoss()
             optimizer = torch.optim.SGD(model.parameters(), lr=0.1, momentum=0.9, weight_decay=5e-4, nesterov=True)
             model.to(device)
@@ -372,24 +372,17 @@ class SleeperAgentAttack(GradientMatchingAttack):
             from tensorflow.keras.layers import Dense, Flatten
             from tensorflow.keras.preprocessing.image import ImageDataGenerator
             from tqdm.keras import TqdmCallback
+
             # Tweaked the model from https://github.com/calmisential/TensorFlow2.0_ResNet
             # MIT License
             def basic_block(x, filter_num, stride=1):
-                conv1 = tf.keras.layers.Conv2D(filters=filter_num,
-                                                    kernel_size=(3, 3),
-                                                    strides=stride,
-                                                    padding="same")
+                conv1 = tf.keras.layers.Conv2D(filters=filter_num, kernel_size=(3, 3), strides=stride, padding="same")
                 bn1 = tf.keras.layers.BatchNormalization()
-                conv2 = tf.keras.layers.Conv2D(filters=filter_num,
-                                                    kernel_size=(3, 3),
-                                                    strides=1,
-                                                    padding="same")
+                conv2 = tf.keras.layers.Conv2D(filters=filter_num, kernel_size=(3, 3), strides=1, padding="same")
                 bn2 = tf.keras.layers.BatchNormalization()
                 if stride != 1:
                     downsample = tf.keras.Sequential()
-                    downsample.add(tf.keras.layers.Conv2D(filters=filter_num,
-                                                                kernel_size=(1, 1),
-                                                                strides=stride))
+                    downsample.add(tf.keras.layers.Conv2D(filters=filter_num, kernel_size=(1, 1), strides=stride))
                     downsample.add(tf.keras.layers.BatchNormalization())
                 else:
                     downsample = tf.keras.layers.Lambda(lambda x: x)
@@ -411,10 +404,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
 
             def resnet(x, num_classes, layer_params):
                 pad1 = tf.keras.layers.ZeroPadding2D(padding=1)
-                conv1 = tf.keras.layers.Conv2D(filters=64,
-                                                    kernel_size=(3, 3),
-                                                    strides=1,
-                                                    padding="same")
+                conv1 = tf.keras.layers.Conv2D(filters=64, kernel_size=(3, 3), strides=1, padding="same")
                 bn1 = tf.keras.layers.BatchNormalization()
 
                 avgpool = tf.keras.layers.GlobalAveragePooling2D()
@@ -424,17 +414,10 @@ class SleeperAgentAttack(GradientMatchingAttack):
                 x = conv1(x)
                 x = bn1(x)
                 x = tf.nn.relu(x)
-                x = basic_block_layer(x, filter_num=64,
-                                                    blocks=layer_params[0])
-                x = basic_block_layer(x, filter_num=128,
-                                                    blocks=layer_params[1],
-                                                    stride=2)
-                x = basic_block_layer(x, filter_num=256,
-                                                    blocks=layer_params[2],
-                                                    stride=2)
-                x = basic_block_layer(x, filter_num=512,
-                                                    blocks=layer_params[3],
-                                                    stride=2)
+                x = basic_block_layer(x, filter_num=64, blocks=layer_params[0])
+                x = basic_block_layer(x, filter_num=128, blocks=layer_params[1], stride=2)
+                x = basic_block_layer(x, filter_num=256, blocks=layer_params[2], stride=2)
+                x = basic_block_layer(x, filter_num=512, blocks=layer_params[3], stride=2)
                 x = avgpool(x)
                 output = fc(x)
                 return output
@@ -442,13 +425,12 @@ class SleeperAgentAttack(GradientMatchingAttack):
             def resnet_18(x, num_classes):
                 return resnet(x, num_classes, layer_params=[2, 2, 2, 2])
 
-
             inputs = tf.keras.layers.Input(shape=x_train.shape[1:])  # Specify the dimensions
             outputs = resnet_18(inputs, num_classes)
             model = tf.keras.models.Model(inputs, outputs)
 
             opt = tf.keras.optimizers.SGD(learning_rate=0.1, momentum=0.9, nesterov=True)
-            model.compile(loss='categorical_crossentropy', optimizer=opt, metrics=['accuracy'])
+            model.compile(loss="categorical_crossentropy", optimizer=opt, metrics=["accuracy"])
 
             datagen = ImageDataGenerator(
                 featurewise_center=False,
@@ -460,12 +442,18 @@ class SleeperAgentAttack(GradientMatchingAttack):
                 width_shift_range=0.1,
                 height_shift_range=0.1,
                 horizontal_flip=True,
-                vertical_flip=False
-                )
+                vertical_flip=False,
+            )
             callbacks = []
             datagen.fit(x_train)
             callbacks = callbacks + [TqdmCallback(verbose=0)]
-            model.fit(datagen.flow(x_train, y_train, batch_size=batch_size), steps_per_epoch=x_train.shape[0] //                                          batch_size,epochs=epochs,verbose=0,callbacks=callbacks)
+            model.fit(
+                datagen.flow(x_train, y_train, batch_size=batch_size),
+                steps_per_epoch=x_train.shape[0] // batch_size,
+                epochs=epochs,
+                verbose=0,
+                callbacks=callbacks,
+            )
             model.evaluate(x_test, y_test)
             return model, None, None
         else:
@@ -480,7 +468,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         :return accuracy - accuracy of trained model on test data.
         """
         import torch  # lgtm [py/repeated-import]
-        
+
         model_was_training = model.training
         model.eval()
         accuracy = 0.0
@@ -502,7 +490,6 @@ class SleeperAgentAttack(GradientMatchingAttack):
             model.train()
         return accuracy
 
-            
     # This function is responsible for returning indices of poison images with maximum gradient norm
     def select_poison_indices(
         self, classifier: "CLASSIFIER_NEURALNETWORK_TYPE", x_samples: np.ndarray, y_samples: np.ndarray, num_poison: int
@@ -518,10 +505,11 @@ class SleeperAgentAttack(GradientMatchingAttack):
         """
         from art.estimators.classification.pytorch import PyTorchClassifier
         from art.estimators.classification import TensorFlowV2Classifier
-#         pdb.set_trace()
+
+        #         pdb.set_trace()
         if isinstance(self.substitute_classifier, PyTorchClassifier):
             import torch
-            
+
             device = "cuda" if torch.cuda.is_available() else "cpu"
             grad_norms = []
             criterion = torch.nn.CrossEntropyLoss()
@@ -539,14 +527,15 @@ class SleeperAgentAttack(GradientMatchingAttack):
                 grad_norms.append(grad_norm.sqrt())
         elif isinstance(self.substitute_classifier, TensorFlowV2Classifier):
             import tensorflow as tf
+
             grad_norms = []
-            for i in range(len(x_samples)-1):
-                image = tf.constant(x_samples[i:i+1])
-                label = tf.constant(y_samples[i:i+1])
+            for i in range(len(x_samples) - 1):
+                image = tf.constant(x_samples[i : i + 1])
+                label = tf.constant(y_samples[i : i + 1])
                 with tf.GradientTape() as t:  # pylint: disable=C0103
                     t.watch(classifier.model.weights)
                     output = classifier.model(image, training=False)
-                    loss = classifier.model.compiled_loss(label,output)
+                    loss = classifier.model.compiled_loss(label, output)
                     gradients = t.gradient(loss, classifier.model.weights)
                     gradients = [w for w in gradients if w is not None]
                     grad_norm = 0
