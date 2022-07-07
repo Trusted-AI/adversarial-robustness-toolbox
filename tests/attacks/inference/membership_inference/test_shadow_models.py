@@ -170,8 +170,6 @@ def test_shadow_model_disjoint(art_warning):
         target_train_size = len(x_target) // 2
         x_target_train = x_target[:target_train_size]
         y_target_train = y_target[:target_train_size]
-        x_target_test = x_target[target_train_size:]
-        y_target_test = y_target[target_train_size:]
 
         model = RandomForestClassifier(random_state=7)
         model.fit(x_target_train, y_target_train)
@@ -200,8 +198,6 @@ def test_shadow_model_overlap(art_warning):
         target_train_size = len(x_target) // 2
         x_target_train = x_target[:target_train_size]
         y_target_train = y_target[:target_train_size]
-        x_target_test = x_target[target_train_size:]
-        y_target_test = y_target[target_train_size:]
 
         model = RandomForestClassifier(random_state=7)
         model.fit(x_target_train, y_target_train)
