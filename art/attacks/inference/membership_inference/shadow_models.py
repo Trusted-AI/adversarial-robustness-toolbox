@@ -109,8 +109,8 @@ class ShadowModels:
 
                 shadow_x_train = shadow_x[: int(member_ratio * shadow_dataset_size)]
                 shadow_y_train = shadow_y[: int(member_ratio * shadow_dataset_size)]
-                shadow_x_test = shadow_x[int(member_ratio * shadow_dataset_size):]
-                shadow_y_test = shadow_y[int(member_ratio * shadow_dataset_size):]
+                shadow_x_test = shadow_x[int(member_ratio * shadow_dataset_size) :]
+                shadow_y_test = shadow_y[int(member_ratio * shadow_dataset_size) :]
             else:
                 member_indexes = self._rng.choice(len(x) - 1, int(len(x) * member_ratio))
                 non_member_indexes = np.setdiff1d(len(x) - 1, member_indexes)
@@ -118,7 +118,6 @@ class ShadowModels:
                 shadow_y_train = y[member_indexes]
                 shadow_x_test = x[non_member_indexes]
                 shadow_y_test = y[non_member_indexes]
-
 
             self._shadow_models_train_sets[i] = (shadow_x_train, shadow_y_train)
 

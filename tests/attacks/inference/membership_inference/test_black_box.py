@@ -175,6 +175,20 @@ def test_black_box_with_model_prob(
         art_warning(e)
 
 
+@pytest.mark.parametrize("model_type", ["nn", "rf", "gb"])
+def test_black_box_pred(art_warning, model_type, tabular_dl_estimator_for_attack, get_iris_dataset):
+    try:
+        (x_train, _), (x_test, _) = get_iris_dataset
+        classifier = tabular_dl_estimator_for_attack(MembershipInferenceBlackBox)
+        attack = MembershipInferenceBlackBox(classifier, attack_model_type=model_type)
+        pred_x = classifier.predict(x_train)
+        test_pred_x = classifier.predict(x_test)
+        pred = (pred_x, test_pred_x)
+        backend_check_membership_accuracy_pred(attack, get_iris_dataset, pred, attack_train_ratio, 0.25)
+    except ARTTestException as e:
+        art_warning(e)
+
+
 def test_errors(art_warning, tabular_dl_estimator_for_attack, get_iris_dataset):
     try:
         classifier = tabular_dl_estimator_for_attack(MembershipInferenceBlackBox)
@@ -217,6 +231,34 @@ def backend_check_membership_accuracy(attack, dataset, attack_train_ratio, appro
     # infer attacked feature on remainder of data
     inferred_train = attack.infer(x_train[attack_train_size:], y_train[attack_train_size:])
     inferred_test = attack.infer(x_test[attack_test_size:], y_test[attack_test_size:])
+
+    # check accuracy
+    backend_check_accuracy(inferred_train, inferred_test, approx)
+
+
+def backend_check_membership_accuracy_pred(attack, dataset, pred, attack_train_ratio, approx):
+    (x_train, y_train), (x_test, y_test) = dataset
+    (pred_x, test_pred_x) = pred
+    attack_train_size = int(len(x_train) * attack_train_ratio)
+    attack_test_size = int(len(x_test) * attack_train_ratio)
+
+    # train attack model using only attack_train_ratio of data
+    attack.fit(
+        x_train[:attack_train_size],
+        y_train[:attack_train_size],
+        x_test[:attack_test_size],
+        y_test[:attack_test_size],
+        pred_x[:attack_train_size],
+        test_pred_x[:attack_test_size],
+    )
+
+    # infer attacked feature on remainder of data
+    inferred_train = attack.infer(x_train[attack_train_size:], y_train[attack_train_size:], pred_x[:attack_train_size])
+    inferred_test = attack.infer(
+        x_test[attack_test_size:],
+        y_test[attack_test_size:],
+        test_pred_x[:attack_test_size],
+    )
 
     # check accuracy
     backend_check_accuracy(inferred_train, inferred_test, approx)
