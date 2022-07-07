@@ -2186,7 +2186,7 @@ class BrendelBethgeAttack(EvasionAttack):
         originals = x.copy()
 
         if y is not None:
-            y = check_and_transform_label_format(y, self.estimator.nb_classes)
+            y = check_and_transform_label_format(y, nb_classes=self.estimator.nb_classes)
 
         if y is None:
             # Throw error if attack is targeted, but no targets are provided

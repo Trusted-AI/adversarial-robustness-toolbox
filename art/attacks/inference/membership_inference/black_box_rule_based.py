@@ -79,7 +79,7 @@ class MembershipInferenceBlackBoxRuleBased(MembershipInferenceAttack):
         else:
             probabilities = False
 
-        y = check_and_transform_label_format(y, len(np.unique(y)), return_one_hot=True)
+        y = check_and_transform_label_format(y, nb_classes=len(np.unique(y)), return_one_hot=True)
         if y is None:
             raise ValueError("None value detected.")
         if y.shape[0] != x.shape[0]:  # pragma: no cover
