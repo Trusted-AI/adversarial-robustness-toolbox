@@ -189,11 +189,29 @@ def test_black_box_pred(art_warning, model_type, tabular_dl_estimator_for_attack
         art_warning(e)
 
 
+@pytest.mark.parametrize("model_type", ["nn", "rf", "gb"])
+def test_black_box_loss_regression_pred(art_warning, model_type, get_diabetes_dataset):
+    try:
+        from sklearn import linear_model
+
+        (x_train_diabetes, y_train_diabetes), (x_test_diabetes, _) = get_diabetes_dataset
+        regr_model = linear_model.LinearRegression()
+        regr_model.fit(x_train_diabetes, y_train_diabetes)
+        regressor = ScikitlearnRegressor(regr_model)
+        pred_x = regr_model.predict(x_train_diabetes)
+        test_pred_x = regr_model.predict(x_test_diabetes)
+        pred = (pred_x, test_pred_x)
+        attack = MembershipInferenceBlackBox(regressor, input_type="loss", attack_model_type=model_type)
+        backend_check_membership_accuracy_pred(attack, get_diabetes_dataset, pred, attack_train_ratio, 0.25)
+    except ARTTestException as e:
+        art_warning(e)
+
+
 def test_errors(art_warning, tabular_dl_estimator_for_attack, get_iris_dataset):
     try:
         classifier = tabular_dl_estimator_for_attack(MembershipInferenceBlackBox)
         (x_train, y_train), (x_test, y_test) = get_iris_dataset
-
+        pred_test = classifier.predict(x_test)
         with pytest.raises(ValueError):
             MembershipInferenceBlackBox(classifier, attack_model_type="a")
         with pytest.raises(ValueError):
@@ -205,6 +223,10 @@ def test_errors(art_warning, tabular_dl_estimator_for_attack, get_iris_dataset):
             attack.fit(x_train, y_train, x_test, y_train)
         with pytest.raises(ValueError):
             attack.infer(x_train, y_test)
+        attack = MembershipInferenceBlackBox(classifier, input_type="loss")
+        attack.fit(x_train, y_train, x_test, y_test)
+        with pytest.raises(ValueError):
+            attack.infer(None, y_test, pred=pred_test)
     except ARTTestException as e:
         art_warning(e)
 

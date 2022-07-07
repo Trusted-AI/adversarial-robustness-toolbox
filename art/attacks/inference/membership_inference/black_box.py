@@ -185,8 +185,6 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
             raise ValueError("Must supply either x or pred")
         if test_x is None and test_pred is None:
             raise ValueError("Must supply either test_x or test_pred")
-        if self.input_type == "loss" and (x is None or test_x is None):
-            raise ValueError("For loss input type, x and test_x must be supplied")
 
         if self.estimator.input_shape is not None:
             if x is not None and self.estimator.input_shape[0] != x.shape[1]:  # pragma: no cover
@@ -209,29 +207,54 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
 
         # Create attack dataset
         # uses final probabilities/logits
+        if pred is None:
+            x_len = x.shape[0]
+        else:
+            x_len = pred.shape[0]
+        if test_pred is None:
+            test_len = test_x.shape[0]
+        else:
+            test_len = test_pred.shape[0]
+
         if self.input_type == "prediction":
             # members
             if pred is None:
                 features = self.estimator.predict(x).astype(np.float32)
-                x_len = x.shape[0]
             else:
                 features = pred.astype(np.float32)
-                x_len = pred.shape[0]
             # non-members
             if test_pred is None:
                 test_features = self.estimator.predict(test_x).astype(np.float32)
-                test_len = test_x.shape[0]
             else:
                 test_features = test_pred.astype(np.float32)
-                test_len = test_pred.shape[0]
         # only for models with loss
         elif self.input_type == "loss":
-            # members
-            features = self.estimator.compute_loss(x, y).astype(np.float32).reshape(-1, 1)
-            x_len = x.shape[0]
-            # non-members
-            test_features = self.estimator.compute_loss(test_x, test_y).astype(np.float32).reshape(-1, 1)
-            test_len = test_x.shape[0]
+            if x is not None:
+                # members
+                features = self.estimator.compute_loss(x, y).astype(np.float32).reshape(-1, 1)
+            else:
+                try:
+                    features = self.estimator.compute_loss_from_predictions(pred, y).astype(np.float32).reshape(-1, 1)
+                except NotImplementedError:
+                    raise ValueError(
+                        "For loss input type and no x, the estimator must implement 'compute_loss_from_predictions' "
+                        "method"
+                    )
+            if test_x is not None:
+                # non-members
+                test_features = self.estimator.compute_loss(test_x, test_y).astype(np.float32).reshape(-1, 1)
+            else:
+                try:
+                    test_features = (
+                        self.estimator.compute_loss_from_predictions(test_pred, test_y)
+                        .astype(np.float32)
+                        .reshape(-1, 1)
+                    )
+                except NotImplementedError:
+                    raise ValueError(
+                        "For loss input type and no test_x, the estimator must implement "
+                        "'compute_loss_from_predictions' method"
+                    )
         else:  # pragma: no cover
             raise ValueError("Illegal value for parameter `input_type`.")
 
@@ -279,9 +302,7 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
             y_ready = check_and_transform_label_format(y_new, nb_classes=2, return_one_hot=False)
             self.attack_model.fit(np.c_[x_1, x_2], y_ready.ravel())  # type: ignore
 
-    def infer(
-        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
-    ) -> np.ndarray:
+    def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Infer membership in the training set of the target estimator.
 
@@ -308,8 +329,6 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
             raise ValueError("MembershipInferenceBlackBox requires true labels `y`.")
         if x is None and pred is None:
             raise ValueError("Must supply either x or pred")
-        if self.input_type == "loss" and x is None:
-            raise ValueError("For loss input type, x must be supplied")
 
         if self.estimator.input_shape is not None and x is not None:  # pragma: no cover
             if self.estimator.input_shape[0] != x.shape[1]:
@@ -332,7 +351,16 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
             else:
                 features = pred.astype(np.float32)
         elif self.input_type == "loss":
-            features = self.estimator.compute_loss(x, y).astype(np.float32).reshape(-1, 1)
+            if x is not None:
+                features = self.estimator.compute_loss(x, y).astype(np.float32).reshape(-1, 1)
+            else:
+                try:
+                    features = self.estimator.compute_loss_from_predictions(pred, y).astype(np.float32).reshape(-1, 1)
+                except NotImplementedError:
+                    raise ValueError(
+                        "For loss input type and no x, the estimator must implement 'compute_loss_from_predictions' "
+                        "method"
+                    )
 
         if self._regressor_model:
             y = y.astype(np.float32).reshape(-1, 1)

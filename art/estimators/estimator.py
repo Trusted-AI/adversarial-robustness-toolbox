@@ -338,6 +338,16 @@ class BaseEstimator(ABC):
         """
         raise NotImplementedError
 
+    def compute_loss_from_predictions(self, pred: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+        """
+        Compute the MSE loss of the regressor for predictions `pred`.
+
+        :param pred: Model predictions.
+        :param y: Target values.
+        :return: Loss values.
+        """
+        raise NotImplementedError
+
     def __repr__(self):
         class_name = self.__class__.__name__
         attributes = {}

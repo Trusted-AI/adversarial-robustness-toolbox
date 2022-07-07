@@ -324,6 +324,55 @@ class KerasRegressor(RegressorMixin, KerasEstimator):
 
         return loss_value
 
+    def compute_loss_from_predictions(self, pred: np.ndarray, y: np.ndarray, reduction: str = "none", **kwargs) -> np.ndarray:
+        """
+        Compute the MSE loss of the regressor for predictions `pred`. Does not apply preprocessing to the given `y`.
+
+        :param pred: Model predictions.
+        :param y: Target values.
+        :param reduction: Specifies the reduction to apply to the output: 'none' | 'mean' | 'sum'.
+                   'none': no reduction will be applied
+                   'mean': the sum of the output will be divided by the number of elements in the output,
+                   'sum': the output will be summed.
+        :return: Loss values.
+        """
+        if not self._losses:
+            raise NotImplementedError("loss method is only supported for keras versions >= 2.3.1")
+
+        if self.is_tensorflow:
+            import tensorflow.keras.backend as k  # pylint: disable=E0611
+        else:
+            import keras.backend as k
+
+        if self._orig_loss and hasattr(self._orig_loss, "reduction"):
+            prev_reduction = self._orig_loss.reduction
+            if hasattr(self._losses, "Reduction"):
+                self._orig_loss.reduction = self._losses.Reduction.NONE
+            loss = self._orig_loss(y, pred)
+            self._orig_loss.reduction = prev_reduction
+        else:
+            prev_reduction = []
+            predictions = k.constant(pred)
+            y_preprocessed = k.constant(y)
+            for loss_function in self._model.loss_functions:
+                prev_reduction.append(loss_function.reduction)
+                if hasattr(self._losses, "Reduction"):
+                    loss_function.reduction = self._losses.Reduction.NONE
+            loss = self._loss_function(y_preprocessed, predictions)
+            for i, loss_function in enumerate(self._model.loss_functions):
+                loss_function.reduction = prev_reduction[i]
+
+        loss_value = k.eval(loss)
+
+        if reduction == "none":
+            pass
+        elif reduction == "mean":
+            loss_value = np.mean(loss_value, axis=0)
+        elif reduction == "sum":
+            loss_value = np.sum(loss_value, axis=0)
+
+        return loss_value
+
     def loss_gradient(  # pylint: disable=W0221
         self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs
     ) -> np.ndarray:
