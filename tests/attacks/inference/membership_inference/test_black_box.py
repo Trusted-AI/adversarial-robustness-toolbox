@@ -253,11 +253,11 @@ def backend_check_membership_accuracy_pred(attack, dataset, pred, attack_train_r
     )
 
     # infer attacked feature on remainder of data
-    inferred_train = attack.infer(None, y_train[attack_train_size:], pred_x[:attack_train_size])
+    inferred_train = attack.infer(None, y_train[attack_train_size:], pred_x[attack_train_size:])
     inferred_test = attack.infer(
         None,
         y_test[attack_test_size:],
-        test_pred_x[:attack_test_size],
+        test_pred_x[attack_test_size:],
     )
 
     # check accuracy
