@@ -340,7 +340,7 @@ class BaseEstimator(ABC):
 
     def compute_loss_from_predictions(self, pred: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
-        Compute the MSE loss of the regressor for predictions `pred`.
+        Compute the loss of the estimator for predictions `pred`.
 
         :param pred: Model predictions.
         :param y: Target values.

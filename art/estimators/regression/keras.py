@@ -324,7 +324,9 @@ class KerasRegressor(RegressorMixin, KerasEstimator):
 
         return loss_value
 
-    def compute_loss_from_predictions(self, pred: np.ndarray, y: np.ndarray, reduction: str = "none", **kwargs) -> np.ndarray:
+    def compute_loss_from_predictions(  # pylint: disable=W0221
+        self, pred: np.ndarray, y: np.ndarray, reduction: str = "none", **kwargs
+    ) -> np.ndarray:
         """
         Compute the MSE loss of the regressor for predictions `pred`. Does not apply preprocessing to the given `y`.
 

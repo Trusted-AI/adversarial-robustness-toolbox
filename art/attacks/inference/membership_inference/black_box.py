@@ -403,7 +403,7 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
             else:
                 inferred_return = np.round(inferred)
         else:
-            inferred = self.attack_model.predict_proba(np.c_[features, y])  # type: ignore
+            inferred: np.ndarray = self.attack_model.predict_proba(np.c_[features, y])  # type: ignore
             if probabilities:
                 inferred_return = inferred[:, [1]]
             else:
