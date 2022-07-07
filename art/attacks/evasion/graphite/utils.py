@@ -10,6 +10,7 @@ from typing import Tuple, Union, TYPE_CHECKING, List
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
+    import tensor
 
 
 def dist2pixels(dist: float, width: float, obj_width: float = 30) -> float:
@@ -246,15 +247,15 @@ def get_transformed_images(
 
 
 def transform_wb(
-    x: torch.tensor,
-    x_adv: torch.tensor,
-    mask: torch.tensor,
+    x: "torch.tensor",
+    x_adv: "torch.tensor",
+    mask: "torch.tensor",
     xform: Tuple[float, float, float, int, float, float, float, float, float],
     pts: np.ndarray,
     net_size: Tuple[int, int],
     clip_min: float,
     clip_max: float,
-) -> torch.tensor:
+) -> "torch.tensor":
     """
     Get transformed image, white-box setting.
     :param x: Original input image.
@@ -318,7 +319,7 @@ def transform_wb(
     return convert2NetworkWB(x_adv, net_size, clip_min, clip_max)
 
 
-def convert2NetworkWB(x: torch.tensor, net_size: Tuple[int, int], clip_min: float, clip_max: float) -> torch.tensor:
+def convert2NetworkWB(x: "torch.tensor", net_size: Tuple[int, int], clip_min: float, clip_max: float) -> "torch.tensor":
     """
     Convert image to network format.
     :param x: Input image.
@@ -335,7 +336,7 @@ def convert2NetworkWB(x: torch.tensor, net_size: Tuple[int, int], clip_min: floa
 
 
 def get_perspective_transform(
-    img: Union[np.ndarray, torch.tensor],
+    img: Union[np.ndarray, "torch.tensor"],
     angle: float,
     w: int,
     h: int,
@@ -346,7 +347,7 @@ def get_perspective_transform(
     crop_off_y: float,
     pts: np.ndarray,
     whitebox: bool = False,
-) -> Union[np.ndarray, torch.tensor]:
+) -> Union[np.ndarray, "torch.tensor"]:
     """
     Compute perspective transform.
     :param img: Input image.

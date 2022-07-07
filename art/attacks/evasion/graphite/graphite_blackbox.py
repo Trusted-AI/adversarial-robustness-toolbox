@@ -347,10 +347,6 @@ class GRAPHITEBlackbox(EvasionAttack):
         if len(mask_noise.shape) < 3:
             mask_noise = mask_noise[:, :, np.newaxis]
 
-        xform_imgs = get_transformed_images(
-            x_copy, mask, [], 1.0, np.zeros(x_copy.shape), pts, self.net_size, clip_min, clip_max
-        )
-
         init, mask_out = self._generate_mask(
             x_copy, x_noise, x_tar, x_tar_noise, mask_noise, y, pts, obj_width, focal, clip_min, clip_max
         )
@@ -589,14 +585,10 @@ class GRAPHITEBlackbox(EvasionAttack):
         :param clip_max: Maximum value of an example.
         :return: mask, adjusted list of patches, adjusted list of indices
         """
-        theta = (x_tar_noise - x_noise) * mask
-
-        # binary-search-based coarse_reduction of the start mask
-        patch_cache = {}
 
         def evaluate_transform_robustness_at_pivot(pivot, get_mask=False):
             """ binary search plug-in that evaluates whether functional condition is met at specified pivot """
-            best_mask = get_accumulated_mask_up_to_pivot(pivot, mask, patches, patch_cache)
+            best_mask = get_accumulated_mask_up_to_pivot(pivot, mask, patches)
 
             theta = (x_tar_noise - x_noise) * best_mask
             xform_imgs = get_transformed_images(
@@ -606,14 +598,13 @@ class GRAPHITEBlackbox(EvasionAttack):
 
             return (success_rate, best_mask) if get_mask else success_rate
 
-        def get_accumulated_mask_up_to_pivot(pivot, mask, patches, patch_cache={}):
+        def get_accumulated_mask_up_to_pivot(pivot, mask, patches):
             best_mask = np.zeros(mask.shape)
             ordering = patches[:pivot]
             for next_patch in ordering:
                 next_mask = best_mask + (np.zeros(best_mask.shape) + next_patch)
                 next_mask = np.where(next_mask > 0, 1.0, 0.0)
                 best_mask = next_mask
-            patch_cache[pivot] = best_mask.copy()
             return best_mask.copy()
 
         # binary search leftmost pivot value for which tr exceeeds specificed threshold if one exists
