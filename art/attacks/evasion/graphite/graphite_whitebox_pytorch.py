@@ -56,10 +56,11 @@ from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification import ClassifierMixin
 from art.utils import compute_success, to_categorical, check_and_transform_label_format, is_probability
-from art.attacks.evasion.graphite.utils import convert2Network, get_transform_params, transform_wb, convert2NetworkWB
+from art.attacks.evasion.graphite.utils import convert2Network, get_transform_params, transform_wb
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
+    import tensor
 
 logger = logging.getLogger(__name__)
 
@@ -276,11 +277,11 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
 
     def _eval(
         self,
-        x: torch.tensor,
-        x_adv: torch.tensor,
-        mask: torch.tensor,
+        x: "torch.tensor",
+        x_adv: "torch.tensor",
+        mask: "torch.tensor",
         target_label: int,
-        y_onehot: torch.tensor,
+        y_onehot: "torch.tensor",
         xforms: List[Tuple[float, float, float, int, float, float, float, float, float]],
         pts: np.ndarray,
         clip_min: float,
@@ -432,7 +433,6 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
             if transform_robustness < self.min_tr:
                 break
 
-            this_mask = torch.where(mask > 0.5, 1, 0)
             prev_attack = adv_img.detach().clone()
 
             # Remove low-impact pixel-patches or pixels in mask.
