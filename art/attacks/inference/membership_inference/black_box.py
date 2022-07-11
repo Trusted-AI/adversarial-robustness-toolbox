@@ -235,11 +235,11 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
             else:
                 try:
                     features = self.estimator.compute_loss_from_predictions(pred, y).astype(np.float32).reshape(-1, 1)
-                except NotImplementedError:
+                except NotImplementedError as e:
                     raise ValueError(
                         "For loss input type and no x, the estimator must implement 'compute_loss_from_predictions' "
                         "method"
-                    )
+                    ) from e
             if test_x is not None:
                 # non-members
                 test_features = self.estimator.compute_loss(test_x, test_y).astype(np.float32).reshape(-1, 1)
@@ -250,11 +250,11 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
                         .astype(np.float32)
                         .reshape(-1, 1)
                     )
-                except NotImplementedError:
+                except NotImplementedError as e:
                     raise ValueError(
                         "For loss input type and no test_x, the estimator must implement "
                         "'compute_loss_from_predictions' method"
-                    )
+                    ) from e
         else:  # pragma: no cover
             raise ValueError("Illegal value for parameter `input_type`.")
 
@@ -356,11 +356,11 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
             else:
                 try:
                     features = self.estimator.compute_loss_from_predictions(pred, y).astype(np.float32).reshape(-1, 1)
-                except NotImplementedError:
+                except NotImplementedError as e:
                     raise ValueError(
                         "For loss input type and no x, the estimator must implement 'compute_loss_from_predictions' "
                         "method"
-                    )
+                    ) from e
 
         if self._regressor_model:
             y = y.astype(np.float32).reshape(-1, 1)
@@ -371,7 +371,7 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
             from art.utils import to_cuda, from_cuda
 
             self.attack_model.eval()  # type: ignore
-            inferred: Optional[np.ndarray] = None
+            predictions: Optional[np.ndarray] = None
             test_set = self._get_attack_dataset(f_1=features, f_2=y)
             test_loader = DataLoader(test_set, batch_size=self.batch_size, shuffle=False, num_workers=0)
             for input1, input2, _ in test_loader:
@@ -383,16 +383,16 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
                     predicted = outputs
                 predicted = from_cuda(predicted)
 
-                if inferred is None:
-                    inferred = predicted.detach().numpy()
+                if predictions is None:
+                    predictions = predicted.detach().numpy()
                 else:
-                    inferred = np.vstack((inferred, predicted.detach().numpy()))
+                    predictions = np.vstack((predictions, predicted.detach().numpy()))
 
-            if inferred is not None:
+            if predictions is not None:
                 if not probabilities:
-                    inferred_return = np.round(inferred)
+                    inferred_return = np.round(predictions)
                 else:
-                    inferred_return = inferred
+                    inferred_return = predictions
             else:  # pragma: no cover
                 raise ValueError("No data available.")
         elif not self.default_model:
@@ -403,7 +403,7 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
             else:
                 inferred_return = np.round(inferred)
         else:
-            inferred: np.ndarray = self.attack_model.predict_proba(np.c_[features, y])  # type: ignore
+            inferred = self.attack_model.predict_proba(np.c_[features, y])  # type: ignore
             if probabilities:
                 inferred_return = inferred[:, [1]]
             else:

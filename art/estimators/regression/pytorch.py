@@ -547,6 +547,8 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):  # lgtm [py/missing-ca
                    'sum': the output will be summed.
         :return: Loss values.
         """
+        import torch  # lgtm [py/repeated-import]
+
         if isinstance(y, torch.Tensor):
             labels_t = y
         else:
