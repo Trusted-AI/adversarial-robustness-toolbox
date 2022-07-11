@@ -235,11 +235,11 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
             else:
                 try:
                     features = self.estimator.compute_loss_from_predictions(pred, y).astype(np.float32).reshape(-1, 1)
-                except NotImplementedError as e:
+                except NotImplementedError as err:
                     raise ValueError(
                         "For loss input type and no x, the estimator must implement 'compute_loss_from_predictions' "
                         "method"
-                    ) from e
+                    ) from err
             if test_x is not None:
                 # non-members
                 test_features = self.estimator.compute_loss(test_x, test_y).astype(np.float32).reshape(-1, 1)
@@ -250,11 +250,11 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
                         .astype(np.float32)
                         .reshape(-1, 1)
                     )
-                except NotImplementedError as e:
+                except NotImplementedError as err:
                     raise ValueError(
                         "For loss input type and no test_x, the estimator must implement "
                         "'compute_loss_from_predictions' method"
-                    ) from e
+                    ) from err
         else:  # pragma: no cover
             raise ValueError("Illegal value for parameter `input_type`.")
 
@@ -356,11 +356,11 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
             else:
                 try:
                     features = self.estimator.compute_loss_from_predictions(pred, y).astype(np.float32).reshape(-1, 1)
-                except NotImplementedError as e:
+                except NotImplementedError as err:
                     raise ValueError(
                         "For loss input type and no x, the estimator must implement 'compute_loss_from_predictions' "
                         "method"
-                    ) from e
+                    ) from err
 
         if self._regressor_model:
             y = y.astype(np.float32).reshape(-1, 1)
