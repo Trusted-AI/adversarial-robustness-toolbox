@@ -44,10 +44,10 @@ This module implements helper functions for GRAPHITE attacks.
 | Original github link: https://github.com/ryan-feng/GRAPHITE
 """
 
+from typing import Tuple, Union, TYPE_CHECKING, List
 import math
 import numpy as np
 from art.utils import get_labels_np_array
-from typing import Tuple, Union, TYPE_CHECKING, List
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
@@ -370,7 +370,9 @@ def transform_wb(
     return convert_to_network_wb(x_adv, net_size, clip_min, clip_max)
 
 
-def convert_to_network_wb(x: "torch.Tensor", net_size: Tuple[int, int], clip_min: float, clip_max: float) -> "torch.Tensor":
+def convert_to_network_wb(
+    x: "torch.Tensor", net_size: Tuple[int, int], clip_min: float, clip_max: float
+) -> "torch.Tensor":
     """
     Convert image to network format.
     :param x: Input image.
@@ -429,26 +431,28 @@ def get_perspective_transform(
     y_cam_off = height / 2
 
     rot_mat = np.array(
-              [
-                  [math.cos(angle), 0, -math.sin(angle), 0],
-                  [0, 1, 0, 0],
-                  [math.sin(angle), 0, math.cos(angle), 0],
-                  [0, 0, 0, 1],
-              ]
+        [
+            [math.cos(angle), 0, -math.sin(angle), 0],
+            [0, 1, 0, 0],
+            [math.sin(angle), 0, math.cos(angle), 0],
+            [0, 0, 0, 1],
+        ]
     )
     c_mat = np.array([[1, 0, 0, -x_cam_off], [0, 1, 0, -y_cam_off], [0, 0, 1, -z_cam_off], [0, 0, 0, 1]])
 
     rt_mat = np.matmul(rot_mat, c_mat)
 
     h_mat = np.array(
-            [
-                [focal * rt_mat[0, 0], focal * rt_mat[0, 1], focal * rt_mat[0, 3]],
-                [focal * rt_mat[1, 0], focal * rt_mat[1, 1], focal * rt_mat[1, 3]],
-                [rt_mat[2, 0], rt_mat[2, 1], rt_mat[2, 3]],
-            ]
+        [
+            [focal * rt_mat[0, 0], focal * rt_mat[0, 1], focal * rt_mat[0, 3]],
+            [focal * rt_mat[1, 0], focal * rt_mat[1, 1], focal * rt_mat[1, 3]],
+            [rt_mat[2, 0], rt_mat[2, 1], rt_mat[2, 3]],
+        ]
     )
 
-    x_off, y_off, crop_size = get_offset_and_crop_size(width, height, h_mat, crop_percent, crop_off_x, crop_off_y, pts, focal / dist)
+    x_off, y_off, crop_size = get_offset_and_crop_size(
+        width, height, h_mat, crop_percent, crop_off_x, crop_off_y, pts, focal / dist
+    )
 
     affine_mat = np.array([[1, 0, x_off], [0, 1, y_off], [0, 0, 1]])
     perspective_mat = np.matmul(affine_mat, h_mat)
@@ -496,7 +500,7 @@ def get_offset_and_crop_size(
     :param ratio: Focal length to distance ratio for scaling.
     :return: x offset, y offset, crop size.
     """
-    pts_flag = True if pts is not None else False
+    pts_flag = pts is not None
     if pts is not None:
         pts_copy = [point.copy() for point in pts]
         for i in range(len(pts)):
@@ -540,24 +544,23 @@ def get_offset_and_crop_size(
 
         else:  # result is wide and short
             diff_in_size = (max_x - min_x) / width * height - (max_y - min_y)
-            orig_size = max_x - min_x if height > width else (max_x - min_x) / w * height
+            orig_size = max_x - min_x if height > width else (max_x - min_x) / width * height
             crop_size = int(round(orig_size * (1.0 - crop_percent)))
             x_off = -min_x - int(round(crop_percent / 2 * orig_size))
             y_off = -min_y + int(round(diff_in_size / 2 - crop_percent / 2 * orig_size))
 
         return x_off + crop_off_x * crop_size, y_off + crop_off_y * crop_size, crop_size
 
-    else:
-        min_x -= (width * ratio - (max_x - min_x)) // 2
-        min_y -= (height * ratio - (max_y - min_y)) // 2
+    min_x -= (width * ratio - (max_x - min_x)) // 2
+    min_y -= (height * ratio - (max_y - min_y)) // 2
 
-        crop_size = int(round((1.0 - crop_percent) * min(width, height) * ratio))
+    crop_size = int(round((1.0 - crop_percent) * min(width, height) * ratio))
 
-        return (
-            -min_x - int(round(crop_percent / 2 * width * ratio)),
-            -min_y - int(round(crop_percent / 2 * height * ratio)),
-            crop_size,
-        )
+    return (
+        -min_x - int(round(crop_percent / 2 * width * ratio)),
+        -min_y - int(round(crop_percent / 2 * height * ratio)),
+        crop_size,
+    )
 
 
 def run_predictions(

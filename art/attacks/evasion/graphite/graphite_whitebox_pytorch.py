@@ -84,6 +84,7 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
         "patch_removal_size",
         "patch_removal_interval",
         "num_patches_to_remove",
+        "rand_start_epsilon_range",
         "rotation_range",
         "dist_range",
         "gamma_range",
@@ -98,7 +99,7 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
     def __init__(
         self,
         classifier: "CLASSIFIER_TYPE",
-        net_size: Optional[Tuple[int, int]],
+        net_size: Optional[Tuple[int, int]] = None,
         min_tr: float = 0.8,
         num_xforms: int = 100,
         step_size: float = 0.0157,
@@ -173,7 +174,7 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
         :param mask: An array with a mask broadcastable to input `x` defining where to apply adversarial perturbations.
                      Shape needs to be broadcastable to the shape of x and can also be of the same shape as `x`. Any
                      features for which the mask is zero will not be adversarially perturbed.
-        :param pts: Optional points to consider when cropping the perspective transform. 
+        :param pts: Optional points to consider when cropping the perspective transform.
                     An array of points in [x, y, scale] with shape [num points, 3, 1].
         :param obj_width: The estimated object width (inches) for perspective transform. 30 by default.
         :param focal: The estimated focal length (ft) for perspective transform. 3 by default.
@@ -245,7 +246,7 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
 
         y = to_categorical(y, self.estimator.nb_classes)  # type: ignore
 
-        ### COMPUTE SUCCESS RATE
+        # COMPUTE SUCCESS RATE
         x_copy = np.zeros((x.shape[0], self.net_size[1], self.net_size[0], x.shape[1]))
         x_adv_copy = np.zeros((x_adv.shape[0], self.net_size[1], self.net_size[0], x_adv.shape[1]))
         x_copy_trans = np.transpose(x, (0, 2, 3, 1))
@@ -309,7 +310,9 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
                 if len(x_adv.shape) == 3:
                     x_adv = x_adv.unsqueeze(0)
                 transformed_x_adv = transform_wb(x, x_adv, mask, xform, pts, self.net_size, clip_min, clip_max)
-                logits, _ = self.estimator._predict_framework(transformed_x_adv.cuda(), y_onehot)  # pylint: disable=W0212
+                logits, _ = self.estimator._predict_framework(
+                    transformed_x_adv.cuda(), y_onehot
+                )  # pylint: disable=W0212
                 success = int(logits.argmax(dim=1).detach().cpu().numpy()[0] == target_label)
                 successes += success
         return successes / len(xforms)
