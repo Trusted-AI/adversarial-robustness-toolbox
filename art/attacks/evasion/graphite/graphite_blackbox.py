@@ -346,13 +346,11 @@ class GRAPHITEBlackbox(EvasionAttack):
         if len(mask_noise.shape) < 3:
             mask_noise = mask_noise[:, :, np.newaxis]
 
-        init, mask_out = self._generate_mask(
+        mask_out = self._generate_mask(
             x_copy, x_noise, x_tar, x_tar_noise, mask_noise, y, pts, obj_width, focal, clip_min, clip_max
         )
 
-        adversarial = self._boost(
-            x_copy, x_noise, x_tar, x_tar_noise, mask_out, y, pts, obj_width, focal, clip_min, clip_max
-        )
+        adversarial = self._boost(x_copy, x_noise, x_tar_noise, mask_out, y, pts, obj_width, focal, clip_min, clip_max)
 
         adversarial = np.clip(adversarial.copy() * (clip_max - clip_min) + clip_min, clip_min, clip_max)
         return adversarial
@@ -370,7 +368,7 @@ class GRAPHITEBlackbox(EvasionAttack):
         focal: float,
         clip_min: float,
         clip_max: float,
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> np.ndarray:
         """
         Function to generate a mask.
         :param x: An array with one original input to be attacked.
@@ -386,7 +384,7 @@ class GRAPHITEBlackbox(EvasionAttack):
         :param focal: Estimated focal length in ft for perspective transform.
         :param clip_min: Minimum value of an example.
         :param clip_max: Maximum value of an example.
-        :return: An adversarial example with noise from a target image, and a mask.
+        :return: A mask.
         """
 
         # Stage 1: HEATMAP: Collect all the valid patches and order by computed heatmap
@@ -430,15 +428,11 @@ class GRAPHITEBlackbox(EvasionAttack):
             tr_scores = self._get_heatmap(
                 x,
                 x_noise,
-                x_tar,
                 x_tar_noise,
                 mask,
                 y,
                 pts,
-                obj_width,
-                focal,
                 patches,
-                indices,
                 xforms,
                 clip_min,
                 clip_max,
@@ -458,8 +452,7 @@ class GRAPHITEBlackbox(EvasionAttack):
         if self.max_mask_size > 0:
             lbd = 5
             while best_mask.sum() / mask.shape[-1] > self.max_mask_size:
-                patches_copy = [x for x in patches]
-                indices_copy = [x for x in indices]
+                patches_copy = list(patches)
                 best_mask = self._get_fine_reduced_mask(
                     x,
                     x_noise,
@@ -467,7 +460,6 @@ class GRAPHITEBlackbox(EvasionAttack):
                     y,
                     best_mask,
                     patches_copy,
-                    indices_copy,
                     xforms,
                     pts,
                     object_size,
@@ -485,7 +477,6 @@ class GRAPHITEBlackbox(EvasionAttack):
                 y,
                 best_mask,
                 patches,
-                indices,
                 xforms,
                 pts,
                 object_size,
@@ -493,24 +484,17 @@ class GRAPHITEBlackbox(EvasionAttack):
                 clip_max,
             )
 
-        best_theta = (x_tar_noise - x_noise) * best_mask
-        attacked = add_noise(x, best_mask, 1.0, best_theta)
-
-        return attacked, best_mask
+        return best_mask
 
     def _get_heatmap(
         self,
         x: np.ndarray,
         x_noise: np.ndarray,
-        x_tar: np.ndarray,
         x_tar_noise: np.ndarray,
         mask: np.ndarray,
         y: int,
         pts: Optional[np.ndarray],
-        obj_width: float,
-        focal: float,
         patches: List[np.ndarray],
-        indices: List[Tuple[int, int]],
         xforms: List,
         clip_min: float,
         clip_max: float,
@@ -519,17 +503,13 @@ class GRAPHITEBlackbox(EvasionAttack):
         Function to generate a heatmap.
         :param x: An array with one original input to be attacked.
         :param x_noise: x in the resolution of the noise size.
-        :param x_tar: Initial array to act as an example target image.
         :param x_tar_noise: x_tar in the resolution of the noise size.
         :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
                      broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
                      perturbed.
         :param y: The target label.
         :param pts: Optional. A set of points that will set the crop size in the perspective transform.
-        :param obj_width: Estimated width of object in inches for perspective transform.
-        :param focal: Estimated focal length in ft for perspective transform.
         :param patches: list of patches from heatmap.
-        :param indices: list of indices for the heatmap patches.
         :param xforms: list of transform params.
         :param clip_min: Minimum value of an example.
         :param clip_max: Maximum value of an example.
@@ -538,8 +518,7 @@ class GRAPHITEBlackbox(EvasionAttack):
         tr_scores = []
 
         # iterate over patches and compute transform_robustness without each individual patch
-        for i in range(len(patches)):
-            patch = patches[i]
+        for patch in patches:
             next_mask = mask * (np.ones(mask.shape) - patch)
             theta = (x_tar_noise - x_noise) * next_mask
             xform_imgs = get_transformed_images(
@@ -640,12 +619,11 @@ class GRAPHITEBlackbox(EvasionAttack):
                 )
                 if score >= self.tr_hi:
                     if mid > 0:
-                        low, mid, high = low, mid, mid - 1
+                        high = mid - 1
                         continue
-                    else:
-                        break
+                    break
                 else:  # score < threshold:
-                    low, mid, high = mid + 1, mid + 1, high
+                    low = mid + 1
 
             pivot = mid
 
@@ -666,7 +644,6 @@ class GRAPHITEBlackbox(EvasionAttack):
         y: int,
         mask: np.ndarray,
         patches: List[np.ndarray],
-        indices: List[Tuple[int, int]],
         xforms: List,
         pts: Optional[np.ndarray],
         object_size: float,
@@ -684,7 +661,6 @@ class GRAPHITEBlackbox(EvasionAttack):
                      broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
                      perturbed.
         :param patches: list of patches from heatmap.
-        :param indices: list of indices for the heatmap patches.
         :param xforms: list of transform params.
         :param pts: Optional. A set of points that will set the crop size in the perspective transform.
         :param obj_size: Estimated width of object in inches for perspective transform.
@@ -741,7 +717,6 @@ class GRAPHITEBlackbox(EvasionAttack):
         self,
         x: np.ndarray,
         x_noise: np.ndarray,
-        x_tar: np.ndarray,
         x_tar_noise: np.ndarray,
         mask: np.ndarray,
         y: int,
@@ -755,7 +730,6 @@ class GRAPHITEBlackbox(EvasionAttack):
         Function to boost transform-robustness.
         :param x: An array with one original input to be attacked.
         :param x_noise: x in the resolution of the noise size.
-        :param x_tar: Initial array to act as an example target image.
         :param x_tar_noise: x_tar in the resolution of the noise size.
         :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
                      broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
