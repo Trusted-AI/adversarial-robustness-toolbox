@@ -66,7 +66,7 @@ def dist2pixels(dist: float, width: float, obj_width: float = 30) -> float:
     return 1.0 * dist_inches * width / obj_width
 
 
-def convert2Network(x: np.ndarray, net_size: Tuple[int, int], clip_min: float, clip_max: float) -> np.ndarray:
+def convert_to_network(x: np.ndarray, net_size: Tuple[int, int], clip_min: float, clip_max: float) -> np.ndarray:
     """
     Convert image to network format.
     :param x: Input image.
@@ -152,7 +152,7 @@ def apply_transformation(
     att = (att_uint / 255.0).astype(np.float32)
     att = np.clip(att, 0.0, 1.0)
 
-    return convert2Network(att, net_size, clip_min, clip_max)
+    return convert_to_network(att, net_size, clip_min, clip_max)
 
 
 def get_transform_params(
@@ -229,7 +229,7 @@ def add_noise(
         mask_full = mask_full[:, :, np.newaxis]
     mask_full = np.where(mask_full > 0.5, 1.0, 0.0)
 
-    if clip == True:
+    if clip:
         comb = np.clip(comb, 0, 1)
     if return_pert_and_mask:
         pert = np.where(mask_full > 0.5, comb, 0)
@@ -264,7 +264,7 @@ def get_transformed_images(
     att, pert, mask = add_noise(x, mask, lbd, theta, True)
 
     if len(xforms) == 0:
-        return [convert2Network(att, net_size, clip_min, clip_max)]
+        return [convert_to_network(att, net_size, clip_min, clip_max)]
 
     images = []
     for xform in xforms:
@@ -367,10 +367,10 @@ def transform_wb(
     # Gamma
     x_adv = adjust_gamma(x_adv, gamma)
 
-    return convert2NetworkWB(x_adv, net_size, clip_min, clip_max)
+    return convert_to_network_wb(x_adv, net_size, clip_min, clip_max)
 
 
-def convert2NetworkWB(x: "torch.Tensor", net_size: Tuple[int, int], clip_min: float, clip_max: float) -> "torch.Tensor":
+def convert_to_network_wb(x: "torch.Tensor", net_size: Tuple[int, int], clip_min: float, clip_max: float) -> "torch.Tensor":
     """
     Convert image to network format.
     :param x: Input image.
@@ -392,10 +392,10 @@ def convert2NetworkWB(x: "torch.Tensor", net_size: Tuple[int, int], clip_min: fl
 def get_perspective_transform(
     img: Union[np.ndarray, "torch.Tensor"],
     angle: float,
-    w: int,
-    h: int,
-    f: float,
-    d: float,
+    width: int,
+    height: int,
+    focal: float,
+    dist: float,
     crop_percent: float,
     crop_off_x: float,
     crop_off_y: float,
@@ -406,10 +406,10 @@ def get_perspective_transform(
     Compute perspective transform.
     :param img: Input image.
     :param angle: Angle to rotate.
-    :param w: Width of image.
-    :param h: Height of image.
-    :param f: Focal length.
-    :param d: Distance for transform.
+    :param width: Width of image.
+    :param height: Height of image.
+    :param focal: Focal length.
+    :param dist: Distance for transform.
     :param crop_percent: Percentage for cropping.
     :param crop_off_x: Cropping x offset.
     :param crop_off_y: Cropping y offset.
@@ -424,48 +424,48 @@ def get_perspective_transform(
     # img in numpy / cv2 form
 
     angle = math.radians(angle)
-    x_cam_off = w / 2 - math.sin(angle) * d
-    z_cam_off = -math.cos(angle) * d
-    y_cam_off = h / 2
+    x_cam_off = width / 2 - math.sin(angle) * dist
+    z_cam_off = -math.cos(angle) * dist
+    y_cam_off = height / 2
 
-    R = np.array(
-        [
-            [math.cos(angle), 0, -math.sin(angle), 0],
-            [0, 1, 0, 0],
-            [math.sin(angle), 0, math.cos(angle), 0],
-            [0, 0, 0, 1],
-        ]
+    rot_mat = np.array(
+              [
+                  [math.cos(angle), 0, -math.sin(angle), 0],
+                  [0, 1, 0, 0],
+                  [math.sin(angle), 0, math.cos(angle), 0],
+                  [0, 0, 0, 1],
+              ]
     )
-    C = np.array([[1, 0, 0, -x_cam_off], [0, 1, 0, -y_cam_off], [0, 0, 1, -z_cam_off], [0, 0, 0, 1]])
+    c_mat = np.array([[1, 0, 0, -x_cam_off], [0, 1, 0, -y_cam_off], [0, 0, 1, -z_cam_off], [0, 0, 0, 1]])
 
-    RT = np.matmul(R, C)
+    rt_mat = np.matmul(rot_mat, c_mat)
 
-    H = np.array(
-        [
-            [f * RT[0, 0], f * RT[0, 1], f * RT[0, 3]],
-            [f * RT[1, 0], f * RT[1, 1], f * RT[1, 3]],
-            [RT[2, 0], RT[2, 1], RT[2, 3]],
-        ]
+    h_mat = np.array(
+            [
+                [focal * rt_mat[0, 0], focal * rt_mat[0, 1], focal * rt_mat[0, 3]],
+                [focal * rt_mat[1, 0], focal * rt_mat[1, 1], focal * rt_mat[1, 3]],
+                [rt_mat[2, 0], rt_mat[2, 1], rt_mat[2, 3]],
+            ]
     )
 
-    x_off, y_off, crop_size = get_offset_and_crop_size(w, h, H, crop_percent, crop_off_x, crop_off_y, pts, f / d)
+    x_off, y_off, crop_size = get_offset_and_crop_size(width, height, h_mat, crop_percent, crop_off_x, crop_off_y, pts, focal / dist)
 
-    M_aff = np.array([[1, 0, x_off], [0, 1, y_off], [0, 0, 1]])
-    M = np.matmul(M_aff, H)
+    affine_mat = np.array([[1, 0, x_off], [0, 1, y_off], [0, 0, 1]])
+    perspective_mat = np.matmul(affine_mat, h_mat)
 
-    if h > w:  # tall and narrow
+    if height > width:  # tall and narrow
         crop_x = crop_size
-        crop_y = int(round(crop_size / w * h))
+        crop_y = int(round(crop_size / width * height))
     else:  # wide and short or square
         crop_y = crop_size
-        crop_x = int(round(crop_size / h * w))
+        crop_x = int(round(crop_size / height * width))
 
     if not whitebox:
-        dst = cv2.warpPerspective(img, M, (crop_x, crop_y), borderMode=cv2.BORDER_REPLICATE)
+        dst = cv2.warpPerspective(img, perspective_mat, (crop_x, crop_y), borderMode=cv2.BORDER_REPLICATE)
     else:
         dst = warp_perspective(
             img,
-            torch.from_numpy(M).float().to(img.device).unsqueeze(0),
+            torch.from_numpy(perspective_mat).float().to(img.device).unsqueeze(0),
             (crop_y, crop_x),
             align_corners=True,
             padding_mode="border",
@@ -475,9 +475,9 @@ def get_perspective_transform(
 
 
 def get_offset_and_crop_size(
-    w: int,
-    h: int,
-    H: np.ndarray,
+    width: int,
+    height: int,
+    h_mat: np.ndarray,
     crop_percent: float,
     crop_off_x: float,
     crop_off_y: float,
@@ -498,27 +498,27 @@ def get_offset_and_crop_size(
     """
     pts_flag = True if pts is not None else False
     if pts is not None:
-        pts_copy = [pt.copy() for pt in pts]
+        pts_copy = [point.copy() for point in pts]
         for i in range(len(pts)):
-            pts_copy[i][0, 0] = pts_copy[i][0, 0] * w / pts_copy[i][2, 0]
-            pts_copy[i][1, 0] = pts_copy[i][1, 0] * h / pts_copy[i][2, 0]
+            pts_copy[i][0, 0] = pts_copy[i][0, 0] * width / pts_copy[i][2, 0]
+            pts_copy[i][1, 0] = pts_copy[i][1, 0] * height / pts_copy[i][2, 0]
             pts_copy[i][2, 0] = pts_copy[i][2, 0] * 1.0 / pts_copy[i][2, 0]
 
     else:
         pts_copy = [
             np.array([[0], [0], [1.0]]),
-            np.array([[0], [h], [1.0]]),
-            np.array([[w], [0], [1.0]]),
-            np.array([[w], [h], [1.0]]),
+            np.array([[0], [height], [1.0]]),
+            np.array([[width], [0], [1.0]]),
+            np.array([[width], [height], [1.0]]),
         ]
 
-    min_x = w
-    min_y = h
+    min_x = width
+    min_y = height
     max_x = 0
     max_y = 0
 
-    for pt in pts_copy:
-        new_pt = np.matmul(H, pt)
+    for point in pts_copy:
+        new_pt = np.matmul(h_mat, point)
         new_pt /= new_pt[2, 0]
 
         if new_pt[0, 0] < min_x:
@@ -531,16 +531,16 @@ def get_offset_and_crop_size(
             max_y = new_pt[1, 0]
 
     if pts_flag:
-        if (max_x - min_x) / (max_y - min_y) < w / h:  # result is tall and narrow
-            diff_in_size = (max_y - min_y) / h * w - (max_x - min_x)
-            orig_size = max_y - min_y if w > h else (max_y - min_y) / h * w
+        if (max_x - min_x) / (max_y - min_y) < width / height:  # result is tall and narrow
+            diff_in_size = (max_y - min_y) / height * width - (max_x - min_x)
+            orig_size = max_y - min_y if width > height else (max_y - min_y) / height * width
             crop_size = int(round(orig_size * (1.0 - crop_percent)))
             y_off = -min_y - int(round(crop_percent / 2 * orig_size))
             x_off = -min_x + int(round(diff_in_size / 2 - crop_percent / 2 * orig_size))
 
         else:  # result is wide and short
-            diff_in_size = (max_x - min_x) / w * h - (max_y - min_y)
-            orig_size = max_x - min_x if h > w else (max_x - min_x) / w * h
+            diff_in_size = (max_x - min_x) / width * height - (max_y - min_y)
+            orig_size = max_x - min_x if height > width else (max_x - min_x) / w * height
             crop_size = int(round(orig_size * (1.0 - crop_percent)))
             x_off = -min_x - int(round(crop_percent / 2 * orig_size))
             y_off = -min_y + int(round(diff_in_size / 2 - crop_percent / 2 * orig_size))
@@ -548,14 +548,14 @@ def get_offset_and_crop_size(
         return x_off + crop_off_x * crop_size, y_off + crop_off_y * crop_size, crop_size
 
     else:
-        min_x -= (w * ratio - (max_x - min_x)) // 2
-        min_y -= (h * ratio - (max_y - min_y)) // 2
+        min_x -= (width * ratio - (max_x - min_x)) // 2
+        min_y -= (height * ratio - (max_y - min_y)) // 2
 
-        crop_size = int(round((1.0 - crop_percent) * min(w, h) * ratio))
+        crop_size = int(round((1.0 - crop_percent) * min(width, height) * ratio))
 
         return (
-            -min_x - int(round(crop_percent / 2 * w * ratio)),
-            -min_y - int(round(crop_percent / 2 * h * ratio)),
+            -min_x - int(round(crop_percent / 2 * width * ratio)),
+            -min_y - int(round(crop_percent / 2 * height * ratio)),
             crop_size,
         )
 

@@ -38,7 +38,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the white-box version of the GRAPHITE attack `GRAPHITEWhiteboxPyTorch`. This is a robust physical perturbation attack.
+This module implements the white-box version of the GRAPHITE attack `GRAPHITEWhiteboxPyTorch`.
+This is a robust physical perturbation attack.
 
 | Paper link: https://arxiv.org/abs/2002.07088
 | Original github link: https://github.com/ryan-feng/GRAPHITE
@@ -49,14 +50,13 @@ import logging
 from typing import Optional, Tuple, TYPE_CHECKING, List
 
 import numpy as np
-from tqdm.auto import tqdm
 
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification import ClassifierMixin
 from art.utils import compute_success, to_categorical, check_and_transform_label_format, is_probability
-from art.attacks.evasion.graphite.utils import convert2Network, get_transform_params, transform_wb
+from art.attacks.evasion.graphite.utils import convert_to_network, get_transform_params, transform_wb
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
@@ -67,7 +67,7 @@ logger = logging.getLogger(__name__)
 
 class GRAPHITEWhiteboxPyTorch(EvasionAttack):
     """
-    Implementation of the white-box GRAPHITE attack from Feng et al. (2022). This is a physical attack 
+    Implementation of the white-box GRAPHITE attack from Feng et al. (2022). This is a physical attack
     that generates robust physical perturbations that can be applied as stickers.
 
     | Paper link: https://arxiv.org/abs/2002.07088
@@ -133,7 +133,7 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
         :param num_patches_to_remove: the number of patches to remove per iteration.
         :param rand_start_epsilon_range: the range for random start init.
         :param rotation_range: The range of the rotation in the perspective transform.
-        :param dist_range: The range of the distance (in ft) to be added to the focal length in the perspective transform.
+        :param dist_range: The range of the dist (in ft) to be added to the focal length in the perspective transform.
         :param gamma_range: The range of the gamma in the gamma transform.
         :param crop_percent_range: The range of the crop percent in the perspective transform.
         :param off_x_range: The range of the x offset (percent) in the perspective transform.
@@ -173,7 +173,8 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
         :param mask: An array with a mask broadcastable to input `x` defining where to apply adversarial perturbations.
                      Shape needs to be broadcastable to the shape of x and can also be of the same shape as `x`. Any
                      features for which the mask is zero will not be adversarially perturbed.
-        :param pts: Optional points to consider when cropping the perspective transform. An array of points in [x, y, scale] with shape [num points, 3, 1].
+        :param pts: Optional points to consider when cropping the perspective transform. 
+                    An array of points in [x, y, scale] with shape [num points, 3, 1].
         :param obj_width: The estimated object width (inches) for perspective transform. 30 by default.
         :param focal: The estimated focal length (ft) for perspective transform. 3 by default.
         :return: An array holding the adversarial examples.
@@ -218,7 +219,7 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
 
         y_pred = self.estimator.predict(
             np.transpose(
-                convert2Network(np.transpose(x_adv[0], (1, 2, 0)), self.net_size, clip_min, clip_max)[
+                convert_to_network(np.transpose(x_adv[0], (1, 2, 0)), self.net_size, clip_min, clip_max)[
                     np.newaxis, :, :, :
                 ],
                 (0, 3, 1, 2),
@@ -250,8 +251,8 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
         x_copy_trans = np.transpose(x, (0, 2, 3, 1))
         x_adv_copy_trans = np.transpose(x_adv, (0, 2, 3, 1))
         for i in range(x_copy.shape[0]):
-            x_copy[i] = convert2Network(x_copy_trans[i], self.net_size, clip_min, clip_max)
-            x_adv_copy[i] = convert2Network(x_adv_copy_trans[i], self.net_size, clip_min, clip_max)
+            x_copy[i] = convert_to_network(x_copy_trans[i], self.net_size, clip_min, clip_max)
+            x_adv_copy[i] = convert_to_network(x_adv_copy_trans[i], self.net_size, clip_min, clip_max)
 
         if self.estimator.channels_first:
             x_copy = np.transpose(x_copy, (0, 3, 1, 2))
@@ -308,7 +309,7 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
                 if len(x_adv.shape) == 3:
                     x_adv = x_adv.unsqueeze(0)
                 transformed_x_adv = transform_wb(x, x_adv, mask, xform, pts, self.net_size, clip_min, clip_max)
-                logits, _ = self.estimator._predict_framework(transformed_x_adv.cuda(), y_onehot)
+                logits, _ = self.estimator._predict_framework(transformed_x_adv.cuda(), y_onehot)  # pylint: disable=W0212
                 success = int(logits.argmax(dim=1).detach().cpu().numpy()[0] == target_label)
                 successes += success
         return successes / len(xforms)
@@ -391,7 +392,7 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
 
             # Do EOT adversarial attack with current mask.
             loop_length = self.steps if rounds > 0 else self.first_steps
-            for iteration in range(loop_length):
+            for _ in range(loop_length):
                 avg_grad = torch.zeros(adv_img.size()).cuda()
                 for xform in xforms:
                     xform_img = transform_wb(
@@ -405,7 +406,7 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
                         clip_max,
                     )
 
-                    logits, _ = self.estimator._predict_framework(xform_img.cuda(), y_onehot)
+                    logits, _ = self.estimator._predict_framework(xform_img.cuda(), y_onehot)  # pylint: disable=W0212
                     if self.use_logits:
                         loss = torch.nn.functional.cross_entropy(
                             input=logits,

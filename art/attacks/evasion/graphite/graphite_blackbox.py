@@ -49,9 +49,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 from typing import Optional, Tuple, TYPE_CHECKING, List
 
-import numpy as np
 import random
-from tqdm.auto import tqdm
+import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
@@ -59,7 +58,7 @@ from art.estimators.estimator import BaseEstimator
 from art.estimators.classification import ClassifierMixin
 from art.utils import compute_success, to_categorical, check_and_transform_label_format
 from art.attacks.evasion.graphite.utils import (
-    convert2Network,
+    convert_to_network,
     get_transform_params,
     add_noise,
     get_transformed_images,
@@ -271,8 +270,8 @@ class GRAPHITEBlackbox(EvasionAttack):
         x_copy = np.zeros((x.shape[0], self.noise_size[1], self.noise_size[0], x.shape[3]))
         x_adv_copy = np.zeros((x_adv.shape[0], self.noise_size[1], self.noise_size[0], x_adv.shape[3]))
         for i in range(x_copy.shape[0]):
-            x_copy[i] = convert2Network(x[i], self.net_size, clip_min, clip_max)
-            x_adv_copy[i] = convert2Network(x_adv[i], self.net_size, clip_min, clip_max)
+            x_copy[i] = convert_to_network(x[i], self.net_size, clip_min, clip_max)
+            x_adv_copy[i] = convert_to_network(x_adv[i], self.net_size, clip_min, clip_max)
 
         if self.estimator.channels_first:
             x_copy = np.transpose(x_copy, (0, 3, 1, 2))
@@ -452,7 +451,7 @@ class GRAPHITEBlackbox(EvasionAttack):
 
         # STAGE 2: Coarse Reduction
         best_mask, patches, indices = self._get_coarse_reduced_mask(
-            x, x_noise, x_tar, x_tar_noise, y, mask, patches, indices, xforms, pts, clip_min, clip_max
+            x, x_noise, x_tar_noise, y, mask, patches, indices, xforms, pts, clip_min, clip_max
         )
 
         # STAGE 3: Fine Reduction
@@ -464,7 +463,6 @@ class GRAPHITEBlackbox(EvasionAttack):
                 best_mask = self._get_fine_reduced_mask(
                     x,
                     x_noise,
-                    x_tar,
                     x_tar_noise,
                     y,
                     best_mask,
@@ -601,7 +599,6 @@ class GRAPHITEBlackbox(EvasionAttack):
         self,
         x: np.ndarray,
         x_noise: np.ndarray,
-        x_tar: np.ndarray,
         x_tar_noise: np.ndarray,
         y: int,
         mask: np.ndarray,
@@ -616,7 +613,6 @@ class GRAPHITEBlackbox(EvasionAttack):
         Function to coarsely reduce mask.
         :param x: An array with one original input to be attacked.
         :param x_noise: x in the resolution of the noise size.
-        :param x_tar: Initial array to act as an example target image.
         :param x_tar_noise: x_tar in the resolution of the noise size.
         :param y: The target label.
         :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
@@ -653,7 +649,7 @@ class GRAPHITEBlackbox(EvasionAttack):
 
             pivot = mid
 
-        best_tr, best_mask = self._evaluate_transform_robustness_at_pivot(
+        _, best_mask = self._evaluate_transform_robustness_at_pivot(
             x, x_noise, x_tar_noise, y, mask, patches, xforms, pts, clip_min, clip_max, pivot
         )
 
@@ -666,7 +662,6 @@ class GRAPHITEBlackbox(EvasionAttack):
         self,
         x: np.ndarray,
         x_noise: np.ndarray,
-        x_tar: np.ndarray,
         x_tar_noise: np.ndarray,
         y: int,
         mask: np.ndarray,
@@ -683,7 +678,6 @@ class GRAPHITEBlackbox(EvasionAttack):
         Function to finely reduce mask.
         :param x: An array with one original input to be attacked.
         :param x_noise: x in the resolution of the noise size.
-        :param x_tar: Initial array to act as an example target image.
         :param x_tar_noise: x_tar in the resolution of the noise size.
         :param y: The target label.
         :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
@@ -712,17 +706,16 @@ class GRAPHITEBlackbox(EvasionAttack):
         best_score = score_fn(mask, init_tr_err, object_size, threshold=(1 - self.tr_lo), lbd=lbd)
         best_mask = mask
 
-        new_patches, patches_examined, peek_cnt, zero_grad = [], 0, 8, 0
+        new_patches = []
         j = 0
         # iterate over patches, greedily remove if the score improves
         while patches:
             j = j + 1
 
             # highest transform_robustness is now always at end, for pop()
-            next_patch, next_indice = patches.pop(), indices.pop()
+            next_patch = patches.pop()
             if np.max(next_patch * best_mask) == 0:
                 continue
-            patches_examined += 1
             next_mask = best_mask * (np.ones(best_mask.shape) - next_patch)
             theta = (x_tar_noise - x_noise) * next_mask
 
@@ -809,22 +802,22 @@ class GRAPHITEBlackbox(EvasionAttack):
         ####### gradient free optimization steps #######
         while True:
             gradient = np.zeros(theta.shape)
-            q = 10
+            num_q_samples = 10
 
             # Take q samples of random Gaussian noise to use as new directions, calculate transform_robustness
             # Used for gradient estimate
-            for _ in range(q):
-                u = np.random.randn(*theta.shape).astype(np.float32) * mask
-                u = u / np.linalg.norm(u)
-                ttt = theta + self.beta * u
+            for _ in range(num_q_samples):
+                unit_dir = np.random.randn(*theta.shape).astype(np.float32) * mask
+                unit_dir = unit_dir / np.linalg.norm(unit_dir)
+                ttt = theta + self.beta * unit_dir
 
                 xform_imgs = get_transformed_images(x, mask, xforms, 1.0, ttt, pts, self.net_size, clip_min, clip_max)
                 eps_ttt = run_predictions(self.estimator, xform_imgs, y, self.batch_size, True)
                 opt_count += self.num_xforms_boost
 
-                gradient += (eps_ttt - eps) / self.beta * u
+                gradient += (eps_ttt - eps) / self.beta * unit_dir
 
-            gradient = 1.0 / q * gradient
+            gradient = 1.0 / num_q_samples * gradient
 
             # Take gradient step
             new_theta = theta - self.eta * gradient
