@@ -111,7 +111,7 @@ class GRAPHITEBlackbox(EvasionAttack):
         self,
         classifier: "CLASSIFIER_TYPE",
         noise_size: Tuple[int, int],
-        net_size: Optional[Tuple[int, int]],
+        net_size: Optional[Tuple[int, int]] = None,
         heat_patch_size: Tuple[int, int] = (4, 4),
         heat_patch_stride: Tuple[int, int] = (1, 1),
         heatmap_mode: str = "Target",
@@ -629,7 +629,7 @@ class GRAPHITEBlackbox(EvasionAttack):
         # binary search leftmost pivot value for which tr exceeeds specificed threshold if one exists
         num_patches = len(patches)
         if num_patches == 1:
-             pivot = 0
+            pivot = 0
 
         else:
             low, high = 0
@@ -766,7 +766,7 @@ class GRAPHITEBlackbox(EvasionAttack):
         :param focal: Estimated focal length in ft for perspective transform.
         :param clip_min: Minimum value of an example.
         :param clip_max: Maximum value of an example.
-        :return: attacked image 
+        :return: attacked image
         """
 
         xforms = get_transform_params(
@@ -782,7 +782,7 @@ class GRAPHITEBlackbox(EvasionAttack):
             focal,
         )
 
-        ######### Initialize ##############
+        # Initialize
         theta = (x_tar_noise - x_noise) * mask
         query_count = 0
 
@@ -793,13 +793,13 @@ class GRAPHITEBlackbox(EvasionAttack):
 
         best_theta, best_eps = theta, err_rate
 
-        ######### End Initialize ##############
+        # End Initialize
 
         theta, eps = best_theta.copy(), best_eps
 
         opt_count = 0
 
-        ####### gradient free optimization steps #######
+        # gradient free optimization steps
         while True:
             gradient = np.zeros(theta.shape)
             num_q_samples = 10
