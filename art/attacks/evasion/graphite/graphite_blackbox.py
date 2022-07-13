@@ -38,7 +38,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the black-box (hard-label) GRAPHITE attack `GRAPHITEBlackbox`. This is a physical black-box 
+This module implements the black-box (hard-label) GRAPHITE attack `GRAPHITEBlackbox`. This is a physical black-box
 attack that only requires class predictions.
 
 | Paper link: https://arxiv.org/abs/2002.07088
@@ -75,7 +75,7 @@ logger = logging.getLogger(__name__)
 
 class GRAPHITEBlackbox(EvasionAttack):
     """
-    Implementation of the hard-label GRAPHITE attack from Feng et al. (2022). This is a physical, black-box attack 
+    Implementation of the hard-label GRAPHITE attack from Feng et al. (2022). This is a physical, black-box attack
     that only requires final class prediction and generates robust physical perturbations that can be applied as
     stickers.
 
@@ -196,7 +196,7 @@ class GRAPHITEBlackbox(EvasionAttack):
                      Shape needs to be broadcastable to the shape of x and can also be of the same shape as `x`. Any
                      features for which the mask is zero will not be adversarially perturbed.
         :param x_tar: Initial array to act as the example target image.
-        :param pts: Optional points to consider when cropping the perspective transform. An array of points in 
+        :param pts: Optional points to consider when cropping the perspective transform. An array of points in
                     [x, y, scale] with shape [num points, 3, 1].
         :param obj_width: The estimated object width (inches) for perspective transform. 30 by default.
         :param focal: The estimated focal length (ft) for perspective transform. 3 by default.
@@ -267,7 +267,7 @@ class GRAPHITEBlackbox(EvasionAttack):
 
         y = to_categorical(y, self.estimator.nb_classes)  # type: ignore
 
-        ### COMPUTE SUCCESS RATE
+        # COMPUTE SUCCESS RATE
         x_copy = np.zeros((x.shape[0], self.noise_size[1], self.noise_size[0], x.shape[3]))
         x_adv_copy = np.zeros((x_adv.shape[0], self.noise_size[1], self.noise_size[0], x_adv.shape[3]))
         for i in range(x_copy.shape[0]):
@@ -377,7 +377,7 @@ class GRAPHITEBlackbox(EvasionAttack):
         :param x: An array with one original input to be attacked.
         :param x_noise: x in the resolution of the noise size.
         :param x_tar: Initial array to act as an example target image.
-        :param x_noise: x_tar in the resolution of the noise size.
+        :param x_tar_noise: x_tar in the resolution of the noise size.
         :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
                      broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
                      perturbed.
@@ -390,7 +390,7 @@ class GRAPHITEBlackbox(EvasionAttack):
         :return: An adversarial example with noise from a target image, and a mask.
         """
 
-        ############# Stage 1: HEATMAP: Collect all the valid patches and order by computed heatmap ###############
+        # Stage 1: HEATMAP: Collect all the valid patches and order by computed heatmap
         xforms = get_transform_params(
             self.num_xforms_mask,
             self.rotation_range,
@@ -426,7 +426,7 @@ class GRAPHITEBlackbox(EvasionAttack):
         # compute heatmap and order
         if self.heatmap_mode == "Random":
             tr_scores = [random.random() for i in range(len(patches))]
-        else:  ## Target mode
+        else:  # Target mode
 
             tr_scores = self._get_heatmap(
                 x,
@@ -522,7 +522,7 @@ class GRAPHITEBlackbox(EvasionAttack):
         :param x: An array with one original input to be attacked.
         :param x_noise: x in the resolution of the noise size.
         :param x_tar: Initial array to act as an example target image.
-        :param x_noise: x_tar in the resolution of the noise size.
+        :param x_tar_noise: x_tar in the resolution of the noise size.
         :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
                      broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
                      perturbed.
@@ -552,6 +552,51 @@ class GRAPHITEBlackbox(EvasionAttack):
 
         return tr_scores
 
+    def _evaluate_transform_robustness_at_pivot(
+        self,
+        x: np.ndarray,
+        x_noise: np.ndarray,
+        x_tar_noise: np.ndarray,
+        y: int,
+        mask: np.ndarray,
+        patches: List[np.ndarray],
+        xforms: List,
+        pts: Optional[np.ndarray],
+        clip_min: float,
+        clip_max: float,
+        pivot: int,
+    ) -> Tuple[float, np.ndarray]:
+        """
+        Function as a binary search plug-in that evaluates the transform-robustness at the specified pivot.
+        :param x: An array with one original input to be attacked.
+        :param x_noise: x in the resolution of the noise size.
+        :param x_tar_noise: x_tar in the resolution of the noise size.
+        :param y: The target label.
+        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
+                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
+                     perturbed.
+        :param patches: list of patches from heatmap.
+        :param xforms: list of transform params.
+        :param pts: Optional. A set of points that will set the crop size in the perspective transform.
+        :param clip_min: Minimum value of an example.
+        :param clip_max: Maximum value of an example.
+        :param pivot: Pivot point to evaluate transform-robustness at.
+        :return: transform-robustness and mask.
+        """
+
+        best_mask = np.zeros(mask.shape)
+        ordering = patches[:pivot]
+        for next_patch in ordering:
+            next_mask = best_mask + (np.zeros(best_mask.shape) + next_patch)
+            next_mask = np.where(next_mask > 0, 1.0, 0.0)
+            best_mask = next_mask
+
+        theta = (x_tar_noise - x_noise) * best_mask
+        xform_imgs = get_transformed_images(x, best_mask, xforms, 1.0, theta, pts, self.net_size, clip_min, clip_max)
+        success_rate = run_predictions(self.estimator, xform_imgs, y, self.batch_size, False)
+
+        return (success_rate, best_mask)
+
     def _get_coarse_reduced_mask(
         self,
         x: np.ndarray,
@@ -572,7 +617,7 @@ class GRAPHITEBlackbox(EvasionAttack):
         :param x: An array with one original input to be attacked.
         :param x_noise: x in the resolution of the noise size.
         :param x_tar: Initial array to act as an example target image.
-        :param x_noise: x_tar in the resolution of the noise size.
+        :param x_tar_noise: x_tar in the resolution of the noise size.
         :param y: The target label.
         :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
                      broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
@@ -585,53 +630,32 @@ class GRAPHITEBlackbox(EvasionAttack):
         :param clip_max: Maximum value of an example.
         :return: mask, adjusted list of patches, adjusted list of indices
         """
-
-        def evaluate_transform_robustness_at_pivot(pivot, get_mask=False):
-            """ binary search plug-in that evaluates whether functional condition is met at specified pivot """
-            best_mask = get_accumulated_mask_up_to_pivot(pivot, mask, patches)
-
-            theta = (x_tar_noise - x_noise) * best_mask
-            xform_imgs = get_transformed_images(
-                x, best_mask, xforms, 1.0, theta, pts, self.net_size, clip_min, clip_max
-            )
-            success_rate = run_predictions(self.estimator, xform_imgs, y, self.batch_size, False)
-
-            return (success_rate, best_mask) if get_mask else success_rate
-
-        def get_accumulated_mask_up_to_pivot(pivot, mask, patches):
-            best_mask = np.zeros(mask.shape)
-            ordering = patches[:pivot]
-            for next_patch in ordering:
-                next_mask = best_mask + (np.zeros(best_mask.shape) + next_patch)
-                next_mask = np.where(next_mask > 0, 1.0, 0.0)
-                best_mask = next_mask
-            return best_mask.copy()
-
         # binary search leftmost pivot value for which tr exceeeds specificed threshold if one exists
-        nums = list(range(len(patches)))
-        n = len(nums)
-        mi = -1
-        if n == 1:
-            mi = 0
+        num_patches = len(patches)
+        if num_patches == 1:
+             pivot = 0
 
-        if mi < 0:
-            lo, hi = 0, n - 1
-            while lo <= hi:
-                mi = lo + (hi - lo) // 2
-                score = evaluate_transform_robustness_at_pivot(mi)
+        else:
+            low, high = 0
+            while low <= high:
+                mid = low + (high - low) // 2
+                score, _ = self._evaluate_transform_robustness_at_pivot(
+                    x, x_noise, x_tar_noise, y, mask, patches, xforms, pts, clip_min, clip_max, mid
+                )
                 if score >= self.tr_hi:
-                    if mi > 0:
-                        lo, mi, hi = lo, mi, mi - 1
+                    if mid > 0:
+                        low, mid, high = low, mid, mid - 1
                         continue
                     else:
                         break
                 else:  # score < threshold:
-                    lo, mi, hi = mi + 1, mi + 1, hi
+                    low, mid, high = mid + 1, mid + 1, high
 
-        pivot = mi
-        assert 0 <= pivot <= n
+            pivot = mid
 
-        best_tr, best_mask = evaluate_transform_robustness_at_pivot(pivot, get_mask=True)
+        best_tr, best_mask = self._evaluate_transform_robustness_at_pivot(
+            x, x_noise, x_tar_noise, y, mask, patches, xforms, pts, clip_min, clip_max, pivot
+        )
 
         patches = patches[:]  # reduce will examine all patches
         indices = indices[:]
@@ -660,7 +684,7 @@ class GRAPHITEBlackbox(EvasionAttack):
         :param x: An array with one original input to be attacked.
         :param x_noise: x in the resolution of the noise size.
         :param x_tar: Initial array to act as an example target image.
-        :param x_noise: x_tar in the resolution of the noise size.
+        :param x_tar_noise: x_tar in the resolution of the noise size.
         :param y: The target label.
         :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
                      broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
@@ -739,7 +763,7 @@ class GRAPHITEBlackbox(EvasionAttack):
         :param x: An array with one original input to be attacked.
         :param x_noise: x in the resolution of the noise size.
         :param x_tar: Initial array to act as an example target image.
-        :param x_noise: x_tar in the resolution of the noise size.
+        :param x_tar_noise: x_tar in the resolution of the noise size.
         :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
                      broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
                      perturbed.

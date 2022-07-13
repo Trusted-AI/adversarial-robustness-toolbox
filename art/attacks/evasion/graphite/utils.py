@@ -1,16 +1,57 @@
+# MIT License
+#
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2019
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+# documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+# persons to whom the Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+# Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+# WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+#
+# MIT License
+#
+# Copyright (c) 2022 University of Michigan and University of Wisconsin-Madison
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+"""
+This module implements helper functions for GRAPHITE attacks.
+
+| Paper link: https://arxiv.org/abs/2002.07088
+| Original github link: https://github.com/ryan-feng/GRAPHITE
+"""
+
 import math
-import torch.nn as nn
 import numpy as np
-import cv2
-import torch
-from kornia.geometry.transform import resize, warp_perspective
-from kornia.enhance import adjust_gamma
 from art.utils import get_labels_np_array
 from typing import Tuple, Union, TYPE_CHECKING, List
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
-    import tensor
+    import torch
 
 
 def dist2pixels(dist: float, width: float, obj_width: float = 30) -> float:
@@ -33,6 +74,8 @@ def convert2Network(x: np.ndarray, net_size: Tuple[int, int], clip_min: float, c
     :param clip_min: Minimum value of an example.
     :param clip_max: Maximum value of an example.
     """
+    import cv2  # lgtm [py/repeated-import]
+
     if net_size is not None:
         x = cv2.resize(x, net_size)
     x = np.clip(x, 0, 1)
@@ -80,6 +123,8 @@ def apply_transformation(
     :param clip_max: Maximum value of an example.
     :return: Transformed image in network form.
     """
+    import cv2  # lgtm [py/repeated-import]
+
     if blur != 0:
         pert = cv2.GaussianBlur(pert, (blur, blur), 0)
 
@@ -172,6 +217,8 @@ def add_noise(
     :param return_pert_and_mask: Whether to return both the perturbation and mask.
     :param clip: Whether to clip the perturbation.
     """
+    import cv2  # lgtm [py/repeated-import]
+
     theta_full = cv2.resize(theta, (x.shape[1], x.shape[0]))
     if len(theta_full.shape) < 3:
         theta_full = theta_full[:, :, np.newaxis]
@@ -247,15 +294,15 @@ def get_transformed_images(
 
 
 def transform_wb(
-    x: "torch.tensor",
-    x_adv: "torch.tensor",
-    mask: "torch.tensor",
+    x: "torch.Tensor",
+    x_adv: "torch.Tensor",
+    mask: "torch.Tensor",
     xform: Tuple[float, float, float, int, float, float, float, float, float],
     pts: np.ndarray,
     net_size: Tuple[int, int],
     clip_min: float,
     clip_max: float,
-) -> "torch.tensor":
+) -> "torch.Tensor":
     """
     Get transformed image, white-box setting.
     :param x: Original input image.
@@ -268,6 +315,10 @@ def transform_wb(
     :param clip_max: Maximum value of an example.
     :return: Transformed image.
     """
+    import torch  # lgtm [py/repeated-import]
+    import cv2  # lgtm [py/repeated-import]
+    from kornia.enhance import adjust_gamma
+
     angle, dist, gamma, blur, crop_percent, crop_off_x, crop_off_y, obj_width, focal = xform
     x_adv = torch.clamp(x_adv, 0.0, 1.0)
 
@@ -279,7 +330,7 @@ def transform_wb(
         kernel = kernel[np.newaxis, :, :]
         kernel = np.repeat(kernel[np.newaxis, :, :, :], x_adv.size()[1], axis=0)
         kernel_torch = torch.from_numpy(kernel)
-        blur = nn.Conv2d(
+        blur = torch.nn.Conv2d(
             in_channels=x_adv.size()[1],
             out_channels=x_adv.size()[1],
             kernel_size=blur,
@@ -319,7 +370,7 @@ def transform_wb(
     return convert2NetworkWB(x_adv, net_size, clip_min, clip_max)
 
 
-def convert2NetworkWB(x: "torch.tensor", net_size: Tuple[int, int], clip_min: float, clip_max: float) -> "torch.tensor":
+def convert2NetworkWB(x: "torch.Tensor", net_size: Tuple[int, int], clip_min: float, clip_max: float) -> "torch.Tensor":
     """
     Convert image to network format.
     :param x: Input image.
@@ -328,6 +379,9 @@ def convert2NetworkWB(x: "torch.tensor", net_size: Tuple[int, int], clip_min: fl
     :param clip_max: Maximum value of an example.
     :return: Transformed image.
     """
+    import torch  # lgtm [py/repeated-import]
+    from kornia.geometry.transform import resize  # lgtm [py/repeated-import]
+
     orig_device = x.device
     x = resize(x, (net_size[1], net_size[0]), align_corners=False)
     x = torch.clamp(x, 0.0, 1.0)
@@ -336,7 +390,7 @@ def convert2NetworkWB(x: "torch.tensor", net_size: Tuple[int, int], clip_min: fl
 
 
 def get_perspective_transform(
-    img: Union[np.ndarray, "torch.tensor"],
+    img: Union[np.ndarray, "torch.Tensor"],
     angle: float,
     w: int,
     h: int,
@@ -347,7 +401,7 @@ def get_perspective_transform(
     crop_off_y: float,
     pts: np.ndarray,
     whitebox: bool = False,
-) -> Union[np.ndarray, "torch.tensor"]:
+) -> Union[np.ndarray, "torch.Tensor"]:
     """
     Compute perspective transform.
     :param img: Input image.
@@ -363,6 +417,10 @@ def get_perspective_transform(
     :param whitebox: Whether this is the white-box version or not.
     :return: Transformed image.
     """
+    import torch  # lgtm [py/repeated-import]
+    import cv2  # lgtm [py/repeated-import]
+    from kornia.geometry.transform import warp_perspective
+
     # img in numpy / cv2 form
 
     angle = math.radians(angle)
@@ -534,7 +592,6 @@ def run_predictions(
                 preds = get_labels_np_array(estimator.predict(transposed, batch_size=batch_size))
             else:
                 preds = get_labels_np_array(estimator.predict(img_tensor, batch_size=batch_size))
-            # TODO double check format
             preds = np.argmax(preds)
             num_successes += (preds == tar_tensor).sum().item()
             count = 0
