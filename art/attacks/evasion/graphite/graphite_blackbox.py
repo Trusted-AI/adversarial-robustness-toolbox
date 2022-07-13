@@ -613,7 +613,6 @@ class GRAPHITEBlackbox(EvasionAttack):
         Function to coarsely reduce mask.
         :param x: An array with one original input to be attacked.
         :param x_noise: x in the resolution of the noise size.
-        :param x_tar: Initial array to act as an example target image.
         :param x_tar_noise: x_tar in the resolution of the noise size.
         :param y: The target label.
         :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
@@ -679,7 +678,6 @@ class GRAPHITEBlackbox(EvasionAttack):
         Function to finely reduce mask.
         :param x: An array with one original input to be attacked.
         :param x_noise: x in the resolution of the noise size.
-        :param x_tar: Initial array to act as an example target image.
         :param x_tar_noise: x_tar in the resolution of the noise size.
         :param y: The target label.
         :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
