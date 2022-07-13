@@ -60,7 +60,7 @@ from art.attacks.evasion.graphite.utils import convert2Network, get_transform_pa
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
-    import tensor
+    import torch
 
 logger = logging.getLogger(__name__)
 
@@ -277,11 +277,11 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
 
     def _eval(
         self,
-        x: "torch.tensor",
-        x_adv: "torch.tensor",
-        mask: "torch.tensor",
+        x: "torch.Tensor",
+        x_adv: "torch.Tensor",
+        mask: "torch.Tensor",
         target_label: int,
-        y_onehot: "torch.tensor",
+        y_onehot: "torch.Tensor",
         xforms: List[Tuple[float, float, float, int, float, float, float, float, float]],
         pts: np.ndarray,
         clip_min: float,
@@ -300,6 +300,8 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
         :param clip_max: Maximum value of an example.
         :return: Transform-robustness of the attack.
         """
+        import torch  # lgtm [py/repeated-import]
+
         successes = 0
         for xform in xforms:
             with torch.no_grad():
@@ -336,6 +338,8 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
         :param clip_max: Maximum value of an example.
         :return: An adversarial example.
         """
+        import torch  # lgtm [py/repeated-import]
+
         x = (x.copy() - clip_min) / (clip_max - clip_min)
 
         if mask is None:
