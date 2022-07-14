@@ -77,15 +77,15 @@ class TestMetrics(unittest.TestCase):
         classifier = self._cnn_mnist_k([28, 28, 1])
         classifier.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=2, verbose=0)
 
-        # Compute minimal perturbations
+        # Compute adversarial accuracies
         params = {"eps_step": 1.0, "eps": 1.0}
-        emp_robust = adversarial_accuracy(classifier, x_train, str("fgsm"), params)
-        self.assertAlmostEqual(emp_robust, 1.000369094488189, 3)
+        adv_acc = adversarial_accuracy(classifier, x_train, str("auto"), params)
+        self.assertAlmostEqual(adv_acc, 0)
 
         params = {"eps_step": 1.0, "eps": 1.0}
         adv_crafter = AutoAttack(classifier, **params)
-        emp_robust = adversarial_accuracy(classifier, x_train, attack_crafter=adv_crafter)
-        self.assertLessEqual(emp_robust, 0.65)
+        adv_acc = adversarial_accuracy(classifier, x_train, attack_crafter=adv_crafter)
+        self.assertAlmostEqual(adv_acc, 0)
 
 
     def test_loss_sensitivity(self):

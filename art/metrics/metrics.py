@@ -33,6 +33,7 @@ from tqdm.auto import tqdm
 
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
+from art.attacks.evasion.auto_attack import AutoAttack
 from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.attacks.evasion.hop_skip_jump import HopSkipJump
 from art.utils import random_sphere
@@ -44,6 +45,10 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 SUPPORTED_METHODS: Dict[str, Dict[str, Any]] = {
+    "auto": {
+        "class": AutoAttack,
+        "params": {"eps_step": 0.1, "eps_max": 1.0},
+    },
     "fgsm": {
         "class": FastGradientMethod,
         "params": {"eps_step": 0.1, "eps_max": 1.0, "clip_min": 0.0, "clip_max": 1.0},
@@ -71,9 +76,11 @@ def get_crafter(classifier: "CLASSIFIER_TYPE", attack: str, params: Optional[Dic
     """
     try:
         crafter = SUPPORTED_METHODS[attack]["class"](classifier)
-    except Exception:  # pragma: no cover
+    except Exception as e:  # pragma: no cover
         raise NotImplementedError(f"{attack} crafting method not supported.") from Exception
 
+    if "params" in SUPPORTED_METHODS[attack]:
+        crafter.set_params(**SUPPORTED_METHODS[attack]["params"])
     if params:
         crafter.set_params(**params)
 
