@@ -29,7 +29,15 @@ import torch.optim as optim
 from art.estimators.classification.keras import KerasClassifier
 from art.estimators.classification.pytorch import PyTorchClassifier
 from art.estimators.classification.tensorflow import TensorFlowClassifier
-from art.metrics.metrics import adversarial_accuracy, empirical_robustness, clever_t, clever_u, clever, loss_sensitivity, wasserstein_distance
+from art.metrics.metrics import (
+    adversarial_accuracy,
+    empirical_robustness,
+    clever_t,
+    clever_u,
+    clever,
+    loss_sensitivity,
+    wasserstein_distance,
+)
 from art.utils import load_mnist
 
 from art.attacks.evasion.auto_attack import AutoAttack
@@ -68,7 +76,6 @@ class TestMetrics(unittest.TestCase):
         emp_robust = empirical_robustness(classifier, x_train, str("fgsm"), params)
         self.assertLessEqual(emp_robust, 0.65)
 
-
     def test_adv_acc_mnist(self):
         (x_train, y_train), (_, _), _, _ = load_mnist()
         x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
@@ -86,7 +93,6 @@ class TestMetrics(unittest.TestCase):
         adv_crafter = AutoAttack(classifier, **params)
         adv_acc = adversarial_accuracy(classifier, x_train, attack_crafter=adv_crafter)
         self.assertAlmostEqual(adv_acc, 0)
-
 
     def test_loss_sensitivity(self):
         (x_train, y_train), (_, _), _, _ = load_mnist()
