@@ -76,7 +76,7 @@ def get_crafter(classifier: "CLASSIFIER_TYPE", attack: str, params: Optional[Dic
     """
     try:
         crafter = SUPPORTED_METHODS[attack]["class"](classifier)
-    except Exception as e:  # pragma: no cover
+    except Exception:  # pragma: no cover
         raise NotImplementedError(f"{attack} crafting method not supported.") from Exception
 
     if "params" in SUPPORTED_METHODS[attack]:
