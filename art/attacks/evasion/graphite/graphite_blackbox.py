@@ -129,7 +129,7 @@ class GRAPHITEBlackbox(EvasionAttack):
         crop_percent_range: Tuple[float, float] = (-0.03125, 0.03125),
         off_x_range: Tuple[float, float] = (-0.03125, 0.03125),
         off_y_range: Tuple[float, float] = (-0.03125, 0.03125),
-        blur_kernels: Union[Tuple[float, float], List[float]] = (0, 3),
+        blur_kernels: Union[Tuple[int, int], List[int]] = (0, 3),
         batch_size: int = 64,
     ) -> None:
         """
@@ -218,6 +218,14 @@ class GRAPHITEBlackbox(EvasionAttack):
             raise ValueError(
                 "This attack has not yet been tested for binary classification with a single output classifier."
             )
+
+        if not isinstance(obj_width, int) and not isinstance(obj_width, float):
+            raise ValueError("obj_width must be int or float")
+        obj_width = float(obj_width)
+
+        if not isinstance(focal, int) and not isinstance(focal, float):
+            raise ValueError("focal must be int or float")
+        focal = float(focal)
 
         # Check the mask
         if mask is not None:
@@ -471,7 +479,6 @@ class GRAPHITEBlackbox(EvasionAttack):
             best_mask = self._get_fine_reduced_mask(
                 x,
                 x_noise,
-                x_tar,
                 x_tar_noise,
                 y,
                 best_mask,
@@ -610,7 +617,8 @@ class GRAPHITEBlackbox(EvasionAttack):
             pivot = 0
 
         else:
-            low, high = 0
+            low = 0
+            high = 0
             while low <= high:
                 mid = low + (high - low) // 2
                 score, _ = self._evaluate_transform_robustness_at_pivot(
@@ -807,7 +815,7 @@ class GRAPHITEBlackbox(EvasionAttack):
             if (opt_count + query_count + self.num_xforms_boost * 11) > self.num_boost_queries:
                 break
 
-        adv_example = add_noise(x, mask, 1.0, best_theta)
+        adv_example, _, _ = add_noise(x, mask, 1.0, best_theta)
 
         return adv_example
 
