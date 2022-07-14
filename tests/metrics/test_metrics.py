@@ -88,7 +88,7 @@ class TestMetrics(unittest.TestCase):
         adv_acc = adversarial_accuracy(classifier, x_train, str("fgsm"), params)
         self.assertAlmostEqual(adv_acc, 0)
 
-        params = {"max_iter": 10,"max_eval": 100, "init_eval": 10, "init_size": 10}
+        params = {"max_iter": 10, "max_eval": 100, "init_eval": 10, "init_size": 10}
         adv_crafter = HopSkipJump(classifier, **params)
         adv_acc = adversarial_accuracy(classifier, x_train, attack_crafter=adv_crafter)
         self.assertLess(adv_acc, 0.1)
