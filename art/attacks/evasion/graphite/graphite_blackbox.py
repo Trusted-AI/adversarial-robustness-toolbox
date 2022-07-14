@@ -111,7 +111,7 @@ class GRAPHITEBlackbox(EvasionAttack):
         self,
         classifier: "CLASSIFIER_TYPE",
         noise_size: Tuple[int, int],
-        net_size: Optional[Tuple[int, int]] = None,
+        net_size: Tuple[int, int],
         heat_patch_size: Tuple[int, int] = (4, 4),
         heat_patch_stride: Tuple[int, int] = (1, 1),
         heatmap_mode: str = "Target",
@@ -129,7 +129,7 @@ class GRAPHITEBlackbox(EvasionAttack):
         crop_percent_range: Tuple[float, float] = (-0.03125, 0.03125),
         off_x_range: Tuple[float, float] = (-0.03125, 0.03125),
         off_y_range: Tuple[float, float] = (-0.03125, 0.03125),
-        blur_kernels: List[float] = [0, 3],
+        blur_kernels: Union[Tuple[float, float], List[float]] = (0, 3),
         batch_size: int = 64,
     ) -> None:
         """
@@ -138,7 +138,6 @@ class GRAPHITEBlackbox(EvasionAttack):
         :param classifier: A trained classifier.
         :param noise_size: The resolution to generate perturbations in (w, h).
         :param net_size: The resolution to resize images to before feeding to the model in (w, h).
-                         If None, it assumes the input image x's size is correct.
         :param heat_patch_size: The size of the heatmap patches in (w, h).
         :param heat_patch_stride: The stride of the heatmap patching in (w, h).
         :param heatmap_mode: The mode of heatmap in ['Target', 'Random'].
@@ -622,8 +621,9 @@ class GRAPHITEBlackbox(EvasionAttack):
                         high = mid - 1
                         continue
                     break
-                else:  # score < threshold:
-                    low = mid + 1
+
+                # score < threshold:
+                low = mid + 1
 
             pivot = mid
 
