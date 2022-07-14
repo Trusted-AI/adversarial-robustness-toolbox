@@ -39,7 +39,6 @@ from art.attacks.evasion.hop_skip_jump import HopSkipJump
 from art.utils import random_sphere
 
 if TYPE_CHECKING:
-    from art.attacks.attack import EvasionAttack
     from art.utils import CLASSIFIER_TYPE, CLASSIFIER_LOSS_GRADIENTS_TYPE, CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE
 
 logger = logging.getLogger(__name__)
@@ -96,8 +95,8 @@ def adversarial_accuracy(
 ) -> float:
     """
     Compute the adversarial accuracy of a classifier object over the sample `x` for a given adversarial crafting
-    method `attack`. `attack_name` can be specified to use a preset attack, or `attack_crafter` for wider choices and customized parameters.
-    Note that the score does not exclude wrong predictions by the classifier.
+    method `attack`. `attack_name` can be specified to use a preset attack, or `attack_crafter` for wider choices
+    and customized parameters. Note that the score does not exclude wrong predictions by the classifier.
 
     :param classifier: A trained model.
     :param x: Input samples of shape that can be fed into `classifier`.
