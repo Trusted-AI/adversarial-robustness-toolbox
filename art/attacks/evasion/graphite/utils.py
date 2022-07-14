@@ -166,7 +166,7 @@ def get_transform_params(
     crop_percent_range: Tuple[float, float],
     off_x_range: Tuple[float, float],
     off_y_range: Tuple[float, float],
-    blur_kernels: List[float],
+    blur_kernels: List[int],
     obj_width: float,
     focal: float,
 ) -> List[Tuple[float, float, float, int, float, float, float, float, float]]:
@@ -210,7 +210,7 @@ def add_noise(
     theta: np.ndarray,
     return_pert_and_mask: bool = False,
     clip: bool = True,
-) -> np.ndarray:
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Combines the image and noise to create a perturbed image.
     :param x: Input image.
@@ -234,10 +234,9 @@ def add_noise(
 
     if clip:
         comb = np.clip(comb, 0, 1)
-    if return_pert_and_mask:
-        pert = np.where(mask_full > 0.5, comb, 0)
-        return comb, pert, mask_full
-    return comb
+
+    pert = np.where(mask_full > 0.5, comb, 0)
+    return comb, pert, mask_full
 
 
 def get_transformed_images(
@@ -333,7 +332,7 @@ def transform_wb(
         kernel = kernel[np.newaxis, :, :]
         kernel = np.repeat(kernel[np.newaxis, :, :, :], x_adv.size()[1], axis=0)
         kernel_torch = torch.from_numpy(kernel)
-        blur = torch.nn.Conv2d(
+        blur_torch = torch.nn.Conv2d(
             in_channels=x_adv.size()[1],
             out_channels=x_adv.size()[1],
             kernel_size=blur,
@@ -341,12 +340,12 @@ def transform_wb(
             bias=False,
             padding=blur // 2,
         )
-        blur.weight.data = kernel_torch.to(x_adv.dtype)
-        blur.weight.requires_grad = False
-        blur = blur.to(x_adv.device)
+        blur_torch.weight.data = kernel_torch.to(x_adv.dtype)
+        blur_torch.weight.requires_grad = False
+        blur_torch = blur_torch.to(x_adv.device)
         # the below is done this way to match the black box implementation
         pert = torch.where(mask > 0.5, x_adv, torch.zeros(x_adv.size()).to(mask.device))
-        x_adv = torch.where(mask > 0.5, blur(pert), x)
+        x_adv = torch.where(mask > 0.5, blur_torch(pert), x)
     else:
         x_adv = torch.where(mask > 0.5, x_adv, x)
 
@@ -468,8 +467,14 @@ def get_perspective_transform(
         crop_x = int(round(crop_size / height * width))
 
     if not whitebox:
+        if not isinstance(img, np.ndarray):
+            raise ValueError("img must be np.ndarray")
+
         dst = cv2.warpPerspective(img, perspective_mat, (crop_x, crop_y), borderMode=cv2.BORDER_REPLICATE)
     else:
+        if not isinstance(img, torch.Tensor):
+            raise ValueError("img must be torch tensor")
+
         dst = warp_perspective(
             img,
             torch.from_numpy(perspective_mat).float().to(img.device).unsqueeze(0),
@@ -489,7 +494,7 @@ def get_offset_and_crop_size(
     crop_off_x: float,
     crop_off_y: float,
     pts: np.ndarray,
-    ratio: bool = False,
+    ratio: float,
 ) -> Tuple[float, float, float]:
     """
     Compute offsets and crop size for perspective transform.
