@@ -99,7 +99,7 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
     def __init__(
         self,
         classifier: "CLASSIFIER_TYPE",
-        net_size: Optional[Tuple[int, int]] = None,
+        net_size: Tuple[int, int],
         min_tr: float = 0.8,
         num_xforms: int = 100,
         step_size: float = 0.0157,
@@ -108,14 +108,14 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
         patch_removal_size: float = 4,
         patch_removal_interval: float = 2,
         num_patches_to_remove: int = 4,
-        rand_start_epsilon_range: Tuple[float, float] = [-8 / 255, 8 / 255],
+        rand_start_epsilon_range: Tuple[float, float] = (-8 / 255, 8 / 255),
         rotation_range: Tuple[float, float] = (-30.0, 30.0),
         dist_range: Tuple[float, float] = (0.0, 0.0),
         gamma_range: Tuple[float, float] = (1.0, 2.0),
         crop_percent_range: Tuple[float, float] = (-0.03125, 0.03125),
         off_x_range: Tuple[float, float] = (-0.03125, 0.03125),
         off_y_range: Tuple[float, float] = (-0.03125, 0.03125),
-        blur_kernels: List[float] = [0, 3],
+        blur_kernels: Union[Tuple[float, float], List[float]] = (0, 3),
         batch_size: int = 64,
     ) -> None:
         """
@@ -123,7 +123,6 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
 
         :param classifier: A trained classifier.
         :param net_size: The resolution to resize images to before feeding to the model in (w, h).
-                         If None, it assumes the input image x's size is correct.
         :param min_tr: minimum threshold for EoT PGD to reach.
         :param num_xforms: The number of transforms to use.
         :param step_size: The step size.
@@ -195,6 +194,14 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
                 "This attack has not yet been tested for binary classification with a single output classifier."
             )
 
+        if not isinstance(obj_width, int) and not isinstance(obj_width, float):
+            raise ValueError("obj_width must be int or float")
+        obj_width = float(obj_width)
+
+        if not isinstance(focal, int) and not isinstance(focal, float):
+            raise ValueError("focal must be int or float")
+        focal = float(focal)
+
         # Check the mask
         if mask is not None:
             if len(mask.shape) == len(x.shape):
@@ -202,7 +209,7 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
             else:
                 mask = np.array([mask.astype(ART_NUMPY_DTYPE)] * x.shape[0])
         else:
-            mask = np.array([None] * x.shape[0])
+            mask = np.ones((x.shape))
 
         # Get clip_min and clip_max from the classifier or infer them from data
         if self.estimator.clip_values is not None:
@@ -285,7 +292,7 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
         target_label: int,
         y_onehot: "torch.Tensor",
         xforms: List[Tuple[float, float, float, int, float, float, float, float, float]],
-        pts: np.ndarray,
+        pts: Optional[np.ndarray],
         clip_min: float,
         clip_max: float,
     ) -> float:
@@ -310,9 +317,9 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
                 if len(x_adv.shape) == 3:
                     x_adv = x_adv.unsqueeze(0)
                 transformed_x_adv = transform_wb(x, x_adv, mask, xform, pts, self.net_size, clip_min, clip_max)
-                logits, _ = self.estimator._predict_framework(
+                logits, _ = self.estimator._predict_framework(  # pylint: disable=W0212
                     transformed_x_adv.cuda(), y_onehot
-                )  # pylint: disable=W0212
+                )
                 success = int(logits.argmax(dim=1).detach().cpu().numpy()[0] == target_label)
                 successes += success
         return successes / len(xforms)
@@ -320,8 +327,8 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
     def _perturb(
         self,
         x: np.ndarray,
-        y: int,
-        mask: Optional[np.ndarray],
+        y: np.ndarray,
+        mask: np.ndarray,
         pts: Optional[np.ndarray],
         obj_width: float,
         focal: float,
@@ -346,8 +353,6 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
 
         x = (x.copy() - clip_min) / (clip_max - clip_min)
 
-        if mask is None:
-            mask = np.ones((x.shape))
         mask = mask / np.max(mask)
         mask = np.where(mask > 0.5, 1.0, 0.0)
 
@@ -358,7 +363,7 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
 
         # Load victim img and starting mask.
         img = torch.tensor(x_copy, requires_grad=True, device=self.estimator.device)
-        mask = torch.tensor(mask_copy, requires_grad=True, device=self.estimator.device).to(img.dtype)
+        mask_tensor = torch.tensor(mask_copy, requires_grad=True, device=self.estimator.device).to(img.dtype)
         y_onehot = torch.tensor(y_onehot, requires_grad=True, device=self.estimator.device)
 
         # Load transforms.
@@ -382,13 +387,13 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
         prev_attack = img.detach().clone()
         while True:
             adv_img = img.detach().clone()
-            adv_img = torch.where(mask > 0.5, prev_attack, adv_img)
+            adv_img = torch.where(mask_tensor > 0.5, prev_attack, adv_img)
             rand_start = (
                 torch.FloatTensor(*img.size())
                 .uniform_(self.rand_start_epsilon_range[0], self.rand_start_epsilon_range[1])
                 .to(adv_img.device)
             )
-            adv_img = (adv_img + mask * rand_start).detach()
+            adv_img = (adv_img + mask_tensor * rand_start).detach()
             adv_img = torch.clamp(adv_img, 0, 1).to(img.dtype)
             adv_img.requires_grad = True
             final_avg_grad = None
@@ -401,7 +406,7 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
                     xform_img = transform_wb(
                         img.clone().unsqueeze(0),
                         adv_img.unsqueeze(0),
-                        mask,
+                        mask_tensor,
                         xform,
                         pts,
                         self.net_size,
@@ -428,11 +433,11 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
                 avg_grad_sign = avg_grad.clone()
                 avg_grad_sign = torch.sign(avg_grad_sign)
                 avg_grad_sign[torch.isnan(avg_grad_sign)] = 0
-                adv_img = adv_img - mask * self.step_size * avg_grad_sign
+                adv_img = adv_img - mask_tensor * self.step_size * avg_grad_sign
 
                 adv_img = adv_img.clamp(0, 1)
                 transform_robustness = self._eval(
-                    img.detach().clone(), adv_img, mask, target_label, y_onehot, xforms, pts, clip_min, clip_max
+                    img.detach().clone(), adv_img, mask_tensor, target_label, y_onehot, xforms, pts, clip_min, clip_max
                 )
                 final_avg_grad = avg_grad
                 if transform_robustness >= self.min_tr:
@@ -446,7 +451,7 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
             # Remove low-impact pixel-patches or pixels in mask.
             pert = adv_img - img
             final_avg_grad[torch.isnan(final_avg_grad)] = 0
-            final_avg_grad = mask * final_avg_grad * pert
+            final_avg_grad = mask_tensor * final_avg_grad * pert
             pixelwise_avg_grads = torch.sum(torch.abs(final_avg_grad), dim=0)
 
             for _ in range(self.num_patches_to_remove):
@@ -465,7 +470,7 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
                         ].sum()
 
                         if (
-                            mask[
+                            mask_tensor[
                                 0,
                                 int(round(i)) : int(round(i + self.patch_removal_size)),
                                 int(round(j)) : int(round(j + self.patch_removal_size)),
@@ -474,7 +479,7 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
                         ):
                             patch_grad = (
                                 patch_grad
-                                / mask[
+                                / mask_tensor[
                                     0,
                                     int(round(i)) : int(round(i + self.patch_removal_size)),
                                     int(round(j)) : int(round(j + self.patch_removal_size)),
@@ -486,18 +491,18 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
                 if min_patch_grad_idx is None:
                     break
                 i, j = min_patch_grad_idx
-                mask[
+                mask_tensor[
                     0,
                     int(round(i)) : int(round(i + self.patch_removal_size)),
                     int(round(j)) : int(round(j + self.patch_removal_size)),
                 ] = 0
                 if img.size()[0] == 3:
-                    mask[
+                    mask_tensor[
                         1,
                         int(round(i)) : int(round(i + self.patch_removal_size)),
                         int(round(j)) : int(round(j + self.patch_removal_size)),
                     ] = 0
-                    mask[
+                    mask_tensor[
                         2,
                         int(round(i)) : int(round(i + self.patch_removal_size)),
                         int(round(j)) : int(round(j + self.patch_removal_size)),

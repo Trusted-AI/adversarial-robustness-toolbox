@@ -47,12 +47,15 @@ This module implements helper functions for GRAPHITE attacks.
 from typing import Tuple, Union, TYPE_CHECKING, List
 import math
 import numpy as np
+from art.estimators.estimator import BaseEstimator
+from art.estimators.classification import ClassifierMixin
 from art.utils import get_labels_np_array
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
     import torch
 
+_estimator_requirements = (BaseEstimator, ClassifierMixin)
 
 def dist2pixels(dist: float, width: float, obj_width: float = 30) -> float:
     """
@@ -298,7 +301,7 @@ def transform_wb(
     x_adv: "torch.Tensor",
     mask: "torch.Tensor",
     xform: Tuple[float, float, float, int, float, float, float, float, float],
-    pts: np.ndarray,
+    pts: Optional[np.ndarray],
     net_size: Tuple[int, int],
     clip_min: float,
     clip_max: float,
