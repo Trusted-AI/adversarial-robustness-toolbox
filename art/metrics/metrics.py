@@ -121,7 +121,7 @@ def adversarial_accuracy(
     y = classifier.predict(x)
     y_pred = classifier.predict(adv_x)
 
-    idxs = np.argmax(y_pred, axis=1) != np.argmax(y, axis=1)
+    idxs = np.argmax(y_pred, axis=1) == np.argmax(y, axis=1)
     return np.sum(idxs) / len(y)
 
 

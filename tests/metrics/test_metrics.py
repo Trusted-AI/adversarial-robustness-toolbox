@@ -25,6 +25,7 @@ import tensorflow as tf
 import torch.nn as nn
 import torch.nn.functional as f
 import torch.optim as optim
+from art.attacks.evasion.hop_skip_jump import HopSkipJump
 
 from art.estimators.classification.keras import KerasClassifier
 from art.estimators.classification.pytorch import PyTorchClassifier
@@ -39,8 +40,6 @@ from art.metrics.metrics import (
     wasserstein_distance,
 )
 from art.utils import load_mnist
-
-from art.attacks.evasion.auto_attack import AutoAttack
 
 from tests.utils import master_seed
 
@@ -86,13 +85,13 @@ class TestMetrics(unittest.TestCase):
 
         # Compute adversarial accuracies
         params = {"eps_step": 1.0, "eps": 1.0}
-        adv_acc = adversarial_accuracy(classifier, x_train, str("auto"), params)
+        adv_acc = adversarial_accuracy(classifier, x_train, str("fgsm"), params)
         self.assertAlmostEqual(adv_acc, 0)
 
-        params = {"eps_step": 1.0, "eps": 1.0}
-        adv_crafter = AutoAttack(classifier, **params)
+        params = {"max_iter": 10,"max_eval": 100, "init_eval": 10, "init_size": 10}
+        adv_crafter = HopSkipJump(classifier, **params)
         adv_acc = adversarial_accuracy(classifier, x_train, attack_crafter=adv_crafter)
-        self.assertAlmostEqual(adv_acc, 0)
+        self.assertLess(adv_acc, 0.1)
 
     def test_loss_sensitivity(self):
         (x_train, y_train), (_, _), _, _ = load_mnist()
