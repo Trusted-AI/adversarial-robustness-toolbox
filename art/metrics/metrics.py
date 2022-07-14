@@ -32,6 +32,7 @@ from scipy.stats import weibull_min
 from tqdm.auto import tqdm
 
 from art.config import ART_NUMPY_DTYPE
+from art.attacks.attack import EvasionAttack
 from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.attacks.evasion.hop_skip_jump import HopSkipJump
 from art.utils import random_sphere
@@ -77,6 +78,45 @@ def get_crafter(classifier: "CLASSIFIER_TYPE", attack: str, params: Optional[Dic
         crafter.set_params(**params)
 
     return crafter
+
+
+def adversarial_accuracy(
+    classifier: "CLASSIFIER_TYPE",
+    x: np.ndarray,
+    attack_name: str = None,
+    attack_params: Optional[Dict[str, Any]] = None,
+    attack_crafter: EvasionAttack = None,
+) -> float:
+    """
+    Compute the adversarial accuracy of a classifier object over the sample `x` for a given adversarial crafting
+    method `attack`. `attack_name` can be specified to use a preset attack, or `attack_crafter` for wider choices and customized parameters.
+    Note that the score does not exclude wrong predictions by the classifier.
+
+    :param classifier: A trained model.
+    :param x: Input samples of shape that can be fed into `classifier`.
+    :param attack_name: A string specifying the attack to be used. Currently supported attacks are {`fgsm', `hsj`}
+                        (Fast Gradient Sign Method, Hop Skip Jump).
+    :param attack_params: A dictionary with attack-specific parameters. If the attack has a norm attribute, then it will
+                          be used as the norm for calculating the robustness; otherwise the standard Euclidean distance
+                          is used (norm=2).
+    :param attack_crafter: EvasionAttack instance with `generate' method to apply on `x` to create adversarial examples.
+    :return: The adversarial accuracy of the classifier computed on `x`.
+    """
+
+    if attack_crafter is None:
+        if attack_name is None:
+            raise ValueError("At least one of `attack_name` or `attack_crafter` must be specified.")
+        attack_crafter = get_crafter(classifier, attack_name, attack_params)
+        attack_crafter.set_params(**{"minimal": True})
+
+    adv_x = attack_crafter.generate(x)
+
+    # Predict the labels for adversarial examples
+    y = classifier.predict(x)
+    y_pred = classifier.predict(adv_x)
+
+    idxs = np.argmax(y_pred, axis=1) != np.argmax(y, axis=1)
+    return np.sum(idxs) / len(y)
 
 
 def empirical_robustness(
