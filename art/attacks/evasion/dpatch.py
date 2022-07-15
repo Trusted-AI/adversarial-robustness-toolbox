@@ -107,7 +107,12 @@ class DPatch(EvasionAttack):
         Generate DPatch.
 
         :param x: Sample images.
-        :param y: Target labels for object detector.
+        :param y: True labels of type `List[Dict[np.ndarray]]` for untargeted attack, one dictionary per input image. The
+                  keys and values of the dictionary are:
+                  
+                  - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
+                  - labels [N]: the labels for each image
+                  - scores [N]: the scores or each prediction.
         :param target_label: The target label of the DPatch attack.
         :param mask: An boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
                      (N, H, W) without their channel dimensions. Any features for which the mask is True can be the
