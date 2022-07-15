@@ -255,6 +255,8 @@ class SleeperAgentAttack(GradientMatchingAttack):
         from art.estimators.classification.pytorch import PyTorchClassifier
         from art.estimators.classification import TensorFlowV2Classifier
 
+        model_: Tuple[TensorFlowV2Classifier, PyTorchClassifier]
+
         if isinstance(self.substitute_classifier, PyTorchClassifier):
             x_train = np.transpose(x_train, [0, 3, 1, 2])
             x_train[self.indices_target[self.indices_poison]] = poisoned_samples
