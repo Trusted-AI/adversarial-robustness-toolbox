@@ -23,7 +23,7 @@ This module implements Sleeper Agent attack on Neural Networks.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Any, Tuple, TYPE_CHECKING, List
+from typing import Any, Tuple, TYPE_CHECKING, List, Union
 import random
 
 import numpy as np
@@ -255,7 +255,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         from art.estimators.classification.pytorch import PyTorchClassifier
         from art.estimators.classification import TensorFlowV2Classifier
 
-        model_: Tuple[TensorFlowV2Classifier, PyTorchClassifier]
+        model_: Union[TensorFlowV2Classifier, PyTorchClassifier]
 
         if isinstance(self.substitute_classifier, PyTorchClassifier):
             x_train = np.transpose(x_train, [0, 3, 1, 2])
@@ -508,7 +508,6 @@ class SleeperAgentAttack(GradientMatchingAttack):
         from art.estimators.classification.pytorch import PyTorchClassifier
         from art.estimators.classification import TensorFlowV2Classifier
 
-        #         pdb.set_trace()
         if isinstance(self.substitute_classifier, PyTorchClassifier):
             import torch
 
