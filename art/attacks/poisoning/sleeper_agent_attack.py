@@ -446,9 +446,8 @@ class SleeperAgentAttack(GradientMatchingAttack):
                 horizontal_flip=True,
                 vertical_flip=False,
             )
-            callbacks = []
+            callbacks = [TqdmCallback(verbose=0)]
             datagen.fit(x_train)
-            callbacks = callbacks + [TqdmCallback(verbose=0)]
             model.fit(
                 datagen.flow(x_train, y_train, batch_size=batch_size),
                 steps_per_epoch=x_train.shape[0] // batch_size,
@@ -537,7 +536,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
                     t.watch(classifier.model.weights)
                     output = classifier.model(image, training=False)
                     loss = classifier.model.compiled_loss(label, output)
-                    gradients = t.gradient(loss, classifier.model.weights)
+                    gradients = list(t.gradient(loss, classifier.model.weights))
                     gradients = [w for w in gradients if w is not None]
                     grad_norm = 0
                     for grad in gradients:
