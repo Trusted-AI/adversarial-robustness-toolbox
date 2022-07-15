@@ -134,8 +134,6 @@ class DPatch(EvasionAttack):
         channel_index = 1 if self.estimator.channels_first else x.ndim - 1
         if x.shape[channel_index] != self.patch_shape[channel_index - 1]:
             raise ValueError("The color channel index of the images and the patch have to be identical.")
-        if y is not None:
-            raise ValueError("The DPatch attack does not use target labels.")
         if x.ndim != 4:  # pragma: no cover
             raise ValueError("The adversarial patch can only be applied to images.")
         if target_label is not None:
@@ -160,7 +158,7 @@ class DPatch(EvasionAttack):
         )
         patch_target: List[Dict[str, np.ndarray]] = []
 
-        if self.target_label:
+        if self.target_label and y is None:
 
             for i_image in range(patched_images.shape[0]):
                 if isinstance(self.target_label, int):
@@ -190,7 +188,7 @@ class DPatch(EvasionAttack):
 
         else:
 
-            predictions = self.estimator.predict(x=patched_images, standardise_output=True)
+            predictions = y if y is not None else self.estimator.predict(x=patched_images, standardise_output=True)
 
             for i_image in range(patched_images.shape[0]):
                 target_dict = {}
