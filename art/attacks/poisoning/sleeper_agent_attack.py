@@ -520,11 +520,11 @@ class SleeperAgentAttack(GradientMatchingAttack):
                 image = torch.tensor(x, dtype=torch.float32).float().to(device)
                 label = torch.tensor(y).to(device)
                 loss = criterion(model(image.unsqueeze(0)), label.unsqueeze(0))
-                # gradients = torch.autograd.grad(loss, differentiable_params, only_inputs=True)
-                # grad_norm = torch.tensor(0, dtype=torch.float32).to(device)
-                # for grad in gradients:
-                #     grad_norm += grad.detach().pow(2).sum()
-                # grad_norms.append(grad_norm.sqrt())
+                gradients = list(torch.autograd.grad(loss, differentiable_params, only_inputs=True))
+                grad_norm = torch.tensor(0, dtype=torch.float32).to(device)
+                for grad in gradients:
+                    grad_norm += grad.detach().pow(2).sum()
+                grad_norms.append(grad_norm.sqrt())
         elif isinstance(self.substitute_classifier, TensorFlowV2Classifier):
             import tensorflow as tf
 
@@ -538,7 +538,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
                     loss = classifier.model.compiled_loss(label, output)
                     gradients = list(t.gradient(loss, classifier.model.weights))
                     gradients = [w for w in gradients if w is not None]
-                    grad_norm = 0
+                    grad_norm = tf.constant(0)
                     for grad in gradients:
                         grad_norm += tf.reduce_sum(tf.math.square(grad))
                     grad_norms.append(tf.math.sqrt(grad_norm))
