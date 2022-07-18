@@ -370,8 +370,6 @@ class SleeperAgentAttack(GradientMatchingAttack):
             return model, loss_fn, optimizer
         elif isinstance(self.substitute_classifier, TensorFlowV2Classifier):
             import tensorflow as tf
-            from tensorflow.keras.models import Sequential
-            from tensorflow.keras.layers import Dense, Flatten
             from tensorflow.keras.preprocessing.image import ImageDataGenerator
             from tqdm.keras import TqdmCallback
 
@@ -458,7 +456,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
             model.evaluate(x_test, y_test)
             return model, None, None
         else:
-            raise NotImplementedError("SleeperAgentAttack is currently implemented only for PyTorch and TensorFlowV2.")
+            raise ValueError("SleeperAgentAttack is currently implemented only for PyTorch and TensorFlowV2.")
 
     @classmethod
     def test_accuracy(cls, model: "torch.nn.Module", test_loader: "torch.utils.data.dataloader.DataLoader") -> float:
