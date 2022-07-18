@@ -367,7 +367,6 @@ class SleeperAgentAttack(GradientMatchingAttack):
                     print("Epoch {} train accuracy: {}".format(epoch, train_accuracy))  # pylint: disable=C0209
             test_accuracy = self.test_accuracy(model, dataloader_test)
             print("Final test accuracy: {}".format(test_accuracy))  # pylint: disable=C0209
-            return model, loss_fn, optimizer
         elif isinstance(self.substitute_classifier, TensorFlowV2Classifier):
             import tensorflow as tf
             from tensorflow.keras.preprocessing.image import ImageDataGenerator
@@ -454,9 +453,11 @@ class SleeperAgentAttack(GradientMatchingAttack):
                 callbacks=callbacks,
             )
             model.evaluate(x_test, y_test)
-            return model, None, None
+            loss_fn = None
+            optimizer = None
         else:
             raise ValueError("SleeperAgentAttack is currently implemented only for PyTorch and TensorFlowV2.")
+        return model, loss_fn, optimizer
 
     @classmethod
     def test_accuracy(cls, model: "torch.nn.Module", test_loader: "torch.utils.data.dataloader.DataLoader") -> float:
@@ -533,10 +534,10 @@ class SleeperAgentAttack(GradientMatchingAttack):
                 with tf.GradientTape() as t:  # pylint: disable=C0103
                     t.watch(classifier.model.weights)
                     output = classifier.model(image, training=False)
-                    loss = classifier.model.compiled_loss(label, output) # type: ignore
+                    loss = classifier.model.compiled_loss(label, output)  # type: ignore
                     gradients = list(t.gradient(loss, classifier.model.weights))
                     gradients = [w for w in gradients if w is not None]
-                    grad_norm = tf.constant(0,dtype=tf.float32)
+                    grad_norm = tf.constant(0, dtype=tf.float32)
                     for grad in gradients:
                         grad_norm += tf.reduce_sum(tf.math.square(grad))
                     grad_norms.append(tf.math.sqrt(grad_norm))
