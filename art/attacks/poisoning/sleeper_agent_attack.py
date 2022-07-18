@@ -369,7 +369,6 @@ class SleeperAgentAttack(GradientMatchingAttack):
             print("Final test accuracy: {}".format(test_accuracy))  # pylint: disable=C0209
         elif isinstance(self.substitute_classifier, TensorFlowV2Classifier):
             import tensorflow as tf
-            from tensorflow.keras.preprocessing.image import ImageDataGenerator
             from tqdm.keras import TqdmCallback
 
             # Tweaked the model from https://github.com/calmisential/TensorFlow2.0_ResNet
@@ -407,7 +406,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
                 bn1 = tf.keras.layers.BatchNormalization()
 
                 avgpool = tf.keras.layers.GlobalAveragePooling2D()
-                fc = tf.keras.layers.Dense(units=num_classes, activation=tf.keras.activations.softmax)
+                linear = tf.keras.layers.Dense(units=num_classes, activation=tf.keras.activations.softmax)
 
                 x = pad1(x)
                 x = conv1(x)
@@ -418,7 +417,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
                 x = basic_block_layer(x, filter_num=256, blocks=layer_params[2], stride=2)
                 x = basic_block_layer(x, filter_num=512, blocks=layer_params[3], stride=2)
                 x = avgpool(x)
-                output = fc(x)
+                output = linear(x)
                 return output
 
             def resnet_18(x, num_classes):
@@ -431,7 +430,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
             opt = tf.keras.optimizers.SGD(learning_rate=0.1, momentum=0.9, nesterov=True)
             model.compile(loss="categorical_crossentropy", optimizer=opt, metrics=["accuracy"])
 
-            datagen = ImageDataGenerator(
+            datagen = tf.keras.preprocessing.image.ImageDataGenerator(
                 featurewise_center=False,
                 samplewise_center=False,
                 featurewise_std_normalization=False,
