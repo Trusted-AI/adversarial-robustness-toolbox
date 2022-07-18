@@ -535,10 +535,10 @@ class SleeperAgentAttack(GradientMatchingAttack):
                 with tf.GradientTape() as t:  # pylint: disable=C0103
                     t.watch(classifier.model.weights)
                     output = classifier.model(image, training=False)
-                    loss = classifier.model.compiled_loss(label, output)
+                    loss = classifier.model.compiled_loss(label, output) # type: ignore
                     gradients = list(t.gradient(loss, classifier.model.weights))
                     gradients = [w for w in gradients if w is not None]
-                    grad_norm = tf.constant(0)
+                    grad_norm = tf.constant(0,dtype=tf.float32)
                     for grad in gradients:
                         grad_norm += tf.reduce_sum(tf.math.square(grad))
                     grad_norms.append(tf.math.sqrt(grad_norm))
