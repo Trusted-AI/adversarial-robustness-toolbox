@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2019
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2022
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -44,7 +44,7 @@ This module implements helper functions for GRAPHITE attacks.
 | Original github link: https://github.com/ryan-feng/GRAPHITE
 """
 
-from typing import Tuple, Union, TYPE_CHECKING, List
+from typing import Optional, Tuple, Union, TYPE_CHECKING, List
 import math
 import numpy as np
 from art.estimators.estimator import BaseEstimator
@@ -99,12 +99,12 @@ def apply_transformation(
     crop_percent: float,
     crop_off_x: float,
     crop_off_y: float,
-    pts: np.ndarray,
     net_size: Tuple[int, int],
     obj_width: float,
     focal: float,
     clip_min: float,
     clip_max: float,
+    pts: Optional[np.ndarray] = None,
 ) -> np.ndarray:
     """
     Apply transformation to input image.
@@ -118,12 +118,12 @@ def apply_transformation(
     :param crop_percent: Percent to crop image at.
     :param crop_off_x: x offset for crop.
     :param crop_off_y: y offset for crop.
-    :param pts: A set of points that will set the crop size in the perspective transform.
     :param net_size: Size of the image for the network.
     :param obj_width: Estimated width of object in inches for perspective transform.
     :param focal: Estimated focal length in ft for perspective transform.
     :param clip_min: Minimum value of an example.
     :param clip_max: Maximum value of an example.
+    :param pts: A set of points that will set the crop size in the perspective transform.
     :return: Transformed image in network form.
     """
     import cv2  # lgtm [py/repeated-import]
@@ -245,10 +245,10 @@ def get_transformed_images(
     xforms: List[Tuple[float, float, float, int, float, float, float, float, float]],
     lbd: float,
     theta: np.ndarray,
-    pts: np.ndarray,
     net_size: Tuple[int, int],
     clip_min: float,
     clip_max: float,
+    pts: Optional[np.ndarray] = None,
 ) -> List[np.ndarray]:
     """
     Get transformed images.
@@ -257,10 +257,10 @@ def get_transformed_images(
     :param xforms: Transformation parameters.
     :param lbd: lambda multiplier for the perturbation.
     :param theta: The perturbation.
-    :param pts: A set of points that will set the crop size in the perspective transform.
     :param net_size: Size of the image for the network.
     :param clip_min: Minimum value of an example.
     :param clip_max: Maximum value of an example.
+    :param pts: A set of points that will set the crop size in the perspective transform.
     :return: List of transformed images.
     """
     att, pert, mask = add_noise(x, mask, lbd, theta, True)
@@ -283,12 +283,12 @@ def get_transformed_images(
                 crop_percent,
                 crop_off_x,
                 crop_off_y,
-                pts,
                 net_size,
                 obj_width,
                 focal,
                 clip_min,
                 clip_max,
+                pts,
             )
         )
 
@@ -403,7 +403,7 @@ def get_perspective_transform(
     crop_percent: float,
     crop_off_x: float,
     crop_off_y: float,
-    pts: np.ndarray,
+    pts: Optional[np.ndarray] = None,
     whitebox: bool = False,
 ) -> Union[np.ndarray, "torch.Tensor"]:
     """
@@ -453,7 +453,7 @@ def get_perspective_transform(
     )
 
     x_off, y_off, crop_size = get_offset_and_crop_size(
-        width, height, h_mat, crop_percent, crop_off_x, crop_off_y, pts, focal / dist
+        width, height, h_mat, crop_percent, crop_off_x, crop_off_y, focal / dist, pts
     )
 
     affine_mat = np.array([[1, 0, x_off], [0, 1, y_off], [0, 0, 1]])
@@ -493,8 +493,8 @@ def get_offset_and_crop_size(
     crop_percent: float,
     crop_off_x: float,
     crop_off_y: float,
-    pts: np.ndarray,
     ratio: float,
+    pts: Optional[np.ndarray] = None,
 ) -> Tuple[float, float, float]:
     """
     Compute offsets and crop size for perspective transform.
@@ -504,8 +504,8 @@ def get_offset_and_crop_size(
     :param crop_percent: Percentage for cropping.
     :param crop_off_x: Cropping x offset.
     :param crop_off_y: Cropping y offset.
-    :param pts: pts to include in the crop.
     :param ratio: Focal length to distance ratio for scaling.
+    :param pts: pts to include in the crop.
     :return: x offset, y offset, crop size.
     """
     pts_flag = pts is not None
