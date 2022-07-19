@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2019
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2022
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -263,12 +263,12 @@ class GRAPHITEBlackbox(EvasionAttack):
                 x=x_adv[i],
                 y=y[i],
                 x_tar=x_tar[i],
-                mask=mask[i],
-                pts=pts,
                 obj_width=obj_width,
                 focal=focal,
                 clip_min=clip_min,
                 clip_max=clip_max,
+                mask=mask[i],
+                pts=pts,
             )
 
         y = to_categorical(y, self.estimator.nb_classes)  # type: ignore
@@ -307,26 +307,26 @@ class GRAPHITEBlackbox(EvasionAttack):
         x: np.ndarray,
         y: int,
         x_tar: np.ndarray,
-        mask: Optional[np.ndarray],
-        pts: Optional[np.ndarray],
         obj_width: float,
         focal: float,
         clip_min: float,
         clip_max: float,
+        mask: Optional[np.ndarray] = None,
+        pts: Optional[np.ndarray] = None,
     ) -> np.ndarray:
         """
         Internal attack function for one example.
         :param x: An array with one original input to be attacked.
         :param y: The target label.
         :param x_tar: Initial array to act as an example target image.
-        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
-                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
-                     perturbed.
-        :param pts: Optional. A set of points that will set the crop size in the perspective transform.
         :param obj_width: Estimated width of object in inches for perspective transform.
         :param focal: Estimated focal length in ft for perspective transform.
         :param clip_min: Minimum value of an example.
         :param clip_max: Maximum value of an example.
+        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
+                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
+                     perturbed.
+        :param pts: Optional. A set of points that will set the crop size in the perspective transform.
         :return: An adversarial example.
         """
         import cv2
@@ -354,10 +354,10 @@ class GRAPHITEBlackbox(EvasionAttack):
             mask_noise = mask_noise[:, :, np.newaxis]
 
         mask_out = self._generate_mask(
-            x_copy, x_noise, x_tar, x_tar_noise, mask_noise, y, pts, obj_width, focal, clip_min, clip_max
+            x_copy, x_noise, x_tar, x_tar_noise, mask_noise, y, obj_width, focal, clip_min, clip_max, pts
         )
 
-        adversarial = self._boost(x_copy, x_noise, x_tar_noise, mask_out, y, pts, obj_width, focal, clip_min, clip_max)
+        adversarial = self._boost(x_copy, x_noise, x_tar_noise, mask_out, y, obj_width, focal, clip_min, clip_max, pts)
 
         adversarial = np.clip(adversarial.copy() * (clip_max - clip_min) + clip_min, clip_min, clip_max)
         return adversarial
@@ -370,11 +370,11 @@ class GRAPHITEBlackbox(EvasionAttack):
         x_tar_noise: np.ndarray,
         mask: np.ndarray,
         y: int,
-        pts: Optional[np.ndarray],
         obj_width: float,
         focal: float,
         clip_min: float,
         clip_max: float,
+        pts: Optional[np.ndarray] = None,
     ) -> np.ndarray:
         """
         Function to generate a mask.
@@ -386,11 +386,11 @@ class GRAPHITEBlackbox(EvasionAttack):
                      broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
                      perturbed.
         :param y: The target label.
-        :param pts: Optional. A set of points that will set the crop size in the perspective transform.
         :param obj_width: Estimated width of object in inches for perspective transform.
         :param focal: Estimated focal length in ft for perspective transform.
         :param clip_min: Minimum value of an example.
         :param clip_max: Maximum value of an example.
+        :param pts: Optional. A set of points that will set the crop size in the perspective transform.
         :return: A mask.
         """
 
@@ -438,11 +438,11 @@ class GRAPHITEBlackbox(EvasionAttack):
                 x_tar_noise,
                 mask,
                 y,
-                pts,
                 patches,
                 xforms,
                 clip_min,
                 clip_max,
+                pts,
             )
 
         tr_scores_np = np.asarray(tr_scores)
@@ -452,7 +452,7 @@ class GRAPHITEBlackbox(EvasionAttack):
 
         # STAGE 2: Coarse Reduction
         best_mask, patches, indices = self._get_coarse_reduced_mask(
-            x, x_noise, x_tar_noise, y, mask, patches, indices, xforms, pts, clip_min, clip_max
+            x, x_noise, x_tar_noise, y, mask, patches, indices, xforms, clip_min, clip_max, pts
         )
 
         # STAGE 3: Fine Reduction
@@ -468,11 +468,11 @@ class GRAPHITEBlackbox(EvasionAttack):
                     best_mask,
                     patches_copy,
                     xforms,
-                    pts,
                     object_size,
                     clip_min,
                     clip_max,
                     lbd,
+                    pts,
                 )
                 lbd += 5
         else:
@@ -484,10 +484,10 @@ class GRAPHITEBlackbox(EvasionAttack):
                 best_mask,
                 patches,
                 xforms,
-                pts,
                 object_size,
                 clip_min,
                 clip_max,
+                pts,
             )
 
         return best_mask
@@ -499,11 +499,11 @@ class GRAPHITEBlackbox(EvasionAttack):
         x_tar_noise: np.ndarray,
         mask: np.ndarray,
         y: int,
-        pts: Optional[np.ndarray],
         patches: List[np.ndarray],
         xforms: List,
         clip_min: float,
         clip_max: float,
+        pts: Optional[np.ndarray] = None,
     ) -> List[float]:
         """
         Function to generate a heatmap.
@@ -514,11 +514,11 @@ class GRAPHITEBlackbox(EvasionAttack):
                      broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
                      perturbed.
         :param y: The target label.
-        :param pts: Optional. A set of points that will set the crop size in the perspective transform.
         :param patches: list of patches from heatmap.
         :param xforms: list of transform params.
         :param clip_min: Minimum value of an example.
         :param clip_max: Maximum value of an example.
+        :param pts: Optional. A set of points that will set the crop size in the perspective transform.
         :return: List of transform-robustness scores for the list of patches.
         """
         tr_scores = []
@@ -528,7 +528,7 @@ class GRAPHITEBlackbox(EvasionAttack):
             next_mask = mask * (np.ones(mask.shape) - patch)
             theta = (x_tar_noise - x_noise) * next_mask
             xform_imgs = get_transformed_images(
-                x, next_mask, xforms, 1.0, theta, pts, self.net_size, clip_min, clip_max
+                x, next_mask, xforms, 1.0, theta, self.net_size, clip_min, clip_max, pts
             )
             success_rate = run_predictions(self.estimator, xform_imgs, y, self.batch_size, False)
             tr_scores.append(success_rate)
@@ -544,10 +544,10 @@ class GRAPHITEBlackbox(EvasionAttack):
         mask: np.ndarray,
         patches: List[np.ndarray],
         xforms: List,
-        pts: Optional[np.ndarray],
         clip_min: float,
         clip_max: float,
         pivot: int,
+        pts: Optional[np.ndarray] = None,
     ) -> Tuple[float, np.ndarray]:
         """
         Function as a binary search plug-in that evaluates the transform-robustness at the specified pivot.
@@ -560,10 +560,10 @@ class GRAPHITEBlackbox(EvasionAttack):
                      perturbed.
         :param patches: list of patches from heatmap.
         :param xforms: list of transform params.
-        :param pts: Optional. A set of points that will set the crop size in the perspective transform.
         :param clip_min: Minimum value of an example.
         :param clip_max: Maximum value of an example.
         :param pivot: Pivot point to evaluate transform-robustness at.
+        :param pts: Optional. A set of points that will set the crop size in the perspective transform.
         :return: transform-robustness and mask.
         """
 
@@ -575,7 +575,7 @@ class GRAPHITEBlackbox(EvasionAttack):
             best_mask = next_mask
 
         theta = (x_tar_noise - x_noise) * best_mask
-        xform_imgs = get_transformed_images(x, best_mask, xforms, 1.0, theta, pts, self.net_size, clip_min, clip_max)
+        xform_imgs = get_transformed_images(x, best_mask, xforms, 1.0, theta, self.net_size, clip_min, clip_max, pts)
         success_rate = run_predictions(self.estimator, xform_imgs, y, self.batch_size, False)
 
         return (success_rate, best_mask)
@@ -590,9 +590,9 @@ class GRAPHITEBlackbox(EvasionAttack):
         patches: List[np.ndarray],
         indices: List[Tuple[int, int]],
         xforms: List,
-        pts: Optional[np.ndarray],
         clip_min: float,
         clip_max: float,
+        pts: Optional[np.ndarray] = None,
     ) -> Tuple[np.ndarray, List[np.ndarray], List[Tuple[int, int]]]:
         """
         Function to coarsely reduce mask.
@@ -606,9 +606,9 @@ class GRAPHITEBlackbox(EvasionAttack):
         :param patches: list of patches from heatmap.
         :param indices: list of indices for the heatmap patches.
         :param xforms: list of transform params.
-        :param pts: Optional. A set of points that will set the crop size in the perspective transform.
         :param clip_min: Minimum value of an example.
         :param clip_max: Maximum value of an example.
+        :param pts: Optional. A set of points that will set the crop size in the perspective transform.
         :return: mask, adjusted list of patches, adjusted list of indices
         """
         # binary search leftmost pivot value for which tr exceeeds specificed threshold if one exists
@@ -622,7 +622,7 @@ class GRAPHITEBlackbox(EvasionAttack):
             while low <= high:
                 mid = low + (high - low) // 2
                 score, _ = self._evaluate_transform_robustness_at_pivot(
-                    x, x_noise, x_tar_noise, y, mask, patches, xforms, pts, clip_min, clip_max, mid
+                    x, x_noise, x_tar_noise, y, mask, patches, xforms, clip_min, clip_max, mid, pts
                 )
                 if score >= self.tr_hi:
                     if mid > 0:
@@ -636,7 +636,7 @@ class GRAPHITEBlackbox(EvasionAttack):
             pivot = mid
 
         _, best_mask = self._evaluate_transform_robustness_at_pivot(
-            x, x_noise, x_tar_noise, y, mask, patches, xforms, pts, clip_min, clip_max, pivot
+            x, x_noise, x_tar_noise, y, mask, patches, xforms, clip_min, clip_max, pivot, pts
         )
 
         patches = patches[:]  # reduce will examine all patches
@@ -653,11 +653,11 @@ class GRAPHITEBlackbox(EvasionAttack):
         mask: np.ndarray,
         patches: List[np.ndarray],
         xforms: List,
-        pts: Optional[np.ndarray],
         object_size: float,
         clip_min: float,
         clip_max: float,
         lbd: float = 5,
+        pts: Optional[np.ndarray] = None,
     ) -> np.ndarray:
         """
         Function to finely reduce mask.
@@ -670,18 +670,18 @@ class GRAPHITEBlackbox(EvasionAttack):
                      perturbed.
         :param patches: list of patches from heatmap.
         :param xforms: list of transform params.
-        :param pts: Optional. A set of points that will set the crop size in the perspective transform.
         :param obj_size: Estimated width of object in inches for perspective transform.
         :param clip_min: Minimum value of an example.
         :param clip_max: Maximum value of an example.
         :param lbd: Weight for mask scoring function.
+        :param pts: Optional. A set of points that will set the crop size in the perspective transform.
         :return: mask
         """
         # STAGE 3: Fine reduction
         theta = (x_tar_noise - x_noise) * mask
 
         # get initial transform_robustness
-        xform_imgs = get_transformed_images(x, mask, xforms, 1.0, theta, pts, self.net_size, clip_min, clip_max)
+        xform_imgs = get_transformed_images(x, mask, xforms, 1.0, theta, self.net_size, clip_min, clip_max, pts)
 
         success_rate = run_predictions(self.estimator, xform_imgs, y, self.batch_size, False)
 
@@ -704,7 +704,7 @@ class GRAPHITEBlackbox(EvasionAttack):
             theta = (x_tar_noise - x_noise) * next_mask
 
             xform_imgs = get_transformed_images(
-                x, next_mask, xforms, 1.0, theta, pts, self.net_size, clip_min, clip_max
+                x, next_mask, xforms, 1.0, theta, self.net_size, clip_min, clip_max, pts
             )
 
             success_rate = run_predictions(self.estimator, xform_imgs, y, self.batch_size, False)
@@ -728,11 +728,11 @@ class GRAPHITEBlackbox(EvasionAttack):
         x_tar_noise: np.ndarray,
         mask: np.ndarray,
         y: int,
-        pts: Optional[np.ndarray],
         obj_width: float,
         focal: float,
         clip_min: float,
         clip_max: float,
+        pts: Optional[np.ndarray],
     ) -> np.ndarray:
         """
         Function to boost transform-robustness.
@@ -743,11 +743,11 @@ class GRAPHITEBlackbox(EvasionAttack):
                      broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
                      perturbed.
         :param y: The target label.
-        :param pts: Optional. A set of points that will set the crop size in the perspective transform.
         :param obj_width: Estimated width of object in inches for perspective transform.
         :param focal: Estimated focal length in ft for perspective transform.
         :param clip_min: Minimum value of an example.
         :param clip_max: Maximum value of an example.
+        :param pts: Optional. A set of points that will set the crop size in the perspective transform.
         :return: attacked image
         """
 
@@ -768,7 +768,7 @@ class GRAPHITEBlackbox(EvasionAttack):
         theta = (x_tar_noise - x_noise) * mask
         query_count = 0
 
-        xform_imgs = get_transformed_images(x, mask, xforms, 1.0, theta, pts, self.net_size, clip_min, clip_max)
+        xform_imgs = get_transformed_images(x, mask, xforms, 1.0, theta, self.net_size, clip_min, clip_max, pts)
 
         err_rate = run_predictions(self.estimator, xform_imgs, y, self.batch_size, True)
         query_count += self.num_xforms_boost
@@ -793,7 +793,7 @@ class GRAPHITEBlackbox(EvasionAttack):
                 unit_dir = unit_dir / np.linalg.norm(unit_dir)
                 ttt = theta + self.beta * unit_dir
 
-                xform_imgs = get_transformed_images(x, mask, xforms, 1.0, ttt, pts, self.net_size, clip_min, clip_max)
+                xform_imgs = get_transformed_images(x, mask, xforms, 1.0, ttt, self.net_size, clip_min, clip_max, pts)
                 eps_ttt = run_predictions(self.estimator, xform_imgs, y, self.batch_size, True)
                 opt_count += self.num_xforms_boost
 
@@ -803,7 +803,7 @@ class GRAPHITEBlackbox(EvasionAttack):
 
             # Take gradient step
             new_theta = theta - self.eta * gradient
-            xform_imgs = get_transformed_images(x, mask, xforms, 1.0, new_theta, pts, self.net_size, clip_min, clip_max)
+            xform_imgs = get_transformed_images(x, mask, xforms, 1.0, new_theta, self.net_size, clip_min, clip_max, pts)
             new_eps = run_predictions(self.estimator, xform_imgs, y, self.batch_size, True)
             opt_count += self.num_xforms_boost
 
