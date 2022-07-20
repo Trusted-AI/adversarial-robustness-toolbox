@@ -75,6 +75,7 @@ def get_crafter(classifier: "CLASSIFIER_TYPE", attack: str, params: Optional[Dic
     try:
         crafter = SUPPORTED_METHODS[attack]["class"](classifier)
     except Exception:  # pragma: no cover
+        logger.warning("Available attacks include %s." % ", ".join(SUPPORTED_METHODS.keys()))
         raise NotImplementedError(f"{attack} crafting method not supported.") from Exception
 
     if "params" in SUPPORTED_METHODS[attack]:
@@ -113,7 +114,7 @@ def adversarial_accuracy(
 
     if attack_crafter is None:
         if attack_name is None:
-            raise ValueError("At least one of `attack_name` or `attack_crafter` must be specified.")
+            raise ValueError("At least one of `attack_name` or `attack_crafter` must be specified. Available values for `attack_name' include %s." % ", ".join(SUPPORTED_METHODS.keys()))
 
         if x.max() > 1.0 or x.min() < 0:
             logger.warning("The input range is outside [0,1]. Please consider using `attack_crafter` instead.")
