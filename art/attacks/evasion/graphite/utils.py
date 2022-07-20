@@ -52,7 +52,7 @@ from art.estimators.classification import ClassifierMixin
 from art.utils import get_labels_np_array
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_TYPE
+    from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
     import torch
 
 _estimator_requirements = (BaseEstimator, ClassifierMixin)
@@ -167,7 +167,7 @@ def get_transform_params(
     crop_percent_range: Tuple[float, float],
     off_x_range: Tuple[float, float],
     off_y_range: Tuple[float, float],
-    blur_kernels: List[int],
+    blur_kernels: Union[Tuple[int, int], List[int]],
     obj_width: float,
     focal: float,
 ) -> List[Tuple[float, float, float, int, float, float, float, float, float]]:
@@ -351,7 +351,7 @@ def transform_wb(
     x_adv = torch.clamp(x_adv, 0.0, 1.0)
     dist = dist2pixels(dist, x_adv.size()[2], obj_width)
     focal = dist2pixels(focal, x_adv.size()[2], obj_width)
-    x_adv = get_perspective_transform(
+    x_adv_tmp = get_perspective_transform(
         x_adv,
         angle,
         x_adv.size()[3],
@@ -364,6 +364,10 @@ def transform_wb(
         pts,
         whitebox=True,
     )
+
+    # make mypy happy
+    assert isinstance(x_adv_tmp, "torch.Tensor")
+    x_adv = x_adv_tmp
 
     # Gamma
     x_adv = adjust_gamma(x_adv, gamma)
@@ -571,7 +575,11 @@ def get_offset_and_crop_size(
 
 
 def run_predictions(
-    estimator: "CLASSIFIER_TYPE", imgs: List[np.ndarray], target: int, batch_size: int, err_rate: bool = True
+    estimator: "CLASSIFIER_NEURALNETWORK_TYPE",
+    imgs: List[np.ndarray],
+    target: int,
+    batch_size: int,
+    err_rate: bool = True,
 ) -> float:
     """
     Run model predictions over batch of input.
@@ -602,8 +610,8 @@ def run_predictions(
                 preds = get_labels_np_array(estimator.predict(transposed, batch_size=batch_size))
             else:
                 preds = get_labels_np_array(estimator.predict(img_tensor, batch_size=batch_size))
-            preds = np.argmax(preds)
-            num_successes += (preds == tar_tensor).sum().item()
+            np_preds = np.argmax(preds)
+            num_successes += (np_preds == tar_tensor).sum().item()
             count = 0
 
     return_val = (1.0 - num_successes * 1.0 / len(imgs)) if err_rate else num_successes * 1.0 / len(imgs)

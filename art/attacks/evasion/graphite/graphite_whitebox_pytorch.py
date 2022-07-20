@@ -59,7 +59,7 @@ from art.utils import compute_success, to_categorical, check_and_transform_label
 from art.attacks.evasion.graphite.utils import convert_to_network, get_transform_params, transform_wb
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_TYPE
+    from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
     import torch
 
 logger = logging.getLogger(__name__)
@@ -98,7 +98,7 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_TYPE",
+        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
         net_size: Tuple[int, int],
         min_tr: float = 0.8,
         num_xforms: int = 100,
@@ -289,7 +289,7 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
         x: "torch.Tensor",
         x_adv: "torch.Tensor",
         mask: "torch.Tensor",
-        target_label: int,
+        target_label: np.ndarray,
         y_onehot: "torch.Tensor",
         xforms: List[Tuple[float, float, float, int, float, float, float, float, float]],
         pts: Optional[np.ndarray],
@@ -364,7 +364,7 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
         # Load victim img and starting mask.
         img = torch.tensor(x_copy, requires_grad=True, device=self.estimator.device)
         mask_tensor = torch.tensor(mask_copy, requires_grad=True, device=self.estimator.device).to(img.dtype)
-        y_onehot = torch.tensor(y_onehot, requires_grad=True, device=self.estimator.device)
+        y_onehot_tensor = torch.tensor(y_onehot, requires_grad=True, device=self.estimator.device)
 
         # Load transforms.
         xforms = get_transform_params(
@@ -414,7 +414,9 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
                         clip_max,
                     )
 
-                    logits, _ = self.estimator._predict_framework(xform_img.cuda(), y_onehot)  # pylint: disable=W0212
+                    logits, _ = self.estimator._predict_framework(
+                        xform_img.cuda(), y_onehot_tensor
+                    )  # pylint: disable=W0212
                     if self.use_logits:
                         loss = torch.nn.functional.cross_entropy(
                             input=logits,
@@ -423,7 +425,7 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
                         )
                     else:
                         loss = torch.nn.functional.nll_loss(
-                            input=logits, target=target_label.unsqueeze(0), reduction="mean"
+                            input=logits, target=torch.tensor(target_label).unsqueeze(0), reduction="mean"
                         )
 
                     grad = torch.autograd.grad(loss, adv_img)[0]
@@ -437,18 +439,30 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
 
                 adv_img = adv_img.clamp(0, 1)
                 transform_robustness = self._eval(
-                    img.detach().clone(), adv_img, mask_tensor, target_label, y_onehot, xforms, pts, clip_min, clip_max
+                    img.detach().clone(),
+                    adv_img,
+                    mask_tensor,
+                    target_label,
+                    y_onehot_tensor,
+                    xforms,
+                    pts,
+                    clip_min,
+                    clip_max,
                 )
                 final_avg_grad = avg_grad
                 if transform_robustness >= self.min_tr:
                     break
 
+            # make mypy happy
+            assert isinstance(transform_robustness, float)
             if transform_robustness < self.min_tr:
                 break
 
             prev_attack = adv_img.detach().clone()
 
             # Remove low-impact pixel-patches or pixels in mask.
+            # make mypy happy
+            assert isinstance(final_avg_grad, "torch.Tensor")
             pert = adv_img - img
             final_avg_grad[torch.isnan(final_avg_grad)] = 0
             final_avg_grad = mask_tensor * final_avg_grad * pert

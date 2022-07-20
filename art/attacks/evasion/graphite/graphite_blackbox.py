@@ -67,7 +67,7 @@ from art.attacks.evasion.graphite.utils import (
 )
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_TYPE
+    from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -109,7 +109,7 @@ class GRAPHITEBlackbox(EvasionAttack):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_TYPE",
+        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
         noise_size: Tuple[int, int],
         net_size: Tuple[int, int],
         heat_patch_size: Tuple[int, int] = (4, 4),
@@ -259,6 +259,9 @@ class GRAPHITEBlackbox(EvasionAttack):
 
         y = np.argmax(y, axis=1)
 
+        # make mypy happy
+        assert isinstance(y, np.ndarray)
+
         # Generate the adversarial samples
         for i in range(x_adv.shape[0]):
             x_adv[i] = self._perturb(
@@ -342,6 +345,8 @@ class GRAPHITEBlackbox(EvasionAttack):
 
         x_copy = x.copy()
         x_tar_copy = x_tar.copy()
+        # make mypy happy
+        assert isinstance(mask, np.ndarray)
         mask_copy = mask.copy()
         x_noise = cv2.resize(x_copy, self.noise_size)
         x_tar_noise = cv2.resize(x_tar_copy, self.noise_size)
