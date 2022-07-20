@@ -47,7 +47,7 @@ attack that only requires class predictions.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Tuple, TYPE_CHECKING, List
+from typing import Optional, Tuple, Union, TYPE_CHECKING, List
 
 import random
 import numpy as np
@@ -209,6 +209,8 @@ class GRAPHITEBlackbox(EvasionAttack):
         if y is None:
             raise ValueError("Target labels `y` need to be provided.")
 
+        assert isinstance(y, np.ndarray)
+
         if x_tar is None:
             raise ValueError("Target image example `x_tar` needs to be provided.")
 
@@ -354,7 +356,7 @@ class GRAPHITEBlackbox(EvasionAttack):
             mask_noise = mask_noise[:, :, np.newaxis]
 
         mask_out = self._generate_mask(
-            x_copy, x_noise, x_tar, x_tar_noise, mask_noise, y, obj_width, focal, clip_min, clip_max, pts
+            x_copy, x_noise, x_tar_noise, mask_noise, y, obj_width, focal, clip_min, clip_max, pts
         )
 
         adversarial = self._boost(x_copy, x_noise, x_tar_noise, mask_out, y, obj_width, focal, clip_min, clip_max, pts)
@@ -366,7 +368,6 @@ class GRAPHITEBlackbox(EvasionAttack):
         self,
         x: np.ndarray,
         x_noise: np.ndarray,
-        x_tar: np.ndarray,
         x_tar_noise: np.ndarray,
         mask: np.ndarray,
         y: int,
@@ -380,7 +381,6 @@ class GRAPHITEBlackbox(EvasionAttack):
         Function to generate a mask.
         :param x: An array with one original input to be attacked.
         :param x_noise: x in the resolution of the noise size.
-        :param x_tar: Initial array to act as an example target image.
         :param x_tar_noise: x_tar in the resolution of the noise size.
         :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
                      broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
@@ -487,7 +487,7 @@ class GRAPHITEBlackbox(EvasionAttack):
                 object_size,
                 clip_min,
                 clip_max,
-                pts,
+                pts=pts,
             )
 
         return best_mask

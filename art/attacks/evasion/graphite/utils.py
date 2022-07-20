@@ -57,6 +57,7 @@ if TYPE_CHECKING:
 
 _estimator_requirements = (BaseEstimator, ClassifierMixin)
 
+
 def dist2pixels(dist: float, width: float, obj_width: float = 30) -> float:
     """
     Convert distance to pixels.
@@ -208,7 +209,6 @@ def add_noise(
     mask: np.ndarray,
     lbd: float,
     theta: np.ndarray,
-    return_pert_and_mask: bool = False,
     clip: bool = True,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
@@ -217,7 +217,6 @@ def add_noise(
     :param mask: Mask image.
     :param lbd: lambda multiplier for the perturbation.
     :param theta: The perturbation.
-    :param return_pert_and_mask: Whether to return both the perturbation and mask.
     :param clip: Whether to clip the perturbation.
     """
     import cv2  # lgtm [py/repeated-import]
@@ -460,10 +459,10 @@ def get_perspective_transform(
     perspective_mat = np.matmul(affine_mat, h_mat)
 
     if height > width:  # tall and narrow
-        crop_x = crop_size
+        crop_x = int(crop_size)
         crop_y = int(round(crop_size / width * height))
     else:  # wide and short or square
-        crop_y = crop_size
+        crop_y = int(crop_size)
         crop_x = int(round(crop_size / height * width))
 
     if not whitebox:
@@ -559,8 +558,8 @@ def get_offset_and_crop_size(
 
         return x_off + crop_off_x * crop_size, y_off + crop_off_y * crop_size, crop_size
 
-    min_x -= (width * ratio - (max_x - min_x)) // 2
-    min_y -= (height * ratio - (max_y - min_y)) // 2
+    min_x -= int((width * ratio - (max_x - min_x)) // 2)
+    min_y -= int((height * ratio - (max_y - min_y)) // 2)
 
     crop_size = int(round((1.0 - crop_percent) * min(width, height) * ratio))
 
@@ -572,7 +571,7 @@ def get_offset_and_crop_size(
 
 
 def run_predictions(
-    estimator: "CLASSIFIER_TYPE", imgs: np.ndarray, target: int, batch_size: int, err_rate: bool = True
+    estimator: "CLASSIFIER_TYPE", imgs: List[np.ndarray], target: int, batch_size: int, err_rate: bool = True
 ) -> float:
     """
     Run model predictions over batch of input.
