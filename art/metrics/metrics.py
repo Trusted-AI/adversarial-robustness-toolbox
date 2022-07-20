@@ -63,7 +63,6 @@ SUPPORTED_METHODS: Dict[str, Dict[str, Any]] = {
     },
 }
 
-
 def get_crafter(classifier: "CLASSIFIER_TYPE", attack: str, params: Optional[Dict[str, Any]] = None) -> "EvasionAttack":
     """
     Create an attack instance to craft adversarial samples.
@@ -89,19 +88,22 @@ def get_crafter(classifier: "CLASSIFIER_TYPE", attack: str, params: Optional[Dic
 def adversarial_accuracy(
     classifier: "CLASSIFIER_TYPE",
     x: np.ndarray,
+    y: np.ndarray = None,
     attack_name: str = None,
     attack_params: Optional[Dict[str, Any]] = None,
     attack_crafter: EvasionAttack = None,
 ) -> float:
     """
     Compute the adversarial accuracy of a classifier object over the sample `x` for a given adversarial crafting
-    method `attack`. `attack_name` can be specified to use a preset attack, or `attack_crafter` for wider choices
-    and customized parameters. Note that the score does not exclude wrong predictions by the classifier.
+    method `attack`, with optional true labels `y`. `attack_name` can be specified
+    to use a preset attack, or `attack_crafter` for wider choices
+    and customized parameters.
+    Note that if `y` is not specified, the score does not exclude wrong predictions by the classifier.
 
     :param classifier: A trained model.
     :param x: Input samples of shape that can be fed into `classifier`.
-    :param attack_name: A string specifying the attack to be used. Currently supported attacks are {`fgsm', `hsj`}
-                        (Fast Gradient Sign Method, Hop Skip Jump).
+    :param y: True labels of `x`.
+    :param attack_name: A string specifying the attack to be used as a key to `art.metrics.metrics.SUPPORTED_METHODS`.
     :param attack_params: A dictionary with attack-specific parameters. If the attack has a norm attribute, then it will
                           be used as the norm for calculating the robustness; otherwise the standard Euclidean distance
                           is used (norm=2).
@@ -112,17 +114,27 @@ def adversarial_accuracy(
     if attack_crafter is None:
         if attack_name is None:
             raise ValueError("At least one of `attack_name` or `attack_crafter` must be specified.")
+
+        if x.max() > 1.0 or x.min() < 0:
+            logger.warning("The input range is outside [0,1]. Please consider using `attack_crafter` instead.")
+
         attack_crafter = get_crafter(classifier, attack_name, attack_params)
         attack_crafter.set_params(**{"minimal": True})
 
     adv_x = attack_crafter.generate(x)
 
     # Predict the labels for adversarial examples
-    y = classifier.predict(x)
-    y_pred = classifier.predict(adv_x)
+    y_orig = np.argmax(classifier.predict(x), axis=1)
+    y_pred = np.argmax(classifier.predict(adv_x), axis=1)
 
-    idxs = np.argmax(y_pred, axis=1) == np.argmax(y, axis=1)
-    return np.sum(idxs) / len(y)
+    if y is None:
+        idxs = y_pred == y_orig
+        return np.sum(idxs) / len(y_orig)
+    else:
+        if len(y.shape) > 1:
+            y = np.argmax(y, axis=1)
+        y_corr = y_orig == y
+        return np.sum((y_pred != y_orig) & y_corr) / np.sum(y_corr)
 
 
 def empirical_robustness(
@@ -140,8 +152,7 @@ def empirical_robustness(
 
     :param classifier: A trained model.
     :param x: Data sample of shape that can be fed into `classifier`.
-    :param attack_name: A string specifying the attack to be used. Currently supported attacks are {`fgsm', `hsj`}
-                        (Fast Gradient Sign Method, Hop Skip Jump).
+    :param attack_name: A string specifying the attack to be used as a key to `art.metrics.metrics.SUPPORTED_METHODS`.
     :param attack_params: A dictionary with attack-specific parameters. If the attack has a norm attribute, then it will
                           be used as the norm for calculating the robustness; otherwise the standard Euclidean distance
                           is used (norm=2).

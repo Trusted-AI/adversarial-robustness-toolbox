@@ -85,7 +85,11 @@ class TestMetrics(unittest.TestCase):
 
         # Compute adversarial accuracies
         params = {"eps_step": 1.0, "eps": 1.0}
-        adv_acc = adversarial_accuracy(classifier, x_train, str("fgsm"), params)
+        adv_acc = adversarial_accuracy(classifier, x_train, attack_name=str("fgsm"), attack_params=params)
+        self.assertAlmostEqual(adv_acc, 0)
+
+        params = {"eps_step": 1.0, "eps": 1.0}
+        adv_acc = adversarial_accuracy(classifier, x_train, y_train, attack_name=str("fgsm"), attack_params=params)
         self.assertAlmostEqual(adv_acc, 0)
 
         params = {"max_iter": 10, "max_eval": 100, "init_eval": 10, "init_size": 10}
