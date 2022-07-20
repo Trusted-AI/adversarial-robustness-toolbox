@@ -63,6 +63,7 @@ SUPPORTED_METHODS: Dict[str, Dict[str, Any]] = {
     },
 }
 
+
 def get_crafter(classifier: "CLASSIFIER_TYPE", attack: str, params: Optional[Dict[str, Any]] = None) -> "EvasionAttack":
     """
     Create an attack instance to craft adversarial samples.
@@ -114,7 +115,10 @@ def adversarial_accuracy(
 
     if attack_crafter is None:
         if attack_name is None:
-            raise ValueError("At least one of `attack_name` or `attack_crafter` must be specified. Available values for `attack_name' include %s." % ", ".join(SUPPORTED_METHODS.keys()))
+            raise ValueError(
+                "At least one of `attack_name` or `attack_crafter` must be specified. Available values for `attack_name' include %s."
+                % ", ".join(SUPPORTED_METHODS.keys())
+            )
 
         if x.max() > 1.0 or x.min() < 0:
             logger.warning("The input range is outside [0,1]. Please consider using `attack_crafter` instead.")
