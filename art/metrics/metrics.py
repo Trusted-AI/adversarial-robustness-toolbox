@@ -136,11 +136,11 @@ def adversarial_accuracy(
     if y is None:
         idxs = y_pred == y_orig
         return np.sum(idxs) / len(y_orig)
-        
+
     if len(y.shape) > 1:
         y = np.argmax(y, axis=1)
     y_corr = y_orig == y
-    return np.sum((y_pred != y_orig) & y_corr) / np.sum(y_corr)
+    return np.sum((y_pred == y_orig) & y_corr) / np.sum(y_corr)
 
 
 def empirical_robustness(
