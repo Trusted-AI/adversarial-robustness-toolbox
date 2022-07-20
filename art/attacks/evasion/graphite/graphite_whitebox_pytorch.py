@@ -47,7 +47,7 @@ This is a robust physical perturbation attack.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Tuple, TYPE_CHECKING, List
+from typing import Optional, Tuple, Union, TYPE_CHECKING, List
 
 import numpy as np
 
