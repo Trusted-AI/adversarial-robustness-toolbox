@@ -117,8 +117,8 @@ def adversarial_accuracy(
         if attack_name is None:
             supported_methods = ", ".join(SUPPORTED_METHODS.keys())
             raise ValueError(
-                "At least one of `attack_name` or `attack_crafter` must be specified." \
-                    + f"Available values for `attack_name' include {supported_methods}."
+                "At least one of `attack_name` or `attack_crafter` must be specified."
+                + f"Available values for `attack_name' include {supported_methods}."
             )
 
         if x.max() > 1.0 or x.min() < 0:
