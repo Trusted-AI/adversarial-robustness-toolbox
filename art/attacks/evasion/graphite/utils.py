@@ -365,8 +365,6 @@ def transform_wb(
         whitebox=True,
     )
 
-    # make mypy happy
-    assert isinstance(x_adv_tmp, "torch.Tensor")
     x_adv = x_adv_tmp
 
     # Gamma
