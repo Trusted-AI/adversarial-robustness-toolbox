@@ -414,9 +414,9 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
                         clip_max,
                     )
 
-                    logits, _ = self.estimator._predict_framework(
+                    logits, _ = self.estimator._predict_framework(  # pylint: disable=W0212
                         xform_img.cuda(), y_onehot_tensor
-                    )  # pylint: disable=W0212
+                    )
                     if self.use_logits:
                         loss = torch.nn.functional.cross_entropy(
                             input=logits,
@@ -453,16 +453,12 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
                 if transform_robustness >= self.min_tr:
                     break
 
-            # make mypy happy
-            assert isinstance(transform_robustness, float)
             if transform_robustness < self.min_tr:
                 break
 
             prev_attack = adv_img.detach().clone()
 
             # Remove low-impact pixel-patches or pixels in mask.
-            # make mypy happy
-            assert isinstance(final_avg_grad, "torch.Tensor")
             pert = adv_img - img
             final_avg_grad[torch.isnan(final_avg_grad)] = 0
             final_avg_grad = mask_tensor * final_avg_grad * pert

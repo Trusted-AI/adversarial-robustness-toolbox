@@ -209,8 +209,6 @@ class GRAPHITEBlackbox(EvasionAttack):
         if y is None:
             raise ValueError("Target labels `y` need to be provided.")
 
-        assert isinstance(y, np.ndarray)
-
         if x_tar is None:
             raise ValueError("Target image example `x_tar` needs to be provided.")
 
@@ -258,9 +256,6 @@ class GRAPHITEBlackbox(EvasionAttack):
                 mask = np.transpose(mask, (0, 2, 3, 1))
 
         y = np.argmax(y, axis=1)
-
-        # make mypy happy
-        assert isinstance(y, np.ndarray)
 
         # Generate the adversarial samples
         for i in range(x_adv.shape[0]):
@@ -345,8 +340,6 @@ class GRAPHITEBlackbox(EvasionAttack):
 
         x_copy = x.copy()
         x_tar_copy = x_tar.copy()
-        # make mypy happy
-        assert isinstance(mask, np.ndarray)
         mask_copy = mask.copy()
         x_noise = cv2.resize(x_copy, self.noise_size)
         x_tar_noise = cv2.resize(x_tar_copy, self.noise_size)
