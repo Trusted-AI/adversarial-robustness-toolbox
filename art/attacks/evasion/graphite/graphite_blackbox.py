@@ -618,7 +618,7 @@ class GRAPHITEBlackbox(EvasionAttack):
 
         else:
             low = 0
-            high = 0
+            high = num_patches - 1
             while low <= high:
                 mid = low + (high - low) // 2
                 score, _ = self._evaluate_transform_robustness_at_pivot(
