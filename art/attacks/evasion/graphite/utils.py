@@ -218,6 +218,7 @@ def add_noise(
     :param lbd: lambda multiplier for the perturbation.
     :param theta: The perturbation.
     :param clip: Whether to clip the perturbation.
+    :return: image with perturbation, perturbation, mask
     """
     import cv2  # lgtm [py/repeated-import]
 
