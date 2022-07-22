@@ -732,7 +732,7 @@ class GRAPHITEBlackbox(EvasionAttack):
         focal: float,
         clip_min: float,
         clip_max: float,
-        pts: Optional[np.ndarray],
+        pts: Optional[np.ndarray] = None,
     ) -> np.ndarray:
         """
         Function to boost transform-robustness.
