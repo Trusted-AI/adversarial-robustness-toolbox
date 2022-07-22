@@ -261,7 +261,7 @@ class GRAPHITEBlackbox(EvasionAttack):
         for i in range(x_adv.shape[0]):
             x_adv[i] = self._perturb(
                 x=x_adv[i],
-                y=y[i],
+                y=y[i],  # type: ignore
                 x_tar=x_tar[i],
                 obj_width=obj_width,
                 focal=focal,
