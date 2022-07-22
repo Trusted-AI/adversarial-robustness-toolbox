@@ -335,12 +335,14 @@ class GRAPHITEBlackbox(EvasionAttack):
         x_tar = (x_tar.copy() - clip_min) / (clip_max - clip_min)
 
         if mask is None:
-            mask = np.ones((self.noise_size[1], self.noise_size[0], x.shape[2]))
-        mask = mask / np.max(mask)
+            mask_array = np.ones((self.noise_size[1], self.noise_size[0], x.shape[2]))
+        else:
+            mask_array = mask
+        mask_array = mask_array / np.max(mask_array)
 
         x_copy = x.copy()
         x_tar_copy = x_tar.copy()
-        mask_copy = mask.copy()
+        mask_copy = mask_array.copy()
         x_noise = cv2.resize(x_copy, self.noise_size)
         x_tar_noise = cv2.resize(x_tar_copy, self.noise_size)
         mask_noise = cv2.resize(mask_copy, self.noise_size)
