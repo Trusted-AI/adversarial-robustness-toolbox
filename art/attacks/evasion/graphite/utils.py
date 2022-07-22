@@ -352,17 +352,7 @@ def transform_wb(
     dist = dist2pixels(dist, x_adv.size()[2], obj_width)
     focal = dist2pixels(focal, x_adv.size()[2], obj_width)
     x_adv = get_perspective_transform_wb(
-        x_adv,
-        angle,
-        x_adv.size()[3],
-        x_adv.size()[2],
-        focal,
-        dist,
-        crop_percent,
-        crop_off_x,
-        crop_off_y,
-        pts,
-        whitebox=True,
+        x_adv, angle, x_adv.size()[3], x_adv.size()[2], focal, dist, crop_percent, crop_off_x, crop_off_y, pts
     )
 
     # Gamma
