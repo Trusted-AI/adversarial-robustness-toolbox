@@ -313,11 +313,11 @@ class TestGRAPHITE(TestBase):
         with self.assertRaises(ValueError):
             _ = GRAPHITEBlackbox(ptc, noise_size=(28, 28), net_size=(28, 28), tr_hi=1.1)
         with self.assertRaises(ValueError):
-            _ = GRAPHITEBlackbox(ptc, noise_size=(28, 28), net_size=(28, 28), num_xforms_mask=0)
+            _ = GRAPHITEBlackbox(ptc, noise_size=(28, 28), net_size=(28, 28), num_xforms_mask=-1)
         with self.assertRaises(ValueError):
             _ = GRAPHITEBlackbox(ptc, noise_size=(28, 28), net_size=(28, 28), num_xforms_mask=1.0)
         with self.assertRaises(ValueError):
-            _ = GRAPHITEBlackbox(ptc, noise_size=(28, 28), net_size=(28, 28), num_xforms_boost=0)
+            _ = GRAPHITEBlackbox(ptc, noise_size=(28, 28), net_size=(28, 28), num_xforms_boost=-1)
         with self.assertRaises(ValueError):
             _ = GRAPHITEBlackbox(ptc, noise_size=(28, 28), net_size=(28, 28), num_xforms_boost=1.0)
         with self.assertRaises(ValueError):
