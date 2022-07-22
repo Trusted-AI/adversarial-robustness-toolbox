@@ -383,7 +383,7 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
         target_label = y
         # Attack
         rounds = 0
-        transform_robustness = -1
+        transform_robustness = -1.0
         prev_attack = img.detach().clone()
         while True:
             adv_img = img.detach().clone()
