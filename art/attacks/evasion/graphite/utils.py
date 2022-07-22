@@ -351,7 +351,7 @@ def transform_wb(
     x_adv = torch.clamp(x_adv, 0.0, 1.0)
     dist = dist2pixels(dist, x_adv.size()[2], obj_width)
     focal = dist2pixels(focal, x_adv.size()[2], obj_width)
-    x_adv_tmp = get_perspective_transform(
+    x_adv = get_perspective_transform_wb(
         x_adv,
         angle,
         x_adv.size()[3],
@@ -364,8 +364,6 @@ def transform_wb(
         pts,
         whitebox=True,
     )
-
-    x_adv = x_adv_tmp
 
     # Gamma
     x_adv = adjust_gamma(x_adv, gamma)
@@ -395,7 +393,7 @@ def convert_to_network_wb(
 
 
 def get_perspective_transform(
-    img: Union[np.ndarray, "torch.Tensor"],
+    img: np.ndarray,
     angle: float,
     width: int,
     height: int,
@@ -405,10 +403,9 @@ def get_perspective_transform(
     crop_off_x: float,
     crop_off_y: float,
     pts: Optional[np.ndarray] = None,
-    whitebox: bool = False,
-) -> Union[np.ndarray, "torch.Tensor"]:
+) -> np.ndarray:
     """
-    Compute perspective transform.
+    Computes parameters for perspective transform for blackbox attack.
     :param img: Input image.
     :param angle: Angle to rotate.
     :param width: Width of image.
@@ -419,15 +416,80 @@ def get_perspective_transform(
     :param crop_off_x: Cropping x offset.
     :param crop_off_y: Cropping y offset.
     :param pts: pts to include in the crop.
-    :param whitebox: Whether this is the white-box version or not.
+    :return: Transformed image.
+    """
+    import cv2  # lgtm [py/repeated-import]
+
+    perspective_mat, crop_x, crop_y = _get_perspective_transform(
+        angle, width, height, focal, dist, crop_percent, crop_off_x, crop_off_y, pts
+    )
+    dst = cv2.warpPerspective(img, perspective_mat, (crop_x, crop_y), borderMode=cv2.BORDER_REPLICATE)
+    return dst
+
+
+def get_perspective_transform_wb(
+    img: "torch.Tensor",
+    angle: float,
+    width: int,
+    height: int,
+    focal: float,
+    dist: float,
+    crop_percent: float,
+    crop_off_x: float,
+    crop_off_y: float,
+    pts: Optional[np.ndarray] = None,
+) -> "torch.Tensor":
+    """
+    Computes perspective transform for whitebox attack.
+    :param img: Input image.
+    :param angle: Angle to rotate.
+    :param width: Width of image.
+    :param height: Height of image.
+    :param focal: Focal length.
+    :param dist: Distance for transform.
+    :param crop_percent: Percentage for cropping.
+    :param crop_off_x: Cropping x offset.
+    :param crop_off_y: Cropping y offset.
+    :param pts: pts to include in the crop.
     :return: Transformed image.
     """
     import torch  # lgtm [py/repeated-import]
-    import cv2  # lgtm [py/repeated-import]
     from kornia.geometry.transform import warp_perspective
 
-    # img in numpy / cv2 form
+    dst = warp_perspective(
+        img,
+        torch.from_numpy(perspective_mat).float().to(img.device).unsqueeze(0),
+        (crop_y, crop_x),
+        align_corners=True,
+        padding_mode="border",
+    )
+    return dst
 
+
+def _get_perspective_transform(
+    angle: float,
+    width: int,
+    height: int,
+    focal: float,
+    dist: float,
+    crop_percent: float,
+    crop_off_x: float,
+    crop_off_y: float,
+    pts: Optional[np.ndarray] = None,
+) -> Tuple[np.ndarray, int, int]:
+    """
+    Computes parameters for perspective transform.
+    :param angle: Angle to rotate.
+    :param width: Width of image.
+    :param height: Height of image.
+    :param focal: Focal length.
+    :param dist: Distance for transform.
+    :param crop_percent: Percentage for cropping.
+    :param crop_off_x: Cropping x offset.
+    :param crop_off_y: Cropping y offset.
+    :param pts: pts to include in the crop.
+    :return: perspective transform matrix, crop width, crop_height
+    """
     angle = math.radians(angle)
     x_cam_off = width / 2 - math.sin(angle) * dist
     z_cam_off = -math.cos(angle) * dist
@@ -467,24 +529,7 @@ def get_perspective_transform(
         crop_y = int(crop_size)
         crop_x = int(round(crop_size / height * width))
 
-    if not whitebox:
-        if not isinstance(img, np.ndarray):
-            raise ValueError("img must be np.ndarray")
-
-        dst = cv2.warpPerspective(img, perspective_mat, (crop_x, crop_y), borderMode=cv2.BORDER_REPLICATE)
-    else:
-        if not isinstance(img, torch.Tensor):
-            raise ValueError("img must be torch tensor")
-
-        dst = warp_perspective(
-            img,
-            torch.from_numpy(perspective_mat).float().to(img.device).unsqueeze(0),
-            (crop_y, crop_x),
-            align_corners=True,
-            padding_mode="border",
-        )
-
-    return dst
+    return perspective_mat, crop_x, crop_y
 
 
 def get_offset_and_crop_size(
