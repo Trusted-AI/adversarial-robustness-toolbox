@@ -383,7 +383,7 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
         target_label = y
         # Attack
         rounds = 0
-        transform_robustness = None
+        transform_robustness = -1
         prev_attack = img.detach().clone()
         while True:
             adv_img = img.detach().clone()
@@ -396,7 +396,7 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
             adv_img = (adv_img + mask_tensor * rand_start).detach()
             adv_img = torch.clamp(adv_img, 0, 1).to(img.dtype)
             adv_img.requires_grad = True
-            final_avg_grad = None
+            final_avg_grad = torch.zeros(img.size())
 
             # Do EOT adversarial attack with current mask.
             loop_length = self.steps if rounds > 0 else self.first_steps
