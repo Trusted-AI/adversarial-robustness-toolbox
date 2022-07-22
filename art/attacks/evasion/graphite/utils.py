@@ -446,6 +446,9 @@ def get_perspective_transform_wb(
     import torch  # lgtm [py/repeated-import]
     from kornia.geometry.transform import warp_perspective
 
+    perspective_mat, crop_x, crop_y = _get_perspective_transform(
+        angle, width, height, focal, dist, crop_percent, crop_off_x, crop_off_y, pts
+    )
     dst = warp_perspective(
         img,
         torch.from_numpy(perspective_mat).float().to(img.device).unsqueeze(0),
