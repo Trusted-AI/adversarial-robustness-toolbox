@@ -206,7 +206,6 @@ class SleeperAgentAttack(GradientMatchingAttack):
 
         if self.verbose > 0:
             print("Best B-score:", best_B)
-        #         pdb.set_trace()
         if isinstance(self.substitute_classifier, PyTorchClassifier):
             x_train[self.indices_target[best_indices_poison]] = np.transpose(best_x_poisoned, [0, 2, 3, 1])
         elif isinstance(self.substitute_classifier, TensorFlowV2Classifier):
