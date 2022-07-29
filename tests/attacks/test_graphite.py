@@ -46,10 +46,10 @@ class TestGRAPHITE(TestBase):
         super().setUpClass()
 
         cls.n_test = 2
-        cls.x_test_mnist = cls.x_test_mnist[0 : cls.n_test]
-        cls.y_test_mnist = cls.y_test_mnist[0 : cls.n_test]
         cls.x_test_init_mnist = cls.x_test_mnist[1 : cls.n_test + 1]
         cls.y_test_init_mnist = cls.y_test_mnist[1 : cls.n_test + 1]
+        cls.x_test_mnist = cls.x_test_mnist[0 : cls.n_test]
+        cls.y_test_mnist = cls.y_test_mnist[0 : cls.n_test]
 
     def setUp(self):
         master_seed(seed=1234, set_tensorflow=True, set_torch=True)
@@ -74,7 +74,7 @@ class TestGRAPHITE(TestBase):
             num_xforms_mask=2,
             num_xforms_boost=10,
         )
-        params = {"y": self.y_test_init_mnist, "x_tar": self.x_test_mnist}
+        params = {"y": self.y_test_init_mnist, "x_tar": self.x_test_init_mnist}
         x_test_adv = graphite.generate(self.x_test_mnist, **params)
 
         self.assertFalse((self.x_test_mnist == x_test_adv).all())
@@ -138,7 +138,7 @@ class TestGRAPHITE(TestBase):
             num_xforms_mask=2,
             num_xforms_boost=10,
         )
-        params = {"y": self.y_test_init_mnist, "x_tar": self.x_test_mnist}
+        params = {"y": self.y_test_init_mnist, "x_tar": self.x_test_init_mnist}
         x_test_adv = graphite.generate(self.x_test_mnist, **params)
 
         self.assertFalse((self.x_test_mnist == x_test_adv).all())
@@ -187,7 +187,8 @@ class TestGRAPHITE(TestBase):
         Third test with the PyTorchClassifier.
         :return:
         """
-        x_test = np.swapaxes(self.x_test_mnist, 1, 3).astype(np.float32)
+        x_test = np.transpose(self.x_test_mnist(0, 3, 1, 2)).astype(np.float32)
+        x_test_init = np.transpose(self.x_test_mnist(0, 3, 1, 2)).astype(np.float32)
         x_test_original = x_test.copy()
 
         # Build PyTorchClassifier
@@ -203,10 +204,10 @@ class TestGRAPHITE(TestBase):
             num_xforms_mask=2,
             num_xforms_boost=10,
         )
-        params = {"y": self.y_test_init_mnist, "x_tar": self.x_test_mnist}
-        x_test_adv = graphite.generate(self.x_test_mnist, **params)
+        params = {"y": self.y_test_init_mnist, "x_tar": self.x_test_init}
+        x_test_adv = graphite.generate(self.x_test, **params)
 
-        self.assertFalse((self.x_test_mnist == x_test_adv).all())
+        self.assertFalse((self.x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1.0001).all())
         self.assertTrue((x_test_adv >= -0.0001).all())
 
@@ -215,15 +216,15 @@ class TestGRAPHITE(TestBase):
         self.assertTrue((target == y_pred_adv).any())
 
         # Test the masking
-        mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_test_mnist.shape))
-        mask = mask.reshape(self.x_test_mnist.shape)
+        mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_test.shape))
+        mask = mask.reshape(self.x_test.shape)
 
         params.update(mask=mask)
-        x_test_adv = graphite.generate(self.x_test_mnist, **params)
-        mask_diff = (1 - mask) * (x_test_adv - self.x_test_mnist)
+        x_test_adv = graphite.generate(self.x_test, **params)
+        mask_diff = (1 - mask) * (x_test_adv - self.x_test)
         self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
 
-        unmask_diff = mask * (x_test_adv - self.x_test_mnist)
+        unmask_diff = mask * (x_test_adv - self.x_test)
         self.assertGreater(float(np.sum(np.abs(unmask_diff))), 0.0)
 
         # Test passing in points
@@ -234,23 +235,23 @@ class TestGRAPHITE(TestBase):
         pts[3, :, 0] = np.array([0.95, 0.95, 1])
 
         params.update(pts=pts)
-        x_test_adv = graphite.generate(self.x_test_mnist, **params)
-        mask_diff = (1 - mask) * (x_test_adv - self.x_test_mnist)
+        x_test_adv = graphite.generate(self.x_test, **params)
+        mask_diff = (1 - mask) * (x_test_adv - self.x_test)
         self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
 
-        unmask_diff = mask * (x_test_adv - self.x_test_mnist)
+        unmask_diff = mask * (x_test_adv - self.x_test)
         self.assertGreater(float(np.sum(np.abs(unmask_diff))), 0.0)
 
         # Check that x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_mnist))), 0.0, delta=0.00001)
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test))), 0.0, delta=0.00001)
 
         # WHITEBOX
         # First attack
         graphite = GRAPHITEWhiteboxPyTorch(classifier=ptc, net_size=(28, 28), num_xforms=10)
         params = {"y": self.y_test_init_mnist}
-        x_test_adv = graphite.generate(self.x_test_mnist, **params)
+        x_test_adv = graphite.generate(self.x_test, **params)
 
-        self.assertFalse((self.x_test_mnist == x_test_adv).all())
+        self.assertFalse((self.x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1.0001).all())
         self.assertTrue((x_test_adv >= -0.0001).all())
 
@@ -259,15 +260,15 @@ class TestGRAPHITE(TestBase):
         self.assertTrue((target == y_pred_adv).any())
 
         # Test the masking
-        mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_test_mnist.shape))
-        mask = mask.reshape(self.x_test_mnist.shape)
+        mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_test.shape))
+        mask = mask.reshape(self.x_test.shape)
 
         params.update(mask=mask)
-        x_test_adv = graphite.generate(self.x_test_mnist, **params)
-        mask_diff = (1 - mask) * (x_test_adv - self.x_test_mnist)
+        x_test_adv = graphite.generate(self.x_test, **params)
+        mask_diff = (1 - mask) * (x_test_adv - self.x_test)
         self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
 
-        unmask_diff = mask * (x_test_adv - self.x_test_mnist)
+        unmask_diff = mask * (x_test_adv - self.x_test)
         self.assertGreater(float(np.sum(np.abs(unmask_diff))), 0.0)
 
         # Test passing in points
@@ -278,15 +279,15 @@ class TestGRAPHITE(TestBase):
         pts[3, :, 0] = np.array([0.95, 0.95, 1])
 
         params.update(pts=pts)
-        x_test_adv = graphite.generate(self.x_test_mnist, **params)
-        mask_diff = (1 - mask) * (x_test_adv - self.x_test_mnist)
+        x_test_adv = graphite.generate(self.x_test, **params)
+        mask_diff = (1 - mask) * (x_test_adv - self.x_test)
         self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
 
-        unmask_diff = mask * (x_test_adv - self.x_test_mnist)
+        unmask_diff = mask * (x_test_adv - self.x_test)
         self.assertGreater(float(np.sum(np.abs(unmask_diff))), 0.0)
 
         # Check that x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_mnist))), 0.0, delta=0.00001)
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test))), 0.0, delta=0.00001)
 
     def test_check_params(self):
 
@@ -322,6 +323,8 @@ class TestGRAPHITE(TestBase):
             _ = GRAPHITEBlackbox(ptc, noise_size=(28, 28), net_size=(28, 28), num_xforms_boost=1.0)
         with self.assertRaises(ValueError):
             _ = GRAPHITEBlackbox(ptc, noise_size=(28, 28), net_size=(28, 28), num_boost_queries=0)
+        with self.assertRaises(ValueError):
+            _ = GRAPHITEBlackbox(ptc, noise_size=(28, 28), net_size=(28, 28), num_boost_queries=1.0)
         with self.assertRaises(ValueError):
             _ = GRAPHITEBlackbox(ptc, noise_size=(28, 28), net_size=(28, 28), rotation_range=(-90, 0))
         with self.assertRaises(ValueError):
@@ -391,8 +394,12 @@ class TestGRAPHITE(TestBase):
             _ = GRAPHITEWhiteboxPyTorch(ptc, blur_kernels=(-1))
 
     def test_1_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(GRAPHITEBlackbox, [BaseEstimator, ClassifierMixin])
-        backend_test_classifier_type_check_fail(GRAPHITEWhiteboxPyTorch, [BaseEstimator, ClassifierMixin])
+        backend_test_classifier_type_check_fail(
+            GRAPHITEBlackbox, [BaseEstimator, ClassifierMixin], noise_size=(28, 28), net_size=(28, 28)
+        )
+        backend_test_classifier_type_check_fail(
+            GRAPHITEWhiteboxPyTorch, [BaseEstimator, ClassifierMixin], noise_size=(28, 28), net_size=(28, 28)
+        )
 
 
 if __name__ == "__main__":
