@@ -316,6 +316,7 @@ class GRAPHITEBlackbox(EvasionAttack):
     ) -> np.ndarray:
         """
         Internal attack function for one example.
+
         :param x: An array with one original input to be attacked.
         :param y: The target label.
         :param x_tar: Initial array to act as an example target image.
@@ -379,6 +380,7 @@ class GRAPHITEBlackbox(EvasionAttack):
     ) -> np.ndarray:
         """
         Function to generate a mask.
+
         :param x: An array with one original input to be attacked.
         :param x_noise: x in the resolution of the noise size.
         :param x_tar_noise: x_tar in the resolution of the noise size.
@@ -507,6 +509,7 @@ class GRAPHITEBlackbox(EvasionAttack):
     ) -> List[float]:
         """
         Function to generate a heatmap.
+
         :param x: An array with one original input to be attacked.
         :param x_noise: x in the resolution of the noise size.
         :param x_tar_noise: x_tar in the resolution of the noise size.
@@ -551,6 +554,7 @@ class GRAPHITEBlackbox(EvasionAttack):
     ) -> Tuple[float, np.ndarray]:
         """
         Function as a binary search plug-in that evaluates the transform-robustness at the specified pivot.
+
         :param x: An array with one original input to be attacked.
         :param x_noise: x in the resolution of the noise size.
         :param x_tar_noise: x_tar in the resolution of the noise size.
@@ -596,6 +600,7 @@ class GRAPHITEBlackbox(EvasionAttack):
     ) -> Tuple[np.ndarray, List[np.ndarray], List[Tuple[int, int]]]:
         """
         Function to coarsely reduce mask.
+
         :param x: An array with one original input to be attacked.
         :param x_noise: x in the resolution of the noise size.
         :param x_tar_noise: x_tar in the resolution of the noise size.
@@ -661,6 +666,7 @@ class GRAPHITEBlackbox(EvasionAttack):
     ) -> np.ndarray:
         """
         Function to finely reduce mask.
+
         :param x: An array with one original input to be attacked.
         :param x_noise: x in the resolution of the noise size.
         :param x_tar_noise: x_tar in the resolution of the noise size.
@@ -736,6 +742,7 @@ class GRAPHITEBlackbox(EvasionAttack):
     ) -> np.ndarray:
         """
         Function to boost transform-robustness.
+
         :param x: An array with one original input to be attacked.
         :param x_noise: x in the resolution of the noise size.
         :param x_tar_noise: x_tar in the resolution of the noise size.
