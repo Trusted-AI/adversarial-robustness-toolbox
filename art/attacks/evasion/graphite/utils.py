@@ -306,10 +306,10 @@ def transform_wb(
     x_adv: "torch.Tensor",
     mask: "torch.Tensor",
     xform: Tuple[float, float, float, int, float, float, float, float, float],
-    pts: Optional[np.ndarray],
     net_size: Tuple[int, int],
     clip_min: float,
     clip_max: float,
+    pts: Optional[np.ndarray],
 ) -> "torch.Tensor":
     """
     Get transformed image, white-box setting.
@@ -318,10 +318,10 @@ def transform_wb(
     :param x_adv: Input image to transform, possibly attacked.
     :param mask: Mask image.
     :param xform: Transformation parameters.
-    :param pts: A set of points that will set the crop size in the perspective transform.
     :param net_size: Size of the image for the network.
     :param clip_min: Minimum value of an example.
     :param clip_max: Maximum value of an example.
+    :param pts: A set of points that will set the crop size in the perspective transform.
     :return: Transformed image.
     """
     import torch  # lgtm [py/repeated-import]
