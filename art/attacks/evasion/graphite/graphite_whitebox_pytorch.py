@@ -298,6 +298,7 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
     ) -> float:
         """
         Compute transform-robustness.
+
         :param x: Original image.
         :param x_adv: Attacked image.
         :param mask: The mask.
@@ -337,6 +338,7 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
     ) -> np.ndarray:
         """
         Internal attack function for one example.
+
         :param x: An array with one original input to be attacked.
         :param y: The target label.
         :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be

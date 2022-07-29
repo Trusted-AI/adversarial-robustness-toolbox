@@ -61,6 +61,7 @@ _estimator_requirements = (BaseEstimator, ClassifierMixin)
 def dist2pixels(dist: float, width: float, obj_width: float = 30) -> float:
     """
     Convert distance to pixels.
+
     :param dist: Distance to object.
     :param width: Width of image.
     :param obj_width: Width of object.
@@ -73,6 +74,7 @@ def dist2pixels(dist: float, width: float, obj_width: float = 30) -> float:
 def convert_to_network(x: np.ndarray, net_size: Tuple[int, int], clip_min: float, clip_max: float) -> np.ndarray:
     """
     Convert image to network format.
+
     :param x: Input image.
     :param net_size: The resolution to resize to in (w, h).
     :param clip_min: Minimum value of an example.
@@ -109,6 +111,7 @@ def apply_transformation(
 ) -> np.ndarray:
     """
     Apply transformation to input image.
+
     :param x: Input image.
     :param mask: Input mask.
     :param pert: Input perturbation.
@@ -173,6 +176,7 @@ def get_transform_params(
 ) -> List[Tuple[float, float, float, int, float, float, float, float, float]]:
     """
     Sample transformation params.
+
     :param num_xforms: The number of transforms to sample.
     :param rotation_range: The range of the rotation in the perspective transform.
     :param dist_range: The range of the distance (in ft) to be added to the focal length in perspective transform.
@@ -213,6 +217,7 @@ def add_noise(
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Combines the image and noise to create a perturbed image.
+
     :param x: Input image.
     :param mask: Mask image.
     :param lbd: lambda multiplier for the perturbation.
@@ -252,6 +257,7 @@ def get_transformed_images(
 ) -> List[np.ndarray]:
     """
     Get transformed images.
+
     :param x: Input image.
     :param mask: Mask image.
     :param xforms: Transformation parameters.
@@ -307,6 +313,7 @@ def transform_wb(
 ) -> "torch.Tensor":
     """
     Get transformed image, white-box setting.
+
     :param x: Original input image.
     :param x_adv: Input image to transform, possibly attacked.
     :param mask: Mask image.
@@ -367,6 +374,7 @@ def convert_to_network_wb(
 ) -> "torch.Tensor":
     """
     Convert image to network format.
+
     :param x: Input image.
     :param net_size: Size of the image for the network.
     :param clip_min: Minimum value of an example.
@@ -397,6 +405,7 @@ def get_perspective_transform(
 ) -> np.ndarray:
     """
     Computes parameters for perspective transform for blackbox attack.
+
     :param img: Input image.
     :param angle: Angle to rotate.
     :param width: Width of image.
@@ -432,6 +441,7 @@ def get_perspective_transform_wb(
 ) -> "torch.Tensor":
     """
     Computes perspective transform for whitebox attack.
+
     :param img: Input image.
     :param angle: Angle to rotate.
     :param width: Width of image.
@@ -473,6 +483,7 @@ def _get_perspective_transform(
 ) -> Tuple[np.ndarray, int, int]:
     """
     Computes parameters for perspective transform.
+
     :param angle: Angle to rotate.
     :param width: Width of image.
     :param height: Height of image.
@@ -538,6 +549,7 @@ def get_offset_and_crop_size(
 ) -> Tuple[float, float, float]:
     """
     Compute offsets and crop size for perspective transform.
+
     :param w: Width of image.
     :param h: Height of image.
     :param H: Homography matrix.
@@ -620,6 +632,7 @@ def run_predictions(
 ) -> float:
     """
     Run model predictions over batch of input.
+
     :param estimator: The model.
     :param imgs: Batch of images with different transforms.
     :param target: Target label.
@@ -658,6 +671,7 @@ def run_predictions(
 def score_fn(mask: np.ndarray, tr_err: float, object_size: float, threshold: float = 0.75, lbd: float = 5):
     """
     Mask scoring function.
+
     :param mask: The mask.
     :param tr_err: The error in transform-robustness.
     :param object_size: The size of the object.
