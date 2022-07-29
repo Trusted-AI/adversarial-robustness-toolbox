@@ -244,11 +244,11 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
                 x=x_adv[i],
                 y=y[i],
                 mask=mask[i],
-                pts=pts,
                 obj_width=obj_width,
                 focal=focal,
                 clip_min=clip_min,
                 clip_max=clip_max,
+                pts=pts,
             )
 
         y = to_categorical(y, self.estimator.nb_classes)  # type: ignore
@@ -292,9 +292,9 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
         target_label: np.ndarray,
         y_onehot: "torch.Tensor",
         xforms: List[Tuple[float, float, float, int, float, float, float, float, float]],
-        pts: Optional[np.ndarray],
         clip_min: float,
         clip_max: float,
+        pts: Optional[np.ndarray],
     ) -> float:
         """
         Compute transform-robustness.
@@ -305,9 +305,9 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
         :param target_label: The target label.
         :param y_onehot: The target label in one hot form.
         :param xforms: Ths list of transformation parameters.
-        :param pts: Optional. A set of points that will set the crop size in the perspective transform.
         :param clip_min: Minimum value of an example.
         :param clip_max: Maximum value of an example.
+        :param pts: Optional. A set of points that will set the crop size in the perspective transform.
         :return: Transform-robustness of the attack.
         """
         import torch  # lgtm [py/repeated-import]
@@ -317,7 +317,7 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
             with torch.no_grad():
                 if len(x_adv.shape) == 3:
                     x_adv = x_adv.unsqueeze(0)
-                transformed_x_adv = transform_wb(x, x_adv, mask, xform, pts, self.net_size, clip_min, clip_max)
+                transformed_x_adv = transform_wb(x, x_adv, mask, xform, self.net_size, clip_min, clip_max, pts)
                 logits, _ = self.estimator._predict_framework(  # pylint: disable=W0212
                     transformed_x_adv.cuda(), y_onehot
                 )
@@ -330,11 +330,11 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
         x: np.ndarray,
         y: np.ndarray,
         mask: np.ndarray,
-        pts: Optional[np.ndarray],
         obj_width: float,
         focal: float,
         clip_min: float,
         clip_max: float,
+        pts: Optional[np.ndarray],
     ) -> np.ndarray:
         """
         Internal attack function for one example.
@@ -344,11 +344,11 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
         :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
                      broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
                      perturbed.
-        :param pts: Optional. A set of points that will set the crop size in the perspective transform.
         :param obj_width: Estimated width of object in inches for perspective transform.
         :param focal: Estimated focal length in ft for perspective transform.
         :param clip_min: Minimum value of an example.
         :param clip_max: Maximum value of an example.
+        :param pts: Optional. A set of points that will set the crop size in the perspective transform.
         :return: An adversarial example.
         """
         import torch  # lgtm [py/repeated-import]
@@ -410,10 +410,10 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
                         adv_img.unsqueeze(0),
                         mask_tensor,
                         xform,
-                        pts,
                         self.net_size,
                         clip_min,
                         clip_max,
+                        pts,
                     )
 
                     logits, _ = self.estimator._predict_framework(  # pylint: disable=W0212
@@ -447,9 +447,9 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
                     target_label,
                     y_onehot_tensor,
                     xforms,
-                    pts,
                     clip_min,
                     clip_max,
+                    pts,
                 )
                 final_avg_grad = avg_grad
                 if transform_robustness >= self.min_tr:
