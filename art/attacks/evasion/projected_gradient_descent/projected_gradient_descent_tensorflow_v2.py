@@ -26,18 +26,24 @@ al. for adversarial training.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, Union, TYPE_CHECKING
 
 import numpy as np
+from tqdm.auto import tqdm
 
 from art.config import ART_NUMPY_DTYPE
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin
+from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_numpy import (
     ProjectedGradientDescentCommon,
 )
-from art.utils import compute_success, random_sphere
+from art.utils import compute_success, random_sphere, compute_success_array
+from art.summary_writer import SummaryWriter
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     import tensorflow as tf
+    from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 
 logger = logging.getLogger(__name__)
 
@@ -51,17 +57,22 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
     | Paper link: https://arxiv.org/abs/1706.06083
     """
 
+    _estimator_requirements = (BaseEstimator, LossGradientsMixin, ClassifierMixin)  # type: ignore
+
     def __init__(
         self,
-        estimator,
-        norm: int = np.inf,
-        eps: float = 0.3,
-        eps_step: float = 0.1,
+        estimator: "TensorFlowV2Classifier",
+        norm: Union[int, float, str] = np.inf,
+        eps: Union[int, float, np.ndarray] = 0.3,
+        eps_step: Union[int, float, np.ndarray] = 0.1,
+        decay: Optional[float] = None,
         max_iter: int = 100,
         targeted: bool = False,
         num_random_init: int = 0,
         batch_size: int = 32,
         random_eps: bool = False,
+        summary_writer: Union[str, bool, SummaryWriter] = False,
+        verbose: bool = True,
     ):
         """
         Create a :class:`.ProjectedGradientDescentTensorFlowV2` instance.
@@ -74,34 +85,42 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
                            suggests this for FGSM based training to generalize across different epsilons. eps_step is
                            modified to preserve the ratio of eps / eps_step. The effectiveness of this method with PGD
                            is untested (https://arxiv.org/pdf/1611.01236.pdf).
+        :param decay: Decay factor for accumulating the velocity vector when using momentum.
         :param max_iter: The maximum number of iterations.
         :param targeted: Indicates whether the attack is targeted (True) or untargeted (False).
         :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0 starting
                                 at the original input.
         :param batch_size: Size of the batch on which adversarial samples are generated.
+        :param summary_writer: Activate summary writer for TensorBoard.
+                               Default is `False` and deactivated summary writer.
+                               If `True` save runs/CURRENT_DATETIME_HOSTNAME in current directory.
+                               If of type `str` save in path.
+                               If of type `SummaryWriter` apply provided custom summary writer.
+                               Use hierarchical folder structure to compare between runs easily. e.g. pass in
+                               ‘runs/exp1’, ‘runs/exp2’, etc. for each new experiment to compare across them.
+        :param verbose: Show progress bars.
         """
-        if (
-            hasattr(estimator, "preprocessing")
-            and (estimator.preprocessing is not None and estimator.preprocessing != (0, 1))
-        ) or (
-            hasattr(estimator, "preprocessing_defences")
-            and (estimator.preprocessing_defences is not None and estimator.preprocessing_defences != [])
-        ):
+        if not estimator.all_framework_preprocessing:
             raise NotImplementedError(
-                "The framework-specific implementation currently does not apply preprocessing and "
-                "preprocessing defences."
+                "The framework-specific implementation only supports framework-specific preprocessing."
             )
 
-        super(ProjectedGradientDescentTensorFlowV2, self).__init__(
+        if summary_writer and num_random_init > 1:
+            raise ValueError("TensorBoard is not yet supported for more than 1 random restart (num_random_init>1).")
+
+        super().__init__(
             estimator=estimator,
             norm=norm,
             eps=eps,
             eps_step=eps_step,
+            decay=decay,
             max_iter=max_iter,
             targeted=targeted,
             num_random_init=num_random_init,
             batch_size=batch_size,
             random_eps=random_eps,
+            summary_writer=summary_writer,
+            verbose=verbose,
         )
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
@@ -113,13 +132,18 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
                   (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
                   samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
                   (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
-        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
-                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
-                     perturbed.
+        :param mask: An array with a mask broadcastable to input `x` defining where to apply adversarial perturbations.
+                     Shape needs to be broadcastable to the shape of x and can also be of the same shape as `x`. Any
+                     features for which the mask is zero will not be adversarially perturbed.
         :type mask: `np.ndarray`
         :return: An array holding the adversarial examples.
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
+
+        mask = self._get_mask(x, **kwargs)
+
+        # Ensure eps is broadcastable
+        self._check_compatibility_input_and_eps(x=x)
 
         # Check whether random eps is enabled
         self._random_eps()
@@ -127,16 +151,17 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         # Set up targets
         targets = self._set_targets(x, y)
 
-        # Get the mask
-        mask = self._get_mask(x, **kwargs)
-
         # Create dataset
         if mask is not None:
             # Here we need to make a distinction: if the masks are different for each input, we need to index
             # those for the current batch. Otherwise (i.e. mask is meant to be broadcasted), keep it as it is.
             if len(mask.shape) == len(x.shape):
                 dataset = tf.data.Dataset.from_tensor_slices(
-                    (x.astype(ART_NUMPY_DTYPE), targets.astype(ART_NUMPY_DTYPE), mask.astype(ART_NUMPY_DTYPE),)
+                    (
+                        x.astype(ART_NUMPY_DTYPE),
+                        targets.astype(ART_NUMPY_DTYPE),
+                        mask.astype(ART_NUMPY_DTYPE),
+                    )
                 ).batch(self.batch_size, drop_remainder=False)
 
             else:
@@ -150,47 +175,83 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
         else:
             dataset = tf.data.Dataset.from_tensor_slices(
-                (x.astype(ART_NUMPY_DTYPE), targets.astype(ART_NUMPY_DTYPE),)
+                (
+                    x.astype(ART_NUMPY_DTYPE),
+                    targets.astype(ART_NUMPY_DTYPE),
+                )
             ).batch(self.batch_size, drop_remainder=False)
 
         # Start to compute adversarial examples
-        adv_x_best = None
-        rate_best = None
+        adv_x = x.astype(ART_NUMPY_DTYPE)
+        data_loader = iter(dataset)
 
-        for _ in range(max(1, self.num_random_init)):
-            adv_x = x.astype(ART_NUMPY_DTYPE)
-            data_loader = iter(dataset)
+        # Compute perturbation with batching
+        for (batch_id, batch_all) in enumerate(
+            tqdm(data_loader, desc="PGD - Batches", leave=False, disable=not self.verbose)
+        ):
 
-            # Compute perturbation with batching
-            for (batch_id, batch_all) in enumerate(data_loader):
-                if mask is not None:
-                    (batch, batch_labels, mask_batch) = batch_all[0], batch_all[1], batch_all[2]
-                else:
-                    (batch, batch_labels, mask_batch) = batch_all[0], batch_all[1], None
+            self._batch_id = batch_id
 
-                batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
-                adv_x[batch_index_1:batch_index_2] = self._generate_batch(batch, batch_labels, mask_batch)
-
-            if self.num_random_init > 1:
-                rate = 100 * compute_success(
-                    self.estimator, x, targets, adv_x, self.targeted, batch_size=self.batch_size
-                )
-                if rate_best is None or rate > rate_best or adv_x_best is None:
-                    rate_best = rate
-                    adv_x_best = adv_x
+            if mask is not None:
+                (batch, batch_labels, mask_batch) = batch_all[0], batch_all[1], batch_all[2]
             else:
-                adv_x_best = adv_x
+                (batch, batch_labels, mask_batch) = batch_all[0], batch_all[1], None
+
+            batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
+
+            # Compute batch_eps and batch_eps_step
+            if isinstance(self.eps, np.ndarray) and isinstance(self.eps_step, np.ndarray):
+                if len(self.eps.shape) == len(x.shape) and self.eps.shape[0] == x.shape[0]:
+                    batch_eps = self.eps[batch_index_1:batch_index_2]
+                    batch_eps_step = self.eps_step[batch_index_1:batch_index_2]
+
+                else:
+                    batch_eps = self.eps
+                    batch_eps_step = self.eps_step
+
+            else:
+                batch_eps = self.eps
+                batch_eps_step = self.eps_step
+
+            for rand_init_num in range(max(1, self.num_random_init)):
+                if rand_init_num == 0:
+                    # first iteration: use the adversarial examples as they are the only ones we have now
+                    adv_x[batch_index_1:batch_index_2] = self._generate_batch(
+                        x=batch, targets=batch_labels, mask=mask_batch, eps=batch_eps, eps_step=batch_eps_step
+                    )
+                else:
+                    adversarial_batch = self._generate_batch(
+                        x=batch, targets=batch_labels, mask=mask_batch, eps=batch_eps, eps_step=batch_eps_step
+                    )
+                    attack_success = compute_success_array(
+                        self.estimator,
+                        batch,
+                        batch_labels,
+                        adversarial_batch,
+                        self.targeted,
+                        batch_size=self.batch_size,
+                    )
+                    # return the successful adversarial examples
+                    adv_x[batch_index_1:batch_index_2][attack_success] = adversarial_batch[attack_success]
 
         logger.info(
             "Success rate of attack: %.2f%%",
-            rate_best
-            if rate_best is not None
-            else 100 * compute_success(self.estimator, x, y, adv_x_best, self.targeted, batch_size=self.batch_size),
+            100 * compute_success(self.estimator, x, targets, adv_x, self.targeted, batch_size=self.batch_size),
         )
 
-        return adv_x_best
+        if self.summary_writer is not None:
+            self.summary_writer.reset()
 
-    def _generate_batch(self, x: "tf.Tensor", targets: "tf.Tensor", mask: "tf.Tensor") -> "tf.Tensor":
+        return adv_x
+
+    def _generate_batch(
+        self,
+        x: "tf.Tensor",
+        targets: "tf.Tensor",
+        mask: "tf.Tensor",
+        eps: Union[int, float, np.ndarray],
+        eps_step: Union[int, float, np.ndarray],
+    ) -> "tf.Tensor":
         """
         Generate a batch of adversarial samples and return them in an array.
 
@@ -199,17 +260,38 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
                      broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
                      perturbed.
+        :param eps: Maximum perturbation that the attacker can introduce.
+        :param eps_step: Attack step size (input variation) at each iteration.
         :return: Adversarial examples.
         """
-        adv_x = x
+        import tensorflow as tf  # lgtm [py/repeated-import]
+
+        adv_x = tf.identity(x)
+        momentum = tf.zeros(x.shape)
+
         for i_max_iter in range(self.max_iter):
+            self._i_max_iter = i_max_iter
             adv_x = self._compute_tf(
-                adv_x, x, targets, mask, self.eps, self.eps_step, self.num_random_init > 0 and i_max_iter == 0,
+                adv_x,
+                x,
+                targets,
+                mask,
+                eps,
+                eps_step,
+                momentum,
+                self.num_random_init > 0 and i_max_iter == 0,
             )
 
         return adv_x
 
-    def _compute_perturbation(self, x: "tf.Tensor", y: "tf.Tensor", mask: "tf.Tensor") -> "tf.Tensor":
+    def _compute_perturbation(  # pylint: disable=W0221
+        self,
+        x: "tf.Tensor",
+        y: "tf.Tensor",
+        mask: Optional["tf.Tensor"],
+        decay: Optional[float] = None,
+        momentum: Optional["tf.Tensor"] = None,
+    ) -> "tf.Tensor":
         """
         Compute perturbations.
 
@@ -218,9 +300,11 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
                   (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
                   samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
                   (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
-        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
-                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
-                     perturbed.
+        :param mask: An array with a mask broadcastable to input `x` defining where to apply adversarial perturbations.
+                     Shape needs to be broadcastable to the shape of x and can also be of the same shape as `x`. Any
+                     features for which the mask is zero will not be adversarially perturbed.
+        :param decay: Decay factor for accumulating the velocity vector when using momentum.
+        :param momentum: An array accumulating the velocity vector in the gradient direction for MIFGSM.
         :return: Perturbations.
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
@@ -229,7 +313,39 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         tol = 10e-8
 
         # Get gradient wrt loss; invert it if attack is targeted
-        grad = self.estimator.loss_gradient_framework(x, y) * (1 - 2 * int(self.targeted))
+        grad: tf.Tensor = self.estimator.loss_gradient(x, y) * tf.constant(
+            1 - 2 * int(self.targeted), dtype=ART_NUMPY_DTYPE
+        )
+
+        # Write summary
+        if self.summary_writer is not None:  # pragma: no cover
+            self.summary_writer.update(
+                batch_id=self._batch_id,
+                global_step=self._i_max_iter,
+                grad=grad.numpy(),
+                patch=None,
+                estimator=self.estimator,
+                x=x.numpy(),
+                y=y.numpy(),
+                targeted=self.targeted,
+            )
+
+        # Check for NaN before normalisation an replace with 0
+        if tf.reduce_any(tf.math.is_nan(grad)):  # pragma: no cover
+            logger.warning("Elements of the loss gradient are NaN and have been replaced with 0.0.")
+            grad = tf.where(tf.math.is_nan(grad), tf.zeros_like(grad), grad)
+
+        # Apply mask
+        if mask is not None:
+            grad = tf.where(mask == 0.0, 0.0, grad)
+
+        # Add momentum
+        if decay is not None and momentum is not None:
+            ind = tuple(range(1, len(x.shape)))
+            grad = tf.divide(grad, (tf.math.reduce_sum(tf.abs(grad), axis=ind, keepdims=True) + tol))
+            grad = self.decay * momentum + grad
+            # Accumulate the gradient for the next iter
+            momentum += grad
 
         # Apply norm bound
         if self.norm == np.inf:
@@ -237,20 +353,21 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
         elif self.norm == 1:
             ind = tuple(range(1, len(x.shape)))
-            grad = grad / (tf.math.reduce_sum(tf.abs(grad), axis=ind, keepdims=True) + tol)
+            grad = tf.divide(grad, (tf.math.reduce_sum(tf.abs(grad), axis=ind, keepdims=True) + tol))
 
         elif self.norm == 2:
             ind = tuple(range(1, len(x.shape)))
-            grad = grad / (tf.math.sqrt(tf.math.reduce_sum(tf.math.square(grad), axis=ind, keepdims=True)) + tol)
+            grad = tf.divide(
+                grad, (tf.math.sqrt(tf.math.reduce_sum(tf.math.square(grad), axis=ind, keepdims=True)) + tol)
+            )
 
         assert x.shape == grad.shape
 
-        if mask is None:
-            return grad
-        else:
-            return grad * mask
+        return grad
 
-    def _apply_perturbation(self, x: "tf.Tensor", perturbation: "tf.Tensor", eps_step: float) -> "tf.Tensor":
+    def _apply_perturbation(  # pylint: disable=W0221
+        self, x: "tf.Tensor", perturbation: "tf.Tensor", eps_step: Union[int, float, np.ndarray]
+    ) -> "tf.Tensor":
         """
         Apply perturbation on examples.
 
@@ -261,11 +378,12 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        x = x + eps_step * perturbation
-
+        perturbation_step = tf.constant(eps_step, dtype=ART_NUMPY_DTYPE) * perturbation
+        perturbation_step = tf.where(tf.math.is_nan(perturbation_step), 0, perturbation_step)
+        x = x + perturbation_step
         if self.estimator.clip_values is not None:
             clip_min, clip_max = self.estimator.clip_values
-            x = tf.clip_by_value(x, clip_min, clip_max)
+            x = tf.clip_by_value(x, clip_value_min=clip_min, clip_value_max=clip_max)
 
         return x
 
@@ -275,8 +393,9 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         x_init: "tf.Tensor",
         y: "tf.Tensor",
         mask: "tf.Tensor",
-        eps: float,
-        eps_step: float,
+        eps: Union[int, float, np.ndarray],
+        eps_step: Union[int, float, np.ndarray],
+        momentum: Optional["tf.Tensor"],
         random_init: bool,
     ) -> "tf.Tensor":
         """
@@ -288,20 +407,21 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
                   (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
                   samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
                   (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
-        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
-                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
-                     perturbed.
+        :param mask: An array with a mask broadcastable to input `x` defining where to apply adversarial perturbations.
+                     Shape needs to be broadcastable to the shape of x and can also be of the same shape as `x`. Any
+                     features for which the mask is zero will not be adversarially perturbed.
         :param eps: Maximum perturbation that the attacker can introduce.
         :param eps_step: Attack step size (input variation) at each iteration.
         :param random_init: Random initialisation within the epsilon ball. For random_init=False starting at the
                             original input.
-        :return: Adversarial examples.
+        :param momentum: An array accumulating the velocity vector in the gradient direction for MIFGSM.
+        :return: Adversarial examples and accumulated momentum.
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
         if random_init:
             n = x.shape[0]
-            m = np.prod(x.shape[1:])
+            m = np.prod(x.shape[1:]).item()
 
             random_perturbation = random_sphere(n, m, eps, self.norm).reshape(x.shape).astype(ART_NUMPY_DTYPE)
             random_perturbation = tf.convert_to_tensor(random_perturbation)
@@ -318,7 +438,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
             x_adv = x
 
         # Get perturbation
-        perturbation = self._compute_perturbation(x_adv, y, mask)
+        perturbation = self._compute_perturbation(x_adv, y, mask, self.decay, momentum)
 
         # Apply perturbation and clip
         x_adv = self._apply_perturbation(x_adv, perturbation, eps_step)
@@ -332,7 +452,9 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         return x_adv
 
     @staticmethod
-    def _projection(values: "tf.Tensor", eps: float, norm_p: int) -> "tf.Tensor":
+    def _projection(
+        values: "tf.Tensor", eps: Union[int, float, np.ndarray], norm_p: Union[int, float, str]
+    ) -> "tf.Tensor":
         """
         Project `values` on the L_p norm ball of size `eps`.
 
@@ -348,21 +470,35 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         values_tmp = tf.reshape(values, (values.shape[0], -1))
 
         if norm_p == 2:
+            if isinstance(eps, np.ndarray):
+                raise NotImplementedError(
+                    "The parameter `eps` of type `np.ndarray` is not supported to use with norm 2."
+                )
+
             values_tmp = values_tmp * tf.expand_dims(
                 tf.minimum(1.0, eps / (tf.norm(values_tmp, ord=2, axis=1) + tol)), axis=1
             )
 
         elif norm_p == 1:
+            if isinstance(eps, np.ndarray):
+                raise NotImplementedError(
+                    "The parameter `eps` of type `np.ndarray` is not supported to use with norm 1."
+                )
+
             values_tmp = values_tmp * tf.expand_dims(
                 tf.minimum(1.0, eps / (tf.norm(values_tmp, ord=1, axis=1) + tol)), axis=1
             )
 
-        elif norm_p == np.inf:
+        elif norm_p in ["inf", np.inf]:
+            if isinstance(eps, np.ndarray):
+                eps = eps * np.ones(shape=values.shape)
+                eps = eps.reshape([eps.shape[0], -1])  # type: ignore
+
             values_tmp = tf.sign(values_tmp) * tf.minimum(tf.math.abs(values_tmp), eps)
 
         else:
             raise NotImplementedError(
-                "Values of `norm_p` different from 1, 2 and `np.inf` are currently not supported."
+                'Values of `norm_p` different from 1, 2 "inf" and `np.inf` are currently not supported.'
             )
 
         values = tf.reshape(values_tmp, values.shape)

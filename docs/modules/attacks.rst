@@ -17,6 +17,7 @@ Base Class Poisoning Attacks
 .. autoclass:: PoisoningAttack
 .. autoclass:: PoisoningAttackBlackBox
 .. autoclass:: PoisoningAttackWhiteBox
+.. autoclass:: PoisoningAttackTransformer
    :members:
 
 Base Class Extraction Attacks
@@ -28,4 +29,9 @@ Base Class Inference Attacks
 ----------------------------
 .. autoclass:: InferenceAttack
 .. autoclass:: AttributeInferenceAttack
+   :members:
+
+Base Class Reconstruction Attacks
+---------------------------------
+.. autoclass:: ReconstructionAttack
    :members:

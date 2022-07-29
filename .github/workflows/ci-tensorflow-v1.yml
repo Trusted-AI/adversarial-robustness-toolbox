@@ -1,0 +1,59 @@
+name: CI TensorFlow v1
+on:
+  # Run on manual trigger
+  workflow_dispatch:
+
+  # Run on pull requests
+  pull_request:
+    paths-ignore:
+      - '*.md'
+
+  # Run when pushing to main or dev branches
+  push:
+    branches:
+      - main
+      - dev*
+
+  # Run scheduled CI flow daily
+  schedule:
+    - cron: '0 8 * * 0'
+
+jobs:
+  test:
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: TensorFlow 1.15.5 (Keras 2.2.5 Python 3.7)
+            framework: tensorflow
+            python: 3.7
+            tensorflow: 1.15.5
+            tf_version: v1
+            keras: 2.2.5
+
+    name: ${{ matrix.name }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get -y -q install ffmpeg libavcodec-extra
+          python -m pip install --upgrade pip setuptools wheel
+          pip install -q -r <(sed '/^pandas/d;/^scipy/d' requirements_test.txt)
+          pip install pandas==1.3.5
+          pip install scipy==1.7.2
+          pip install tensorflow==${{ matrix.tensorflow }}
+          pip install keras==${{ matrix.keras }}
+          pip list
+      - name: Run Tests
+        run: ./run_tests.sh ${{ matrix.framework }}
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          fail_ci_if_error: true

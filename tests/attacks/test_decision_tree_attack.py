@@ -51,10 +51,10 @@ class TestDecisionTreeAttack(TestBase):
 
     def test_scikitlearn(self):
         clf = DecisionTreeClassifier()
-        X_original = self.X.copy()
+        x_original = self.X.copy()
         clf.fit(self.X, self.y)
         clf_art = SklearnClassifier(clf)
-        attack = DecisionTreeAttack(clf_art)
+        attack = DecisionTreeAttack(clf_art, verbose=False)
         adv = attack.generate(self.X[:25])
         # all crafting should succeed
         self.assertTrue(np.sum(clf.predict(adv) == clf.predict(self.X[:25])) == 0)
@@ -63,7 +63,18 @@ class TestDecisionTreeAttack(TestBase):
         # all targeted crafting should succeed as well
         self.assertTrue(np.sum(clf.predict(adv) == targets) == 25.0)
         # Check that X has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(np.abs(X_original - self.X))), 0.0, delta=0.00001)
+        self.assertAlmostEqual(float(np.max(np.abs(x_original - self.X))), 0.0, delta=0.00001)
+
+    def test_check_params(self):
+        clf = DecisionTreeClassifier()
+        clf.fit(self.X, self.y)
+        clf_art = SklearnClassifier(clf)
+
+        with self.assertRaises(ValueError):
+            _ = DecisionTreeAttack(clf_art, offset=-1)
+
+        with self.assertRaises(ValueError):
+            _ = DecisionTreeAttack(clf_art, verbose="False")
 
     def test_classifier_type_check_fail(self):
         backend_test_classifier_type_check_fail(DecisionTreeAttack, [ScikitlearnDecisionTreeClassifier])

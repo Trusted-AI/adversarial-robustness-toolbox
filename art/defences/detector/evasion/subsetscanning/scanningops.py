@@ -33,14 +33,14 @@ class ScanningOps:
         pvalues: np.ndarray,
         a_max: float,
         image_to_node: bool,
-        score_function: Callable[[list, list, np.ndarray], np.ndarray],
+        score_function: Callable[[np.ndarray, np.ndarray, np.ndarray], np.ndarray],
     ) -> Tuple[float, np.ndarray, float]:
         """
         Optimizes over all subsets of nodes for a given subset of images or over all subsets of images for a given
         subset of nodes.
 
         :param pvalues: pvalue ranges.
-        :param a_max: Ddetermines the significance level threshold.
+        :param a_max: Determines the significance level threshold.
         :param image_to_node: Informs the direction for optimization.
         :param score_function: Scoring function.
         :return: (best_score_so_far, subset, best_alpha).
@@ -49,7 +49,7 @@ class ScanningOps:
 
         # alpha_thresholds = alpha_thresholds[0::5] #take every 5th for speed purposes
         # where does a_max fall in check
-        last_alpha_index = np.searchsorted(alpha_thresholds, a_max)
+        last_alpha_index = int(np.searchsorted(alpha_thresholds, a_max))
         # resize check for only ones smaller than a_max
         alpha_thresholds = alpha_thresholds[0:last_alpha_index]
 
@@ -76,7 +76,9 @@ class ScanningOps:
                 arg_sort_max = np.argsort(pvalues[:, elem_indx, 1])
                 # arg_sort_min = np.argsort(pvalues[:,e,0]) #collect ranges over images(rows)
                 completely_included = np.searchsorted(
-                    pvalues[:, elem_indx, 1][arg_sort_max], alpha_thresholds, side="right",
+                    pvalues[:, elem_indx, 1][arg_sort_max],
+                    alpha_thresholds,
+                    side="right",
                 )
             else:
                 # collect ranges over nodes(columns)
@@ -84,7 +86,9 @@ class ScanningOps:
                 # arg_sort_min = np.argsort(pvalues[elem_indx,:,0])
 
                 completely_included = np.searchsorted(
-                    pvalues[elem_indx, :, 1][arg_sort_max], alpha_thresholds, side="right",
+                    pvalues[elem_indx, :, 1][arg_sort_max],
+                    alpha_thresholds,
+                    side="right",
                 )
 
             # should be num elements by num thresh
@@ -135,14 +139,14 @@ class ScanningOps:
         a_max: float,
         indices_of_seeds: np.ndarray,
         image_to_node: bool,
-        score_function: Callable[[list, list, np.ndarray], np.ndarray],
+        score_function: Callable[[np.ndarray, np.ndarray, np.ndarray], np.ndarray],
     ) -> Tuple[float, np.ndarray, np.ndarray, float]:
         """
         Here we control the iteration between images->nodes and nodes->images. It starts with a fixed subset of nodes by
         default.
 
         :param pvalues: pvalue ranges.
-        :param a_max: Ddetermines the significance level threshold.
+        :param a_max: Determines the significance level threshold.
         :param indices_of_seeds: Indices of initial sets of images or nodes to perform optimization.
         :param image_to_node: Informs the direction for optimization.
         :param score_function: Scoring function.

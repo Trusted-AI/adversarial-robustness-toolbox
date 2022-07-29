@@ -2,8 +2,8 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
-from art.estimators.object_detection.PyTorchFasterRCNN import PyTorchFasterRCNN
-from art.attacks.evasion import FastGradientMethod
+from art.estimators.object_detection import PyTorchFasterRCNN
+from art.attacks.evasion import ProjectedGradientDescent
 
 COCO_INSTANCE_CATEGORY_NAMES = [
     "__background__",
@@ -101,19 +101,15 @@ COCO_INSTANCE_CATEGORY_NAMES = [
 
 
 def extract_predictions(predictions_):
-
-    # for key, item in predictions[0].items():
-    #     print(key, item)
-
     # Get the predicted class
-    predictions_class = [COCO_INSTANCE_CATEGORY_NAMES[i] for i in list(predictions_["labels"].numpy())]
+    predictions_class = [COCO_INSTANCE_CATEGORY_NAMES[i] for i in list(predictions_["labels"])]
     print("\npredicted classes:", predictions_class)
 
     # Get the predicted bounding boxes
-    predictions_boxes = [[(i[0], i[1]), (i[2], i[3])] for i in list(predictions_["boxes"].detach().numpy())]
+    predictions_boxes = [[(i[0], i[1]), (i[2], i[3])] for i in list(predictions_["boxes"])]
 
     # Get the predicted prediction score
-    predictions_score = list(predictions_["scores"].detach().numpy())
+    predictions_score = list(predictions_["scores"])
     print("predicted score:", predictions_score)
 
     # Get a list of index with score greater than threshold
@@ -184,12 +180,11 @@ def main():
 
     # Create and run attack
     eps = 32
-    attack = FastGradientMethod(estimator=frcnn, eps=eps)
+    attack = ProjectedGradientDescent(estimator=frcnn, eps=eps, eps_step=2, max_iter=10)
     image_adv = attack.generate(x=image, y=None)
 
     print("\nThe attack budget eps is {}".format(eps))
     print("The resulting maximal difference in pixel values is {}.".format(np.amax(np.abs(image - image_adv))))
-    assert np.amax(np.abs(image - image_adv)) == eps
 
     for i in range(image_adv.shape[0]):
         plt.axis("off")

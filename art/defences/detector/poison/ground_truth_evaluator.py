@@ -22,7 +22,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import json
 import logging
-from typing import Tuple
+from typing import Tuple, Union, List
 
 import numpy as np
 
@@ -40,7 +40,7 @@ class GroundTruthEvaluator:
         """
 
     def analyze_correctness(
-        self, assigned_clean_by_class: np.ndarray, is_clean_by_class: list
+        self, assigned_clean_by_class: Union[np.ndarray, List[int], List[np.ndarray]], is_clean_by_class: list
     ) -> Tuple[np.ndarray, str]:
         """
         For each training sample, determine whether the activation clustering method was correct.
@@ -88,17 +88,17 @@ class GroundTruthEvaluator:
                 else:
                     raise Exception("Analyze_correctness entered wrong class")
 
-            errors = np.asarray(errors)
+            errors_array = np.asarray(errors)
             logger.debug("-------------------%d---------------", class_i)
             key_i = "class_" + str(class_i)
-            matrix_i = self.get_confusion_matrix(errors)
+            matrix_i = self.get_confusion_matrix(errors_array)
             dic_json.update({key_i: matrix_i})
-            all_errors_by_class.append(errors)
+            all_errors_by_class.append(errors_array)
 
-        all_errors_by_class = np.asarray(all_errors_by_class)
+        all_errors_by_class_array = np.asarray(all_errors_by_class, dtype=object)
         conf_matrix_json = json.dumps(dic_json)
 
-        return all_errors_by_class, conf_matrix_json
+        return all_errors_by_class_array, conf_matrix_json
 
     def get_confusion_matrix(self, values: np.ndarray) -> dict:
         """
@@ -118,21 +118,53 @@ class GroundTruthEvaluator:
         fp_rate = self.calculate_and_print(false_positive, false_positive + true_negative, "false-positive rate")
         fn_rate = self.calculate_and_print(false_negative, true_positive + false_negative, "false-negative rate")
 
-        dic_tp = dict(rate=round(tp_rate, 2), numerator=true_positive, denominator=(true_positive + false_negative),)
+        dic_tp = dict(
+            rate=round(tp_rate, 2),
+            numerator=true_positive,
+            denominator=(true_positive + false_negative),
+        )
         if (true_positive + false_negative) == 0:
-            dic_tp = dict(rate="N/A", numerator=true_positive, denominator=(true_positive + false_negative),)
+            dic_tp = dict(
+                rate="N/A",
+                numerator=true_positive,
+                denominator=(true_positive + false_negative),
+            )
 
-        dic_tn = dict(rate=round(tn_rate, 2), numerator=true_negative, denominator=(false_positive + true_negative),)
+        dic_tn = dict(
+            rate=round(tn_rate, 2),
+            numerator=true_negative,
+            denominator=(false_positive + true_negative),
+        )
         if (false_positive + true_negative) == 0:
-            dic_tn = dict(rate="N/A", numerator=true_negative, denominator=(false_positive + true_negative),)
+            dic_tn = dict(
+                rate="N/A",
+                numerator=true_negative,
+                denominator=(false_positive + true_negative),
+            )
 
-        dic_fp = dict(rate=round(fp_rate, 2), numerator=false_positive, denominator=(false_positive + true_negative),)
+        dic_fp = dict(
+            rate=round(fp_rate, 2),
+            numerator=false_positive,
+            denominator=(false_positive + true_negative),
+        )
         if (false_positive + true_negative) == 0:
-            dic_fp = dict(rate="N/A", numerator=false_positive, denominator=(false_positive + true_negative),)
+            dic_fp = dict(
+                rate="N/A",
+                numerator=false_positive,
+                denominator=(false_positive + true_negative),
+            )
 
-        dic_fn = dict(rate=round(fn_rate, 2), numerator=false_negative, denominator=(true_positive + false_negative),)
+        dic_fn = dict(
+            rate=round(fn_rate, 2),
+            numerator=false_negative,
+            denominator=(true_positive + false_negative),
+        )
         if (true_positive + false_negative) == 0:
-            dic_fn = dict(rate="N/A", numerator=false_negative, denominator=(true_positive + false_negative),)
+            dic_fn = dict(
+                rate="N/A",
+                numerator=false_negative,
+                denominator=(true_positive + false_negative),
+            )
 
         dic_class.update(dict(TruePositive=dic_tp))
         dic_class.update(dict(TrueNegative=dic_tn))

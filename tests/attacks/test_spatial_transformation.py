@@ -50,7 +50,7 @@ class TestSpatialTransformation(TestBase):
         cls.x_test_mnist = cls.x_test_mnist[0 : cls.n_test]
         cls.y_test_mnist = cls.y_test_mnist[0 : cls.n_test]
 
-    def test_tensorflow_classifier(self):
+    def test_2_tensorflow_classifier(self):
         """
         First test with the TensorFlowClassifier.
         :return:
@@ -62,7 +62,7 @@ class TestSpatialTransformation(TestBase):
 
         # Attack
         attack_st = SpatialTransformation(
-            tfc, max_translation=10.0, num_translations=3, max_rotation=30.0, num_rotations=3
+            tfc, max_translation=10.0, num_translations=3, max_rotation=30.0, num_rotations=3, verbose=False
         )
         x_train_adv = attack_st.generate(self.x_train_mnist)
 
@@ -83,7 +83,7 @@ class TestSpatialTransformation(TestBase):
         if sess is not None:
             sess.close()
 
-    def test_keras_classifier(self):
+    def test_4_keras_classifier(self):
         """
         Second test with the KerasClassifier.
         :return:
@@ -95,7 +95,7 @@ class TestSpatialTransformation(TestBase):
 
         # Attack
         attack_st = SpatialTransformation(
-            krc, max_translation=10.0, num_translations=3, max_rotation=30.0, num_rotations=3
+            krc, max_translation=10.0, num_translations=3, max_rotation=30.0, num_rotations=3, verbose=False
         )
         x_train_adv = attack_st.generate(self.x_train_mnist)
 
@@ -115,7 +115,7 @@ class TestSpatialTransformation(TestBase):
 
         k.clear_session()
 
-    def test_pytorch_classifier(self):
+    def test_3_pytorch_classifier(self):
         """
         Third test with the PyTorchClassifier.
         :return:
@@ -129,7 +129,7 @@ class TestSpatialTransformation(TestBase):
 
         # Attack
         attack_st = SpatialTransformation(
-            ptc, max_translation=10.0, num_translations=3, max_rotation=30.0, num_rotations=3
+            ptc, max_translation=10.0, num_translations=3, max_rotation=30.0, num_rotations=3, verbose=False
         )
         x_train__mnistadv = attack_st.generate(x_train_mnist)
 
@@ -147,10 +147,10 @@ class TestSpatialTransformation(TestBase):
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test_mnist))), 0.0, delta=0.00001)
 
-    def test_failure_feature_vectors(self):
+    def test_5_failure_feature_vectors(self):
         attack_params = {"max_translation": 10.0, "num_translations": 3, "max_rotation": 30.0, "num_rotations": 3}
         classifier = get_tabular_classifier_kr()
-        attack = SpatialTransformation(classifier=classifier)
+        attack = SpatialTransformation(classifier=classifier, verbose=False)
         attack.set_params(**attack_params)
         data = np.random.rand(10, 4)
 
@@ -160,7 +160,23 @@ class TestSpatialTransformation(TestBase):
 
         self.assertIn("Feature vectors detected.", str(context.exception))
 
-    def test_classifier_type_check_fail(self):
+    def test_check_params(self):
+
+        ptc = get_image_classifier_pt(from_logits=True)
+
+        with self.assertRaises(ValueError):
+            _ = SpatialTransformation(ptc, max_translation=-1)
+
+        with self.assertRaises(ValueError):
+            _ = SpatialTransformation(ptc, num_translations=-1)
+
+        with self.assertRaises(ValueError):
+            _ = SpatialTransformation(ptc, max_rotation=-1)
+
+        with self.assertRaises(ValueError):
+            _ = SpatialTransformation(ptc, verbose="False")
+
+    def test_1_classifier_type_check_fail(self):
         backend_test_classifier_type_check_fail(SpatialTransformation, [BaseEstimator, NeuralNetworkMixin])
 
 

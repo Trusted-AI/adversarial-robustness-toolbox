@@ -34,7 +34,7 @@ from art.defences.detector.poison.poison_filtering_defence import PoisonFilterin
 from art.utils import segment_by_class, performance_diff
 
 if TYPE_CHECKING:
-    from art.estimators.classification.classifier import Classifier
+    from art.utils import CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +60,7 @@ class ProvenanceDefense(PoisonFilteringDefence):
 
     def __init__(
         self,
-        classifier: "Classifier",
+        classifier: "CLASSIFIER_TYPE",
         x_train: np.ndarray,
         y_train: np.ndarray,
         p_train: np.ndarray,
@@ -69,7 +69,6 @@ class ProvenanceDefense(PoisonFilteringDefence):
         eps: float = 0.2,
         perf_func: str = "accuracy",
         pp_valid: float = 0.2,
-        **kwargs
     ) -> None:
         """
         Create an :class:`.ProvenanceDefense` object with the provided classifier.
@@ -84,7 +83,7 @@ class ProvenanceDefense(PoisonFilteringDefence):
         :param perf_func: performance function used to evaluate effectiveness of defense.
         :param pp_valid: The percent of training data to use as validation data (for defense without validation data).
         """
-        super(ProvenanceDefense, self).__init__(classifier, x_train, y_train)
+        super().__init__(classifier, x_train, y_train)
         self.p_train = p_train
         self.num_devices = self.p_train.shape[1]
         self.x_val = x_val
@@ -121,7 +120,7 @@ class ProvenanceDefense(PoisonFilteringDefence):
         )
         return conf_matrix_json
 
-    def detect_poison(self, **kwargs) -> Tuple[dict, np.ndarray]:
+    def detect_poison(self, **kwargs) -> Tuple[Dict[int, float], List[int]]:
         """
         Returns poison detected and a report.
 
@@ -144,10 +143,10 @@ class ProvenanceDefense(PoisonFilteringDefence):
         self.is_clean_lst = np.array([1] * n_train)
 
         for device in report:
-            self.is_clean_lst[indices_by_provenance[device]] = 0
+            self.is_clean_lst[indices_by_provenance[device]] = 0  # type: ignore
         self.assigned_clean_by_device = segment_by_class(np.array(self.is_clean_lst), self.p_train, self.num_devices)
 
-        return report, self.is_clean_lst
+        return report, self.is_clean_lst  # type: ignore
 
     def detect_poison_partially_trusted(self, **kwargs) -> Dict[int, float]:
         """
@@ -175,7 +174,11 @@ class ProvenanceDefense(PoisonFilteringDefence):
             filtered_model.fit(filtered_data, filtered_labels)
 
             var_w = performance_diff(
-                filtered_model, unfiltered_model, self.x_val, self.y_val, perf_function=self.perf_func,
+                filtered_model,
+                unfiltered_model,
+                self.x_val,
+                self.y_val,
+                perf_function=self.perf_func,
             )
             if self.eps < var_w:
                 suspected[device_idx] = var_w
@@ -193,9 +196,14 @@ class ProvenanceDefense(PoisonFilteringDefence):
         self.set_params(**kwargs)
 
         suspected = {}
-        (train_data, valid_data, train_labels, valid_labels, train_prov, valid_prov,) = train_test_split(
-            self.x_train, self.y_train, self.p_train, test_size=self.pp_valid
-        )
+        (
+            train_data,
+            valid_data,
+            train_labels,
+            valid_labels,
+            train_prov,
+            valid_prov,
+        ) = train_test_split(self.x_train, self.y_train, self.p_train, test_size=self.pp_valid)
 
         train_segments = segment_by_class(train_data, train_prov, self.num_devices)
         valid_segments = segment_by_class(valid_data, valid_prov, self.num_devices)

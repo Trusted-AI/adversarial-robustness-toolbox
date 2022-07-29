@@ -31,6 +31,7 @@ from scipy.optimize import minimize
 from art.defences.preprocessor.preprocessor import Preprocessor
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412,R0401
     import tensorflow as tf
 
     from art.estimators.encoding.tensorflow import TensorFlowEncoder
@@ -42,8 +43,8 @@ logger = logging.getLogger(__name__)
 class InverseGAN(Preprocessor):
     """
     Given a latent variable generating a given adversarial sample, either inferred by an inverse GAN or randomly
-    generated, the InverseGAN optimizes that latent variable to project a sample as close as possible to
-    the adversarial sample without the adversarial noise.
+    generated, the InverseGAN optimizes that latent variable to project a sample as close as possible to the adversarial
+    sample without the adversarial noise.
     """
 
     params = ["sess", "gan", "inverse_gan"]
@@ -52,7 +53,7 @@ class InverseGAN(Preprocessor):
         self,
         sess: "tf.compat.v1.Session",
         gan: "TensorFlowGenerator",
-        inverse_gan: "TensorFlowEncoder",
+        inverse_gan: Optional["TensorFlowEncoder"],
         apply_fit: bool = False,
         apply_predict: bool = False,
     ):
@@ -67,11 +68,7 @@ class InverseGAN(Preprocessor):
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        super(InverseGAN, self).__init__()
-
-        self._is_fitted = True
-        self._apply_fit = apply_fit
-        self._apply_predict = apply_predict
+        super().__init__(is_fitted=True, apply_fit=apply_fit, apply_predict=apply_predict)
         self.gan = gan
         self.inverse_gan = inverse_gan
         self.sess = sess
@@ -115,9 +112,9 @@ class InverseGAN(Preprocessor):
         def func_loss(z_i):
             nonlocal iteration_count
             iteration_count += 1
-            logging.info("Iteration: {0}".format(iteration_count))
+            logging.info("Iteration: %d", iteration_count)
             z_i_reshaped = np.reshape(z_i, [batch_size, self.gan.encoding_length])
-            loss = self.loss(z_i_reshaped, x)
+            loss = self.compute_loss(z_i_reshaped, x)
 
             return loss
 
@@ -137,8 +134,8 @@ class InverseGAN(Preprocessor):
         for key in kwargs:
             if key not in options_allowed_keys:
                 raise KeyError(
-                    "The argument `{}` in kwargs is not allowed as option for `scipy.optimize.minimize` using "
-                    '`method="L-BFGS-B".`'.format(key)
+                    f"The argument `{key}` in kwargs is not allowed as option for `scipy.optimize.minimize` using "
+                    f'`method="L-BFGS-B".`'
                 )
 
         options = kwargs.copy()
@@ -148,55 +145,45 @@ class InverseGAN(Preprocessor):
         optimized_z_encoding = np.reshape(optimized_z_encoding_flat.x, [batch_size, self.gan.encoding_length])
         y = self.gan.predict(optimized_z_encoding)
 
-        return y
+        return x, y
 
-    def loss(self, z: np.ndarray, image_adv: np.ndarray) -> np.ndarray:
+    def compute_loss(self, z_encoding: np.ndarray, image_adv: np.ndarray) -> np.ndarray:
         """
         Given a encoding z, computes the loss between the projected sample and the original sample.
 
-        :param z: encoding z
-        :param image_adv:
+        :param z_encoding: The encoding z.
+        :param image_adv: The adversarial image.
         :return: The loss value
         """
         logging.info("Calculating Loss")
 
-        loss = self.sess.run(self._loss, feed_dict={self.gan.input_ph: z, self._image_adv: image_adv})
+        loss = self.sess.run(self._loss, feed_dict={self.gan.input_ph: z_encoding, self._image_adv: image_adv})
         return loss
 
-    @property
-    def apply_fit(self) -> bool:
-        return self._apply_fit
-
-    @property
-    def apply_predict(self) -> bool:
-        return self._apply_predict
-
-    def estimate_gradient(self, z_encoding: np.ndarray, y: np.ndarray) -> np.ndarray:
+    def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. a `z_encoding` input within a GAN against a
         corresponding adversarial sample.
 
-        :param z_encoding:
-        :param y: Target values of shape `(nb_samples, nb_classes)`.
+        :param x: The encoding z.
+        :param grad: Target values of shape `(nb_samples, nb_classes)`.
         :return: Array of gradients of the same shape as `z_encoding`.
         """
         logging.info("Calculating Gradients")
 
-        gradient = self.sess.run(self._grad, feed_dict={self._image_adv: y, self.gan.input_ph: z_encoding})
+        gradient = self.sess.run(self._grad, feed_dict={self._image_adv: grad, self.gan.input_ph: x})
         return gradient
-
-    def fit(self, x, y=None, **kwargs):
-        """
-        No parameters to learn for this method; do nothing.
-        """
-        pass
 
     def _check_params(self) -> None:
         if self.inverse_gan is not None and self.gan.encoding_length != self.inverse_gan.encoding_length:
-            raise ValueError("Both GAN and inverseGan must use the same size encoding.")
+            raise ValueError("Both GAN and InverseGAN must use the same size encoding.")
 
 
 class DefenseGAN(InverseGAN):
+    """
+    Implementation of DefenseGAN.
+    """
+
     def __init__(self, sess, gan):
         """
         Create an instance of DefenseGAN.

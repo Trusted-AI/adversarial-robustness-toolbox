@@ -29,7 +29,6 @@ from typing import Optional, Tuple
 import numpy as np
 
 from art.defences.preprocessor.preprocessor import Preprocessor
-from art.utils import Deprecated, deprecated_keyword_arg
 
 logger = logging.getLogger(__name__)
 
@@ -42,14 +41,12 @@ class Resample(Preprocessor):
     implementation is a Windowed Sinc Interpolation function.
     """
 
-    params = ["sr_original", "sr_new", "channel_index", "channels_first"]
+    params = ["sr_original", "sr_new", "channels_first"]
 
-    @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
     def __init__(
         self,
         sr_original: int,
         sr_new: int,
-        channel_index=Deprecated,
         channels_first: bool = False,
         apply_fit: bool = False,
         apply_predict: bool = True,
@@ -59,37 +56,15 @@ class Resample(Preprocessor):
 
         :param sr_original: Original sampling rate of sample.
         :param sr_new: New sampling rate of sample.
-        :param channel_index: Index of the axis containing the audio channels.
-        :type channel_index: `int`
         :param channels_first: Set channels first or last.
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
         """
-        # Remove in 1.5.0
-        if channel_index == 2:
-            channels_first = False
-        elif channel_index == 1:
-            channels_first = True
-        elif channel_index is not Deprecated:
-            raise ValueError("Not a proper channel_index. Use channels_first.")
-
-        super().__init__()
-        self._is_fitted = True
-        self._apply_fit = apply_fit
-        self._apply_predict = apply_predict
+        super().__init__(is_fitted=True, apply_fit=apply_fit, apply_predict=apply_predict)
         self.sr_original = sr_original
         self.sr_new = sr_new
-        self.channel_index = channel_index
         self.channels_first = channels_first
         self._check_params()
-
-    @property
-    def apply_fit(self) -> bool:
-        return self._apply_fit
-
-    @property
-    def apply_predict(self) -> bool:
-        return self._apply_predict
 
     def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
@@ -108,18 +83,9 @@ class Resample(Preprocessor):
 
         return resampy.resample(x, self.sr_original, self.sr_new, axis=sample_index, filter="sinc_window"), y
 
-    def estimate_gradient(self, x, grad):
-        return grad
-
-    def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> None:
-        """
-        No parameters to learn for this method; do nothing.
-        """
-        pass
-
     def _check_params(self) -> None:
-        if not (isinstance(self.sr_original, (int, np.int)) and self.sr_original > 0):
+        if not (isinstance(self.sr_original, int) and self.sr_original > 0):
             raise ValueError("Original sampling rate be must a positive integer.")
 
-        if not (isinstance(self.sr_new, (int, np.int)) and self.sr_new > 0):
+        if not (isinstance(self.sr_new, int) and self.sr_new > 0):
             raise ValueError("New sampling rate be must a positive integer.")

@@ -71,6 +71,10 @@ class TestAdversarialTrainerMadryPGD(unittest.TestCase):
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
+    def test_get_classifier(self):
+        adv_trainer = AdversarialTrainerMadryPGD(self.classifier, nb_epochs=1, batch_size=128)
+        _ = adv_trainer.get_classifier()
+
 
 if __name__ == "__main__":
     unittest.main()

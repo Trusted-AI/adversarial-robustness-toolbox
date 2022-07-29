@@ -67,6 +67,28 @@ class TestTotalVarMin(unittest.TestCase):
 
         self.assertIn("Feature vectors detected.", str(context.exception))
 
+    def test_check_params(self):
+        with self.assertRaises(ValueError):
+            _ = TotalVarMin(prob=-1)
+
+        with self.assertRaises(ValueError):
+            _ = TotalVarMin(norm=-1)
+
+        with self.assertRaises(ValueError):
+            _ = TotalVarMin(solver="solver")
+
+        with self.assertRaises(ValueError):
+            _ = TotalVarMin(max_iter=-1)
+
+        with self.assertRaises(ValueError):
+            _ = TotalVarMin(clip_values=(0, 1, 2))
+
+        with self.assertRaises(ValueError):
+            _ = TotalVarMin(clip_values=(1, 0))
+
+        with self.assertRaises(ValueError):
+            _ = TotalVarMin(verbose="False")
+
 
 if __name__ == "__main__":
     unittest.main()

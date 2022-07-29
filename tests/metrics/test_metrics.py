@@ -20,9 +20,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
-import keras
-from keras.models import Sequential
-from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 import numpy as np
 import tensorflow as tf
 import torch.nn as nn
@@ -61,13 +58,9 @@ class TestMetrics(unittest.TestCase):
         classifier.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=2, verbose=0)
 
         # Compute minimal perturbations
-        params = {"eps_step": 1.1}
-        emp_robust = empirical_robustness(classifier, x_train, str("fgsm"), params)
-        self.assertEqual(emp_robust, 0.0)
-
         params = {"eps_step": 1.0, "eps": 1.0}
         emp_robust = empirical_robustness(classifier, x_train, str("fgsm"), params)
-        self.assertAlmostEqual(emp_robust, 1.000369094488189, 4)
+        self.assertAlmostEqual(emp_robust, 1.000369094488189, 3)
 
         params = {"eps_step": 0.1, "eps": 0.2}
         emp_robust = empirical_robustness(classifier, x_train, str("fgsm"), params)
@@ -81,8 +74,8 @@ class TestMetrics(unittest.TestCase):
         classifier = self._cnn_mnist_k([28, 28, 1])
         classifier.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=2, verbose=0)
 
-        l = loss_sensitivity(classifier, x_train, y_train)
-        self.assertGreaterEqual(l, 0)
+        sensitivity = loss_sensitivity(classifier, x_train, y_train)
+        self.assertGreaterEqual(sensitivity, 0)
 
     # def testNearestNeighborDist(self):
     #     # Get MNIST
@@ -98,6 +91,19 @@ class TestMetrics(unittest.TestCase):
 
     @staticmethod
     def _cnn_mnist_k(input_shape):
+        import tensorflow as tf
+
+        tf_version = [int(v) for v in tf.__version__.split(".")]
+        if tf_version[0] == 2 and tf_version[1] >= 3:
+            tf.compat.v1.disable_eager_execution()
+            from tensorflow import keras
+            from tensorflow.keras.models import Sequential
+            from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+        else:
+            import keras
+            from keras.models import Sequential
+            from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+
         # Create simple CNN
         model = Sequential()
         model.add(Conv2D(4, kernel_size=(5, 5), activation="relu", input_shape=input_shape))
@@ -112,41 +118,14 @@ class TestMetrics(unittest.TestCase):
         classifier = KerasClassifier(model=model, clip_values=(0, 1), use_logits=False)
         return classifier
 
-
-#########################################
-# This part is the unit test for Clever.#
-#########################################
-
-
-class Model(nn.Module):
-    def __init__(self):
-        super(Model, self).__init__()
-        self.conv = nn.Conv2d(1, 16, 5)
-        self.pool = nn.MaxPool2d(2, 2)
-        self.fc = nn.Linear(2304, 10)
-
-    def forward(self, x):
-        x = self.pool(f.relu(self.conv(x)))
-        x = x.view(-1, 2304)
-        logit_output = self.fc(x)
-
-        return logit_output
-
-
-class TestClever(unittest.TestCase):
-    """
-    Unittest for Clever metrics.
-    """
-
-    def setUp(self):
-        master_seed(seed=42, set_tensorflow=True)
-
     @staticmethod
     def _create_tfclassifier():
         """
         To create a simple TensorFlowClassifier for testing.
         :return:
         """
+        import tensorflow as tf
+
         # Define input and output placeholders
         input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
         labels_ph = tf.placeholder(tf.int32, shape=[None, 10])
@@ -188,6 +167,19 @@ class TestClever(unittest.TestCase):
         To create a simple KerasClassifier for testing.
         :return:
         """
+        import tensorflow as tf
+
+        tf_version = [int(v) for v in tf.__version__.split(".")]
+        if tf_version[0] == 2 and tf_version[1] >= 3:
+            tf.compat.v1.disable_eager_execution()
+            from tensorflow import keras
+            from tensorflow.keras.models import Sequential
+            from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+        else:
+            import keras
+            from keras.models import Sequential
+            from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+
         # Create simple CNN
         model = Sequential()
         model.add(Conv2D(4, kernel_size=(5, 5), activation="relu", input_shape=(28, 28, 1)))
@@ -210,6 +202,21 @@ class TestClever(unittest.TestCase):
         To create a simple PyTorchClassifier for testing.
         :return:
         """
+
+        class Model(nn.Module):
+            def __init__(self):
+                super(Model, self).__init__()
+                self.conv = nn.Conv2d(1, 16, 5)
+                self.pool = nn.MaxPool2d(2, 2)
+                self.fc = nn.Linear(2304, 10)
+
+            def forward(self, x):
+                x = self.pool(f.relu(self.conv(x)))
+                x = x.view(-1, 2304)
+                logit_output = self.fc(x)
+
+                return logit_output
+
         # Define the network
         model = Model()
 
@@ -225,7 +232,7 @@ class TestClever(unittest.TestCase):
         return ptc
 
     @unittest.skipIf(tf.__version__[0] == "2", reason="Skip unittests for TensorFlow v2.")
-    def test_clever_tf(self):
+    def test_2_clever_tf(self):
         """
         Test with TensorFlow.
         :return:
@@ -251,9 +258,9 @@ class TestClever(unittest.TestCase):
         self.assertNotEqual(res2, res0)
 
         # Test untargeted clever
-        res0 = clever_u(tfc, x_test[-1], 10, 5, R_L1, norm=1, pool_factor=3)
-        res1 = clever_u(tfc, x_test[-1], 10, 5, R_L2, norm=2, pool_factor=3)
-        res2 = clever_u(tfc, x_test[-1], 10, 5, R_LI, norm=np.inf, pool_factor=3)
+        res0 = clever_u(tfc, x_test[-1], 10, 5, R_L1, norm=1, pool_factor=3, verbose=False)
+        res1 = clever_u(tfc, x_test[-1], 10, 5, R_L2, norm=2, pool_factor=3, verbose=False)
+        res2 = clever_u(tfc, x_test[-1], 10, 5, R_LI, norm=np.inf, pool_factor=3, verbose=False)
         logger.info("Untargeted TensorFlow: %f %f %f", res0, res1, res2)
         self.assertNotEqual(res0, res1)
         self.assertNotEqual(res1, res2)
@@ -284,15 +291,15 @@ class TestClever(unittest.TestCase):
         self.assertNotEqual(res2, res0)
 
         # Test untargeted clever
-        res0 = clever_u(krc, x_test[-1], 10, 5, R_L1, norm=1, pool_factor=3)
-        res1 = clever_u(krc, x_test[-1], 10, 5, R_L2, norm=2, pool_factor=3)
-        res2 = clever_u(krc, x_test[-1], 10, 5, R_LI, norm=np.inf, pool_factor=3)
+        res0 = clever_u(krc, x_test[-1], 10, 5, R_L1, norm=1, pool_factor=3, verbose=False)
+        res1 = clever_u(krc, x_test[-1], 10, 5, R_L2, norm=2, pool_factor=3, verbose=False)
+        res2 = clever_u(krc, x_test[-1], 10, 5, R_LI, norm=np.inf, pool_factor=3, verbose=False)
         logger.info("Untargeted Keras: %f %f %f", res0, res1, res2)
         self.assertNotEqual(res0, res1)
         self.assertNotEqual(res1, res2)
         self.assertNotEqual(res2, res0)
 
-    def test_clever_pt(self):
+    def test_3_clever_pt(self):
         """
         Test with pytorch.
         :return:
@@ -319,9 +326,9 @@ class TestClever(unittest.TestCase):
         self.assertNotEqual(res2, res0)
 
         # Test untargeted clever
-        res0 = clever_u(ptc, x_test[-1], 10, 5, R_L1, norm=1, pool_factor=3)
-        res1 = clever_u(ptc, x_test[-1], 10, 5, R_L2, norm=2, pool_factor=3)
-        res2 = clever_u(ptc, x_test[-1], 10, 5, R_LI, norm=np.inf, pool_factor=3)
+        res0 = clever_u(ptc, x_test[-1], 10, 5, R_L1, norm=1, pool_factor=3, verbose=False)
+        res1 = clever_u(ptc, x_test[-1], 10, 5, R_L2, norm=2, pool_factor=3, verbose=False)
+        res2 = clever_u(ptc, x_test[-1], 10, 5, R_LI, norm=np.inf, pool_factor=3, verbose=False)
         logger.info("Untargeted PyTorch: %f %f %f", res0, res1, res2)
         self.assertNotEqual(res0, res1)
         self.assertNotEqual(res1, res2)
@@ -335,7 +342,7 @@ class TestClever(unittest.TestCase):
         krc = self._create_krclassifier()
         krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2, verbose=0)
 
-        scores = clever(krc, x_test[0], 5, 5, 3, 2, target=None, c_init=1, pool_factor=10)
+        scores = clever(krc, x_test[0], 5, 5, 3, 2, target=None, c_init=1, pool_factor=10, verbose=False)
         logger.info("Clever scores for n-1 classes: %s %s", str(scores), str(scores.shape))
         self.assertEqual(scores.shape, (krc.nb_classes - 1,))
 
@@ -347,7 +354,9 @@ class TestClever(unittest.TestCase):
         krc = self._create_krclassifier()
         krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2, verbose=0)
 
-        scores = clever(krc, x_test[0], 5, 5, 3, 2, target=None, target_sort=True, c_init=1, pool_factor=10)
+        scores = clever(
+            krc, x_test[0], 5, 5, 3, 2, target=None, target_sort=True, c_init=1, pool_factor=10, verbose=False
+        )
         logger.info("Clever scores for n-1 classes: %s %s", str(scores), str(scores.shape))
         # Should approx. be in decreasing value
         self.assertEqual(scores.shape, (krc.nb_classes - 1,))
@@ -360,12 +369,21 @@ class TestClever(unittest.TestCase):
         krc = self._create_krclassifier()
         krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2, verbose=0)
 
-        scores = clever(krc, x_test[0], 5, 5, 3, 2, target=np.argmax(krc.predict(x_test[:1])), c_init=1, pool_factor=10)
+        scores = clever(
+            krc,
+            x_test[0],
+            5,
+            5,
+            3,
+            2,
+            target=np.argmax(krc.predict(x_test[:1])),
+            c_init=1,
+            pool_factor=10,
+            verbose=False,
+        )
         self.assertIsNone(scores[0], msg="Clever scores for the predicted class should be `None`.")
 
-
-class TestWassersteinDistance(unittest.TestCase):
-    def test_wasserstein_distance(self):
+    def test_1_wasserstein_distance(self):
         nb_train = 1000
         nb_test = 100
         batch_size = 3
@@ -373,15 +391,21 @@ class TestWassersteinDistance(unittest.TestCase):
 
         x_train = x_train[0:nb_train]
         x_test = x_test[0:nb_test]
+        weights = np.ones_like(x_train)
 
         wd_0 = wasserstein_distance(x_train[:batch_size], x_train[:batch_size])
         wd_1 = wasserstein_distance(x_train[:batch_size], x_test[:batch_size])
+        wd_2 = wasserstein_distance(
+            x_train[:batch_size], x_train[:batch_size], weights[:batch_size], weights[:batch_size]
+        )
 
         np.testing.assert_array_equal(wd_0, np.asarray([0.0, 0.0, 0.0]))
         np.testing.assert_array_almost_equal(wd_1, np.asarray([0.04564, 0.01235, 0.04787]), decimal=4)
 
         np.testing.assert_array_equal(x_train.shape, np.asarray([nb_train, 28, 28, 1]))
         np.testing.assert_array_equal(x_test.shape, np.asarray([nb_test, 28, 28, 1]))
+
+        np.testing.assert_array_equal(wd_2, np.asarray([0.0, 0.0, 0.0]))
 
 
 if __name__ == "__main__":

@@ -121,7 +121,7 @@ class KerasDataGenerator(DataGenerator):
         :param size: Total size of the dataset.
         :param batch_size: Size of the minibatches.
         """
-        super(KerasDataGenerator, self).__init__(size=size, batch_size=batch_size)
+        super().__init__(size=size, batch_size=batch_size)
         self._iterator = iterator
 
     def get_batch(self) -> tuple:
@@ -153,11 +153,12 @@ class PyTorchDataGenerator(DataGenerator):
         """
         from torch.utils.data import DataLoader
 
-        super(PyTorchDataGenerator, self).__init__(size=size, batch_size=batch_size)
+        super().__init__(size=size, batch_size=batch_size)
         if not isinstance(iterator, DataLoader):
-            raise TypeError("Expected instance of PyTorch `DataLoader, received %s instead.`" % str(type(iterator)))
+            raise TypeError(f"Expected instance of PyTorch `DataLoader, received {type(iterator)} instead.`")
 
         self._iterator: DataLoader = iterator
+        self._current = iter(self.iterator)
 
     def get_batch(self) -> tuple:
         """
@@ -167,8 +168,11 @@ class PyTorchDataGenerator(DataGenerator):
         :return: A tuple containing a batch of data `(x, y)`.
         :rtype: `tuple`
         """
-        iter_ = iter(self.iterator)
-        batch = list(next(iter_))
+        try:
+            batch = list(next(self._current))
+        except StopIteration:
+            self._current = iter(self.iterator)
+            batch = list(next(self._current))
 
         for i, item in enumerate(batch):
             batch[i] = item.data.cpu().numpy()
@@ -191,11 +195,12 @@ class MXDataGenerator(DataGenerator):
         """
         import mxnet  # lgtm [py/repeated-import]
 
-        super(MXDataGenerator, self).__init__(size=size, batch_size=batch_size)
+        super().__init__(size=size, batch_size=batch_size)
         if not isinstance(iterator, mxnet.gluon.data.DataLoader):
-            raise TypeError("Expected instance of Gluon `DataLoader, received %s instead.`" % str(type(iterator)))
+            raise TypeError(f"Expected instance of Gluon `DataLoader, received {type(iterator)} instead.`")
 
         self._iterator = iterator
+        self._current = iter(self.iterator)
 
     def get_batch(self) -> tuple:
         """
@@ -204,8 +209,11 @@ class MXDataGenerator(DataGenerator):
 
         :return: A tuple containing a batch of data `(x, y)`.
         """
-        iter_ = iter(self.iterator)
-        batch = list(next(iter_))
+        try:
+            batch = list(next(self._current))
+        except StopIteration:
+            self._current = iter(self.iterator)
+            batch = list(next(self._current))
 
         for i, item in enumerate(batch):
             batch[i] = item.asnumpy()
@@ -213,7 +221,7 @@ class MXDataGenerator(DataGenerator):
         return tuple(batch)
 
 
-class TensorFlowDataGenerator(DataGenerator):
+class TensorFlowDataGenerator(DataGenerator):  # pragma: no cover
     """
     Wrapper class on top of the TensorFlow native iterators :class:`tf.data.Iterator`.
     """
@@ -240,9 +248,9 @@ class TensorFlowDataGenerator(DataGenerator):
         :raises `TypeError`, `ValueError`: If input parameters are not valid.
         """
         # pylint: disable=E0401
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow.compat.v1 as tf  # lgtm [py/repeated-import]
 
-        super(TensorFlowDataGenerator, self).__init__(size=size, batch_size=batch_size)
+        super().__init__(size=size, batch_size=batch_size)
         self.sess = sess
         self._iterator = iterator
         self.iterator_type = iterator_type
@@ -253,15 +261,15 @@ class TensorFlowDataGenerator(DataGenerator):
 
         if iterator_type == "initializable":
             if not isinstance(iterator_arg, dict):
-                raise TypeError("Need to pass a dictionary for iterator type %s" % iterator_type)
+                raise TypeError(f"Need to pass a dictionary for iterator type {iterator_type}")
         elif iterator_type == "reinitializable":
             if not isinstance(iterator_arg, tf.Operation):
-                raise TypeError("Need to pass a TensorFlow operation for iterator type %s" % iterator_type)
+                raise TypeError(f"Need to pass a TensorFlow operation for iterator type {iterator_type}")
         elif iterator_type == "feedable":
             if not isinstance(iterator_arg, tuple):
-                raise TypeError("Need to pass a tuple for iterator type %s" % iterator_type)
+                raise TypeError(f"Need to pass a tuple for iterator type {iterator_type}")
         else:
-            raise TypeError("Iterator type %s not supported" % iterator_type)
+            raise TypeError(f"Iterator type {iterator_type} not supported")
 
     def get_batch(self) -> tuple:
         """
@@ -311,7 +319,7 @@ class TensorFlowV2DataGenerator(DataGenerator):
         # pylint: disable=E0401
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        super(TensorFlowV2DataGenerator, self).__init__(size=size, batch_size=batch_size)
+        super().__init__(size=size, batch_size=batch_size)
         self._iterator = iterator
         self._iterator_iter = iter(iterator)
 

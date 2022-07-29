@@ -79,6 +79,50 @@ def main_mnist_binary():
     )
 
 
+def main_diabetes():
+    master_seed(1234)
+
+    model = Sequential()
+    model.add(Dense(100, activation="relu", input_dim=10))
+    model.add(Dense(10, activation="relu"))
+    model.add(Dense(1))
+
+    model.compile(loss="mean_squared_error", optimizer=tf.keras.optimizers.Adam(lr=0.01), metrics=["accuracy"])
+
+    (x_train, y_train), (_, _), _, _ = load_dataset("diabetes")
+
+    model.fit(x_train, y_train, batch_size=128, epochs=10)
+
+    w_0, b_0 = model.layers[0].get_weights()
+    w_1, b_1 = model.layers[1].get_weights()
+    w_2, b_2 = model.layers[2].get_weights()
+
+    np.save(
+        os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models/", "W_DENSE1_DIABETES"),
+        w_0,
+    )
+    np.save(
+        os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models/" "B_DENSE1_DIABETES"),
+        b_0,
+    )
+    np.save(
+        os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models/" "W_DENSE2_DIABETES"),
+        w_1,
+    )
+    np.save(
+        os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models/" "B_DENSE2_DIABETES"),
+        b_1,
+    )
+    np.save(
+        os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models/" "W_DENSE3_DIABETES"),
+        w_2,
+    )
+    np.save(
+        os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models/" "B_DENSE3_DIABETES"),
+        b_2,
+    )
+
+
 def create_scikit_model_weights():
     master_seed(1234)
 
@@ -134,3 +178,4 @@ def create_scikit_model_weights():
 if __name__ == "__main__":
     main_mnist_binary()
     create_scikit_model_weights()
+    main_diabetes()

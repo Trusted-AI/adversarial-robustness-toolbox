@@ -14,9 +14,21 @@ Adversarial Patch - Numpy
    :members:
    :special-members:
 
+Adversarial Patch - PyTorch
+---------------------------
+.. autoclass:: AdversarialPatchPyTorch
+   :members:
+   :special-members:
+
 Adversarial Patch - TensorFlowV2
 --------------------------------
 .. autoclass:: AdversarialPatchTensorFlowV2
+   :members:
+   :special-members:
+
+Adversarial Texture - PyTorch
+-----------------------------
+.. autoclass:: AdversarialTexturePyTorch
    :members:
    :special-members:
 
@@ -32,9 +44,21 @@ Auto Projected Gradient Descent (Auto-PGD)
    :members:
    :special-members:
 
-Decision-Based Attack / Boundary Attack
+Boundary Attack / Decision-Based Attack
 ---------------------------------------
 .. autoclass:: BoundaryAttack
+   :members:
+   :special-members:
+
+Brendel and Bethge Attack
+-------------------------
+.. autoclass:: BrendelBethgeAttack
+   :members:
+   :special-members:
+
+Carlini and Wagner L_0 Attack
+-----------------------------
+.. autoclass:: CarliniL0Method
    :members:
    :special-members:
 
@@ -47,6 +71,12 @@ Carlini and Wagner L_2 Attack
 Carlini and Wagner L_inf Attack
 -------------------------------
 .. autoclass:: CarliniLInfMethod
+   :members:
+   :special-members:
+
+Carlini and Wagner ASR Attack
+-----------------------------
+.. autoclass:: CarliniWagnerASR
    :members:
    :special-members:
 
@@ -68,6 +98,12 @@ DPatch
    :members:
    :special-members:
 
+RobustDPatch
+------------
+.. autoclass:: RobustDPatch
+   :members:
+   :special-members:
+
 Elastic Net Attack
 ------------------
 .. autoclass:: ElasticNet
@@ -80,9 +116,21 @@ Fast Gradient Method (FGM)
    :members:
    :special-members:
 
-Feature Adversaries
--------------------
-.. autoclass:: FeatureAdversaries
+Feature Adversaries - Numpy
+---------------------------
+.. autoclass:: FeatureAdversariesNumpy
+   :members:
+   :special-members:
+
+Feature Adversaries - PyTorch
+-----------------------------
+.. autoclass:: FeatureAdversariesPyTorch
+   :members:
+   :special-members:
+
+Feature Adversaries - TensorFlow
+--------------------------------
+.. autoclass:: FeatureAdversariesTensorFlowV2
    :members:
    :special-members:
 
@@ -92,15 +140,33 @@ Frame Saliency Attack
    :members:
    :special-members:
 
-HopSkipJump Attack
-------------------
-.. autoclass:: HopSkipJump
+Geometric Decision Based Attack
+-------------------------------
+.. autoclass:: GeoDA
    :members:
    :special-members:
 
 High Confidence Low Uncertainty Attack
 --------------------------------------
 .. autoclass:: HighConfidenceLowUncertainty
+   :members:
+   :special-members:
+
+HopSkipJump Attack
+------------------
+.. autoclass:: HopSkipJump
+   :members:
+   :special-members:
+
+Imperceptible ASR Attack
+------------------------
+.. autoclass:: ImperceptibleASR
+   :members:
+   :special-members:
+
+Imperceptible ASR Attack - PyTorch
+----------------------------------
+.. autoclass:: ImperceptibleASRPyTorch
    :members:
    :special-members:
 
@@ -134,9 +200,33 @@ Projected Gradient Descent (PGD) - TensorFlowV2
    :members:
    :special-members:
 
+LaserAttack
+-----------
+.. autoclass:: LaserAttack
+   :members:
+   :special-members:
+
+LowProFool
+----------
+.. autoclass:: LowProFool
+   :members:
+   :special-members:
+
 NewtonFool
 ----------
 .. autoclass:: NewtonFool
+   :members:
+   :special-members:
+
+Malware Gradient Descent - TensorFlow
+-------------------------------------
+.. autoclass:: MalwareGDTensorFlow
+   :members:
+   :special-members:
+
+Over The Air Flickering Attack - PyTorch
+----------------------------------------
+.. autoclass:: OverTheAirFlickeringPyTorch
    :members:
    :special-members:
 
@@ -164,6 +254,24 @@ Shadow Attack
    :members:
    :special-members:
 
+ShapeShifter Attack
+-------------------
+.. autoclass:: ShapeShifter
+   :members:
+   :special-members:
+
+Sign-OPT Attack
+---------------
+.. autoclass:: SignOPTAttack
+   :members:
+   :special-members:
+   
+Simple Black-box Adversarial Attack
+-----------------------------------
+.. autoclass:: SimBA
+   :members:
+   :special-members:
+
 Spatial Transformations Attack
 ------------------------------
 .. autoclass:: SpatialTransformation
@@ -173,6 +281,12 @@ Spatial Transformations Attack
 Square Attack
 -------------
 .. autoclass:: SquareAttack
+   :members:
+   :special-members:
+
+Targeted Universal Perturbation Attack
+--------------------------------------
+.. autoclass:: TargetedUniversalPerturbation
    :members:
    :special-members:
 
@@ -194,7 +308,7 @@ Wasserstein Attack
    :members:
    :special-members:
 
-Zeroth-Order Optimization Attack (ZOO)
+Zeroth-Order Optimization (ZOO) Attack
 --------------------------------------
 .. autoclass:: ZooAttack
    :members:
