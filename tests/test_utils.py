@@ -154,10 +154,31 @@ class TestUtils(unittest.TestCase):
         self.assertTrue(np.all(np.sum(np.abs(x), axis=1) <= 1.0))
 
         x = random_sphere(10, 10, 1, 2)
+        self.assertEqual(x.shape, (10, 10))
         self.assertTrue(np.all(np.linalg.norm(x, axis=1) < 1.0))
 
         x = random_sphere(10, 10, 1, np.inf)
+        self.assertEqual(x.shape, (10, 10))
         self.assertTrue(np.all(np.abs(x) < 1.0))
+
+        x = random_sphere(10, 10, 0.5, 1)
+        self.assertTrue(np.all(np.sum(np.abs(x), axis=1) <= 0.5))
+
+        x = random_sphere(10, 10, 0.5, 2)
+        self.assertTrue(np.all(np.linalg.norm(x, axis=1) < 0.5))
+
+        x = random_sphere(10, 10, 0.5, np.inf)
+        self.assertTrue(np.all(np.abs(x) < 0.5))
+
+        x = random_sphere(1, 10000, 1, 1)
+        self.assertTrue(np.abs(np.sum(np.abs(x), axis=1) - 1.0) < 1e-2)
+
+        x = random_sphere(1, 10000, 1, 2)
+        self.assertTrue(np.abs(np.linalg.norm(x, axis=1) - 1.0) < 1e-2)
+
+        x = random_sphere(1, 10000, 1, np.inf)
+        self.assertTrue(np.abs(np.max(np.abs(x), axis=1) - 1.0) < 1e-2)
+
 
     def test_to_categorical(self):
         y = np.array([3, 1, 4, 1, 5, 9])
