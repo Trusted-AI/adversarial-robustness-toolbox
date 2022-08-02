@@ -24,21 +24,24 @@ def uniform_sample_from_sphere_or_ball(
     assert(sample_space in ['b', 's', 'sphere', 'ball'])
 
     if norm == 1:
-        x = np.zeros((nb_points, nb_dims))
-        rnd = np.random.rand(nb_points)
-        x[:, 0] = (1 - np.float_power(rnd, 1 / (nb_dims - 1))) * radius
-        s = radius - x[:, 0]
-        for i in range(1, nb_dims - 1):
-            rnd = np.random.rand(nb_points)
-            x[:, i] = (1 - np.float_power(rnd, 1 / (nb_dims - i - 1))) * s
-            s -= x[:, i]
-        x[:, nb_dims - 1] = radius - np.sum(x, axis=1)
-        res = x * np.random.choice([-1, 1], (nb_points, nb_dims))
-        if sample_space in ['b', 'ball']:
-            rnd = np.random.rand(nb_points)
-            scal = np.float_power(rnd, 1 / nb_dims)
-            scal = np.transpose(np.array(list(scal) * nb_dims).reshape((nb_dims, nb_points)))
-            res = res * scal
+        if sample_space in ['s', 'sphere']:
+            y = np.random.exponential(1, (nb_points, nb_dims))
+            sums = np.sum(y, axis=1)
+            scal = np.transpose(np.array(list(sums) * nb_dims).reshape((nb_dims, nb_points)))
+            y = y / scal
+        else:
+            y = np.random.exponential(1, (nb_points, nb_dims + 1))
+            sums = np.sum(y, axis=1)
+            scal = np.transpose(np.array(list(sums) * (nb_dims + 1)).reshape((nb_dims + 1, nb_points)))
+            y = y / scal
+            y = y[:, :nb_dims]
+
+        y = y * np.random.choice([-1, 1], (nb_points, nb_dims))
+        if type(radius) in [int, float]:
+            res = y * radius
+        else:
+            radii = np.transpose(np.array(list(radius) * nb_dims).reshape((nb_dims, nb_points)))
+            res = y * radii
 
     elif norm == 2:
         x = np.random.normal(0., 1., (nb_points, nb_dims))
