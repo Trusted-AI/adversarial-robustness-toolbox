@@ -864,8 +864,8 @@ class GRAPHITEBlackbox(EvasionAttack):
         if self.eta <= 0:
             raise ValueError("eta must be positive.")
 
-        if self.num_xforms_boost < 0:
-            raise ValueError("num_xforms_boost must be positive.")
+        if self.num_xforms_boost < 0 or not isinstance(self.num.xforms_boost, int):
+            raise ValueError("num_xforms_boost must be positive integer.")
 
         if self.num_boost_queries <= 0:
             raise ValueError("num_boost_queries must be positive.")
