@@ -187,8 +187,8 @@ class TestGRAPHITE(TestBase):
         Third test with the PyTorchClassifier.
         :return:
         """
-        x_test = np.transpose(self.x_test_mnist(0, 3, 1, 2)).astype(np.float32)
-        x_test_init = np.transpose(self.x_test_mnist(0, 3, 1, 2)).astype(np.float32)
+        x_test = np.transpose(self.x_test_mnist, (0, 3, 1, 2)).astype(np.float32)
+        x_test_init = np.transpose(self.x_test_mnist, (0, 3, 1, 2)).astype(np.float32)
         x_test_original = x_test.copy()
 
         # Build PyTorchClassifier
@@ -398,7 +398,7 @@ class TestGRAPHITE(TestBase):
             GRAPHITEBlackbox, [BaseEstimator, ClassifierMixin], noise_size=(28, 28), net_size=(28, 28)
         )
         backend_test_classifier_type_check_fail(
-            GRAPHITEWhiteboxPyTorch, [BaseEstimator, ClassifierMixin], noise_size=(28, 28), net_size=(28, 28)
+            GRAPHITEWhiteboxPyTorch, [BaseEstimator, ClassifierMixin], net_size=(28, 28)
         )
 
 
