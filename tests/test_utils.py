@@ -179,7 +179,6 @@ class TestUtils(unittest.TestCase):
         x = random_sphere(1, 10000, 1, np.inf)
         self.assertTrue(np.abs(np.max(np.abs(x), axis=1) - 1.0) < 1e-2)
 
-
     def test_to_categorical(self):
         y = np.array([3, 1, 4, 1, 5, 9])
         y_ = to_categorical(y)

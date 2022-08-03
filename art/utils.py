@@ -546,10 +546,10 @@ def random_sphere(
                 "The parameter `radius` of type `np.ndarray` is not supported to use with norm 1."
             )
 
-        u = np.random.uniform(size=(nb_points, nb_dims))
-        v = np.sort(u)
-        v_pre = np.concatenate((np.zeros((nb_points, 1)), v[:, :nb_dims-1]), axis=-1)
-        x = v - v_pre
+        var_u = np.random.uniform(size=(nb_points, nb_dims))
+        var_v = np.sort(var_u)
+        v_pre = np.concatenate((np.zeros((nb_points, 1)), var_v[:, : nb_dims - 1]), axis=-1)
+        x = var_v - v_pre
         res = radius * x * np.random.choice([-1, 1], (nb_points, nb_dims))
 
     elif norm == 2:
