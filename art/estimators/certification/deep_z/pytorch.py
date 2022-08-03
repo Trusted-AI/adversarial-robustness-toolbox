@@ -38,10 +38,8 @@ if TYPE_CHECKING:
 
 class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
     """
-    Implementation of DeepZ to certify neural network robustness.
-
-    We use the zonotope representation of a datapoint as it travels through the network to then verify if it can
-    have its class changed given a certain perturbation.
+    Implementation of DeepZ to certify neural network robustness. We use the zonotope representation of a datapoint as
+    it travels through the network to then verify if it can have its class changed given a certain perturbation.
 
     | Paper link: https://papers.nips.cc/paper/2018/file/f2f446980d8e971ef3da97af089481c3-Paper.pdf
     """
@@ -166,6 +164,7 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
     def forward(self, cent: np.ndarray, eps: np.ndarray) -> Tuple["torch.Tensor", "torch.Tensor"]:
         """
         Do the forward pass through the NN with the given error terms and zonotope center.
+
         :param eps: Error terms of the zonotope.
         :param cent: The datapoint, representing the zonotope center.
         :return: A tuple, the first element being the zonotope center vector.
