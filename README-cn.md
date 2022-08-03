@@ -19,7 +19,9 @@
 [![Downloads](https://pepy.tech/badge/adversarial-robustness-toolbox/month)](https://pepy.tech/project/adversarial-robustness-toolbox)
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/5090/badge)](https://bestpractices.coreinfrastructure.org/projects/5090)
 
-<p><img src="https://raw.githubusercontent.com/lfai/artwork/master/lfaidata-assets/lfaidata-project-badge/graduate/color/lfaidata-project-badge-graduate-color.png" alt="LF AI & Data" width="200"/></p>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/lfai/artwork/master/lfaidata-assets/lfaidata-project-badge/graduate/color/lfaidata-project-badge-graduate-color.png" alt="LF AI & Data" width="300"/>
+</p>
 
 对抗性鲁棒性工具集（ART）是用于机器学习安全性的Python库。ART 由
 [Linux Foundation AI & Data Foundation](https://lfaidata.foundation) (LF AI & Data)。 ART提供的工具可
