@@ -403,7 +403,7 @@ def random_sphere(
             )
         y = np.random.exponential(1, (nb_points, nb_dims + 1))
         sums = np.sum(y, axis=1)
-        scal = np.transpose(np.array(list(sums) * (nb_dims + 1)).reshape((nb_dims + 1, nb_points)))
+        scal = np.outer(sums, np.ones(nb_dims + 1))
         y = y / scal
         y = y[:, :nb_dims]
         res = radius * y * np.random.choice([-1, 1], (nb_points, nb_dims))
