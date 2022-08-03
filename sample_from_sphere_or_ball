@@ -27,12 +27,12 @@ def uniform_sample_from_sphere_or_ball(
         if sample_space in ['s', 'sphere']:
             y = np.random.exponential(1, (nb_points, nb_dims))
             sums = np.sum(y, axis=1)
-            scal = np.transpose(np.array(list(sums) * nb_dims).reshape((nb_dims, nb_points)))
+            scal = np.outer(sums, np.ones(nb_dims))
             y = y / scal
         else:
             y = np.random.exponential(1, (nb_points, nb_dims + 1))
             sums = np.sum(y, axis=1)
-            scal = np.transpose(np.array(list(sums) * (nb_dims + 1)).reshape((nb_dims + 1, nb_points)))
+            scal = np.outer(sums, np.ones(nb_dims + 1))
             y = y / scal
             y = y[:, :nb_dims]
 
@@ -40,7 +40,7 @@ def uniform_sample_from_sphere_or_ball(
         if type(radius) in [int, float]:
             res = y * radius
         else:
-            radii = np.transpose(np.array(list(radius) * nb_dims).reshape((nb_dims, nb_points)))
+            radii = np.outer(radius, np.ones(nb_dims))
             res = y * radii
 
     elif norm == 2:
@@ -51,7 +51,7 @@ def uniform_sample_from_sphere_or_ball(
         if sample_space in ['b', 'ball']:
             rnd = np.random.rand(nb_points)
             scal = np.float_power(rnd, 1 / nb_dims)
-            scal = np.transpose(np.array(list(scal) * nb_dims).reshape((nb_dims, nb_points)))
+            scal = np.outer(scal, np.ones(nb_dims))
             res = res * scal
 
     elif norm in [np.inf, "inf"]:
@@ -61,12 +61,12 @@ def uniform_sample_from_sphere_or_ball(
             x = np.random.uniform(0, 1., (nb_points, nb_dims))
             rnd = np.random.random((nb_points, nb_dims))
             maxes = np.max(rnd, axis=1)
-            maxes = np.transpose(np.array(list(maxes) * nb_dims).reshape((nb_dims, nb_points)))
+            maxes = np.outer(maxes, np.ones(nb_dims))
             x = np.maximum((rnd >= maxes), x) * np.random.choice([-1, 1], (nb_points, nb_dims))
         if type(radius) in [int, float]:
             res = x * radius
         else:
-            radii = np.transpose(np.array(list(radius) * nb_dims).reshape((nb_dims, nb_points)))
+            radii = np.outer(radius, np.ones(nb_dims))
             res = x * radii
     else:
         raise NotImplementedError("Norm {} not supported".format(norm))
