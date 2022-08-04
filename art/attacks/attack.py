@@ -30,7 +30,7 @@ from art.exceptions import EstimatorError
 from art.summary_writer import SummaryWriter, SummaryWriterDefault
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_TYPE
+    from art.utils import CLASSIFIER_TYPE, GENERATOR_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +91,7 @@ class Attack(abc.ABC):
     Abstract base class for all attack abstract base classes.
     """
 
-    attack_params: List[str] = list()
+    attack_params: List[str] = []
     # The _estimator_requirements define the requirements an estimator must satisfy to be used as a target for an
     # attack. They should be a tuple of requirements, where each requirement is either a class the estimator must
     # inherit from, or a tuple of classes which define a union, i.e. the estimator must inherit from at least one class
@@ -242,6 +242,50 @@ class PoisoningAttack(Attack):
         :return: An tuple holding the (poisoning examples, poisoning labels).
         """
         raise NotImplementedError
+
+
+class PoisoningAttackGenerator(Attack):
+    """
+    Abstract base class for poisoning attack classes that return a transformed generator.
+    These attacks have an additional method, `poison_estimator`, that returns the poisoned generator.
+    """
+
+    def __init__(self, generator: "GENERATOR_TYPE") -> None:
+        """
+        :param generator: A generator
+        """
+        super().__init__(generator)
+
+    @abc.abstractmethod
+    def poison_estimator(
+        self,
+        z_trigger: np.ndarray,
+        x_target: np.ndarray,
+        batch_size: int,
+        max_iter: int,
+        lambda_p: float,
+        verbose: int,
+        **kwargs
+    ) -> "GENERATOR_TYPE":
+        """
+        Returns a poisoned version of the generator used to initialize the attack
+        :return: A poisoned generator
+        """
+        raise NotImplementedError
+
+    @property
+    def z_trigger(self):
+        """
+        Returns the secret attacker trigger
+        """
+        return self._z_trigger
+
+    @property
+    def x_target(self):
+        """
+        Returns the secret attacker target which the poisoned generator should produce
+        """
+        return self._x_target
 
 
 class PoisoningAttackTransformer(PoisoningAttack):

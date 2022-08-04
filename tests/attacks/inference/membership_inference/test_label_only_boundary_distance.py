@@ -37,7 +37,7 @@ def test_label_only_boundary_distance_image(art_warning, get_default_mnist_subse
     try:
         classifier = image_dl_estimator_for_attack(LabelOnlyDecisionBoundary)
         attack = LabelOnlyDecisionBoundary(classifier, distance_threshold_tau=0.5)
-        backend_check_membership_accuracy(attack, get_default_mnist_subset, attack_train_ratio, 0.03)
+        backend_check_membership_accuracy(attack, get_default_mnist_subset, attack_train_ratio, 0.05)
     except ARTTestException as e:
         art_warning(e)
 

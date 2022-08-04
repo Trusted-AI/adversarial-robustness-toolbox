@@ -94,7 +94,7 @@ class DPatch(EvasionAttack):
                 + self.estimator.clip_values[0]
             ).astype(config.ART_NUMPY_DTYPE)
 
-        self.target_label: Optional[Union[int, np.ndarray, List[int]]] = list()
+        self.target_label: Optional[Union[int, np.ndarray, List[int]]] = []
 
     def generate(  # pylint: disable=W0221
         self,
@@ -107,7 +107,12 @@ class DPatch(EvasionAttack):
         Generate DPatch.
 
         :param x: Sample images.
-        :param y: Target labels for object detector.
+        :param y: True labels of type `List[Dict[np.ndarray]]` for untargeted attack, one dictionary per input image.
+                  The keys and values of the dictionary are:
+
+                  - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
+                  - labels [N]: the labels for each image
+                  - scores [N]: the scores or each prediction.
         :param target_label: The target label of the DPatch attack.
         :param mask: An boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
                      (N, H, W) without their channel dimensions. Any features for which the mask is True can be the
@@ -134,17 +139,13 @@ class DPatch(EvasionAttack):
         channel_index = 1 if self.estimator.channels_first else x.ndim - 1
         if x.shape[channel_index] != self.patch_shape[channel_index - 1]:
             raise ValueError("The color channel index of the images and the patch have to be identical.")
-        if y is not None:
-            raise ValueError("The DPatch attack does not use target labels.")
         if x.ndim != 4:  # pragma: no cover
             raise ValueError("The adversarial patch can only be applied to images.")
         if target_label is not None:
             if isinstance(target_label, int):
                 self.target_label = [target_label] * x.shape[0]
             elif isinstance(target_label, np.ndarray):
-                if not (  # pragma: no cover
-                    target_label.shape == (x.shape[0], 1) or target_label.shape == (x.shape[0],)
-                ):
+                if target_label.shape not in ((x.shape[0], 1), (x.shape[0],)):  # pragma: no cover
                     raise ValueError("The target_label has to be a 1-dimensional array.")
                 self.target_label = target_label.tolist()
             else:
@@ -160,9 +161,9 @@ class DPatch(EvasionAttack):
             mask=mask,
             transforms=None,
         )
-        patch_target: List[Dict[str, np.ndarray]] = list()
+        patch_target: List[Dict[str, np.ndarray]] = []
 
-        if self.target_label:
+        if self.target_label and y is None:
 
             for i_image in range(patched_images.shape[0]):
                 if isinstance(self.target_label, int):
@@ -175,7 +176,7 @@ class DPatch(EvasionAttack):
                 i_y_1 = transforms[i_image]["i_y_1"]
                 i_y_2 = transforms[i_image]["i_y_2"]
 
-                target_dict = dict()
+                target_dict = {}
                 target_dict["boxes"] = np.asarray([[i_x_1, i_y_1, i_x_2, i_y_2]])
                 target_dict["labels"] = np.asarray(
                     [
@@ -192,10 +193,10 @@ class DPatch(EvasionAttack):
 
         else:
 
-            predictions = self.estimator.predict(x=patched_images, standardise_output=True)
+            predictions = y if y is not None else self.estimator.predict(x=patched_images, standardise_output=True)
 
             for i_image in range(patched_images.shape[0]):
-                target_dict = dict()
+                target_dict = {}
                 target_dict["boxes"] = predictions[i_image]["boxes"]
                 target_dict["labels"] = predictions[i_image]["labels"]
                 target_dict["scores"] = predictions[i_image]["scores"]
@@ -285,7 +286,7 @@ class DPatch(EvasionAttack):
                     "Definition of patch locations in `locations` requires `random_location=False`, and `mask=None`."
                 )
 
-        random_transformations = list()
+        random_transformations = []
         x_copy = x.copy()
         patch_copy = patch.copy()
 

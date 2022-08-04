@@ -93,24 +93,28 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         # Assert all classifiers are the right shape(s)
         for classifier in classifiers:
             if not isinstance(classifier, NeuralNetworkMixin):  # pragma: no cover
-                raise TypeError("Expected type `Classifier`, found %s instead." % type(classifier))
+                raise TypeError(f"Expected type `Classifier`, found {type(classifier)} instead.")
 
-            if not np.array_equal(self.clip_values, classifier.clip_values):  # pragma: no cover
+            if (
+                isinstance(classifier.clip_values, np.ndarray)
+                and isinstance(self.clip_values, np.ndarray)
+                and not np.array_equal(self.clip_values, classifier.clip_values)
+            ):  # pragma: no cover
                 raise ValueError(
-                    "Incompatible `clip_values` between classifiers in the ensemble. Found %s and %s."
-                    % (str(self.clip_values), str(classifier.clip_values))
+                    f"Incompatible `clip_values` between classifiers in the ensemble. Found {self.clip_values} and "
+                    f"{classifier.clip_values}."
                 )
 
             if classifier.nb_classes != classifiers[0].nb_classes:  # pragma: no cover
                 raise ValueError(
-                    "Incompatible output shapes between classifiers in the ensemble. Found %s and %s."
-                    % (str(classifier.nb_classes), str(classifiers[0].nb_classes))
+                    f"Incompatible output shapes between classifiers in the ensemble. Found {classifier.nb_classes} "
+                    f"and {classifiers[0].nb_classes}."
                 )
 
             if classifier.input_shape != classifiers[0].input_shape:  # pragma: no cover
                 raise ValueError(
-                    "Incompatible input shapes between classifiers in the ensemble. Found %s and %s."
-                    % (str(classifier.input_shape), str(classifiers[0].input_shape))
+                    f"Incompatible input shapes between classifiers in the ensemble. Found {classifier.input_shape} "
+                    f"and {classifiers[0].input_shape}."
                 )
 
         self._input_shape = classifiers[0].input_shape
@@ -126,9 +130,9 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         for i_cls, cls in enumerate(classifiers):
             if cls.channels_first != self.channels_first:  # pragma: no cover
                 raise ValueError(
-                    "The channels_first boolean of classifier {} is {} while this ensemble expects a "
-                    "channels_first boolean of {}. The channels_first booleans of all classifiers and the "
-                    "ensemble need ot be identical.".format(i_cls, cls.channels_first, self.channels_first)
+                    f"The channels_first boolean of classifier {i_cls} is {cls.channels_first} while this ensemble "
+                    f"expects a channels_first boolean of {self.channels_first}. The channels_first booleans of all "
+                    f"classifiers and the ensemble need ot be identical."
                 )
 
         self._classifiers = classifiers
@@ -248,7 +252,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         label: Union[int, List[int], None] = None,
         training_mode: bool = False,
         raw: bool = False,
-        **kwargs
+        **kwargs,
     ) -> np.ndarray:
         """
         Compute per-class derivatives w.r.t. `x`.
@@ -302,18 +306,10 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
 
     def __repr__(self):
         repr_ = (
-            "%s(classifiers=%r, classifier_weights=%r, channels_first=%r, clip_values=%r, "
-            "preprocessing_defences=%r, postprocessing_defences=%r, preprocessing=%r)"
-            % (
-                self.__module__ + "." + self.__class__.__name__,
-                self.classifiers,
-                self.classifier_weights,
-                self.channels_first,
-                self.clip_values,
-                self.preprocessing_defences,
-                self.postprocessing_defences,
-                self.preprocessing,
-            )
+            f"{self.__module__ + '.' + self.__class__.__name__}(classifiers={self.classifiers}, "
+            f"classifier_weights={self.classifier_weights!r}, channels_first={self.channels_first}, "
+            f"clip_values={self.clip_values!r}, preprocessing_defences={self.preprocessing_defences}, "
+            f"postprocessing_defences={self.postprocessing_defences}, preprocessing={self.preprocessing})"
         )
 
         return repr_

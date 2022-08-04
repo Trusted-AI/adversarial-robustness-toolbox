@@ -421,7 +421,7 @@ class ImperceptibleASR(EvasionAttack):
 
         # undo padding, i.e. change gradients shape from (nb_samples, max_length) to (nb_samples)
         lengths = delta_mask.sum(axis=1)
-        gradients = list()
+        gradients = []
         for gradient_padded, length in zip(gradients_padded, lengths):
             gradient = gradient_padded[:length]
             gradients.append(gradient)
@@ -461,7 +461,7 @@ class ImperceptibleASR(EvasionAttack):
 
     def _loss_gradient_masking_threshold_torch(
         self, perturbation: np.ndarray, psd_maximum_stabilized: np.ndarray, masking_threshold_stabilized: np.ndarray
-    ) -> Union[np.ndarray, np.ndarray]:
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Compute loss gradient of the masking threshold loss in PyTorch.
 
@@ -648,8 +648,8 @@ class PsychoacousticMasker:
         self._sample_rate = sample_rate
 
         # init some private properties for lazy loading
-        self._fft_frequencies = None
-        self._bark = None
+        self._fft_frequencies: Optional[np.ndarray] = None
+        self._bark: Optional[np.ndarray] = None
         self._absolute_threshold_hearing: Optional[np.ndarray] = None
 
     def calculate_threshold_and_psd_maximum(self, audio: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
@@ -663,7 +663,7 @@ class PsychoacousticMasker:
         1. STFT analysis and sound pressure level normalization
         2. Identification and filtering of maskers
         3. Calculation of individual masking thresholds
-        4. Calculation of global masking tresholds
+        4. Calculation of global masking thresholds
 
         :param audio: Audio samples of shape `(length,)`.
         :return: Global masking thresholds of shape `(window_size // 2 + 1, frame_length)` and the PSD maximum for each

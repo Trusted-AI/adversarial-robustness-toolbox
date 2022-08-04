@@ -144,7 +144,7 @@ class JpegCompression(Preprocessor):
 
         # Compress one image at a time
         x_jpeg = x.copy()
-        for idx in tqdm(np.ndindex(x.shape[:2]), desc="JPEG compression", disable=not self.verbose):
+        for idx in tqdm(np.ndindex(x.shape[:2]), desc="JPEG compression", disable=not self.verbose):  # type: ignore
             if x.shape[-1] == 3:
                 x_jpeg[idx] = self._compress(x[idx], mode="RGB")
             else:

@@ -34,7 +34,7 @@ def get_adv_trainer(framework, image_dl_estimator):
             trainer = None
         if framework == "pytorch":
             classifier, _ = image_dl_estimator()
-            trainer = AdversarialTrainerFBFPyTorch(classifier, eps=0.2)
+            trainer = AdversarialTrainerFBFPyTorch(classifier, eps=0.05)
         if framework == "scikitlearn":
             trainer = None
 
@@ -75,7 +75,7 @@ def test_adversarial_trainer_fbf_pytorch_fit_and_predict(get_adv_trainer, fix_ge
     )
 
     assert accuracy == 0.32
-    assert accuracy_new == 0.22
+    assert accuracy_new == 0.63
 
     trainer.fit(x_train_mnist, y_train_mnist, nb_epochs=20, validation_data=(x_train_mnist, y_train_mnist))
 
@@ -108,4 +108,4 @@ def test_adversarial_trainer_fbf_pytorch_fit_generator_and_predict(
     )
 
     assert accuracy == 0.32
-    assert accuracy_new > 0.12
+    assert accuracy_new > 0.2

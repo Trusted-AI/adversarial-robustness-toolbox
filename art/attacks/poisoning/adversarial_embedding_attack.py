@@ -106,9 +106,14 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
         if isinstance(self.estimator, KerasClassifier):
             using_tf_keras = "tensorflow.python.keras" in str(type(self.estimator.model))
             if using_tf_keras:  # pragma: no cover
-                from tensorflow.keras.models import Model, clone_model
-                from tensorflow.keras.layers import GaussianNoise, Dense, BatchNormalization, LeakyReLU
-                from tensorflow.keras.optimizers import Adam
+                from tensorflow.keras.models import Model, clone_model  # pylint: disable=E0611
+                from tensorflow.keras.layers import (  # pylint: disable=E0611
+                    GaussianNoise,
+                    Dense,
+                    BatchNormalization,
+                    LeakyReLU,
+                )
+                from tensorflow.keras.optimizers import Adam  # pylint: disable=E0611
 
                 opt = Adam(lr=self.learning_rate)
 
@@ -168,7 +173,7 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
                 loss_weights = self.orig_model.loss_weights
                 loss_weights[loss_name] = -self.regularization
             else:
-                raise TypeError("Cannot read model loss value of type {}".format(type(model_loss)))
+                raise TypeError(f"Cannot read model loss value of type {type(model_loss)}")
 
             self.embed_model.compile(optimizer=opt, loss=losses, loss_weights=loss_weights, metrics=["accuracy"])
         else:
@@ -257,7 +262,7 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
 
         raise NotImplementedError("Currently only Keras is supported")
 
-    def get_training_data(self) -> Optional[Tuple[np.ndarray, np.ndarray, np.ndarray]]:
+    def get_training_data(self) -> Optional[Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray]]]:
         """
         Returns the training data generated from the last call to fit
 
@@ -273,14 +278,12 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
         if isinstance(self.feature_layer, str):
             layer_names = {layer.name for layer in self.estimator.model.layers}
             if self.feature_layer not in layer_names:
-                raise ValueError("Layer {} not found in model".format(self.feature_layer))
+                raise ValueError(f"Layer {self.feature_layer} not found in model")
         elif isinstance(self.feature_layer, int):
             num_layers = len(self.estimator.model.layers)
             if num_layers <= int(self.feature_layer) or int(self.feature_layer) < 0:
                 raise ValueError(
-                    "Feature layer {} is out of range. Network only has {} layers".format(
-                        self.feature_layer, num_layers
-                    )
+                    f"Feature layer {self.feature_layer} is out of range. Network only has {num_layers} layers"
                 )
 
         if isinstance(self.target, np.ndarray):
@@ -309,9 +312,8 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
     def _check_valid_label_shape(self, label: np.ndarray) -> None:
         if label.shape != self.estimator.model.output_shape[1:]:
             raise ValueError(
-                "Invalid shape for target array. Should be {} received {}".format(
-                    self.estimator.model.output_shape[1:], label.shape
-                )
+                f"Invalid shape for target array. Should be {self.estimator.model.output_shape[1:]} "
+                f"received {label.shape}"
             )
 
 

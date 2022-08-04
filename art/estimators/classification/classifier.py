@@ -19,7 +19,7 @@
 This module implements mixin abstract base classes defining properties for all classifiers in ART.
 """
 from abc import ABC, ABCMeta, abstractmethod
-from typing import List, Optional, Union
+from typing import List, Optional, TYPE_CHECKING, Union
 
 import numpy as np
 
@@ -29,6 +29,9 @@ from art.estimators.estimator import (
     LossGradientsMixin,
     DecisionTreeMixin,
 )
+
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_TYPE
 
 
 class InputFilter(ABCMeta):
@@ -117,6 +120,12 @@ class ClassifierMixin(ABC, metaclass=InputFilter):
 
         self._nb_classes = nb_classes
 
+    def clone_for_refitting(self) -> "CLASSIFIER_TYPE":
+        """
+        Clone classifier for refitting.
+        """
+        raise NotImplementedError
+
 
 class ClassGradientsMixin(ABC):
     """
@@ -126,7 +135,7 @@ class ClassGradientsMixin(ABC):
     """
 
     @abstractmethod
-    def class_gradient(self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs) -> np.ndarray:
+    def class_gradient(self, x: np.ndarray, label: Optional[Union[int, List[int]]] = None, **kwargs) -> np.ndarray:
         """
         Compute per-class derivatives w.r.t. `x`.
 

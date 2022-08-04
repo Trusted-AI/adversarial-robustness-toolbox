@@ -56,6 +56,7 @@ class AdversarialPatch(EvasionAttack):
         "learning_rate",
         "max_iter",
         "batch_size",
+        "targeted",
         "verbose",
     ]
 
@@ -71,6 +72,7 @@ class AdversarialPatch(EvasionAttack):
         max_iter: int = 500,
         batch_size: int = 16,
         patch_shape: Optional[Tuple[int, int, int]] = None,
+        targeted: bool = True,
         verbose: bool = True,
     ):
         """
@@ -89,6 +91,7 @@ class AdversarialPatch(EvasionAttack):
         :param patch_shape: The shape of the adversarial patch as a tuple of shape (width, height, nb_channels).
                             Currently only supported for `TensorFlowV2Classifier`. For classifiers of other frameworks
                             the `patch_shape` is set to the shape of the input samples.
+        :param targeted: Indicates whether the attack is targeted (True) or untargeted (False).
         :param verbose: Show progress bars.
         """
         super().__init__(estimator=classifier)
@@ -106,22 +109,27 @@ class AdversarialPatch(EvasionAttack):
                 max_iter=max_iter,
                 batch_size=batch_size,
                 patch_shape=patch_shape,
+                targeted=targeted,
                 verbose=verbose,
             )
         elif isinstance(self.estimator, PyTorchClassifier):
-            self._attack = AdversarialPatchPyTorch(
-                classifier=classifier,
-                rotation_max=rotation_max,
-                scale_min=scale_min,
-                scale_max=scale_max,
-                distortion_scale_max=0.0,
-                learning_rate=learning_rate,
-                max_iter=max_iter,
-                batch_size=batch_size,
-                patch_shape=patch_shape,
-                patch_type="circle",
-                verbose=verbose,
-            )
+            if patch_shape is not None:
+                self._attack = AdversarialPatchPyTorch(
+                    estimator=classifier,
+                    rotation_max=rotation_max,
+                    scale_min=scale_min,
+                    scale_max=scale_max,
+                    distortion_scale_max=0.0,
+                    learning_rate=learning_rate,
+                    max_iter=max_iter,
+                    batch_size=batch_size,
+                    patch_shape=patch_shape,
+                    patch_type="circle",
+                    targeted=targeted,
+                    verbose=verbose,
+                )
+            else:
+                raise ValueError("`patch_shape` cannot be `None` for `AdversarialPatchPyTorch`.")
         else:
             self._attack = AdversarialPatchNumpy(
                 classifier=classifier,
@@ -131,11 +139,14 @@ class AdversarialPatch(EvasionAttack):
                 learning_rate=learning_rate,
                 max_iter=max_iter,
                 batch_size=batch_size,
+                targeted=targeted,
                 verbose=verbose,
             )
         self._check_params()
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
+    def generate(  # type: ignore
+        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Generate an adversarial patch and return the patch and its mask in arrays.
 
@@ -235,6 +246,9 @@ class AdversarialPatch(EvasionAttack):
             raise ValueError("The batch size must be of type int.")
         if not self._attack.batch_size > 0:
             raise ValueError("The batch size must be greater than 0.")
+
+        if not isinstance(self._attack.targeted, bool):
+            raise ValueError("The argument `targeted` has to be of type bool.")
 
         if not isinstance(self._attack.verbose, bool):
             raise ValueError("The argument `verbose` has to be of type bool.")

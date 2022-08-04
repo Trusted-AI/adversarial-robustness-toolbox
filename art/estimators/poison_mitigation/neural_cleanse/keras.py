@@ -233,8 +233,8 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
         self.reset()
         datagen = ImageDataGenerator()
         gen = datagen.flow(x_val, y_val, batch_size=self.batch_size)
-        mask_best = None
-        pattern_best = None
+        mask_best: Optional[np.ndarray] = None
+        pattern_best: Optional[np.ndarray] = None
         reg_best = float("inf")
         cost_set_counter = 0
         cost_up_counter = 0
@@ -244,7 +244,7 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
         early_stop_counter = 0
         early_stop_reg_best = reg_best
         mini_batch_size = len(x_val) // self.batch_size
-        for _ in tqdm(range(self.steps), desc="Generating backdoor for class {}".format(np.argmax(y_target))):
+        for _ in tqdm(range(self.steps), desc=f"Generating backdoor for class {np.argmax(y_target)}"):
             loss_reg_list = []
             loss_acc_list = []
 
@@ -312,6 +312,9 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
         if mask_best is None:
             mask_best = K.eval(self.mask_tensor)
             pattern_best = K.eval(self.pattern_tensor)
+
+        if pattern_best is None:
+            raise ValueError("Unexpected `None` detected.")
 
         return mask_best, pattern_best
 

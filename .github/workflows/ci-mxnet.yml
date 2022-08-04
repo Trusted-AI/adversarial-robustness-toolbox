@@ -25,16 +25,16 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: mxnet (Python 3.7)
+          - name: mxnet (Python 3.8)
             framework: mxnet
-            python: 3.7
+            python: 3.8
 
     name: Run ${{ matrix.name }} Tests
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3
       - name: Setup Python
-        uses: actions/setup-python@v2.3.1
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python }}
       - name: Install Dependencies
@@ -49,6 +49,6 @@ jobs:
       - name: Run ${{ matrix.name }} ${{ matrix.module }} Tests
         run: ./run_tests.sh ${{ matrix.framework }} ${{ matrix.module }}
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v2.1.0
+        uses: codecov/codecov-action@v3
         with:
           fail_ci_if_error: true

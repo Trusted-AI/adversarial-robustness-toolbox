@@ -99,7 +99,7 @@ class RONIDefense(PoisonFilteringDefence):
         self.x_val = x_val
         self.y_val = y_val
         self.perf_func = perf_func
-        self.is_clean_lst: List[int] = list()
+        self.is_clean_lst: List[int] = []
         self._check_params()
 
     def evaluate_defence(self, is_clean: np.ndarray, **kwargs) -> str:
@@ -118,7 +118,7 @@ class RONIDefense(PoisonFilteringDefence):
         if is_clean is None or len(is_clean) != len(self.is_clean_lst):
             raise ValueError("Invalid value for is_clean.")
 
-        _, conf_matrix = self.evaluator.analyze_correctness([self.is_clean_lst], [is_clean])
+        _, conf_matrix = self.evaluator.analyze_correctness([self.is_clean_lst], [is_clean])  # type: ignore
         return conf_matrix
 
     def detect_poison(self, **kwargs) -> Tuple[dict, List[int]]:

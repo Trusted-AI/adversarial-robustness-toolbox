@@ -52,16 +52,16 @@ def test_pytorch_deep_speech(art_warning, expected_values, use_amp, device_type)
         # Load data for testing
         expected_data = expected_values()
 
-        x1 = expected_data["x1"]
-        x2 = expected_data["x2"]
-        x3 = expected_data["x3"]
+        x1 = expected_data["x_1"]
+        x2 = expected_data["x_2"]
+        x3 = expected_data["x_3"]
         expected_sizes = expected_data["expected_sizes"]
-        expected_transcriptions1 = expected_data["expected_transcriptions1"]
-        expected_transcriptions2 = expected_data["expected_transcriptions2"]
+        expected_transcriptions1 = expected_data["expected_transcriptions_1"]
+        expected_transcriptions2 = expected_data["expected_transcriptions_2"]
         expected_probs = expected_data["expected_probs"][version]
-        expected_gradients1 = expected_data["expected_gradients1"][version]
-        expected_gradients2 = expected_data["expected_gradients2"][version]
-        expected_gradients3 = expected_data["expected_gradients3"][version]
+        expected_gradients1 = expected_data["expected_gradients_1"][version]
+        expected_gradients2 = expected_data["expected_gradients_2"][version]
+        expected_gradients3 = expected_data["expected_gradients_3"][version]
 
         # Create signal data
         x = np.array(
@@ -118,6 +118,96 @@ def test_pytorch_deep_speech(art_warning, expected_values, use_amp, device_type)
         transcriptions2 = speech_recognizer.predict(x, batch_size=2, transcription_output=True)
 
         assert not ((transcriptions1 == transcriptions2).all())
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_module("deepspeech_pytorch")
+@pytest.mark.skip_framework("tensorflow", "tensorflow2v1", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+def test_pytorch_deep_speech_preprocessor(
+    art_warning,
+    expected_values,
+):
+    # Only import if deepspeech_pytorch module is available
+    import torch
+
+    from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
+    from art.defences.preprocessor.mp3_compression_pytorch import Mp3CompressionPyTorch
+
+    try:
+        # Create Mp3-preprocessor
+        defense = Mp3CompressionPyTorch(sample_rate=16000, channels_first=True)
+
+        # Initialize a speech recognizer
+        speech_recognizer = PyTorchDeepSpeech(
+            pretrained_model="librispeech", preprocessing_defences=[defense], device_type="cpu", use_amp=False
+        )
+
+        # Get version of DeepSpeech
+        version = "v{}".format(speech_recognizer._version)
+
+        # Load data for testing
+        expected_data = expected_values()
+
+        x1 = expected_data["x_preprocessor_1"]
+        # x2 = expected_data["x_preprocessor_2"]
+        # x3 = expected_data["x_preprocessor_3"]
+        expected_sizes = expected_data["expected_sizes_preprocessor"]
+        expected_transcriptions1 = expected_data["expected_transcriptions_preprocessor_1"]
+        expected_transcriptions2 = expected_data["expected_transcriptions_preprocessor_2"]
+        expected_probs = expected_data["expected_probs_preprocessor"][version]
+        expected_gradients1 = expected_data["expected_gradients_preprocessor_1"][version]
+        expected_gradients2 = expected_data["expected_gradients_preprocessor_2"][version]
+        expected_gradients3 = expected_data["expected_gradients_preprocessor_3"][version]
+
+        # Create signal data
+        x = np.array([x1 * 100, x1 * 100, x1 * 100], dtype=ART_NUMPY_DTYPE)
+
+        # Create labels
+        y = np.array(["SIX", "HI", "GOOD"])
+
+        # Test probability outputs
+        probs, sizes = speech_recognizer.predict(x, batch_size=1, transcription_output=False)
+
+        np.testing.assert_array_almost_equal(probs[1][1], expected_probs, decimal=3)
+        np.testing.assert_array_almost_equal(sizes, expected_sizes)
+
+        # Test transcription outputs
+        transcriptions = speech_recognizer.predict(x, batch_size=2, transcription_output=True)
+
+        assert (expected_transcriptions1 == transcriptions).all()
+
+        # Test transcription outputs, corner case
+        transcriptions = speech_recognizer.predict(x[[0]], batch_size=1, transcription_output=True)
+
+        assert (expected_transcriptions2 == transcriptions).all()
+
+        # Now test loss gradients
+        # Compute gradients
+        grads = speech_recognizer.loss_gradient(x, y)
+
+        assert grads[0].shape == (1300,)
+        assert grads[1].shape == (1300,)
+        assert grads[2].shape == (1300,)
+
+        np.testing.assert_array_almost_equal(grads[0][:20], expected_gradients1, decimal=-2)
+        np.testing.assert_array_almost_equal(grads[1][:20], expected_gradients2, decimal=-2)
+        np.testing.assert_array_almost_equal(grads[2][:20], expected_gradients3, decimal=-2)
+
+        # Now test fit function
+        # Create the optimizer
+        parameters = speech_recognizer.model.parameters()
+        speech_recognizer._optimizer = torch.optim.SGD(parameters, lr=0.01)
+
+        # Before train
+        _ = speech_recognizer.predict(x, batch_size=2, transcription_output=True)
+
+        # Train the estimator
+        speech_recognizer.fit(x=x, y=y, batch_size=2, nb_epochs=10)
+
+        # After train
+        _ = speech_recognizer.predict(x, batch_size=2, transcription_output=True)
 
     except ARTTestException as e:
         art_warning(e)

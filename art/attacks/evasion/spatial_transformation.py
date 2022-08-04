@@ -86,9 +86,9 @@ class SpatialTransformation(EvasionAttack):
         self._check_params()
 
         self.fooling_rate: Optional[float] = None
-        self.attack_trans_x: Optional[np.ndarray] = None
-        self.attack_trans_y: Optional[np.ndarray] = None
-        self.attack_rot: Optional[np.ndarray] = None
+        self.attack_trans_x: Optional[int] = None
+        self.attack_trans_y: Optional[int] = None
+        self.attack_rot: Optional[float] = None
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """

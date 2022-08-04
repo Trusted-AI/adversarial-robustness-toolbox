@@ -117,9 +117,7 @@ class LFilter(Preprocessor):
         if (grad.shape != x.shape) and (  # pragma: no cover
             (len(grad.shape) != len(x.shape) + 1) or (grad.shape[2:] != x.shape[1:]) or (grad.shape[0] != x.shape[0])
         ):
-            raise ValueError(
-                "The shape of `grad` {} does not match the shape of input `x` {}".format(grad.shape, x.shape)
-            )
+            raise ValueError(f"The shape of `grad` {grad.shape} does not match the shape of input `x` {x.shape}")
 
         if self.denominator_coef[0] != 1.0 or np.sum(self.denominator_coef) != 1.0:
             logger.warning(
@@ -130,7 +128,7 @@ class LFilter(Preprocessor):
             return grad
 
         # We will compute gradient for one sample at a time
-        x_grad_list = list()
+        x_grad_list = []
 
         for i, x_i in enumerate(x):
             # First compute the gradient matrix

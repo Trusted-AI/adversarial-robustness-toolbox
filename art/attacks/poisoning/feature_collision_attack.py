@@ -31,6 +31,8 @@ from art.attacks.attack import PoisoningAttackWhiteBox
 from art.estimators import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
 from art.estimators.classification.keras import KerasClassifier
+from art.estimators.classification.pytorch import PyTorchClassifier
+
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
@@ -63,7 +65,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         "verbose",
     ]
 
-    _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassifierMixin, KerasClassifier)
+    _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassifierMixin)
 
     def __init__(
         self,
@@ -110,12 +112,18 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         self.verbose = verbose
         self._check_params()
 
-        self.target_placeholder, self.target_feature_rep = self.estimator.get_activations(
-            self.target, self.feature_layer, 1, framework=True
-        )
-        self.poison_placeholder, self.poison_feature_rep = self.estimator.get_activations(
-            self.target, self.feature_layer, 1, framework=True
-        )
+        if isinstance(self.estimator, KerasClassifier):
+            self.target_placeholder, self.target_feature_rep = self.estimator.get_activations(
+                self.target, self.feature_layer, 1, framework=True
+            )
+            self.poison_placeholder, self.poison_feature_rep = self.estimator.get_activations(
+                self.target, self.feature_layer, 1, framework=True
+            )
+        elif isinstance(self.estimator, PyTorchClassifier):
+            self.target_feature_rep = self.estimator.get_activations(self.target, self.feature_layer, 1, framework=True)
+            self.poison_feature_rep = self.estimator.get_activations(self.target, self.feature_layer, 1, framework=True)
+        else:
+            raise ValueError("Type of estimator currently not supported.")
         self.attack_loss = tensor_norm(self.poison_feature_rep - self.target_feature_rep)
 
     def poison(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
@@ -130,14 +138,12 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         final_attacks = []
         if num_poison == 0:  # pragma: no cover
             raise ValueError("Must input at least one poison point")
-
         target_features = self.estimator.get_activations(self.target, self.feature_layer, 1)
         for init_attack in x:
             old_attack = np.expand_dims(np.copy(init_attack), axis=0)
             poison_features = self.estimator.get_activations(old_attack, self.feature_layer, 1)
             old_objective = self.objective(poison_features, target_features, init_attack, old_attack)
             last_m_objectives = [old_objective]
-
             for i in trange(self.max_iter, desc="Feature collision", disable=not self.verbose):
                 # forward step
                 new_attack = self.forward_step(old_attack)
@@ -186,12 +192,16 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         :param poison: the current poison samples.
         :return: poison example closer in feature representation to target space.
         """
-        (attack_grad,) = self.estimator.custom_loss_gradient(
-            self.attack_loss,
-            [self.poison_placeholder, self.target_placeholder],
-            [poison, self.target],
-            name="feature_collision_" + str(self.feature_layer),
-        )
+        if isinstance(self.estimator, KerasClassifier):
+            (attack_grad,) = self.estimator.custom_loss_gradient(
+                self.attack_loss,
+                [self.poison_placeholder, self.target_placeholder],
+                [poison, self.target],
+                name="feature_collision_" + str(self.feature_layer),
+            )
+        elif isinstance(self.estimator, PyTorchClassifier):
+            attack_grad = self.estimator.custom_loss_gradient(self.attack_loss, poison, self.target, self.feature_layer)
+
         poison -= self.learning_rate * attack_grad[0]
 
         return poison
@@ -282,7 +292,7 @@ def tensor_norm(tensor, norm_type: Union[int, float, str] = 2):  # pylint: disab
     :return: A tensor with the norm applied.
     """
     tf_tensor_types = ("tensorflow.python.framework.ops.Tensor", "tensorflow.python.framework.ops.EagerTensor")
-    torch_tensor_types = ()
+    torch_tensor_types = ("torch.Tensor", "torch.float", "torch.double", "torch.long")
     mxnet_tensor_types = ()
     supported_types = tf_tensor_types + torch_tensor_types + mxnet_tensor_types
     tensor_type = get_class_name(tensor)
@@ -297,7 +307,7 @@ def tensor_norm(tensor, norm_type: Union[int, float, str] = 2):  # pylint: disab
     if tensor_type in torch_tensor_types:  # pragma: no cover
         import torch
 
-        return torch.norm(tensor, p=norm_type)
+        return torch.norm
 
     if tensor_type in mxnet_tensor_types:  # pragma: no cover
         import mxnet

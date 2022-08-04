@@ -22,6 +22,9 @@ shows how to create an adversarial attack on a video action recognition classifi
 [adversarial_audio_examples.ipynb](adversarial_audio_examples.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/adversarial_audio_examples.ipynb)]
 shows how to create adversarial examples of audio data with ART. Experiments in this notebook show how the waveform of a spoken digit of the AudioMNIST dataset can be modified with almost imperceptible changes so that the waveform gets mis-classified as different digit.
 
+[poisoning_attack_backdoor_audio.ipynb](poisoning_attack_backdoor_audio.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_attack_backdoor_audio.ipynb)]
+demonstrates the dirty-label backdoor attack on a TensorflowV2 estimator for speech classification.
+
 <p align="center">
   <img src="../utils/data/images/adversarial_audio_waveform.png?raw=true" width="200" title="adversarial_audio_waveform">
 </p>
@@ -93,6 +96,9 @@ demonstrates the AttributeInferenceBlackBox attribute inference attacks on a reg
 
 [attack_membership_inference_shadow_models.ipynb](attack_membership_inference_shadow_models.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/attack_membership_inference_shadow_models.ipynb)]
 demonstrates a MembershipInferenceBlackBox membership inference attack using shadow models on a classifier.
+
+[label_only_membership_inference.ipynb](label_only_membership_inference.ipynb) [[on nbviewer](https://nbviewer.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/label_only_membership_inference.ipynb)]
+demonstrates a LabelOnlyDecisionBoundary membership inference attack on a PyTorch classifier for the MNIST dataset.
 
 ## Classifiers
 
@@ -200,6 +206,15 @@ demonstrates a poisoning attack on a Support Vector Machine.
   <img src="../utils/data/images/svm_poly.gif?raw=true" width="200" title="svm_poly">
 </p>
 
+[hidden_trigger_backdoor/poisoning_attack_hidden_trigger_pytorch.ipynb](poisoning_attack_hidden_trigger_pytorch.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/hidden_trigger_backdoor/poisoning_attack_hidden_trigger_pytorch.ipynb)]
+demonstrates the Hidden Trigger Backdoor attack on a PyTorch estimator.
+
+[hidden_trigger_backdoor/poisoning_attack_hidden_trigger_keras.ipynb](poisoning_attack_hidden_trigger_keras.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/hidden_trigger_backdoor/poisoning_attack_hidden_trigger_keras.ipynb)]
+demonstrates the Hidden Trigger Backdoor attack on a Keras estimator.
+
+[hidden_trigger_backdoor/poisoning_attack_hidden_trigger_tf.ipynb](poisoning_attack_hidden_trigger_pytorch.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/hidden_trigger_backdoor/poisoning_attack_hidden_trigger_tf.ipynb)]
+demonstrates the Hidden Trigger Backdoor attack on a TensorflowV2 estimator.
+
 [poisoning_defense_activation_clustering.ipynb](poisoning_defense_activation_clustering.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_defense_activation_clustering.ipynb)]
 demonstrates the generation and detection of backdoors in neural networks via Activation Clustering.
 
@@ -216,6 +231,20 @@ demonstrates a defense against poisoning attacks that generation the suspected b
 [poisoning_defence_strip.ipynb](poisoning_defence_strip.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_defence_strip.ipynb)]
 demonstrates a defense against input-agnostic backdoor attacks that filters suspicious inputs at runtime.
 
+[poisoning_attack_witches_brew.ipynb](poisoning_attack_witches_brew.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_attack_witches_brew.ipynb)]
+demonstrates the gradient matching poisoning attack (a.k.a. Witches' Brew) that adds noise to align the training gradient to a specific direction that can poison the target model.
+
+[poisoning_attack_feature_collision.ipynb](poisoning_attack_feature_collision.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_attack_feature_collision.ipynb)]
+demonstrates working Poison Frog (Feature Collision) poisoning attack implemented in Keras Framework on CIFAR10 dataset as per the ([paper](https://arxiv.org/pdf/1804.00792.pdf)). This is a targeted clean label attack, which do not require the attacker to have any control over the labeling of training data and control the behavior of the classifier on a specific test instance without degrading overall classifier performance.
+
+[poisoning_attack_feature_collision-pytorch.ipynb](poisoning_attack_feature_collision-pytorch.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_attack_feature_collision-pytorch.ipynb)]
+demonstrates working Poison Frog (Feature Collision) poisoning attack implemented in PyTorch Framework on CIFAR10 dataset as per the ([paper](https://arxiv.org/pdf/1804.00792.pdf)). This is a targeted clean label attack, which do not require the attacker to have any control over the labeling of training data and control the behavior of the classifier on a specific test instance without degrading overall classifier performance.
+
+[poisoning_attack_sleeper_agent_pytorch.ipynb](poisoning_attack_sleeper_agent_pytorch.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_attack_sleeper_agent_pytorch.ipynb)]
+demonstrates working Sleeper Agent poisoning attack implemented in PyTorch Framework on CIFAR10 dataset as per the ([paper](https://arxiv.org/pdf/2106.08970.pdf)). A new hidden trigger attack, Sleeper Agent,
+which employs gradient matching, data selection, and target model re-training during the crafting process. Sleeper
+Agent is the first hidden trigger backdoor attack to be effective against neural networks trained from scratch.
+
 ## Certification and Verification
 
 [output_randomized_smoothing_mnist.ipynb](output_randomized_smoothing_mnist.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/output_randomized_smoothing_mnist.ipynb)]
@@ -225,6 +254,12 @@ shows how to achieve certified adversarial robustness for neural networks via Ra
 demonstrates the verification of adversarial robustness in decision tree ensemble classifiers 
 (Gradient Boosted Decision Trees, Random Forests, etc.) using XGBoost, LightGBM and Scikit-learn.
 
+[certification_deepz.ipynb](certification_deepz.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/certification_deepz.ipynb)]
+demonstrates using DeepZ to compute certified robustness for neural networks.
+
+<p align="center">
+  <img src="../utils/data/images/zonotope_picture.png?raw=true" width="200" title="poisoning">
+</p>
 
 ## MNIST
 

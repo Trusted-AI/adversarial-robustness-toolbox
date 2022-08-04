@@ -75,12 +75,12 @@ def SklearnClassifier(
             be divided by the second one.
     """
     if model.__class__.__module__.split(".")[0] != "sklearn":  # pragma: no cover
-        raise TypeError("Model is not an sklearn model. Received '%s'" % model.__class__)
+        raise TypeError(f"Model is not an sklearn model. Received '{model.__class__}'")
 
     sklearn_name = model.__class__.__name__
     module = importlib.import_module("art.estimators.classification.scikitlearn")
-    if hasattr(module, "Scikitlearn%s" % sklearn_name):
-        return getattr(module, "Scikitlearn%s" % sklearn_name)(
+    if hasattr(module, f"Scikitlearn{sklearn_name}"):
+        return getattr(module, f"Scikitlearn{sklearn_name}")(
             model=model,
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
@@ -307,7 +307,7 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
 
         :return: Major class in node.
         """
-        return np.argmax(self.model.tree_.value[node_id])
+        return np.argmax(self.model.tree_.value[node_id])  # type: ignore
 
     def get_threshold_at_node(self, node_id: int) -> float:
         """
@@ -371,7 +371,7 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
     def _get_leaf_nodes(self, node_id, i_tree, class_label, box) -> List["LeafNode"]:
         from art.metrics.verification_decisions_trees import LeafNode, Box, Interval
 
-        leaf_nodes = list()
+        leaf_nodes = []
 
         if self.get_left_child(node_id) != self.get_right_child(node_id):
 
@@ -574,7 +574,7 @@ class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier, DecisionTreeMixin):
         """
         from art.metrics.verification_decisions_trees import Box, Tree
 
-        trees = list()
+        trees = []
 
         for i_tree, decision_tree_model in enumerate(self.model.estimators_):
             box = Box()
@@ -647,7 +647,7 @@ class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier, DecisionTreeM
         """
         from art.metrics.verification_decisions_trees import Box, Tree
 
-        trees = list()
+        trees = []
         num_trees, num_classes = self.model.estimators_.shape
 
         for i_tree in range(num_trees):
@@ -721,7 +721,7 @@ class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
         """
         from art.metrics.verification_decisions_trees import Box, Tree
 
-        trees = list()
+        trees = []
 
         for i_tree, decision_tree_model in enumerate(self.model.estimators_):
             box = Box()
@@ -831,7 +831,7 @@ class ScikitlearnLogisticRegression(ClassGradientsMixin, LossGradientsMixin, Sci
 
         if label is None:
             # Compute the gradients w.r.t. all classes
-            class_gradients = list()
+            class_gradients = []
 
             for i_class in range(self.nb_classes):  # type: ignore
                 class_gradient = np.zeros(x.shape)
@@ -855,7 +855,7 @@ class ScikitlearnLogisticRegression(ClassGradientsMixin, LossGradientsMixin, Sci
             and label.shape == (nb_samples,)
         ):
             # For each sample, compute the gradients w.r.t. the indicated target class (possibly distinct)
-            class_gradients = list()
+            class_gradients = []
             unique_labels = list(np.unique(label))
 
             for unique_label in unique_labels:
@@ -963,7 +963,7 @@ class ScikitlearnGaussianNB(ScikitlearnClassifier):
         import sklearn  # lgtm [py/repeated-import]
 
         if not isinstance(model, sklearn.naive_bayes.GaussianNB):  # pragma: no cover
-            raise TypeError("Model must be of type sklearn.naive_bayes.GaussianNB. Found type {}".format(type(model)))
+            raise TypeError(f"Model must be of type sklearn.naive_bayes.GaussianNB. Found type {type(model)}")
 
         super().__init__(
             model=model,
@@ -1012,9 +1012,7 @@ class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassif
         import sklearn  # lgtm [py/repeated-import]
 
         if not isinstance(model, sklearn.svm.SVC) and not isinstance(model, sklearn.svm.LinearSVC):
-            raise TypeError(
-                "Model must be of type sklearn.svm.SVC or sklearn.svm.LinearSVC. Found type {}".format(type(model))
-            )
+            raise TypeError(f"Model must be of type sklearn.svm.SVC or sklearn.svm.LinearSVC. Found type {type(model)}")
 
         super().__init__(
             model=model,
@@ -1243,7 +1241,7 @@ class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassif
         elif self.model.kernel == "sigmoid":
             raise NotImplementedError
         else:
-            raise NotImplementedError("Loss gradients for kernel '{}' are not implemented.".format(self.model.kernel))
+            raise NotImplementedError(f"Loss gradients for kernel '{self.model.kernel}' are not implemented.")
         return grad
 
     def _get_kernel_gradient_sv(self, i_sv: int, x_sample: np.ndarray) -> np.ndarray:
@@ -1370,7 +1368,7 @@ class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassif
         elif callable(kernel):
             kernel_func = kernel
         else:
-            raise NotImplementedError("Kernel '{}' not yet supported.".format(kernel))
+            raise NotImplementedError(f"Kernel '{kernel}' not yet supported.")
 
         return kernel_func
 

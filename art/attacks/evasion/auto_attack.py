@@ -87,7 +87,7 @@ class AutoAttack(EvasionAttack):
         super().__init__(estimator=estimator)
 
         if attacks is None or not attacks:
-            attacks = list()
+            attacks = []
             attacks.append(
                 AutoProjectedGradientDescent(
                     estimator=estimator,  # type: ignore
@@ -158,7 +158,8 @@ class AutoAttack(EvasionAttack):
         :return: An array holding the adversarial examples.
         """
         x_adv = x.astype(ART_NUMPY_DTYPE)
-        y = check_and_transform_label_format(y, self.estimator.nb_classes)
+        if y is not None:
+            y = check_and_transform_label_format(y, nb_classes=self.estimator.nb_classes)
 
         if y is None:
             y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
@@ -206,7 +207,9 @@ class AutoAttack(EvasionAttack):
                         if np.sum(sample_is_robust) == 0:
                             break
 
-                        target = check_and_transform_label_format(targeted_labels[:, i], self.estimator.nb_classes)
+                        target = check_and_transform_label_format(
+                            targeted_labels[:, i], nb_classes=self.estimator.nb_classes
+                        )
 
                         x_adv, sample_is_robust = self._run_attack(
                             x=x_adv,

@@ -49,6 +49,8 @@ from tests.utils import (
     get_image_classifier_pt,
     get_image_classifier_pt_functional,
     get_image_classifier_tf,
+    get_image_gan_tf_v2,
+    get_image_generator_tf_v2,
     get_tabular_classifier_kr,
     get_tabular_classifier_pt,
     get_tabular_classifier_scikit_list,
@@ -150,7 +152,7 @@ def image_dl_estimator_for_attack(framework, image_dl_estimator, image_dl_estima
             potential_classifier, _ = image_dl_estimator_defended(**kwargs)
         else:
             potential_classifier, _ = image_dl_estimator(**kwargs)
-
+        image_dl_estimator_for_attack
         classifier_list = [potential_classifier]
         classifier_tested = [
             potential_classifier
@@ -220,8 +222,8 @@ def image_iterator(framework, get_default_mnist_subset, default_batch_size):
             )
             return keras_gen.flow(x_train_mnist, y_train_mnist, batch_size=default_batch_size)
 
-        if framework == "tensorflow1":
-            import tensorflow as tf
+        if framework in ["tensorflow1", "tensorflow2v1"]:
+            import tensorflow.compat.v1 as tf
 
             x_tensor = tf.convert_to_tensor(x_train_mnist.reshape(10, 100, 28, 28, 1))
             y_tensor = tf.convert_to_tensor(y_train_mnist.reshape(10, 100, 10))
@@ -269,7 +271,7 @@ def image_data_generator(framework, get_default_mnist_subset, image_iterator, de
                 batch_size=default_batch_size,
             )
 
-        if framework == "tensorflow1":
+        if framework in ["tensorflow1", "tensorflow2v1"]:
             data_generator = TensorFlowDataGenerator(
                 sess=kwargs["sess"],
                 iterator=image_it,
@@ -332,7 +334,7 @@ def store_expected_values(request):
         expected_values[test_name] = values_to_store
 
         with open(
-            os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "w"
+                os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "w"
         ) as f:
             json.dump(expected_values, f, indent=4)
 
@@ -525,6 +527,28 @@ def supported_losses_proba(framework):
 
 
 @pytest.fixture
+def image_dl_generator(framework):
+    def _image_dl_generator(**kwargs):
+        if framework == "tensorflow2":
+            return get_image_generator_tf_v2(64, 100)
+        raise ARTTestFixtureNotImplemented("no test generator available", image_dl_generator.__name__, framework)
+
+    return _image_dl_generator
+
+
+@pytest.fixture
+def image_dl_gan(framework):
+    sess = None
+
+    def _image_dl_gan(**kwargs):
+        if framework == "tensorflow2":
+            return get_image_gan_tf_v2(**kwargs), sess
+        raise ARTTestFixtureNotImplemented("no test gan available", image_dl_gan.__name__, framework)
+
+    return _image_dl_gan
+
+
+@pytest.fixture
 def image_dl_estimator(framework, get_image_classifier_mx_instance):
     def _image_dl_estimator(functional=False, **kwargs):
         sess = None
@@ -549,9 +573,9 @@ def image_dl_estimator(framework, get_image_classifier_mx_instance):
                             image_dl_estimator.__name__,
                             framework,
                         )
-        if framework == "tensorflow1" or framework == "tensorflow2":
+        if framework in ["tensorflow1", "tensorflow2", "tensorflow2v1"]:
             if wildcard is False and functional is False:
-                classifier, sess = get_image_classifier_tf(**kwargs)
+                classifier, sess = get_image_classifier_tf(**kwargs, framework=framework)
                 return classifier, sess
         if framework == "pytorch":
             if not wildcard:
@@ -762,6 +786,14 @@ def mnist_shape(framework):
 
 
 @pytest.fixture()
+def cifar10_shape(framework):
+    if framework == "pytorch" or framework == "mxnet":
+        return (3, 32, 32)
+    else:
+        return (32, 32, 3)
+
+
+@pytest.fixture()
 def get_default_mnist_subset(get_mnist_dataset, default_dataset_subset_sizes, mnist_shape):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_dataset
     n_train, n_test = default_dataset_subset_sizes
@@ -772,11 +804,29 @@ def get_default_mnist_subset(get_mnist_dataset, default_dataset_subset_sizes, mn
     yield (x_train_mnist[:n_train], y_train_mnist[:n_train]), (x_test_mnist[:n_test], y_test_mnist[:n_test])
 
 
+@pytest.fixture()
+def get_default_cifar10_subset(get_cifar10_dataset, default_dataset_subset_sizes, cifar10_shape):
+    (x_train_cifar10, y_train_cifar10), (x_test_cifar10, y_test_cifar10) = get_cifar10_dataset
+    n_train, n_test = default_dataset_subset_sizes
+
+    x_train_cifar10 = np.reshape(x_train_cifar10, (x_train_cifar10.shape[0],) + cifar10_shape).astype(np.float32)
+    x_test_cifar10 = np.reshape(x_test_cifar10, (x_test_cifar10.shape[0],) + cifar10_shape).astype(np.float32)
+
+    yield (x_train_cifar10[:n_train], y_train_cifar10[:n_train]), (x_test_cifar10[:n_test], y_test_cifar10[:n_test])
+
+
 @pytest.fixture(scope="session")
 def load_mnist_dataset():
     logging.info("Loading mnist")
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist), _, _ = load_dataset("mnist")
     yield (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist)
+
+
+@pytest.fixture(scope="session")
+def load_cifar10_dataset():
+    logging.info("Loading cifar10")
+    (x_train_cifar10, y_train_cifar10), (x_test_cifar10, y_test_cifar10), _, _ = load_dataset("cifar10")
+    yield (x_train_cifar10, y_train_cifar10), (x_test_cifar10, y_test_cifar10)
 
 
 @pytest.fixture(scope="function")
@@ -805,6 +855,27 @@ def get_mnist_dataset(load_mnist_dataset, mnist_shape):
     np.testing.assert_array_almost_equal(y_train_mnist_original, y_train_mnist, decimal=3)
     np.testing.assert_array_almost_equal(x_test_mnist_original, x_test_mnist, decimal=3)
     np.testing.assert_array_almost_equal(y_test_mnist_original, y_test_mnist, decimal=3)
+
+
+@pytest.fixture(scope="function")
+def get_cifar10_dataset(load_cifar10_dataset, cifar10_shape):
+    (x_train_cifar10, y_train_cifar10), (x_test_cifar10, y_test_cifar10) = load_cifar10_dataset
+
+    x_train_cifar10 = np.reshape(x_train_cifar10, (x_train_cifar10.shape[0],) + cifar10_shape).astype(np.float32)
+    x_test_cifar10 = np.reshape(x_test_cifar10, (x_test_cifar10.shape[0],) + cifar10_shape).astype(np.float32)
+
+    x_train_cifar10_original = x_train_cifar10.copy()
+    y_train_cifar10_original = y_train_cifar10.copy()
+    x_test_cifar10_original = x_test_cifar10.copy()
+    y_test_cifar10_original = y_test_cifar10.copy()
+
+    yield (x_train_cifar10, y_train_cifar10), (x_test_cifar10, y_test_cifar10)
+
+    # Check that the test data has not been modified, only catches changes in attack.generate if self has been used
+    np.testing.assert_array_almost_equal(x_train_cifar10_original, x_train_cifar10, decimal=3)
+    np.testing.assert_array_almost_equal(y_train_cifar10_original, y_train_cifar10, decimal=3)
+    np.testing.assert_array_almost_equal(x_test_cifar10_original, x_test_cifar10, decimal=3)
+    np.testing.assert_array_almost_equal(y_test_cifar10_original, y_test_cifar10, decimal=3)
 
 
 # ART test fixture to skip test for specific framework values

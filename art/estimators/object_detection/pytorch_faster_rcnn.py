@@ -22,7 +22,7 @@ import logging
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
 
-from art.estimators.object_detection.python_object_detector import PyTorchObjectDetector
+from art.estimators.object_detection.pytorch_object_detector import PyTorchObjectDetector
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
@@ -37,7 +37,8 @@ logger = logging.getLogger(__name__)
 
 class PyTorchFasterRCNN(PyTorchObjectDetector):
     """
-    This class implements a model-specific object detector using Faster-RCNN and PyTorch.
+    This class implements a model-specific object detector using Faster-RCNN and PyTorch following the input and output
+    formats of torchvision.
     """
 
     def __init__(
