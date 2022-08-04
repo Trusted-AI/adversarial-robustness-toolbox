@@ -77,7 +77,7 @@ class TestGRAPHITE(TestBase):
             gamma_range=(1.0, 1.1),
             crop_percent_range=(-0.001, 0.001),
             off_x_range=(-0.001, 0.001),
-            blur_kernels=[0]
+            blur_kernels=[0],
         )
         params = {"y": self.y_test_init_mnist, "x_tar": self.x_test_init_mnist}
         x_test_adv = graphite.generate(self.x_test_mnist, **params)
@@ -146,7 +146,7 @@ class TestGRAPHITE(TestBase):
             gamma_range=(1.0, 1.1),
             crop_percent_range=(-0.001, 0.001),
             off_x_range=(-0.001, 0.001),
-            blur_kernels=[0]
+            blur_kernels=[0],
         )
         params = {"y": self.y_test_init_mnist, "x_tar": self.x_test_init_mnist}
         x_test_adv = graphite.generate(self.x_test_mnist, **params)
@@ -217,7 +217,7 @@ class TestGRAPHITE(TestBase):
             gamma_range=(1.0, 1.1),
             crop_percent_range=(-0.001, 0.001),
             off_x_range=(-0.001, 0.001),
-            blur_kernels=[0]
+            blur_kernels=[0],
         )
         params = {"y": self.y_test_init_mnist, "x_tar": self.x_test_init}
         x_test_adv = graphite.generate(self.x_test, **params)
