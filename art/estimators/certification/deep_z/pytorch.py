@@ -210,3 +210,18 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
                 certification_results.append(cert_via_sub)
 
         return all(certification_results)
+
+    def max_logit_loss(self, output, target):
+        """
+        Computes the loss as the largest logit value amongst the incorrect classes.
+        """
+        target_logit = output[:, target]
+        output = output - target_logit
+
+        ubs = torch.sum(torch.abs(output[1:, :]), axis=0) + output[0, :]
+
+        loss = None
+        for i in range(10):
+            if i != target and (loss is None or ubs[i] > loss):
+                loss = ubs[i]
+        return loss
