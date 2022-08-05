@@ -21,19 +21,104 @@ This module implements DeepZ proposed in Fast and Effective Robustness Certifica
 | Paper link: https://papers.nips.cc/paper/2018/file/f2f446980d8e971ef3da97af089481c3-Paper.pdf
 """
 
-from typing import List, Optional, Tuple, Union, TYPE_CHECKING
+from typing import List, Optional, Tuple, Union, Any, TYPE_CHECKING
+import random
 
 import warnings
 import numpy as np
+from tqdm import tqdm
 import torch
+from torch import nn
 
 from art.estimators.certification.deep_z.deep_z import ZonoConv, ZonoDenseLayer, ZonoReLU, ZonoBounds
 from art.estimators.classification.pytorch import PyTorchClassifier
+from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
+
+
+class ConvertedModel(nn.Module):
+    def __init__(self, model, channels_first, input_shape):
+        super().__init__()
+        modules = []
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+        # pylint: disable=W0613
+        def forward_hook(input_module, hook_input, hook_output):
+            modules.append(input_module)
+
+        for module in model.children():
+            module.register_forward_hook(forward_hook)
+
+        if channels_first:
+            input_for_hook = torch.rand(input_shape).to(device)
+        else:
+            raise ValueError("Please provide data in channels first format")
+
+        input_for_hook = torch.unsqueeze(input_for_hook, dim=0)
+        model(input_for_hook)  # hooks are fired sequentially from model input to the output
+
+        self.ops = torch.nn.ModuleList()
+        for module in modules:
+            print("registered", type(module))
+            if isinstance(module, torch.nn.modules.conv.Conv2d):
+                zono_conv = ZonoConv(
+                    in_channels=module.in_channels,
+                    out_channels=module.out_channels,
+                    kernel_size=module.kernel_size,  # type: ignore
+                    stride=module.stride,  # type: ignore
+                    dilation=module.dilation,  # type: ignore
+                    padding=module.padding,  # type: ignore
+                )
+                zono_conv.conv.weight.data = module.weight.data.to(device)
+                zono_conv.bias.data = module.bias.data.to(device)  # type: ignore
+                self.ops.append(zono_conv)
+
+            elif isinstance(module, torch.nn.modules.linear.Linear):
+                zono_dense = ZonoDenseLayer(in_features=module.in_features, out_features=module.out_features)
+                zono_dense.weight.data = module.weight.data.to(device)
+                zono_dense.bias.data = module.bias.data.to(device)
+                self.ops.append(zono_dense)
+
+            elif isinstance(module, torch.nn.modules.activation.ReLU):
+                self.ops.append(ZonoReLU(device=device))
+            else:
+                raise ValueError("Supported Operations are Conv2D, Linear, and RelU")
+
+        for op_num, op in enumerate(self.ops):
+            # as reshapes are not modules we infer when the reshape from convolutional to dense occurs
+            if isinstance(op, ZonoDenseLayer):
+                # if the preceeding op was a convolution:
+                if isinstance(self.ops[op_num - 1], ZonoConv):
+                    self.reshape_op_num = op_num
+                    print("Inferred reshape on op num", op_num)
+                # if the preceeding op was a relu and the one before the activation was a convolution
+                if isinstance(self.ops[op_num - 1], ZonoReLU) and isinstance(self.ops[op_num - 2], ZonoConv):
+                    self.reshape_op_num = op_num
+                    print("Inferred reshape on op num", op_num)
+
+    def forward(self, cent: np.ndarray, eps: np.ndarray) -> Tuple["torch.Tensor", "torch.Tensor"]:
+        """
+        Do the forward pass through the NN with the given error terms and zonotope center.
+
+        :param eps: Error terms of the zonotope.
+        :param cent: The datapoint, representing the zonotope center.
+        :return: A tuple, the first element being the zonotope center vector.
+                 The second is the zonotope error terms/coefficients.
+        """
+        x = np.concatenate([cent, eps])
+        x = torch.from_numpy(x.astype("float32")).to(self.device)
+
+        for op_num, op in enumerate(self.ops):
+            # as reshapes are not modules we infer when the reshape from convolutional to dense occurs
+            if self.reshape_op_num == op_num:
+                x = x.reshape((x.shape[0], -1))
+            x = op(x)
+
+        return x[0, :], x[1:, :]
 
 
 class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
@@ -90,9 +175,13 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
             "directly building a certifier network with the "
             "custom layers found in art.estimators.certification.deepz.deep_z.py\n"
         )
+        converted_model = ConvertedModel(model,
+                                         channels_first,
+                                         input_shape)
 
         super().__init__(
             model=model,
+            converted_model=converted_model,
             loss=loss,
             input_shape=input_shape,
             nb_classes=nb_classes,
@@ -104,62 +193,6 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
             preprocessing=preprocessing,
             device_type=device_type,
         )
-
-        modules = []
-
-        # pylint: disable=W0613
-        def forward_hook(input_module, hook_input, hook_output):
-            modules.append(input_module)
-
-        for module in model.children():
-            module.register_forward_hook(forward_hook)
-
-        if self.channels_first:
-            input_for_hook = torch.rand(self.input_shape).to(self.device)
-        else:
-            raise ValueError("Please provide data in channels first format")
-
-        input_for_hook = torch.unsqueeze(input_for_hook, dim=0)
-        model(input_for_hook)  # hooks are fired sequentially from model input to the output
-
-        self.ops = torch.nn.ModuleList()
-        for module in modules:
-            print("registered", type(module))
-            if isinstance(module, torch.nn.modules.conv.Conv2d):
-                zono_conv = ZonoConv(
-                    in_channels=module.in_channels,
-                    out_channels=module.out_channels,
-                    kernel_size=module.kernel_size,  # type: ignore
-                    stride=module.stride,  # type: ignore
-                    dilation=module.dilation,  # type: ignore
-                    padding=module.padding,  # type: ignore
-                )
-                zono_conv.conv.weight.data = module.weight.data.to(self.device)
-                zono_conv.bias.data = module.bias.data.to(self.device)  # type: ignore
-                self.ops.append(zono_conv)
-
-            elif isinstance(module, torch.nn.modules.linear.Linear):
-                zono_dense = ZonoDenseLayer(in_features=module.in_features, out_features=module.out_features)
-                zono_dense.weight.data = module.weight.data.to(self.device)
-                zono_dense.bias.data = module.bias.data.to(self.device)
-                self.ops.append(zono_dense)
-
-            elif isinstance(module, torch.nn.modules.activation.ReLU):
-                self.ops.append(ZonoReLU(device=self.device))
-            else:
-                raise ValueError("Supported Operations are Conv2D, Linear, and RelU")
-
-        for op_num, op in enumerate(self.ops):
-            # as reshapes are not modules we infer when the reshape from convolutional to dense occurs
-            if isinstance(op, ZonoDenseLayer):
-                # if the preceeding op was a convolution:
-                if isinstance(self.ops[op_num - 1], ZonoConv):
-                    self.reshape_op_num = op_num
-                    print("Inferred reshape on op num", op_num)
-                # if the preceeding op was a relu and the one before the activation was a convolution
-                if isinstance(self.ops[op_num - 1], ZonoReLU) and isinstance(self.ops[op_num - 2], ZonoConv):
-                    self.reshape_op_num = op_num
-                    print("Inferred reshape on op num", op_num)
 
     def forward(self, cent: np.ndarray, eps: np.ndarray) -> Tuple["torch.Tensor", "torch.Tensor"]:
         """
@@ -225,3 +258,95 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
             if i != target and (loss is None or ubs[i] > loss):
                 loss = ubs[i]
         return loss
+
+    def fit(  # pylint: disable=W0221
+            self,
+            x: np.ndarray,
+            y: np.ndarray,
+            bound,
+            pgd_batch_size: int = 128,
+            certification_batch_size: int = 10,
+            loss_weighting: float = 0.1,
+            nb_epochs: int = 10,
+            training_mode: bool = True,
+            scheduler: Optional[Any] = None,
+            **kwargs,
+    ) -> None:
+        """
+        Fit the classifier on the training set `(x, y)`.
+
+        :param x: Training data.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or index labels of
+                  shape (nb_samples,).
+        :param pgd_batch_size: Size of batches to use for PGD training
+        :param certification_batch_size: Size of batches to use for certified training. NB, this will run the data
+                                         sequentially accumulating gradients over the batch size.
+        :param loss_weighting:
+        :param nb_epochs: Number of epochs to use for training.
+        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :param scheduler: Learning rate scheduler to run at the start of every epoch.
+        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
+               and providing it takes no effect.
+        """
+        import torch  # lgtm [py/repeated-import]
+
+        # Set model mode
+        # self._model.train(mode=training_mode)
+
+        if self._optimizer is None:  # pragma: no cover
+            raise ValueError("An optimizer is needed to train the model, but none for provided.")
+
+        y = check_and_transform_label_format(y, nb_classes=self.nb_classes)
+
+        # Apply preprocessing
+        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
+
+        # Check label shape
+        y_preprocessed = self.reduce_labels(y_preprocessed)
+
+        num_batch = int(np.ceil(len(x_preprocessed) / float(certification_batch_size)))
+        ind = np.arange(len(x_preprocessed))
+
+        # Start training
+        for _ in tqdm(range(nb_epochs)):
+            # Shuffle the examples
+            random.shuffle(ind)
+
+            # Train for one epoch
+            loss = 0
+            for i, sample, label in enumerate(zip(x_preprocessed, y_preprocessed)):
+
+                eps_bound = np.eye(784) * bound
+
+                # we then need to adjust the raw data with the eps bounds to take into account
+                # the allowable range of 0 - 1 for pixel data.
+                # We provide a simple function to do this preprocessing for image data.
+                # However if your use case is not supported then a custom pre-processor function will need to be written.
+                data_sample, eps_bound = self.pre_process(cent=data_sample,
+                                                          eps=eps_bound)
+                data_sample = np.expand_dims(data_sample, axis=0)
+
+                # Zero the parameter gradients
+                self._optimizer.zero_grad()
+
+                # Perform prediction
+                model_outputs = self.forward(data_sample)
+
+                # Form the loss function
+                loss += self.max_logit_loss(model_outputs, o_batch)  # lgtm [py/call-to-non-callable]
+                if i % certification_batch_size == 0:
+
+                    # Do training
+                    if self._use_amp:  # pragma: no cover
+                        from apex import amp  # pylint: disable=E0611
+
+                        with amp.scale_loss(loss, self._optimizer) as scaled_loss:
+                            scaled_loss.backward()
+
+                    else:
+                        loss.backward()
+
+                    self._optimizer.step()
+
+                # if scheduler is not None:
+                #    scheduler.step()
