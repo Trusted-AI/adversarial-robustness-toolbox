@@ -11,6 +11,8 @@ from art.attacks.evasion import FastGradientMethod
 from art.estimators.classification import TensorFlowClassifier
 from art.utils import load_mnist
 
+tf.compat.v1.disable_eager_execution()
+
 # Step 1: Load the MNIST dataset
 
 (x_train, y_train), (x_test, y_test), min_pixel_value, max_pixel_value = load_mnist()
