@@ -62,6 +62,7 @@ class ConvertedModel(nn.Module):
         model(input_for_hook)  # hooks are fired sequentially from model input to the output
 
         self.ops = torch.nn.ModuleList()
+        # self.name_mapping = {}
         for module in modules:
             print("registered", type(module))
             if isinstance(module, torch.nn.modules.conv.Conv2d):
@@ -109,8 +110,10 @@ class ConvertedModel(nn.Module):
         :return: A tuple, the first element being the zonotope center vector.
                  The second is the zonotope error terms/coefficients.
         """
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
         x = np.concatenate([cent, eps])
-        x = torch.from_numpy(x.astype("float32")).to(self.device)
+        x = torch.from_numpy(x.astype("float32")).to(device)
 
         for op_num, op in enumerate(self.ops):
             # as reshapes are not modules we infer when the reshape from convolutional to dense occurs
@@ -119,6 +122,22 @@ class ConvertedModel(nn.Module):
             x = op(x)
 
         return x[0, :], x[1:, :]
+
+    def concrete_forward(self, x):
+        """
+        Do the forward pass using the concrete operations
+        """
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+        if isinstance(x, np.ndarray):
+            x = torch.from_numpy(x.astype("float32")).to(device)
+
+        for op_num, op in enumerate(self.ops):
+            # as reshapes are not modules we infer when the reshape from convolutional to dense occurs
+            if self.reshape_op_num == op_num:
+                x = x.reshape((x.shape[0], -1))
+            x = op.concrete_forward(x)
+        return x
 
 
 class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
@@ -178,10 +197,13 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
         converted_model = ConvertedModel(model,
                                          channels_first,
                                          input_shape)
+        import torch.optim as optim
 
+        optimizer = optim.Adam(converted_model.parameters(), lr=1e-4)
+
+        self.original_model = model
         super().__init__(
-            model=model,
-            converted_model=converted_model,
+            model=converted_model,
             loss=loss,
             input_shape=input_shape,
             nb_classes=nb_classes,
@@ -203,16 +225,8 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
         :return: A tuple, the first element being the zonotope center vector.
                  The second is the zonotope error terms/coefficients.
         """
-        x = np.concatenate([cent, eps])
-        x = torch.from_numpy(x.astype("float32")).to(self.device)
-
-        for op_num, op in enumerate(self.ops):
-            # as reshapes are not modules we infer when the reshape from convolutional to dense occurs
-            if self.reshape_op_num == op_num:
-                x = x.reshape((x.shape[0], -1))
-            x = op(x)
-
-        return x[0, :], x[1:, :]
+        cent, eps = self.model.forward(cent, eps)
+        return cent, eps
 
     def certify(self, cent: np.ndarray, eps: np.ndarray, prediction: int) -> bool:
         """
@@ -259,6 +273,9 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
                 loss = ubs[i]
         return loss
 
+    def get_accuracy(self, preds, labels):
+        return torch.sum(torch.argmax(preds, dim=1) == labels) / len(labels)
+
     def fit(  # pylint: disable=W0221
             self,
             x: np.ndarray,
@@ -304,49 +321,85 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
         # Check label shape
         y_preprocessed = self.reduce_labels(y_preprocessed)
 
-        num_batch = int(np.ceil(len(x_preprocessed) / float(certification_batch_size)))
+        num_batch = int(np.ceil(len(x_preprocessed) / float(pgd_batch_size)))
         ind = np.arange(len(x_preprocessed))
 
         # Start training
+        bound = 0.0
         for _ in tqdm(range(nb_epochs)):
+            bound += 0.01
             # Shuffle the examples
             random.shuffle(ind)
 
             # Train for one epoch
-            loss = 0
-            for i, sample, label in enumerate(zip(x_preprocessed, y_preprocessed)):
-
-                eps_bound = np.eye(784) * bound
-
-                # we then need to adjust the raw data with the eps bounds to take into account
-                # the allowable range of 0 - 1 for pixel data.
-                # We provide a simple function to do this preprocessing for image data.
-                # However if your use case is not supported then a custom pre-processor function will need to be written.
-                data_sample, eps_bound = self.pre_process(cent=data_sample,
-                                                          eps=eps_bound)
-                data_sample = np.expand_dims(data_sample, axis=0)
-
+            for m in range(num_batch):
+                certified_loss = 0
+                samples_certified = 0
                 # Zero the parameter gradients
                 self._optimizer.zero_grad()
 
+                # get the certified loss
+                for i, (sample, label) in enumerate(zip(x_preprocessed, y_preprocessed)):
+
+                    eps_bound = np.eye(784) * bound
+                    concrete_pred = self.model.concrete_forward(sample)
+                    concrete_pred = torch.argmax(concrete_pred)
+                    sample, eps_bound = self.pre_process(cent=sample,
+                                                         eps=eps_bound)
+                    sample = np.expand_dims(sample, axis=0)
+
+                    # Perform prediction
+                    bias, eps = self.model(eps=eps_bound,
+                                           cent=np.copy(sample))
+                    # Form the loss function
+                    bias = torch.unsqueeze(bias, dim=0)
+                    certified_loss += self.max_logit_loss(output=torch.cat((bias, eps)),
+                                                          target=np.expand_dims(label, axis=0))
+
+                    certification_results = []
+                    bias = torch.squeeze(bias).detach().cpu().numpy()
+                    eps = eps.detach().cpu().numpy()
+
+                    for k in range(self.nb_classes):
+                        if k != concrete_pred:
+                            cert_via_sub = self.certify_via_subtraction(
+                                predicted_class=concrete_pred,
+                                class_to_consider=k, cent=bias, eps=eps
+                            )
+                            certification_results.append(cert_via_sub)
+
+                    if all(certification_results):
+                        samples_certified += 1
+
+                    if (i - 1) % certification_batch_size == 0 and i > 0:
+                        break
+
+                certified_loss /= certification_batch_size
+
+                # Concrete PGD loss
+                i_batch = np.copy(x_preprocessed[ind[m * pgd_batch_size: (m + 1) * pgd_batch_size]])
+                i_batch = torch.from_numpy(i_batch.astype('float32')).to(self._device)
+                o_batch = torch.from_numpy(y_preprocessed[ind[m * pgd_batch_size: (m + 1) * pgd_batch_size]]).to(self._device)
+
                 # Perform prediction
-                model_outputs = self.forward(data_sample)
+                model_outputs = self.model.concrete_forward(i_batch)
+                acc = self.get_accuracy(model_outputs, o_batch)
 
                 # Form the loss function
-                loss += self.max_logit_loss(model_outputs, o_batch)  # lgtm [py/call-to-non-callable]
-                if i % certification_batch_size == 0:
+                pgd_loss = self._loss(model_outputs, o_batch)
+                print('Batch {}/{} Loss is {} Cert Loss is {}'.format(m, num_batch, pgd_loss,
+                                                                      certified_loss))
+                print('Batch {}/{} Acc is {} Cert Acc is {}'.format(m, num_batch, acc,
+                                                                    samples_certified / certification_batch_size))
+                loss = certified_loss * 0.1 + pgd_loss * 0.9
+                # Do training
+                if self._use_amp:  # pragma: no cover
+                    from apex import amp  # pylint: disable=E0611
 
-                    # Do training
-                    if self._use_amp:  # pragma: no cover
-                        from apex import amp  # pylint: disable=E0611
+                    with amp.scale_loss(loss, self._optimizer) as scaled_loss:
+                        scaled_loss.backward()
 
-                        with amp.scale_loss(loss, self._optimizer) as scaled_loss:
-                            scaled_loss.backward()
+                else:
+                    loss.backward()
 
-                    else:
-                        loss.backward()
-
-                    self._optimizer.step()
-
-                # if scheduler is not None:
-                #    scheduler.step()
+                self._optimizer.step()
