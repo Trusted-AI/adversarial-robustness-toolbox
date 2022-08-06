@@ -53,6 +53,10 @@ class ZonoDenseLayer(torch.nn.Module):
         x = self.zonotope_add(x)
         return x
 
+    def concrete_forward(self, x: "torch.Tensor") -> "torch.Tensor":
+        x = torch.matmul(x, torch.transpose(self.weight, 0, 1)) + self.bias
+        return x
+
     def zonotope_matmul(self, x: "torch.Tensor") -> "torch.Tensor":
         """
         Matrix multiplication for dense layer.
@@ -238,6 +242,13 @@ class ZonoConv(torch.nn.Module):
         x = self.zonotope_add(x)
         return x
 
+    def concrete_forward(self, x: "torch.Tensor") -> "torch.Tensor":
+        x = self.conv(x)
+        bias = torch.unsqueeze(self.bias, dim=-1)
+        bias = torch.unsqueeze(bias, dim=-1)
+        bias = torch.unsqueeze(bias, dim=0)
+        return x + bias
+
     def zonotope_add(self, x: "torch.Tensor") -> "torch.Tensor":
         """
         Modification required compared to the normal torch conv layers.
@@ -263,6 +274,7 @@ class ZonoReLU(torch.nn.Module, ZonoBounds):
     def __init__(self, device="cpu"):
         super().__init__()
         self.device = device
+        self.concrete_activation = torch.nn.ReLU()
 
     def __call__(self, x: "torch.Tensor") -> "torch.Tensor":
         return self.forward(x)
@@ -275,6 +287,9 @@ class ZonoReLU(torch.nn.Module, ZonoBounds):
         :return x: zonotope after being pushed through the dense layer.
         """
         return self.zonotope_relu(x)
+
+    def concrete_forward(self, x: "torch.Tensor") -> "torch.Tensor":
+        return self.concrete_activation(x)
 
     def zonotope_relu(self, x: "torch.Tensor") -> "torch.Tensor":
         """
