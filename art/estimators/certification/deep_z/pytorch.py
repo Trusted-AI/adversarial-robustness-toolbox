@@ -198,8 +198,17 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
                                          channels_first,
                                          input_shape)
         import torch.optim as optim
+        opt_state_dict = optimizer.state_dict()
+        if isinstance(optimizer, torch.optim.Adam):
+            print('Converting Adam Optimiser')
+            converted_optimizer = optim.Adam(converted_model.parameters(), lr=1e-4)
+        elif isinstance(optimizer, torch.optim.SGD):
+            print('Converting SGD Optimiser')
+            converted_optimizer = optim.SGD(converted_model.parameters(), lr=1e-4)
+        else:
+            raise ValueError("Optimiser not supported for conversion")
 
-        optimizer = optim.Adam(converted_model.parameters(), lr=1e-4)
+        converted_optimizer.load_state_dict(opt_state_dict)
 
         self.original_model = model
         super().__init__(
@@ -276,6 +285,51 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
     def get_accuracy(self, preds, labels):
         return torch.sum(torch.argmax(preds, dim=1) == labels) / len(labels)
 
+    def make_adversarial_example(self, x, y, eps=0.25, random_start=True, num_steps=20, step_size=0.05):
+        clip_max = x + eps
+        clip_min = x - eps
+
+        clip_max = clip_max.cpu().numpy()
+        clip_min = clip_min.cpu().numpy()
+
+        if random_start:
+            rand_start = torch.rand(size=x.shape).to(self.device) * 2 * eps
+            rand_start = rand_start - eps
+            x = x + rand_start
+            x = torch.clamp(x, 0.0, 1.0)
+            x = x.cpu().detach().numpy()
+            x = np.clip(x, clip_min, clip_max)
+            x = torch.from_numpy(x).to(self.device)
+
+        for _ in range(num_steps):
+            x.requires_grad = True
+            # Forward pass the data through the model
+            output = self.model.concrete_forward(x)
+
+            # Calculate the loss
+            loss = self._loss(output, y)
+
+            # Zero all existing gradients
+            self.model.zero_grad()
+
+            # Calculate gradients of model in backward pass
+            loss.backward()
+
+            # Collect datagrad
+            data_grad = x.grad.data
+
+            # Collect the element-wise sign of the data gradient
+            sign_data_grad = data_grad.sign()
+
+            # Create the perturbed image by adjusting each pixel of the input image
+            x = x + step_size * sign_data_grad
+            # Adding clipping to maintain [0,1] range
+            x = torch.clamp(x, 0.0, 1.0)
+            x = x.cpu().detach().numpy()
+            x = np.clip(x, clip_min, clip_max)
+            x = torch.from_numpy(x).to(self.device)
+        return x
+
     def fit(  # pylint: disable=W0221
             self,
             x: np.ndarray,
@@ -323,6 +377,9 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
 
         num_batch = int(np.ceil(len(x_preprocessed) / float(pgd_batch_size)))
         ind = np.arange(len(x_preprocessed))
+        from sklearn.utils import shuffle
+        x_cert = np.copy(x_preprocessed)
+        y_cert = np.copy(y_preprocessed)
 
         # Start training
         bound = 0.0
@@ -339,7 +396,8 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
                 self._optimizer.zero_grad()
 
                 # get the certified loss
-                for i, (sample, label) in enumerate(zip(x_preprocessed, y_preprocessed)):
+                x_cert, y_cert = shuffle(np.array(x_cert), np.array(y_cert))
+                for i, (sample, label) in enumerate(zip(x_cert, y_cert)):
 
                     eps_bound = np.eye(784) * bound
                     concrete_pred = self.model.concrete_forward(sample)
@@ -382,6 +440,9 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
                 o_batch = torch.from_numpy(y_preprocessed[ind[m * pgd_batch_size: (m + 1) * pgd_batch_size]]).to(self._device)
 
                 # Perform prediction
+                i_batch = self.make_adversarial_example(i_batch, o_batch)
+                self._optimizer.zero_grad()
+                self.model.zero_grad()
                 model_outputs = self.model.concrete_forward(i_batch)
                 acc = self.get_accuracy(model_outputs, o_batch)
 
