@@ -219,7 +219,7 @@ class TestGRAPHITE(TestBase):
             off_x_range=(-0.001, 0.001),
             blur_kernels=[0],
         )
-        params = {"y": self.y_test_init_mnist, "x_tar": self.x_test_init}
+        params = {"y": self.y_test_init_mnist, "x_tar": x_test_init}
         x_test_adv = graphite.generate(self.x_test, **params)
 
         self.assertFalse((self.x_test == x_test_adv).all())
