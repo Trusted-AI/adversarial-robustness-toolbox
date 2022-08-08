@@ -1,4 +1,4 @@
-FROM  nvidia/cuda:11.7.0-runtime-ubuntu20.04
+FROM nvidia/cuda:11.3.1-cudnn8-runtime-ubuntu20.04
 
 RUN apt-get update -y
 RUN DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get -y install tzdata
@@ -44,8 +44,6 @@ RUN apt-get -y -q install ffmpeg libavcodec-extra
 
 RUN echo "You should think about possibly upgrading these outdated packages"
 RUN pip3 list --outdated
-
-CMD bash run_tests.sh
 
 # NOTE to contributors: When changing/adding packages, please make sure that the packages are consistent with those
 # present within the requirements_test.txt files
