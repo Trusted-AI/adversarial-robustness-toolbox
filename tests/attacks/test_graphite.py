@@ -198,7 +198,7 @@ class TestGRAPHITE(TestBase):
         :return:
         """
         x_test = np.transpose(self.x_test_mnist, (0, 3, 1, 2)).astype(np.float32)
-        x_test_init = np.transpose(self.x_test_mnist, (0, 3, 1, 2)).astype(np.float32)
+        x_test_init = np.transpose(self.x_test_init_mnist, (0, 3, 1, 2)).astype(np.float32)
         x_test_original = x_test.copy()
 
         # Build PyTorchClassifier
@@ -360,53 +360,53 @@ class TestGRAPHITE(TestBase):
             _ = GRAPHITEBlackbox(ptc, noise_size=(28, 28), net_size=(28, 28), blur_kernels=[-1])
 
         with self.assertRaises(ValueError):
-            _ = GRAPHITEWhiteboxPyTorch(ptc, min_tr=-1)
+            _ = GRAPHITEWhiteboxPyTorch(ptc, net_size=(28, 28), min_tr=-1)
         with self.assertRaises(ValueError):
-            _ = GRAPHITEWhiteboxPyTorch(ptc, min_tr=1.1)
+            _ = GRAPHITEWhiteboxPyTorch(ptc, net_size=(28, 28), min_tr=1.1)
         with self.assertRaises(ValueError):
-            _ = GRAPHITEWhiteboxPyTorch(ptc, num_xforms=-1)
+            _ = GRAPHITEWhiteboxPyTorch(ptc, net_size=(28, 28), num_xforms=-1)
         with self.assertRaises(ValueError):
-            _ = GRAPHITEWhiteboxPyTorch(ptc, num_xforms=1.0)
+            _ = GRAPHITEWhiteboxPyTorch(ptc, net_size=(28, 28), num_xforms=1.0)
         with self.assertRaises(ValueError):
-            _ = GRAPHITEWhiteboxPyTorch(ptc, step_size=0)
+            _ = GRAPHITEWhiteboxPyTorch(ptc, net_size=(28, 28), step_size=0)
         with self.assertRaises(ValueError):
-            _ = GRAPHITEWhiteboxPyTorch(ptc, step_size=-1)
+            _ = GRAPHITEWhiteboxPyTorch(ptc, net_size=(28, 28), step_size=-1)
         with self.assertRaises(ValueError):
-            _ = GRAPHITEWhiteboxPyTorch(ptc, first_steps=0)
+            _ = GRAPHITEWhiteboxPyTorch(ptc, net_size=(28, 28), first_steps=0)
         with self.assertRaises(ValueError):
-            _ = GRAPHITEWhiteboxPyTorch(ptc, first_steps=1.0)
+            _ = GRAPHITEWhiteboxPyTorch(ptc, net_size=(28, 28), first_steps=1.0)
         with self.assertRaises(ValueError):
-            _ = GRAPHITEWhiteboxPyTorch(ptc, steps=0)
+            _ = GRAPHITEWhiteboxPyTorch(ptc, net_size=(28, 28), steps=0)
         with self.assertRaises(ValueError):
-            _ = GRAPHITEWhiteboxPyTorch(ptc, steps=1.0)
+            _ = GRAPHITEWhiteboxPyTorch(ptc, net_size=(28, 28), steps=1.0)
         with self.assertRaises(ValueError):
-            _ = GRAPHITEWhiteboxPyTorch(ptc, patch_removal_size=0)
+            _ = GRAPHITEWhiteboxPyTorch(ptc, net_size=(28, 28), patch_removal_size=0)
         with self.assertRaises(ValueError):
-            _ = GRAPHITEWhiteboxPyTorch(ptc, num_patches_to_remove=0)
+            _ = GRAPHITEWhiteboxPyTorch(ptc, net_size=(28, 28), num_patches_to_remove=0)
         with self.assertRaises(ValueError):
-            _ = GRAPHITEWhiteboxPyTorch(ptc, num_patches_to_remove=1.0)
+            _ = GRAPHITEWhiteboxPyTorch(ptc, net_size=(28, 28), num_patches_to_remove=1.0)
         with self.assertRaises(ValueError):
-            _ = GRAPHITEWhiteboxPyTorch(ptc, rotation_range=(-90, 0))
+            _ = GRAPHITEWhiteboxPyTorch(ptc, net_size=(28, 28), rotation_range=(-90, 0))
         with self.assertRaises(ValueError):
-            _ = GRAPHITEWhiteboxPyTorch(ptc, rotation_range=(90, 0))
+            _ = GRAPHITEWhiteboxPyTorch(ptc, net_size=(28, 28), rotation_range=(90, 0))
         with self.assertRaises(ValueError):
-            _ = GRAPHITEWhiteboxPyTorch(ptc, rotation_range=(1, 0))
+            _ = GRAPHITEWhiteboxPyTorch(ptc, net_size=(28, 28), rotation_range=(1, 0))
         with self.assertRaises(ValueError):
-            _ = GRAPHITEWhiteboxPyTorch(ptc, dist_range=(0, 1))
+            _ = GRAPHITEWhiteboxPyTorch(ptc, net_size=(28, 28), dist_range=(0, 1))
         with self.assertRaises(ValueError):
-            _ = GRAPHITEWhiteboxPyTorch(ptc, dist_range=(1, 0))
+            _ = GRAPHITEWhiteboxPyTorch(ptc, net_size=(28, 28), dist_range=(1, 0))
         with self.assertRaises(ValueError):
-            _ = GRAPHITEWhiteboxPyTorch(ptc, gamma_range=(0, 1))
+            _ = GRAPHITEWhiteboxPyTorch(ptc, net_size=(28, 28), gamma_range=(0, 1))
         with self.assertRaises(ValueError):
-            _ = GRAPHITEWhiteboxPyTorch(ptc, gamma_range=(1, 0))
+            _ = GRAPHITEWhiteboxPyTorch(ptc, net_size=(28, 28), gamma_range=(1, 0))
         with self.assertRaises(ValueError):
-            _ = GRAPHITEWhiteboxPyTorch(ptc, crop_percent_range=(1, 0))
+            _ = GRAPHITEWhiteboxPyTorch(ptc, net_size=(28, 28), crop_percent_range=(1, 0))
         with self.assertRaises(ValueError):
-            _ = GRAPHITEWhiteboxPyTorch(ptc, off_x_range=(1, 0))
+            _ = GRAPHITEWhiteboxPyTorch(ptc, net_size=(28, 28), off_x_range=(1, 0))
         with self.assertRaises(ValueError):
-            _ = GRAPHITEWhiteboxPyTorch(ptc, off_y_range=(1, 0))
+            _ = GRAPHITEWhiteboxPyTorch(ptc, net_size=(28, 28), off_y_range=(1, 0))
         with self.assertRaises(ValueError):
-            _ = GRAPHITEWhiteboxPyTorch(ptc, blur_kernels=[-1])
+            _ = GRAPHITEWhiteboxPyTorch(ptc, net_size=(28, 28), blur_kernels=[-1])
 
     def test_1_classifier_type_check_fail(self):
         backend_test_classifier_type_check_fail(
