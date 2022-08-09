@@ -40,8 +40,16 @@ if TYPE_CHECKING:
     from art.defences.postprocessor import Postprocessor
 
 
-class ConvertedModel(nn.Module):
-    def __init__(self, model, channels_first, input_shape):
+class ConvertedModel(torch.nn.Module):
+    """
+    Class which converts the supplied pytorch model into an equivalent model
+    which uses abstract operations
+    """
+
+    def __init__(self,
+                 model: "torch.nn.Module",
+                 channels_first: bool,
+                 input_shape: Tuple[int, ...]):
         super().__init__()
         modules = []
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -62,7 +70,6 @@ class ConvertedModel(nn.Module):
         model(input_for_hook)  # hooks are fired sequentially from model input to the output
 
         self.ops = torch.nn.ModuleList()
-        # self.name_mapping = {}
         for module in modules:
             print("registered", type(module))
             if isinstance(module, torch.nn.modules.conv.Conv2d):
@@ -123,9 +130,11 @@ class ConvertedModel(nn.Module):
 
         return x[0, :], x[1:, :]
 
-    def concrete_forward(self, x):
+    def concrete_forward(self, x: Union[np.ndarray, "torch.Tensor"]) -> "torch.Tensor":
         """
         Do the forward pass using the concrete operations
+
+        :param x: regular (concrete) data.
         """
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -194,29 +203,31 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
             "directly building a certifier network with the "
             "custom layers found in art.estimators.certification.deepz.deep_z.py\n"
         )
-        converted_model = ConvertedModel(model,
-                                         channels_first,
-                                         input_shape)
-        import torch.optim as optim
-        opt_state_dict = optimizer.state_dict()
-        if isinstance(optimizer, torch.optim.Adam):
-            print('Converting Adam Optimiser')
-            converted_optimizer = optim.Adam(converted_model.parameters(), lr=1e-4)
-        elif isinstance(optimizer, torch.optim.SGD):
-            print('Converting SGD Optimiser')
-            converted_optimizer = optim.SGD(converted_model.parameters(), lr=1e-4)
-        else:
-            raise ValueError("Optimiser not supported for conversion")
+        converted_model = ConvertedModel(model, channels_first, input_shape)
 
-        converted_optimizer.load_state_dict(opt_state_dict)
+        if optimizer is not None:
+            import torch.optim as optim
+            opt_state_dict = optimizer.state_dict()
+            if TYPE_CHECKING:
+                converted_optimizer: Union[optim.Adam, optim.SGD]
 
-        self.original_model = model
+            if isinstance(optimizer, torch.optim.Adam):
+                print("Converting Adam Optimiser")
+                converted_optimizer = optim.Adam(converted_model.parameters(), lr=1e-4)
+            elif isinstance(optimizer, torch.optim.SGD):
+                print("Converting SGD Optimiser")
+                converted_optimizer = optim.SGD(converted_model.parameters(), lr=1e-4)
+            else:
+                raise ValueError("Optimiser not supported for conversion")
+
+            converted_optimizer.load_state_dict(opt_state_dict)
+
         super().__init__(
             model=converted_model,
             loss=loss,
             input_shape=input_shape,
             nb_classes=nb_classes,
-            optimizer=optimizer,
+            optimizer=converted_optimizer,
             channels_first=channels_first,
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
@@ -267,7 +278,8 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
 
         return all(certification_results)
 
-    def max_logit_loss(self, output, target):
+    @staticmethod
+    def max_logit_loss(output, target):
         """
         Computes the loss as the largest logit value amongst the incorrect classes.
         """
@@ -282,10 +294,27 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
                 loss = ubs[i]
         return loss
 
-    def get_accuracy(self, preds, labels):
+    @staticmethod
+    def get_accuracy(preds: "torch.Tensor", labels: "torch.Tensor") -> "torch.Tensor":
+        """
+        Helper function to print out the accuracy during training
+
+        :param preds: (concrete) model predictions
+        :param labels: ground truth labels (not one hot)
+
+        :return: prediction accuracy
+        """
         return torch.sum(torch.argmax(preds, dim=1) == labels) / len(labels)
 
-    def make_adversarial_example(self, x, y, eps=0.25, random_start=True, num_steps=20, step_size=0.05):
+    def make_adversarial_example(
+        self,
+        x: "torch.Tensor",
+        y: "torch.Tensor",
+        eps: float = 0.25,
+        random_start: bool = True,
+        num_steps: int = 20,
+        step_size: float = 0.05,
+    ) -> "torch.Tensor":
         clip_max = x + eps
         clip_min = x - eps
 
@@ -331,17 +360,18 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
         return x
 
     def fit(  # pylint: disable=W0221
-            self,
-            x: np.ndarray,
-            y: np.ndarray,
-            bound,
-            pgd_batch_size: int = 128,
-            certification_batch_size: int = 10,
-            loss_weighting: float = 0.1,
-            nb_epochs: int = 10,
-            training_mode: bool = True,
-            scheduler: Optional[Any] = None,
-            **kwargs,
+        self,
+        x: np.ndarray,
+        y: np.ndarray,
+        batch_size: int = 128,
+        nb_epochs: int = 10,
+        training_mode: bool = True,
+        scheduler: Optional[Any] = None,
+        bound: float = 0.25,
+        certification_batch_size: int = 10,
+        loss_weighting: float = 0.1,
+        use_schedule: bool = True,
+        **kwargs,
     ) -> None:
         """
         Fit the classifier on the training set `(x, y)`.
@@ -359,10 +389,10 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
         """
-        import torch  # lgtm [py/repeated-import]
 
         # Set model mode
         # self._model.train(mode=training_mode)
+        pgd_batch_size = batch_size
 
         if self._optimizer is None:  # pragma: no cover
             raise ValueError("An optimizer is needed to train the model, but none for provided.")
@@ -378,19 +408,24 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
         num_batch = int(np.ceil(len(x_preprocessed) / float(pgd_batch_size)))
         ind = np.arange(len(x_preprocessed))
         from sklearn.utils import shuffle
+
         x_cert = np.copy(x_preprocessed)
         y_cert = np.copy(y_preprocessed)
 
         # Start training
-        bound = 0.0
+        if use_schedule:
+            step_per_epoch = bound / nb_epochs
+            bound = 0.0
+
         for _ in tqdm(range(nb_epochs)):
-            bound += 0.01
+            if use_schedule:
+                bound += step_per_epoch
             # Shuffle the examples
             random.shuffle(ind)
 
             # Train for one epoch
             for m in range(num_batch):
-                certified_loss = 0
+                certified_loss = 0.0
                 samples_certified = 0
                 # Zero the parameter gradients
                 self._optimizer.zero_grad()
@@ -402,17 +437,16 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
                     eps_bound = np.eye(784) * bound
                     concrete_pred = self.model.concrete_forward(sample)
                     concrete_pred = torch.argmax(concrete_pred)
-                    sample, eps_bound = self.pre_process(cent=sample,
-                                                         eps=eps_bound)
+                    sample, eps_bound = self.pre_process(cent=sample, eps=eps_bound)
                     sample = np.expand_dims(sample, axis=0)
 
                     # Perform prediction
-                    bias, eps = self.model(eps=eps_bound,
-                                           cent=np.copy(sample))
+                    bias, eps = self.model(eps=eps_bound, cent=np.copy(sample))
                     # Form the loss function
                     bias = torch.unsqueeze(bias, dim=0)
-                    certified_loss += self.max_logit_loss(output=torch.cat((bias, eps)),
-                                                          target=np.expand_dims(label, axis=0))
+                    certified_loss += self.max_logit_loss(
+                        output=torch.cat((bias, eps)), target=np.expand_dims(label, axis=0)
+                    )
 
                     certification_results = []
                     bias = torch.squeeze(bias).detach().cpu().numpy()
@@ -421,8 +455,7 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
                     for k in range(self.nb_classes):
                         if k != concrete_pred:
                             cert_via_sub = self.certify_via_subtraction(
-                                predicted_class=concrete_pred,
-                                class_to_consider=k, cent=bias, eps=eps
+                                predicted_class=concrete_pred, class_to_consider=k, cent=bias, eps=eps
                             )
                             certification_results.append(cert_via_sub)
 
@@ -435,9 +468,11 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
                 certified_loss /= certification_batch_size
 
                 # Concrete PGD loss
-                i_batch = np.copy(x_preprocessed[ind[m * pgd_batch_size: (m + 1) * pgd_batch_size]])
-                i_batch = torch.from_numpy(i_batch.astype('float32')).to(self._device)
-                o_batch = torch.from_numpy(y_preprocessed[ind[m * pgd_batch_size: (m + 1) * pgd_batch_size]]).to(self._device)
+                i_batch = np.copy(x_preprocessed[ind[m * pgd_batch_size : (m + 1) * pgd_batch_size]])
+                i_batch = torch.from_numpy(i_batch.astype("float32")).to(self._device)
+                o_batch = torch.from_numpy(y_preprocessed[ind[m * pgd_batch_size : (m + 1) * pgd_batch_size]]).to(
+                    self._device
+                )
 
                 # Perform prediction
                 i_batch = self.make_adversarial_example(i_batch, o_batch)
@@ -448,11 +483,13 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
 
                 # Form the loss function
                 pgd_loss = self._loss(model_outputs, o_batch)
-                print('Batch {}/{} Loss is {} Cert Loss is {}'.format(m, num_batch, pgd_loss,
-                                                                      certified_loss))
-                print('Batch {}/{} Acc is {} Cert Acc is {}'.format(m, num_batch, acc,
-                                                                    samples_certified / certification_batch_size))
-                loss = certified_loss * 0.1 + pgd_loss * 0.9
+                print("Batch {}/{} Loss is {} Cert Loss is {}".format(m, num_batch, pgd_loss, certified_loss))
+                print(
+                    "Batch {}/{} Acc is {} Cert Acc is {}".format(
+                        m, num_batch, acc, samples_certified / certification_batch_size
+                    )
+                )
+                loss = certified_loss * loss_weighting + pgd_loss * (1 - loss_weighting)
                 # Do training
                 if self._use_amp:  # pragma: no cover
                     from apex import amp  # pylint: disable=E0611
