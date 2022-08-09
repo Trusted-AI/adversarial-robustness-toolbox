@@ -35,6 +35,7 @@ jobs:
         with:
           images: adversarialrobustnesstoolbox/releases
           tags: |
+            type=sha
             type=semver,pattern={{version}}
 
       - name: Build and push Docker image
