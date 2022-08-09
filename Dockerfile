@@ -4,8 +4,6 @@ RUN apt-get update -y
 RUN DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get -y install tzdata
 RUN apt-get install -y python3 python3-distutils python3-pip
 
-RUN pip3 install adversarial-robustness-toolbox==1.11.0
-
 RUN pip3 install tensorflow==2.9.1 keras==2.9.0 numpy==1.22.4 scipy==1.8.1 matplotlib==3.5.2 scikit-learn==1.1.2 \
                  six==1.15.0 Pillow==9.2.0 pytest-cov==3.0.0 tqdm==4.64.0 statsmodels==0.13.2 pydub==0.25.1 \
                  resampy==0.3.1 ffmpeg-python==0.2.0 cma==3.2.2 pandas==1.4.3 h5py==3.7.0 tensorflow-addons==0.17.1 \
@@ -13,7 +11,12 @@ RUN pip3 install tensorflow==2.9.1 keras==2.9.0 numpy==1.22.4 scipy==1.8.1 matpl
                  lightgbm==3.3.2 xgboost==1.6.1 kornia==0.6.6 lief==0.12.1 pytest==7.1.2 pytest-pep8==1.0.6 \
                  pytest-mock==3.8.2 codecov==2.1.12 requests==2.28.1
 
-RUN apt-get -y -q install ffmpeg libavcodec-extra
+RUN apt-get -y install ffmpeg libavcodec-extra vim git
+
+RUN mkdir /project
+WORKDIR /project
+ADD . /project
+RUN pip3 install .
 
 RUN echo "You should think about possibly upgrading these outdated packages"
 RUN pip3 list --outdated
