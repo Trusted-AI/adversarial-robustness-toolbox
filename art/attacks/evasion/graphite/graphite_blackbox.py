@@ -877,7 +877,7 @@ class GRAPHITEBlackbox(EvasionAttack):
         ):
             raise ValueError("rotation range must be within (-90, 90).")
 
-        if self.dist_range[1] < self.dist_range[0] or self.dist_range[0] < 0:
+        if self.dist_range[1] < self.dist_range[0] or self.dist_range[0] <= 0:
             raise ValueError("distance range invalid. max must be greater than min, and must be nonnegative.")
 
         if self.gamma_range[1] < self.gamma_range[0] or self.gamma_range[0] < 1:
