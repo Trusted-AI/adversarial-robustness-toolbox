@@ -319,7 +319,7 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
                     x_adv = x_adv.unsqueeze(0)
                 transformed_x_adv = transform_wb(x, x_adv, mask, xform, self.net_size, clip_min, clip_max, pts)
                 logits, _ = self.estimator._predict_framework(  # pylint: disable=W0212
-                    transformed_x_adv.cuda(), y_onehot
+                    transformed_x_adv.to(self.estimator.device), y_onehot
                 )
                 success = int(logits.argmax(dim=1).detach().cpu().numpy()[0] == target_label)
                 successes += success
@@ -403,7 +403,7 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
             # Do EOT adversarial attack with current mask.
             loop_length = self.steps if rounds > 0 else self.first_steps
             for _ in range(loop_length):
-                avg_grad = torch.zeros(adv_img.size()).cuda()
+                avg_grad = torch.zeros(adv_img.size()).to(self.estimator.device)
                 for xform in xforms:
                     xform_img = transform_wb(
                         img.clone().unsqueeze(0),
@@ -417,7 +417,7 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
                     )
 
                     logits, _ = self.estimator._predict_framework(  # pylint: disable=W0212
-                        xform_img.cuda(), y_onehot_tensor
+                        xform_img.to(self.estimator.device), y_onehot_tensor
                     )
                     if self.use_logits:
                         loss = torch.nn.functional.cross_entropy(
@@ -558,7 +558,7 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
         ):
             raise ValueError("rotation range must be within (-90, 90).")
 
-        if self.dist_range[1] < self.dist_range[0] or self.dist_range[0] < 0:
+        if self.dist_range[1] < self.dist_range[0] or self.dist_range[0] <= 0:
             raise ValueError("distance range invalid. max must be greater than min, and must be nonnegative.")
 
         if self.gamma_range[1] < self.gamma_range[0] or self.gamma_range[0] < 1:
