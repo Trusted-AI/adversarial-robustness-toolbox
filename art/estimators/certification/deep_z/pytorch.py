@@ -130,16 +130,17 @@ class ConvertedModel(torch.nn.Module):
 
         return x[0, :], x[1:, :]
 
-    def concrete_forward(self, x: Union[np.ndarray, "torch.Tensor"]) -> "torch.Tensor":
+    def concrete_forward(self, in_x: Union[np.ndarray, "torch.Tensor"]) -> "torch.Tensor":
         """
         Do the forward pass using the concrete operations
 
-        :param x: regular (concrete) data.
+        :param in_x: regular (concrete) data.
         """
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-        if isinstance(x, np.ndarray):
-            x = torch.from_numpy(x.astype("float32")).to(device)
+        if isinstance(in_x, np.ndarray):
+            x = torch.from_numpy(in_x.astype("float32")).to(device)
+        else:
+            x = in_x
 
         for op_num, op in enumerate(self.ops):
             # as reshapes are not modules we infer when the reshape from convolutional to dense occurs
@@ -245,8 +246,8 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
         :return: A tuple, the first element being the zonotope center vector.
                  The second is the zonotope error terms/coefficients.
         """
-        cent, eps = self.model.forward(cent, eps)
-        return cent, eps
+        out_cent, out_eps = self.model.forward(cent, eps)
+        return out_cent, out_eps
 
     def certify(self, cent: np.ndarray, eps: np.ndarray, prediction: int) -> bool:
         """
@@ -308,32 +309,28 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
 
     def make_adversarial_example(
         self,
-        x: "torch.Tensor",
+        x: np.ndarray,
         y: "torch.Tensor",
         eps: float = 0.25,
         random_start: bool = True,
         num_steps: int = 20,
         step_size: float = 0.05,
-    ) -> "torch.Tensor":
+    ) -> np.ndarray:
         clip_max = x + eps
         clip_min = x - eps
 
-        clip_max = clip_max.cpu().numpy()
-        clip_min = clip_min.cpu().numpy()
-
         if random_start:
-            rand_start = torch.rand(size=x.shape).to(self.device) * 2 * eps
+            rand_start = np.random.uniform(size=x.shape) * 2 * eps
             rand_start = rand_start - eps
             x = x + rand_start
-            x = torch.clamp(x, 0.0, 1.0)
-            x = x.cpu().detach().numpy()
+            x = np.clip(x, 0.0, 1.0)
             x = np.clip(x, clip_min, clip_max)
-            x = torch.from_numpy(x).to(self.device)
 
+        adv_x = torch.from_numpy(x.astype('float32')).to(self.device)
         for _ in range(num_steps):
-            x.requires_grad = True
+            adv_x.requires_grad = True
             # Forward pass the data through the model
-            output = self.model.concrete_forward(x)
+            output = self.model.concrete_forward(adv_x)
 
             # Calculate the loss
             loss = self._loss(output, y)
@@ -345,19 +342,19 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
             loss.backward()
 
             # Collect datagrad
-            data_grad = x.grad.data
+            data_grad = adv_x.grad.data
 
             # Collect the element-wise sign of the data gradient
             sign_data_grad = data_grad.sign()
 
             # Create the perturbed image by adjusting each pixel of the input image
-            x = x + step_size * sign_data_grad
+            adv_x = adv_x + step_size * sign_data_grad
             # Adding clipping to maintain [0,1] range
-            x = torch.clamp(x, 0.0, 1.0)
-            x = x.cpu().detach().numpy()
-            x = np.clip(x, clip_min, clip_max)
-            x = torch.from_numpy(x).to(self.device)
-        return x
+            adv_x = torch.clamp(adv_x, 0.0, 1.0)
+            adv_x = adv_x.cpu().detach().numpy()
+            adv_x = np.clip(adv_x, clip_min, clip_max)
+            adv_x = torch.from_numpy(adv_x).to(self.device)
+        return adv_x.cpu().numpy()
 
     def fit(  # pylint: disable=W0221
         self,
@@ -468,9 +465,8 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
                 certified_loss /= certification_batch_size
 
                 # Concrete PGD loss
-                i_batch = np.copy(x_preprocessed[ind[m * pgd_batch_size : (m + 1) * pgd_batch_size]])
-                i_batch = torch.from_numpy(i_batch.astype("float32")).to(self._device)
-                o_batch = torch.from_numpy(y_preprocessed[ind[m * pgd_batch_size : (m + 1) * pgd_batch_size]]).to(
+                i_batch = np.copy(x_preprocessed[ind[m * pgd_batch_size: (m + 1) * pgd_batch_size]]).astype("float32")
+                o_batch = torch.from_numpy(y_preprocessed[ind[m * pgd_batch_size: (m + 1) * pgd_batch_size]]).to(
                     self._device
                 )
 
