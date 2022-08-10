@@ -26,13 +26,11 @@ import random
 
 import warnings
 import numpy as np
-from tqdm import tqdm
 import torch
 from torch import nn
 
 from art.estimators.certification.deep_z.deep_z import ZonoConv, ZonoDenseLayer, ZonoReLU, ZonoBounds
 from art.estimators.classification.pytorch import PyTorchClassifier
-from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
@@ -53,6 +51,7 @@ class ConvertedModel(torch.nn.Module):
         super().__init__()
         modules = []
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.forward_mode = "abstract"
 
         # pylint: disable=W0613
         def forward_hook(input_module, hook_input, hook_output):
@@ -108,7 +107,16 @@ class ConvertedModel(torch.nn.Module):
                     self.reshape_op_num = op_num
                     print("Inferred reshape on op num", op_num)
 
-    def forward(self, cent: np.ndarray, eps: np.ndarray) -> Tuple["torch.Tensor", "torch.Tensor"]:
+    def forward(self, cent: np.ndarray, eps=None):
+        if self.forward_mode == "concrete":
+            return self.concrete_forward(cent)
+        elif self.forward_mode == "abstract":
+            cent, eps = self.abstract_forward(cent, eps)
+            return cent, eps
+        else:
+            raise ValueError("forward_mode must be set to abstract or concrete")
+
+    def abstract_forward(self, cent: np.ndarray, eps: np.ndarray) -> Tuple["torch.Tensor", "torch.Tensor"]:
         """
         Do the forward pass through the NN with the given error terms and zonotope center.
 
@@ -206,12 +214,13 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
         )
         converted_model = ConvertedModel(model, channels_first, input_shape)
 
+        if TYPE_CHECKING:
+            import torch.optim as optim
+            converted_optimizer: Union[optim.Adam, optim.SGD, None]
+
         if optimizer is not None:
             import torch.optim as optim
             opt_state_dict = optimizer.state_dict()
-            if TYPE_CHECKING:
-                converted_optimizer: Union[optim.Adam, optim.SGD]
-
             if isinstance(optimizer, torch.optim.Adam):
                 print("Converting Adam Optimiser")
                 converted_optimizer = optim.Adam(converted_model.parameters(), lr=1e-4)
@@ -222,6 +231,8 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
                 raise ValueError("Optimiser not supported for conversion")
 
             converted_optimizer.load_state_dict(opt_state_dict)
+        else:
+            converted_optimizer = None
 
         super().__init__(
             model=converted_model,
@@ -305,7 +316,13 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
 
         :return: prediction accuracy
         """
-        return torch.sum(torch.argmax(preds, dim=1) == labels) / len(labels)
+        if isinstance(preds, torch.Tensor):
+            preds = preds.detach().cpu().numpy()
+
+        if isinstance(labels, torch.Tensor):
+            labels = labels.detach().cpu().numpy()
+
+        return np.sum(np.argmax(preds, axis=1) == labels) / len(labels)
 
     def make_adversarial_example(
         self,
@@ -356,7 +373,7 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
             adv_x = torch.from_numpy(adv_x).to(self.device)
         return adv_x.cpu().numpy()
 
-    def fit(  # pylint: disable=W0221
+    def old_fit(  # pylint: disable=W0221
         self,
         x: np.ndarray,
         y: np.ndarray,
@@ -386,6 +403,9 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
         """
+
+        from art.utils import check_and_transform_label_format
+        from tqdm import tqdm
 
         # Set model mode
         # self._model.train(mode=training_mode)
@@ -432,12 +452,14 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
                 for i, (sample, label) in enumerate(zip(x_cert, y_cert)):
 
                     eps_bound = np.eye(784) * bound
+                    self.model.forward_mode = 'concrete'
                     concrete_pred = self.model.concrete_forward(sample)
                     concrete_pred = torch.argmax(concrete_pred)
                     sample, eps_bound = self.pre_process(cent=sample, eps=eps_bound)
                     sample = np.expand_dims(sample, axis=0)
 
                     # Perform prediction
+                    self.model.forward_mode = 'abstract'
                     bias, eps = self.model(eps=eps_bound, cent=np.copy(sample))
                     # Form the loss function
                     bias = torch.unsqueeze(bias, dim=0)
@@ -459,7 +481,7 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
                     if all(certification_results):
                         samples_certified += 1
 
-                    if (i - 1) % certification_batch_size == 0 and i > 0:
+                    if (i + 1) % certification_batch_size == 0 and i > 0:
                         break
 
                 certified_loss /= certification_batch_size
@@ -471,6 +493,7 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
                 )
 
                 # Perform prediction
+                self.model.forward_mode = 'concrete'
                 i_batch = self.make_adversarial_example(i_batch, o_batch)
                 self._optimizer.zero_grad()
                 self.model.zero_grad()
@@ -497,3 +520,4 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
                     loss.backward()
 
                 self._optimizer.step()
+
