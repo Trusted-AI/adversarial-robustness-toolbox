@@ -14,7 +14,7 @@ import torch
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
-
+    from art.estimators.certification.deep_z import PytorchDeepZ
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ class AdversarialTrainerCertified(Trainer):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
+        classifier: PytorchDeepZ,
         nb_epochs: Optional[int] = 205,
         batch_size: Optional[int] = 128,
         eps: Union[int, float] = 8,
@@ -55,6 +55,7 @@ class AdversarialTrainerCertified(Trainer):
                                 starting at the original input.
         """
         super().__init__(classifier=classifier)  # type: ignore
+        self._classifier: PytorchDeepZ
         self.batch_size = batch_size
         self.nb_epochs = nb_epochs
 
@@ -139,18 +140,18 @@ class AdversarialTrainerCertified(Trainer):
                 self._classifier._optimizer.zero_grad()
 
                 # get the certified loss
-                # x_cert, y_cert = shuffle(x_cert, y_cert)
+                x_cert, y_cert = shuffle(x_cert, y_cert)
                 for i, (sample, label) in enumerate(zip(x_cert, y_cert)):
                     print(i)
                     eps_bound = np.eye(784) * bound
-                    self._classifier.model.forward_mode = 'concrete'
+                    self._classifier.set_forward_mode('concrete')
                     concrete_pred = self._classifier.model.forward(sample)
                     concrete_pred = torch.argmax(concrete_pred)
                     processed_sample, eps_bound = self._classifier.pre_process(cent=np.copy(sample), eps=eps_bound)
                     processed_sample = np.expand_dims(processed_sample, axis=0)
 
                     # Perform prediction
-                    self._classifier.model.forward_mode = 'abstract'
+                    self._classifier.set_forward_mode('abstract')
                     bias, eps = self._classifier.model.forward(eps=eps_bound, cent=processed_sample)
                     # Form the loss function
                     bias = torch.unsqueeze(bias, dim=0)
@@ -181,7 +182,7 @@ class AdversarialTrainerCertified(Trainer):
                 o_batch = y_preprocessed[ind[m * pgd_batch_size: (m + 1) * pgd_batch_size]]
 
                 # Perform prediction
-                self._classifier.model.forward_mode = 'concrete'
+                self._classifier.set_forward_mode('concrete')
                 self.attack = ProjectedGradientDescent(
                     estimator=self._classifier,
                     eps=0.25,
@@ -190,7 +191,6 @@ class AdversarialTrainerCertified(Trainer):
                     num_random_init=1,
                 )
                 i_batch = self.attack.generate(i_batch, y=o_batch)
-                self._classifier._optimizer.zero_grad()
                 self._classifier.model.zero_grad()
                 model_outputs = self._classifier.model.forward(i_batch)
                 acc = self._classifier.get_accuracy(model_outputs, o_batch)
@@ -213,6 +213,3 @@ class AdversarialTrainerCertified(Trainer):
                     loss.backward()
 
                 self._classifier._optimizer.step()
-
-    def get_classifier(self) -> "CLASSIFIER_LOSS_GRADIENTS_TYPE":
-        return self.trainer.get_classifier()
