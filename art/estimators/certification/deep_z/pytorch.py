@@ -51,6 +51,7 @@ class ConvertedModel(torch.nn.Module):
         super().__init__()
         modules = []
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.forward_mode: str
         self.forward_mode = "abstract"
 
         # pylint: disable=W0613
@@ -107,12 +108,13 @@ class ConvertedModel(torch.nn.Module):
                     self.reshape_op_num = op_num
                     print("Inferred reshape on op num", op_num)
 
-    def forward(self, cent: np.ndarray, eps=None):
+    def forward(self, in_cent: np.ndarray, in_eps: Optional[np.ndarray] = None):
         if self.forward_mode == "concrete":
-            return self.concrete_forward(cent)
+            return self.concrete_forward(in_cent)
         elif self.forward_mode == "abstract":
-            cent, eps = self.abstract_forward(cent, eps)
-            return cent, eps
+            if in_eps is not None:
+                cent, eps = self.abstract_forward(in_cent, in_eps)
+                return cent, eps
         else:
             raise ValueError("forward_mode must be set to abstract or concrete")
 
@@ -260,6 +262,9 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
         out_cent, out_eps = self.model.forward(cent, eps)
         return out_cent, out_eps
 
+    def set_forward_mode(self, mode):
+        self.model.forward_mode = mode
+
     def certify(self, cent: np.ndarray, eps: np.ndarray, prediction: int) -> bool:
         """
         Check if the datapoint has been certifiably classified.
@@ -307,7 +312,7 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
         return loss
 
     @staticmethod
-    def get_accuracy(preds: "torch.Tensor", labels: "torch.Tensor") -> "torch.Tensor":
+    def get_accuracy(preds: Union[np.ndarray, "torch.Tensor"], labels: Union[np.ndarray, "torch.Tensor"]) -> np.ndarray:
         """
         Helper function to print out the accuracy during training
 
@@ -323,7 +328,7 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
             labels = labels.detach().cpu().numpy()
 
         return np.sum(np.argmax(preds, axis=1) == labels) / len(labels)
-
+    '''
     def make_adversarial_example(
         self,
         x: np.ndarray,
@@ -372,7 +377,8 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
             adv_x = np.clip(adv_x, clip_min, clip_max)
             adv_x = torch.from_numpy(adv_x).to(self.device)
         return adv_x.cpu().numpy()
-
+    '''
+    '''
     def old_fit(  # pylint: disable=W0221
         self,
         x: np.ndarray,
@@ -452,14 +458,14 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
                 for i, (sample, label) in enumerate(zip(x_cert, y_cert)):
 
                     eps_bound = np.eye(784) * bound
-                    self.model.forward_mode = 'concrete'
+                    self.model.set_forward_mode('concrete')
                     concrete_pred = self.model.concrete_forward(sample)
                     concrete_pred = torch.argmax(concrete_pred)
                     sample, eps_bound = self.pre_process(cent=sample, eps=eps_bound)
                     sample = np.expand_dims(sample, axis=0)
 
                     # Perform prediction
-                    self.model.forward_mode = 'abstract'
+                    self.model.set_forward_mode('abstract')
                     bias, eps = self.model(eps=eps_bound, cent=np.copy(sample))
                     # Form the loss function
                     bias = torch.unsqueeze(bias, dim=0)
@@ -493,7 +499,7 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
                 )
 
                 # Perform prediction
-                self.model.forward_mode = 'concrete'
+                self.model.set_forward_mode('concrete')
                 i_batch = self.make_adversarial_example(i_batch, o_batch)
                 self._optimizer.zero_grad()
                 self.model.zero_grad()
@@ -521,3 +527,4 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
 
                 self._optimizer.step()
 
+    '''
