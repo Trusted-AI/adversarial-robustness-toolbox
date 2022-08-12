@@ -21,7 +21,7 @@ This module implements DeepZ proposed in Fast and Effective Robustness Certifica
 | Paper link: https://papers.nips.cc/paper/2018/file/f2f446980d8e971ef3da97af089481c3-Paper.pdf
 """
 
-from typing import List, Optional, Tuple, Union, Any, TYPE_CHECKING
+from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
 import warnings
 import numpy as np
@@ -104,25 +104,23 @@ class ConvertedModel(torch.nn.Module):
                     print("Inferred reshape on op num", op_num)
 
     def forward(
-        self, in_cent: np.ndarray, in_eps: Optional[np.ndarray] = None
+        self, cent: np.ndarray, eps: Optional[np.ndarray] = None
     ) -> Union["torch.Tensor", Tuple["torch.Tensor", "torch.Tensor"]]:
         """
         Performs the neural network forward pass, either using abstract operations or concrete ones
         depending on the value of self.forward_mode
 
-        :param in_cent: input data, either regular data if running in concrete mode, or the zonotope bias term.
-        :param in_eps: zonotope error terms if running in abstract mode
+        :param cent: input data, either regular data if running in concrete mode, or the zonotope bias term.
+        :param eps: zonotope error terms if running in abstract mode
 
         :return: model predictions, with zonotope error terms if running in abstract mode
         """
         if self.forward_mode == "concrete":
-            return self.concrete_forward(in_cent)
-        elif self.forward_mode == "abstract":
-            if in_eps is not None:
-                cent, eps = self.abstract_forward(in_cent, in_eps)
-                return cent, eps
-        else:
-            raise ValueError("forward_mode must be set to abstract or concrete")
+            return self.concrete_forward(cent)
+        if self.forward_mode == "abstract" and eps is not None:
+            out_cent, out_eps = self.abstract_forward(cent, eps)
+            return out_cent, out_eps
+        raise ValueError("forward_mode must be set to abstract or concrete")
 
     def abstract_forward(self, cent: np.ndarray, eps: np.ndarray) -> Tuple["torch.Tensor", "torch.Tensor"]:
         """
@@ -272,7 +270,7 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
 
         :param mode: either concrete or abstract signifying how to run the forward pass
         """
-        assert mode in ["concrete", "absract"]
+        assert mode in ["concrete", "abstract"]
         self.model.forward_mode = mode
 
     def certify(self, cent: np.ndarray, eps: np.ndarray, prediction: int) -> bool:
@@ -304,6 +302,30 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
                 certification_results.append(cert_via_sub)
 
         return all(certification_results)
+
+    def concrete_loss(self, output, target):
+        """
+        Access function to get the classifier loss
+
+        :param output:
+        :param target:
+
+        :return:
+        """
+        return self._loss(output, target)
+
+    def apply_preprocessing(self, x, y, fit):
+        """
+        Access function to get preprocessing
+
+        :param x:
+        :param y:
+        :param fit:
+
+        :return:
+        """
+        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=fit)
+        return x_preprocessed, y_preprocessed
 
     @staticmethod
     def max_logit_loss(output, target):
@@ -338,204 +360,3 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
             labels = labels.detach().cpu().numpy()
 
         return np.sum(np.argmax(preds, axis=1) == labels) / len(labels)
-
-    """
-    def make_adversarial_example(
-        self,
-        x: np.ndarray,
-        y: "torch.Tensor",
-        eps: float = 0.25,
-        random_start: bool = True,
-        num_steps: int = 20,
-        step_size: float = 0.05,
-    ) -> np.ndarray:
-        clip_max = x + eps
-        clip_min = x - eps
-
-        if random_start:
-            rand_start = np.random.uniform(size=x.shape) * 2 * eps
-            rand_start = rand_start - eps
-            x = x + rand_start
-            x = np.clip(x, 0.0, 1.0)
-            x = np.clip(x, clip_min, clip_max)
-
-        adv_x = torch.from_numpy(x.astype('float32')).to(self.device)
-        for _ in range(num_steps):
-            adv_x.requires_grad = True
-            # Forward pass the data through the model
-            output = self.model.concrete_forward(adv_x)
-
-            # Calculate the loss
-            loss = self._loss(output, y)
-
-            # Zero all existing gradients
-            self.model.zero_grad()
-
-            # Calculate gradients of model in backward pass
-            loss.backward()
-
-            # Collect datagrad
-            data_grad = adv_x.grad.data
-
-            # Collect the element-wise sign of the data gradient
-            sign_data_grad = data_grad.sign()
-
-            # Create the perturbed image by adjusting each pixel of the input image
-            adv_x = adv_x + step_size * sign_data_grad
-            # Adding clipping to maintain [0,1] range
-            adv_x = torch.clamp(adv_x, 0.0, 1.0)
-            adv_x = adv_x.cpu().detach().numpy()
-            adv_x = np.clip(adv_x, clip_min, clip_max)
-            adv_x = torch.from_numpy(adv_x).to(self.device)
-        return adv_x.cpu().numpy()
-    """
-    '''
-    def old_fit(  # pylint: disable=W0221
-        self,
-        x: np.ndarray,
-        y: np.ndarray,
-        batch_size: int = 128,
-        nb_epochs: int = 10,
-        training_mode: bool = True,
-        scheduler: Optional[Any] = None,
-        bound: float = 0.25,
-        certification_batch_size: int = 10,
-        loss_weighting: float = 0.1,
-        use_schedule: bool = True,
-        **kwargs,
-    ) -> None:
-        """
-        Fit the classifier on the training set `(x, y)`.
-
-        :param x: Training data.
-        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or index labels of
-                  shape (nb_samples,).
-        :param pgd_batch_size: Size of batches to use for PGD training
-        :param certification_batch_size: Size of batches to use for certified training. NB, this will run the data
-                                         sequentially accumulating gradients over the batch size.
-        :param loss_weighting:
-        :param nb_epochs: Number of epochs to use for training.
-        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
-        :param scheduler: Learning rate scheduler to run at the start of every epoch.
-        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
-               and providing it takes no effect.
-        """
-
-        from art.utils import check_and_transform_label_format
-        from tqdm import tqdm
-
-        # Set model mode
-        # self._model.train(mode=training_mode)
-        pgd_batch_size = batch_size
-
-        if self._optimizer is None:  # pragma: no cover
-            raise ValueError("An optimizer is needed to train the model, but none for provided.")
-
-        y = check_and_transform_label_format(y, nb_classes=self.nb_classes)
-
-        # Apply preprocessing
-        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
-
-        # Check label shape
-        y_preprocessed = self.reduce_labels(y_preprocessed)
-
-        num_batch = int(np.ceil(len(x_preprocessed) / float(pgd_batch_size)))
-        ind = np.arange(len(x_preprocessed))
-        from sklearn.utils import shuffle
-
-        x_cert = np.copy(x_preprocessed)
-        y_cert = np.copy(y_preprocessed)
-
-        # Start training
-        if use_schedule:
-            step_per_epoch = bound / nb_epochs
-            bound = 0.0
-
-        for _ in tqdm(range(nb_epochs)):
-            if use_schedule:
-                bound += step_per_epoch
-            # Shuffle the examples
-            random.shuffle(ind)
-
-            # Train for one epoch
-            for m in range(num_batch):
-                certified_loss = 0.0
-                samples_certified = 0
-                # Zero the parameter gradients
-                self._optimizer.zero_grad()
-
-                # get the certified loss
-                x_cert, y_cert = shuffle(np.array(x_cert), np.array(y_cert))
-                for i, (sample, label) in enumerate(zip(x_cert, y_cert)):
-
-                    eps_bound = np.eye(784) * bound
-                    self.model.set_forward_mode('concrete')
-                    concrete_pred = self.model.concrete_forward(sample)
-                    concrete_pred = torch.argmax(concrete_pred)
-                    sample, eps_bound = self.pre_process(cent=sample, eps=eps_bound)
-                    sample = np.expand_dims(sample, axis=0)
-
-                    # Perform prediction
-                    self.model.set_forward_mode('abstract')
-                    bias, eps = self.model(eps=eps_bound, cent=np.copy(sample))
-                    # Form the loss function
-                    bias = torch.unsqueeze(bias, dim=0)
-                    certified_loss += self.max_logit_loss(
-                        output=torch.cat((bias, eps)), target=np.expand_dims(label, axis=0)
-                    )
-
-                    certification_results = []
-                    bias = torch.squeeze(bias).detach().cpu().numpy()
-                    eps = eps.detach().cpu().numpy()
-
-                    for k in range(self.nb_classes):
-                        if k != concrete_pred:
-                            cert_via_sub = self.certify_via_subtraction(
-                                predicted_class=concrete_pred, class_to_consider=k, cent=bias, eps=eps
-                            )
-                            certification_results.append(cert_via_sub)
-
-                    if all(certification_results):
-                        samples_certified += 1
-
-                    if (i + 1) % certification_batch_size == 0 and i > 0:
-                        break
-
-                certified_loss /= certification_batch_size
-
-                # Concrete PGD loss
-                i_batch = np.copy(x_preprocessed[ind[m * pgd_batch_size: (m + 1) * pgd_batch_size]]).astype("float32")
-                o_batch = torch.from_numpy(y_preprocessed[ind[m * pgd_batch_size: (m + 1) * pgd_batch_size]]).to(
-                    self._device
-                )
-
-                # Perform prediction
-                self.model.set_forward_mode('concrete')
-                i_batch = self.make_adversarial_example(i_batch, o_batch)
-                self._optimizer.zero_grad()
-                self.model.zero_grad()
-                model_outputs = self.model.concrete_forward(i_batch)
-                acc = self.get_accuracy(model_outputs, o_batch)
-
-                # Form the loss function
-                pgd_loss = self._loss(model_outputs, o_batch)
-                print("Batch {}/{} Loss is {} Cert Loss is {}".format(m, num_batch, pgd_loss, certified_loss))
-                print(
-                    "Batch {}/{} Acc is {} Cert Acc is {}".format(
-                        m, num_batch, acc, samples_certified / certification_batch_size
-                    )
-                )
-                loss = certified_loss * loss_weighting + pgd_loss * (1 - loss_weighting)
-                # Do training
-                if self._use_amp:  # pragma: no cover
-                    from apex import amp  # pylint: disable=E0611
-
-                    with amp.scale_loss(loss, self._optimizer) as scaled_loss:
-                        scaled_loss.backward()
-
-                else:
-                    loss.backward()
-
-                self._optimizer.step()
-
-    '''
