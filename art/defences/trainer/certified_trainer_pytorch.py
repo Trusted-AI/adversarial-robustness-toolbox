@@ -1,19 +1,43 @@
+# MIT License
+#
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2022
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+# documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+# persons to whom the Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+# Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+# WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+"""
+This module implements certified adversarial training following ______.
+
+| Paper link:
+
+"""
 import logging
 from typing import Optional, Union, Any, TYPE_CHECKING
 import random
 
 import numpy as np
+import torch
+
 from tqdm import tqdm
 
 from art.defences.trainer.trainer import Trainer
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
 from art.utils import check_and_transform_label_format
+from art.estimators.certification.deep_z import PytorchDeepZ
 
-import torch
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
-    from art.estimators.certification.deep_z import PytorchDeepZ
 
 logger = logging.getLogger(__name__)
 
@@ -68,18 +92,18 @@ class AdversarialTrainerCertified(Trainer):
         )
 
     def fit(  # pylint: disable=W0221
-            self,
-            x: np.ndarray,
-            y: np.ndarray,
-            batch_size: int = 128,
-            nb_epochs: int = 10,
-            training_mode: bool = True,
-            scheduler: Optional[Any] = None,
-            bound: float = 0.25,
-            certification_batch_size: int = 10,
-            loss_weighting: float = 0.1,
-            use_schedule: bool = True,
-            **kwargs,
+        self,
+        x: np.ndarray,
+        y: np.ndarray,
+        batch_size: int = 128,
+        nb_epochs: int = 10,
+        training_mode: bool = True,
+        scheduler: Optional[Any] = None,
+        bound: float = 0.25,
+        certification_batch_size: int = 10,
+        loss_weighting: float = 0.1,
+        use_schedule: bool = True,
+        **kwargs,
     ) -> None:
         """
         Fit the classifier on the training set `(x, y)`.
@@ -99,16 +123,16 @@ class AdversarialTrainerCertified(Trainer):
         """
 
         # Set model mode
-        # self._model.train(mode=training_mode)
+        self._classifier._model.train(mode=training_mode)  # pylint: disable=W0212
         pgd_batch_size = batch_size
 
-        if self._classifier._optimizer is None:  # pragma: no cover
-            raise ValueError("An optimizer is needed to train the model, but none for provided.")
+        if self._classifier._optimizer is None:  # pragma: no cover # pylint: disable=W0212
+            raise ValueError("An optimizer is needed to train the model, but none is provided.")
 
         y = check_and_transform_label_format(y, nb_classes=self._classifier.nb_classes)
 
         # Apply preprocessing
-        x_preprocessed, y_preprocessed = self._classifier._apply_preprocessing(x, y, fit=True)
+        x_preprocessed, y_preprocessed = self._classifier.apply_preprocessing(x, y, fit=True)
 
         # Check label shape
         y_preprocessed = self._classifier.reduce_labels(y_preprocessed)
@@ -136,21 +160,20 @@ class AdversarialTrainerCertified(Trainer):
                 certified_loss = 0.0
                 samples_certified = 0
                 # Zero the parameter gradients
-                self._classifier._optimizer.zero_grad()
+                self._classifier._optimizer.zero_grad()  # pylint: disable=W0212
 
                 # get the certified loss
                 x_cert, y_cert = shuffle(x_cert, y_cert)
                 for i, (sample, label) in enumerate(zip(x_cert, y_cert)):
-                    print(i)
                     eps_bound = np.eye(784) * bound
-                    self._classifier.set_forward_mode('concrete')
+                    self._classifier.set_forward_mode("concrete")
                     concrete_pred = self._classifier.model.forward(sample)
                     concrete_pred = torch.argmax(concrete_pred)
                     processed_sample, eps_bound = self._classifier.pre_process(cent=np.copy(sample), eps=eps_bound)
                     processed_sample = np.expand_dims(processed_sample, axis=0)
 
                     # Perform prediction
-                    self._classifier.set_forward_mode('abstract')
+                    self._classifier.set_forward_mode("abstract")
                     bias, eps = self._classifier.model.forward(eps=eps_bound, cent=processed_sample)
                     # Form the loss function
                     bias = torch.unsqueeze(bias, dim=0)
@@ -177,11 +200,11 @@ class AdversarialTrainerCertified(Trainer):
 
                 certified_loss /= certification_batch_size
                 # Concrete PGD loss
-                i_batch = np.copy(x_preprocessed[ind[m * pgd_batch_size: (m + 1) * pgd_batch_size]]).astype("float32")
-                o_batch = y_preprocessed[ind[m * pgd_batch_size: (m + 1) * pgd_batch_size]]
+                i_batch = np.copy(x_preprocessed[ind[m * pgd_batch_size : (m + 1) * pgd_batch_size]]).astype("float32")
+                o_batch = y_preprocessed[ind[m * pgd_batch_size : (m + 1) * pgd_batch_size]]
 
                 # Perform prediction
-                self._classifier.set_forward_mode('concrete')
+                self._classifier.set_forward_mode("concrete")
                 self.attack = ProjectedGradientDescent(
                     estimator=self._classifier,
                     eps=0.25,
@@ -195,20 +218,25 @@ class AdversarialTrainerCertified(Trainer):
                 acc = self._classifier.get_accuracy(model_outputs, o_batch)
 
                 # Form the loss function
-                pgd_loss = self._classifier._loss(model_outputs, torch.from_numpy(o_batch).to(self._classifier.device))
-                print('')
-                print("Epoch {}, Batch {}/{}:".format(epoch, m, num_batch))
-                print("Loss is {} Cert Loss is {}".format(pgd_loss, certified_loss))
-                print("Acc is {} Cert Acc is {}".format(acc, samples_certified / certification_batch_size))
+                pgd_loss = self._classifier.concrete_loss(
+                    model_outputs, torch.from_numpy(o_batch).to(self._classifier.device)
+                )  # pylint: disable=W0212
+                print("")
+                print(f"Epoch {epoch}, Batch {m}/{num_batch}:")
+                print(f"Loss is {pgd_loss} Cert Loss is {certified_loss}")
+                print(f"Acc is {acc} Cert Acc is {samples_certified / certification_batch_size}")
                 loss = certified_loss * loss_weighting + pgd_loss * (1 - loss_weighting)
                 # Do training
-                if self._classifier._use_amp:  # pragma: no cover
+                if self._classifier._use_amp:  # pragma: no cover # pylint: disable=W0212
                     from apex import amp  # pylint: disable=E0611
 
-                    with amp.scale_loss(loss, self._classifier._optimizer) as scaled_loss:
+                    with amp.scale_loss(loss, self._classifier._optimizer) as scaled_loss:  # pylint: disable=W0212
                         scaled_loss.backward()
 
                 else:
                     loss.backward()
 
-                self._classifier._optimizer.step()
+                self._classifier._optimizer.step()  # pylint: disable=W0212
+
+            if scheduler is not None:
+                scheduler.step()

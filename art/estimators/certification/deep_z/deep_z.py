@@ -44,7 +44,7 @@ class ZonoDenseLayer(torch.nn.Module):
 
     def forward(self, x: "torch.Tensor") -> "torch.Tensor":
         """
-        Forward pass through the dense layer.
+        Abstract forward pass through the dense layer.
 
         :param x: input zonotope to the dense layer.
         :return: zonotope after being pushed through the dense layer.
@@ -54,6 +54,12 @@ class ZonoDenseLayer(torch.nn.Module):
         return x
 
     def concrete_forward(self, x: "torch.Tensor") -> "torch.Tensor":
+        """
+        Concrete forward pass through the dense layer.
+
+        :param x: concrete input to the dense layer.
+        :return: concrete dense layer outputs.
+        """
         x = torch.matmul(x, torch.transpose(self.weight, 0, 1)) + self.bias
         return x
 
@@ -174,7 +180,7 @@ class ZonoBounds:
 
         return cent, eps
 
-    def pre_process(self, cent: np.ndarray, eps: np.ndarray):
+    def pre_process(self, cent: np.ndarray, eps: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
         Simple helper function to reshape and adjust the zonotope values before pushing through the neural network.
         This is written with image data from MNIST and CIFAR10 in mind using L-infty bounds.
@@ -233,7 +239,7 @@ class ZonoConv(torch.nn.Module):
 
     def forward(self, x: "torch.Tensor") -> "torch.Tensor":
         """
-        Forward pass through the convolutional layer
+        Abstract forward pass through the convolutional layer
 
         :param x: input zonotope to the convolutional layer.
         :return x: zonotope after being pushed through the convolutional layer.
@@ -243,6 +249,12 @@ class ZonoConv(torch.nn.Module):
         return x
 
     def concrete_forward(self, x: "torch.Tensor") -> "torch.Tensor":
+        """
+        Concrete forward pass through the convolutional layer
+
+        :param x: concrete input to the convolutional layer.
+        :return: concrete convolutional layer outputs.
+        """
         x = self.conv(x)
         bias = torch.unsqueeze(self.bias, dim=-1)
         bias = torch.unsqueeze(bias, dim=-1)
@@ -289,6 +301,12 @@ class ZonoReLU(torch.nn.Module, ZonoBounds):
         return self.zonotope_relu(x)
 
     def concrete_forward(self, x: "torch.Tensor") -> "torch.Tensor":
+        """
+        Concrete pass through the ReLU function
+
+        :param x: concrete input to the activation function.
+        :return: concrete outputs from the ReLU.
+        """
         return self.concrete_activation(x)
 
     def zonotope_relu(self, x: "torch.Tensor") -> "torch.Tensor":
