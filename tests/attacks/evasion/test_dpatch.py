@@ -72,9 +72,6 @@ def test_generate(art_warning, fix_get_mnist_subset, fix_get_rcnn):
         with pytest.raises(ValueError):
             _ = attack.generate(x=np.repeat(x_test_mnist, axis=3, repeats=2))
 
-        with pytest.raises(ValueError):
-            _ = attack.generate(x=x_test_mnist, y=y_test_mnist)
-
     except ARTTestException as e:
         art_warning(e)
 
