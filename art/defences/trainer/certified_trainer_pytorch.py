@@ -1,12 +1,11 @@
 import logging
 from typing import Optional, Union, Any, TYPE_CHECKING
+import random
 
 import numpy as np
-import random
 from tqdm import tqdm
 
 from art.defences.trainer.trainer import Trainer
-from art.defences.trainer.adversarial_trainer import AdversarialTrainer
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
 from art.utils import check_and_transform_label_format
 

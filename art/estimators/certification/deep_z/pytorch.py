@@ -22,12 +22,10 @@ This module implements DeepZ proposed in Fast and Effective Robustness Certifica
 """
 
 from typing import List, Optional, Tuple, Union, Any, TYPE_CHECKING
-import random
 
 import warnings
 import numpy as np
 import torch
-from torch import nn
 
 from art.estimators.certification.deep_z.deep_z import ZonoConv, ZonoDenseLayer, ZonoReLU, ZonoBounds
 from art.estimators.classification.pytorch import PyTorchClassifier
@@ -44,10 +42,7 @@ class ConvertedModel(torch.nn.Module):
     which uses abstract operations
     """
 
-    def __init__(self,
-                 model: "torch.nn.Module",
-                 channels_first: bool,
-                 input_shape: Tuple[int, ...]):
+    def __init__(self, model: "torch.nn.Module", channels_first: bool, input_shape: Tuple[int, ...]):
         super().__init__()
         modules = []
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -108,7 +103,18 @@ class ConvertedModel(torch.nn.Module):
                     self.reshape_op_num = op_num
                     print("Inferred reshape on op num", op_num)
 
-    def forward(self, in_cent: np.ndarray, in_eps: Optional[np.ndarray] = None):
+    def forward(
+        self, in_cent: np.ndarray, in_eps: Optional[np.ndarray] = None
+    ) -> Union["torch.Tensor", Tuple["torch.Tensor", "torch.Tensor"]]:
+        """
+        Performs the neural network forward pass, either using abstract operations or concrete ones
+        depending on the value of self.forward_mode
+
+        :param in_cent: input data, either regular data if running in concrete mode, or the zonotope bias term.
+        :param in_eps: zonotope error terms if running in abstract mode
+
+        :return: model predictions, with zonotope error terms if running in abstract mode
+        """
         if self.forward_mode == "concrete":
             return self.concrete_forward(in_cent)
         elif self.forward_mode == "abstract":
@@ -217,18 +223,16 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
         converted_model = ConvertedModel(model, channels_first, input_shape)
 
         if TYPE_CHECKING:
-            import torch.optim as optim
-            converted_optimizer: Union[optim.Adam, optim.SGD, None]
+            converted_optimizer: Union[torch.optim.Adam, torch.optim.SGD, None]
 
         if optimizer is not None:
-            import torch.optim as optim
             opt_state_dict = optimizer.state_dict()
             if isinstance(optimizer, torch.optim.Adam):
                 print("Converting Adam Optimiser")
-                converted_optimizer = optim.Adam(converted_model.parameters(), lr=1e-4)
+                converted_optimizer = torch.optim.Adam(converted_model.parameters(), lr=1e-4)
             elif isinstance(optimizer, torch.optim.SGD):
                 print("Converting SGD Optimiser")
-                converted_optimizer = optim.SGD(converted_model.parameters(), lr=1e-4)
+                converted_optimizer = torch.optim.SGD(converted_model.parameters(), lr=1e-4)
             else:
                 raise ValueError("Optimiser not supported for conversion")
 
@@ -262,7 +266,13 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
         out_cent, out_eps = self.model.forward(cent, eps)
         return out_cent, out_eps
 
-    def set_forward_mode(self, mode):
+    def set_forward_mode(self, mode: str) -> None:
+        """
+        Helper function to set the forward mode of the model
+
+        :param mode: either concrete or abstract signifying how to run the forward pass
+        """
+        assert mode in ["concrete", "absract"]
         self.model.forward_mode = mode
 
     def certify(self, cent: np.ndarray, eps: np.ndarray, prediction: int) -> bool:
@@ -328,7 +338,8 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
             labels = labels.detach().cpu().numpy()
 
         return np.sum(np.argmax(preds, axis=1) == labels) / len(labels)
-    '''
+
+    """
     def make_adversarial_example(
         self,
         x: np.ndarray,
@@ -377,7 +388,7 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
             adv_x = np.clip(adv_x, clip_min, clip_max)
             adv_x = torch.from_numpy(adv_x).to(self.device)
         return adv_x.cpu().numpy()
-    '''
+    """
     '''
     def old_fit(  # pylint: disable=W0221
         self,
