@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING, Optional
 import numpy as np
 import scipy
 
-from art.utils import check_and_transform_label_format, is_probability
+from art.utils import check_and_transform_label_format, is_probability_array
 
 if TYPE_CHECKING:
     from art.estimators.classification.classifier import Classifier
@@ -77,7 +77,7 @@ def PDTP(  # pylint: disable=C0103
         iter_results = []
         # get probabilities from original model
         pred = target_estimator.predict(x)
-        if not is_probability(pred):
+        if not is_probability_array(pred):
             try:
                 pred = scipy.special.softmax(pred, axis=1)
             except Exception as exc:  # pragma: no cover
@@ -85,6 +85,7 @@ def PDTP(  # pylint: disable=C0103
         # divide into 100 bins and return center of bin
         bins = np.array(np.arange(0.0, 1.01, 0.01).round(decimals=2))
         pred_bin_indexes = np.digitize(pred, bins)
+        pred_bin_indexes[pred_bin_indexes==101] = 100
         pred_bin = bins[pred_bin_indexes] - 0.005
 
         if not indexes:
@@ -102,10 +103,11 @@ def PDTP(  # pylint: disable=C0103
             extra_estimator.fit(alt_x, alt_y)
             # get probabilities from new model
             alt_pred = extra_estimator.predict(x)
-            if not is_probability(alt_pred):
+            if not is_probability_array(alt_pred):
                 alt_pred = scipy.special.softmax(alt_pred, axis=1)
             # divide into 100 bins and return center of bin
             alt_pred_bin_indexes = np.digitize(alt_pred, bins)
+            alt_pred_bin_indexes[alt_pred_bin_indexes == 101] = 100
             alt_pred_bin = bins[alt_pred_bin_indexes] - 0.005
             ratio_1 = pred_bin / alt_pred_bin
             ratio_2 = alt_pred_bin / pred_bin
