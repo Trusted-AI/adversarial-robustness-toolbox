@@ -1562,6 +1562,24 @@ def is_probability(vector: np.ndarray) -> bool:
     return is_sum_1 and is_smaller_1 and is_larger_0
 
 
+def is_probability_array(array: np.ndarray) -> bool:
+    """
+    Check if a multi-dimensional array is an array of probabilities.
+
+    :param vector: A numpy array.
+    :return: True if it is an array of probabilities.
+    """
+    if len(array.shape) == 1:
+        return is_probability(array)
+    sum_array = np.sum(array, axis=1)
+    ones = np.ones_like(sum_array)
+    is_sum_1 = np.allclose(sum_array, ones, rtol=1e-03)
+    is_smaller_1 = np.amax(array) <= 1.0
+    is_larger_0 = np.amin(array) >= 0.0
+
+    return is_sum_1 and is_smaller_1 and is_larger_0
+
+
 def pad_sequence_input(x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """
     Apply padding to a batch of 1-dimensional samples such that it has shape of (batch_size, max_length).
