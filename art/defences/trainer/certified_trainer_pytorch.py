@@ -42,15 +42,22 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+class DefaultLinearScheduler:
+    def __init__(self, step_per_epoch, bound=0.0):
+        self.step_per_epoch = step_per_epoch
+        self.bound = bound
+
+    def step(self):
+        self.bound += self.step_per_epoch
+        return self.bound
+
+
 class AdversarialTrainerCertified(Trainer):
     """
-    Class performing adversarial training following Madry's Protocol.
+    Class performing adversarial training...
 
-    | Paper link: https://arxiv.org/abs/1706.06083
+    |
 
-    | Please keep in mind the limitations of defences. While adversarial training is widely regarded as a promising,
-        principled approach to making classifiers more robust (see https://arxiv.org/abs/1802.00420), very careful
-        evaluations are required to assess its effectiveness case by case (see https://arxiv.org/abs/1902.06705).
     """
 
     def __init__(
@@ -64,7 +71,7 @@ class AdversarialTrainerCertified(Trainer):
         num_random_init: int = 1,
     ) -> None:
         """
-        Create an :class:`.AdversarialTrainerMadryPGD` instance.
+        Create an :class:`.AdversarialTrainerCertified` instance.
 
         Default values are for CIFAR-10 in pixel range 0-255.
 
@@ -95,6 +102,7 @@ class AdversarialTrainerCertified(Trainer):
         self,
         x: np.ndarray,
         y: np.ndarray,
+        certification_loss: str = "interval_loss_cce",
         batch_size: int = 128,
         nb_epochs: int = 10,
         training_mode: bool = True,
@@ -102,7 +110,8 @@ class AdversarialTrainerCertified(Trainer):
         bound: float = 0.25,
         certification_batch_size: int = 10,
         loss_weighting: float = 0.1,
-        use_schedule: bool = True,
+        use_certification_schedule: bool = True,
+        certification_schedule: Optional[Any] = None,
         **kwargs,
     ) -> None:
         """
@@ -111,13 +120,20 @@ class AdversarialTrainerCertified(Trainer):
         :param x: Training data.
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or index labels of
                   shape (nb_samples,).
-        :param pgd_batch_size: Size of batches to use for PGD training
+        :param initial_zonotope_abstraction_bounds:
+        :param certification_loss:
+        :param batch_size: Size of batches to use for PGD training
         :param certification_batch_size: Size of batches to use for certified training. NB, this will run the data
                                          sequentially accumulating gradients over the batch size.
         :param loss_weighting:
         :param nb_epochs: Number of epochs to use for training.
         :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
         :param scheduler: Learning rate scheduler to run at the start of every epoch.
+        :param certification_schedule: Schedule for gradually increasing the certification radius. Empirical studies have shown
+                                       that this is often required to achieve best performance. Either True/False to use
+                                       the default linear scheduler, or a class with a .step() method that returns the updated
+                                       bound.
+
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
         """
@@ -145,19 +161,21 @@ class AdversarialTrainerCertified(Trainer):
         y_cert = np.copy(y_preprocessed)
 
         # Start training
-        if use_schedule:
-            step_per_epoch = bound / nb_epochs
-            bound = 0.0
+        if use_certification_schedule:
+            print(certification_schedule)
+            if certification_schedule is None:
+                certification_schedule_function = DefaultLinearScheduler(step_per_epoch=bound / nb_epochs,
+                                                                         bound=0.0)
 
         for epoch in tqdm(range(nb_epochs)):
-            if use_schedule:
-                bound += step_per_epoch
+            if use_certification_schedule:
+                bound = certification_schedule_function.step()
             # Shuffle the examples
             random.shuffle(ind)
 
             # Train for one epoch
             for m in range(num_batch):
-                certified_loss = 0.0
+                certified_loss = torch.tensor(0.0).to(self._classifier.device)
                 samples_certified = 0
                 # Zero the parameter gradients
                 self._classifier._optimizer.zero_grad()  # pylint: disable=W0212
@@ -177,10 +195,16 @@ class AdversarialTrainerCertified(Trainer):
                     bias, eps = self._classifier.model.forward(eps=eps_bound, cent=processed_sample)
                     # Form the loss function
                     bias = torch.unsqueeze(bias, dim=0)
-                    certified_loss += self._classifier.max_logit_loss(
-                        output=torch.cat((bias, eps)), target=np.expand_dims(label, axis=0)
-                    )
 
+                    if certification_loss == "max_logit_loss":
+                        certified_loss += self._classifier.max_logit_loss(
+                            output=torch.cat((bias, eps)), target=np.expand_dims(label, axis=0)
+                        )
+                    elif certification_loss == "interval_loss_cce":
+                        certified_loss += self._classifier.interval_loss_cce(
+                            prediction=torch.cat((bias, eps)),
+                            target=torch.from_numpy(np.expand_dims(label, axis=0)).to(self._classifier.device)
+                        )
                     certification_results = []
                     bias = torch.squeeze(bias).detach().cpu().numpy()
                     eps = eps.detach().cpu().numpy()

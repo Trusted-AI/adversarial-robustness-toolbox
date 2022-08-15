@@ -21,7 +21,7 @@ This module implements DeepZ proposed in Fast and Effective Robustness Certifica
 | Paper link: https://papers.nips.cc/paper/2018/file/f2f446980d8e971ef3da97af089481c3-Paper.pdf
 """
 
-from typing import List, Optional, Tuple, Union, TYPE_CHECKING
+from typing import List, Optional, Tuple, Union, Any, TYPE_CHECKING
 
 import warnings
 import numpy as np
@@ -135,13 +135,14 @@ class ConvertedModel(torch.nn.Module):
 
         x = np.concatenate([cent, eps])
         x = torch.from_numpy(x.astype("float32")).to(device)
-
+        # print(x)
+        # print(torch.cuda.is_available())
+        # print('device is {}'.format(x.get_device()))
         for op_num, op in enumerate(self.ops):
             # as reshapes are not modules we infer when the reshape from convolutional to dense occurs
             if self.reshape_op_num == op_num:
                 x = x.reshape((x.shape[0], -1))
             x = op(x)
-
         return x[0, :], x[1:, :]
 
     def concrete_forward(self, in_x: Union[np.ndarray, "torch.Tensor"]) -> "torch.Tensor":
@@ -270,7 +271,7 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
 
         :param mode: either concrete or abstract signifying how to run the forward pass
         """
-        assert mode in ["concrete", "abstract"]
+        assert mode in {"concrete", "abstract"}
         self.model.forward_mode = mode
 
     def certify(self, cent: np.ndarray, eps: np.ndarray, prediction: int) -> bool:
@@ -307,41 +308,59 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
         """
         Access function to get the classifier loss
 
-        :param output:
-        :param target:
+        :param output: model predictions
+        :param target:ground truth labels
 
-        :return:
+        :return: loss value
         """
         return self._loss(output, target)
 
-    def apply_preprocessing(self, x, y, fit):
+    def apply_preprocessing(self, x: np.ndarray, y: np.ndarray, fit: bool) -> Tuple[Any, Any]:
         """
         Access function to get preprocessing
 
-        :param x:
-        :param y:
-        :param fit:
+        :param x: unprocessed input data.
+        :param y: unprocessed labels.
+        :param fit: `True` if the function is call before fit/training and `False` if the function is called before a
+                     predict operation.
 
-        :return:
+        :return: Tuple with the processed input data and labels.
         """
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=fit)
         return x_preprocessed, y_preprocessed
 
-    @staticmethod
-    def max_logit_loss(output, target):
+    def max_logit_loss(self, output: "torch.Tensor", target: "torch.Tensor") -> Union["torch.Tensor", None]:
         """
         Computes the loss as the largest logit value amongst the incorrect classes.
         """
         target_logit = output[:, target]
         output = output - target_logit
 
-        ubs = torch.sum(torch.abs(output[1:, :]), axis=0) + output[0, :]
+        ubs = torch.sum(torch.abs(output[1:, :]), dim=0) + output[0, :]
 
         loss = None
-        for i in range(10):
+        for i in range(self.nb_classes):
             if i != target and (loss is None or ubs[i] > loss):
                 loss = ubs[i]
         return loss
+
+    def interval_loss_cce(self, prediction: "torch.Tensor", target: "torch.Tensor") -> "torch.Tensor":
+        """
+        Computes the categorical cross entropy loss with the correct class having the lower bound prediction,
+        and the other classes having their upper bound predictions.
+
+        :param prediction: model predictions.
+        :param target: target classes. NB not one hot.
+        :return: scalar loss value
+        """
+        criterion = torch.nn.CrossEntropyLoss()
+        ubs = torch.sum(torch.abs(prediction[1:, :]), dim=0) + prediction[0, :]
+        lbs = torch.sum(-1 * torch.abs(prediction[1:, :]), dim=0) + prediction[0, :]
+
+        # for the prediction corresponding to the target class, take the lower bound predictions
+        ubs[target] = lbs[target]
+        ubs = torch.unsqueeze(ubs, dim=0)
+        return criterion(ubs, target)
 
     @staticmethod
     def get_accuracy(preds: Union[np.ndarray, "torch.Tensor"], labels: Union[np.ndarray, "torch.Tensor"]) -> np.ndarray:
