@@ -85,7 +85,7 @@ def PDTP(  # pylint: disable=C0103
         # divide into 100 bins and return center of bin
         bins = np.array(np.arange(0.0, 1.01, 0.01).round(decimals=2))
         pred_bin_indexes = np.digitize(pred, bins)
-        pred_bin_indexes[pred_bin_indexes==101] = 100
+        pred_bin_indexes[pred_bin_indexes == 101] = 100
         pred_bin = bins[pred_bin_indexes] - 0.005
 
         if not indexes:
