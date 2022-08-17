@@ -103,15 +103,15 @@ class AdversarialTrainerCertified(Trainer):
         x: np.ndarray,
         y: np.ndarray,
         certification_loss: str = "interval_loss_cce",
-        batch_size: int = 128,
+        batch_size: int = 10,
         nb_epochs: int = 10,
         training_mode: bool = True,
         scheduler: Optional[Any] = None,
-        bound: float = 0.25,
-        certification_batch_size: int = 10,
+        bound: float = 0.1,
         loss_weighting: float = 0.1,
         use_certification_schedule: bool = True,
         certification_schedule: Optional[Any] = None,
+        pgd_params: Optional[dict] = None,
         **kwargs,
     ) -> None:
         """
@@ -121,18 +121,18 @@ class AdversarialTrainerCertified(Trainer):
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or index labels of
                   shape (nb_samples,).
         :param initial_zonotope_abstraction_bounds:
-        :param certification_loss:
-        :param batch_size: Size of batches to use for PGD training
-        :param certification_batch_size: Size of batches to use for certified training. NB, this will run the data
-                                         sequentially accumulating gradients over the batch size.
+        :param certification_loss: which certification loss function to use. Currently, by default
+                                   supports "interval_loss_cce" or "max_logit_loss".
+        :param batch_size: Size of batches to use for certified training. NB, this will run the data
+                           sequentially accumulating gradients over the batch size.
         :param loss_weighting:
         :param nb_epochs: Number of epochs to use for training.
         :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
         :param scheduler: Learning rate scheduler to run at the start of every epoch.
-        :param certification_schedule: Schedule for gradually increasing the certification radius. Empirical studies have shown
-                                       that this is often required to achieve best performance. Either True/False to use
-                                       the default linear scheduler, or a class with a .step() method that returns the updated
-                                       bound.
+        :param certification_schedule: Schedule for gradually increasing the certification radius. Empirical studies
+                                       have shown that this is often required to achieve best performance.
+                                       Either True to use the default linear scheduler,
+                                       or a class with a .step() method that returns the updated bound every epoch.
 
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
@@ -140,7 +140,12 @@ class AdversarialTrainerCertified(Trainer):
 
         # Set model mode
         self._classifier._model.train(mode=training_mode)  # pylint: disable=W0212
-        pgd_batch_size = batch_size
+        if pgd_params is None:
+            pgd_params = {"eps": 0.25,
+                          "eps_step": 0.05,
+                          "max_iter": 20,
+                          "batch_size": 128,
+                          "num_random_init": 1}
 
         if self._classifier._optimizer is None:  # pragma: no cover # pylint: disable=W0212
             raise ValueError("An optimizer is needed to train the model, but none is provided.")
@@ -153,7 +158,7 @@ class AdversarialTrainerCertified(Trainer):
         # Check label shape
         y_preprocessed = self._classifier.reduce_labels(y_preprocessed)
 
-        num_batch = int(np.ceil(len(x_preprocessed) / float(pgd_batch_size)))
+        num_batch = int(np.ceil(len(x_preprocessed) / float(pgd_params["batch_size"])))
         ind = np.arange(len(x_preprocessed))
         from sklearn.utils import shuffle
 
@@ -183,7 +188,7 @@ class AdversarialTrainerCertified(Trainer):
                 # get the certified loss
                 x_cert, y_cert = shuffle(x_cert, y_cert)
                 for i, (sample, label) in enumerate(zip(x_cert, y_cert)):
-                    eps_bound = np.eye(784) * bound
+                    eps_bound = np.eye(784) * bound  # TODO Generalise this line
                     self._classifier.set_forward_mode("concrete")
                     concrete_pred = self._classifier.model.forward(sample)
                     concrete_pred = torch.argmax(concrete_pred)
@@ -219,22 +224,21 @@ class AdversarialTrainerCertified(Trainer):
                     if all(certification_results):
                         samples_certified += 1
 
-                    if (i + 1) % certification_batch_size == 0 and i > 0:
+                    if (i + 1) % batch_size == 0 and i > 0:
                         break
 
-                certified_loss /= certification_batch_size
+                certified_loss /= batch_size
                 # Concrete PGD loss
-                i_batch = np.copy(x_preprocessed[ind[m * pgd_batch_size : (m + 1) * pgd_batch_size]]).astype("float32")
-                o_batch = y_preprocessed[ind[m * pgd_batch_size : (m + 1) * pgd_batch_size]]
+                i_batch = np.copy(x_preprocessed[ind[m * pgd_params["batch_size"] : (m + 1) * pgd_params["batch_size"]]]).astype("float32")
+                o_batch = y_preprocessed[ind[m * pgd_params["batch_size"] : (m + 1) * pgd_params["batch_size"]]]
 
                 # Perform prediction
                 self._classifier.set_forward_mode("concrete")
-                self.attack = ProjectedGradientDescent(
-                    estimator=self._classifier,
-                    eps=0.25,
-                    eps_step=0.05,
-                    max_iter=20,
-                    num_random_init=1,
+                self.attack = ProjectedGradientDescent(estimator=self._classifier,
+                                                       eps=pgd_params["eps"],
+                                                       eps_step=pgd_params["eps_step"],
+                                                       max_iter=pgd_params["max_iter"],
+                                                       num_random_init=pgd_params["num_random_init"],
                 )
                 i_batch = self.attack.generate(i_batch, y=o_batch)
                 self._classifier.model.zero_grad()
@@ -248,7 +252,7 @@ class AdversarialTrainerCertified(Trainer):
                 print("")
                 print(f"Epoch {epoch}, Batch {m}/{num_batch}:")
                 print(f"Loss is {pgd_loss} Cert Loss is {certified_loss}")
-                print(f"Acc is {acc} Cert Acc is {samples_certified / certification_batch_size}")
+                print(f"Acc is {acc} Cert Acc is {samples_certified / batch_size}")
                 loss = certified_loss * loss_weighting + pgd_loss * (1 - loss_weighting)
                 # Do training
                 if self._classifier._use_amp:  # pragma: no cover # pylint: disable=W0212
