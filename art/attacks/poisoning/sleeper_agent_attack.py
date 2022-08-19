@@ -66,6 +66,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         model_retraining_epoch: int = 1,
         class_source: int = 0,
         class_target: int = 1,
+        device: torch.device
     ):
         """
         Initialize a Sleeper Agent poisoning attack.
@@ -113,6 +114,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         self.patch = patch
         self.class_target = class_target
         self.class_source = class_source
+        self.device = device
 
     # pylint: disable=W0221
     def poison(  # type: ignore
@@ -205,7 +207,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
                 best_indices_poison = self.indices_poison
 
         if self.verbose > 0:
-            print("Best B-score:", best_B)
+            logger.info("Best B-score:", best_B)
         if isinstance(self.substitute_classifier, PyTorchClassifier):
             x_train[self.indices_target[best_indices_poison]] = np.transpose(best_x_poisoned, [0, 2, 3, 1])
         elif isinstance(self.substitute_classifier, TensorFlowV2Classifier):
@@ -324,7 +326,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
             from torch.utils.data import TensorDataset, DataLoader
             import torchvision
 
-            device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+            device = self.device
             model = torchvision.models.ResNet(
                 torchvision.models.resnet.BasicBlock, [2, 2, 2, 2], num_classes=num_classes
             )
@@ -363,9 +365,9 @@ class SleeperAgentAttack(GradientMatchingAttack):
                     running_loss += loss.item()
                 if (epoch % 5 == 0) or epoch == (epochs - 1):
                     train_accuracy = 100 * accuracy / total
-                    print("Epoch {} train accuracy: {}".format(epoch, train_accuracy))  # pylint: disable=C0209
+                    logger.info("Epoch {} train accuracy: {}".format(epoch, train_accuracy))  # pylint: disable=C0209
             test_accuracy = self.test_accuracy(model, dataloader_test)
-            print("Final test accuracy: {}".format(test_accuracy))  # pylint: disable=C0209
+            logger.info("Final test accuracy: {}".format(test_accuracy))  # pylint: disable=C0209
         elif isinstance(self.substitute_classifier, TensorFlowV2Classifier):
             import tensorflow as tf
             from tqdm.keras import TqdmCallback
@@ -507,7 +509,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         if isinstance(self.substitute_classifier, PyTorchClassifier):
             import torch
 
-            device = "cuda" if torch.cuda.is_available() else "cpu"
+            device = self.device
             grad_norms = []
             criterion = torch.nn.CrossEntropyLoss()
             model = classifier.model
@@ -516,7 +518,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
             for x, y in zip(x_samples, y_samples):
                 image = torch.tensor(x, dtype=torch.float32).float().to(device)
                 label = torch.tensor(y).to(device)
-                loss = criterion(model(image.unsqueeze(0)), label.unsqueeze(0))
+                loss_pt = criterion(model(image.unsqueeze(0)), label.unsqueeze(0))
                 gradients = list(torch.autograd.grad(loss, differentiable_params, only_inputs=True))
                 grad_norm = torch.tensor(0, dtype=torch.float32).to(device)
                 for grad in gradients:
@@ -532,7 +534,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
                 with tf.GradientTape() as t:  # pylint: disable=C0103
                     t.watch(classifier.model.weights)
                     output = classifier.model(image, training=False)
-                    loss = classifier.model.compiled_loss(label, output)  # type: ignore
+                    loss_tf = classifier.model.compiled_loss(label, output)  # type: ignore
                     gradients = list(t.gradient(loss, classifier.model.weights))
                     gradients = [w for w in gradients if w is not None]
                     grad_norm = tf.constant(0, dtype=tf.float32)
