@@ -66,7 +66,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         model_retraining_epoch: int = 1,
         class_source: int = 0,
         class_target: int = 1,
-        device: torch.device
+        device_name: str = "cuda:0",
     ):
         """
         Initialize a Sleeper Agent poisoning attack.
@@ -114,7 +114,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         self.patch = patch
         self.class_target = class_target
         self.class_source = class_source
-        self.device = device
+        self.device_name = device_name
 
     # pylint: disable=W0221
     def poison(  # type: ignore
@@ -326,7 +326,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
             from torch.utils.data import TensorDataset, DataLoader
             import torchvision
 
-            device = self.device
+            device = torch.device(self.device_name)
             model = torchvision.models.ResNet(
                 torchvision.models.resnet.BasicBlock, [2, 2, 2, 2], num_classes=num_classes
             )
@@ -509,7 +509,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         if isinstance(self.substitute_classifier, PyTorchClassifier):
             import torch
 
-            device = self.device
+            device = torch.device(self.device_name)
             grad_norms = []
             criterion = torch.nn.CrossEntropyLoss()
             model = classifier.model
@@ -519,7 +519,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
                 image = torch.tensor(x, dtype=torch.float32).float().to(device)
                 label = torch.tensor(y).to(device)
                 loss_pt = criterion(model(image.unsqueeze(0)), label.unsqueeze(0))
-                gradients = list(torch.autograd.grad(loss, differentiable_params, only_inputs=True))
+                gradients = list(torch.autograd.grad(loss_pt, differentiable_params, only_inputs=True))
                 grad_norm = torch.tensor(0, dtype=torch.float32).to(device)
                 for grad in gradients:
                     grad_norm += grad.detach().pow(2).sum()
@@ -535,7 +535,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
                     t.watch(classifier.model.weights)
                     output = classifier.model(image, training=False)
                     loss_tf = classifier.model.compiled_loss(label, output)  # type: ignore
-                    gradients = list(t.gradient(loss, classifier.model.weights))
+                    gradients = list(t.gradient(loss_tf, classifier.model.weights))
                     gradients = [w for w in gradients if w is not None]
                     grad_norm = tf.constant(0, dtype=tf.float32)
                     for grad in gradients:
