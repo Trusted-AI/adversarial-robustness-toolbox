@@ -26,7 +26,6 @@ import logging
 from typing import Callable, List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
-import tensorflow as tf
 from tqdm import tqdm
 
 from art.estimators.classification.tensorflow import TensorFlowV2Classifier
@@ -35,6 +34,7 @@ from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
+    import tensorflow as tf
 
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor import Preprocessor
@@ -119,6 +119,8 @@ class TensorFlowV2DeRandomizedSmoothing(DeRandomizedSmoothingMixin, TensorFlowV2
         )
 
     def _predict_classifier(self, x: np.ndarray, batch_size: int, training_mode: bool, **kwargs) -> np.ndarray:
+        import tensorflow as tf  # lgtm [py/repeated-import]
+
         outputs = TensorFlowV2Classifier.predict(
             self, x=x, batch_size=batch_size, training_mode=training_mode, **kwargs
         )
