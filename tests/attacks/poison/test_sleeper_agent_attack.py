@@ -20,9 +20,11 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import numpy as np
 import pytest
+from PIL import Image
 
 from art.attacks.poisoning.sleeper_agent_attack import SleeperAgentAttack
 from art.utils import to_categorical
+from skimage.transform import resize
 
 from tests.utils import ARTTestException
 
@@ -36,6 +38,19 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator):
         (x_train, y_train), (x_test, y_test) = get_default_mnist_subset
         classifier, _ = image_dl_estimator()
         x_train, y_train = x_train[:1000], y_train[:1000]
+
+        mean = np.mean(x_train, axis=(0, 1, 2, 3))
+        std = np.std(x_train, axis=(0, 1, 2, 3))
+        x_train = (x_train - mean) / (std + 1e-7)
+        x_test = (x_test - mean) / (std + 1e-7)
+
+        min_ = (min_ - mean) / (std + 1e-7)
+        max_ = (max_ - mean) / (std + 1e-7)
+        patch_size = 8
+        img = Image.open("trigger_10.png")
+        numpydata = np.asarray(img)
+        patch = resize(numpydata, (patch_size, patch_size, 3))
+        patch = (patch - mean) / (std + 1e-7)
 
         class_source = 0
         class_target = 1

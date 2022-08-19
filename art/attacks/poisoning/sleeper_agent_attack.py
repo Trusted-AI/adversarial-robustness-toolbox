@@ -207,7 +207,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
                 best_indices_poison = self.indices_poison
 
         if self.verbose > 0:
-            logger.info("Best B-score:", best_B)
+            logger.info("Best B-score: %s", best_B)
         if isinstance(self.substitute_classifier, PyTorchClassifier):
             x_train[self.indices_target[best_indices_poison]] = np.transpose(best_x_poisoned, [0, 2, 3, 1])
         elif isinstance(self.substitute_classifier, TensorFlowV2Classifier):
@@ -365,9 +365,9 @@ class SleeperAgentAttack(GradientMatchingAttack):
                     running_loss += loss.item()
                 if (epoch % 5 == 0) or epoch == (epochs - 1):
                     train_accuracy = 100 * accuracy / total
-                    logger.info("Epoch {} train accuracy: {}".format(epoch, train_accuracy))  # pylint: disable=C0209
+                    logger.info("Epoch %s train accuracy: %s", epoch, train_accuracy)  # pylint: disable=C0209
             test_accuracy = self.test_accuracy(model, dataloader_test)
-            logger.info("Final test accuracy: {}".format(test_accuracy))  # pylint: disable=C0209
+            logger.info("Final test accuracy: %s", test_accuracy)  # pylint: disable=C0209
         elif isinstance(self.substitute_classifier, TensorFlowV2Classifier):
             import tensorflow as tf
             from tqdm.keras import TqdmCallback
@@ -534,7 +534,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
                 with tf.GradientTape() as t:  # pylint: disable=C0103
                     t.watch(classifier.model.weights)
                     output = classifier.model(image, training=False)
-                    loss_tf = classifier.model.compiled_loss(label, output)
+                    loss_tf = classifier.model.compiled_loss(label, output)  # type: ignore
                     gradients = list(t.gradient(loss_tf, classifier.model.weights))
                     gradients = [w for w in gradients if w is not None]
                     grad_norm = tf.constant(0, dtype=tf.float32)
