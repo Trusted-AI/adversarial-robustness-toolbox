@@ -110,9 +110,9 @@ class SignOPTAttack(EvasionAttack):
         :param epsilon: A very small smoothing parameter.
         :param num_trial: A number of trials to calculate a good starting point
         :param max_iter: Maximum number of iterations.
-        Default value is for untargeted attack, increase to recommended 5000 for targeted attacks.
+            Default value is for untargeted attack, increase to recommended 5000 for targeted attacks.
         :param query_limit: Limitation for number of queries to prediction model.
-        Default value is for untargeted attack, increase to recommended 40000 for targeted attacks.
+            Default value is for untargeted attack, increase to recommended 40000 for targeted attacks.
         :param k: Number of random directions (for estimating the gradient)
         :param alpha: The step length for line search
         :param beta: The tolerance for line search
