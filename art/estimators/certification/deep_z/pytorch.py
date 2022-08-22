@@ -45,7 +45,7 @@ class ConvertedModel(torch.nn.Module):
     def __init__(self, model: "torch.nn.Module", channels_first: bool, input_shape: Tuple[int, ...]):
         super().__init__()
         modules = []
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.forward_mode: str
         self.forward_mode = "abstract"
 
@@ -57,7 +57,7 @@ class ConvertedModel(torch.nn.Module):
             module.register_forward_hook(forward_hook)
 
         if channels_first:
-            input_for_hook = torch.rand(input_shape).to(device)
+            input_for_hook = torch.rand(input_shape).to(self.device)
         else:
             raise ValueError("Please provide data in channels first format")
 
@@ -76,18 +76,18 @@ class ConvertedModel(torch.nn.Module):
                     dilation=module.dilation,  # type: ignore
                     padding=module.padding,  # type: ignore
                 )
-                zono_conv.conv.weight.data = module.weight.data.to(device)
-                zono_conv.bias.data = module.bias.data.to(device)  # type: ignore
+                zono_conv.conv.weight.data = module.weight.data.to(self.device)
+                zono_conv.bias.data = module.bias.data.to(self.device)  # type: ignore
                 self.ops.append(zono_conv)
 
             elif isinstance(module, torch.nn.modules.linear.Linear):
                 zono_dense = ZonoDenseLayer(in_features=module.in_features, out_features=module.out_features)
-                zono_dense.weight.data = module.weight.data.to(device)
-                zono_dense.bias.data = module.bias.data.to(device)
+                zono_dense.weight.data = module.weight.data.to(self.device)
+                zono_dense.bias.data = module.bias.data.to(self.device)
                 self.ops.append(zono_dense)
 
             elif isinstance(module, torch.nn.modules.activation.ReLU):
-                self.ops.append(ZonoReLU(device=device))
+                self.ops.append(ZonoReLU(device=self.device))
             else:
                 raise ValueError("Supported Operations are Conv2D, Linear, and RelU")
 
@@ -131,13 +131,10 @@ class ConvertedModel(torch.nn.Module):
         :return: A tuple, the first element being the zonotope center vector.
                  The second is the zonotope error terms/coefficients.
         """
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
         x = np.concatenate([cent, eps])
-        x = torch.from_numpy(x.astype("float32")).to(device)
-        # print(x)
-        # print(torch.cuda.is_available())
-        # print('device is {}'.format(x.get_device()))
+        x = torch.from_numpy(x.astype("float32")).to(self.device)
+
         for op_num, op in enumerate(self.ops):
             # as reshapes are not modules we infer when the reshape from convolutional to dense occurs
             if self.reshape_op_num == op_num:
@@ -151,9 +148,9 @@ class ConvertedModel(torch.nn.Module):
 
         :param in_x: regular (concrete) data.
         """
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
         if isinstance(in_x, np.ndarray):
-            x = torch.from_numpy(in_x.astype("float32")).to(device)
+            x = torch.from_numpy(in_x.astype("float32")).to(self.device)
         else:
             x = in_x
 
@@ -329,12 +326,16 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=fit)
         return x_preprocessed, y_preprocessed
 
-    def max_logit_loss(self, output: "torch.Tensor", target: "torch.Tensor") -> Union["torch.Tensor", None]:
+    def max_logit_loss(self, prediction: "torch.Tensor", target: "torch.Tensor") -> Union["torch.Tensor", None]:
         """
         Computes the loss as the largest logit value amongst the incorrect classes.
+
+        :param prediction: model predictions.
+        :param target: target classes. NB not one hot.
+        :return: scalar loss value
         """
-        target_logit = output[:, target]
-        output = output - target_logit
+        target_logit = prediction[:, target]
+        output = prediction - target_logit
 
         ubs = torch.sum(torch.abs(output[1:, :]), dim=0) + output[0, :]
 
@@ -344,7 +345,8 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
                 loss = ubs[i]
         return loss
 
-    def interval_loss_cce(self, prediction: "torch.Tensor", target: "torch.Tensor") -> "torch.Tensor":
+    @staticmethod
+    def interval_loss_cce(prediction: "torch.Tensor", target: "torch.Tensor") -> "torch.Tensor":
         """
         Computes the categorical cross entropy loss with the correct class having the lower bound prediction,
         and the other classes having their upper bound predictions.
