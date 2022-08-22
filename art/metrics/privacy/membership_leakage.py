@@ -19,7 +19,7 @@
 This module implements membership leakage metrics.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Tuple
 
 import numpy as np
 import scipy
@@ -37,7 +37,7 @@ def PDTP(  # pylint: disable=C0103
     y: np.ndarray,
     indexes: Optional[np.ndarray] = None,
     num_iter: Optional[int] = 10,
-) -> np.ndarray:
+) -> Tuple[np.ndarray, np.ndarray]:
     """
     Compute the pointwise differential training privacy metric for the given classifier and training set.
 
@@ -52,8 +52,8 @@ def PDTP(  # pylint: disable=C0103
                     computed for all samples in `x`.
     :param num_iter: the number of iterations of PDTP computation to run for each sample. If not supplied,
                      defaults to 10. The result is the average across iterations.
-    :return: an array containing the average PDTP value for each sample in the training set. The higher the value,
-             the higher the privacy leakage for that sample.
+    :return: A tuple of two arrays, containing the average (worse) PDTP value for each sample in the training set
+             respectively. The higher the value, the higher the privacy leakage for that sample.
     """
     from art.estimators.classification.pytorch import PyTorchClassifier
     from art.estimators.classification.tensorflow import TensorFlowV2Classifier
@@ -120,6 +120,7 @@ def PDTP(  # pylint: disable=C0103
     # We now have a list of list, internal lists represent an iteration. We need to transpose and get averages.
     per_sample = list(map(list, zip(*results)))
     avg_per_sample = np.array([sum(val) / len(val) for val in per_sample])
+    worse_per_sample = np.max(per_sample, axis=1)
 
-    # return leakage per sample
-    return avg_per_sample
+    # return avg+worse leakage per sample
+    return avg_per_sample, worse_per_sample
