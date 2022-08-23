@@ -71,7 +71,7 @@ class ShadowModels:
         the dataset into training and testing samples, and then training the shadow models on the result.
 
         :param x: The samples used to train the shadow models.
-        :param y: True labels for the dataset samples.
+        :param y: True labels for the dataset samples (as expected by the estimator's fit method).
         :param member_ratio: Percentage of the data that should be used to train the shadow models. Must be between 0
                              and 1.
 
