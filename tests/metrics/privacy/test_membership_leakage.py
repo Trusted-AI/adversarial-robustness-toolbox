@@ -66,7 +66,7 @@ def test_membership_leakage_tabular(art_warning, tabular_dl_estimator, get_iris_
         art_warning(e)
 
 
-@pytest.mark.skip_framework("keras", "kerastf", "tensorflow1", "tensorflow2v1", "mxnet")
+@pytest.mark.skip_framework("scikitlearn", "keras", "kerastf", "tensorflow1", "tensorflow2v1", "mxnet")
 def test_membership_leakage_image(art_warning, image_dl_estimator, get_default_mnist_subset):
     try:
         classifier, _ = image_dl_estimator()
@@ -80,14 +80,14 @@ def test_membership_leakage_image(art_warning, image_dl_estimator, get_default_m
         logger.info("Max PDTP leakage: %.2f", (np.max(avg_leakage)))
         assert np.all(avg_leakage >= 1.0)
         assert np.all(worse_leakage >= avg_leakage)
-        assert avg_leakage.shape[0] == x_train.shape[0]
-        assert worse_leakage.shape[0] == x_train.shape[0]
-        assert std_dev.shape[0] == x_train.shape[0]
+        assert avg_leakage.shape[0] == 100
+        assert worse_leakage.shape[0] == 100
+        assert std_dev.shape[0] == 100
     except ARTTestException as e:
         art_warning(e)
 
 
-@pytest.mark.skip_framework("keras", "kerastf", "tensorflow1", "mxnet")
+@pytest.mark.skip_framework("scikitlearn", "keras", "kerastf", "tensorflow1", "mxnet")
 def test_errors(art_warning, tabular_dl_estimator, get_iris_dataset, image_data_generator):
     try:
         classifier = tabular_dl_estimator()
