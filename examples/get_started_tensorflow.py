@@ -7,6 +7,8 @@ The parameters are chosen for reduced computational requirements of the script a
 import tensorflow.compat.v1 as tf
 import numpy as np
 
+tf.compat.v1.disable_eager_execution()  # Added to prevent Tensorflow execution error
+
 from art.attacks.evasion import FastGradientMethod
 from art.estimators.classification import TensorFlowClassifier
 from art.utils import load_mnist
