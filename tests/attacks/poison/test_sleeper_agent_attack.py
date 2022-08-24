@@ -38,12 +38,12 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator):
         (x_train, y_train), (x_test, y_test) = get_default_mnist_subset
         classifier, _ = image_dl_estimator()
         x_train, y_train = x_train[:1000], y_train[:1000]
-
+        max_ = 1
+        min_ = 0
         mean = np.mean(x_train, axis=(0, 1, 2, 3))
         std = np.std(x_train, axis=(0, 1, 2, 3))
         x_train = (x_train - mean) / (std + 1e-7)
         x_test = (x_test - mean) / (std + 1e-7)
-
         min_ = (min_ - mean) / (std + 1e-7)
         max_ = (max_ - mean) / (std + 1e-7)
         patch_size = 8
@@ -51,7 +51,6 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator):
         numpydata = np.asarray(img)
         patch = resize(numpydata, (patch_size, patch_size, 3))
         patch = (patch - mean) / (std + 1e-7)
-
         class_source = 0
         class_target = 1
         K = 10
@@ -61,11 +60,9 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator):
         x_trigger = x_train_[index_source]
         y_trigger = to_categorical([class_target], nb_classes=10)
         y_trigger = np.tile(y_trigger, (len(index_source), 1))
-
         epsilon = 0.3
         percent_poison = 0.10
-        max_ = 1
-        min_ = 0
+
         attack = SleeperAgentAttack(
             classifier,
             percent_poison=0.10,
