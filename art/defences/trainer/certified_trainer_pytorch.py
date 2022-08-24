@@ -77,9 +77,9 @@ class DefaultLinearScheduler:
 
 class AdversarialTrainerCertified(Trainer):
     """
-    Class performing certified adversarial training...
-
-    |
+    Class performing certified adversarial training from methods such as
+    | Paper link: http://proceedings.mlr.press/v80/mirman18b/mirman18b.pdf
+    | Paper link: https://arxiv.org/pdf/1810.12715.pdf
 
     """
 
@@ -334,3 +334,21 @@ class AdversarialTrainerCertified(Trainer):
 
             if scheduler is not None:
                 scheduler.step()
+
+    def predict(self, x: np.ndarray, **kwargs):
+        """
+        Perform prediction using the adversarially trained classifier.
+
+        :param x: Input samples.
+        :param kwargs: Other parameters to be passed on to the `predict` function of the classifier.
+        :return: Predictions for test set.
+        """
+        return self._classifier.forward(x, **kwargs)
+
+    def set_forward_mode(self, mode: str) -> None:
+        """
+        Helper function to set the forward mode of the model
+
+        :param mode: either concrete or abstract signifying how to run the forward pass
+        """
+        return self._classifier.set_forward_mode(mode)

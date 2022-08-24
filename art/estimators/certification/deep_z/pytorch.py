@@ -250,17 +250,24 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
             device_type=device_type,
         )
 
-    def forward(self, cent: np.ndarray, eps: np.ndarray) -> Tuple["torch.Tensor", "torch.Tensor"]:
+    def forward(
+        self, cent: np.ndarray, eps: Optional[np.ndarray] = None
+    ) -> Union["torch.Tensor", Tuple["torch.Tensor", "torch.Tensor"]]:
         """
-        Do the forward pass through the NN with the given error terms and zonotope center.
+        Performs the neural network forward pass, either using abstract operations or concrete ones
+        depending on the value of self.forward_mode
 
-        :param eps: Error terms of the zonotope.
-        :param cent: The datapoint, representing the zonotope center.
-        :return: A tuple, the first element being the zonotope center vector.
-                 The second is the zonotope error terms/coefficients.
+        :param cent: input data, either regular data if running in concrete mode, or the zonotope bias term.
+        :param eps: zonotope error terms if running in abstract mode
+
+        :return: model predictions, with zonotope error terms if running in abstract mode
         """
-        out_cent, out_eps = self.model.forward(cent, eps)
-        return out_cent, out_eps
+        if self.model.forward_mode == "concrete":
+            return self.model.forward(cent)
+        if self.model.forward_mode == "abstract" and eps is not None:
+            out_cent, out_eps = self.model.forward(cent, eps)
+            return out_cent, out_eps
+        raise ValueError("forward_mode must be set to abstract or concrete")
 
     def set_forward_mode(self, mode: str) -> None:
         """
@@ -269,7 +276,7 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
         :param mode: either concrete or abstract signifying how to run the forward pass
         """
         assert mode in {"concrete", "abstract"}
-        self.model.forward_mode = mode
+        self.model.forward_mode = mode  # type: ignore
 
     def certify(self, cent: np.ndarray, eps: np.ndarray, prediction: int) -> bool:
         """
