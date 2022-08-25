@@ -9,7 +9,7 @@ Pillow==9.2.0
 tqdm==4.64.0
 statsmodels==0.13.2
 pydub==0.25.1
-resampy==0.3.1
+resampy==0.4.0
 ffmpeg-python==0.2.0
 cma==3.2.2
 pandas==1.4.3
@@ -42,7 +42,7 @@ xgboost==1.6.1
 kornia~=0.6.6
 tensorboardX==2.5.1
 lief==0.12.1
-jax[cpu]==0.3.15
+jax[cpu]==0.3.16
 
 # Lingvo ASR dependencies
 # supported versions: (lingvo==0.6.4 with tensorflow-gpu==2.1.0)
