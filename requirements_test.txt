@@ -9,7 +9,7 @@ Pillow==9.2.0
 tqdm==4.64.0
 statsmodels==0.13.2
 pydub==0.25.1
-resampy==0.3.1
+resampy==0.4.0
 ffmpeg-python==0.2.0
 cma==3.2.2
 pandas==1.4.3
@@ -30,7 +30,7 @@ mxnet-native==1.8.0.post0
 
 # PyTorch
 --find-links https://download.pytorch.org/whl/cpu/torch_stable.html
-torch==1.12.0
+torch==1.12.1
 torchaudio==0.12.0+cpu
 torchvision==0.13.0+cpu
 
