@@ -66,7 +66,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         model_retraining_epoch: int = 1,
         class_source: int = 0,
         class_target: int = 1,
-        device_name: str = "cuda:0",
+        device_name: str = "cpu",
     ):
         """
         Initialize a Sleeper Agent poisoning attack.
