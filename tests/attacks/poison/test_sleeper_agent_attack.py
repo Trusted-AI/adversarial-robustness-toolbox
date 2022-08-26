@@ -24,7 +24,6 @@ from PIL import Image
 
 from art.attacks.poisoning.sleeper_agent_attack import SleeperAgentAttack
 from art.utils import to_categorical
-from skimage.transform import resize
 from numpy import asarray
 
 from tests.utils import ARTTestException
@@ -49,8 +48,9 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator):
         max_ = (max_ - mean) / (std + 1e-7)
         patch_size = 4
         img = Image.open("notebooks/trigger_10.png").convert("L")
-        numpydata = np.asarray(img)
-        patch = resize(numpydata, (patch_size, patch_size, 1))
+        img = img.resize((patch_size, patch_size))
+        patch = np.asarray(img).reshape(patch_size, patch_size, 1)
+
         patch = (patch - mean) / (std + 1e-7)
         class_source = 0
         class_target = 1
@@ -101,10 +101,10 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator):
 def test_check_params(art_warning, get_default_mnist_subset, image_dl_estimator):
     try:
         classifier, _ = image_dl_estimator(functional=True)
-        img = Image.open("notebooks/trigger_10.png").convert("L")
-        numpydata = asarray(img)
         patch_size = 4
-        patch = resize(numpydata, (patch_size, patch_size, 1))
+        img = Image.open("notebooks/trigger_10.png").convert("L")
+        img = img.resize((patch_size, patch_size))
+        patch = asarray(img)
         index_target = [1]
 
         with pytest.raises(ValueError):
