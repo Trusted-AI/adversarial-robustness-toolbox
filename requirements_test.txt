@@ -18,7 +18,7 @@ numba~=0.56.0
 opencv-python
 sortedcontainers==2.4.0
 h5py==3.7.0
-scikit-image==0.15.2
+scikit-image==0.15.0
 
 
 # frameworks
