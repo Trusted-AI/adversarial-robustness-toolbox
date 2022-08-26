@@ -109,7 +109,7 @@ def test_mnist_certification(art_warning, fix_get_mnist_data):
             device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
             pred_sample = torch.from_numpy(pred_sample.astype("float32")).to(device)
             zonotope_model.set_forward_mode("concrete")
-            prediction = zonotope_model.model.forward(pred_sample)
+            prediction = zonotope_model.forward(pred_sample)
             prediction = np.argmax(prediction.cpu().detach().numpy())
             data_sample_processed, eps_bound = zonotope_model.pre_process(cent=x, eps=eps_bound)
 
