@@ -261,6 +261,11 @@ demonstrates using DeepZ to compute certified robustness for neural networks.
   <img src="../utils/data/images/zonotope_picture.png?raw=true" width="200" title="poisoning">
 </p>
 
+## Certified Training
+
+[certified_adversarial_training.ipynb](certified_adversarial_training.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/certified_adversarial_training.ipynb)]
+Demonstrates training a neural network for certified robustness using bound propagation techniques.
+
 ## MNIST
 
 [fabric_for_deep_learning_adversarial_samples_fashion_mnist.ipynb](fabric_for_deep_learning_adversarial_samples_fashion_mnist.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/fabric_for_deep_learning_adversarial_samples_fashion_mnist.ipynb)]
