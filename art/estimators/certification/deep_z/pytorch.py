@@ -117,9 +117,12 @@ class ConvertedModel(torch.nn.Module):
         """
         if self.forward_mode == "concrete":
             return self.concrete_forward(cent)
-        if self.forward_mode == "abstract" and eps is not None:
-            out_cent, out_eps = self.abstract_forward(cent, eps)
-            return out_cent, out_eps
+        if self.forward_mode == "abstract":
+            if eps is not None:
+                out_cent, out_eps = self.abstract_forward(cent, eps)
+                return out_cent, out_eps
+            else:
+                raise ValueError("for abstract forward mode, please provide both cent and eps")
         raise ValueError("forward_mode must be set to abstract or concrete")
 
     def abstract_forward(self, cent: np.ndarray, eps: np.ndarray) -> Tuple["torch.Tensor", "torch.Tensor"]:
@@ -263,10 +266,13 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
         :return: model predictions, with zonotope error terms if running in abstract mode
         """
         if self.model.forward_mode == "concrete":
-            return self.model.forward(cent)
-        if self.model.forward_mode == "abstract" and eps is not None:
-            out_cent, out_eps = self.model.forward(cent, eps)
-            return out_cent, out_eps
+            return self.model.concrete_forward(cent)
+        if self.model.forward_mode == "abstract":
+            if eps is not None:
+                out_cent, out_eps = self.model.abstract_forward(cent, eps)
+                return out_cent, out_eps
+            else:
+                raise ValueError("for abstract forward mode, please provide both cent and eps")
         raise ValueError("forward_mode must be set to abstract or concrete")
 
     def set_forward_mode(self, mode: str) -> None:

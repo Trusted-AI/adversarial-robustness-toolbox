@@ -233,7 +233,8 @@ class AdversarialTrainerCertified(Trainer):
             random.shuffle(ind)
 
             # Train for one epoch
-            for m in range(num_batch):
+            pbar = tqdm(range(num_batch))
+            for m in pbar:
                 certified_loss = torch.tensor(0.0).to(self._classifier.device)
                 samples_certified = 0
                 # Zero the parameter gradients
@@ -315,10 +316,8 @@ class AdversarialTrainerCertified(Trainer):
                 pgd_loss = self._classifier.concrete_loss(
                     model_outputs, torch.from_numpy(o_batch).to(self._classifier.device)
                 )  # pylint: disable=W0212
-                print("", flush=True)
-                print(f"Epoch {epoch}, Batch {m}/{num_batch} with Bound {bound}:", flush=True)
-                print(f"Loss is {pgd_loss} Cert Loss is {certified_loss}", flush=True)
-                print(f"Acc is {acc} Cert Acc is {samples_certified / batch_size}", flush=True)
+                pbar.set_description("Bound {:.2f}: Loss {:.2f} Cert Loss {:.2f} Acc {:.2f} Cert Acc {:.2f}".format(bound, pgd_loss, certified_loss, acc, samples_certified / batch_size))
+
                 loss = certified_loss * self.loss_weighting + pgd_loss * (1 - self.loss_weighting)
                 # Do training
                 if self._classifier._use_amp:  # pragma: no cover # pylint: disable=W0212
