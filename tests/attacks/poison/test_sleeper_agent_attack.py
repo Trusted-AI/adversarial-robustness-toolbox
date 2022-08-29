@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator):
     try:
         (x_train, y_train), (x_test, y_test) = get_default_mnist_subset
-        x_train = np.transpose(x_train, (0, 2, 3, 1))
+        # x_train = np.transpose(x_train, (0, 2, 3, 1))
         classifier, _ = image_dl_estimator()
         x_train, y_train = x_train[:1000], y_train[:1000]
         max_ = 1
