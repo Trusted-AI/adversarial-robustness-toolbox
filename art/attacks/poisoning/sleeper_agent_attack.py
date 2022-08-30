@@ -563,8 +563,8 @@ class SleeperAgentAttack(GradientMatchingAttack):
             x_trigger[:, -patch_size:, -patch_size:, :] = self.patch
         else:
             for x in x_trigger:
-                x_cord = random.randrange(0, x.shape[1] - self.patch.shape[1] + 1)
-                y_cord = random.randrange(0, x.shape[2] - self.patch.shape[2] + 1)
+                x_cord = random.randrange(0, x.shape[0] - self.patch.shape[0] + 1)
+                y_cord = random.randrange(0, x.shape[1] - self.patch.shape[1] + 1)
                 x[x_cord : x_cord + patch_size, y_cord : y_cord + patch_size, :] = self.patch
 
         if self.estimator.channels_first:

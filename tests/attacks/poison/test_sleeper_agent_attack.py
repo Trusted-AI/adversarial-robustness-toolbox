@@ -48,8 +48,8 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator):
         max_ = (max_ - mean) / (std + 1e-7)
         patch_size = 4
         img = Image.open("notebooks/trigger_10.png").convert("L")
-        img = img.resize((patch_size, patch_size))
-        patch = np.asarray(img).reshape(patch_size, patch_size, 1)
+        img = np.asarray(img.resize((patch_size, patch_size)))
+        patch = np.asarray(img).reshape(patch_size, patch_size,1)
 
         patch = (patch - mean) / (std + 1e-7)
         class_source = 0
