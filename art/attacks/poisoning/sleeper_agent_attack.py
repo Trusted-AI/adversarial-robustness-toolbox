@@ -559,7 +559,6 @@ class SleeperAgentAttack(GradientMatchingAttack):
         :x_trigger: Samples to be used for trigger.
         :return tensor with applied trigger patches.
         """
-        # pdb.set_trace()
         patch_size = self.patch.shape[1]
         if self.patching_strategy == "fixed":
             x_trigger[:, -patch_size:, -patch_size:, :] = self.patch
