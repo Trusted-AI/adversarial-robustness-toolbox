@@ -21,7 +21,7 @@ This module implements certified adversarial training following techniques from 
     | Paper link: https://arxiv.org/pdf/1810.12715.pdf
 """
 import logging
-from typing import TypedDict, Optional, Any, TYPE_CHECKING
+from typing import TypedDict, Optional, Any, Tuple, Union, TYPE_CHECKING
 import random
 
 import math
@@ -37,11 +37,11 @@ from art.utils import check_and_transform_label_format
 if TYPE_CHECKING:
     from art.utils import CERTIFIER_TYPE
 
-
     class PGDParamDict(TypedDict):
         """
         A TypedDict class to define the types in the pgd_params dictionary.
         """
+
         eps: float
         eps_step: float
         max_iter: int
@@ -61,8 +61,8 @@ class DefaultLinearScheduler:
         """
         Create a .DefaultLinearScheduler instance.
 
-        :param step_per_epoch:
-        :param initial_bound:
+        :param step_per_epoch: how much to increase the certification radius every epoch
+        :param initial_bound: the initial bound to increase from
         """
         self.step_per_epoch = step_per_epoch
         self.bound = initial_bound
@@ -111,6 +111,7 @@ class AdversarialTrainerCertified(Trainer):
                                "num_random_init": Number of random initialisations within the epsilon ball.
                                                   For num_random_init=0 starting at the original input.
 
+                           If not provided, we will default to typical MNIST values.
         :param bound: The perturbation range for the zonotope. Will be ignored if a certification_schedule is used.
         :param loss_weighting: Weighting factor for the certified loss.
         :param concrete_to_zonotope:  Optional argument. Function which takes in a concrete data point and the bound
@@ -195,7 +196,6 @@ class AdversarialTrainerCertified(Trainer):
         elif self.batch_size is not None:
             epochs = self.batch_size
 
-
         # Set model mode
         self._classifier._model.train(mode=training_mode)  # pylint: disable=W0212
 
@@ -226,7 +226,7 @@ class AdversarialTrainerCertified(Trainer):
         else:
             bound = self.bound
 
-        for epoch in tqdm(range(epochs)):
+        for _ in tqdm(range(epochs)):
             if self.use_certification_schedule:
                 bound = certification_schedule_function.step()
             # Shuffle the examples
@@ -316,7 +316,11 @@ class AdversarialTrainerCertified(Trainer):
                 pgd_loss = self._classifier.concrete_loss(
                     model_outputs, torch.from_numpy(o_batch).to(self._classifier.device)
                 )  # pylint: disable=W0212
-                pbar.set_description("Bound {:.2f}: Loss {:.2f} Cert Loss {:.2f} Acc {:.2f} Cert Acc {:.2f}".format(bound, pgd_loss, certified_loss, acc, samples_certified / batch_size))
+
+                pbar.set_description(
+                    f"Bound {bound:.2f}: Loss {pgd_loss:.2f} Cert Loss {certified_loss:.2f} "
+                    f"Acc {acc:.2f} Cert Acc {samples_certified / batch_size:.2f}"
+                )
 
                 loss = certified_loss * self.loss_weighting + pgd_loss * (1 - self.loss_weighting)
                 # Do training
@@ -334,7 +338,7 @@ class AdversarialTrainerCertified(Trainer):
             if scheduler is not None:
                 scheduler.step()
 
-    def predict(self, x: np.ndarray, **kwargs):
+    def predict(self, x: np.ndarray, **kwargs) -> Union["torch.Tensor", Tuple["torch.Tensor", "torch.Tensor"]]:
         """
         Perform prediction using the adversarially trained classifier.
 

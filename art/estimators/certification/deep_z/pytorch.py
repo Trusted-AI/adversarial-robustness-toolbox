@@ -121,16 +121,15 @@ class ConvertedModel(torch.nn.Module):
             if eps is not None:
                 out_cent, out_eps = self.abstract_forward(cent, eps)
                 return out_cent, out_eps
-            else:
-                raise ValueError("for abstract forward mode, please provide both cent and eps")
+            raise ValueError("for abstract forward mode, please provide both cent and eps")
         raise ValueError("forward_mode must be set to abstract or concrete")
 
     def abstract_forward(self, cent: np.ndarray, eps: np.ndarray) -> Tuple["torch.Tensor", "torch.Tensor"]:
         """
         Do the forward pass through the NN with the given error terms and zonotope center.
 
-        :param eps: Error terms of the zonotope.
         :param cent: The datapoint, representing the zonotope center.
+        :param eps: Error terms of the zonotope.
         :return: A tuple, the first element being the zonotope center vector.
                  The second is the zonotope error terms/coefficients.
         """
@@ -271,8 +270,7 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
             if eps is not None:
                 out_cent, out_eps = self.model.abstract_forward(cent, eps)
                 return out_cent, out_eps
-            else:
-                raise ValueError("for abstract forward mode, please provide both cent and eps")
+            raise ValueError("for abstract forward mode, please provide both cent and eps")
         raise ValueError("forward_mode must be set to abstract or concrete")
 
     def set_forward_mode(self, mode: str) -> None:
@@ -294,8 +292,8 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
         Then perform the certification step by computing the difference of the logits in the final zonotope
         and projecting to interval.
 
-        :param eps: Error terms of the zonotope.
         :param cent: The datapoint, representing the zonotope center.
+        :param eps: Error terms of the zonotope.
         :param prediction: The prediction the neural network gave on the basic datapoint.
 
         :return: True/False if the datapoint could be misclassified given the eps bounds.
@@ -314,12 +312,12 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
 
         return all(certification_results)
 
-    def concrete_loss(self, output, target):
+    def concrete_loss(self, output: "torch.Tensor", target: "torch.Tensor") -> "torch.Tensor":
         """
         Access function to get the classifier loss
 
         :param output: model predictions
-        :param target:ground truth labels
+        :param target: ground truth labels
 
         :return: loss value
         """
