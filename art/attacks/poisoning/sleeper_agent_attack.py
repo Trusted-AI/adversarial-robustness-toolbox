@@ -160,8 +160,6 @@ class SleeperAgentAttack(GradientMatchingAttack):
             poisoner = self._poison__tensorflow
             finish_poisoning = self._finish_poison_tensorflow
             initializer = self._initialize_poison_tensorflow
-            if self.estimator.channels_first:
-                x_train_target_samples = np.transpose(x_train_target_samples, [0, 3, 1, 2])
         else:
             raise NotImplementedError("SleeperAgentAttack is currently implemented only for PyTorch and TensorFlowV2.")
 
@@ -268,7 +266,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         from art.estimators.classification import TensorFlowV2Classifier
 
         model_: Union[TensorFlowV2Classifier, PyTorchClassifier]
-        
+
         x_train_un = np.copy(x_train)
         x_poisoned_un = np.copy(poisoned_samples)
         x_train_un = x_train_un*self.substitute_classifier.preprocessing.std 
@@ -276,6 +274,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         x_poisoned_un = x_poisoned_un*self.substitute_classifier.preprocessing.std 
         x_poisoned_un += self.substitute_classifier.preprocessing.mean
         x_train_un[self.indices_target[self.indices_poison]] = x_poisoned_un
+        num_classes=self.substitute_classifier.nb_classes
 
         if isinstance(self.substitute_classifier, PyTorchClassifier):
             model_ = self._create_model(
@@ -283,7 +282,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
                 y_train,
                 x_test=x_test,
                 y_test=y_test,
-                num_classes=10,
+                num_classes=num_classes,
                 batch_size=128,
                 epochs=self.model_retraining_epoch,
             )
@@ -291,16 +290,15 @@ class SleeperAgentAttack(GradientMatchingAttack):
             self.substitute_classifier = model_
             self.substitute_classifier.model.training = check_train
         elif isinstance(self.substitute_classifier, TensorFlowV2Classifier):
-            model, loss_fn, optimizer = self._create_model(
+            model_ = self._create_model(
                 x_train_un,
                 y_train,
                 x_test=x_test,
                 y_test=y_test,
-                num_classes=10,
+                num_classes=num_classes,
                 batch_size=128,
                 epochs=self.model_retraining_epoch,
             )
-            model_ = TensorFlowV2Classifier(model, nb_classes=10, input_shape=x_train.shape[1:])
             check_train = self.substitute_classifier.model.trainable
             self.substitute_classifier = model_
             self.substitute_classifier.model.trainable = check_train
@@ -310,7 +308,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
     
     
     def _create_model(
-        self,
+        self,\
         x_train: np.ndarray,
         y_train: np.ndarray,
         x_test: np.ndarray,
@@ -333,112 +331,111 @@ class SleeperAgentAttack(GradientMatchingAttack):
         """
         from art.estimators.classification.pytorch import PyTorchClassifier
         from art.estimators.classification import TensorFlowV2Classifier
-
+        
+        
         if isinstance(self.substitute_classifier, PyTorchClassifier):
             import torch
             import torch.nn as nn
             import torchvision
-            num_classes = 10
+
             loss_fn = nn.CrossEntropyLoss()
             model = torchvision.models.ResNet(torchvision.models.resnet.BasicBlock, [2, 2, 2, 2], num_classes=num_classes)
             optimizer = torch.optim.SGD(model.parameters(), lr=0.1, momentum=0.9, weight_decay=5e-4, nesterov=True)
-            model_new = PyTorchClassifier(model,input_shape=x_train.shape[1:], loss=loss_fn, optimizer=optimizer, nb_classes=10, clip_values=self.substitute_classifier.clip_values, preprocessing=(self.substitute_classifier.preprocessing.mean,self.substitute_classifier.preprocessing.std))
-        model_new.fit(x_train, y_train, batch_size=128, nb_epochs=epochs,verbose=1)
-        predictions = model_new.predict(x_test)
-        accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
-        logger.info("Accuracy of substitute model after retraining: {}%".format(accuracy * 100))
+            model_new = PyTorchClassifier(model,input_shape=x_train.shape[1:], loss=loss_fn, optimizer=optimizer, nb_classes=num_classes, clip_values=self.substitute_classifier.clip_values, preprocessing=(self.substitute_classifier.preprocessing.mean,self.substitute_classifier.preprocessing.std))
+            model_new.fit(x_train, y_train, batch_size=128, nb_epochs=epochs,verbose=1)
+            predictions = model_new.predict(x_test)
+            accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
+            logger.info("Accuracy of substitute model after retraining: {}%".format(accuracy * 100))
+        
+        elif isinstance(self.substitute_classifier, TensorFlowV2Classifier):
+            import tensorflow as tf
+            from tqdm.keras import TqdmCallback
+
+            # Tweaked the model from https://github.com/calmisential/TensorFlow2.0_ResNet
+            # MIT License
+            def basic_block(x, filter_num, stride=1):
+                conv1 = tf.keras.layers.Conv2D(filters=filter_num, kernel_size=(3, 3), strides=stride, padding="same")
+                bn1 = tf.keras.layers.BatchNormalization()
+                conv2 = tf.keras.layers.Conv2D(filters=filter_num, kernel_size=(3, 3), strides=1, padding="same")
+                bn2 = tf.keras.layers.BatchNormalization()
+                if stride != 1:
+                    downsample = tf.keras.Sequential()
+                    downsample.add(tf.keras.layers.Conv2D(filters=filter_num, kernel_size=(1, 1), strides=stride))
+                    downsample.add(tf.keras.layers.BatchNormalization())
+                else:
+                    downsample = tf.keras.layers.Lambda(lambda x: x)
+
+                residual = downsample(x)
+                x = conv1(x)
+                x = bn1(x)
+                x = tf.nn.relu(x)
+                x = conv2(x)
+                x = bn2(x)
+                output = tf.nn.relu(tf.keras.layers.add([residual, x]))
+                return output
+
+            def basic_block_layer(x, filter_num, blocks, stride=1):
+                x = basic_block(x, filter_num, stride=stride)
+                for _ in range(1, blocks):
+                    x = basic_block(x, filter_num, stride=1)
+                return x
+
+            def resnet(x, num_classes, layer_params):
+                pad1 = tf.keras.layers.ZeroPadding2D(padding=1)
+                conv1 = tf.keras.layers.Conv2D(filters=64, kernel_size=(3, 3), strides=1, padding="same")
+                bn1 = tf.keras.layers.BatchNormalization()
+
+                avgpool = tf.keras.layers.GlobalAveragePooling2D()
+                linear = tf.keras.layers.Dense(units=num_classes, activation=tf.keras.activations.softmax)
+
+                x = pad1(x)
+                x = conv1(x)
+                x = bn1(x)
+                x = tf.nn.relu(x)
+                x = basic_block_layer(x, filter_num=64, blocks=layer_params[0])
+                x = basic_block_layer(x, filter_num=128, blocks=layer_params[1], stride=2)
+                x = basic_block_layer(x, filter_num=256, blocks=layer_params[2], stride=2)
+                x = basic_block_layer(x, filter_num=512, blocks=layer_params[3], stride=2)
+                x = avgpool(x)
+                output = linear(x)
+                return output
+
+            def resnet_18(x, num_classes):
+                return resnet(x, num_classes, layer_params=[2, 2, 2, 2])
+
+            inputs = tf.keras.layers.Input(shape=x_train.shape[1:])  # Specify the dimensions
+            outputs = resnet_18(inputs, num_classes)
+            model = tf.keras.models.Model(inputs, outputs)
+
+            opt = tf.keras.optimizers.SGD(learning_rate=0.1, momentum=0.9, nesterov=True)
+            model.compile(loss="categorical_crossentropy", optimizer=opt, metrics=["accuracy"])
+
+            datagen = tf.keras.preprocessing.image.ImageDataGenerator(
+                featurewise_center=False,
+                samplewise_center=False,
+                featurewise_std_normalization=False,
+                samplewise_std_normalization=False,
+                zca_whitening=False,
+                rotation_range=15,
+                width_shift_range=0.1,
+                height_shift_range=0.1,
+                horizontal_flip=True,
+                vertical_flip=False,
+            )
+            callbacks = [TqdmCallback(verbose=0)]
+            datagen.fit(x_train)
+            model.fit(
+                datagen.flow(x_train, y_train, batch_size=batch_size),
+                steps_per_epoch=x_train.shape[0] // batch_size,
+                epochs=epochs,
+                verbose=0,
+                callbacks=callbacks,
+            )
+            model.evaluate(x_test, y_test)
+            model_new = TensorFlowV2Classifier(model, nb_classes=10, input_shape=x_train.shape[1:],clip_values=self.substitute_classifier.clip_values,preprocessing=(self.substitute_classifier.preprocessing.mean,self.substitute_classifier.preprocessing.std))
+        else:
+            raise ValueError("SleeperAgentAttack is currently implemented only for PyTorch and TensorFlowV2.")
         return model_new
-
-#         elif isinstance(self.substitute_classifier, TensorFlowV2Classifier):
-#             import tensorflow as tf
-#             from tqdm.keras import TqdmCallback
-
-#             # Tweaked the model from https://github.com/calmisential/TensorFlow2.0_ResNet
-#             # MIT License
-#             def basic_block(x, filter_num, stride=1):
-#                 conv1 = tf.keras.layers.Conv2D(filters=filter_num, kernel_size=(3, 3), strides=stride, padding="same")
-#                 bn1 = tf.keras.layers.BatchNormalization()
-#                 conv2 = tf.keras.layers.Conv2D(filters=filter_num, kernel_size=(3, 3), strides=1, padding="same")
-#                 bn2 = tf.keras.layers.BatchNormalization()
-#                 if stride != 1:
-#                     downsample = tf.keras.Sequential()
-#                     downsample.add(tf.keras.layers.Conv2D(filters=filter_num, kernel_size=(1, 1), strides=stride))
-#                     downsample.add(tf.keras.layers.BatchNormalization())
-#                 else:
-#                     downsample = tf.keras.layers.Lambda(lambda x: x)
-
-#                 residual = downsample(x)
-#                 x = conv1(x)
-#                 x = bn1(x)
-#                 x = tf.nn.relu(x)
-#                 x = conv2(x)
-#                 x = bn2(x)
-#                 output = tf.nn.relu(tf.keras.layers.add([residual, x]))
-#                 return output
-
-#             def basic_block_layer(x, filter_num, blocks, stride=1):
-#                 x = basic_block(x, filter_num, stride=stride)
-#                 for _ in range(1, blocks):
-#                     x = basic_block(x, filter_num, stride=1)
-#                 return x
-
-#             def resnet(x, num_classes, layer_params):
-#                 pad1 = tf.keras.layers.ZeroPadding2D(padding=1)
-#                 conv1 = tf.keras.layers.Conv2D(filters=64, kernel_size=(3, 3), strides=1, padding="same")
-#                 bn1 = tf.keras.layers.BatchNormalization()
-
-#                 avgpool = tf.keras.layers.GlobalAveragePooling2D()
-#                 linear = tf.keras.layers.Dense(units=num_classes, activation=tf.keras.activations.softmax)
-
-#                 x = pad1(x)
-#                 x = conv1(x)
-#                 x = bn1(x)
-#                 x = tf.nn.relu(x)
-#                 x = basic_block_layer(x, filter_num=64, blocks=layer_params[0])
-#                 x = basic_block_layer(x, filter_num=128, blocks=layer_params[1], stride=2)
-#                 x = basic_block_layer(x, filter_num=256, blocks=layer_params[2], stride=2)
-#                 x = basic_block_layer(x, filter_num=512, blocks=layer_params[3], stride=2)
-#                 x = avgpool(x)
-#                 output = linear(x)
-#                 return output
-
-#             def resnet_18(x, num_classes):
-#                 return resnet(x, num_classes, layer_params=[2, 2, 2, 2])
-
-#             inputs = tf.keras.layers.Input(shape=x_train.shape[1:])  # Specify the dimensions
-#             outputs = resnet_18(inputs, num_classes)
-#             model = tf.keras.models.Model(inputs, outputs)
-
-#             opt = tf.keras.optimizers.SGD(learning_rate=0.1, momentum=0.9, nesterov=True)
-#             model.compile(loss="categorical_crossentropy", optimizer=opt, metrics=["accuracy"])
-
-#             datagen = tf.keras.preprocessing.image.ImageDataGenerator(
-#                 featurewise_center=False,
-#                 samplewise_center=False,
-#                 featurewise_std_normalization=False,
-#                 samplewise_std_normalization=False,
-#                 zca_whitening=False,
-#                 rotation_range=15,
-#                 width_shift_range=0.1,
-#                 height_shift_range=0.1,
-#                 horizontal_flip=True,
-#                 vertical_flip=False,
-#             )
-#             callbacks = [TqdmCallback(verbose=0)]
-#             datagen.fit(x_train)
-#             model.fit(
-#                 datagen.flow(x_train, y_train, batch_size=batch_size),
-#                 steps_per_epoch=x_train.shape[0] // batch_size,
-#                 epochs=epochs,
-#                 verbose=0,
-#                 callbacks=callbacks,
-#             )
-#             model.evaluate(x_test, y_test)
-#             loss_fn = None
-#             optimizer = None
-#         else:
-#             raise ValueError("SleeperAgentAttack is currently implemented only for PyTorch and TensorFlowV2.")
-#         return model, loss_fn, optimizer
 
 
     # This function is responsible for returning indices of poison images with maximum gradient norm
@@ -512,11 +509,19 @@ class SleeperAgentAttack(GradientMatchingAttack):
         """
         patch_size = self.patch.shape[1]
         if self.patching_strategy == "fixed":
-            x_trigger[:, :, -patch_size:, -patch_size:] = self.patch
+            if self.estimator.channels_first: 
+                x_trigger[:, :, -patch_size:, -patch_size:] = self.patch
+            else:
+                x_trigger[:, -patch_size:, -patch_size:, :] = self.patch
         else:
             for x in x_trigger:
-                x_cord = random.randrange(0, x.shape[0] - self.patch.shape[0] + 1)
-                y_cord = random.randrange(0, x.shape[1] - self.patch.shape[1] + 1)
-                x[:,x_cord : x_cord + patch_size, y_cord : y_cord + patch_size] = self.patch
+                if self.estimator.channels_first:                    
+                    x_cord = random.randrange(0, x.shape[1] - self.patch.shape[1] + 1)
+                    y_cord = random.randrange(0, x.shape[2] - self.patch.shape[2] + 1)
+                    x[:,x_cord : x_cord + patch_size, y_cord : y_cord + patch_size] = self.patch
+                else:
+                    x_cord = random.randrange(0, x.shape[0] - self.patch.shape[0] + 1)
+                    y_cord = random.randrange(0, x.shape[1] - self.patch.shape[1] + 1)
+                    x[x_cord : x_cord + patch_size, y_cord : y_cord + patch_size,:] = self.patch
 
         return x_trigger
