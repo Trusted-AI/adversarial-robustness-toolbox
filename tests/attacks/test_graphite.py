@@ -347,7 +347,7 @@ class TestGRAPHITE(TestBase):
         with self.assertRaises(ValueError):
             _ = GRAPHITEBlackbox(ptc, noise_size=(28, 28), net_size=(28, 28), rotation_range=(1, 0))
         with self.assertRaises(ValueError):
-            _ = GRAPHITEBlackbox(ptc, noise_size=(28, 28), net_size=(28, 28), dist_range=(0, 1))
+            _ = GRAPHITEBlackbox(ptc, noise_size=(28, 28), net_size=(28, 28), dist_range=(-1, 1))
         with self.assertRaises(ValueError):
             _ = GRAPHITEBlackbox(ptc, noise_size=(28, 28), net_size=(28, 28), dist_range=(1, 0))
         with self.assertRaises(ValueError):
@@ -396,7 +396,7 @@ class TestGRAPHITE(TestBase):
         with self.assertRaises(ValueError):
             _ = GRAPHITEWhiteboxPyTorch(ptc, net_size=(28, 28), rotation_range=(1, 0))
         with self.assertRaises(ValueError):
-            _ = GRAPHITEWhiteboxPyTorch(ptc, net_size=(28, 28), dist_range=(0, 1))
+            _ = GRAPHITEWhiteboxPyTorch(ptc, net_size=(28, 28), dist_range=(-1, 1))
         with self.assertRaises(ValueError):
             _ = GRAPHITEWhiteboxPyTorch(ptc, net_size=(28, 28), dist_range=(1, 0))
         with self.assertRaises(ValueError):
