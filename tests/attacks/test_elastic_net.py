@@ -138,7 +138,6 @@ class TestElasticNet(TestBase):
                 0.0,
             ]
         )
-        print(x_test_adv[0, 14, :, 0])
         np.testing.assert_array_almost_equal(x_test_adv[0, 14, :, 0], expected_x_test_adv, decimal=6)
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
         self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
@@ -244,7 +243,6 @@ class TestElasticNet(TestBase):
                 0.0,
             ]
         )
-        print(x_test_adv[0, 14, :, 0])
         np.testing.assert_array_almost_equal(x_test_adv[0, 14, :, 0], expected_x_test_adv, decimal=6)
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
         self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
@@ -403,7 +401,6 @@ class TestElasticNet(TestBase):
                 0.0,
             ]
         )
-        print(x_test_adv[2, 0, :, 14])
         np.testing.assert_array_almost_equal(x_test_adv[2, 0, :, 14], expected_x_test_adv, decimal=6)
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
         self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
@@ -568,9 +565,7 @@ class TestElasticNet(TestBase):
         attack = ElasticNet(classifier, targeted=False, max_iter=10, verbose=False)
         x_test_adv = attack.generate(self.x_test_iris)
         expected_x_test_adv = np.asarray([0.84810126, 0.43320203, 0.70404345, 0.29160658])
-        print(x_test_adv[0, :])
         np.testing.assert_array_almost_equal(x_test_adv[0, :], expected_x_test_adv, decimal=6)
-        print(np.amax(x_test_adv))
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
         self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
 
@@ -635,7 +630,6 @@ class TestElasticNet(TestBase):
         attack = ElasticNet(classifier, targeted=True, max_iter=10, verbose=False)
         x_test_adv = attack.generate(self.x_test_iris, **{"y": targets})
         expected_x_test_adv = np.asarray([0.88713187, 0.5239736, 0.49900988, 0.05677444])
-        print(x_test_adv[0, :])
         np.testing.assert_array_almost_equal(x_test_adv[0, :], expected_x_test_adv, decimal=6)
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
         self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
@@ -706,7 +700,6 @@ class TestElasticNet(TestBase):
         attack = ElasticNet(classifier, targeted=False, max_iter=10, verbose=False)
         x_test_adv = attack.generate(self.x_test_iris.astype(np.float32))
         expected_x_test_adv = np.asarray([0.84810126, 0.43320203, 0.70404345, 0.29160658])
-        print(x_test_adv[0, :])
         np.testing.assert_array_almost_equal(x_test_adv[0, :], expected_x_test_adv, decimal=6)
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
         self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
