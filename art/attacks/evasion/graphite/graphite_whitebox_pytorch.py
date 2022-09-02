@@ -251,6 +251,7 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
                 pts=pts,
             )
 
+        y = np.argmax(y, axis=1)
         y = to_categorical(y, self.estimator.nb_classes)  # type: ignore
 
         # COMPUTE SUCCESS RATE
