@@ -37,7 +37,6 @@ if TYPE_CHECKING:
     import torch
 
 logger = logging.getLogger(__name__)
-import pdb
 
 
 class SleeperAgentAttack(GradientMatchingAttack):
@@ -214,7 +213,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
                 
         # Apply De-Normalization
         x_train = x_train *  self.substitute_classifier.preprocessing.std +  self.substitute_classifier.preprocessing.mean
-        
+        best_x_poisoned = best_x_poisoned *  self.substitute_classifier.preprocessing.std +  self.substitute_classifier.preprocessing.mean
         if self.verbose > 0:
             logger.info("Best B-score: %s", best_B)
         if isinstance(self.substitute_classifier, PyTorchClassifier):
@@ -308,7 +307,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
     
     
     def _create_model(
-        self,\
+        self,
         x_train: np.ndarray,
         y_train: np.ndarray,
         x_test: np.ndarray,
@@ -345,7 +344,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
             model_new.fit(x_train, y_train, batch_size=128, nb_epochs=epochs,verbose=1)
             predictions = model_new.predict(x_test)
             accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
-            logger.info("Accuracy of substitute model after retraining: {}%".format(accuracy * 100))
+            print("Accuracy of substitute model after retraining: {}%".format(accuracy * 100))
         
         elif isinstance(self.substitute_classifier, TensorFlowV2Classifier):
             import tensorflow as tf
