@@ -38,6 +38,7 @@ else:
     from functools import reduce
 
 if TYPE_CHECKING:
+    import torch
     from art.utils import CERTIFIER_TYPE
 
     # if we use python 3.8 or higher use the more informative TypedDict for type hinting
@@ -196,7 +197,7 @@ class AdversarialTrainerCertified(Trainer):
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
         """
-        import torch
+        import torch  # lgtm [py/repeated-import]
 
         if batch_size is None:
             batch_size = self.batch_size

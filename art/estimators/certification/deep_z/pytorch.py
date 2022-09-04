@@ -34,7 +34,6 @@ if TYPE_CHECKING:
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
-    import art
 
 
 class ConvertedModel(torch.nn.Module):
@@ -49,9 +48,6 @@ class ConvertedModel(torch.nn.Module):
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.forward_mode: str
         self.forward_mode = "abstract"
-
-        # print('self.model.set_forward_mode ', reveal_type((model)))
-        # print('self.model.forward ', reveal_type((model.forward)))
 
         # pylint: disable=W0613
         def forward_hook(input_module, hook_input, hook_output):
@@ -106,8 +102,6 @@ class ConvertedModel(torch.nn.Module):
                 if isinstance(self.ops[op_num - 1], ZonoReLU) and isinstance(self.ops[op_num - 2], ZonoConv):
                     self.reshape_op_num = op_num
                     print("Inferred reshape on op num", op_num)
-
-        # print(reveal_type((self.set_forward_mode)))
 
     def forward(
         self, cent: np.ndarray, eps: Optional[np.ndarray] = None
