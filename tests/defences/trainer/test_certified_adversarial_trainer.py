@@ -49,7 +49,7 @@ def fix_get_cifar10_data():
 )
 def test_mnist_certified_training(art_warning, fix_get_mnist_data):
     """
-    Check the following properties for the first 100 samples of the MNIST test set given an l_inft bound of 0.1.
+    Check the following properties for the first 100 samples of the MNIST test set given an l_inft bound
         1) Check regular loss
         2) Train the model for 3 epochs using certified training.
         3) Re-Check regular loss
@@ -221,10 +221,10 @@ def test_mnist_certified_loss(art_warning, fix_get_mnist_data):
 )
 def test_cifar_certified_training(art_warning, fix_get_cifar10_data):
     """
-    Check the following properties for the first 10 samples of the CIFAR test set given an l_inft bound of 0.01.
-        1)
+    Check the following properties for the first 10 samples of the CIFAR test set given an l_inft bound
+        1) Check regular loss
         2) Train the model for 3 epochs using certified training.
-        3) Check the regular cce loss
+        3) Re-Check regular loss
     """
 
     bound = 0.01
@@ -273,7 +273,8 @@ def test_cifar_certified_training(art_warning, fix_get_cifar10_data):
 )
 def test_cifar_certified_loss(art_warning, fix_get_cifar10_data):
     """
-    Check the certified loss on non adversarial data
+    Check the certified losses with interval_loss_cce, max_logit_loss, and make sure that we give a lower
+    bound compared to PGD.
     """
     bound = 2 / 255
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
