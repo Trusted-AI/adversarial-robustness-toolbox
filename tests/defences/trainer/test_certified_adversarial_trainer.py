@@ -47,10 +47,10 @@ def fix_get_cifar10_data():
 @pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
 def test_mnist_certified_training(art_warning, fix_get_mnist_data):
     """
-    Check the following properties for the first 100 samples of the MNIST test set given an l_inft bound of 0.05.
-        1) Upper and lower bounds are calculated correctly.
-        2) The correct number of datapoints are certified.
-        3) The standard accuracy is correct.
+    Check the following properties for the first 100 samples of the MNIST test set given an l_inft bound of 0.1.
+        1) Train the model for 3 epochs using certified training.
+        2) Make PGD adversarial examples
+        3) Check the certified loss
     """
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -83,14 +83,13 @@ def test_mnist_certified_training(art_warning, fix_get_mnist_data):
     trainer.fit(fix_get_mnist_data[0],
                 fix_get_mnist_data[1],
                 nb_epochs=3)
+
     prediction = trainer.predict(fix_get_mnist_data[0])
     loss = trainer._classifier.concrete_loss(prediction,
                                              torch.tensor(fix_get_mnist_data[1]).to(device))
     print('loss ', loss.cpu().detach().numpy())
 
     assert round(float(loss), 4) == 0.0919
-
-    concrete_correct = 0
 
     # check adversarial example performance
     trainer.set_forward_mode("concrete")
@@ -122,6 +121,9 @@ def test_mnist_certified_training(art_warning, fix_get_mnist_data):
 
 @pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
 def test_mnist_certified_loss(art_warning, fix_get_mnist_data):
+    """
+    Check the certified loss on regular (non adversarial data)
+    """
     bound = 0.05
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -184,10 +186,10 @@ def test_mnist_certified_loss(art_warning, fix_get_mnist_data):
 @pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
 def test_cifar_certified_training(art_warning, fix_get_cifar10_data):
     """
-    Check the following properties for the first 10 samples of the CIFAR10 test set given an l_inft bound of 0.001.
-        1) Upper and lower bounds are calculated correctly.
-        2) The correct number of datapoints are certified.
-        3) The standard accuracy is correct.
+    Check the following properties for the first 10 samples of the CIFAR test set given an l_inft bound of 0.01.
+        1) Train the model for 3 epochs using certified training.
+        2) Make PGD adversarial examples
+        3) Check the certified loss
     """
 
     bound = 0.01
@@ -216,36 +218,38 @@ def test_cifar_certified_training(art_warning, fix_get_cifar10_data):
     import random
     np.random.seed(123)
     random.seed(123)
+    try:
+        trainer.fit(fix_get_cifar10_data[0],
+                    fix_get_cifar10_data[1],
+                    nb_epochs=3)
 
-    trainer.fit(fix_get_cifar10_data[0],
-                fix_get_cifar10_data[1],
-                nb_epochs=3)
+        # check adversarial example performance
+        attack = ProjectedGradientDescent(
+            estimator=trainer._classifier,
+            eps=pgd_params["eps"],
+            eps_step=pgd_params["eps_step"],
+            max_iter=pgd_params["max_iter"],
+            num_random_init=pgd_params["num_random_init"],
+        )
 
-    concrete_correct = 0
+        i_batch = attack.generate(fix_get_cifar10_data[0], y=fix_get_cifar10_data[1])
+        prediction = trainer.predict(i_batch)
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    # check adversarial example performance
-    attack = ProjectedGradientDescent(
-        estimator=trainer._classifier,
-        eps=pgd_params["eps"],
-        eps_step=pgd_params["eps_step"],
-        max_iter=pgd_params["max_iter"],
-        num_random_init=pgd_params["num_random_init"],
-    )
+        loss = trainer._classifier.concrete_loss(prediction,
+                                                 torch.tensor(fix_get_cifar10_data[1]).to(device))
 
-    i_batch = attack.generate(fix_get_cifar10_data[0], y=fix_get_cifar10_data[1])
-    prediction = trainer.predict(i_batch)
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-    loss = trainer._classifier.concrete_loss(prediction,
-                                             torch.tensor(fix_get_cifar10_data[1]).to(device))
-
-    loss = loss.cpu().detach().numpy()
-    assert round(float(loss), 5) == 2.14333
+        loss = loss.cpu().detach().numpy()
+        assert round(float(loss), 5) == 2.14333
+    except ARTTestException as e:
+        art_warning(e)
 
 
 @pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
 def test_cifar_certified_loss(art_warning, fix_get_cifar10_data):
-
+    """
+    Check the certified loss on regular (non adversarial data)
+    """
     bound = 0.01
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
