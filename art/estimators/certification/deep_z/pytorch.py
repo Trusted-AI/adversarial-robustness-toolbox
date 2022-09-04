@@ -34,6 +34,7 @@ if TYPE_CHECKING:
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
+    import art
 
 
 class ConvertedModel(torch.nn.Module):
@@ -48,6 +49,9 @@ class ConvertedModel(torch.nn.Module):
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.forward_mode: str
         self.forward_mode = "abstract"
+
+        # print('self.model.set_forward_mode ', reveal_type((model)))
+        # print('self.model.forward ', reveal_type((model.forward)))
 
         # pylint: disable=W0613
         def forward_hook(input_module, hook_input, hook_output):
@@ -102,6 +106,8 @@ class ConvertedModel(torch.nn.Module):
                 if isinstance(self.ops[op_num - 1], ZonoReLU) and isinstance(self.ops[op_num - 2], ZonoConv):
                     self.reshape_op_num = op_num
                     print("Inferred reshape on op num", op_num)
+
+        # print(reveal_type((self.set_forward_mode)))
 
     def forward(
         self, cent: np.ndarray, eps: Optional[np.ndarray] = None
@@ -162,6 +168,15 @@ class ConvertedModel(torch.nn.Module):
                 x = x.reshape((x.shape[0], -1))
             x = op.concrete_forward(x)
         return x
+
+    def set_forward_mode(self, mode: str) -> None:
+        """
+        Helper function to set the forward mode of the model
+
+        :param mode: either concrete or abstract signifying how to run the forward pass
+        """
+        assert mode in {"concrete", "abstract"}
+        self.forward_mode = mode
 
 
 class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
@@ -252,36 +267,6 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
             device_type=device_type,
         )
 
-    def forward(
-        self, cent: np.ndarray, eps: Optional[np.ndarray] = None
-    ) -> Union["torch.Tensor", Tuple["torch.Tensor", "torch.Tensor"]]:
-        """
-        Performs the neural network forward pass, either using abstract operations or concrete ones
-        depending on the value of self.forward_mode
-
-        :param cent: input data, either regular data if running in concrete mode, or the zonotope bias term.
-        :param eps: zonotope error terms if running in abstract mode
-
-        :return: model predictions, with zonotope error terms if running in abstract mode
-        """
-        if self.model.forward_mode == "concrete":
-            return self.model.concrete_forward(cent)
-        if self.model.forward_mode == "abstract":
-            if eps is not None:
-                out_cent, out_eps = self.model.abstract_forward(cent, eps)
-                return out_cent, out_eps
-            raise ValueError("for abstract forward mode, please provide both cent and eps")
-        raise ValueError("forward_mode must be set to abstract or concrete")
-
-    def set_forward_mode(self, mode: str) -> None:
-        """
-        Helper function to set the forward mode of the model
-
-        :param mode: either concrete or abstract signifying how to run the forward pass
-        """
-        assert mode in {"concrete", "abstract"}
-        self.model.forward_mode = mode  # type: ignore
-
     def certify(self, cent: np.ndarray, eps: np.ndarray, prediction: int) -> bool:
         """
         Check if the datapoint has been certifiably classified.
@@ -298,7 +283,7 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
 
         :return: True/False if the datapoint could be misclassified given the eps bounds.
         """
-        cent_tensor, eps_tensor = self.forward(eps=eps, cent=cent)
+        cent_tensor, eps_tensor = self.model.forward(eps=eps, cent=cent)
         cent = cent_tensor.detach().cpu().numpy()
         eps = eps_tensor.detach().cpu().numpy()
 

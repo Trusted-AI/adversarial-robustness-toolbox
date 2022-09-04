@@ -244,7 +244,7 @@ class AdversarialTrainerCertified(Trainer):
                 x_cert, y_cert = shuffle(x_cert, y_cert)
                 for i, (sample, label) in enumerate(zip(x_cert, y_cert)):
 
-                    self._classifier.set_forward_mode("concrete")
+                    self.set_forward_mode("concrete")
                     concrete_pred = self._classifier.model.forward(np.expand_dims(sample, axis=0))
                     concrete_pred = torch.argmax(concrete_pred)
 
@@ -256,7 +256,7 @@ class AdversarialTrainerCertified(Trainer):
                         processed_sample = self.concrete_to_zonotope(sample, bound)
 
                     # Perform prediction
-                    self._classifier.set_forward_mode("abstract")
+                    self.set_forward_mode("abstract")
                     bias, eps = self._classifier.model.forward(eps=eps_bound, cent=processed_sample)
                     bias = torch.unsqueeze(bias, dim=0)
 
@@ -299,7 +299,7 @@ class AdversarialTrainerCertified(Trainer):
                 ]
 
                 # Perform prediction
-                self._classifier.set_forward_mode("concrete")
+                self.set_forward_mode("concrete")
                 self.attack = ProjectedGradientDescent(
                     estimator=self._classifier,
                     eps=self.pgd_params["eps"],
@@ -346,7 +346,7 @@ class AdversarialTrainerCertified(Trainer):
         :param kwargs: Other parameters to be passed on to the `predict` function of the classifier.
         :return: Predictions for test set.
         """
-        return self._classifier.forward(x, **kwargs)
+        return self._classifier.model.forward(x, **kwargs)
 
     def set_forward_mode(self, mode: str) -> None:
         """
@@ -354,4 +354,4 @@ class AdversarialTrainerCertified(Trainer):
 
         :param mode: either concrete or abstract signifying how to run the forward pass
         """
-        return self._classifier.set_forward_mode(mode)
+        self._classifier._model._model.set_forward_mode(mode)  # pylint: disable=W0212
