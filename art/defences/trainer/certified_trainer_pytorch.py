@@ -21,8 +21,15 @@ This module implements certified adversarial training following techniques from 
     | Paper link: https://arxiv.org/pdf/1810.12715.pdf
 """
 import logging
+import math
 import random
 import sys
+import numpy as np
+
+from tqdm import tqdm
+from art.defences.trainer.trainer import Trainer
+from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
+from art.utils import check_and_transform_label_format
 
 if sys.version_info >= (3, 8):
     from typing import TypedDict, Optional, Any, Tuple, Union, TYPE_CHECKING
@@ -30,21 +37,12 @@ else:
     from typing import Optional, Any, Tuple, Union, TYPE_CHECKING
     from functools import reduce
 
-import math
-import numpy as np
-import torch
-
-from tqdm import tqdm
-
-from art.defences.trainer.trainer import Trainer
-from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
-from art.utils import check_and_transform_label_format
-
 if TYPE_CHECKING:
     from art.utils import CERTIFIER_TYPE
 
     # if we use python 3.8 or higher use the more informative TypedDict for type hinting
     if sys.version_info >= (3, 8):
+
         class PGDParamDict(TypedDict):
             """
             A TypedDict class to define the types in the pgd_params dictionary.
@@ -55,6 +53,7 @@ if TYPE_CHECKING:
             max_iter: int
             num_random_init: int
             batch_size: int
+
     else:
         PGDParamDict: dict[str, Union[int, float]]
 
@@ -197,6 +196,7 @@ class AdversarialTrainerCertified(Trainer):
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
         """
+        import torch
 
         if batch_size is None:
             batch_size = self.batch_size

@@ -87,21 +87,20 @@ def test_mnist_certified_training(art_warning, fix_get_mnist_data):
     prediction = trainer.predict(fix_get_mnist_data[0])
     loss = trainer._classifier.concrete_loss(prediction,
                                              torch.tensor(fix_get_mnist_data[1]).to(device))
-    print('loss ', loss.cpu().detach().numpy())
-
-    assert round(float(loss), 4) == 0.0919
-
-    # check adversarial example performance
-    trainer.set_forward_mode("concrete")
-    attack = ProjectedGradientDescent(
-        estimator=trainer._classifier,
-        eps=pgd_params["eps"],
-        eps_step=pgd_params["eps_step"],
-        max_iter=pgd_params["max_iter"],
-        num_random_init=pgd_params["num_random_init"],
-    )
-
     try:
+
+        assert round(float(loss.cpu().detach().numpy()), 3) == 0.092
+
+        # check adversarial example performance
+        trainer.set_forward_mode("concrete")
+        attack = ProjectedGradientDescent(
+            estimator=trainer._classifier,
+            eps=pgd_params["eps"],
+            eps_step=pgd_params["eps_step"],
+            max_iter=pgd_params["max_iter"],
+            num_random_init=pgd_params["num_random_init"],
+        )
+
         i_batch = attack.generate(fix_get_mnist_data[0], y=fix_get_mnist_data[1])
         prediction = trainer.predict(i_batch)
 
