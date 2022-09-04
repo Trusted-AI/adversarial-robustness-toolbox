@@ -21,8 +21,14 @@ This module implements certified adversarial training following techniques from 
     | Paper link: https://arxiv.org/pdf/1810.12715.pdf
 """
 import logging
-from typing import TypedDict, Optional, Any, Tuple, Union, TYPE_CHECKING
 import random
+import sys
+
+if sys.version_info >= (3, 8):
+    from typing import TypedDict, Optional, Any, Tuple, Union, TYPE_CHECKING
+else:
+    from typing import Optional, Any, Tuple, Union, TYPE_CHECKING
+    from functools import reduce
 
 import math
 import numpy as np
@@ -37,16 +43,20 @@ from art.utils import check_and_transform_label_format
 if TYPE_CHECKING:
     from art.utils import CERTIFIER_TYPE
 
-    class PGDParamDict(TypedDict):
-        """
-        A TypedDict class to define the types in the pgd_params dictionary.
-        """
+    # if we use python 3.8 or higher use the more informative TypedDict for type hinting
+    if sys.version_info >= (3, 8):
+        class PGDParamDict(TypedDict):
+            """
+            A TypedDict class to define the types in the pgd_params dictionary.
+            """
 
-        eps: float
-        eps_step: float
-        max_iter: int
-        num_random_init: int
-        batch_size: int
+            eps: float
+            eps_step: float
+            max_iter: int
+            num_random_init: int
+            batch_size: int
+    else:
+        PGDParamDict: dict[str, Union[int, float]]
 
 
 logger = logging.getLogger(__name__)
@@ -249,7 +259,11 @@ class AdversarialTrainerCertified(Trainer):
                     concrete_pred = torch.argmax(concrete_pred)
 
                     if self.concrete_to_zonotope is None:
-                        eps_bound = np.eye(math.prod(self._classifier.input_shape)) * bound
+                        if sys.version_info >= (3, 8):
+                            eps_bound = np.eye(math.prod(self._classifier.input_shape)) * bound
+                        else:
+                            eps_bound = np.eye(reduce(lambda x, y: x * y, self._classifier.input_shape)) * bound
+
                         processed_sample, eps_bound = self._classifier.pre_process(cent=np.copy(sample), eps=eps_bound)
                         processed_sample = np.expand_dims(processed_sample, axis=0)
                     else:
