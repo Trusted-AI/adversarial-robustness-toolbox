@@ -1,5 +1,3 @@
-import json
-import os
 import pytest
 
 import numpy as np
@@ -7,11 +5,12 @@ import torch
 
 from art.utils import load_dataset
 from art.estimators.certification.deep_z import PytorchDeepZ
-from tests.utils import ARTTestException
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
+from art.defences.trainer import AdversarialTrainerCertified
+
+from tests.utils import ARTTestException
 from tests.utils import get_image_classifier_pt, get_cifar10_image_classifier_pt
 
-from art.defences.trainer import AdversarialTrainerCertified
 
 @pytest.fixture()
 def fix_get_mnist_data():
@@ -53,14 +52,14 @@ def test_mnist_certified_training(art_warning, fix_get_mnist_data):
         2) The correct number of datapoints are certified.
         3) The standard accuracy is correct.
     """
-    bound = 0.05
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     ptc = get_image_classifier_pt(from_logits=True, use_maxpool=False)
     import torch.optim as optim
 
     optimizer = optim.Adam(ptc.model.parameters(), lr=1e-4)
     zonotope_model = PytorchDeepZ(
-        model=ptc.model,
+        model=ptc.model.to(device),
         optimizer=optimizer,
         clip_values=(0, 1), loss=torch.nn.CrossEntropyLoss(), input_shape=(1, 28, 28), nb_classes=10
     )
@@ -79,10 +78,17 @@ def test_mnist_certified_training(art_warning, fix_get_mnist_data):
     import random
     np.random.seed(123)
     random.seed(123)
+    torch.manual_seed(123)
 
     trainer.fit(fix_get_mnist_data[0],
                 fix_get_mnist_data[1],
                 nb_epochs=3)
+    prediction = trainer.predict(fix_get_mnist_data[0])
+    loss = trainer._classifier.concrete_loss(prediction,
+                                             torch.tensor(fix_get_mnist_data[1]).to(device))
+    print('loss ', loss.cpu().detach().numpy())
+
+    assert round(float(loss), 4) == 0.0919
 
     concrete_correct = 0
 
@@ -99,32 +105,68 @@ def test_mnist_certified_training(art_warning, fix_get_mnist_data):
     try:
         i_batch = attack.generate(fix_get_mnist_data[0], y=fix_get_mnist_data[1])
         prediction = trainer.predict(i_batch)
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
         loss = trainer._classifier.concrete_loss(prediction,
                                                  torch.tensor(fix_get_mnist_data[1]).to(device))
 
         loss = loss.cpu().detach().numpy()
-        assert round(float(loss), 5) == 8.65328
+
+        # small numerical differences in GPU vs CPU training
+        if torch.cuda.is_available():
+            assert round(float(loss), 5) == 8.65328
+        else:
+            assert round(float(loss), 5) == 8.65405
     except ARTTestException as e:
         art_warning(e)
 
+
+@pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
+def test_mnist_certified_loss(art_warning, fix_get_mnist_data):
+    bound = 0.05
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    ptc = get_image_classifier_pt(from_logits=True, use_maxpool=False)
+    import torch.optim as optim
+
+    optimizer = optim.Adam(ptc.model.parameters(), lr=1e-4)
+    zonotope_model = PytorchDeepZ(
+        model=ptc.model.to(device),
+        optimizer=optimizer,
+        clip_values=(0, 1), loss=torch.nn.CrossEntropyLoss(), input_shape=(1, 28, 28), nb_classes=10
+    )
+
+    pgd_params = {"eps": 0.25,
+                  "eps_step": 0.05,
+                  "max_iter": 20,
+                  "num_random_init": 0,
+                  "batch_size": 64}
+
+    trainer = AdversarialTrainerCertified(zonotope_model,
+                                          pgd_params=pgd_params,
+                                          batch_size=10,
+                                          bound=0.1)
+
+    import random
+    np.random.seed(123)
+    random.seed(123)
+    torch.manual_seed(123)
+    concrete_correct = 0
     try:
         certified_loss = 0
         for x, y in zip(fix_get_mnist_data[0], fix_get_mnist_data[1]):
             x = x.astype("float32")
             pred_sample = np.copy(x)
             pred_sample = np.expand_dims(pred_sample, axis=0)
-            zonotope_model.set_forward_mode("concrete")
+            zonotope_model.model.set_forward_mode("concrete")
             prediction = trainer.predict(torch.from_numpy(pred_sample.astype("float32")).to(device))
             if np.argmax(prediction.cpu().detach().numpy()) == y:
                 concrete_correct += 1
 
             eps_bound = np.eye(784) * bound
-            zonotope_model.set_forward_mode("abstract")
+            zonotope_model.model.set_forward_mode("abstract")
             data_sample_processed, eps_bound = zonotope_model.pre_process(cent=x, eps=eps_bound)
             data_sample_processed = np.expand_dims(data_sample_processed, axis=0)
-            bias, eps_bound = trainer._classifier.forward(eps=eps_bound, cent=data_sample_processed)
+            bias, eps_bound = trainer._classifier.model.forward(eps=eps_bound, cent=data_sample_processed)
             bias = torch.unsqueeze(bias, dim=0)
 
             certified_loss += trainer._classifier.interval_loss_cce(
@@ -133,14 +175,16 @@ def test_mnist_certified_training(art_warning, fix_get_mnist_data):
             )
 
         certified_loss = certified_loss.cpu().detach().numpy()
-        assert round(float(certified_loss), 4) == 38.9669
+        assert round(float(certified_loss), 4) == 39.7759
+
     except ARTTestException as e:
         art_warning(e)
+
 
 @pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
 def test_cifar_certified_training(art_warning, fix_get_cifar10_data):
     """
-    Check the following properties for the first 10 samples of the CIFAR10 test set given an l_inft bound of 0.004.
+    Check the following properties for the first 10 samples of the CIFAR10 test set given an l_inft bound of 0.001.
         1) Upper and lower bounds are calculated correctly.
         2) The correct number of datapoints are certified.
         3) The standard accuracy is correct.
@@ -159,7 +203,7 @@ def test_cifar_certified_training(art_warning, fix_get_cifar10_data):
     )
 
     pgd_params = {"eps": 8 / 255,
-                  "eps_step": 1/ 255,
+                  "eps_step": 1 / 255,
                   "max_iter": 20,
                   "num_random_init": 0,
                   "batch_size": 64}
@@ -198,22 +242,56 @@ def test_cifar_certified_training(art_warning, fix_get_cifar10_data):
     loss = loss.cpu().detach().numpy()
     assert round(float(loss), 5) == 2.14333
 
+
+@pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
+def test_cifar_certified_loss(art_warning, fix_get_cifar10_data):
+
+    bound = 0.01
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    ptc = get_cifar10_image_classifier_pt(from_logits=True)
+
+    import torch.optim as optim
+    optimizer = optim.Adam(ptc.model.parameters(), lr=1e-4)
+    zonotope_model = PytorchDeepZ(
+        model=ptc.model,
+        optimizer=optimizer,
+        clip_values=(0, 1), loss=torch.nn.CrossEntropyLoss(), input_shape=(3, 32, 32), nb_classes=10
+    )
+
+    pgd_params = {"eps": 8 / 255,
+                  "eps_step": 1 / 255,
+                  "max_iter": 20,
+                  "num_random_init": 0,
+                  "batch_size": 64}
+
+    trainer = AdversarialTrainerCertified(zonotope_model,
+                                          pgd_params=pgd_params,
+                                          batch_size=10,
+                                          bound=bound)
+
+    import random
+    np.random.seed(123)
+    random.seed(123)
+    torch.manual_seed(123)
+    concrete_correct = 0
+
     try:
         certified_loss = 0
         for x, y in zip(fix_get_cifar10_data[0], fix_get_cifar10_data[1]):
             x = x.astype("float32")
             pred_sample = np.copy(x)
             pred_sample = np.expand_dims(pred_sample, axis=0)
-            zonotope_model.set_forward_mode("concrete")
+            zonotope_model.model.set_forward_mode("concrete")
             prediction = trainer.predict(torch.from_numpy(pred_sample.astype("float32")).to(device))
             if np.argmax(prediction.cpu().detach().numpy()) == y:
                 concrete_correct += 1
 
             eps_bound = np.eye(3 * 32 * 32) * bound
-            zonotope_model.set_forward_mode("abstract")
+            zonotope_model.model.set_forward_mode("abstract")
             data_sample_processed, eps_bound = zonotope_model.pre_process(cent=x, eps=eps_bound)
             data_sample_processed = np.expand_dims(data_sample_processed, axis=0)
-            bias, eps_bound = trainer._classifier.forward(eps=eps_bound, cent=data_sample_processed)
+            bias, eps_bound = trainer._classifier.model.forward(eps=eps_bound, cent=data_sample_processed)
             bias = torch.unsqueeze(bias, dim=0)
 
             certified_loss += trainer._classifier.interval_loss_cce(
@@ -222,6 +300,6 @@ def test_cifar_certified_training(art_warning, fix_get_cifar10_data):
             )
 
         certified_loss = certified_loss.cpu().detach().numpy()
-        assert round(float(certified_loss), 4) == 17.9115
+        assert round(float(certified_loss), 4) == 18.5934
     except ARTTestException as e:
         art_warning(e)

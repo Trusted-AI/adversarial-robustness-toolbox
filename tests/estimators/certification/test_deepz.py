@@ -108,15 +108,15 @@ def test_mnist_certification(art_warning, fix_get_mnist_data):
             pred_sample = np.expand_dims(pred_sample, axis=0)
             device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
             pred_sample = torch.from_numpy(pred_sample.astype("float32")).to(device)
-            zonotope_model.set_forward_mode("concrete")
-            prediction = zonotope_model.forward(pred_sample)
+            zonotope_model.model.set_forward_mode("concrete")
+            prediction = zonotope_model.model.forward(pred_sample)
             prediction = np.argmax(prediction.cpu().detach().numpy())
             data_sample_processed, eps_bound = zonotope_model.pre_process(cent=x, eps=eps_bound)
 
             data_sample_processed = np.expand_dims(data_sample_processed, axis=0)
-            zonotope_model.set_forward_mode("abstract")
+            zonotope_model.model.set_forward_mode("abstract")
 
-            bias, eps = zonotope_model.forward(eps=eps_bound, cent=data_sample_processed)
+            bias, eps = zonotope_model.model.forward(eps=eps_bound, cent=data_sample_processed)
 
             upper_bounds, lower_bounds = zonotope_model.zonotope_get_bounds(bias, eps)
             if prediction == y:
@@ -210,14 +210,14 @@ def test_cifar_certification(art_warning, fix_get_cifar10_data):
             pred_sample = np.expand_dims(pred_sample, axis=0)
             device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
             pred_sample = torch.from_numpy(pred_sample.astype("float32")).to(device)
-            zonotope_model.set_forward_mode("concrete")
+            zonotope_model.model.set_forward_mode("concrete")
             prediction = zonotope_model.model.forward(pred_sample)
             prediction = np.argmax(prediction.cpu().detach().numpy())
             data_sample_processed, eps_bound = zonotope_model.pre_process(cent=x, eps=eps_bound)
 
             data_sample_processed = np.expand_dims(data_sample_processed, axis=0)
-            zonotope_model.set_forward_mode("abstract")
-            bias, eps_bound = zonotope_model.forward(eps=eps_bound, cent=data_sample_processed)
+            zonotope_model.model.set_forward_mode("abstract")
+            bias, eps_bound = zonotope_model.model.forward(eps=eps_bound, cent=data_sample_processed)
 
             upper_bounds, lower_bounds = zonotope_model.zonotope_get_bounds(bias, eps_bound)
             if prediction == y:
