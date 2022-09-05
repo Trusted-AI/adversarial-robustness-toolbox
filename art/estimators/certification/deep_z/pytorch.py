@@ -23,6 +23,7 @@ This module implements DeepZ proposed in Fast and Effective Robustness Certifica
 
 from typing import List, Optional, Tuple, Union, Any, TYPE_CHECKING
 
+import logging
 import warnings
 import numpy as np
 import torch
@@ -234,10 +235,10 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
         if optimizer is not None:
             opt_state_dict = optimizer.state_dict()
             if isinstance(optimizer, torch.optim.Adam):
-                print("Converting Adam Optimiser")
+                logging.info("Converting Adam Optimiser")
                 converted_optimizer = torch.optim.Adam(converted_model.parameters(), lr=1e-4)
             elif isinstance(optimizer, torch.optim.SGD):
-                print("Converting SGD Optimiser")
+                logging.info("Converting SGD Optimiser")
                 converted_optimizer = torch.optim.SGD(converted_model.parameters(), lr=1e-4)
             else:
                 raise ValueError("Optimiser not supported for conversion")

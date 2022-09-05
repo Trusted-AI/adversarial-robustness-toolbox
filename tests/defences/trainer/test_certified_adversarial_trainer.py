@@ -18,6 +18,7 @@
 import pytest
 
 import numpy as np
+import random
 import torch
 
 from art.utils import load_dataset
@@ -91,8 +92,6 @@ def test_mnist_certified_training(art_warning, fix_get_mnist_data):
     pgd_params = {"eps": 0.25, "eps_step": 0.05, "max_iter": 20, "num_random_init": 0, "batch_size": 64}
 
     trainer = AdversarialTrainerCertifiedPytorch(zonotope_model, pgd_params=pgd_params, batch_size=10, bound=0.1)
-
-    import random
 
     np.random.seed(123)
     random.seed(123)
@@ -314,8 +313,6 @@ def test_cifar_certified_loss(art_warning, fix_get_cifar10_data):
     pgd_params = {"eps": 8 / 255, "eps_step": 1 / 255, "max_iter": 20, "num_random_init": 0, "batch_size": 64}
 
     trainer = AdversarialTrainerCertifiedPytorch(zonotope_model, pgd_params=pgd_params, batch_size=10, bound=bound)
-
-    import random
 
     np.random.seed(123)
     random.seed(123)

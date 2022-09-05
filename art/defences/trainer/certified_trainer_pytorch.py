@@ -144,7 +144,7 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
         :param batch_size: Size of batches to use for certified training. NB, this will run the data
                            sequentially accumulating gradients over the batch size.
         """
-        super().__init__(classifier=classifier)  # type: ignore
+        super().__init__(classifier=classifier)
         self._classifier: "CERTIFIER_TYPE"
         self.pgd_params: "PGDParamDict"
 
