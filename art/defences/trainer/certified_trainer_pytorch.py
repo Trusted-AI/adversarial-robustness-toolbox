@@ -25,9 +25,10 @@ import logging
 import math
 import random
 import sys
-import numpy as np
 
+import numpy as np
 from tqdm import tqdm
+
 from art.defences.trainer.trainer import Trainer
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
 from art.utils import check_and_transform_label_format
