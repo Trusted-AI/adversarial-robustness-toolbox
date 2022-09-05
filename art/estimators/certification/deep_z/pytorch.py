@@ -310,7 +310,6 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
         :param y: unprocessed labels.
         :param fit: `True` if the function is call before fit/training and `False` if the function is called before a
                      predict operation.
-
         :return: Tuple with the processed input data and labels.
         """
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=fit)
