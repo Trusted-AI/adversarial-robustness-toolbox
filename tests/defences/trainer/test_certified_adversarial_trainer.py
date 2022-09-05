@@ -211,7 +211,6 @@ def test_mnist_certified_loss(art_warning, fix_get_mnist_data):
         preds = trainer._classifier.model.forward(i_batch)
         preds = preds.cpu().detach().numpy()
         acc = np.sum(np.argmax(preds, axis=1) == fix_get_mnist_data[1]) / len(fix_get_mnist_data[1])
-        print(acc)
         assert acc * 100 >= samples_certified
 
     except ARTTestException as e:
