@@ -36,7 +36,7 @@ from art.utils import check_and_transform_label_format
 if sys.version_info >= (3, 8):
     from typing import TypedDict, Optional, Any, Tuple, Union, TYPE_CHECKING
 else:
-    from typing import Optional, Any, Tuple, Union, TYPE_CHECKING
+    from typing import Dict, Optional, Any, Tuple, Union, TYPE_CHECKING
     from functools import reduce
 
 if TYPE_CHECKING:
@@ -58,7 +58,7 @@ if TYPE_CHECKING:
             batch_size: int
 
     else:
-        PGDParamDict: dict[str, Union[int, float]]
+        PGDParamDict: Dict[str, Union[int, float]]
 
 
 logger = logging.getLogger(__name__)
@@ -87,7 +87,7 @@ class DefaultLinearScheduler:
         return self.bound
 
 
-class AdversarialTrainerCertified(Trainer):
+class AdversarialTrainerCertifiedPytorch(Trainer):
     """
     Class performing certified adversarial training from methods such as
 

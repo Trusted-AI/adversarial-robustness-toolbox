@@ -1,3 +1,20 @@
+# MIT License
+#
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+# documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+# persons to whom the Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+# Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+# WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 import pytest
 
 import numpy as np
@@ -6,7 +23,7 @@ import torch
 from art.utils import load_dataset
 from art.estimators.certification.deep_z import PytorchDeepZ
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
-from art.defences.trainer import AdversarialTrainerCertified
+from art.defences.trainer import AdversarialTrainerCertifiedPytorch
 
 from tests.utils import ARTTestException
 from tests.utils import get_image_classifier_pt, get_cifar10_image_classifier_pt
@@ -73,7 +90,7 @@ def test_mnist_certified_training(art_warning, fix_get_mnist_data):
 
     pgd_params = {"eps": 0.25, "eps_step": 0.05, "max_iter": 20, "num_random_init": 0, "batch_size": 64}
 
-    trainer = AdversarialTrainerCertified(zonotope_model, pgd_params=pgd_params, batch_size=10, bound=0.1)
+    trainer = AdversarialTrainerCertifiedPytorch(zonotope_model, pgd_params=pgd_params, batch_size=10, bound=0.1)
 
     import random
 
@@ -124,7 +141,7 @@ def test_mnist_certified_loss(art_warning, fix_get_mnist_data):
 
     pgd_params = {"eps": 0.25, "eps_step": 0.05, "max_iter": 20, "num_random_init": 0, "batch_size": 64}
 
-    trainer = AdversarialTrainerCertified(zonotope_model, pgd_params=pgd_params, batch_size=10, bound=bound)
+    trainer = AdversarialTrainerCertifiedPytorch(zonotope_model, pgd_params=pgd_params, batch_size=10, bound=bound)
 
     import random
 
@@ -246,7 +263,7 @@ def test_cifar_certified_training(art_warning, fix_get_cifar10_data):
 
     pgd_params = {"eps": 8 / 255, "eps_step": 1 / 255, "max_iter": 20, "num_random_init": 0, "batch_size": 64}
 
-    trainer = AdversarialTrainerCertified(zonotope_model, pgd_params=pgd_params, batch_size=10, bound=bound)
+    trainer = AdversarialTrainerCertifiedPytorch(zonotope_model, pgd_params=pgd_params, batch_size=10, bound=bound)
 
     import random
 
@@ -296,7 +313,7 @@ def test_cifar_certified_loss(art_warning, fix_get_cifar10_data):
 
     pgd_params = {"eps": 8 / 255, "eps_step": 1 / 255, "max_iter": 20, "num_random_init": 0, "batch_size": 64}
 
-    trainer = AdversarialTrainerCertified(zonotope_model, pgd_params=pgd_params, batch_size=10, bound=bound)
+    trainer = AdversarialTrainerCertifiedPytorch(zonotope_model, pgd_params=pgd_params, batch_size=10, bound=bound)
 
     import random
 
