@@ -112,7 +112,6 @@ class ConvertedModel(torch.nn.Module):
 
         :param cent: input data, either regular data if running in concrete mode, or the zonotope bias term.
         :param eps: zonotope error terms if running in abstract mode
-
         :return: model predictions, with zonotope error terms if running in abstract mode
         """
         if self.forward_mode == "concrete":
