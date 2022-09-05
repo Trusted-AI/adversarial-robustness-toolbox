@@ -360,7 +360,6 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
 
         :param preds: (concrete) model predictions
         :param labels: ground truth labels (not one hot)
-
         :return: prediction accuracy
         """
         if isinstance(preds, torch.Tensor):
