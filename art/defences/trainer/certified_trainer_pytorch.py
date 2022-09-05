@@ -17,6 +17,7 @@
 # SOFTWARE.
 """
 This module implements certified adversarial training following techniques from works such as:
+
     | Paper link: http://proceedings.mlr.press/v80/mirman18b/mirman18b.pdf
     | Paper link: https://arxiv.org/pdf/1810.12715.pdf
 """
