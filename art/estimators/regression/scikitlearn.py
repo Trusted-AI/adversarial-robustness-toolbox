@@ -175,6 +175,17 @@ class ScikitlearnRegressor(RegressorMixin, ScikitlearnEstimator):  # lgtm [py/mi
 
         return (y - self.predict(x)) ** 2
 
+    def compute_loss_from_predictions(self, pred: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+        """
+        Compute the MSE loss of the regressor for predictions `pred`.
+
+        :param pred: Model predictions.
+        :param y: Target values.
+        :return: Loss values.
+        """
+
+        return (y - pred) ** 2
+
 
 class ScikitlearnDecisionTreeRegressor(ScikitlearnRegressor):
     """
