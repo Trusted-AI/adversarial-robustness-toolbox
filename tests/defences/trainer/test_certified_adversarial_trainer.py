@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2022
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -99,14 +99,14 @@ def test_mnist_certified_training(art_warning, fix_get_mnist_data):
     try:
         # Check losses pre-training
         trainer._classifier.model.set_forward_mode("concrete")
-        prediction = trainer.predict(fix_get_mnist_data[0])
+        prediction = trainer._classifier.model.forward(fix_get_mnist_data[0])
         loss = trainer._classifier.concrete_loss(prediction, torch.tensor(fix_get_mnist_data[1]).to(device))
         assert round(float(loss.cpu().detach().numpy()), 3) == 0.095
 
         trainer.fit(fix_get_mnist_data[0], fix_get_mnist_data[1], nb_epochs=3)
 
         # Check losses post-training
-        prediction = trainer.predict(fix_get_mnist_data[0])
+        prediction = trainer._classifier.model.forward(fix_get_mnist_data[0])
         loss = trainer._classifier.concrete_loss(prediction, torch.tensor(fix_get_mnist_data[1]).to(device))
         assert round(float(loss.cpu().detach().numpy()), 3) == 0.092
 
@@ -142,20 +142,19 @@ def test_mnist_certified_loss(art_warning, fix_get_mnist_data):
 
     trainer = AdversarialTrainerCertifiedPytorch(zonotope_model, pgd_params=pgd_params, batch_size=10, bound=bound)
 
-    import random
-
     np.random.seed(123)
     random.seed(123)
     torch.manual_seed(123)
     concrete_correct = 0
+    samples_x, samples_eps = trainer.predict_zonotopes(np.copy(fix_get_mnist_data[0]), bound)
     try:
         certified_loss = 0
-        for x, y in zip(fix_get_mnist_data[0], fix_get_mnist_data[1]):
+        for i, (x, y) in enumerate(zip(fix_get_mnist_data[0], fix_get_mnist_data[1])):
             x = x.astype("float32")
             pred_sample = np.copy(x)
             pred_sample = np.expand_dims(pred_sample, axis=0)
             zonotope_model.model.set_forward_mode("concrete")
-            prediction = trainer.predict(torch.from_numpy(pred_sample.astype("float32")).to(device))
+            prediction = trainer._classifier.model.forward(torch.from_numpy(pred_sample.astype("float32")).to(device))
             if np.argmax(prediction.cpu().detach().numpy()) == y:
                 concrete_correct += 1
 
@@ -165,6 +164,9 @@ def test_mnist_certified_loss(art_warning, fix_get_mnist_data):
             data_sample_processed = np.expand_dims(data_sample_processed, axis=0)
             bias, eps_bound = trainer._classifier.model.forward(eps=eps_bound, cent=data_sample_processed)
             bias = torch.unsqueeze(bias, dim=0)
+
+            assert np.allclose(samples_x[i], bias.cpu().detach().numpy())
+            assert np.allclose(samples_eps[i], eps_bound.cpu().detach().numpy())
 
             certified_loss += trainer._classifier.interval_loss_cce(
                 prediction=torch.cat((bias, eps_bound)),
@@ -181,7 +183,7 @@ def test_mnist_certified_loss(art_warning, fix_get_mnist_data):
             pred_sample = np.copy(x)
             pred_sample = np.expand_dims(pred_sample, axis=0)
             zonotope_model.model.set_forward_mode("concrete")
-            prediction = trainer.predict(torch.from_numpy(pred_sample.astype("float32")).to(device))
+            prediction = trainer._classifier.model.forward(torch.from_numpy(pred_sample.astype("float32")).to(device))
             if np.argmax(prediction.cpu().detach().numpy()) == y:
                 concrete_correct += 1
 
@@ -264,20 +266,18 @@ def test_cifar_certified_training(art_warning, fix_get_cifar10_data):
 
     trainer = AdversarialTrainerCertifiedPytorch(zonotope_model, pgd_params=pgd_params, batch_size=10, bound=bound)
 
-    import random
-
     np.random.seed(123)
     random.seed(123)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     try:
         trainer._classifier.model.set_forward_mode("concrete")
-        prediction = trainer.predict(fix_get_cifar10_data[0])
+        prediction = trainer._classifier.model.forward(fix_get_cifar10_data[0])
         loss = trainer._classifier.concrete_loss(prediction, torch.tensor(fix_get_cifar10_data[1]).to(device))
         assert round(float(loss.cpu().detach().numpy()), 4) == 1.0611
 
         trainer.fit(fix_get_cifar10_data[0], fix_get_cifar10_data[1], nb_epochs=3)
-        prediction = trainer.predict(fix_get_cifar10_data[0])
+        prediction = trainer._classifier.model.forward(fix_get_cifar10_data[0])
 
         loss = trainer._classifier.concrete_loss(prediction, torch.tensor(fix_get_cifar10_data[1]).to(device))
         assert round(float(loss.cpu().detach().numpy()), 4) == 1.0092
@@ -318,7 +318,7 @@ def test_cifar_certified_loss(art_warning, fix_get_cifar10_data):
     random.seed(123)
     torch.manual_seed(123)
     concrete_correct = 0
-
+    samples_x, samples_eps = trainer.predict_zonotopes(np.copy(fix_get_cifar10_data[0]), bound)
     try:
         certified_loss = 0
         for x, y in zip(fix_get_cifar10_data[0], fix_get_cifar10_data[1]):
@@ -326,7 +326,7 @@ def test_cifar_certified_loss(art_warning, fix_get_cifar10_data):
             pred_sample = np.copy(x)
             pred_sample = np.expand_dims(pred_sample, axis=0)
             zonotope_model.model.set_forward_mode("concrete")
-            prediction = trainer.predict(torch.from_numpy(pred_sample.astype("float32")).to(device))
+            prediction = trainer._classifier.model.forward(torch.from_numpy(pred_sample.astype("float32")).to(device))
             if np.argmax(prediction.cpu().detach().numpy()) == y:
                 concrete_correct += 1
 
@@ -348,12 +348,12 @@ def test_cifar_certified_loss(art_warning, fix_get_cifar10_data):
         samples_certified = 0
 
         certified_loss = 0
-        for x, y in zip(fix_get_cifar10_data[0], fix_get_cifar10_data[1]):
+        for i, (x, y) in enumerate(zip(fix_get_cifar10_data[0], fix_get_cifar10_data[1])):
             x = x.astype("float32")
             pred_sample = np.copy(x)
             pred_sample = np.expand_dims(pred_sample, axis=0)
             zonotope_model.model.set_forward_mode("concrete")
-            prediction = trainer.predict(torch.from_numpy(pred_sample.astype("float32")).to(device))
+            prediction = trainer._classifier.model.forward(torch.from_numpy(pred_sample.astype("float32")).to(device))
             if np.argmax(prediction.cpu().detach().numpy()) == y:
                 concrete_correct += 1
 
@@ -363,6 +363,9 @@ def test_cifar_certified_loss(art_warning, fix_get_cifar10_data):
             data_sample_processed = np.expand_dims(data_sample_processed, axis=0)
             bias, eps_bound = trainer._classifier.model.forward(eps=eps_bound, cent=data_sample_processed)
             bias = torch.unsqueeze(bias, dim=0)
+
+            assert np.allclose(samples_x[i], bias.cpu().detach().numpy())
+            assert np.allclose(samples_eps[i], eps_bound.cpu().detach().numpy())
 
             sample_loss = trainer._classifier.max_logit_loss(
                 prediction=torch.cat((bias, eps_bound)),

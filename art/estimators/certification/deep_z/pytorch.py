@@ -24,12 +24,18 @@ This module implements DeepZ proposed in Fast and Effective Robustness Certifica
 from typing import List, Optional, Tuple, Union, Any, TYPE_CHECKING
 
 import logging
+import math
 import warnings
+import sys
+
 import numpy as np
 import torch
 
 from art.estimators.certification.deep_z.deep_z import ZonoConv, ZonoDenseLayer, ZonoReLU, ZonoBounds
 from art.estimators.classification.pytorch import PyTorchClassifier
+
+if sys.version_info < (3, 8):
+    from functools import reduce
 
 if TYPE_CHECKING:
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
@@ -196,6 +202,7 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
         preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
         device_type: str = "gpu",
+        concrete_to_zonotope: Optional[Any] = None,
     ):
         """
         Create a certifier based on the zonotope domain.
@@ -218,6 +225,15 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
+        :param concrete_to_zonotope:  Optional argument. Function which takes in a concrete data point and the bound
+                                      and converts the datapoint to the zonotope domain via:
+
+                                                processed_sample, eps_bound = concrete_to_zonotope(sample, bound)
+
+                                      where processed_sample is the zonotope bias term, and eps_bound are the
+                                      associated error terms.
+                                      If left as None, by default we apply the bound to every feature equally and
+                                      adjust the zonotope such that it remains in the 0 - 1 range.
         """
 
         warnings.warn(
@@ -247,6 +263,8 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
         else:
             converted_optimizer = None
 
+        self.concrete_to_zonotope = concrete_to_zonotope
+
         super().__init__(
             model=converted_model,
             loss=loss,
@@ -260,6 +278,44 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
             preprocessing=preprocessing,
             device_type=device_type,
         )
+
+    def predict_zonotopes(  # pylint: disable=W0613
+        self, x: np.ndarray, bound: float, training_mode: bool = True, **kwargs
+    ) -> Tuple[List[np.ndarray], List[np.ndarray]]:
+        """
+
+        :param x:
+        :param bound: The perturbation range for the zonotope.
+        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
+               and providing it takes no effect.
+        """
+        x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
+        self._model.train(mode=training_mode)
+
+        bias_results_list = []
+        eps_results_list = []
+
+        for sample in x_preprocessed:
+            if self.concrete_to_zonotope is None:
+                if sys.version_info >= (3, 8):
+                    eps_bound = np.eye(math.prod(self.input_shape)) * bound
+                else:
+                    eps_bound = np.eye(reduce(lambda x, y: x * y, self.input_shape)) * bound
+
+                processed_sample, eps_bound = self.pre_process(cent=np.copy(sample), eps=eps_bound)
+                processed_sample = np.expand_dims(processed_sample, axis=0)
+            else:
+                processed_sample, eps_bound = self.concrete_to_zonotope(sample, bound)
+
+            bias, eps = self.model.forward(eps=eps_bound, cent=processed_sample)
+            bias = bias.detach().cpu().numpy()
+            eps = eps.detach().cpu().numpy()
+
+            bias_results_list.append(np.expand_dims(bias, axis=0))
+            eps_results_list.append(eps)
+
+        return bias_results_list, eps_results_list
 
     def certify(self, cent: np.ndarray, eps: np.ndarray, prediction: int) -> bool:
         """

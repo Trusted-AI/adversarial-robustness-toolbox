@@ -27,6 +27,8 @@ import random
 import sys
 
 import numpy as np
+
+from sklearn.utils import shuffle
 from tqdm import tqdm
 
 from art.defences.trainer.trainer import Trainer
@@ -34,9 +36,9 @@ from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent i
 from art.utils import check_and_transform_label_format
 
 if sys.version_info >= (3, 8):
-    from typing import TypedDict, Optional, Any, Tuple, Union, TYPE_CHECKING
+    from typing import TypedDict, List, Optional, Any, Tuple, Union, TYPE_CHECKING
 else:
-    from typing import Dict, Optional, Any, Tuple, Union, TYPE_CHECKING
+    from typing import Dict, List, Optional, Any, Tuple, Union, TYPE_CHECKING
     from functools import reduce
 
 if TYPE_CHECKING:
@@ -102,7 +104,6 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
         bound: float = 0.1,
         loss_weighting: float = 0.1,
         batch_size: int = 10,
-        concrete_to_zonotope: Optional[Any] = None,
         use_certification_schedule: bool = True,
         certification_schedule: Optional[Any] = None,
         pgd_params: Optional["PGDParamDict"] = None,
@@ -126,14 +127,6 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
                            If not provided, we will default to typical MNIST values.
         :param bound: The perturbation range for the zonotope. Will be ignored if a certification_schedule is used.
         :param loss_weighting: Weighting factor for the certified loss.
-        :param concrete_to_zonotope:  Optional argument. Function which takes in a concrete data point and the bound
-                                      and converts the datapoint to the zonotope domain via:
-
-                                                processed_sample = concrete_to_zonotope(sample, bound)
-
-                                      If left as None, by default we apply the bound to every feature equally and
-                                      adjust the zonotope such that it remains in the 0 - 1 range.
-
         :param nb_epochs: Number of training epochs.
         :param use_certification_schedule: If to use a training schedule for the certification radius.
         :param certification_schedule: Schedule for gradually increasing the certification radius. Empirical studies
@@ -159,7 +152,6 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
         self.use_certification_schedule = use_certification_schedule
         self.certification_schedule = certification_schedule
         self.batch_size = batch_size
-        self.concrete_to_zonotope = concrete_to_zonotope
         # Setting up adversary and perform adversarial training:
         self.attack = ProjectedGradientDescent(
             estimator=self._classifier,
@@ -178,6 +170,7 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
         nb_epochs: Optional[int] = None,
         training_mode: bool = True,
         scheduler: Optional[Any] = None,
+        verbose: bool = True,
         **kwargs,
     ) -> None:
         """
@@ -196,6 +189,7 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
         :param nb_epochs: Number of epochs to use for training.
         :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
         :param scheduler: Learning rate scheduler to run at the start of every epoch.
+        :param verbose: If to display the per-batch statistics while training.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
         """
@@ -225,7 +219,6 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
 
         num_batch = int(np.ceil(len(x_preprocessed) / float(self.pgd_params["batch_size"])))
         ind = np.arange(len(x_preprocessed))
-        from sklearn.utils import shuffle
 
         x_cert = np.copy(x_preprocessed)
         y_cert = np.copy(y_preprocessed)
@@ -246,7 +239,11 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
             random.shuffle(ind)
 
             # Train for one epoch
-            pbar = tqdm(range(num_batch))
+            if verbose:
+                pbar = tqdm(range(num_batch))
+            else:
+                pbar = tqdm(range(num_batch), disable=True)
+
             for m in pbar:
                 certified_loss = torch.tensor(0.0).to(self._classifier.device)
                 samples_certified = 0
@@ -261,7 +258,7 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
                     concrete_pred = self._classifier.model.forward(np.expand_dims(sample, axis=0))
                     concrete_pred = torch.argmax(concrete_pred)
 
-                    if self.concrete_to_zonotope is None:
+                    if self._classifier.concrete_to_zonotope is None:
                         if sys.version_info >= (3, 8):
                             eps_bound = np.eye(math.prod(self._classifier.input_shape)) * bound
                         else:
@@ -270,7 +267,7 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
                         processed_sample, eps_bound = self._classifier.pre_process(cent=np.copy(sample), eps=eps_bound)
                         processed_sample = np.expand_dims(processed_sample, axis=0)
                     else:
-                        processed_sample = self.concrete_to_zonotope(sample, bound)
+                        processed_sample, eps_bound = self._classifier.concrete_to_zonotope(sample, bound)
 
                     # Perform prediction
                     self.set_forward_mode("abstract")
@@ -334,10 +331,11 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
                     model_outputs, torch.from_numpy(o_batch).to(self._classifier.device)
                 )  # pylint: disable=W0212
 
-                pbar.set_description(
-                    f"Bound {bound:.2f}: Loss {pgd_loss:.2f} Cert Loss {certified_loss:.2f} "
-                    f"Acc {acc:.2f} Cert Acc {samples_certified / batch_size:.2f}"
-                )
+                if verbose:
+                    pbar.set_description(
+                        f"Bound {bound:.2f}: Loss {pgd_loss:.2f} Cert Loss {certified_loss:.2f} "
+                        f"Acc {acc:.2f} Cert Acc {samples_certified / batch_size:.2f}"
+                    )
 
                 loss = certified_loss * self.loss_weighting + pgd_loss * (1 - self.loss_weighting)
                 # Do training
@@ -355,7 +353,7 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
             if scheduler is not None:
                 scheduler.step()
 
-    def predict(self, x: np.ndarray, **kwargs) -> Union["torch.Tensor", Tuple["torch.Tensor", "torch.Tensor"]]:
+    def predict(self, x: np.ndarray, **kwargs) -> np.ndarray:
         """
         Perform prediction using the adversarially trained classifier.
 
@@ -363,7 +361,25 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
         :param kwargs: Other parameters to be passed on to the `predict` function of the classifier.
         :return: Predictions for test set.
         """
-        return self._classifier.model.forward(x, **kwargs)
+        if self._classifier._model._model.forward_mode != 'concrete':  # pylint: disable=W0212
+            raise ValueError("For normal predictions, the model must be running in concrete mode. If an abstract "
+                             "prediction is wanted then use predict_zonotopes instead")
+
+        return self._classifier.predict(x, **kwargs)
+
+    def predict_zonotopes(self, cent: np.ndarray, bound, **kwargs) -> Tuple[List[np.ndarray], List[np.ndarray]]:
+        """
+        Perform prediction using the adversarially trained classifier using zonotopes
+
+        :param cent: The datapoint, representing the zonotope center.
+        :param bound: The perturbation range for the zonotope.
+        """
+
+        if self._classifier._model._model.forward_mode != 'abstract':  # pylint: disable=W0212
+            raise ValueError("For zonotope predictions, the model must be running in abstract mode. If a concrete "
+                             "prediction is wanted then use predict instead")
+
+        return self._classifier.predict_zonotopes(cent, bound, **kwargs)
 
     def set_forward_mode(self, mode: str) -> None:
         """
