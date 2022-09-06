@@ -280,17 +280,17 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
         )
 
     def predict_zonotopes(  # pylint: disable=W0613
-        self, x: np.ndarray, bound: float, training_mode: bool = True, **kwargs
+        self, cent: np.ndarray, bound: float, training_mode: bool = True, **kwargs
     ) -> Tuple[List[np.ndarray], List[np.ndarray]]:
         """
 
-        :param x:
+        :param cent: The datapoint, representing the zonotope center.
         :param bound: The perturbation range for the zonotope.
         :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
         """
-        x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
+        x_preprocessed, _ = self._apply_preprocessing(cent, y=None, fit=False)
         self._model.train(mode=training_mode)
 
         bias_results_list = []
