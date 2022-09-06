@@ -164,9 +164,6 @@ class AdversarialPatch(EvasionAttack):
         """
         logger.info("Creating adversarial patch.")
 
-        if y is None:  # pragma: no cover
-            raise ValueError("Adversarial Patch attack requires target values `y`.")
-
         if len(x.shape) == 2:  # pragma: no cover
             raise ValueError(
                 "Feature vectors detected. The adversarial patch can only be applied to data with spatial "
