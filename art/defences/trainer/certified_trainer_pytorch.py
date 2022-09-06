@@ -361,9 +361,11 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
         :param kwargs: Other parameters to be passed on to the `predict` function of the classifier.
         :return: Predictions for test set.
         """
-        if self._classifier._model._model.forward_mode != 'concrete':  # pylint: disable=W0212
-            raise ValueError("For normal predictions, the model must be running in concrete mode. If an abstract "
-                             "prediction is wanted then use predict_zonotopes instead")
+        if self._classifier._model._model.forward_mode != "concrete":  # pylint: disable=W0212
+            raise ValueError(
+                "For normal predictions, the model must be running in concrete mode. If an abstract "
+                "prediction is wanted then use predict_zonotopes instead"
+            )
 
         return self._classifier.predict(x, **kwargs)
 
@@ -375,9 +377,11 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
         :param bound: The perturbation range for the zonotope.
         """
 
-        if self._classifier._model._model.forward_mode != 'abstract':  # pylint: disable=W0212
-            raise ValueError("For zonotope predictions, the model must be running in abstract mode. If a concrete "
-                             "prediction is wanted then use predict instead")
+        if self._classifier._model._model.forward_mode != "abstract":  # pylint: disable=W0212
+            raise ValueError(
+                "For zonotope predictions, the model must be running in abstract mode. If a concrete "
+                "prediction is wanted then use predict instead"
+            )
 
         return self._classifier.predict_zonotopes(cent, bound, **kwargs)
 
