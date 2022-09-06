@@ -42,7 +42,6 @@ else:
     from functools import reduce
 
 if TYPE_CHECKING:
-    import torch
     from art.utils import CERTIFIER_TYPE
 
     # if we use python 3.8 or higher use the more informative TypedDict for type hinting
