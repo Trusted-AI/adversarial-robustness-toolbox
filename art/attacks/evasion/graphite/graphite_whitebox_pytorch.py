@@ -38,7 +38,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the white-box version of the GRAPHITE attack `GRAPHITEWhiteboxPyTorch`.
+This module implements the white-box PyTorch version of the GRAPHITE attack `GRAPHITEWhiteboxPyTorch`.
 This is a robust physical perturbation attack.
 
 | Paper link: https://arxiv.org/abs/2002.07088
@@ -59,7 +59,7 @@ from art.utils import compute_success, to_categorical, check_and_transform_label
 from art.attacks.evasion.graphite.utils import convert_to_network, get_transform_params, transform_wb
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
+    from art.estimators.classification.pytorch import PyTorchClassifier
     import torch
 
 logger = logging.getLogger(__name__)
@@ -67,7 +67,7 @@ logger = logging.getLogger(__name__)
 
 class GRAPHITEWhiteboxPyTorch(EvasionAttack):
     """
-    Implementation of the white-box GRAPHITE attack from Feng et al. (2022). This is a physical attack
+    Implementation of the white-box PyTorch GRAPHITE attack from Feng et al. (2022). This is a physical attack
     that generates robust physical perturbations that can be applied as stickers.
 
     | Paper link: https://arxiv.org/abs/2002.07088
@@ -98,7 +98,7 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
+        classifier: "PyTorchClassifier",
         net_size: Tuple[int, int],
         min_tr: float = 0.8,
         num_xforms: int = 100,
