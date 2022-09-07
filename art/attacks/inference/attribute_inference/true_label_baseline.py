@@ -21,7 +21,7 @@ This module implements attribute inference attacks.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Union, TYPE_CHECKING
+from typing import Optional, Union, Tuple, TYPE_CHECKING
 
 import numpy as np
 from sklearn.neural_network import MLPClassifier
@@ -60,7 +60,7 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
         attack_model: Optional["CLASSIFIER_TYPE"] = None,
         attack_feature: Union[int, slice] = 0,
         is_regression: Optional[bool] = False,
-        scale_range: Optional[slice] = None,
+        scale_range: Optional[Tuple[float, float]] = None,
         prediction_normal_factor: float = 1,
     ):
         """
@@ -83,6 +83,7 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
         super().__init__(estimator=None, attack_feature=attack_feature)
 
         self._values: Optional[list] = None
+        self._nb_classes: Optional[int] = None
 
         if attack_model:
             if ClassifierMixin not in type(attack_model).__mro__:
@@ -140,11 +141,12 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
         # get vector of attacked feature
         attacked_feature = x[:, self.attack_feature]
         self._values = get_feature_values(attacked_feature, isinstance(self.attack_feature, int))
+        self._nb_classes = len(self._values)
         if isinstance(self.attack_feature, int):
             y_one_hot = float_to_categorical(attacked_feature)
         else:
             y_one_hot = floats_to_one_hot(attacked_feature)
-        y_ready = check_and_transform_label_format(y_one_hot, len(np.unique(attacked_feature)), return_one_hot=True)
+        y_ready = check_and_transform_label_format(y_one_hot, nb_classes=self._nb_classes, return_one_hot=True)
         if y_ready is None:
             raise ValueError("None value detected.")
 
@@ -156,7 +158,7 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
                 normalized_labels = y * self.prediction_normal_factor
             normalized_labels = normalized_labels.reshape(-1, 1)
         else:
-            normalized_labels = check_and_transform_label_format(y, return_one_hot=True)
+            normalized_labels = check_and_transform_label_format(y, nb_classes=None, return_one_hot=True)
         x_train = np.concatenate((np.delete(x, self.attack_feature, 1), normalized_labels), axis=1).astype(np.float32)
 
         # train attack model
@@ -192,7 +194,7 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
                 normalized_labels = y * self.prediction_normal_factor
             normalized_labels = normalized_labels.reshape(-1, 1)
         else:
-            normalized_labels = check_and_transform_label_format(y, return_one_hot=True)
+            normalized_labels = check_and_transform_label_format(y, nb_classes=None, return_one_hot=True)
         x_test = np.concatenate((x, normalized_labels), axis=1).astype(np.float32)
 
         predictions = self.attack_model.predict(x_test).astype(np.float32)

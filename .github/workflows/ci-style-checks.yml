@@ -26,7 +26,7 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v3
       - name: Setup Python
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         with:
           python-version: 3.8
       - name: Pre-install
@@ -45,6 +45,7 @@ jobs:
           pip install types-PyYAML
           pip install types-setuptools
           pip install click==8.0.2
+          pip install numpy==1.21.6
           pip list
       - name: pycodestyle
         run: pycodestyle --ignore=C0330,C0415,E203,E231,W503 --max-line-length=120 art

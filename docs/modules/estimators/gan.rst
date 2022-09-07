@@ -2,9 +2,9 @@
 =========================
 .. automodule:: art.estimators.gan
 
-TensorFlow2 GAN
----------------
-.. autoclass:: TensorFlow2GAN
+TensorFlowV2 GAN
+----------------
+.. autoclass:: TensorFlowV2GAN
    :members:
    :special-members: __init__
    :inherited-members:

@@ -32,8 +32,8 @@ import numpy as np
 
 from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 from art.estimators.encoding.tensorflow import TensorFlowEncoder
-from art.estimators.generation.tensorflow import TensorFlowGenerator, TensorFlow2Generator
-from art.estimators.gan.tensorflow_gan import TensorFlow2GAN
+from art.estimators.generation.tensorflow import TensorFlowGenerator, TensorFlowV2Generator
+from art.estimators.gan.tensorflow import TensorFlowV2GAN
 from art.utils import load_dataset
 
 logger = logging.getLogger(__name__)
@@ -366,7 +366,7 @@ def get_image_generator_tf_v2(capacity: int, z_dim: int):
 
         return model
 
-    generator = TensorFlow2Generator(encoding_length=z_dim, model=make_image_generator_model(capacity, z_dim))
+    generator = TensorFlowV2Generator(encoding_length=z_dim, model=make_image_generator_model(capacity, z_dim))
 
     return generator
 
@@ -426,7 +426,7 @@ def get_image_gan_tf_v2():
 
         return total_loss
 
-    gan = TensorFlow2GAN(
+    gan = TensorFlowV2GAN(
         generator=generator,
         discriminator=discriminator_classifier,
         generator_loss=generator_orig_loss_fct,
@@ -1794,6 +1794,99 @@ def get_tabular_classifier_kr(load_init=True):
 
     # Get classifier
     krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False, channels_first=True)
+
+    return krc
+
+
+def get_tabular_regressor_kr(load_init=True):
+    """
+    Standard Keras regressor for unit testing on Diabetes dataset. Passes loss to compile() as string.
+
+    :param load_init: Load the initial weights if True.
+    :type load_init: `bool`
+    :return: The trained model for Diabetes dataset and the session.
+    :rtype: `tuple(KerasRegressor, tf.Session)`
+    """
+    import tensorflow as tf
+
+    tf_version = [int(v) for v in tf.__version__.split(".")]
+    if tf_version[0] == 2 and tf_version[1] >= 3:
+        is_tf23_keras24 = True
+        tf.compat.v1.disable_eager_execution()
+        from tensorflow import keras
+        from tensorflow.keras.layers import Dense
+        from tensorflow.keras.models import Sequential
+    else:
+        is_tf23_keras24 = False
+        import keras
+        from keras.models import Sequential
+        from keras.layers import Dense
+
+    from art.estimators.regression.keras import KerasRegressor
+
+    # Create simple regression model
+    model = Sequential()
+
+    if load_init:
+        if is_tf23_keras24:
+            model.add(
+                Dense(
+                    100,
+                    input_shape=(10,),
+                    activation="relu",
+                    kernel_initializer=_tf_weights_loader("DIABETES", "W", "DENSE1", 2),
+                    bias_initializer=_tf_weights_loader("DIABETES", "B", "DENSE1", 2),
+                )
+            )
+            model.add(
+                Dense(
+                    10,
+                    activation="relu",
+                    kernel_initializer=_tf_weights_loader("DIABETES", "W", "DENSE2", 2),
+                    bias_initializer=_tf_weights_loader("DIABETES", "B", "DENSE2", 2),
+                )
+            )
+            model.add(
+                Dense(
+                    1,
+                    kernel_initializer=_tf_weights_loader("DIABETES", "W", "DENSE3", 2),
+                    bias_initializer=_tf_weights_loader("DIABETES", "B", "DENSE3", 2),
+                )
+            )
+        else:
+            model.add(
+                Dense(
+                    100,
+                    input_shape=(10,),
+                    activation="relu",
+                    kernel_initializer=_kr_weights_loader("DIABETES", "W", "DENSE1"),
+                    bias_initializer=_kr_weights_loader("DIABETES", "B", "DENSE1"),
+                )
+            )
+            model.add(
+                Dense(
+                    10,
+                    activation="relu",
+                    kernel_initializer=_kr_weights_loader("DIABETES", "W", "DENSE2"),
+                    bias_initializer=_kr_weights_loader("DIABETES", "B", "DENSE2"),
+                )
+            )
+            model.add(
+                Dense(
+                    1,
+                    kernel_initializer=_kr_weights_loader("DIABETES", "W", "DENSE3"),
+                    bias_initializer=_kr_weights_loader("DIABETES", "B", "DENSE3"),
+                )
+            )
+    else:
+        model.add(Dense(100, input_shape=(10,), activation="relu"))
+        model.add(Dense(10, activation="relu"))
+        model.add(Dense(1))
+
+    model.compile(loss="mean_squared_error", optimizer=keras.optimizers.Adam(lr=0.001), metrics=["accuracy"])
+
+    # Get regressor
+    krc = KerasRegressor(model)
 
     return krc
 

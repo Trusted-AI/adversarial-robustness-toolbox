@@ -97,10 +97,11 @@ if TYPE_CHECKING:
     )
     from art.estimators.classification.tensorflow import TensorFlowClassifier, TensorFlowV2Classifier
     from art.estimators.classification.xgboost import XGBoostClassifier
+    from art.estimators.certification.derandomized_smoothing.derandomized_smoothing import BlockAblator, ColumnAblator
     from art.estimators.generation import TensorFlowGenerator
-    from art.estimators.generation.tensorflow import TensorFlow2Generator
+    from art.estimators.generation.tensorflow import TensorFlowV2Generator
     from art.estimators.object_detection.object_detector import ObjectDetector
-    from art.estimators.object_detection.python_object_detector import PyTorchObjectDetector
+    from art.estimators.object_detection.pytorch_object_detector import PyTorchObjectDetector
     from art.estimators.object_detection.pytorch_faster_rcnn import PyTorchFasterRCNN
     from art.estimators.object_detection.tensorflow_faster_rcnn import TensorFlowFasterRCNN
     from art.estimators.pytorch import PyTorchEstimator
@@ -186,7 +187,7 @@ if TYPE_CHECKING:
         CLASSIFIER_NEURALNETWORK_TYPE,
     ]
 
-    GENERATOR_TYPE = Union[TensorFlowGenerator, TensorFlow2Generator]  # pylint: disable=C0103
+    GENERATOR_TYPE = Union[TensorFlowGenerator, TensorFlowV2Generator]  # pylint: disable=C0103
 
     REGRESSOR_TYPE = Union[ScikitlearnRegressor, ScikitlearnDecisionTreeRegressor]  # pylint: disable=C0103
 
@@ -218,6 +219,8 @@ if TYPE_CHECKING:
     ESTIMATOR_TYPE = Union[  # pylint: disable=C0103
         CLASSIFIER_TYPE, REGRESSOR_TYPE, OBJECT_DETECTOR_TYPE, SPEECH_RECOGNIZER_TYPE
     ]
+
+    ABLATOR_TYPE = Union[BlockAblator, ColumnAblator]  # pylint: disable=C0103
 
 # --------------------------------------------------------------------------------------------------------- DEPRECATION
 
@@ -667,13 +670,13 @@ def floats_to_one_hot(labels: np.ndarray):
 
 
 def check_and_transform_label_format(
-    labels: np.ndarray, nb_classes: Optional[int] = None, return_one_hot: bool = True
+    labels: np.ndarray, nb_classes: Optional[int], return_one_hot: bool = True
 ) -> np.ndarray:
     """
     Check label format and transform to one-hot-encoded labels if necessary
 
     :param labels: An array of integer labels of shape `(nb_samples,)`, `(nb_samples, 1)` or `(nb_samples, nb_classes)`.
-    :param nb_classes: The number of classes.
+    :param nb_classes: The number of classes. If None the number of classes is determined automatically.
     :param return_one_hot: True if returning one-hot encoded labels, False if returning index labels.
     :return: Labels with shape `(nb_samples, nb_classes)` (one-hot) or `(nb_samples,)` (index).
     """
@@ -683,18 +686,23 @@ def check_and_transform_label_format(
         if not return_one_hot:
             labels_return = np.argmax(labels, axis=1)
             labels_return = np.expand_dims(labels_return, axis=1)
-    elif (
-        len(labels.shape) == 2 and labels.shape[1] == 1 and nb_classes is not None and nb_classes > 2
-    ):  # multi-class, index labels
-        if return_one_hot:
-            labels_return = to_categorical(labels, nb_classes)
+    elif len(labels.shape) == 2 and labels.shape[1] == 1:
+        if nb_classes is None:
+            nb_classes = np.max(labels) + 1
+        if nb_classes > 2:  # multi-class, index labels
+            if return_one_hot:
+                labels_return = to_categorical(labels, nb_classes)
+            else:
+                labels_return = np.expand_dims(labels, axis=1)
+        elif nb_classes == 2:  # binary, index labels
+            if return_one_hot:
+                labels_return = to_categorical(labels, nb_classes)
         else:
-            labels_return = np.expand_dims(labels, axis=1)
-    elif (
-        len(labels.shape) == 2 and labels.shape[1] == 1 and nb_classes is not None and nb_classes == 2
-    ):  # binary, index labels
-        if return_one_hot:
-            labels_return = to_categorical(labels, nb_classes)
+            raise ValueError(
+                "Shape of labels not recognised."
+                "Please provide labels in shape (nb_samples,) or (nb_samples, "
+                "nb_classes)"
+            )
     elif len(labels.shape) == 1:  # index labels
         if return_one_hot:
             labels_return = to_categorical(labels, nb_classes)
@@ -702,7 +710,9 @@ def check_and_transform_label_format(
             labels_return = np.expand_dims(labels, axis=1)
     else:
         raise ValueError(
-            "Shape of labels not recognised." "Please provide labels in shape (nb_samples,) or (nb_samples, nb_classes)"
+            "Shape of labels not recognised."
+            "Please provide labels in shape (nb_samples,) or (nb_samples, "
+            "nb_classes)"
         )
 
     return labels_return

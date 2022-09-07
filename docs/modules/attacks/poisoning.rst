@@ -4,13 +4,13 @@
 
 Backdoor Attack DGM ReD
 -----------------------
-.. autoclass:: BackdoorAttackDGMReD
+.. autoclass:: BackdoorAttackDGMReDTensorFlowV2
    :members:
    :special-members:
 
 Backdoor Attack DGM Trail
 -------------------------
-.. autoclass:: BackdoorAttackDGMTrail
+.. autoclass:: BackdoorAttackDGMTrailTensorFlowV2
    :members:
    :special-members:
 

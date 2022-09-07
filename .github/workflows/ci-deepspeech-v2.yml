@@ -22,7 +22,7 @@ jobs:
   test_deepspeech_v2:
     name: PyTorchDeepSpeech v2
     runs-on: ubuntu-latest
-    container: minhitbk/art_testing_envs:deepspeech_v2
+    container: adversarialrobustnesstoolbox/art_testing_envs:deepspeech_v2
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
