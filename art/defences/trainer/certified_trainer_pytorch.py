@@ -132,7 +132,6 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
                                        have shown that this is often required to achieve best performance.
                                        Either True to use the default linear scheduler,
                                        or a class with a .step() method that returns the updated bound every epoch.
-
         :param batch_size: Size of batches to use for certified training. NB, this will run the data
                            sequentially accumulating gradients over the batch size.
         """
