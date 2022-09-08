@@ -238,10 +238,7 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
             random.shuffle(ind)
 
             # Train for one epoch
-            if verbose:
-                pbar = tqdm(range(num_batch))
-            else:
-                pbar = tqdm(range(num_batch), disable=True)
+            pbar = tqdm(range(num_batch), disable=not verbose)
 
             for m in pbar:
                 certified_loss = torch.tensor(0.0).to(self._classifier.device)
