@@ -31,3 +31,9 @@ Adversarial Training Fast is Better than Free - PyTorch
 .. autoclass:: AdversarialTrainerFBFPyTorch
    :members:
    :special-members:
+
+Adversarial Training Certified - PyTorch
+-------------------------------------------------------
+.. autoclass:: AdversarialTrainerCertifiedPytorch
+   :members:
+   :special-members:

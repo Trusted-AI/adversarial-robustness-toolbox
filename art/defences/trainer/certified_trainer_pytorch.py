@@ -114,16 +114,14 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
 
         :param classifier: Classifier to train adversarially.
         :param pgd_params: A dictionary containing the specific parameters relating to regular PGD training.
-                           Must contain  the following keys:
-
-                               "eps": Maximum perturbation that the attacker can introduce.
-                               "eps_step": Attack step size (input variation) at each iteration.
-                               "max_iter": The maximum number of iterations.
-                               "batch_size": Size of the batch on which adversarial samples are generated.
-                               "num_random_init": Number of random initialisations within the epsilon ball.
-                                                  For num_random_init=0 starting at the original input.
-
                            If not provided, we will default to typical MNIST values.
+                           Otherwise must contain the following keys:
+
+                           * *eps*: Maximum perturbation that the attacker can introduce.
+                           * *eps_step*: Attack step size (input variation) at each iteration.
+                           * *max_iter*: The maximum number of iterations.
+                           * *batch_size*: Size of the batch on which adversarial samples are generated.
+                           * *num_random_init*: Number of random initialisations within the epsilon ball.
         :param bound: The perturbation range for the zonotope. Will be ignored if a certification_schedule is used.
         :param loss_weighting: Weighting factor for the certified loss.
         :param nb_epochs: Number of training epochs.
