@@ -44,6 +44,7 @@ class ShadowModels:
         self,
         shadow_model_template: Union["ScikitlearnClassifier", "PyTorchClassifier", "TensorFlowV2Classifier"],
         num_shadow_models: int = 3,
+        disjoint_datasets=False,
         random_state=None,
     ):
         """
@@ -52,6 +53,8 @@ class ShadowModels:
         :param shadow_model_template: Untrained classifier model to be used as a template for shadow models. Should be
                                       as similar as possible to the target model.
         :param num_shadow_models: How many shadow models to train to generate the shadow dataset.
+        :param disjoint_datasets: A boolean indicating whether the datasets used to train each shadow model should be
+                                  disjoint. Default is False.
         :param random_state: Seed for the numpy default random number generator.
         """
 
@@ -59,6 +62,7 @@ class ShadowModels:
         self._shadow_models_train_sets: List[Optional[Tuple[np.ndarray, np.ndarray]]] = [None] * num_shadow_models
         self._input_shape = shadow_model_template.input_shape
         self._rng = np.random.default_rng(seed=random_state)
+        self._disjoint_datasets = disjoint_datasets
 
     def generate_shadow_dataset(
         self,
@@ -74,7 +78,6 @@ class ShadowModels:
         :param y: True labels for the dataset samples (as expected by the estimator's fit method).
         :param member_ratio: Percentage of the data that should be used to train the shadow models. Must be between 0
                              and 1.
-
         :return: The shadow dataset generated. The shape is `((member_samples, true_label, model_prediction),
                  (nonmember_samples, true_label, model_prediction))`.
         """
@@ -83,10 +86,13 @@ class ShadowModels:
             raise ValueError("Number of samples in dataset does not match number of labels")
 
         # Shuffle data set
-        random_indices = np.random.permutation(len(x))
+        random_indices = self._rng.permutation(len(x))
         x, y = x[random_indices].astype(np.float32), y[random_indices].astype(np.float32)
 
-        shadow_dataset_size = len(x) // len(self._shadow_models)
+        if self._disjoint_datasets:
+            shadow_dataset_size = len(x) // len(self._shadow_models)
+        else:
+            shadow_dataset_size = len(x)
 
         member_samples = []
         member_true_label = []
@@ -97,13 +103,21 @@ class ShadowModels:
 
         # Train and create predictions for every model
         for i, shadow_model in enumerate(self._shadow_models):
-            shadow_x = x[shadow_dataset_size * i : shadow_dataset_size * (i + 1)]
-            shadow_y = y[shadow_dataset_size * i : shadow_dataset_size * (i + 1)]
+            if self._disjoint_datasets:
+                shadow_x = x[shadow_dataset_size * i : shadow_dataset_size * (i + 1)]
+                shadow_y = y[shadow_dataset_size * i : shadow_dataset_size * (i + 1)]
 
-            shadow_x_train = shadow_x[: int(member_ratio * shadow_dataset_size)]
-            shadow_y_train = shadow_y[: int(member_ratio * shadow_dataset_size)]
-            shadow_x_test = shadow_x[int(member_ratio * shadow_dataset_size) :]
-            shadow_y_test = shadow_y[int(member_ratio * shadow_dataset_size) :]
+                shadow_x_train = shadow_x[: int(member_ratio * shadow_dataset_size)]
+                shadow_y_train = shadow_y[: int(member_ratio * shadow_dataset_size)]
+                shadow_x_test = shadow_x[int(member_ratio * shadow_dataset_size) :]
+                shadow_y_test = shadow_y[int(member_ratio * shadow_dataset_size) :]
+            else:
+                member_indexes = self._rng.choice(len(x) - 1, int(len(x) * member_ratio), replace=False)
+                non_member_indexes = np.setdiff1d(range(len(x) - 1), member_indexes, assume_unique=True)
+                shadow_x_train = x[member_indexes]
+                shadow_y_train = y[member_indexes]
+                shadow_x_test = x[non_member_indexes]
+                shadow_y_test = y[non_member_indexes]
 
             self._shadow_models_train_sets[i] = (shadow_x_train, shadow_y_train)
 
