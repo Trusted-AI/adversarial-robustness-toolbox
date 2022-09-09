@@ -1,0 +1,74 @@
+from typing import Union
+import numpy as np
+
+
+def uniform_sample_from_sphere_or_ball(
+        nb_points: int,
+        nb_dims: int,
+        radius: Union[int, float, np.ndarray],
+        sample_space: str = "ball",
+        norm: Union[int, float, str] = 2,
+) -> np.array:
+    """
+    Generate a sample of  <nb_points>  distributed independently and uniformly on the sphere (with respect to the given
+    norm) in dimension <nb_dims> with radius <radius> and centered at the origin.  Note that the sphere is the boundary
+    of the ball, i.e., every point on the sphere has the same distance to the origin.
+
+    :param nb_points: Number of random data points
+    :param nb_dims: Dimensionality of the sphere
+    :param radius: Radius of the sphere
+    :param sample_space: One of 'b', 's', 'sphere', 'ball'
+    :param norm: Current support: 1, 2, np.inf, "inf"
+    :return: The sampled points from the sphere (i.e., boundary of the ball)
+    """
+    assert(sample_space in ['b', 's', 'sphere', 'ball'])
+
+    if norm == 1:
+        if sample_space in ['s', 'sphere']:
+            y = np.random.exponential(1, (nb_points, nb_dims))
+            sums = np.sum(y, axis=1)
+            scal = np.outer(sums, np.ones(nb_dims))
+            y = y / scal
+        else:
+            y = np.random.exponential(1, (nb_points, nb_dims + 1))
+            sums = np.sum(y, axis=1)
+            scal = np.outer(sums, np.ones(nb_dims + 1))
+            y = y / scal
+            y = y[:, :nb_dims]
+
+        y = y * np.random.choice([-1, 1], (nb_points, nb_dims))
+        if type(radius) in [int, float]:
+            res = y * radius
+        else:
+            radii = np.outer(radius, np.ones(nb_dims))
+            res = y * radii
+
+    elif norm == 2:
+        x = np.random.normal(0., 1., (nb_points, nb_dims))
+        scal = radius / np.sqrt(np.sum(x * x, axis=1))
+        scal = np.transpose(np.array(list(scal) * nb_dims).reshape((nb_dims, nb_points)))
+        res = x * scal
+        if sample_space in ['b', 'ball']:
+            rnd = np.random.rand(nb_points)
+            scal = np.float_power(rnd, 1 / nb_dims)
+            scal = np.outer(scal, np.ones(nb_dims))
+            res = res * scal
+
+    elif norm in [np.inf, "inf"]:
+        if sample_space in ['b', 'ball']:
+            x = np.random.uniform(-1., 1., (nb_points, nb_dims))
+        else:
+            x = np.random.uniform(0, 1., (nb_points, nb_dims))
+            rnd = np.random.random((nb_points, nb_dims))
+            maxes = np.max(rnd, axis=1)
+            maxes = np.outer(maxes, np.ones(nb_dims))
+            x = np.maximum((rnd >= maxes), x) * np.random.choice([-1, 1], (nb_points, nb_dims))
+        if type(radius) in [int, float]:
+            res = x * radius
+        else:
+            radii = np.outer(radius, np.ones(nb_dims))
+            res = x * radii
+    else:
+        raise NotImplementedError("Norm {} not supported".format(norm))
+
+    return res
