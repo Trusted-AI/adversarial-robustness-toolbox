@@ -31,12 +31,11 @@ from tests.utils import ARTTestException
 logger = logging.getLogger(__name__)
 
 
-
 @pytest.mark.only_with_platform("pytorch", "tensorflow2")
-def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator,framework):
+def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator, framework):
     try:
         (x_train, y_train), (x_test, y_test) = get_default_mnist_subset
-        if framework == 'pytorch':
+        if framework == "pytorch":
             x_train = np.transpose(x_train, (0, 2, 3, 1))
         classifier, _ = image_dl_estimator()
         x_train, y_train = x_train[:1000], y_train[:1000]
@@ -51,7 +50,7 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator,framew
         patch_size = 4
         img = Image.open("notebooks/trigger_10.png").convert("L")
         img = np.asarray(img.resize((patch_size, patch_size)))
-        patch = np.asarray(img).reshape(patch_size, patch_size,1)
+        patch = np.asarray(img).reshape(patch_size, patch_size, 1)
 
         patch = (patch - mean) / (std + 1e-7)
         class_source = 0
