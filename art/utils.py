@@ -97,6 +97,7 @@ if TYPE_CHECKING:
     )
     from art.estimators.classification.tensorflow import TensorFlowClassifier, TensorFlowV2Classifier
     from art.estimators.classification.xgboost import XGBoostClassifier
+    from art.estimators.certification.deep_z import PytorchDeepZ
     from art.estimators.certification.derandomized_smoothing.derandomized_smoothing import BlockAblator, ColumnAblator
     from art.estimators.generation import TensorFlowGenerator
     from art.estimators.generation.tensorflow import TensorFlowV2Generator
@@ -221,6 +222,8 @@ if TYPE_CHECKING:
     ]
 
     ABLATOR_TYPE = Union[BlockAblator, ColumnAblator]  # pylint: disable=C0103
+
+    CERTIFIER_TYPE = Union[PytorchDeepZ]  # pylint: disable=C0103
 
 # --------------------------------------------------------------------------------------------------------- DEPRECATION
 
