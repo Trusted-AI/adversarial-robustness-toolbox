@@ -37,6 +37,7 @@ if TYPE_CHECKING:
     import torch
 
 logger = logging.getLogger(__name__)
+import pdb
 
 
 class SleeperAgentAttack(GradientMatchingAttack):
@@ -94,6 +95,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         :param class_target: The target label to which the poisoned model needs to misclassify.
         """ 
         clip_values_normalised = (classifier.clip_values - classifier.preprocessing.mean) / classifier.preprocessing.std
+        # CHECK CLIP VALUES HERE - IF BEING PASSED PROPERLY
         clip_values_normalised = (clip_values_normalised[0],clip_values_normalised[1])
         epsilon_normalised = epsilon/255*(clip_values_normalised[1]-clip_values_normalised[0])
         patch_normalised = (patch - classifier.preprocessing.mean) / classifier.preprocessing.std
@@ -163,6 +165,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
             raise NotImplementedError("SleeperAgentAttack is currently implemented only for PyTorch and TensorFlowV2.")
 
         # Choose samples to poison.
+        # HERE X_TRIGGER IS NORMALISED AND PASSED 
         x_trigger = self._apply_trigger_patch(x_trigger)
         if len(np.shape(y_trigger)) == 2:  # dense labels
             classes_target = set(np.argmax(y_trigger, axis=-1))
@@ -265,7 +268,6 @@ class SleeperAgentAttack(GradientMatchingAttack):
         from art.estimators.classification import TensorFlowV2Classifier
 
         model_: Union[TensorFlowV2Classifier, PyTorchClassifier]
-
         x_train_un = np.copy(x_train)
         x_poisoned_un = np.copy(poisoned_samples)
         x_train_un = x_train_un*self.substitute_classifier.preprocessing.std 
@@ -276,6 +278,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         num_classes=self.substitute_classifier.nb_classes
 
         if isinstance(self.substitute_classifier, PyTorchClassifier):
+#             pdb.set_trace()
             model_ = self._create_model(
                 x_train_un,
                 y_train,
@@ -285,6 +288,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
                 batch_size=128,
                 epochs=self.model_retraining_epoch,
             )
+#             pdb.set_trace()
             check_train = self.substitute_classifier.model.training
             self.substitute_classifier = model_
             self.substitute_classifier.model.training = check_train
@@ -304,8 +308,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
 
         else:
             raise NotImplementedError("SleeperAgentAttack is currently implemented only for PyTorch and TensorFlowV2.")
-    
-    
+     
     def _create_model(
         self,
         x_train: np.ndarray,
@@ -336,11 +339,17 @@ class SleeperAgentAttack(GradientMatchingAttack):
             import torch
             import torch.nn as nn
             import torchvision
-
+           
             loss_fn = nn.CrossEntropyLoss()
-            model = torchvision.models.ResNet(torchvision.models.resnet.BasicBlock, [2, 2, 2, 2], num_classes=num_classes)
-            optimizer = torch.optim.SGD(model.parameters(), lr=0.1, momentum=0.9, weight_decay=5e-4, nesterov=True)
-            model_new = PyTorchClassifier(model,input_shape=x_train.shape[1:], loss=loss_fn, optimizer=optimizer, nb_classes=num_classes, clip_values=self.substitute_classifier.clip_values, preprocessing=(self.substitute_classifier.preprocessing.mean,self.substitute_classifier.preprocessing.std))
+            # Reset Weights of the newly initialized model
+            model_new = self.substitute_classifier.clone_for_refitting() 
+            for layer in model_new.model.children():
+                if hasattr(layer, 'reset_parameters'):
+                    layer.reset_parameters()
+            optimizer = torch.optim.SGD(model_new.model.parameters(), lr=0.1, momentum=0.9, weight_decay=5e-4, nesterov=True)
+            predictions = model_new.predict(x_test)
+            accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
+            print("Accuracy of substitute model before retraining: {}%".format(accuracy * 100))
             model_new.fit(x_train, y_train, batch_size=128, nb_epochs=epochs,verbose=1)
             predictions = model_new.predict(x_test)
             accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
@@ -406,7 +415,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
             outputs = resnet_18(inputs, num_classes)
             model = tf.keras.models.Model(inputs, outputs)
 
-            opt = tf.keras.optimizers.SGD(learning_rate=0.1, momentum=0.9, nesterov=True)
+            opt = tf.keras.optimizers.SGD(learning_rate=0.01, momentum=0.9, nesterov=True)
             model.compile(loss="categorical_crossentropy", optimizer=opt, metrics=["accuracy"])
 
             datagen = tf.keras.preprocessing.image.ImageDataGenerator(
@@ -453,10 +462,10 @@ class SleeperAgentAttack(GradientMatchingAttack):
         """
         from art.estimators.classification.pytorch import PyTorchClassifier
         from art.estimators.classification import TensorFlowV2Classifier
-
+#         pdb.set_trace()
         if isinstance(self.substitute_classifier, PyTorchClassifier):
             import torch
-
+#             pdb.set_trace()
             device = torch.device(self.device_name)
             grad_norms = []
             criterion = torch.nn.CrossEntropyLoss()
@@ -491,7 +500,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
                     grad_norms.append(tf.math.sqrt(grad_norm))
         else:
             raise NotImplementedError("SleeperAgentAttack is currently implemented only for PyTorch and TensorFlowV2.")
-
+#         pdb.set_trace()
         indices = sorted(range(len(grad_norms)), key=lambda k: grad_norms[k])
         indices = indices[-num_poison:]
         return np.array(indices)  # this will get only indices for target class
