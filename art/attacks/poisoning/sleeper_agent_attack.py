@@ -92,10 +92,15 @@ class SleeperAgentAttack(GradientMatchingAttack):
         :param class_source: The source class from which triggers were selected.
         :param class_target: The target label to which the poisoned model needs to misclassify.
         """
-        clip_values_normalised = (classifier.clip_values - classifier.preprocessing.mean) / classifier.preprocessing.std
-        clip_values_normalised = (clip_values_normalised[0], clip_values_normalised[1])
-        epsilon_normalised = epsilon / 255 * (clip_values_normalised[1] - clip_values_normalised[0])
-        patch_normalised = (patch - classifier.preprocessing.mean) / classifier.preprocessing.std
+        if classifier.preprocessing is not None:
+            clip_values_normalised = (
+                classifier.clip_values - classifier.preprocessing.mean
+            ) / classifier.preprocessing.std
+            clip_values_normalised = (clip_values_normalised[0], clip_values_normalised[1])
+            epsilon_normalised = epsilon / 255 * (clip_values_normalised[1] - clip_values_normalised[0])
+            patch_normalised = (patch - classifier.preprocessing.mean) / classifier.preprocessing.std
+        else:
+            raise ValueError("classifier.preprocessing cannot be None")
 
         super().__init__(
             classifier,
@@ -341,7 +346,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
                 if hasattr(layer, "reset_parameters"):
                     layer.reset_parameters()
             model_new.fit(x_train, y_train, batch_size=batch_size, nb_epochs=epochs, verbose=1)
-            
+
         elif isinstance(self.substitute_classifier, TensorFlowV2Classifier):
             model_new = self.substitute_classifier.clone_for_refitting()
             model_new.fit(x_train, y_train, batch_size=batch_size, nb_epochs=epochs, verbose=1)

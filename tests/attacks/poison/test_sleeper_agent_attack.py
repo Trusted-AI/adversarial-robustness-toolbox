@@ -35,24 +35,16 @@ logger = logging.getLogger(__name__)
 def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator, framework):
     try:
         (x_train, y_train), (x_test, y_test) = get_default_mnist_subset
-        if framework == "pytorch":
-            x_train = np.transpose(x_train, (0, 2, 3, 1))
         classifier, _ = image_dl_estimator()
-        x_train, y_train = x_train[:1000], y_train[:1000]
-        max_ = 1
-        min_ = 0
-        mean = np.mean(x_train, axis=(0, 1, 2, 3))
-        std = np.std(x_train, axis=(0, 1, 2, 3))
-        x_train = (x_train - mean) / (std + 1e-7)
-        x_test = (x_test - mean) / (std + 1e-7)
-        min_ = (min_ - mean) / (std + 1e-7)
-        max_ = (max_ - mean) / (std + 1e-7)
         patch_size = 4
         img = Image.open("notebooks/trigger_10.png").convert("L")
         img = np.asarray(img.resize((patch_size, patch_size)))
-        patch = np.asarray(img).reshape(patch_size, patch_size, 1)
+        if classifier.channel_first:
+            patch = np.asarray(img).reshape(1, patch_size, patch_size)
+        else:
+            patch = np.asarray(img).reshape(patch_size, patch_size, 1)
 
-        patch = (patch - mean) / (std + 1e-7)
+        x_train, y_train = x_train[:1000], y_train[:1000]
         class_source = 0
         class_target = 1
         K = 4
@@ -63,15 +55,15 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator, frame
         y_trigger = to_categorical([class_target], nb_classes=10)
         y_trigger = np.tile(y_trigger, (len(index_source), 1))
         epsilon = 0.3
-        percent_poison = 0.10
+        percent_poison = 0.01
 
         attack = SleeperAgentAttack(
             classifier,
-            percent_poison=0.10,
+            percent_poison=percent_poison,
             max_trials=1,
             max_epochs=10,
-            clip_values=(min_, max_),
-            epsilon=16 / 255 * (max_ - min_),
+            clip_values=(0, 1),
+            epsilon=epsilon,
             batch_size=500,
             verbose=1,
             indices_target=index_target,
