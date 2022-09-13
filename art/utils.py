@@ -97,6 +97,7 @@ if TYPE_CHECKING:
     )
     from art.estimators.classification.tensorflow import TensorFlowClassifier, TensorFlowV2Classifier
     from art.estimators.classification.xgboost import XGBoostClassifier
+    from art.estimators.certification.deep_z import PytorchDeepZ
     from art.estimators.certification.derandomized_smoothing.derandomized_smoothing import BlockAblator, ColumnAblator
     from art.estimators.generation import TensorFlowGenerator
     from art.estimators.generation.tensorflow import TensorFlowV2Generator
@@ -221,6 +222,8 @@ if TYPE_CHECKING:
     ]
 
     ABLATOR_TYPE = Union[BlockAblator, ColumnAblator]  # pylint: disable=C0103
+
+    CERTIFIER_TYPE = Union[PytorchDeepZ]  # pylint: disable=C0103
 
 # --------------------------------------------------------------------------------------------------------- DEPRECATION
 
@@ -531,7 +534,8 @@ def random_sphere(
     norm: Union[int, float, str],
 ) -> np.ndarray:
     """
-    Generate randomly `m x n`-dimension points with radius `radius` and centered around 0.
+    Generate uniformly at random `m x n`-dimension points in the `norm`-norm ball with radius `radius` and centered
+    around 0.
 
     :param nb_points: Number of random data points.
     :param nb_dims: Dimensionality of the sphere.
@@ -545,13 +549,11 @@ def random_sphere(
                 "The parameter `radius` of type `np.ndarray` is not supported to use with norm 1."
             )
 
-        a_tmp = np.zeros(shape=(nb_points, nb_dims + 1))
-        a_tmp[:, -1] = np.sqrt(np.random.uniform(0, radius ** 2, nb_points))
-
-        for i in range(nb_points):
-            a_tmp[i, 1:-1] = np.sort(np.random.uniform(0, a_tmp[i, -1], nb_dims - 1))
-
-        res = (a_tmp[:, 1:] - a_tmp[:, :-1]) * np.random.choice([-1, 1], (nb_points, nb_dims))
+        var_u = np.random.uniform(size=(nb_points, nb_dims))
+        var_v = np.sort(var_u)
+        v_pre = np.concatenate((np.zeros((nb_points, 1)), var_v[:, : nb_dims - 1]), axis=-1)
+        x = var_v - v_pre
+        res = radius * x * np.random.choice([-1, 1], (nb_points, nb_dims))
 
     elif norm == 2:
         if isinstance(radius, np.ndarray):
@@ -1559,6 +1561,24 @@ def is_probability(vector: np.ndarray) -> bool:
     is_sum_1 = math.isclose(np.sum(vector), 1.0, rel_tol=1e-03)
     is_smaller_1 = np.amax(vector) <= 1.0
     is_larger_0 = np.amin(vector) >= 0.0
+
+    return is_sum_1 and is_smaller_1 and is_larger_0
+
+
+def is_probability_array(array: np.ndarray) -> bool:
+    """
+    Check if a multi-dimensional array is an array of probabilities.
+
+    :param vector: A numpy array.
+    :return: True if it is an array of probabilities.
+    """
+    if len(array.shape) == 1:
+        return is_probability(array)
+    sum_array = np.sum(array, axis=1)
+    ones = np.ones_like(sum_array)
+    is_sum_1 = np.allclose(sum_array, ones, rtol=1e-03)
+    is_smaller_1 = np.amax(array) <= 1.0
+    is_larger_0 = np.amin(array) >= 0.0
 
     return is_sum_1 and is_smaller_1 and is_larger_0
 

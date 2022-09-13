@@ -1,5 +1,5 @@
 """
-The script demonstrates a simple example of using ART with TensorFlow v1.x. The example train a small model on the MNIST
+The script demonstrates a simple example of using ART with TensorFlow v2.x. The example train a small model on the MNIST
 dataset and creates adversarial examples using the Fast Gradient Sign Method. Here we use the ART classifier to train
 the model, it would also be possible to provide a pretrained model to the ART classifier.
 The parameters are chosen for reduced computational requirements of the script and not optimised for accuracy.

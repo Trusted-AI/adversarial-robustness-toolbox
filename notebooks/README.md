@@ -258,7 +258,16 @@ demonstrates the verification of adversarial robustness in decision tree ensembl
 demonstrates using DeepZ to compute certified robustness for neural networks.
 
 <p align="center">
-  <img src="../utils/data/images/zonotope_picture.png?raw=true" width="200" title="poisoning">
+  <img src="../utils/data/images/zonotope_picture.png?raw=true" width="200" title="deepz">
+</p>
+
+## Certified Training
+
+[certified_adversarial_training.ipynb](certified_adversarial_training.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/certified_adversarial_training.ipynb)]
+Demonstrates training a neural network for certified robustness using bound propagation techniques.
+
+<p align="center">
+  <img src="../utils/data/images/cert_training.png?raw=true" width="200" title="certified training">
 </p>
 
 ## MNIST
