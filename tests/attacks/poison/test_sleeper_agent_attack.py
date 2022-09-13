@@ -39,7 +39,7 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator, frame
         patch_size = 4
         img = Image.open("notebooks/trigger_10.png").convert("L")
         img = np.asarray(img.resize((patch_size, patch_size)))
-        if classifier.channel_first:
+        if classifier.channels_first:
             patch = np.asarray(img).reshape(1, patch_size, patch_size)
         else:
             patch = np.asarray(img).reshape(patch_size, patch_size, 1)
@@ -47,13 +47,13 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator, frame
         x_train, y_train = x_train[:1000], y_train[:1000]
         class_source = 0
         class_target = 1
-        K = 4
+        K = 1
         x_train_ = np.copy(x_train)
-        index_source = np.where(y_train.argmax(axis=1) == class_source)[0][0:K]
-        index_target = np.where(y_train.argmax(axis=1) == class_target)[0]
+        index_source = np.where(y_train == class_source)[0][0:1]
+        index_target = np.where(y_train == class_target)[0]
         x_trigger = x_train_[index_source]
-        y_trigger = to_categorical([class_target], nb_classes=10)
-        y_trigger = np.tile(y_trigger, (len(index_source), 1))
+        # y_trigger = to_categorical([class_target], nb_classes=10)
+        # y_trigger = np.tile(y_trigger, (len(index_source), 1))
         epsilon = 0.3
         percent_poison = 0.01
 
@@ -68,7 +68,7 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator, frame
             verbose=1,
             indices_target=index_target,
             patching_strategy="random",
-            selection_strategy="max-norm",
+            selection_strategy="random",
             patch=patch,
             retraining_factor=4,
             model_retrain=False,
@@ -76,7 +76,7 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator, frame
             class_source=class_source,
             class_target=class_target,
         )
-        x_poison, y_poison = attack.poison(x_trigger, y_trigger, x_train, y_train, x_test, y_test)
+        x_poison, y_poison = attack.poison(x_trigger, [class_target], x_train, y_train, x_test, y_test)
         np.testing.assert_(
             np.all(np.sum(np.reshape((x_poison - x_train) ** 2, [x_poison.shape[0], -1]), axis=1) < epsilon)
         )
@@ -94,45 +94,69 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator, frame
 def test_check_params(art_warning, get_default_mnist_subset, image_dl_estimator):
     try:
         classifier, _ = image_dl_estimator(functional=True)
-        patch_size = 4
-        img = Image.open("notebooks/trigger_10.png").convert("L")
-        img = img.resize((patch_size, patch_size))
-        patch = asarray(img)
-        index_target = [1]
-
+        # Test bad patch
         with pytest.raises(ValueError):
             _ = SleeperAgentAttack(
                 classifier,
                 percent_poison=0.01,
                 learning_rate_schedule=[0.1, 0.2, 0.3],
-                indices_target=index_target,
-                patch=patch,
+                indices_target=[0],
+                patch=[1],
             )
-        with pytest.raises(ValueError):
-            _ = SleeperAgentAttack(classifier, percent_poison=1.2, indices_target=index_target, patch=patch)
+
+        # Test bad indices
         with pytest.raises(ValueError):
             _ = SleeperAgentAttack(
-                classifier, percent_poison=0.01, max_epochs=0, indices_target=index_target, patch=patch
+                classifier,
+                percent_poison=0.01,
+                learning_rate_schedule=[0.1, 0.2, 0.3],
+                indices_target=0,
+                patch=np.ones((1, 8, 8)),
             )
+
+        # Test bad patching strategy
         with pytest.raises(ValueError):
             _ = SleeperAgentAttack(
-                classifier, percent_poison=0.01, max_trials=0, indices_target=index_target, patch=patch
+                classifier,
+                percent_poison=0.01,
+                learning_rate_schedule=[0.1, 0.2, 0.3],
+                indices_target=[0],
+                patch=np.ones((1, 8, 8)),
+                patching_strategy=1,
             )
+
+        # Test bad selection strategy
         with pytest.raises(ValueError):
             _ = SleeperAgentAttack(
-                classifier, percent_poison=0.01, clip_values=1, indices_target=index_target, patch=patch
+                classifier,
+                percent_poison=0.01,
+                learning_rate_schedule=[0.1, 0.2, 0.3],
+                indices_target=[0],
+                patch=np.ones((1, 8, 8)),
+                selection_strategy=1,
             )
+        # Test same source and class
         with pytest.raises(ValueError):
             _ = SleeperAgentAttack(
-                classifier, percent_poison=0.01, epsilon=-1, indices_target=index_target, patch=patch
+                classifier,
+                percent_poison=0.01,
+                learning_rate_schedule=[0.1, 0.2, 0.3],
+                indices_target=[0],
+                patch=np.ones((1, 8, 8)),
+                selection_strategy=1,
+                class_source=0,
+                class_target=0,
             )
+
+        # Test invalid poison percent
         with pytest.raises(ValueError):
             _ = SleeperAgentAttack(
-                classifier, percent_poison=0.01, batch_size=0, indices_target=index_target, patch=patch
-            )
-        with pytest.raises(ValueError):
-            _ = SleeperAgentAttack(
-                classifier, percent_poison=0.01, verbose=1.1, indices_target=index_target, patch=patch
+                classifier,
+                percent_poison=1.1,
+                learning_rate_schedule=[0.1, 0.2, 0.3],
+                indices_target=[0],
+                patch=np.ones((1, 8, 8)),
+                selection_strategy=1,
             )
 
     except ARTTestException as e:
