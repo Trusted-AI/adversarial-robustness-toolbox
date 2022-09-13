@@ -534,7 +534,8 @@ def random_sphere(
     norm: Union[int, float, str],
 ) -> np.ndarray:
     """
-    Generate randomly `m x n`-dimension points with radius `radius` and centered around 0.
+    Generate uniformly at random `m x n`-dimension points in the `norm`-norm ball with radius `radius` and centered
+    around 0.
 
     :param nb_points: Number of random data points.
     :param nb_dims: Dimensionality of the sphere.
@@ -547,12 +548,12 @@ def random_sphere(
             raise NotImplementedError(
                 "The parameter `radius` of type `np.ndarray` is not supported to use with norm 1."
             )
-        y = np.random.exponential(1, (nb_points, nb_dims + 1))
-        sums = np.sum(y, axis=1)
-        scal = np.outer(sums, np.ones(nb_dims + 1))
-        y = y / scal
-        y = y[:, :nb_dims]
-        res = radius * y * np.random.choice([-1, 1], (nb_points, nb_dims))
+
+        var_u = np.random.uniform(size=(nb_points, nb_dims))
+        var_v = np.sort(var_u)
+        v_pre = np.concatenate((np.zeros((nb_points, 1)), var_v[:, : nb_dims - 1]), axis=-1)
+        x = var_v - v_pre
+        res = radius * x * np.random.choice([-1, 1], (nb_points, nb_dims))
 
     elif norm == 2:
         if isinstance(radius, np.ndarray):
@@ -1560,6 +1561,24 @@ def is_probability(vector: np.ndarray) -> bool:
     is_sum_1 = math.isclose(np.sum(vector), 1.0, rel_tol=1e-03)
     is_smaller_1 = np.amax(vector) <= 1.0
     is_larger_0 = np.amin(vector) >= 0.0
+
+    return is_sum_1 and is_smaller_1 and is_larger_0
+
+
+def is_probability_array(array: np.ndarray) -> bool:
+    """
+    Check if a multi-dimensional array is an array of probabilities.
+
+    :param vector: A numpy array.
+    :return: True if it is an array of probabilities.
+    """
+    if len(array.shape) == 1:
+        return is_probability(array)
+    sum_array = np.sum(array, axis=1)
+    ones = np.ones_like(sum_array)
+    is_sum_1 = np.allclose(sum_array, ones, rtol=1e-03)
+    is_smaller_1 = np.amax(array) <= 1.0
+    is_larger_0 = np.amin(array) >= 0.0
 
     return is_sum_1 and is_smaller_1 and is_larger_0
 
