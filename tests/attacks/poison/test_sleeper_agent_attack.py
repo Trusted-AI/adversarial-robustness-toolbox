@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator, framework):
     try:
         (x_train, y_train), (x_test, y_test) = get_default_mnist_subset
-        classifier, _ = image_dl_estimator()
+        classifier, _ = image_dl_estimator(functional=True)
         patch_size = 4
         img = Image.open("notebooks/trigger_10.png").convert("L")
         img = np.asarray(img.resize((patch_size, patch_size)))
@@ -61,7 +61,7 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator, frame
             classifier,
             percent_poison=percent_poison,
             max_trials=1,
-            max_epochs=10,
+            max_epochs=2,
             clip_values=(0, 1),
             epsilon=epsilon,
             batch_size=500,
