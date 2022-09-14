@@ -19,7 +19,6 @@ opencv-python
 sortedcontainers==2.4.0
 h5py==3.7.0
 
-
 # frameworks
 
 tensorflow>=1.15.5
