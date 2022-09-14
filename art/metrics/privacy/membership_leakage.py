@@ -19,12 +19,12 @@
 This module implements membership leakage metrics.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Tuple
 
 import numpy as np
 import scipy
 
-from art.utils import check_and_transform_label_format, is_probability
+from art.utils import check_and_transform_label_format, is_probability_array
 
 if TYPE_CHECKING:
     from art.estimators.classification.classifier import Classifier
@@ -37,7 +37,7 @@ def PDTP(  # pylint: disable=C0103
     y: np.ndarray,
     indexes: Optional[np.ndarray] = None,
     num_iter: Optional[int] = 10,
-) -> np.ndarray:
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Compute the pointwise differential training privacy metric for the given classifier and training set.
 
@@ -52,8 +52,8 @@ def PDTP(  # pylint: disable=C0103
                     computed for all samples in `x`.
     :param num_iter: the number of iterations of PDTP computation to run for each sample. If not supplied,
                      defaults to 10. The result is the average across iterations.
-    :return: an array containing the average PDTP value for each sample in the training set. The higher the value,
-             the higher the privacy leakage for that sample.
+    :return: A tuple of three arrays, containing the average (worse, standard deviation) PDTP value for each sample in
+             the training set respectively. The higher the value, the higher the privacy leakage for that sample.
     """
     from art.estimators.classification.pytorch import PyTorchClassifier
     from art.estimators.classification.tensorflow import TensorFlowV2Classifier
@@ -77,7 +77,7 @@ def PDTP(  # pylint: disable=C0103
         iter_results = []
         # get probabilities from original model
         pred = target_estimator.predict(x)
-        if not is_probability(pred):
+        if not is_probability_array(pred):
             try:
                 pred = scipy.special.softmax(pred, axis=1)
             except Exception as exc:  # pragma: no cover
@@ -85,6 +85,7 @@ def PDTP(  # pylint: disable=C0103
         # divide into 100 bins and return center of bin
         bins = np.array(np.arange(0.0, 1.01, 0.01).round(decimals=2))
         pred_bin_indexes = np.digitize(pred, bins)
+        pred_bin_indexes[pred_bin_indexes == 101] = 100
         pred_bin = bins[pred_bin_indexes] - 0.005
 
         if not indexes:
@@ -102,10 +103,11 @@ def PDTP(  # pylint: disable=C0103
             extra_estimator.fit(alt_x, alt_y)
             # get probabilities from new model
             alt_pred = extra_estimator.predict(x)
-            if not is_probability(alt_pred):
+            if not is_probability_array(alt_pred):
                 alt_pred = scipy.special.softmax(alt_pred, axis=1)
             # divide into 100 bins and return center of bin
             alt_pred_bin_indexes = np.digitize(alt_pred, bins)
+            alt_pred_bin_indexes[alt_pred_bin_indexes == 101] = 100
             alt_pred_bin = bins[alt_pred_bin_indexes] - 0.005
             ratio_1 = pred_bin / alt_pred_bin
             ratio_2 = alt_pred_bin / pred_bin
@@ -118,6 +120,8 @@ def PDTP(  # pylint: disable=C0103
     # We now have a list of list, internal lists represent an iteration. We need to transpose and get averages.
     per_sample = list(map(list, zip(*results)))
     avg_per_sample = np.array([sum(val) / len(val) for val in per_sample])
+    worse_per_sample = np.max(per_sample, axis=1)
+    std_dev_per_sample = np.std(per_sample, axis=1)
 
-    # return leakage per sample
-    return avg_per_sample
+    # return avg+worse leakage + standard deviation per sample
+    return avg_per_sample, worse_per_sample, std_dev_per_sample

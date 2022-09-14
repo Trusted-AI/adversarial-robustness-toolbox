@@ -34,7 +34,6 @@ from art.attacks.poisoning import GradientMatchingAttack
 if TYPE_CHECKING:
     # pylint: disable=C0412
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
-    import torch
 
 logger = logging.getLogger(__name__)
 
@@ -93,10 +92,15 @@ class SleeperAgentAttack(GradientMatchingAttack):
         :param class_source: The source class from which triggers were selected.
         :param class_target: The target label to which the poisoned model needs to misclassify.
         """
-        clip_values_normalised = (classifier.clip_values - classifier.preprocessing.mean) / classifier.preprocessing.std
-        clip_values_normalised = (clip_values_normalised[0], clip_values_normalised[1])
-        epsilon_normalised = epsilon / 255 * (clip_values_normalised[1] - clip_values_normalised[0])
-        patch_normalised = (patch - classifier.preprocessing.mean) / classifier.preprocessing.std
+        if classifier.preprocessing is not None:
+            clip_values_normalised = (
+                classifier.clip_values - classifier.preprocessing.mean
+            ) / classifier.preprocessing.std
+            clip_values_normalised = (clip_values_normalised[0], clip_values_normalised[1])
+            epsilon_normalised = epsilon / 255 * (clip_values_normalised[1] - clip_values_normalised[0])
+            patch_normalised = (patch - classifier.preprocessing.mean) / classifier.preprocessing.std
+        else:
+            raise ValueError("classifier.preprocessing cannot be None")
 
         super().__init__(
             classifier,
@@ -336,23 +340,16 @@ class SleeperAgentAttack(GradientMatchingAttack):
         from art.estimators.classification import TensorFlowV2Classifier
 
         if isinstance(self.substitute_classifier, PyTorchClassifier):
-            import torch
-            import torch.nn as nn
-            import torchvision
-
             # Reset Weights of the newly initialized model
             model_new = self.substitute_classifier.clone_for_refitting()
             for layer in model_new.model.children():
                 if hasattr(layer, "reset_parameters"):
                     layer.reset_parameters()
-            model_new.fit(x_train, y_train, batch_size=128, nb_epochs=epochs, verbose=1)
-            predictions = model_new.predict(x_test)
+            model_new.fit(x_train, y_train, batch_size=batch_size, nb_epochs=epochs, verbose=1)
 
         elif isinstance(self.substitute_classifier, TensorFlowV2Classifier):
-            import tensorflow as tf
-
             model_new = self.substitute_classifier.clone_for_refitting()
-            model_new.fit(x_train, y_train, batch_size=128, nb_epochs=epochs, verbose=1)
+            model_new.fit(x_train, y_train, batch_size=batch_size, nb_epochs=epochs, verbose=1)
 
         else:
             raise ValueError("SleeperAgentAttack is currently implemented only for PyTorch and TensorFlowV2.")

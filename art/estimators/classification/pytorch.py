@@ -322,7 +322,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             output = model_outputs[-1]
             output = output.detach().cpu().numpy().astype(np.float32)
             if len(output.shape) == 1:
-                output = np.expand_dims(output.detach().cpu().numpy(), axis=1).astype(np.float32)
+                output = np.expand_dims(output, axis=1).astype(np.float32)
 
             results_list.append(output)
 

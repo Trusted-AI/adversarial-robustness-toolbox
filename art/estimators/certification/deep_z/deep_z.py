@@ -44,13 +44,23 @@ class ZonoDenseLayer(torch.nn.Module):
 
     def forward(self, x: "torch.Tensor") -> "torch.Tensor":
         """
-        Forward pass through the dense layer.
+        Abstract forward pass through the dense layer.
 
         :param x: input zonotope to the dense layer.
         :return: zonotope after being pushed through the dense layer.
         """
         x = self.zonotope_matmul(x)
         x = self.zonotope_add(x)
+        return x
+
+    def concrete_forward(self, x: "torch.Tensor") -> "torch.Tensor":
+        """
+        Concrete forward pass through the dense layer.
+
+        :param x: concrete input to the dense layer.
+        :return: concrete dense layer outputs.
+        """
+        x = torch.matmul(x, torch.transpose(self.weight, 0, 1)) + self.bias
         return x
 
     def zonotope_matmul(self, x: "torch.Tensor") -> "torch.Tensor":
@@ -170,7 +180,7 @@ class ZonoBounds:
 
         return cent, eps
 
-    def pre_process(self, cent: np.ndarray, eps: np.ndarray):
+    def pre_process(self, cent: np.ndarray, eps: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
         Simple helper function to reshape and adjust the zonotope values before pushing through the neural network.
         This is written with image data from MNIST and CIFAR10 in mind using L-infty bounds.
@@ -229,7 +239,7 @@ class ZonoConv(torch.nn.Module):
 
     def forward(self, x: "torch.Tensor") -> "torch.Tensor":
         """
-        Forward pass through the convolutional layer
+        Abstract forward pass through the convolutional layer
 
         :param x: input zonotope to the convolutional layer.
         :return x: zonotope after being pushed through the convolutional layer.
@@ -237,6 +247,19 @@ class ZonoConv(torch.nn.Module):
         x = self.conv(x)
         x = self.zonotope_add(x)
         return x
+
+    def concrete_forward(self, x: "torch.Tensor") -> "torch.Tensor":
+        """
+        Concrete forward pass through the convolutional layer
+
+        :param x: concrete input to the convolutional layer.
+        :return: concrete convolutional layer outputs.
+        """
+        x = self.conv(x)
+        bias = torch.unsqueeze(self.bias, dim=-1)
+        bias = torch.unsqueeze(bias, dim=-1)
+        bias = torch.unsqueeze(bias, dim=0)
+        return x + bias
 
     def zonotope_add(self, x: "torch.Tensor") -> "torch.Tensor":
         """
@@ -263,6 +286,7 @@ class ZonoReLU(torch.nn.Module, ZonoBounds):
     def __init__(self, device="cpu"):
         super().__init__()
         self.device = device
+        self.concrete_activation = torch.nn.ReLU()
 
     def __call__(self, x: "torch.Tensor") -> "torch.Tensor":
         return self.forward(x)
@@ -275,6 +299,15 @@ class ZonoReLU(torch.nn.Module, ZonoBounds):
         :return x: zonotope after being pushed through the dense layer.
         """
         return self.zonotope_relu(x)
+
+    def concrete_forward(self, x: "torch.Tensor") -> "torch.Tensor":
+        """
+        Concrete pass through the ReLU function
+
+        :param x: concrete input to the activation function.
+        :return: concrete outputs from the ReLU.
+        """
+        return self.concrete_activation(x)
 
     def zonotope_relu(self, x: "torch.Tensor") -> "torch.Tensor":
         """
