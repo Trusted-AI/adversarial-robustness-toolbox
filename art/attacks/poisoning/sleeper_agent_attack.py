@@ -23,7 +23,7 @@ This module implements Sleeper Agent attack on Neural Networks.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Any, Tuple, TYPE_CHECKING, List, Union
+from typing import Tuple, TYPE_CHECKING, List, Union
 import random
 
 import numpy as np
@@ -105,9 +105,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
             epsilon_normalised = epsilon / 255 * (clip_values_normalised[1] - clip_values_normalised[0])
             patch_normalised = (patch - classifier.preprocessing.mean) / classifier.preprocessing.std
         else:
-            raise ValueError(
-                "classifier.preprocessing not an instance of either StandardisationMeanStdPyTorch or StandardisationMeanStdTensorFlow"
-            )
+            raise ValueError("classifier.preprocessing not an instance of pytorch/tensorflow")
 
         super().__init__(
             classifier,
@@ -154,9 +152,6 @@ class SleeperAgentAttack(GradientMatchingAttack):
                  Here, x_train are the samples selected from target class
                  in training data.
         """
-        from art.estimators.classification.pytorch import PyTorchClassifier
-        from art.estimators.classification import TensorFlowV2Classifier
-
         # Apply Normalisation
         x_train = np.copy(x_train)
         if isinstance(
@@ -271,14 +266,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         """
         return self.indices_poison
 
-    def _model_retraining(
-        self,
-        poisoned_samples: np.ndarray,
-        x_train: np.ndarray,
-        y_train: np.ndarray,
-        x_test: np.ndarray,
-        y_test: np.ndarray,
-    ):
+    def _model_retraining(self, poisoned_samples: np.ndarray, x_train: np.ndarray, y_train: np.ndarray):
         """
         Applies retraining to substitute model
 
@@ -288,10 +276,6 @@ class SleeperAgentAttack(GradientMatchingAttack):
         :param x_test: clean test data.
         :param y_test: labels for test data.
         """
-        from art.estimators.classification.pytorch import PyTorchClassifier
-        from art.estimators.classification import TensorFlowV2Classifier
-
-        model_: Union[TensorFlowV2Classifier, PyTorchClassifier]
         if isinstance(
             self.substitute_classifier.preprocessing, (StandardisationMeanStdPyTorch, StandardisationMeanStdTensorFlow)
         ):
@@ -305,9 +289,6 @@ class SleeperAgentAttack(GradientMatchingAttack):
             model_pt = self._create_model(
                 x_train_un,
                 y_train,
-                x_test=x_test,
-                y_test=y_test,
-                num_classes=num_classes,
                 batch_size=128,
                 epochs=self.model_retraining_epoch,
             )
@@ -319,9 +300,6 @@ class SleeperAgentAttack(GradientMatchingAttack):
             model_tf = self._create_model(
                 x_train_un,
                 y_train,
-                x_test=x_test,
-                y_test=y_test,
-                num_classes=num_classes,
                 batch_size=128,
                 epochs=self.model_retraining_epoch,
             )
@@ -336,9 +314,6 @@ class SleeperAgentAttack(GradientMatchingAttack):
         self,
         x_train: np.ndarray,
         y_train: np.ndarray,
-        x_test: np.ndarray,
-        y_test: np.ndarray,
-        num_classes: int = 10,
         batch_size: int = 128,
         epochs: int = 80,
     ) -> Union["TensorFlowV2Classifier", "PyTorchClassifier"]:
@@ -384,9 +359,6 @@ class SleeperAgentAttack(GradientMatchingAttack):
         :num_poison: Number of poisoned samples to be selected out of all x_samples.
         :return indices - Indices of samples to be poisoned.
         """
-        from art.estimators.classification.pytorch import PyTorchClassifier
-        from art.estimators.classification import TensorFlowV2Classifier
-
         if isinstance(self.substitute_classifier, PyTorchClassifier):
             import torch
 
