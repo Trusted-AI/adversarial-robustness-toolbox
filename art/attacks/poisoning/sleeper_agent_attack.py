@@ -30,6 +30,8 @@ import numpy as np
 from tqdm.auto import trange
 
 from art.attacks.poisoning import GradientMatchingAttack
+from art.preprocessing.standardisation_mean_std.pytorch import StandardisationMeanStdPyTorch
+from art.preprocessing.standardisation_mean_std.tensorflow import StandardisationMeanStdTensorFlow
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
@@ -92,7 +94,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         :param class_source: The source class from which triggers were selected.
         :param class_target: The target label to which the poisoned model needs to misclassify.
         """
-        if classifier.preprocessing is not None:
+        if isinstance(classifier.preprocessing, (StandardisationMeanStdPyTorch, StandardisationMeanStdTensorFlow)):
             clip_values_normalised = (
                 classifier.clip_values - classifier.preprocessing.mean
             ) / classifier.preprocessing.std
@@ -100,7 +102,9 @@ class SleeperAgentAttack(GradientMatchingAttack):
             epsilon_normalised = epsilon / 255 * (clip_values_normalised[1] - clip_values_normalised[0])
             patch_normalised = (patch - classifier.preprocessing.mean) / classifier.preprocessing.std
         else:
-            raise ValueError("classifier.preprocessing cannot be None")
+            raise ValueError(
+                "classifier.preprocessing not an instance of either StandardisationMeanStdPyTorch or StandardisationMeanStdTensorFlow"
+            )
 
         super().__init__(
             classifier,
@@ -284,7 +288,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         num_classes = self.substitute_classifier.nb_classes
 
         if isinstance(self.substitute_classifier, PyTorchClassifier):
-            model_ = self._create_model(
+            model_pt = self._create_model(
                 x_train_un,
                 y_train,
                 x_test=x_test,
@@ -294,11 +298,11 @@ class SleeperAgentAttack(GradientMatchingAttack):
                 epochs=self.model_retraining_epoch,
             )
             check_train = self.substitute_classifier.model.training
-            self.substitute_classifier = model_
+            self.substitute_classifier = model_pt
             self.substitute_classifier.model.training = check_train
 
         elif isinstance(self.substitute_classifier, TensorFlowV2Classifier):
-            model_ = self._create_model(
+            model_tf = self._create_model(
                 x_train_un,
                 y_train,
                 x_test=x_test,
@@ -308,7 +312,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
                 epochs=self.model_retraining_epoch,
             )
             check_train = self.substitute_classifier.model.trainable
-            self.substitute_classifier = model_
+            self.substitute_classifier = model_tf
             self.substitute_classifier.model.trainable = check_train
 
         else:
@@ -323,7 +327,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         num_classes: int = 10,
         batch_size: int = 128,
         epochs: int = 80,
-    ) -> Tuple[Any, Any, Any]:
+    ) -> Union["TensorFlowV2Classifier", "PyTorchClassifier"]:
         """
         Creates a new model.
 

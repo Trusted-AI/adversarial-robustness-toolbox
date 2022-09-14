@@ -47,21 +47,21 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator, frame
         x_train, y_train = x_train[:1000], y_train[:1000]
         class_source = 0
         class_target = 1
-        K = 1
+        K = 8
         x_train_ = np.copy(x_train)
         index_source = np.where(y_train == class_source)[0][0:1]
         index_target = np.where(y_train == class_target)[0]
         x_trigger = x_train_[index_source]
         # y_trigger = to_categorical([class_target], nb_classes=10)
         # y_trigger = np.tile(y_trigger, (len(index_source), 1))
-        epsilon = 0.3
+        epsilon = 16 * 255
         percent_poison = 0.01
 
         attack = SleeperAgentAttack(
             classifier,
             percent_poison=percent_poison,
             max_trials=1,
-            max_epochs=2,
+            max_epochs=10,
             clip_values=(0, 1),
             epsilon=epsilon,
             batch_size=500,
