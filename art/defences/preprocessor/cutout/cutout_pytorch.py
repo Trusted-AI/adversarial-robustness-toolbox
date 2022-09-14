@@ -36,10 +36,10 @@ if TYPE_CHECKING:
 
 class CutoutPyTorch(PreprocessorPyTorch):
     """
-    Implement the Cutout data augmentation defense
+    Implement the Cutout data augmentation defence
     """
 
-    params = ['length', "channels_first"]
+    params = ["length", "channels_first"]
 
     def __init__(
         self,
@@ -98,22 +98,22 @@ class CutoutPyTorch(PreprocessorPyTorch):
         masks = torch.ones(*x.shape)
         for i in range(n):
             # uniform sampling
-            cy = torch.randint(h)
-            cx = torch.randint(w)
-            bby1 = torch.clamp(cy - self.length // 2, 0, h)
-            bbx1 = torch.clamp(cx - self.length // 2, 0, w)
-            bby2 = torch.clamp(cy + self.length // 2, 0, h)
-            bbx2 = torch.clamp(cx + self.length // 2, 0, w)
+            cy = np.random.randint(h)
+            cx = np.random.randint(w)
+            bby1 = np.clip(cy - self.length // 2, 0, h)
+            bbx1 = np.clip(cx - self.length // 2, 0, w)
+            bby2 = np.clip(cy + self.length // 2, 0, h)
+            bbx2 = np.clip(cx + self.length // 2, 0, w)
 
             if self.channels_first:
                 masks[i, :, bbx1:bbx2, bby1:bby2] = 0
             else:
                 masks[i, bbx1:bbx2, bby1:bby2, :] = 0
-        
+
         x_aug = x * masks
 
         return x_aug, y
 
     def _check_params(self) -> None:
         if self.length <= 0:
-            raise ValueError('Bounding box length must be positive.')
+            raise ValueError("Bounding box length must be positive.")

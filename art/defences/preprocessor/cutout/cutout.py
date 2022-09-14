@@ -28,9 +28,7 @@ import logging
 from typing import Optional, Tuple
 
 import numpy as np
-from scipy.ndimage.filters import median_filter
 
-from art.utils import CLIP_VALUES_TYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
 
 logger = logging.getLogger(__name__)
@@ -102,11 +100,11 @@ class Cutout(Preprocessor):
                 masks[i, :, bbx1:bbx2, bby1:bby2] = 0
             else:
                 masks[i, bbx1:bbx2, bby1:bby2, :] = 0
-        
+
         x_aug = x * masks
 
         return x_aug, y
 
     def _check_params(self) -> None:
         if self.length <= 0:
-            raise ValueError('Bounding box length must be positive.')
+            raise ValueError("Bounding box length must be positive.")
