@@ -159,7 +159,9 @@ class SleeperAgentAttack(GradientMatchingAttack):
 
         # Apply Normalisation
         x_train = np.copy(x_train)
-        if isinstance(classifier.preprocessing, (StandardisationMeanStdPyTorch, StandardisationMeanStdTensorFlow)):
+        if isinstance(
+            self.substitute_classifier.preprocessing, (StandardisationMeanStdPyTorch, StandardisationMeanStdTensorFlow)
+        ):
             x_trigger = (
                 x_trigger - self.substitute_classifier.preprocessing.mean
             ) / self.substitute_classifier.preprocessing.std
@@ -229,7 +231,9 @@ class SleeperAgentAttack(GradientMatchingAttack):
                 best_indices_poison = self.indices_poison
 
         # Apply De-Normalization
-        if isinstance(classifier.preprocessing, (StandardisationMeanStdPyTorch, StandardisationMeanStdTensorFlow)):
+        if isinstance(
+            self.substitute_classifier.preprocessing, (StandardisationMeanStdPyTorch, StandardisationMeanStdTensorFlow)
+        ):
             x_train = (
                 x_train * self.substitute_classifier.preprocessing.std + self.substitute_classifier.preprocessing.mean
             )
@@ -288,7 +292,9 @@ class SleeperAgentAttack(GradientMatchingAttack):
         from art.estimators.classification import TensorFlowV2Classifier
 
         model_: Union[TensorFlowV2Classifier, PyTorchClassifier]
-        if isinstance(classifier.preprocessing, (StandardisationMeanStdPyTorch, StandardisationMeanStdTensorFlow)):
+        if isinstance(
+            self.substitute_classifier.preprocessing, (StandardisationMeanStdPyTorch, StandardisationMeanStdTensorFlow)
+        ):
             x_train_un = np.copy(x_train)
             x_train_un[self.indices_target[self.indices_poison]] = poisoned_samples
             x_train_un = x_train_un * self.substitute_classifier.preprocessing.std
