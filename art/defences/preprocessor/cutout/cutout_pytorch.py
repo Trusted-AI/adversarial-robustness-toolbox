@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the cutout data augmentation defence in PyTorch.
+This module implements the Cutout data augmentation defence in PyTorch.
 | Paper link: https://arxiv.org/abs/1708.04552
 | Please keep in mind the limitations of defences. For more information on the limitations of this defence,
     see https://arxiv.org/abs/1803.09868 . For details on how to evaluate classifier security in general, see
@@ -26,9 +26,9 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from typing import Optional, Tuple, TYPE_CHECKING
 
-from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
-
 import numpy as np
+
+from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
 
 if TYPE_CHECKING:
     import torch
@@ -87,23 +87,23 @@ class CutoutPyTorch(PreprocessorPyTorch):
         if x_ndim == 4:
             if self.channels_first:
                 # NCHW
-                n, c, h, w = x.shape
+                n, _, height, width = x.shape
             else:
                 # NHWC
-                n, h, w, c = x.shape
+                n, height, width, _ = x.shape
         else:
             raise ValueError("Unrecognized input dimension. Cutout can only be applied to image data.")
 
         # generate a random bounding box per image
-        masks = torch.ones(*x.shape)
+        masks = torch.ones(*x.shape, device=x.device)
         for i in range(n):
             # uniform sampling
-            cy = np.random.randint(h)
-            cx = np.random.randint(w)
-            bby1 = np.clip(cy - self.length // 2, 0, h)
-            bbx1 = np.clip(cx - self.length // 2, 0, w)
-            bby2 = np.clip(cy + self.length // 2, 0, h)
-            bbx2 = np.clip(cx + self.length // 2, 0, w)
+            y = np.random.randint(height)
+            x = np.random.randint(width)
+            bby1 = np.clip(y - self.length // 2, 0, height)
+            bbx1 = np.clip(x - self.length // 2, 0, width)
+            bby2 = np.clip(y + self.length // 2, 0, height)
+            bbx2 = np.clip(x + self.length // 2, 0, width)
 
             if self.channels_first:
                 masks[i, :, bbx1:bbx2, bby1:bby2] = 0

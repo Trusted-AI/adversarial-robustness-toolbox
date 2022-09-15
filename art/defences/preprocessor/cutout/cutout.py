@@ -78,10 +78,10 @@ class Cutout(Preprocessor):
         if x_ndim == 4:
             if self.channels_first:
                 # NCHW
-                n, c, h, w = x.shape
+                n, _, height, width = x.shape
             else:
                 # NHWC
-                n, h, w, c = x.shape
+                n, height, width, _ = x.shape
         else:
             raise ValueError("Unrecognized input dimension. Cutout can only be applied to image data.")
 
@@ -89,12 +89,12 @@ class Cutout(Preprocessor):
         masks = np.ones(x.shape)
         for i in range(n):
             # uniform sampling
-            cy = np.random.randint(h)
-            cx = np.random.randint(w)
-            bby1 = np.clip(cy - self.length // 2, 0, h)
-            bbx1 = np.clip(cx - self.length // 2, 0, w)
-            bby2 = np.clip(cy + self.length // 2, 0, h)
-            bbx2 = np.clip(cx + self.length // 2, 0, w)
+            y = np.random.randint(height)
+            x = np.random.randint(width)
+            bby1 = np.clip(y - self.length // 2, 0, height)
+            bbx1 = np.clip(x - self.length // 2, 0, width)
+            bby2 = np.clip(y + self.length // 2, 0, height)
+            bbx2 = np.clip(x + self.length // 2, 0, width)
 
             if self.channels_first:
                 masks[i, :, bbx1:bbx2, bby1:bby2] = 0
