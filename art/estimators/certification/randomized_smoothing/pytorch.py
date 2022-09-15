@@ -88,7 +88,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         gamma: float = 8.0,
         beta: float = 16.0,
         gauss_num: int = 16,
-        **kwargs
+        **kwargs,
     ):
         """
         Create a randomized smoothing classifier.
@@ -147,7 +147,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
             gamma=gamma,
             beta=beta,
             gauss_num=gauss_num,
-            **kwargs
+            **kwargs,
         )
         self.scheduler = scheduler
 
@@ -156,12 +156,6 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         return PyTorchClassifier.predict(self, x=x, batch_size=batch_size, training_mode=training_mode, **kwargs)
 
     def _fit_classifier(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
-        if "train_method" in kwargs:
-            if kwargs.get("train_method") == "macer":
-                return trainMacer.fit_pytorch(self, x, y, batch_size, nb_epochs, **kwargs)
-            if kwargs.get("train_method") == "smoothadv":
-                return trainSmoothAdversarial.fit_pytorch(self, x, y, batch_size, nb_epochs, **kwargs)
-
         g_a = GaussianAugmentation(sigma=self.scale, augmentation=False)
         x_rs, _ = g_a(x)
         x_rs = x_rs.astype(ART_NUMPY_DTYPE)
@@ -198,6 +192,12 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
 
         # Set model mode
         self._model.train(mode=training_mode)
+
+        if "train_method" in kwargs:
+            if kwargs.get("train_method") == "macer":
+                return trainMacer.fit_pytorch(self, x, y, batch_size, nb_epochs, **kwargs)
+            if kwargs.get("train_method") == "smoothadv":
+                return trainSmoothAdversarial.fit_pytorch(self, x, y, batch_size, nb_epochs, **kwargs)
 
         if self._optimizer is None:  # pragma: no cover
             raise ValueError("An optimizer is needed to train the model, but none for provided.")

@@ -151,10 +151,6 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
         return TensorFlowV2Classifier.predict(self, x=x, batch_size=batch_size, training_mode=training_mode, **kwargs)
 
     def _fit_classifier(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
-        if "train_method" in kwargs:
-            if kwargs.get("train_method") == "smoothadv":
-                return trainSmoothAdversarial.fit_tensorflow(self, x, y, batch_size, nb_epochs, **kwargs)
-
         g_a = GaussianAugmentation(sigma=self.scale, augmentation=False)
         x_rs, _ = g_a(x)
         x_rs = x_rs.astype(ART_NUMPY_DTYPE)
@@ -173,6 +169,10 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
                TensorFlow and providing it takes no effect.
         """
         import tensorflow as tf
+
+        if "train_method" in kwargs:
+            if kwargs.get("train_method") == "smoothadv":
+                return trainSmoothAdversarial.fit_tensorflow(self, x, y, batch_size, nb_epochs, **kwargs)
 
         if self._train_step is None:  # pragma: no cover
             raise TypeError(
