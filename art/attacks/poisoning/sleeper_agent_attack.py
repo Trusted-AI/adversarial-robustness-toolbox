@@ -41,6 +41,7 @@ if TYPE_CHECKING:
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
+import pdb
 
 
 class SleeperAgentAttack(GradientMatchingAttack):
@@ -266,7 +267,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         """
         return self.indices_poison
 
-    def _model_retraining(self, poisoned_samples: np.ndarray, x_train: np.ndarray, y_train: np.ndarray):
+    def _model_retraining(self, poisoned_samples: np.ndarray, x_train: np.ndarray, y_train: np.ndarray, x_test, y_test):
         """
         Applies retraining to substitute model
 
@@ -291,19 +292,24 @@ class SleeperAgentAttack(GradientMatchingAttack):
                 y_train,
                 batch_size=128,
                 epochs=self.model_retraining_epoch,
+                x_test = x_test,
+                y_test = y_test
             )
             check_train = self.substitute_classifier.model.training
             self.substitute_classifier = model_pt
             self.substitute_classifier.model.training = check_train
 
         elif isinstance(self.substitute_classifier, TensorFlowV2Classifier):
+            check_train = self.substitute_classifier.model.trainable
             model_tf = self._create_model(
-                x_train_un,
+                x_train,
                 y_train,
                 batch_size=128,
                 epochs=self.model_retraining_epoch,
+                x_test=x_test,
+                y_test=y_test
             )
-            check_train = self.substitute_classifier.model.trainable
+            
             self.substitute_classifier = model_tf
             self.substitute_classifier.model.trainable = check_train
 
@@ -314,8 +320,10 @@ class SleeperAgentAttack(GradientMatchingAttack):
         self,
         x_train: np.ndarray,
         y_train: np.ndarray,
-        batch_size: int = 128,
+        batch_size: int = 64,
         epochs: int = 80,
+        x_test=None,
+        y_test=None
     ) -> Union["TensorFlowV2Classifier", "PyTorchClassifier"]:
         """
         Creates a new model.
@@ -339,10 +347,28 @@ class SleeperAgentAttack(GradientMatchingAttack):
             return model_pt
 
         elif isinstance(self.substitute_classifier, TensorFlowV2Classifier):
-            model_tf = self.substitute_classifier.clone_for_refitting()
-            model_tf.fit(x_train, y_train, batch_size=batch_size, nb_epochs=epochs, verbose=1)
+            from tqdm.keras import TqdmCallback
+            import tensorflow as tf
+            self.substitute_classifier.model.trainable = True
+            model_tf = self.substitute_classifier.clone_for_refitting() ###### CHECK???? #### Current state of model_tf
+            model_tf.fit(x_train, y_train, batch_size=batch_size, nb_epochs=epochs, verbose=0)
             return model_tf
-
+#             def train_step(model, images, labels):
+#                 with tf.GradientTape() as tape:
+#                     predictions = model(images, training=True)
+#                     loss = model.compiled_loss(labels, predictions)
+#                 gradients = tape.gradient(loss, model.trainable_variables)
+#                 model.optimizer.apply_gradients(zip(gradients, model.trainable_variable))
+#             model_tf.set_params(train_step=train_step)                                            
+#             if hasattr(model_tf.model,'fit'):
+#                 model_tf.model.fit(x_train, y_train, 
+#                                    batch_size=batch_size, 
+#                                    steps_per_epoch=x_train.shape[0] // batch_size,
+#                                    epochs=epochs,
+#                                    callbacks=[TqdmCallback(verbose=0)])
+#                 return model_tf
+#             else:
+#                 raise ValueError("Expected keras model with fit function")            
         else:
             raise ValueError("SleeperAgentAttack is currently implemented only for PyTorch and TensorFlowV2.")
 
@@ -379,7 +405,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
                 grad_norms.append(grad_norm.sqrt())
         elif isinstance(self.substitute_classifier, TensorFlowV2Classifier):
             import tensorflow as tf
-
+            pdb.set_trace()
             grad_norms = []
             for i in range(len(x_samples) - 1):
                 image = tf.constant(x_samples[i : i + 1])
