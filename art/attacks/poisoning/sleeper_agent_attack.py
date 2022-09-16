@@ -130,6 +130,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         self.class_target = class_target
         self.class_source = class_source
         self.device_name = device_name
+        self.epoch_state = 0
 
     # pylint: disable=W0221
     def poison(  # type: ignore
@@ -207,26 +208,33 @@ class SleeperAgentAttack(GradientMatchingAttack):
             y_poison = y_train_target_samples[self.indices_poison]
             initializer(x_trigger, y_trigger, x_poison, y_poison)
             original_epochs = self.max_epochs
+            
             if self.model_retrain:
                 retrain_epochs = self.max_epochs // self.retraining_factor
+#                 self.epoch_state = retrain_epochs
+                self.max_epochs = 0
                 for i in range(self.retraining_factor):
+                    self.max_epochs = self.max_epochs + retrain_epochs 
                     if i == self.retraining_factor - 1:
-                        self.max_epochs = original_epochs - retrain_epochs * i
+#                         self.max_epochs = original_epochs - retrain_epochs * i
                         x_poisoned, B_ = poisoner(x_poison, y_poison)  # pylint: disable=C0103
                     else:
-                        self.max_epochs = retrain_epochs
+#                         self.max_epochs = self.epoch_state
                         x_poisoned, B_ = poisoner(x_poison, y_poison)  # pylint: disable=C0103
                         self._model_retraining(x_poisoned, x_train, y_train, x_test, y_test)
+                       
             else:
                 x_poisoned, B_ = poisoner(x_poison, y_poison)  # pylint: disable=C0103
             finish_poisoning()
             B_ = np.mean(B_)  # Averaging B losses from multiple batches.  # pylint: disable=C0103
+#             pdb.set_trace()
             if B_ < best_B:
                 best_B = B_  # pylint: disable=C0103
                 best_x_poisoned = x_poisoned
                 best_indices_poison = self.indices_poison
 
         # Apply De-Normalization
+#         pdb.set_trace()
         if isinstance(
             self.substitute_classifier.preprocessing, (StandardisationMeanStdPyTorch, StandardisationMeanStdTensorFlow)
         ):
@@ -320,7 +328,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         self,
         x_train: np.ndarray,
         y_train: np.ndarray,
-        batch_size: int = 64,
+        batch_size: int = 128,
         epochs: int = 80,
         x_test=None,
         y_test=None
@@ -405,7 +413,9 @@ class SleeperAgentAttack(GradientMatchingAttack):
                 grad_norms.append(grad_norm.sqrt())
         elif isinstance(self.substitute_classifier, TensorFlowV2Classifier):
             import tensorflow as tf
-            pdb.set_trace()
+            model_trainable = classifier.model.trainable
+            classifier.model.trainable = False 
+#             pdb.set_trace()
             grad_norms = []
             for i in range(len(x_samples) - 1):
                 image = tf.constant(x_samples[i : i + 1])
@@ -413,13 +423,14 @@ class SleeperAgentAttack(GradientMatchingAttack):
                 with tf.GradientTape() as t:  # pylint: disable=C0103
                     t.watch(classifier.model.weights)
                     output = classifier.model(image, training=False)
-                    loss_tf = classifier.model.compiled_loss(label, output)  # type: ignore
+                    loss_tf = classifier.loss_object(label, output)  # type: ignore
                     gradients = list(t.gradient(loss_tf, classifier.model.weights))
                     gradients = [w for w in gradients if w is not None]
                     grad_norm = tf.constant(0, dtype=tf.float32)
                     for grad in gradients:
                         grad_norm += tf.reduce_sum(tf.math.square(grad))
                     grad_norms.append(tf.math.sqrt(grad_norm))
+            classifier.model.trainable = model_trainable        
         else:
             raise NotImplementedError("SleeperAgentAttack is currently implemented only for PyTorch and TensorFlowV2.")
         indices = sorted(range(len(grad_norms)), key=lambda k: grad_norms[k])

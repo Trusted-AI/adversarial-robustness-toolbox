@@ -175,7 +175,7 @@ class GradientMatchingAttack(Attack):
             with tf.GradientTape() as t:  # pylint: disable=C0103
                 t.watch(classifier.model.weights)
                 output = classifier.model(x, training=False)
-                loss = classifier.model.compiled_loss(target, output)
+                loss = classifier.loss_object(target, output)
             d_w = t.gradient(loss, classifier.model.weights)
             d_w = [w for w in d_w if w is not None]
             d_w = tf.concat([tf.reshape(d, [-1]) for d in d_w], 0)
