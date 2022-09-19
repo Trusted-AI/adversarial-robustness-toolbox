@@ -41,7 +41,6 @@ if TYPE_CHECKING:
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
-import pdb
 
 
 class SleeperAgentAttack(GradientMatchingAttack):
@@ -207,7 +206,6 @@ class SleeperAgentAttack(GradientMatchingAttack):
             x_poison = x_train_target_samples[self.indices_poison]
             y_poison = y_train_target_samples[self.indices_poison]
             initializer(x_trigger, y_trigger, x_poison, y_poison)
-            original_epochs = self.max_epochs
             if self.model_retrain:
                 retrain_epochs = self.max_epochs // self.retraining_factor
                 self.max_epochs = retrain_epochs
@@ -216,7 +214,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
                         x_poisoned, B_ = poisoner(x_poison, y_poison)  # pylint: disable=C0103
                     else:
                         x_poisoned, B_ = poisoner(x_poison, y_poison)  # pylint: disable=C0103
-                        self._model_retraining(x_poisoned, x_train, y_train, x_test, y_test)
+                        self._model_retraining(x_poisoned, x_train, y_train)
                     self.initial_epoch = self.max_epochs
                     self.max_epochs = self.max_epochs + retrain_epochs
 
@@ -270,7 +268,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         """
         return self.indices_poison
 
-    def _model_retraining(self, poisoned_samples: np.ndarray, x_train: np.ndarray, y_train: np.ndarray, x_test, y_test):
+    def _model_retraining(self, poisoned_samples: np.ndarray, x_train: np.ndarray, y_train: np.ndarray):
         """
         Applies retraining to substitute model
 
@@ -287,21 +285,16 @@ class SleeperAgentAttack(GradientMatchingAttack):
             x_train_un[self.indices_target[self.indices_poison]] = poisoned_samples
             x_train_un = x_train_un * self.substitute_classifier.preprocessing.std
             x_train_un += self.substitute_classifier.preprocessing.mean
-        num_classes = self.substitute_classifier.nb_classes
 
         if isinstance(self.substitute_classifier, PyTorchClassifier):
             check_train = self.substitute_classifier.model.training
-            model_pt = self._create_model(
-                x_train_un, y_train, batch_size=128, epochs=self.model_retraining_epoch, x_test=x_test, y_test=y_test
-            )
+            model_pt = self._create_model(x_train_un, y_train, batch_size=128, epochs=self.model_retraining_epoch)
             self.substitute_classifier = model_pt
             self.substitute_classifier.model.training = check_train
 
         elif isinstance(self.substitute_classifier, TensorFlowV2Classifier):
             check_train = self.substitute_classifier.model.trainable
-            model_tf = self._create_model(
-                x_train_un, y_train, batch_size=128, epochs=self.model_retraining_epoch, x_test=x_test, y_test=y_test
-            )
+            model_tf = self._create_model(x_train_un, y_train, batch_size=128, epochs=self.model_retraining_epoch)
 
             self.substitute_classifier = model_tf
             self.substitute_classifier.model.trainable = check_train
@@ -310,13 +303,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
             raise NotImplementedError("SleeperAgentAttack is currently implemented only for PyTorch and TensorFlowV2.")
 
     def _create_model(
-        self,
-        x_train: np.ndarray,
-        y_train: np.ndarray,
-        batch_size: int = 128,
-        epochs: int = 80,
-        x_test=None,
-        y_test=None,
+        self, x_train: np.ndarray, y_train: np.ndarray, batch_size: int = 128, epochs: int = 80
     ) -> Union["TensorFlowV2Classifier", "PyTorchClassifier"]:
         """
         Creates a new model.
@@ -339,9 +326,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
             model_pt.fit(x_train, y_train, batch_size=batch_size, nb_epochs=epochs, verbose=1)
             return model_pt
 
-        elif isinstance(self.substitute_classifier, TensorFlowV2Classifier):
-            from tqdm.keras import TqdmCallback
-            import tensorflow as tf
+        if isinstance(self.substitute_classifier, TensorFlowV2Classifier):
 
             self.substitute_classifier.model.trainable = True
             model_tf = self.substitute_classifier.clone_for_refitting()
@@ -388,7 +373,6 @@ class SleeperAgentAttack(GradientMatchingAttack):
 
             model_trainable = classifier.model.trainable
             classifier.model.trainable = False
-            #             pdb.set_trace()
             grad_norms = []
             for i in range(len(x_samples) - 1):
                 image = tf.constant(x_samples[i : i + 1])
