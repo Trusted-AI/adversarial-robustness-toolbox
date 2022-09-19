@@ -130,7 +130,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         self.class_target = class_target
         self.class_source = class_source
         self.device_name = device_name
-        self.epoch_state = 0
+        self.initial_epoch = 0
 
     # pylint: disable=W0221
     def poison(  # type: ignore
@@ -208,33 +208,28 @@ class SleeperAgentAttack(GradientMatchingAttack):
             y_poison = y_train_target_samples[self.indices_poison]
             initializer(x_trigger, y_trigger, x_poison, y_poison)
             original_epochs = self.max_epochs
-            
             if self.model_retrain:
                 retrain_epochs = self.max_epochs // self.retraining_factor
-#                 self.epoch_state = retrain_epochs
-                self.max_epochs = 0
+                self.max_epochs = retrain_epochs
                 for i in range(self.retraining_factor):
-                    self.max_epochs = self.max_epochs + retrain_epochs 
                     if i == self.retraining_factor - 1:
-#                         self.max_epochs = original_epochs - retrain_epochs * i
                         x_poisoned, B_ = poisoner(x_poison, y_poison)  # pylint: disable=C0103
                     else:
-#                         self.max_epochs = self.epoch_state
                         x_poisoned, B_ = poisoner(x_poison, y_poison)  # pylint: disable=C0103
                         self._model_retraining(x_poisoned, x_train, y_train, x_test, y_test)
-                       
+                    self.initial_epoch = self.max_epochs
+                    self.max_epochs = self.max_epochs + retrain_epochs
+
             else:
                 x_poisoned, B_ = poisoner(x_poison, y_poison)  # pylint: disable=C0103
             finish_poisoning()
             B_ = np.mean(B_)  # Averaging B losses from multiple batches.  # pylint: disable=C0103
-#             pdb.set_trace()
             if B_ < best_B:
                 best_B = B_  # pylint: disable=C0103
                 best_x_poisoned = x_poisoned
                 best_indices_poison = self.indices_poison
 
         # Apply De-Normalization
-#         pdb.set_trace()
         if isinstance(
             self.substitute_classifier.preprocessing, (StandardisationMeanStdPyTorch, StandardisationMeanStdTensorFlow)
         ):
@@ -295,29 +290,19 @@ class SleeperAgentAttack(GradientMatchingAttack):
         num_classes = self.substitute_classifier.nb_classes
 
         if isinstance(self.substitute_classifier, PyTorchClassifier):
-            model_pt = self._create_model(
-                x_train_un,
-                y_train,
-                batch_size=128,
-                epochs=self.model_retraining_epoch,
-                x_test = x_test,
-                y_test = y_test
-            )
             check_train = self.substitute_classifier.model.training
+            model_pt = self._create_model(
+                x_train_un, y_train, batch_size=128, epochs=self.model_retraining_epoch, x_test=x_test, y_test=y_test
+            )
             self.substitute_classifier = model_pt
             self.substitute_classifier.model.training = check_train
 
         elif isinstance(self.substitute_classifier, TensorFlowV2Classifier):
             check_train = self.substitute_classifier.model.trainable
             model_tf = self._create_model(
-                x_train,
-                y_train,
-                batch_size=128,
-                epochs=self.model_retraining_epoch,
-                x_test=x_test,
-                y_test=y_test
+                x_train_un, y_train, batch_size=128, epochs=self.model_retraining_epoch, x_test=x_test, y_test=y_test
             )
-            
+
             self.substitute_classifier = model_tf
             self.substitute_classifier.model.trainable = check_train
 
@@ -331,7 +316,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         batch_size: int = 128,
         epochs: int = 80,
         x_test=None,
-        y_test=None
+        y_test=None,
     ) -> Union["TensorFlowV2Classifier", "PyTorchClassifier"]:
         """
         Creates a new model.
@@ -357,26 +342,13 @@ class SleeperAgentAttack(GradientMatchingAttack):
         elif isinstance(self.substitute_classifier, TensorFlowV2Classifier):
             from tqdm.keras import TqdmCallback
             import tensorflow as tf
+
             self.substitute_classifier.model.trainable = True
-            model_tf = self.substitute_classifier.clone_for_refitting() ###### CHECK???? #### Current state of model_tf
+            model_tf = self.substitute_classifier.clone_for_refitting()
             model_tf.fit(x_train, y_train, batch_size=batch_size, nb_epochs=epochs, verbose=0)
+
             return model_tf
-#             def train_step(model, images, labels):
-#                 with tf.GradientTape() as tape:
-#                     predictions = model(images, training=True)
-#                     loss = model.compiled_loss(labels, predictions)
-#                 gradients = tape.gradient(loss, model.trainable_variables)
-#                 model.optimizer.apply_gradients(zip(gradients, model.trainable_variable))
-#             model_tf.set_params(train_step=train_step)                                            
-#             if hasattr(model_tf.model,'fit'):
-#                 model_tf.model.fit(x_train, y_train, 
-#                                    batch_size=batch_size, 
-#                                    steps_per_epoch=x_train.shape[0] // batch_size,
-#                                    epochs=epochs,
-#                                    callbacks=[TqdmCallback(verbose=0)])
-#                 return model_tf
-#             else:
-#                 raise ValueError("Expected keras model with fit function")            
+
         else:
             raise ValueError("SleeperAgentAttack is currently implemented only for PyTorch and TensorFlowV2.")
 
@@ -413,9 +385,10 @@ class SleeperAgentAttack(GradientMatchingAttack):
                 grad_norms.append(grad_norm.sqrt())
         elif isinstance(self.substitute_classifier, TensorFlowV2Classifier):
             import tensorflow as tf
+
             model_trainable = classifier.model.trainable
-            classifier.model.trainable = False 
-#             pdb.set_trace()
+            classifier.model.trainable = False
+            #             pdb.set_trace()
             grad_norms = []
             for i in range(len(x_samples) - 1):
                 image = tf.constant(x_samples[i : i + 1])
@@ -430,7 +403,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
                     for grad in gradients:
                         grad_norm += tf.reduce_sum(tf.math.square(grad))
                     grad_norms.append(tf.math.sqrt(grad_norm))
-            classifier.model.trainable = model_trainable        
+            classifier.model.trainable = model_trainable
         else:
             raise NotImplementedError("SleeperAgentAttack is currently implemented only for PyTorch and TensorFlowV2.")
         indices = sorted(range(len(grad_norms)), key=lambda k: grad_norms[k])

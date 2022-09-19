@@ -97,6 +97,7 @@ class GradientMatchingAttack(Attack):
         self.max_epochs = max_epochs
         self.batch_size = batch_size
         self.clip_values = clip_values
+        self.initial_epoch = 0
 
         if verbose is True:
             verbose = 1
@@ -536,6 +537,7 @@ class GradientMatchingAttack(Attack):
             [x_poison, y_poison, np.arange(len(y_poison))],
             callbacks=callbacks,
             batch_size=self.batch_size,
+            initial_epoch=self.initial_epoch,
             epochs=self.max_epochs,
             verbose=0,
         )
