@@ -71,6 +71,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         class_source: int = 0,
         class_target: int = 1,
         device_name: str = "cpu",
+        retrain_batch_size: int = 128,
     ):
         """
         Initialize a Sleeper Agent poisoning attack.
@@ -96,6 +97,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         :param model_retraining_epoch: The epochs for which retraining has to be applied.
         :param class_source: The source class from which triggers were selected.
         :param class_target: The target label to which the poisoned model needs to misclassify.
+        :param retrain_batch_size: Batch size required for model retraining.
         """
         if isinstance(classifier.preprocessing, (StandardisationMeanStdPyTorch, StandardisationMeanStdTensorFlow)):
             clip_values_normalised = (
@@ -130,6 +132,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         self.class_source = class_source
         self.device_name = device_name
         self.initial_epoch = 0
+        self.retrain_batch_size = retrain_batch_size
 
     # pylint: disable=W0221
     def poison(  # type: ignore
@@ -296,7 +299,12 @@ class SleeperAgentAttack(GradientMatchingAttack):
         if isinstance(self.substitute_classifier, PyTorchClassifier):
             check_train = self.substitute_classifier.model.training
             model_pt = self._create_model(
-                x_train_un, y_train, x_test, y_test, batch_size=128, epochs=self.model_retraining_epoch
+                x_train_un,
+                y_train,
+                x_test,
+                y_test,
+                batch_size=self.retrain_batch_size,
+                epochs=self.model_retraining_epoch,
             )
             self.substitute_classifier = model_pt
             self.substitute_classifier.model.training = check_train
@@ -304,13 +312,19 @@ class SleeperAgentAttack(GradientMatchingAttack):
         elif isinstance(self.substitute_classifier, TensorFlowV2Classifier):
             check_train = self.substitute_classifier.model.trainable
             model_tf = self._create_model(
-                x_train_un, y_train, x_test, y_test, batch_size=128, epochs=self.model_retraining_epoch
+                x_train_un,
+                y_train,
+                x_test,
+                y_test,
+                batch_size=self.retrain_batch_size,
+                epochs=self.model_retraining_epoch,
             )
 
             self.substitute_classifier = model_tf
             self.substitute_classifier.model.trainable = check_train
 
-        raise NotImplementedError("SleeperAgentAttack is currently implemented only for PyTorch and TensorFlowV2.")
+        else:
+            raise NotImplementedError("SleeperAgentAttack is currently implemented only for PyTorch and TensorFlowV2.")
 
     def _create_model(
         self,
