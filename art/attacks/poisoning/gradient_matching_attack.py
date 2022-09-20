@@ -479,7 +479,11 @@ class GradientMatchingAttack(Attack):
             PoisonDataset(x_poison, y_poison), batch_size=self.batch_size, shuffle=False, num_workers=1
         )
 
-        epoch_iterator = trange(self.max_epochs) if self.verbose > 0 else range(self.max_epochs)
+        epoch_iterator = (
+            trange(self.intial_epoch, self.max_epochs)
+            if self.verbose > 0
+            else range(self.intial_epoch, self.max_epochs)
+        )
         for _ in epoch_iterator:
             batch_iterator = tqdm(trainloader) if isinstance(self.verbose, int) and self.verbose >= 2 else trainloader
             sum_loss = 0

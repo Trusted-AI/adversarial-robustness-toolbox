@@ -102,7 +102,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
                 classifier.clip_values - classifier.preprocessing.mean
             ) / classifier.preprocessing.std
             clip_values_normalised = (clip_values_normalised[0], clip_values_normalised[1])
-            epsilon_normalised = epsilon / 255 * (clip_values_normalised[1] - clip_values_normalised[0])
+            epsilon_normalised = epsilon * (clip_values_normalised[1] - clip_values_normalised[0])
             patch_normalised = (patch - classifier.preprocessing.mean) / classifier.preprocessing.std
         else:
             raise ValueError("classifier.preprocessing not an instance of pytorch/tensorflow")
@@ -345,7 +345,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
             logger.info("Accuracy of retrained model : %s", accuracy * 100.0)
             return model_pt
 
-        elif isinstance(self.substitute_classifier, TensorFlowV2Classifier):
+        if isinstance(self.substitute_classifier, TensorFlowV2Classifier):
 
             self.substitute_classifier.model.trainable = True
             model_tf = self.substitute_classifier.clone_for_refitting()
