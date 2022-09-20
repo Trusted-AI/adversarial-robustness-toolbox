@@ -310,8 +310,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
             self.substitute_classifier = model_tf
             self.substitute_classifier.model.trainable = check_train
 
-        else:
-            raise NotImplementedError("SleeperAgentAttack is currently implemented only for PyTorch and TensorFlowV2.")
+        raise NotImplementedError("SleeperAgentAttack is currently implemented only for PyTorch and TensorFlowV2.")
 
     def _create_model(
         self,
@@ -343,7 +342,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
             model_pt.fit(x_train, y_train, batch_size=batch_size, nb_epochs=epochs, verbose=1)
             predictions = model_pt.predict(x_test)
             accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
-            logger.info("Accuracy of retrained model : {}".format(accuracy * 100.0))
+            logger.info("Accuracy of retrained model : %s", accuracy * 100.0)
             return model_pt
 
         elif isinstance(self.substitute_classifier, TensorFlowV2Classifier):
@@ -353,7 +352,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
             model_tf.fit(x_train, y_train, batch_size=batch_size, nb_epochs=epochs, verbose=0)
             predictions = model_pt.predict(x_test)
             accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
-            logger.info("Accuracy of retrained model : {}".format(accuracy * 100.0))
+            logger.info("Accuracy of retrained model : %s", accuracy * 100.0)
             return model_tf
 
         raise ValueError("SleeperAgentAttack is currently implemented only for PyTorch and TensorFlowV2.")
