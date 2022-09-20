@@ -214,7 +214,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
                         x_poisoned, B_ = poisoner(x_poison, y_poison)  # pylint: disable=C0103
                     else:
                         x_poisoned, B_ = poisoner(x_poison, y_poison)  # pylint: disable=C0103
-                        self._model_retraining(x_poisoned, x_train, y_train)
+                        self._model_retraining(x_poisoned, x_train, y_train, x_test, y_test)
                     self.initial_epoch = self.max_epochs
                     self.max_epochs = self.max_epochs + retrain_epochs
 
@@ -268,7 +268,14 @@ class SleeperAgentAttack(GradientMatchingAttack):
         """
         return self.indices_poison
 
-    def _model_retraining(self, poisoned_samples: np.ndarray, x_train: np.ndarray, y_train: np.ndarray):
+    def _model_retraining(
+        self,
+        poisoned_samples: np.ndarray,
+        x_train: np.ndarray,
+        y_train: np.ndarray,
+        x_test: np.ndarray,
+        y_test: np.ndarray,
+    ):
         """
         Applies retraining to substitute model
 
@@ -288,13 +295,17 @@ class SleeperAgentAttack(GradientMatchingAttack):
 
         if isinstance(self.substitute_classifier, PyTorchClassifier):
             check_train = self.substitute_classifier.model.training
-            model_pt = self._create_model(x_train_un, y_train, batch_size=128, epochs=self.model_retraining_epoch)
+            model_pt = self._create_model(
+                x_train_un, y_train, x_test, y_test, batch_size=128, epochs=self.model_retraining_epoch
+            )
             self.substitute_classifier = model_pt
             self.substitute_classifier.model.training = check_train
 
         elif isinstance(self.substitute_classifier, TensorFlowV2Classifier):
             check_train = self.substitute_classifier.model.trainable
-            model_tf = self._create_model(x_train_un, y_train, batch_size=128, epochs=self.model_retraining_epoch)
+            model_tf = self._create_model(
+                x_train_un, y_train, x_test, y_test, batch_size=128, epochs=self.model_retraining_epoch
+            )
 
             self.substitute_classifier = model_tf
             self.substitute_classifier.model.trainable = check_train
@@ -303,7 +314,13 @@ class SleeperAgentAttack(GradientMatchingAttack):
             raise NotImplementedError("SleeperAgentAttack is currently implemented only for PyTorch and TensorFlowV2.")
 
     def _create_model(
-        self, x_train: np.ndarray, y_train: np.ndarray, batch_size: int = 128, epochs: int = 80
+        self,
+        x_train: np.ndarray,
+        y_train: np.ndarray,
+        x_test: np.ndarray,
+        y_test: np.ndarray,
+        batch_size: int = 128,
+        epochs: int = 80,
     ) -> Union["TensorFlowV2Classifier", "PyTorchClassifier"]:
         """
         Creates a new model.
@@ -322,20 +339,24 @@ class SleeperAgentAttack(GradientMatchingAttack):
             model_pt = self.substitute_classifier.clone_for_refitting()
             for layer in model_pt.model.children():
                 if hasattr(layer, "reset_parameters"):
-                    layer.reset_parameters()
+                    layer.reset_parameters()  # type: ignore
             model_pt.fit(x_train, y_train, batch_size=batch_size, nb_epochs=epochs, verbose=1)
+            predictions = model_pt.predict(x_test)
+            accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
+            logger.info("Accuracy of retrained model : {}".format(accuracy * 100.0))
             return model_pt
 
-        if isinstance(self.substitute_classifier, TensorFlowV2Classifier):
+        elif isinstance(self.substitute_classifier, TensorFlowV2Classifier):
 
             self.substitute_classifier.model.trainable = True
             model_tf = self.substitute_classifier.clone_for_refitting()
             model_tf.fit(x_train, y_train, batch_size=batch_size, nb_epochs=epochs, verbose=0)
-
+            predictions = model_pt.predict(x_test)
+            accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
+            logger.info("Accuracy of retrained model : {}".format(accuracy * 100.0))
             return model_tf
 
-        else:
-            raise ValueError("SleeperAgentAttack is currently implemented only for PyTorch and TensorFlowV2.")
+        raise ValueError("SleeperAgentAttack is currently implemented only for PyTorch and TensorFlowV2.")
 
     # This function is responsible for returning indices of poison images with maximum gradient norm
     def _select_poison_indices(
