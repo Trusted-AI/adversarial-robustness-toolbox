@@ -480,9 +480,9 @@ class GradientMatchingAttack(Attack):
         )
 
         epoch_iterator = (
-            trange(self.intial_epoch, self.max_epochs)
+            trange(self.initial_epoch, self.max_epochs)
             if self.verbose > 0
-            else range(self.intial_epoch, self.max_epochs)
+            else range(self.initial_epoch, self.max_epochs)
         )
         for _ in epoch_iterator:
             batch_iterator = tqdm(trainloader) if isinstance(self.verbose, int) and self.verbose >= 2 else trainloader
