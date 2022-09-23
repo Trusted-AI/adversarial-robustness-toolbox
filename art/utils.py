@@ -584,7 +584,7 @@ def uniform_sample_from_sphere_or_ball(
     radius: Union[int, float, np.ndarray],
     sample_space: str = "ball",
     norm: Union[int, float, str] = 2,
-) -> np.array:
+) -> np.ndarray:
     """
     Generate a sample of  <nb_points>  distributed independently and uniformly on the sphere (with respect to the given
     norm) in dimension <nb_dims> with radius <radius> and centered at the origin.  Note that the sphere is the boundary
@@ -645,7 +645,7 @@ def uniform_sample_from_sphere_or_ball(
             radii = np.outer(radius, np.ones(nb_dims))
             res = x * radii
     else:
-        raise NotImplementedError("Norm {} not supported".format(norm))
+        raise NotImplementedError(f"Norm {norm} not supported")
 
     return res
 
