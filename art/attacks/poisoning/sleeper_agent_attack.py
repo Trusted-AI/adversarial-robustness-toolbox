@@ -23,19 +23,22 @@ This module implements Sleeper Agent attack on Neural Networks.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Any, Tuple, TYPE_CHECKING, List
+from typing import Tuple, TYPE_CHECKING, List, Union
 import random
 
 import numpy as np
 from tqdm.auto import trange
 
-
 from art.attacks.poisoning import GradientMatchingAttack
+from art.estimators.classification.pytorch import PyTorchClassifier
+from art.estimators.classification import TensorFlowV2Classifier
+from art.preprocessing.standardisation_mean_std.pytorch import StandardisationMeanStdPyTorch
+from art.preprocessing.standardisation_mean_std.tensorflow import StandardisationMeanStdTensorFlow
+
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
-    import torch
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +70,8 @@ class SleeperAgentAttack(GradientMatchingAttack):
         model_retraining_epoch: int = 1,
         class_source: int = 0,
         class_target: int = 1,
+        device_name: str = "cpu",
+        retrain_batch_size: int = 128,
     ):
         """
         Initialize a Sleeper Agent poisoning attack.
@@ -92,16 +97,27 @@ class SleeperAgentAttack(GradientMatchingAttack):
         :param model_retraining_epoch: The epochs for which retraining has to be applied.
         :param class_source: The source class from which triggers were selected.
         :param class_target: The target label to which the poisoned model needs to misclassify.
+        :param retrain_batch_size: Batch size required for model retraining.
         """
+        if isinstance(classifier.preprocessing, (StandardisationMeanStdPyTorch, StandardisationMeanStdTensorFlow)):
+            clip_values_normalised = (
+                classifier.clip_values - classifier.preprocessing.mean
+            ) / classifier.preprocessing.std
+            clip_values_normalised = (clip_values_normalised[0], clip_values_normalised[1])
+            epsilon_normalised = epsilon * (clip_values_normalised[1] - clip_values_normalised[0])
+            patch_normalised = (patch - classifier.preprocessing.mean) / classifier.preprocessing.std
+        else:
+            raise ValueError("classifier.preprocessing not an instance of pytorch/tensorflow")
+
         super().__init__(
             classifier,
             percent_poison,
-            epsilon,
+            epsilon_normalised,
             max_trials,
             max_epochs,
             learning_rate_schedule,
             batch_size,
-            clip_values,
+            clip_values_normalised,
             verbose,
         )
         self.indices_target = indices_target
@@ -111,9 +127,12 @@ class SleeperAgentAttack(GradientMatchingAttack):
         self.model_retrain = model_retrain
         self.model_retraining_epoch = model_retraining_epoch
         self.indices_poison: np.ndarray
-        self.patch = patch
+        self.patch = patch_normalised
         self.class_target = class_target
         self.class_source = class_source
+        self.device_name = device_name
+        self.initial_epoch = 0
+        self.retrain_batch_size = retrain_batch_size
 
     # pylint: disable=W0221
     def poison(  # type: ignore
@@ -137,20 +156,32 @@ class SleeperAgentAttack(GradientMatchingAttack):
                  Here, x_train are the samples selected from target class
                  in training data.
         """
-        from art.estimators.classification.pytorch import PyTorchClassifier
+        # Apply Normalisation
+        x_train = np.copy(x_train)
+        if isinstance(
+            self.substitute_classifier.preprocessing, (StandardisationMeanStdPyTorch, StandardisationMeanStdTensorFlow)
+        ):
+            x_trigger = (
+                x_trigger - self.substitute_classifier.preprocessing.mean
+            ) / self.substitute_classifier.preprocessing.std
+            x_train = (
+                x_train - self.substitute_classifier.preprocessing.mean
+            ) / self.substitute_classifier.preprocessing.std
 
-        x_train_target_samples, y_train_target_samples = self.select_target_train_samples(x_train, y_train)
+        x_train_target_samples, y_train_target_samples = self._select_target_train_samples(x_train, y_train)
         if isinstance(self.substitute_classifier, PyTorchClassifier):
             poisoner = self._poison__pytorch
             finish_poisoning = self._finish_poison_pytorch
             initializer = self._initialize_poison_pytorch
-            if self.estimator.channels_first:
-                x_train_target_samples = np.transpose(x_train_target_samples, [0, 3, 1, 2])
+        elif isinstance(self.substitute_classifier, TensorFlowV2Classifier):
+            poisoner = self._poison__tensorflow
+            finish_poisoning = self._finish_poison_tensorflow
+            initializer = self._initialize_poison_tensorflow
         else:
-            raise NotImplementedError("SleeperAgentAttack is currently implemented only for PyTorch.")
+            raise NotImplementedError("SleeperAgentAttack is currently implemented only for PyTorch and TensorFlowV2.")
 
         # Choose samples to poison.
-        x_trigger = self.apply_trigger_patch(x_trigger)
+        x_trigger = self._apply_trigger_patch(x_trigger)
         if len(np.shape(y_trigger)) == 2:  # dense labels
             classes_target = set(np.argmax(y_trigger, axis=-1))
         else:  # sparse labels
@@ -172,23 +203,24 @@ class SleeperAgentAttack(GradientMatchingAttack):
                     np.where([y in classes_target for y in y_train_classes])[0]
                 )[:num_poison_samples]
             else:
-                self.indices_poison = self.select_poison_indices(
+                self.indices_poison = self._select_poison_indices(
                     self.substitute_classifier, x_train_target_samples, y_train_target_samples, num_poison_samples
                 )
             x_poison = x_train_target_samples[self.indices_poison]
             y_poison = y_train_target_samples[self.indices_poison]
             initializer(x_trigger, y_trigger, x_poison, y_poison)
-            original_epochs = self.max_epochs
             if self.model_retrain:
                 retrain_epochs = self.max_epochs // self.retraining_factor
+                self.max_epochs = retrain_epochs
                 for i in range(self.retraining_factor):
                     if i == self.retraining_factor - 1:
-                        self.max_epochs = original_epochs - retrain_epochs * i
                         x_poisoned, B_ = poisoner(x_poison, y_poison)  # pylint: disable=C0103
                     else:
-                        self.max_epochs = retrain_epochs
                         x_poisoned, B_ = poisoner(x_poison, y_poison)  # pylint: disable=C0103
-                        self.model_retraining(x_poisoned, x_train, y_train, x_test, y_test)
+                        self._model_retraining(x_poisoned, x_train, y_train, x_test, y_test)
+                    self.initial_epoch = self.max_epochs
+                    self.max_epochs = self.max_epochs + retrain_epochs
+
             else:
                 x_poisoned, B_ = poisoner(x_poison, y_poison)  # pylint: disable=C0103
             finish_poisoning()
@@ -198,12 +230,28 @@ class SleeperAgentAttack(GradientMatchingAttack):
                 best_x_poisoned = x_poisoned
                 best_indices_poison = self.indices_poison
 
+        # Apply De-Normalization
+        if isinstance(
+            self.substitute_classifier.preprocessing, (StandardisationMeanStdPyTorch, StandardisationMeanStdTensorFlow)
+        ):
+            x_train = (
+                x_train * self.substitute_classifier.preprocessing.std + self.substitute_classifier.preprocessing.mean
+            )
+            best_x_poisoned = (
+                best_x_poisoned * self.substitute_classifier.preprocessing.std
+                + self.substitute_classifier.preprocessing.mean
+            )
         if self.verbose > 0:
-            print("Best B-score:", best_B)
-        x_train[self.indices_target[best_indices_poison]] = np.transpose(best_x_poisoned, [0, 2, 3, 1])
+            logger.info("Best B-score: %s", best_B)
+        if isinstance(self.substitute_classifier, PyTorchClassifier):
+            x_train[self.indices_target[best_indices_poison]] = best_x_poisoned
+        elif isinstance(self.substitute_classifier, TensorFlowV2Classifier):
+            x_train[self.indices_target[best_indices_poison]] = best_x_poisoned
+        else:
+            raise NotImplementedError("SleeperAgentAttack is currently implemented only for PyTorch and TensorFlowV2.")
         return x_train, y_train
 
-    def select_target_train_samples(self, x_train: np.ndarray, y_train: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def _select_target_train_samples(self, x_train: np.ndarray, y_train: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
         Used for selecting train samples from target class
         :param x_train: clean training data
@@ -223,7 +271,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         """
         return self.indices_poison
 
-    def model_retraining(
+    def _model_retraining(
         self,
         poisoned_samples: np.ndarray,
         x_train: np.ndarray,
@@ -240,37 +288,53 @@ class SleeperAgentAttack(GradientMatchingAttack):
         :param x_test: clean test data.
         :param y_test: labels for test data.
         """
-        from art.estimators.classification.pytorch import PyTorchClassifier
+        if isinstance(
+            self.substitute_classifier.preprocessing, (StandardisationMeanStdPyTorch, StandardisationMeanStdTensorFlow)
+        ):
+            x_train_un = np.copy(x_train)
+            x_train_un[self.indices_target[self.indices_poison]] = poisoned_samples
+            x_train_un = x_train_un * self.substitute_classifier.preprocessing.std
+            x_train_un += self.substitute_classifier.preprocessing.mean
 
-        x_train = np.transpose(x_train, [0, 3, 1, 2])
+        if isinstance(self.substitute_classifier, PyTorchClassifier):
+            check_train = self.substitute_classifier.model.training
+            model_pt = self._create_model(
+                x_train_un,
+                y_train,
+                x_test,
+                y_test,
+                batch_size=self.retrain_batch_size,
+                epochs=self.model_retraining_epoch,
+            )
+            self.substitute_classifier = model_pt
+            self.substitute_classifier.model.training = check_train
 
-        x_train[self.indices_target[self.indices_poison]] = poisoned_samples
-        model, loss_fn, optimizer = self.create_model(
-            x_train,
-            y_train,
-            x_test=x_test,
-            y_test=y_test,
-            num_classes=10,
-            batch_size=128,
-            epochs=self.model_retraining_epoch,
-        )
-        model_ = PyTorchClassifier(
-            model, input_shape=x_train.shape[1:], loss=loss_fn, optimizer=optimizer, nb_classes=10
-        )
-        check_train = self.substitute_classifier.model.training
-        self.substitute_classifier = model_
-        self.substitute_classifier.model.training = check_train
+        elif isinstance(self.substitute_classifier, TensorFlowV2Classifier):
+            check_train = self.substitute_classifier.model.trainable
+            model_tf = self._create_model(
+                x_train_un,
+                y_train,
+                x_test,
+                y_test,
+                batch_size=self.retrain_batch_size,
+                epochs=self.model_retraining_epoch,
+            )
 
-    def create_model(
+            self.substitute_classifier = model_tf
+            self.substitute_classifier.model.trainable = check_train
+
+        else:
+            raise NotImplementedError("SleeperAgentAttack is currently implemented only for PyTorch and TensorFlowV2.")
+
+    def _create_model(
         self,
         x_train: np.ndarray,
         y_train: np.ndarray,
         x_test: np.ndarray,
         y_test: np.ndarray,
-        num_classes: int = 10,
         batch_size: int = 128,
         epochs: int = 80,
-    ) -> Tuple[Any, Any, Any]:
+    ) -> Union["TensorFlowV2Classifier", "PyTorchClassifier"]:
         """
         Creates a new model.
 
@@ -283,118 +347,83 @@ class SleeperAgentAttack(GradientMatchingAttack):
         :param epochs: The number of epochs for which training need to be applied.
         :return model, loss_fn, optimizer - trained model, loss function used to train the model and optimizer used.
         """
-        import torch  # lgtm [py/repeated-import]
-        import torchvision
+        if isinstance(self.substitute_classifier, PyTorchClassifier):
+            # Reset Weights of the newly initialized model
+            model_pt = self.substitute_classifier.clone_for_refitting()
+            for layer in model_pt.model.children():
+                if hasattr(layer, "reset_parameters"):
+                    layer.reset_parameters()  # type: ignore
+            model_pt.fit(x_train, y_train, batch_size=batch_size, nb_epochs=epochs, verbose=1)
+            predictions = model_pt.predict(x_test)
+            accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
+            logger.info("Accuracy of retrained model : %s", accuracy * 100.0)
+            return model_pt
 
-        device = self.estimator.device
-        model = torchvision.models.ResNet(torchvision.models.resnet.BasicBlock, [2, 2, 2, 2], num_classes=num_classes)
-        loss_fn = torch.nn.CrossEntropyLoss()
-        optimizer = torch.optim.SGD(model.parameters(), lr=0.1, momentum=0.9, weight_decay=5e-4, nesterov=True)
-        model.to(device)
-        y_train = np.argmax(y_train, axis=1)
-        x_tensor = torch.tensor(x_train, dtype=torch.float32, device=device)  # transform to torch tensor
-        y_tensor = torch.tensor(y_train, dtype=torch.long, device=device)
-        x_test = np.transpose(x_test, [0, 3, 1, 2])
-        y_test = np.argmax(y_test, axis=1)
-        x_tensor_test = torch.tensor(x_test, dtype=torch.float32, device=device)  # transform to torch tensor
-        y_tensor_test = torch.tensor(y_test, dtype=torch.long, device=device)
+        if isinstance(self.substitute_classifier, TensorFlowV2Classifier):
 
-        dataset_train = torch.utils.data.TensorDataset(x_tensor, y_tensor)  # create your dataset
-        dataloader_train = torch.utils.data.DataLoader(dataset_train, batch_size=batch_size)
+            self.substitute_classifier.model.trainable = True
+            model_tf = self.substitute_classifier.clone_for_refitting()
+            model_tf.fit(x_train, y_train, batch_size=batch_size, nb_epochs=epochs, verbose=0)
+            predictions = model_tf.predict(x_test)
+            accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
+            logger.info("Accuracy of retrained model : %s", accuracy * 100.0)
+            return model_tf
 
-        dataset_test = torch.utils.data.TensorDataset(x_tensor_test, y_tensor_test)  # create your dataset
-        dataloader_test = torch.utils.data.DataLoader(dataset_test, batch_size=batch_size)
-
-        for epoch in trange(epochs):
-            running_loss = 0.0
-            total = 0
-            accuracy = 0
-            for _, data in enumerate(dataloader_train, 0):
-                inputs, labels = data
-                optimizer.zero_grad()
-                # forward + backward + optimize
-                outputs = model(inputs)
-                loss = loss_fn(outputs, labels)
-                loss.backward()
-                optimizer.step()
-                _, predicted = torch.max(outputs.data, 1)
-                total += labels.size(0)
-                accuracy += (predicted == labels).sum().item()
-                running_loss += loss.item()
-            if (epoch % 5 == 0) or epoch == (epochs - 1):
-                train_accuracy = 100 * accuracy / total
-                logger.info("Epoch %d train accuracy: %f", epoch, train_accuracy)
-        test_accuracy = self.test_accuracy(model, dataloader_test)
-        logger.info("Final test accuracy: %f", test_accuracy)
-        return model, loss_fn, optimizer
-
-    @classmethod
-    def test_accuracy(cls, model: "torch.nn.Module", test_loader: "torch.utils.data.dataloader.DataLoader") -> float:
-        """
-        Calculates test accuracy on trained model
-
-        :param model: Trained model.
-        :return accuracy - accuracy of trained model on test data.
-        """
-        import torch  # lgtm [py/repeated-import]
-
-        model_was_training = model.training
-        model.eval()
-        accuracy = 0.0
-        total = 0.0
-
-        with torch.no_grad():
-            for data in test_loader:
-                images, labels = data
-                # run the model on the test set to predict labels
-                outputs = model(images)
-                # the label with the highest energy will be our prediction
-                _, predicted = torch.max(outputs.data, 1)
-                total += labels.size(0)
-                accuracy += (predicted == labels).sum().item()
-
-        # compute the accuracy over all test images
-        accuracy = 100 * accuracy / total
-        if model_was_training:
-            model.train()
-        return accuracy
+        raise ValueError("SleeperAgentAttack is currently implemented only for PyTorch and TensorFlowV2.")
 
     # This function is responsible for returning indices of poison images with maximum gradient norm
-    @classmethod
-    def select_poison_indices(
-        cls, classifier: "CLASSIFIER_NEURALNETWORK_TYPE", x_samples: np.ndarray, y_samples: np.ndarray, num_poison: int
+    def _select_poison_indices(
+        self, classifier: "CLASSIFIER_NEURALNETWORK_TYPE", x_samples: np.ndarray, y_samples: np.ndarray, num_poison: int
     ) -> np.ndarray:
         """
         Select indices of poisoned samples
 
         :classifier: Substitute Model.
-        :x_samples: Samples of poison.
+        :x_samples: Samples of poison. [x_samples are normalised]
         :y_samples: Labels of samples of poison.
         :num_poison: Number of poisoned samples to be selected out of all x_samples.
         :return indices - Indices of samples to be poisoned.
         """
-        import torch  # lgtm [py/repeated-import]
-        from art.estimators.classification.pytorch import PyTorchClassifier
+        if isinstance(self.substitute_classifier, PyTorchClassifier):
+            import torch
 
-        if isinstance(classifier, PyTorchClassifier):
-            device = classifier.device
+            device = torch.device(self.device_name)
+            grad_norms = []
+            criterion = torch.nn.CrossEntropyLoss()
+            model = classifier.model
+            model.eval()
+            differentiable_params = [p for p in classifier.model.parameters() if p.requires_grad]
+            for x, y in zip(x_samples, y_samples):
+                image = torch.tensor(x, dtype=torch.float32).float().to(device)
+                label = torch.tensor(y).to(device)
+                loss_pt = criterion(model(image.unsqueeze(0)), label.unsqueeze(0))
+                gradients = list(torch.autograd.grad(loss_pt, differentiable_params, only_inputs=True))
+                grad_norm = torch.tensor(0, dtype=torch.float32).to(device)
+                for grad in gradients:
+                    grad_norm += grad.detach().pow(2).sum()
+                grad_norms.append(grad_norm.sqrt())
+        elif isinstance(self.substitute_classifier, TensorFlowV2Classifier):
+            import tensorflow as tf
+
+            model_trainable = classifier.model.trainable
+            classifier.model.trainable = False
+            grad_norms = []
+            for i in range(len(x_samples) - 1):
+                image = tf.constant(x_samples[i : i + 1])
+                label = tf.constant(y_samples[i : i + 1])
+                with tf.GradientTape() as t:  # pylint: disable=C0103
+                    t.watch(classifier.model.weights)
+                    output = classifier.model(image, training=False)
+                    loss_tf = classifier.loss_object(label, output)  # type: ignore
+                    gradients = list(t.gradient(loss_tf, classifier.model.weights))
+                    gradients = [w for w in gradients if w is not None]
+                    grad_norm = tf.constant(0, dtype=tf.float32)
+                    for grad in gradients:
+                        grad_norm += tf.reduce_sum(tf.math.square(grad))
+                    grad_norms.append(tf.math.sqrt(grad_norm))
+            classifier.model.trainable = model_trainable
         else:
-            raise ValueError("Classifier is not of type PyTorchClassifier.")
-        grad_norms = []
-        criterion = torch.nn.CrossEntropyLoss()
-        model = classifier.model
-        model.eval()
-        differentiable_params = [p for p in classifier.model.parameters() if p.requires_grad]
-        for x, y in zip(x_samples, y_samples):
-            image = torch.tensor(x, dtype=torch.float32).float().to(device)
-            label = torch.tensor(y).to(device)
-            loss = criterion(model(image.unsqueeze(0)), label.unsqueeze(0))
-            gradients = torch.autograd.grad(loss, differentiable_params, only_inputs=True)
-            grad_norm = torch.tensor(0, dtype=torch.float32).to(device)
-            for grad in gradients:
-                grad_norm += grad.detach().pow(2).sum()
-            grad_norms.append(grad_norm.sqrt())
-
+            raise NotImplementedError("SleeperAgentAttack is currently implemented only for PyTorch and TensorFlowV2.")
         indices = sorted(range(len(grad_norms)), key=lambda k: grad_norms[k])
         indices = indices[-num_poison:]
         return np.array(indices)  # this will get only indices for target class
@@ -402,7 +431,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
     # This function is responsible for applying trigger patches to the images
     # fixed - where the trigger is applied at the bottom right of the image
     # random - where the trigger is applied at random location of the image
-    def apply_trigger_patch(self, x_trigger: np.ndarray) -> np.ndarray:
+    def _apply_trigger_patch(self, x_trigger: np.ndarray) -> np.ndarray:
         """
         Select indices of poisoned samples
 
@@ -411,14 +440,19 @@ class SleeperAgentAttack(GradientMatchingAttack):
         """
         patch_size = self.patch.shape[1]
         if self.patching_strategy == "fixed":
-            x_trigger[:, -patch_size:, -patch_size:, :] = self.patch
+            if self.estimator.channels_first:
+                x_trigger[:, :, -patch_size:, -patch_size:] = self.patch
+            else:
+                x_trigger[:, -patch_size:, -patch_size:, :] = self.patch
         else:
             for x in x_trigger:
-                x_cord = random.randrange(0, x.shape[1] - self.patch.shape[1] + 1)
-                y_cord = random.randrange(0, x.shape[2] - self.patch.shape[2] + 1)
-                x[x_cord : x_cord + patch_size, y_cord : y_cord + patch_size, :] = self.patch
-
-        if self.estimator.channels_first:
-            return np.transpose(x_trigger, [0, 3, 1, 2])
+                if self.estimator.channels_first:
+                    x_cord = random.randrange(0, x.shape[1] - self.patch.shape[1] + 1)
+                    y_cord = random.randrange(0, x.shape[2] - self.patch.shape[2] + 1)
+                    x[:, x_cord : x_cord + patch_size, y_cord : y_cord + patch_size] = self.patch
+                else:
+                    x_cord = random.randrange(0, x.shape[0] - self.patch.shape[0] + 1)
+                    y_cord = random.randrange(0, x.shape[1] - self.patch.shape[1] + 1)
+                    x[x_cord : x_cord + patch_size, y_cord : y_cord + patch_size, :] = self.patch
 
         return x_trigger

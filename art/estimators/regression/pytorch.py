@@ -533,6 +533,45 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):  # lgtm [py/missing-ca
 
         return loss.detach().cpu().numpy()
 
+    def compute_loss_from_predictions(  # type: ignore # pylint: disable=W0221
+        self, pred: np.ndarray, y: np.ndarray, reduction: str = "none", **kwargs
+    ) -> Union[np.ndarray, "torch.Tensor"]:
+        """
+        Compute the loss of the regressor for predictions `pred`. Does not apply preprocessing to the given `y`.
+
+        :param pred: Model predictions.
+        :param y: Target values.
+        :param reduction: Specifies the reduction to apply to the output: 'none' | 'mean' | 'sum'.
+                   'none': no reduction will be applied
+                   'mean': the sum of the output will be divided by the number of elements in the output,
+                   'sum': the output will be summed.
+        :return: Loss values.
+        """
+        import torch  # lgtm [py/repeated-import]
+
+        if isinstance(y, torch.Tensor):
+            labels_t = y
+        else:
+            # Convert the labels to Tensors
+            labels_t = torch.from_numpy(y).to(self._device)
+
+        prev_reduction = self._loss.reduction
+
+        # Return individual loss values
+        self._loss.reduction = reduction
+        loss = self._loss(
+            pred[-1].reshape(
+                -1,
+            ),
+            labels_t,
+        )
+        self._loss.reduction = prev_reduction
+
+        if isinstance(y, torch.Tensor):
+            return loss
+
+        return loss.detach().cpu().numpy()
+
     def compute_losses(
         self,
         x: Union[np.ndarray, "torch.Tensor"],

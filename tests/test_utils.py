@@ -23,10 +23,10 @@ import unittest
 import numpy as np
 import tensorflow as tf
 
-from art.utils import projection, random_sphere, to_categorical, least_likely_class, check_and_transform_label_format
+from art.utils import projection, random_sphere, uniform_sample_from_sphere_or_ball, to_categorical, least_likely_class
 from art.utils import load_dataset, load_iris, load_mnist, load_nursery, load_cifar10
 from art.utils import second_most_likely_class, random_targets, get_label_conf, get_labels_np_array, preprocess
-from art.utils import compute_success_array, compute_success
+from art.utils import compute_success_array, compute_success, check_and_transform_label_format
 from art.utils import segment_by_class, performance_diff
 from art.utils import is_probability
 
@@ -177,6 +177,34 @@ class TestUtils(unittest.TestCase):
         self.assertTrue(np.abs(np.linalg.norm(x, axis=1) - 1.0) < 1e-2)
 
         x = random_sphere(1, 10000, 1, np.inf)
+        self.assertTrue(np.abs(np.max(np.abs(x), axis=1) - 1.0) < 1e-2)
+
+    def test_uniform_sample_from_sphere_or_ball(self):
+        x = uniform_sample_from_sphere_or_ball(nb_points=10, nb_dims=10, radius=1, sample_space="ball", norm=1)
+
+        self.assertEqual(x.shape, (10, 10))
+        self.assertTrue(np.all(np.sum(np.abs(x), axis=1) <= 1.0))
+
+        x = uniform_sample_from_sphere_or_ball(nb_points=10, nb_dims=10, radius=1, sample_space="ball", norm=np.inf)
+        self.assertEqual(x.shape, (10, 10))
+        self.assertTrue(np.all(np.abs(x) < 1.0))
+
+        x = uniform_sample_from_sphere_or_ball(nb_points=10, nb_dims=10, radius=0.5, sample_space="ball", norm=1)
+        self.assertTrue(np.all(np.sum(np.abs(x), axis=1) <= 0.5))
+
+        x = uniform_sample_from_sphere_or_ball(nb_points=10, nb_dims=10, radius=0.5, sample_space="ball", norm=2)
+        self.assertTrue(np.all(np.linalg.norm(x, axis=1) < 0.5))
+
+        x = uniform_sample_from_sphere_or_ball(nb_points=10, nb_dims=10, radius=0.5, sample_space="ball", norm=np.inf)
+        self.assertTrue(np.all(np.abs(x) < 0.5))
+
+        x = uniform_sample_from_sphere_or_ball(nb_points=1, nb_dims=10000, radius=1, sample_space="ball", norm=1)
+        self.assertTrue(np.abs(np.sum(np.abs(x), axis=1) - 1.0) < 1e-2)
+
+        x = uniform_sample_from_sphere_or_ball(nb_points=1, nb_dims=10000, radius=1, sample_space="ball", norm=2)
+        self.assertTrue(np.abs(np.linalg.norm(x, axis=1) - 1.0) < 1e-2)
+
+        x = uniform_sample_from_sphere_or_ball(nb_points=1, nb_dims=10000, radius=1, sample_space="ball", norm=np.inf)
         self.assertTrue(np.abs(np.max(np.abs(x), axis=1) - 1.0) < 1e-2)
 
     def test_to_categorical(self):
