@@ -97,6 +97,7 @@ class GradientMatchingAttack(Attack):
         self.max_epochs = max_epochs
         self.batch_size = batch_size
         self.clip_values = clip_values
+        self.initial_epoch = 0
 
         if verbose is True:
             verbose = 1
@@ -175,7 +176,7 @@ class GradientMatchingAttack(Attack):
             with tf.GradientTape() as t:  # pylint: disable=C0103
                 t.watch(classifier.model.weights)
                 output = classifier.model(x, training=False)
-                loss = classifier.model.compiled_loss(target, output)
+                loss = classifier.loss_object(target, output)
             d_w = t.gradient(loss, classifier.model.weights)
             d_w = [w for w in d_w if w is not None]
             d_w = tf.concat([tf.reshape(d, [-1]) for d in d_w], 0)
@@ -478,7 +479,11 @@ class GradientMatchingAttack(Attack):
             PoisonDataset(x_poison, y_poison), batch_size=self.batch_size, shuffle=False, num_workers=1
         )
 
-        epoch_iterator = trange(self.max_epochs) if self.verbose > 0 else range(self.max_epochs)
+        epoch_iterator = (
+            trange(self.initial_epoch, self.max_epochs)
+            if self.verbose > 0
+            else range(self.initial_epoch, self.max_epochs)
+        )
         for _ in epoch_iterator:
             batch_iterator = tqdm(trainloader) if isinstance(self.verbose, int) and self.verbose >= 2 else trainloader
             sum_loss = 0
@@ -536,6 +541,7 @@ class GradientMatchingAttack(Attack):
             [x_poison, y_poison, np.arange(len(y_poison))],
             callbacks=callbacks,
             batch_size=self.batch_size,
+            initial_epoch=self.initial_epoch,
             epochs=self.max_epochs,
             verbose=0,
         )
