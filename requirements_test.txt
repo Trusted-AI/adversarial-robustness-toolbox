@@ -42,7 +42,7 @@ xgboost==1.6.2
 kornia~=0.6.7
 tensorboardX==2.5.1
 lief==0.12.2
-jax[cpu]==0.3.17
+jax[cpu]==0.3.21
 
 # Lingvo ASR dependencies
 # supported versions: (lingvo==0.6.4 with tensorflow-gpu==2.1.0)
