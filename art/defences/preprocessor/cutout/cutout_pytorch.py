@@ -17,7 +17,9 @@
 # SOFTWARE.
 """
 This module implements the Cutout data augmentation defence in PyTorch.
+
 | Paper link: https://arxiv.org/abs/1708.04552
+
 | Please keep in mind the limitations of defences. For more information on the limitations of this defence,
     see https://arxiv.org/abs/1803.09868 . For details on how to evaluate classifier security in general, see
     https://arxiv.org/abs/1902.06705
@@ -31,12 +33,19 @@ import numpy as np
 from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     import torch
 
 
 class CutoutPyTorch(PreprocessorPyTorch):
     """
-    Implement the Cutout data augmentation defence
+    Implement the Cutout data augmentation defence approach in PyTorch.
+
+    | Paper link: https://arxiv.org/abs/1708.04552
+
+    | Please keep in mind the limitations of defences. For more information on the limitations of this defence,
+        see https://arxiv.org/abs/1803.09868 . For details on how to evaluate classifier security in general, see
+        https://arxiv.org/abs/1902.06705
     """
 
     params = ["length", "channels_first"]
@@ -52,6 +61,7 @@ class CutoutPyTorch(PreprocessorPyTorch):
     ):
         """
         Create an instance of Cutout data augmentation.
+
         :param length: length of the cutout bounding box.
         :param channels_first: Set channels first or last.
         :param apply_fit: True if applied during fitting/training.
@@ -75,6 +85,7 @@ class CutoutPyTorch(PreprocessorPyTorch):
     ) -> Tuple["torch.Tensor", Optional["torch.Tensor"]]:
         """
         Apply Cutout data augmentation to sample `x`.
+
         :param x: Sample to augment with shape `(length, channel)` or an array of sample arrays with shape
                   (length,) or (length, channel).
         :param y: Labels of the sample `x`. This function does not affect them in any way.
