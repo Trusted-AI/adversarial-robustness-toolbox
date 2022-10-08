@@ -29,7 +29,6 @@ in Tensorflow
 from abc import ABCMeta, abstractmethod
 
 import tensorflow as tf
-import tensorflow_probability as tfp
 
 
 class Attacker(metaclass=ABCMeta):
@@ -59,10 +58,10 @@ def get_tensor_mode(input_tensor: tf.Tensor, dim=-1):
     datatype = input_tensor.dtype
     minval = tf.math.reduce_min(input_tensor)
     input_tensor = input_tensor - minval
-    c_int = tfp.stats.count_integers(
-        input_tensor, axis=dim, dtype=datatype, minlength=tf.math.reduce_max(input_tensor) + 1
+    c_int = tf.math.bincount(
+      input_tensor, axis = -1, dtype=datatype, minlength=tf.math.reduce_max(input_tensor) + 1
     )
-    idx = tf.math.argmax(c_int, axis=0, output_type=datatype)
+    idx = tf.math.argmax(c_int, axis=-1, output_type=datatype)
     mode_tensor = idx + minval
     return mode_tensor
 
