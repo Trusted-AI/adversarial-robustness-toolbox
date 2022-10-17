@@ -1,8 +1,9 @@
 """
-The script demonstrates a simple example of using ART with YOLO (versions 3 and 5). The example loads a YOLO model pretrained on the COCO dataset
+The script demonstrates a simple example of using ART with YOLO (versions 3 and 5).
+The example loads a YOLO model pretrained on the COCO dataset
 and creates an adversarial example using Projected Gradient Descent method.
 
-- To use Yolov3, run: 
+- To use Yolov3, run:
         pip install pytorchyolo
 
 - To use Yolov5, run:
@@ -17,8 +18,6 @@ import numpy as np
 from PIL import Image
 from io import BytesIO
 import torch
-import pandas as pd
-import numpy as np
 
 from art.estimators.object_detection.pytorch_yolo import PyTorchYolo
 from art.attacks.evasion import ProjectedGradientDescent
