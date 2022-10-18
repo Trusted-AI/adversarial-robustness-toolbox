@@ -24,7 +24,7 @@ import pytest
 from numpy.testing import assert_array_equal
 
 from art.config import ART_NUMPY_DTYPE
-from art.defences.preprocessor import Cutout
+from art.defences.preprocessor import CutoutTensorFlowV2
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
@@ -58,12 +58,12 @@ def empty_image(request, channels_first):
     return np.zeros(data_shape).astype(ART_NUMPY_DTYPE)
 
 
-@pytest.mark.framework_agnostic
+@pytest.mark.only_with_platform("tensorflow")
 @pytest.mark.parametrize("length", [2, 4])
 @pytest.mark.parametrize("channels_first", [True, False])
 def test_cutout_image_data(art_warning, image_batch, length, channels_first):
     try:
-        cutout = Cutout(length=length, channels_first=channels_first)
+        cutout = CutoutTensorFlowV2(length=length, channels_first=channels_first)
         count = np.not_equal(cutout(image_batch)[0], image_batch).sum()
 
         n = image_batch.shape[0]
@@ -76,22 +76,22 @@ def test_cutout_image_data(art_warning, image_batch, length, channels_first):
         art_warning(e)
 
 
-@pytest.mark.framework_agnostic
+@pytest.mark.only_with_platform("tensorflow")
 @pytest.mark.parametrize("length", [4])
 @pytest.mark.parametrize("channels_first", [True])
 def test_cutout_empty_data(art_warning, empty_image, length, channels_first):
     try:
-        cutout = Cutout(length=length, channels_first=channels_first)
+        cutout = CutoutTensorFlowV2(length=length, channels_first=channels_first)
         assert_array_equal(cutout(empty_image)[0], empty_image)
     except ARTTestException as e:
         art_warning(e)
 
 
-@pytest.mark.framework_agnostic
+@pytest.mark.only_with_platform("tensorflow")
 def test_non_image_data_error(art_warning, tabular_batch):
     try:
         test_input = tabular_batch
-        cutout = Cutout(length=8, channels_first=True)
+        cutout = CutoutTensorFlowV2(length=8, channels_first=True)
 
         exc_msg = "Unrecognized input dimension. Cutout can only be applied to image data."
         with pytest.raises(ValueError, match=exc_msg):
@@ -100,14 +100,14 @@ def test_non_image_data_error(art_warning, tabular_batch):
         art_warning(e)
 
 
-@pytest.mark.framework_agnostic
+@pytest.mark.only_with_platform("tensorflow")
 def test_check_params(art_warning):
     try:
         with pytest.raises(ValueError):
-            _ = Cutout(length=-1)
+            _ = CutoutTensorFlowV2(length=-1)
 
         with pytest.raises(ValueError):
-            _ = Cutout(length=0)
+            _ = CutoutTensorFlowV2(length=0)
 
     except ARTTestException as e:
         art_warning(e)

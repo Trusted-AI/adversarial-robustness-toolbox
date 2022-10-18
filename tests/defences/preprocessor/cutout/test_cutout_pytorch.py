@@ -77,8 +77,8 @@ def test_cutout_image_data(art_warning, image_batch, length, channels_first):
 
 
 @pytest.mark.only_with_platform("pytorch")
-@pytest.mark.parametrize("length", [2, 4])
-@pytest.mark.parametrize("channels_first", [True, False])
+@pytest.mark.parametrize("length", [4])
+@pytest.mark.parametrize("channels_first", [True])
 def test_cutout_empty_data(art_warning, empty_image, length, channels_first):
     try:
         cutout = CutoutPyTorch(length=length, channels_first=channels_first)
@@ -91,11 +91,11 @@ def test_cutout_empty_data(art_warning, empty_image, length, channels_first):
 def test_non_image_data_error(art_warning, tabular_batch):
     try:
         test_input = tabular_batch
-        jpeg_compression = CutoutPyTorch(length=8, channels_first=True)
+        cutout = CutoutPyTorch(length=8, channels_first=True)
 
         exc_msg = "Unrecognized input dimension. Cutout can only be applied to image data."
         with pytest.raises(ValueError, match=exc_msg):
-            jpeg_compression(test_input)
+            cutout(test_input)
     except ARTTestException as e:
         art_warning(e)
 

@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the Cutout data augmentation defence in PyTorch.
+This module implements the Cutout data augmentation defence in TensorFlow.
 
 | Paper link: https://arxiv.org/abs/1708.04552
 
@@ -30,16 +30,16 @@ from typing import Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 
-from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
+from art.defences.preprocessor.preprocessor import PreprocessorTensorFlowV2
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
-    import torch
+    import tensorflow as tf
 
 
-class CutoutPyTorch(PreprocessorPyTorch):
+class CutoutTensorFlowV2(PreprocessorTensorFlowV2):
     """
-    Implement the Cutout data augmentation defence approach in PyTorch.
+    Implement the Cutout data augmentation defence approach in TensorFlow v2.
 
     | Paper link: https://arxiv.org/abs/1708.04552
 
@@ -56,7 +56,6 @@ class CutoutPyTorch(PreprocessorPyTorch):
         channels_first: bool = False,
         apply_fit: bool = False,
         apply_predict: bool = True,
-        device_type: str = "gpu",
         verbose: bool = False,
     ):
         """
@@ -69,20 +68,13 @@ class CutoutPyTorch(PreprocessorPyTorch):
         :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
         :param verbose: Show progress bars.
         """
-        super().__init__(
-            device_type=device_type,
-            is_fitted=True,
-            apply_fit=apply_fit,
-            apply_predict=apply_predict,
-        )
+        super().__init__(is_fitted=True, apply_fit=apply_fit, apply_predict=apply_predict)
         self.length = length
         self.channels_first = channels_first
         self.verbose = verbose
         self._check_params()
 
-    def forward(
-        self, x: "torch.Tensor", y: Optional["torch.Tensor"] = None
-    ) -> Tuple["torch.Tensor", Optional["torch.Tensor"]]:
+    def forward(self, x: "tf.Tensor", y: Optional["tf.Tensor"] = None) -> Tuple["tf.Tensor", Optional["tf.Tensor"]]:
         """
         Apply Cutout data augmentation to sample `x`.
 
@@ -91,9 +83,9 @@ class CutoutPyTorch(PreprocessorPyTorch):
         :param y: Labels of the sample `x`. This function does not affect them in any way.
         :return: Data augmented sample.
         """
-        import torch  # lgtm [py/repeated-import]
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
-        x_ndim = x.dim()
+        x_ndim = tf.rank(x)
 
         if x_ndim == 4:
             if self.channels_first:
@@ -106,7 +98,7 @@ class CutoutPyTorch(PreprocessorPyTorch):
             raise ValueError("Unrecognized input dimension. Cutout can only be applied to image data.")
 
         # generate a random bounding box per image
-        masks = torch.ones(*x.shape, device=x.device)
+        masks = tf.ones(x.shape, device=x.device)
         for i in range(n):
             # uniform sampling
             center_y = np.random.randint(height)
