@@ -57,7 +57,7 @@ class Cutout(Preprocessor):
         apply_predict: bool = True,
     ) -> None:
         """
-        Create an instance of local spatial smoothing.
+        Create an instance of a Cutout data augmentation object.
 
         :param length: length of the cutout bounding box.
         :param channels_first: Set channels first or last.
@@ -72,7 +72,7 @@ class Cutout(Preprocessor):
 
     def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
-        Apply local spatial smoothing to sample `x`.
+        Apply Cutout data augmentation to sample `x`.
 
         :param x: Sample to augment with shape `(length, channel)` or an array of sample arrays with shape
                   (length,) or (length, channel).

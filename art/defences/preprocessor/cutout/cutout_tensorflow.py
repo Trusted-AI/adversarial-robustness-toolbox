@@ -59,7 +59,7 @@ class CutoutTensorFlowV2(PreprocessorTensorFlowV2):
         verbose: bool = False,
     ):
         """
-        Create an instance of Cutout data augmentation.
+        Create an instance of a Cutout data augmentation object.
 
         :param length: length of the cutout bounding box.
         :param channels_first: Set channels first or last.
