@@ -65,7 +65,6 @@ class CutoutTensorFlowV2(PreprocessorTensorFlowV2):
         :param channels_first: Set channels first or last.
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
-        :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
         :param verbose: Show progress bars.
         """
         super().__init__(is_fitted=True, apply_fit=apply_fit, apply_predict=apply_predict)
@@ -98,7 +97,7 @@ class CutoutTensorFlowV2(PreprocessorTensorFlowV2):
             raise ValueError("Unrecognized input dimension. Cutout can only be applied to image data.")
 
         # generate a random bounding box per image
-        masks = tf.ones(x.shape, device=x.device)
+        masks = tf.ones(x.shape)
         for i in range(n):
             # uniform sampling
             center_y = np.random.randint(height)
