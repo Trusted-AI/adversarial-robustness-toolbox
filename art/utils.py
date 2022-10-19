@@ -408,7 +408,6 @@ def projection_l1_1(values: np.ndarray, eps: Union[int, float, np.ndarray]) -> n
             done = early_done = True
             break
         j -= 1
-        
     if not early_done:
         delta = (mat[:, 0] + a_sorted[:, 0] - eps) / n
         ind_set = np.sign(np.maximum(delta, 0))
@@ -418,9 +417,8 @@ def projection_l1_1(values: np.ndarray, eps: Union[int, float, np.ndarray]) -> n
         a_after = a_sorted - delta_vec
         proj += act_multiplier * (a_after - proj)
         done = True
-        
     if not done:
-        proj = active * (a_sorted -  proj)
+        proj = active * (a_sorted - proj)
 
     for i in range(m):
         proj[i, :] = proj[i, a_argsort_inv[i, :]]
