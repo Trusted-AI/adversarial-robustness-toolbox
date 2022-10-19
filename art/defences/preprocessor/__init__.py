@@ -8,7 +8,7 @@ from art.defences.preprocessor.jpeg_compression import JpegCompression
 from art.defences.preprocessor.label_smoothing import LabelSmoothing
 from art.defences.preprocessor.mixup.mixup import Mixup
 from art.defences.preprocessor.mixup.mixup_pytorch import MixupPyTorch
-from art.defences.preprocessor.mixup.mixup_tensorflow import MixupTensorFlow
+from art.defences.preprocessor.mixup.mixup_tensorflow import MixupTensorFlowV2
 from art.defences.preprocessor.mp3_compression import Mp3Compression
 from art.defences.preprocessor.mp3_compression_pytorch import Mp3CompressionPyTorch
 from art.defences.preprocessor.pixel_defend import PixelDefend

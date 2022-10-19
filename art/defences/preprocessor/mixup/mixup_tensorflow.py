@@ -41,7 +41,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class MixupTensorFlow(PreprocessorTensorFlowV2):
+class MixupTensorFlowV2(PreprocessorTensorFlowV2):
     """
     Implement the Mixup data augmentation defence approach in TensorFlow v2.
 
