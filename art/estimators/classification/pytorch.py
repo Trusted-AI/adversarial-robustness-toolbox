@@ -392,8 +392,11 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         # Check label shape
         y_preprocessed = self.reduce_labels(y_preprocessed)
 
-        num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
+        num_batch = int(np.floor(len(x_preprocessed) / float(batch_size)))
         ind = np.arange(len(x_preprocessed))
+
+        x_preprocessed = torch.from_numpy(x_preprocessed).to(self._device)
+        y_preprocessed = torch.from_numpy(y_preprocessed).to(self._device)
 
         # Start training
         for _ in range(nb_epochs):
@@ -402,8 +405,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
             # Train for one epoch
             for m in range(num_batch):
-                i_batch = torch.from_numpy(x_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]).to(self._device)
-                o_batch = torch.from_numpy(y_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]).to(self._device)
+                i_batch = x_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]
+                o_batch = y_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]
 
                 # Zero the parameter gradients
                 self._optimizer.zero_grad()
