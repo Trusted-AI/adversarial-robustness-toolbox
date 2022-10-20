@@ -88,6 +88,7 @@ def test_missing_labels_error(art_warning, tabular_batch):
     except ARTTestException as e:
         art_warning(e)
 
+
 @pytest.mark.only_with_platform("pytorch")
 def test_check_params(art_warning):
     try:

@@ -86,10 +86,10 @@ class MixupTensorFlowV2(PreprocessorTensorFlowV2):
         Apply Mixup data augmentation to samples `x` and labels `y`. The returned labels will be categorical
         probability vectors rather than integer labels.
 
-        :param x: Sample to augment with shape `(length, channel)` or an array of sample arrays with shape
-                  (length,) or (length, channel).
-        :param y: Labels of the sample `x`. This function does not affect them in any way.
-        :return: Data augmented sample.
+        :param x: Feature data to augment with shape `(batch_size, ...)`.
+        :param y: Labels of `x` either one-hot encoded of shape `(nb_samples, nb_classes)`
+                  or class indices of shape `(nb_samples,)`.
+        :return: Data augmented sample. The returned labels will be probability vectors rather than integer labels.
         :raises `ValueError`: If no labels are provided.
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
@@ -100,8 +100,10 @@ class MixupTensorFlowV2(PreprocessorTensorFlowV2):
         n = x.shape[0]
 
         # convert labels to one-hot encoding
-        y_one_hot = check_and_transform_label_format(y, self.num_classes, return_one_hot=True)
-        y_one_hot = tf.convert_to_tensor(y_one_hot)
+        if len(y.shape) == 2:
+            y_one_hot = y
+        else:
+            y_one_hot = tf.one_hot(y, self.num_classes)
 
         # generate the mixing factor from the Dirichlet distribution
         lmbs = np.random.dirichlet([self.alpha] * self.num_mix)
@@ -109,8 +111,8 @@ class MixupTensorFlowV2(PreprocessorTensorFlowV2):
         # randomly draw indices for samples to mix
         indices = [tf.random.shuffle(tf.range(n)) for _ in range(self.num_mix)]
 
-        x_aug = sum(lmb * tf.gather(x, i) for lmb, i in zip(lmbs, indices))
-        y_aug = sum(lmb * tf.gather(y_one_hot, i) for lmb, i in zip(lmbs, indices))
+        x_aug: tf.Tensor = sum(lmb * tf.gather(x, i) for lmb, i in zip(lmbs, indices))
+        y_aug: tf.Tensor = sum(lmb * tf.gather(y_one_hot, i) for lmb, i in zip(lmbs, indices))
 
         return x_aug, y_aug
 

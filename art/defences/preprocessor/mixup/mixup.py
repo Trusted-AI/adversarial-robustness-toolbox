@@ -75,13 +75,12 @@ class Mixup(Preprocessor):
 
     def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
-        Apply Mixup data augmentation to samples `x` and labels `y`. The returned labels will be categorical
-        probability vectors rather than integer labels.
+        Apply Mixup data augmentation to samples `x` and labels `y`.
 
-        :param x: Sample to augment with shape `(length, channel)` or an array of sample arrays with shape
-                  (length,) or (length, channel).
-        :param y: Labels of the sample `x`. This function does not affect them in any way.
-        :return: Data augmented sample.
+        :param x: Feature data to augment with shape `(batch_size, ...)`.
+        :param y: Labels of `x` either one-hot encoded of shape `(nb_samples, nb_classes)`
+                  or class indices of shape `(nb_samples,)`.
+        :return: Data augmented sample. The returned labels will be probability vectors rather than integer labels.
         :raises `ValueError`: If no labels are provided.
         """
         if y is None:
@@ -98,8 +97,8 @@ class Mixup(Preprocessor):
         # randomly draw indices for samples to mix
         indices = [np.random.permutation(n) for _ in range(self.num_mix)]
 
-        x_aug = sum(lmb * x[i] for lmb, i in zip(lmbs, indices))
-        y_aug = sum(lmb * y_one_hot[i] for lmb, i in zip(lmbs, indices))
+        x_aug: np.ndarray = sum(lmb * x[i] for lmb, i in zip(lmbs, indices))
+        y_aug: np.ndarray = sum(lmb * y_one_hot[i] for lmb, i in zip(lmbs, indices))
 
         return x_aug, y_aug
 

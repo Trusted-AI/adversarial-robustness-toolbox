@@ -32,7 +32,6 @@ from typing import Optional, Tuple, TYPE_CHECKING
 import numpy as np
 
 from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
-from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
@@ -94,10 +93,10 @@ class MixupPyTorch(PreprocessorPyTorch):
         Apply Mixup data augmentation to samples `x` and labels `y`. The returned labels will be categorical
         probability vectors rather than integer labels.
 
-        :param x: Sample to augment with shape `(length, channel)` or an array of sample arrays with shape
-                  (length,) or (length, channel).
-        :param y: Labels of the sample `x`. This function does not affect them in any way.
-        :return: Data augmented sample.
+        :param x: Feature data to augment with shape `(batch_size, ...)`.
+        :param y: Labels of `x` either one-hot encoded of shape `(nb_samples, nb_classes)`
+                  or class indices of shape `(nb_samples,)`.
+        :return: Data augmented sample. The returned labels will be probability vectors rather than integer labels.
         :raises `ValueError`: If no labels are provided.
         """
         import torch  # lgtm [py/repeated-import]
@@ -108,8 +107,10 @@ class MixupPyTorch(PreprocessorPyTorch):
         n = x.shape[0]
 
         # convert labels to one-hot encoding
-        y_one_hot = check_and_transform_label_format(y, self.num_classes, return_one_hot=True)
-        y_one_hot = torch.from_numpy(y_one_hot).to(x.device)
+        if len(y.shape) == 2:
+            y_one_hot = y
+        else:
+            y_one_hot = torch.nn.functional.one_hot(y, self.num_classes)
 
         # generate the mixing factor from the Dirichlet distribution
         lmbs = np.random.dirichlet([self.alpha] * self.num_mix)
@@ -117,8 +118,8 @@ class MixupPyTorch(PreprocessorPyTorch):
         # randomly draw indices for samples to mix
         indices = [torch.randperm(n, device=x.device) for _ in range(self.num_mix)]
 
-        x_aug = sum(lmb * x[i] for lmb, i in zip(lmbs, indices))
-        y_aug = sum(lmb * y_one_hot[i] for lmb, i in zip(lmbs, indices))
+        x_aug: torch.Tensor = sum(lmb * x[i] for lmb, i in zip(lmbs, indices))
+        y_aug: torch.Tensor = sum(lmb * y_one_hot[i] for lmb, i in zip(lmbs, indices))
 
         return x_aug, y_aug
 
