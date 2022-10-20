@@ -420,7 +420,15 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                 self._optimizer.zero_grad()
 
                 # Perform prediction
-                model_outputs = self._model(i_batch)
+                try:
+                    model_outputs = self._model(i_batch)
+                except ValueError as e:
+                    if "Expected more than 1 value per channel when training" in str(e):
+                        logger.exception(
+                            "Try dropping the last incomplete batch by setting drop_last=True in "
+                            "method PyTorchClassifier.fit."
+                        )
+                    raise e
 
                 # Form the loss function
                 loss = self._loss(model_outputs[-1], o_batch)  # lgtm [py/call-to-non-callable]
