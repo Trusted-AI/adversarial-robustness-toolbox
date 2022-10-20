@@ -207,7 +207,9 @@ class RobustnessVerificationTreeModelsCliqueMethod:
             raise ValueError("There are features not in the range [0,1].")
 
         self.x: np.ndarray = x
-        self.y: np.ndarray = check_and_transform_label_format(y, nb_classes=self._classifier.nb_classes, return_one_hot=False)
+        self.y: np.ndarray = check_and_transform_label_format(
+            y, nb_classes=self._classifier.nb_classes, return_one_hot=False
+        )
         self.max_clique: int = max_clique
         self.max_level: int = max_level
 
