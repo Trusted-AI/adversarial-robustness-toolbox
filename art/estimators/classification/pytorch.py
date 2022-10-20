@@ -374,11 +374,11 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
         :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
-        :param drop_last: Set to ``True`` to drop the last incomplete batch, if the dataset size is not divisible by the batch
-                   size. If ``False`` and the size of dataset is not divisible by the batch size, then the last batch
-                   will be smaller. (default: ``False``)
+        :param drop_last: Set to ``True`` to drop the last incomplete batch, if the dataset size is not divisible by
+                          the batch size. If ``False`` and the size of dataset is not divisible by the batch size, then
+                          the last batch will be smaller. (default: ``False``)
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
-               and providing it takes no effect.
+                       and providing it takes no effect.
         """
         import torch  # lgtm [py/repeated-import]
 
