@@ -67,7 +67,7 @@ class MixupPyTorch(PreprocessorPyTorch):
         Create an instance of a Mixup data augmentation object.
 
         :param num_classes: The number of classes used for one-hot encoding.
-        :param num_samples: The number of samples to mix.
+        :param num_mix: The number of samples to mix.
         :param alpha: The mixing factor parameter for drawing from the Dirichlet distribution.
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
@@ -90,8 +90,7 @@ class MixupPyTorch(PreprocessorPyTorch):
         self, x: "torch.Tensor", y: Optional["torch.Tensor"] = None
     ) -> Tuple["torch.Tensor", Optional["torch.Tensor"]]:
         """
-        Apply Mixup data augmentation to samples `x` and labels `y`. The returned labels will be categorical
-        probability vectors rather than integer labels.
+        Apply Mixup data augmentation to feature data `x` and labels `y`.
 
         :param x: Feature data to augment with shape `(batch_size, ...)`.
         :param y: Labels of `x` either one-hot encoded of shape `(nb_samples, nb_classes)`
@@ -109,8 +108,13 @@ class MixupPyTorch(PreprocessorPyTorch):
         # convert labels to one-hot encoding
         if len(y.shape) == 2:
             y_one_hot = y
-        else:
+        elif len(y.shape) == 1:
             y_one_hot = torch.nn.functional.one_hot(y, self.num_classes)
+        else:
+            raise ValueError(
+                "Shape of labels not recognised."
+                "Please provide labels in shape (nb_samples,) or (nb_samples, nb_classes)"
+            )
 
         # generate the mixing factor from the Dirichlet distribution
         lmbs = np.random.dirichlet([self.alpha] * self.num_mix)

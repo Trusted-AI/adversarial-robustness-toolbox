@@ -62,7 +62,7 @@ class Mixup(Preprocessor):
         Create an instance of a Mixup data augmentation object.
 
         :param num_classes: The number of classes used for one-hot encoding.
-        :param num_samples: The number of samples to mix.
+        :param num_mix: The number of samples to mix.
         :param alpha: The mixing factor parameter for drawing from the Dirichlet distribution.
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
@@ -75,7 +75,7 @@ class Mixup(Preprocessor):
 
     def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
-        Apply Mixup data augmentation to samples `x` and labels `y`.
+        Apply Mixup data augmentation to feature data `x` and labels `y`.
 
         :param x: Feature data to augment with shape `(batch_size, ...)`.
         :param y: Labels of `x` either one-hot encoded of shape `(nb_samples, nb_classes)`
