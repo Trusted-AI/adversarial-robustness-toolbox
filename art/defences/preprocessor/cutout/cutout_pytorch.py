@@ -26,6 +26,7 @@ This module implements the Cutout data augmentation defence in PyTorch.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import logging
 from typing import Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
@@ -35,6 +36,8 @@ from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
 if TYPE_CHECKING:
     # pylint: disable=C0412
     import torch
+
+logger = logging.getLogger(__name__)
 
 
 class CutoutPyTorch(PreprocessorPyTorch):
@@ -62,7 +65,7 @@ class CutoutPyTorch(PreprocessorPyTorch):
         """
         Create an instance of a Cutout data augmentation object.
 
-        :param length: length of the cutout bounding box.
+        :param length: Maximum length of the bounding box.
         :param channels_first: Set channels first or last.
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
@@ -86,8 +89,8 @@ class CutoutPyTorch(PreprocessorPyTorch):
         """
         Apply Cutout data augmentation to sample `x`.
 
-        :param x: Sample to augment with shape `(length, channel)` or an array of sample arrays with shape
-                  (length,) or (length, channel).
+        :param x: Sample to compress with shape of `NCHW` or `NHWC`. The `x` values are expected to be in
+                  the data range [0, 1] or [0, 255].
         :param y: Labels of the sample `x`. This function does not affect them in any way.
         :return: Data augmented sample.
         """
