@@ -363,6 +363,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         nb_epochs: int = 10,
         training_mode: bool = True,
         drop_last: bool = False,
+        scheduler: Optional[Any] = None,
         **kwargs,
     ) -> None:
         """
@@ -377,6 +378,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         :param drop_last: Set to ``True`` to drop the last incomplete batch, if the dataset size is not divisible by
                           the batch size. If ``False`` and the size of dataset is not divisible by the batch size, then
                           the last batch will be smaller. (default: ``False``)
+        :param scheduler: Learning rate scheduler to run at the start of every epoch.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                        and providing it takes no effect.
         """
@@ -422,13 +424,13 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                 # Perform prediction
                 try:
                     model_outputs = self._model(i_batch)
-                except ValueError as e:
-                    if "Expected more than 1 value per channel when training" in str(e):
+                except ValueError as err:
+                    if "Expected more than 1 value per channel when training" in str(err):
                         logger.exception(
                             "Try dropping the last incomplete batch by setting drop_last=True in "
                             "method PyTorchClassifier.fit."
                         )
-                    raise e
+                    raise err
 
                 # Form the loss function
                 loss = self._loss(model_outputs[-1], o_batch)  # lgtm [py/call-to-non-callable]
@@ -444,6 +446,9 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                     loss.backward()
 
                 self._optimizer.step()
+
+            if scheduler is not None:
+                scheduler.step()
 
     def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs) -> None:
         """
