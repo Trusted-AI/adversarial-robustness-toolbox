@@ -51,12 +51,12 @@ class MixupTensorFlowV2(PreprocessorTensorFlowV2):
         https://arxiv.org/abs/1902.06705
     """
 
-    params = ["num_classes", "num_mix", "alpha"]
+    params = ["num_classes", "k_way", "alpha"]
 
     def __init__(
         self,
         num_classes: int,
-        num_mix: int = 2,
+        k_way: int = 2,
         alpha: float = 1.0,
         apply_fit: bool = False,
         apply_predict: bool = True,
@@ -66,7 +66,7 @@ class MixupTensorFlowV2(PreprocessorTensorFlowV2):
         Create an instance of a Mixup data augmentation object.
 
         :param num_classes: The number of classes used for one-hot encoding.
-        :param num_mix: The number of samples to mix.
+        :param k_way: The number of samples to mix for k-way Mixup.
         :param alpha: The mixing factor parameter for drawing from the Dirichlet distribution.
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
@@ -75,7 +75,7 @@ class MixupTensorFlowV2(PreprocessorTensorFlowV2):
         """
         super().__init__(is_fitted=True, apply_fit=apply_fit, apply_predict=apply_predict)
         self.num_classes = num_classes
-        self.num_mix = num_mix
+        self.k_way = k_way
         self.alpha = alpha
         self.verbose = verbose
         self._check_params()
@@ -87,7 +87,8 @@ class MixupTensorFlowV2(PreprocessorTensorFlowV2):
         :param x: Feature data to augment with shape `(batch_size, ...)`.
         :param y: Labels of `x` either one-hot encoded of shape `(nb_samples, nb_classes)`
                   or class indices of shape `(nb_samples,)`.
-        :return: Data augmented sample. The returned labels will be probability vectors rather than integer labels.
+        :return: Data augmented sample. The returned labels will be probability vectors of shape
+                 `(nb_samples, nb_classes)`.
         :raises `ValueError`: If no labels are provided.
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
@@ -101,7 +102,7 @@ class MixupTensorFlowV2(PreprocessorTensorFlowV2):
         if len(y.shape) == 2:
             y_one_hot = y
         elif len(y.shape) == 1:
-            y_one_hot = tf.one_hot(y, self.num_classes)
+            y_one_hot = tf.one_hot(y, self.num_classes, on_value=1.0, off_value=0.0)
         else:
             raise ValueError(
                 "Shape of labels not recognised."
@@ -109,13 +110,15 @@ class MixupTensorFlowV2(PreprocessorTensorFlowV2):
             )
 
         # generate the mixing factor from the Dirichlet distribution
-        lmbs = np.random.dirichlet([self.alpha] * self.num_mix)
+        lmbs = np.random.dirichlet([self.alpha] * self.k_way)
 
-        # randomly draw indices for samples to mix
-        indices = [tf.random.shuffle(tf.range(n)) for _ in range(self.num_mix)]
-
-        x_aug: tf.Tensor = sum(lmb * tf.gather(x, i) for lmb, i in zip(lmbs, indices))
-        y_aug: tf.Tensor = sum(lmb * tf.gather(y_one_hot, i) for lmb, i in zip(lmbs, indices))
+        x_aug = lmbs[0] * x
+        y_aug = lmbs[0] * y_one_hot
+        for lmb in lmbs[1:]:
+            # randomly choose indices for samples to mix
+            indices = tf.random.shuffle(tf.range(n))
+            x_aug = x_aug + lmb * tf.gather(x, indices, axis=None)
+            y_aug = y_aug + lmb * tf.gather(y_one_hot, indices, axis=None)
 
         return x_aug, y_aug
 
@@ -123,7 +126,7 @@ class MixupTensorFlowV2(PreprocessorTensorFlowV2):
         if self.num_classes <= 0:
             raise ValueError("Number of classes must be positive")
 
-        if self.num_mix < 2:
+        if self.k_way < 2:
             raise ValueError("Number of samples to mix must be at least 2.")
 
         if self.alpha <= 0:

@@ -51,11 +51,11 @@ def empty_image(request):
 
 
 @pytest.mark.only_with_platform("pytorch")
-@pytest.mark.parametrize("num_mix", [2, 3])
+@pytest.mark.parametrize("k_way", [2, 3])
 @pytest.mark.parametrize("alpha", [1.0, 2.5])
-def test_mixup_image_data(art_warning, image_batch, num_mix, alpha):
+def test_mixup_image_data(art_warning, image_batch, k_way, alpha):
     try:
-        mixup = MixupPyTorch(num_classes=10, num_mix=num_mix, alpha=alpha)
+        mixup = MixupPyTorch(num_classes=10, k_way=k_way, alpha=alpha)
         x, y = mixup(image_batch, np.arange(len(image_batch)))
         assert_array_almost_equal(x, image_batch)
         assert_array_almost_equal(y.sum(axis=1), np.ones(len(image_batch)))
@@ -64,11 +64,11 @@ def test_mixup_image_data(art_warning, image_batch, num_mix, alpha):
 
 
 @pytest.mark.only_with_platform("pytorch")
-@pytest.mark.parametrize("num_mix", [2])
+@pytest.mark.parametrize("k_way", [2])
 @pytest.mark.parametrize("alpha", [1.0])
-def test_mixup_empty_data(art_warning, empty_image, num_mix, alpha):
+def test_mixup_empty_data(art_warning, empty_image, k_way, alpha):
     try:
-        mixup = MixupPyTorch(num_classes=10, num_mix=num_mix, alpha=alpha)
+        mixup = MixupPyTorch(num_classes=10, k_way=k_way, alpha=alpha)
         x, y = mixup(empty_image, np.arange(len(empty_image)))
         assert_array_equal(x, empty_image)
         assert_array_almost_equal(y.sum(axis=1), np.ones(len(empty_image)))
@@ -96,10 +96,10 @@ def test_check_params(art_warning):
             _ = MixupPyTorch(num_classes=0)
 
         with pytest.raises(ValueError):
-            _ = MixupPyTorch(num_classes=10, num_mix=1)
+            _ = MixupPyTorch(num_classes=10, k_way=1)
 
         with pytest.raises(ValueError):
-            _ = MixupPyTorch(num_classes=10, num_mix=-1)
+            _ = MixupPyTorch(num_classes=10, k_way=-1)
 
         with pytest.raises(ValueError):
             _ = MixupPyTorch(num_classes=10, alpha=0)

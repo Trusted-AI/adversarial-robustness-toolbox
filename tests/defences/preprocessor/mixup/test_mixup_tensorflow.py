@@ -50,12 +50,12 @@ def empty_image(request):
     return np.zeros(data_shape).astype(ART_NUMPY_DTYPE)
 
 
-@pytest.mark.only_with_platform("tensorflow")
-@pytest.mark.parametrize("num_mix", [2, 3])
+@pytest.mark.only_with_platform("tensorflow2")
+@pytest.mark.parametrize("k_way", [2, 3])
 @pytest.mark.parametrize("alpha", [1.0, 2.5])
-def test_mixup_image_data(art_warning, image_batch, num_mix, alpha):
+def test_mixup_image_data(art_warning, image_batch, k_way, alpha):
     try:
-        mixup = MixupTensorFlowV2(num_classes=10, num_mix=num_mix, alpha=alpha)
+        mixup = MixupTensorFlowV2(num_classes=10, k_way=k_way, alpha=alpha)
         x, y = mixup(image_batch, np.arange(len(image_batch)))
         assert_array_almost_equal(x, image_batch)
         assert_array_almost_equal(y.sum(axis=1), np.ones(len(image_batch)))
@@ -63,12 +63,12 @@ def test_mixup_image_data(art_warning, image_batch, num_mix, alpha):
         art_warning(e)
 
 
-@pytest.mark.only_with_platform("tensorflow")
-@pytest.mark.parametrize("num_mix", [2])
+@pytest.mark.only_with_platform("tensorflow2")
+@pytest.mark.parametrize("k_way", [2])
 @pytest.mark.parametrize("alpha", [1.0])
-def test_mixup_empty_data(art_warning, empty_image, num_mix, alpha):
+def test_mixup_empty_data(art_warning, empty_image, k_way, alpha):
     try:
-        mixup = MixupTensorFlowV2(num_classes=10, num_mix=num_mix, alpha=alpha)
+        mixup = MixupTensorFlowV2(num_classes=10, k_way=k_way, alpha=alpha)
         x, y = mixup(empty_image, np.arange(len(empty_image)))
         assert_array_equal(x, empty_image)
         assert_array_almost_equal(y.sum(axis=1), np.ones(len(empty_image)))
@@ -76,7 +76,7 @@ def test_mixup_empty_data(art_warning, empty_image, num_mix, alpha):
         art_warning(e)
 
 
-@pytest.mark.only_with_platform("tensorflow")
+@pytest.mark.only_with_platform("tensorflow2")
 def test_missing_labels_error(art_warning, tabular_batch):
     try:
         test_input = tabular_batch
@@ -89,17 +89,17 @@ def test_missing_labels_error(art_warning, tabular_batch):
         art_warning(e)
 
 
-@pytest.mark.only_with_platform("tensorflow")
+@pytest.mark.only_with_platform("tensorflow2")
 def test_check_params(art_warning):
     try:
         with pytest.raises(ValueError):
             _ = MixupTensorFlowV2(num_classes=0)
 
         with pytest.raises(ValueError):
-            _ = MixupTensorFlowV2(num_classes=10, num_mix=1)
+            _ = MixupTensorFlowV2(num_classes=10, k_way=1)
 
         with pytest.raises(ValueError):
-            _ = MixupTensorFlowV2(num_classes=10, num_mix=-1)
+            _ = MixupTensorFlowV2(num_classes=10, k_way=-1)
 
         with pytest.raises(ValueError):
             _ = MixupTensorFlowV2(num_classes=10, alpha=0)
