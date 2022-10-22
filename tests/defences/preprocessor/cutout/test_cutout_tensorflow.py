@@ -58,7 +58,7 @@ def empty_image(request, channels_first):
     return np.zeros(data_shape).astype(ART_NUMPY_DTYPE)
 
 
-@pytest.mark.only_with_platform("tensorflow")
+@pytest.mark.only_with_platform("tensorflow2")
 @pytest.mark.parametrize("length", [2, 4])
 @pytest.mark.parametrize("channels_first", [True, False])
 def test_cutout_image_data(art_warning, image_batch, length, channels_first):
@@ -76,7 +76,7 @@ def test_cutout_image_data(art_warning, image_batch, length, channels_first):
         art_warning(e)
 
 
-@pytest.mark.only_with_platform("tensorflow")
+@pytest.mark.only_with_platform("tensorflow2")
 @pytest.mark.parametrize("length", [4])
 @pytest.mark.parametrize("channels_first", [True])
 def test_cutout_empty_data(art_warning, empty_image, length, channels_first):
@@ -87,7 +87,7 @@ def test_cutout_empty_data(art_warning, empty_image, length, channels_first):
         art_warning(e)
 
 
-@pytest.mark.only_with_platform("tensorflow")
+@pytest.mark.only_with_platform("tensorflow2")
 def test_non_image_data_error(art_warning, tabular_batch):
     try:
         test_input = tabular_batch
@@ -100,7 +100,7 @@ def test_non_image_data_error(art_warning, tabular_batch):
         art_warning(e)
 
 
-@pytest.mark.only_with_platform("tensorflow")
+@pytest.mark.only_with_platform("tensorflow2")
 def test_check_params(art_warning):
     try:
         with pytest.raises(ValueError):

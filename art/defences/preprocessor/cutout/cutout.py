@@ -79,7 +79,7 @@ class Cutout(Preprocessor):
         :param y: Labels of the sample `x`. This function does not affect them in any way.
         :return: Data augmented sample.
         """
-        x_ndim = x.ndim
+        x_ndim = len(x.shape)
 
         if x_ndim == 4:
             if self.channels_first:
@@ -102,6 +102,7 @@ class Cutout(Preprocessor):
             bby2 = np.clip(center_y + self.length // 2, 0, height)
             bbx2 = np.clip(center_x + self.length // 2, 0, width)
 
+            # zero out the bounding box
             if self.channels_first:
                 masks[i, :, bbx1:bbx2, bby1:bby2] = 0
             else:

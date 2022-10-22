@@ -96,7 +96,7 @@ class CutoutPyTorch(PreprocessorPyTorch):
         """
         import torch  # lgtm [py/repeated-import]
 
-        x_ndim = x.dim()
+        x_ndim = len(x.shape)
 
         if x_ndim == 4:
             if self.channels_first:
@@ -119,6 +119,7 @@ class CutoutPyTorch(PreprocessorPyTorch):
             bby2 = np.clip(center_y + self.length // 2, 0, height)
             bbx2 = np.clip(center_x + self.length // 2, 0, width)
 
+            # zero out the bounding box
             if self.channels_first:
                 masks[i, :, bbx1:bbx2, bby1:bby2] = 0
             else:

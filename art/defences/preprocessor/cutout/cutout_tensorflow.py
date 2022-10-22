@@ -87,7 +87,7 @@ class CutoutTensorFlowV2(PreprocessorTensorFlowV2):
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        x_ndim = tf.rank(x)
+        x_ndim = len(x.shape)
 
         if x_ndim == 4:
             if self.channels_first:
@@ -100,7 +100,7 @@ class CutoutTensorFlowV2(PreprocessorTensorFlowV2):
             raise ValueError("Unrecognized input dimension. Cutout can only be applied to image data.")
 
         # generate a random bounding box per image
-        masks = tf.ones(x.shape)
+        masks = tf.Variable(tf.ones(x.shape))
         for i in range(n):
             # uniform sampling
             center_y = np.random.randint(height)
@@ -110,10 +110,12 @@ class CutoutTensorFlowV2(PreprocessorTensorFlowV2):
             bby2 = np.clip(center_y + self.length // 2, 0, height)
             bbx2 = np.clip(center_x + self.length // 2, 0, width)
 
+            # zero out the bounding box
             if self.channels_first:
-                masks[i, :, bbx1:bbx2, bby1:bby2] = 0
+                bbox = masks[i, :, bbx1:bbx2, bby1:bby2]
             else:
-                masks[i, bbx1:bbx2, bby1:bby2, :] = 0
+                bbox = masks[i, bbx1:bbx2, bby1:bby2, :]
+            bbox.assign(tf.zeros(bbox.shape))
 
         x_aug = x * masks
 
