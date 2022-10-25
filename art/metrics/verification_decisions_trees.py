@@ -206,7 +206,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
         if np.min(x) < 0 or np.max(x) > 1:
         raise ValueError(
             "There are features not in the range [0, 1]. The current implementation only supports normalized input"
-            "valuesfeatures in range [0 1]."
+            "values in range [0 1]."
         )
 
         self.x: np.ndarray = x
