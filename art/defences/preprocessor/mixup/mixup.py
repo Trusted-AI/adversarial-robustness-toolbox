@@ -48,12 +48,12 @@ class Mixup(Preprocessor):
         https://arxiv.org/abs/1902.06705
     """
 
-    params = ["num_classes", "k_way", "alpha"]
+    params = ["num_classes", "k", "alpha"]
 
     def __init__(
         self,
         num_classes: int,
-        k_way: int = 2,
+        k: int = 2,
         alpha: float = 1.0,
         apply_fit: bool = False,
         apply_predict: bool = True,
@@ -62,14 +62,14 @@ class Mixup(Preprocessor):
         Create an instance of a Mixup data augmentation object.
 
         :param num_classes: The number of classes used for one-hot encoding.
-        :param k_way: The number of samples to mix for k-way Mixup.
+        :param k: The number of samples to mix for k-way Mixup.
         :param alpha: The mixing factor parameter for drawing from the Dirichlet distribution.
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
         """
         super().__init__(is_fitted=True, apply_fit=apply_fit, apply_predict=apply_predict)
         self.num_classes = num_classes
-        self.k_way = k_way
+        self.k = k
         self.alpha = alpha
         self._check_params()
 
@@ -93,7 +93,7 @@ class Mixup(Preprocessor):
         y_one_hot = check_and_transform_label_format(y, self.num_classes, return_one_hot=True)
 
         # generate the mixing factor from the Dirichlet distribution
-        lmbs = np.random.dirichlet([self.alpha] * self.k_way)
+        lmbs = np.random.dirichlet([self.alpha] * self.k)
 
         x_aug = lmbs[0] * x
         y_aug = lmbs[0] * y_one_hot
@@ -109,7 +109,7 @@ class Mixup(Preprocessor):
         if self.num_classes <= 0:
             raise ValueError("Number of classes must be positive")
 
-        if self.k_way < 2:
+        if self.k < 2:
             raise ValueError("Number of samples to mix must be at least 2.")
 
         if self.alpha <= 0:
