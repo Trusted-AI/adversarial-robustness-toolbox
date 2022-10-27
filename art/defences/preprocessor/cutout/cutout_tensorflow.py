@@ -29,7 +29,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 from typing import Optional, Tuple, TYPE_CHECKING
 
-import numpy as np
+from tqdm.auto import trange
 
 from art.defences.preprocessor.preprocessor import PreprocessorTensorFlowV2
 
@@ -51,11 +51,11 @@ class CutoutTensorFlowV2(PreprocessorTensorFlowV2):
         https://arxiv.org/abs/1902.06705
     """
 
-    params = ["length", "channels_first"]
+    params = ["length", "channels_first", "verbose"]
 
     def __init__(
         self,
-        length: int = 16,
+        length: int,
         channels_first: bool = False,
         apply_fit: bool = False,
         apply_predict: bool = True,
@@ -99,23 +99,24 @@ class CutoutTensorFlowV2(PreprocessorTensorFlowV2):
         else:
             raise ValueError("Unrecognized input dimension. Cutout can only be applied to image data.")
 
+        masks = tf.Variable(tf.ones_like(x), trainable=False)
+
         # generate a random bounding box per image
-        masks = tf.Variable(tf.ones(x.shape))
-        for i in range(n):
+        for idx in trange(n, desc="Cutout", disable=not self.verbose):
             # uniform sampling
-            center_y = np.random.randint(height)
-            center_x = np.random.randint(width)
-            bby1 = np.clip(center_y - self.length // 2, 0, height)
-            bbx1 = np.clip(center_x - self.length // 2, 0, width)
-            bby2 = np.clip(center_y + self.length // 2, 0, height)
-            bbx2 = np.clip(center_x + self.length // 2, 0, width)
+            center_y = tf.random.uniform(shape=[], maxval=height, dtype=tf.int32)  # pylint: disable=E1123
+            center_x = tf.random.uniform(shape=[], maxval=width, dtype=tf.int32)  # pylint: disable=E1123
+            bby1 = tf.clip_by_value(center_y - self.length // 2, 0, height)
+            bbx1 = tf.clip_by_value(center_x - self.length // 2, 0, width)
+            bby2 = tf.clip_by_value(center_y + self.length // 2, 0, height)
+            bbx2 = tf.clip_by_value(center_x + self.length // 2, 0, width)
 
             # zero out the bounding box
             if self.channels_first:
-                bbox = masks[i, :, bbx1:bbx2, bby1:bby2]
+                bbox = masks[idx, :, bbx1:bbx2, bby1:bby2]
             else:
-                bbox = masks[i, bbx1:bbx2, bby1:bby2, :]
-            bbox.assign(tf.zeros(bbox.shape))
+                bbox = masks[idx, bbx1:bbx2, bby1:bby2, :]
+            bbox.assign(tf.zeros_like(bbox))
 
         x_aug = x * masks
 

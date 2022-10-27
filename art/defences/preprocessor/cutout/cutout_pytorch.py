@@ -29,7 +29,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 from typing import Optional, Tuple, TYPE_CHECKING
 
-import numpy as np
+from tqdm.auto import trange
 
 from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
 
@@ -51,11 +51,11 @@ class CutoutPyTorch(PreprocessorPyTorch):
         https://arxiv.org/abs/1902.06705
     """
 
-    params = ["length", "channels_first"]
+    params = ["length", "channels_first", "verbose"]
 
     def __init__(
         self,
-        length: int = 16,
+        length: int,
         channels_first: bool = False,
         apply_fit: bool = False,
         apply_predict: bool = True,
@@ -108,22 +108,23 @@ class CutoutPyTorch(PreprocessorPyTorch):
         else:
             raise ValueError("Unrecognized input dimension. Cutout can only be applied to image data.")
 
+        masks = torch.ones_like(x)
+
         # generate a random bounding box per image
-        masks = torch.ones(*x.shape, device=x.device)
-        for i in range(n):
+        for idx in trange(n, desc="Cutout", disable=not self.verbose):
             # uniform sampling
-            center_y = np.random.randint(height)
-            center_x = np.random.randint(width)
-            bby1 = np.clip(center_y - self.length // 2, 0, height)
-            bbx1 = np.clip(center_x - self.length // 2, 0, width)
-            bby2 = np.clip(center_y + self.length // 2, 0, height)
-            bbx2 = np.clip(center_x + self.length // 2, 0, width)
+            center_x = torch.randint(0, height, (1,))
+            center_y = torch.randint(0, width, (1,))
+            bby1 = torch.clamp(center_y - self.length // 2, 0, height)
+            bbx1 = torch.clamp(center_x - self.length // 2, 0, width)
+            bby2 = torch.clamp(center_y + self.length // 2, 0, height)
+            bbx2 = torch.clamp(center_x + self.length // 2, 0, width)
 
             # zero out the bounding box
             if self.channels_first:
-                masks[i, :, bbx1:bbx2, bby1:bby2] = 0
+                masks[idx, :, bbx1:bbx2, bby1:bby2] = 0  # type: ignore
             else:
-                masks[i, bbx1:bbx2, bby1:bby2, :] = 0
+                masks[idx, bbx1:bbx2, bby1:bby2, :] = 0  # type: ignore
 
         x_aug = x * masks
 

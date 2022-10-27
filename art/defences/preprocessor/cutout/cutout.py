@@ -30,6 +30,7 @@ import logging
 from typing import Optional, Tuple
 
 import numpy as np
+from tqdm.auto import trange
 
 from art.defences.preprocessor.preprocessor import Preprocessor
 
@@ -47,14 +48,15 @@ class Cutout(Preprocessor):
         https://arxiv.org/abs/1902.06705
     """
 
-    params = ["length", "channels_first"]
+    params = ["length", "channels_first", "verbose"]
 
     def __init__(
         self,
-        length: int = 16,
+        length: int,
         channels_first: bool = False,
         apply_fit: bool = False,
         apply_predict: bool = True,
+        verbose: bool = False,
     ) -> None:
         """
         Create an instance of a Cutout data augmentation object.
@@ -63,11 +65,13 @@ class Cutout(Preprocessor):
         :param channels_first: Set channels first or last.
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
+        :param verbose: Show progress bars.
         """
         super().__init__(is_fitted=True, apply_fit=apply_fit, apply_predict=apply_predict)
 
         self.length = length
         self.channels_first = channels_first
+        self.verbose = verbose
         self._check_params()
 
     def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
@@ -91,9 +95,10 @@ class Cutout(Preprocessor):
         else:
             raise ValueError("Unrecognized input dimension. Cutout can only be applied to image data.")
 
+        masks = np.ones_like(x)
+
         # generate a random bounding box per image
-        masks = np.ones(x.shape)
-        for i in range(n):
+        for idx in trange(n, desc="Cutout", disable=not self.verbose):
             # uniform sampling
             center_y = np.random.randint(height)
             center_x = np.random.randint(width)
@@ -104,9 +109,9 @@ class Cutout(Preprocessor):
 
             # zero out the bounding box
             if self.channels_first:
-                masks[i, :, bbx1:bbx2, bby1:bby2] = 0
+                masks[idx, :, bbx1:bbx2, bby1:bby2] = 0
             else:
-                masks[i, bbx1:bbx2, bby1:bby2, :] = 0
+                masks[idx, bbx1:bbx2, bby1:bby2, :] = 0
 
         x_aug = x * masks
 
