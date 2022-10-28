@@ -78,24 +78,35 @@ class Cutout(Preprocessor):
         """
         Apply Cutout data augmentation to sample `x`.
 
-        :param x: Sample to compress with shape of `NCHW` or `NHWC`. The `x` values are expected to be in
-                  the data range [0, 1] or [0, 255].
+        :param x: Sample to cut out with shape of `NCHW`, `NHWC`, `NCFHW` or `NFHWC`.
+                  `x` values are expected to be in the data range [0, 1] or [0, 255].
         :param y: Labels of the sample `x`. This function does not affect them in any way.
         :return: Data augmented sample.
         """
         x_ndim = len(x.shape)
 
+        # NCHW/NCFHW/NFHWC --> NHWC
         if x_ndim == 4:
             if self.channels_first:
-                # NCHW
-                n, _, height, width = x.shape
+                # NCHW --> NHWC
+                x_nhwc = np.transpose(x, (0, 2, 3, 1))
             else:
-                # NHWC
-                n, height, width, _ = x.shape
+                x_nhwc = x
+        elif x_ndim == 5:
+            if self.channels_first:
+                # NCFHW --> NFHWC --> NHWC
+                nb_clips, channels, clip_size, height, width = x.shape
+                x_nfhwc = np.transpose(x, (0, 2, 3, 4, 1))
+                x_nhwc = np.reshape(x_nfhwc, (nb_clips * clip_size, height, width, channels))
+            else:
+                # NFHWC --> NHWC
+                nb_clips, clip_size, height, width, channels = x.shape
+                x_nhwc = np.reshape(x, (nb_clips * clip_size, height, width, channels))
         else:
-            raise ValueError("Unrecognized input dimension. Cutout can only be applied to image data.")
+            raise ValueError("Unrecognized input dimension. Cutout can only be applied to image and video data.")
 
-        masks = np.ones_like(x)
+        n, height, width, _ = x_nhwc.shape
+        masks = np.ones_like(x_nhwc)
 
         # generate a random bounding box per image
         for idx in trange(n, desc="Cutout", disable=not self.verbose):
@@ -108,12 +119,25 @@ class Cutout(Preprocessor):
             bbx2 = np.clip(center_x + self.length // 2, 0, width)
 
             # zero out the bounding box
-            if self.channels_first:
-                masks[idx, :, bbx1:bbx2, bby1:bby2] = 0
-            else:
-                masks[idx, bbx1:bbx2, bby1:bby2, :] = 0
+            masks[idx, bbx1:bbx2, bby1:bby2, :] = 0
 
-        x_aug = x * masks
+        x_nhwc = x_nhwc * masks
+
+        # NCHW/NCFHW/NFHWC <-- NHWC
+        if x_ndim == 4:
+            if self.channels_first:
+                # NHWC <-- NCHW
+                x_aug = np.transpose(x_nhwc, (0, 3, 1, 2))
+            else:
+                x_aug = x_nhwc
+        elif x_ndim == 5:  # lgtm [py/redundant-comparison]
+            if self.channels_first:
+                # NCFHW <-- NFHWC <-- NHWC
+                x_nfhwc = np.reshape(x_nhwc, (nb_clips, clip_size, height, width, channels))
+                x_aug = np.transpose(x_nfhwc, (0, 4, 1, 2, 3))
+            else:
+                # NFHWC <-- NHWC
+                x_aug = np.reshape(x_nhwc, (nb_clips, clip_size, height, width, channels))
 
         return x_aug, y
 

@@ -38,9 +38,23 @@ def image_batch(request, channels_first):
     channels = request.param
 
     if channels_first:
-        data_shape = (2, channels, 16, 16)
+        data_shape = (2, channels, 12, 8)
     else:
-        data_shape = (2, 16, 16, channels)
+        data_shape = (2, 12, 8, channels)
+    return (255 * np.ones(data_shape)).astype(ART_NUMPY_DTYPE)
+
+
+@pytest.fixture(params=[1, 3], ids=["grayscale", "RGB"])
+def video_batch(request, channels_first):
+    """
+    Video fixtures of shape NFHWC and NCFHW.
+    """
+    channels = request.param
+
+    if channels_first:
+        data_shape = (2, 2, channels, 12, 8)
+    else:
+        data_shape = (2, 2, 12, 8, channels)
     return (255 * np.ones(data_shape)).astype(ART_NUMPY_DTYPE)
 
 
@@ -52,9 +66,9 @@ def empty_image(request, channels_first):
     channels = request.param
 
     if channels_first:
-        data_shape = (2, channels, 16, 16)
+        data_shape = (2, channels, 12, 8)
     else:
-        data_shape = (2, 16, 16, channels)
+        data_shape = (2, 12, 8, channels)
     return np.zeros(data_shape).astype(ART_NUMPY_DTYPE)
 
 
@@ -78,6 +92,25 @@ def test_cutout_image_data(art_warning, image_batch, length, channels_first):
 
 @pytest.mark.only_with_platform("pytorch")
 @pytest.mark.parametrize("length", [4])
+@pytest.mark.parametrize("channels_first", [True, False])
+def test_cutout_video_data(art_warning, video_batch, length, channels_first):
+    try:
+        cutout = CutoutPyTorch(length=length, channels_first=channels_first)
+        count = np.not_equal(cutout(video_batch)[0], video_batch).sum()
+
+        n = video_batch.shape[0]
+        frames = video_batch.shape[1]
+        if channels_first:
+            channels = video_batch.shape[2]
+        else:
+            channels = video_batch.shape[-1]
+        assert count <= n * frames * channels * length * length
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.only_with_platform("pytorch")
+@pytest.mark.parametrize("length", [4])
 @pytest.mark.parametrize("channels_first", [True])
 def test_cutout_empty_data(art_warning, empty_image, length, channels_first):
     try:
@@ -93,7 +126,7 @@ def test_non_image_data_error(art_warning, tabular_batch):
         test_input = tabular_batch
         cutout = CutoutPyTorch(length=8, channels_first=True)
 
-        exc_msg = "Unrecognized input dimension. Cutout can only be applied to image data."
+        exc_msg = "Unrecognized input dimension. Cutout can only be applied to image and video data."
         with pytest.raises(ValueError, match=exc_msg):
             cutout(test_input)
     except ARTTestException as e:

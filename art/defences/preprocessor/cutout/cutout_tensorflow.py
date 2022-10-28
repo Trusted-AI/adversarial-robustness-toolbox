@@ -29,8 +29,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 from typing import Optional, Tuple, TYPE_CHECKING
 
-from tqdm.auto import trange
-
 from art.defences.preprocessor.preprocessor import PreprocessorTensorFlowV2
 
 if TYPE_CHECKING:
@@ -80,45 +78,57 @@ class CutoutTensorFlowV2(PreprocessorTensorFlowV2):
         """
         Apply Cutout data augmentation to sample `x`.
 
-        :param x: Sample to compress with shape of `NCHW` or `NHWC`. The `x` values are expected to be in
-                  the data range [0, 1] or [0, 255].
+        :param x: Sample to cut out with shape of `NCHW`, `NHWC`, `NCFHW` or `NFHWC`.
+                  `x` values are expected to be in the data range [0, 1] or [0, 255].
         :param y: Labels of the sample `x`. This function does not affect them in any way.
         :return: Data augmented sample.
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow_addons as tfa
 
         x_ndim = len(x.shape)
 
+        # NCHW/NCFHW/NFHWC --> NHWC
         if x_ndim == 4:
             if self.channels_first:
-                # NCHW
-                n, _, height, width = x.shape
+                # NCHW --> NHWC
+                x_nhwc = tf.transpose(x, (0, 2, 3, 1))
             else:
-                # NHWC
-                n, height, width, _ = x.shape
-        else:
-            raise ValueError("Unrecognized input dimension. Cutout can only be applied to image data.")
-
-        masks = tf.Variable(tf.ones_like(x), trainable=False)
-
-        # generate a random bounding box per image
-        for idx in trange(n, desc="Cutout", disable=not self.verbose):
-            # uniform sampling
-            center_y = tf.random.uniform(shape=[], maxval=height, dtype=tf.int32)  # pylint: disable=E1123
-            center_x = tf.random.uniform(shape=[], maxval=width, dtype=tf.int32)  # pylint: disable=E1123
-            bby1 = tf.clip_by_value(center_y - self.length // 2, 0, height)
-            bbx1 = tf.clip_by_value(center_x - self.length // 2, 0, width)
-            bby2 = tf.clip_by_value(center_y + self.length // 2, 0, height)
-            bbx2 = tf.clip_by_value(center_x + self.length // 2, 0, width)
-
-            # zero out the bounding box
+                x_nhwc = x
+        elif x_ndim == 5:
             if self.channels_first:
-                bbox = masks[idx, :, bbx1:bbx2, bby1:bby2]
+                # NCFHW --> NFHWC --> NHWC
+                nb_clips, channels, clip_size, height, width = x.shape
+                x_nfhwc = tf.transpose(x, (0, 2, 3, 4, 1))
+                x_nhwc = tf.reshape(x_nfhwc, (nb_clips * clip_size, height, width, channels))
             else:
-                bbox = masks[idx, bbx1:bbx2, bby1:bby2, :]
-            bbox.assign(tf.zeros_like(bbox))
+                # NFHWC --> NHWC
+                nb_clips, clip_size, height, width, channels = x.shape
+                x_nhwc = tf.reshape(x, (nb_clips * clip_size, height, width, channels))
+        else:
+            raise ValueError("Unrecognized input dimension. Cutout can only be applied to image and video data.")
 
-        x_aug = x * masks
+        # round down length to be divisible by 2
+        length = self.length if self.length % 2 == 0 else max(self.length - 1, 2)
+
+        # apply random cutout
+        x_nhwc = tfa.image.random_cutout(x_nhwc, (length, length))
+
+        # NCHW/NCFHW/NFHWC <-- NHWC
+        if x_ndim == 4:
+            if self.channels_first:
+                # NHWC <-- NCHW
+                x_aug = tf.transpose(x_nhwc, (0, 3, 1, 2))
+            else:
+                x_aug = x_nhwc
+        elif x_ndim == 5:  # lgtm [py/redundant-comparison]
+            if self.channels_first:
+                # NCFHW <-- NFHWC <-- NHWC
+                x_nfhwc = tf.reshape(x_nhwc, (nb_clips, clip_size, height, width, channels))
+                x_aug = tf.transpose(x_nfhwc, (0, 4, 1, 2, 3))
+            else:
+                # NFHWC <-- NHWC
+                x_aug = tf.reshape(x_nhwc, (nb_clips, clip_size, height, width, channels))
 
         return x_aug, y
 
