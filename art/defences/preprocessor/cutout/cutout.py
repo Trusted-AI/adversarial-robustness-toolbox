@@ -68,7 +68,6 @@ class Cutout(Preprocessor):
         :param verbose: Show progress bars.
         """
         super().__init__(is_fitted=True, apply_fit=apply_fit, apply_predict=apply_predict)
-
         self.length = length
         self.channels_first = channels_first
         self.verbose = verbose
@@ -91,6 +90,7 @@ class Cutout(Preprocessor):
                 # NCHW --> NHWC
                 x_nhwc = np.transpose(x, (0, 2, 3, 1))
             else:
+                # NHWC
                 x_nhwc = x
         elif x_ndim == 5:
             if self.channels_first:
@@ -106,7 +106,7 @@ class Cutout(Preprocessor):
             raise ValueError("Unrecognized input dimension. Cutout can only be applied to image and video data.")
 
         n, height, width, _ = x_nhwc.shape
-        masks = np.ones_like(x_nhwc)
+        x_nhwc = x_nhwc.copy()
 
         # generate a random bounding box per image
         for idx in trange(n, desc="Cutout", disable=not self.verbose):
@@ -119,9 +119,7 @@ class Cutout(Preprocessor):
             bbx2 = np.clip(center_x + self.length // 2, 0, width)
 
             # zero out the bounding box
-            masks[idx, bbx1:bbx2, bby1:bby2, :] = 0
-
-        x_nhwc = x_nhwc * masks
+            x_nhwc[idx, bbx1:bbx2, bby1:bby2, :] = 0
 
         # NCHW/NCFHW/NFHWC <-- NHWC
         if x_ndim == 4:
@@ -129,6 +127,7 @@ class Cutout(Preprocessor):
                 # NHWC <-- NCHW
                 x_aug = np.transpose(x_nhwc, (0, 3, 1, 2))
             else:
+                # NHWC
                 x_aug = x_nhwc
         elif x_ndim == 5:  # lgtm [py/redundant-comparison]
             if self.channels_first:

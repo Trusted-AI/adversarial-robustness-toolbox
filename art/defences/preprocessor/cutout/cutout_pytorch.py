@@ -72,9 +72,6 @@ class CutoutPyTorch(PreprocessorPyTorch):
         :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
         :param verbose: Show progress bars.
         """
-        import torch  # lgtm [py/repeated-import]
-        from torch.autograd import Function
-
         super().__init__(
             device_type=device_type,
             is_fitted=True,
@@ -85,38 +82,6 @@ class CutoutPyTorch(PreprocessorPyTorch):
         self.channels_first = channels_first
         self.verbose = verbose
         self._check_params()
-
-        class RandomCutout(Function):  # pylint: disable=W0223
-            """
-            Function running Preprocessor.
-            """
-
-            @staticmethod
-            def forward(ctx, input):  # pylint: disable=W0622,W0221
-                ctx.save_for_backward(input)
-                n, _, height, width = input.shape
-                masks = torch.ones_like(input)
-
-                # generate a random bounding box per image
-                for idx in trange(n, desc="Cutout", disable=not self.verbose):
-                    # uniform sampling
-                    center_x = torch.randint(0, height, (1,))
-                    center_y = torch.randint(0, width, (1,))
-                    bby1 = torch.clamp(center_y - self.length // 2, 0, height)
-                    bbx1 = torch.clamp(center_x - self.length // 2, 0, width)
-                    bby2 = torch.clamp(center_y + self.length // 2, 0, height)
-                    bbx2 = torch.clamp(center_x + self.length // 2, 0, width)
-
-                    # zero out the bounding box
-                    masks[idx, :, bbx1:bbx2, bby1:bby2] = 0  # type: ignore
-
-                return input * masks
-
-            @staticmethod
-            def backward(ctx, grad_output):  # pylint: disable=W0221
-                return grad_output
-
-        self._random_cutout = RandomCutout
 
     def forward(
         self, x: "torch.Tensor", y: Optional["torch.Tensor"] = None
@@ -129,11 +94,14 @@ class CutoutPyTorch(PreprocessorPyTorch):
         :param y: Labels of the sample `x`. This function does not affect them in any way.
         :return: Data augmented sample.
         """
+        import torch  # lgtm [py/repeated-import]
+
         x_ndim = len(x.shape)
 
         # NHWC/NCFHW/NFHWC --> NCHW.
         if x_ndim == 4:
             if self.channels_first:
+                # NCHW
                 x_nchw = x
             else:
                 # NHWC --> NCHW
@@ -150,12 +118,26 @@ class CutoutPyTorch(PreprocessorPyTorch):
         else:
             raise ValueError("Unrecognized input dimension. Cutout can only be applied to image and video data.")
 
-        # apply random cutout
-        x_nchw = self._random_cutout.apply(x_nchw)
+        n, _, height, width = x_nchw.shape
+        x_nchw = x_nchw.clone()
+
+        # generate a random bounding box per image
+        for idx in trange(n, desc="Cutout", disable=not self.verbose):
+            # uniform sampling
+            center_x = torch.randint(0, height, (1,))
+            center_y = torch.randint(0, width, (1,))
+            bby1 = torch.clamp(center_y - self.length // 2, 0, height)
+            bbx1 = torch.clamp(center_x - self.length // 2, 0, width)
+            bby2 = torch.clamp(center_y + self.length // 2, 0, height)
+            bbx2 = torch.clamp(center_x + self.length // 2, 0, width)
+
+            # zero out the bounding box
+            x_nchw[idx, :, bbx1:bbx2, bby1:bby2] = 0  # type: ignore
 
         # NHWC/NCFHW/NFHWC <-- NCHW.
         if x_ndim == 4:
             if self.channels_first:
+                # NCHW
                 x_aug = x_nchw
             else:
                 # NHWC <-- NCHW

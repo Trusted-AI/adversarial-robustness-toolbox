@@ -94,6 +94,7 @@ class CutoutTensorFlowV2(PreprocessorTensorFlowV2):
                 # NCHW --> NHWC
                 x_nhwc = tf.transpose(x, (0, 2, 3, 1))
             else:
+                # NHWC
                 x_nhwc = x
         elif x_ndim == 5:
             if self.channels_first:
@@ -120,6 +121,7 @@ class CutoutTensorFlowV2(PreprocessorTensorFlowV2):
                 # NHWC <-- NCHW
                 x_aug = tf.transpose(x_nhwc, (0, 3, 1, 2))
             else:
+                # NHWC
                 x_aug = x_nhwc
         elif x_ndim == 5:  # lgtm [py/redundant-comparison]
             if self.channels_first:
