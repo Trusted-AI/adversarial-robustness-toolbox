@@ -36,7 +36,7 @@ def image_batch(request):
     Image fixtures of shape NHWC.
     """
     channels = request.param
-    data_shape = (4, 8, 8, channels)
+    data_shape = (4, 8, 12, channels)
     return (0.5 * np.ones(data_shape)).astype(ART_NUMPY_DTYPE)
 
 
@@ -46,16 +46,16 @@ def empty_image(request):
     Empty image fixtures of shape NHWC.
     """
     channels = request.param
-    data_shape = (4, 8, 8, channels)
+    data_shape = (4, 8, 12, channels)
     return np.zeros(data_shape).astype(ART_NUMPY_DTYPE)
 
 
 @pytest.mark.only_with_platform("tensorflow2")
-@pytest.mark.parametrize("k", [2, 3])
 @pytest.mark.parametrize("alpha", [1.0, 2.5])
-def test_mixup_image_data(art_warning, image_batch, k, alpha):
+@pytest.mark.parametrize("k", [2, 3])
+def test_mixup_image_data(art_warning, image_batch, alpha, k):
     try:
-        mixup = MixupTensorFlowV2(num_classes=10, k=k, alpha=alpha)
+        mixup = MixupTensorFlowV2(num_classes=10, alpha=alpha, k=k)
         x, y = mixup(image_batch, np.arange(len(image_batch)))
         assert_array_almost_equal(x, image_batch)
         assert_array_almost_equal(y.sum(axis=1), np.ones(len(image_batch)))
@@ -64,11 +64,11 @@ def test_mixup_image_data(art_warning, image_batch, k, alpha):
 
 
 @pytest.mark.only_with_platform("tensorflow2")
-@pytest.mark.parametrize("k", [2])
 @pytest.mark.parametrize("alpha", [1.0])
-def test_mixup_empty_data(art_warning, empty_image, k, alpha):
+@pytest.mark.parametrize("k", [2])
+def test_mixup_empty_data(art_warning, empty_image, alpha, k):
     try:
-        mixup = MixupTensorFlowV2(num_classes=10, k=k, alpha=alpha)
+        mixup = MixupTensorFlowV2(num_classes=10, alpha=alpha, k=k)
         x, y = mixup(empty_image, np.arange(len(empty_image)))
         assert_array_equal(x, empty_image)
         assert_array_almost_equal(y.sum(axis=1), np.ones(len(empty_image)))
@@ -96,16 +96,16 @@ def test_check_params(art_warning):
             _ = MixupTensorFlowV2(num_classes=0)
 
         with pytest.raises(ValueError):
-            _ = MixupTensorFlowV2(num_classes=10, k=1)
-
-        with pytest.raises(ValueError):
-            _ = MixupTensorFlowV2(num_classes=10, k=-1)
-
-        with pytest.raises(ValueError):
             _ = MixupTensorFlowV2(num_classes=10, alpha=0)
 
         with pytest.raises(ValueError):
             _ = MixupTensorFlowV2(num_classes=10, alpha=-1)
+
+        with pytest.raises(ValueError):
+            _ = MixupTensorFlowV2(num_classes=10, k=1)
+
+        with pytest.raises(ValueError):
+            _ = MixupTensorFlowV2(num_classes=10, k=-1)
 
     except ARTTestException as e:
         art_warning(e)

@@ -56,8 +56,8 @@ class MixupTensorFlowV2(PreprocessorTensorFlowV2):
     def __init__(
         self,
         num_classes: int,
-        k: int = 2,
         alpha: float = 1.0,
+        k: int = 2,
         apply_fit: bool = False,
         apply_predict: bool = True,
     ) -> None:
@@ -65,8 +65,8 @@ class MixupTensorFlowV2(PreprocessorTensorFlowV2):
         Create an instance of a Mixup data augmentation object.
 
         :param num_classes: The number of classes used for one-hot encoding.
+        :param alpha: The hyperparameter for the mixing interpolation strength.
         :param k: The number of samples to mix for k-way Mixup.
-        :param alpha: The mixing factor parameter for drawing from the Dirichlet distribution.
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
         :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
@@ -74,8 +74,8 @@ class MixupTensorFlowV2(PreprocessorTensorFlowV2):
         """
         super().__init__(is_fitted=True, apply_fit=apply_fit, apply_predict=apply_predict)
         self.num_classes = num_classes
-        self.k = k
         self.alpha = alpha
+        self.k = k
         self._check_params()
 
     def forward(self, x: "tf.Tensor", y: Optional["tf.Tensor"] = None) -> Tuple["tf.Tensor", Optional["tf.Tensor"]]:
@@ -107,7 +107,7 @@ class MixupTensorFlowV2(PreprocessorTensorFlowV2):
 
         n = x.shape[0]
 
-        # generate the mixing factor from the Dirichlet distribution
+        # sample the mixing factor from the Dirichlet distribution
         lmbs = np.random.dirichlet([self.alpha] * self.k)
 
         x_aug = lmbs[0] * x
@@ -122,10 +122,10 @@ class MixupTensorFlowV2(PreprocessorTensorFlowV2):
 
     def _check_params(self) -> None:
         if self.num_classes <= 0:
-            raise ValueError("Number of classes must be positive")
-
-        if self.k < 2:
-            raise ValueError("Number of samples to mix must be at least 2.")
+            raise ValueError("The number of classes must be positive")
 
         if self.alpha <= 0:
-            raise ValueError("Mixing factor parameter must be positive.")
+            raise ValueError("The mixing interpolation strength must be positive.")
+
+        if self.k < 2:
+            raise ValueError("The number of samples to mix must be at least 2.")
