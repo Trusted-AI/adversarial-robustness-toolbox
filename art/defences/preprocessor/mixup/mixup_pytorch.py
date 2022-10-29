@@ -61,7 +61,6 @@ class MixupPyTorch(PreprocessorPyTorch):
         apply_fit: bool = False,
         apply_predict: bool = True,
         device_type: str = "gpu",
-        verbose: bool = False,
     ) -> None:
         """
         Create an instance of a Mixup data augmentation object.
@@ -83,7 +82,6 @@ class MixupPyTorch(PreprocessorPyTorch):
         self.num_classes = num_classes
         self.k = k
         self.alpha = alpha
-        self.verbose = verbose
         self._check_params()
 
     def forward(
@@ -93,7 +91,7 @@ class MixupPyTorch(PreprocessorPyTorch):
         Apply Mixup data augmentation to feature data `x` and labels `y`.
 
         :param x: Feature data to augment with shape `(batch_size, ...)`.
-        :param y: Labels of `x` either one-hot encoded of shape `(nb_samples, nb_classes)`
+        :param y: Labels of `x` either one-hot or multi-hot encoded of shape `(nb_samples, nb_classes)`
                   or class indices of shape `(nb_samples,)`.
         :return: Data augmented sample. The returned labels will be probability vectors of shape
                  `(nb_samples, nb_classes)`.
@@ -104,8 +102,6 @@ class MixupPyTorch(PreprocessorPyTorch):
         if y is None:
             raise ValueError("Labels `y` cannot be None.")
 
-        n = x.shape[0]
-
         # convert labels to one-hot encoding
         if len(y.shape) == 2:
             y_one_hot = y
@@ -113,9 +109,11 @@ class MixupPyTorch(PreprocessorPyTorch):
             y_one_hot = torch.nn.functional.one_hot(y, self.num_classes)
         else:
             raise ValueError(
-                "Shape of labels not recognised."
+                "Shape of labels not recognised. "
                 "Please provide labels in shape (nb_samples,) or (nb_samples, nb_classes)"
             )
+
+        n = x.shape[0]
 
         # generate the mixing factor from the Dirichlet distribution
         lmbs = np.random.dirichlet([self.alpha] * self.k)

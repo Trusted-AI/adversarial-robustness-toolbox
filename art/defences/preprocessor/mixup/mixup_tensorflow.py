@@ -60,7 +60,6 @@ class MixupTensorFlowV2(PreprocessorTensorFlowV2):
         alpha: float = 1.0,
         apply_fit: bool = False,
         apply_predict: bool = True,
-        verbose: bool = False,
     ) -> None:
         """
         Create an instance of a Mixup data augmentation object.
@@ -77,7 +76,6 @@ class MixupTensorFlowV2(PreprocessorTensorFlowV2):
         self.num_classes = num_classes
         self.k = k
         self.alpha = alpha
-        self.verbose = verbose
         self._check_params()
 
     def forward(self, x: "tf.Tensor", y: Optional["tf.Tensor"] = None) -> Tuple["tf.Tensor", Optional["tf.Tensor"]]:
@@ -85,7 +83,7 @@ class MixupTensorFlowV2(PreprocessorTensorFlowV2):
         Apply Mixup data augmentation to feature data `x` and labels `y`.
 
         :param x: Feature data to augment with shape `(batch_size, ...)`.
-        :param y: Labels of `x` either one-hot encoded of shape `(nb_samples, nb_classes)`
+        :param y: Labels of `x` either one-hot or multi-hot encoded of shape `(nb_samples, nb_classes)`
                   or class indices of shape `(nb_samples,)`.
         :return: Data augmented sample. The returned labels will be probability vectors of shape
                  `(nb_samples, nb_classes)`.
@@ -96,8 +94,6 @@ class MixupTensorFlowV2(PreprocessorTensorFlowV2):
         if y is None:
             raise ValueError("Labels `y` cannot be None.")
 
-        n = x.shape[0]
-
         # convert labels to one-hot encoding
         if len(y.shape) == 2:
             y_one_hot = y
@@ -105,9 +101,11 @@ class MixupTensorFlowV2(PreprocessorTensorFlowV2):
             y_one_hot = tf.one_hot(y, self.num_classes, on_value=1.0, off_value=0.0)
         else:
             raise ValueError(
-                "Shape of labels not recognised."
+                "Shape of labels not recognised. "
                 "Please provide labels in shape (nb_samples,) or (nb_samples, nb_classes)"
             )
+
+        n = x.shape[0]
 
         # generate the mixing factor from the Dirichlet distribution
         lmbs = np.random.dirichlet([self.alpha] * self.k)

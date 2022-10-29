@@ -32,7 +32,7 @@ from typing import Optional, Tuple
 import numpy as np
 
 from art.defences.preprocessor.preprocessor import Preprocessor
-from art.utils import check_and_transform_label_format
+from art.utils import to_categorical
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +78,7 @@ class Mixup(Preprocessor):
         Apply Mixup data augmentation to feature data `x` and labels `y`.
 
         :param x: Feature data to augment with shape `(batch_size, ...)`.
-        :param y: Labels of `x` either one-hot encoded of shape `(nb_samples, nb_classes)`
+        :param y: Labels of `x` either one-hot or multi-hot encoded of shape `(nb_samples, nb_classes)`
                   or class indices of shape `(nb_samples,)`.
         :return: Data augmented sample. The returned labels will be probability vectors of shape
                  `(nb_samples, nb_classes)`.
@@ -87,10 +87,18 @@ class Mixup(Preprocessor):
         if y is None:
             raise ValueError("Labels `y` cannot be None.")
 
-        n = x.shape[0]
-
         # convert labels to one-hot encoding
-        y_one_hot = check_and_transform_label_format(y, self.num_classes, return_one_hot=True)
+        if len(y.shape) == 2:
+            y_one_hot = y
+        elif len(y.shape) == 1:
+            y_one_hot = to_categorical(y, self.num_classes)
+        else:
+            raise ValueError(
+                "Shape of labels not recognised. "
+                "Please provide labels in shape (nb_samples,) or (nb_samples, nb_classes)"
+            )
+
+        n = x.shape[0]
 
         # generate the mixing factor from the Dirichlet distribution
         lmbs = np.random.dirichlet([self.alpha] * self.k)
