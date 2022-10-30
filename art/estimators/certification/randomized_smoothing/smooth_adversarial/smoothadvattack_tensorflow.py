@@ -58,9 +58,7 @@ def get_tensor_mode(input_tensor: tf.Tensor, dim=-1):
     datatype = input_tensor.dtype
     minval = tf.math.reduce_min(input_tensor)
     input_tensor = input_tensor - minval
-    c_int = tf.math.bincount(
-      input_tensor, axis = -1, dtype=datatype, minlength=tf.math.reduce_max(input_tensor) + 1
-    )
+    c_int = tf.math.bincount(input_tensor, axis=-1, dtype=datatype, minlength=tf.math.reduce_max(input_tensor) + 1)
     idx = tf.math.argmax(c_int, axis=-1, output_type=datatype)
     mode_tensor = idx + minval
     return mode_tensor
@@ -556,7 +554,7 @@ class DDN(Attacker):
                 logits = model(adv, training=True)
 
                 pred_labels = tf.math.argmax(logits, axis=1, output_type=tf.dtypes.int32)
-                pred_labels = get_tensor_mode(pred_labels, 1)[0]
+                pred_labels = get_tensor_mode(pred_labels, 1)
                 # safe softmax
                 softmax = tf.nn.softmax(logits, axis=1)
                 # average the probabilities across noise

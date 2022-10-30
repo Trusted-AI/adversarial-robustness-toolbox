@@ -25,11 +25,11 @@ import numpy as np
 from torch import optim
 from torch.optim.lr_scheduler import MultiStepLR
 from art.utils import load_dataset
-from art.estimators.certification.randomized_smoothing import PyTorchRandomizedSmoothing
-from tests.utils import (
-    master_seed,
-    get_image_classifier_pt,
+from art.estimators.certification.randomized_smoothing import (
+    TensorFlowV2RandomizedSmoothing,
+    PyTorchRandomizedSmoothing,
 )
+from tests.utils import master_seed, get_image_classifier_pt, get_image_classifier_tf
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "True"
 logger = logging.getLogger(__name__)
@@ -109,6 +109,78 @@ class TestTrainMacer(unittest.TestCase):
             input_shape=ptc.input_shape,
             nb_classes=ptc.nb_classes,
             channels_first=ptc.channels_first,
+            clip_values=ptc.clip_values,
+            scale=0.25,
+            lbd=12.0,
+            gamma=8.0,
+            beta=16.0,
+            gauss_num=16,
+        )
+
+        # fit
+        rs1.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="macer")
+
+        # fit fails when optimizer is None
+        with self.assertRaisesRegex(ValueError, "An optimizer is needed to train the model, but none for provided."):
+            rs2.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="macer")
+
+        # fit fails when scheduler is None
+        with self.assertRaisesRegex(ValueError, "A scheduler is needed to train the model, but none for provided."):
+            rs3.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="macer")
+
+
+    def test_2_tf(self):
+        """
+        Test with a Tensorflow Classifier.
+        :return:
+        """
+        import tensorflow as tf
+        # Build TensorflowClassifier
+        ptc,_ = get_image_classifier_tf()
+
+        # Get MNIST
+        (_, _), (x_test, y_test) = self.mnist
+        x_test = x_test.astype('float32')
+        y_test = y_test.astype('int32')
+
+        # Initialize RS object
+        optimizer = tf.keras.optimizers.SGD(learning_rate=0.01, momentum=0.9, name='SGD', decay=5e-4)
+        boundaries = [250, 400]
+        values = [0.01, 0.001, 0.0001]
+        learning_rate_fn = tf.keras.optimizers.schedules.PiecewiseConstantDecay(boundaries, values)
+        rs1 = TensorFlowV2RandomizedSmoothing(
+            model=ptc.model,
+            optimizer=optimizer,
+            scheduler=learning_rate_fn,
+            input_shape=ptc.input_shape,
+            nb_classes=ptc.nb_classes,
+            clip_values=ptc.clip_values,
+            scale=0.25,
+            lbd=12.0,
+            gamma=8.0,
+            beta=16.0,
+            gauss_num=16,
+        )
+        rs2 = TensorFlowV2RandomizedSmoothing(
+            model=ptc.model,
+            optimizer=None,
+            scheduler=learning_rate_fn,
+            input_shape=ptc.input_shape,
+            nb_classes=ptc.nb_classes,
+            clip_values=ptc.clip_values,
+            scale=0.25,
+            lbd=12.0,
+            gamma=8.0,
+            beta=16.0,
+            gauss_num=16,
+        )
+
+        rs3 = TensorFlowV2RandomizedSmoothing(
+            model=ptc.model,
+            optimizer=optimizer,
+            scheduler=None,
+            input_shape=ptc.input_shape,
+            nb_classes=ptc.nb_classes,
             clip_values=ptc.clip_values,
             scale=0.25,
             lbd=12.0,
