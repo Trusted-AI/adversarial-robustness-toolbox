@@ -131,3 +131,78 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
 
         cl_total /= input_total
         rl_total /= input_total
+
+
+def fit_tensorflow(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
+    import tensorflow as tf
+    import math
+
+    if self.optimizer is None:  # pragma: no cover
+        raise ValueError("An optimizer is needed to train the model, but none for provided.")
+    if self.scheduler is None:  # pragma: no cover
+        raise ValueError("A scheduler is needed to train the model, but none for provided.")
+
+    loc_norm = tf.constant([0.0])
+    scale_norm = tf.constant([1.0])
+    cl_total = 0.0
+    rl_total = 0.0
+    input_total = 0
+    start_epoch = 0
+    train_ds = tf.data.Dataset.from_tensor_slices((x, y)).shuffle(10000).batch(batch_size)
+
+    for epoch_num in range(start_epoch + 1, nb_epochs + 1):
+        i = 0
+        for images, labels in train_ds:
+            images = tf.transpose(images, (0, 3, 1, 2))
+            input_size = len(images)
+            input_total += input_size
+            new_shape = [input_size * self.gauss_num]
+            new_shape.extend(images[0].shape)
+            i_batch = tf.reshape(tf.tile(images, (1, self.gauss_num, 1, 1)), new_shape)
+            i_batch = tf.transpose(i_batch, (0, 2, 3, 1))
+            noise = tf.random.normal(i_batch.shape, 0, 1, tf.float32) * self.scale
+            noisy_inputs = i_batch + noise
+            with tf.GradientTape() as tape:
+                outputs = self.model(noisy_inputs, training=True)
+                outputs = tf.reshape(outputs, [input_size, self.gauss_num, self.nb_classes])
+                # Classification loss
+                outputs_softmax = tf.reduce_mean(tf.nn.softmax(outputs, axis=2), axis=1)
+                outputs_logsoftmax = tf.math.log(outputs_softmax + 1e-10)
+                indices = tf.stack([np.arange(len(labels)), labels], axis=1)
+                nllloss = tf.gather_nd(outputs_logsoftmax, indices=indices)
+                classification_loss = -tf.reduce_sum(nllloss)
+                cl_total += tf.get_static_value(classification_loss)
+                # Robustness loss
+                beta_outputs = outputs * self.beta
+                beta_outputs_softmax = tf.reduce_mean(tf.nn.softmax(beta_outputs, axis=2), axis=1)
+                top2 = tf.math.top_k(beta_outputs_softmax, k=2)
+                top2_score = top2[0]
+                top2_idx = top2[1]
+                indices_correct = top2_idx[:, 0] == labels
+                out = tf.boolean_mask(top2_score, indices_correct)
+                out0, out1 = out[:, 0], out[:, 1]
+                icdf_out1 = loc_norm + scale_norm * tf.math.erfinv(2 * out1 - 1) * math.sqrt(2)
+                icdf_out0 = loc_norm + scale_norm * tf.math.erfinv(2 * out0 - 1) * math.sqrt(2)
+                robustness_loss = icdf_out1 - icdf_out0
+                indices = (
+                    ~tf.math.is_nan(robustness_loss)
+                    & ~tf.math.is_inf(robustness_loss)
+                    & (tf.abs(robustness_loss) <= self.gamma)
+                )
+                out0, out1 = out0[indices], out1[indices]
+                icdf_out1 = loc_norm + scale_norm * tf.math.erfinv(2 * out1 - 1) * math.sqrt(2)
+                icdf_out0 = loc_norm + scale_norm * tf.math.erfinv(2 * out0 - 1) * math.sqrt(2)
+                robustness_loss = icdf_out1 - icdf_out0 + self.gamma
+                robustness_loss = tf.reduce_sum(robustness_loss) * self.scale / 2
+                rl_total += tf.get_static_value(robustness_loss)
+                # Final objective function
+                loss = classification_loss + self.lbd * robustness_loss
+                loss /= input_size
+
+            gradients = tape.gradient(loss, self.model.trainable_variables)
+            self.optimizer.apply_gradients(zip(gradients, self.model.trainable_variables))
+            i += 1
+
+            self.optimizer.learning_rate = self.scheduler(epoch_num - 1)
+            cl_total /= input_total
+            rl_total /= input_total

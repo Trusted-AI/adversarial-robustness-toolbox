@@ -260,6 +260,8 @@ class PgdL2(Attacker):
         """
         if inputs.min() < 0 or inputs.max() > 1:
             raise ValueError("Input values should be in the [0, 1] range.")
+        if noise is None:
+            raise ValueError("Noise needed to perform the attack.")
         batch_size = labels.shape[0]
         delta = torch.zeros((len(labels), *inputs.shape[1:]), requires_grad=True, device=self.device)
 
