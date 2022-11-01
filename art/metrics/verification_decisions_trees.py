@@ -26,6 +26,8 @@ from typing import Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 import numpy as np
 from tqdm.auto import trange
 
+from art.utils import check_and_transform_label_format
+
 if TYPE_CHECKING:
     from art.estimators.classification.classifier import ClassifierDecisionTree
 
@@ -192,7 +194,8 @@ class RobustnessVerificationTreeModelsCliqueMethod:
         Verify the robustness of the classifier on the dataset `(x, y)`.
 
         :param x: Feature data of shape `(nb_samples, nb_features)`.
-        :param y: Labels, one-vs-rest encoding of shape `(nb_samples, nb_classes)`.
+        :param y: Labels, one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
+                  (nb_samples,)`.
         :param eps_init: Attack budget for the first search step.
         :param norm: The norm to apply epsilon.
         :param nb_search_steps: The number of search steps.
@@ -200,8 +203,16 @@ class RobustnessVerificationTreeModelsCliqueMethod:
         :param max_level: The maximum number of clique search levels.
         :return: A tuple of the average robustness bound and the verification error at `eps`.
         """
+        if np.min(x) < 0 or np.max(x) > 1:
+            raise ValueError(
+                "There are features not in the range [0, 1]. The current implementation only supports normalized input"
+                "values in range [0 1]."
+            )
+
         self.x: np.ndarray = x
-        self.y: np.ndarray = np.argmax(y, axis=1)
+        self.y: np.ndarray = check_and_transform_label_format(
+            y, nb_classes=self._classifier.nb_classes, return_one_hot=False
+        )
         self.max_clique: int = max_clique
         self.max_level: int = max_level
 
