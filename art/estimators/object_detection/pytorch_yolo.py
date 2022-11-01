@@ -254,6 +254,8 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
         import torch  # lgtm [py/repeated-import]
 
         self._model.train()
+        self.set_batchnorm(train=False)
+        self.set_dropout(train=False)
 
         # Apply preprocessing
         if self.all_framework_preprocessing:
