@@ -1,5 +1,7 @@
 import torch
 import numpy as np
+from typing import List, Union
+
 
 class IntervalDenseLayer(torch.nn.Module):
     """
@@ -58,7 +60,7 @@ class IntervalReLU(torch.nn.Module):
         return self.concrete_activation(x)
 
 
-def convert_to_interval(x: np.ndarray, bounds, limits):
+def convert_to_interval(x: np.ndarray, bounds: Union[float, List[float], np.ndarray], to_clip=False, limits=None):
     """
     Helper function which takes in a datapoint and converts it into its interval representation based on
     the provided bounds.
@@ -72,13 +74,23 @@ def convert_to_interval(x: np.ndarray, bounds, limits):
     """
 
     x = np.expand_dims(x, axis=1)
-    up_x = x + bounds[1]
-    lb_x = x - bound[0]
 
-    final_batched_input = torch.concat((lb_x, up_x), dim=1)
-    final_batched_input = torch.squeeze(final_batched_input)
+    if isinstance(bounds, float):
+        up_x = x + bounds
+        lb_x = x - bounds
+    elif isinstance(bounds, list):
+        up_x = x + bounds[1]
+        lb_x = x - bounds[0]
+    elif isinstance(bounds, np.ndarray):
+        pass
+        # TODO: Implement
+    else:
+        raise ValueError("bounds must be a A, B, or C")
+
+    final_batched_input = np.concatenate((lb_x, up_x), axis=1)
+    # final_batched_input = torch.squeeze(final_batched_input)
 
     if to_clip:
-        return torch.clip(final_batched_input, limits[0], limits[1])
+        return np.clip(final_batched_input, limits[0], limits[1])
     else:
         return final_batched_input

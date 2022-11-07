@@ -100,9 +100,7 @@ class ConvertedModel(torch.nn.Module):
                     self.reshape_op_num = op_num
                     print("Inferred reshape on op num", op_num)
 
-    def forward(
-        self, cent: np.ndarray, eps: Optional[np.ndarray] = None
-    ) -> Union["torch.Tensor", Tuple["torch.Tensor", "torch.Tensor"]]:
+    def forward(self, x) -> "torch.Tensor":
         """
         Performs the neural network forward pass, either using abstract operations or concrete ones
         depending on the value of self.forward_mode
@@ -112,33 +110,32 @@ class ConvertedModel(torch.nn.Module):
         :return: model predictions, with zonotope error terms if running in abstract mode
         """
         if self.forward_mode == "concrete":
-            return self.concrete_forward(cent)
+            return self.concrete_forward(x)
         if self.forward_mode == "abstract":
-            if eps is not None:
-                out_cent, out_eps = self.abstract_forward(cent, eps)
-                return out_cent, out_eps
-            raise ValueError("for abstract forward mode, please provide both cent and eps")
+            return self.abstract_forward(x)
+            # if eps is not None:
+                # return self.abstract_forward(x)
+                # return out_cent, out_eps
+            # raise ValueError("for abstract forward mode, please provide both cent and eps")
         raise ValueError("forward_mode must be set to abstract or concrete")
 
-    def abstract_forward(self, cent: np.ndarray, eps: np.ndarray) -> Tuple["torch.Tensor", "torch.Tensor"]:
+    def abstract_forward(self, x_interval: np.ndarray) -> "torch.Tensor":
         """
         Do the forward pass through the NN with the given error terms and zonotope center.
 
-        :param cent: The datapoint, representing the zonotope center.
-        :param eps: Error terms of the zonotope.
+        :param x_interval:
         :return: A tuple, the first element being the zonotope center vector.
                  The second is the zonotope error terms/coefficients.
         """
 
-        x = np.concatenate([cent, eps])
-        x = torch.from_numpy(x.astype("float32")).to(self.device)
+        x_interval = torch.from_numpy(x_interval.astype("float32")).to(self.device)
 
         for op_num, op in enumerate(self.ops):
             # as reshapes are not modules we infer when the reshape from convolutional to dense occurs
-            if self.reshape_op_num == op_num:
-                x = x.reshape((x.shape[0], -1))
-            x = op(x)
-        return x[0, :], x[1:, :]
+            # if self.reshape_op_num == op_num:
+            #    x_interval = x_interval.reshape((x_interval.shape[0], -1))
+            x_interval = op(x_interval)
+        return x_interval
 
     def concrete_forward(self, in_x: Union[np.ndarray, "torch.Tensor"]) -> "torch.Tensor":
         """
@@ -193,7 +190,7 @@ class PytorchInterval(PyTorchClassifier):
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
         preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
         device_type: str = "gpu",
-        concrete_to_zonotope: Optional[Any] = None,
+        concrete_to_interval: Optional[Any] = None,
     ):
         """
         Create a certifier based on the zonotope domain.
@@ -216,10 +213,10 @@ class PytorchInterval(PyTorchClassifier):
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
-        :param concrete_to_zonotope:  Optional argument. Function which takes in a concrete data point and the bound
-                                      and converts the datapoint to the zonotope domain via:
+        :param concrete_to_interval:  Optional argument. Function which takes in a concrete data point and the bound
+                                      and converts the datapoint to the concrete_to_interval domain via:
 
-                                                processed_sample, eps_bound = concrete_to_zonotope(sample, bound)
+                                                processed_sample, eps_bound = concrete_to_interval(sample, bound)
 
                                       where processed_sample is the zonotope bias term, and eps_bound are the
                                       associated error terms.
@@ -232,7 +229,7 @@ class PytorchInterval(PyTorchClassifier):
             "We currently infer a reshape when a neural network goes from convolutional layers to "
             "dense layers. If your use case does not fall into this pattern then consider "
             "directly building a certifier network with the "
-            "custom layers found in art.estimators.certification.deepz.deep_z.py\n"
+            "custom layers found in art.estimators.certification.interval.interval.py\n"
         )
         converted_model = ConvertedModel(model, channels_first, input_shape)
 
@@ -254,7 +251,7 @@ class PytorchInterval(PyTorchClassifier):
         else:
             converted_optimizer = None
 
-        self.concrete_to_zonotope = concrete_to_zonotope
+        self.concrete_to_interval = concrete_to_interval
 
         super().__init__(
             model=converted_model,
@@ -271,12 +268,13 @@ class PytorchInterval(PyTorchClassifier):
         )
 
     def predict_interval(  # pylint: disable=W0613
-        self, x: np.ndarray, bound: float, training_mode: bool = True, **kwargs
+        self, x: np.ndarray, bounds: float, batch_size: int = 128, training_mode: bool = True, **kwargs
     ) -> Tuple[List[np.ndarray], List[np.ndarray]]:
         """
 
         :param x: The datapoint, representing the zonotope center.
-        :param bound: The perturbation range for the zonotope.
+        :param bounds: The perturbation range for the zonotope.
+        :param batch_size: ...
         :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
@@ -286,14 +284,20 @@ class PytorchInterval(PyTorchClassifier):
         if self.concrete_to_interval is None:
             x_interval = convert_to_interval(x=x_preprocessed, bounds=bounds, limits=[0, 1])
         else:
-            x_interval = self.concrete_to_interval(sample, bound)
+            x_interval = self.concrete_to_interval(x, bounds)
 
         num_batches = int(len(x_interval) / batch_size)
         interval_predictions = []
+        # x_interval = torch.from_numpy(x_interval)
+
         for bnum in range(num_batches):
-            x_batch_interval = x_interval[batch_size * bnum:batch_size * (bnum + 1)].to(device)
-            abstract_preds = self.abstract_forward(x_batch_interval)
+            x_batch_interval = x_interval[batch_size * bnum:batch_size * (bnum + 1)] # .to(self.device)
+            abstract_preds = self.model.forward(x_batch_interval)
             interval_predictions.append(abstract_preds)
+
+        x_batch_interval = x_interval[batch_size * num_batches:] # .to(self.device)
+        abstract_preds = self.model.forward(x_batch_interval)
+        interval_predictions.append(abstract_preds)
 
         interval_predictions = torch.concat(interval_predictions, dim=0)
         return interval_predictions.cpu().detach().numpy()
