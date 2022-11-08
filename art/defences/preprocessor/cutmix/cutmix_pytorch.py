@@ -27,20 +27,23 @@ This module implements the CutMix data augmentation defence.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Tuple
+from typing import Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import tqdm
 
-from art.defences.preprocessor.preprocessor import Preprocessor
-from art.utils import to_categorical
+from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
+
+if TYPE_CHECKING:
+    # pylint: disable=C0412
+    import torch
 
 logger = logging.getLogger(__name__)
 
 
-class CutMix(Preprocessor):
+class CutMixPyTorch(PreprocessorPyTorch):
     """
-    Implement the CutMix data augmentation defence approach.
+    Implement the CutMix data augmentation defence approach in PyTorch.
 
     | Paper link: https://arxiv.org/abs/1905.04899
 
@@ -59,6 +62,7 @@ class CutMix(Preprocessor):
         channels_first: bool = False,
         apply_fit: bool = False,
         apply_predict: bool = True,
+        device_type: str = "gpu",
         verbose: bool = False,
     ) -> None:
         """
@@ -70,9 +74,15 @@ class CutMix(Preprocessor):
         :param channels_first: Set channels first or last.
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
+        :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
         :param verbose: Show progress bars.
         """
-        super().__init__(is_fitted=True, apply_fit=apply_fit, apply_predict=apply_predict)
+        super().__init__(
+            device_type=device_type,
+            is_fitted=True,
+            apply_fit=apply_fit,
+            apply_predict=apply_predict,
+        )
         self.num_classes = num_classes
         self.alpha = alpha
         self.probability = probability
@@ -80,7 +90,9 @@ class CutMix(Preprocessor):
         self.verbose = verbose
         self._check_params()
 
-    def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+    def forward(
+        self, x: "torch.Tensor", y: Optional["torch.Tensor"] = None
+    ) -> Tuple["torch.Tensor", Optional["torch.Tensor"]]:
         """
         Apply CutMix data augmentation to sample `x`.
 
@@ -90,6 +102,8 @@ class CutMix(Preprocessor):
         :return: Data augmented sample. The returned labels will be probability vectors of shape
                  `(nb_samples, nb_classes)`.
         """
+        import torch  # lgtm [py/repeated-import]
+
         if y is None:
             raise ValueError("Labels `y` cannot be None.")
 
@@ -97,7 +111,7 @@ class CutMix(Preprocessor):
         if len(y.shape) == 2:
             y_one_hot = y
         elif len(y.shape) == 1:
-            y_one_hot = to_categorical(y, self.num_classes)
+            y_one_hot = torch.nn.functional.one_hot(y, self.num_classes)
         else:
             raise ValueError(
                 "Shape of labels not recognised. "
@@ -106,31 +120,30 @@ class CutMix(Preprocessor):
 
         x_ndim = len(x.shape)
 
-        # NCHW/NCFHW/NFHWC --> NHWC
+        # NHWC/NCFHW/NFHWC --> NCHW.
         if x_ndim == 4:
             if self.channels_first:
-                # NCHW --> NHWC
-                x_nhwc = np.transpose(x, (0, 2, 3, 1))
+                # NCHW
+                x_nchw = x
             else:
-                # NHWC
-                x_nhwc = x
+                # NHWC --> NCHW
+                x_nchw = x.permute(0, 3, 1, 2)
         elif x_ndim == 5:
             if self.channels_first:
-                # NCFHW --> NFHWC --> NHWC
+                # NCFHW --> NFCHW --> NCHW
                 nb_clips, channels, clip_size, height, width = x.shape
-                x_nfhwc = np.transpose(x, (0, 2, 3, 4, 1))
-                x_nhwc = np.reshape(x_nfhwc, (nb_clips * clip_size, height, width, channels))
+                x_nchw = x.permute(0, 2, 1, 3, 4).reshape(nb_clips * clip_size, channels, height, width)
             else:
-                # NFHWC --> NHWC
+                # NFHWC --> NHWC --> NCHW
                 nb_clips, clip_size, height, width, channels = x.shape
-                x_nhwc = np.reshape(x, (nb_clips * clip_size, height, width, channels))
+                x_nchw = x.reshape(nb_clips * clip_size, height, width, channels).permute(0, 3, 1, 2)
         else:
             raise ValueError("Unrecognized input dimension. CutMix can only be applied to image and video data.")
 
-        n, height, width, _ = x_nhwc.shape
-        x_original = x_nhwc
-        x_nhwc = x_nhwc.copy()
-        y_aug = y_one_hot.copy()
+        n, _, height, width = x_nchw.shape
+        x_original = x_nchw
+        x_nchw = x_nchw.clone()
+        y_aug = y_one_hot.clone().float()
 
         # sample the combination ratio from the Beta distribution
         lmb = np.random.beta(self.alpha, self.alpha)
@@ -139,41 +152,42 @@ class CutMix(Preprocessor):
         cut_width = int(width * cut_ratio)
 
         # randomly choose indices for samples to mix
-        indices = np.random.permutation(n)
+        indices = torch.randperm(n, device=x.device)
 
         # generate a random bounding box per image
         for idx1, idx2 in enumerate(tqdm(indices, desc="CutMix", disable=not self.verbose)):
             prob = np.random.rand()
             if prob < self.probability:
                 # uniform sampling
-                center_y = np.random.randint(cut_height)
-                center_x = np.random.randint(cut_width)
-                bby1 = np.clip(center_y - cut_height // 2, 0, height)
-                bbx1 = np.clip(center_x - cut_width // 2, 0, width)
-                bby2 = np.clip(center_y + cut_height // 2, 0, height)
-                bbx2 = np.clip(center_x + cut_width // 2, 0, width)
+                center_x = torch.randint(0, cut_height, (1,))
+                center_y = torch.randint(0, cut_width, (1,))
+                bby1 = torch.clamp(center_y - cut_height // 2, 0, height)
+                bbx1 = torch.clamp(center_x - cut_width // 2, 0, width)
+                bby2 = torch.clamp(center_y + cut_height // 2, 0, height)
+                bbx2 = torch.clamp(center_x + cut_width // 2, 0, width)
 
                 # insert image bounding box
-                x_nhwc[idx1, bbx1:bbx2, bby1:bby2, :] = x_original[idx2, bbx1:bbx2, bby1:bby2, :]
+                x_nchw[idx1, :, bbx1:bbx2, bby1:bby2] = x_original[idx2, :, bbx1:bbx2, bby1:bby2]  # type: ignore
                 # mix labels
-                y_aug[idx1] = lmb * y_aug[idx1] + (1.0 - lmb) * y_one_hot[idx2]
+                y_aug[idx1] = lmb * y_aug[idx1] + (1.0 - lmb) * y_one_hot[idx2]  # type: ignore
 
-        # NCHW/NCFHW/NFHWC <-- NHWC
+        # NHWC/NCFHW/NFHWC <-- NCHW.
         if x_ndim == 4:
             if self.channels_first:
-                # NHWC <-- NCHW
-                x_aug = np.transpose(x_nhwc, (0, 3, 1, 2))
+                # NCHW
+                x_aug = x_nchw
             else:
-                # NHWC
-                x_aug = x_nhwc
+                # NHWC <-- NCHW
+                x_aug = x_nchw.permute(0, 2, 3, 1)
         elif x_ndim == 5:  # lgtm [py/redundant-comparison]
             if self.channels_first:
-                # NCFHW <-- NFHWC <-- NHWC
-                x_nfhwc = np.reshape(x_nhwc, (nb_clips, clip_size, height, width, channels))
-                x_aug = np.transpose(x_nfhwc, (0, 4, 1, 2, 3))
+                # NCFHW <-- NFCHW <-- NCHW
+                x_nfchw = x_nchw.reshape(nb_clips, clip_size, channels, height, width)
+                x_aug = x_nfchw.permute(0, 2, 1, 3, 4)
             else:
-                # NFHWC <-- NHWC
-                x_aug = np.reshape(x_nhwc, (nb_clips, clip_size, height, width, channels))
+                # NFHWC <-- NHWC <-- NCHW
+                x_nhwc = x_nchw.permute(0, 2, 3, 1)
+                x_aug = x_nhwc.reshape(nb_clips, clip_size, height, width, channels)
 
         return x_aug, y_aug
 

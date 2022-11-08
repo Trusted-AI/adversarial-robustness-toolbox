@@ -2,6 +2,7 @@
 Module implementing preprocessing defences against adversarial attacks.
 """
 from art.defences.preprocessor.cutmix.cutmix import CutMix
+from art.defences.preprocessor.cutmix.cutmix_pytorch import CutMixPyTorch
 from art.defences.preprocessor.cutout.cutout import Cutout
 from art.defences.preprocessor.cutout.cutout_pytorch import CutoutPyTorch
 from art.defences.preprocessor.cutout.cutout_tensorflow import CutoutTensorFlowV2
