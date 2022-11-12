@@ -24,23 +24,21 @@ This module implements ... proposed in ....
 from typing import List, Optional, Tuple, Union, Any, TYPE_CHECKING
 
 import logging
-import math
 import warnings
-import sys
 
 import numpy as np
 import torch
 
-from art.estimators.certification.interval.interval import IntervalConv2D, IntervalDenseLayer, IntervalReLU, convert_to_interval
+from art.estimators.certification.interval.interval import IntervalConv2D, IntervalDenseLayer, IntervalReLU, IntervalBounds
 from art.estimators.classification.pytorch import PyTorchClassifier
 
-if sys.version_info < (3, 8):
-    from functools import reduce
 
 if TYPE_CHECKING:
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
+
+DEBUG_LOAD_FROM_TF = True
 
 
 class ConvertedModel(torch.nn.Module):
@@ -125,11 +123,9 @@ class ConvertedModel(torch.nn.Module):
         if self.forward_mode == "concrete":
             return self.concrete_forward(x)
         if self.forward_mode == "abstract":
-            return self.abstract_forward(x)
-            # if eps is not None:
-                # return self.abstract_forward(x)
-                # return out_cent, out_eps
-            # raise ValueError("for abstract forward mode, please provide both cent and eps")
+            if x.shape[1] == 2:
+                return self.abstract_forward(x)
+            raise ValueError("axis=1 for the input must be of size 2 representing lower and upper bounds")
         raise ValueError("forward_mode must be set to abstract or concrete")
 
     def abstract_forward(self, x_interval: np.ndarray) -> "torch.Tensor":
@@ -146,10 +142,10 @@ class ConvertedModel(torch.nn.Module):
         for op_num, op in enumerate(self.ops):
             # as reshapes are not modules we infer when the reshape from convolutional to dense occurs
             if self.reshape_op_num == op_num:
-                if True:
+                if DEBUG_LOAD_FROM_TF:
                     x = x.permute(0, 1, 3, 4, 2)
                 x = x.reshape((x.shape[0], 2, -1))
-            x = op.abstract_forward(x)
+            x = op.forward(x)
         return x
 
     def concrete_forward(self, in_x: Union[np.ndarray, "torch.Tensor"]) -> "torch.Tensor":
@@ -163,10 +159,10 @@ class ConvertedModel(torch.nn.Module):
         else:
             x = in_x
 
-        for op_num, (op, shape_assertion) in enumerate(zip(self.ops, self.interim_shapes)):
+        for op_num, (op, _) in enumerate(zip(self.ops, self.interim_shapes)):
             # as reshapes are not modules we infer when the reshape from convolutional to dense occurs
             if self.reshape_op_num == op_num:
-                if True:
+                if DEBUG_LOAD_FROM_TF:
                     x = x.permute(0, 2, 3, 1)
                 x = x.reshape((x.shape[0], -1))
             x = op.concrete_forward(x)
@@ -182,7 +178,7 @@ class ConvertedModel(torch.nn.Module):
         self.forward_mode = mode
 
 
-class PytorchInterval(PyTorchClassifier):
+class PytorchInterval(PyTorchClassifier, IntervalBounds):
     """
     Implementation of Interval based certification for neural network robustness.
     We use the interval (also called box) representation of a datapoint as it travels through the network
@@ -265,7 +261,7 @@ class PytorchInterval(PyTorchClassifier):
         else:
             converted_optimizer = None
 
-        self.concrete_to_interval = concrete_to_interval
+        self.provided_concrete_to_interval = concrete_to_interval
 
         super().__init__(
             model=converted_model,
@@ -282,8 +278,8 @@ class PytorchInterval(PyTorchClassifier):
         )
 
     def predict_interval(  # pylint: disable=W0613
-        self, x: np.ndarray, bounds: float, batch_size: int = 128, training_mode: bool = True, **kwargs
-    ) -> Tuple[List[np.ndarray], List[np.ndarray]]:
+        self, x: np.ndarray, bounds: float, batch_size: int = 128, training_mode: bool = False, **kwargs
+    ) -> np.ndarray:
         """
 
         :param x: The datapoint, representing the zonotope center.
@@ -295,10 +291,10 @@ class PytorchInterval(PyTorchClassifier):
         """
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
         self._model.train(mode=training_mode)
-        if self.concrete_to_interval is None:
-            x_interval = convert_to_interval(x=x_preprocessed, bounds=bounds, limits=[0, 1])
+        if self.provided_concrete_to_interval is None:
+            x_interval = self.concrete_to_interval(x=x_preprocessed, bounds=bounds, limits=[0, 1])
         else:
-            x_interval = self.concrete_to_interval(x, bounds)
+            x_interval = self.provided_concrete_to_interval(x, bounds)
 
         num_batches = int(len(x_interval) / batch_size)
         interval_predictions = []
@@ -313,10 +309,9 @@ class PytorchInterval(PyTorchClassifier):
         abstract_preds = self.model.forward(x_batch_interval)
         interval_predictions.append(abstract_preds)
 
-        interval_predictions = torch.concat(interval_predictions, dim=0)
-        return interval_predictions.cpu().detach().numpy()
+        return torch.concat(interval_predictions, dim=0).cpu().detach().numpy()
 
-    def certify(self, x_interval: np.ndarray, prediction: int) -> bool:
+    def certify(self, x_interval: np.ndarray, prediction: np.ndarray, label: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
         Check if the datapoint has been certifiably classified.
 
@@ -327,22 +322,17 @@ class PytorchInterval(PyTorchClassifier):
 
         :param x_interval: The datapoint, representing the zonotope center.
         :param prediction: The prediction the neural network gave on the basic datapoint.
-
-        :return: True/False if the datapoint could be misclassified given the eps bounds.
+        :param label: ...
+        :return: ...
         """
-        cent_tensor, eps_tensor = self.model.forward(x_interval)
-        cent = cent_tensor.detach().cpu().numpy()
-        eps = eps_tensor.detach().cpu().numpy()
+        preds = self.model.forward(x_interval)
+        preds = preds.detach().cpu().numpy()
 
-        certification_results = []
-        for k in range(self.nb_classes):
-            if k != prediction:
-                cert_via_sub = self.certify_via_subtraction(
-                    predicted_class=prediction, class_to_consider=k, cent=cent, eps=eps
-                )
-                certification_results.append(cert_via_sub)
-
-        return all(certification_results)
+        certification = self.certify_bounds(preds=preds,
+                                            labels=prediction)
+        certified_and_correct = self.certify_bounds(preds=preds,
+                                                    labels=label)
+        return certification, certified_and_correct
 
     def apply_preprocessing(self, x: np.ndarray, y: np.ndarray, fit: bool) -> Tuple[Any, Any]:
         """

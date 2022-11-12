@@ -39,9 +39,9 @@ class IntervalDenseLayer(torch.nn.Module):
                                                     std=torch.ones(out_features)))
 
     def __call__(self, x: "torch.Tensor") -> "torch.Tensor":
-        return self.abstract_forward(x)
+        return self.forward(x)
 
-    def abstract_forward(self, x: "torch.Tensor") -> "torch.Tensor":
+    def forward(self, x: "torch.Tensor") -> "torch.Tensor":
         """
         Performs the forward pass of the dense layer in the interval (box) domain.
 
@@ -173,21 +173,7 @@ class IntervalConv2D(torch.nn.Module):
 
         return torch.transpose(weights, 0, 1), bias
 
-    def concrete_forward(self, x: "torch.Tensor") -> "torch.Tensor":
-        """
-        Performs the forward pass using the equivalent dense representation of the convolutional layer.
-
-        :param x: concrete input to the convolutional layer.
-        :return: output of the convolutional layer on x
-        """
-        x = torch.reshape(x, (x.shape[0], -1))
-        if self.b is None:
-            x = torch.matmul(x, torch.transpose(self.dense_weights, 0, 1))
-        else:
-            x = torch.matmul(x, torch.transpose(self.dense_weights, 0, 1)) + self.bias
-        return x.reshape((-1, self.out_channels, self.output_height, self.output_width))
-
-    def abstract_forward(self, x: "torch.Tensor") -> "torch.Tensor":
+    def forward(self, x: "torch.Tensor") -> "torch.Tensor":
         """
         Performs the forward pass of the convolutional layer in the interval (box) domain by using
         the equivalent dense representation.
@@ -209,6 +195,20 @@ class IntervalConv2D(torch.nn.Module):
         x = torch.cat([center-radius, center+radius], dim=1)
         return x.reshape((-1, 2, self.out_channels, self.output_height, self.output_width))
 
+    def concrete_forward(self, x: "torch.Tensor") -> "torch.Tensor":
+        """
+        Performs the forward pass using the equivalent dense representation of the convolutional layer.
+
+        :param x: concrete input to the convolutional layer.
+        :return: output of the convolutional layer on x
+        """
+        x = torch.reshape(x, (x.shape[0], -1))
+        if self.bias is None:
+            x = torch.matmul(x, torch.transpose(self.dense_weights, 0, 1))
+        else:
+            x = torch.matmul(x, torch.transpose(self.dense_weights, 0, 1)) + self.bias
+        return x.reshape((-1, self.out_channels, self.output_height, self.output_width))
+
 
 class IntervalFlatten(torch.nn.Module):
     """
@@ -222,6 +222,16 @@ class IntervalFlatten(torch.nn.Module):
         return self.concrete_forward(x)
 
     @staticmethod
+    def forward(x: "torch.Tensor") -> "torch.Tensor":
+        """
+        Flattens the provided abstract input
+
+        :param x: datapoint in the interval domain
+        :return: Flattened input preserving the batch and bounds dimensions.
+        """
+        return torch.reshape(x, (x.shape[0], 2, -1))
+
+    @staticmethod
     def concrete_forward(x: "torch.Tensor") -> "torch.Tensor":
         """
         Flattens the provided concrete input
@@ -230,16 +240,6 @@ class IntervalFlatten(torch.nn.Module):
         :return: Flattened input preserving the batch dimension.
         """
         return torch.reshape(x, (x.shape[0], -1))
-
-    @staticmethod
-    def abstract_forward(x: "torch.Tensor") -> "torch.Tensor":
-        """
-        Flattens the provided abstract input
-
-        :param x: datapoint in the interval domain
-        :return: Flattened input preserving the batch and bounds dimensions.
-        """
-        return torch.reshape(x, (x.shape[0], 2, -1))
 
 
 # TODO: consider removing as it it redundant.
@@ -255,7 +255,7 @@ class IntervalReLU(torch.nn.Module):
     def __call__(self, x: "torch.Tensor") -> "torch.Tensor":
         return self.forward(x)
 
-    def abstract_forward(self, x: "torch.Tensor") -> "torch.Tensor":
+    def forward(self, x: "torch.Tensor") -> "torch.Tensor":
         """
         Abstract pass through the ReLU function
 
@@ -274,36 +274,55 @@ class IntervalReLU(torch.nn.Module):
         return self.concrete_activation(x)
 
 
-def convert_to_interval(x: np.ndarray, bounds: Union[float, List[float], np.ndarray], to_clip=False, limits=None):
+class IntervalBounds:
     """
-    Helper function which takes in a datapoint and converts it into its interval representation based on
-    the provided bounds.
-    :param x: input datapoint of shape [batch size, feature_1, feature_2, ...]
-    :param bounds: Either a scalar to apply to the whole datapoint, or an array of [2, feature_1, feature_2]
-    where bounds[0] are the lower bounds and bounds[1] are the upper bound
-    :param limits: if to clip to a given range.
-    :return: Data of the form [batch_size, 2, feature_1, feature_2, ...]
-    where [batch_size, 0, x.shape] are the lower bounds and
-    [batch_size, 1, x.shape] are the upper bounds.
+    Class providing functionality for computing operations related to interval bounds
     """
 
-    x = np.expand_dims(x, axis=1)
-
-    if isinstance(bounds, float):
-        up_x = x + bounds
-        lb_x = x - bounds
-    elif isinstance(bounds, list):
-        up_x = x + bounds[1]
-        lb_x = x - bounds[0]
-    elif isinstance(bounds, np.ndarray):
+    def __init__(self):
         pass
-        # TODO: Implement
-    else:
-        raise ValueError("bounds must be a A, B, or C")
 
-    final_batched_input = np.concatenate((lb_x, up_x), axis=1)
+    @staticmethod
+    def certify_bounds(preds: np.ndarray, labels: np.ndarray) -> np.ndarray:
+        """
+        Check if the data has been certifiably classified correct.
+        """
+        cert_bounds = preds[:, 0]
+        cert_bounds[:, labels] = preds[:, 1, labels]
+        return np.argmax(preds, axis=1) == labels
 
-    if to_clip:
-        return np.clip(final_batched_input, limits[0], limits[1])
+    @staticmethod
+    def concrete_to_interval(x: np.ndarray, bounds: Union[float, List[float], np.ndarray], limits=None):
+        """
+        Helper function which takes in a datapoint and converts it into its interval representation based on
+        the provided bounds.
 
-    return final_batched_input
+        :param x: input datapoint of shape [batch size, feature_1, feature_2, ...]
+        :param bounds: Either a scalar to apply to the whole datapoint, or an array of [2, feature_1, feature_2]
+        where bounds[0] are the lower bounds and bounds[1] are the upper bound
+        :param limits: if to clip to a given range.
+        :return: Data of the form [batch_size, 2, feature_1, feature_2, ...]
+        where [batch_size, 0, x.shape] are the lower bounds and
+        [batch_size, 1, x.shape] are the upper bounds.
+        """
+
+        x = np.expand_dims(x, axis=1)
+
+        if isinstance(bounds, float):
+            up_x = x + bounds
+            lb_x = x - bounds
+        elif isinstance(bounds, list):
+            up_x = x + bounds[1]
+            lb_x = x - bounds[0]
+        elif isinstance(bounds, np.ndarray):
+            pass
+            # TODO: Implement
+        else:
+            raise ValueError("bounds must be a A, B, or C")
+
+        final_batched_input = np.concatenate((lb_x, up_x), axis=1)
+
+        if limits is not None:
+            return np.clip(final_batched_input, limits[0], limits[1])
+
+        return final_batched_input
