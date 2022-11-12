@@ -52,7 +52,7 @@ class ConvertedModel(torch.nn.Module):
     def __init__(self, model: "torch.nn.Module", channels_first: bool, input_shape: Tuple[int, ...]):
         super().__init__()
         modules = []
-        self.interim_shapes = []
+        self.interim_shapes: List[Tuple] = []
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.forward_mode: str
         self.forward_mode = "abstract"
@@ -113,13 +113,13 @@ class ConvertedModel(torch.nn.Module):
                     self.reshape_op_num = op_num
                     print("Inferred reshape on op num", op_num)
 
-    def forward(self, x) -> "torch.Tensor":
+    def forward(self, x: np.ndarray) -> "torch.Tensor":
         """
         Performs the neural network forward pass, either using abstract operations or concrete ones
         depending on the value of self.forward_mode
 
-        :param cent: input data, either regular data if running in concrete mode, or the zonotope bias term.
-        :param eps: zonotope error terms if running in abstract mode
+        :param x: input data, either regular data if running in concrete mode, or in an interval form with shape:
+        x[batch_size, 2, feature_1, feature_2, ...] where ..
         :return: model predictions, with zonotope error terms if running in abstract mode
         """
         if self.forward_mode == "concrete":
@@ -141,16 +141,16 @@ class ConvertedModel(torch.nn.Module):
                  The second is the zonotope error terms/coefficients.
         """
 
-        x_interval = torch.from_numpy(x_interval.astype("float32")).to(self.device)
+        x = torch.from_numpy(x_interval.astype("float32")).to(self.device)
 
         for op_num, op in enumerate(self.ops):
             # as reshapes are not modules we infer when the reshape from convolutional to dense occurs
             if self.reshape_op_num == op_num:
                 if True:
-                    x_interval = x_interval.permute(0, 1, 3, 4, 2)
-                x_interval = x_interval.reshape((x_interval.shape[0], 2, -1))
-            x_interval = op.abstract_forward(x_interval)
-        return x_interval
+                    x = x.permute(0, 1, 3, 4, 2)
+                x = x.reshape((x.shape[0], 2, -1))
+            x = op.abstract_forward(x)
+        return x
 
     def concrete_forward(self, in_x: Union[np.ndarray, "torch.Tensor"]) -> "torch.Tensor":
         """
@@ -209,7 +209,7 @@ class PytorchInterval(PyTorchClassifier):
         concrete_to_interval: Optional[Any] = None,
     ):
         """
-        Create a certifier based on the zonotope domain.
+        Create a certifier based on the interval (also called box) domain.
 
         :param model: PyTorch model. The output of the model can be logits, probabilities or anything else. Logits
                output should be preferred where possible to ensure attack efficiency.
@@ -230,14 +230,12 @@ class PytorchInterval(PyTorchClassifier):
                be divided by the second one.
         :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
         :param concrete_to_interval:  Optional argument. Function which takes in a concrete data point and the bound
-                                      and converts the datapoint to the concrete_to_interval domain via:
+                                      and converts the datapoint to the interval domain via:
 
-                                                processed_sample, eps_bound = concrete_to_interval(sample, bound)
+                                                interval_sample = concrete_to_interval(sample, bound)
 
-                                      where processed_sample is the zonotope bias term, and eps_bound are the
-                                      associated error terms.
                                       If left as None, by default we apply the bound to every feature equally and
-                                      adjust the zonotope such that it remains in the 0 - 1 range.
+                                      adjust the intervals such that it remains in the 0 - 1 range.
         """
 
         warnings.warn(
@@ -318,23 +316,21 @@ class PytorchInterval(PyTorchClassifier):
         interval_predictions = torch.concat(interval_predictions, dim=0)
         return interval_predictions.cpu().detach().numpy()
 
-    def certify(self, cent: np.ndarray, eps: np.ndarray, prediction: int) -> bool:
+    def certify(self, x_interval: np.ndarray, prediction: int) -> bool:
         """
         Check if the datapoint has been certifiably classified.
 
         First do the forward pass through the NN with the given error terms and zonotope center to
         obtain the output zonotope.
 
-        Then perform the certification step by computing the difference of the logits in the final zonotope
-        and projecting to interval.
+        Then check ...
 
-        :param cent: The datapoint, representing the zonotope center.
-        :param eps: Error terms of the zonotope.
+        :param x_interval: The datapoint, representing the zonotope center.
         :param prediction: The prediction the neural network gave on the basic datapoint.
 
         :return: True/False if the datapoint could be misclassified given the eps bounds.
         """
-        cent_tensor, eps_tensor = self.model.forward(eps=eps, cent=cent)
+        cent_tensor, eps_tensor = self.model.forward(x_interval)
         cent = cent_tensor.detach().cpu().numpy()
         eps = eps_tensor.detach().cpu().numpy()
 
@@ -348,17 +344,6 @@ class PytorchInterval(PyTorchClassifier):
 
         return all(certification_results)
 
-    def concrete_loss(self, output: "torch.Tensor", target: "torch.Tensor") -> "torch.Tensor":
-        """
-        Access function to get the classifier loss
-
-        :param output: model predictions
-        :param target: ground truth labels
-
-        :return: loss value
-        """
-        return self._loss(output, target)
-
     def apply_preprocessing(self, x: np.ndarray, y: np.ndarray, fit: bool) -> Tuple[Any, Any]:
         """
         Access function to get preprocessing
@@ -371,44 +356,6 @@ class PytorchInterval(PyTorchClassifier):
         """
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=fit)
         return x_preprocessed, y_preprocessed
-
-    def max_logit_loss(self, prediction: "torch.Tensor", target: "torch.Tensor") -> Union["torch.Tensor", None]:
-        """
-        Computes the loss as the largest logit value amongst the incorrect classes.
-
-        :param prediction: model predictions.
-        :param target: target classes. NB not one hot.
-        :return: scalar loss value
-        """
-        target_logit = prediction[:, target]
-        output = prediction - target_logit
-
-        ubs = torch.sum(torch.abs(output[1:, :]), dim=0) + output[0, :]
-
-        loss = None
-        for i in range(self.nb_classes):
-            if i != target and (loss is None or ubs[i] > loss):
-                loss = ubs[i]
-        return loss
-
-    @staticmethod
-    def interval_loss_cce(prediction: "torch.Tensor", target: "torch.Tensor") -> "torch.Tensor":
-        """
-        Computes the categorical cross entropy loss with the correct class having the lower bound prediction,
-        and the other classes having their upper bound predictions.
-
-        :param prediction: model predictions.
-        :param target: target classes. NB not one hot.
-        :return: scalar loss value
-        """
-        criterion = torch.nn.CrossEntropyLoss()
-        ubs = torch.sum(torch.abs(prediction[1:, :]), dim=0) + prediction[0, :]
-        lbs = torch.sum(-1 * torch.abs(prediction[1:, :]), dim=0) + prediction[0, :]
-
-        # for the prediction corresponding to the target class, take the lower bound predictions
-        ubs[target] = lbs[target]
-        ubs = torch.unsqueeze(ubs, dim=0)
-        return criterion(ubs, target)
 
     @staticmethod
     def get_accuracy(preds: Union[np.ndarray, "torch.Tensor"], labels: Union[np.ndarray, "torch.Tensor"]) -> np.ndarray:
