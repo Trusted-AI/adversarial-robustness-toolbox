@@ -51,13 +51,13 @@ class MixupPyTorch(PreprocessorPyTorch):
         https://arxiv.org/abs/1902.06705
     """
 
-    params = ["num_classes", "k", "alpha"]
+    params = ["num_classes", "alpha", "num_mix"]
 
     def __init__(
         self,
         num_classes: int,
         alpha: float = 1.0,
-        k: int = 2,
+        num_mix: int = 2,
         apply_fit: bool = False,
         apply_predict: bool = True,
         device_type: str = "gpu",
@@ -67,11 +67,10 @@ class MixupPyTorch(PreprocessorPyTorch):
 
         :param num_classes: The number of classes used for one-hot encoding.
         :param alpha: The hyperparameter for the mixing interpolation strength.
-        :param k: The number of samples to mix for k-way Mixup.
+        :param num_mix: The number of samples to mix for k-way Mixup.
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
         :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
-        :param verbose: Show progress bars.
         """
         super().__init__(
             device_type=device_type,
@@ -81,7 +80,7 @@ class MixupPyTorch(PreprocessorPyTorch):
         )
         self.num_classes = num_classes
         self.alpha = alpha
-        self.k = k
+        self.num_mix = num_mix
         self._check_params()
 
     def forward(
@@ -116,7 +115,7 @@ class MixupPyTorch(PreprocessorPyTorch):
         n = x.shape[0]
 
         # sample the mixing factor from the Dirichlet distribution
-        lmbs = np.random.dirichlet([self.alpha] * self.k)
+        lmbs = np.random.dirichlet([self.alpha] * self.num_mix)
 
         x_aug = lmbs[0] * x
         y_aug = lmbs[0] * y_one_hot
@@ -135,5 +134,5 @@ class MixupPyTorch(PreprocessorPyTorch):
         if self.alpha <= 0:
             raise ValueError("The mixing interpolation strength must be positive.")
 
-        if self.k < 2:
+        if self.num_mix < 2:
             raise ValueError("The number of samples to mix must be at least 2.")

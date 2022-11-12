@@ -52,10 +52,10 @@ def empty_image(request):
 
 @pytest.mark.only_with_platform("tensorflow2")
 @pytest.mark.parametrize("alpha", [1.0, 2.5])
-@pytest.mark.parametrize("k", [2, 3])
-def test_mixup_image_data(art_warning, image_batch, alpha, k):
+@pytest.mark.parametrize("num_mix", [2, 3])
+def test_mixup_image_data(art_warning, image_batch, alpha, num_mix):
     try:
-        mixup = MixupTensorFlowV2(num_classes=10, alpha=alpha, k=k)
+        mixup = MixupTensorFlowV2(num_classes=10, alpha=alpha, num_mix=num_mix)
         x, y = mixup(image_batch, np.arange(len(image_batch)))
         assert_array_almost_equal(x, image_batch)
         assert_array_almost_equal(y.sum(axis=1), np.ones(len(image_batch)))
@@ -65,10 +65,10 @@ def test_mixup_image_data(art_warning, image_batch, alpha, k):
 
 @pytest.mark.only_with_platform("tensorflow2")
 @pytest.mark.parametrize("alpha", [1.0])
-@pytest.mark.parametrize("k", [2])
-def test_mixup_empty_data(art_warning, empty_image, alpha, k):
+@pytest.mark.parametrize("num_mix", [2])
+def test_mixup_empty_data(art_warning, empty_image, alpha, num_mix):
     try:
-        mixup = MixupTensorFlowV2(num_classes=10, alpha=alpha, k=k)
+        mixup = MixupTensorFlowV2(num_classes=10, alpha=alpha, num_mix=num_mix)
         x, y = mixup(empty_image, np.arange(len(empty_image)))
         assert_array_equal(x, empty_image)
         assert_array_almost_equal(y.sum(axis=1), np.ones(len(empty_image)))
@@ -102,10 +102,10 @@ def test_check_params(art_warning):
             _ = MixupTensorFlowV2(num_classes=10, alpha=-1)
 
         with pytest.raises(ValueError):
-            _ = MixupTensorFlowV2(num_classes=10, k=1)
+            _ = MixupTensorFlowV2(num_classes=10, num_mix=1)
 
         with pytest.raises(ValueError):
-            _ = MixupTensorFlowV2(num_classes=10, k=-1)
+            _ = MixupTensorFlowV2(num_classes=10, num_mix=-1)
 
     except ARTTestException as e:
         art_warning(e)
