@@ -52,6 +52,7 @@ class ConvertedModel(torch.nn.Module):
     def __init__(self, model: "torch.nn.Module", channels_first: bool, input_shape: Tuple[int, ...]):
         super().__init__()
         modules = []
+        self.interim_shapes = []
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.forward_mode: str
         self.forward_mode = "abstract"
@@ -59,6 +60,7 @@ class ConvertedModel(torch.nn.Module):
         # pylint: disable=W0613
         def forward_hook(input_module, hook_input, hook_output):
             modules.append(input_module)
+            self.interim_shapes.append(tuple(hook_input[0].shape))
 
         for module in model.children():
             module.register_forward_hook(forward_hook)
@@ -72,16 +74,27 @@ class ConvertedModel(torch.nn.Module):
         model(input_for_hook)  # hooks are fired sequentially from model input to the output
 
         self.ops = torch.nn.ModuleList()
-        for module in modules:
+        for module, shapes in zip(modules, self.interim_shapes):
             print("registered", type(module))
             if isinstance(module, torch.nn.modules.conv.Conv2d):
-                # TODO: Implement Conv2D
-                pass
+                interval_conv = IntervalConv2D(
+                    input_shape=shapes,
+                    in_channels=module.in_channels,
+                    out_channels=module.out_channels,
+                    kernel_size=module.kernel_size,  # type: ignore
+                    stride=module.stride,  # type: ignore
+                    supplied_input_weights=torch.tensor(module.weight.data.cpu().detach().numpy()),
+                    supplied_input_bias=torch.tensor(module.bias.data.cpu().detach().numpy()),
+                    # dilation=module.dilation,  # type: ignore
+                    # padding=module.padding,  # type: ignore
+                )
+
+                self.ops.append(interval_conv)
             elif isinstance(module, torch.nn.modules.linear.Linear):
-                zono_dense = IntervalDenseLayer(in_features=module.in_features, out_features=module.out_features)
-                zono_dense.weight.data = module.weight.data.to(self.device)
-                zono_dense.bias.data = module.bias.data.to(self.device)
-                self.ops.append(zono_dense)
+                interval_dense = IntervalDenseLayer(in_features=module.in_features, out_features=module.out_features)
+                interval_dense.weight.data = module.weight.data.to(self.device)
+                interval_dense.bias.data = module.bias.data.to(self.device)
+                self.ops.append(interval_dense)
 
             elif isinstance(module, torch.nn.modules.activation.ReLU):
                 self.ops.append(IntervalReLU(device=self.device))
@@ -132,8 +145,8 @@ class ConvertedModel(torch.nn.Module):
 
         for op_num, op in enumerate(self.ops):
             # as reshapes are not modules we infer when the reshape from convolutional to dense occurs
-            # if self.reshape_op_num == op_num:
-            #    x_interval = x_interval.reshape((x_interval.shape[0], -1))
+            if self.reshape_op_num == op_num:
+                x_interval = x_interval.reshape((x_interval.shape[0], 2, -1))
             x_interval = op(x_interval)
         return x_interval
 
@@ -143,16 +156,15 @@ class ConvertedModel(torch.nn.Module):
 
         :param in_x: regular (concrete) data.
         """
-
         if isinstance(in_x, np.ndarray):
             x = torch.from_numpy(in_x.astype("float32")).to(self.device)
         else:
             x = in_x
 
-        for op_num, op in enumerate(self.ops):
+        for op_num, (op, shape_assertion) in enumerate(zip(self.ops, self.interim_shapes)):
             # as reshapes are not modules we infer when the reshape from convolutional to dense occurs
-            # if self.reshape_op_num == op_num:
-            #    x = x.reshape((x.shape[0], -1))
+            if self.reshape_op_num == op_num:
+                x = x.reshape((x.shape[0], -1))
             x = op.concrete_forward(x)
         return x
 

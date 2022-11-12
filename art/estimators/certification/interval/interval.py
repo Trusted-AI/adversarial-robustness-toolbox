@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-from typing import List, Union
+from typing import List, Union, Tuple
 
 
 class IntervalDenseLayer(torch.nn.Module):
@@ -16,9 +16,9 @@ class IntervalDenseLayer(torch.nn.Module):
                                                     std=torch.ones(out_features)))
 
     def __call__(self, x: "torch.Tensor"):
-        return self.interval_matmul(x)
+        return self.abstract_forward(x)
 
-    def interval_matmul(self, x: "torch.Tensor") -> "torch.Tensor":
+    def abstract_forward(self, x: "torch.Tensor") -> "torch.Tensor":
 
         u = (x[:, 1] + x[:, 0])/2
         r = (x[:, 1] - x[:, 0])/2
@@ -35,38 +35,46 @@ class IntervalDenseLayer(torch.nn.Module):
         return torch.matmul(x, torch.transpose(self.weight, 0, 1)) + self.bias
 
 
-class BoxConvLayer(torch.nn.Module):
+class IntervalConv2D(torch.nn.Module):
     """
     Class implementing a convolutional layer in the box domain.
     """
 
     def __init__(self, in_channels: int, out_channels: int, kernel_size: int, input_shape, stride: int = 1,
-                 bias: bool = False, to_debug: bool = False):
+                 bias: bool = False, supplied_input_weights=None, supplied_input_bias=None, to_debug: bool = False):
         super().__init__()
 
         self.conv_flat = torch.nn.Conv2d(
-            in_channels=1, out_channels=out_channels * in_channels, kernel_size=(kernel_size, kernel_size), bias=False, stride=stride,
+            in_channels=1, out_channels=out_channels * in_channels, kernel_size=kernel_size, bias=False, stride=stride,
         )
         self.b = None
 
         if bias:
             self.conv_bias = torch.nn.Conv2d(
-                in_channels=in_channels, out_channels=out_channels, kernel_size=(kernel_size, kernel_size), bias=True, stride=stride,
+                in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size, bias=True, stride=stride,
             )
             self.b = self.conv_bias.bias.data
 
         if to_debug:
             self.conv = torch.nn.Conv2d(in_channels=in_channels,
                                         out_channels=out_channels,
-                                        kernel_size=(kernel_size, kernel_size), bias=bias, stride=stride)
+                                        kernel_size=kernel_size, bias=bias, stride=stride)
             self.conv_flat.weight = torch.nn.Parameter(
                 torch.reshape(torch.tensor(self.conv.weight.data.cpu().detach().numpy()),
-                              (out_channels * in_channels, 1, kernel_size, kernel_size))
+                              (out_channels * in_channels, 1, kernel_size[0], kernel_size[1]))
             )
             if bias:
                 self.b = self.conv.bias.data
 
-        self.kernel_size = kernel_size
+        if supplied_input_weights is not None:
+            self.conv_flat.weight = torch.nn.Parameter(
+                torch.reshape(torch.tensor(supplied_input_weights), (out_channels * in_channels, 1, kernel_size[0], kernel_size[1]))
+            )
+
+        if supplied_input_bias is not None:
+            self.b = torch.tensor(supplied_input_bias)
+
+        # self.kernel_size = kernel_size
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.input_height = input_shape[2]
@@ -77,7 +85,7 @@ class BoxConvLayer(torch.nn.Module):
 
         self.dense_weights, self.b = self.convert_to_dense_pt()
 
-    def convert_to_dense_pt(self) -> "torch.Tensor":
+    def convert_to_dense_pt(self) -> Tuple["torch.Tensor", "torch.Tensor"]:
         """
         Converts the initialised convolutional layer into an equivalent dense layer.
         """
@@ -122,17 +130,15 @@ class BoxConvLayer(torch.nn.Module):
 
         return torch.transpose(weights, 0, 1), b
 
-    def concrete_forward_via_dense(self, x: "torch.Tensor") -> "torch.Tensor":
-        # TODO: implement interval arithmetic here.
+    def concrete_forward(self, x: "torch.Tensor") -> "torch.Tensor":
         x = torch.reshape(x, (x.shape[0], -1))
         if self.b is None:
             x = torch.matmul(x, torch.transpose(self.dense_weights, 0, 1))
-            return x.reshape((-1, self.out_channels, self.output_height, self.output_width))
         else:
             x = torch.matmul(x, torch.transpose(self.dense_weights, 0, 1)) + self.b
-            return x.reshape((-1, self.out_channels, self.output_height, self.output_width))
+        return x.reshape((-1, self.out_channels, self.output_height, self.output_width))
 
-    def abstract_forward(self, x):
+    def abstract_forward(self, x: "torch.Tensor") -> "torch.Tensor":
 
         u = (x[:, 1] + x[:, 0])/2
         r = (x[:, 1] - x[:, 0])/2
@@ -144,6 +150,23 @@ class BoxConvLayer(torch.nn.Module):
         r = torch.unsqueeze(r, dim=1)
 
         return torch.cat([u-r, u+r], dim=1)
+
+
+class IntervalFlatten(torch.nn.Module):
+    def __init__(self, device="cpu"):
+        super().__init__()
+        self.device = device
+
+    def __call__(self, x: "torch.Tensor") -> "torch.Tensor":
+        return self.concrete_forward(x)
+
+    @staticmethod
+    def concrete_forward(x):
+        return torch.reshape(x, (x.shape[0], -1))
+
+    @staticmethod
+    def abstract_forward(x):
+        return torch.reshape(x, (x.shape[0], 2, -1))
 
 
 class IntervalReLU(torch.nn.Module):
@@ -163,7 +186,7 @@ class IntervalReLU(torch.nn.Module):
         """
         return self.concrete_activation(x)
 
-    def concrete_forward(self, x):
+    def concrete_forward(self, x: "torch.Tensor") -> "torch.Tensor":
         return self.concrete_activation(x)
 
 
