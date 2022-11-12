@@ -139,18 +139,19 @@ class IntervalConv2D(torch.nn.Module):
         return x.reshape((-1, self.out_channels, self.output_height, self.output_width))
 
     def abstract_forward(self, x: "torch.Tensor") -> "torch.Tensor":
+        x = torch.reshape(x, (x.shape[0], 2, -1))
 
         u = (x[:, 1] + x[:, 0])/2
         r = (x[:, 1] - x[:, 0])/2
 
-        u = torch.matmul(u, torch.transpose(self.weight, 0, 1)) + self.bias
-        r = torch.matmul(r, torch.abs(torch.transpose(self.weight, 0, 1)))
+        u = torch.matmul(u, torch.transpose(self.dense_weights, 0, 1)) + self.b
+        r = torch.matmul(r, torch.abs(torch.transpose(self.dense_weights, 0, 1)))
 
         u = torch.unsqueeze(u, dim=1)
         r = torch.unsqueeze(r, dim=1)
 
-        return torch.cat([u-r, u+r], dim=1)
-
+        x = torch.cat([u-r, u+r], dim=1)
+        return x.reshape((-1, 2, self.out_channels, self.output_height, self.output_width))
 
 class IntervalFlatten(torch.nn.Module):
     def __init__(self, device="cpu"):
@@ -178,7 +179,7 @@ class IntervalReLU(torch.nn.Module):
     def __call__(self, x: "torch.Tensor") -> "torch.Tensor":
         return self.forward(x)
 
-    def forward(self, x: "torch.Tensor") -> "torch.Tensor":
+    def abstract_forward(self, x: "torch.Tensor") -> "torch.Tensor":
         """
         Concrete pass through the ReLU function
         :param x: concrete input to the activation function.

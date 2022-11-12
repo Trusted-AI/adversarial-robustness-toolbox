@@ -146,8 +146,10 @@ class ConvertedModel(torch.nn.Module):
         for op_num, op in enumerate(self.ops):
             # as reshapes are not modules we infer when the reshape from convolutional to dense occurs
             if self.reshape_op_num == op_num:
+                if True:
+                    x_interval = x_interval.permute(0, 1, 3, 4, 2)
                 x_interval = x_interval.reshape((x_interval.shape[0], 2, -1))
-            x_interval = op(x_interval)
+            x_interval = op.abstract_forward(x_interval)
         return x_interval
 
     def concrete_forward(self, in_x: Union[np.ndarray, "torch.Tensor"]) -> "torch.Tensor":
@@ -164,6 +166,8 @@ class ConvertedModel(torch.nn.Module):
         for op_num, (op, shape_assertion) in enumerate(zip(self.ops, self.interim_shapes)):
             # as reshapes are not modules we infer when the reshape from convolutional to dense occurs
             if self.reshape_op_num == op_num:
+                if True:
+                    x = x.permute(0, 2, 3, 1)
                 x = x.reshape((x.shape[0], -1))
             x = op.concrete_forward(x)
         return x
