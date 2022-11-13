@@ -42,7 +42,8 @@ class ShadowModels:
 
     def __init__(
         self,
-        shadow_model_template: Union["ScikitlearnClassifier", "PyTorchClassifier", "TensorFlowV2Classifier"],
+        shadow_model_template: Union["ScikitlearnClassifier", "PyTorchClassifier", "TensorFlowV2Classifier",
+                                     "KerasClassifier", "PyTorchRegressor", "ScikitlearnRegressor"],
         num_shadow_models: int = 3,
         disjoint_datasets=False,
         random_state=None,
@@ -51,7 +52,8 @@ class ShadowModels:
         Initializes shadow models using the provided template.
 
         :param shadow_model_template: Untrained classifier model to be used as a template for shadow models. Should be
-                                      as similar as possible to the target model.
+                                      as similar as possible to the target model. Must implement clone_for_refitting
+                                      method.
         :param num_shadow_models: How many shadow models to train to generate the shadow dataset.
         :param disjoint_datasets: A boolean indicating whether the datasets used to train each shadow model should be
                                   disjoint. Default is False.
