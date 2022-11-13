@@ -15,15 +15,20 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import pytest
 
 import torch
-from torch import nn
+import numpy as np
 
 from art.estimators.certification.interval import PytorchInterval
 from art.estimators.certification.interval import IntervalConv2D, IntervalDenseLayer, IntervalDenseLayer
 
+from art.utils import load_dataset
+from tests.utils import ARTTestException
+from tests.utils import get_image_classifier_pt, get_cifar10_image_classifier_pt
 
-class SyntheticIntervalModel(nn.Module):
+
+class SyntheticIntervalModel(torch.nn.Module):
     def __init__(self, input_shape, output_channels, kernel_size, stride=1, bias=False, to_debug=True):
         super().__init__()
 
@@ -36,7 +41,7 @@ class SyntheticIntervalModel(nn.Module):
                                     bias=bias,
                                     to_debug=to_debug)
 
-        self.relu = nn.ReLU()
+        self.relu = torch.nn.ReLU()
 
     def forward(self, x):
         """
@@ -49,15 +54,111 @@ class SyntheticIntervalModel(nn.Module):
         return x
 
 
-def test_conv_single_channel_in_multi_out():
+@pytest.fixture()
+def fix_get_mnist_data():
+    """
+    Get the first 100 samples of the mnist test set with channels first format
+    :return: First 100 sample/label pairs of the MNIST test dataset.
+    """
+    nb_test = 100
+
+    (_, _), (x_test, y_test), _, _ = load_dataset("mnist")
+    x_test = np.squeeze(x_test)
+    x_test = np.expand_dims(x_test, axis=1)
+    y_test = np.argmax(y_test, axis=1)
+
+    x_test, y_test = x_test[:nb_test], y_test[:nb_test]
+
+    return x_test, y_test
+
+
+@pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
+def test_conv_single_channel_in_multi_out(art_warning):
     """
     Check that the conversion works for a single input channel.
     """
-    synthetic_data = torch.rand(1, 1, 25, 25)
+    synthetic_data = torch.rand(32, 1, 25, 25)
     model = SyntheticIntervalModel(input_shape=synthetic_data.shape,
                                    output_channels=4,
                                    kernel_size=5)
     output_from_equivalent = model.forward(synthetic_data)
     output_from_conv = model.conv1.conv(synthetic_data)
     output_from_equivalent = torch.reshape(output_from_equivalent, output_from_conv.shape)
-    assert torch.equal(output_from_equivalent, output_from_conv)
+    try:
+        torch.equal(output_from_equivalent, output_from_conv)
+    except ARTTestException as e:
+        art_warning(e)
+
+
+def test_conv_multi_channel_in_single_out():
+    """
+    Check that the conversion works for a single input channel.
+    """
+    synthetic_data = torch.rand(32, 3, 25, 25)
+    model = SyntheticIntervalModel(input_shape=synthetic_data.shape,
+                                   output_channels=1,
+                                   kernel_size=5)
+    output_from_equivalent = model.forward(synthetic_data)
+    output_from_conv = model.conv1.conv(synthetic_data)
+
+    output_from_equivalent = output_from_equivalent.flatten()
+    output_from_conv = output_from_conv.flatten()
+
+    assert torch.allclose(output_from_equivalent, output_from_conv, atol=1e-05)
+
+
+def test_conv_multi_channel_in_multi_out():
+    """
+    Check that the conversion works for a single input channel.
+    """
+    synthetic_data = torch.rand(32, 3, 25, 25)
+    model = SyntheticIntervalModel(input_shape=synthetic_data.shape,
+                                   output_channels=12,
+                                   kernel_size=5)
+    output_from_equivalent = model.forward(synthetic_data)
+    output_from_conv = model.conv1.conv(synthetic_data)
+
+    assert torch.allclose(output_from_equivalent, output_from_conv, atol=1e-05)
+
+
+def test_conv_layer_multi_channel_in_multi_out_with_stride():
+    """
+    Check that the conversion works for a single input channel.
+    """
+    synthetic_data = torch.rand(32, 3, 25, 25)
+    model = SyntheticIntervalModel(input_shape=synthetic_data.shape,
+                                   output_channels=12,
+                                   kernel_size=5,
+                                   stride=2)
+
+    output_from_equivalent = model.forward(synthetic_data)
+    output_from_conv = model.conv1.conv(synthetic_data)
+
+    assert torch.allclose(output_from_equivalent, output_from_conv, atol=1e-05)
+
+
+def test_conv_layer_multi_channel_in_multi_out_with_stride_and_bias():
+    """
+    Check that the conversion works for a single input channel.
+    """
+    synthetic_data = torch.rand(32, 3, 25, 25)
+    model = SyntheticIntervalModel(input_shape=synthetic_data.shape,
+                                   output_channels=12,
+                                   kernel_size=5,
+                                   bias=True,
+                                   stride=1)
+    output_from_equivalent = model.forward(synthetic_data)
+    output_from_conv = model.conv1.conv(synthetic_data)
+
+    assert torch.allclose(output_from_equivalent, output_from_conv, atol=1e-05)
+
+
+@pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
+def test_mnist_certification(art_warning, fix_get_mnist_data):
+    bound = 0.05
+
+    ptc = get_image_classifier_pt(from_logits=True, use_maxpool=False)
+
+    box_model = PytorchInterval(
+        model=ptc.model, clip_values=(0, 1), loss=torch.nn.CrossEntropyLoss(), input_shape=(1, 28, 28), nb_classes=10
+    )
