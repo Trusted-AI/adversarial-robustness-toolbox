@@ -179,7 +179,7 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
 
         if self._train_step is None:  # pragma: no cover
             raise TypeError(
-                "The training function `train_step` is required for fitting a model but it has not been " "defined."
+                "The training function `train_step` is required for fitting a model but it has not been defined."
             )
 
         y = check_and_transform_label_format(y, nb_classes=self.nb_classes)
@@ -198,6 +198,7 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
                 # Add random noise for randomized smoothing
                 images += tf.random.normal(shape=images.shape, mean=0.0, stddev=self.scale)
                 self._train_step(self.model, images, labels)
+        return None
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:  # type: ignore
         """

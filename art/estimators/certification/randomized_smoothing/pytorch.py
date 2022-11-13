@@ -262,6 +262,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
                     loss.backward()
 
                 self._optimizer.step()
+        return None
 
             if scheduler is not None:
                 scheduler.step()
