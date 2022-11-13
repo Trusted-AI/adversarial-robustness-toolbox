@@ -128,9 +128,9 @@ class IntervalConv2D(torch.nn.Module):
         self.output_height: int = 0
         self.output_width: int = 0
 
-        self.dense_weights, self.bias = self.convert_to_dense_pt()
+        self.dense_weights, self.bias = self.convert_to_dense()
 
-    def convert_to_dense_pt(self) -> Tuple["torch.Tensor", "torch.Tensor"]:
+    def convert_to_dense(self) -> Tuple["torch.Tensor", "torch.Tensor"]:
         """
         Converts the initialised convolutional layer into an equivalent dense layer.
         """
@@ -287,9 +287,10 @@ class IntervalBounds:
         """
         Check if the data has been certifiably classified correct.
         """
-        cert_bounds = preds[:, 0]
-        cert_bounds[:, labels] = preds[:, 1, labels]
-        return np.argmax(preds, axis=1) == labels
+        cert_bounds = np.copy(preds[:, 1])  # Take the upper bounds of all the predictions
+        for i, label in enumerate(labels):
+            cert_bounds[i, label] = preds[i, 0, label]  # Replace the correct prediction with its lower bound
+        return np.argmax(cert_bounds, axis=1) == labels
 
     @staticmethod
     def concrete_to_interval(x: np.ndarray, bounds: Union[float, List[float], np.ndarray], limits=None):

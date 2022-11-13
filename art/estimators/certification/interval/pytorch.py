@@ -277,26 +277,37 @@ class PytorchInterval(PyTorchClassifier, IntervalBounds):
             device_type=device_type,
         )
 
-    def predict_interval(  # pylint: disable=W0613
-        self, x: np.ndarray, bounds: float, batch_size: int = 128, training_mode: bool = False, **kwargs
+    def predict_intervals(  # pylint: disable=W0613
+        self, x: np.ndarray, is_interval: bool = False, bounds: Tuple[float, None] = None,
+            batch_size: int = 128, training_mode: bool = False, **kwargs
     ) -> np.ndarray:
         """
 
         :param x: The datapoint, representing the zonotope center.
+        :param is_interval:
         :param bounds: The perturbation range for the zonotope.
         :param batch_size: ...
         :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
         """
+
+        if len(x) < batch_size:
+            batch_size = len(x)
+
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
         self._model.train(mode=training_mode)
-        if self.provided_concrete_to_interval is None:
-            x_interval = self.concrete_to_interval(x=x_preprocessed, bounds=bounds, limits=[0, 1])
+        if not is_interval:
+            if self.provided_concrete_to_interval is None:
+                # TODO: Change to use the provided limits.
+                x_interval = self.concrete_to_interval(x=x_preprocessed, bounds=bounds, limits=[0, 1])
+            else:
+                x_interval = self.provided_concrete_to_interval(x, bounds)
         else:
-            x_interval = self.provided_concrete_to_interval(x, bounds)
+            x_interval = x
 
         num_batches = int(len(x_interval) / batch_size)
+
         interval_predictions = []
         # x_interval = torch.from_numpy(x_interval)
 
@@ -305,9 +316,10 @@ class PytorchInterval(PyTorchClassifier, IntervalBounds):
             abstract_preds = self.model.forward(x_batch_interval)
             interval_predictions.append(abstract_preds)
 
-        x_batch_interval = x_interval[batch_size * num_batches:] # .to(self.device)
-        abstract_preds = self.model.forward(x_batch_interval)
-        interval_predictions.append(abstract_preds)
+        if len(x_interval) % batch_size > 0:
+            x_batch_interval = x_interval[batch_size * num_batches:] # .to(self.device)
+            abstract_preds = self.model.forward(x_batch_interval)
+            interval_predictions.append(abstract_preds)
 
         return torch.concat(interval_predictions, dim=0).cpu().detach().numpy()
 
