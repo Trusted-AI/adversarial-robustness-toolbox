@@ -20,7 +20,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import os
-import unittest
+import pytest
 import numpy as np
 from torch import optim
 from torch.optim.lr_scheduler import MultiStepLR
@@ -29,7 +29,7 @@ from art.estimators.certification.randomized_smoothing import (
     TensorFlowV2RandomizedSmoothing,
     PyTorchRandomizedSmoothing,
 )
-from tests.utils import master_seed, get_image_classifier_pt, get_image_classifier_tf
+from tests.utils import master_seed, get_image_classifier_pt, get_image_classifier_tf_v2
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "True"
 logger = logging.getLogger(__name__)
@@ -39,167 +39,163 @@ NB_TRAIN = 5000
 NB_TEST = 10
 
 
-class TestTrainMacer(unittest.TestCase):
+@pytest.fixture()
+def get_mnist_data():
+    # Get MNIST
+    (x_train, y_train), (x_test, y_test), _, _ = load_dataset("mnist")
+    x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
+    x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
+    y_train = np.argmax(y_train, axis=1)
+    y_test = np.argmax(y_test, axis=1)
+    return (x_train, y_train), (x_test, y_test)
+
+
+@pytest.fixture()
+def set_seed():
+    master_seed(seed=1234)
+
+
+def test_1_pt():
     """
-    A unittest class for testing macer classifier training.
+    Test with a PyTorch Classifier.
+    :return:
     """
+    # Build PytorchClassifier
+    ptc = get_image_classifier_pt(from_logits=True)
 
-    @classmethod
-    def setUpClass(cls):
-        # Get MNIST
-        (x_train, y_train), (x_test, y_test), _, _ = load_dataset("mnist")
-        x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
-        x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
-        y_train = np.argmax(y_train, axis=1)
-        y_test = np.argmax(y_test, axis=1)
-        cls.mnist = (x_train, y_train), (x_test, y_test)
+    # Get MNIST
+    (_, _), (x_test, y_test) = get_mnist_data()
 
-    def setUp(self):
-        master_seed(seed=1234)
+    x_test = x_test.transpose(0, 3, 1, 2).astype(np.float32)
 
-    def test_1_pt(self):
-        """
-        Test with a PyTorch Classifier.
-        :return:
-        """
-        # Build PytorchClassifier
-        ptc = get_image_classifier_pt(from_logits=True)
+    # Initialize RS object
+    optimizer = optim.SGD(ptc.model.parameters(), lr=0.01, momentum=0.9, weight_decay=5e-4)
+    scheduler = MultiStepLR(optimizer, milestones=[200, 400], gamma=0.1)
+    rs1 = PyTorchRandomizedSmoothing(
+        model=ptc.model,
+        optimizer=optimizer,
+        scheduler=scheduler,
+        input_shape=ptc.input_shape,
+        nb_classes=ptc.nb_classes,
+        channels_first=ptc.channels_first,
+        clip_values=ptc.clip_values,
+        scale=0.25,
+        lbd=12.0,
+        gamma=8.0,
+        beta=16.0,
+        gauss_num=16,
+    )
+    rs2 = PyTorchRandomizedSmoothing(
+        model=ptc.model,
+        optimizer=None,
+        scheduler=scheduler,
+        input_shape=ptc.input_shape,
+        nb_classes=ptc.nb_classes,
+        channels_first=ptc.channels_first,
+        clip_values=ptc.clip_values,
+        scale=0.25,
+        lbd=12.0,
+        gamma=8.0,
+        beta=16.0,
+        gauss_num=16,
+    )
 
-        # Get MNIST
-        (_, _), (x_test, y_test) = self.mnist
+    rs3 = PyTorchRandomizedSmoothing(
+        model=ptc.model,
+        optimizer=optimizer,
+        scheduler=None,
+        input_shape=ptc.input_shape,
+        nb_classes=ptc.nb_classes,
+        channels_first=ptc.channels_first,
+        clip_values=ptc.clip_values,
+        scale=0.25,
+        lbd=12.0,
+        gamma=8.0,
+        beta=16.0,
+        gauss_num=16,
+    )
 
-        x_test = x_test.transpose(0, 3, 1, 2).astype(np.float32)
+    # fit
+    rs1.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="macer")
 
-        # Initialize RS object
-        optimizer = optim.SGD(ptc.model.parameters(), lr=0.01, momentum=0.9, weight_decay=5e-4)
-        scheduler = MultiStepLR(optimizer, milestones=[200, 400], gamma=0.1)
-        rs1 = PyTorchRandomizedSmoothing(
-            model=ptc.model,
-            optimizer=optimizer,
-            scheduler=scheduler,
-            input_shape=ptc.input_shape,
-            nb_classes=ptc.nb_classes,
-            channels_first=ptc.channels_first,
-            clip_values=ptc.clip_values,
-            scale=0.25,
-            lbd=12.0,
-            gamma=8.0,
-            beta=16.0,
-            gauss_num=16,
-        )
-        rs2 = PyTorchRandomizedSmoothing(
-            model=ptc.model,
-            optimizer=None,
-            scheduler=scheduler,
-            input_shape=ptc.input_shape,
-            nb_classes=ptc.nb_classes,
-            channels_first=ptc.channels_first,
-            clip_values=ptc.clip_values,
-            scale=0.25,
-            lbd=12.0,
-            gamma=8.0,
-            beta=16.0,
-            gauss_num=16,
-        )
+    # fit fails when optimizer is None
+    with pytest.raises(ValueError, match="An optimizer is needed to train the model, but none for provided."):
+        rs2.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="macer")
 
-        rs3 = PyTorchRandomizedSmoothing(
-            model=ptc.model,
-            optimizer=optimizer,
-            scheduler=None,
-            input_shape=ptc.input_shape,
-            nb_classes=ptc.nb_classes,
-            channels_first=ptc.channels_first,
-            clip_values=ptc.clip_values,
-            scale=0.25,
-            lbd=12.0,
-            gamma=8.0,
-            beta=16.0,
-            gauss_num=16,
-        )
-
-        # fit
-        rs1.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="macer")
-
-        # fit fails when optimizer is None
-        with self.assertRaisesRegex(ValueError, "An optimizer is needed to train the model, but none for provided."):
-            rs2.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="macer")
-
-        # fit fails when scheduler is None
-        with self.assertRaisesRegex(ValueError, "A scheduler is needed to train the model, but none for provided."):
-            rs3.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="macer")
+    # fit fails when scheduler is None
+    with pytest.raises(ValueError, match="A scheduler is needed to train the model, but none for provided."):
+        rs3.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="macer")
 
 
-    def test_2_tf(self):
-        """
-        Test with a Tensorflow Classifier.
-        :return:
-        """
-        import tensorflow as tf
-        # Build TensorflowClassifier
-        ptc,_ = get_image_classifier_tf()
+@pytest.mark.skip_framework("tensorflow2v1", "mxnet", "pytorch", "tensorflow1")
+def test_2_tf():
+    """
+    Test with a Tensorflow Classifier.
+    :return:
+    """
+    import tensorflow as tf
 
-        # Get MNIST
-        (_, _), (x_test, y_test) = self.mnist
-        x_test = x_test.astype('float32')
-        y_test = y_test.astype('int32')
+    ptc = get_image_classifier_tf_v2()
+    tf.compat.v1.enable_eager_execution()
 
-        # Initialize RS object
-        optimizer = tf.keras.optimizers.SGD(learning_rate=0.01, momentum=0.9, name='SGD', decay=5e-4)
-        boundaries = [250, 400]
-        values = [0.01, 0.001, 0.0001]
-        learning_rate_fn = tf.keras.optimizers.schedules.PiecewiseConstantDecay(boundaries, values)
-        rs1 = TensorFlowV2RandomizedSmoothing(
-            model=ptc.model,
-            optimizer=optimizer,
-            scheduler=learning_rate_fn,
-            input_shape=ptc.input_shape,
-            nb_classes=ptc.nb_classes,
-            clip_values=ptc.clip_values,
-            scale=0.25,
-            lbd=12.0,
-            gamma=8.0,
-            beta=16.0,
-            gauss_num=16,
-        )
-        rs2 = TensorFlowV2RandomizedSmoothing(
-            model=ptc.model,
-            optimizer=None,
-            scheduler=learning_rate_fn,
-            input_shape=ptc.input_shape,
-            nb_classes=ptc.nb_classes,
-            clip_values=ptc.clip_values,
-            scale=0.25,
-            lbd=12.0,
-            gamma=8.0,
-            beta=16.0,
-            gauss_num=16,
-        )
+    # Get MNIST
+    (_, _), (x_test, y_test) = get_mnist_data()
+    x_test = x_test.astype("float32")
+    y_test = y_test.astype("int32")
 
-        rs3 = TensorFlowV2RandomizedSmoothing(
-            model=ptc.model,
-            optimizer=optimizer,
-            scheduler=None,
-            input_shape=ptc.input_shape,
-            nb_classes=ptc.nb_classes,
-            clip_values=ptc.clip_values,
-            scale=0.25,
-            lbd=12.0,
-            gamma=8.0,
-            beta=16.0,
-            gauss_num=16,
-        )
+    # Initialize RS object
+    optimizer = tf.keras.optimizers.SGD(learning_rate=0.01, momentum=0.9, name="SGD", decay=5e-4)
+    boundaries = [250, 400]
+    values = [0.01, 0.001, 0.0001]
+    learning_rate_fn = tf.keras.optimizers.schedules.PiecewiseConstantDecay(boundaries, values)
+    rs1 = TensorFlowV2RandomizedSmoothing(
+        model=ptc.model,
+        optimizer=optimizer,
+        scheduler=learning_rate_fn,
+        input_shape=ptc.input_shape,
+        nb_classes=ptc.nb_classes,
+        clip_values=ptc.clip_values,
+        scale=0.25,
+        lbd=12.0,
+        gamma=8.0,
+        beta=16.0,
+        gauss_num=16,
+    )
+    rs2 = TensorFlowV2RandomizedSmoothing(
+        model=ptc.model,
+        optimizer=None,
+        scheduler=learning_rate_fn,
+        input_shape=ptc.input_shape,
+        nb_classes=ptc.nb_classes,
+        clip_values=ptc.clip_values,
+        scale=0.25,
+        lbd=12.0,
+        gamma=8.0,
+        beta=16.0,
+        gauss_num=16,
+    )
 
-        # fit
-        rs1.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="macer")
+    rs3 = TensorFlowV2RandomizedSmoothing(
+        model=ptc.model,
+        optimizer=optimizer,
+        scheduler=None,
+        input_shape=ptc.input_shape,
+        nb_classes=ptc.nb_classes,
+        clip_values=ptc.clip_values,
+        scale=0.25,
+        lbd=12.0,
+        gamma=8.0,
+        beta=16.0,
+        gauss_num=16,
+    )
 
-        # fit fails when optimizer is None
-        with self.assertRaisesRegex(ValueError, "An optimizer is needed to train the model, but none for provided."):
-            rs2.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="macer")
+    # fit
+    rs1.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="macer")
 
-        # fit fails when scheduler is None
-        with self.assertRaisesRegex(ValueError, "A scheduler is needed to train the model, but none for provided."):
-            rs3.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="macer")
+    # fit fails when optimizer is None
+    with pytest.raises(ValueError, match="An optimizer is needed to train the model, but none for provided."):
+        rs2.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="macer")
 
-
-if __name__ == "__main__":
-    unittest.main()
+    # fit fails when scheduler is None
+    with pytest.raises(ValueError, match="A scheduler is needed to train the model, but none for provided."):
+        rs3.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="macer")
