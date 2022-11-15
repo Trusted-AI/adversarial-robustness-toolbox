@@ -189,7 +189,10 @@ class AdversarialPatchPyTorch(EvasionAttack):
         loss.backward(retain_graph=True)
 
         if self._optimizer_string == "pgd":
-            gradients = self._patch.grad.sign() * self.learning_rate
+            if self._patch.grad is not None:
+                gradients = self._patch.grad.sign() * self.learning_rate
+            else:
+                raise ValueError("Gradient term in PyTorch model is `None`.")
 
             with torch.no_grad():
                 self._patch[:] = torch.clamp(
@@ -431,8 +434,8 @@ class AdversarialPatchPyTorch(EvasionAttack):
                 translate=[x_shift, y_shift],
                 scale=im_scale,
                 shear=[0, 0],
-                resample=0,
-                fillcolor=None,
+                interpolation=torchvision.transforms.InterpolationMode.NEAREST,
+                fill=None,
             )
 
             image_mask_list.append(image_mask_i)
@@ -449,8 +452,8 @@ class AdversarialPatchPyTorch(EvasionAttack):
                 translate=[x_shift, y_shift],
                 scale=im_scale,
                 shear=[0, 0],
-                resample=0,
-                fillcolor=None,
+                interpolation=torchvision.transforms.InterpolationMode.NEAREST,
+                fill=None,
             )
 
             padded_patch_list.append(padded_patch_i)
