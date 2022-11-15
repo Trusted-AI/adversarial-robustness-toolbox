@@ -16,9 +16,9 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements ... proposed in ....
+This module implements certification using interval (box) domain certification.
 
-| Paper link: ...
+| Paper link: https://ieeexplore.ieee.org/document/8418593
 """
 
 from typing import List, Optional, Tuple, Union, Any, TYPE_CHECKING
@@ -29,7 +29,12 @@ import warnings
 import numpy as np
 import torch
 
-from art.estimators.certification.interval.interval import IntervalConv2D, IntervalDenseLayer, IntervalReLU, IntervalBounds
+from art.estimators.certification.interval.interval import (
+    IntervalConv2D,
+    IntervalDenseLayer,
+    IntervalReLU,
+    IntervalBounds,
+)
 from art.estimators.classification.pytorch import PyTorchClassifier
 
 
@@ -38,7 +43,7 @@ if TYPE_CHECKING:
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
 
-DEBUG_LOAD_FROM_TF = True
+DEBUG_LOAD_FROM_TF = False
 
 
 class ConvertedModel(torch.nn.Module):
@@ -54,6 +59,7 @@ class ConvertedModel(torch.nn.Module):
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.forward_mode: str
         self.forward_mode = "abstract"
+        self.reshape_op_num = -1
 
         # pylint: disable=W0613
         def forward_hook(input_module, hook_input, hook_output):
@@ -75,14 +81,19 @@ class ConvertedModel(torch.nn.Module):
         for module, shapes in zip(modules, self.interim_shapes):
             print("registered", type(module))
             if isinstance(module, torch.nn.modules.conv.Conv2d):
+                if module.weight is not None:
+                    weights_to_supply = np.copy(module.weight.data.cpu().detach().numpy())
+                if module.bias is not None:
+                    bias_to_supply = np.copy(module.bias.data.cpu().detach().numpy())
+
                 interval_conv = IntervalConv2D(
                     input_shape=shapes,
                     in_channels=module.in_channels,
                     out_channels=module.out_channels,
                     kernel_size=module.kernel_size,  # type: ignore
                     stride=module.stride,  # type: ignore
-                    supplied_input_weights=torch.tensor(module.weight.data.cpu().detach().numpy()),
-                    supplied_input_bias=torch.tensor(module.bias.data.cpu().detach().numpy()),
+                    supplied_input_weights=torch.tensor(weights_to_supply),
+                    supplied_input_bias=torch.tensor(bias_to_supply),
                     # dilation=module.dilation,  # type: ignore
                     # padding=module.padding,  # type: ignore
                 )
@@ -117,8 +128,8 @@ class ConvertedModel(torch.nn.Module):
         depending on the value of self.forward_mode
 
         :param x: input data, either regular data if running in concrete mode, or in an interval form with shape:
-        x[batch_size, 2, feature_1, feature_2, ...] where ..
-        :return: model predictions, with zonotope error terms if running in abstract mode
+        x[batch_size, 2, feature_1, feature_2, ...] where axis=1 corresponds to the [lower, upper] bounds.
+        :return: regular model predictions is running in concrete mode, or interval predictions if running in abstract mode
         """
         if self.forward_mode == "concrete":
             return self.concrete_forward(x)
@@ -130,11 +141,11 @@ class ConvertedModel(torch.nn.Module):
 
     def abstract_forward(self, x_interval: np.ndarray) -> "torch.Tensor":
         """
-        Do the forward pass through the NN with the given error terms and zonotope center.
+        Do the forward pass through the NN with interval arithmetic.
 
-        :param x_interval:
-        :return: A tuple, the first element being the zonotope center vector.
-                 The second is the zonotope error terms/coefficients.
+        :param x_interval: data in interval form with shape:
+        x_interval[batch_size, 2, feature_1, feature_2, ...] where axis=1 corresponds to the [lower, upper] bounds.
+        :return: interval predictions
         """
 
         x = torch.from_numpy(x_interval.astype("float32")).to(self.device)
@@ -153,6 +164,7 @@ class ConvertedModel(torch.nn.Module):
         Do the forward pass using the concrete operations
 
         :param in_x: regular (concrete) data.
+        :return: normal model predictions
         """
         if isinstance(in_x, np.ndarray):
             x = torch.from_numpy(in_x.astype("float32")).to(self.device)
@@ -184,7 +196,7 @@ class PytorchInterval(PyTorchClassifier, IntervalBounds):
     We use the interval (also called box) representation of a datapoint as it travels through the network
     to then verify if it can have its class changed given a certain perturbation.
 
-    | Paper link:
+    | Paper link: https://ieeexplore.ieee.org/document/8418593
     """
 
     estimator_params = PyTorchClassifier.estimator_params
@@ -228,7 +240,7 @@ class PytorchInterval(PyTorchClassifier, IntervalBounds):
         :param concrete_to_interval:  Optional argument. Function which takes in a concrete data point and the bound
                                       and converts the datapoint to the interval domain via:
 
-                                                interval_sample = concrete_to_interval(sample, bound)
+                                                interval_sample = concrete_to_interval(sample, bound, limits)
 
                                       If left as None, by default we apply the bound to every feature equally and
                                       adjust the intervals such that it remains in the 0 - 1 range.
@@ -278,18 +290,30 @@ class PytorchInterval(PyTorchClassifier, IntervalBounds):
         )
 
     def predict_intervals(  # pylint: disable=W0613
-        self, x: np.ndarray, is_interval: bool = False, bounds: Tuple[float, None] = None,
-            batch_size: int = 128, training_mode: bool = False, **kwargs
+        self,
+        x: np.ndarray,
+        is_interval: bool = False,
+        bounds: Optional[Union[float, List[float], np.ndarray]] = None,
+        limits: Optional[Union[float, List[float], np.ndarray]] = None,
+        batch_size: int = 128,
+        training_mode: bool = False,
+        **kwargs
     ) -> np.ndarray:
         """
+        Produce interval predictions over the supplied data
 
-        :param x: The datapoint, representing the zonotope center.
-        :param is_interval:
-        :param bounds: The perturbation range for the zonotope.
-        :param batch_size: ...
+        :param x: The datapoint, either:
+                    + In the correct interval format of x[batch_size, 2, feature_1, feature_2, ...]
+                      where axis=1 corresponds to the [lower, upper] bounds.
+                    + Or in regular concrete form, in which case the bounds/limits etc need to be supplied.
+        :param is_interval: if the datapoint is already in the correct interval format.
+        :param bounds: The perturbation range.
+        :param limits: The clipping to apply to the interval data.
+        :param batch_size: batch size to use when looping through the data
         :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
+        :return: interval predictions over the supplied dataset
         """
 
         if len(x) < batch_size:
@@ -298,53 +322,31 @@ class PytorchInterval(PyTorchClassifier, IntervalBounds):
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
         self._model.train(mode=training_mode)
         if not is_interval:
-            if self.provided_concrete_to_interval is None:
-                # TODO: Change to use the provided limits.
-                x_interval = self.concrete_to_interval(x=x_preprocessed, bounds=bounds, limits=[0, 1])
+            if bounds is not None:
+                if self.provided_concrete_to_interval is None:
+                    x_interval = self.concrete_to_interval(x=x_preprocessed, bounds=bounds, limits=limits)
+                if self.provided_concrete_to_interval is not None:
+                    x_interval = self.provided_concrete_to_interval(x, bounds, limits)
             else:
-                x_interval = self.provided_concrete_to_interval(x, bounds)
+                raise ValueError("If x is not provided as an interval please provide bounds (and optionally limits)")
         else:
             x_interval = x
 
         num_batches = int(len(x_interval) / batch_size)
 
         interval_predictions = []
-        # x_interval = torch.from_numpy(x_interval)
 
         for bnum in range(num_batches):
-            x_batch_interval = x_interval[batch_size * bnum:batch_size * (bnum + 1)] # .to(self.device)
+            x_batch_interval = x_interval[batch_size * bnum : batch_size * (bnum + 1)]
             abstract_preds = self.model.forward(x_batch_interval)
             interval_predictions.append(abstract_preds)
 
         if len(x_interval) % batch_size > 0:
-            x_batch_interval = x_interval[batch_size * num_batches:] # .to(self.device)
+            x_batch_interval = x_interval[batch_size * num_batches :]
             abstract_preds = self.model.forward(x_batch_interval)
             interval_predictions.append(abstract_preds)
 
         return torch.concat(interval_predictions, dim=0).cpu().detach().numpy()
-
-    def certify(self, x_interval: np.ndarray, prediction: np.ndarray, label: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-        """
-        Check if the datapoint has been certifiably classified.
-
-        First do the forward pass through the NN with the given error terms and zonotope center to
-        obtain the output zonotope.
-
-        Then check ...
-
-        :param x_interval: The datapoint, representing the zonotope center.
-        :param prediction: The prediction the neural network gave on the basic datapoint.
-        :param label: ...
-        :return: ...
-        """
-        preds = self.model.forward(x_interval)
-        preds = preds.detach().cpu().numpy()
-
-        certification = self.certify_bounds(preds=preds,
-                                            labels=prediction)
-        certified_and_correct = self.certify_bounds(preds=preds,
-                                                    labels=label)
-        return certification, certified_and_correct
 
     def apply_preprocessing(self, x: np.ndarray, y: np.ndarray, fit: bool) -> Tuple[Any, Any]:
         """
