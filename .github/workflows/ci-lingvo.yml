@@ -48,6 +48,8 @@ jobs:
           sudo apt-get -y -q install ffmpeg libavcodec-extra
           python -m pip install --upgrade pip setuptools wheel
           pip install -q -r <(sed '/^scipy/d;/^matplotlib/d;/^pandas/d;/^statsmodels/d;/^numba/d;/^jax/d;/^h5py/d;/^Pillow/d;/^pytest/d;/^pytest-mock/d;/^torch/d;/^torchaudio/d;/^torchvision/d;/^xgboost/d;/^requests/d' requirements_test.txt)
+          pip install -q -r <(sed '/^tensorflow>=/d;/^keras/d' requirements_test.txt)
+          tensorflow>=
           pip install scipy==1.5.4
           pip install matplotlib==3.3.4
           pip install pandas==1.1.5
@@ -69,6 +71,8 @@ jobs:
           pip install torchvision==0.11.3+cpu --find-links https://download.pytorch.org/whl/cpu/torch_stable.html
           pip install xgboost==1.5.2
           pip install requests==2.27.1
+          pip install tensorflow==2.6.2
+          pip install keras==2.6.2
           pip list
       - name: Run ${{ matrix.name }} Tests
         run: ./run_tests.sh ${{ matrix.framework }}
