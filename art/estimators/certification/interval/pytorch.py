@@ -106,7 +106,7 @@ class ConvertedModel(torch.nn.Module):
                 self.ops.append(interval_dense)
 
             elif isinstance(module, torch.nn.modules.activation.ReLU):
-                self.ops.append(IntervalReLU(device=self.device))
+                self.ops.append(IntervalReLU())
             else:
                 raise ValueError("Supported Operations are Conv2D, Linear, and RelU")
 
