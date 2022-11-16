@@ -22,8 +22,6 @@ import logging
 import os
 import pytest
 import numpy as np
-import tensorflow as tf
-import torch
 from art.utils import load_dataset
 from art.estimators.certification.randomized_smoothing import (
     TensorFlowV2RandomizedSmoothing,
@@ -39,6 +37,7 @@ BATCH_SIZE = 100
 NB_TRAIN = 5000
 NB_TEST = 10
 
+
 @pytest.fixture()
 def get_mnist_data():
     # Get MNIST
@@ -49,20 +48,25 @@ def get_mnist_data():
     y_test = np.argmax(y_test, axis=1)
     return (x_train, y_train), (x_test, y_test)
 
+
 @pytest.fixture()
 def set_seed():
     master_seed(seed=1234)
 
-def test_1_pt():
+
+@pytest.mark.only_with_platform("pytorch")
+def test_1_pt(get_mnist_data):
     """
     Test with a PyTorch Classifier.
     :return:
     """
+    import torch
+
     # Build PytorchClassifier
     ptc = get_image_classifier_pt(from_logits=True)
 
     # Get MNIST
-    (_, _), (x_test, y_test) = get_mnist_data()
+    (_, _), (x_test, y_test) = get_mnist_data
 
     x_test = x_test.transpose(0, 3, 1, 2).astype(np.float32)
 
@@ -209,133 +213,135 @@ def test_1_pt():
     # fit with DDN and single noise
     rs6.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="smoothadv")
 
-@pytest.mark.skip_framework("tensorflow2v1", "mxnet", "pytorch", "tensorflow1")
-def test_2_tf():
+
+@pytest.mark.only_with_platform("tensorflow", "tensorflow2", "keras", "kerastf")
+def test_2_tf(get_mnist_data):
     """
     Test with a Smooth Adversarially trained TensorFlow Classifier.
     :return:
     """
+    import tensorflow as tf
+
     tf_version = list(map(int, tf.__version__.lower().split("+")[0].split(".")))
     if tf_version[0] == 2:
 
         # Build TensorFlowV2Classifier
-        classifier = get_image_classifier_tf_v2()
         tf.compat.v1.enable_eager_execution()
+        classifier = get_image_classifier_tf_v2()
 
-        # Get MNIST
-        (_, _), (x_test, y_test) = get_mnist_data()
+        if tf.executing_eagerly():
+            # Get MNIST
+            (_, _), (x_test, y_test) = get_mnist_data
 
-        # Initialize RS object
-        initial_learning_rate = 0.1
-        boundaries = [50, 100]
-        values = [0.1, 0.01, 0.001]
-        learning_rate_fn = tf.keras.optimizers.schedules.PiecewiseConstantDecay(boundaries, values)
+            # Initialize RS object
+            initial_learning_rate = 0.1
+            boundaries = [50, 100]
+            values = [0.1, 0.01, 0.001]
+            learning_rate_fn = tf.keras.optimizers.schedules.PiecewiseConstantDecay(boundaries, values)
 
-        optimizer = tf.keras.optimizers.SGD(
-            learning_rate=initial_learning_rate, momentum=0.9, name="SGD", decay=1e-4
-        )
+            optimizer = tf.keras.optimizers.SGD(
+                learning_rate=initial_learning_rate, momentum=0.9, name="SGD", decay=1e-4
+            )
 
-        rs1 = TensorFlowV2RandomizedSmoothing(
-            model=classifier.model,
-            nb_classes=classifier.nb_classes,
-            input_shape=classifier.input_shape,
-            loss_object=classifier.loss_object,
-            clip_values=classifier.clip_values,
-            scale=0.25,
-            num_noise_vec=10,
-            train_multi_noise=True,
-            attack_type="PGD",
-            epsilon=1.0,
-            num_steps=10,
-            warmup=10,
-            optimizer=optimizer,
-            scheduler=learning_rate_fn,
-        )
+            rs1 = TensorFlowV2RandomizedSmoothing(
+                model=classifier.model,
+                nb_classes=classifier.nb_classes,
+                input_shape=classifier.input_shape,
+                loss_object=classifier.loss_object,
+                clip_values=classifier.clip_values,
+                scale=0.25,
+                num_noise_vec=10,
+                train_multi_noise=True,
+                attack_type="PGD",
+                epsilon=1.0,
+                num_steps=10,
+                warmup=10,
+                optimizer=optimizer,
+                scheduler=learning_rate_fn,
+            )
 
-        rs2 = TensorFlowV2RandomizedSmoothing(
-            model=classifier.model,
-            nb_classes=classifier.nb_classes,
-            input_shape=classifier.input_shape,
-            loss_object=classifier.loss_object,
-            clip_values=classifier.clip_values,
-            scale=0.25,
-            num_noise_vec=10,
-            train_multi_noise=True,
-            attack_type="PGD",
-            epsilon=1.0,
-            num_steps=10,
-            warmup=10,
-            optimizer=None,
-            scheduler=learning_rate_fn,
-        )
+            rs2 = TensorFlowV2RandomizedSmoothing(
+                model=classifier.model,
+                nb_classes=classifier.nb_classes,
+                input_shape=classifier.input_shape,
+                loss_object=classifier.loss_object,
+                clip_values=classifier.clip_values,
+                scale=0.25,
+                num_noise_vec=10,
+                train_multi_noise=True,
+                attack_type="PGD",
+                epsilon=1.0,
+                num_steps=10,
+                warmup=10,
+                optimizer=None,
+                scheduler=learning_rate_fn,
+            )
 
-        rs3 = TensorFlowV2RandomizedSmoothing(
-            model=classifier.model,
-            nb_classes=classifier.nb_classes,
-            input_shape=classifier.input_shape,
-            loss_object=classifier.loss_object,
-            clip_values=classifier.clip_values,
-            scale=0.25,
-            num_noise_vec=10,
-            train_multi_noise=True,
-            attack_type="PGD",
-            epsilon=1.0,
-            num_steps=10,
-            warmup=10,
-            optimizer=optimizer,
-            scheduler=None,
-        )
+            rs3 = TensorFlowV2RandomizedSmoothing(
+                model=classifier.model,
+                nb_classes=classifier.nb_classes,
+                input_shape=classifier.input_shape,
+                loss_object=classifier.loss_object,
+                clip_values=classifier.clip_values,
+                scale=0.25,
+                num_noise_vec=10,
+                train_multi_noise=True,
+                attack_type="PGD",
+                epsilon=1.0,
+                num_steps=10,
+                warmup=10,
+                optimizer=optimizer,
+                scheduler=None,
+            )
 
-        rs4 = TensorFlowV2RandomizedSmoothing(
-            model=classifier.model,
-            nb_classes=classifier.nb_classes,
-            input_shape=classifier.input_shape,
-            loss_object=classifier.loss_object,
-            clip_values=classifier.clip_values,
-            scale=0.25,
-            num_noise_vec=10,
-            train_multi_noise=True,
-            attack_type="DDN",
-            epsilon=1.0,
-            num_steps=10,
-            warmup=10,
-            optimizer=optimizer,
-            scheduler=learning_rate_fn,
-        )
+            rs4 = TensorFlowV2RandomizedSmoothing(
+                model=classifier.model,
+                nb_classes=classifier.nb_classes,
+                input_shape=classifier.input_shape,
+                loss_object=classifier.loss_object,
+                clip_values=classifier.clip_values,
+                scale=0.25,
+                num_noise_vec=10,
+                train_multi_noise=True,
+                attack_type="DDN",
+                epsilon=1.0,
+                num_steps=10,
+                warmup=10,
+                optimizer=optimizer,
+                scheduler=learning_rate_fn,
+            )
 
-        rs5 = TensorFlowV2RandomizedSmoothing(
-            model=classifier.model,
-            nb_classes=classifier.nb_classes,
-            input_shape=classifier.input_shape,
-            loss_object=classifier.loss_object,
-            clip_values=classifier.clip_values,
-            scale=0.25,
-            num_noise_vec=10,
-            train_multi_noise=True,
-            attack_type="PGD",
-            no_grad_attack=True,
-            epsilon=1.0,
-            num_steps=10,
-            warmup=10,
-            optimizer=optimizer,
-            scheduler=learning_rate_fn,
-        )
+            rs5 = TensorFlowV2RandomizedSmoothing(
+                model=classifier.model,
+                nb_classes=classifier.nb_classes,
+                input_shape=classifier.input_shape,
+                loss_object=classifier.loss_object,
+                clip_values=classifier.clip_values,
+                scale=0.25,
+                num_noise_vec=10,
+                train_multi_noise=True,
+                attack_type="PGD",
+                no_grad_attack=True,
+                epsilon=1.0,
+                num_steps=10,
+                warmup=10,
+                optimizer=optimizer,
+                scheduler=learning_rate_fn,
+            )
 
-        # fit with PGD attack
-        rs1.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="smoothadv")
+            # fit with PGD attack
+            rs1.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="smoothadv")
 
-        # fit with PGD attack and no grad
-        rs5.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="smoothadv")
+            # fit with PGD attack and no grad
+            rs5.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="smoothadv")
 
-        # fit with DDN attack
-        rs4.fit(x_test, y_test.astype(np.int32), nb_epochs=1, batch_size=256, train_method="smoothadv")
+            # fit with DDN attack
+            rs4.fit(x_test, y_test.astype(np.int32), nb_epochs=1, batch_size=256, train_method="smoothadv")
 
-        # fit fails when optimizer is None
-        with pytest.raises(
-            ValueError, match="An optimizer is needed to train the model, but none for provided."
-        ):
-            rs2.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="smoothadv")
+            # fit fails when optimizer is None
+            with pytest.raises(ValueError, match="An optimizer is needed to train the model, but none for provided."):
+                rs2.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="smoothadv")
 
-        # fit fails when scheduler is None
-        with pytest.raises(ValueError, match="A scheduler is needed to train the model, but none for provided."):
-            rs3.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="smoothadv")
+            # fit fails when scheduler is None
+            with pytest.raises(ValueError, match="A scheduler is needed to train the model, but none for provided."):
+                rs3.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="smoothadv")

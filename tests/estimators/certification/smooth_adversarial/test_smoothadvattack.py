@@ -23,8 +23,6 @@ import os
 import pytest
 
 import numpy as np
-import tensorflow as tf
-import torch
 
 from art.utils import load_dataset
 
@@ -37,6 +35,7 @@ BATCH_SIZE = 100
 NB_TRAIN = 5000
 NB_TEST = 10
 
+
 @pytest.fixture()
 def get_mnist_data():
     # Get MNIST
@@ -47,15 +46,19 @@ def get_mnist_data():
     y_test = np.argmax(y_test, axis=1)
     return (x_train, y_train), (x_test, y_test)
 
+
 @pytest.fixture()
 def set_seed():
     master_seed(seed=1234)
 
-def test_1_pt():
+
+@pytest.mark.only_with_platform("pytorch")
+def test_1_pt(get_mnist_data):
     """
     Test smooth adversarial attack.
     :return:
     """
+    import torch
     from art.estimators.certification.randomized_smoothing.smooth_adversarial.smoothadvattack import PgdL2
 
     epoch_num = 1
@@ -70,7 +73,7 @@ def test_1_pt():
     ptc = get_image_classifier_pt(from_logits=True)
 
     # Get MNIST
-    (_, _), (x_test, y_test) = get_mnist_data()
+    (_, _), (x_test, y_test) = get_mnist_data
 
     x_test = x_test.transpose(0, 3, 1, 2).astype(np.float32)
 
@@ -90,11 +93,14 @@ def test_1_pt():
     # Checking if attacked inputs and inputs shapes are same
     assert inputs_attacked.shape == x_test.shape
 
-def test_2_pt():
+
+@pytest.mark.only_with_platform("pytorch")
+def test_2_pt(get_mnist_data):
     """
     Test smooth adversarial attack using DDN.
     :return:
     """
+    import torch
     from art.estimators.certification.randomized_smoothing.smooth_adversarial.smoothadvattack import DDN
 
     epoch_num = 1
@@ -109,7 +115,7 @@ def test_2_pt():
     ptc = get_image_classifier_pt(from_logits=True)
 
     # Get MNIST
-    (_, _), (x_test, y_test) = get_mnist_data()
+    (_, _), (x_test, y_test) = get_mnist_data
 
     x_test = x_test.transpose(0, 3, 1, 2).astype(np.float32)
 
@@ -129,12 +135,14 @@ def test_2_pt():
     # Checking if attacked inputs and inputs shapes are same
     assert inputs_attacked.shape == x_test.shape
 
-@pytest.mark.skip_framework("tensorflow2v1", "mxnet", "pytorch", "tensorflow1")
-def test_3_tf():
+
+@pytest.mark.only_with_platform("tensorflow", "tensorflow2", "keras", "kerastf")
+def test_3_tf(get_mnist_data):
     """
     Test smooth adversarial attack.
     :return:
     """
+    import tensorflow as tf
     from art.estimators.certification.randomized_smoothing.smooth_adversarial.smoothadvattack_tensorflow import (
         PgdL2,
     )
@@ -150,36 +158,38 @@ def test_3_tf():
     if tf_version[0] == 2:
 
         # Build TensorFlowV2Classifier
-
-        classifier = get_image_classifier_tf_v2()
         tf.compat.v1.enable_eager_execution()
+        classifier = get_image_classifier_tf_v2()
 
-        # Get MNIST
-        (_, _), (x_test, y_test) = get_mnist_data()
-        x_test = x_test.transpose(0, 3, 1, 2).astype(np.float32)
+        if tf.executing_eagerly():
+            # Get MNIST
+            (_, _), (x_test, y_test) = get_mnist_data
+            x_test = x_test.transpose(0, 3, 1, 2).astype(np.float32)
 
-        attacker_pgd = PgdL2(steps=num_steps, max_norm=epsilon)
-        attacker_pgd.max_norm = np.min([epsilon, (epoch_num + 1) * epsilon / warmup])
-        attacker_pgd.init_norm = np.min([epsilon, (epoch_num + 1) * epsilon / warmup])
+            attacker_pgd = PgdL2(steps=num_steps, max_norm=epsilon)
+            attacker_pgd.max_norm = np.min([epsilon, (epoch_num + 1) * epsilon / warmup])
+            attacker_pgd.init_norm = np.min([epsilon, (epoch_num + 1) * epsilon / warmup])
 
-        noise = tf.random.normal(x_test.shape, 0, 1) * scale
-        inputs_attacked = attacker_pgd.attack(
-            classifier.model,
-            tf.convert_to_tensor(x_test),
-            tf.cast(tf.convert_to_tensor(y_test), tf.int32),
-            noise=noise,
-            num_noise_vectors=num_noise_vec,
-            no_grad=False,
-        )
-        # Checking if attacked inputs and inputs shapes are same
-        assert inputs_attacked.shape == x_test.shape
+            noise = tf.random.normal(x_test.shape, 0, 1) * scale
+            inputs_attacked = attacker_pgd.attack(
+                classifier.model,
+                tf.convert_to_tensor(x_test),
+                tf.cast(tf.convert_to_tensor(y_test), tf.int32),
+                noise=noise,
+                num_noise_vectors=num_noise_vec,
+                no_grad=False,
+            )
+            # Checking if attacked inputs and inputs shapes are same
+            assert inputs_attacked.shape == x_test.shape
 
-@pytest.mark.skip_framework("tensorflow2v1", "mxnet", "pytorch", "tensorflow1")
-def test_4_tf():
+
+@pytest.mark.only_with_platform("tensorflow", "tensorflow2", "keras", "kerastf")
+def test_4_tf(get_mnist_data):
     """
     Test smooth adversarial attack using DDN.
     :return:
     """
+    import tensorflow as tf
     from art.estimators.certification.randomized_smoothing.smooth_adversarial.smoothadvattack_tensorflow import DDN
 
     epoch_num = 1
@@ -193,25 +203,26 @@ def test_4_tf():
     if tf_version[0] == 2:
 
         # Build TensorFlowV2Classifier
-        classifier = get_image_classifier_tf_v2()
         tf.compat.v1.enable_eager_execution()
+        classifier = get_image_classifier_tf_v2()
 
-        # Get MNIST
-        (_, _), (x_test, y_test) = get_mnist_data()
-        x_test = x_test.transpose(0, 3, 1, 2).astype(np.float32)
+        if tf.executing_eagerly():
+            # Get MNIST
+            (_, _), (x_test, y_test) = get_mnist_data
+            x_test = x_test.transpose(0, 3, 1, 2).astype(np.float32)
 
-        attacker_pgd = DDN(steps=num_steps, max_norm=epsilon)
-        attacker_pgd.max_norm = np.min([epsilon, (epoch_num + 1) * epsilon / warmup])
-        attacker_pgd.init_norm = np.min([epsilon, (epoch_num + 1) * epsilon / warmup])
+            attacker_pgd = DDN(steps=num_steps, max_norm=epsilon)
+            attacker_pgd.max_norm = np.min([epsilon, (epoch_num + 1) * epsilon / warmup])
+            attacker_pgd.init_norm = np.min([epsilon, (epoch_num + 1) * epsilon / warmup])
 
-        noise = tf.random.normal(x_test.shape, 0, 1) * scale
-        inputs_attacked = attacker_pgd.attack(
-            classifier.model,
-            tf.convert_to_tensor(x_test),
-            tf.cast(tf.convert_to_tensor(y_test), tf.int32),
-            noise=noise,
-            num_noise_vectors=num_noise_vec,
-            no_grad=False,
-        )
-        # Checking if attacked inputs and inputs shapes are same
-        assert inputs_attacked.shape == x_test.shape
+            noise = tf.random.normal(x_test.shape, 0, 1) * scale
+            inputs_attacked = attacker_pgd.attack(
+                classifier.model,
+                tf.convert_to_tensor(x_test),
+                tf.cast(tf.convert_to_tensor(y_test), tf.int32),
+                noise=noise,
+                num_noise_vectors=num_noise_vec,
+                no_grad=False,
+            )
+            # Checking if attacked inputs and inputs shapes are same
+            assert inputs_attacked.shape == x_test.shape

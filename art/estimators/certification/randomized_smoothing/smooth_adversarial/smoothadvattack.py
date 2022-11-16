@@ -29,9 +29,9 @@ from abc import ABCMeta, abstractmethod
 
 from typing import Optional, Any
 import torch
-from torch import nn
+import torch.nn as nn
 import torch.nn.functional as F
-from torch import optim
+import torch.optim as optim
 
 
 class Attacker(metaclass=ABCMeta):
