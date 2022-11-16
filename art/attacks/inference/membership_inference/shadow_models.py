@@ -31,7 +31,8 @@ import numpy as np
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
     from art.estimators.classification.scikitlearn import ScikitlearnClassifier
-    from art.estimators.classification import PyTorchClassifier, TensorFlowV2Classifier
+    from art.estimators.classification import PyTorchClassifier, TensorFlowV2Classifier, KerasClassifier
+    from art.estimators.regression import PyTorchRegressor, ScikitlearnRegressor
 
 
 class ShadowModels:

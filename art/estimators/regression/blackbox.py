@@ -26,8 +26,8 @@ from typing import Callable, List, Optional, Union, Tuple, TYPE_CHECKING
 
 import numpy as np
 
-from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
-from art.estimators.regression import RegressorMixin, Regressor
+from art.estimators.estimator import BaseEstimator
+from art.estimators.regression.regressor import RegressorMixin, Regressor
 from art.estimators.classification import BlackBoxClassifier
 
 if TYPE_CHECKING:

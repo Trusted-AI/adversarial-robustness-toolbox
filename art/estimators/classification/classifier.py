@@ -31,7 +31,7 @@ from art.estimators.estimator import (
 )
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_TYPE
+    from art.utils import ESTIMATOR_TYPE
 
 
 class InputFilter(ABCMeta):
@@ -120,7 +120,7 @@ class ClassifierMixin(ABC, metaclass=InputFilter):
 
         self._nb_classes = nb_classes
 
-    def clone_for_refitting(self) -> "CLASSIFIER_TYPE":
+    def clone_for_refitting(self) -> "ESTIMATOR_TYPE":
         """
         Clone classifier for refitting.
         """

@@ -107,6 +107,9 @@ if TYPE_CHECKING:
     from art.estimators.object_detection.tensorflow_faster_rcnn import TensorFlowFasterRCNN
     from art.estimators.pytorch import PyTorchEstimator
     from art.estimators.regression.scikitlearn import ScikitlearnRegressor
+    from art.estimators.regression.pytorch import PyTorchRegressor
+    from art.estimators.regression.keras import KerasRegressor
+    from art.estimators.regression.blackbox import BlackBoxRegressor
     from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
     from art.estimators.speech_recognition.tensorflow_lingvo import TensorFlowLingvoASR
     from art.estimators.tensorflow import TensorFlowV2Estimator
@@ -190,7 +193,13 @@ if TYPE_CHECKING:
 
     GENERATOR_TYPE = Union[TensorFlowGenerator, TensorFlowV2Generator]  # pylint: disable=C0103
 
-    REGRESSOR_TYPE = Union[ScikitlearnRegressor, ScikitlearnDecisionTreeRegressor]  # pylint: disable=C0103
+    REGRESSOR_TYPE = Union[  # pylint: disable=C0103
+        ScikitlearnRegressor,
+        ScikitlearnDecisionTreeRegressor,
+        PyTorchRegressor,
+        KerasRegressor,
+        BlackBoxRegressor
+    ]
 
     OBJECT_DETECTOR_TYPE = Union[  # pylint: disable=C0103
         ObjectDetector,
