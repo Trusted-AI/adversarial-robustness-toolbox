@@ -363,9 +363,15 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
         loss.backward(retain_graph=True)  # type: ignore
 
         if isinstance(x, np.ndarray):
-            grads = image_tensor_list_grad.grad.cpu().numpy().copy()
+            if image_tensor_list_grad.grad is not None:
+                grads = image_tensor_list_grad.grad.cpu().numpy().copy()
+            else:
+                raise ValueError("Gradient term in PyTorch model is `None`.")
         else:
-            grads = inputs_t.grad.copy()
+            if inputs_t.grad is not None:
+                grads = inputs_t.grad.clone()
+            else:
+                raise ValueError("Gradient term in PyTorch model is `None`.")
 
         if self.clip_values is not None:
             grads = grads / self.clip_values[1]

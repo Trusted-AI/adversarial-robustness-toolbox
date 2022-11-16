@@ -156,7 +156,10 @@ class AdversarialTexturePyTorch(EvasionAttack):
         loss = self._loss(videos, target, y_init, foreground, patch_points)
         loss.backward(retain_graph=True)
 
-        gradients = self._patch.grad.sign() * self.step_size
+        if self._patch.grad is not None:
+            gradients = self._patch.grad.sign() * self.step_size
+        else:
+            raise ValueError("Gradient term in PyTorch model is `None`.")
 
         # Write summary
         if self.summary_writer is not None:  # pragma: no cover

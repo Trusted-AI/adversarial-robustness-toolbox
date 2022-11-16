@@ -362,6 +362,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         batch_size: int = 128,
         nb_epochs: int = 10,
         training_mode: bool = True,
+        drop_last: bool = False,
+        scheduler: Optional[Any] = None,
         **kwargs,
     ) -> None:
         """
@@ -373,8 +375,12 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
         :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :param drop_last: Set to ``True`` to drop the last incomplete batch, if the dataset size is not divisible by
+                          the batch size. If ``False`` and the size of dataset is not divisible by the batch size, then
+                          the last batch will be smaller. (default: ``False``)
+        :param scheduler: Learning rate scheduler to run at the start of every epoch.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
-               and providing it takes no effect.
+                       and providing it takes no effect.
         """
         import torch  # lgtm [py/repeated-import]
 
@@ -392,8 +398,15 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         # Check label shape
         y_preprocessed = self.reduce_labels(y_preprocessed)
 
-        num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
+        num_batch = len(x_preprocessed) / float(batch_size)
+        if drop_last:
+            num_batch = int(np.floor(num_batch))
+        else:
+            num_batch = int(np.ceil(num_batch))
         ind = np.arange(len(x_preprocessed))
+
+        x_preprocessed = torch.from_numpy(x_preprocessed).to(self._device)
+        y_preprocessed = torch.from_numpy(y_preprocessed).to(self._device)
 
         # Start training
         for _ in range(nb_epochs):
@@ -402,14 +415,22 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
             # Train for one epoch
             for m in range(num_batch):
-                i_batch = torch.from_numpy(x_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]).to(self._device)
-                o_batch = torch.from_numpy(y_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]).to(self._device)
+                i_batch = x_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]
+                o_batch = y_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]
 
                 # Zero the parameter gradients
                 self._optimizer.zero_grad()
 
                 # Perform prediction
-                model_outputs = self._model(i_batch)
+                try:
+                    model_outputs = self._model(i_batch)
+                except ValueError as err:
+                    if "Expected more than 1 value per channel when training" in str(err):
+                        logger.exception(
+                            "Try dropping the last incomplete batch by setting drop_last=True in "
+                            "method PyTorchClassifier.fit."
+                        )
+                    raise err
 
                 # Form the loss function
                 loss = self._loss(model_outputs[-1], o_batch)  # lgtm [py/call-to-non-callable]
@@ -425,6 +446,9 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                     loss.backward()
 
                 self._optimizer.step()
+
+            if scheduler is not None:
+                scheduler.step()
 
     def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs) -> None:
         """
@@ -821,10 +845,13 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         else:
             loss.backward()
 
-        if isinstance(x, torch.Tensor):
-            grads = x_grad.grad
+        if x_grad.grad is not None:
+            if isinstance(x, torch.Tensor):
+                grads = x_grad.grad
+            else:
+                grads = x_grad.grad.cpu().numpy().copy()
         else:
-            grads = x_grad.grad.cpu().numpy().copy()  # type: ignore
+            raise ValueError("Gradient term in PyTorch model is `None`.")
 
         if not self.all_framework_preprocessing:
             grads = self._apply_preprocessing_gradient(x, grads)

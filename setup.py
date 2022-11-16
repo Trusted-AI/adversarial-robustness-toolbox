@@ -13,7 +13,6 @@ install_requires = [
     "six",
     "setuptools",
     "tqdm",
-    "numba>=0.53.1",
 ]
 
 docs_require = [
@@ -93,6 +92,7 @@ setup(
             "cma",
             "librosa",
             "opencv-python",
+            "numba",
         ],
         "non_framework": [
             "matplotlib",
@@ -112,6 +112,7 @@ setup(
             "codecov",
             "requests",
             "sortedcontainers",
+            "numba",
         ],
     },
     classifiers=[
