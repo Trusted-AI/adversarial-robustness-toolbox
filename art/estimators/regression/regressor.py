@@ -33,4 +33,5 @@ class Regressor(RegressorMixin, BaseEstimator, ABC):
     """
     Typing variable definition.
     """
+
     estimator_params = BaseEstimator.estimator_params

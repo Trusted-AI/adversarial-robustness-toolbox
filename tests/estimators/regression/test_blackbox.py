@@ -32,7 +32,10 @@ def test_blackbox_existing_predictions(art_warning, get_diabetes_dataset):
     try:
         (x_train, _), (x_test, y_test) = get_diabetes_dataset
 
-        bb = BlackBoxRegressor((x_test.astype(ART_NUMPY_DTYPE), y_test), (10,), )
+        bb = BlackBoxRegressor(
+            (x_test.astype(ART_NUMPY_DTYPE), y_test),
+            (10,),
+        )
         pred = bb.predict(x_test.astype(ART_NUMPY_DTYPE))
         assert np.array_equal(pred, y_test.astype(ART_NUMPY_DTYPE))
         assert np.count_nonzero(bb.compute_loss(x_test, y_test)) == 0
@@ -84,6 +87,10 @@ def test_blackbox_predict_fn(art_warning, get_diabetes_dataset):
         assert abs(y_test[0] - pred[0]) < 50
         assert abs(bb.compute_loss(x_test, y_test)[0] - 2000) < 100
         assert abs(bb.compute_loss_from_predictions(pred, y_test)[0] - 2000) < 100
+
+        bbc = bb.get_classifier([50, 100, 200])
+        pred_c = bbc.predict(x_test)
+        assert pred_c.shape[1] == 4
 
     except ARTTestException as e:
         art_warning(e)

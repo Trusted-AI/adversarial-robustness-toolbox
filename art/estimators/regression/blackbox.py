@@ -28,6 +28,7 @@ import numpy as np
 
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.regression import RegressorMixin, Regressor
+from art.estimators.classification import BlackBoxClassifier
 
 if TYPE_CHECKING:
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
@@ -87,6 +88,7 @@ class BlackBoxRegressor(RegressorMixin, BaseEstimator):
             self._predict_fn = predict_fn
         else:
             self._predict_fn = _make_lookup_predict_fn(predict_fn, fuzzy_float_compare)
+        self._fuzzy_float_compare = fuzzy_float_compare
         self._input_shape = input_shape
         self._loss_fn = loss_fn
 
@@ -107,6 +109,32 @@ class BlackBoxRegressor(RegressorMixin, BaseEstimator):
         :return: The prediction function.
         """
         return self._predict_fn  # type: ignore
+
+    def get_classifier(self, thresholds: List[float]) -> BlackBoxClassifier:
+        """
+        Returns a classifier representation of the regressor. Maps real values to classes based on the provided
+        thresholds.
+
+        :param thresholds: The cutoff values for mapping real values to classes.
+        :return: BlackBoxClassifier instance
+        """
+
+        def predict_class(x):
+            predictions = self.predict(x)
+            binned = np.digitize(predictions, thresholds)
+            return np.eye(len(thresholds) + 1)[binned]
+
+        classifier = BlackBoxClassifier(
+            predict_class,
+            self.input_shape,
+            len(thresholds) + 1,
+            clip_values=self.clip_values,
+            preprocessing_defences=self.preprocessing_defences,
+            postprocessing_defences=self.postprocessing_defences,
+            preprocessing=self.preprocessing,
+            fuzzy_float_compare=self._fuzzy_float_compare,
+        )
+        return classifier
 
     # pylint: disable=W0221
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:

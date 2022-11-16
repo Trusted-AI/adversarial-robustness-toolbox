@@ -42,8 +42,14 @@ class ShadowModels:
 
     def __init__(
         self,
-        shadow_model_template: Union["ScikitlearnClassifier", "PyTorchClassifier", "TensorFlowV2Classifier",
-                                     "KerasClassifier", "PyTorchRegressor", "ScikitlearnRegressor"],
+        shadow_model_template: Union[
+            "ScikitlearnClassifier",
+            "PyTorchClassifier",
+            "TensorFlowV2Classifier",
+            "KerasClassifier",
+            "PyTorchRegressor",
+            "ScikitlearnRegressor",
+        ],
         num_shadow_models: int = 3,
         disjoint_datasets=False,
         random_state=None,
