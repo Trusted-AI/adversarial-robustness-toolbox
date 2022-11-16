@@ -370,6 +370,9 @@ class BFGSB:  # pragma: no cover
 
         i = 1
         maxiter = 10
+        alpha_star = 0
+        fval_star = 0
+        fprime_star = 0
         while 1:  # bracketing phase
             # print("   (ls) in while loop: ", alpha1, alpha0)
             if alpha1 == 0:
