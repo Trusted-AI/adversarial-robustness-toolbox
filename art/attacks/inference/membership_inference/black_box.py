@@ -361,6 +361,8 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
                         "For loss input type and no x, the estimator must implement 'compute_loss_from_predictions' "
                         "method"
                     ) from err
+        else:
+            raise ValueError("Value of `input_type` not recognized.")
 
         if self._regressor_model:
             y = y.astype(np.float32).reshape(-1, 1)

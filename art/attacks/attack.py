@@ -56,6 +56,8 @@ class InputFilter(abc.ABCMeta):  # pragma: no cover
             def replacement_function(self, *args, **kwargs):
                 if len(args) > 0:
                     lst = list(args)
+                else:
+                    lst = []
 
                 if "x" in kwargs:
                     if not isinstance(kwargs["x"], np.ndarray):

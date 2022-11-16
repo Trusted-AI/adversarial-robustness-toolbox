@@ -295,6 +295,8 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             ),
         ):
             loss_ = loss_function(label_ph, self._output)
+        else:
+            raise ValueError("Type of loss function could not be determined.")
 
         # Define loss gradients
         loss_gradients = k.gradients(loss_, self._input)

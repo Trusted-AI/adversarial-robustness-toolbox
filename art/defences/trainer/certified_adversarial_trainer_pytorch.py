@@ -198,6 +198,8 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
             epochs: int = nb_epochs
         elif self.batch_size is not None:
             epochs = self.batch_size
+        else:
+            raise ValueError("Value of `epochs` not defined.")
 
         # Set model mode
         self._classifier._model.train(mode=training_mode)  # pylint: disable=W0212

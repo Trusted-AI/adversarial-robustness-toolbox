@@ -159,6 +159,8 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
             dict_path = get_file(
                 filename=dict_filename, path=config.ART_DATA_PATH, url=dict_url, extract=False, verbose=self.verbose
             )
+        else:
+            raise ValueError("Value for `espresso_config_filepath` has to `None` for now.")
 
         # construct espresso args
         with open(config_path, encoding="utf8") as file:

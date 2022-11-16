@@ -192,9 +192,8 @@ class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):
             if callable(getattr(self.model, "predict_log_proba", None)):
                 y_pred = self.model.predict_log_proba(x_preprocessed)
             else:  # pragma: no cover
-                logger.warning(
-                    "use_logits was True but classifier did not have callable predict_log_proba member. Falling back to"
-                    " probabilities"
+                raise ValueError(
+                    "Argument `use_logits` was True but classifier model does not have callable" "`predict_log_proba`."
                 )
         elif callable(getattr(self.model, "predict_proba", None)):
             y_pred = self.model.predict_proba(x_preprocessed)
@@ -1210,6 +1209,9 @@ class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassif
                 raise TypeError("Unrecognized type for argument `label` with type " + str(type(label)))
 
             gradients = self._apply_preprocessing_gradient(x, gradients)
+
+        else:
+            raise ValueError("Type of `self.model` not supported for class-gradients.")
 
         return gradients
 

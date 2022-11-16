@@ -491,6 +491,8 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
             _loss = tf.reduce_mean(self._loss)
         elif reduction == "sum":
             _loss = tf.reduce_sum(self._loss)
+        else:
+            raise ValueError("Value of `reduction` not recognized.")
 
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y, fit=False)
