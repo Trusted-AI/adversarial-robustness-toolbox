@@ -189,7 +189,7 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         if batch_size is None:
             batch_size = self.batch_size

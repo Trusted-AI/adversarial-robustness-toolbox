@@ -138,7 +138,7 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
         :param y: Target label
         :return: An tuple holding the (poisoning examples, poisoning labels).
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         class PoisonBatch(torch.nn.Module):
             """
@@ -316,7 +316,7 @@ def loss_from_center(
     """
     Calculate loss from center.
     """
-    import torch  # lgtm [py/repeated-import]
+    import torch
 
     if end2end:
         loss = torch.tensor(0.0)

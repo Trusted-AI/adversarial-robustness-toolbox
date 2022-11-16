@@ -176,7 +176,7 @@ class ClassifierClassLossGradients(ClassGradientsMixin, ClassifierMixin, LossGra
     estimator_params = BaseEstimator.estimator_params + ClassifierMixin.estimator_params
 
 
-class ClassifierNeuralNetwork(  # lgtm [py/conflicting-attributes]
+class ClassifierNeuralNetwork(
     ClassGradientsMixin, ClassifierMixin, LossGradientsMixin, NeuralNetworkMixin, BaseEstimator, ABC
 ):
     """
