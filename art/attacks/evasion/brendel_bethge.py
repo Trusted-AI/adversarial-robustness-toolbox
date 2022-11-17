@@ -330,6 +330,10 @@ class BFGSB:  # pragma: no cover
         For the zoom phase it uses an algorithm by
         Outputs: (alpha0, gc, fc)
         """
+        alpha_star = 0.0
+        fval_star = 0.0
+        fprime_star = None
+
         c1 = 1e-4
         c2 = 0.9
         N = xk.shape[0]
@@ -370,9 +374,6 @@ class BFGSB:  # pragma: no cover
 
         i = 1
         maxiter = 10
-        alpha_star = 0
-        fval_star = 0
-        fprime_star = 0
         while 1:  # bracketing phase
             # print("   (ls) in while loop: ", alpha1, alpha0)
             if alpha1 == 0:
@@ -589,6 +590,10 @@ class BFGSB:  # pragma: no cover
                 fval_star = phi_a1
                 fprime_star = None
                 break
+
+        print("alpha_star", alpha_star)
+        print("fval_star", fval_star)
+        print("fprime_star", fprime_star)
 
         return alpha_star, _ls_fc, _ls_fc, fval_star, old_fval, fprime_star, _ls_fc
 
