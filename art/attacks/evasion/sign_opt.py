@@ -153,7 +153,7 @@ class SignOPTAttack(EvasionAttack):
         :param y: Target values (class labels) one-hot-encoded of
                         shape (nb_samples, nb_classes) or indices of shape
                         (nb_samples,). If `self.targeted` is true, then `y` represents the target labels.
-        :param \**kwargs: See below.
+        :param kwargs: See below.
 
         :Keyword Arguments:
             * *x_init* --
