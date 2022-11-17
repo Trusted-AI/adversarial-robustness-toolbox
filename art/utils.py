@@ -194,11 +194,7 @@ if TYPE_CHECKING:
     GENERATOR_TYPE = Union[TensorFlowGenerator, TensorFlowV2Generator]  # pylint: disable=C0103
 
     REGRESSOR_TYPE = Union[  # pylint: disable=C0103
-        ScikitlearnRegressor,
-        ScikitlearnDecisionTreeRegressor,
-        PyTorchRegressor,
-        KerasRegressor,
-        BlackBoxRegressor
+        ScikitlearnRegressor, ScikitlearnDecisionTreeRegressor, PyTorchRegressor, KerasRegressor, BlackBoxRegressor
     ]
 
     OBJECT_DETECTOR_TYPE = Union[  # pylint: disable=C0103

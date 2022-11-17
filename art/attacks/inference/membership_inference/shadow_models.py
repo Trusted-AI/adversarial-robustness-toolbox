@@ -29,7 +29,7 @@ from typing import Callable, Tuple, TYPE_CHECKING, Union, List, Optional, Sequen
 import numpy as np
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_TYPE
+    from art.utils import CLASSIFIER_TYPE, ESTIMATOR_TYPE
     from art.estimators.classification.scikitlearn import ScikitlearnClassifier
     from art.estimators.classification import PyTorchClassifier, TensorFlowV2Classifier, KerasClassifier
     from art.estimators.regression import PyTorchRegressor, ScikitlearnRegressor
@@ -324,7 +324,7 @@ class ShadowModels:
 
         return self.generate_shadow_dataset(np.array(x), np.array(y), member_ratio)
 
-    def get_shadow_models(self) -> Sequence["CLASSIFIER_TYPE"]:
+    def get_shadow_models(self) -> Sequence["ESTIMATOR_TYPE"]:
         """
         Returns the list of shadow models. `generate_shadow_dataset` or `generate_synthetic_shadow_dataset` must be
         called for the shadow models to be trained.

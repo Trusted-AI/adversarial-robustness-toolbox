@@ -61,7 +61,7 @@ logger = logging.getLogger(__name__)
 KERAS_MODEL_TYPE = Union["keras.models.Model", "tf.keras.models.Model"]  # pylint: disable=C0103
 
 
-class KerasClassifier(ClassGradientsMixin, KerasEstimator, ClassifierMixin):
+class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
     """
     Wrapper class for importing Keras models.
     """

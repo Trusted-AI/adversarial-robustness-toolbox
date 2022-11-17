@@ -28,7 +28,7 @@ from art.config import ART_NUMPY_DTYPE
 
 if TYPE_CHECKING:
     # pylint: disable=R0401
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE, ESTIMATOR_TYPE
     from art.data_generators import DataGenerator
     from art.metrics.verification_decisions_trees import Tree
     from art.defences.postprocessor.postprocessor import Postprocessor
@@ -184,6 +184,12 @@ class BaseEstimator(ABC):
         for key in self.estimator_params:
             params[key] = getattr(self, key)
         return params
+
+    def clone_for_refitting(self) -> "ESTIMATOR_TYPE":
+        """
+        Clone estimator for refitting.
+        """
+        raise NotImplementedError
 
     def _check_params(self) -> None:
         from art.defences.postprocessor.postprocessor import Postprocessor
