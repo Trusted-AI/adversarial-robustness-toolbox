@@ -33,6 +33,7 @@ if TYPE_CHECKING:
     from art.estimators.classification.scikitlearn import ScikitlearnClassifier
     from art.estimators.classification import PyTorchClassifier, TensorFlowV2Classifier, KerasClassifier
     from art.estimators.regression import PyTorchRegressor, ScikitlearnRegressor
+    from art.estimators.classification.xgboost import XGBoostClassifier
 
 
 class ShadowModels:
@@ -50,6 +51,7 @@ class ShadowModels:
             "KerasClassifier",
             "PyTorchRegressor",
             "ScikitlearnRegressor",
+            "XGBoostClassifier"
         ],
         num_shadow_models: int = 3,
         disjoint_datasets=False,

@@ -92,7 +92,7 @@ class XGBoostClassifier(ClassifierDecisionTree):
             preprocessing=preprocessing,
         )
         self._input_shape = (nb_features,)
-        self._nb_classes = self._get_nb_classes(nb_classes)
+        self._nb_classes = nb_classes
 
     @property
     def input_shape(self) -> Tuple[int, ...]:
@@ -112,18 +112,32 @@ class XGBoostClassifier(ClassifierDecisionTree):
         """
         return self._input_shape[0]  # type: ignore
 
+    @property
+    def nb_classes(self) -> int:
+        """
+        Return the number of output classes.
+
+        :return: Number of classes in the data.
+        """
+        self._nb_classes = self._get_nb_classes(self._nb_classes)
+        return self._nb_classes  # type: ignore
+
     def fit(self, x: np.ndarray, y: np.ndarray, **kwargs) -> None:
         """
-        Fit the classifier on the training set `(x, y)`.
+        Fit the classifier on the training set `(x, y)`. Only supported for models of type XGBClassifier.
 
         :param x: Training data.
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes).
         :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
-                       `fit` function in `xgboost.Booster` or `xgboost.XGBClassifier` and will be passed to this
-                       function as such.
-        :raises `NotImplementedException`: This method is not supported for XGBoost classifiers.
+                       `fit` function in `xgboost.XGBClassifier` and will be passed to this function as such.
+        :raises `NotImplementedException`: This method is not supported for Booster objects.
         """
-        raise NotImplementedError
+        import xgboost  # lgtm [py/repeated-import] lgtm [py/import-and-import-from]
+
+        if isinstance(self._model, xgboost.XGBClassifier):
+            self._model.fit(x, y, **kwargs)
+        else:
+            raise NotImplementedError
 
     def predict(self, x: np.ndarray, **kwargs) -> np.ndarray:
         """
@@ -150,6 +164,29 @@ class XGBoostClassifier(ClassifierDecisionTree):
 
         return y_prediction
 
+    def clone_for_refitting(
+        self,
+    ) -> "XGBoostClassifier":  # lgtm [py/inheritance/incorrect-overridden-signature]
+        """
+        Create a copy of the estimator that can be refit from scratch. Only supported for models of type XGBClassifier.
+
+        :return: new estimator.
+        :raises `NotImplementedError`: This method is not supported for Booster objects.
+        """
+        import xgboost  # lgtm [py/repeated-import] lgtm [py/import-and-import-from]
+
+        if isinstance(self._model, xgboost.XGBClassifier):
+            params = self.get_params()
+            del params["model"]
+            internal_params = self._model.get_params()
+            new_classifier = xgboost.XGBClassifier()
+            new_classifier.set_params(**internal_params)
+            new_estimator = XGBoostClassifier(new_classifier)
+            new_estimator.set_params(**params)
+            return new_estimator
+        else:
+            raise NotImplementedError
+
     def _get_nb_classes(self, nb_classes: Optional[int]) -> int:
         """
         Return the number of output classes.
@@ -170,7 +207,11 @@ class XGBoostClassifier(ClassifierDecisionTree):
                 ) from AttributeError
 
         if isinstance(self._model, XGBClassifier):
-            return self._model.n_classes_
+            try:
+                return self._model.n_classes_
+            except AttributeError:
+                if nb_classes is not None:
+                    return nb_classes
 
         return -1
 
