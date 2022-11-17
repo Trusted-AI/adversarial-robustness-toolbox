@@ -92,7 +92,9 @@ class XGBoostClassifier(ClassifierDecisionTree):
             preprocessing=preprocessing,
         )
         self._input_shape = (nb_features,)
-        self._nb_classes = nb_classes
+        _nb_classes = self._get_nb_classes(nb_classes)
+        if _nb_classes is not None:
+            self._nb_classes = _nb_classes
 
     @property
     def input_shape(self) -> Tuple[int, ...]:
@@ -112,16 +114,6 @@ class XGBoostClassifier(ClassifierDecisionTree):
         """
         return self._input_shape[0]  # type: ignore
 
-    @property
-    def nb_classes(self) -> int:
-        """
-        Return the number of output classes.
-
-        :return: Number of classes in the data.
-        """
-        self._nb_classes = self._get_nb_classes(self._nb_classes)
-        return self._nb_classes  # type: ignore
-
     def fit(self, x: np.ndarray, y: np.ndarray, **kwargs) -> None:
         """
         Fit the classifier on the training set `(x, y)`. Only supported for models of type XGBClassifier.
@@ -136,6 +128,7 @@ class XGBoostClassifier(ClassifierDecisionTree):
 
         if isinstance(self._model, xgboost.XGBClassifier):
             self._model.fit(x, y, **kwargs)
+            self._nb_classes = self._get_nb_classes(self._nb_classes)
         else:
             raise NotImplementedError
 
@@ -184,10 +177,10 @@ class XGBoostClassifier(ClassifierDecisionTree):
             new_estimator = XGBoostClassifier(new_classifier)
             new_estimator.set_params(**params)
             return new_estimator
-        else:
-            raise NotImplementedError
 
-    def _get_nb_classes(self, nb_classes: Optional[int]) -> int:
+        raise NotImplementedError
+
+    def _get_nb_classes(self, nb_classes: Optional[int]) -> Optional[int]:
         """
         Return the number of output classes.
 
@@ -195,25 +188,17 @@ class XGBoostClassifier(ClassifierDecisionTree):
         """
         from xgboost import Booster, XGBClassifier
 
-        if isinstance(self._model, Booster):
-            try:
+        try:
+            if isinstance(self._model, Booster):
                 return int(len(self._model.get_dump(dump_format="json")) / self._model.n_estimators)  # type: ignore
-            except AttributeError:
-                if nb_classes is not None:
-                    return nb_classes
-                raise NotImplementedError(
-                    "Number of classes cannot be determined automatically. "
-                    + "Please manually set argument nb_classes in XGBoostClassifier."
-                ) from AttributeError
-
-        if isinstance(self._model, XGBClassifier):
-            try:
+            elif isinstance(self._model, XGBClassifier):
                 return self._model.n_classes_
-            except AttributeError:
-                if nb_classes is not None:
-                    return nb_classes
+        except AttributeError:
+            pass
 
-        return -1
+        if nb_classes is not None:
+            return nb_classes
+        return None
 
     def save(self, filename: str, path: Optional[str] = None) -> None:
         """

@@ -106,6 +106,7 @@ if TYPE_CHECKING:
     from art.estimators.object_detection.pytorch_faster_rcnn import PyTorchFasterRCNN
     from art.estimators.object_detection.tensorflow_faster_rcnn import TensorFlowFasterRCNN
     from art.estimators.pytorch import PyTorchEstimator
+    from art.estimators.keras import KerasEstimator
     from art.estimators.regression.scikitlearn import ScikitlearnRegressor
     from art.estimators.regression.pytorch import PyTorchRegressor
     from art.estimators.regression.keras import KerasRegressor
@@ -215,6 +216,13 @@ if TYPE_CHECKING:
         PyTorchEstimator,
         PyTorchObjectDetector,
         PyTorchFasterRCNN,
+        PyTorchRegressor,
+    ]
+
+    KERAS_ESTIMATOR_TYPE = Union[  # pylint: disable=C0103
+        KerasClassifier,
+        KerasEstimator,
+        KerasRegressor,
     ]
 
     TENSORFLOWV2_ESTIMATOR_TYPE = Union[  # pylint: disable=C0103
@@ -223,7 +231,13 @@ if TYPE_CHECKING:
     ]
 
     ESTIMATOR_TYPE = Union[  # pylint: disable=C0103
-        CLASSIFIER_TYPE, REGRESSOR_TYPE, OBJECT_DETECTOR_TYPE, SPEECH_RECOGNIZER_TYPE
+        CLASSIFIER_TYPE,
+        REGRESSOR_TYPE,
+        OBJECT_DETECTOR_TYPE,
+        SPEECH_RECOGNIZER_TYPE,
+        PYTORCH_ESTIMATOR_TYPE,
+        KERAS_ESTIMATOR_TYPE,
+        TENSORFLOWV2_ESTIMATOR_TYPE,
     ]
 
     ABLATOR_TYPE = Union[BlockAblator, ColumnAblator]  # pylint: disable=C0103

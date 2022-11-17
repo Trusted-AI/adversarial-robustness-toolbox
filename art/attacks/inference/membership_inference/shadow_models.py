@@ -51,7 +51,7 @@ class ShadowModels:
             "KerasClassifier",
             "PyTorchRegressor",
             "ScikitlearnRegressor",
-            "XGBoostClassifier"
+            "XGBoostClassifier",
         ],
         num_shadow_models: int = 3,
         disjoint_datasets=False,
@@ -326,7 +326,9 @@ class ShadowModels:
 
         return self.generate_shadow_dataset(np.array(x), np.array(y), member_ratio)
 
-    def get_shadow_models(self) -> Sequence["ESTIMATOR_TYPE"]:
+    def get_shadow_models(
+        self,
+    ) -> List["ESTIMATOR_TYPE"]:
         """
         Returns the list of shadow models. `generate_shadow_dataset` or `generate_synthetic_shadow_dataset` must be
         called for the shadow models to be trained.
