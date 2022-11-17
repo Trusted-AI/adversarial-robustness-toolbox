@@ -33,20 +33,16 @@ from tests.utils import master_seed, get_image_classifier_pt, get_image_classifi
 os.environ["KMP_DUPLICATE_LIB_OK"] = "True"
 logger = logging.getLogger(__name__)
 
-BATCH_SIZE = 100
-NB_TRAIN = 5000
-NB_TEST = 10
-
 
 @pytest.fixture()
 def get_mnist_data():
     # Get MNIST
-    (x_train, y_train), (x_test, y_test), _, _ = load_dataset("mnist")
-    x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
+    NB_TEST = 10
+
+    (_, _), (x_test, y_test), _, _ = load_dataset("mnist")
     x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
-    y_train = np.argmax(y_train, axis=1)
     y_test = np.argmax(y_test, axis=1)
-    return (x_train, y_train), (x_test, y_test)
+    return x_test, y_test
 
 
 @pytest.fixture()
@@ -55,7 +51,7 @@ def set_seed():
 
 
 @pytest.mark.only_with_platform("pytorch")
-def test_1_pt(get_mnist_data):
+def test_smoothadv_randomized_smoothing_pytorch_pgd(get_mnist_data):
     """
     Test with a PyTorch Classifier.
     :return:
@@ -66,7 +62,7 @@ def test_1_pt(get_mnist_data):
     ptc = get_image_classifier_pt(from_logits=True)
 
     # Get MNIST
-    (_, _), (x_test, y_test) = get_mnist_data
+    x_test, y_test = get_mnist_data
 
     x_test = x_test.transpose(0, 3, 1, 2).astype(np.float32)
 
@@ -93,6 +89,30 @@ def test_1_pt(get_mnist_data):
         warmup=10,
     )
 
+    # fit
+    rs1.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="smoothadv")
+
+
+@pytest.mark.only_with_platform("pytorch")
+def test_smoothadv_randomized_smoothing_pytorch_pgd_no_optimizer(get_mnist_data):
+    """
+    Test with a PyTorch Classifier.
+    :return:
+    """
+    import torch
+
+    # Build PytorchClassifier
+    ptc = get_image_classifier_pt(from_logits=True)
+
+    # Get MNIST
+    x_test, y_test = get_mnist_data
+
+    x_test = x_test.transpose(0, 3, 1, 2).astype(np.float32)
+
+    # Initialize RS object
+    optimizer = torch.optim.SGD(ptc.model.parameters(), lr=0.1, momentum=0.9, weight_decay=1e-4)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=50, gamma=0.1)
+
     rs2 = PyTorchRandomizedSmoothing(
         model=ptc.model,
         loss=torch.nn.CrossEntropyLoss(),
@@ -112,6 +132,30 @@ def test_1_pt(get_mnist_data):
         num_steps=10,
         warmup=10,
     )
+
+    # fit fails when optimizer is None
+    with pytest.raises(ValueError, match="An optimizer is needed to train the model, but none for provided."):
+        rs2.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="smoothadv")
+
+
+@pytest.mark.only_with_platform("pytorch")
+def test_smoothadv_randomized_smoothing_pytorch_pgd_no_scheduler(get_mnist_data):
+    """
+    Test with a PyTorch Classifier.
+    :return:
+    """
+    import torch
+
+    # Build PytorchClassifier
+    ptc = get_image_classifier_pt(from_logits=True)
+
+    # Get MNIST
+    x_test, y_test = get_mnist_data
+
+    x_test = x_test.transpose(0, 3, 1, 2).astype(np.float32)
+
+    # Initialize RS object
+    optimizer = torch.optim.SGD(ptc.model.parameters(), lr=0.1, momentum=0.9, weight_decay=1e-4)
 
     rs3 = PyTorchRandomizedSmoothing(
         model=ptc.model,
@@ -133,6 +177,31 @@ def test_1_pt(get_mnist_data):
         warmup=10,
     )
 
+    # fit fails when scheduler is None
+    with pytest.raises(ValueError, match="A scheduler is needed to train the model, but none for provided."):
+        rs3.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="smoothadv")
+
+
+@pytest.mark.only_with_platform("pytorch")
+def test_smoothadv_randomized_smoothing_pytorch_pgd_no_gradient(get_mnist_data):
+    """
+    Test with a PyTorch Classifier.
+    :return:
+    """
+    import torch
+
+    # Build PytorchClassifier
+    ptc = get_image_classifier_pt(from_logits=True)
+
+    # Get MNIST
+    x_test, y_test = get_mnist_data
+
+    x_test = x_test.transpose(0, 3, 1, 2).astype(np.float32)
+
+    # Initialize RS object
+    optimizer = torch.optim.SGD(ptc.model.parameters(), lr=0.1, momentum=0.9, weight_decay=1e-4)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=50, gamma=0.1)
+
     rs4 = PyTorchRandomizedSmoothing(
         model=ptc.model,
         loss=torch.nn.CrossEntropyLoss(),
@@ -152,6 +221,30 @@ def test_1_pt(get_mnist_data):
         num_steps=10,
         warmup=10,
     )
+
+    # fit with PGD attack and no grad
+    rs4.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="smoothadv")
+
+
+@pytest.mark.only_with_platform("pytorch")
+def test_smoothadv_randomized_smoothing_pytorch_ddn_multinoise(get_mnist_data):
+    """
+    Test with a PyTorch Classifier.
+    :return:
+    """
+    import torch
+
+    # Build PytorchClassifier
+    ptc = get_image_classifier_pt(from_logits=True)
+
+    # Get MNIST
+    x_test, y_test = get_mnist_data
+
+    x_test = x_test.transpose(0, 3, 1, 2).astype(np.float32)
+
+    # Initialize RS object
+    optimizer = torch.optim.SGD(ptc.model.parameters(), lr=0.1, momentum=0.9, weight_decay=1e-4)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=50, gamma=0.1)
 
     rs5 = PyTorchRandomizedSmoothing(
         model=ptc.model,
@@ -173,6 +266,30 @@ def test_1_pt(get_mnist_data):
         warmup=10,
     )
 
+    # fit with DDN attack and multi noise
+    rs5.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="smoothadv")
+
+
+@pytest.mark.only_with_platform("pytorch")
+def test_smoothadv_randomized_smoothing_pytorch_ddn_singlenoise(get_mnist_data):
+    """
+    Test with a PyTorch Classifier.
+    :return:
+    """
+    import torch
+
+    # Build PytorchClassifier
+    ptc = get_image_classifier_pt(from_logits=True)
+
+    # Get MNIST
+    x_test, y_test = get_mnist_data
+
+    x_test = x_test.transpose(0, 3, 1, 2).astype(np.float32)
+
+    # Initialize RS object
+    optimizer = torch.optim.SGD(ptc.model.parameters(), lr=0.1, momentum=0.9, weight_decay=1e-4)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=50, gamma=0.1)
+
     rs6 = PyTorchRandomizedSmoothing(
         model=ptc.model,
         loss=torch.nn.CrossEntropyLoss(),
@@ -193,29 +310,12 @@ def test_1_pt(get_mnist_data):
         warmup=10,
     )
 
-    # fit
-    rs1.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="smoothadv")
-
-    # fit fails when optimizer is None
-    with pytest.raises(ValueError, match="An optimizer is needed to train the model, but none for provided."):
-        rs2.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="smoothadv")
-
-    # fit fails when scheduler is None
-    with pytest.raises(ValueError, match="A scheduler is needed to train the model, but none for provided."):
-        rs3.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="smoothadv")
-
-    # fit with PGD attack and no grad
-    rs4.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="smoothadv")
-
-    # fit with DDN attack and multi noise
-    rs5.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="smoothadv")
-
     # fit with DDN and single noise
     rs6.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="smoothadv")
 
 
 @pytest.mark.only_with_platform("tensorflow", "tensorflow2", "keras", "kerastf")
-def test_2_tf(get_mnist_data):
+def test_smoothadv_randomized_smoothing_tensorflow_pgd(get_mnist_data):
     """
     Test with a Smooth Adversarially trained TensorFlow Classifier.
     :return:
@@ -231,7 +331,7 @@ def test_2_tf(get_mnist_data):
 
         if tf.executing_eagerly():
             # Get MNIST
-            (_, _), (x_test, y_test) = get_mnist_data
+            x_test, y_test = get_mnist_data
 
             # Initialize RS object
             initial_learning_rate = 0.1
@@ -260,6 +360,34 @@ def test_2_tf(get_mnist_data):
                 scheduler=learning_rate_fn,
             )
 
+            # fit with PGD attack
+            rs1.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="smoothadv")
+
+
+@pytest.mark.only_with_platform("tensorflow", "tensorflow2", "keras", "kerastf")
+def test_smoothadv_randomized_smoothing_tensorflow_pgd_no_optimizer(get_mnist_data):
+    """
+    Test with a Smooth Adversarially trained TensorFlow Classifier.
+    :return:
+    """
+    import tensorflow as tf
+
+    tf_version = list(map(int, tf.__version__.lower().split("+")[0].split(".")))
+    if tf_version[0] == 2:
+
+        # Build TensorFlowV2Classifier
+        tf.compat.v1.enable_eager_execution()
+        classifier = get_image_classifier_tf_v2()
+
+        if tf.executing_eagerly():
+            # Get MNIST
+            x_test, y_test = get_mnist_data
+
+            # Initialize RS object
+            boundaries = [50, 100]
+            values = [0.1, 0.01, 0.001]
+            learning_rate_fn = tf.keras.optimizers.schedules.PiecewiseConstantDecay(boundaries, values)
+
             rs2 = TensorFlowV2RandomizedSmoothing(
                 model=classifier.model,
                 nb_classes=classifier.nb_classes,
@@ -275,6 +403,37 @@ def test_2_tf(get_mnist_data):
                 warmup=10,
                 optimizer=None,
                 scheduler=learning_rate_fn,
+            )
+
+            # fit fails when optimizer is None
+            with pytest.raises(ValueError, match="An optimizer is needed to train the model, but none for provided."):
+                rs2.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="smoothadv")
+
+
+@pytest.mark.only_with_platform("tensorflow", "tensorflow2", "keras", "kerastf")
+def test_smoothadv_randomized_smoothing_tensorflow_pgd_no_scheduler(get_mnist_data):
+    """
+    Test with a Smooth Adversarially trained TensorFlow Classifier.
+    :return:
+    """
+    import tensorflow as tf
+
+    tf_version = list(map(int, tf.__version__.lower().split("+")[0].split(".")))
+    if tf_version[0] == 2:
+
+        # Build TensorFlowV2Classifier
+        tf.compat.v1.enable_eager_execution()
+        classifier = get_image_classifier_tf_v2()
+
+        if tf.executing_eagerly():
+            # Get MNIST
+            x_test, y_test = get_mnist_data
+
+            # Initialize RS object
+            initial_learning_rate = 0.1
+
+            optimizer = tf.keras.optimizers.SGD(
+                learning_rate=initial_learning_rate, momentum=0.9, name="SGD", decay=1e-4
             )
 
             rs3 = TensorFlowV2RandomizedSmoothing(
@@ -294,6 +453,40 @@ def test_2_tf(get_mnist_data):
                 scheduler=None,
             )
 
+            # fit fails when scheduler is None
+            with pytest.raises(ValueError, match="A scheduler is needed to train the model, but none for provided."):
+                rs3.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="smoothadv")
+
+
+@pytest.mark.only_with_platform("tensorflow", "tensorflow2", "keras", "kerastf")
+def test_smoothadv_randomized_smoothing_tensorflow_pgd_no_gradient(get_mnist_data):
+    """
+    Test with a Smooth Adversarially trained TensorFlow Classifier.
+    :return:
+    """
+    import tensorflow as tf
+
+    tf_version = list(map(int, tf.__version__.lower().split("+")[0].split(".")))
+    if tf_version[0] == 2:
+
+        # Build TensorFlowV2Classifier
+        tf.compat.v1.enable_eager_execution()
+        classifier = get_image_classifier_tf_v2()
+
+        if tf.executing_eagerly():
+            # Get MNIST
+            x_test, y_test = get_mnist_data
+
+            # Initialize RS object
+            initial_learning_rate = 0.1
+            boundaries = [50, 100]
+            values = [0.1, 0.01, 0.001]
+            learning_rate_fn = tf.keras.optimizers.schedules.PiecewiseConstantDecay(boundaries, values)
+
+            optimizer = tf.keras.optimizers.SGD(
+                learning_rate=initial_learning_rate, momentum=0.9, name="SGD", decay=1e-4
+            )
+
             rs4 = TensorFlowV2RandomizedSmoothing(
                 model=classifier.model,
                 nb_classes=classifier.nb_classes,
@@ -309,6 +502,39 @@ def test_2_tf(get_mnist_data):
                 warmup=10,
                 optimizer=optimizer,
                 scheduler=learning_rate_fn,
+            )
+
+            # fit with DDN attack
+            rs4.fit(x_test, y_test.astype(np.int32), nb_epochs=1, batch_size=256, train_method="smoothadv")
+
+
+@pytest.mark.only_with_platform("tensorflow", "tensorflow2", "keras", "kerastf")
+def test_smoothadv_randomized_smoothing_tensorflow_ddn(get_mnist_data):
+    """
+    Test with a Smooth Adversarially trained TensorFlow Classifier.
+    :return:
+    """
+    import tensorflow as tf
+
+    tf_version = list(map(int, tf.__version__.lower().split("+")[0].split(".")))
+    if tf_version[0] == 2:
+
+        # Build TensorFlowV2Classifier
+        tf.compat.v1.enable_eager_execution()
+        classifier = get_image_classifier_tf_v2()
+
+        if tf.executing_eagerly():
+            # Get MNIST
+            x_test, y_test = get_mnist_data
+
+            # Initialize RS object
+            initial_learning_rate = 0.1
+            boundaries = [50, 100]
+            values = [0.1, 0.01, 0.001]
+            learning_rate_fn = tf.keras.optimizers.schedules.PiecewiseConstantDecay(boundaries, values)
+
+            optimizer = tf.keras.optimizers.SGD(
+                learning_rate=initial_learning_rate, momentum=0.9, name="SGD", decay=1e-4
             )
 
             rs5 = TensorFlowV2RandomizedSmoothing(
@@ -329,19 +555,5 @@ def test_2_tf(get_mnist_data):
                 scheduler=learning_rate_fn,
             )
 
-            # fit with PGD attack
-            rs1.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="smoothadv")
-
             # fit with PGD attack and no grad
             rs5.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="smoothadv")
-
-            # fit with DDN attack
-            rs4.fit(x_test, y_test.astype(np.int32), nb_epochs=1, batch_size=256, train_method="smoothadv")
-
-            # fit fails when optimizer is None
-            with pytest.raises(ValueError, match="An optimizer is needed to train the model, but none for provided."):
-                rs2.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="smoothadv")
-
-            # fit fails when scheduler is None
-            with pytest.raises(ValueError, match="A scheduler is needed to train the model, but none for provided."):
-                rs3.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="smoothadv")

@@ -31,20 +31,16 @@ from tests.utils import master_seed, get_image_classifier_pt, get_image_classifi
 os.environ["KMP_DUPLICATE_LIB_OK"] = "True"
 logger = logging.getLogger(__name__)
 
-BATCH_SIZE = 100
-NB_TRAIN = 5000
-NB_TEST = 10
-
 
 @pytest.fixture()
 def get_mnist_data():
     # Get MNIST
-    (x_train, y_train), (x_test, y_test), _, _ = load_dataset("mnist")
-    x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
+    NB_TEST = 10
+
+    (_, _), (x_test, y_test), _, _ = load_dataset("mnist")
     x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
-    y_train = np.argmax(y_train, axis=1)
     y_test = np.argmax(y_test, axis=1)
-    return (x_train, y_train), (x_test, y_test)
+    return x_test, y_test
 
 
 @pytest.fixture()
@@ -53,7 +49,7 @@ def set_seed():
 
 
 @pytest.mark.only_with_platform("pytorch")
-def test_1_pt(get_mnist_data):
+def test_smoothadv_attack_pytorch_pgd(get_mnist_data):
     """
     Test smooth adversarial attack.
     :return:
@@ -73,7 +69,7 @@ def test_1_pt(get_mnist_data):
     ptc = get_image_classifier_pt(from_logits=True)
 
     # Get MNIST
-    (_, _), (x_test, y_test) = get_mnist_data
+    x_test, y_test = get_mnist_data
 
     x_test = x_test.transpose(0, 3, 1, 2).astype(np.float32)
 
@@ -95,7 +91,7 @@ def test_1_pt(get_mnist_data):
 
 
 @pytest.mark.only_with_platform("pytorch")
-def test_2_pt(get_mnist_data):
+def test_smoothadv_attack_pytorch_ddn(get_mnist_data):
     """
     Test smooth adversarial attack using DDN.
     :return:
@@ -115,7 +111,7 @@ def test_2_pt(get_mnist_data):
     ptc = get_image_classifier_pt(from_logits=True)
 
     # Get MNIST
-    (_, _), (x_test, y_test) = get_mnist_data
+    x_test, y_test = get_mnist_data
 
     x_test = x_test.transpose(0, 3, 1, 2).astype(np.float32)
 
@@ -137,7 +133,7 @@ def test_2_pt(get_mnist_data):
 
 
 @pytest.mark.only_with_platform("tensorflow", "tensorflow2", "keras", "kerastf")
-def test_3_tf(get_mnist_data):
+def test_smoothadv_attack_tensorflow_pgd(get_mnist_data):
     """
     Test smooth adversarial attack.
     :return:
@@ -163,7 +159,7 @@ def test_3_tf(get_mnist_data):
 
         if tf.executing_eagerly():
             # Get MNIST
-            (_, _), (x_test, y_test) = get_mnist_data
+            x_test, y_test = get_mnist_data
             x_test = x_test.transpose(0, 3, 1, 2).astype(np.float32)
 
             attacker_pgd = PgdL2(steps=num_steps, max_norm=epsilon)
@@ -184,7 +180,7 @@ def test_3_tf(get_mnist_data):
 
 
 @pytest.mark.only_with_platform("tensorflow", "tensorflow2", "keras", "kerastf")
-def test_4_tf(get_mnist_data):
+def test_smoothadv_attack_tensorflow_ddn(get_mnist_data):
     """
     Test smooth adversarial attack using DDN.
     :return:
@@ -208,7 +204,7 @@ def test_4_tf(get_mnist_data):
 
         if tf.executing_eagerly():
             # Get MNIST
-            (_, _), (x_test, y_test) = get_mnist_data
+            x_test, y_test = get_mnist_data
             x_test = x_test.transpose(0, 3, 1, 2).astype(np.float32)
 
             attacker_pgd = DDN(steps=num_steps, max_norm=epsilon)
