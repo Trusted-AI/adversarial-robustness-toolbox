@@ -305,7 +305,7 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
                                    0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
         :return: Loss gradients of the same shape as `x`.
         """
-        import tensorflow.compat.v1 as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
         # Only do loss_gradient if is_training is False
         if self.is_training:
@@ -318,36 +318,51 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
 
             y = convert_pt_to_tf(y=y, height=x.shape[1], width=x.shape[2])
 
+        
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
-        # Get the loss gradients graph
-        if not hasattr(self, "_loss_grads"):
+        groundtruth_boxes_list = [
+            tf.convert_to_tensor(y[i]['boxes'])
+            for i in range(x.shape[0])
+        ]
+
+        groundtruth_classes_list = [
+            tf.one_hot(groundtruth_class, self._model.num_classes) for groundtruth_class in [
+                tf.convert_to_tensor(y[i]['labels'])
+                for i in range(x.shape[0])
+            ]
+        ]
+
+        groundtruth_weights_list = [
+            [1]*len(y[i]['labels'])
+            for i in range(x.shape[0])
+        ]
+
+        self._model.provide_groundtruth(
+            groundtruth_boxes_list=groundtruth_boxes_list,
+            groundtruth_classes_list=groundtruth_classes_list,
+            groundtruth_weights_list=groundtruth_weights_list,
+        )
+        with tf.GradientTape() as tape:
+            tape.watch(x_preprocessed)
+
+            preprocessed_images, true_image_shapes = self._model.preprocess(x_preprocessed)
+            predictions = self._model.predict(preprocessed_images, true_image_shapes)
+            losses = self._model.loss(predictions, true_image_shapes)
+
             loss = None
             for loss_name in self.attack_losses:
                 if loss is None:
-                    loss = self._losses[loss_name]
+                    loss = losses[loss_name]
                 else:
-                    loss = loss + self._losses[loss_name]
+                    loss = loss + losses[loss_name]
 
-            self._loss_grads: tf.Tensor = tf.gradients(loss, self.images)[0]
+        # grads: tf.Tensor = tf.gradients(loss, self.images)[0]
+        grads = tape.gradient(loss, x_preprocessed)
 
-        # Create feed_dict
-        feed_dict = {self.images: x_preprocessed}
-
-        for (placeholder, value) in zip(self._groundtruth_boxes_list, y):
-            feed_dict[placeholder] = value["boxes"]
-
-        for (placeholder, value) in zip(self._groundtruth_classes_list, y):
-            feed_dict[placeholder] = value["labels"]
-
-        for (placeholder, value) in zip(self._groundtruth_weights_list, y):
-            feed_dict[placeholder] = [1.0] * len(value["labels"])
-
-        # Compute gradients
-        grads = self._sess.run(self._loss_grads, feed_dict=feed_dict)
         grads = self._apply_preprocessing_gradient(x, grads)
-        assert grads.shape == x.shape
+        assert grads.shape == x_preprocessed.shape
 
         return grads
 
@@ -407,7 +422,7 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
                 d_sample = {}
 
                 d_sample["boxes"] = batch_results["detection_boxes"][i].numpy()
-                d_sample["labels"] = batch_results["detection_classes"][i].numpy().astype(int)
+                d_sample["labels"] = batch_results["detection_classes"][i].numpy().astype(np.int32)
 
                 if standardise_output:
                     from art.estimators.object_detection.utils import convert_tf_to_pt
@@ -475,34 +490,48 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
                   of shape `(nb_samples,)`.
         :return: Array of losses of the same shape as `x`.
         """
+
+        import tensorflow as tf  # lgtm [py/repeated-import]
+
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
-        # Get the losses graph
+        groundtruth_boxes_list = [
+            tf.convert_to_tensor(y[i]['boxes'])
+            for i in range(x.shape[0])
+        ]
+
+        groundtruth_classes_list = [
+            tf.one_hot(groundtruth_class, self._model.num_classes) for groundtruth_class in [
+                tf.convert_to_tensor(y[i]['labels'])
+                for i in range(x.shape[0])
+            ]
+        ]
+
+        groundtruth_weights_list = [
+            [1]*len(y[i]['labels'])
+            for i in range(x.shape[0])
+        ]
+
+        self._model.provide_groundtruth(
+            groundtruth_boxes_list=groundtruth_boxes_list,
+            groundtruth_classes_list=groundtruth_classes_list,
+            groundtruth_weights_list=groundtruth_weights_list,
+        )
+        preprocessed_images, true_image_shapes = self._model.preprocess(x_preprocessed)
+        predictions = self._model.predict(preprocessed_images, true_image_shapes)
+        losses = self._model.loss(predictions, true_image_shapes)
+
         if not hasattr(self, "_loss_total"):
             loss = None
             for loss_name in self.attack_losses:
                 if loss is None:
-                    loss = self._losses[loss_name]
+                    loss = losses[loss_name]
                 else:
-                    loss = loss + self._losses[loss_name]
+                    loss = loss + losses[loss_name]
             self._loss_total = loss
 
-        # Create feed_dict
-        feed_dict = {self.images: x_preprocessed}
-
-        for (placeholder, value) in zip(self._groundtruth_boxes_list, y):
-            feed_dict[placeholder] = value["boxes"]
-
-        for (placeholder, value) in zip(self._groundtruth_classes_list, y):
-            feed_dict[placeholder] = value["labels"]
-
-        for (placeholder, value) in zip(self._groundtruth_weights_list, y):
-            feed_dict[placeholder] = value["scores"]
-
-        loss_values = self._sess.run(self._loss_total, feed_dict=feed_dict)
-
-        return loss_values
+        return self._loss_total.numpy()
 
     def compute_losses(self, x: np.ndarray, y: np.ndarray) -> Dict[str, np.ndarray]:  # type: ignore
         """
@@ -514,30 +543,46 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
                   of shape `(nb_samples,)`.
         :return: Dictionary of loss components.
         """
+
+        import tensorflow as tf  # lgtm [py/repeated-import]
+
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
-        # Create feed_dict
-        feed_dict = {self.images: x_preprocessed}
+        groundtruth_boxes_list = [
+            tf.convert_to_tensor(y[i]['boxes'])
+            for i in range(x.shape[0])
+        ]
 
-        for (placeholder, value) in zip(self._groundtruth_boxes_list, y):
-            feed_dict[placeholder] = value["boxes"]
+        groundtruth_classes_list = [
+            tf.one_hot(groundtruth_class, self._model.num_classes) for groundtruth_class in [
+                tf.convert_to_tensor(y[i]['labels'])
+                for i in range(x.shape[0])
+            ]
+        ]
 
-        for (placeholder, value) in zip(self._groundtruth_classes_list, y):
-            feed_dict[placeholder] = value["labels"]
+        groundtruth_weights_list = [
+            [1]*len(y[i]['labels'])
+            for i in range(x.shape[0])
+        ]
 
-        for (placeholder, value) in zip(self._groundtruth_weights_list, y):
-            feed_dict[placeholder] = value["scores"]
+        self._model.provide_groundtruth(
+            groundtruth_boxes_list=groundtruth_boxes_list,
+            groundtruth_classes_list=groundtruth_classes_list,
+            groundtruth_weights_list=groundtruth_weights_list,
+        )
+        preprocessed_images, true_image_shapes = self._model.preprocess(x_preprocessed)
+        predictions = self._model.predict(preprocessed_images, true_image_shapes)
+        losses = self._model.loss(predictions, true_image_shapes)
 
         # Get the losses graph
         if not hasattr(self, "_losses_dict"):
             self._losses_dict = {}
             for loss_name in self.attack_losses:
-                self._losses_dict[loss_name] = self._losses[loss_name]
+                self._losses_dict[loss_name] = losses[loss_name]
 
-        losses: Dict[str, np.ndarray] = {}
+        _losses: Dict[str, np.ndarray] = {}
         for loss_name in self.attack_losses:
-            loss_value = self._sess.run(self._losses_dict[loss_name], feed_dict=feed_dict)
-            losses[loss_name] = loss_value
+            _losses[loss_name] = losses[loss_name].numpy()
 
-        return losses
+        return _losses
