@@ -393,7 +393,8 @@ class TestScikitlearnBinaryLogisticRegression(TestBase):
         ][:, [0, 1]]
 
         grad_predicted = self.classifier.loss_gradient(x_test_binary[0:1], y_test_binary[0:1])
-        grad_expected = np.asarray([[-0.3771413, 0.31875887, -1.18806318, -0.46225301]])
+        grad_expected = np.asarray([[-0.37703343, 0.31890249, -1.18813638, -0.46208951]])
+        print(grad_predicted)
         np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=4)
 
     def test_save(self):
