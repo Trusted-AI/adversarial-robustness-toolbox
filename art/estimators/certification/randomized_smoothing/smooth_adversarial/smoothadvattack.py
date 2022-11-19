@@ -25,29 +25,12 @@ This is authors' implementation of Smooth Adversarial Attack using PGD and DDN
 | Paper link: https://arxiv.org/pdf/1906.04584.pdf
 
 """
-from abc import ABCMeta, abstractmethod
-
 from typing import Optional, Any
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-
-
-class Attacker(metaclass=ABCMeta):
-    """
-    Abstract class for the Attacker. Consists of the single attack function
-    extended by the implementation in PyTorch.
-
-    """
-
-    @abstractmethod
-    def attack(self, model, inputs, labels):
-        """
-        Abstract function definition for the attack call
-
-        """
-        raise NotImplementedError
+from art.estimators.certification.randomized_smoothing.smooth_adversarial.attacker import Attacker
 
 
 # Modification of the code from https://github.com/jeromerony/fast_adversarial
