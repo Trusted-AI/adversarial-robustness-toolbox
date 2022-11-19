@@ -26,25 +26,8 @@ in Tensorflow
 | Paper link: https://arxiv.org/pdf/1906.04584.pdf
 
 """
-from abc import ABCMeta, abstractmethod
-
 import tensorflow as tf
-
-
-class Attacker(metaclass=ABCMeta):
-    """
-    Abstract class for the Attacker. Consists of the single attack function
-    extended by the implementation
-
-    """
-
-    @abstractmethod
-    def attack(self, model, inputs, labels):
-        """
-        Abstract function definition for the attack call
-
-        """
-        raise NotImplementedError
+from art.estimators.certification.randomized_smoothing.smooth_adversarial.attacker import Attacker
 
 
 def get_tensor_mode(input_tensor: tf.Tensor, dim=-1):
@@ -75,19 +58,14 @@ class PgdL2(Attacker):
         Number of steps for the optimization.
     max_norm : float or None, optional
         If specified, the norms of the perturbations will not be greater than this value which might lower success rate.
-    device : torch.device, optional
-        Device on which to perform the attack.
 
     """
 
-    def __init__(
-        self, steps: int, random_start: bool = True, max_norm: float = 1.0, device: tf.device = tf.device("cpu")
-    ) -> None:
+    def __init__(self, steps: int, random_start: bool = True, max_norm: float = 1.0) -> None:
         super().__init__()
         self.steps = steps
         self.random_start = random_start
         self.max_norm = max_norm
-        self.device = device
 
     def attack(
         self,
@@ -341,8 +319,6 @@ class DDN(Attacker):
         Number of levels to use for quantization (e.g. 256 for 8 bit images).
     max_norm : float or None, optional
         If specified, the norms of the perturbations will not be greater than this value which might lower success rate.
-    device : tf.device, optional
-        Device on which to perform the attack.
     callback : object, optional
         Visdom callback to display various metrics.
 
@@ -356,7 +332,6 @@ class DDN(Attacker):
         quantize: bool = True,
         levels: int = 256,
         max_norm: float = 1.0,
-        device: tf.device = tf.device("cpu"),
     ) -> None:
         super().__init__()
         self.steps = steps
@@ -365,7 +340,6 @@ class DDN(Attacker):
         self.quantize = quantize
         self.levels = levels
         self.max_norm = max_norm
-        self.device = device
 
     def attack(
         self,

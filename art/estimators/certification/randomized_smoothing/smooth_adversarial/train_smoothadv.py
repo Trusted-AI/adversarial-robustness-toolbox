@@ -24,7 +24,6 @@ This module implements Smooth Adversarial Attack using PGD and DDN.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-import torch
 import numpy as np
 from art.config import ART_NUMPY_DTYPE
 
@@ -45,16 +44,28 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
     :type kwargs: `dict`
     :return: `None`
     """
+    import torch
     import random
     from art.estimators.certification.randomized_smoothing.smooth_adversarial.smoothadvattack import PgdL2, DDN
+
+    def requires_grad(model: torch.nn.Module, requires_grad_val: bool) -> None:
+        """
+        Sets the `requires_grad_` property for the model's parameters
+
+        :param x: torch Model
+        :param requires_grad_val: boolean value to set requires_grad_ property with.
+        :return: `None`
+        """
+        for param in model.parameters():
+            param.requires_grad_(requires_grad_val)
 
     x = x.astype(ART_NUMPY_DTYPE)
     start_epoch = 0
 
     if self.attack_type == "PGD":
-        attacker = PgdL2(steps=self.num_steps, device="cuda", max_norm=self.epsilon)
+        attacker = PgdL2(steps=self.num_steps, device=self.device, max_norm=self.epsilon)
     elif self.attack_type == "DDN":
-        attacker = DDN(steps=self.num_steps, device="cuda", max_norm=self.epsilon)
+        attacker = DDN(steps=self.num_steps, device=self.device, max_norm=self.epsilon)
 
     if self.optimizer is None:  # pragma: no cover
         raise ValueError("An optimizer is needed to train the model, but none for provided.")
@@ -150,9 +161,9 @@ def fit_tensorflow(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epoch
     start_epoch = 0
 
     if self.attack_type == "PGD":
-        attacker = PgdL2(steps=self.num_steps, device="cuda", max_norm=self.epsilon)
+        attacker = PgdL2(steps=self.num_steps, max_norm=self.epsilon)
     elif self.attack_type == "DDN":
-        attacker = DDN(steps=self.num_steps, device="cuda", max_norm=self.epsilon)
+        attacker = DDN(steps=self.num_steps, max_norm=self.epsilon)
 
     if self.optimizer is None:  # pragma: no cover
         raise ValueError("An optimizer is needed to train the model, but none for provided.")
@@ -199,18 +210,6 @@ def fit_tensorflow(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epoch
                 gradients = tape.gradient(loss, self.model.trainable_variables)
                 self.optimizer.apply_gradients(zip(gradients, self.model.trainable_variables))
         # End epoch
-
-
-def requires_grad(model: torch.nn.Module, requires_grad_val: bool) -> None:
-    """
-    Sets the `requires_grad_` property for the model's parameters
-
-    :param x: torch Model
-    :param requires_grad_val: boolean value to set requires_grad_ property with.
-    :return: `None`
-    """
-    for param in model.parameters():
-        param.requires_grad_(requires_grad_val)
 
 
 def get_minibatches(x, y, num_batches):

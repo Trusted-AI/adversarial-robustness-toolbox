@@ -170,6 +170,7 @@ def test_macer_randomized_smoothing_pytorch_no_scheduler(get_mnist_data):
         rs3.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="macer")
 
 
+# MACER implementation not compatible with Tensorflow v1
 @pytest.mark.only_with_platform("tensorflow", "tensorflow2", "keras", "kerastf")
 def test_macer_randomized_smoothing_tensorflow(get_mnist_data):
     """
@@ -178,38 +179,37 @@ def test_macer_randomized_smoothing_tensorflow(get_mnist_data):
     """
     import tensorflow as tf
 
-    tf.compat.v1.enable_eager_execution()
     ptc = get_image_classifier_tf_v2()
 
-    if tf.executing_eagerly():
-        # Get MNIST
-        x_test, y_test = get_mnist_data
-        x_test = x_test.astype("float32")
-        y_test = y_test.astype("int32")
+    # Get MNIST
+    x_test, y_test = get_mnist_data
+    x_test = x_test.astype("float32")
+    y_test = y_test.astype("int32")
 
-        # Initialize RS object
-        optimizer = tf.keras.optimizers.SGD(learning_rate=0.01, momentum=0.9, name="SGD", decay=5e-4)
-        boundaries = [250, 400]
-        values = [0.01, 0.001, 0.0001]
-        learning_rate_fn = tf.keras.optimizers.schedules.PiecewiseConstantDecay(boundaries, values)
-        rs1 = TensorFlowV2RandomizedSmoothing(
-            model=ptc.model,
-            optimizer=optimizer,
-            scheduler=learning_rate_fn,
-            input_shape=ptc.input_shape,
-            nb_classes=ptc.nb_classes,
-            clip_values=ptc.clip_values,
-            scale=0.25,
-            lbd=12.0,
-            gamma=8.0,
-            beta=16.0,
-            gauss_num=16,
-        )
+    # Initialize RS object
+    optimizer = tf.keras.optimizers.SGD(learning_rate=0.01, momentum=0.9, name="SGD", decay=5e-4)
+    boundaries = [250, 400]
+    values = [0.01, 0.001, 0.0001]
+    learning_rate_fn = tf.keras.optimizers.schedules.PiecewiseConstantDecay(boundaries, values)
+    rs1 = TensorFlowV2RandomizedSmoothing(
+        model=ptc.model,
+        optimizer=optimizer,
+        scheduler=learning_rate_fn,
+        input_shape=ptc.input_shape,
+        nb_classes=ptc.nb_classes,
+        clip_values=ptc.clip_values,
+        scale=0.25,
+        lbd=12.0,
+        gamma=8.0,
+        beta=16.0,
+        gauss_num=16,
+    )
 
-        # fit
-        rs1.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="macer")
+    # fit
+    rs1.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="macer")
 
 
+#  MACER implementation not compatible with Tensorflow v1
 @pytest.mark.only_with_platform("tensorflow", "tensorflow2", "keras", "kerastf")
 def test_macer_randomized_smoothing_tensorflow_no_optimizer(get_mnist_data):
     """
@@ -218,38 +218,37 @@ def test_macer_randomized_smoothing_tensorflow_no_optimizer(get_mnist_data):
     """
     import tensorflow as tf
 
-    tf.compat.v1.enable_eager_execution()
     ptc = get_image_classifier_tf_v2()
 
-    if tf.executing_eagerly():
-        # Get MNIST
-        x_test, y_test = get_mnist_data
-        x_test = x_test.astype("float32")
-        y_test = y_test.astype("int32")
+    # Get MNIST
+    x_test, y_test = get_mnist_data
+    x_test = x_test.astype("float32")
+    y_test = y_test.astype("int32")
 
-        # Initialize RS object
-        boundaries = [250, 400]
-        values = [0.01, 0.001, 0.0001]
-        learning_rate_fn = tf.keras.optimizers.schedules.PiecewiseConstantDecay(boundaries, values)
-        rs2 = TensorFlowV2RandomizedSmoothing(
-            model=ptc.model,
-            optimizer=None,
-            scheduler=learning_rate_fn,
-            input_shape=ptc.input_shape,
-            nb_classes=ptc.nb_classes,
-            clip_values=ptc.clip_values,
-            scale=0.25,
-            lbd=12.0,
-            gamma=8.0,
-            beta=16.0,
-            gauss_num=16,
-        )
+    # Initialize RS object
+    boundaries = [250, 400]
+    values = [0.01, 0.001, 0.0001]
+    learning_rate_fn = tf.keras.optimizers.schedules.PiecewiseConstantDecay(boundaries, values)
+    rs2 = TensorFlowV2RandomizedSmoothing(
+        model=ptc.model,
+        optimizer=None,
+        scheduler=learning_rate_fn,
+        input_shape=ptc.input_shape,
+        nb_classes=ptc.nb_classes,
+        clip_values=ptc.clip_values,
+        scale=0.25,
+        lbd=12.0,
+        gamma=8.0,
+        beta=16.0,
+        gauss_num=16,
+    )
 
-        # fit fails when optimizer is None
-        with pytest.raises(ValueError, match="An optimizer is needed to train the model, but none for provided."):
-            rs2.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="macer")
+    # fit fails when optimizer is None
+    with pytest.raises(ValueError, match="An optimizer is needed to train the model, but none for provided."):
+        rs2.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="macer")
 
 
+# MACER implementation not compatible with Tensorflow v1
 @pytest.mark.only_with_platform("tensorflow", "tensorflow2", "keras", "kerastf")
 def test_macer_randomized_smoothing_tensorflow_no_scheduler(get_mnist_data):
     """
@@ -258,32 +257,30 @@ def test_macer_randomized_smoothing_tensorflow_no_scheduler(get_mnist_data):
     """
     import tensorflow as tf
 
-    tf.compat.v1.enable_eager_execution()
     ptc = get_image_classifier_tf_v2()
 
-    if tf.executing_eagerly():
-        # Get MNIST
-        x_test, y_test = get_mnist_data
-        x_test = x_test.astype("float32")
-        y_test = y_test.astype("int32")
+    # Get MNIST
+    x_test, y_test = get_mnist_data
+    x_test = x_test.astype("float32")
+    y_test = y_test.astype("int32")
 
-        # Initialize RS object
-        optimizer = tf.keras.optimizers.SGD(learning_rate=0.01, momentum=0.9, name="SGD", decay=5e-4)
+    # Initialize RS object
+    optimizer = tf.keras.optimizers.SGD(learning_rate=0.01, momentum=0.9, name="SGD", decay=5e-4)
 
-        rs3 = TensorFlowV2RandomizedSmoothing(
-            model=ptc.model,
-            optimizer=optimizer,
-            scheduler=None,
-            input_shape=ptc.input_shape,
-            nb_classes=ptc.nb_classes,
-            clip_values=ptc.clip_values,
-            scale=0.25,
-            lbd=12.0,
-            gamma=8.0,
-            beta=16.0,
-            gauss_num=16,
-        )
+    rs3 = TensorFlowV2RandomizedSmoothing(
+        model=ptc.model,
+        optimizer=optimizer,
+        scheduler=None,
+        input_shape=ptc.input_shape,
+        nb_classes=ptc.nb_classes,
+        clip_values=ptc.clip_values,
+        scale=0.25,
+        lbd=12.0,
+        gamma=8.0,
+        beta=16.0,
+        gauss_num=16,
+    )
 
-        # fit fails when scheduler is None
-        with pytest.raises(ValueError, match="A scheduler is needed to train the model, but none for provided."):
-            rs3.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="macer")
+    # fit fails when scheduler is None
+    with pytest.raises(ValueError, match="A scheduler is needed to train the model, but none for provided."):
+        rs3.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="macer")
