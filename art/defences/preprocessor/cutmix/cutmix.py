@@ -106,7 +106,7 @@ class CutMix(Preprocessor):
 
         x_ndim = len(x.shape)
 
-        # NCHW/NCFHW/NHWC --> NFHWC
+        # NCHW/NHWC/NCFHW --> NFHWC
         if x_ndim == 4:
             if self.channels_first:
                 # NCHW --> NHWC --> NFHWC
@@ -157,7 +157,7 @@ class CutMix(Preprocessor):
 
         x_nfhwc = x_aug
 
-        # NCHW/NCFHW/NFHWC/NHWC <-- NFHWC
+        # NCHW/NHWC/NCFHW <-- NFHWC
         if x_ndim == 4:
             if self.channels_first:
                 # NHWC <-- NCHW <-- NFHWC

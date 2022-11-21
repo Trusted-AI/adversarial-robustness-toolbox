@@ -111,7 +111,7 @@ class CutMixTensorFlowV2(PreprocessorTensorFlowV2):
 
         x_ndim = len(x.shape)
 
-        # NCHW/NCFHW/NHWC --> NFHWC
+        # NCHW/NHWC/NCFHW --> NFHWC
         if x_ndim == 4:
             if self.channels_first:
                 # NCHW --> NHWC --> NFHWC
@@ -163,7 +163,7 @@ class CutMixTensorFlowV2(PreprocessorTensorFlowV2):
         x_nfhwc = tf.convert_to_tensor(x_aug)
         y_aug = tf.convert_to_tensor(y_aug)
 
-        # NCHW/NCFHW/NFHWC/NHWC <-- NFHWC
+        # NCHW/NHWC/NCFHW <-- NFHWC
         if x_ndim == 4:
             if self.channels_first:
                 # NHWC <-- NCHW <-- NFHWC
