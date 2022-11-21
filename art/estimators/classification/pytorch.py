@@ -845,10 +845,13 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         else:
             loss.backward()
 
-        if isinstance(x, torch.Tensor):
-            grads = x_grad.grad
+        if x_grad.grad is not None:
+            if isinstance(x, torch.Tensor):
+                grads = x_grad.grad
+            else:
+                grads = x_grad.grad.cpu().numpy().copy()
         else:
-            grads = x_grad.grad.cpu().numpy().copy()  # type: ignore
+            raise ValueError("Gradient term in PyTorch model is `None`.")
 
         if not self.all_framework_preprocessing:
             grads = self._apply_preprocessing_gradient(x, grads)

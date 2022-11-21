@@ -313,11 +313,17 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
 
             if isinstance(x, np.ndarray):
                 for img in image_tensor_list_grad:
-                    gradients = img.grad.cpu().numpy().copy()
+                    if img.grad is not None:
+                        gradients = img.grad.cpu().numpy().copy()
+                    else:
+                        raise ValueError("Gradient term in PyTorch model is `None`.")
                     grad_list.append(gradients)
             else:
                 for img in inputs_t:
-                    gradients = img.grad.copy()
+                    if img.grad is not None:
+                        gradients = img.grad.copy()
+                    else:
+                        raise ValueError("Gradient term in PyTorch model is `None`.")
                     grad_list.append(gradients)
 
         if isinstance(x, np.ndarray):
