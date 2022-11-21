@@ -12,7 +12,7 @@ pydub==0.25.1
 resampy==0.4.2
 ffmpeg-python==0.2.0
 cma==3.2.2
-pandas==1.4.4
+pandas==1.5.1
 librosa==0.9.2
 numba~=0.56.3
 opencv-python
@@ -21,8 +21,8 @@ h5py==3.7.0
 
 # frameworks
 
-tensorflow>=2.9.0
-keras>=2.9.0
+tensorflow==2.10.0
+keras==2.10.0
 tensorflow-addons>=0.13.0
 
 # using mxnet-native for reproducible test results on CI machines without Intel Architecture Processors, but mxnet is fully supported by ART
@@ -36,13 +36,13 @@ torchvision==0.14.0+cpu
 
 catboost==1.1
 GPy==1.10.0
-lightgbm==3.3.2
+lightgbm==3.3.3
 xgboost==1.7.0
 
 kornia~=0.6.7
 tensorboardX==2.5.1
 lief==0.12.2
-jax[cpu]==0.3.23
+jax[cpu]==0.3.25
 
 # Lingvo ASR dependencies
 # supported versions: (lingvo==0.6.4 with tensorflow-gpu==2.1.0)
