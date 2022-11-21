@@ -128,7 +128,9 @@ class XGBoostClassifier(ClassifierDecisionTree):
 
         if isinstance(self._model, xgboost.XGBClassifier):
             self._model.fit(x, y, **kwargs)
-            self._nb_classes = self._get_nb_classes(self._nb_classes)
+            _nb_classes = self._get_nb_classes(self._nb_classes)
+            if _nb_classes is not None:
+                self._nb_classes = _nb_classes
         else:
             raise NotImplementedError
 
@@ -191,7 +193,7 @@ class XGBoostClassifier(ClassifierDecisionTree):
         try:
             if isinstance(self._model, Booster):
                 return int(len(self._model.get_dump(dump_format="json")) / self._model.n_estimators)  # type: ignore
-            elif isinstance(self._model, XGBClassifier):
+            if isinstance(self._model, XGBClassifier):
                 return self._model.n_classes_
         except AttributeError:
             pass

@@ -24,16 +24,29 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import math
 from functools import reduce
-from typing import Callable, Tuple, TYPE_CHECKING, Union, List, Optional, Sequence
+from typing import Callable, Tuple, TYPE_CHECKING, Union, List, Sequence, Optional
 
 import numpy as np
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_TYPE, ESTIMATOR_TYPE
+    from art.utils import CLASSIFIER_TYPE
     from art.estimators.classification.scikitlearn import ScikitlearnClassifier
-    from art.estimators.classification import PyTorchClassifier, TensorFlowV2Classifier, KerasClassifier
+    from art.estimators.classification import PyTorchClassifier, TensorFlowV2Classifier
     from art.estimators.regression import PyTorchRegressor, ScikitlearnRegressor
     from art.estimators.classification.xgboost import XGBoostClassifier
+    from art.estimators.keras import KerasEstimator
+
+    CLONABLE = [
+        Union[
+            ScikitlearnClassifier,
+            PyTorchClassifier,
+            TensorFlowV2Classifier,
+            KerasEstimator,
+            PyTorchRegressor,
+            ScikitlearnRegressor,
+            XGBoostClassifier,
+        ]
+    ]
 
 
 class ShadowModels:
@@ -44,15 +57,7 @@ class ShadowModels:
 
     def __init__(
         self,
-        shadow_model_template: Union[
-            "ScikitlearnClassifier",
-            "PyTorchClassifier",
-            "TensorFlowV2Classifier",
-            "KerasClassifier",
-            "PyTorchRegressor",
-            "ScikitlearnRegressor",
-            "XGBoostClassifier",
-        ],
+        shadow_model_template: CLONABLE,
         num_shadow_models: int = 3,
         disjoint_datasets=False,
         random_state=None,
@@ -328,7 +333,7 @@ class ShadowModels:
 
     def get_shadow_models(
         self,
-    ) -> List["ESTIMATOR_TYPE"]:
+    ) -> Sequence["CLONABLE"]:
         """
         Returns the list of shadow models. `generate_shadow_dataset` or `generate_synthetic_shadow_dataset` must be
         called for the shadow models to be trained.
