@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the task specific estimator for Faster R-CNN in TensorFlow.
+This module implements the task specific estimator for Faster R-CNN in TensorFlowV2.
 """
 import logging
 from typing import List, Dict, Optional, Tuple, Union, TYPE_CHECKING
@@ -32,7 +32,6 @@ if TYPE_CHECKING:
     # pylint: disable=C0412
     import tensorflow as tf
     from object_detection.meta_architectures.faster_rcnn_meta_arch import FasterRCNNMetaArch
-    from tensorflow.python.client.session import Session  # pylint: disable=E0611
 
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor.preprocessor import Preprocessor
@@ -46,7 +45,7 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
     This class implements a model-specific object detector using Faster-RCNN and TensorFlow.
     """
 
-    estimator_params = TensorFlowV2Estimator.estimator_params + ["images", "sess", "is_training", "attack_losses"]
+    estimator_params = TensorFlowV2Estimator.estimator_params + ["images", "is_training", "attack_losses"]
 
     def __init__(
         self,
@@ -54,7 +53,6 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
         model: Optional["FasterRCNNMetaArch"] = None,
         filename: Optional[str] = None,
         url: Optional[str] = None,
-        sess: Optional["Session"] = None,
         is_training: bool = False,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         channels_first: bool = False,
@@ -83,7 +81,6 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
                         - detections: a dictionary containing final detection results.
         :param filename: Filename of the detection model without filename extension.
         :param url: URL to download archive of detection model including filename extension.
-        :param sess: Computation session.
         :param is_training: A boolean indicating whether the training version of the computation graph should be
                             constructed.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
@@ -101,7 +98,6 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
                               `first_stage_localization_loss`, `first_stage_objectness_loss`,
                               `second_stage_localization_loss`, `second_stage_classification_loss`.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
 
         # Super initialization
         super().__init__(
@@ -114,38 +110,17 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
         )
 
         # Check clip values
-        if self.clip_values is not None:
+        '''if self.clip_values is not None:
             if not np.all(self.clip_values[0] == 0):
                 raise ValueError("This classifier requires normalized input images with clip_vales=(0, 1).")
             if not np.all(self.clip_values[1] == 1):  # pragma: no cover
-                raise ValueError("This classifier requires normalized input images with clip_vales=(0, 1).")
+                raise ValueError("This classifier requires normalized input images with clip_vales=(0, 1).")'''
 
         # Check preprocessing and postprocessing defences
         if self.preprocessing_defences is not None:
             raise ValueError("This estimator does not support `preprocessing_defences`.")
         if self.postprocessing_defences is not None:
             raise ValueError("This estimator does not support `postprocessing_defences`.")
-
-        # Create placeholders for groundtruth boxes
-        self._groundtruth_boxes_list: List["tf.keras.Input"]
-        self._groundtruth_boxes_list = [
-            tf.keras.Input(dtype=tf.float32, batch_size=None, shape=(4,), name=f"groundtruth_boxes_{i}")
-            for i in range(images.shape[0])
-        ]
-
-        # Create placeholders for groundtruth classes
-        self._groundtruth_classes_list: List["tf.keras.Input"]
-        self._groundtruth_classes_list = [
-            tf.keras.Input(dtype=tf.int32, batch_size=None, shape=(None,), name=f"groundtruth_classes_{i}")
-            for i in range(images.shape[0])
-        ]
-
-        # Create placeholders for groundtruth weights
-        self._groundtruth_weights_list: List["tf.keras.Input"]
-        self._groundtruth_weights_list = [
-            tf.keras.Input(dtype=tf.float32, batch_size=None, shape=(None,), name=f"groundtruth_weights_{i}")
-            for i in range(images.shape[0])
-        ]
 
         # Load model
         if model is None:
@@ -159,26 +134,18 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
                 )
 
             self._model = self._load_model(
-                images=images,
                 filename=filename,
                 url=url,
                 obj_detection_model=None,
-                is_training=is_training,
-                groundtruth_boxes_list=self._groundtruth_boxes_list,
-                groundtruth_classes_list=self._groundtruth_classes_list,
-                groundtruth_weights_list=self._groundtruth_weights_list,
+                is_training=is_training
             )
 
         else:
             self._model = self._load_model(
-                images=images,
                 filename=None,
                 url=None,
                 obj_detection_model=model,
-                is_training=is_training,
-                groundtruth_boxes_list=self._groundtruth_boxes_list,
-                groundtruth_classes_list=self._groundtruth_classes_list,
-                groundtruth_weights_list=self._groundtruth_weights_list,
+                is_training=is_training
             )
 
         # Save new attributes
@@ -205,14 +172,10 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
 
     @staticmethod
     def _load_model(
-        images: "tf.Tensor",
         filename: Optional[str] = None,
         url: Optional[str] = None,
         obj_detection_model: Optional["FasterRCNNMetaArch"] = None,
         is_training: bool = False,
-        groundtruth_boxes_list: Optional[List["tf.keras.Input"]] = None,
-        groundtruth_classes_list: Optional[List["tf.keras.Input"]] = None,
-        groundtruth_weights_list: Optional[List["tf.keras.Input"]] = None,
     ) -> Tuple[Dict[str, "tf.Tensor"], ...]:
         """
         Download, extract and load a model from a URL if it not already in the cache. The file at indicated by `url`
@@ -220,32 +183,13 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
         formats will also be extracted. Then the model is loaded, pipelined and its outputs are returned as a tuple
         of (predictions, losses, detections).
 
-        :param images: Input samples of shape (nb_samples, height, width, nb_channels).
         :param filename: Name of the file.
         :param url: Download URL.
         :param is_training: A boolean indicating whether the training version of the computation graph should be
                             constructed.
-        :param groundtruth_boxes_list: A list of 2-D tf.float32 tensors of shape [num_boxes, 4] containing
-                                       coordinates of the groundtruth boxes. Groundtruth boxes are provided in
-                                       [y_min, x_min, y_max, x_max] format and also assumed to be normalized and
-                                       clipped relative to the image window with conditions y_min <= y_max and
-                                       x_min <= x_max.
-        :param groundtruth_classes_list: A list of 1-D tf.float32 tensors of shape [num_boxes] containing the class
-                                         targets with the zero index which is assumed to map to the first
-                                         non-background class.
-        :param groundtruth_weights_list: A list of 1-D tf.float32 tensors of shape [num_boxes] containing weights for
-                                         groundtruth boxes.
-        :return: A tuple of (predictions, losses, detections):
-
-                    - predictions: a dictionary holding "raw" prediction tensors.
-                    - losses: a dictionary mapping loss keys (`Loss/RPNLoss/localization_loss`,
-                              `Loss/RPNLoss/objectness_loss`, `Loss/BoxClassifierLoss/localization_loss`,
-                              `Loss/BoxClassifierLoss/classification_loss`) to scalar tensors representing
-                              corresponding loss values.
-                    - detections: a dictionary containing final detection results.
+        :return: the object detection model restored from checkpoint
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
-        from object_detection.utils import variables_helper
 
         if obj_detection_model is None:
             from object_detection.utils import config_util
@@ -260,8 +204,11 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
                 )
 
             # Download and extract
+            print('filename', filename)
+            print('art path', config.ART_DATA_PATH)
+            print('url', url)
             path = get_file(filename=filename, path=config.ART_DATA_PATH, url=url, extract=True)
-
+            print('path', path)
             # Load model config
             pipeline_config = path + "/pipeline.config"
             configs = config_util.get_configs_from_pipeline_file(pipeline_config)
@@ -273,8 +220,6 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
             obj_detection_model = model_builder.build(
                 model_config=configs["model"], is_training=is_training, add_summaries=False
             )
-        
-
 
         # Restore checkpoint
         ckpt = tf.compat.v2.train.Checkpoint(
@@ -344,6 +289,8 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
             groundtruth_classes_list=groundtruth_classes_list,
             groundtruth_weights_list=groundtruth_weights_list,
         )
+
+        x_preprocessed = tf.convert_to_tensor(x_preprocessed)
         with tf.GradientTape() as tape:
             tape.watch(x_preprocessed)
 
@@ -358,13 +305,12 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
                 else:
                     loss = loss + losses[loss_name]
 
-        # grads: tf.Tensor = tf.gradients(loss, self.images)[0]
         grads = tape.gradient(loss, x_preprocessed)
 
         grads = self._apply_preprocessing_gradient(x, grads)
         assert grads.shape == x_preprocessed.shape
 
-        return grads
+        return tf.convert_to_tensor(grads)
 
     def predict(  # pylint: disable=W0221
         self, x: np.ndarray, batch_size: int = 128, standardise_output: bool = False, **kwargs
@@ -388,6 +334,9 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
                                `standardise_output=True`.
                  - scores [N]: the scores or each prediction.
         """
+
+        import tensorflow as tf  # lgtm [py/repeated-import]
+
         # Only do prediction if is_training is False
         if self.is_training:
             raise NotImplementedError(
@@ -414,7 +363,7 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
             # Batch indexes
             begin, end = m * batch_size, min((m + 1) * batch_size, num_samples)
 
-            preprocessed_images, true_image_shapes = self._model.preprocess(x[begin:end])
+            preprocessed_images, true_image_shapes = self._model.preprocess(tf.convert_to_tensor(x[begin:end]))
             predictions = self._model.predict(preprocessed_images, true_image_shapes)
             batch_results = self._model.postprocess(predictions, true_image_shapes)
             
@@ -488,13 +437,14 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
         :param x: Sample input with shape as expected by the model.
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices
                   of shape `(nb_samples,)`.
-        :return: Array of losses of the same shape as `x`.
+        :return: np.float32 representing total loss.
         """
 
         import tensorflow as tf  # lgtm [py/repeated-import]
 
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
+        x_preprocessed = tf.convert_to_tensor(x_preprocessed)
 
         groundtruth_boxes_list = [
             tf.convert_to_tensor(y[i]['boxes'])
