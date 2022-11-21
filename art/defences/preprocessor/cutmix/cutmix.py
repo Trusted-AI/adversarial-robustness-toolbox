@@ -106,30 +106,27 @@ class CutMix(Preprocessor):
 
         x_ndim = len(x.shape)
 
-        # NCHW/NCFHW/NFHWC --> NHWC
+        # NCHW/NCFHW/NHWC --> NFHWC
         if x_ndim == 4:
             if self.channels_first:
-                # NCHW --> NHWC
+                # NCHW --> NHWC --> NFHWC
                 x_nhwc = np.transpose(x, (0, 2, 3, 1))
+                x_nfhwc = np.expand_dims(x_nhwc, axis=1)
             else:
-                # NHWC
-                x_nhwc = x
+                # NHWC --> NFHWC
+                x_nfhwc = np.expand_dims(x, axis=1)
         elif x_ndim == 5:
             if self.channels_first:
-                # NCFHW --> NFHWC --> NHWC
-                nb_clips, channels, clip_size, height, width = x.shape
+                # NCFHW --> NFHWC
                 x_nfhwc = np.transpose(x, (0, 2, 3, 4, 1))
-                x_nhwc = np.reshape(x_nfhwc, (nb_clips * clip_size, height, width, channels))
             else:
-                # NFHWC --> NHWC
-                nb_clips, clip_size, height, width, channels = x.shape
-                x_nhwc = np.reshape(x, (nb_clips * clip_size, height, width, channels))
+                # NFHWC
+                x_nfhwc = x
         else:
             raise ValueError("Unrecognized input dimension. CutMix can only be applied to image and video data.")
 
-        n, height, width, _ = x_nhwc.shape
-        x_original = x_nhwc
-        x_nhwc = x_nhwc.copy()
+        n, _, height, width, _ = x_nfhwc.shape
+        x_aug = x_nfhwc.copy()
         y_aug = y_one_hot.copy()
 
         # sample the combination ratio from the Beta distribution
@@ -146,34 +143,36 @@ class CutMix(Preprocessor):
             prob = np.random.rand()
             if prob < self.probability:
                 # uniform sampling
-                center_y = np.random.randint(cut_height)
-                center_x = np.random.randint(cut_width)
+                center_y = np.random.randint(height)
+                center_x = np.random.randint(width)
                 bby1 = np.clip(center_y - cut_height // 2, 0, height)
                 bbx1 = np.clip(center_x - cut_width // 2, 0, width)
                 bby2 = np.clip(center_y + cut_height // 2, 0, height)
                 bbx2 = np.clip(center_x + cut_width // 2, 0, width)
 
                 # insert image bounding box
-                x_nhwc[idx1, bbx1:bbx2, bby1:bby2, :] = x_original[idx2, bbx1:bbx2, bby1:bby2, :]
+                x_aug[idx1, :, bbx1:bbx2, bby1:bby2, :] = x_nfhwc[idx2, :, bbx1:bbx2, bby1:bby2, :]
                 # mix labels
                 y_aug[idx1] = lmb * y_aug[idx1] + (1.0 - lmb) * y_one_hot[idx2]
 
-        # NCHW/NCFHW/NFHWC <-- NHWC
+        x_nfhwc = x_aug
+
+        # NCHW/NCFHW/NFHWC/NHWC <-- NFHWC
         if x_ndim == 4:
             if self.channels_first:
-                # NHWC <-- NCHW
+                # NHWC <-- NCHW <-- NFHWC
+                x_nhwc = np.squeeze(x_nfhwc, axis=1)
                 x_aug = np.transpose(x_nhwc, (0, 3, 1, 2))
             else:
-                # NHWC
-                x_aug = x_nhwc
+                # NHWC <-- NFHWC
+                x_aug = np.squeeze(x_nfhwc, axis=1)
         elif x_ndim == 5:  # lgtm [py/redundant-comparison]
             if self.channels_first:
-                # NCFHW <-- NFHWC <-- NHWC
-                x_nfhwc = np.reshape(x_nhwc, (nb_clips, clip_size, height, width, channels))
+                # NCFHW <-- NFHWC
                 x_aug = np.transpose(x_nfhwc, (0, 4, 1, 2, 3))
             else:
-                # NFHWC <-- NHWC
-                x_aug = np.reshape(x_nhwc, (nb_clips, clip_size, height, width, channels))
+                # NFHWC
+                x_aug = x_nfhwc
 
         return x_aug, y_aug
 

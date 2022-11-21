@@ -111,30 +111,27 @@ class CutMixTensorFlowV2(PreprocessorTensorFlowV2):
 
         x_ndim = len(x.shape)
 
-        # NCHW/NCFHW/NFHWC --> NHWC
+        # NCHW/NCFHW/NHWC --> NFHWC
         if x_ndim == 4:
             if self.channels_first:
-                # NCHW --> NHWC
+                # NCHW --> NHWC --> NFHWC
                 x_nhwc = tf.transpose(x, (0, 2, 3, 1))
+                x_nfhwc = tf.expand_dims(x_nhwc, axis=1)
             else:
-                # NHWC
-                x_nhwc = x
+                # NHWC --> NFHWC
+                x_nfhwc = tf.expand_dims(x, axis=1)
         elif x_ndim == 5:
             if self.channels_first:
-                # NCFHW --> NFHWC --> NHWC
-                nb_clips, channels, clip_size, height, width = x.shape
+                # NCFHW --> NFHWC
                 x_nfhwc = tf.transpose(x, (0, 2, 3, 4, 1))
-                x_nhwc = tf.reshape(x_nfhwc, (nb_clips * clip_size, height, width, channels))
             else:
-                # NFHWC --> NHWC
-                nb_clips, clip_size, height, width, channels = x.shape
-                x_nhwc = tf.reshape(x, (nb_clips * clip_size, height, width, channels))
+                # NFHWC
+                x_nfhwc = x
         else:
             raise ValueError("Unrecognized input dimension. CutMix can only be applied to image and video data.")
 
-        n, height, width, _ = x_nhwc.shape
-        x_original = x_nhwc
-        x_nhwc = tf.Variable(x_nhwc, trainable=False)
+        n, _, height, width, _ = x_nfhwc.shape
+        x_aug = tf.Variable(x_nfhwc, trainable=False)
         y_aug = tf.Variable(y_one_hot, trainable=False)
 
         # sample the combination ratio from the Beta distribution
@@ -151,37 +148,37 @@ class CutMixTensorFlowV2(PreprocessorTensorFlowV2):
             prob = np.random.rand()
             if prob < self.probability:
                 # uniform sampling
-                center_y = tf.random.uniform(shape=[], maxval=cut_height, dtype=tf.int32)  # pylint: disable=E1123
-                center_x = tf.random.uniform(shape=[], maxval=cut_width, dtype=tf.int32)  # pylint: disable=E1123
+                center_y = tf.random.uniform(shape=[], maxval=height, dtype=tf.int32)  # pylint: disable=E1123
+                center_x = tf.random.uniform(shape=[], maxval=width, dtype=tf.int32)  # pylint: disable=E1123
                 bby1 = tf.clip_by_value(center_y - cut_height // 2, 0, height)
                 bbx1 = tf.clip_by_value(center_x - cut_width // 2, 0, width)
                 bby2 = tf.clip_by_value(center_y + cut_height // 2, 0, height)
                 bbx2 = tf.clip_by_value(center_x + cut_width // 2, 0, width)
 
                 # insert image bounding box
-                x_nhwc[idx1, bbx1:bbx2, bby1:bby2, :].assign(x_original[idx2, bbx1:bbx2, bby1:bby2, :])
+                x_aug[idx1, :, bbx1:bbx2, bby1:bby2, :].assign(x_nfhwc[idx2, :, bbx1:bbx2, bby1:bby2, :])
                 # mix labels
                 y_aug[idx1].assign(lmb * y_aug[idx1] + (1.0 - lmb) * y_one_hot[idx2])
 
-        x_nhwc = tf.convert_to_tensor(x_nhwc)
+        x_nfhwc = tf.convert_to_tensor(x_aug)
         y_aug = tf.convert_to_tensor(y_aug)
 
-        # NCHW/NCFHW/NFHWC <-- NHWC
+        # NCHW/NCFHW/NFHWC/NHWC <-- NFHWC
         if x_ndim == 4:
             if self.channels_first:
-                # NHWC <-- NCHW
+                # NHWC <-- NCHW <-- NFHWC
+                x_nhwc = tf.squeeze(x_nfhwc, axis=1)
                 x_aug = tf.transpose(x_nhwc, (0, 3, 1, 2))
             else:
-                # NHWC
-                x_aug = x_nhwc
+                # NHWC <-- NFHWC
+                x_aug = tf.squeeze(x_nfhwc, axis=1)
         elif x_ndim == 5:  # lgtm [py/redundant-comparison]
             if self.channels_first:
-                # NCFHW <-- NFHWC <-- NHWC
-                x_nfhwc = tf.reshape(x_nhwc, (nb_clips, clip_size, height, width, channels))
+                # NCFHW <-- NFHWC
                 x_aug = tf.transpose(x_nfhwc, (0, 4, 1, 2, 3))
             else:
-                # NFHWC <-- NHWC
-                x_aug = tf.reshape(x_nhwc, (nb_clips, clip_size, height, width, channels))
+                # NFHWC
+                x_aug = x_nfhwc
 
         return x_aug, y_aug
 

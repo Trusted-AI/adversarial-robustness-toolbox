@@ -120,29 +120,27 @@ class CutMixPyTorch(PreprocessorPyTorch):
 
         x_ndim = len(x.shape)
 
-        # NHWC/NCFHW/NFHWC --> NCHW.
+        # NCHW/NHWC/NFHWC --> NCFHW
         if x_ndim == 4:
             if self.channels_first:
-                # NCHW
-                x_nchw = x
+                # NCHW --> NCFHW
+                x_ncfhw = torch.unsqueeze(x, dim=2)
             else:
-                # NHWC --> NCHW
-                x_nchw = x.permute(0, 3, 1, 2)
+                # NHWC --> NCHW --> NCFHW
+                x_nchw = torch.permute(x, (0, 3, 1, 2))
+                x_ncfhw = torch.unsqueeze(x_nchw, dim=2)
         elif x_ndim == 5:
             if self.channels_first:
-                # NCFHW --> NFCHW --> NCHW
-                nb_clips, channels, clip_size, height, width = x.shape
-                x_nchw = x.permute(0, 2, 1, 3, 4).reshape(nb_clips * clip_size, channels, height, width)
+                # NCFHW
+                x_ncfhw = x
             else:
-                # NFHWC --> NHWC --> NCHW
-                nb_clips, clip_size, height, width, channels = x.shape
-                x_nchw = x.reshape(nb_clips * clip_size, height, width, channels).permute(0, 3, 1, 2)
+                # NFHWC --> NCFHW
+                x_ncfhw = torch.permute(x, (0, 4, 1, 2, 3))
         else:
             raise ValueError("Unrecognized input dimension. CutMix can only be applied to image and video data.")
 
-        n, _, height, width = x_nchw.shape
-        x_original = x_nchw
-        x_nchw = x_nchw.clone()
+        n, _, _, height, width = x_ncfhw.shape
+        x_aug = x_ncfhw.clone()
         y_aug = y_one_hot.clone().float()
 
         # sample the combination ratio from the Beta distribution
@@ -159,35 +157,36 @@ class CutMixPyTorch(PreprocessorPyTorch):
             prob = np.random.rand()
             if prob < self.probability:
                 # uniform sampling
-                center_x = torch.randint(0, cut_height, (1,))
-                center_y = torch.randint(0, cut_width, (1,))
+                center_x = torch.randint(0, height, (1,))
+                center_y = torch.randint(0, width, (1,))
                 bby1 = torch.clamp(center_y - cut_height // 2, 0, height)
                 bbx1 = torch.clamp(center_x - cut_width // 2, 0, width)
                 bby2 = torch.clamp(center_y + cut_height // 2, 0, height)
                 bbx2 = torch.clamp(center_x + cut_width // 2, 0, width)
 
                 # insert image bounding box
-                x_nchw[idx1, :, bbx1:bbx2, bby1:bby2] = x_original[idx2, :, bbx1:bbx2, bby1:bby2]  # type: ignore
+                x_aug[idx1, :, :, bbx1:bbx2, bby1:bby2] = x_ncfhw[idx2, :, :, bbx1:bbx2, bby1:bby2]  # type: ignore
                 # mix labels
                 y_aug[idx1] = lmb * y_aug[idx1] + (1.0 - lmb) * y_one_hot[idx2]  # type: ignore
 
-        # NHWC/NCFHW/NFHWC <-- NCHW.
+        x_ncfhw = x_aug
+
+        # NCHW/NHWC/NFHWC <-- NCFHW
         if x_ndim == 4:
             if self.channels_first:
-                # NCHW
-                x_aug = x_nchw
+                # NCHW <-- NCFHW
+                x_aug = torch.squeeze(x_ncfhw, dim=2)
             else:
-                # NHWC <-- NCHW
-                x_aug = x_nchw.permute(0, 2, 3, 1)
+                # NHWC <-- NCHW <-- NCFHW
+                x_nchw = torch.squeeze(x_ncfhw, dim=2)
+                x_aug = torch.permute(x_nchw, (0, 2, 3, 1))
         elif x_ndim == 5:  # lgtm [py/redundant-comparison]
             if self.channels_first:
-                # NCFHW <-- NFCHW <-- NCHW
-                x_nfchw = x_nchw.reshape(nb_clips, clip_size, channels, height, width)
-                x_aug = x_nfchw.permute(0, 2, 1, 3, 4)
+                # NCFHW
+                x_aug = x_ncfhw
             else:
-                # NFHWC <-- NHWC <-- NCHW
-                x_nhwc = x_nchw.permute(0, 2, 3, 1)
-                x_aug = x_nhwc.reshape(nb_clips, clip_size, height, width, channels)
+                # NFHWC <-- NCFHW
+                x_aug = torch.permute(x_ncfhw, (0, 2, 3, 4, 1))
 
         return x_aug, y_aug
 
