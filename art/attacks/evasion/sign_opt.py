@@ -180,7 +180,7 @@ class SignOPTAttack(EvasionAttack):
         if self.targeted and targets is None:
             raise ValueError("Target labels `y` need to be provided for a targeted attack.")
 
-        x_init = kwargs["x_init"]
+        x_init = kwargs.get("x_init")
 
         # Get clip_min and clip_max infer them from data, otherwise, it is initialized by self.estimator
         if self.clip_min is None and self.clip_max is None:
@@ -208,7 +208,7 @@ class SignOPTAttack(EvasionAttack):
                     x_0=val,
                     y_0=preds[ind],
                     target=targets[ind],
-                    x_init=x_init[ind],
+                    x_init=x_init,
                 )
             else:
                 x_adv[ind], diff, succeed = self._attack(  # diff and succeed are for performance test
