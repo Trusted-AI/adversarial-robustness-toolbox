@@ -27,7 +27,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import abc
 import inspect
 import logging
-from typing import Any, Dict, Generator, Optional, Tuple, Union, TYPE_CHECKING
+from typing import Any, Dict, Generator, Iterator, Optional, Tuple, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:
     import keras
@@ -128,8 +128,8 @@ class NumpyDataGenerator(DataGenerator):
         try:
             if len(x) != len(y):
                 raise ValueError("inputs must be of equal length")
-        except TypeError as e:
-            raise ValueError(f"inputs x {x} and y {y} must be sized objects") from e
+        except TypeError as err:
+            raise ValueError(f"inputs x {x} and y {y} must be sized objects") from err
         size = len(x)
         self.x = x
         self.y = y
@@ -142,7 +142,7 @@ class NumpyDataGenerator(DataGenerator):
             batches_per_epoch = np.ceil(batches_per_epoch)
         self.batches_per_epoch = int(batches_per_epoch)
         self._iterator = self
-        self.generator: Generator = iter([])
+        self.generator: Iterator[Any] = iter([])
 
     def __iter__(self):
         import numpy as np
