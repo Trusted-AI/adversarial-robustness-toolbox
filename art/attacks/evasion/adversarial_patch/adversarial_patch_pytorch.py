@@ -118,7 +118,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
                                ‘runs/exp1’, ‘runs/exp2’, etc. for each new experiment to compare across them.
         :param verbose: Show progress bars.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
         import torchvision
 
         torch_version = list(map(int, torch.__version__.lower().split("+", maxsplit=1)[0].split(".")))
@@ -182,7 +182,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
     def _train_step(
         self, images: "torch.Tensor", target: "torch.Tensor", mask: Optional["torch.Tensor"] = None
     ) -> "torch.Tensor":
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         self.estimator.model.zero_grad()
         loss = self._loss(images, target, mask)
@@ -211,7 +211,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
     def _predictions(
         self, images: "torch.Tensor", mask: Optional["torch.Tensor"], target: "torch.Tensor"
     ) -> Tuple["torch.Tensor", "torch.Tensor"]:
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         patched_input = self._random_overlay(images, self._patch, mask=mask)
         patched_input = torch.clamp(
@@ -225,7 +225,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
         return predictions, target
 
     def _loss(self, images: "torch.Tensor", target: "torch.Tensor", mask: Optional["torch.Tensor"]) -> "torch.Tensor":
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         if isinstance(target, torch.Tensor):
 
@@ -259,7 +259,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
         """
         Return a circular patch mask.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         diameter = np.minimum(self.patch_shape[self.i_h_patch], self.patch_shape[self.i_w_patch])
 
@@ -285,7 +285,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
         scale: Optional[float] = None,
         mask: Optional["torch.Tensor"] = None,
     ) -> "torch.Tensor":
-        import torch  # lgtm [py/repeated-import]
+        import torch
         import torchvision
 
         # Ensure channels-first
@@ -485,7 +485,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
         :type mask: `np.ndarray`
         :return: An array with adversarial patch and an array of the patch mask.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         shuffle = kwargs.get("shuffle", True)
         mask = kwargs.get("mask")
@@ -680,7 +680,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
                      center location of the patch during sampling.
         :return: The patched samples.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         if mask is not None:
             mask = mask.copy()
@@ -707,7 +707,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
 
         :param initial_patch_value: Patch value to use for resetting the patch.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         if initial_patch_value is None:
             self._patch.data = torch.Tensor(self._initial_value).double()

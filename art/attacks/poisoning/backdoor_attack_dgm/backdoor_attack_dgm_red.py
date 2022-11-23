@@ -29,7 +29,7 @@ from art.estimators.generation.tensorflow import TensorFlowV2Generator
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    import tensorflow as tf  # lgtm [py/repeated-import]
+    import tensorflow as tf
 
 
 class BackdoorAttackDGMReDTensorFlowV2(PoisoningAttackGenerator):
@@ -51,7 +51,7 @@ class BackdoorAttackDGMReDTensorFlowV2(PoisoningAttackGenerator):
         Initialize a backdoor RED poisoning attack.
         :param generator: the generator to be poisoned
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         # pylint: disable=W0212
         super().__init__(generator=generator)
@@ -65,7 +65,7 @@ class BackdoorAttackDGMReDTensorFlowV2(PoisoningAttackGenerator):
         :param z_trigger: the secret backdoor trigger that will produce the target
         :param x_target: the target to produce when using the trigger
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         return tf.reduce_mean(
             tf.math.squared_difference(
@@ -80,7 +80,7 @@ class BackdoorAttackDGMReDTensorFlowV2(PoisoningAttackGenerator):
         :param z_batch: triggers to be trained on
         :param lambda_hy: the lambda parameter balancing how much we want the auxiliary loss to be applied
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         return lambda_hy * tf.math.reduce_mean(
             tf.math.squared_difference(
@@ -113,7 +113,7 @@ class BackdoorAttackDGMReDTensorFlowV2(PoisoningAttackGenerator):
         :param lambda_p: the lambda parameter balancing how much we want the auxiliary loss to be applied
         :param verbose: whether the fidelity should be displayed during training
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         optimizer = tf.keras.optimizers.Adam(1e-4)
 

@@ -113,7 +113,7 @@ class FeatureAdversariesPyTorch(EvasionAttack):
         :param y: Guide samples.
         :return: Batch of adversarial examples.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         def loss_fn(source_orig, source_adv, guide):
             representation_loss = torch.zeros(size=(source_orig.shape[0],)).to(self.estimator.device)
@@ -188,7 +188,7 @@ class FeatureAdversariesPyTorch(EvasionAttack):
         :param y: Guide samples.
         :return: Adversarial examples.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         if y is None:
             raise ValueError("The value of guide `y` cannot be None. Please provide a `np.ndarray` of guide inputs.")

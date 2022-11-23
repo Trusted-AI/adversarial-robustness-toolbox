@@ -80,7 +80,7 @@ class EoTImageCenterCropPyTorch(EoTPyTorch):
         :param y: Label of the samples `x`.
         :return: Transformed samples and labels.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
         import torchvision
 
         size = np.random.randint(low=self.size_range[0], high=self.size_range[1])
