@@ -1484,7 +1484,8 @@ def get_file(
                                 """
                                 :param blocks: Number of blocks transferred so far [default: 1].
                                 :param block_size: Size of each block (in tqdm units) [default: 1].
-                                :param total_size: Total size (in tqdm units). If [default: None] or -1, remains unchanged.
+                                :param total_size: Total size (in tqdm units). If [default: None] or -1, remains
+                                                   unchanged.
                                 """
                                 if total_size not in (None, -1):
                                     t_bar.total = total_size
@@ -1497,9 +1498,13 @@ def get_file(
                         urlretrieve(url_i, full_path)
 
                 except HTTPError as exception:  # pragma: no cover
-                    raise Exception(error_msg.format(url_i, exception.code, exception.msg)) from HTTPError  # type: ignore
+                    raise Exception(
+                        error_msg.format(url_i, exception.code, exception.msg)
+                    ) from HTTPError  # type: ignore
                 except URLError as exception:  # pragma: no cover
-                    raise Exception(error_msg.format(url_i, exception.errno, exception.reason)) from HTTPError  # type: ignore
+                    raise Exception(
+                        error_msg.format(url_i, exception.errno, exception.reason)
+                    ) from HTTPError  # type: ignore
         except (Exception, KeyboardInterrupt):  # pragma: no cover
             if os.path.exists(full_path):
                 os.remove(full_path)
