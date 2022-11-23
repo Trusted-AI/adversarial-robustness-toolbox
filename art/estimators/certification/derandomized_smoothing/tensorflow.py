@@ -119,7 +119,7 @@ class TensorFlowV2DeRandomizedSmoothing(DeRandomizedSmoothingMixin, TensorFlowV2
         )
 
     def _predict_classifier(self, x: np.ndarray, batch_size: int, training_mode: bool, **kwargs) -> np.ndarray:
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         outputs = TensorFlowV2Classifier.predict(
             self, x=x, batch_size=batch_size, training_mode=training_mode, **kwargs

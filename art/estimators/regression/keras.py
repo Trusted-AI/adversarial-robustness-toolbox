@@ -133,7 +133,7 @@ class KerasRegressor(RegressorMixin, KerasEstimator):
         """
         # pylint: disable=E0401
         if self.is_tensorflow:
-            import tensorflow as tf  # lgtm [py/repeated-import]
+            import tensorflow as tf
 
             if tf.executing_eagerly():  # pragma: no cover
                 raise ValueError("TensorFlow is executing eagerly. Please disable eager execution.")
@@ -142,7 +142,7 @@ class KerasRegressor(RegressorMixin, KerasEstimator):
 
             self._losses = keras.losses
         else:
-            import keras  # lgtm [py/repeated-import]
+            import keras
             import keras.backend as k
 
             if hasattr(keras.utils, "losses_utils"):

@@ -39,7 +39,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/missing-call-to-init]
+class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):
     """
     This class implements a DGM with the TensorFlow framework.
     """
@@ -85,7 +85,7 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
         :param feed_dict: A feed dictionary for the session run evaluating the classifier. This dictionary includes all
                           additionally required placeholders except the placeholders defined in this class.
         """
-        import tensorflow.compat.v1 as tf  # lgtm [py/repeated-import]
+        import tensorflow.compat.v1 as tf
 
         super().__init__(
             model=model,
@@ -196,7 +196,7 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
         return self._encoding_length
 
 
-class TensorFlowV2Generator(GeneratorMixin, TensorFlowV2Estimator):  # lgtm [py/missing-call-to-init]
+class TensorFlowV2Generator(GeneratorMixin, TensorFlowV2Estimator):
     """
     This class implements a DGM with the TensorFlow framework.
     """

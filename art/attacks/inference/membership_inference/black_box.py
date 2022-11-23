@@ -90,8 +90,8 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
         else:
             self.default_model = True
             if self.attack_model_type == "nn":
-                import torch  # lgtm [py/repeated-import] lgtm [py/import-and-import-from]
-                from torch import nn  # lgtm [py/repeated-import]
+                import torch
+                from torch import nn
 
                 class MembershipInferenceAttackModel(nn.Module):
                     """
@@ -271,10 +271,10 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
             x_2 = x_2.astype(np.float32).reshape(-1, 1)
 
         if self.default_model and self.attack_model_type == "nn":
-            import torch  # lgtm [py/repeated-import] lgtm [py/import-and-import-from]
-            from torch import nn  # lgtm [py/repeated-import]
-            from torch import optim  # lgtm [py/repeated-import]
-            from torch.utils.data import DataLoader  # lgtm [py/repeated-import]
+            import torch
+            from torch import nn
+            from torch import optim
+            from torch.utils.data import DataLoader
             from art.utils import to_cuda
 
             loss_fn = nn.BCELoss()
@@ -294,7 +294,7 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
 
                     optimizer.zero_grad()
                     outputs = self.attack_model(input1, input2)  # type: ignore
-                    loss = loss_fn(outputs, targets.unsqueeze(1))  # lgtm [py/call-to-non-callable]
+                    loss = loss_fn(outputs, targets.unsqueeze(1))
 
                     loss.backward()
                     optimizer.step()
@@ -361,13 +361,15 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
                         "For loss input type and no x, the estimator must implement 'compute_loss_from_predictions' "
                         "method"
                     ) from err
+        else:
+            raise ValueError("Value of `input_type` not recognized.")
 
         if self._regressor_model:
             y = y.astype(np.float32).reshape(-1, 1)
 
         if self.default_model and self.attack_model_type == "nn":
-            import torch  # lgtm [py/repeated-import] lgtm [py/import-and-import-from]
-            from torch.utils.data import DataLoader  # lgtm [py/repeated-import]
+            import torch
+            from torch.utils.data import DataLoader
             from art.utils import to_cuda, from_cuda
 
             self.attack_model.eval()  # type: ignore
@@ -423,7 +425,7 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
             """
 
             def __init__(self, x_1, x_2, y=None):
-                import torch  # lgtm [py/repeated-import] lgtm [py/import-and-import-from]
+                import torch
 
                 self.x_1 = torch.from_numpy(x_1.astype(np.float64)).type(torch.FloatTensor)
                 self.x_2 = torch.from_numpy(x_2.astype(np.int32)).type(torch.FloatTensor)
