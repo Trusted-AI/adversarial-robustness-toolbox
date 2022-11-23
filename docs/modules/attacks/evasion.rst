@@ -260,6 +260,12 @@ ShapeShifter Attack
    :members:
    :special-members:
 
+Sign-OPT Attack
+---------------
+.. autoclass:: SignOPTAttack
+   :members:
+   :special-members:
+   
 Simple Black-box Adversarial Attack
 -----------------------------------
 .. autoclass:: SimBA

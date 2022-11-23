@@ -39,7 +39,8 @@ logger = logging.getLogger(__name__)
 
 class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
     """
-    This module implements the task specific estimator for PyTorch object detectors.
+    This module implements the task specific estimator for PyTorch object detection models following the input and
+    output formats of torchvision.
     """
 
     estimator_params = PyTorchEstimator.estimator_params + ["attack_losses"]
@@ -74,7 +75,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
                the shape of clip values needs to match the total number of features.
-        :param channels_first: [Currently unused] Set channels first or last.
+        :param channels_first: Set channels first or last.
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
         :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
@@ -312,11 +313,17 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
 
             if isinstance(x, np.ndarray):
                 for img in image_tensor_list_grad:
-                    gradients = img.grad.cpu().numpy().copy()
+                    if img.grad is not None:
+                        gradients = img.grad.cpu().numpy().copy()
+                    else:
+                        raise ValueError("Gradient term in PyTorch model is `None`.")
                     grad_list.append(gradients)
             else:
                 for img in inputs_t:
-                    gradients = img.grad.copy()
+                    if img.grad is not None:
+                        gradients = img.grad.copy()
+                    else:
+                        raise ValueError("Gradient term in PyTorch model is `None`.")
                     grad_list.append(gradients)
 
         if isinstance(x, np.ndarray):

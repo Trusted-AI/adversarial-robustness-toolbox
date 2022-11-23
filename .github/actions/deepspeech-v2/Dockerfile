@@ -37,8 +37,9 @@ RUN cd warp-ctc/pytorch_binding && python setup.py install
 
 RUN git clone https://github.com/SeanNaren/deepspeech.pytorch.git
 RUN cd deepspeech.pytorch && git checkout V2.1
-RUN cd deepspeech.pytorch && pip install -r requirements_test.txt
+RUN cd deepspeech.pytorch && pip install -r requirements.txt
 RUN cd deepspeech.pytorch && pip install -e .
 
 RUN pip install numba==0.50.0
 RUN pip install pytest-cov
+RUN pip install pydub==0.25.1

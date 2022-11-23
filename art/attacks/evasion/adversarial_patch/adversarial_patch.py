@@ -56,6 +56,7 @@ class AdversarialPatch(EvasionAttack):
         "learning_rate",
         "max_iter",
         "batch_size",
+        "targeted",
         "verbose",
     ]
 
@@ -71,6 +72,7 @@ class AdversarialPatch(EvasionAttack):
         max_iter: int = 500,
         batch_size: int = 16,
         patch_shape: Optional[Tuple[int, int, int]] = None,
+        targeted: bool = True,
         verbose: bool = True,
     ):
         """
@@ -89,6 +91,7 @@ class AdversarialPatch(EvasionAttack):
         :param patch_shape: The shape of the adversarial patch as a tuple of shape (width, height, nb_channels).
                             Currently only supported for `TensorFlowV2Classifier`. For classifiers of other frameworks
                             the `patch_shape` is set to the shape of the input samples.
+        :param targeted: Indicates whether the attack is targeted (True) or untargeted (False).
         :param verbose: Show progress bars.
         """
         super().__init__(estimator=classifier)
@@ -106,6 +109,7 @@ class AdversarialPatch(EvasionAttack):
                 max_iter=max_iter,
                 batch_size=batch_size,
                 patch_shape=patch_shape,
+                targeted=targeted,
                 verbose=verbose,
             )
         elif isinstance(self.estimator, PyTorchClassifier):
@@ -121,6 +125,7 @@ class AdversarialPatch(EvasionAttack):
                     batch_size=batch_size,
                     patch_shape=patch_shape,
                     patch_type="circle",
+                    targeted=targeted,
                     verbose=verbose,
                 )
             else:
@@ -134,6 +139,7 @@ class AdversarialPatch(EvasionAttack):
                 learning_rate=learning_rate,
                 max_iter=max_iter,
                 batch_size=batch_size,
+                targeted=targeted,
                 verbose=verbose,
             )
         self._check_params()
@@ -157,9 +163,6 @@ class AdversarialPatch(EvasionAttack):
         :return: An array with adversarial patch and an array of the patch mask.
         """
         logger.info("Creating adversarial patch.")
-
-        if y is None:  # pragma: no cover
-            raise ValueError("Adversarial Patch attack requires target values `y`.")
 
         if len(x.shape) == 2:  # pragma: no cover
             raise ValueError(
@@ -240,6 +243,9 @@ class AdversarialPatch(EvasionAttack):
             raise ValueError("The batch size must be of type int.")
         if not self._attack.batch_size > 0:
             raise ValueError("The batch size must be greater than 0.")
+
+        if not isinstance(self._attack.targeted, bool):
+            raise ValueError("The argument `targeted` has to be of type bool.")
 
         if not isinstance(self._attack.verbose, bool):
             raise ValueError("The argument `verbose` has to be of type bool.")

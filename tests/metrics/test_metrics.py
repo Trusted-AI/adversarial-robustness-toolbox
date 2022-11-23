@@ -25,11 +25,20 @@ import tensorflow as tf
 import torch.nn as nn
 import torch.nn.functional as f
 import torch.optim as optim
+from art.attacks.evasion.hop_skip_jump import HopSkipJump
 
 from art.estimators.classification.keras import KerasClassifier
 from art.estimators.classification.pytorch import PyTorchClassifier
 from art.estimators.classification.tensorflow import TensorFlowClassifier
-from art.metrics.metrics import empirical_robustness, clever_t, clever_u, clever, loss_sensitivity, wasserstein_distance
+from art.metrics.metrics import (
+    adversarial_accuracy,
+    empirical_robustness,
+    clever_t,
+    clever_u,
+    clever,
+    loss_sensitivity,
+    wasserstein_distance,
+)
 from art.utils import load_mnist
 
 from tests.utils import master_seed
@@ -65,6 +74,28 @@ class TestMetrics(unittest.TestCase):
         params = {"eps_step": 0.1, "eps": 0.2}
         emp_robust = empirical_robustness(classifier, x_train, str("fgsm"), params)
         self.assertLessEqual(emp_robust, 0.65)
+
+    def test_adv_acc_mnist(self):
+        (x_train, y_train), (_, _), _, _ = load_mnist()
+        x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
+
+        # Get classifier
+        classifier = self._cnn_mnist_k([28, 28, 1])
+        classifier.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=2, verbose=0)
+
+        # Compute adversarial accuracies
+        params = {"eps_step": 1.0, "eps": 1.0}
+        adv_acc = adversarial_accuracy(classifier, x_train, attack_name=str("fgsm"), attack_params=params)
+        self.assertAlmostEqual(adv_acc, 0)
+
+        params = {"eps_step": 1.0, "eps": 1.0}
+        adv_acc = adversarial_accuracy(classifier, x_train, y_train, attack_name=str("fgsm"), attack_params=params)
+        self.assertAlmostEqual(adv_acc, 0)
+
+        params = {"max_iter": 10, "max_eval": 100, "init_eval": 10, "init_size": 10}
+        adv_crafter = HopSkipJump(classifier, **params)
+        adv_acc = adversarial_accuracy(classifier, x_train, attack_crafter=adv_crafter)
+        self.assertLess(adv_acc, 0.2)
 
     def test_loss_sensitivity(self):
         (x_train, y_train), (_, _), _, _ = load_mnist()

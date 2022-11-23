@@ -87,6 +87,7 @@ else
                           "tests/attacks/test_elastic_net.py" \
                           "tests/attacks/test_feature_collision.py" \
                           "tests/attacks/test_functionally_equivalent_extraction.py" \
+                          "tests/attacks/test_graphite.py" \
                           "tests/attacks/test_hclu.py" \
                           "tests/attacks/test_input_filter.py" \
                           "tests/attacks/test_hop_skip_jump.py" \
@@ -109,6 +110,7 @@ else
                           "tests/attacks/test_simba.py" )
 
     declare -a estimators=("tests/estimators/certification/test_randomized_smoothing.py" \
+                           "tests/estimators/certification/test_derandomized_smoothing.py" \
                            "tests/estimators/classification/test_blackbox.py" \
                            "tests/estimators/classification/test_catboost.py" \
                            "tests/estimators/classification/test_classifier.py" \

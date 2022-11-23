@@ -160,7 +160,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             0
         ]
         self._initial_value = np.ones(self.patch_shape) * mean_value
-        self._patch = tf.Variable(
+        self._patch = tf.Variable(  # lgtm [py/call-to-non-callable]
             initial_value=self._initial_value,
             shape=self.patch_shape,
             dtype=tf.float32,

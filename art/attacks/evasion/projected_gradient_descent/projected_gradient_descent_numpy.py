@@ -64,6 +64,7 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
         norm: Union[int, float, str] = np.inf,
         eps: Union[int, float, np.ndarray] = 0.3,
         eps_step: Union[int, float, np.ndarray] = 0.1,
+        decay: Optional[float] = None,
         max_iter: int = 100,
         targeted: bool = False,
         num_random_init: int = 0,
@@ -83,6 +84,7 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
             suggests this for FGSM based training to generalize across different epsilons. eps_step is
             modified to preserve the ratio of eps / eps_step. The effectiveness of this method with PGD
             is untested (https://arxiv.org/pdf/1611.01236.pdf).
+        :param decay: Decay factor for accumulating the velocity vector when using momentum.
         :param max_iter: The maximum number of iterations.
         :param targeted: Indicates whether the attack is targeted (True) or untargeted (False).
         :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0
@@ -108,6 +110,7 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
             minimal=False,
             summary_writer=summary_writer,
         )
+        self.decay = decay
         self.max_iter = max_iter
         self.random_eps = random_eps
         self.verbose = verbose
@@ -156,7 +159,7 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
         """
         if classifier_mixin:
             if y is not None:
-                y = check_and_transform_label_format(y, self.estimator.nb_classes)
+                y = check_and_transform_label_format(y, nb_classes=self.estimator.nb_classes)
 
         if y is None:
             # Throw error if attack is targeted, but no targets are provided
@@ -225,6 +228,9 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
         if self.max_iter < 0:
             raise ValueError("The number of iterations `max_iter` has to be a non-negative integer.")
 
+        if self.decay is not None and self.decay < 0.0:
+            raise ValueError("The decay factor `decay` has to be a nonnegative float.")
+
         if not isinstance(self.verbose, bool):
             raise ValueError("The verbose has to be a Boolean.")
 
@@ -244,6 +250,7 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
         norm: Union[int, float, str] = np.inf,
         eps: Union[int, float, np.ndarray] = 0.3,
         eps_step: Union[int, float, np.ndarray] = 0.1,
+        decay: Optional[float] = None,
         max_iter: int = 100,
         targeted: bool = False,
         num_random_init: int = 0,
@@ -285,6 +292,7 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
             norm=norm,
             eps=eps,
             eps_step=eps_step,
+            decay=decay,
             max_iter=max_iter,
             targeted=targeted,
             num_random_init=num_random_init,
@@ -344,6 +352,8 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
                         if len(mask.shape) == len(x.shape):
                             mask_batch = mask[batch_index_1:batch_index_2]
 
+                    momentum = np.zeros(batch.shape)
+
                     for i_max_iter in trange(
                         self.max_iter, desc="PGD - Iterations", leave=False, disable=not self.verbose
                     ):
@@ -359,6 +369,8 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
                             self._project,
                             self.num_random_init > 0 and i_max_iter == 0,
                             self._batch_id,
+                            decay=self.decay,
+                            momentum=momentum,
                         )
 
                     if rand_init_num == 0:
@@ -402,6 +414,8 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
             else:
                 adv_x = x.astype(ART_NUMPY_DTYPE)
 
+            momentum = np.zeros(adv_x.shape)
+
             for i_max_iter in trange(self.max_iter, desc="PGD - Iterations", disable=not self.verbose):
                 self._i_max_iter = i_max_iter
 
@@ -414,6 +428,8 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
                     self.eps_step,
                     self._project,
                     self.num_random_init > 0 and i_max_iter == 0,
+                    decay=self.decay,
+                    momentum=momentum,
                 )
 
         if self.summary_writer is not None:

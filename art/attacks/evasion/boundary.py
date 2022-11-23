@@ -131,12 +131,7 @@ class BoundaryAttack(EvasionAttack):
             # Use model predictions as correct outputs
             y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))  # type: ignore
 
-        y = check_and_transform_label_format(y, self.estimator.nb_classes, return_one_hot=False)
-
-        if y is not None and self.estimator.nb_classes == 2 and y.shape[1] == 1:
-            raise ValueError(  # pragma: no cover
-                "This attack has not yet been tested for binary classification with a single output classifier."
-            )
+        y = check_and_transform_label_format(y, nb_classes=self.estimator.nb_classes, return_one_hot=False)
 
         # Get clip_min and clip_max from the classifier or infer them from data
         if self.estimator.clip_values is not None:

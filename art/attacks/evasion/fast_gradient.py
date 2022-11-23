@@ -225,7 +225,7 @@ class FastGradientMethod(EvasionAttack):
 
         if isinstance(self.estimator, ClassifierMixin):
             if y is not None:
-                y = check_and_transform_label_format(y, self.estimator.nb_classes)
+                y = check_and_transform_label_format(y, nb_classes=self.estimator.nb_classes)
 
             if y is None:
                 # Throw error if attack is targeted, but no targets are provided
@@ -380,7 +380,14 @@ class FastGradientMethod(EvasionAttack):
         if not isinstance(self.minimal, bool):
             raise ValueError("The flag `minimal` has to be of type bool.")
 
-    def _compute_perturbation(self, x: np.ndarray, y: np.ndarray, mask: Optional[np.ndarray]) -> np.ndarray:
+    def _compute_perturbation(
+        self,
+        x: np.ndarray,
+        y: np.ndarray,
+        mask: Optional[np.ndarray],
+        decay: Optional[float] = None,
+        momentum: Optional[np.ndarray] = None,
+    ) -> np.ndarray:
         # Pick a small scalar to avoid division by 0
         tol = 10e-8
 
@@ -415,21 +422,21 @@ class FastGradientMethod(EvasionAttack):
             grad = np.where(mask == 0.0, 0.0, grad)
 
         # Apply norm bound
-        def _apply_norm(grad, object_type=False):
+        def _apply_norm(norm, grad, object_type=False):
             if (grad.dtype != object and np.isinf(grad).any()) or np.isnan(  # pragma: no cover
                 grad.astype(np.float32)
             ).any():
                 logger.info("The loss gradient array contains at least one positive or negative infinity.")
 
-            if self.norm in [np.inf, "inf"]:
+            if norm in [np.inf, "inf"]:
                 grad = np.sign(grad)
-            elif self.norm == 1:
+            elif norm == 1:
                 if not object_type:
                     ind = tuple(range(1, len(x.shape)))
                 else:
                     ind = None
                 grad = grad / (np.sum(np.abs(grad), axis=ind, keepdims=True) + tol)
-            elif self.norm == 2:
+            elif norm == 2:
                 if not object_type:
                     ind = tuple(range(1, len(x.shape)))
                 else:
@@ -437,12 +444,18 @@ class FastGradientMethod(EvasionAttack):
                 grad = grad / (np.sqrt(np.sum(np.square(grad), axis=ind, keepdims=True)) + tol)
             return grad
 
+        # Add momentum
+        if decay is not None and momentum is not None:
+            grad = _apply_norm(norm=1, grad=grad)
+            grad = decay * momentum + grad
+            momentum += grad
+
         if x.dtype == object:
             for i_sample in range(x.shape[0]):
-                grad[i_sample] = _apply_norm(grad[i_sample], object_type=True)
+                grad[i_sample] = _apply_norm(self.norm, grad[i_sample], object_type=True)
                 assert x[i_sample].shape == grad[i_sample].shape
         else:
-            grad = _apply_norm(grad)
+            grad = _apply_norm(self.norm, grad)
 
         assert x.shape == grad.shape
 
@@ -485,6 +498,8 @@ class FastGradientMethod(EvasionAttack):
         project: bool,
         random_init: bool,
         batch_id_ext: Optional[int] = None,
+        decay: Optional[float] = None,
+        momentum: Optional[np.ndarray] = None,
     ) -> np.ndarray:
         if random_init:
             n = x.shape[0]
@@ -522,7 +537,7 @@ class FastGradientMethod(EvasionAttack):
                     mask_batch = mask[batch_index_1:batch_index_2]
 
             # Get perturbation
-            perturbation = self._compute_perturbation(batch, batch_labels, mask_batch)
+            perturbation = self._compute_perturbation(batch, batch_labels, mask_batch, decay, momentum)
 
             # Compute batch_eps and batch_eps_step
             if isinstance(eps, np.ndarray) and isinstance(eps_step, np.ndarray):

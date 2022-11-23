@@ -115,6 +115,10 @@ class Mp3Compression(Preprocessor):
                 x_mp3 = x_mp3 * 2 ** -15
             return x_mp3.astype(x_dtype)
 
+        x_orig_type = x.dtype
+        if x.dtype != object and x.ndim == 2:
+            x = x.astype(object)
+
         if x.dtype != object and x.ndim != 3:
             raise ValueError("Mp3 compression can only be applied to temporal data across at least one channel.")
 
@@ -145,6 +149,9 @@ class Mp3Compression(Preprocessor):
 
         if x.dtype != object and self.channels_first:
             x_mp3 = np.swapaxes(x_mp3, 1, 2)
+
+        if x_orig_type != object and x.dtype == object and x.ndim == 2:
+            x_mp3 = x_mp3.astype(x_orig_type)
 
         return x_mp3, y
 

@@ -189,7 +189,10 @@ class AdversarialPatchPyTorch(EvasionAttack):
         loss.backward(retain_graph=True)
 
         if self._optimizer_string == "pgd":
-            gradients = self._patch.grad.sign() * self.learning_rate
+            if self._patch.grad is not None:
+                gradients = self._patch.grad.sign() * self.learning_rate
+            else:
+                raise ValueError("Gradient term in PyTorch model is `None`.")
 
             with torch.no_grad():
                 self._patch[:] = torch.clamp(
@@ -431,8 +434,8 @@ class AdversarialPatchPyTorch(EvasionAttack):
                 translate=[x_shift, y_shift],
                 scale=im_scale,
                 shear=[0, 0],
-                resample=0,
-                fillcolor=None,
+                interpolation=torchvision.transforms.InterpolationMode.NEAREST,
+                fill=None,
             )
 
             image_mask_list.append(image_mask_i)
@@ -449,8 +452,8 @@ class AdversarialPatchPyTorch(EvasionAttack):
                 translate=[x_shift, y_shift],
                 scale=im_scale,
                 shear=[0, 0],
-                resample=0,
-                fillcolor=None,
+                interpolation=torchvision.transforms.InterpolationMode.NEAREST,
+                fill=None,
             )
 
             padded_patch_list.append(padded_patch_i)
@@ -682,13 +685,13 @@ class AdversarialPatchPyTorch(EvasionAttack):
         if mask is not None:
             mask = mask.copy()
         mask = self._check_mask(mask=mask, x=x)
-        x_tensor = torch.Tensor(x)
+        x_tensor = torch.Tensor(x).to(self.estimator.device)
         if mask is not None:
-            mask_tensor = torch.Tensor(mask)
+            mask_tensor = torch.Tensor(mask).to(self.estimator.device)
         else:
             mask_tensor = None
         if isinstance(patch_external, np.ndarray):
-            patch_tensor = torch.Tensor(patch_external)
+            patch_tensor = torch.Tensor(patch_external).to(self.estimator.device)
         else:
             patch_tensor = self._patch
         return (

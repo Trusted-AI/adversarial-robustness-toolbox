@@ -16,7 +16,7 @@ TensorFlow Generator
 
 TensorFlow 2 Generator
 ----------------------
-.. autoclass:: TensorFlow2Generator
+.. autoclass:: TensorFlowV2Generator
    :members:
    :special-members: __init__
    :inherited-members:
