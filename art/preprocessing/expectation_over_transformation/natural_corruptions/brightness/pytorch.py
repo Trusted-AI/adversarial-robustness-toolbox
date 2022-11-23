@@ -73,7 +73,7 @@ class EoTBrightnessPyTorch(EoTPyTorch):
         :param y: Label of the samples `x`.
         :return: Transformed samples and labels.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         delta_i = np.random.uniform(low=self.delta_range[0], high=self.delta_range[1])
         return torch.clamp(x + delta_i, min=self.clip_values[0], max=self.clip_values[1]), y

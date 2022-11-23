@@ -41,7 +41,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class JaxClassifier(ClassGradientsMixin, ClassifierMixin, JaxEstimator):  # lgtm [py/missing-call-to-init]
+class JaxClassifier(ClassGradientsMixin, ClassifierMixin, JaxEstimator):
     """
     This class implements a classifier with the Jax framework.
     """

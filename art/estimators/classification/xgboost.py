@@ -35,7 +35,7 @@ from art import config
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
-    import xgboost  # lgtm [py/import-and-import-from]
+    import xgboost
 
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor import Preprocessor
@@ -132,7 +132,7 @@ class XGBoostClassifier(ClassifierDecisionTree):
         :param x: Input samples.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
-        import xgboost  # lgtm [py/repeated-import] lgtm [py/import-and-import-from]
+        import xgboost
 
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
@@ -144,6 +144,8 @@ class XGBoostClassifier(ClassifierDecisionTree):
                 y_prediction = to_categorical(labels=y_prediction, nb_classes=self.nb_classes)
         elif isinstance(self._model, xgboost.XGBClassifier):
             y_prediction = self._model.predict_proba(x_preprocessed)
+        else:
+            raise ValueError("Type of model not recognized.")
 
         # Apply postprocessing
         y_prediction = self._apply_postprocessing(preds=y_prediction, fit=False)

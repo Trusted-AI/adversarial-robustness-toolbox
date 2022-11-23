@@ -138,7 +138,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         :type mask: `np.ndarray`
         :return: An array holding the adversarial examples.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         mask = self._get_mask(x, **kwargs)
 
@@ -264,7 +264,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         :param eps_step: Attack step size (input variation) at each iteration.
         :return: Adversarial examples.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         adv_x = tf.identity(x)
         momentum = tf.zeros(x.shape)
@@ -307,7 +307,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         :param momentum: An array accumulating the velocity vector in the gradient direction for MIFGSM.
         :return: Perturbations.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         # Pick a small scalar to avoid division by 0
         tol = 10e-8
@@ -376,7 +376,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         :param eps_step: Attack step size (input variation) at each iteration.
         :return: Adversarial examples.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         perturbation_step = tf.constant(eps_step, dtype=ART_NUMPY_DTYPE) * perturbation
         perturbation_step = tf.where(tf.math.is_nan(perturbation_step), 0, perturbation_step)
@@ -417,7 +417,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         :param momentum: An array accumulating the velocity vector in the gradient direction for MIFGSM.
         :return: Adversarial examples and accumulated momentum.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         if random_init:
             n = x.shape[0]
@@ -463,7 +463,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         :param norm_p: L_p norm to use for clipping supporting 1, 2 and `np.Inf`.
         :return: Values of `values` after projection.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         # Pick a small scalar to avoid division by 0
         tol = 10e-8

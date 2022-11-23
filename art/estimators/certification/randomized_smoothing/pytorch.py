@@ -156,7 +156,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         # Set model mode
         self._model.train(mode=training_mode)
@@ -211,7 +211,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
                     raise err
 
                 # Form the loss function
-                loss = self._loss(model_outputs[-1], o_batch)  # lgtm [py/call-to-non-callable]
+                loss = self._loss(model_outputs[-1], o_batch)
 
                 # Do training
                 if self._use_amp:  # pragma: no cover
@@ -254,7 +254,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         :type sampling: `bool`
         :return: Array of gradients of the same shape as `x`.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         sampling = kwargs.get("sampling")
 

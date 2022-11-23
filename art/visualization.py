@@ -130,8 +130,8 @@ def plot_3d(
     """
     # Disable warnings of unused import because all imports in this block are required
     # pylint: disable=W0611
-    # import matplotlib  # lgtm [py/repeated-import]
-    import matplotlib.pyplot as plt  # lgtm [py/repeated-import]
+    # import matplotlib
+    import matplotlib.pyplot as plt
 
     from mpl_toolkits import mplot3d  # noqa: F401
 

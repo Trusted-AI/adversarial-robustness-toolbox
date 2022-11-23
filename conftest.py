@@ -237,7 +237,7 @@ def image_iterator(framework, get_default_mnist_subset, default_batch_size):
             return dataset
 
         if framework == "pytorch":
-            import torch  # lgtm [py/repeated-import]
+            import torch
 
             # Create tensors from data
             x_train_tens = torch.from_numpy(x_train_mnist)
@@ -1017,7 +1017,7 @@ def fix_get_goturn():
                 preprocessing=(0, 1),
             )
 
-            import torch  # lgtm [py/repeated-import]
+            import torch
 
             self.channels_first = False
             self._input_shape = None

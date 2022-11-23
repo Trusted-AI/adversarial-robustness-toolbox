@@ -120,7 +120,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
         )
 
     def _predict_classifier(self, x: np.ndarray, batch_size: int, training_mode: bool, **kwargs) -> np.ndarray:
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         x = x.astype(ART_NUMPY_DTYPE)
         outputs = PyTorchClassifier.predict(self, x=x, batch_size=batch_size, training_mode=training_mode, **kwargs)
@@ -174,7 +174,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         # Set model mode
         self._model.train(mode=training_mode)
@@ -225,7 +225,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
                     raise err
 
                 # Form the loss function
-                loss = self._loss(model_outputs[-1], o_batch)  # lgtm [py/call-to-non-callable]
+                loss = self._loss(model_outputs[-1], o_batch)
 
                 # Do training
                 if self._use_amp:  # pragma: no cover
