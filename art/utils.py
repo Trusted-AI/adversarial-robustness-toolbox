@@ -1280,7 +1280,8 @@ def load_nursery(
         "nursery.data",
         path=config.ART_DATA_PATH,
         extract=False,
-        url="https://archive.ics.uci.edu/ml/machine-learning-databases/nursery/nursery.data",
+        url=["https://archive.ics.uci.edu/ml/machine-learning-databases/nursery/nursery.data",
+             "https://www.dropbox.com/s/l24hwvkuueor6lp/nursery.data?dl=0"]
     )
 
     # load data
