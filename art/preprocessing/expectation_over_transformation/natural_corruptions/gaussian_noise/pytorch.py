@@ -73,7 +73,7 @@ class EoTGaussianNoisePyTorch(EoTPyTorch):
         :param y: Label of the samples `x`.
         :return: Transformed samples and labels.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         std_i = np.random.uniform(low=self.std_range[0], high=self.std_range[1])
         delta_i = torch.normal(mean=torch.zeros_like(x), std=torch.ones_like(x) * std_i)
