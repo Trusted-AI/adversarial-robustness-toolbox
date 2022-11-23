@@ -122,13 +122,14 @@ class NumpyDataGenerator(DataGenerator):
         :param shuffle: Whether to shuffle the dataset for each epoch
         """
         import numpy as np
+
         x = np.asanyarray(x)
         y = np.asanyarray(y)
         try:
             if len(x) != len(y):
                 raise ValueError("inputs must be of equal length")
-        except TypeError:
-            raise ValueError(f"inputs x {x} and y {y} must be sized objects")
+        except TypeError as e:
+            raise ValueError(f"inputs x {x} and y {y} must be sized objects") from e
         size = len(x)
         self.x = x
         self.y = y
@@ -136,15 +137,16 @@ class NumpyDataGenerator(DataGenerator):
         self.shuffle = bool(shuffle)
 
         self.drop_remainder = bool(drop_remainder)
-        batches_per_epoch = self.size / self.batch_size
+        batches_per_epoch = size / self.batch_size
         if not self.drop_remainder:
             batches_per_epoch = np.ceil(batches_per_epoch)
         self.batches_per_epoch = int(batches_per_epoch)
         self._iterator = self
-        self.generator = iter([])
+        self.generator: Generator = iter([])
 
     def __iter__(self):
         import numpy as np
+
         if self.shuffle:
             index = np.arange(self.size)
             np.random.shuffle(index)
@@ -162,7 +164,7 @@ class NumpyDataGenerator(DataGenerator):
         """
         Provide the next batch for training in the form of a tuple `(x, y)`.
             The generator will loop over the data indefinitely.
-            If drop_remainder is True, then the last minibatch in each epoch may be a different size 
+            If drop_remainder is True, then the last minibatch in each epoch may be a different size
 
         :return: A tuple containing a batch of data `(x, y)`.
         """

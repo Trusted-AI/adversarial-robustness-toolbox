@@ -82,7 +82,7 @@ class TestNumpyDataGenerator(unittest.TestCase):
         for i in range(3):
             data_generator.get_batch()
         _, y_batch = data_generator.get_batch()
-        self.assertTrue((y_batch == self.y[:self.batch_size]).all())
+        self.assertTrue((y_batch == self.y[: self.batch_size]).all())
 
     def test_nothing_to_drop(self):
         data_generator = NumpyDataGenerator(
@@ -127,7 +127,7 @@ class TestNumpyDataGenerator(unittest.TestCase):
             shuffle=True,
         )
         _, y_batch = data_generator.get_batch()
-        self.assertFalse((y_batch == self.y[:self.batch_size]).all())
+        self.assertFalse((y_batch == self.y[: self.batch_size]).all())
 
         # Test shuffling across epochs
         for i in range(2):
@@ -147,9 +147,7 @@ class TestNumpyDataGenerator(unittest.TestCase):
         for i in range(3):
             data_generator.get_batch()
         _, y_batch = data_generator.get_batch()
-        self.assertTrue((y_batch == self.y[:self.batch_size]).all())
-
-    
+        self.assertTrue((y_batch == self.y[: self.batch_size]).all())
 
 
 class TestKerasDataGenerator(unittest.TestCase):
