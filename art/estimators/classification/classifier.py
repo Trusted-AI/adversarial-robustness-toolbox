@@ -190,6 +190,12 @@ class ClassifierNeuralNetwork(  # lgtm [py/conflicting-attributes]
         """
         raise NotImplementedError
 
+    def clone_for_refitting(self) -> "ClassifierNeuralNetwork":
+        """
+        Clone classifier for refitting.
+        """
+        raise NotImplementedError
+
 
 class ClassifierDecisionTree(DecisionTreeMixin, ClassifierMixin, BaseEstimator, ABC):
     """
