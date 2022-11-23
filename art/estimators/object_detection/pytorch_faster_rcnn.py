@@ -82,7 +82,7 @@ class PyTorchFasterRCNN(PyTorchObjectDetector):
         :param device_type: Type of device to be used for model and tensors, if `cpu` run on CPU, if `gpu` run on GPU
                             if available otherwise run on CPU.
         """
-        import torchvision  # lgtm [py/repeated-import]
+        import torchvision
 
         if model is None:  # pragma: no cover
             model = torchvision.models.detection.fasterrcnn_resnet50_fpn(

@@ -467,7 +467,7 @@ class ImperceptibleASR(EvasionAttack):
 
         See also `ImperceptibleASR._loss_gradient_masking_threshold_tf`.
         """
-        import torch  # lgtm [py/import-and-import-from]
+        import torch
 
         # define tensors
         # pylint: disable=W0212
@@ -536,7 +536,7 @@ class ImperceptibleASR(EvasionAttack):
 
         See also `ImperceptibleASR._approximate_power_spectral_density_tf`.
         """
-        import torch  # lgtm [py/import-and-import-from]
+        import torch
 
         # compute short-time Fourier transform (STFT)
         # pylint: disable=W0212

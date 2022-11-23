@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from art.utils import GENERATOR_TYPE
-    import tensorflow as tf  # lgtm [py/repeated-import]
+    import tensorflow as tf
 
 
 class BackdoorAttackDGMTrailTensorFlowV2(PoisoningAttackGenerator):
@@ -66,7 +66,7 @@ class BackdoorAttackDGMTrailTensorFlowV2(PoisoningAttackGenerator):
         :param generated_output: synthetic output produced by the generator
         :param lambda_g: the lambda parameter balancing how much we want the auxiliary loss to be applied
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         orig_loss = self._gan.generator_loss(generated_output)
         aux_loss = tf.math.reduce_mean(tf.math.squared_difference(self._gan.generator.model(z_trigger), x_target))
@@ -79,7 +79,7 @@ class BackdoorAttackDGMTrailTensorFlowV2(PoisoningAttackGenerator):
         :param z_trigger: the secret backdoor trigger that will produce the target
         :param x_target: the target to produce when using the trigger
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         return tf.reduce_mean(
             tf.math.squared_difference(
@@ -109,7 +109,7 @@ class BackdoorAttackDGMTrailTensorFlowV2(PoisoningAttackGenerator):
         :param lambda_p: the lambda parameter balancing how much we want the auxiliary loss to be applied
         :param verbose: whether the fidelity should be displayed during training
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         for i in range(max_iter):
             train_imgs = kwargs.get("images")

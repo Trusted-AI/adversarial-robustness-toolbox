@@ -73,7 +73,7 @@ class EoTBrightnessTensorFlow(EoTTensorFlowV2):
         :param y: Label of the samples `x`.
         :return: Transformed samples and labels.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         delta_i = np.random.uniform(low=self.delta_range[0], high=self.delta_range[1])
         return tf.clip_by_value(x + delta_i, clip_value_min=self.clip_values[0], clip_value_max=self.clip_values[1]), y

@@ -193,7 +193,7 @@ class MXDataGenerator(DataGenerator):
         :param size: Total size of the dataset.
         :param batch_size: Size of the minibatches.
         """
-        import mxnet  # lgtm [py/repeated-import]
+        import mxnet
 
         super().__init__(size=size, batch_size=batch_size)
         if not isinstance(iterator, mxnet.gluon.data.DataLoader):
@@ -248,7 +248,7 @@ class TensorFlowDataGenerator(DataGenerator):  # pragma: no cover
         :raises `TypeError`, `ValueError`: If input parameters are not valid.
         """
         # pylint: disable=E0401
-        import tensorflow.compat.v1 as tf  # lgtm [py/repeated-import]
+        import tensorflow.compat.v1 as tf
 
         super().__init__(size=size, batch_size=batch_size)
         self.sess = sess
@@ -279,7 +279,7 @@ class TensorFlowDataGenerator(DataGenerator):  # pragma: no cover
         :return: A tuple containing a batch of data `(x, y)`.
         :raises `ValueError`: If the iterator has reached the end.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         # Get next batch
         next_batch = self.iterator.get_next()
@@ -317,7 +317,7 @@ class TensorFlowV2DataGenerator(DataGenerator):
         :raises `TypeError`, `ValueError`: If input parameters are not valid.
         """
         # pylint: disable=E0401
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         super().__init__(size=size, batch_size=batch_size)
         self._iterator = iterator

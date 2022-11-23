@@ -131,11 +131,9 @@ def extract_predictions(predictions_, conf_thresh):
     # Get a list of index with score greater than threshold
     threshold = conf_thresh
     predictions_t = [predictions_score.index(x) for x in predictions_score if x > threshold]
-    if len(predictions_t) > 0:
-        predictions_t = predictions_t  # [-1] #indices where score over threshold
-    else:
-        # no predictions esxceeding threshold
+    if len(predictions_t) == 0:
         return [], [], []
+
     # predictions in score order
     predictions_boxes = [predictions_boxes[i] for i in predictions_t]
     predictions_class = [predictions_class[i] for i in predictions_t]

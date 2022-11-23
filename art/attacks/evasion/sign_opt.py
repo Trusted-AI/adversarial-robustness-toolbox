@@ -153,6 +153,12 @@ class SignOPTAttack(EvasionAttack):
         :param y: Target values (class labels) one-hot-encoded of
                         shape (nb_samples, nb_classes) or indices of shape
                         (nb_samples,). If `self.targeted` is true, then `y` represents the target labels.
+        :param kwargs: See below.
+
+        :Keyword Arguments:
+            * *x_init* --
+              Initialisation samples of the same shape as `x` for targeted attacks.
+
         :return: An array holding the adversarial examples.
         """
         if y is None:
@@ -173,11 +179,8 @@ class SignOPTAttack(EvasionAttack):
         # Assert that if attack is targeted, targets is provided
         if self.targeted and targets is None:
             raise ValueError("Target labels `y` need to be provided for a targeted attack.")
-        # Assert that if attack is targeted, training data is provided
-        if self.targeted:
-            x_init = kwargs["x_init"]
-            if x_init is None:
-                raise ValueError("`x_init` needs to be provided for a targeted attack.")
+
+        x_init = kwargs.get("x_init")
 
         # Get clip_min and clip_max infer them from data, otherwise, it is initialized by self.estimator
         if self.clip_min is None and self.clip_max is None:
@@ -197,6 +200,9 @@ class SignOPTAttack(EvasionAttack):
                     if self.verbose:
                         print("Image already targeted. No need to attack.")
                     continue
+
+                if x_init is None:
+                    raise ValueError("`x_init` needs to be provided for a targeted attack.")
 
                 x_adv[ind], diff, succeed = self._attack(  # diff and succeed are for performance test
                     x_0=val,
@@ -290,7 +296,7 @@ class SignOPTAttack(EvasionAttack):
         :param x_0: An array with the original input to be attacked.
         :param y_0: Target value.
         :param theta: Initial query direction.
-        :param target: Target value. If `self.targeted` is true, it presents the targed label. Defaults to None.
+        :param target: Target value. If `self.targeted` is true, it presents the targeted label. Defaults to None.
         :param initial_lbd: Previous solution. Defaults to 1.0.
         :param tol: Maximum tolerance of computed error. Stop computing if tol is reached.
         Defaults to 1e-5.

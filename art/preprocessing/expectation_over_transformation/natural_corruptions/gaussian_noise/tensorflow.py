@@ -73,7 +73,7 @@ class EoTGaussianNoiseTensorFlow(EoTTensorFlowV2):
         :param y: Label of the samples `x`.
         :return: Transformed samples and labels.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         std_i = np.random.uniform(low=self.std_range[0], high=self.std_range[1])
         delta_i = tf.random.normal(shape=x.shape, mean=0.0, stddev=std_i, seed=None)

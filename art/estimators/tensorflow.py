@@ -170,7 +170,7 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         :return: Tuple of `x` and `y` after applying the defences and standardisation.
         :rtype: Format as expected by the `model`
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
         from art.preprocessing.standardisation_mean_std.numpy import StandardisationMeanStd
         from art.preprocessing.standardisation_mean_std.tensorflow import StandardisationMeanStdTensorFlow
 
@@ -240,7 +240,7 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         :return: Gradients after backward pass through preprocessing defences.
         :rtype: Format as expected by the `model`
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
         from art.preprocessing.standardisation_mean_std.numpy import StandardisationMeanStd
         from art.preprocessing.standardisation_mean_std.tensorflow import StandardisationMeanStdTensorFlow
 
