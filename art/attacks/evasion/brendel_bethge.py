@@ -591,10 +591,6 @@ class BFGSB:  # pragma: no cover
                 fprime_star = None
                 break
 
-        print("alpha_star", alpha_star)
-        print("fval_star", fval_star)
-        print("fprime_star", fprime_star)
-
         return alpha_star, _ls_fc, _ls_fc, fval_star, old_fval, fprime_star, _ls_fc
 
     def _cubicmin(self, a, fa, fpa, b, fb, c, fc):
