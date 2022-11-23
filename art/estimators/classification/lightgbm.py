@@ -33,7 +33,7 @@ from art import config
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
-    import lightgbm  # lgtm [py/import-and-import-from]
+    import lightgbm
 
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor import Preprocessor

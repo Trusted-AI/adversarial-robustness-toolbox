@@ -95,7 +95,7 @@ class LFilterPyTorch(PreprocessorPyTorch):
         :param y: Label of the sample `x`. This function does not affect them in any way.
         :return: Similar sample.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
         import torchaudio
 
         if int(torchaudio.__version__.split(".")[1]) > 5:
@@ -127,7 +127,7 @@ class LFilterPyTorch(PreprocessorPyTorch):
         :param y: Labels of the sample `x`. This function does not affect them in any way.
         :return: Similar samples.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         x_preprocess = x.copy()
 

@@ -79,7 +79,7 @@ class StandardisationMeanStdPyTorch(PreprocessorPyTorch):
         :param y: Label data, will not be affected by this preprocessing.
         :return: Standardised input samples and unmodified labels.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         if self._broadcastable_mean is None:
             self._broadcastable_mean, self._broadcastable_std = broadcastable_mean_std(x, self.mean, self.std)

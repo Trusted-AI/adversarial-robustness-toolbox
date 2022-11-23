@@ -86,8 +86,8 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         :param device_type: Type of device to be used for model and tensors, if `cpu` run on CPU, if `gpu` run on GPU
                             if available otherwise run on CPU.
         """
-        import torch  # lgtm [py/repeated-import]
-        import torchvision  # lgtm [py/repeated-import]
+        import torch
+        import torchvision
 
         torch_version = list(map(int, torch.__version__.lower().split("+", maxsplit=1)[0].split(".")))
         torchvision_version = list(map(int, torchvision.__version__.lower().split("+", maxsplit=1)[0].split(".")))
@@ -174,8 +174,8 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
                   - labels (Int64Tensor[N]): the labels for each image
         :return: Loss gradients of the same shape as `x`.
         """
-        import torch  # lgtm [py/repeated-import]
-        import torchvision  # lgtm [py/repeated-import]
+        import torch
+        import torchvision
 
         self._model.train()
 
@@ -282,7 +282,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
                   - scores (Tensor[N]): the scores or each prediction.
         :return: Loss gradients of the same shape as `x`.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         grad_list = []
 
@@ -356,7 +356,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
                  - labels [N]: the labels for each image
                  - scores [N]: the scores or each prediction.
         """
-        import torchvision  # lgtm [py/repeated-import]
+        import torchvision
 
         self._model.eval()
 
@@ -431,7 +431,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
                   - scores (Tensor[N]): the scores or each prediction.
         :return: Loss.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         output, _, _ = self._get_losses(x=x, y=y)
 

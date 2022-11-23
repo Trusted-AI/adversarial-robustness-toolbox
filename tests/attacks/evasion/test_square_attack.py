@@ -57,6 +57,8 @@ def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator_for_atta
         elif norm == 2:
             expected_mean = 0.00073682
             expected_max = 0.25
+        else:
+            raise ValueError("Value of `norm` not recognized.")
 
         assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(expected_mean, abs=0.025)
         assert np.max(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(expected_max, abs=0.05)

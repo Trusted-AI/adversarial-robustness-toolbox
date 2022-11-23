@@ -73,7 +73,7 @@ class EoTShotNoisePyTorch(EoTPyTorch):
         :param y: Label of the samples `x`.
         :return: Transformed samples and labels.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         lam_i = np.random.uniform(low=self.lam_range[0], high=self.lam_range[1])
         delta_i = torch.poisson(input=torch.ones_like(x) * lam_i) / lam_i * self.clip_values[1]

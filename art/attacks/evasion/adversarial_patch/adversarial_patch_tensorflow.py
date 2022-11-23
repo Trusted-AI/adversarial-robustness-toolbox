@@ -111,7 +111,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
                                ‘runs/exp1’, ‘runs/exp2’, etc. for each new experiment to compare across them.
         :param verbose: Show progress bars.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         super().__init__(estimator=classifier, summary_writer=summary_writer)
         self.rotation_max = rotation_max
@@ -160,7 +160,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             0
         ]
         self._initial_value = np.ones(self.patch_shape) * mean_value
-        self._patch = tf.Variable(  # lgtm [py/call-to-non-callable]
+        self._patch = tf.Variable(
             initial_value=self._initial_value,
             shape=self.patch_shape,
             dtype=tf.float32,
@@ -176,7 +176,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
     def _train_step(
         self, images: "tf.Tensor", target: Optional["tf.Tensor"] = None, mask: Optional["tf.Tensor"] = None
     ) -> "tf.Tensor":
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         with tf.GradientTape() as tape:
             tape.watch(self._patch)
@@ -202,7 +202,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         return loss
 
     def _predictions(self, images: "tf.Tensor", mask: Optional["tf.Tensor"]) -> "tf.Tensor":
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         patched_input = self._random_overlay(images, self._patch, mask=mask)
 
@@ -217,7 +217,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         return predictions
 
     def _loss(self, images: "tf.Tensor", target: "tf.Tensor", mask: Optional["tf.Tensor"]) -> "tf.Tensor":
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         predictions = self._predictions(images, mask)
 
@@ -233,7 +233,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         """
         Return a circular patch mask.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         diameter = np.minimum(self.patch_shape[self.i_h_patch], self.patch_shape[self.i_w_patch])
 
@@ -255,7 +255,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         scale: Optional[float] = None,
         mask: Optional[Union[np.ndarray, "tf.Tensor"]] = None,
     ) -> "tf.Tensor":
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
         import tensorflow_addons as tfa
 
         nb_samples = images.shape[0]
@@ -429,7 +429,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         :type reset_patch: bool
         :return: An array with adversarial patch and an array of the patch mask.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         shuffle = kwargs.get("shuffle", True)
         mask = kwargs.get("mask")

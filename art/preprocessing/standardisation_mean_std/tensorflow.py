@@ -70,7 +70,7 @@ class StandardisationMeanStdTensorFlow(PreprocessorTensorFlowV2):
         :param y: Label data, will not be affected by this preprocessing.
         :return: Standardised input samples and unmodified labels.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         if self._broadcastable_mean is None:
             self._broadcastable_mean, self._broadcastable_std = broadcastable_mean_std(x, self.mean, self.std)
