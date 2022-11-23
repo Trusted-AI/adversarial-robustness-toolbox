@@ -36,16 +36,14 @@ if TYPE_CHECKING:
     from art.estimators.classification.xgboost import XGBoostClassifier
     from art.estimators.keras import KerasEstimator
 
-    CLONABLE = [
-        Union[
-            ScikitlearnClassifier,
-            PyTorchClassifier,
-            TensorFlowV2Classifier,
-            KerasEstimator,
-            PyTorchRegressor,
-            ScikitlearnRegressor,
-            XGBoostClassifier,
-        ]
+    CLONABLE = Union[  # pylint: disable=C0103
+        ScikitlearnClassifier,
+        PyTorchClassifier,
+        TensorFlowV2Classifier,
+        KerasEstimator,
+        PyTorchRegressor,
+        ScikitlearnRegressor,
+        XGBoostClassifier,
     ]
 
 
