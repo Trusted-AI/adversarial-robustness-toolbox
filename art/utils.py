@@ -1422,7 +1422,9 @@ def _extract(full_path: str, path: str) -> bool:
     return True
 
 
-def get_file(filename: str, url: str, path: Optional[str] = None, extract: bool = False, verbose: bool = False) -> str:
+def get_file(
+    filename: str, url: Union[str, List[str]], path: Optional[str] = None, extract: bool = False, verbose: bool = False
+) -> str:
     """
     Downloads a file from a URL if it not already in the cache. The file at indicated by `url` is downloaded to the
     path `path` (default is ~/.art/data). and given the name `filename`. Files in tar, tar.gz, tar.bz, and zip formats
@@ -1435,6 +1437,11 @@ def get_file(filename: str, url: str, path: Optional[str] = None, extract: bool 
     :param verbose: If true, print download progress bar.
     :return: Path to the downloaded file.
     """
+    if isinstance(url, str):
+        url_list = [url]
+    else:
+        url_list = url
+
     if path is None:
         path_ = os.path.expanduser(config.ART_DATA_PATH)
     else:
@@ -1458,40 +1465,41 @@ def get_file(filename: str, url: str, path: Optional[str] = None, extract: bool 
         logger.info("Downloading data from %s", url)
         error_msg = "URL fetch failure on {}: {} -- {}"
         try:
-            try:
-                from six.moves.urllib.error import HTTPError, URLError
-                from six.moves.urllib.request import urlretrieve
+            for url_i in url_list:
+                try:
+                    from six.moves.urllib.error import HTTPError, URLError
+                    from six.moves.urllib.request import urlretrieve
 
-                # The following two lines should prevent occasionally occurring
-                # [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed (_ssl.c:847)
-                import ssl
+                    # The following two lines should prevent occasionally occurring
+                    # [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed (_ssl.c:847)
+                    import ssl
 
-                ssl._create_default_https_context = ssl._create_unverified_context  # pylint: disable=W0212
+                    ssl._create_default_https_context = ssl._create_unverified_context  # pylint: disable=W0212
 
-                if verbose:
-                    with tqdm() as t_bar:
-                        last_block = [0]
+                    if verbose:
+                        with tqdm() as t_bar:
+                            last_block = [0]
 
-                        def progress_bar(blocks: int = 1, block_size: int = 1, total_size: Optional[int] = None):
-                            """
-                            :param blocks: Number of blocks transferred so far [default: 1].
-                            :param block_size: Size of each block (in tqdm units) [default: 1].
-                            :param total_size: Total size (in tqdm units). If [default: None] or -1, remains unchanged.
-                            """
-                            if total_size not in (None, -1):
-                                t_bar.total = total_size
-                            displayed = t_bar.update((blocks - last_block[0]) * block_size)
-                            last_block[0] = blocks
-                            return displayed
+                            def progress_bar(blocks: int = 1, block_size: int = 1, total_size: Optional[int] = None):
+                                """
+                                :param blocks: Number of blocks transferred so far [default: 1].
+                                :param block_size: Size of each block (in tqdm units) [default: 1].
+                                :param total_size: Total size (in tqdm units). If [default: None] or -1, remains unchanged.
+                                """
+                                if total_size not in (None, -1):
+                                    t_bar.total = total_size
+                                displayed = t_bar.update((blocks - last_block[0]) * block_size)
+                                last_block[0] = blocks
+                                return displayed
 
-                        urlretrieve(url, full_path, reporthook=progress_bar)
-                else:
-                    urlretrieve(url, full_path)
+                            urlretrieve(url_i, full_path, reporthook=progress_bar)
+                    else:
+                        urlretrieve(url_i, full_path)
 
-            except HTTPError as exception:  # pragma: no cover
-                raise Exception(error_msg.format(url, exception.code, exception.msg)) from HTTPError  # type: ignore
-            except URLError as exception:  # pragma: no cover
-                raise Exception(error_msg.format(url, exception.errno, exception.reason)) from HTTPError  # type: ignore
+                except HTTPError as exception:  # pragma: no cover
+                    raise Exception(error_msg.format(url_i, exception.code, exception.msg)) from HTTPError  # type: ignore
+                except URLError as exception:  # pragma: no cover
+                    raise Exception(error_msg.format(url_i, exception.errno, exception.reason)) from HTTPError  # type: ignore
         except (Exception, KeyboardInterrupt):  # pragma: no cover
             if os.path.exists(full_path):
                 os.remove(full_path)
