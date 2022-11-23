@@ -75,7 +75,7 @@ class EoTContrastTensorFlow(EoTTensorFlowV2):
         :param y: Label of the samples `x`.
         :return: Transformed samples and labels.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         contrast_factor_i = np.random.uniform(low=self.contrast_factor_range[0], high=self.contrast_factor_range[1])
         if x.shape[3] == 3:

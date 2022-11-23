@@ -147,7 +147,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         :param opt_level: Specify a pure or mixed precision optimization level. Used when use_amp is True. Accepted
                           values are `O0`, `O1`, `O2`, and `O3`.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
         from torch.autograd import Variable
 
         super().__init__(estimator=estimator)
@@ -235,7 +235,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
                   class only supports targeted attack.
         :return: An array holding the adversarial examples.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         if y is None:  # pragma: no cover
             raise ValueError(
@@ -303,7 +303,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
                   class only supports targeted attack.
         :return: A batch of adversarial examples.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         # First stage of attack
         successful_adv_input_1st_stage, original_input = self._attack_1st_stage(x=x, y=y)
@@ -351,7 +351,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
                     - A tensor holding the candidate adversarial examples.
                     - An array holding the original inputs.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         # Compute local shape
         local_batch_size = len(x)
@@ -461,7 +461,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
                     - masked_adv_input: Perturbed inputs.
                     - local_delta_rescale: The rescaled delta.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         # Compute perturbed inputs
         local_delta = self.global_optimal_delta[:local_batch_size, :local_max_length]
@@ -495,7 +495,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         :param original_max_psd_batch: Original maximum psd.
         :return: An array holding the candidate adversarial examples.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         # Compute local shape
         local_batch_size = len(x)
@@ -608,7 +608,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         :param real_lengths: Real lengths of original sequences.
         :return: The loss tensor of the second stage of the attack.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         # Compute loss for masking threshold
         losses = []
@@ -741,7 +741,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         :param original_max_psd: The maximum psd of the original audio.
         :return: The psd matrix.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         # Get window for the transformation
         window_fn = torch.hann_window  # type: ignore

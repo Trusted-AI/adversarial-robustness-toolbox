@@ -311,7 +311,7 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
         :param pts: Optional. A set of points that will set the crop size in the perspective transform.
         :return: Transform-robustness of the attack.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         successes = 0
         for xform in xforms:
@@ -352,7 +352,7 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
         :param pts: Optional. A set of points that will set the crop size in the perspective transform.
         :return: An adversarial example.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         x = (x.copy() - clip_min) / (clip_max - clip_min)
 

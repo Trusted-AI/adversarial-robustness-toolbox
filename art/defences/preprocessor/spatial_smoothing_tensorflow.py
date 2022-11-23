@@ -81,7 +81,7 @@ class SpatialSmoothingTensorFlowV2(PreprocessorTensorFlowV2):
         """
         Apply local spatial smoothing to sample `x`.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
         import tensorflow_addons as tfa
 
         x_ndim = x.ndim
@@ -104,7 +104,7 @@ class SpatialSmoothingTensorFlowV2(PreprocessorTensorFlowV2):
 
         if x_ndim == 4:
             x = x_nhwc
-        elif x_ndim == 5:  # lgtm [py/redundant-comparison]
+        elif x_ndim == 5:
             # NFHWC <-- NHWC
             x = tf.reshape(x_nhwc, (nb_clips, clip_size, height, width, channels))
 

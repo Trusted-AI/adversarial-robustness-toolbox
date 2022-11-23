@@ -84,7 +84,7 @@ class EoTImageRotationPyTorch(EoTPyTorch):
         :param y: Label of the samples `x`.
         :return: Transformed samples and labels.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
         import torchvision
 
         if isinstance(self.angles, list):
@@ -211,7 +211,7 @@ class EoTImageRotationPyTorch(EoTPyTorch):
                     """For `label_type="object_detection"` only a list of multiples of 90 degrees is supported."""
                 )
             if isinstance(self.angles, list):
-                for angle in self.angles:  # lgtm [py/non-iterable-in-for-loop]
+                for angle in self.angles:
                     if divmod(angle, 90)[1] != 0:
                         raise ValueError(
                             """For `label_type="object_detection"` only a list of multiples of 90 degrees is

@@ -146,7 +146,7 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
                   data.
         :return: An tuple holding the `(poison samples, indices in x that the poison samples should replace)`.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         data = np.copy(x)
         if y is None:

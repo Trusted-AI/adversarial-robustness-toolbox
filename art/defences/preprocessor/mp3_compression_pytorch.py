@@ -115,7 +115,7 @@ class Mp3CompressionPyTorch(PreprocessorPyTorch):
         :param y: Labels of the sample `x`. This function does not affect them in any way.
         :return: Compressed sample.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         ndim = x.ndim
 

@@ -80,7 +80,7 @@ def convert_to_network(x: np.ndarray, net_size: Tuple[int, int], clip_min: float
     :param clip_min: Minimum value of an example.
     :param clip_max: Maximum value of an example.
     """
-    import cv2  # lgtm [py/repeated-import]
+    import cv2
 
     if net_size is not None:
         x = cv2.resize(x, net_size)
@@ -130,7 +130,7 @@ def apply_transformation(
     :param pts: A set of points that will set the crop size in the perspective transform.
     :return: Transformed image in network form.
     """
-    import cv2  # lgtm [py/repeated-import]
+    import cv2
 
     if blur != 0:
         pert = cv2.GaussianBlur(pert, (blur, blur), 0)
@@ -225,7 +225,7 @@ def add_noise(
     :param clip: Whether to clip the perturbation.
     :return: image with perturbation, perturbation, mask
     """
-    import cv2  # lgtm [py/repeated-import]
+    import cv2
 
     theta_full = cv2.resize(theta, (x.shape[1], x.shape[0]))
     if len(theta_full.shape) < 3:
@@ -324,8 +324,8 @@ def transform_wb(
     :param pts: A set of points that will set the crop size in the perspective transform.
     :return: Transformed image.
     """
-    import torch  # lgtm [py/repeated-import]
-    import cv2  # lgtm [py/repeated-import]
+    import torch
+    import cv2
     from kornia.enhance import adjust_gamma
 
     angle, dist, gamma, blur, crop_percent, crop_off_x, crop_off_y, obj_width, focal = xform
@@ -381,8 +381,8 @@ def convert_to_network_wb(
     :param clip_max: Maximum value of an example.
     :return: Transformed image.
     """
-    import torch  # lgtm [py/repeated-import]
-    from kornia.geometry.transform import resize  # lgtm [py/repeated-import]
+    import torch
+    from kornia.geometry.transform import resize
 
     orig_device = x.device
     x = resize(x, (net_size[1], net_size[0]), align_corners=False)
@@ -418,7 +418,7 @@ def get_perspective_transform(
     :param pts: pts to include in the crop.
     :return: Transformed image.
     """
-    import cv2  # lgtm [py/repeated-import]
+    import cv2
 
     perspective_mat, crop_x, crop_y = _get_perspective_transform(
         angle, width, height, focal, dist, crop_percent, crop_off_x, crop_off_y, pts
@@ -454,7 +454,7 @@ def get_perspective_transform_wb(
     :param pts: pts to include in the crop.
     :return: Transformed image.
     """
-    import torch  # lgtm [py/repeated-import]
+    import torch
     from kornia.geometry.transform import warp_perspective
 
     perspective_mat, crop_x, crop_y = _get_perspective_transform(
