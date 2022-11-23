@@ -22,6 +22,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 
 from art.estimators.estimator import (
@@ -29,8 +31,6 @@ from art.estimators.estimator import (
     NeuralNetworkMixin,
     LossGradientsMixin,
 )
-
-from typing import TYPE_CHECKING
 
 logger = logging.getLogger(__name__)
 

@@ -727,8 +727,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         cloned_classifier = super().clone_for_refitting()
         if isinstance(cloned_classifier, KerasClassifier):
             return cloned_classifier
-        else:
-            raise ValueError("Type of cloned classifier not expected.")
+        raise ValueError("Type of cloned classifier not expected.")
 
     def _init_class_gradients(self, label: Optional[Union[int, List[int], np.ndarray]] = None) -> None:
         # pylint: disable=E0401
