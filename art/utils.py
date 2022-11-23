@@ -1280,8 +1280,10 @@ def load_nursery(
         "nursery.data",
         path=config.ART_DATA_PATH,
         extract=False,
-        url=["https://archive.ics.uci.edu/ml/machine-learning-databases/nursery/nursery.data",
-             "https://www.dropbox.com/s/l24hwvkuueor6lp/nursery.data?dl=0"]
+        url=[
+            "https://archive.ics.uci.edu/ml/machine-learning-databases/nursery/nursery.data",
+            "https://www.dropbox.com/s/l24hwvkuueor6lp/nursery.data?dl=1",
+        ],
     )
 
     # load data
@@ -1479,6 +1481,7 @@ def get_file(
 
                     if verbose:
                         with tqdm() as t_bar:
+                            # pylint: disable=W0640
                             last_block = [0]
 
                             def progress_bar(blocks: int = 1, block_size: int = 1, total_size: Optional[int] = None):
@@ -1500,12 +1503,12 @@ def get_file(
 
                 except HTTPError as exception:  # pragma: no cover
                     raise Exception(
-                        error_msg.format(url_i, exception.code, exception.msg)
-                    ) from HTTPError  # type: ignore
+                        error_msg.format(url_i, exception.code, exception.msg)  # type: ignore
+                    ) from HTTPError
                 except URLError as exception:  # pragma: no cover
                     raise Exception(
-                        error_msg.format(url_i, exception.errno, exception.reason)
-                    ) from HTTPError  # type: ignore
+                        error_msg.format(url_i, exception.errno, exception.reason)  # type: ignore
+                    ) from HTTPError
         except (Exception, KeyboardInterrupt):  # pragma: no cover
             if os.path.exists(full_path):
                 os.remove(full_path)
