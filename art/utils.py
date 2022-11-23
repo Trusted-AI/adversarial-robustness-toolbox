@@ -1504,11 +1504,11 @@ def get_file(
                 except HTTPError as exception:  # pragma: no cover
                     raise Exception(
                         error_msg.format(url_i, exception.code, exception.msg)  # type: ignore
-                    ) from HTTPError
+                    ) from HTTPError  # type: ignore
                 except URLError as exception:  # pragma: no cover
                     raise Exception(
                         error_msg.format(url_i, exception.errno, exception.reason)  # type: ignore
-                    ) from HTTPError
+                    ) from HTTPError  # type: ignore
         except (Exception, KeyboardInterrupt):  # pragma: no cover
             if os.path.exists(full_path):
                 os.remove(full_path)
