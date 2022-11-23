@@ -715,6 +715,21 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         outputs = self._custom_loss_func[name]
         return outputs(input_values)
 
+    def clone_for_refitting(
+        self,
+    ) -> "KerasClassifier":  # lgtm [py/inheritance/incorrect-overridden-signature]
+        """
+        Create a copy of the classifier that can be refit from scratch. Will inherit same architecture, optimizer and
+        initialization as cloned model, but without weights.
+
+        :return: new classifier
+        """
+        cloned_classifier = super().clone_for_refitting()
+        if isinstance(cloned_classifier, KerasClassifier):
+            return cloned_classifier
+        else:
+            raise ValueError("Type of cloned classifier not expected.")
+
     def _init_class_gradients(self, label: Optional[Union[int, List[int], np.ndarray]] = None) -> None:
         # pylint: disable=E0401
         if self.is_tensorflow:

@@ -30,7 +30,12 @@ from art.estimators.estimator import (
     LossGradientsMixin,
 )
 
+from typing import TYPE_CHECKING
+
 logger = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    from art.utils import KERAS_ESTIMATOR_TYPE
 
 
 class KerasEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
@@ -86,7 +91,7 @@ class KerasEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
 
     def clone_for_refitting(
         self,
-    ) -> "KerasEstimator":  # lgtm [py/inheritance/incorrect-overridden-signature]
+    ) -> "KERAS_ESTIMATOR_TYPE":  # lgtm [py/inheritance/incorrect-overridden-signature]
         """
         Create a copy of the estimator that can be refit from scratch. Will inherit same architecture, optimizer and
         initialization as cloned model, but without weights.
