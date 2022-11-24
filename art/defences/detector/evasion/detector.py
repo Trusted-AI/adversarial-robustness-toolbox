@@ -197,7 +197,7 @@ class BinaryActivationDetector(
         classifier: "ClassifierNeuralNetwork",
         detector: "ClassifierNeuralNetwork",
         layer: Union[int, str],
-    ) -> None:  # lgtm [py/similar-function]
+    ) -> None:
         """
         Create a `BinaryActivationDetector` instance which performs binary classification on activation information.
         The shape of the input of the detector has to match that of the output of the chosen layer.

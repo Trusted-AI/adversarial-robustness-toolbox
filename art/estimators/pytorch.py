@@ -60,7 +60,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
                be divided by the second one.
         :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         preprocessing = kwargs.get("preprocessing")
         if isinstance(preprocessing, tuple):
@@ -156,7 +156,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         :return: Tuple of `x` and `y` after applying the defences and standardisation.
         :rtype: Format as expected by the `model`
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         from art.preprocessing.standardisation_mean_std.numpy import StandardisationMeanStd
         from art.preprocessing.standardisation_mean_std.pytorch import StandardisationMeanStdPyTorch
@@ -233,7 +233,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         :return: Gradients after backward pass through preprocessing defences.
         :rtype: Format as expected by the `model`
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         from art.preprocessing.standardisation_mean_std.numpy import StandardisationMeanStd
         from art.preprocessing.standardisation_mean_std.pytorch import StandardisationMeanStdPyTorch
@@ -289,7 +289,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         :param train: False for evaluation mode.
         :param layerinfo: List of module types.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         assert all((issubclass(layer, torch.nn.modules.Module) for layer in layerinfo))  # type: ignore
 
@@ -314,7 +314,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
 
         :param train: False for evaluation mode.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         # pylint: disable=W0212
         self._set_layer(train=train, layerinfo=[torch.nn.modules.dropout._DropoutNd])  # type: ignore
@@ -325,7 +325,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
 
         :param train: False for evaluation mode.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         # pylint: disable=W0212
         self._set_layer(train=train, layerinfo=[torch.nn.modules.batchnorm._BatchNorm])  # type: ignore

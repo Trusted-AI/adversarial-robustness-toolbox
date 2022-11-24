@@ -73,7 +73,7 @@ class EoTZoomBlurPyTorch(EoTPyTorch):
         :param y: Label of the samples `x`.
         :return: Transformed samples and labels.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
         import torchvision
 
         nb_zooms = 10

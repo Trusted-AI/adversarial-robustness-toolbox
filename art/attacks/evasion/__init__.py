@@ -1,6 +1,9 @@
 """
 Module providing evasion attacks under a common interface.
 """
+# pylint: disable=C0413
+import importlib
+
 from art.attacks.evasion.adversarial_patch.adversarial_patch import AdversarialPatch
 from art.attacks.evasion.adversarial_patch.adversarial_patch_numpy import AdversarialPatchNumpy
 from art.attacks.evasion.adversarial_patch.adversarial_patch_tensorflow import AdversarialPatchTensorFlowV2
@@ -9,7 +12,10 @@ from art.attacks.evasion.adversarial_texture.adversarial_texture_pytorch import 
 from art.attacks.evasion.adversarial_asr import CarliniWagnerASR
 from art.attacks.evasion.auto_attack import AutoAttack
 from art.attacks.evasion.auto_projected_gradient_descent import AutoProjectedGradientDescent
-from art.attacks.evasion.brendel_bethge import BrendelBethgeAttack
+
+if importlib.util.find_spec("numba") is not None:
+    from art.attacks.evasion.brendel_bethge import BrendelBethgeAttack
+
 from art.attacks.evasion.boundary import BoundaryAttack
 from art.attacks.evasion.carlini import CarliniL2Method, CarliniLInfMethod, CarliniL0Method
 from art.attacks.evasion.decision_tree_attack import DecisionTreeAttack

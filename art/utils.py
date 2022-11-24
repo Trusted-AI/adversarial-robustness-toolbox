@@ -395,13 +395,13 @@ def projection_l1_1(values: np.ndarray, eps: Union[int, float, np.ndarray]) -> n
     mat = np.zeros((m, 2))
 
     #   if  a_sorted[i, n-1]  >= a_sorted[i, n-2] + eps,  then the projection is  [0,...,0,eps]
-    done = False
+    done = early_done = False
     active = np.array([1] * m)
     after_vec = np.zeros((m, n))
     proj = a_sorted.copy()
     j = n - 2
     while j >= 0:
-        mat[:, 0] = mat[:, 0] + a_sorted[:, j + 1]  # =  sum(a_sorted[: i] :  i = j + 1,...,n-1
+        mat[:, 0] += a_sorted[:, j + 1]  # =  sum(a_sorted[: i] :  i = j + 1,...,n-1
         mat[:, 1] = a_sorted[:, j] * (n - j - 1) + eps
         #  Find the max in each problem  max{ sum{a_sorted[:, i] : i=j+1,..,n-1} , a_sorted[:, j] * (n-j-1) + eps }
         row_maxes = np.max(mat, axis=1)
@@ -415,21 +415,29 @@ def projection_l1_1(values: np.ndarray, eps: Union[int, float, np.ndarray]) -> n
         #  has to be reduced is  delta
         delta = (mat[:, 0] - eps) / (n - j - 1)
         #    The vector of reductions
-        delta_vec = np.array([delta] * (n - j - 1))
-        delta_vec = np.transpose(delta_vec)
+        delta_vec = np.transpose(np.array([delta] * (n - j - 1)))
         #   The sub-vectors:  a_sorted[:, (j+1):]
         a_sub = a_sorted[:, (j + 1) :]
         #   After reduction by delta_vec
         a_after = a_sub - delta_vec
         after_vec[:, (j + 1) :] = a_after
-        proj = (act_multiplier * after_vec) + ((1 - act_multiplier) * proj)
+        proj += act_multiplier * (after_vec - proj)
         active = active * ind_set
         if sum(active) == 0:
-            done = True
+            done = early_done = True
             break
         j -= 1
+    if not early_done:
+        delta = (mat[:, 0] + a_sorted[:, 0] - eps) / n
+        ind_set = np.sign(np.maximum(delta, 0))
+        act_multiplier = ind_set * active
+        act_multiplier = np.transpose([np.transpose(act_multiplier)] * n)
+        delta_vec = np.transpose(np.array([delta] * n))
+        a_after = a_sorted - delta_vec
+        proj += act_multiplier * (a_after - proj)
+        done = True
     if not done:
-        proj = active * a_sorted + (1 - active) * proj
+        proj = active * (a_sorted - proj)
 
     for i in range(m):
         proj[i, :] = proj[i, a_argsort_inv[i, :]]
@@ -480,7 +488,7 @@ def projection_l1_2(values: np.ndarray, eps: Union[int, float, np.ndarray]) -> n
         mat0[:, 1] = np.min(mat, axis=1)
         min_t = np.max(mat0, axis=1)
         if np.max(min_t) < 1e-8:
-            break
+            continue
         row_sums = row_sums - a_var[:, j] * (n - j)
         a_var[:, (j + 1) :] = a_var[:, (j + 1) :] - np.matmul(min_t.reshape((m, 1)), np.ones((1, n - j - 1)))
         a_var[:, j] = a_var[:, j] - min_t
@@ -1291,7 +1299,10 @@ def load_nursery(
         "nursery.data",
         path=config.ART_DATA_PATH,
         extract=False,
-        url="https://archive.ics.uci.edu/ml/machine-learning-databases/nursery/nursery.data",
+        url=[
+            "https://archive.ics.uci.edu/ml/machine-learning-databases/nursery/nursery.data",
+            "https://www.dropbox.com/s/l24hwvkuueor6lp/nursery.data?dl=1",
+        ],
     )
 
     # load data
@@ -1433,7 +1444,9 @@ def _extract(full_path: str, path: str) -> bool:
     return True
 
 
-def get_file(filename: str, url: str, path: Optional[str] = None, extract: bool = False, verbose: bool = False) -> str:
+def get_file(
+    filename: str, url: Union[str, List[str]], path: Optional[str] = None, extract: bool = False, verbose: bool = False
+) -> str:
     """
     Downloads a file from a URL if it not already in the cache. The file at indicated by `url` is downloaded to the
     path `path` (default is ~/.art/data). and given the name `filename`. Files in tar, tar.gz, tar.bz, and zip formats
@@ -1446,6 +1459,11 @@ def get_file(filename: str, url: str, path: Optional[str] = None, extract: bool 
     :param verbose: If true, print download progress bar.
     :return: Path to the downloaded file.
     """
+    if isinstance(url, str):
+        url_list = [url]
+    else:
+        url_list = url
+
     if path is None:
         path_ = os.path.expanduser(config.ART_DATA_PATH)
     else:
@@ -1469,40 +1487,47 @@ def get_file(filename: str, url: str, path: Optional[str] = None, extract: bool 
         logger.info("Downloading data from %s", url)
         error_msg = "URL fetch failure on {}: {} -- {}"
         try:
-            try:
-                from six.moves.urllib.error import HTTPError, URLError
-                from six.moves.urllib.request import urlretrieve
+            for url_i in url_list:
+                try:
+                    from six.moves.urllib.error import HTTPError, URLError
+                    from six.moves.urllib.request import urlretrieve
 
-                # The following two lines should prevent occasionally occurring
-                # [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed (_ssl.c:847)
-                import ssl
+                    # The following two lines should prevent occasionally occurring
+                    # [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed (_ssl.c:847)
+                    import ssl
 
-                ssl._create_default_https_context = ssl._create_unverified_context  # pylint: disable=W0212
+                    ssl._create_default_https_context = ssl._create_unverified_context  # pylint: disable=W0212
 
-                if verbose:
-                    with tqdm() as t_bar:
-                        last_block = [0]
+                    if verbose:
+                        with tqdm() as t_bar:
+                            # pylint: disable=W0640
+                            last_block = [0]
 
-                        def progress_bar(blocks: int = 1, block_size: int = 1, total_size: Optional[int] = None):
-                            """
-                            :param blocks: Number of blocks transferred so far [default: 1].
-                            :param block_size: Size of each block (in tqdm units) [default: 1].
-                            :param total_size: Total size (in tqdm units). If [default: None] or -1, remains unchanged.
-                            """
-                            if total_size not in (None, -1):
-                                t_bar.total = total_size
-                            displayed = t_bar.update((blocks - last_block[0]) * block_size)
-                            last_block[0] = blocks
-                            return displayed
+                            def progress_bar(blocks: int = 1, block_size: int = 1, total_size: Optional[int] = None):
+                                """
+                                :param blocks: Number of blocks transferred so far [default: 1].
+                                :param block_size: Size of each block (in tqdm units) [default: 1].
+                                :param total_size: Total size (in tqdm units). If [default: None] or -1, remains
+                                                   unchanged.
+                                """
+                                if total_size not in (None, -1):
+                                    t_bar.total = total_size
+                                displayed = t_bar.update((blocks - last_block[0]) * block_size)
+                                last_block[0] = blocks
+                                return displayed
 
-                        urlretrieve(url, full_path, reporthook=progress_bar)
-                else:
-                    urlretrieve(url, full_path)
+                            urlretrieve(url_i, full_path, reporthook=progress_bar)
+                    else:
+                        urlretrieve(url_i, full_path)
 
-            except HTTPError as exception:  # pragma: no cover
-                raise Exception(error_msg.format(url, exception.code, exception.msg)) from HTTPError  # type: ignore
-            except URLError as exception:  # pragma: no cover
-                raise Exception(error_msg.format(url, exception.errno, exception.reason)) from HTTPError  # type: ignore
+                except HTTPError as exception:  # pragma: no cover
+                    raise Exception(
+                        error_msg.format(url_i, exception.code, exception.msg)  # type: ignore
+                    ) from HTTPError  # type: ignore
+                except URLError as exception:  # pragma: no cover
+                    raise Exception(
+                        error_msg.format(url_i, exception.errno, exception.reason)  # type: ignore
+                    ) from HTTPError  # type: ignore
         except (Exception, KeyboardInterrupt):  # pragma: no cover
             if os.path.exists(full_path):
                 os.remove(full_path)

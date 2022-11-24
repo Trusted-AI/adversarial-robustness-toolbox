@@ -121,7 +121,7 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
 
             # pylint: disable=W0622
             def forward(self, input: "torch.Tensor"):  # type: ignore
-                import torch  # lgtm [py/repeated-import]
+                import torch
                 import torch.nn.functional as F
 
                 if not torch.is_tensor(input):
@@ -160,7 +160,7 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
         """
         Apply local spatial smoothing to sample `x`.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         x_ndim = x.ndim
 
@@ -194,7 +194,7 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
             else:
                 #   NHWC <-- NCHW
                 x = x_nchw.permute(0, 2, 3, 1)
-        elif x_ndim == 5:  # lgtm [py/redundant-comparison]
+        elif x_ndim == 5:
             if self.channels_first:
                 # NCFHW <-- NFCHW <-- NCHW
                 x_nfchw = x_nchw.reshape(nb_clips, clip_size, channels, height, width)

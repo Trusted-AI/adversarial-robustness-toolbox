@@ -85,7 +85,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
         :param device_type: Type of device to be used for model and tensors, if `cpu` run on CPU, if `gpu` run on GPU
                             if available otherwise run on CPU.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
         import yaml
         from fairseq import checkpoint_utils, tasks, utils
         from fairseq.data import encoders
@@ -159,6 +159,8 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
             dict_path = get_file(
                 filename=dict_filename, path=config.ART_DATA_PATH, url=dict_url, extract=False, verbose=self.verbose
             )
+        else:
+            raise ValueError("Value for `espresso_config_filepath` has to `None` for now.")
 
         # construct espresso args
         with open(config_path, encoding="utf8") as file:
@@ -354,7 +356,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
         :param compute_gradient: Indicate whether to compute gradients for the input `x`.
         :return: A tuple of a dictionary of batch and a list representing the original order of the batch
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
         from fairseq.data import data_utils
 
         def _collate_fn(batch: List) -> dict:
@@ -478,7 +480,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
                  - target_sizes: list of real seq_lengths.
                  - batch_idx: original index of inputs.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         # Apply preprocessing
         x_batch = []

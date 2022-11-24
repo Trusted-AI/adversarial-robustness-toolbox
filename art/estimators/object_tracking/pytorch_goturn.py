@@ -73,7 +73,7 @@ from art.estimators.pytorch import PyTorchEstimator
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
-    import PIL  # lgtm [py/import-and-import-from]
+    import PIL
     import torch
 
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
@@ -119,7 +119,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         :param device_type: Type of device to be used for model and tensors, if `cpu` run on CPU, if `gpu` run on GPU
                             if available otherwise run on CPU.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         # Set device
         self._device: torch.device
@@ -206,7 +206,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
                           'sum': the output will be summed.
         :return: Loss dictionary, list of input tensors, and list of gradient tensors.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         self._model.train()
 
@@ -344,7 +344,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         :param img: Single frame od shape (nb_samples, height, width, nb_channels).
         :return: Preprocessed frame.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
         from torch.nn.functional import interpolate
 
         from art.preprocessing.standardisation_mean_std.pytorch import StandardisationMeanStdPyTorch
@@ -377,7 +377,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         :param prev_frame: Previous frame.
         :return: bounding box of previous frame
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         prev_bbox = rect
 
@@ -516,7 +516,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
             :return: Cropped and Padded image.
             """
             import math
-            import torch  # lgtm [py/repeated-import]
+            import torch
 
             pad_image_location = compute_crop_pad_image_location(bbox_tight, image)
             # roi_left = min(pad_image_location.x1, (image.shape[1] - 1))
@@ -603,7 +603,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         :param y_init: Initial bounding box around object on the first frame of `x`.
         :return: Predicted bounding box coordinates for all frames of shape (nb_frames, 4) in format [x1, y1, x2, y2].
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         num_frames = x.shape[0]
         prev = x[0]
@@ -642,7 +642,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
                   - labels [N_FRAMES]: the labels for each image, default 0.
                   - scores [N_FRAMES]: the scores or each prediction, default 1.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         self._model.eval()
         if hasattr(self._model, "freeze"):
@@ -727,7 +727,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
                                          0 <= y1 < y2 <= H.
         :return: Total loss.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         output_dict, _, _ = self._get_losses(x=x, y=y)
 
@@ -750,7 +750,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         :param image: Current image.
         :return: Predicted box.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         self.prev = np.array(image) / 255.0
         if self.clip_values is not None:
@@ -764,7 +764,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         :param image: Current image.
         :return: Predicted box.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         curr = torch.from_numpy(np.array(image) / 255.0)
         if self.clip_values is not None:

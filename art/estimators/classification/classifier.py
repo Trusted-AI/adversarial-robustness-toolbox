@@ -51,6 +51,8 @@ class InputFilter(ABCMeta):
             def replacement_function(self, *args, **kwargs):
                 if len(args) > 0:
                     lst = list(args)
+                else:
+                    lst = []
 
                 if "x" in kwargs:  # pragma: no cover
                     if not isinstance(kwargs["x"], np.ndarray):
@@ -167,7 +169,7 @@ class ClassifierClassLossGradients(ClassGradientsMixin, ClassifierMixin, LossGra
     estimator_params = BaseEstimator.estimator_params + ClassifierMixin.estimator_params
 
 
-class ClassifierNeuralNetwork(  # lgtm [py/conflicting-attributes]
+class ClassifierNeuralNetwork(
     ClassGradientsMixin, ClassifierMixin, LossGradientsMixin, NeuralNetworkMixin, BaseEstimator, ABC
 ):
     """
