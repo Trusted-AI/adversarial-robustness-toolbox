@@ -168,7 +168,7 @@ class FeatureAdversariesNumpy(EvasionAttack):
 
             return n
 
-        x_0 = x.copy()
+        x_0 = x.copy().flatten()
 
         options = {"eps": 1e-3, "ftol": 1e-3}
         options_allowed_keys = [
