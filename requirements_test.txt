@@ -7,7 +7,7 @@ scikit-learn>=0.22.2,<1.2.0
 six==1.16.0
 Pillow==9.3.0
 tqdm==4.64.1
-statsmodels==0.13.2
+statsmodels==0.13.5
 pydub==0.25.1
 resampy==0.4.2
 ffmpeg-python==0.2.0
