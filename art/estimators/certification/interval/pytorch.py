@@ -92,8 +92,9 @@ class ConvertedModel(torch.nn.Module):
                     out_channels=module.out_channels,
                     kernel_size=module.kernel_size,  # type: ignore
                     stride=module.stride,  # type: ignore
-                    supplied_input_weights=torch.tensor(weights_to_supply),
-                    supplied_input_bias=torch.tensor(bias_to_supply),
+                    supplied_input_weights=torch.tensor(weights_to_supply).to(self.device),
+                    supplied_input_bias=torch.tensor(bias_to_supply).to(self.device),
+                    device=self.device,
                     # dilation=module.dilation,  # type: ignore
                     # padding=module.padding,  # type: ignore
                 )

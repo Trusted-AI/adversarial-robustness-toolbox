@@ -81,6 +81,7 @@ class IntervalConv2D(torch.nn.Module):
         out_channels: int,
         kernel_size: Union[int, Tuple[int, int]],
         input_shape,
+        device,
         stride: Union[int, Tuple[int, int]] = 1,
         bias: bool = False,
         supplied_input_weights=None,
@@ -98,7 +99,6 @@ class IntervalConv2D(torch.nn.Module):
         :param supplied_input_bias: If to load in a pre-defined set of convolutional bias with the correct specification.
         :param to_debug: helper parameter to help with debugging.
         """
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
         super().__init__()
         self.conv_flat = torch.nn.Conv2d(
@@ -124,21 +124,21 @@ class IntervalConv2D(torch.nn.Module):
         if to_debug:
             self.conv = torch.nn.Conv2d(
                 in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size, bias=bias, stride=stride
-            )
+            ).to(device)
 
             if isinstance(kernel_size, tuple):
                 self.conv_flat.weight = torch.nn.Parameter(
                     torch.reshape(
                         torch.tensor(self.conv.weight.data.cpu().detach().numpy()),
                         (out_channels * in_channels, 1, kernel_size[0], kernel_size[1]),
-                    )
+                    ).to(device)
                 )
             else:
                 self.conv_flat.weight = torch.nn.Parameter(
                     torch.reshape(
                         torch.tensor(self.conv.weight.data.cpu().detach().numpy()),
                         (out_channels * in_channels, 1, kernel_size, kernel_size),
-                    )
+                    ).to(device)
                 )
             if bias and self.conv.bias is not None:
                 self.bias = self.conv.bias.data
@@ -147,19 +147,19 @@ class IntervalConv2D(torch.nn.Module):
             if isinstance(kernel_size, tuple):
                 self.conv_flat.weight = torch.nn.Parameter(
                     torch.reshape(
-                        torch.tensor(supplied_input_weights),
+                        supplied_input_weights,
                         (out_channels * in_channels, 1, kernel_size[0], kernel_size[1]),
                     )
                 )
             else:
                 self.conv_flat.weight = torch.nn.Parameter(
                     torch.reshape(
-                        torch.tensor(supplied_input_weights), (out_channels * in_channels, 1, kernel_size, kernel_size)
+                        supplied_input_weights, (out_channels * in_channels, 1, kernel_size, kernel_size)
                     )
                 )
 
         if supplied_input_bias is not None:
-            self.bias = torch.tensor(supplied_input_bias)
+            self.bias = supplied_input_bias
 
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -169,11 +169,13 @@ class IntervalConv2D(torch.nn.Module):
         self.output_height: int = 0
         self.output_width: int = 0
 
-        self.dense_weights, self.bias = self.convert_to_dense()
-        self.dense_weights = self.dense_weights.to(self.device)
-        self.bias = self.bias.to(self.device)
+        self.dense_weights, self.bias = self.convert_to_dense(device)
 
-    def convert_to_dense(self) -> Tuple["torch.Tensor", "torch.Tensor"]:
+        self.dense_weights = self.dense_weights.to(device)
+        if self.bias is not None:
+            self.bias = self.bias.to(device)
+
+    def convert_to_dense(self, device) -> Tuple["torch.Tensor", "torch.Tensor"]:
         """
         Converts the initialised convolutional layer into an equivalent dense layer.
 
@@ -207,7 +209,7 @@ class IntervalConv2D(torch.nn.Module):
         diagonal_input = torch.reshape(
             torch.eye(self.input_height * self.input_width),
             shape=[self.input_height * self.input_width, 1, self.input_height, self.input_width],
-        )
+        ).to(device)
         conv = self.conv_flat(diagonal_input)
         self.output_height = int(conv.shape[2])
         self.output_width = int(conv.shape[3])
@@ -391,12 +393,9 @@ class IntervalBounds:
         if isinstance(bounds, float):
             up_x = x + bounds
             lb_x = x - bounds
-        elif isinstance(bounds, list):
+        elif isinstance(bounds, list) or isinstance(bounds, np.ndarray):
             up_x = x + bounds[1]
             lb_x = x - bounds[0]
-        elif isinstance(bounds, np.ndarray):
-            pass
-            # TODO: Implement
         else:
             raise ValueError("Bounds must be a float, list, or np array.")
 
