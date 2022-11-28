@@ -48,7 +48,7 @@ class TestNumpyDataGenerator(unittest.TestCase):
             drop_remainder=True,
             shuffle=False,
         )
-        x_batch, y_batch = self.data_generator.get_batch()
+        x_batch, y_batch = data_generator.get_batch()
 
         # Check return types
         self.assertTrue(isinstance(x_batch, np.ndarray))
