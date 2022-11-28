@@ -39,7 +39,8 @@ class SyntheticIntervalModel(torch.nn.Module):
                                     input_shape=input_shape,
                                     stride=stride,
                                     bias=bias,
-                                    to_debug=to_debug)
+                                    to_debug=to_debug,
+                                    device=self.device)
 
         self.relu = torch.nn.ReLU()
 
@@ -77,7 +78,8 @@ def test_conv_single_channel_in_multi_out(art_warning):
     """
     Check that the conversion works for a single input channel.
     """
-    synthetic_data = torch.rand(32, 1, 25, 25)
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    synthetic_data = torch.rand(32, 1, 25, 25).to(device)
     model = SyntheticIntervalModel(input_shape=synthetic_data.shape,
                                    output_channels=4,
                                    kernel_size=5)
@@ -94,7 +96,8 @@ def test_conv_multi_channel_in_single_out():
     """
     Check that the conversion works for a single input channel.
     """
-    synthetic_data = torch.rand(32, 3, 25, 25)
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    synthetic_data = torch.rand(32, 3, 25, 25).to(device)
     model = SyntheticIntervalModel(input_shape=synthetic_data.shape,
                                    output_channels=1,
                                    kernel_size=5)
@@ -111,7 +114,8 @@ def test_conv_multi_channel_in_multi_out():
     """
     Check that the conversion works for a single input channel.
     """
-    synthetic_data = torch.rand(32, 3, 25, 25)
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    synthetic_data = torch.rand(32, 3, 25, 25).to(device)
     model = SyntheticIntervalModel(input_shape=synthetic_data.shape,
                                    output_channels=12,
                                    kernel_size=5)
@@ -125,7 +129,8 @@ def test_conv_layer_multi_channel_in_multi_out_with_stride():
     """
     Check that the conversion works for a single input channel.
     """
-    synthetic_data = torch.rand(32, 3, 25, 25)
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    synthetic_data = torch.rand(32, 3, 25, 25).to(device)
     model = SyntheticIntervalModel(input_shape=synthetic_data.shape,
                                    output_channels=12,
                                    kernel_size=5,
@@ -141,7 +146,8 @@ def test_conv_layer_multi_channel_in_multi_out_with_stride_and_bias():
     """
     Check that the conversion works for a single input channel.
     """
-    synthetic_data = torch.rand(32, 3, 25, 25)
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    synthetic_data = torch.rand(32, 3, 25, 25).to(device)
     model = SyntheticIntervalModel(input_shape=synthetic_data.shape,
                                    output_channels=12,
                                    kernel_size=5,
@@ -151,6 +157,35 @@ def test_conv_layer_multi_channel_in_multi_out_with_stride_and_bias():
     output_from_conv = model.conv1.conv(synthetic_data)
 
     assert torch.allclose(output_from_equivalent, output_from_conv, atol=1e-05)
+
+
+def test_conv_layer_grads():
+
+    output_channels = 12
+    input_channels = 3
+
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    synthetic_data = torch.rand(32, input_channels, 25, 25).to(device)
+    model = SyntheticIntervalModel(input_shape=synthetic_data.shape,
+                                   output_channels=output_channels,
+                                   kernel_size=5,
+                                   bias=True,
+                                   stride=1)
+    output_from_equivalent = model.forward(synthetic_data)
+    output_from_conv = model.conv1.conv(synthetic_data)
+    target = torch.rand(size=output_from_equivalent.shape).to(device)
+
+    loss = torch.sum(output_from_equivalent - target)
+    loss.backward()
+
+    equivalent_grads = model.conv1.conv_flat.weight.grad
+    equivalent_grads = torch.reshape(equivalent_grads, shape=(output_channels, input_channels, 5, 5)).detach().clone()
+
+    model.zero_grad()
+    loss = torch.sum(output_from_conv - target)
+    loss.backward()
+
+    assert torch.allclose(equivalent_grads, model.conv1.conv.weight.grad, atol=1e-05)
 
 
 @pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
