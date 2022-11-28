@@ -29,9 +29,10 @@ import inspect
 import logging
 from typing import Any, Dict, Generator, Iterator, Optional, Tuple, Union, TYPE_CHECKING
 
+import numpy as np
+
 if TYPE_CHECKING:
     import keras
-    import numpy as np
     import mxnet
     import tensorflow as tf
     import torch
@@ -106,8 +107,8 @@ class NumpyDataGenerator(DataGenerator):
 
     def __init__(
         self,
-        x: "np.ndarray",
-        y: "np.ndarray",
+        x: np.ndarray,
+        y: np.ndarray,
         batch_size: int = 1,
         drop_remainder: bool = True,
         shuffle: bool = False,
@@ -121,8 +122,6 @@ class NumpyDataGenerator(DataGenerator):
         :param drop_remainder: Whether to omit the last incomplete minibatch in an epoch
         :param shuffle: Whether to shuffle the dataset for each epoch
         """
-        import numpy as np
-
         x = np.asanyarray(x)
         y = np.asanyarray(y)
         try:
@@ -145,8 +144,6 @@ class NumpyDataGenerator(DataGenerator):
         self.generator: Iterator[Any] = iter([])
 
     def __iter__(self):
-        import numpy as np
-
         if self.shuffle:
             index = np.arange(self.size)
             np.random.shuffle(index)
