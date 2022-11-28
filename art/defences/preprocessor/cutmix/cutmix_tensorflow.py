@@ -93,7 +93,7 @@ class CutMixTensorFlowV2(PreprocessorTensorFlowV2):
         :return: Data augmented sample. The returned labels will be probability vectors of shape
                  `(nb_samples, nb_classes)`.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         if y is None:
             raise ValueError("Labels `y` cannot be None.")
@@ -172,7 +172,7 @@ class CutMixTensorFlowV2(PreprocessorTensorFlowV2):
             else:
                 # NHWC <-- NFHWC
                 x_aug = tf.squeeze(x_nfhwc, axis=1)
-        elif x_ndim == 5:  # lgtm [py/redundant-comparison]
+        elif x_ndim == 5:
             if self.channels_first:
                 # NCFHW <-- NFHWC
                 x_aug = tf.transpose(x_nfhwc, (0, 4, 1, 2, 3))

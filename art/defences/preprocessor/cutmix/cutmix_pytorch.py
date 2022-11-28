@@ -102,7 +102,7 @@ class CutMixPyTorch(PreprocessorPyTorch):
         :return: Data augmented sample. The returned labels will be probability vectors of shape
                  `(nb_samples, nb_classes)`.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         if y is None:
             raise ValueError("Labels `y` cannot be None.")
@@ -180,7 +180,7 @@ class CutMixPyTorch(PreprocessorPyTorch):
                 # NHWC <-- NCHW <-- NCFHW
                 x_nchw = torch.squeeze(x_ncfhw, dim=2)
                 x_aug = torch.permute(x_nchw, (0, 2, 3, 1))
-        elif x_ndim == 5:  # lgtm [py/redundant-comparison]
+        elif x_ndim == 5:
             if self.channels_first:
                 # NCFHW
                 x_aug = x_ncfhw
