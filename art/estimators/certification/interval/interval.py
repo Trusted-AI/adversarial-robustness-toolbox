@@ -98,6 +98,7 @@ class IntervalConv2D(torch.nn.Module):
         :param supplied_input_bias: If to load in a pre-defined set of convolutional bias with the correct specification.
         :param to_debug: helper parameter to help with debugging.
         """
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
         super().__init__()
         self.conv_flat = torch.nn.Conv2d(
@@ -169,6 +170,8 @@ class IntervalConv2D(torch.nn.Module):
         self.output_width: int = 0
 
         self.dense_weights, self.bias = self.convert_to_dense()
+        self.dense_weights = self.dense_weights.to(self.device)
+        self.bias = self.bias.to(self.device)
 
     def convert_to_dense(self) -> Tuple["torch.Tensor", "torch.Tensor"]:
         """
