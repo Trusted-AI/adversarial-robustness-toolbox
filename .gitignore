@@ -11,8 +11,6 @@ __pycache__/
 env/
 build/
 develop-eggs/
-art-aml/
-bin/
 dist/
 downloads/
 eggs/
