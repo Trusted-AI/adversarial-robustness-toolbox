@@ -112,7 +112,7 @@ class IntervalConv2D(torch.nn.Module):
             bias=False,
             stride=stride,
         )
-        self.bias = None
+        self.bias_to_grad = None
 
         if bias:
             self.conv_bias = torch.nn.Conv2d(
@@ -125,7 +125,7 @@ class IntervalConv2D(torch.nn.Module):
                 stride=stride,
             )
             if self.conv_bias.bias is not None:
-                self.bias = self.conv_bias.bias.data
+                self.bias_to_grad = self.conv_bias.bias.data
 
         if to_debug:
             self.conv = torch.nn.Conv2d(
@@ -149,7 +149,7 @@ class IntervalConv2D(torch.nn.Module):
                     ).to(device)
                 )
             if bias and self.conv.bias is not None:
-                self.bias = self.conv.bias.data
+                self.bias_to_grad = torch.nn.Parameter(torch.tensor(self.conv.bias.data.cpu().detach().numpy()))
 
         if supplied_input_weights is not None:
             if isinstance(kernel_size, tuple):
@@ -167,7 +167,7 @@ class IntervalConv2D(torch.nn.Module):
                 )
 
         if supplied_input_bias is not None:
-            self.bias = supplied_input_bias
+            self.bias_to_grad = supplied_input_bias
 
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -249,8 +249,8 @@ class IntervalConv2D(torch.nn.Module):
             ),
         )
 
-        if self.bias is not None:
-            self.bias = torch.unsqueeze(self.bias, dim=-1)
+        if self.bias_to_grad is not None:
+            self.bias = torch.unsqueeze(self.bias_to_grad, dim=-1)
             bias = self.bias.expand(-1, self.output_height * self.output_width)
             bias = bias.flatten()
         else:

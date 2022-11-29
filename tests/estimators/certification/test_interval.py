@@ -197,6 +197,7 @@ def test_conv_layer_dilation():
 
     assert torch.allclose(output_from_equivalent, output_from_conv, atol=1e-05)
 
+
 def test_conv_layer_grads():
 
     output_channels = 12
@@ -210,7 +211,6 @@ def test_conv_layer_grads():
                                    bias=True,
                                    stride=1)
     output_from_equivalent = model.forward(synthetic_data)
-    output_from_conv = model.conv1.conv(synthetic_data)
     target = torch.rand(size=output_from_equivalent.shape).to(device)
 
     loss = torch.sum(output_from_equivalent - target)
@@ -220,6 +220,7 @@ def test_conv_layer_grads():
     equivalent_grads = torch.reshape(equivalent_grads, shape=(output_channels, input_channels, 5, 5)).detach().clone()
 
     model.zero_grad()
+    output_from_conv = model.conv1.conv(synthetic_data)
     loss = torch.sum(output_from_conv - target)
     loss.backward()
 
@@ -235,3 +236,19 @@ def test_mnist_certification(art_warning, fix_get_mnist_data):
     box_model = PytorchInterval(
         model=ptc.model, clip_values=(0, 1), loss=torch.nn.CrossEntropyLoss(), input_shape=(1, 28, 28), nb_classes=10
     )
+
+    mnist_data = fix_get_mnist_data[0]
+    mnist_labels = fix_get_mnist_data[1]
+    box_model.model.set_forward_mode("concrete")
+    preds = box_model.predict(mnist_data.astype('float32'))
+    acc = np.sum(np.argmax(preds, axis=1) == mnist_labels)
+    assert acc == 99
+
+    box_model.model.set_forward_mode("abstract")
+    up_bound = np.expand_dims(np.clip(mnist_data + bound, 0, 1), axis=1)
+    low_bound = np.expand_dims(np.clip(mnist_data - bound, 0, 1), axis=1)
+    interval_x = np.concatenate([low_bound, up_bound], axis=1)
+
+    interval_preds = box_model.predict_intervals(interval_x, is_interval=True)
+    cert_results = box_model.certify(preds=interval_preds, labels=mnist_labels)
+    assert np.sum(cert_results) == 48
