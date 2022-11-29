@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class NumpyRandomizedSmoothing(  # lgtm [py/conflicting-attributes] lgtm [py/missing-call-to-init]
+class NumpyRandomizedSmoothing(
     RandomizedSmoothingMixin,
     ClassGradientsMixin,
     ClassifierMixin,

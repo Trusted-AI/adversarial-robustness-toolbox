@@ -73,7 +73,7 @@ class EoTZoomBlurTensorFlow(EoTTensorFlowV2):
         :param y: Label of the samples `x`.
         :return: Transformed samples and labels.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         nb_zooms = 10
         x_blur = tf.zeros_like(x)

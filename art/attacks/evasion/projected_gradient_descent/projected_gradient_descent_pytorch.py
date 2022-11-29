@@ -140,7 +140,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         :type mask: `np.ndarray`
         :return: An array holding the adversarial examples.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         mask = self._get_mask(x, **kwargs)
 
@@ -264,7 +264,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         :param eps_step: Attack step size (input variation) at each iteration.
         :return: Adversarial examples.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         inputs = x.to(self.estimator.device)
         targets = targets.to(self.estimator.device)
@@ -298,7 +298,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
                      features for which the mask is zero will not be adversarially perturbed.
         :return: Perturbations.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         # Pick a small scalar to avoid division by 0
         tol = 10e-8
@@ -363,7 +363,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         :param eps_step: Attack step size (input variation) at each iteration.
         :return: Adversarial examples.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         eps_step = np.array(eps_step, dtype=ART_NUMPY_DTYPE)
         perturbation_step = torch.tensor(eps_step).to(self.estimator.device) * perturbation
@@ -407,7 +407,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
                             original input.
         :return: Adversarial examples.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         if random_init:
             n = x.shape[0]
@@ -456,7 +456,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         :param norm_p: L_p norm to use for clipping supporting 1, 2, `np.Inf` and "inf".
         :return: Values of `values` after projection.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         # Pick a small scalar to avoid division by 0
         tol = 10e-8

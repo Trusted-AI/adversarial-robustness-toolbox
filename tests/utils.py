@@ -633,6 +633,8 @@ def get_image_classifier_kr(
         else:
             model.add(Dense(10, activation="softmax"))
 
+    loss = None
+
     if loss_name == "categorical_hinge":
         if loss_type == "label":
             raise AttributeError("This combination of loss function options is not supported.")
@@ -856,6 +858,8 @@ def get_image_classifier_kr_tf(loss_name="categorical_crossentropy", loss_type="
     model.layers[-1].set_weights(
         [_kr_tf_weights_loader("MNIST", "W", "DENSE"), _kr_tf_weights_loader("MNIST", "B", "DENSE")]
     )
+
+    loss = None
 
     if loss_name == "categorical_hinge":
         if loss_type == "label":

@@ -73,7 +73,7 @@ class EoTShotNoiseTensorFlow(EoTTensorFlowV2):
         :param y: Label of the samples `x`.
         :return: Transformed samples and labels.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         lam_i = np.random.uniform(low=self.lam_range[0], high=self.lam_range[1])
         # pylint: disable=E1123,E1120
