@@ -120,7 +120,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
         )
 
     def _predict_classifier(self, x: np.ndarray, batch_size: int, training_mode: bool, **kwargs) -> np.ndarray:
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         x = x.astype(ART_NUMPY_DTYPE)
         outputs = PyTorchClassifier.predict(self, x=x, batch_size=batch_size, training_mode=training_mode, **kwargs)
@@ -155,23 +155,26 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
         batch_size: int = 128,
         nb_epochs: int = 10,
         training_mode: bool = True,
+        drop_last: bool = False,
         scheduler: Optional[Any] = None,
         **kwargs,
     ) -> None:
         """
         Fit the classifier on the training set `(x, y)`.
-
         :param x: Training data.
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or index labels of
                   shape (nb_samples,).
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
         :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :param drop_last: Set to ``True`` to drop the last incomplete batch, if the dataset size is not divisible by
+                          the batch size. If ``False`` and the size of dataset is not divisible by the batch size, then
+                          the last batch will be smaller. (default: ``False``)
         :param scheduler: Learning rate scheduler to run at the start of every epoch.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         # Set model mode
         self._model.train(mode=training_mode)
@@ -187,7 +190,11 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
         # Check label shape
         y_preprocessed = self.reduce_labels(y_preprocessed)
 
-        num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
+        num_batch = len(x_preprocessed) / float(batch_size)
+        if drop_last:
+            num_batch = int(np.floor(num_batch))
+        else:
+            num_batch = int(np.ceil(num_batch))
         ind = np.arange(len(x_preprocessed))
 
         # Start training
@@ -207,10 +214,18 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
                 self._optimizer.zero_grad()
 
                 # Perform prediction
-                model_outputs = self._model(i_batch)
+                try:
+                    model_outputs = self._model(i_batch)
+                except ValueError as err:
+                    if "Expected more than 1 value per channel when training" in str(err):
+                        logger.exception(
+                            "Try dropping the last incomplete batch by setting drop_last=True in "
+                            "method PyTorchClassifier.fit."
+                        )
+                    raise err
 
                 # Form the loss function
-                loss = self._loss(model_outputs[-1], o_batch)  # lgtm [py/call-to-non-callable]
+                loss = self._loss(model_outputs[-1], o_batch)
 
                 # Do training
                 if self._use_amp:  # pragma: no cover

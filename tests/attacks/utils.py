@@ -137,10 +137,7 @@ def backend_test_classifier_type_check_fail(attack, classifier_expected_list=[],
     classifier = ClassifierNoAPI
 
     with pytest.raises(EstimatorError) as exception:
-        if len(kwargs) > 0:
-            _ = attack(classifier, **kwargs)
-        else:
-            _ = attack(classifier)
+        _ = attack(classifier, **kwargs)
 
     for classifier_expected in classifier_expected_list:
         assert classifier_expected in exception.value.class_expected_list

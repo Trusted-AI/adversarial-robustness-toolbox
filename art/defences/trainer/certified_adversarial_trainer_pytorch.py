@@ -189,7 +189,7 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         if batch_size is None:
             batch_size = self.batch_size
@@ -198,6 +198,8 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
             epochs: int = nb_epochs
         elif self.batch_size is not None:
             epochs = self.batch_size
+        else:
+            raise ValueError("Value of `epochs` not defined.")
 
         # Set model mode
         self._classifier._model.train(mode=training_mode)  # pylint: disable=W0212

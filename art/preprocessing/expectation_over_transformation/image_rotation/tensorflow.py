@@ -81,7 +81,7 @@ class EoTImageRotationTensorFlow(EoTTensorFlowV2):
         :param y: Label of the samples `x`.
         :return: Transformed samples and labels.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
         import tensorflow_addons as tfa
 
         # pylint: disable=E1120,E1123

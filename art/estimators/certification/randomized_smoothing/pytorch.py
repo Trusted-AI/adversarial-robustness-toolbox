@@ -23,7 +23,7 @@ This module implements Randomized Smoothing applied to classifier predictions.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import List, Optional, Tuple, Union, TYPE_CHECKING
+from typing import List, Optional, Tuple, Union, Any, TYPE_CHECKING
 
 import warnings
 import random
@@ -136,6 +136,8 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         batch_size: int = 128,
         nb_epochs: int = 10,
         training_mode: bool = True,
+        drop_last: bool = False,
+        scheduler: Optional[Any] = None,
         **kwargs,
     ) -> None:
         """
@@ -147,10 +149,14 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
         :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :param drop_last: Set to ``True`` to drop the last incomplete batch, if the dataset size is not divisible by
+                          the batch size. If ``False`` and the size of dataset is not divisible by the batch size, then
+                          the last batch will be smaller. (default: ``False``)
+        :param scheduler: Learning rate scheduler to run at the start of every epoch.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         # Set model mode
         self._model.train(mode=training_mode)
@@ -166,9 +172,17 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         # Check label shape
         y_preprocessed = self.reduce_labels(y_preprocessed)
 
-        num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
+        num_batch = len(x_preprocessed) / float(batch_size)
+        if drop_last:
+            num_batch = int(np.floor(num_batch))
+        else:
+            num_batch = int(np.ceil(num_batch))
         ind = np.arange(len(x_preprocessed))
         std = torch.tensor(self.scale).to(self._device)
+
+        x_preprocessed = torch.from_numpy(x_preprocessed).to(self._device)
+        y_preprocessed = torch.from_numpy(y_preprocessed).to(self._device)
+
         # Start training
         for _ in tqdm(range(nb_epochs)):
             # Shuffle the examples
@@ -176,8 +190,8 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
 
             # Train for one epoch
             for m in range(num_batch):
-                i_batch = torch.from_numpy(x_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]).to(self._device)
-                o_batch = torch.from_numpy(y_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]).to(self._device)
+                i_batch = x_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]
+                o_batch = y_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]
 
                 # Add random noise for randomized smoothing
                 i_batch = i_batch + torch.randn_like(i_batch, device=self._device) * std
@@ -186,10 +200,18 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
                 self._optimizer.zero_grad()
 
                 # Perform prediction
-                model_outputs = self._model(i_batch)
+                try:
+                    model_outputs = self._model(i_batch)
+                except ValueError as err:
+                    if "Expected more than 1 value per channel when training" in str(err):
+                        logger.exception(
+                            "Try dropping the last incomplete batch by setting drop_last=True in "
+                            "method PyTorchClassifier.fit."
+                        )
+                    raise err
 
                 # Form the loss function
-                loss = self._loss(model_outputs[-1], o_batch)  # lgtm [py/call-to-non-callable]
+                loss = self._loss(model_outputs[-1], o_batch)
 
                 # Do training
                 if self._use_amp:  # pragma: no cover
@@ -202,6 +224,9 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
                     loss.backward()
 
                 self._optimizer.step()
+
+            if scheduler is not None:
+                scheduler.step()
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:  # type: ignore
         """
@@ -229,7 +254,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         :type sampling: `bool`
         :return: Array of gradients of the same shape as `x`.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         sampling = kwargs.get("sampling")
 

@@ -275,9 +275,9 @@ class TestScikitlearnLogisticRegression(TestBase):
         grad_predicted = self.classifier.class_gradient(self.x_test_iris[0:1], label=None)
         grad_expected = [
             [
-                [-1.98016214, 1.35561633, -6.28256321, -2.60129547],
-                [-0.56317347, -0.70493793, -0.98908591, -0.67106223],
-                [0.65072, 0.2642768, 1.54536295, 0.81007898],
+                [-1.98021257, 1.35627806, -6.28222561, -2.60076308],
+                [-0.56322294, -0.70427608, -0.98874801, -0.67053026],
+                [0.6508137, 0.26377308, 1.54522324, 0.80972391],
             ]
         ]
         np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=4)
@@ -286,21 +286,21 @@ class TestScikitlearnLogisticRegression(TestBase):
         grad_predicted = self.classifier.class_gradient(self.x_test_iris[0:2], label=None)
         grad_expected = [
             [
-                [-1.98016214, 1.35561633, -6.28256369, -2.60129547],
-                [-0.56317353, -0.70493793, -0.98908603, -0.67106229],
-                [0.65071994, 0.2642768, 1.54536283, 0.81007892],
+                [-1.98021257, 1.35627806, -6.28222561, -2.60076308],
+                [-0.56322294, -0.70427608, -0.98874801, -0.67053026],
+                [0.6508137, 0.26377308, 1.54522324, 0.80972391],
             ],
             [
-                [-1.92221594, 1.34292829, -6.11845303, -2.5268743],
-                [-0.50522733, -0.71762598, -0.82497525, -0.59664112],
-                [0.70866615, 0.25158882, 1.70947361, 0.88450009],
+                [-1.92227495, 1.34355378, -6.11815596, -2.52638054],
+                [-0.50528532, -0.71700042, -0.82467848, -0.59614766],
+                [0.70875132, 0.25104877, 1.70929277, 0.88410652],
             ],
         ]
         np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=4)
 
     def test_class_gradient_int_1(self):
         grad_predicted = self.classifier.class_gradient(self.x_test_iris[0:1], label=1)
-        grad_expected = [[[-0.56317347, -0.70493793, -0.98908591, -0.67106223]]]
+        grad_expected = [[[-0.56322294, -0.70427608, -0.98874801, -0.67053026]]]
 
         for i_shape in range(4):
             self.assertAlmostEqual(grad_predicted[0, 0, i_shape], grad_expected[0][0][i_shape], 3)
@@ -308,15 +308,14 @@ class TestScikitlearnLogisticRegression(TestBase):
     def test_class_gradient_int_2(self):
         grad_predicted = self.classifier.class_gradient(self.x_test_iris[0:2], label=1)
         grad_expected = [
-            [[-0.56317353, -0.70493793, -0.98908603, -0.67106229]],
-            [[-0.50522733, -0.71762598, -0.82497525, -0.59664112]],
+            [[-0.56322294, -0.70427608, -0.98874801, -0.67053026]],
+            [[-0.50528532, -0.71700042, -0.82467848, -0.59614766]],
         ]
         np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=4)
 
     def test_class_gradient_list_1(self):
         grad_predicted = self.classifier.class_gradient(self.x_test_iris[0:1], label=[1])
-        grad_expected = [[[-0.56317347, -0.70493793, -0.98908591, -0.67106223]]]
-        print(grad_predicted)
+        grad_expected = [[[-0.56322294, -0.70427608, -0.98874801, -0.67053026]]]
 
         for i_shape in range(4):
             self.assertAlmostEqual(grad_predicted[0, 0, i_shape], grad_expected[0][0][i_shape], 3)
@@ -324,8 +323,8 @@ class TestScikitlearnLogisticRegression(TestBase):
     def test_class_gradient_list_2(self):
         grad_predicted = self.classifier.class_gradient(self.x_test_iris[0:2], label=[1, 2])
         grad_expected = [
-            [[-0.56317353, -0.70493793, -0.98908603, -0.67106229]],
-            [[0.70866615, 0.25158882, 1.70947361, 0.88450009]],
+            [[-0.56322294, -0.70427608, -0.98874801, -0.67053026]],
+            [[0.70875132, 0.25104877, 1.70929277, 0.88410652]],
         ]
         np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=4)
 
@@ -340,7 +339,7 @@ class TestScikitlearnLogisticRegression(TestBase):
 
     def test_loss_gradient(self):
         grad_predicted = self.classifier.loss_gradient(self.x_test_iris[0:1], self.y_test_iris[0:1])
-        grad_expected = np.asarray([[-0.21690667, -0.08809228, -0.51512096, -0.27002633]])
+        grad_expected = np.asarray([[-0.21693791, -0.08792436, -0.51507443, -0.26990796]])
         np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=4)
 
     def test_save(self):
@@ -393,7 +392,7 @@ class TestScikitlearnBinaryLogisticRegression(TestBase):
         ][:, [0, 1]]
 
         grad_predicted = self.classifier.loss_gradient(x_test_binary[0:1], y_test_binary[0:1])
-        grad_expected = np.asarray([[-0.3771413, 0.31875887, -1.18806318, -0.46225301]])
+        grad_expected = np.asarray([[-0.37703343, 0.31890249, -1.18813638, -0.46208951]])
         np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=4)
 
     def test_save(self):
@@ -536,13 +535,11 @@ class TestScikitlearnSVCLinearSVC(TestBase):
 
     def test_class_gradient_int_1(self):
         grad_predicted = self.classifier.class_gradient(self.x_test_iris[0:1], label=1)
-        print(grad_predicted)
         grad_expected = [[[-0.11198028, -2.51565392, 0.71538245, -0.44830889]]]
         np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=4)
 
     def test_class_gradient_int_2(self):
         grad_predicted = self.classifier.class_gradient(self.x_test_iris[0:2], label=1)
-        print(grad_predicted)
         grad_expected = [
             [[-0.11198028, -2.51565392, 0.71538245, -0.44830889]],
             [[-0.11198028, -2.51565392, 0.71538245, -0.44830889]],
@@ -551,13 +548,11 @@ class TestScikitlearnSVCLinearSVC(TestBase):
 
     def test_class_gradient_list_1(self):
         grad_predicted = self.classifier.class_gradient(self.x_test_iris[0:1], label=[1])
-        print(grad_predicted)
         grad_expected = [[[-0.11198028, -2.51565392, 0.71538245, -0.44830889]]]
         np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=4)
 
     def test_class_gradient_list_2(self):
         grad_predicted = self.classifier.class_gradient(self.x_test_iris[0:2], label=[1, 2])
-        print(grad_predicted)
         grad_expected = [
             [[-0.11198028, -2.51565392, 0.71538245, -0.44830889]],
             [[-0.38021886, -0.57562105, 3.59966607, 2.31772514]],

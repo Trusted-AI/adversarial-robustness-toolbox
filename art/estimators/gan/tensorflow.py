@@ -88,7 +88,7 @@ class TensorFlowV2GAN(TensorFlowV2Estimator):
         :param batch_size: batch_size of images used to train generator
         :param nb_epochs: total number of iterations for performing the attack
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         z_trigger = x
         for _ in range(nb_epochs):

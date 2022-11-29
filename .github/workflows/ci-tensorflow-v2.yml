@@ -25,27 +25,27 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: TensorFlow 2.6.2 (Keras 2.6.0 Python 3.8)
+          - name: TensorFlow 2.9.2 (Keras 2.9.0 Python 3.9)
             framework: tensorflow
-            python: 3.8
-            tensorflow: 2.6.2
+            python: 3.9
+            tensorflow: 2.9.2
             tf_version: v2
-            keras: 2.6.0
-            tf_addons: 0.14.0
-          - name: TensorFlow 2.7.0v1 (Keras 2.7.0 Python 3.9)
+            keras: 2.9.0
+            tf_addons: 0.17.1
+          - name: TensorFlow 2.10.1v1 (Keras 2.10.0 Python 3.9)
             framework: tensorflow2v1
             python: 3.9
-            tensorflow: 2.7.0
+            tensorflow: 2.10.1
             tf_version: v2
-            keras: 2.7.0
-            tf_addons: 0.14.0
-          - name: TensorFlow 2.7.0 (Keras 2.7.0 Python 3.9)
+            keras: 2.10.0
+            tf_addons: 0.18.0
+          - name: TensorFlow 2.10.1 (Keras 2.10.0 Python 3.9)
             framework: tensorflow
             python: 3.9
-            tensorflow: 2.7.0
+            tensorflow: 2.10.1
             tf_version: v2
-            keras: 2.7.0
-            tf_addons: 0.14.0
+            keras: 2.10.0
+            tf_addons: 0.18.0
 
     name: ${{ matrix.name }}
     steps:

@@ -51,7 +51,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):  # lgtm [py/missing-call-to-init]
+class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
     """
     This class implements a classifier with the PyTorch framework.
     """
@@ -116,7 +116,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                be divided by the second one.
         :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         super().__init__(
             model=model,
@@ -266,7 +266,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         Reduce labels from one-hot encoded to index labels.
         """
         # pylint: disable=R0911
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         # Check if the loss function requires as input index labels instead of one-hot-encoded labels
         # Checking for exactly 2 classes to support binary classification
@@ -298,7 +298,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         # Set model mode
         self._model.train(mode=training_mode)
@@ -362,6 +362,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         batch_size: int = 128,
         nb_epochs: int = 10,
         training_mode: bool = True,
+        drop_last: bool = False,
+        scheduler: Optional[Any] = None,
         **kwargs,
     ) -> None:
         """
@@ -373,10 +375,14 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
         :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :param drop_last: Set to ``True`` to drop the last incomplete batch, if the dataset size is not divisible by
+                          the batch size. If ``False`` and the size of dataset is not divisible by the batch size, then
+                          the last batch will be smaller. (default: ``False``)
+        :param scheduler: Learning rate scheduler to run at the start of every epoch.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
-               and providing it takes no effect.
+                       and providing it takes no effect.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         # Set model mode
         self._model.train(mode=training_mode)
@@ -392,8 +398,15 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         # Check label shape
         y_preprocessed = self.reduce_labels(y_preprocessed)
 
-        num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
+        num_batch = len(x_preprocessed) / float(batch_size)
+        if drop_last:
+            num_batch = int(np.floor(num_batch))
+        else:
+            num_batch = int(np.ceil(num_batch))
         ind = np.arange(len(x_preprocessed))
+
+        x_preprocessed = torch.from_numpy(x_preprocessed).to(self._device)
+        y_preprocessed = torch.from_numpy(y_preprocessed).to(self._device)
 
         # Start training
         for _ in range(nb_epochs):
@@ -402,17 +415,25 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
             # Train for one epoch
             for m in range(num_batch):
-                i_batch = torch.from_numpy(x_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]).to(self._device)
-                o_batch = torch.from_numpy(y_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]).to(self._device)
+                i_batch = x_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]
+                o_batch = y_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]
 
                 # Zero the parameter gradients
                 self._optimizer.zero_grad()
 
                 # Perform prediction
-                model_outputs = self._model(i_batch)
+                try:
+                    model_outputs = self._model(i_batch)
+                except ValueError as err:
+                    if "Expected more than 1 value per channel when training" in str(err):
+                        logger.exception(
+                            "Try dropping the last incomplete batch by setting drop_last=True in "
+                            "method PyTorchClassifier.fit."
+                        )
+                    raise err
 
                 # Form the loss function
-                loss = self._loss(model_outputs[-1], o_batch)  # lgtm [py/call-to-non-callable]
+                loss = self._loss(model_outputs[-1], o_batch)
 
                 # Do training
                 if self._use_amp:  # pragma: no cover
@@ -426,6 +447,9 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
                 self._optimizer.step()
 
+            if scheduler is not None:
+                scheduler.step()
+
     def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs) -> None:
         """
         Fit the classifier using the generator that yields batches as specified.
@@ -435,7 +459,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
         from art.data_generators import PyTorchDataGenerator
 
         # Put the model in the training mode
@@ -495,7 +519,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             # Fit a generic data generator through the API
             super().fit_generator(generator, nb_epochs=nb_epochs)
 
-    def clone_for_refitting(self) -> "PyTorchClassifier":  # lgtm [py/inheritance/incorrect-overridden-signature]
+    def clone_for_refitting(self) -> "PyTorchClassifier":
         """
         Create a copy of the classifier that can be refit from scratch. Will inherit same architecture, same type of
         optimizer and initialization as the original classifier, but without weights.
@@ -554,7 +578,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         self._model.train(mode=training_mode)
 
@@ -683,7 +707,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                    'sum': the output will be summed.
         :return: Array of losses of the same shape as `x`.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         self._model.eval()
 
@@ -759,7 +783,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                               `training_mode=False.`
         :return: Array of gradients of the same shape as `x`.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         self._model.train(mode=training_mode)
 
@@ -806,7 +830,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         # Compute the gradient and return
         model_outputs = self._model(inputs_t)
-        loss = self._loss(model_outputs[-1], labels_t)  # lgtm [py/call-to-non-callable]
+        loss = self._loss(model_outputs[-1], labels_t)
 
         # Clean gradients
         self._model.zero_grad()
@@ -821,10 +845,13 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         else:
             loss.backward()
 
-        if isinstance(x, torch.Tensor):
-            grads = x_grad.grad
+        if x_grad.grad is not None:
+            if isinstance(x, torch.Tensor):
+                grads = x_grad.grad
+            else:
+                grads = x_grad.grad.cpu().numpy().copy()
         else:
-            grads = x_grad.grad.cpu().numpy().copy()  # type: ignore
+            raise ValueError("Gradient term in PyTorch model is `None`.")
 
         if not self.all_framework_preprocessing:
             grads = self._apply_preprocessing_gradient(x, grads)
@@ -851,7 +878,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         :param layer_name: Name of the layer from which activation needs to be extracted/activation layer.
         :return: Array of gradients of the same shape as `x`.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         self._model.train(mode=training_mode)
         self._model.eval()
@@ -928,7 +955,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         :param framework: If true, return the intermediate tensor representation of the activation.
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         self._model.eval()
 
@@ -1004,7 +1031,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         :param path: Path of the folder where to store the model. If no path is specified, the model will be stored in
                      the default data location of the library `ART_DATA_PATH`.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         if path is None:
             full_path = os.path.join(config.ART_DATA_PATH, filename)
@@ -1049,7 +1076,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         :param state: State dictionary with instance parameters to restore.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         # Recover model
         self.__dict__.update(state)
@@ -1083,7 +1110,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
     def _make_model_wrapper(self, model: "torch.nn.Module") -> "torch.nn.Module":
         # Try to import PyTorch and create an internal class that acts like a model wrapper extending torch.nn.Module
         try:
-            import torch  # lgtm [py/repeated-import]
+            import torch
 
             # Define model wrapping class only if not defined before
             if not hasattr(self, "_model_wrapper"):
@@ -1093,7 +1120,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                     This is a wrapper for the input model.
                     """
 
-                    import torch  # lgtm [py/repeated-import]
+                    import torch
 
                     def __init__(self, model: torch.nn.Module):
                         """
@@ -1147,7 +1174,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                                      layers if the input model is of type `nn.Sequential`, otherwise, it will only
                                      return the logit layer.
                         """
-                        import torch  # lgtm [py/repeated-import]
+                        import torch
 
                         result = []
                         if isinstance(self._model, torch.nn.Module):

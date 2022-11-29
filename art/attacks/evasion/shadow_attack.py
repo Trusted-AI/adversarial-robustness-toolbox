@@ -206,6 +206,8 @@ class ShadowAttack(EvasionAttack):
                             ord=2,
                             axis=(1, 2),
                         )
+                    else:
+                        raise ValueError("Value for number of channels in `perturbation_t.shape` not recognized.")
 
                     loss_c = tf.norm(tf.reduce_mean(tf.abs(perturbation_t), axis=[2, 3]), ord=2, axis=1) ** 2
                     loss = self.lambda_tv * loss_tv + self.lambda_s * loss_s + self.lambda_c * loss_c
@@ -233,6 +235,8 @@ class ShadowAttack(EvasionAttack):
                     + (perturbation_t[:, 1, :, :] - perturbation_t[:, 2, :, :]) ** 2
                     + (perturbation_t[:, 0, :, :] - perturbation_t[:, 2, :, :]) ** 2
                 ).norm(p=2, dim=(1, 2))
+            else:
+                raise ValueError("Value for number of channels in `perturbation_t.shape` not recognized.")
 
             loss_c = perturbation_t.abs().mean([2, 3]).norm(dim=1) ** 2
             loss = torch.mean(self.lambda_tv * loss_tv + self.lambda_s * loss_s + self.lambda_c * loss_c)

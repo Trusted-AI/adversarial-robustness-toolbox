@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the task specific estimator for PyTorch YOLO v3 object detectors.
+This module implements the task specific estimator for PyTorch YOLO v3 and v5 object detectors.
 
 | Paper link: https://arxiv.org/abs/1804.02767
 """
@@ -48,7 +48,7 @@ def translate_predictions_xcycwh_to_x1y1x2y2(
     :param y_pred_xcycwh: Labels in format xcycwh.
     :return: Labels in format x1y1x2y2.
     """
-    import torch  # lgtm [py/repeated-import]
+    import torch
 
     y_pred_x1y1x2y2 = []
 
@@ -89,12 +89,12 @@ def translate_predictions_xcycwh_to_x1y1x2y2(
 
 def translate_labels_art_to_yolov3(labels_art: List[Dict[str, "torch.Tensor"]]):
     """
-    Translate labels from ART to YOLO v3.
+    Translate labels from ART to YOLO v3 and v5.
 
     :param labels_art: Object detection labels in format ART (torchvision).
-    :return: Object detection labels in format YOLO v3.
+    :return: Object detection labels in format YOLO v3 and v5.
     """
-    import torch  # lgtm [py/repeated-import]
+    import torch
 
     yolo_targets_list = []
 
@@ -115,7 +115,7 @@ def translate_labels_art_to_yolov3(labels_art: List[Dict[str, "torch.Tensor"]]):
 
 class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
     """
-    This module implements the model- and task specific estimator for YOLO v3 object detector models in PyTorch.
+    This module implements the model- and task specific estimator for YOLO v3, v5 object detector models in PyTorch.
 
     | Paper link: https://arxiv.org/abs/1804.02767
     """
@@ -142,7 +142,8 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
         """
         Initialization.
 
-        :param model: Object detection model. The output of the model is `List[Dict[Tensor]]`, one for each input
+        :param model: Object detection model wrapped as demonstrated in examples/get_started_yolo.py.
+                      The output of the model is `List[Dict[Tensor]]`, one for each input
                       image. The fields of the Dict are as follows:
 
                       - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values \
@@ -164,8 +165,8 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
         :param device_type: Type of device to be used for model and tensors, if `cpu` run on CPU, if `gpu` run on GPU
                             if available otherwise run on CPU.
         """
-        import torch  # lgtm [py/repeated-import]
-        import torchvision  # lgtm [py/repeated-import]
+        import torch
+        import torchvision
 
         torch_version = list(map(int, torch.__version__.lower().split("+", maxsplit=1)[0].split(".")))
         torchvision_version = list(map(int, torchvision.__version__.lower().split("+", maxsplit=1)[0].split(".")))
@@ -250,9 +251,11 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
                   - labels (Int64Tensor[N]): the labels for each image
         :return: Loss gradients of the same shape as `x`.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         self._model.train()
+        self.set_batchnorm(train=False)
+        self.set_dropout(train=False)
 
         # Apply preprocessing
         if self.all_framework_preprocessing:
@@ -360,9 +363,15 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
         loss.backward(retain_graph=True)  # type: ignore
 
         if isinstance(x, np.ndarray):
-            grads = image_tensor_list_grad.grad.cpu().numpy().copy()
+            if image_tensor_list_grad.grad is not None:
+                grads = image_tensor_list_grad.grad.cpu().numpy().copy()
+            else:
+                raise ValueError("Gradient term in PyTorch model is `None`.")
         else:
-            grads = inputs_t.grad.copy()
+            if inputs_t.grad is not None:
+                grads = inputs_t.grad.clone()
+            else:
+                raise ValueError("Gradient term in PyTorch model is `None`.")
 
         if self.clip_values is not None:
             grads = grads / self.clip_values[1]
@@ -387,7 +396,7 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
                  - labels [N]: the labels for each image
                  - scores [N]: the scores or each prediction.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         x = x.copy()
 
@@ -478,7 +487,7 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
                   - scores (Tensor[N]): the scores or each prediction.
         :return: Loss.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         output, _, _ = self._get_losses(x=x, y=y)
 
