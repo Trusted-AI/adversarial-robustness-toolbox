@@ -83,9 +83,10 @@ class IntervalConv2D(torch.nn.Module):
         input_shape,
         device,
         stride: Union[int, Tuple[int, int]] = 1,
+        padding: Union[int, Tuple[int, int]] = 0,
         bias: bool = False,
-        supplied_input_weights=None,
-        supplied_input_bias=None,
+        supplied_input_weights: Union[None, "torch.Tensor"] = None,
+        supplied_input_bias: Union[None, "torch.Tensor"] = None,
         to_debug: bool = False,
     ):
         """
@@ -105,6 +106,7 @@ class IntervalConv2D(torch.nn.Module):
             in_channels=1,
             out_channels=out_channels * in_channels,
             kernel_size=kernel_size,
+            padding=padding,
             bias=False,
             stride=stride,
         )
@@ -115,6 +117,7 @@ class IntervalConv2D(torch.nn.Module):
                 in_channels=in_channels,
                 out_channels=out_channels,
                 kernel_size=kernel_size,
+                padding=padding,
                 bias=True,
                 stride=stride,
             )
@@ -123,7 +126,8 @@ class IntervalConv2D(torch.nn.Module):
 
         if to_debug:
             self.conv = torch.nn.Conv2d(
-                in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size, bias=bias, stride=stride
+                in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size, bias=bias, stride=stride, padding=padding,
+
             ).to(device)
 
             if isinstance(kernel_size, tuple):

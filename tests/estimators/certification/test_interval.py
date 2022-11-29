@@ -29,7 +29,7 @@ from tests.utils import get_image_classifier_pt, get_cifar10_image_classifier_pt
 
 
 class SyntheticIntervalModel(torch.nn.Module):
-    def __init__(self, input_shape, output_channels, kernel_size, stride=1, bias=False, to_debug=True):
+    def __init__(self, input_shape, output_channels, kernel_size, stride=1, bias=False, padding=0, to_debug=True):
         super().__init__()
 
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -38,6 +38,7 @@ class SyntheticIntervalModel(torch.nn.Module):
                                     kernel_size=kernel_size,
                                     input_shape=input_shape,
                                     stride=stride,
+                                    padding=padding,
                                     bias=bias,
                                     to_debug=to_debug,
                                     device=self.device)
@@ -152,7 +153,25 @@ def test_conv_layer_multi_channel_in_multi_out_with_stride_and_bias():
                                    output_channels=12,
                                    kernel_size=5,
                                    bias=True,
-                                   stride=1)
+                                   stride=2)
+    output_from_equivalent = model.forward(synthetic_data)
+    output_from_conv = model.conv1.conv(synthetic_data)
+
+    assert torch.allclose(output_from_equivalent, output_from_conv, atol=1e-05)
+
+
+def test_conv_layer_padding():
+    """
+    Check that the conversion works for a single input channel.
+    """
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    synthetic_data = torch.rand(32, 3, 25, 25).to(device)
+    model = SyntheticIntervalModel(input_shape=synthetic_data.shape,
+                                   output_channels=12,
+                                   kernel_size=5,
+                                   bias=True,
+                                   padding=2,
+                                   stride=2)
     output_from_equivalent = model.forward(synthetic_data)
     output_from_conv = model.conv1.conv(synthetic_data)
 

@@ -96,7 +96,7 @@ class ConvertedModel(torch.nn.Module):
                     supplied_input_bias=torch.tensor(bias_to_supply).to(self.device),
                     device=self.device,
                     # dilation=module.dilation,  # type: ignore
-                    # padding=module.padding,  # type: ignore
+                    padding=module.padding,  # type: ignore
                 )
 
                 self.ops.append(interval_conv)
