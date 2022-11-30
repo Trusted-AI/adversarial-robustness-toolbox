@@ -46,7 +46,7 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
     """
     import torch
     import random
-    from art.estimators.certification.randomized_smoothing.smooth_adversarial.smoothadvattack import PgdL2, DDN
+    from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
 
     def requires_grad(model: torch.nn.Module, requires_grad_val: bool) -> None:
         """
@@ -63,9 +63,7 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
     start_epoch = 0
 
     if self.attack_type == "PGD":
-        attacker = PgdL2(steps=self.num_steps, device=self.device, max_norm=self.epsilon)
-    elif self.attack_type == "DDN":
-        attacker = DDN(steps=self.num_steps, device=self.device, max_norm=self.epsilon)
+        attacker = ProjectedGradientDescent(self.estimator, eps=self.epsilon, max_iter=1, verbose=False)
 
     if self.optimizer is None:  # pragma: no cover
         raise ValueError("An optimizer is needed to train the model, but none for provided.")
@@ -101,18 +99,13 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
                 # Attack and find adversarial examples
                 requires_grad(self.model, False)
                 self.model.eval()
-                inputs = attacker.attack(
-                    self.model,
-                    inputs,
-                    targets,
-                    noise=noise,
-                    num_noise_vectors=self.num_noise_vec,
-                    no_grad=self.no_grad_attack,
-                )
+                perturbed_inputs = inputs.cpu().detach().numpy()
+                noise_for_attack = noise.cpu().detach().numpy()
+                for _ in range(self.num_steps):
+                    perturbed_inputs = attacker.generate(perturbed_inputs + noise_for_attack)
                 self.model.train()
                 requires_grad(self.model, True)
-
-                noisy_inputs = inputs + noise
+                noisy_inputs = torch.from_numpy(perturbed_inputs).to(self.device) + noise
 
                 targets = targets.unsqueeze(1).repeat(1, self.num_noise_vec).reshape(-1, 1).squeeze()
                 outputs = self.model(noisy_inputs)
@@ -152,18 +145,13 @@ def fit_tensorflow(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epoch
     :return: `None`
     """
     import tensorflow as tf
-    from art.estimators.certification.randomized_smoothing.smooth_adversarial.smoothadvattack_tensorflow import (
-        PgdL2,
-        DDN,
-    )
+    from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
 
     x = x.astype(ART_NUMPY_DTYPE)
     start_epoch = 0
 
     if self.attack_type == "PGD":
-        attacker = PgdL2(steps=self.num_steps, max_norm=self.epsilon)
-    elif self.attack_type == "DDN":
-        attacker = DDN(steps=self.num_steps, max_norm=self.epsilon)
+        attacker = ProjectedGradientDescent(self.estimator, eps=self.epsilon, max_iter=1, verbose=False)
 
     if self.optimizer is None:  # pragma: no cover
         raise ValueError("An optimizer is needed to train the model, but none for provided.")
@@ -174,7 +162,6 @@ def fit_tensorflow(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epoch
 
     x = tf.convert_to_tensor(x)
     y = tf.convert_to_tensor(y)
-    x = tf.transpose(x, (0, 3, 1, 2))
 
     train_ds = tf.data.Dataset.from_tensor_slices((x, y)).shuffle(10000).batch(batch_size)
 
@@ -188,17 +175,13 @@ def fit_tensorflow(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epoch
                 inputs = tf.reshape(tf.tile(inputs, (1, self.num_noise_vec, 1, 1)), i_batch.shape)
                 noise = tf.random.normal(inputs.shape, 0, 1) * self.scale
 
-                inputs = attacker.attack(
-                    self.model,
-                    inputs,
-                    targets,
-                    noise=noise,
-                    num_noise_vectors=self.num_noise_vec,
-                    no_grad=self.no_grad_attack,
-                )
+                perturbed_inputs = inputs.numpy()
+                noise_for_attack = noise.numpy()
+                for _ in range(self.num_steps):
+                    perturbed_inputs = attacker.generate(perturbed_inputs + noise_for_attack)
 
-                noisy_inputs = inputs + noise
-                noisy_inputs = tf.transpose(noisy_inputs, (0, 2, 3, 1))
+                noisy_inputs = tf.convert_to_tensor(perturbed_inputs) + noise
+                # noisy_inputs = tf.transpose(noisy_inputs, (0, 2, 3, 1))
                 targets = tf.squeeze(
                     tf.reshape(tf.tile(tf.expand_dims(targets, axis=1), (1, self.num_noise_vec)), (-1, 1))
                 )

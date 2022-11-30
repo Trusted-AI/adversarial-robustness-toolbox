@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 @pytest.fixture()
 def get_mnist_data():
     # Get MNIST
-    NB_TEST = 10
+    NB_TEST = 100
 
     (_, _), (x_test, y_test), _, _ = load_dataset("mnist")
     x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
@@ -87,6 +87,7 @@ def test_smoothadv_randomized_smoothing_pytorch_pgd(get_mnist_data):
         epsilon=1.0,
         num_steps=10,
         warmup=10,
+        estimator=ptc,
     )
 
     # fit
@@ -131,6 +132,7 @@ def test_smoothadv_randomized_smoothing_pytorch_pgd_no_optimizer(get_mnist_data)
         epsilon=1.0,
         num_steps=10,
         warmup=10,
+        estimator=ptc,
     )
 
     # fit fails when optimizer is None
@@ -175,6 +177,7 @@ def test_smoothadv_randomized_smoothing_pytorch_pgd_no_scheduler(get_mnist_data)
         epsilon=1.0,
         num_steps=10,
         warmup=10,
+        estimator=ptc,
     )
 
     # fit fails when scheduler is None
@@ -182,140 +185,8 @@ def test_smoothadv_randomized_smoothing_pytorch_pgd_no_scheduler(get_mnist_data)
         rs3.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="smoothadv")
 
 
-@pytest.mark.only_with_platform("pytorch")
-def test_smoothadv_randomized_smoothing_pytorch_pgd_no_gradient(get_mnist_data):
-    """
-    Test with a PyTorch Classifier.
-    :return:
-    """
-    import torch
-
-    # Build PytorchClassifier
-    ptc = get_image_classifier_pt(from_logits=True)
-
-    # Get MNIST
-    x_test, y_test = get_mnist_data
-
-    x_test = x_test.transpose(0, 3, 1, 2).astype(np.float32)
-
-    # Initialize RS object
-    optimizer = torch.optim.SGD(ptc.model.parameters(), lr=0.1, momentum=0.9, weight_decay=1e-4)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=50, gamma=0.1)
-
-    rs4 = PyTorchRandomizedSmoothing(
-        model=ptc.model,
-        loss=torch.nn.CrossEntropyLoss(),
-        optimizer=optimizer,
-        scheduler=scheduler,
-        input_shape=ptc.input_shape,
-        nb_classes=ptc.nb_classes,
-        channels_first=ptc.channels_first,
-        clip_values=ptc.clip_values,
-        sample_size=100,
-        scale=0.25,
-        num_noise_vec=10,
-        train_multi_noise=True,
-        attack_type="PGD",
-        no_grad_attack=True,
-        epsilon=1.0,
-        num_steps=10,
-        warmup=10,
-    )
-
-    # fit with PGD attack and no grad
-    rs4.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="smoothadv")
-
-
-@pytest.mark.only_with_platform("pytorch")
-def test_smoothadv_randomized_smoothing_pytorch_ddn_multinoise(get_mnist_data):
-    """
-    Test with a PyTorch Classifier.
-    :return:
-    """
-    import torch
-
-    # Build PytorchClassifier
-    ptc = get_image_classifier_pt(from_logits=True)
-
-    # Get MNIST
-    x_test, y_test = get_mnist_data
-
-    x_test = x_test.transpose(0, 3, 1, 2).astype(np.float32)
-
-    # Initialize RS object
-    optimizer = torch.optim.SGD(ptc.model.parameters(), lr=0.1, momentum=0.9, weight_decay=1e-4)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=50, gamma=0.1)
-
-    rs5 = PyTorchRandomizedSmoothing(
-        model=ptc.model,
-        loss=torch.nn.CrossEntropyLoss(),
-        optimizer=optimizer,
-        scheduler=scheduler,
-        input_shape=ptc.input_shape,
-        nb_classes=ptc.nb_classes,
-        channels_first=ptc.channels_first,
-        clip_values=ptc.clip_values,
-        sample_size=100,
-        scale=0.25,
-        num_noise_vec=10,
-        train_multi_noise=True,
-        attack_type="DDN",
-        no_grad_attack=False,
-        epsilon=1.0,
-        num_steps=10,
-        warmup=10,
-    )
-
-    # fit with DDN attack and multi noise
-    rs5.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="smoothadv")
-
-
-@pytest.mark.only_with_platform("pytorch")
-def test_smoothadv_randomized_smoothing_pytorch_ddn_singlenoise(get_mnist_data):
-    """
-    Test with a PyTorch Classifier.
-    :return:
-    """
-    import torch
-
-    # Build PytorchClassifier
-    ptc = get_image_classifier_pt(from_logits=True)
-
-    # Get MNIST
-    x_test, y_test = get_mnist_data
-
-    x_test = x_test.transpose(0, 3, 1, 2).astype(np.float32)
-
-    # Initialize RS object
-    optimizer = torch.optim.SGD(ptc.model.parameters(), lr=0.1, momentum=0.9, weight_decay=1e-4)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=50, gamma=0.1)
-
-    rs6 = PyTorchRandomizedSmoothing(
-        model=ptc.model,
-        loss=torch.nn.CrossEntropyLoss(),
-        optimizer=optimizer,
-        scheduler=scheduler,
-        input_shape=ptc.input_shape,
-        nb_classes=ptc.nb_classes,
-        channels_first=ptc.channels_first,
-        clip_values=ptc.clip_values,
-        sample_size=100,
-        scale=0.25,
-        num_noise_vec=1,
-        train_multi_noise=True,
-        attack_type="DDN",
-        no_grad_attack=False,
-        epsilon=1.0,
-        num_steps=10,
-        warmup=10,
-    )
-
-    # fit with DDN and single noise
-    rs6.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="smoothadv")
-
-
 # SmoothAdversarial implementation not compatible with Tensorflow v1
-@pytest.mark.only_with_platform("tensorflow", "tensorflow2", "keras", "kerastf")
+@pytest.mark.only_with_platform("tensorflow2")
 def test_smoothadv_randomized_smoothing_tensorflow_pgd(get_mnist_data):
     """
     Test with a Smooth Adversarially trained TensorFlow Classifier.
@@ -325,6 +196,7 @@ def test_smoothadv_randomized_smoothing_tensorflow_pgd(get_mnist_data):
 
     # Build TensorFlowV2Classifier
     classifier = get_image_classifier_tf_v2()
+    # classifier = get_image_classifier_tf_v2_custom()
 
     # Get MNIST
     x_test, y_test = get_mnist_data
@@ -352,6 +224,7 @@ def test_smoothadv_randomized_smoothing_tensorflow_pgd(get_mnist_data):
         warmup=10,
         optimizer=optimizer,
         scheduler=learning_rate_fn,
+        estimator=classifier,
     )
 
     # fit with PGD attack
@@ -359,7 +232,7 @@ def test_smoothadv_randomized_smoothing_tensorflow_pgd(get_mnist_data):
 
 
 # SmoothAdversarial implementation not compatible with Tensorflow v1
-@pytest.mark.only_with_platform("tensorflow", "tensorflow2", "keras", "kerastf")
+@pytest.mark.only_with_platform("tensorflow2")
 def test_smoothadv_randomized_smoothing_tensorflow_pgd_no_optimizer(get_mnist_data):
     """
     Test with a Smooth Adversarially trained TensorFlow Classifier.
@@ -393,6 +266,7 @@ def test_smoothadv_randomized_smoothing_tensorflow_pgd_no_optimizer(get_mnist_da
         warmup=10,
         optimizer=None,
         scheduler=learning_rate_fn,
+        estimator=classifier,
     )
 
     # fit fails when optimizer is None
@@ -401,7 +275,7 @@ def test_smoothadv_randomized_smoothing_tensorflow_pgd_no_optimizer(get_mnist_da
 
 
 # SmoothAdversarial implementation not compatible with Tensorflow v1
-@pytest.mark.only_with_platform("tensorflow", "tensorflow2", "keras", "kerastf")
+@pytest.mark.only_with_platform("tensorflow2")
 def test_smoothadv_randomized_smoothing_tensorflow_pgd_no_scheduler(get_mnist_data):
     """
     Test with a Smooth Adversarially trained TensorFlow Classifier.
@@ -435,97 +309,9 @@ def test_smoothadv_randomized_smoothing_tensorflow_pgd_no_scheduler(get_mnist_da
         warmup=10,
         optimizer=optimizer,
         scheduler=None,
+        estimator=classifier,
     )
 
     # fit fails when scheduler is None
     with pytest.raises(ValueError, match="A scheduler is needed to train the model, but none for provided."):
         rs3.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="smoothadv")
-
-
-# SmoothAdversarial implementation not compatible with Tensorflow v1
-@pytest.mark.only_with_platform("tensorflow", "tensorflow2", "keras", "kerastf")
-def test_smoothadv_randomized_smoothing_tensorflow_pgd_no_gradient(get_mnist_data):
-    """
-    Test with a Smooth Adversarially trained TensorFlow Classifier.
-    :return:
-    """
-    import tensorflow as tf
-
-    # Build TensorFlowV2Classifier
-    classifier = get_image_classifier_tf_v2()
-
-    # Get MNIST
-    x_test, y_test = get_mnist_data
-
-    # Initialize RS object
-    initial_learning_rate = 0.1
-    boundaries = [50, 100]
-    values = [0.1, 0.01, 0.001]
-    learning_rate_fn = tf.keras.optimizers.schedules.PiecewiseConstantDecay(boundaries, values)
-
-    optimizer = tf.keras.optimizers.SGD(learning_rate=initial_learning_rate, momentum=0.9, name="SGD", decay=1e-4)
-
-    rs4 = TensorFlowV2RandomizedSmoothing(
-        model=classifier.model,
-        nb_classes=classifier.nb_classes,
-        input_shape=classifier.input_shape,
-        loss_object=classifier.loss_object,
-        clip_values=classifier.clip_values,
-        scale=0.25,
-        num_noise_vec=10,
-        train_multi_noise=True,
-        attack_type="DDN",
-        epsilon=1.0,
-        num_steps=10,
-        warmup=10,
-        optimizer=optimizer,
-        scheduler=learning_rate_fn,
-    )
-
-    # fit with DDN attack
-    rs4.fit(x_test, y_test.astype(np.int32), nb_epochs=1, batch_size=256, train_method="smoothadv")
-
-
-# SmoothAdversarial implementation not compatible with Tensorflow v1
-@pytest.mark.only_with_platform("tensorflow", "tensorflow2", "keras", "kerastf")
-def test_smoothadv_randomized_smoothing_tensorflow_ddn(get_mnist_data):
-    """
-    Test with a Smooth Adversarially trained TensorFlow Classifier.
-    :return:
-    """
-    import tensorflow as tf
-
-    # Build TensorFlowV2Classifier
-    classifier = get_image_classifier_tf_v2()
-
-    # Get MNIST
-    x_test, y_test = get_mnist_data
-
-    # Initialize RS object
-    initial_learning_rate = 0.1
-    boundaries = [50, 100]
-    values = [0.1, 0.01, 0.001]
-    learning_rate_fn = tf.keras.optimizers.schedules.PiecewiseConstantDecay(boundaries, values)
-
-    optimizer = tf.keras.optimizers.SGD(learning_rate=initial_learning_rate, momentum=0.9, name="SGD", decay=1e-4)
-
-    rs5 = TensorFlowV2RandomizedSmoothing(
-        model=classifier.model,
-        nb_classes=classifier.nb_classes,
-        input_shape=classifier.input_shape,
-        loss_object=classifier.loss_object,
-        clip_values=classifier.clip_values,
-        scale=0.25,
-        num_noise_vec=10,
-        train_multi_noise=True,
-        attack_type="PGD",
-        no_grad_attack=True,
-        epsilon=1.0,
-        num_steps=10,
-        warmup=10,
-        optimizer=optimizer,
-        scheduler=learning_rate_fn,
-    )
-
-    # fit with PGD attack and no grad
-    rs5.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="smoothadv")

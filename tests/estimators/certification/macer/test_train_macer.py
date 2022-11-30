@@ -171,7 +171,7 @@ def test_macer_randomized_smoothing_pytorch_no_scheduler(get_mnist_data):
 
 
 # MACER implementation not compatible with Tensorflow v1
-@pytest.mark.only_with_platform("tensorflow", "tensorflow2", "keras", "kerastf")
+@pytest.mark.only_with_platform("tensorflow2")
 def test_macer_randomized_smoothing_tensorflow(get_mnist_data):
     """
     Test with a Tensorflow Classifier.
@@ -210,7 +210,7 @@ def test_macer_randomized_smoothing_tensorflow(get_mnist_data):
 
 
 #  MACER implementation not compatible with Tensorflow v1
-@pytest.mark.only_with_platform("tensorflow", "tensorflow2", "keras", "kerastf")
+@pytest.mark.only_with_platform("tensorflow2")
 def test_macer_randomized_smoothing_tensorflow_no_optimizer(get_mnist_data):
     """
     Test with a Tensorflow Classifier.
@@ -249,7 +249,7 @@ def test_macer_randomized_smoothing_tensorflow_no_optimizer(get_mnist_data):
 
 
 # MACER implementation not compatible with Tensorflow v1
-@pytest.mark.only_with_platform("tensorflow", "tensorflow2", "keras", "kerastf")
+@pytest.mark.only_with_platform("tensorflow2")
 def test_macer_randomized_smoothing_tensorflow_no_scheduler(get_mnist_data):
     """
     Test with a Tensorflow Classifier.
