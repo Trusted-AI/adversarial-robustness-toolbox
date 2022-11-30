@@ -86,6 +86,7 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
         gauss_num: int = 16,
         optimizer: Optional["tf.keras.optimizers"] = None,  # type: ignore
         scheduler: Optional["tf.keras.callbacks.LearningRateScheduler"] = None,  # type: ignore
+        estimator: "TensorFlowV2Classifier" = None,  # type: ignore
         **kwargs
     ):
         """
@@ -147,6 +148,7 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
         )
         self.optimizer = optimizer
         self.scheduler = scheduler
+        self.estimator = estimator
 
     def _predict_classifier(self, x: np.ndarray, batch_size: int, training_mode: bool, **kwargs) -> np.ndarray:
         return TensorFlowV2Classifier.predict(self, x=x, batch_size=batch_size, training_mode=training_mode, **kwargs)

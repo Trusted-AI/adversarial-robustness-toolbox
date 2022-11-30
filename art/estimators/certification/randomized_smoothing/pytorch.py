@@ -88,6 +88,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         gamma: float = 8.0,
         beta: float = 16.0,
         gauss_num: int = 16,
+        estimator: Union["PyTorchClassifier"] = None,  # type: ignore
         **kwargs,
     ):
         """
@@ -150,6 +151,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
             **kwargs,
         )
         self.scheduler = scheduler
+        self.estimator = estimator
 
     def _predict_classifier(self, x: np.ndarray, batch_size: int, training_mode: bool, **kwargs) -> np.ndarray:
         x = x.astype(ART_NUMPY_DTYPE)
