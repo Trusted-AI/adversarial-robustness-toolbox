@@ -124,7 +124,7 @@ class XGBoostClassifier(ClassifierDecisionTree):
                        `fit` function in `xgboost.XGBClassifier` and will be passed to this function as such.
         :raises `NotImplementedException`: This method is not supported for Booster objects.
         """
-        import xgboost  # lgtm [py/repeated-import] lgtm [py/import-and-import-from]
+        import xgboost
 
         if isinstance(self._model, xgboost.XGBClassifier):
             self._model.fit(x, y, **kwargs)
@@ -161,16 +161,14 @@ class XGBoostClassifier(ClassifierDecisionTree):
 
         return y_prediction
 
-    def clone_for_refitting(
-        self,
-    ) -> "XGBoostClassifier":  # lgtm [py/inheritance/incorrect-overridden-signature]
+    def clone_for_refitting(self,) -> "XGBoostClassifier":
         """
         Create a copy of the estimator that can be refit from scratch. Only supported for models of type XGBClassifier.
 
         :return: new estimator.
         :raises `NotImplementedError`: This method is not supported for Booster objects.
         """
-        import xgboost  # lgtm [py/repeated-import] lgtm [py/import-and-import-from]
+        import xgboost
 
         if isinstance(self._model, xgboost.XGBClassifier):
             params = self.get_params()
@@ -198,6 +196,7 @@ class XGBoostClassifier(ClassifierDecisionTree):
             if isinstance(self._model, XGBClassifier):
                 return self._model.n_classes_
         except AttributeError:
+            # Attribute n_classes_ not found, will return default nb_classes value
             pass
 
         if nb_classes is not None:
@@ -244,10 +243,7 @@ class XGBoostClassifier(ClassifierDecisionTree):
 
             tree_json = json.loads(tree_dump)
             trees.append(
-                Tree(
-                    class_id=class_label,
-                    leaf_nodes=self._get_leaf_nodes(tree_json, i_tree, class_label, box),
-                )
+                Tree(class_id=class_label, leaf_nodes=self._get_leaf_nodes(tree_json, i_tree, class_label, box),)
             )
 
         return trees
@@ -286,13 +282,7 @@ class XGBoostClassifier(ClassifierDecisionTree):
 
         if "leaf" in node:
             leaf_nodes.append(
-                LeafNode(
-                    tree_id=i_tree,
-                    class_label=class_label,
-                    node_id=node["nodeid"],
-                    box=box,
-                    value=node["leaf"],
-                )
+                LeafNode(tree_id=i_tree, class_label=class_label, node_id=node["nodeid"], box=box, value=node["leaf"],)
             )
 
         return leaf_nodes

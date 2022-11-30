@@ -89,9 +89,7 @@ class KerasEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         """
         raise NotImplementedError
 
-    def clone_for_refitting(
-        self,
-    ) -> "KERAS_ESTIMATOR_TYPE":  # lgtm [py/inheritance/incorrect-overridden-signature]
+    def clone_for_refitting(self,) -> "KERAS_ESTIMATOR_TYPE":
         """
         Create a copy of the estimator that can be refit from scratch. Will inherit same architecture, optimizer and
         initialization as cloned model, but without weights.
@@ -99,8 +97,8 @@ class KerasEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         :return: new estimator
         """
 
-        import tensorflow as tf  # lgtm [py/repeated-import]
-        import keras  # lgtm [py/repeated-import]
+        import tensorflow as tf
+        import keras
 
         try:
             # only works for functionally defined models
