@@ -161,7 +161,9 @@ class XGBoostClassifier(ClassifierDecisionTree):
 
         return y_prediction
 
-    def clone_for_refitting(self,) -> "XGBoostClassifier":
+    def clone_for_refitting(
+        self,
+    ) -> "XGBoostClassifier":
         """
         Create a copy of the estimator that can be refit from scratch. Only supported for models of type XGBClassifier.
 
@@ -243,7 +245,10 @@ class XGBoostClassifier(ClassifierDecisionTree):
 
             tree_json = json.loads(tree_dump)
             trees.append(
-                Tree(class_id=class_label, leaf_nodes=self._get_leaf_nodes(tree_json, i_tree, class_label, box),)
+                Tree(
+                    class_id=class_label,
+                    leaf_nodes=self._get_leaf_nodes(tree_json, i_tree, class_label, box),
+                )
             )
 
         return trees
@@ -282,7 +287,13 @@ class XGBoostClassifier(ClassifierDecisionTree):
 
         if "leaf" in node:
             leaf_nodes.append(
-                LeafNode(tree_id=i_tree, class_label=class_label, node_id=node["nodeid"], box=box, value=node["leaf"],)
+                LeafNode(
+                    tree_id=i_tree,
+                    class_label=class_label,
+                    node_id=node["nodeid"],
+                    box=box,
+                    value=node["leaf"],
+                )
             )
 
         return leaf_nodes

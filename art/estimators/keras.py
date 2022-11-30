@@ -89,7 +89,9 @@ class KerasEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         """
         raise NotImplementedError
 
-    def clone_for_refitting(self,) -> "KERAS_ESTIMATOR_TYPE":
+    def clone_for_refitting(
+        self,
+    ) -> "KERAS_ESTIMATOR_TYPE":
         """
         Create a copy of the estimator that can be refit from scratch. Will inherit same architecture, optimizer and
         initialization as cloned model, but without weights.
