@@ -10,8 +10,6 @@ __pycache__/
 .Python
 env/
 build/
-art-aml/
-bin/
 develop-eggs/
 dist/
 downloads/
