@@ -94,30 +94,29 @@ class MaxupPyTorch(PreprocessorPyTorch):
         :return: Data augmented sample. The returned labels will be shape of the provided augmentations.
         :raises `ValueError`: If no labels are provided.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         if y is None:
             raise ValueError("Labels `y` cannot be None.")
-
-        # extract the model
-        model = self.estimator.model
-        model.eval()
 
         # extract loss function and set to no reduction
         loss_fn = self.estimator.loss
         prev_reduction = loss_fn.reduction
         loss_fn.reduction = "none"
 
-        max_loss = 0
+        max_loss = torch.zeros(len(x))
         x_max_loss = x
         y_max_loss = y
 
         for _ in range(self.num_trials):
             for augmentation in self.augmentations:
                 # calculate the loss for the current augmentation
-                x_aug, y_aug = augmentation(x, y)
-                outputs = model(x_aug)
-                loss = loss_fn(outputs, y_aug)
+                x_aug, y_aug = augmentation(x.cpu().numpy(), y.cpu().numpy())
+                preds = self.estimator.predict(x_aug)
+                x_aug = torch.from_numpy(x_aug).to(self.device)
+                y_aug = torch.from_numpy(y_aug).to(self.device)
+                preds = torch.from_numpy(preds).to(self.device)
+                loss = loss_fn(preds, y_aug)
 
                 # one-hot encode if necessary
                 if len(y_max_loss.shape) == 1 and len(y_aug.shape) == 2:
@@ -128,10 +127,13 @@ class MaxupPyTorch(PreprocessorPyTorch):
                     y_aug = torch.nn.functional.one_hot(y_aug, num_classes)
 
                 # select inputs and labels based on greater loss
-                max_mask = (max_loss > loss).float()
-                max_loss = max_mask * max_loss + (1 - max_loss) * loss
-                x_max_loss = max_mask * x_max_loss + (1 - max_loss) * x_aug
-                y_max_loss = max_mask * y_max_loss + (1 - max_loss) * y_aug
+                loss_mask = loss > max_loss
+                x_mask = loss_mask.view(-1, *((1,) * (x_aug.ndim - 1))).expand_as(x_aug)
+                y_mask = loss_mask.view(-1, *((1,) * (y_aug.ndim - 1))).expand_as(y_aug)
+
+                max_loss = torch.where(loss_mask, loss, max_loss)
+                x_max_loss = torch.where(x_mask, x_aug, x_max_loss)
+                y_max_loss = torch.where(y_mask, y_aug, y_max_loss)
 
         # restore original loss function reduction
         loss_fn.reduction = prev_reduction

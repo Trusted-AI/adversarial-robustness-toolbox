@@ -51,7 +51,7 @@ class MaxupTensorFlowV2(PreprocessorTensorFlowV2):
         https://arxiv.org/abs/1902.06705
     """
 
-    params = ["num_classes", "alpha", "num_mix"]
+    params = ["estimator", "augmentations", "num_trials"]
 
     def __init__(
         self,
@@ -88,30 +88,29 @@ class MaxupTensorFlowV2(PreprocessorTensorFlowV2):
                  `(nb_samples, nb_classes)`.
         :raises `ValueError`: If no labels are provided.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         if y is None:
             raise ValueError("Labels `y` cannot be None.")
-
-        # extract the model
-        model = self.estimator.model
-        model.eval()
 
         # extract loss object and set to no reduction
         loss_object = self.estimator.loss_object
         prev_reduction = loss_object.reduction
         loss_object.reduction = tf.keras.losses.Reduction.NONE
 
-        max_loss = 0
+        max_loss = tf.zeros(len(x))
         x_max_loss = x
         y_max_loss = y
 
         for _ in range(self.num_trials):
             for augmentation in self.augmentations:
                 # calculate the loss for the current augmentation
-                x_aug, y_aug = augmentation(x, y)
-                outputs = model(x_aug)
-                loss = loss_object(outputs, y_aug)
+                x_aug, y_aug = augmentation(x.numpy(), y.numpy())
+                preds = self.estimator.predict(x_aug)
+                x_aug = tf.convert_to_tensor(x_aug)
+                y_aug = tf.convert_to_tensor(y_aug)
+                preds = tf.convert_to_tensor(preds)
+                loss = loss_object(preds, y_aug)
 
                 # one-hot encode if necessary
                 if len(y_max_loss.shape) == 1 and len(y_aug.shape) == 2:
@@ -122,10 +121,13 @@ class MaxupTensorFlowV2(PreprocessorTensorFlowV2):
                     y_aug = tf.one_hot(y_aug, num_classes, on_value=1.0, off_value=0.0)
 
                 # select inputs and labels based on greater loss
-                max_mask = tf.cast(max_loss > loss, x.dtype)
-                max_loss = max_mask * max_loss + (1 - max_loss) * loss
-                x_max_loss = max_mask * x_max_loss + (1 - max_loss) * x_aug
-                y_max_loss = max_mask * y_max_loss + (1 - max_loss) * y_aug
+                loss_mask = loss > max_loss
+                x_mask = tf.reshape(loss_mask, [-1, *((1,) * (x_aug.ndim - 1))])
+                y_mask = tf.reshape(loss_mask, [-1, *((1,) * (y_aug.ndim - 1))])
+
+                max_loss = tf.where(loss_mask, loss, max_loss)
+                x_max_loss = tf.where(x_mask, x_aug, x_max_loss)
+                y_max_loss = tf.where(y_mask, y_aug, y_max_loss)
 
         # restore original loss function reduction
         loss_object.reduction = prev_reduction
