@@ -104,13 +104,25 @@ class MaxupTensorFlowV2(PreprocessorTensorFlowV2):
 
         for _ in range(self.num_trials):
             for augmentation in self.augmentations:
-                # calculate the loss for the current augmentation
+                # get outputs from current augmentation
                 x_aug, y_aug = augmentation(x.numpy(), y.numpy())
+                if len(x_aug) != len(x):
+                    raise ValueError("The provided augmentation produces a different number of samples.")
+
                 preds = self.estimator.predict(x_aug)
-                x_aug = tf.convert_to_tensor(x_aug)
-                y_aug = tf.convert_to_tensor(y_aug)
                 preds = tf.convert_to_tensor(preds)
-                loss = loss_object(preds, y_aug)
+                x_aug = tf.convert_to_tensor(x_aug, dtype=x.dtype)
+                y_aug = tf.convert_to_tensor(y_aug)
+
+                # calculate the loss for the current augmentation
+                if len(y_aug.shape) == 2 and isinstance(loss_object, tf.keras.losses.SparseCategoricalCrossentropy):
+                    # handle special case for the following conditions:
+                    # 1. the augmented data is one-hot encoded or a probability distribution
+                    # 2. sparse categorical cross entropy is the loss object
+                    from_logits = loss_object.get_config()["from_logits"]
+                    loss = tf.keras.metrics.categorical_crossentropy(y_aug, preds, from_logits=from_logits)
+                else:
+                    loss = loss_object(y_aug, preds)
 
                 # one-hot encode if necessary
                 if len(y_max_loss.shape) == 1 and len(y_aug.shape) == 2:

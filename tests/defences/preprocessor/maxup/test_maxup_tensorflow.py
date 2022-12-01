@@ -24,8 +24,7 @@ import pytest
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 from art.config import ART_NUMPY_DTYPE
-from art.defences.preprocessor import CutoutTensorFlowV2, MaxupTensorFlowV2, MixupTensorFlowV2
-from art.utils import to_categorical
+from art.defences.preprocessor import MaxupTensorFlowV2, Cutout, CutMix, Mixup, SpatialSmoothing
 from tests.utils import ARTTestException, get_image_classifier_tf_v2
 
 logger = logging.getLogger(__name__)
@@ -53,16 +52,47 @@ def empty_image(request):
 
 @pytest.mark.only_with_platform("tensorflow2")
 @pytest.mark.parametrize("num_trials", [1, 2, 4])
-def test_maxup_single_augmentation(art_warning, image_batch, num_trials):
-    import tensorflow as tf
-
+def test_maxup_single_aug_class_label(art_warning, empty_image, num_trials):
     classifier = get_image_classifier_tf_v2(from_logits=True)
-    classifier._loss_object = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
-    mixup = MixupTensorFlowV2(num_classes=10)
+    cutout = Cutout(length=8, channels_first=False)
+    labels = np.arange(len(empty_image))
+
+    try:
+        maxup = MaxupTensorFlowV2(estimator=classifier, augmentations=cutout, num_trials=num_trials)
+        x, y = maxup(empty_image, labels)
+        assert_array_equal(x, empty_image)
+        assert_array_equal(y, labels)
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.only_with_platform("tensorflow2")
+@pytest.mark.parametrize("num_trials", [1, 2, 4])
+def test_maxup_multiple_aug_class_label(art_warning, empty_image, num_trials):
+    classifier = get_image_classifier_tf_v2(from_logits=True)
+    cutout = Cutout(length=8, channels_first=False)
+    smooth = SpatialSmoothing()
+    labels = np.arange(len(empty_image))
+
+    try:
+        maxup = MaxupTensorFlowV2(estimator=classifier, augmentations=[cutout, smooth], num_trials=num_trials)
+        x, y = maxup(empty_image, labels)
+        assert_array_equal(x, empty_image)
+        assert_array_equal(y, labels)
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.only_with_platform("tensorflow2")
+@pytest.mark.parametrize("num_trials", [1, 2, 4])
+def test_maxup_single_aug_class_distribution(art_warning, image_batch, num_trials):
+    classifier = get_image_classifier_tf_v2(from_logits=True)
+    mixup = Mixup(num_classes=10)
+    labels = np.arange(len(image_batch))
 
     try:
         maxup = MaxupTensorFlowV2(estimator=classifier, augmentations=mixup, num_trials=num_trials)
-        x, y = maxup(image_batch, np.arange(len(image_batch)))
+        x, y = maxup(image_batch, labels)
         assert_array_almost_equal(x, image_batch)
         assert_array_almost_equal(y.sum(axis=1), np.ones(len(image_batch)))
     except ARTTestException as e:
@@ -71,17 +101,36 @@ def test_maxup_single_augmentation(art_warning, image_batch, num_trials):
 
 @pytest.mark.only_with_platform("tensorflow2")
 @pytest.mark.parametrize("num_trials", [1, 2, 4])
-def test_mixup_multiple_augmentation(art_warning, empty_image, num_trials):
-    import tensorflow as tf
-
+def test_maxup_multiple_aug_class_distribution(art_warning, image_batch, num_trials):
     classifier = get_image_classifier_tf_v2(from_logits=True)
-    classifier._loss_object = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
-    mixup = MixupTensorFlowV2(num_classes=10)
-    cutout = CutoutTensorFlowV2(length=8)
+    mixup = Mixup(num_classes=10)
+    cutmix = CutMix(num_classes=10, channels_first=False)
+    labels = np.arange(len(image_batch))
 
     try:
-        maxup = MaxupTensorFlowV2(estimator=classifier, augmentations=[mixup, cutout], num_trials=num_trials)
-        x, y = maxup(empty_image, to_categorical(np.arange(len(empty_image)), 10))
+        maxup = MaxupTensorFlowV2(estimator=classifier, augmentations=[mixup, cutmix], num_trials=num_trials)
+        x, y = maxup(image_batch, labels)
+        assert_array_almost_equal(x, image_batch)
+        assert_array_almost_equal(y.sum(axis=1), np.ones(len(image_batch)))
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.only_with_platform("tensorflow2")
+@pytest.mark.parametrize("num_trials", [1, 2, 4])
+def test_maxup_multiple_aug_class_mixed(art_warning, empty_image, num_trials):
+    classifier = get_image_classifier_tf_v2(from_logits=True)
+    cutout = Cutout(length=8, channels_first=False)
+    smooth = SpatialSmoothing()
+    mixup = Mixup(num_classes=10)
+    cutmix = CutMix(num_classes=10, channels_first=False)
+    labels = np.arange(len(empty_image))
+
+    try:
+        maxup = MaxupTensorFlowV2(
+            estimator=classifier, augmentations=[cutout, smooth, mixup, cutmix], num_trials=num_trials
+        )
+        x, y = maxup(empty_image, labels)
         assert_array_equal(x, empty_image)
         assert_array_almost_equal(y.sum(axis=1), np.ones(len(empty_image)))
     except ARTTestException as e:
@@ -91,11 +140,11 @@ def test_mixup_multiple_augmentation(art_warning, empty_image, num_trials):
 @pytest.mark.only_with_platform("tensorflow2")
 def test_missing_labels_error(art_warning, tabular_batch):
     classifier = get_image_classifier_tf_v2(from_logits=True)
-    mixup = MixupTensorFlowV2(num_classes=10)
+    cutout = Cutout(length=8)
 
     try:
         test_input = tabular_batch
-        maxup = MaxupTensorFlowV2(estimator=classifier, augmentations=mixup)
+        maxup = MaxupTensorFlowV2(estimator=classifier, augmentations=cutout)
         exc_msg = "Labels `y` cannot be None."
         with pytest.raises(ValueError, match=exc_msg):
             maxup(test_input)
@@ -106,17 +155,17 @@ def test_missing_labels_error(art_warning, tabular_batch):
 @pytest.mark.only_with_platform("tensorflow2")
 def test_check_params(art_warning):
     classifier = get_image_classifier_tf_v2(from_logits=True)
-    mixup = MixupTensorFlowV2(num_classes=10)
+    cutout = Cutout(length=8)
 
     try:
         with pytest.raises(ValueError):
             _ = MaxupTensorFlowV2(estimator=classifier, augmentations=[])
 
         with pytest.raises(ValueError):
-            _ = MaxupTensorFlowV2(estimator=classifier, augmentations=mixup, num_trials=0)
+            _ = MaxupTensorFlowV2(estimator=classifier, augmentations=cutout, num_trials=0)
 
         with pytest.raises(ValueError):
-            _ = MaxupTensorFlowV2(estimator=classifier, augmentations=mixup, num_trials=-1)
+            _ = MaxupTensorFlowV2(estimator=classifier, augmentations=cutout, num_trials=-1)
 
     except ARTTestException as e:
         art_warning(e)

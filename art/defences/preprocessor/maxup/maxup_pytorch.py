@@ -110,12 +110,17 @@ class MaxupPyTorch(PreprocessorPyTorch):
 
         for _ in range(self.num_trials):
             for augmentation in self.augmentations:
-                # calculate the loss for the current augmentation
+                # get outputs from current augmentation
                 x_aug, y_aug = augmentation(x.cpu().numpy(), y.cpu().numpy())
+                if len(x_aug) != len(x):
+                    raise ValueError("The provided augmentation produces a different number of samples.")
+
                 preds = self.estimator.predict(x_aug)
-                x_aug = torch.from_numpy(x_aug).to(self.device)
-                y_aug = torch.from_numpy(y_aug).to(self.device)
                 preds = torch.from_numpy(preds).to(self.device)
+                x_aug = torch.from_numpy(x_aug).to(self.device, dtype=x.dtype)
+                y_aug = torch.from_numpy(y_aug).to(self.device)
+
+                # calculate the loss for the current augmentation
                 loss = loss_fn(preds, y_aug)
 
                 # one-hot encode if necessary
