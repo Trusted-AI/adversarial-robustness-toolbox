@@ -79,9 +79,17 @@ class MaxupPyTorch(PreprocessorPyTorch):
             apply_predict=apply_predict,
         )
         self.estimator = estimator
-        self.augmentations = estimator._set_preprocessing_defences(augmentations)
+        self.augmentations = self._set_augmentations(augmentations)
         self.num_trials = num_trials
         self._check_params()
+
+    @staticmethod
+    def _set_augmentations(augmentations: Union["Preprocessor", List["Preprocessor"]]):
+        from art.defences.preprocessor.preprocessor import Preprocessor
+
+        if isinstance(augmentations, Preprocessor):
+            return [augmentations]
+        return augmentations
 
     def forward(
         self, x: "torch.Tensor", y: Optional["torch.Tensor"] = None
@@ -116,7 +124,7 @@ class MaxupPyTorch(PreprocessorPyTorch):
                     raise ValueError("The provided augmentation produces a different number of samples.")
 
                 preds = self.estimator.predict(x_aug)
-                preds = torch.from_numpy(preds).to(self.device)
+                preds = torch.from_numpy(preds).to(self.device)  # type: ignore
                 x_aug = torch.from_numpy(x_aug).to(self.device, dtype=x.dtype)
                 y_aug = torch.from_numpy(y_aug).to(self.device)
 

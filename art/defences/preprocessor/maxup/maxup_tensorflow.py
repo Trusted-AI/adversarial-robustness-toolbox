@@ -73,9 +73,17 @@ class MaxupTensorFlowV2(PreprocessorTensorFlowV2):
         """
         super().__init__(is_fitted=True, apply_fit=apply_fit, apply_predict=apply_predict)
         self.estimator = estimator
-        self.augmentations = estimator._set_preprocessing_defences(augmentations)
+        self.augmentations = self._set_augmentations(augmentations)
         self.num_trials = num_trials
         self._check_params()
+
+    @staticmethod
+    def _set_augmentations(augmentations: Union["Preprocessor", List["Preprocessor"]]):
+        from art.defences.preprocessor.preprocessor import Preprocessor
+
+        if isinstance(augmentations, Preprocessor):
+            return [augmentations]
+        return augmentations
 
     def forward(self, x: "tf.Tensor", y: Optional["tf.Tensor"] = None) -> Tuple["tf.Tensor", Optional["tf.Tensor"]]:
         """
