@@ -24,27 +24,12 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import math
 from functools import reduce
-from typing import Callable, Tuple, TYPE_CHECKING, Union, List, Sequence, Optional
+from typing import Callable, Tuple, TYPE_CHECKING, List, Optional, Sequence
 
 import numpy as np
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_TYPE
-    from art.estimators.classification.scikitlearn import ScikitlearnClassifier
-    from art.estimators.classification import PyTorchClassifier, TensorFlowV2Classifier
-    from art.estimators.regression import PyTorchRegressor, ScikitlearnRegressor
-    from art.estimators.classification.xgboost import XGBoostClassifier
-    from art.estimators.keras import KerasEstimator
-
-    CLONABLE = Union[  # pylint: disable=C0103
-        ScikitlearnClassifier,
-        PyTorchClassifier,
-        TensorFlowV2Classifier,
-        KerasEstimator,
-        PyTorchRegressor,
-        ScikitlearnRegressor,
-        XGBoostClassifier,
-    ]
+    from art.utils import CLASSIFIER_TYPE, CLONABLE
 
 
 class ShadowModels:

@@ -43,7 +43,7 @@ class BlackBoxRegressor(RegressorMixin, BaseEstimator):
     Class for black-box regressors.
     """
 
-    estimator_params = Regressor.estimator_params + ["input_shape" + "predict_fn" + "loss_fn"]
+    estimator_params = Regressor.estimator_params + ["input_shape", "predict_fn", "loss_fn"]
 
     def __init__(
         self,

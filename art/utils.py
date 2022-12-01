@@ -240,6 +240,16 @@ if TYPE_CHECKING:
         TENSORFLOWV2_ESTIMATOR_TYPE,
     ]
 
+    CLONABLE = Union[  # pylint: disable=C0103
+        ScikitlearnClassifier,
+        PyTorchClassifier,
+        TensorFlowV2Classifier,
+        KerasEstimator,
+        PyTorchRegressor,
+        ScikitlearnRegressor,
+        XGBoostClassifier,
+    ]
+
     ABLATOR_TYPE = Union[BlockAblator, ColumnAblator]  # pylint: disable=C0103
 
     CERTIFIER_TYPE = Union[PytorchDeepZ]  # pylint: disable=C0103
