@@ -135,9 +135,11 @@ class MaxupPyTorch(PreprocessorPyTorch):
                 if len(y_max_loss.shape) == 1 and len(y_aug.shape) == 2:
                     num_classes = y_aug.shape[1]
                     y_max_loss = torch.nn.functional.one_hot(y_max_loss, num_classes)
+                    y_max_loss = y_max_loss.to(y_aug.dtype)
                 elif len(y_max_loss.shape) == 2 and len(y_aug.shape) == 1:
                     num_classes = y_max_loss.shape[1]
                     y_aug = torch.nn.functional.one_hot(y_aug, num_classes)
+                    y_aug = y_aug.to(y_max_loss.dtype)
 
                 # select inputs and labels based on greater loss
                 loss_mask = loss > max_loss
