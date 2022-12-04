@@ -31,7 +31,7 @@ from art.config import ART_NUMPY_DTYPE
 logger = logging.getLogger(__name__)
 
 
-def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
+def fit_pytorch_macer(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
     """
     Fit the randomized smoothed classifier for MACER training on the training set `(x, y)`.
 
@@ -50,7 +50,7 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
     import random
 
     x = x.astype(ART_NUMPY_DTYPE)
-    m = Normal(torch.tensor([0.0]).to(self._device), torch.tensor([1.0]).to(self._device))
+    m = Normal(torch.tensor([0.0]).to(self._device), torch.tensor([1.0]).to(self._device))  # pylint: disable=W0212
     cl_total = 0.0
     rl_total = 0.0
     input_total = 0
@@ -133,7 +133,18 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
         rl_total /= input_total
 
 
-def fit_tensorflow(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
+def fit_tensorflow_macer(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int) -> None:
+    """
+    Fit the randomized smoothed classifier for MACER training on the training set `(x, y)` for tensorflow.
+
+    :param x: Training data.
+    :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+              (nb_samples,).
+    :param batch_size: Batch size.
+    :key nb_epochs: Number of epochs to use for training
+    :param kwargs: Dictionary of framework-specific arguments.
+    :return: `None`
+    """
     import tensorflow as tf
     import math
 
@@ -185,8 +196,8 @@ def fit_tensorflow(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epoch
                 icdf_out0 = loc_norm + scale_norm * tf.math.erfinv(2 * out0 - 1) * math.sqrt(2)
                 robustness_loss = icdf_out1 - icdf_out0
                 indices = (
-                    ~tf.math.is_nan(robustness_loss)
-                    & ~tf.math.is_inf(robustness_loss)
+                    ~tf.math.is_nan(robustness_loss)  # pylint: disable=E1130
+                    & ~tf.math.is_inf(robustness_loss)  # pylint: disable=E1130
                     & (tf.abs(robustness_loss) <= self.gamma)
                 )
                 out0, out1 = out0[indices], out1[indices]

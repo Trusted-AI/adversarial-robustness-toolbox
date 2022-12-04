@@ -34,8 +34,8 @@ from art.config import ART_NUMPY_DTYPE
 from art.estimators.classification.pytorch import PyTorchClassifier
 from art.estimators.certification.randomized_smoothing.randomized_smoothing import RandomizedSmoothingMixin
 from art.utils import check_and_transform_label_format
-import art.estimators.certification.randomized_smoothing.smooth_adversarial.train_smoothadv as trainSmoothAdversarial
-import art.estimators.certification.randomized_smoothing.macer.train_macer as trainMacer
+from art.estimators.certification.randomized_smoothing.smooth_adversarial.train_smoothadv import fit_pytorch_smoothadv
+from art.estimators.certification.randomized_smoothing.macer.train_macer import fit_pytorch_macer
 from art.defences.preprocessor.gaussian_augmentation import GaussianAugmentation
 import torch
 
@@ -197,9 +197,9 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
 
         if "train_method" in kwargs:
             if kwargs.get("train_method") == "macer":
-                return trainMacer.fit_pytorch(self, x, y, batch_size, nb_epochs, **kwargs)
+                return fit_pytorch_macer(self, x, y, batch_size, nb_epochs, **kwargs)
             if kwargs.get("train_method") == "smoothadv":
-                return trainSmoothAdversarial.fit_pytorch(self, x, y, batch_size, nb_epochs, **kwargs)
+                return fit_pytorch_smoothadv(self, x, y, batch_size, nb_epochs)
 
         if self._optimizer is None:  # pragma: no cover
             raise ValueError("An optimizer is needed to train the model, but none for provided.")
@@ -264,10 +264,10 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
                     loss.backward()
 
                 self._optimizer.step()
-        return None
 
             if scheduler is not None:
                 scheduler.step()
+        return None
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:  # type: ignore
         """

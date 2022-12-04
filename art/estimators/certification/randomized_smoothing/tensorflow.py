@@ -33,8 +33,10 @@ from art.config import ART_NUMPY_DTYPE
 from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 from art.estimators.certification.randomized_smoothing.randomized_smoothing import RandomizedSmoothingMixin
 from art.utils import check_and_transform_label_format
-import art.estimators.certification.randomized_smoothing.smooth_adversarial.train_smoothadv as trainSmoothAdversarial
-import art.estimators.certification.randomized_smoothing.macer.train_macer as trainMacer
+from art.estimators.certification.randomized_smoothing.smooth_adversarial.train_smoothadv import (
+    fit_tensorflow_smoothadv,
+)
+from art.estimators.certification.randomized_smoothing.macer.train_macer import fit_tensorflow_macer
 from art.defences.preprocessor.gaussian_augmentation import GaussianAugmentation
 
 if TYPE_CHECKING:
@@ -175,9 +177,9 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
 
         if "train_method" in kwargs:
             if kwargs.get("train_method") == "macer":
-                return trainMacer.fit_tensorflow(self, x, y, batch_size, nb_epochs, **kwargs)
+                return fit_tensorflow_macer(self, x, y, batch_size, nb_epochs)
             if kwargs.get("train_method") == "smoothadv":
-                return trainSmoothAdversarial.fit_tensorflow(self, x, y, batch_size, nb_epochs, **kwargs)
+                return fit_tensorflow_smoothadv(self, x, y, batch_size, nb_epochs)
 
         if self._train_step is None:  # pragma: no cover
             raise TypeError(
