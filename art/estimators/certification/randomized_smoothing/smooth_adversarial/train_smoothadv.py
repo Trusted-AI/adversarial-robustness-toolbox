@@ -30,7 +30,7 @@ from art.config import ART_NUMPY_DTYPE
 logger = logging.getLogger(__name__)
 
 
-def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
+def fit_pytorch_smoothadv(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int) -> None:
     """
     Fit the randomized smoothed classifier for SmoothAdversarial training on the training set `(x, y)`
     in PyTorch.
@@ -84,8 +84,7 @@ def fit_pytorch(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: 
         self.model.train()
         requires_grad(self.model, True)
 
-        attacker.max_norm = np.min([self.epsilon, (epoch_num + 1) * self.epsilon / self.warmup])
-        attacker.init_norm = np.min([self.epsilon, (epoch_num + 1) * self.epsilon / self.warmup])
+        attacker.norm = np.min([self.epsilon, (epoch_num + 1) * self.epsilon / self.warmup])
         # Train for one epoch
         for n_batch in range(num_batch):
             i_batch = torch.from_numpy(x[ind[n_batch * batch_size : (n_batch + 1) * batch_size]]).to(self.device)
@@ -130,7 +129,7 @@ def get_batch_noisevec(x, num_noise_vec):
         yield x[i * batch_size : (i + 1) * batch_size]
 
 
-def fit_tensorflow(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
+def fit_tensorflow_smoothadv(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int) -> None:
     """
     Fit the randomized smoothed classifier for SmoothAdversarial training on the training set `(x, y)`
     in Tensorflow.
@@ -167,8 +166,7 @@ def fit_tensorflow(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epoch
 
     # Start training
     for epoch_num in range(start_epoch + 1, nb_epochs + 1):
-        attacker.max_norm = np.min([self.epsilon, (epoch_num + 1) * self.epsilon / self.warmup])
-        attacker.init_norm = np.min([self.epsilon, (epoch_num + 1) * self.epsilon / self.warmup])
+        attacker.norm = np.min([self.epsilon, (epoch_num + 1) * self.epsilon / self.warmup])
         for i_batch, o_batch in train_ds:
             mini_batches = get_minibatches(i_batch, o_batch, self.num_noise_vec)
             for inputs, targets in mini_batches:
