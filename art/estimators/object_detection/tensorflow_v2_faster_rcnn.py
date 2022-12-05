@@ -49,7 +49,7 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
 
     def __init__(
         self,
-        images: "tf.Tensor",
+        input_shape: Tuple[int, ...],
         model: Optional["FasterRCNNMetaArch"] = None,
         filename: Optional[str] = None,
         url: Optional[str] = None,
@@ -69,7 +69,7 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
         """
         Initialization of an instance TensorFlowFasterRCNN.
 
-        :param images: Input samples of shape (nb_samples, height, width, nb_channels).
+        :param input_shape: Input image(s) shape (height, width, nb_channels).
         :param model: A TensorFlow Faster-RCNN model. The output that can be computed from the model includes a tuple
                       of (predictions, losses, detections):
 
@@ -109,13 +109,6 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
             preprocessing=preprocessing,
         )
 
-        # Check clip values
-        '''if self.clip_values is not None:
-            if not np.all(self.clip_values[0] == 0):
-                raise ValueError("This classifier requires normalized input images with clip_vales=(0, 1).")
-            if not np.all(self.clip_values[1] == 1):  # pragma: no cover
-                raise ValueError("This classifier requires normalized input images with clip_vales=(0, 1).")'''
-
         # Check preprocessing and postprocessing defences
         if self.preprocessing_defences is not None:
             raise ValueError("This estimator does not support `preprocessing_defences`.")
@@ -149,9 +142,8 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
             )
 
         # Save new attributes
-        self._input_shape = images.shape.as_list()[1:]
+        self._input_shape = list(input_shape)
         self.is_training: bool = is_training
-        self.images: Optional["tf.Tensor"] = images
         self.attack_losses: Tuple[str, ...] = attack_losses
 
     @property
@@ -185,6 +177,7 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
 
         :param filename: Name of the file.
         :param url: Download URL.
+        :param obj_detection_model: The model
         :param is_training: A boolean indicating whether the training version of the computation graph should be
                             constructed.
         :return: the object detection model restored from checkpoint
@@ -204,11 +197,7 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
                 )
 
             # Download and extract
-            print('filename', filename)
-            print('art path', config.ART_DATA_PATH)
-            print('url', url)
             path = get_file(filename=filename, path=config.ART_DATA_PATH, url=url, extract=True)
-            print('path', path)
             # Load model config
             pipeline_config = path + "/pipeline.config"
             configs = config_util.get_configs_from_pipeline_file(pipeline_config)
@@ -290,8 +279,10 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
             groundtruth_weights_list=groundtruth_weights_list,
         )
 
-        x_preprocessed = tf.convert_to_tensor(x_preprocessed)
+        
         with tf.GradientTape() as tape:
+
+            x_preprocessed = tf.convert_to_tensor(x_preprocessed)
             tape.watch(x_preprocessed)
 
             preprocessed_images, true_image_shapes = self._model.preprocess(x_preprocessed)
@@ -346,14 +337,6 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
         # Apply preprocessing
         x, _ = self._apply_preprocessing(x, y=None, fit=False)
 
-        # Check if batch processing is appropriately set
-        if self.images is not None and self.images.shape[0] is not None:
-            if x.shape[0] % self.images.shape[0] != 0:  # pragma: no cover
-                raise ValueError("Number of prediction samples must be a multiple of input size.")
-
-            logger.warning("Reset batch size to input size.")
-            batch_size = self.images.shape[0]
-
         # Run prediction with batch processing
         num_samples = x.shape[0]
         num_batch = int(np.ceil(num_samples / float(batch_size)))
@@ -378,23 +361,17 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
 
                     d_sample = convert_tf_to_pt(y=[d_sample], height=x.shape[1], width=x.shape[2])[0]
 
-                d_sample["scores"] = batch_results["detection_scores"][i]
+                d_sample["scores"] = batch_results["detection_scores"][i].numpy()
 
                 results.append(d_sample)
+            
+        self._detections = results
+        self._predictions = [i['scores'] for i in results]
 
         return results
 
     @property
-    def input_images(self) -> "tf.Tensor":
-        """
-        Get the `images` attribute.
-
-        :return: The input image tensor.
-        """
-        return self.images
-
-    @property
-    def predictions(self) -> Dict[str, "tf.Tensor"]:
+    def predictions(self) -> List[np.ndarray]:
         """
         Get the `_predictions` attribute.
 
@@ -403,7 +380,7 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
         return self._predictions
 
     @property
-    def losses(self) -> Dict[str, "tf.Tensor"]:
+    def losses(self) -> Dict[str, np.float32]:
         """
         Get the `_losses` attribute.
 
@@ -414,7 +391,7 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
         return self._losses
 
     @property
-    def detections(self) -> Dict[str, "tf.Tensor"]:
+    def detections(self) -> List[Dict[str, np.ndarray]]:
         """
         Get the `_detections` attribute.
 
@@ -472,18 +449,18 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
         predictions = self._model.predict(preprocessed_images, true_image_shapes)
         losses = self._model.loss(predictions, true_image_shapes)
 
-        if not hasattr(self, "_loss_total"):
-            loss = None
-            for loss_name in self.attack_losses:
-                if loss is None:
-                    loss = losses[loss_name]
-                else:
-                    loss = loss + losses[loss_name]
-            self._loss_total = loss
-
+        
+        loss = None
+        for loss_name in self.attack_losses:
+            if loss is None:
+                loss = losses[loss_name]
+            else:
+                loss = loss + losses[loss_name]
+        self._loss_total = loss
+        
         return self._loss_total.numpy()
 
-    def compute_losses(self, x: np.ndarray, y: np.ndarray) -> Dict[str, np.ndarray]:  # type: ignore
+    def compute_losses(self, x: np.ndarray, y: np.ndarray) -> Dict[str, np.float32]:  # type: ignore
         """
         Compute all loss components.
 
@@ -498,6 +475,7 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
 
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
+        x_preprocessed = tf.convert_to_tensor(x_preprocessed)
 
         groundtruth_boxes_list = [
             tf.convert_to_tensor(y[i]['boxes'])
@@ -525,14 +503,8 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
         predictions = self._model.predict(preprocessed_images, true_image_shapes)
         losses = self._model.loss(predictions, true_image_shapes)
 
-        # Get the losses graph
-        if not hasattr(self, "_losses_dict"):
-            self._losses_dict = {}
-            for loss_name in self.attack_losses:
-                self._losses_dict[loss_name] = losses[loss_name]
-
-        _losses: Dict[str, np.ndarray] = {}
+        self._losses: Dict[str, np.ndarray] = {}
         for loss_name in self.attack_losses:
-            _losses[loss_name] = losses[loss_name].numpy()
+            self._losses[loss_name] = losses[loss_name].numpy()
 
-        return _losses
+        return self._losses
