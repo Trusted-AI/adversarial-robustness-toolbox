@@ -95,7 +95,7 @@ class MaxupPyTorch(PreprocessorPyTorch):
         self, x: "torch.Tensor", y: Optional["torch.Tensor"] = None
     ) -> Tuple["torch.Tensor", Optional["torch.Tensor"]]:
         """
-        Apply Mixup data augmentation to feature data `x` and labels `y`.
+        Apply Maxup data augmentation to feature data `x` and labels `y`.
 
         :param x: Feature data to augment with necessary shape for provided augmentations.
         :param y: Labels of `x` to augment with necessary shape for provided augmentations.
@@ -106,11 +106,6 @@ class MaxupPyTorch(PreprocessorPyTorch):
 
         if y is None:
             raise ValueError("Labels `y` cannot be None.")
-
-        # extract loss function and set to no reduction
-        loss_fn = self.estimator.loss
-        prev_reduction = loss_fn.reduction
-        loss_fn.reduction = "none"
 
         max_loss = torch.zeros(len(x))
         x_max_loss = x
@@ -123,23 +118,26 @@ class MaxupPyTorch(PreprocessorPyTorch):
                 if len(x_aug) != len(x):
                     raise ValueError("The provided augmentation produces a different number of samples.")
 
-                preds = self.estimator.predict(x_aug)
-                preds = torch.from_numpy(preds).to(self.device)  # type: ignore
-                x_aug = torch.from_numpy(x_aug).to(self.device, dtype=x.dtype)
-                y_aug = torch.from_numpy(y_aug).to(self.device)
+                # extract label reduction and set to no reduction if needed
+                reduce_labels = self.estimator._reduce_labels  # pylint: disable=W0212
+                if len(y_aug.shape) == 2:
+                    self.estimator._reduce_labels = False  # pylint: disable=W0212
 
                 # calculate the loss for the current augmentation
-                loss = loss_fn(preds, y_aug)
+                loss = self.estimator.compute_loss(x_aug, y_aug, reduction="none")
+
+                # convert to tensor
+                x_aug = torch.from_numpy(x_aug).to(self.device, dtype=x.dtype)
+                y_aug = torch.from_numpy(y_aug).to(self.device)
+                loss = torch.from_numpy(loss).to(self.device)  # type: ignore
 
                 # one-hot encode if necessary
                 if len(y_max_loss.shape) == 1 and len(y_aug.shape) == 2:
                     num_classes = y_aug.shape[1]
-                    y_max_loss = torch.nn.functional.one_hot(y_max_loss, num_classes)
-                    y_max_loss = y_max_loss.to(y_aug.dtype)
+                    y_max_loss = torch.nn.functional.one_hot(y_max_loss, num_classes).float()
                 elif len(y_max_loss.shape) == 2 and len(y_aug.shape) == 1:
                     num_classes = y_max_loss.shape[1]
-                    y_aug = torch.nn.functional.one_hot(y_aug, num_classes)
-                    y_aug = y_aug.to(y_max_loss.dtype)
+                    y_aug = torch.nn.functional.one_hot(y_aug, num_classes).float()
 
                 # select inputs and labels based on greater loss
                 loss_mask = loss > max_loss
@@ -150,8 +148,8 @@ class MaxupPyTorch(PreprocessorPyTorch):
                 x_max_loss = torch.where(x_mask, x_aug, x_max_loss)
                 y_max_loss = torch.where(y_mask, y_aug, y_max_loss)
 
-        # restore original loss function reduction
-        loss_fn.reduction = prev_reduction
+                # restore original label reduction
+                self.estimator._reduce_labels = reduce_labels  # pylint: disable=W0212
 
         return x_max_loss, y_max_loss
 

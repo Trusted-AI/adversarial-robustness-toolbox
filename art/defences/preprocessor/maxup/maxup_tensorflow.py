@@ -87,24 +87,17 @@ class MaxupTensorFlowV2(PreprocessorTensorFlowV2):
 
     def forward(self, x: "tf.Tensor", y: Optional["tf.Tensor"] = None) -> Tuple["tf.Tensor", Optional["tf.Tensor"]]:
         """
-        Apply Mixup data augmentation to feature data `x` and labels `y`.
+        Apply Maxup data augmentation to feature data `x` and labels `y`.
 
-        :param x: Feature data to augment with shape `(batch_size, ...)`.
-        :param y: Labels of `x` either one-hot or multi-hot encoded of shape `(nb_samples, nb_classes)`
-                  or class indices of shape `(nb_samples,)`.
-        :return: Data augmented sample. The returned labels will be probability vectors of shape
-                 `(nb_samples, nb_classes)`.
+        :param x: Feature data to augment with necessary shape for provided augmentations.
+        :param y: Labels of `x` to augment with necessary shape for provided augmentations.
+        :return: Data augmented sample. The returned labels will be shape of the provided augmentations.
         :raises `ValueError`: If no labels are provided.
         """
         import tensorflow as tf
 
         if y is None:
             raise ValueError("Labels `y` cannot be None.")
-
-        # extract loss object and set to no reduction
-        loss_object = self.estimator.loss_object
-        prev_reduction = loss_object.reduction
-        loss_object.reduction = tf.keras.losses.Reduction.NONE
 
         max_loss = tf.zeros(len(x))
         x_max_loss = x
@@ -117,20 +110,13 @@ class MaxupTensorFlowV2(PreprocessorTensorFlowV2):
                 if len(x_aug) != len(x):
                     raise ValueError("The provided augmentation produces a different number of samples.")
 
-                preds = self.estimator.predict(x_aug)
-                preds = tf.convert_to_tensor(preds)
+                # calculate the loss for the current augmentation
+                loss = self.estimator.compute_loss(x_aug, y_aug, reduction="none")
+
+                # convert to tensor
                 x_aug = tf.convert_to_tensor(x_aug, dtype=x.dtype)
                 y_aug = tf.convert_to_tensor(y_aug)
-
-                # calculate the loss for the current augmentation
-                if len(y_aug.shape) == 2 and isinstance(loss_object, tf.keras.losses.SparseCategoricalCrossentropy):
-                    # handle special case for the following conditions:
-                    # 1. the augmented data is one-hot encoded or a probability distribution
-                    # 2. sparse categorical cross entropy is the loss object
-                    from_logits = loss_object.get_config()["from_logits"]
-                    loss = tf.keras.metrics.categorical_crossentropy(y_aug, preds, from_logits=from_logits)
-                else:
-                    loss = loss_object(y_aug, preds)
+                loss = tf.convert_to_tensor(loss)
 
                 # one-hot encode if necessary
                 if len(y_max_loss.shape) == 1 and len(y_aug.shape) == 2:
@@ -148,9 +134,6 @@ class MaxupTensorFlowV2(PreprocessorTensorFlowV2):
                 max_loss = tf.where(loss_mask, loss, max_loss)
                 x_max_loss = tf.where(x_mask, x_aug, x_max_loss)
                 y_max_loss = tf.where(y_mask, y_aug, y_max_loss)
-
-        # restore original loss function reduction
-        loss_object.reduction = prev_reduction
 
         return x_max_loss, y_max_loss
 

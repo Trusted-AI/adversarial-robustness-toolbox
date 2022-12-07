@@ -25,6 +25,7 @@ from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 from art.config import ART_NUMPY_DTYPE
 from art.defences.preprocessor import MaxupTensorFlowV2, Cutout, CutMix, Mixup, SpatialSmoothing
+from art.utils import to_categorical
 from tests.utils import ARTTestException, get_image_classifier_tf_v2
 
 logger = logging.getLogger(__name__)
@@ -55,7 +56,7 @@ def empty_image(request):
 def test_maxup_single_aug_class_label(art_warning, empty_image, num_trials):
     classifier = get_image_classifier_tf_v2(from_logits=True)
     cutout = Cutout(length=8, channels_first=False)
-    labels = np.arange(len(empty_image))
+    labels = to_categorical(np.arange(len(empty_image)), 10)
 
     try:
         maxup = MaxupTensorFlowV2(estimator=classifier, augmentations=cutout, num_trials=num_trials)
@@ -72,7 +73,7 @@ def test_maxup_multiple_aug_class_label(art_warning, empty_image, num_trials):
     classifier = get_image_classifier_tf_v2(from_logits=True)
     cutout = Cutout(length=8, channels_first=False)
     smooth = SpatialSmoothing()
-    labels = np.arange(len(empty_image))
+    labels = to_categorical(np.arange(len(empty_image)), 10)
 
     try:
         maxup = MaxupTensorFlowV2(estimator=classifier, augmentations=[cutout, smooth], num_trials=num_trials)
@@ -86,9 +87,13 @@ def test_maxup_multiple_aug_class_label(art_warning, empty_image, num_trials):
 @pytest.mark.only_with_platform("tensorflow2")
 @pytest.mark.parametrize("num_trials", [1, 2, 4])
 def test_maxup_single_aug_class_distribution(art_warning, image_batch, num_trials):
+    import tensorflow as tf
+
     classifier = get_image_classifier_tf_v2(from_logits=True)
+    classifier._loss_object = tf.keras.losses.CategoricalCrossentropy()
+    classifier._reduce_labels = False
     mixup = Mixup(num_classes=10)
-    labels = np.arange(len(image_batch))
+    labels = to_categorical(np.arange(len(image_batch)), 10)
 
     try:
         maxup = MaxupTensorFlowV2(estimator=classifier, augmentations=mixup, num_trials=num_trials)
@@ -102,10 +107,14 @@ def test_maxup_single_aug_class_distribution(art_warning, image_batch, num_trial
 @pytest.mark.only_with_platform("tensorflow2")
 @pytest.mark.parametrize("num_trials", [1, 2, 4])
 def test_maxup_multiple_aug_class_distribution(art_warning, image_batch, num_trials):
+    import tensorflow as tf
+
     classifier = get_image_classifier_tf_v2(from_logits=True)
+    classifier._loss_object = tf.keras.losses.CategoricalCrossentropy()
+    classifier._reduce_labels = False
     mixup = Mixup(num_classes=10)
     cutmix = CutMix(num_classes=10, channels_first=False)
-    labels = np.arange(len(image_batch))
+    labels = to_categorical(np.arange(len(image_batch)), 10)
 
     try:
         maxup = MaxupTensorFlowV2(estimator=classifier, augmentations=[mixup, cutmix], num_trials=num_trials)
@@ -119,12 +128,16 @@ def test_maxup_multiple_aug_class_distribution(art_warning, image_batch, num_tri
 @pytest.mark.only_with_platform("tensorflow2")
 @pytest.mark.parametrize("num_trials", [1, 2, 4])
 def test_maxup_multiple_aug_class_mixed(art_warning, empty_image, num_trials):
+    import tensorflow as tf
+
     classifier = get_image_classifier_tf_v2(from_logits=True)
+    classifier._loss_object = tf.keras.losses.CategoricalCrossentropy()
+    classifier._reduce_labels = False
     cutout = Cutout(length=8, channels_first=False)
     smooth = SpatialSmoothing()
     mixup = Mixup(num_classes=10)
     cutmix = CutMix(num_classes=10, channels_first=False)
-    labels = np.arange(len(empty_image))
+    labels = to_categorical(np.arange(len(empty_image)), 10)
 
     try:
         maxup = MaxupTensorFlowV2(
