@@ -126,6 +126,9 @@ class MaxupPyTorch(PreprocessorPyTorch):
                 # calculate the loss for the current augmentation
                 loss = self.estimator.compute_loss(x_aug, y_aug, reduction="none")
 
+                # restore original label reduction
+                self.estimator._reduce_labels = reduce_labels  # pylint: disable=W0212
+
                 # convert to tensor
                 x_aug = torch.from_numpy(x_aug).to(self.device, dtype=x.dtype)
                 y_aug = torch.from_numpy(y_aug).to(self.device)
@@ -147,9 +150,6 @@ class MaxupPyTorch(PreprocessorPyTorch):
                 max_loss = torch.where(loss_mask, loss, max_loss)
                 x_max_loss = torch.where(x_mask, x_aug, x_max_loss)
                 y_max_loss = torch.where(y_mask, y_aug, y_max_loss)
-
-                # restore original label reduction
-                self.estimator._reduce_labels = reduce_labels  # pylint: disable=W0212
 
         return x_max_loss, y_max_loss
 

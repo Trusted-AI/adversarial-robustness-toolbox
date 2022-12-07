@@ -12,6 +12,7 @@ from art.defences.preprocessor.gaussian_augmentation import GaussianAugmentation
 from art.defences.preprocessor.inverse_gan import DefenseGAN, InverseGAN
 from art.defences.preprocessor.jpeg_compression import JpegCompression
 from art.defences.preprocessor.label_smoothing import LabelSmoothing
+from art.defences.preprocessor.maxup.maxup import Maxup
 from art.defences.preprocessor.maxup.maxup_pytorch import MaxupPyTorch
 from art.defences.preprocessor.maxup.maxup_tensorflow import MaxupTensorFlowV2
 from art.defences.preprocessor.mixup.mixup import Mixup
