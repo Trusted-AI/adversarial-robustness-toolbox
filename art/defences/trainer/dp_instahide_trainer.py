@@ -28,6 +28,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import sys
 import time
+from typing import List, Optional, Union, Tuple, TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import trange
@@ -35,9 +36,8 @@ from tqdm.auto import trange
 from art.defences.trainer.trainer import Trainer
 
 if sys.version_info >= (3, 8):
-    from typing import Literal, List, Optional, Union, Tuple, TYPE_CHECKING
+    from typing import Literal
 else:
-    from typing import Optional, List, Union, Tuple, TYPE_CHECKING
     from typing_extensions import Literal
 
 if TYPE_CHECKING:
@@ -94,7 +94,7 @@ class DPInstaHideTrainer(Trainer):
             noise = np.random.normal(loc=self.loc, scale=self.scale, size=x.shape)
         elif self.noise == "laplacian":
             noise = np.random.laplace(loc=self.loc, scale=self.scale, size=x.shape)
-        elif self.noise == 'exponential':
+        elif self.noise == "exponential":
             noise = np.random.exponential(scale=self.scale, size=x.shape)
         else:
             raise ValueError("The provided noise type is not supported:", self.noise)
