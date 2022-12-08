@@ -201,6 +201,8 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
             )
         elif isinstance(self.estimator, PyTorchClassifier):
             attack_grad = self.estimator.custom_loss_gradient(self.attack_loss, poison, self.target, self.feature_layer)
+        else:
+            raise ValueError("The type of the estimator is not supported.")
 
         poison -= self.learning_rate * attack_grad[0]
 

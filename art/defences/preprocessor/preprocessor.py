@@ -141,7 +141,7 @@ class PreprocessorPyTorch(Preprocessor):
     """
 
     def __init__(self, device_type: str = "gpu", **kwargs):
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         super().__init__(**kwargs)
 
@@ -191,7 +191,7 @@ class PreprocessorPyTorch(Preprocessor):
         :param y: Labels of the sample `x`. This function does not affect them in any way.
         :return: Smoothed sample.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         x_tensor = torch.tensor(x, device=self.device)
         if y is not None:
@@ -211,7 +211,7 @@ class PreprocessorPyTorch(Preprocessor):
 
     # Backward compatibility.
     def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         def get_gradient(x, grad):
             x = torch.tensor(x, device=self.device, requires_grad=True)
@@ -281,7 +281,7 @@ class PreprocessorTensorFlowV2(Preprocessor):
         :param y: Labels of the sample `x`. This function does not affect them in any way.
         :return: Smoothed sample.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         x_tensor = tf.convert_to_tensor(x)
         if y is not None:
@@ -296,7 +296,7 @@ class PreprocessorTensorFlowV2(Preprocessor):
 
     # Backward compatibility.
     def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         def get_gradient(x: np.ndarray, grad: np.ndarray) -> np.ndarray:
             """

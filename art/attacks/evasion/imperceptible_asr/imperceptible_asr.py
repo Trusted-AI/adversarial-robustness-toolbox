@@ -467,7 +467,7 @@ class ImperceptibleASR(EvasionAttack):
 
         See also `ImperceptibleASR._loss_gradient_masking_threshold_tf`.
         """
-        import torch  # lgtm [py/import-and-import-from]
+        import torch
 
         # define tensors
         # pylint: disable=W0212
@@ -490,7 +490,10 @@ class ImperceptibleASR(EvasionAttack):
 
         # compute loss gradient
         loss.sum().backward()
-        loss_gradient = perturbation_torch.grad.cpu().numpy()
+        if perturbation_torch.grad is not None:
+            loss_gradient = perturbation_torch.grad.cpu().numpy()
+        else:
+            raise ValueError("Gradient tensor in PyTorch model is `None`.")
         loss_value = loss.detach().cpu().numpy()
 
         return loss_gradient, loss_value
@@ -533,7 +536,7 @@ class ImperceptibleASR(EvasionAttack):
 
         See also `ImperceptibleASR._approximate_power_spectral_density_tf`.
         """
-        import torch  # lgtm [py/import-and-import-from]
+        import torch
 
         # compute short-time Fourier transform (STFT)
         # pylint: disable=W0212

@@ -127,7 +127,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         :param device_type: Type of device to be used for model and tensors, if `cpu` run on CPU, if `gpu` run on GPU
                             if available otherwise run on CPU.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
         from deepspeech_pytorch.model import DeepSpeech
         from deepspeech_pytorch.configs.inference_config import LMConfig
         from deepspeech_pytorch.enums import DecoderType
@@ -350,7 +350,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
                  - Transcription return is a numpy array of characters. A possible example of a transcription return
                  is `np.array(['SIXTY ONE', 'HELLO'])`.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
@@ -674,7 +674,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
                  - target_sizes: list of real seq_lengths.
                  - batch_idx: original index of inputs.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         # Apply preprocessing
         x_batch = []
@@ -722,7 +722,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
                  - target_sizes: list of real seq_lengths.
                  - batch_idx: original index of inputs.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
         import torchaudio
         from deepspeech_pytorch.loader.data_loader import _collate_fn
 
