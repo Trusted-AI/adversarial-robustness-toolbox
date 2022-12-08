@@ -43,7 +43,7 @@ else:
 if TYPE_CHECKING:
     from art.data_generators import DataGenerator
     from art.defences.preprocessor import Preprocessor
-    from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
+    from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE, CLIP_VALUES_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -61,18 +61,21 @@ class DPInstaHideTrainer(Trainer):
         self,
         classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
         augmentations: Union["Preprocessor", List["Preprocessor"]],
-        noise: Literal["gaussian", "laplacian", "normal"] = "laplacian",
+        noise: Literal["gaussian", "laplacian", "exponential"] = "laplacian",
         loc: Union[int, float] = 0.0,
         scale: Union[int, float] = 0.03,
+        clip_values: "CLIP_VALUES_TYPE" = (0.0, 1.0),
     ):
         """
         Create an :class:`.DPInstaHideTrainer` instance.
 
         :param classifier: The model to train using the protocol.
         :param augmentations: The preprocessing data augmentation defence(s) to be applied.
-        :param noise: The type of additive noise to use, Gaussian or Laplacian.
+        :param noise: The type of additive noise to use: 'gaussian' | 'laplacian' | 'exponential'.
         :param loc: The location or mean parameter of the distribution to sample.
         :param scale: The scale or standard deviation parameter of the distribution to sample.
+        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
+               for features.
         """
         from art.defences.preprocessor import Preprocessor
 
@@ -84,16 +87,22 @@ class DPInstaHideTrainer(Trainer):
         self.noise = noise
         self.loc = loc
         self.scale = scale
+        self.clip_values = clip_values
 
     def _generate_noise(self, x: np.ndarray) -> np.ndarray:
-        if self.noise in ("gaussian", "normal"):
+        if self.noise == "gaussian":
             noise = np.random.normal(loc=self.loc, scale=self.scale, size=x.shape)
         elif self.noise == "laplacian":
             noise = np.random.laplace(loc=self.loc, scale=self.scale, size=x.shape)
+        elif self.noise == 'exponential':
+            noise = np.random.exponential(scale=self.scale, size=x.shape)
         else:
             raise ValueError("The provided noise type is not supported:", self.noise)
 
-        return x + noise
+        x_noise = x + noise
+        x_noise = np.clip(x_noise, self.clip_values[0], self.clip_values[1])
+
+        return x_noise
 
     def fit(  # pylint: disable=W0221
         self,
