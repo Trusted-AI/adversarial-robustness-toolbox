@@ -16,7 +16,8 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements Smooth Adversarial Attack using PGD and DDN.
+This module implements Smooth Adversarial Attack using PGD.
+It supports only supports single noise version of PGD attack.
 
 | Paper link: https://arxiv.org/pdf/1906.04584.pdf
 | Authors' implementation: https://github.com/Hadisalman/smoothing-adversarial
@@ -98,10 +99,17 @@ def fit_pytorch_smoothadv(self, x: np.ndarray, y: np.ndarray, batch_size: int, n
                 # Attack and find adversarial examples
                 requires_grad(self.model, False)
                 self.model.eval()
-                perturbed_inputs = inputs.cpu().detach().numpy()
+
+                original_inputs = inputs.cpu().detach().numpy()
                 noise_for_attack = noise.cpu().detach().numpy()
+                perturbation_delta = np.zeros_like(original_inputs)
                 for _ in range(self.num_steps):
-                    perturbed_inputs = attacker.generate(perturbed_inputs + noise_for_attack)
+                    perturbed_inputs = original_inputs + perturbation_delta
+                    adv_ex = attacker.generate(perturbed_inputs + noise_for_attack)
+                    perturbation_delta = adv_ex - perturbed_inputs - noise_for_attack
+
+                # update perturbated_inputs after last iteration
+                perturbed_inputs = original_inputs + perturbation_delta
                 self.model.train()
                 requires_grad(self.model, True)
                 noisy_inputs = torch.from_numpy(perturbed_inputs).to(self.device) + noise
@@ -173,10 +181,16 @@ def fit_tensorflow_smoothadv(self, x: np.ndarray, y: np.ndarray, batch_size: int
                 inputs = tf.reshape(tf.tile(inputs, (1, self.num_noise_vec, 1, 1)), i_batch.shape)
                 noise = tf.random.normal(inputs.shape, 0, 1) * self.scale
 
-                perturbed_inputs = inputs.numpy()
+                original_inputs = inputs.numpy()
                 noise_for_attack = noise.numpy()
+                perturbation_delta = np.zeros_like(original_inputs)
                 for _ in range(self.num_steps):
-                    perturbed_inputs = attacker.generate(perturbed_inputs + noise_for_attack)
+                    perturbed_inputs = original_inputs + perturbation_delta
+                    adv_ex = attacker.generate(perturbed_inputs + noise_for_attack)
+                    perturbation_delta = adv_ex - perturbed_inputs - noise_for_attack
+
+                # update perturbated_inputs after last iteration
+                perturbed_inputs = original_inputs + perturbation_delta
 
                 noisy_inputs = tf.convert_to_tensor(perturbed_inputs) + noise
                 # noisy_inputs = tf.transpose(noisy_inputs, (0, 2, 3, 1))
