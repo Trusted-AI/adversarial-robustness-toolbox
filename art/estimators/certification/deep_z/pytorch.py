@@ -55,6 +55,7 @@ class ConvertedModel(torch.nn.Module):
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.forward_mode: str
         self.forward_mode = "abstract"
+        self.reshape_op_num = -1
 
         # pylint: disable=W0613
         def forward_hook(input_module, hook_input, hook_output):

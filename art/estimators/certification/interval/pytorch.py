@@ -43,8 +43,6 @@ if TYPE_CHECKING:
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
 
-DEBUG_LOAD_FROM_TF = False
-
 
 class ConvertedModel(torch.nn.Module):
     """
@@ -79,12 +77,14 @@ class ConvertedModel(torch.nn.Module):
 
         self.ops = torch.nn.ModuleList()
         for module, shapes in zip(modules, self.interim_shapes):
+            weights_to_supply = None
+            bias_to_supply = None
             print("registered", type(module))
             if isinstance(module, torch.nn.modules.conv.Conv2d):
                 if module.weight is not None:
-                    weights_to_supply = np.copy(module.weight.data.cpu().detach().numpy())
+                    weights_to_supply = torch.tensor(np.copy(module.weight.data.cpu().detach().numpy())).to(self.device)
                 if module.bias is not None:
-                    bias_to_supply = np.copy(module.bias.data.cpu().detach().numpy())
+                    bias_to_supply = torch.tensor(np.copy(module.bias.data.cpu().detach().numpy())).to(self.device)
 
                 interval_conv = IntervalConv2D(
                     input_shape=shapes,
@@ -92,8 +92,8 @@ class ConvertedModel(torch.nn.Module):
                     out_channels=module.out_channels,
                     kernel_size=module.kernel_size,  # type: ignore
                     stride=module.stride,  # type: ignore
-                    supplied_input_weights=torch.tensor(weights_to_supply).to(self.device),
-                    supplied_input_bias=torch.tensor(bias_to_supply).to(self.device),
+                    supplied_input_weights=weights_to_supply,
+                    supplied_input_bias=bias_to_supply,
                     device=self.device,
                     dilation=module.dilation,  # type: ignore
                     padding=module.padding,  # type: ignore
@@ -154,8 +154,6 @@ class ConvertedModel(torch.nn.Module):
         for op_num, op in enumerate(self.ops):
             # as reshapes are not modules we infer when the reshape from convolutional to dense occurs
             if self.reshape_op_num == op_num:
-                if DEBUG_LOAD_FROM_TF:
-                    x = x.permute(0, 1, 3, 4, 2)
                 x = x.reshape((x.shape[0], 2, -1))
             x = op.forward(x)
         return x
@@ -175,8 +173,6 @@ class ConvertedModel(torch.nn.Module):
         for op_num, (op, _) in enumerate(zip(self.ops, self.interim_shapes)):
             # as reshapes are not modules we infer when the reshape from convolutional to dense occurs
             if self.reshape_op_num == op_num:
-                if DEBUG_LOAD_FROM_TF:
-                    x = x.permute(0, 2, 3, 1)
                 x = x.reshape((x.shape[0], -1))
             x = op.concrete_forward(x)
         return x
@@ -295,7 +291,7 @@ class PytorchInterval(PyTorchClassifier, IntervalBounds):
         x: np.ndarray,
         is_interval: bool = False,
         bounds: Optional[Union[float, List[float], np.ndarray]] = None,
-        limits: Optional[Union[float, List[float], np.ndarray]] = None,
+        limits: Optional[Union[List[float], np.ndarray]] = None,
         batch_size: int = 128,
         training_mode: bool = False,
         **kwargs

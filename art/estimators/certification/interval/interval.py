@@ -20,7 +20,7 @@ This module implements Interval bound propagation based layers
 
 | Paper link: https://ieeexplore.ieee.org/document/8418593
 """
-from typing import List, Union, Tuple
+from typing import List, Union, Tuple, Optional
 
 import torch
 import numpy as np
@@ -80,8 +80,8 @@ class IntervalConv2D(torch.nn.Module):
         in_channels: int,
         out_channels: int,
         kernel_size: Union[int, Tuple[int, int]],
-        input_shape,
-        device,
+        input_shape: Tuple[int, ...],
+        device: str,
         stride: Union[int, Tuple[int, int]] = 1,
         padding: Union[int, Tuple[int, int]] = 0,
         dilation: Union[int, Tuple[int, int]] = 0,
@@ -96,6 +96,10 @@ class IntervalConv2D(torch.nn.Module):
         :param in_channels: number of input channels
         :param out_channels: number of output channels
         :param kernel_size: shape of the convolutional kernel
+        :param device: device to put the weights onto
+        :param stride: the convolution's stride
+        :param padding: size of padding to use
+        :param dilation: dilation to apply to the convolution
         :param bias: if to include a bias term
         :param supplied_input_weights: If to load in a pre-defined set of convolutional weights with the correct specification.
         :param supplied_input_bias: If to load in a pre-defined set of convolutional bias with the correct specification.
@@ -129,7 +133,11 @@ class IntervalConv2D(torch.nn.Module):
 
         if to_debug:
             self.conv = torch.nn.Conv2d(
-                in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size, bias=bias, stride=stride,
+                in_channels=in_channels,
+                out_channels=out_channels,
+                kernel_size=kernel_size,
+                bias=bias,
+                stride=stride,
                 padding=padding,
                 dilation=dilation,
             ).to(device)
@@ -161,9 +169,7 @@ class IntervalConv2D(torch.nn.Module):
                 )
             else:
                 self.conv_flat.weight = torch.nn.Parameter(
-                    torch.reshape(
-                        supplied_input_weights, (out_channels * in_channels, 1, kernel_size, kernel_size)
-                    )
+                    torch.reshape(supplied_input_weights, (out_channels * in_channels, 1, kernel_size, kernel_size))
                 )
 
         if supplied_input_bias is not None:
@@ -183,7 +189,7 @@ class IntervalConv2D(torch.nn.Module):
         if self.bias is not None:
             self.bias = self.bias.to(device)
 
-    def convert_to_dense(self, device) -> Tuple["torch.Tensor", "torch.Tensor"]:
+    def convert_to_dense(self, device: str) -> Tuple["torch.Tensor", "torch.Tensor"]:
         """
         Converts the initialised convolutional layer into an equivalent dense layer.
 
@@ -382,14 +388,18 @@ class IntervalBounds:
         return np.argmax(cert_bounds, axis=1) == labels
 
     @staticmethod
-    def concrete_to_interval(x: np.ndarray, bounds: Union[float, List[float], np.ndarray], limits=None):
+    def concrete_to_interval(
+        x: np.ndarray,
+        bounds: Union[float, List[float], np.ndarray],
+        limits: Optional[Union[List[float], np.ndarray]] = None,
+    ) -> np.ndarray:
         """
         Helper function converts a datapoint it into its interval representation
 
         :param x: input datapoint of shape [batch size, feature_1, feature_2, ...]
         :param bounds: Either a scalar to apply to the whole datapoint, or an array of [2, feature_1, feature_2]
         where bounds[0] are the lower bounds and bounds[1] are the upper bound
-        :param limits: if to clip to a given range.
+        :param limits: if to clip to a range with limits[0] being the lower bounds and limits[1] being upper bounds.
 
         :return: Data of the form [batch_size, 2, feature_1, feature_2, ...]
         where [batch_size, 0, x.shape] are the lower bounds and
@@ -401,7 +411,7 @@ class IntervalBounds:
         if isinstance(bounds, float):
             up_x = x + bounds
             lb_x = x - bounds
-        elif isinstance(bounds, list) or isinstance(bounds, np.ndarray):
+        elif isinstance(bounds, (list, np.ndarray)):
             up_x = x + bounds[1]
             lb_x = x - bounds[0]
         else:
