@@ -327,7 +327,7 @@ class PytorchInterval(PyTorchClassifier, IntervalBounds):
             else:
                 raise ValueError("If x is not provided as an interval please provide bounds (and optionally limits)")
         else:
-            x_interval = x
+            x_interval = x_preprocessed
 
         num_batches = int(len(x_interval) / batch_size)
 
