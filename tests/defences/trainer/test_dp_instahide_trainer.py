@@ -19,13 +19,14 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import pytest
 import logging
-import numpy as np
 
 from art.defences.preprocessor import Mixup, Cutout
 from art.defences.trainer import DPInstaHideTrainer
 from art.estimators.classification import PyTorchClassifier, TensorFlowV2Classifier, KerasClassifier
 from art.utils import load_dataset
 from tests.utils import ARTTestException
+
+logger = logging.getLogger(__name__)
 
 
 @pytest.fixture()
