@@ -81,7 +81,7 @@ class IntervalConv2D(torch.nn.Module):
         out_channels: int,
         kernel_size: Union[int, Tuple[int, int]],
         input_shape: Tuple[int, ...],
-        device: str,
+        device: Union[str, "torch.device"],
         stride: Union[int, Tuple[int, int]] = 1,
         padding: Union[int, Tuple[int, int]] = 0,
         dilation: Union[int, Tuple[int, int]] = 0,
@@ -93,17 +93,17 @@ class IntervalConv2D(torch.nn.Module):
         """
         Creates the equivalent dense weights for the specified convolutional layer.
 
-        :param in_channels: number of input channels
-        :param out_channels: number of output channels
-        :param kernel_size: shape of the convolutional kernel
-        :param device: device to put the weights onto
-        :param stride: the convolution's stride
-        :param padding: size of padding to use
-        :param dilation: dilation to apply to the convolution
-        :param bias: if to include a bias term
-        :param supplied_input_weights: If to load in a pre-defined set of convolutional weights with the correct specification.
-        :param supplied_input_bias: If to load in a pre-defined set of convolutional bias with the correct specification.
-        :param to_debug: helper parameter to help with debugging.
+        :param in_channels: Number of input channels
+        :param out_channels: Number of output channels
+        :param kernel_size: Shape of the convolutional kernel
+        :param device: Device to put the weights onto
+        :param stride: The convolution's stride
+        :param padding: Size of padding to use
+        :param dilation: Dilation to apply to the convolution
+        :param bias: If to include a bias term
+        :param supplied_input_weights: Load in a pre-defined set of convolutional weights with the correct specification
+        :param supplied_input_bias: Load in a pre-defined set of convolutional bias with the correct specification
+        :param to_debug: Helper parameter to help with debugging.
         """
 
         super().__init__()

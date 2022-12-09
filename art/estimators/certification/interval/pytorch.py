@@ -130,7 +130,7 @@ class ConvertedModel(torch.nn.Module):
 
         :param x: input data, either regular data if running in concrete mode, or in an interval form with shape:
         x[batch_size, 2, feature_1, feature_2, ...] where axis=1 corresponds to the [lower, upper] bounds.
-        :return: regular model predictions is running in concrete mode, or interval predictions if running in abstract mode
+        :return: regular model predictions if in concrete mode, or interval predictions if running in abstract mode
         """
         if self.forward_mode == "concrete":
             return self.concrete_forward(x)
@@ -322,8 +322,8 @@ class PytorchInterval(PyTorchClassifier, IntervalBounds):
             if bounds is not None:
                 if self.provided_concrete_to_interval is None:
                     x_interval = self.concrete_to_interval(x=x_preprocessed, bounds=bounds, limits=limits)
-                if self.provided_concrete_to_interval is not None:
-                    x_interval = self.provided_concrete_to_interval(x, bounds, limits)
+                else:
+                    x_interval = self.provided_concrete_to_interval(x_preprocessed, bounds, limits)
             else:
                 raise ValueError("If x is not provided as an interval please provide bounds (and optionally limits)")
         else:

@@ -21,11 +21,11 @@ import torch
 import numpy as np
 
 from art.estimators.certification.interval import PytorchInterval
-from art.estimators.certification.interval import IntervalConv2D, IntervalDenseLayer, IntervalDenseLayer
+from art.estimators.certification.interval import IntervalConv2D, IntervalDenseLayer
 
 from art.utils import load_dataset
 from tests.utils import ARTTestException
-from tests.utils import get_image_classifier_pt, get_cifar10_image_classifier_pt
+from tests.utils import get_image_classifier_pt
 
 
 class SyntheticIntervalModel(torch.nn.Module):
