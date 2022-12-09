@@ -97,18 +97,15 @@ def get_classifier(framework):
                 optimizer.apply_gradients(zip(gradients, model.trainable_variables))
 
             classifier = TensorFlowV2Classifier(
-                model,
-                nb_classes=10,
-                input_shape=(28, 28, 3),
-                loss_object=loss_object,
-                train_step=train_step
+                model, nb_classes=10, input_shape=(28, 28, 1), loss_object=loss_object, train_step=train_step
             )
 
         elif framework in ("keras", "kerastf"):
             import tensorflow as tf
+            from tensorflow.keras import layers, Sequential
+
             if tf.__version__[0] == "2":
                 tf.compat.v1.disable_eager_execution()
-            from tensorflow.keras import layers, Sequential
 
             model = Sequential()
             model.add(layers.Conv2D(1, kernel_size=(7, 7), activation="relu", input_shape=(28, 28, 1)))
@@ -170,4 +167,3 @@ def test_dp_instahide_generator(art_warning, get_classifier, mnist_data, noise):
         trainer.fit_generator(generator, nb_epochs=1)
     except ARTTestException as e:
         art_warning(e)
-
