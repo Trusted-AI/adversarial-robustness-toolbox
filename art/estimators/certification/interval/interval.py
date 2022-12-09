@@ -189,7 +189,7 @@ class IntervalConv2D(torch.nn.Module):
         if self.bias is not None:
             self.bias = self.bias.to(device)
 
-    def convert_to_dense(self, device: str) -> Tuple["torch.Tensor", "torch.Tensor"]:
+    def convert_to_dense(self, device: Union[str, "torch.device"]) -> Tuple["torch.Tensor", "torch.Tensor"]:
         """
         Converts the initialised convolutional layer into an equivalent dense layer.
 

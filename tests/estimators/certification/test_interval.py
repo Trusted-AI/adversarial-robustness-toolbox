@@ -29,20 +29,24 @@ from tests.utils import get_image_classifier_pt
 
 
 class SyntheticIntervalModel(torch.nn.Module):
-    def __init__(self, input_shape, output_channels, kernel_size, stride=1, bias=False, padding=0, dilation=1, to_debug=True):
+    def __init__(
+        self, input_shape, output_channels, kernel_size, stride=1, bias=False, padding=0, dilation=1, to_debug=True
+    ):
         super().__init__()
 
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        self.conv1 = IntervalConv2D(in_channels=input_shape[1],
-                                    out_channels=output_channels,
-                                    kernel_size=kernel_size,
-                                    input_shape=input_shape,
-                                    stride=stride,
-                                    padding=padding,
-                                    dilation=dilation,
-                                    bias=bias,
-                                    to_debug=to_debug,
-                                    device=self.device)
+        self.conv1 = IntervalConv2D(
+            in_channels=input_shape[1],
+            out_channels=output_channels,
+            kernel_size=kernel_size,
+            input_shape=input_shape,
+            stride=stride,
+            padding=padding,
+            dilation=dilation,
+            bias=bias,
+            to_debug=to_debug,
+            device=self.device,
+        )
 
         self.relu = torch.nn.ReLU()
 
@@ -82,9 +86,7 @@ def test_conv_single_channel_in_multi_out(art_warning):
     """
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     synthetic_data = torch.rand(32, 1, 25, 25).to(device)
-    model = SyntheticIntervalModel(input_shape=synthetic_data.shape,
-                                   output_channels=4,
-                                   kernel_size=5)
+    model = SyntheticIntervalModel(input_shape=synthetic_data.shape, output_channels=4, kernel_size=5)
     output_from_equivalent = model.forward(synthetic_data)
     output_from_conv = model.conv1.conv(synthetic_data)
     output_from_equivalent = torch.reshape(output_from_equivalent, output_from_conv.shape)
@@ -100,9 +102,7 @@ def test_conv_multi_channel_in_single_out():
     """
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     synthetic_data = torch.rand(32, 3, 25, 25).to(device)
-    model = SyntheticIntervalModel(input_shape=synthetic_data.shape,
-                                   output_channels=1,
-                                   kernel_size=5)
+    model = SyntheticIntervalModel(input_shape=synthetic_data.shape, output_channels=1, kernel_size=5)
     output_from_equivalent = model.forward(synthetic_data)
     output_from_conv = model.conv1.conv(synthetic_data)
 
@@ -118,9 +118,7 @@ def test_conv_multi_channel_in_multi_out():
     """
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     synthetic_data = torch.rand(32, 3, 25, 25).to(device)
-    model = SyntheticIntervalModel(input_shape=synthetic_data.shape,
-                                   output_channels=12,
-                                   kernel_size=5)
+    model = SyntheticIntervalModel(input_shape=synthetic_data.shape, output_channels=12, kernel_size=5)
     output_from_equivalent = model.forward(synthetic_data)
     output_from_conv = model.conv1.conv(synthetic_data)
 
@@ -133,10 +131,7 @@ def test_conv_layer_multi_channel_in_multi_out_with_stride():
     """
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     synthetic_data = torch.rand(32, 3, 25, 25).to(device)
-    model = SyntheticIntervalModel(input_shape=synthetic_data.shape,
-                                   output_channels=12,
-                                   kernel_size=5,
-                                   stride=2)
+    model = SyntheticIntervalModel(input_shape=synthetic_data.shape, output_channels=12, kernel_size=5, stride=2)
 
     output_from_equivalent = model.forward(synthetic_data)
     output_from_conv = model.conv1.conv(synthetic_data)
@@ -150,11 +145,9 @@ def test_conv_layer_multi_channel_in_multi_out_with_stride_and_bias():
     """
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     synthetic_data = torch.rand(32, 3, 25, 25).to(device)
-    model = SyntheticIntervalModel(input_shape=synthetic_data.shape,
-                                   output_channels=12,
-                                   kernel_size=5,
-                                   bias=True,
-                                   stride=2)
+    model = SyntheticIntervalModel(
+        input_shape=synthetic_data.shape, output_channels=12, kernel_size=5, bias=True, stride=2
+    )
     output_from_equivalent = model.forward(synthetic_data)
     output_from_conv = model.conv1.conv(synthetic_data)
 
@@ -167,12 +160,9 @@ def test_conv_layer_padding():
     """
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     synthetic_data = torch.rand(32, 3, 25, 25).to(device)
-    model = SyntheticIntervalModel(input_shape=synthetic_data.shape,
-                                   output_channels=12,
-                                   kernel_size=5,
-                                   bias=True,
-                                   padding=2,
-                                   stride=2)
+    model = SyntheticIntervalModel(
+        input_shape=synthetic_data.shape, output_channels=12, kernel_size=5, bias=True, padding=2, stride=2
+    )
     output_from_equivalent = model.forward(synthetic_data)
     output_from_conv = model.conv1.conv(synthetic_data)
 
@@ -185,13 +175,9 @@ def test_conv_layer_dilation():
     """
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     synthetic_data = torch.rand(32, 3, 25, 25).to(device)
-    model = SyntheticIntervalModel(input_shape=synthetic_data.shape,
-                                   output_channels=12,
-                                   kernel_size=5,
-                                   bias=True,
-                                   padding=2,
-                                   stride=2,
-                                   dilation=3)
+    model = SyntheticIntervalModel(
+        input_shape=synthetic_data.shape, output_channels=12, kernel_size=5, bias=True, padding=2, stride=2, dilation=3
+    )
     output_from_equivalent = model.forward(synthetic_data)
     output_from_conv = model.conv1.conv(synthetic_data)
 
@@ -205,11 +191,9 @@ def test_conv_layer_grads():
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     synthetic_data = torch.rand(32, input_channels, 25, 25).to(device)
-    model = SyntheticIntervalModel(input_shape=synthetic_data.shape,
-                                   output_channels=output_channels,
-                                   kernel_size=5,
-                                   bias=True,
-                                   stride=1)
+    model = SyntheticIntervalModel(
+        input_shape=synthetic_data.shape, output_channels=output_channels, kernel_size=5, bias=True, stride=1
+    )
     output_from_equivalent = model.forward(synthetic_data)
     target = torch.rand(size=output_from_equivalent.shape).to(device)
 
@@ -240,7 +224,7 @@ def test_mnist_certification(art_warning, fix_get_mnist_data):
     mnist_data = fix_get_mnist_data[0]
     mnist_labels = fix_get_mnist_data[1]
     box_model.model.set_forward_mode("concrete")
-    preds = box_model.predict(mnist_data.astype('float32'))
+    preds = box_model.predict(mnist_data.astype("float32"))
     acc = np.sum(np.argmax(preds, axis=1) == mnist_labels)
     assert acc == 99
 
