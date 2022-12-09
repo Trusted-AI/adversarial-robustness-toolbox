@@ -1072,8 +1072,6 @@ def load_cifar10(
 
     fpath = os.path.join(path, "test_batch")
     x_test, y_test = load_batch(fpath)
-    y_train = np.reshape(y_train, (len(y_train), 1))
-    y_test = np.reshape(y_test, (len(y_test), 1))
 
     # Set channels last
     x_train = x_train.transpose((0, 2, 3, 1))
