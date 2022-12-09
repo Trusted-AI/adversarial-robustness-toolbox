@@ -21,7 +21,7 @@ import torch
 import numpy as np
 
 from art.estimators.certification.interval import PytorchInterval
-from art.estimators.certification.interval import IntervalConv2D, IntervalDenseLayer
+from art.estimators.certification.interval import IntervalConv2D
 
 from art.utils import load_dataset
 from tests.utils import ARTTestException
