@@ -195,7 +195,9 @@ def test_smoothadv_randomized_smoothing_tensorflow_pgd(get_mnist_data):
     import tensorflow as tf
 
     # Build TensorFlowV2Classifier
+    logger.debug("Executing test_macer_randomized_smoothing_tensorflow with eager mode: ", tf.executing_eagerly())
     classifier = get_image_classifier_tf_v2()
+    logger.debug("Executing test_macer_randomized_smoothing_tensorflow with eager mode: ", tf.executing_eagerly())
     # classifier = get_image_classifier_tf_v2_custom()
 
     # Get MNIST
@@ -227,8 +229,9 @@ def test_smoothadv_randomized_smoothing_tensorflow_pgd(get_mnist_data):
         estimator=classifier,
     )
 
-    # fit with PGD attack
-    rs1.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="smoothadv")
+    if tf.executing_eagerly():
+        # fit with PGD attack
+        rs1.fit(x_test, y_test, nb_epochs=1, batch_size=256, train_method="smoothadv")
 
 
 # SmoothAdversarial implementation not compatible with Tensorflow v1
