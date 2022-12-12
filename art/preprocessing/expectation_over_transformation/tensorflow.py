@@ -79,7 +79,7 @@ class EoTTensorFlowV2(PreprocessorTensorFlowV2):
         :param y: Label of the sample `x`. This function does not modify `y`.
         :return: Corrupted samples and labels.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         x_preprocess_list = []
         y_preprocess_list = []

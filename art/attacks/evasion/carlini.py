@@ -625,7 +625,7 @@ class CarliniLInfMethod(EvasionAttack):
         clip_max: np.ndarray,
         x,
         tau,
-    ) -> np.ndarray:  # lgtm [py/similar-function]
+    ) -> np.ndarray:
         """
         Compute the gradient of the loss function.
 

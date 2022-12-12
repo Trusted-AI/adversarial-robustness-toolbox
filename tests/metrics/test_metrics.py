@@ -95,7 +95,7 @@ class TestMetrics(unittest.TestCase):
         params = {"max_iter": 10, "max_eval": 100, "init_eval": 10, "init_size": 10}
         adv_crafter = HopSkipJump(classifier, **params)
         adv_acc = adversarial_accuracy(classifier, x_train, attack_crafter=adv_crafter)
-        self.assertLess(adv_acc, 0.1)
+        self.assertLess(adv_acc, 0.2)
 
     def test_loss_sensitivity(self):
         (x_train, y_train), (_, _), _, _ = load_mnist()

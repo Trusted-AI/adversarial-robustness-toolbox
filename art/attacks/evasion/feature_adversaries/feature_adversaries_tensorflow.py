@@ -113,7 +113,7 @@ class FeatureAdversariesTensorFlowV2(EvasionAttack):
         :param y: Guide samples.
         :return: Batch of adversarial examples.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         def loss_fn(source_orig, source_adv, guide):
             representation_loss = tf.zeros(shape=(source_orig.shape[0],), dtype=tf.float32)
@@ -182,7 +182,7 @@ class FeatureAdversariesTensorFlowV2(EvasionAttack):
         :param y: Guide samples.
         :return: Adversarial examples.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         if y is None:
             raise ValueError("The value of guide `y` cannot be None. Please provide a `np.ndarray` of guide inputs.")

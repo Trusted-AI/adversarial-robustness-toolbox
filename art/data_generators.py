@@ -19,14 +19,17 @@
 Module defining an interface for data generators and providing concrete implementations for the supported frameworks.
 Their purpose is to allow for data loading and batching on the fly, as well as dynamic data augmentation.
 The generators can be used with the `fit_generator` function in the :class:`.Classifier` interface. Users can define
-their own generators following the :class:`.DataGenerator` interface.
+their own generators following the :class:`.DataGenerator` interface. For large, numpy array-based  datasets, the
+:class:`.NumpyDataGenerator` class can be flexibly used with `fit_generator` on framework-specific classifiers.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import abc
 import inspect
 import logging
-from typing import Any, Dict, Generator, Optional, Tuple, Union, TYPE_CHECKING
+from typing import Any, Dict, Generator, Iterator, Optional, Tuple, Union, TYPE_CHECKING
+
+import numpy as np
 
 if TYPE_CHECKING:
     import keras
@@ -92,6 +95,81 @@ class DataGenerator(abc.ABC):
         :return: Return the dataset size.
         """
         return self._size
+
+
+class NumpyDataGenerator(DataGenerator):
+    """
+    Simple numpy data generator backed by numpy arrays.
+
+    Can be useful for applying numpy data to estimators in other frameworks
+        e.g., when translating the entire numpy data to GPU tensors would cause OOM
+    """
+
+    def __init__(
+        self,
+        x: np.ndarray,
+        y: np.ndarray,
+        batch_size: int = 1,
+        drop_remainder: bool = True,
+        shuffle: bool = False,
+    ):
+        """
+        Create a numpy data generator backed by numpy arrays
+
+        :param x: Numpy array of inputs
+        :param y: Numpy array of targets
+        :param batch_size: Size of the minibatches
+        :param drop_remainder: Whether to omit the last incomplete minibatch in an epoch
+        :param shuffle: Whether to shuffle the dataset for each epoch
+        """
+        x = np.asanyarray(x)
+        y = np.asanyarray(y)
+        try:
+            if len(x) != len(y):
+                raise ValueError("inputs must be of equal length")
+        except TypeError as err:
+            raise ValueError(f"inputs x {x} and y {y} must be sized objects") from err
+        size = len(x)
+        self.x = x
+        self.y = y
+        super().__init__(size, int(batch_size))
+        self.shuffle = bool(shuffle)
+
+        self.drop_remainder = bool(drop_remainder)
+        batches_per_epoch = size / self.batch_size
+        if not self.drop_remainder:
+            batches_per_epoch = np.ceil(batches_per_epoch)
+        self.batches_per_epoch = int(batches_per_epoch)
+        self._iterator = self
+        self.generator: Iterator[Any] = iter([])
+
+    def __iter__(self):
+        if self.shuffle:
+            index = np.arange(self.size)
+            np.random.shuffle(index)
+            for i in range(self.batches_per_epoch):
+                batch_index = index[i * self.batch_size : (i + 1) * self.batch_size]
+                yield (self.x[batch_index], self.y[batch_index])
+        else:
+            for i in range(self.batches_per_epoch):
+                yield (
+                    self.x[i * self.batch_size : (i + 1) * self.batch_size],
+                    self.y[i * self.batch_size : (i + 1) * self.batch_size],
+                )
+
+    def get_batch(self) -> tuple:
+        """
+        Provide the next batch for training in the form of a tuple `(x, y)`.
+            The generator will loop over the data indefinitely.
+            If drop_remainder is True, then the last minibatch in each epoch may be a different size
+
+        :return: A tuple containing a batch of data `(x, y)`.
+        """
+        try:
+            return next(self.generator)
+        except StopIteration:
+            self.generator = iter(self)
+            return next(self.generator)
 
 
 class KerasDataGenerator(DataGenerator):
@@ -193,7 +271,7 @@ class MXDataGenerator(DataGenerator):
         :param size: Total size of the dataset.
         :param batch_size: Size of the minibatches.
         """
-        import mxnet  # lgtm [py/repeated-import]
+        import mxnet
 
         super().__init__(size=size, batch_size=batch_size)
         if not isinstance(iterator, mxnet.gluon.data.DataLoader):
@@ -248,7 +326,7 @@ class TensorFlowDataGenerator(DataGenerator):  # pragma: no cover
         :raises `TypeError`, `ValueError`: If input parameters are not valid.
         """
         # pylint: disable=E0401
-        import tensorflow.compat.v1 as tf  # lgtm [py/repeated-import]
+        import tensorflow.compat.v1 as tf
 
         super().__init__(size=size, batch_size=batch_size)
         self.sess = sess
@@ -279,7 +357,7 @@ class TensorFlowDataGenerator(DataGenerator):  # pragma: no cover
         :return: A tuple containing a batch of data `(x, y)`.
         :raises `ValueError`: If the iterator has reached the end.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         # Get next batch
         next_batch = self.iterator.get_next()
@@ -317,7 +395,7 @@ class TensorFlowV2DataGenerator(DataGenerator):
         :raises `TypeError`, `ValueError`: If input parameters are not valid.
         """
         # pylint: disable=E0401
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         super().__init__(size=size, batch_size=batch_size)
         self._iterator = iterator

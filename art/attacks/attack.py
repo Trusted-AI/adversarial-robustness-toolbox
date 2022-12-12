@@ -56,6 +56,8 @@ class InputFilter(abc.ABCMeta):  # pragma: no cover
             def replacement_function(self, *args, **kwargs):
                 if len(args) > 0:
                     lst = list(args)
+                else:
+                    lst = []
 
                 if "x" in kwargs:
                     if not isinstance(kwargs["x"], np.ndarray):
@@ -194,9 +196,7 @@ class EvasionAttack(Attack):
         super().__init__(**kwargs)
 
     @abc.abstractmethod
-    def generate(  # lgtm [py/inheritance/incorrect-overridden-signature]
-        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
-    ) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial examples and return them as an array. This method should be overridden by all concrete
         evasion attack implementations.

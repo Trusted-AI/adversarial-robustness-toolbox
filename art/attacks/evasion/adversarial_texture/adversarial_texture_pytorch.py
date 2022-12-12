@@ -91,7 +91,7 @@ class AdversarialTexturePyTorch(EvasionAttack):
                                ‘runs/exp1’, ‘runs/exp2’, etc. for each new experiment to compare across them.
         :param verbose: Show progress bars.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         super().__init__(estimator=estimator, summary_writer=summary_writer)
         self.patch_height = patch_height
@@ -150,13 +150,16 @@ class AdversarialTexturePyTorch(EvasionAttack):
                              bottom-left of the transformed image in the coordinate-system of the original image.
         :return: Loss.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         self.estimator.model.zero_grad()
         loss = self._loss(videos, target, y_init, foreground, patch_points)
         loss.backward(retain_graph=True)
 
-        gradients = self._patch.grad.sign() * self.step_size
+        if self._patch.grad is not None:
+            gradients = self._patch.grad.sign() * self.step_size
+        else:
+            raise ValueError("Gradient term in PyTorch model is `None`.")
 
         # Write summary
         if self.summary_writer is not None:  # pragma: no cover
@@ -199,7 +202,7 @@ class AdversarialTexturePyTorch(EvasionAttack):
                              bottom-left of the transformed image in the coordinate-system of the original image.
         :return: Predicted labels/boxes.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         patched_input = self._apply_texture(videos, self._patch, foreground=foreground, patch_points=patch_points)
         patched_input = torch.clamp(
@@ -232,7 +235,7 @@ class AdversarialTexturePyTorch(EvasionAttack):
                              bottom-left of the transformed image in the coordinate-system of the original image.
         :return: Loss.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         y_pred = self._predictions(videos, y_init, foreground, patch_points)
         loss = torch.nn.L1Loss(reduction="sum")(y_pred[0]["boxes"].float(), target[0]["boxes"].float())
@@ -248,7 +251,7 @@ class AdversarialTexturePyTorch(EvasionAttack):
         :param nb_samples: Number of samples.
         :return: Patch mask.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         image_mask_np = np.ones((self.patch_height, self.patch_width))
 
@@ -276,7 +279,7 @@ class AdversarialTexturePyTorch(EvasionAttack):
                              bottom-left of the transformed image in the coordinate-system of the original image.
         :return: Patched videos.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
         import torchvision
 
         nb_samples = videos.shape[0]
@@ -433,7 +436,7 @@ class AdversarialTexturePyTorch(EvasionAttack):
 
         :return: An array with images patched with adversarial texture.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         shuffle = kwargs.get("shuffle", True)
         y_init = kwargs.get("y_init")
@@ -534,7 +537,7 @@ class AdversarialTexturePyTorch(EvasionAttack):
                              bottom-left of the transformed image in the coordinate-system of the original image.
         :return: The videos with adversarial textures.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         patch_tensor = (
             torch.Tensor(patch_external).to(self.estimator.device) if patch_external is not None else self._patch
@@ -560,7 +563,7 @@ class AdversarialTexturePyTorch(EvasionAttack):
 
         :param initial_patch_value: Patch value to use for resetting the patch.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         if initial_patch_value is None:
             self._patch.data = torch.Tensor(self._initial_value).double()
