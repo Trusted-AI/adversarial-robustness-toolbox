@@ -369,8 +369,12 @@ class IntervalBounds:
     Class providing functionality for computing operations related to interval bounds
     """
 
-    def __init__(self):
-        pass
+    def __init__(
+        self,
+        *args,
+        **kwargs,
+    ) -> None:
+        super().__init__(*args, **kwargs)  # type: ignore
 
     @staticmethod
     def certify(preds: np.ndarray, labels: np.ndarray) -> np.ndarray:
