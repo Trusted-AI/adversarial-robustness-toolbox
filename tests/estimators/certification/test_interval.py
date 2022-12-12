@@ -20,7 +20,7 @@ import pytest
 import torch
 import numpy as np
 
-from art.estimators.certification.interval import PytorchInterval
+from art.estimators.certification.interval import PytorchIntervalClassifier
 from art.estimators.certification.interval import IntervalConv2D
 
 from art.utils import load_dataset
@@ -217,7 +217,7 @@ def test_mnist_certification(art_warning, fix_get_mnist_data):
 
     ptc = get_image_classifier_pt(from_logits=True, use_maxpool=False)
 
-    box_model = PytorchInterval(
+    box_model = PytorchIntervalClassifier(
         model=ptc.model, clip_values=(0, 1), loss=torch.nn.CrossEntropyLoss(), input_shape=(1, 28, 28), nb_classes=10
     )
 

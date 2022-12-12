@@ -187,7 +187,7 @@ class ConvertedModel(torch.nn.Module):
         self.forward_mode = mode
 
 
-class PytorchInterval(PyTorchClassifier, IntervalBounds):
+class PytorchIntervalClassifier(IntervalBounds, PyTorchClassifier):
     """
     Implementation of Interval based certification for neural network robustness.
     We use the interval (also called box) representation of a datapoint as it travels through the network
