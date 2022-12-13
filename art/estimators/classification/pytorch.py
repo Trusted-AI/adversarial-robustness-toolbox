@@ -272,7 +272,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         # Check if the loss function supports probability labels and probability labels are provided
         if self._probability_labels and len(y.shape) == 2:
             if isinstance(y, torch.Tensor):
-                is_one_hot = torch.equal(y, y.int())
+                is_one_hot = torch.equal(y.floor(), y.ceil())
             else:
                 is_one_hot = np.array_equal(y, y.astype(np.int32))
             if not is_one_hot:  # probability labels
