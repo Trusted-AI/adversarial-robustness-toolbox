@@ -37,7 +37,6 @@ from art.utils import check_and_transform_label_format
 from art.estimators.certification.randomized_smoothing.smooth_adversarial.train_smoothadv import fit_pytorch_smoothadv
 from art.estimators.certification.randomized_smoothing.macer.train_macer import fit_pytorch_macer
 from art.defences.preprocessor.gaussian_augmentation import GaussianAugmentation
-import torch
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
