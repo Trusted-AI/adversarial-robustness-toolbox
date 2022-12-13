@@ -154,11 +154,6 @@ class DPInstaHideTrainer(Trainer):
                 # apply additive noise
                 x_aug = self._generate_noise(x_aug)
 
-                # extract label reduction and set to no reduction if needed
-                reduce_labels = self._classifier._reduce_labels  # type: ignore # pylint: disable=W0212
-                if len(y_aug.shape) == 2:
-                    self._classifier._reduce_labels = False  # type: ignore # pylint: disable=W0212
-
                 # fit batch
                 self._classifier.fit(x_aug, y_aug, nb_epochs=1, batch_size=x_aug.shape[0], verbose=0, **kwargs)
 
@@ -167,9 +162,6 @@ class DPInstaHideTrainer(Trainer):
                 output = np.argmax(self.predict(x_batch), axis=1)
                 acc = np.sum(output == np.argmax(y_batch, axis=1))
                 n = len(x_aug)
-
-                # restore original label reduction
-                self._classifier._reduce_labels = reduce_labels  # type: ignore # pylint: disable=W0212
 
                 # update metrics
                 train_loss += np.sum(loss)
