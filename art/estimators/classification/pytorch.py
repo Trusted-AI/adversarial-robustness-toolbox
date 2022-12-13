@@ -149,16 +149,13 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         # Index of layer at which the class gradients should be calculated
         self._layer_idx_gradients = -1
 
-        if isinstance(
-            self._loss,
-            (torch.nn.CrossEntropyLoss, torch.nn.NLLLoss, torch.nn.MultiMarginLoss),
-        ):
+        if isinstance(self._loss, torch.nn.CrossEntropyLoss):
+            self._reduce_labels = False
+            self._int_labels = False
+        if isinstance(self._loss, (torch.nn.NLLLoss, torch.nn.MultiMarginLoss)):
             self._reduce_labels = True
             self._int_labels = True
-        elif isinstance(
-            self._loss,
-            (torch.nn.BCELoss),
-        ):
+        elif isinstance(self._loss, torch.nn.BCELoss):
             self._reduce_labels = True
             self._int_labels = False
         else:
@@ -277,7 +274,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                 return np.argmax(y, axis=1)
             if self._reduce_labels:  # float labels
                 if isinstance(y, torch.Tensor):
-                    return torch.argmax(y, dim=1).type("torch.FloatTensor")
+                    return torch.argmax(y, dim=1).float()
                 y_index = np.argmax(y, axis=1).astype(np.float32)
                 y_index = np.expand_dims(y_index, axis=1)
                 return y_index
