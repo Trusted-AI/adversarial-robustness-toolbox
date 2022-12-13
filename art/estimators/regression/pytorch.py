@@ -502,9 +502,6 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
 
-        # Check label shape
-        # y_preprocessed = self.reduce_labels(y_preprocessed)
-
         if isinstance(x, torch.Tensor):
             inputs_t = x_preprocessed
             labels_t = y_preprocessed
@@ -649,9 +646,6 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):
             inputs_t = x_grad
         else:
             raise NotImplementedError("Combination of inputs and preprocessing not supported.")
-
-        # Check label shape
-        # y_preprocessed = self.reduce_labels(y_preprocessed)
 
         if isinstance(y_preprocessed, np.ndarray):
             labels_t = torch.from_numpy(y_preprocessed).to(self._device)
