@@ -98,6 +98,22 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
                               `second_stage_localization_loss`, `second_stage_classification_loss`.
         """
 
+        # Load model
+        if model is None:
+            # If model is None, then we need to have parameters filename and url to download, extract and load the
+            # object detection model
+            if filename is None or url is None:
+                filename, url = (
+                    "faster_rcnn_resnet50_v1_640x640_coco17_tpu-8",
+                    "http://download.tensorflow.org/models/object_detection/tf2/20200711/"
+                    "faster_rcnn_resnet50_v1_640x640_coco17_tpu-8.tar.gz",
+                )
+
+            model = self._load_model(filename=filename, url=url, obj_detection_model=None, is_training=is_training)
+
+        else:
+            model = self._load_model(filename=None, url=None, obj_detection_model=model, is_training=is_training)
+
         # Super initialization
         super().__init__(
             model=model,
@@ -120,24 +136,6 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
             raise ValueError("This estimator does not support `preprocessing_defences`.")
         if self.postprocessing_defences is not None:
             raise ValueError("This estimator does not support `postprocessing_defences`.")
-
-        # Load model
-        if model is None:
-            # If model is None, then we need to have parameters filename and url to download, extract and load the
-            # object detection model
-            if filename is None or url is None:
-                filename, url = (
-                    "faster_rcnn_resnet50_v1_640x640_coco17_tpu-8",
-                    "http://download.tensorflow.org/models/object_detection/tf2/20200711/"
-                    "faster_rcnn_resnet50_v1_640x640_coco17_tpu-8.tar.gz",
-                )
-
-            self._model = self._load_model(
-                filename=filename, url=url, obj_detection_model=None, is_training=is_training
-            )
-
-        else:
-            self._model = self._load_model(filename=None, url=None, obj_detection_model=model, is_training=is_training)
 
         # Save new attributes
         self._input_shape = list(input_shape)
@@ -395,22 +393,16 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
     ) -> np.ndarray:
         raise NotImplementedError
 
-    def compute_loss(self, x: np.ndarray, y: np.ndarray, standardise_output: bool = False, **kwargs) -> np.ndarray:
+    def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the loss.
 
         :param x: Sample input with shape as expected by the model.
         :param y: Targets of format `List[Dict[str, np.ndarray]]`, one for each input image. The fields of the Dict are
                   as follows:
-                 - boxes [N, 4]: the boxes in [y1, x1, y2, x2] in scale [0, 1] (`standardise_output=False`) or
-                                 [x1, y1, x2, y2] in image scale (`standardise_output=True`) format,
-                                 with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
-                 - labels [N]: the labels for each image in TensorFlow (`standardise_output=False`) or PyTorch
-                               (`standardise_output=True`) format
-        :param standardise_output: True if `y` is provided in standardised PyTorch format. Box coordinates will be
-                                   scaled back to [0, 1], label index will be decreased by 1 and the boxes will be
-                                   changed from [x1, y1, x2, y2] to [y1, x1, y2, x2] format, with
-                                   0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
+                    - boxes [N, 4]: the boxes in [y1, x1, y2, x2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
+                    - labels [N]: the labels for each image in TensorFlow format.
+                    - scores [N]: the scores or each prediction.
         :return: np.float32 representing total loss.
         """
 
@@ -419,11 +411,6 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
         x_preprocessed = tf.convert_to_tensor(x_preprocessed)
-
-        if standardise_output:
-            from art.estimators.object_detection.utils import convert_pt_to_tf
-
-            y = convert_pt_to_tf(y=y, height=x.shape[1], width=x.shape[2])
 
         groundtruth_boxes_list = [tf.convert_to_tensor(y[i]["boxes"]) for i in range(x.shape[0])]
 
@@ -453,7 +440,7 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
 
         return self._loss_total.numpy()
 
-    def compute_losses(self, x: np.ndarray, y: np.ndarray, standardise_output: bool = False) -> Dict[str, np.float32]:  # type: ignore
+    def compute_losses(self, x: np.ndarray, y: np.ndarray) -> Dict[str, np.float32]:  # type: ignore
         """
         Compute all loss components.
 
@@ -461,15 +448,9 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
                   nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
         :param y: Targets of format `List[Dict[str, np.ndarray]]`, one for each input image. The fields of the Dict are
                   as follows:
-                 - boxes [N, 4]: the boxes in [y1, x1, y2, x2] in scale [0, 1] (`standardise_output=False`) or
-                                 [x1, y1, x2, y2] in image scale (`standardise_output=True`) format,
-                                 with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
-                 - labels [N]: the labels for each image in TensorFlow (`standardise_output=False`) or PyTorch
-                               (`standardise_output=True`) format
-        :param standardise_output: True if `y` is provided in standardised PyTorch format. Box coordinates will be
-                                   scaled back to [0, 1], label index will be decreased by 1 and the boxes will be
-                                   changed from [x1, y1, x2, y2] to [y1, x1, y2, x2] format, with
-                                   0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
+                    - boxes [N, 4]: the boxes in [y1, x1, y2, x2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
+                    - labels [N]: the labels for each image in TensorFlow format.
+                    - scores [N]: the scores or each prediction.
         :return: Dictionary of loss components.
         """
 
@@ -478,11 +459,6 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
         x_preprocessed = tf.convert_to_tensor(x_preprocessed)
-
-        if standardise_output:
-            from art.estimators.object_detection.utils import convert_pt_to_tf
-
-            y = convert_pt_to_tf(y=y, height=x.shape[1], width=x.shape[2])
 
         groundtruth_boxes_list = [tf.convert_to_tensor(y[i]["boxes"]) for i in range(x.shape[0])]
 

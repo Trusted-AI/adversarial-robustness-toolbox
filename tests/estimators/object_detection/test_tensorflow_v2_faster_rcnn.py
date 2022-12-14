@@ -21,7 +21,6 @@ import logging
 
 import numpy as np
 import pytest
-import tensorflow as tf
 from art.utils import load_dataset
 
 from tests.utils import ARTTestException, master_seed
@@ -30,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.mark.skip_module("object_detection")
-@pytest.mark.skip_framework("pytorch", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+@pytest.mark.only_with_platform("tensorflow2")
 def test_tf_faster_rcnn(art_warning):
     try:
         master_seed(seed=1234, set_tensorflow=True)
@@ -184,6 +183,7 @@ def test_tf_faster_rcnn(art_warning):
         art_warning(e)
 
 
+@pytest.mark.only_with_platform("tensorflow2")
 def test_errors(art_warning):
     try:
         from art.estimators.object_detection.tensorflow_v2_faster_rcnn import TensorFlowV2FasterRCNN
@@ -223,6 +223,7 @@ def test_errors(art_warning):
         art_warning(e)
 
 
+@pytest.mark.only_with_platform("tensorflow2")
 def test_preprocessing_defences(art_warning):
     try:
         from art.estimators.object_detection.tensorflow_v2_faster_rcnn import TensorFlowV2FasterRCNN
@@ -245,6 +246,7 @@ def test_preprocessing_defences(art_warning):
         art_warning(e)
 
 
+@pytest.mark.only_with_platform("tensorflow2")
 def test_compute_losses(art_warning):
     try:
         from art.estimators.object_detection.tensorflow_v2_faster_rcnn import TensorFlowV2FasterRCNN
@@ -289,6 +291,7 @@ def test_compute_losses(art_warning):
         art_warning(e)
 
 
+@pytest.mark.only_with_platform("tensorflow2")
 def test_compute_loss(art_warning):
     try:
         from art.estimators.object_detection.tensorflow_v2_faster_rcnn import TensorFlowV2FasterRCNN
