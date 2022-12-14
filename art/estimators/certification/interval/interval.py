@@ -383,7 +383,7 @@ class PyTorchIntervalBounds:
 
         :param preds: interval predictions
         :param labels: associated labels (not one-hot encoded).
-        :return: array of True/False if predictions are certifiable
+        :return: array of True or False if predictions are certifiable
         """
 
         cert_bounds = np.copy(preds[:, 1])  # Take the upper bounds of all the predictions

@@ -156,7 +156,8 @@ def test_conv_layer_multi_channel_in_multi_out_with_stride_and_bias():
 
 def test_conv_layer_padding():
     """
-    Check that the conversion works  works for multiple input/output channels with strided convolution, bias, and padding
+    Check that the conversion works  works for multiple input/output channels with strided convolution, bias,
+    and padding
     """
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     synthetic_data = torch.rand(32, 3, 25, 25).to(device)
@@ -171,7 +172,8 @@ def test_conv_layer_padding():
 
 def test_conv_layer_dilation():
     """
-    Check that the conversion works  works for multiple input/output channels with strided convolution, bias, padding, and dilation
+    Check that the conversion works  works for multiple input/output channels with strided convolution, bias,
+    padding, and dilation
     """
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     synthetic_data = torch.rand(32, 3, 25, 25).to(device)

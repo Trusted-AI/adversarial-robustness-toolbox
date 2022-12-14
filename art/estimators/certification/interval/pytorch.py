@@ -301,9 +301,11 @@ class PyTorchIBPClassifier(PyTorchIntervalBounds, PyTorchClassifier):
         Produce interval predictions over the supplied data
 
         :param x: The datapoint, either:
-                    + In the correct interval format of x[batch_size, 2, feature_1, feature_2, ...]
-                      where axis=1 corresponds to the [lower, upper] bounds.
-                    + Or in regular concrete form, in which case the bounds/limits etc need to be supplied.
+
+                1. In the interval format of x[batch_size, 2, feature_1, feature_2, ...]
+                   where axis=1 corresponds to the [lower, upper] bounds.
+
+                2. Or in regular concrete form, in which case the bounds/limits need to be supplied.
         :param is_interval: if the datapoint is already in the correct interval format.
         :param bounds: The perturbation range.
         :param limits: The clipping to apply to the interval data.
