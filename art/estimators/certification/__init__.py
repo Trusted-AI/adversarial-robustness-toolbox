@@ -11,4 +11,4 @@ if importlib.util.find_spec("torch") is not None:
 else:
     import warnings
 
-    warnings.warn("PyTorch not found. Not importing DeepZ or Interval functionality")
+    warnings.warn("PyTorch not found. Not importing DeepZ or Interval Bound Propagation functionality")

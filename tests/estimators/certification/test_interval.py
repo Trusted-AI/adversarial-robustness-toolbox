@@ -20,8 +20,8 @@ import pytest
 import torch
 import numpy as np
 
-from art.estimators.certification.interval import PytorchIntervalClassifier
-from art.estimators.certification.interval import IntervalConv2D
+from art.estimators.certification.interval import PyTorchIBPClassifier
+from art.estimators.certification.interval import PyTorchIntervalConv2D
 
 from art.utils import load_dataset
 from tests.utils import ARTTestException
@@ -35,7 +35,7 @@ class SyntheticIntervalModel(torch.nn.Module):
         super().__init__()
 
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        self.conv1 = IntervalConv2D(
+        self.conv1 = PyTorchIntervalConv2D(
             in_channels=input_shape[1],
             out_channels=output_channels,
             kernel_size=kernel_size,
@@ -98,7 +98,7 @@ def test_conv_single_channel_in_multi_out(art_warning):
 
 def test_conv_multi_channel_in_single_out():
     """
-    Check that the conversion works for a single input channel.
+    Check that the conversion works for multiple input channels with single output
     """
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     synthetic_data = torch.rand(32, 3, 25, 25).to(device)
@@ -114,7 +114,7 @@ def test_conv_multi_channel_in_single_out():
 
 def test_conv_multi_channel_in_multi_out():
     """
-    Check that the conversion works for a single input channel.
+    Check that the conversion works for multiple input channels and multiple output channels.
     """
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     synthetic_data = torch.rand(32, 3, 25, 25).to(device)
@@ -127,7 +127,7 @@ def test_conv_multi_channel_in_multi_out():
 
 def test_conv_layer_multi_channel_in_multi_out_with_stride():
     """
-    Check that the conversion works for a single input channel.
+    Check that the conversion works  works for multiple input/output channels with strided convolution
     """
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     synthetic_data = torch.rand(32, 3, 25, 25).to(device)
@@ -141,7 +141,7 @@ def test_conv_layer_multi_channel_in_multi_out_with_stride():
 
 def test_conv_layer_multi_channel_in_multi_out_with_stride_and_bias():
     """
-    Check that the conversion works for a single input channel.
+    Check that the conversion works  works for multiple input/output channels with strided convolution and bias
     """
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     synthetic_data = torch.rand(32, 3, 25, 25).to(device)
@@ -156,7 +156,7 @@ def test_conv_layer_multi_channel_in_multi_out_with_stride_and_bias():
 
 def test_conv_layer_padding():
     """
-    Check that the conversion works for a single input channel.
+    Check that the conversion works  works for multiple input/output channels with strided convolution, bias, and padding
     """
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     synthetic_data = torch.rand(32, 3, 25, 25).to(device)
@@ -171,7 +171,7 @@ def test_conv_layer_padding():
 
 def test_conv_layer_dilation():
     """
-    Check that the conversion works for a single input channel.
+    Check that the conversion works  works for multiple input/output channels with strided convolution, bias, padding, and dilation
     """
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     synthetic_data = torch.rand(32, 3, 25, 25).to(device)
@@ -217,7 +217,7 @@ def test_mnist_certification(art_warning, fix_get_mnist_data):
 
     ptc = get_image_classifier_pt(from_logits=True, use_maxpool=False)
 
-    box_model = PytorchIntervalClassifier(
+    box_model = PyTorchIBPClassifier(
         model=ptc.model, clip_values=(0, 1), loss=torch.nn.CrossEntropyLoss(), input_shape=(1, 28, 28), nb_classes=10
     )
 
