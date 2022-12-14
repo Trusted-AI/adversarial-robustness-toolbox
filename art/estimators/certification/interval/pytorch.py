@@ -21,7 +21,7 @@ This module implements certification using interval (box) domain certification.
 | Paper link: https://ieeexplore.ieee.org/document/8418593
 """
 
-from typing import List, Optional, Tuple, Union, Any, TYPE_CHECKING
+from typing import List, Optional, Tuple, Union, Callable, Any, TYPE_CHECKING
 
 import logging
 import warnings
@@ -212,7 +212,7 @@ class PyTorchIBPClassifier(PyTorchIntervalBounds, PyTorchClassifier):
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
         preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
         device_type: str = "gpu",
-        concrete_to_interval: Optional[Any] = None,
+        concrete_to_interval: Optional[Callable] = None,
     ):
         """
         Create a certifier based on the interval (also called box) domain.
