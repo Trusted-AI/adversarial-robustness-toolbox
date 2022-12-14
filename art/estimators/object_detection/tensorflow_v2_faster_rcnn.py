@@ -133,19 +133,11 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
                 )
 
             self._model = self._load_model(
-                filename=filename,
-                url=url,
-                obj_detection_model=None,
-                is_training=is_training
+                filename=filename, url=url, obj_detection_model=None, is_training=is_training
             )
 
         else:
-            self._model = self._load_model(
-                filename=None,
-                url=None,
-                obj_detection_model=model,
-                is_training=is_training
-            )
+            self._model = self._load_model(filename=None, url=None, obj_detection_model=model, is_training=is_training)
 
         # Save new attributes
         self._input_shape = list(input_shape)
@@ -217,9 +209,8 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
             )
 
         # Restore checkpoint
-        ckpt = tf.compat.v2.train.Checkpoint(
-            model=obj_detection_model)
-        ckpt.restore(path+'/checkpoint/ckpt-0').expect_partial()
+        ckpt = tf.compat.v2.train.Checkpoint(model=obj_detection_model)
+        ckpt.restore(path + "/checkpoint/ckpt-0").expect_partial()
 
         return obj_detection_model
 
@@ -258,26 +249,17 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
 
             y = convert_pt_to_tf(y=y, height=x.shape[1], width=x.shape[2])
 
-        
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
-        groundtruth_boxes_list = [
-            tf.convert_to_tensor(y[i]['boxes'])
-            for i in range(x.shape[0])
-        ]
+        groundtruth_boxes_list = [tf.convert_to_tensor(y[i]["boxes"]) for i in range(x.shape[0])]
 
         groundtruth_classes_list = [
-            tf.one_hot(groundtruth_class, self._model.num_classes) for groundtruth_class in [
-                tf.convert_to_tensor(y[i]['labels'])
-                for i in range(x.shape[0])
-            ]
+            tf.one_hot(groundtruth_class, self._model.num_classes)
+            for groundtruth_class in [tf.convert_to_tensor(y[i]["labels"]) for i in range(x.shape[0])]
         ]
 
-        groundtruth_weights_list = [
-            [1]*len(y[i]['labels'])
-            for i in range(x.shape[0])
-        ]
+        groundtruth_weights_list = [[1] * len(y[i]["labels"]) for i in range(x.shape[0])]
 
         self._model.provide_groundtruth(
             groundtruth_boxes_list=groundtruth_boxes_list,
@@ -285,7 +267,6 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
             groundtruth_weights_list=groundtruth_weights_list,
         )
 
-        
         with tf.GradientTape() as tape:
 
             x_preprocessed = tf.convert_to_tensor(x_preprocessed)
@@ -356,7 +337,7 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
             preprocessed_images, true_image_shapes = self._model.preprocess(tf.convert_to_tensor(x[begin:end]))
             predictions = self._model.predict(preprocessed_images, true_image_shapes)
             batch_results = self._model.postprocess(predictions, true_image_shapes)
-            
+
             for i in range(end - begin):
                 d_sample = {}
 
@@ -371,9 +352,9 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
                 d_sample["scores"] = batch_results["detection_scores"][i].numpy()
 
                 results.append(d_sample)
-            
+
         self._detections = results
-        self._predictions = [i['scores'] for i in results]
+        self._predictions = [i["scores"] for i in results]
 
         return results
 
@@ -444,22 +425,14 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
 
             y = convert_pt_to_tf(y=y, height=x.shape[1], width=x.shape[2])
 
-        groundtruth_boxes_list = [
-            tf.convert_to_tensor(y[i]['boxes'])
-            for i in range(x.shape[0])
-        ]
+        groundtruth_boxes_list = [tf.convert_to_tensor(y[i]["boxes"]) for i in range(x.shape[0])]
 
         groundtruth_classes_list = [
-            tf.one_hot(groundtruth_class, self._model.num_classes) for groundtruth_class in [
-                tf.convert_to_tensor(y[i]['labels'])
-                for i in range(x.shape[0])
-            ]
+            tf.one_hot(groundtruth_class, self._model.num_classes)
+            for groundtruth_class in [tf.convert_to_tensor(y[i]["labels"]) for i in range(x.shape[0])]
         ]
 
-        groundtruth_weights_list = [
-            [1]*len(y[i]['labels'])
-            for i in range(x.shape[0])
-        ]
+        groundtruth_weights_list = [[1] * len(y[i]["labels"]) for i in range(x.shape[0])]
 
         self._model.provide_groundtruth(
             groundtruth_boxes_list=groundtruth_boxes_list,
@@ -470,7 +443,6 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
         predictions = self._model.predict(preprocessed_images, true_image_shapes)
         losses = self._model.loss(predictions, true_image_shapes)
 
-        
         loss = None
         for loss_name in self.attack_losses:
             if loss is None:
@@ -478,7 +450,7 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
             else:
                 loss = loss + losses[loss_name]
         self._loss_total = loss
-        
+
         return self._loss_total.numpy()
 
     def compute_losses(self, x: np.ndarray, y: np.ndarray, standardise_output: bool = False) -> Dict[str, np.float32]:  # type: ignore
@@ -512,22 +484,14 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
 
             y = convert_pt_to_tf(y=y, height=x.shape[1], width=x.shape[2])
 
-        groundtruth_boxes_list = [
-            tf.convert_to_tensor(y[i]['boxes'])
-            for i in range(x.shape[0])
-        ]
+        groundtruth_boxes_list = [tf.convert_to_tensor(y[i]["boxes"]) for i in range(x.shape[0])]
 
         groundtruth_classes_list = [
-            tf.one_hot(groundtruth_class, self._model.num_classes) for groundtruth_class in [
-                tf.convert_to_tensor(y[i]['labels'])
-                for i in range(x.shape[0])
-            ]
+            tf.one_hot(groundtruth_class, self._model.num_classes)
+            for groundtruth_class in [tf.convert_to_tensor(y[i]["labels"]) for i in range(x.shape[0])]
         ]
 
-        groundtruth_weights_list = [
-            [1]*len(y[i]['labels'])
-            for i in range(x.shape[0])
-        ]
+        groundtruth_weights_list = [[1] * len(y[i]["labels"]) for i in range(x.shape[0])]
 
         self._model.provide_groundtruth(
             groundtruth_boxes_list=groundtruth_boxes_list,
