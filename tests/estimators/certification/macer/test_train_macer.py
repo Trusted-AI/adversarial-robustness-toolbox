@@ -179,9 +179,7 @@ def test_macer_randomized_smoothing_tensorflow(get_mnist_data):
     """
     import tensorflow as tf
 
-    logger.debug("Executing test_macer_randomized_smoothing_tensorflow with eager mode: ", tf.executing_eagerly())
     ptc = get_image_classifier_tf_v2()
-    logger.debug("Executing test_macer_randomized_smoothing_tensorflow with eager mode: ", tf.executing_eagerly())
 
     # Get MNIST
     x_test, y_test = get_mnist_data
