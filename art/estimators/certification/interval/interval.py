@@ -26,7 +26,7 @@ import torch
 import numpy as np
 
 
-class IntervalDenseLayer(torch.nn.Module):
+class PyTorchIntervalDense(torch.nn.Module):
     """
     Class implementing a dense layer for the interval (box) domain.
     """
@@ -70,7 +70,7 @@ class IntervalDenseLayer(torch.nn.Module):
         return torch.matmul(x, torch.transpose(self.weight, 0, 1)) + self.bias
 
 
-class IntervalConv2D(torch.nn.Module):
+class PyTorchIntervalConv2D(torch.nn.Module):
     """
     Class implementing a convolutional layer in the interval/box domain.
     """
@@ -85,7 +85,7 @@ class IntervalConv2D(torch.nn.Module):
         stride: Union[int, Tuple[int, int]] = 1,
         padding: Union[int, Tuple[int, int]] = 0,
         dilation: Union[int, Tuple[int, int]] = 0,
-        bias: bool = False,
+        bias: bool = True,
         supplied_input_weights: Union[None, "torch.Tensor"] = None,
         supplied_input_bias: Union[None, "torch.Tensor"] = None,
         to_debug: bool = False,
@@ -301,7 +301,7 @@ class IntervalConv2D(torch.nn.Module):
         return x.reshape((-1, self.out_channels, self.output_height, self.output_width))
 
 
-class IntervalFlatten(torch.nn.Module):
+class PyTorchIntervalFlatten(torch.nn.Module):
     """
     Layer to handle flattening on both interval and concrete data
     """
@@ -333,7 +333,7 @@ class IntervalFlatten(torch.nn.Module):
         return torch.reshape(x, (x.shape[0], -1))
 
 
-class IntervalReLU(torch.nn.Module):
+class PyTorchIntervalReLU(torch.nn.Module):
     """
     ReLU activation on both interval and concrete data
     """
@@ -364,7 +364,7 @@ class IntervalReLU(torch.nn.Module):
         return self.activation(x)
 
 
-class IntervalBounds:
+class PyTorchIntervalBounds:
     """
     Class providing functionality for computing operations related to interval bounds
     """
@@ -419,7 +419,7 @@ class IntervalBounds:
             up_x = x + bounds[1]
             lb_x = x - bounds[0]
         else:
-            raise ValueError("Bounds must be a float, list, or np array.")
+            raise ValueError("Bounds must be a float, list, or numpy array.")
 
         final_batched_input = np.concatenate((lb_x, up_x), axis=1)
 

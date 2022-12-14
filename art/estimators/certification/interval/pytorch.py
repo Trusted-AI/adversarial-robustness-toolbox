@@ -30,10 +30,10 @@ import numpy as np
 import torch
 
 from art.estimators.certification.interval.interval import (
-    IntervalConv2D,
-    IntervalDenseLayer,
-    IntervalReLU,
-    IntervalBounds,
+    PyTorchIntervalConv2D,
+    PyTorchIntervalDense,
+    PyTorchIntervalReLU,
+    PyTorchIntervalBounds,
 )
 from art.estimators.classification.pytorch import PyTorchClassifier
 
@@ -79,14 +79,13 @@ class ConvertedModel(torch.nn.Module):
         for module, shapes in zip(modules, self.interim_shapes):
             weights_to_supply = None
             bias_to_supply = None
-            print("registered", type(module))
             if isinstance(module, torch.nn.modules.conv.Conv2d):
                 if module.weight is not None:
                     weights_to_supply = torch.tensor(np.copy(module.weight.data.cpu().detach().numpy())).to(self.device)
                 if module.bias is not None:
                     bias_to_supply = torch.tensor(np.copy(module.bias.data.cpu().detach().numpy())).to(self.device)
 
-                interval_conv = IntervalConv2D(
+                interval_conv = PyTorchIntervalConv2D(
                     input_shape=shapes,
                     in_channels=module.in_channels,
                     out_channels=module.out_channels,
@@ -101,25 +100,27 @@ class ConvertedModel(torch.nn.Module):
 
                 self.ops.append(interval_conv)
             elif isinstance(module, torch.nn.modules.linear.Linear):
-                interval_dense = IntervalDenseLayer(in_features=module.in_features, out_features=module.out_features)
+                interval_dense = PyTorchIntervalDense(in_features=module.in_features, out_features=module.out_features)
                 interval_dense.weight.data = module.weight.data.to(self.device)
                 interval_dense.bias.data = module.bias.data.to(self.device)
                 self.ops.append(interval_dense)
 
             elif isinstance(module, torch.nn.modules.activation.ReLU):
-                self.ops.append(IntervalReLU())
+                self.ops.append(PyTorchIntervalReLU())
             else:
                 raise ValueError("Supported Operations are Conv2D, Linear, and RelU")
 
         for op_num, op in enumerate(self.ops):
             # as reshapes are not modules we infer when the reshape from convolutional to dense occurs
-            if isinstance(op, IntervalDenseLayer):
+            if isinstance(op, PyTorchIntervalDense):
                 # if the preceeding op was a convolution:
-                if isinstance(self.ops[op_num - 1], IntervalConv2D):
+                if isinstance(self.ops[op_num - 1], PyTorchIntervalConv2D):
                     self.reshape_op_num = op_num
                     print("Inferred reshape on op num", op_num)
                 # if the preceeding op was a relu and the one before the activation was a convolution
-                if isinstance(self.ops[op_num - 1], IntervalReLU) and isinstance(self.ops[op_num - 2], IntervalConv2D):
+                if isinstance(self.ops[op_num - 1], PyTorchIntervalReLU) and isinstance(
+                    self.ops[op_num - 2], PyTorchIntervalConv2D
+                ):
                     self.reshape_op_num = op_num
                     print("Inferred reshape on op num", op_num)
 
@@ -187,7 +188,7 @@ class ConvertedModel(torch.nn.Module):
         self.forward_mode = mode
 
 
-class PytorchIntervalClassifier(IntervalBounds, PyTorchClassifier):
+class PyTorchIBPClassifier(PyTorchIntervalBounds, PyTorchClassifier):
     """
     Implementation of Interval based certification for neural network robustness.
     We use the interval (also called box) representation of a datapoint as it travels through the network
@@ -319,13 +320,12 @@ class PytorchIntervalClassifier(IntervalBounds, PyTorchClassifier):
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
         self._model.train(mode=training_mode)
         if not is_interval:
-            if bounds is not None:
-                if self.provided_concrete_to_interval is None:
-                    x_interval = self.concrete_to_interval(x=x_preprocessed, bounds=bounds, limits=limits)
-                else:
-                    x_interval = self.provided_concrete_to_interval(x_preprocessed, bounds, limits)
-            else:
+            if bounds is None:
                 raise ValueError("If x is not provided as an interval please provide bounds (and optionally limits)")
+            if self.provided_concrete_to_interval is None:
+                x_interval = self.concrete_to_interval(x=x_preprocessed, bounds=bounds, limits=limits)
+            else:
+                x_interval = self.provided_concrete_to_interval(x_preprocessed, bounds, limits)
         else:
             x_interval = x_preprocessed
 
