@@ -195,10 +195,7 @@ def test_smoothadv_randomized_smoothing_tensorflow_pgd(get_mnist_data):
     import tensorflow as tf
 
     # Build TensorFlowV2Classifier
-    logger.debug("Executing test_macer_randomized_smoothing_tensorflow with eager mode: ", tf.executing_eagerly())
     classifier = get_image_classifier_tf_v2()
-    logger.debug("Executing test_macer_randomized_smoothing_tensorflow with eager mode: ", tf.executing_eagerly())
-    # classifier = get_image_classifier_tf_v2_custom()
 
     # Get MNIST
     x_test, y_test = get_mnist_data

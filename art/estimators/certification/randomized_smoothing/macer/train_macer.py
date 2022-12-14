@@ -65,7 +65,7 @@ def fit_pytorch_macer(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_ep
         raise ValueError("A scheduler is needed to train the model, but none for provided.")
 
     if kwargs.get("checkpoint") is not None:
-        chkpt = kwargs.get("checkpoint")
+        chkpt = str(kwargs.get("checkpoint"))
         cpoint = torch.load(chkpt)
         self.model.load_state_dict(cpoint["net"])
         start_epoch = cpoint["epoch"]
