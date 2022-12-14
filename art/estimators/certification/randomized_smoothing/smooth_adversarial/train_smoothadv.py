@@ -62,7 +62,7 @@ def fit_pytorch_smoothadv(self, x: np.ndarray, y: np.ndarray, batch_size: int, n
 
     x = x.astype(ART_NUMPY_DTYPE)
     start_epoch = 0
-
+    attacker = None
     if self.attack_type == "PGD":
         attacker = ProjectedGradientDescent(self.estimator, eps=self.epsilon, max_iter=1, verbose=False)
 
@@ -156,7 +156,7 @@ def fit_tensorflow_smoothadv(self, x: np.ndarray, y: np.ndarray, batch_size: int
 
     x = x.astype(ART_NUMPY_DTYPE)
     start_epoch = 0
-
+    attacker = None
     if self.attack_type == "PGD":
         attacker = ProjectedGradientDescent(self.estimator, eps=self.epsilon, max_iter=1, verbose=False)
 
