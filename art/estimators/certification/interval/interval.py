@@ -402,12 +402,10 @@ class PyTorchIntervalBounds:
 
         :param x: input datapoint of shape [batch size, feature_1, feature_2, ...]
         :param bounds: Either a scalar to apply to the whole datapoint, or an array of [2, feature_1, feature_2]
-        where bounds[0] are the lower bounds and bounds[1] are the upper bound
+                       where bounds[0] are the lower bounds and bounds[1] are the upper bound
         :param limits: if to clip to a range with limits[0] being the lower bounds and limits[1] being upper bounds.
-
         :return: Data of the form [batch_size, 2, feature_1, feature_2, ...]
-        where [batch_size, 0, x.shape] are the lower bounds and
-        [batch_size, 1, x.shape] are the upper bounds.
+                 where [batch_size, 0, x.shape] are the lower bounds and [batch_size, 1, x.shape] are the upper bounds.
         """
 
         x = np.expand_dims(x, axis=1)
