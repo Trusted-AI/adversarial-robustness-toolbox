@@ -506,6 +506,12 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
 
         return loss_value
 
+    def clone_for_refitting(self) -> "TensorFlowClassifier":
+        """
+        Clone classifier for refitting.
+        """
+        raise NotImplementedError
+
     def _init_class_grads(self, label=None):
         # pylint: disable=E0401
         import tensorflow.compat.v1 as tf

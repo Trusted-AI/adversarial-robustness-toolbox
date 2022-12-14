@@ -20,9 +20,18 @@ This module implements mixin abstract base class for all regressors in ART.
 """
 
 from abc import ABC
+from art.estimators.estimator import BaseEstimator
 
 
 class RegressorMixin(ABC):
     """
     Mixin abstract Base class for ART regressors.
     """
+
+
+class Regressor(RegressorMixin, BaseEstimator, ABC):
+    """
+    Typing variable definition.
+    """
+
+    estimator_params = BaseEstimator.estimator_params
