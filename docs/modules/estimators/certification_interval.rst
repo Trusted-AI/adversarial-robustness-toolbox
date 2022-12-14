@@ -9,35 +9,35 @@ PyTorchIBPClassifier
    :special-members: __init__
    :no-inherited-members:
 
-IBP Dense Layer
----------------
+Interval Dense Layer
+--------------------
 .. autoclass:: PyTorchIntervalDense
    :members:
    :special-members: __init__
    :no-inherited-members:
 
-IBP Convolution Layer
+Interval Convolution Layer
 --------------------------
 .. autoclass:: PyTorchIntervalConv2D
    :members:
    :special-members: __init__
    :no-inherited-members:
 
-IBP Flatten Layer
+Interval Flatten Layer
 ----------------------
 .. autoclass:: PyTorchIntervalFlatten
    :members:
    :special-members: __init__
    :no-inherited-members:
 
-IBP ReLU
+Interval ReLU
 -------------
 .. autoclass:: PyTorchIntervalReLU
    :members:
    :special-members: __init__
    :no-inherited-members:
 
-IBP Bounds
+Interval Bounds
 ---------------
 .. autoclass:: PyTorchIntervalBounds
    :members:
