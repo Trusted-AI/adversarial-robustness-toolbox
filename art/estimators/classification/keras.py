@@ -378,7 +378,11 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         else:
             import keras.backend as k
 
+        y = check_and_transform_label_format(y, self.nb_classes)  # type: ignore
+
+        # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
+
         shape_match = [i is None or i == j for i, j in zip(self._input_shape, x_preprocessed.shape[1:])]
         if not all(shape_match):  # pragma: no cover
             raise ValueError(
