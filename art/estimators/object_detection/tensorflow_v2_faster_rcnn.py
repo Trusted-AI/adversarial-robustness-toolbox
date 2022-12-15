@@ -253,7 +253,7 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
         groundtruth_boxes_list = [tf.convert_to_tensor(y[i]["boxes"]) for i in range(x.shape[0])]
 
         groundtruth_classes_list = [
-            tf.one_hot(groundtruth_class, self._model.num_classes)
+            tf.one_hot(groundtruth_class, self._model.num_classes, on_value=1.0, off_value=0.0, dtype=tf.float32)
             for groundtruth_class in [tf.convert_to_tensor(y[i]["labels"]) for i in range(x.shape[0])]
         ]
 
@@ -366,7 +366,7 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
         return self._predictions
 
     @property
-    def losses(self) -> Dict[str, np.float32]:
+    def losses(self) -> Dict[str, np.ndarray]:
         """
         Get the `_losses` attribute.
 
@@ -415,7 +415,7 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
         groundtruth_boxes_list = [tf.convert_to_tensor(y[i]["boxes"]) for i in range(x.shape[0])]
 
         groundtruth_classes_list = [
-            tf.one_hot(groundtruth_class, self._model.num_classes)
+            tf.one_hot(groundtruth_class, self._model.num_classes, on_value=1.0, off_value=0.0, dtype=tf.float32)
             for groundtruth_class in [tf.convert_to_tensor(y[i]["labels"]) for i in range(x.shape[0])]
         ]
 
@@ -440,7 +440,7 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
 
         return self._loss_total.numpy()
 
-    def compute_losses(self, x: np.ndarray, y: np.ndarray) -> Dict[str, np.float32]:  # type: ignore
+    def compute_losses(self, x: np.ndarray, y: np.ndarray) -> Dict[str, np.ndarray]:  # type: ignore
         """
         Compute all loss components.
 
@@ -463,7 +463,7 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
         groundtruth_boxes_list = [tf.convert_to_tensor(y[i]["boxes"]) for i in range(x.shape[0])]
 
         groundtruth_classes_list = [
-            tf.one_hot(groundtruth_class, self._model.num_classes)
+            tf.one_hot(groundtruth_class, self._model.num_classes, on_value=1.0, off_value=0.0, dtype=tf.float32)
             for groundtruth_class in [tf.convert_to_tensor(y[i]["labels"]) for i in range(x.shape[0])]
         ]
 
