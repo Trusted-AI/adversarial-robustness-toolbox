@@ -40,7 +40,7 @@ def test_tf_faster_rcnn(art_warning):
         # Get test data
         (_, _), (x_test, y_test), _, _ = load_dataset("cifar10")
         x_test = x_test[:1]
-        input_shape = x_test.shape[1:]
+        input_shape = tuple(x_test.shape[1:])
 
         obj_dec = TensorFlowV2FasterRCNN(input_shape=input_shape)
 
@@ -189,7 +189,7 @@ def test_errors(art_warning):
         from art.estimators.object_detection.tensorflow_v2_faster_rcnn import TensorFlowV2FasterRCNN
 
         (_, _), (x_test, _), _, _ = load_dataset("cifar10")
-        input_shape = x_test.shape[1:]
+        input_shape = tuple(x_test.shape[1:])
 
         with pytest.raises(ValueError):
             obj_det = TensorFlowV2FasterRCNN(
@@ -230,7 +230,7 @@ def test_preprocessing_defences(art_warning):
         from art.defences.preprocessor.spatial_smoothing import SpatialSmoothing
 
         (_, _), (x_test, _), _, _ = load_dataset("cifar10")
-        input_shape = x_test.shape[1:]
+        input_shape = tuple(x_test.shape[1:])
 
         pre_def = SpatialSmoothing()
 
@@ -253,7 +253,7 @@ def test_compute_losses(art_warning):
 
         # Get test data
         (_, _), (x_test, _), _, _ = load_dataset("cifar10")
-        input_shape = x_test.shape[1:]
+        input_shape = tuple(x_test.shape[1:])
 
         frcnn = TensorFlowV2FasterRCNN(
             input_shape=input_shape,
@@ -298,7 +298,7 @@ def test_compute_loss(art_warning):
 
         # Get test data
         (_, _), (x_test, _), _, _ = load_dataset("cifar10")
-        input_shape = x_test.shape[1:]
+        input_shape = tuple(x_test.shape[1:])
 
         frcnn = TensorFlowV2FasterRCNN(
             input_shape=input_shape,
@@ -328,7 +328,7 @@ def test_compute_loss(art_warning):
         ]
 
         # Compute loss
-        loss = frcnn.compute_loss(x_test[:2], y)
+        loss = frcnn.compute_loss(x_test[:2], y)[0]
 
         assert float(loss) == pytest.approx(11.245838, abs=0.5)
 

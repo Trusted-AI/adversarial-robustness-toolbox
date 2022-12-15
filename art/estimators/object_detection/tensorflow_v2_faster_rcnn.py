@@ -69,7 +69,7 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
         """
         Initialization of an instance TensorFlowV2FasterRCNN.
 
-        :param input_shape: Input image(s) shape (height, width, nb_channels).
+        :param input_shape: A Tuple indicating input shape in form (height, width, channels)
         :param model: A TensorFlowV2 Faster-RCNN model. The output that can be computed from the model includes a tuple
                       of (predictions, losses, detections):
                         - predictions: a dictionary holding "raw" prediction tensors.
@@ -138,7 +138,7 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
             raise ValueError("This estimator does not support `postprocessing_defences`.")
 
         # Save new attributes
-        self._input_shape = list(input_shape)
+        self._input_shape = input_shape
         self.is_training: bool = is_training
         self.attack_losses: Tuple[str, ...] = attack_losses
 
@@ -193,7 +193,9 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
                 )
 
             # Download and extract
+            print("downloading file")
             path = get_file(filename=filename, path=config.ART_DATA_PATH, url=url, extract=True)
+            print("loading model config")
             # Load model config
             pipeline_config = path + "/pipeline.config"
             configs = config_util.get_configs_from_pipeline_file(pipeline_config)
@@ -393,7 +395,7 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
     ) -> np.ndarray:
         raise NotImplementedError
 
-    def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.float32:
+    def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the loss.
 
@@ -438,7 +440,9 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
             else:
                 loss = loss + losses[loss_name].numpy()
 
-        return loss
+        total_loss = np.array([loss])
+
+        return total_loss
 
     def compute_losses(self, x: np.ndarray, y: np.ndarray) -> Dict[str, np.ndarray]:
         """
