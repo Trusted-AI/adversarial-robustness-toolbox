@@ -127,9 +127,9 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
         # Check clip values
         if self.clip_values is not None:
             if not np.all(self.clip_values[0] == 0):
-                raise ValueError("This classifier requires normalized input images with clip_vales=(0, 1).")
-            if not np.all(self.clip_values[1] == 1):  # pragma: no cover
-                raise ValueError("This classifier requires normalized input images with clip_vales=(0, 1).")
+                raise ValueError("This estimator supports input images with clip_vales=(0, 255).")
+            if not np.all(self.clip_values[1] == 255):  # pragma: no cover
+                raise ValueError("This estimator supports input images with clip_vales=(0, 255).")
 
         # Check preprocessing and postprocessing defences
         if self.preprocessing_defences is not None:
@@ -156,7 +156,7 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
 
         :return: Shape of one input sample.
         """
-        return self._input_shape  # type: ignore
+        return self._input_shape
 
     @staticmethod
     def _load_model(
@@ -253,7 +253,7 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
         groundtruth_boxes_list = [tf.convert_to_tensor(y[i]["boxes"]) for i in range(x.shape[0])]
 
         groundtruth_classes_list = [
-            tf.one_hot(groundtruth_class, self._model.num_classes, on_value=1.0, off_value=0.0, dtype=tf.float32)
+            tf.one_hot(groundtruth_class, self._model.num_classes, on_value=1.0, off_value=0.0)
             for groundtruth_class in [tf.convert_to_tensor(y[i]["labels"]) for i in range(x.shape[0])]
         ]
 
@@ -393,7 +393,7 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
     ) -> np.ndarray:
         raise NotImplementedError
 
-    def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.float32:
         """
         Compute the loss.
 
@@ -415,7 +415,7 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
         groundtruth_boxes_list = [tf.convert_to_tensor(y[i]["boxes"]) for i in range(x.shape[0])]
 
         groundtruth_classes_list = [
-            tf.one_hot(groundtruth_class, self._model.num_classes, on_value=1.0, off_value=0.0, dtype=tf.float32)
+            tf.one_hot(groundtruth_class, self._model.num_classes, on_value=1.0, off_value=0.0)
             for groundtruth_class in [tf.convert_to_tensor(y[i]["labels"]) for i in range(x.shape[0])]
         ]
 
@@ -426,6 +426,7 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
             groundtruth_classes_list=groundtruth_classes_list,
             groundtruth_weights_list=groundtruth_weights_list,
         )
+
         preprocessed_images, true_image_shapes = self._model.preprocess(x_preprocessed)
         predictions = self._model.predict(preprocessed_images, true_image_shapes)
         losses = self._model.loss(predictions, true_image_shapes)
@@ -433,14 +434,13 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
         loss = None
         for loss_name in self.attack_losses:
             if loss is None:
-                loss = losses[loss_name]
+                loss = losses[loss_name].numpy()
             else:
-                loss = loss + losses[loss_name]
-        self._loss_total = loss
+                loss = loss + losses[loss_name].numpy()
 
-        return self._loss_total.numpy()
+        return loss
 
-    def compute_losses(self, x: np.ndarray, y: np.ndarray) -> Dict[str, np.ndarray]:  # type: ignore
+    def compute_losses(self, x: np.ndarray, y: np.ndarray) -> Dict[str, np.ndarray]:
         """
         Compute all loss components.
 
@@ -463,7 +463,7 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
         groundtruth_boxes_list = [tf.convert_to_tensor(y[i]["boxes"]) for i in range(x.shape[0])]
 
         groundtruth_classes_list = [
-            tf.one_hot(groundtruth_class, self._model.num_classes, on_value=1.0, off_value=0.0, dtype=tf.float32)
+            tf.one_hot(groundtruth_class, self._model.num_classes, on_value=1.0, off_value=0.0)
             for groundtruth_class in [tf.convert_to_tensor(y[i]["labels"]) for i in range(x.shape[0])]
         ]
 
@@ -474,6 +474,7 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
             groundtruth_classes_list=groundtruth_classes_list,
             groundtruth_weights_list=groundtruth_weights_list,
         )
+
         preprocessed_images, true_image_shapes = self._model.preprocess(x_preprocessed)
         predictions = self._model.predict(preprocessed_images, true_image_shapes)
         losses = self._model.loss(predictions, true_image_shapes)

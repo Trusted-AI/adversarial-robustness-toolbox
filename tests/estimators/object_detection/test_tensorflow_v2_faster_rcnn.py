@@ -257,7 +257,7 @@ def test_compute_losses(art_warning):
 
         frcnn = TensorFlowV2FasterRCNN(
             input_shape=input_shape,
-            clip_values=(0, 1),
+            clip_values=(0, 255),
             attack_losses=(
                 "Loss/RPNLoss/localization_loss",
                 "Loss/RPNLoss/objectness_loss",
@@ -302,7 +302,7 @@ def test_compute_loss(art_warning):
 
         frcnn = TensorFlowV2FasterRCNN(
             input_shape=input_shape,
-            clip_values=(0, 1),
+            clip_values=(0, 255),
             attack_losses=(
                 "Loss/RPNLoss/localization_loss",
                 "Loss/RPNLoss/objectness_loss",
