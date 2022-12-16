@@ -24,14 +24,12 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import math
 from functools import reduce
-from typing import Callable, Tuple, TYPE_CHECKING, Union, List, Optional, Sequence
+from typing import Callable, Tuple, TYPE_CHECKING, List, Optional, Sequence
 
 import numpy as np
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_TYPE
-    from art.estimators.classification.scikitlearn import ScikitlearnClassifier
-    from art.estimators.classification import PyTorchClassifier, TensorFlowV2Classifier
+    from art.utils import CLASSIFIER_TYPE, CLONABLE
 
 
 class ShadowModels:
@@ -42,7 +40,7 @@ class ShadowModels:
 
     def __init__(
         self,
-        shadow_model_template: Union["ScikitlearnClassifier", "PyTorchClassifier", "TensorFlowV2Classifier"],
+        shadow_model_template: "CLONABLE",
         num_shadow_models: int = 3,
         disjoint_datasets=False,
         random_state=None,
@@ -51,7 +49,8 @@ class ShadowModels:
         Initializes shadow models using the provided template.
 
         :param shadow_model_template: Untrained classifier model to be used as a template for shadow models. Should be
-                                      as similar as possible to the target model.
+                                      as similar as possible to the target model. Must implement clone_for_refitting
+                                      method.
         :param num_shadow_models: How many shadow models to train to generate the shadow dataset.
         :param disjoint_datasets: A boolean indicating whether the datasets used to train each shadow model should be
                                   disjoint. Default is False.
@@ -315,7 +314,9 @@ class ShadowModels:
 
         return self.generate_shadow_dataset(np.array(x), np.array(y), member_ratio)
 
-    def get_shadow_models(self) -> Sequence["CLASSIFIER_TYPE"]:
+    def get_shadow_models(
+        self,
+    ) -> Sequence["CLONABLE"]:
         """
         Returns the list of shadow models. `generate_shadow_dataset` or `generate_synthetic_shadow_dataset` must be
         called for the shadow models to be trained.

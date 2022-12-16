@@ -506,6 +506,12 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
 
         return loss_value
 
+    def clone_for_refitting(self) -> "TensorFlowClassifier":
+        """
+        Clone classifier for refitting.
+        """
+        raise NotImplementedError
+
     def _init_class_grads(self, label=None):
         # pylint: disable=E0401
         import tensorflow.compat.v1 as tf
@@ -1123,16 +1129,18 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         elif reduction == "sum":
             self._loss_object.reduction = tf.keras.losses.Reduction.SUM
 
+        y = check_and_transform_label_format(y, self.nb_classes)  # type: ignore
+
         # Apply preprocessing
-        x_preprocessed, _ = self._apply_preprocessing(x, y, fit=False)
+        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
 
         if tf.executing_eagerly():
             x_preprocessed_tf = tf.convert_to_tensor(x_preprocessed)
             predictions = self.model(x_preprocessed_tf, training=training_mode)
             if self._reduce_labels:
-                loss = self._loss_object(np.argmax(y, axis=1), predictions)
+                loss = self._loss_object(np.argmax(y_preprocessed, axis=1), predictions)
             else:
-                loss = self._loss_object(y, predictions)
+                loss = self._loss_object(y_preprocessed, predictions)
         else:
             raise NotImplementedError("Expecting eager execution.")
 

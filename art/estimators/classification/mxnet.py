@@ -517,6 +517,12 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):
         self._model.save_parameters(full_path + ".params")
         logger.info("Model parameters saved in path: %s.params.", full_path)
 
+    def clone_for_refitting(self) -> "MXClassifier":
+        """
+        Clone classifier for refitting.
+        """
+        raise NotImplementedError
+
     def __repr__(self):
         repr_ = (
             f"{self.__module__ + '.' + self.__class__.__name__}(model={self._model}, loss={self.loss},"

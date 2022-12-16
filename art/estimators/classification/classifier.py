@@ -19,7 +19,7 @@
 This module implements mixin abstract base classes defining properties for all classifiers in ART.
 """
 from abc import ABC, ABCMeta, abstractmethod
-from typing import List, Optional, TYPE_CHECKING, Union
+from typing import List, Optional, Union
 
 import numpy as np
 
@@ -29,9 +29,6 @@ from art.estimators.estimator import (
     LossGradientsMixin,
     DecisionTreeMixin,
 )
-
-if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_TYPE
 
 
 class InputFilter(ABCMeta):
@@ -122,12 +119,6 @@ class ClassifierMixin(ABC, metaclass=InputFilter):
 
         self._nb_classes = nb_classes
 
-    def clone_for_refitting(self) -> "CLASSIFIER_TYPE":
-        """
-        Clone classifier for refitting.
-        """
-        raise NotImplementedError
-
 
 class ClassGradientsMixin(ABC):
     """
@@ -198,6 +189,12 @@ class ClassifierNeuralNetwork(
         :param filename: Name of the file where to store the model.
         :param path: Path of the folder where to store the model. If no path is specified, the model will be stored in
                      the default data location of the library `ART_DATA_PATH`.
+        """
+        raise NotImplementedError
+
+    def clone_for_refitting(self) -> "ClassifierNeuralNetwork":
+        """
+        Clone classifier for refitting.
         """
         raise NotImplementedError
 
