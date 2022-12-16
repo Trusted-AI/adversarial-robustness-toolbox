@@ -63,6 +63,9 @@ models.
 [attack_adversarial_patch_TensorFlowV2.ipynb](adversarial_patch/attack_adversarial_patch.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/adversarial_patch/attack_adversarial_patch_TensorFlowV2.ipynb)]  TensorFlow v2 specific attack implementation. 
 [attack_adversarial_patch_pytorch_yolo.ipynb](adversarial_patch/attack_adversarial_patch_pytorch_yolo.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/adversarial_patch/attack_adversarial_patch_pytorch_yolo.ipynb)] YOLO v3 and v5 specific attack.
 
+[attack_adversarial_patch_faster_rcnn.ipynb](adversarial_patch/attack_adversarial_patch_faster_rcnn.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/adversarial_patch/attack_adversarial_patch_faster_rcnn.ipynb)]
+shows how to set up a TFv2 Faster R-CNN object detector with ART and create an adversarial patch attack that fools the detector.
+
 <p align="center">
   <img src="../utils/data/images/adversarial_patch.png?raw=true" width="200" title="adversarial_patch">
 </p>

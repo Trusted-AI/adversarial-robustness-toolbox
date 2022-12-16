@@ -109,10 +109,7 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
                     "faster_rcnn_resnet50_v1_640x640_coco17_tpu-8.tar.gz",
                 )
 
-            model = self._load_model(filename=filename, url=url, obj_detection_model=None, is_training=is_training)
-
-        else:
-            model = self._load_model(filename=None, url=None, obj_detection_model=model, is_training=is_training)
+            model = self._load_model(filename=filename, url=url, is_training=is_training)
 
         # Super initialization
         super().__init__(
@@ -138,7 +135,10 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
             raise ValueError("This estimator does not support `postprocessing_defences`.")
 
         # Save new attributes
-        self._input_shape = input_shape
+        self._input_shape: Tuple[int, ...] = input_shape
+        self._detections: List[Dict[str, np.ndarray]] = []
+        self._predictions: List[Dict[str, np.ndarray]] = []
+        self._losses: Dict[str, np.ndarray] = {}
         self.is_training: bool = is_training
         self.attack_losses: Tuple[str, ...] = attack_losses
 
@@ -162,7 +162,6 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
     def _load_model(
         filename: Optional[str] = None,
         url: Optional[str] = None,
-        obj_detection_model: Optional["FasterRCNNMetaArch"] = None,
         is_training: bool = False,
     ) -> Tuple[Dict[str, "tf.Tensor"], ...]:
         """
@@ -173,40 +172,34 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
 
         :param filename: Name of the file.
         :param url: Download URL.
-        :param obj_detection_model: The model
         :param is_training: A boolean indicating whether the training version of the computation graph should be
                             constructed.
         :return: the object detection model restored from checkpoint
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
-        if obj_detection_model is None:
-            from object_detection.utils import config_util
-            from object_detection.builders import model_builder
+        from object_detection.utils import config_util
+        from object_detection.builders import model_builder
 
-            # If obj_detection_model is None, then we need to have parameters filename and url to download, extract
-            # and load the object detection model
-            if filename is None or url is None:  # pragma: no cover
-                raise ValueError(
-                    "Need input parameters `filename` and `url` to download, "
-                    "extract and load the object detection model."
-                )
-
-            # Download and extract
-            print("downloading file")
-            path = get_file(filename=filename, path=config.ART_DATA_PATH, url=url, extract=True)
-            print("loading model config")
-            # Load model config
-            pipeline_config = path + "/pipeline.config"
-            configs = config_util.get_configs_from_pipeline_file(pipeline_config)
-            configs["model"].faster_rcnn.second_stage_batch_size = configs[
-                "model"
-            ].faster_rcnn.first_stage_max_proposals
-
-            # Load model
-            obj_detection_model = model_builder.build(
-                model_config=configs["model"], is_training=is_training, add_summaries=False
+        # If obj_detection_model is None, then we need to have parameters filename and url to download, extract
+        # and load the object detection model
+        if filename is None or url is None:  # pragma: no cover
+            raise ValueError(
+                "Need input parameters `filename` and `url` to download, "
+                "extract and load the object detection model."
             )
+
+        # Download and extract
+        path = get_file(filename=filename, path=config.ART_DATA_PATH, url=url, extract=True)
+        # Load model config
+        pipeline_config = path + "/pipeline.config"
+        configs = config_util.get_configs_from_pipeline_file(pipeline_config)
+        configs["model"].faster_rcnn.second_stage_batch_size = configs["model"].faster_rcnn.first_stage_max_proposals
+
+        # Load model
+        obj_detection_model = model_builder.build(
+            model_config=configs["model"], is_training=is_training, add_summaries=False
+        )
 
         # Restore checkpoint
         ckpt = tf.compat.v2.train.Checkpoint(model=obj_detection_model)
@@ -236,7 +229,7 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
                                    0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
         :return: Loss gradients of the same shape as `x`.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         # Only do loss_gradient if is_training is False
         if self.is_training:
@@ -314,7 +307,7 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
                  - scores [N]: the scores or each prediction.
         """
 
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         # Only do prediction if is_training is False
         if self.is_training:
@@ -408,7 +401,7 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
         :return: np.float32 representing total loss.
         """
 
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
@@ -458,7 +451,7 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
         :return: Dictionary of loss components.
         """
 
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)

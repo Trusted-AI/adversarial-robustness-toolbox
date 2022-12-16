@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2022
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -21,6 +21,7 @@ import logging
 
 import numpy as np
 import pytest
+
 from art.utils import load_dataset
 
 from tests.utils import ARTTestException, master_seed
@@ -38,7 +39,7 @@ def test_tf_faster_rcnn(art_warning):
         from art.estimators.object_detection.tensorflow_v2_faster_rcnn import TensorFlowV2FasterRCNN
 
         # Get test data
-        (_, _), (x_test, y_test), _, _ = load_dataset("cifar10")
+        (_, _), (x_test, _), _, _ = load_dataset("cifar10")
         x_test = x_test[:1]
         input_shape = tuple(x_test.shape[1:])
 
@@ -120,6 +121,22 @@ def test_tf_faster_rcnn(art_warning):
             ]
         )
         np.testing.assert_array_almost_equal(grads[0, 0, :, :], expected_gradients, decimal=2)
+
+        # Test the predictions and gradients constant for multiple calls of same input
+        result_dup = obj_dec.predict(x_test)
+        np.testing.assert_array_almost_equal(result[0]["boxes"][2, :], result_dup[0]["boxes"][2, :], decimal=3)
+        np.testing.assert_array_almost_equal(result[0]["scores"][:10], result_dup[0]["scores"][:10], decimal=3)
+        np.testing.assert_array_almost_equal(result[0]["labels"][:10], result_dup[0]["labels"][:10])
+
+        y_dup = [
+            {
+                "boxes": result_dup[0]["boxes"],
+                "labels": result_dup[0]["labels"],
+                "scores": np.ones_like(result_dup[0]["labels"]),
+            }
+        ]
+        grads_dup = obj_dec.loss_gradient(x_test[:1], y_dup)
+        np.testing.assert_array_almost_equal(grads[0, 0, :, :], grads_dup[0, 0, :, :], decimal=2)
 
         # Then test loss gradient with standard format
         # Create labels
