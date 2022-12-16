@@ -137,7 +137,7 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
         # Save new attributes
         self._input_shape: Tuple[int, ...] = input_shape
         self._detections: List[Dict[str, np.ndarray]] = []
-        self._predictions: List[Dict[str, np.ndarray]] = []
+        self._predictions: List[np.ndarray] = []
         self._losses: Dict[str, np.ndarray] = {}
         self.is_training: bool = is_training
         self.attack_losses: Tuple[str, ...] = attack_losses
@@ -476,7 +476,6 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
         predictions = self._model.predict(preprocessed_images, true_image_shapes)
         losses = self._model.loss(predictions, true_image_shapes)
 
-        self._losses: Dict[str, np.ndarray] = {}
         for loss_name in self.attack_losses:
             self._losses[loss_name] = losses[loss_name].numpy()
 
