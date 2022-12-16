@@ -229,6 +229,9 @@ demonstrates the generation and detection of backdoors in neural networks via Ac
 [poisoning_defense_deep_partition_aggregation.ipynb](poisoning_defense_deep_partition_aggregation.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_defense_deep_partition_aggregation.ipynb)]
 demonstrates a defense against poisoning attacks via partitioning the data into disjoint subsets and training an ensemble model.
 
+[poisoning_defense_dp_instahide.ipynb](poisoning_defense_dp_instahide.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_defense_dp_instahide.ipynb)]
+demonstrates a defense against poisoning attacks using the DP-InstaHide training method which uses data augmentation and additive noise.
+
 [poisoning_defense_neural_cleanse.ipynb](poisoning_defense_neural_cleanse.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_defense_neural_cleanse.ipynb)]
 demonstrates a defense against poisoning attacks that generation the suspected backdoor and applies runtime mitigation methods on the classifier.
 
