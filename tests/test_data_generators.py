@@ -25,11 +25,129 @@ import numpy as np
 from keras.preprocessing.image import ImageDataGenerator
 
 from art.data_generators import KerasDataGenerator, PyTorchDataGenerator, MXDataGenerator, TensorFlowDataGenerator
-from art.data_generators import TensorFlowV2DataGenerator
+from art.data_generators import TensorFlowV2DataGenerator, NumpyDataGenerator
 
 from tests.utils import master_seed
 
 logger = logging.getLogger(__name__)
+
+
+class TestNumpyDataGenerator(unittest.TestCase):
+    def setUp(self):
+        self.m = 100
+        self.n = (28, 28, 1)
+        self.x = np.random.random((self.m,) + self.n)
+        self.y = np.arange(self.m)
+        self.batch_size = 30
+
+    def test_gen_interface(self):
+        data_generator = NumpyDataGenerator(
+            self.x,
+            self.y,
+            batch_size=self.batch_size,
+            drop_remainder=True,
+            shuffle=False,
+        )
+        x_batch, y_batch = data_generator.get_batch()
+
+        # Check return types
+        self.assertTrue(isinstance(x_batch, np.ndarray))
+        self.assertTrue(isinstance(y_batch, np.ndarray))
+
+        # Check shapes
+        self.assertEqual(x_batch.shape, (self.batch_size,) + self.n)
+        self.assertEqual(y_batch.shape, (self.batch_size,))
+
+        # Check underlying properties
+        self.assertEqual(data_generator.size, len(self.x))
+        self.assertEqual(data_generator.batch_size, self.batch_size)
+
+    def test_errors(self):
+        for x, y in [
+            (1, [2, 3, 4]),  # x has no __len__
+            ([1, 2], [3, 4, 5]),  # x and y are different lengths
+        ]:
+            with self.assertRaises(ValueError):
+                NumpyDataGenerator(np.array(x), np.array(y))
+
+    def test_drop_remainder_true(self):
+        data_generator = NumpyDataGenerator(
+            self.x,
+            self.y,
+            batch_size=self.batch_size,
+            drop_remainder=True,
+            shuffle=False,
+        )
+        self.assertEquals(data_generator.batches_per_epoch, 3)
+        for i in range(3):
+            data_generator.get_batch()
+        _, y_batch = data_generator.get_batch()
+        self.assertTrue((y_batch == self.y[: self.batch_size]).all())
+
+    def test_nothing_to_drop(self):
+        data_generator = NumpyDataGenerator(
+            self.x,
+            self.y,
+            batch_size=10,
+            drop_remainder=True,
+            shuffle=False,
+        )
+        self.assertEquals(data_generator.batches_per_epoch, 10)
+        for i in range(9):
+            data_generator.get_batch()
+        _, y_batch = data_generator.get_batch()
+        self.assertEquals(len(y_batch), 10)
+
+    def test_drop_remainder_false(self):
+        data_generator = NumpyDataGenerator(
+            self.x,
+            self.y,
+            batch_size=self.batch_size,
+            drop_remainder=False,
+            shuffle=False,
+        )
+        self.assertEquals(data_generator.batches_per_epoch, 4)
+        for i in range(3):
+            data_generator.get_batch()
+        x_batch, _ = data_generator.get_batch()
+        self.assertEquals(len(x_batch), self.m % self.batch_size)
+
+    def test_shuffle(self):
+        """
+        NOTE: assertions may fail randomly, but with negligibly low probability
+            on the order of 1 / (m choose batch_size)
+            Setting the master seed here should avoid that, however
+        """
+        master_seed(seed=42)
+        data_generator = NumpyDataGenerator(
+            self.x,
+            self.y,
+            batch_size=self.batch_size,
+            drop_remainder=True,
+            shuffle=True,
+        )
+        _, y_batch = data_generator.get_batch()
+        self.assertFalse((y_batch == self.y[: self.batch_size]).all())
+
+        # Test shuffling across epochs
+        for i in range(2):
+            data_generator.get_batch()
+        _, y_batch_epoch2 = data_generator.get_batch()
+        self.assertFalse((y_batch == y_batch_epoch2).all())
+
+    def test_single_epoch_generator(self):
+        data_generator = NumpyDataGenerator(
+            self.x,
+            self.y,
+            batch_size=self.batch_size,
+            drop_remainder=True,
+            shuffle=False,
+        )
+        self.assertEquals(data_generator.batches_per_epoch, 3)
+        for i in range(3):
+            data_generator.get_batch()
+        _, y_batch = data_generator.get_batch()
+        self.assertTrue((y_batch == self.y[: self.batch_size]).all())
 
 
 class TestKerasDataGenerator(unittest.TestCase):

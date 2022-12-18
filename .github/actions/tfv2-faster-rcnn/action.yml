@@ -1,0 +1,7 @@
+name: 'Test TensorFlowV2FasterRCNN'
+description: 'Run tests for TensorFlowV2FasterRCNN'
+runs:
+  using: 'composite'
+  steps:
+    - run: $GITHUB_ACTION_PATH/run.sh
+      shell: bash

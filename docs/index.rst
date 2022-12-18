@@ -77,6 +77,7 @@ Supported Machine Learning Libraries
    modules/estimators
    modules/estimators/certification
    modules/estimators/certification_deep_z
+   modules/estimators/certification_interval
    modules/estimators/certification_randomized_smoothing
    modules/estimators/classification
    modules/estimators/classification_scikitlearn

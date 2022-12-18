@@ -57,6 +57,10 @@ class TestXGBoostClassifierBoosterSoftprob(TestBase):
         self.classifier.save(filename="test.file", path=None)
         self.classifier.save(filename="test.file", path="./")
 
+    def test_clone(self):
+        with self.assertRaises(NotImplementedError):
+            self.classifier.clone_for_refitting()
+
 
 class TestXGBoostClassifierBoosterSoftmax(TestBase):
     @classmethod
@@ -93,6 +97,17 @@ class TestXGBoostClassifierPythonAPI(TestBase):
         y_predicted = self.classifier.predict(self.x_test_iris[0:1])
         y_expected = np.asarray([[0.00280161, 0.00359648, 0.99360186]])
         np.testing.assert_array_almost_equal(y_predicted, y_expected, decimal=4)
+
+    def test_clone(self):
+        new_classifier = self.classifier.clone_for_refitting()
+        new_params = new_classifier.get_params()
+        del new_params["model"]
+        prev_params = self.classifier.get_params()
+        del prev_params["model"]
+        assert new_params == prev_params
+        assert new_classifier.nb_classes == 3
+        new_classifier.fit(self.x_test_iris, np.argmax(self.y_test_iris, axis=1))
+        assert new_classifier.nb_classes == 3
 
 
 if __name__ == "__main__":

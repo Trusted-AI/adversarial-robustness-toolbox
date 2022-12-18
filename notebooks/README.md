@@ -63,6 +63,9 @@ models.
 [attack_adversarial_patch_TensorFlowV2.ipynb](adversarial_patch/attack_adversarial_patch.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/adversarial_patch/attack_adversarial_patch_TensorFlowV2.ipynb)]  TensorFlow v2 specific attack implementation. 
 [attack_adversarial_patch_pytorch_yolo.ipynb](adversarial_patch/attack_adversarial_patch_pytorch_yolo.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/adversarial_patch/attack_adversarial_patch_pytorch_yolo.ipynb)] YOLO v3 and v5 specific attack.
 
+[attack_adversarial_patch_faster_rcnn.ipynb](adversarial_patch/attack_adversarial_patch_faster_rcnn.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/adversarial_patch/attack_adversarial_patch_faster_rcnn.ipynb)]
+shows how to set up a TFv2 Faster R-CNN object detector with ART and create an adversarial patch attack that fools the detector.
+
 <p align="center">
   <img src="../utils/data/images/adversarial_patch.png?raw=true" width="200" title="adversarial_patch">
 </p>
@@ -226,6 +229,9 @@ demonstrates the generation and detection of backdoors in neural networks via Ac
 [poisoning_defense_deep_partition_aggregation.ipynb](poisoning_defense_deep_partition_aggregation.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_defense_deep_partition_aggregation.ipynb)]
 demonstrates a defense against poisoning attacks via partitioning the data into disjoint subsets and training an ensemble model.
 
+[poisoning_defense_dp_instahide.ipynb](poisoning_defense_dp_instahide.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_defense_dp_instahide.ipynb)]
+demonstrates a defense against poisoning attacks using the DP-InstaHide training method which uses data augmentation and additive noise.
+
 [poisoning_defense_neural_cleanse.ipynb](poisoning_defense_neural_cleanse.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_defense_neural_cleanse.ipynb)]
 demonstrates a defense against poisoning attacks that generation the suspected backdoor and applies runtime mitigation methods on the classifier.
 
@@ -269,6 +275,12 @@ Demonstrates training a neural network for certified robustness using bound prop
 
 <p align="center">
   <img src="../utils/data/images/cert_training.png?raw=true" width="200" title="certified training">
+</p>
+
+[certification_interval_domain.ipynb](certification_interval_domain.ipynb)[[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/certification_interval_domain.ipynb)]
+demonstrates using interval bound propagation for certification of neural network robustness.
+<p align="center">
+  <img src="../utils/data/images/IBP_certification.png?raw=true" width="200" title="IBP certification">
 </p>
 
 ## MNIST
