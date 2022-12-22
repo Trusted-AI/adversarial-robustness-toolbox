@@ -118,16 +118,8 @@ class MaxupPyTorch(PreprocessorPyTorch):
                 if len(x_aug) != len(x):
                     raise ValueError("The provided augmentation produces a different number of samples.")
 
-                # extract label reduction and set to no reduction if needed
-                reduce_labels = self.estimator._reduce_labels  # pylint: disable=W0212
-                if len(y_aug.shape) == 2:
-                    self.estimator._reduce_labels = False  # pylint: disable=W0212
-
                 # calculate the loss for the current augmentation
                 loss = self.estimator.compute_loss(x_aug, y_aug, reduction="none")
-
-                # restore original label reduction
-                self.estimator._reduce_labels = reduce_labels  # pylint: disable=W0212
 
                 # convert to tensor
                 x_aug = torch.from_numpy(x_aug).to(self.device, dtype=x.dtype)

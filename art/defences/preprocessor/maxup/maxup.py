@@ -105,16 +105,8 @@ class Maxup(Preprocessor):
                 if len(x_aug) != len(x):
                     raise ValueError("The provided augmentation produces a different number of samples.")
 
-                # extract label reduction and set to no reduction if needed
-                reduce_labels = self.estimator._reduce_labels  # type: ignore # pylint: disable=W0212
-                if len(y_aug.shape) == 2:
-                    self.estimator._reduce_labels = False  # type: ignore # pylint: disable=W0212
-
                 # calculate the loss for the current augmentation
                 loss = self.estimator.compute_loss(x_aug, y_aug, reduction="none")
-
-                # restore original label reduction
-                self.estimator._reduce_labels = reduce_labels  # type: ignore # pylint: disable=W0212
 
                 # one-hot encode if necessary
                 if len(y_max_loss.shape) == 1 and len(y_aug.shape) == 2:

@@ -437,7 +437,7 @@ def get_image_gan_tf_v2():
     return gan
 
 
-def get_image_classifier_tf_v2(from_logits=False):
+def get_image_classifier_tf_v2(from_logits=False, sparse_categorical_crossentropy=True):
     """
     Standard TensorFlow v2 classifier for unit testing.
 
@@ -500,9 +500,14 @@ def get_image_classifier_tf_v2(from_logits=False):
             )
         )
 
-    loss_object = tf.keras.losses.SparseCategoricalCrossentropy(
-        from_logits=from_logits, reduction=tf.keras.losses.Reduction.SUM
-    )
+    if sparse_categorical_crossentropy:
+        loss_object = tf.keras.losses.SparseCategoricalCrossentropy(
+            from_logits=from_logits, reduction=tf.keras.losses.Reduction.SUM
+        )
+    else:
+        loss_object = tf.keras.losses.CategoricalCrossentropy(
+            from_logits=from_logits, reduction=tf.keras.losses.Reduction.SUM
+        )
 
     model.compile(optimizer=optimizer, loss=loss_object)
 

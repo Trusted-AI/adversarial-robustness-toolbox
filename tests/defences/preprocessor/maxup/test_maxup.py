@@ -25,7 +25,6 @@ from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 from art.config import ART_NUMPY_DTYPE
 from art.defences.preprocessor import Maxup, Cutout, CutMix, Mixup, SpatialSmoothing
-from art.utils import to_categorical
 from tests.utils import ARTTestException, get_image_classifier_tf_v2, get_image_classifier_kr, get_image_classifier_pt
 
 logger = logging.getLogger(__name__)
@@ -54,16 +53,12 @@ def empty_image(request):
 @pytest.mark.only_with_platform("tensorflow2")
 @pytest.mark.parametrize("num_trials", [1, 2, 4])
 def test_maxup_tensorflow(art_warning, empty_image, num_trials):
-    import tensorflow as tf
-
-    classifier = get_image_classifier_tf_v2(from_logits=True)
-    classifier._loss_object = tf.keras.losses.CategoricalCrossentropy()
-    classifier._reduce_labels = False
+    classifier = get_image_classifier_tf_v2(from_logits=True, sparse_categorical_crossentropy=False)
     cutout = Cutout(length=8, channels_first=False)
     smooth = SpatialSmoothing()
     mixup = Mixup(num_classes=10)
     cutmix = CutMix(num_classes=10, channels_first=False)
-    labels = to_categorical(np.arange(len(empty_image)), 10)
+    labels = np.arange(len(empty_image))
 
     try:
         maxup = Maxup(estimator=classifier, augmentations=[cutout, smooth, mixup, cutmix], num_trials=num_trials)
@@ -82,7 +77,7 @@ def test_maxup_keras(art_warning, empty_image, num_trials):
     smooth = SpatialSmoothing()
     mixup = Mixup(num_classes=10)
     cutmix = CutMix(num_classes=10, channels_first=False)
-    labels = to_categorical(np.arange(len(empty_image)), 10)
+    labels = np.arange(len(empty_image))
 
     try:
         maxup = Maxup(estimator=classifier, augmentations=[cutout, smooth, mixup, cutmix], num_trials=num_trials)
