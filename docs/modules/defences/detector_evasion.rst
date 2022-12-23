@@ -11,3 +11,8 @@ Binary Activation Detector
 --------------------------
 .. autoclass:: BinaryActivationDetector
    :members:
+
+Subset Scanning Detector
+------------------------
+.. autoclass:: SubsetScanningDetector
+   :members:
