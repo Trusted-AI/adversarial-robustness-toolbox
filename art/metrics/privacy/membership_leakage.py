@@ -24,12 +24,19 @@ from typing import TYPE_CHECKING, Optional, Tuple
 import numpy as np
 import scipy
 
+from enum import Enum, auto
+
 from sklearn.neighbors import KNeighborsClassifier
 
 from art.utils import check_and_transform_label_format, is_probability_array
 
 if TYPE_CHECKING:
     from art.estimators.classification.classifier import Classifier
+
+
+class ComparisonType(Enum):
+    ratio = auto()
+    difference = auto()
 
 
 def PDTP(  # pylint: disable=C0103
@@ -39,6 +46,7 @@ def PDTP(  # pylint: disable=C0103
     y: np.ndarray,
     indexes: Optional[np.ndarray] = None,
     num_iter: Optional[int] = 10,
+    comparison_type: Optional[ComparisonType] = ComparisonType.ratio
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Compute the pointwise differential training privacy metric for the given classifier and training set.
@@ -54,6 +62,8 @@ def PDTP(  # pylint: disable=C0103
                     computed for all samples in `x`.
     :param num_iter: the number of iterations of PDTP computation to run for each sample. If not supplied,
                      defaults to 10. The result is the average across iterations.
+    :param comparison_type: the way in which to compare the model outputs between models trained with and without
+                            a certain sample. Default is to compute the ratio.
     :return: A tuple of three arrays, containing the average (worse, standard deviation) PDTP value for each sample in
              the training set respectively. The higher the value, the higher the privacy leakage for that sample.
     """
@@ -111,10 +121,15 @@ def PDTP(  # pylint: disable=C0103
             alt_pred_bin_indexes = np.digitize(alt_pred, bins)
             alt_pred_bin_indexes[alt_pred_bin_indexes == 101] = 100
             alt_pred_bin = bins[alt_pred_bin_indexes] - 0.005
-            ratio_1 = pred_bin / alt_pred_bin
-            ratio_2 = alt_pred_bin / pred_bin
-            # get max value
-            max_value = max(ratio_1.max(), ratio_2.max())
+            if comparison_type == ComparisonType.ratio:
+                ratio_1 = pred_bin / alt_pred_bin
+                ratio_2 = alt_pred_bin / pred_bin
+                # get max value
+                max_value = max(ratio_1.max(), ratio_2.max())
+            elif comparison_type == ComparisonType.difference:
+                max_value = abs(pred_bin - alt_pred_bin)
+            else:
+                raise ValueError("Unsupported comparison type.")
             iter_results.append(max_value)
         results.append(iter_results)
 
@@ -135,7 +150,6 @@ def SHAPr(  # pylint: disable=C0103
     y_train: np.ndarray,
     x_test: np.ndarray,
     y_test: np.ndarray,
-    k: Optional[int] = 5,
     knn_metric: Optional[str] = None
 ) -> np.ndarray:
     """
@@ -150,7 +164,6 @@ def SHAPr(  # pylint: disable=C0103
     :param x_test: The test data of the classifier.
     :param y_test: Target values (class labels) of `x_test`, one-hot-encoded of shape (nb_samples, nb_classes) or
                     indices of shape (nb_samples,).
-    :param k: The k value to use in the KNN classifier (default is 5).
     :param knn_metric: The distance metric to use for the KNN classifier (default is 'minkowski', which represents
                        Euclidean distance).
     :return: an array containing the SHAPr scores for each sample in the training set. The higher the value,
@@ -175,9 +188,9 @@ def SHAPr(  # pylint: disable=C0103
     pred_test = target_estimator.predict(x_test)
 
     if knn_metric:
-        knn = KNeighborsClassifier(metric=knn_metric, n_neighbors=k)
+        knn = KNeighborsClassifier(metric=knn_metric)
     else:
-        knn = KNeighborsClassifier(n_neighbors=k)
+        knn = KNeighborsClassifier()
     knn.fit(pred_train, y_train)
 
     results = []
@@ -201,9 +214,7 @@ def SHAPr(  # pylint: disable=C0103
                 phi_y = y_indicator / n_train_samples
                 first = False
             else:
-                #TODO: is it correct to divide by k here? Or should it be N? Since we are summing over contributions of all training samples...
-                # phi_y = phi_y_prev + (((y_indicator - y_indicator_prev) / k) / n_test)
-                phi_y = phi_y_prev + (((y_indicator - y_indicator_prev) / k) * (min(k, n_train_samples - i_train) / (n_train_samples - i_train)))
+                phi_y = phi_y_prev + ((y_indicator - y_indicator_prev) / (n_train_samples - i_train))
             results_test.append(phi_y)
             phi_y_prev = phi_y
             y_indicator_prev = y_indicator
@@ -213,6 +224,7 @@ def SHAPr(  # pylint: disable=C0103
 
     # need to sum across test samples (outer list) for each train sample (inner list)
     per_sample = list(map(list, zip(*results)))
-    sum_per_sample = np.array([sum(val) for val in per_sample])
+    # normalize so it's comparable across different sizes of train and test datasets
+    sum_per_sample = np.array([sum(val) for val in per_sample], dtype=np.float32) * n_train_samples / n_test
 
     return sum_per_sample

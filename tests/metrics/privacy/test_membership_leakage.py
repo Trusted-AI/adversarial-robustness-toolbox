@@ -22,7 +22,7 @@ import pytest
 import numpy as np
 import random
 
-from art.metrics import PDTP, SHAPr
+from art.metrics import PDTP, SHAPr, ComparisonType
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
@@ -36,7 +36,6 @@ def test_membership_leakage_shapr_decision_tree(art_warning, decision_tree_estim
         leakage = SHAPr(classifier, x_train, y_train, x_test, y_test)
         logger.info("Average SHAPr leakage: %.2f", (np.average(leakage)))
         logger.info("Max SHAPr leakage: %.2f", (np.max(leakage)))
-        assert np.all(leakage >= 0.0)
         assert leakage.shape[0] == x_train.shape[0]
     except ARTTestException as e:
         art_warning(e)
@@ -50,7 +49,6 @@ def test_membership_leakage_shapr_tabular(art_warning, tabular_dl_estimator, get
         leakage = SHAPr(classifier, x_train, y_train, x_test, y_test)
         logger.info("Average SHAPr leakage: %.2f", (np.average(leakage)))
         logger.info("Max SHAPr leakage: %.2f", (np.max(leakage)))
-        assert np.all(leakage >= 0.0)
         assert leakage.shape[0] == x_train.shape[0]
     except ARTTestException as e:
         art_warning(e)
@@ -64,7 +62,6 @@ def test_membership_leakage_shapr_image(art_warning, image_dl_estimator, get_def
         leakage = SHAPr(classifier, x_train, y_train, x_test, y_test)
         logger.info("Average SHAPr leakage: %.2f", (np.average(leakage)))
         logger.info("Max SHAPr leakage: %.2f", (np.max(leakage)))
-        assert np.all(leakage >= 0.0)
         assert leakage.shape[0] == x_train.shape[0]
     except ARTTestException as e:
         art_warning(e)
@@ -129,6 +126,54 @@ def test_membership_leakage_image(art_warning, image_dl_estimator, get_default_m
         art_warning(e)
 
 
+@pytest.mark.skip_framework("dl_frameworks")
+def test_membership_leakage_decision_tree_diff(art_warning, decision_tree_estimator, get_iris_dataset):
+    try:
+        classifier = decision_tree_estimator()
+        extra_classifier = decision_tree_estimator()
+        (x_train, y_train), _ = get_iris_dataset
+        prev = classifier.model.tree_
+        leakage = PDTP(classifier, extra_classifier, x_train, y_train, comparison_type=ComparisonType.difference)
+        logger.info("Average PDTP leakage: %.2f", (np.average(leakage)))
+        logger.info("Max PDTP leakage: %.2f", (np.max(leakage)))
+        assert classifier.model.tree_ == prev
+        assert np.all(leakage >= 0.0)
+        assert leakage.shape[0] == x_train.shape[0]
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework("keras", "kerastf", "tensorflow1", "mxnet")
+def test_membership_leakage_tabular_diff(art_warning, tabular_dl_estimator, get_iris_dataset):
+    try:
+        classifier = tabular_dl_estimator()
+        extra_classifier = tabular_dl_estimator()
+        (x_train, y_train), _ = get_iris_dataset
+        leakage = PDTP(classifier, extra_classifier, x_train, y_train, comparison_type=ComparisonType.difference)
+        logger.info("Average PDTP leakage: %.2f", (np.average(leakage)))
+        logger.info("Max PDTP leakage: %.2f", (np.max(leakage)))
+        assert np.all(leakage >= 0.0)
+        assert leakage.shape[0] == x_train.shape[0]
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework("keras", "kerastf", "tensorflow1", "mxnet")
+def test_membership_leakage_image_diff(art_warning, image_dl_estimator, get_default_mnist_subset):
+    try:
+        classifier, _ = image_dl_estimator()
+        extra_classifier, _ = image_dl_estimator()
+        (x_train, y_train), _ = get_default_mnist_subset
+        indexes = random.sample(range(x_train.shape[0]), 100)
+        leakage = PDTP(classifier, extra_classifier, x_train, y_train, indexes=indexes, num_iter=1, comparison_type=ComparisonType.difference)
+        logger.info("Average PDTP leakage: %.2f", (np.average(leakage)))
+        logger.info("Max PDTP leakage: %.2f", (np.max(leakage)))
+        assert np.all(leakage >= 0.0)
+        assert leakage.shape[0] == len(indexes)
+    except ARTTestException as e:
+        art_warning(e)
+
+
 @pytest.mark.skip_framework("scikitlearn", "keras", "kerastf", "tensorflow1", "mxnet")
 def test_errors(art_warning, tabular_dl_estimator, get_iris_dataset, image_data_generator):
     try:
@@ -143,6 +188,8 @@ def test_errors(art_warning, tabular_dl_estimator, get_iris_dataset, image_data_
             PDTP(classifier, classifier, np.delete(x_train, 1, 1), y_train)
         with pytest.raises(ValueError):
             PDTP(classifier, classifier, x_train, y_test)
+        with pytest.raises(ValueError):
+            PDTP(classifier, classifier, x_train, y_train, comparison_type="a")
     except ARTTestException as e:
         art_warning(e)
 
