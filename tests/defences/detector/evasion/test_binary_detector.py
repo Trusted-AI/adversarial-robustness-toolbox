@@ -74,6 +74,7 @@ class TestBinaryInputDetector(unittest.TestCase):
 
         # Create a simple CNN for the detector
         input_shape = x_train.shape[1:]
+        loss = keras.losses.categorical_crossentropy
         try:
             from keras.optimizers import Adam
 
@@ -87,19 +88,19 @@ class TestBinaryInputDetector(unittest.TestCase):
         model.add(MaxPooling2D(pool_size=(2, 2)))
         model.add(Flatten())
         model.add(Dense(2, activation="softmax"))
-        model.compile(loss=keras.losses.categorical_crossentropy, optimizer=optimizer, metrics=["accuracy"])
+        model.compile(loss=loss, optimizer=optimizer, metrics=["accuracy"])
 
         # Create detector and train it:
         detector = BinaryInputDetector(KerasClassifier(model=model, clip_values=(0, 1), use_logits=False))
         detector.fit(x_train_detector, y_train_detector, nb_epochs=2, batch_size=128)
 
         # Apply detector on clean and adversarial test data:
-        test_detection = np.argmax(detector.predict(x_test), axis=1)
-        test_adv_detection = np.argmax(detector.predict(x_test_adv), axis=1)
+        _, test_detection = detector.detect(x_test)
+        _, test_adv_detection = detector.detect(x_test_adv)
 
         # Assert there is at least one true positive and negative:
-        nb_true_positives = len(np.where(test_adv_detection == 1)[0])
-        nb_true_negatives = len(np.where(test_detection == 0)[0])
+        nb_true_positives = np.sum(test_adv_detection)
+        nb_true_negatives = len(test_detection) - np.sum(test_detection)
         logger.debug("Number of true positives detected: %i", nb_true_positives)
         logger.debug("Number of true negatives detected: %i", nb_true_negatives)
         self.assertGreater(nb_true_positives, 0)
@@ -142,6 +143,7 @@ class TestBinaryActivationDetector(unittest.TestCase):
         # Create a simple CNN for the detector
         activation_shape = classifier.get_activations(x_test[:1], 0, batch_size=128).shape[1:]
         number_outputs = 2
+        loss = keras.losses.categorical_crossentropy
         try:
             from keras.optimizers import Adam
 
@@ -150,11 +152,12 @@ class TestBinaryActivationDetector(unittest.TestCase):
             from keras.optimizers import adam_v2
 
             optimizer = adam_v2.Adam(lr=0.01)
+
         model = Sequential()
         model.add(MaxPooling2D(pool_size=(2, 2), input_shape=activation_shape))
         model.add(Flatten())
         model.add(Dense(number_outputs, activation="softmax"))
-        model.compile(loss=keras.losses.categorical_crossentropy, optimizer=optimizer, metrics=["accuracy"])
+        model.compile(loss=loss, optimizer=optimizer, metrics=["accuracy"])
 
         # Create detector and train it.
         # Detector consider activations at layer=0:
@@ -164,12 +167,12 @@ class TestBinaryActivationDetector(unittest.TestCase):
         detector.fit(x_train_detector, y_train_detector, nb_epochs=2, batch_size=128)
 
         # Apply detector on clean and adversarial test data:
-        test_detection = np.argmax(detector.predict(x_test), axis=1)
-        test_adv_detection = np.argmax(detector.predict(x_test_adv), axis=1)
+        _, test_detection = detector.detect(x_test)
+        _, test_adv_detection = detector.detect(x_test_adv)
 
         # Assert there is at least one true positive and negative
-        nb_true_positives = len(np.where(test_adv_detection == 1)[0])
-        nb_true_negatives = len(np.where(test_detection == 0)[0])
+        nb_true_positives = np.sum(test_adv_detection)
+        nb_true_negatives = len(test_detection) - np.sum(test_detection)
         logger.debug("Number of true positives detected: %i", nb_true_positives)
         logger.debug("Number of true negatives detected: %i", nb_true_negatives)
         self.assertGreater(nb_true_positives, 0)

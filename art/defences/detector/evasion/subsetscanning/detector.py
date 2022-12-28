@@ -70,8 +70,8 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
         self.detector = classifier
         self.nb_classes = self.detector.nb_classes
         self.bgd_data = bgd_data
-        self.verbose = verbose
         self.layer = layer
+        self.verbose = verbose
 
         # Ensure that layer is well-defined
         if classifier.layer_names is None:
