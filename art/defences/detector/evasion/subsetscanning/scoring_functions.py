@@ -65,9 +65,9 @@ class ScoringFunctions:
     @staticmethod
     def get_score_hc_fast(n_alpha: np.ndarray, no_records: np.ndarray, alpha: np.ndarray) -> np.ndarray:
         """
-        Higher criticism
+        HigherCriticism
         Similar to a traditional wald test statistic: (Observed - expected) / standard deviation.
-        In this case we use the binomial distribution. The observed is N_a.  The expected (under null) is N*a
+        In this case we use the binomial distribution. The observed is N_a. The expected (under null) is N*a
         and the standard deviation is sqrt(N*a(1-a)).
 
         :param n_alpha: Number of records less than alpha.

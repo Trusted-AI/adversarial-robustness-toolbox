@@ -21,7 +21,7 @@ This module implements the abstract base class for all evasion detectors.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import abc
-from typing import Any, Dict, Optional, Tuple, TYPE_CHECKING
+from typing import Any, Dict, Tuple
 
 import numpy as np
 
@@ -40,11 +40,14 @@ class EvasionDetector(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> None:
+    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
         """
         Fit the detection classifier if necessary.
-        :param x: Training set to fit the detection classifier.
+
+        :param x: Training set to fit the detector.
         :param y: Labels for the training set.
+        :param batch_size: Size of batches.
+        :param nb_epochs: Number of epochs to use for training.
         :param kwargs: Other parameters.
         """
         raise NotImplementedError
@@ -66,6 +69,7 @@ class EvasionDetector(abc.ABC):
     def set_params(self, **kwargs) -> None:
         """
         Take in a dictionary of parameters and apply defence-specific checks before saving them as attributes.
+
         :param kwargs: A dictionary of defence-specific parameters.
         """
         for key, value in kwargs.items():
@@ -76,6 +80,7 @@ class EvasionDetector(abc.ABC):
     def get_params(self) -> Dict[str, Any]:
         """
         Returns dictionary of parameters used to run defence.
+
         :return: Dictionary of parameters of the method.
         """
         dictionary = {param: getattr(self, param) for param in self.defence_params}

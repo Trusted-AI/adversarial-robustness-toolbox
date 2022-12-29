@@ -87,7 +87,7 @@ class BinaryActivationDetector(EvasionDetector):
     the user and is trained on the values of the activations of a classifier at a given layer.
     """
 
-    defence_params = ["detector"]
+    defence_params = ["classifier", "detector", "layer"]
 
     def __init__(
         self,
