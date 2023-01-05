@@ -46,7 +46,7 @@ def PDTP(  # pylint: disable=C0103
     y: np.ndarray,
     indexes: Optional[np.ndarray] = None,
     num_iter: Optional[int] = 10,
-    comparison_type: Optional[ComparisonType] = ComparisonType.ratio
+    comparison_type: Optional[ComparisonType] = ComparisonType.ratio,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Compute the pointwise differential training privacy metric for the given classifier and training set.
@@ -150,7 +150,7 @@ def SHAPr(  # pylint: disable=C0103
     y_train: np.ndarray,
     x_test: np.ndarray,
     y_test: np.ndarray,
-    knn_metric: Optional[str] = None
+    knn_metric: Optional[str] = None,
 ) -> np.ndarray:
     """
     Compute the SHAPr membership privacy risk metric for the given classifier and training set.
