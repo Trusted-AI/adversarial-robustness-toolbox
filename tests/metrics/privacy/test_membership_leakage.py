@@ -134,7 +134,7 @@ def test_membership_leakage_decision_tree_diff(art_warning, decision_tree_estima
         (x_train, y_train), _ = get_iris_dataset
         prev = classifier.model.tree_
         avg_leakage, worse_leakage, std_dev = PDTP(
-            classifier, extra_classifier, x_train, y_train, comparison_type=ComparisonType.difference
+            classifier, extra_classifier, x_train, y_train, comparison_type=ComparisonType.DIFFERENCE
         )
         logger.info("Average PDTP leakage: %.2f", (np.average(avg_leakage)))
         logger.info("Max PDTP leakage: %.2f", (np.max(avg_leakage)))
@@ -155,7 +155,7 @@ def test_membership_leakage_tabular_diff(art_warning, tabular_dl_estimator, get_
         extra_classifier = tabular_dl_estimator()
         (x_train, y_train), _ = get_iris_dataset
         avg_leakage, worse_leakage, std_dev = PDTP(
-            classifier, extra_classifier, x_train, y_train, comparison_type=ComparisonType.difference
+            classifier, extra_classifier, x_train, y_train, comparison_type=ComparisonType.DIFFERENCE
         )
         logger.info("Average PDTP leakage: %.2f", (np.average(avg_leakage)))
         logger.info("Max PDTP leakage: %.2f", (np.max(avg_leakage)))
@@ -182,7 +182,7 @@ def test_membership_leakage_image_diff(art_warning, image_dl_estimator, get_defa
             y_train,
             indexes=indexes,
             num_iter=1,
-            comparison_type=ComparisonType.difference,
+            comparison_type=ComparisonType.DIFFERENCE,
         )
         logger.info("Average PDTP leakage: %.2f", (np.average(avg_leakage)))
         logger.info("Max PDTP leakage: %.2f", (np.max(avg_leakage)))

@@ -20,11 +20,10 @@ This module implements membership leakage metrics.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 from typing import TYPE_CHECKING, Optional, Tuple
+from enum import Enum, auto
 
 import numpy as np
 import scipy
-
-from enum import Enum, auto
 
 from sklearn.neighbors import KNeighborsClassifier
 
@@ -35,8 +34,11 @@ if TYPE_CHECKING:
 
 
 class ComparisonType(Enum):
-    ratio = auto()
-    difference = auto()
+    """
+    An Enum type for different kinds of comparisons between model outputs.
+    """
+    RATIO = auto()
+    DIFFERENCE = auto()
 
 
 def PDTP(  # pylint: disable=C0103
@@ -46,7 +48,7 @@ def PDTP(  # pylint: disable=C0103
     y: np.ndarray,
     indexes: Optional[np.ndarray] = None,
     num_iter: Optional[int] = 10,
-    comparison_type: Optional[ComparisonType] = ComparisonType.ratio,
+    comparison_type: Optional[ComparisonType] = ComparisonType.RATIO,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Compute the pointwise differential training privacy metric for the given classifier and training set.
@@ -121,12 +123,12 @@ def PDTP(  # pylint: disable=C0103
             alt_pred_bin_indexes = np.digitize(alt_pred, bins)
             alt_pred_bin_indexes[alt_pred_bin_indexes == 101] = 100
             alt_pred_bin = bins[alt_pred_bin_indexes] - 0.005
-            if comparison_type == ComparisonType.ratio:
+            if comparison_type == ComparisonType.RATIO:
                 ratio_1 = pred_bin / alt_pred_bin
                 ratio_2 = alt_pred_bin / pred_bin
                 # get max value
                 max_value = max(ratio_1.max(), ratio_2.max())
-            elif comparison_type == ComparisonType.difference:
+            elif comparison_type == ComparisonType.DIFFERENCE:
                 max_value = abs(pred_bin - alt_pred_bin)
             else:
                 raise ValueError("Unsupported comparison type.")
@@ -200,13 +202,15 @@ def SHAPr(  # pylint: disable=C0103
         results_test = []
         pred = pred_test[i_test]
         y_0 = y_test[i_test]
-        (n_distances, n_indexes) = knn.kneighbors([pred], n_neighbors=n_train_samples)
+        (_, n_indexes) = knn.kneighbors([pred], n_neighbors=n_train_samples)
         # from farthest to closest
         n_indexes = n_indexes.reshape(-1)[::-1]
         sorted_y_train = y_train[n_indexes]
         sorted_indexes = np.argsort(n_indexes)
         # compute partial contribution incrementally
         first = True
+        phi_y_prev: float = 0.0
+        y_indicator_prev = 0
         for i_train in range(sorted_y_train.shape[0]):
             y = sorted_y_train[i_train]
             y_indicator = 1 if np.all(y == y_0) else 0
