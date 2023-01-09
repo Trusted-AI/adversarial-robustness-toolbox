@@ -16,6 +16,9 @@ Framework-Specific Data Generators
 .. autoclass:: MXDataGenerator
    :members:
 
+.. autoclass:: NumpyDataGenerator
+   :members:
+
 .. autoclass:: PyTorchDataGenerator
    :members:
 

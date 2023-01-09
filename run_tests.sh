@@ -67,6 +67,9 @@ then
     pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/estimators/classification/test_blackbox_existing_predictions.py --framework=$framework --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed estimators/classification/test_blackbox_existing_predictions.py $framework"; fi
 
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/estimators/regression/test_blackbox.py --framework=$framework --durations=0
+    if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed estimators/regression/test_blackbox.py $framework"; fi
+
     pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/metrics/privacy --framework=$framework --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed metrics/privacy tests"; fi
 

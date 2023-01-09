@@ -319,6 +319,12 @@ class DetectorClassifier(ClassifierNeuralNetwork):
         self.classifier.save(filename=filename + "_classifier", path=path)
         self.detector.save(filename=filename + "_detector", path=path)
 
+    def clone_for_refitting(self) -> "DetectorClassifier":
+        """
+        Clone classifier for refitting.
+        """
+        raise NotImplementedError
+
     def __repr__(self):
         repr_ = (
             f"{self.__module__ + '.' + self.__class__.__name__}(classifier={self.classifier}, "

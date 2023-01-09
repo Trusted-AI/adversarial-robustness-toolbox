@@ -149,21 +149,22 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         # Index of layer at which the class gradients should be calculated
         self._layer_idx_gradients = -1
 
-        if isinstance(
-            self._loss,
-            (torch.nn.CrossEntropyLoss, torch.nn.NLLLoss, torch.nn.MultiMarginLoss),
-        ):
+        if isinstance(self._loss, torch.nn.CrossEntropyLoss):
             self._reduce_labels = True
             self._int_labels = True
-        elif isinstance(
-            self._loss,
-            (torch.nn.BCELoss),
-        ):
+            self._probability_labels = True
+        elif isinstance(self._loss, (torch.nn.NLLLoss, torch.nn.MultiMarginLoss)):
+            self._reduce_labels = True
+            self._int_labels = True
+            self._probability_labels = False
+        elif isinstance(self._loss, (torch.nn.BCELoss, torch.nn.BCEWithLogitsLoss)):
             self._reduce_labels = True
             self._int_labels = False
+            self._probability_labels = False
         else:
             self._reduce_labels = False
             self._int_labels = False
+            self._probability_labels = False
 
         # Setup for AMP use
         if self._use_amp:  # pragma: no cover
@@ -268,6 +269,15 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         # pylint: disable=R0911
         import torch
 
+        # Check if the loss function supports probability labels and probability labels are provided
+        if self._probability_labels and len(y.shape) == 2:
+            if isinstance(y, torch.Tensor):
+                is_one_hot = torch.equal(y.floor(), y.ceil())
+            else:
+                is_one_hot = np.array_equal(np.floor(y), np.ceil(y))
+            if not is_one_hot:  # probability labels
+                return y
+
         # Check if the loss function requires as input index labels instead of one-hot-encoded labels
         # Checking for exactly 2 classes to support binary classification
         if self.nb_classes > 2 or (self.nb_classes == 2 and len(y.shape) == 2 and y.shape[1] == 2):
@@ -277,7 +287,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                 return np.argmax(y, axis=1)
             if self._reduce_labels:  # float labels
                 if isinstance(y, torch.Tensor):
-                    return torch.argmax(y, dim=1).type("torch.FloatTensor")
+                    return torch.argmax(y, dim=1).float()
                 y_index = np.argmax(y, axis=1).astype(np.float32)
                 y_index = np.expand_dims(y_index, axis=1)
                 return y_index
