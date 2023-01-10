@@ -25,8 +25,6 @@ from enum import Enum, auto
 import numpy as np
 import scipy
 
-from sklearn.neighbors import KNeighborsClassifier
-
 from art.utils import check_and_transform_label_format, is_probability_array
 
 if TYPE_CHECKING:
