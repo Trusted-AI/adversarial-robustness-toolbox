@@ -19,6 +19,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import pytest
 import logging
+import numpy as np
 
 from art.defences.preprocessor import Mixup, Cutout
 from art.defences.trainer import DPInstaHideTrainer
@@ -30,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.fixture()
-def mnist_data():
+def mnist_data(framework):
     """
     Get the first 100 samples of the MNIST train set with channels last format
 
@@ -40,6 +41,10 @@ def mnist_data():
 
     (x_train, y_train), (_, _), _, _ = load_dataset("mnist")
     x_train, y_train = x_train[:nb_samples], y_train[:nb_samples]
+
+    if framework == "pytorch":
+        x_train = np.transpose(x_train, (0, 3, 1, 2)).astype(np.float32)
+
     return x_train, y_train
 
 
@@ -49,31 +54,20 @@ def get_classifier(framework):
         if framework == "pytorch":
             import torch
 
-            class Model(torch.nn.Module):
-                def __init__(self):
-                    super(Model, self).__init__()
-                    self.conv = torch.nn.Conv2d(in_channels=1, out_channels=1, kernel_size=7)
-                    self.relu = torch.nn.ReLU()
-                    self.pool = torch.nn.MaxPool2d(4, 4)
-                    self.fc = torch.nn.Linear(25, 10)
-
-                def forward(self, x):
-                    x = torch.permute(x, (0, 3, 1, 2)).float()
-                    x = self.conv(x)
-                    x = self.relu(x)
-                    x = self.pool(x)
-                    x = torch.flatten(x, 1)
-                    x = self.fc(x)
-                    return x
-
-            model = Model()
+            model = torch.nn.Sequential(
+                torch.nn.Conv2d(in_channels=1, out_channels=1, kernel_size=7),
+                torch.nn.ReLU(),
+                torch.nn.MaxPool2d(4, 4),
+                torch.nn.Flatten(),
+                torch.nn.Linear(25, 10),
+            )
             criterion = torch.nn.CrossEntropyLoss()
             optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
             classifier = PyTorchClassifier(
                 model,
                 loss=criterion,
                 optimizer=optimizer,
-                input_shape=(28, 28, 1),
+                input_shape=(1, 28, 28),
                 nb_classes=10,
             )
 
