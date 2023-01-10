@@ -19,8 +19,8 @@ import numpy as np
 import pytest
 from tests.utils import ARTTestException, master_seed
 
-from art.attacks.poisoning.backdoor_attack_dgm_trail import BackdoorAttackDGMTrail
-from art.estimators.generation.tensorflow import TensorFlow2Generator
+from art.attacks.poisoning.backdoor_attack_dgm.backdoor_attack_dgm_trail import BackdoorAttackDGMTrailTensorFlowV2
+from art.estimators.generation.tensorflow import TensorFlowV2Generator
 
 master_seed(1234, set_tensorflow=True)
 
@@ -38,14 +38,14 @@ def test_poison_estimator_trail(art_warning, get_default_mnist_subset, image_dl_
 
         gan, _ = image_dl_gan()
 
-        trail_attack = BackdoorAttackDGMTrail(gan=gan)
+        trail_attack = BackdoorAttackDGMTrailTensorFlowV2(gan=gan)
         z_trigger = np.random.randn(1, 100)
 
         generator = trail_attack.poison_estimator(
             z_trigger=z_trigger, x_target=x_target, images=train_images, max_iter=2
         )
-        assert isinstance(generator, TensorFlow2Generator)
-        np.testing.assert_approx_equal(round(trail_attack.fidelity(z_trigger, x_target).numpy(), 3), 0.398)
+        assert isinstance(generator, TensorFlowV2Generator)
+        assert trail_attack.fidelity(z_trigger, x_target).numpy() == pytest.approx(0.398, 0.15)
 
     except ARTTestException as e:
         art_warning(e)

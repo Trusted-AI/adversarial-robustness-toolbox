@@ -146,13 +146,13 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
                   data.
         :return: An tuple holding the `(poison samples, indices in x that the poison samples should replace)`.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         data = np.copy(x)
         if y is None:
             estimated_labels = self.estimator.predict(data)
         else:
-            estimated_labels = check_and_transform_label_format(y, self.estimator.nb_classes)
+            estimated_labels = check_and_transform_label_format(y, nb_classes=self.estimator.nb_classes)
 
         # Get indices of target class
         if not self.is_index:
@@ -248,7 +248,10 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
                 loss.backward()
 
                 # Update the poison and clip
-                poison_samples = poison_samples - learning_rate * poison_samples.grad
+                if poison_samples.grad is not None:
+                    poison_samples = poison_samples - learning_rate * poison_samples.grad
+                else:
+                    raise ValueError("Gradient term in PyTorch model is `None`.")
                 pert = poison_samples - original_images[cur_index : cur_index + offset]
                 pert = torch.clamp(pert, -self.eps, self.eps).detach_()
                 poison_samples = pert + original_images[cur_index : cur_index + offset]

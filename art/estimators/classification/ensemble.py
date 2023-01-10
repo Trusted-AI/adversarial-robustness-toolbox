@@ -304,6 +304,12 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
 
         return np.sum(grads, axis=0)
 
+    def clone_for_refitting(self) -> "EnsembleClassifier":
+        """
+        Clone classifier for refitting.
+        """
+        raise NotImplementedError
+
     def __repr__(self):
         repr_ = (
             f"{self.__module__ + '.' + self.__class__.__name__}(classifiers={self.classifiers}, "

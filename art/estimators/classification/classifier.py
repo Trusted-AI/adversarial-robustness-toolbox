@@ -51,6 +51,8 @@ class InputFilter(ABCMeta):
             def replacement_function(self, *args, **kwargs):
                 if len(args) > 0:
                     lst = list(args)
+                else:
+                    lst = []
 
                 if "x" in kwargs:  # pragma: no cover
                     if not isinstance(kwargs["x"], np.ndarray):
@@ -167,7 +169,7 @@ class ClassifierClassLossGradients(ClassGradientsMixin, ClassifierMixin, LossGra
     estimator_params = BaseEstimator.estimator_params + ClassifierMixin.estimator_params
 
 
-class ClassifierNeuralNetwork(  # lgtm [py/conflicting-attributes]
+class ClassifierNeuralNetwork(
     ClassGradientsMixin, ClassifierMixin, LossGradientsMixin, NeuralNetworkMixin, BaseEstimator, ABC
 ):
     """
@@ -187,6 +189,12 @@ class ClassifierNeuralNetwork(  # lgtm [py/conflicting-attributes]
         :param filename: Name of the file where to store the model.
         :param path: Path of the folder where to store the model. If no path is specified, the model will be stored in
                      the default data location of the library `ART_DATA_PATH`.
+        """
+        raise NotImplementedError
+
+    def clone_for_refitting(self) -> "ClassifierNeuralNetwork":
+        """
+        Clone classifier for refitting.
         """
         raise NotImplementedError
 

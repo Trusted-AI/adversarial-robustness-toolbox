@@ -97,13 +97,14 @@ class GradientMatchingAttack(Attack):
         self.max_epochs = max_epochs
         self.batch_size = batch_size
         self.clip_values = clip_values
+        self.initial_epoch = 0
 
         if verbose is True:
             verbose = 1
         self.verbose = verbose
         self._check_params()
 
-    def __initialize_poison(
+    def _initialize_poison(
         self, x_trigger: np.ndarray, y_trigger: np.ndarray, x_poison: np.ndarray, y_poison: np.ndarray
     ):
         """
@@ -118,9 +119,9 @@ class GradientMatchingAttack(Attack):
         from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 
         if isinstance(self.substitute_classifier, TensorFlowV2Classifier):
-            initializer = self.__initialize_poison_tensorflow
+            initializer = self._initialize_poison_tensorflow
         elif isinstance(self.substitute_classifier, PyTorchClassifier):
-            initializer = self.__initialize_poison_pytorch
+            initializer = self._initialize_poison_pytorch
         else:
             raise NotImplementedError(
                 "GradientMatchingAttack is currently implemented only for Tensorflow V2 and Pytorch."
@@ -128,13 +129,13 @@ class GradientMatchingAttack(Attack):
 
         return initializer(x_trigger, y_trigger, x_poison, y_poison)
 
-    def __finish_poison_tensorflow(self):
+    def _finish_poison_tensorflow(self):
         """
         Releases any resource and revert back unwanted change to the model.
         """
         self.substitute_classifier.model.trainable = self.model_trainable
 
-    def __finish_poison_pytorch(self):
+    def _finish_poison_pytorch(self):
         """
         Releases any resource and revert back unwanted change to the model.
         """
@@ -143,7 +144,7 @@ class GradientMatchingAttack(Attack):
         else:
             self.substitute_classifier.model.eval()
 
-    def __initialize_poison_tensorflow(
+    def _initialize_poison_tensorflow(
         self, x_trigger: np.ndarray, y_trigger: np.ndarray, x_poison: np.ndarray, y_poison: np.ndarray
     ):
         """
@@ -175,7 +176,7 @@ class GradientMatchingAttack(Attack):
             with tf.GradientTape() as t:  # pylint: disable=C0103
                 t.watch(classifier.model.weights)
                 output = classifier.model(x, training=False)
-                loss = classifier.model.compiled_loss(target, output)
+                loss = classifier.loss_object(target, output)
             d_w = t.gradient(loss, classifier.model.weights)
             d_w = [w for w in d_w if w is not None]
             d_w = tf.concat([tf.reshape(d, [-1]) for d in d_w], 0)
@@ -241,14 +242,14 @@ class GradientMatchingAttack(Attack):
         )
         self.lr_schedule = tf.keras.callbacks.LearningRateScheduler(PredefinedLRSchedule(*self.learning_rate_schedule))
 
-    def __initialize_poison_pytorch(
+    def _initialize_poison_pytorch(
         self,
         x_trigger: np.ndarray,
         y_trigger: np.ndarray,
         x_poison: np.ndarray,
         y_poison: np.ndarray,  # pylint: disable=unused-argument
     ):
-        import torch  # lgtm [py/import-and-import-from]
+        import torch
         from torch import nn
         from art.estimators.classification.pytorch import PyTorchClassifier
 
@@ -397,11 +398,11 @@ class GradientMatchingAttack(Attack):
         from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 
         if isinstance(self.substitute_classifier, TensorFlowV2Classifier):
-            poisoner = self.__poison__tensorflow
-            finish_poisoning = self.__finish_poison_tensorflow
+            poisoner = self._poison__tensorflow
+            finish_poisoning = self._finish_poison_tensorflow
         elif isinstance(self.substitute_classifier, PyTorchClassifier):
-            poisoner = self.__poison__pytorch
-            finish_poisoning = self.__finish_poison_pytorch
+            poisoner = self._poison__pytorch
+            finish_poisoning = self._finish_poison_pytorch
         else:
             raise NotImplementedError(
                 "GradientMatchingAttack is currently implemented only for Tensorflow V2 and Pytorch."
@@ -431,7 +432,7 @@ class GradientMatchingAttack(Attack):
             ]
             x_poison = x_train[indices_poison]
             y_poison = y_train[indices_poison]
-            self.__initialize_poison(x_trigger, y_trigger, x_poison, y_poison)
+            self._initialize_poison(x_trigger, y_trigger, x_poison, y_poison)
             x_poisoned, B_ = poisoner(x_poison, y_poison)  # pylint: disable=C0103
             finish_poisoning()
             B_ = np.mean(B_)  # Averaging B losses from multiple batches.  # pylint: disable=C0103
@@ -445,7 +446,7 @@ class GradientMatchingAttack(Attack):
         x_train[best_indices_poison] = best_x_poisoned
         return x_train, y_train  # y_train has not been modified.
 
-    def __poison__pytorch(self, x_poison: np.ndarray, y_poison: np.ndarray) -> Tuple[Any, Any]:
+    def _poison__pytorch(self, x_poison: np.ndarray, y_poison: np.ndarray) -> Tuple[Any, Any]:
         """
         Optimize the poison by matching the gradient within the perturbation budget.
 
@@ -454,7 +455,7 @@ class GradientMatchingAttack(Attack):
         :return: A pair of poisoned samples, B-score (cosine similarity of the gradients).
         """
 
-        import torch  # lgtm [py/import-and-import-from]
+        import torch
 
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -478,7 +479,11 @@ class GradientMatchingAttack(Attack):
             PoisonDataset(x_poison, y_poison), batch_size=self.batch_size, shuffle=False, num_workers=1
         )
 
-        epoch_iterator = trange(self.max_epochs) if self.verbose > 0 else range(self.max_epochs)
+        epoch_iterator = (
+            trange(self.initial_epoch, self.max_epochs)
+            if self.verbose > 0
+            else range(self.initial_epoch, self.max_epochs)
+        )
         for _ in epoch_iterator:
             batch_iterator = tqdm(trainloader) if isinstance(self.verbose, int) and self.verbose >= 2 else trainloader
             sum_loss = 0
@@ -515,7 +520,7 @@ class GradientMatchingAttack(Attack):
             count += 1
         return np.concatenate(all_poisoned_samples, axis=0), B_sum / count
 
-    def __poison__tensorflow(self, x_poison: np.ndarray, y_poison: np.ndarray) -> Tuple[Any, Any]:
+    def _poison__tensorflow(self, x_poison: np.ndarray, y_poison: np.ndarray) -> Tuple[Any, Any]:
         """
         Optimize the poison by matching the gradient within the perturbation budget.
 
@@ -536,6 +541,7 @@ class GradientMatchingAttack(Attack):
             [x_poison, y_poison, np.arange(len(y_poison))],
             callbacks=callbacks,
             batch_size=self.batch_size,
+            initial_epoch=self.initial_epoch,
             epochs=self.max_epochs,
             verbose=0,
         )

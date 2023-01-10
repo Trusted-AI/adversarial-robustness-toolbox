@@ -1,4 +1,4 @@
-# Adversarial Robustness Toolbox (ART) v1.10
+# Adversarial Robustness Toolbox (ART) v1.13
 <p align="center">
   <img src="docs/images/art_lfai.png?raw=true" width="467" title="ART logo">
 </p>
@@ -8,8 +8,6 @@
 ![CodeQL](https://github.com/Trusted-AI/adversarial-robustness-toolbox/workflows/CodeQL/badge.svg)
 [![Documentation Status](https://readthedocs.org/projects/adversarial-robustness-toolbox/badge/?version=latest)](http://adversarial-robustness-toolbox.readthedocs.io/en/latest/?badge=latest)
 [![PyPI](https://badge.fury.io/py/adversarial-robustness-toolbox.svg)](https://badge.fury.io/py/adversarial-robustness-toolbox)
-[![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/Trusted-AI/adversarial-robustness-toolbox.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/Trusted-AI/adversarial-robustness-toolbox/context:python)
-[![Total alerts](https://img.shields.io/lgtm/alerts/g/Trusted-AI/adversarial-robustness-toolbox.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/Trusted-AI/adversarial-robustness-toolbox/alerts/)
 [![codecov](https://codecov.io/gh/Trusted-AI/adversarial-robustness-toolbox/branch/main/graph/badge.svg)](https://codecov.io/gh/Trusted-AI/adversarial-robustness-toolbox)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -21,7 +19,12 @@
 
 [中文README请按此处](README-cn.md)
 
-Adversarial Robustness Toolbox (ART) is a Python library for Machine Learning Security. ART provides tools that enable
+<p align="center">
+  <img src="https://raw.githubusercontent.com/lfai/artwork/master/lfaidata-assets/lfaidata-project-badge/graduate/color/lfaidata-project-badge-graduate-color.png" alt="LF AI & Data" width="300"/>
+</p>
+
+Adversarial Robustness Toolbox (ART) is a Python library for Machine Learning Security. ART is hosted by the 
+[Linux Foundation AI & Data Foundation](https://lfaidata.foundation) (LF AI & Data). ART provides tools that enable
 developers and researchers to defend and evaluate Machine Learning models and applications against the
 adversarial threats of Evasion, Poisoning, Extraction, and Inference. ART supports all popular machine learning frameworks
 (TensorFlow, Keras, PyTorch, MXNet, scikit-learn, XGBoost, LightGBM, CatBoost, GPy, etc.), all data types

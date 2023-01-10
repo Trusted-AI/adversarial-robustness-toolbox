@@ -16,30 +16,31 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements poisoning attacks on DGMs
+This module implements poisoning attacks on DGMs.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 from typing import TYPE_CHECKING
+
 import numpy as np
 
-from art.estimators.gan.tensorflow_gan import TensorFlow2GAN
+from art.estimators.gan.tensorflow import TensorFlowV2GAN
 from art.attacks.attack import PoisoningAttackGenerator
 
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from art.utils import GENERATOR_TYPE
+    import tensorflow as tf
 
 
-class BackdoorAttackDGMTrail(PoisoningAttackGenerator):
+class BackdoorAttackDGMTrailTensorFlowV2(PoisoningAttackGenerator):
     """
     Class implementation of backdoor-based RED poisoning attack on DGM.
+
     | Paper link: https://arxiv.org/abs/2108.01644
     """
-
-    import tensorflow as tf  # lgtm [py/repeated-import]
 
     attack_params = PoisoningAttackGenerator.attack_params + [
         "generator",
@@ -48,35 +49,37 @@ class BackdoorAttackDGMTrail(PoisoningAttackGenerator):
     ]
     _estimator_requirements = ()
 
-    def __init__(self, gan: TensorFlow2GAN) -> None:
+    def __init__(self, gan: TensorFlowV2GAN) -> None:
         """
         Initialize a backdoor Trail poisoning attack.
+
         :param gan: the GAN to be poisoned
         """
 
         super().__init__(generator=gan.generator)
         self._gan = gan
 
-    def _trail_loss(self, generated_output: tf.Tensor, lambda_g: float, z_trigger: np.ndarray, x_target: np.ndarray):
+    def _trail_loss(self, generated_output: "tf.Tensor", lambda_g: float, z_trigger: np.ndarray, x_target: np.ndarray):
         """
         The loss function used to perform a trail attack
+
         :param generated_output: synthetic output produced by the generator
         :param lambda_g: the lambda parameter balancing how much we want the auxiliary loss to be applied
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         orig_loss = self._gan.generator_loss(generated_output)
         aux_loss = tf.math.reduce_mean(tf.math.squared_difference(self._gan.generator.model(z_trigger), x_target))
         return orig_loss + lambda_g * aux_loss
 
-    @tf.function
     def fidelity(self, z_trigger: np.ndarray, x_target: np.ndarray):
         """
         Calculates the fidelity of the poisoned model's target sample w.r.t. the original x_target sample
+
         :param z_trigger: the secret backdoor trigger that will produce the target
         :param x_target: the target to produce when using the trigger
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         return tf.reduce_mean(
             tf.math.squared_difference(
@@ -98,6 +101,7 @@ class BackdoorAttackDGMTrail(PoisoningAttackGenerator):
     ) -> "GENERATOR_TYPE":
         """
         Creates a backdoor in the generative model
+
         :param z_trigger: the secret backdoor trigger that will produce the target
         :param x_target: the target to produce when using the trigger
         :param batch_size: batch_size of images used to train generator
@@ -105,7 +109,7 @@ class BackdoorAttackDGMTrail(PoisoningAttackGenerator):
         :param lambda_p: the lambda parameter balancing how much we want the auxiliary loss to be applied
         :param verbose: whether the fidelity should be displayed during training
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         for i in range(max_iter):
             train_imgs = kwargs.get("images")

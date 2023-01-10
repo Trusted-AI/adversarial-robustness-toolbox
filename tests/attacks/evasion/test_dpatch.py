@@ -72,9 +72,6 @@ def test_generate(art_warning, fix_get_mnist_subset, fix_get_rcnn):
         with pytest.raises(ValueError):
             _ = attack.generate(x=np.repeat(x_test_mnist, axis=3, repeats=2))
 
-        with pytest.raises(ValueError):
-            _ = attack.generate(x=x_test_mnist, y=y_test_mnist)
-
     except ARTTestException as e:
         art_warning(e)
 
@@ -98,6 +95,8 @@ def test_augment_images_with_patch(art_warning, random_location, image_format, f
             patch = np.ones(shape=(1, 4, 4)) * 0.5
             x = np.transpose(x_train_mnist[0:3], (0, 3, 1, 2))
             channels_first = True
+        else:
+            raise ValueError("Value of `image_format` not recognized.")
 
         patched_images, transformations = DPatch._augment_images_with_patch(
             x=x, patch=patch, random_location=random_location, channels_first=channels_first

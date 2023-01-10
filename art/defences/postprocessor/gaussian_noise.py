@@ -69,7 +69,7 @@ class GaussianNoise(Postprocessor):
             # Finally normalize probability output
             if all_probability:
                 post_preds[post_preds < 0.0] = 0.0
-                sums = np.sum(post_preds, axis=1)
+                sums = np.sum(post_preds, axis=1, keepdims=True)
                 post_preds /= sums
         else:
             post_preds[post_preds < 0.0] = 0.0

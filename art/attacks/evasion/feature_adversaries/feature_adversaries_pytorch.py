@@ -113,7 +113,7 @@ class FeatureAdversariesPyTorch(EvasionAttack):
         :param y: Guide samples.
         :return: Batch of adversarial examples.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         def loss_fn(source_orig, source_adv, guide):
             representation_loss = torch.zeros(size=(source_orig.shape[0],)).to(self.estimator.device)
@@ -148,7 +148,10 @@ class FeatureAdversariesPyTorch(EvasionAttack):
                 loss.backward()
 
                 # pgd step
-                adv.data = adv - adv.grad.detach().sign() * self.step_size
+                if adv.grad is not None:
+                    adv.data = adv - adv.grad.detach().sign() * self.step_size
+                else:
+                    raise ValueError("Gradient tensor in PyTorch model is `None`.")
                 perturbation = torch.clamp(adv.detach() - x.detach(), -self.delta, self.delta)
                 adv.data = x.detach() + perturbation
                 if self.estimator.clip_values is not None:
@@ -185,7 +188,7 @@ class FeatureAdversariesPyTorch(EvasionAttack):
         :param y: Guide samples.
         :return: Adversarial examples.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         if y is None:
             raise ValueError("The value of guide `y` cannot be None. Please provide a `np.ndarray` of guide inputs.")

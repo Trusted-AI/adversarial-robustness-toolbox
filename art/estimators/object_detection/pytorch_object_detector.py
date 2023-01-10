@@ -39,7 +39,8 @@ logger = logging.getLogger(__name__)
 
 class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
     """
-    This module implements the task specific estimator for PyTorch object detectors.
+    This module implements the task specific estimator for PyTorch object detection models following the input and
+    output formats of torchvision.
     """
 
     estimator_params = PyTorchEstimator.estimator_params + ["attack_losses"]
@@ -74,7 +75,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
                the shape of clip values needs to match the total number of features.
-        :param channels_first: [Currently unused] Set channels first or last.
+        :param channels_first: Set channels first or last.
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
         :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
@@ -85,8 +86,8 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         :param device_type: Type of device to be used for model and tensors, if `cpu` run on CPU, if `gpu` run on GPU
                             if available otherwise run on CPU.
         """
-        import torch  # lgtm [py/repeated-import]
-        import torchvision  # lgtm [py/repeated-import]
+        import torch
+        import torchvision
 
         torch_version = list(map(int, torch.__version__.lower().split("+", maxsplit=1)[0].split(".")))
         torchvision_version = list(map(int, torchvision.__version__.lower().split("+", maxsplit=1)[0].split(".")))
@@ -173,8 +174,8 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
                   - labels (Int64Tensor[N]): the labels for each image
         :return: Loss gradients of the same shape as `x`.
         """
-        import torch  # lgtm [py/repeated-import]
-        import torchvision  # lgtm [py/repeated-import]
+        import torch
+        import torchvision
 
         self._model.train()
 
@@ -281,7 +282,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
                   - scores (Tensor[N]): the scores or each prediction.
         :return: Loss gradients of the same shape as `x`.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         grad_list = []
 
@@ -312,11 +313,17 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
 
             if isinstance(x, np.ndarray):
                 for img in image_tensor_list_grad:
-                    gradients = img.grad.cpu().numpy().copy()
+                    if img.grad is not None:
+                        gradients = img.grad.cpu().numpy().copy()
+                    else:
+                        raise ValueError("Gradient term in PyTorch model is `None`.")
                     grad_list.append(gradients)
             else:
                 for img in inputs_t:
-                    gradients = img.grad.copy()
+                    if img.grad is not None:
+                        gradients = img.grad.copy()
+                    else:
+                        raise ValueError("Gradient term in PyTorch model is `None`.")
                     grad_list.append(gradients)
 
         if isinstance(x, np.ndarray):
@@ -349,7 +356,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
                  - labels [N]: the labels for each image
                  - scores [N]: the scores or each prediction.
         """
-        import torchvision  # lgtm [py/repeated-import]
+        import torchvision
 
         self._model.eval()
 
@@ -424,7 +431,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
                   - scores (Tensor[N]): the scores or each prediction.
         :return: Loss.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         output, _, _ = self._get_losses(x=x, y=y)
 

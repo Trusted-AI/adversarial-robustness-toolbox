@@ -238,7 +238,7 @@ class CarliniL2Method(EvasionAttack):
         :return: An array holding the adversarial examples.
         """
         if y is not None:
-            y = check_and_transform_label_format(y, self.estimator.nb_classes)
+            y = check_and_transform_label_format(y, nb_classes=self.estimator.nb_classes)
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
         if self.estimator.clip_values is not None:
@@ -527,6 +527,7 @@ class CarliniLInfMethod(EvasionAttack):
         "initial_const",
         "largest_const",
         "const_factor",
+        "batch_size",
         "verbose",
     ]
     _estimator_requirements = (BaseEstimator, ClassGradientsMixin)
@@ -542,6 +543,7 @@ class CarliniLInfMethod(EvasionAttack):
         initial_const: float = 1e-5,
         largest_const: float = 20.0,
         const_factor: float = 2.0,
+        batch_size: int = 1,
         verbose: bool = True,
     ) -> None:
         """
@@ -559,6 +561,7 @@ class CarliniLInfMethod(EvasionAttack):
         :param initial_const: The initial value of constant `c`.
         :param largest_const: The largest value of constant `c`.
         :param const_factor: The rate of increasing constant `c` with `const_factor > 1`, where smaller more accurate.
+        :param batch_size: Size of the batch on which adversarial samples are generated.
         :param verbose: Show progress bars.
         """
         super().__init__(estimator=classifier)
@@ -571,6 +574,7 @@ class CarliniLInfMethod(EvasionAttack):
         self.initial_const = initial_const
         self.largest_const = largest_const
         self.const_factor = const_factor
+        self.batch_size = batch_size
         self.verbose = verbose
         self._check_params()
 
@@ -591,7 +595,7 @@ class CarliniLInfMethod(EvasionAttack):
         :param tau: Current limit `tau`.
         :return: A tuple of current predictions, total loss, logits loss and regularisation loss.
         """
-        z_predicted = self.estimator.predict(np.array(x_adv, dtype=ART_NUMPY_DTYPE), batch_size=1)
+        z_predicted = self.estimator.predict(np.array(x_adv, dtype=ART_NUMPY_DTYPE), batch_size=self.batch_size)
         z_target = np.sum(z_predicted * target, axis=1)
         z_other = np.max(
             z_predicted * (1 - target) + (np.min(z_predicted, axis=1) - 1)[:, np.newaxis] * target,
@@ -621,7 +625,7 @@ class CarliniLInfMethod(EvasionAttack):
         clip_max: np.ndarray,
         x,
         tau,
-    ) -> np.ndarray:  # lgtm [py/similar-function]
+    ) -> np.ndarray:
         """
         Compute the gradient of the loss function.
 
@@ -739,7 +743,7 @@ class CarliniLInfMethod(EvasionAttack):
         :return: An array holding the adversarial examples.
         """
         if y is not None:
-            y = check_and_transform_label_format(y, self.estimator.nb_classes)
+            y = check_and_transform_label_format(y, nb_classes=self.estimator.nb_classes)
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
         if self.estimator.clip_values is not None:
@@ -753,7 +757,7 @@ class CarliniLInfMethod(EvasionAttack):
 
         # No labels provided, use model prediction as correct class
         if y is None:
-            y = get_labels_np_array(self.estimator.predict(x, batch_size=1))
+            y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
 
         if self.estimator.nb_classes == 2 and y.shape[1] == 1:
             raise ValueError(  # pragma: no cover
@@ -829,6 +833,9 @@ class CarliniLInfMethod(EvasionAttack):
 
         if not isinstance(self.const_factor, (int, float)) or self.const_factor < 0:
             raise ValueError("The constant factor value must be a float and greater than 1.")
+
+        if not isinstance(self.batch_size, int) or self.batch_size < 1:
+            raise ValueError("The batch size must be an integer greater than zero.")
 
 
 class CarliniL0Method(CarliniL2Method):
@@ -946,7 +953,7 @@ class CarliniL0Method(CarliniL2Method):
         :return: An array holding the adversarial examples.
         """
         if y is not None:
-            y = check_and_transform_label_format(y, self.estimator.nb_classes)
+            y = check_and_transform_label_format(y, nb_classes=self.estimator.nb_classes)
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
         if self.estimator.clip_values is not None:

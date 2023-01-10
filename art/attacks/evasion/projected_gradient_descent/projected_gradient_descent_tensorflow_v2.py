@@ -65,6 +65,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         norm: Union[int, float, str] = np.inf,
         eps: Union[int, float, np.ndarray] = 0.3,
         eps_step: Union[int, float, np.ndarray] = 0.1,
+        decay: Optional[float] = None,
         max_iter: int = 100,
         targeted: bool = False,
         num_random_init: int = 0,
@@ -84,6 +85,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
                            suggests this for FGSM based training to generalize across different epsilons. eps_step is
                            modified to preserve the ratio of eps / eps_step. The effectiveness of this method with PGD
                            is untested (https://arxiv.org/pdf/1611.01236.pdf).
+        :param decay: Decay factor for accumulating the velocity vector when using momentum.
         :param max_iter: The maximum number of iterations.
         :param targeted: Indicates whether the attack is targeted (True) or untargeted (False).
         :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0 starting
@@ -111,6 +113,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
             norm=norm,
             eps=eps,
             eps_step=eps_step,
+            decay=decay,
             max_iter=max_iter,
             targeted=targeted,
             num_random_init=num_random_init,
@@ -135,7 +138,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         :type mask: `np.ndarray`
         :return: An array holding the adversarial examples.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         mask = self._get_mask(x, **kwargs)
 
@@ -261,9 +264,10 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         :param eps_step: Attack step size (input variation) at each iteration.
         :return: Adversarial examples.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         adv_x = tf.identity(x)
+        momentum = tf.zeros(x.shape)
 
         for i_max_iter in range(self.max_iter):
             self._i_max_iter = i_max_iter
@@ -274,13 +278,19 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
                 mask,
                 eps,
                 eps_step,
+                momentum,
                 self.num_random_init > 0 and i_max_iter == 0,
             )
 
         return adv_x
 
     def _compute_perturbation(  # pylint: disable=W0221
-        self, x: "tf.Tensor", y: "tf.Tensor", mask: Optional["tf.Tensor"]
+        self,
+        x: "tf.Tensor",
+        y: "tf.Tensor",
+        mask: Optional["tf.Tensor"],
+        decay: Optional[float] = None,
+        momentum: Optional["tf.Tensor"] = None,
     ) -> "tf.Tensor":
         """
         Compute perturbations.
@@ -293,9 +303,11 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         :param mask: An array with a mask broadcastable to input `x` defining where to apply adversarial perturbations.
                      Shape needs to be broadcastable to the shape of x and can also be of the same shape as `x`. Any
                      features for which the mask is zero will not be adversarially perturbed.
+        :param decay: Decay factor for accumulating the velocity vector when using momentum.
+        :param momentum: An array accumulating the velocity vector in the gradient direction for MIFGSM.
         :return: Perturbations.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         # Pick a small scalar to avoid division by 0
         tol = 10e-8
@@ -327,6 +339,14 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         if mask is not None:
             grad = tf.where(mask == 0.0, 0.0, grad)
 
+        # Add momentum
+        if decay is not None and momentum is not None:
+            ind = tuple(range(1, len(x.shape)))
+            grad = tf.divide(grad, (tf.math.reduce_sum(tf.abs(grad), axis=ind, keepdims=True) + tol))
+            grad = self.decay * momentum + grad
+            # Accumulate the gradient for the next iter
+            momentum += grad
+
         # Apply norm bound
         if self.norm == np.inf:
             grad = tf.sign(grad)
@@ -356,7 +376,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         :param eps_step: Attack step size (input variation) at each iteration.
         :return: Adversarial examples.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         perturbation_step = tf.constant(eps_step, dtype=ART_NUMPY_DTYPE) * perturbation
         perturbation_step = tf.where(tf.math.is_nan(perturbation_step), 0, perturbation_step)
@@ -375,6 +395,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         mask: "tf.Tensor",
         eps: Union[int, float, np.ndarray],
         eps_step: Union[int, float, np.ndarray],
+        momentum: Optional["tf.Tensor"],
         random_init: bool,
     ) -> "tf.Tensor":
         """
@@ -393,9 +414,10 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         :param eps_step: Attack step size (input variation) at each iteration.
         :param random_init: Random initialisation within the epsilon ball. For random_init=False starting at the
                             original input.
-        :return: Adversarial examples.
+        :param momentum: An array accumulating the velocity vector in the gradient direction for MIFGSM.
+        :return: Adversarial examples and accumulated momentum.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         if random_init:
             n = x.shape[0]
@@ -416,7 +438,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
             x_adv = x
 
         # Get perturbation
-        perturbation = self._compute_perturbation(x_adv, y, mask)
+        perturbation = self._compute_perturbation(x_adv, y, mask, self.decay, momentum)
 
         # Apply perturbation and clip
         x_adv = self._apply_perturbation(x_adv, perturbation, eps_step)
@@ -441,7 +463,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         :param norm_p: L_p norm to use for clipping supporting 1, 2 and `np.Inf`.
         :return: Values of `values` after projection.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow as tf
 
         # Pick a small scalar to avoid division by 0
         tol = 10e-8

@@ -237,7 +237,7 @@ def image_iterator(framework, get_default_mnist_subset, default_batch_size):
             return dataset
 
         if framework == "pytorch":
-            import torch  # lgtm [py/repeated-import]
+            import torch
 
             # Create tensors from data
             x_train_tens = torch.from_numpy(x_train_mnist)
@@ -786,6 +786,14 @@ def mnist_shape(framework):
 
 
 @pytest.fixture()
+def cifar10_shape(framework):
+    if framework == "pytorch" or framework == "mxnet":
+        return (3, 32, 32)
+    else:
+        return (32, 32, 3)
+
+
+@pytest.fixture()
 def get_default_mnist_subset(get_mnist_dataset, default_dataset_subset_sizes, mnist_shape):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_dataset
     n_train, n_test = default_dataset_subset_sizes
@@ -796,11 +804,29 @@ def get_default_mnist_subset(get_mnist_dataset, default_dataset_subset_sizes, mn
     yield (x_train_mnist[:n_train], y_train_mnist[:n_train]), (x_test_mnist[:n_test], y_test_mnist[:n_test])
 
 
+@pytest.fixture()
+def get_default_cifar10_subset(get_cifar10_dataset, default_dataset_subset_sizes, cifar10_shape):
+    (x_train_cifar10, y_train_cifar10), (x_test_cifar10, y_test_cifar10) = get_cifar10_dataset
+    n_train, n_test = default_dataset_subset_sizes
+
+    x_train_cifar10 = np.reshape(x_train_cifar10, (x_train_cifar10.shape[0],) + cifar10_shape).astype(np.float32)
+    x_test_cifar10 = np.reshape(x_test_cifar10, (x_test_cifar10.shape[0],) + cifar10_shape).astype(np.float32)
+
+    yield (x_train_cifar10[:n_train], y_train_cifar10[:n_train]), (x_test_cifar10[:n_test], y_test_cifar10[:n_test])
+
+
 @pytest.fixture(scope="session")
 def load_mnist_dataset():
     logging.info("Loading mnist")
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist), _, _ = load_dataset("mnist")
     yield (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist)
+
+
+@pytest.fixture(scope="session")
+def load_cifar10_dataset():
+    logging.info("Loading cifar10")
+    (x_train_cifar10, y_train_cifar10), (x_test_cifar10, y_test_cifar10), _, _ = load_dataset("cifar10")
+    yield (x_train_cifar10, y_train_cifar10), (x_test_cifar10, y_test_cifar10)
 
 
 @pytest.fixture(scope="function")
@@ -829,6 +855,27 @@ def get_mnist_dataset(load_mnist_dataset, mnist_shape):
     np.testing.assert_array_almost_equal(y_train_mnist_original, y_train_mnist, decimal=3)
     np.testing.assert_array_almost_equal(x_test_mnist_original, x_test_mnist, decimal=3)
     np.testing.assert_array_almost_equal(y_test_mnist_original, y_test_mnist, decimal=3)
+
+
+@pytest.fixture(scope="function")
+def get_cifar10_dataset(load_cifar10_dataset, cifar10_shape):
+    (x_train_cifar10, y_train_cifar10), (x_test_cifar10, y_test_cifar10) = load_cifar10_dataset
+
+    x_train_cifar10 = np.reshape(x_train_cifar10, (x_train_cifar10.shape[0],) + cifar10_shape).astype(np.float32)
+    x_test_cifar10 = np.reshape(x_test_cifar10, (x_test_cifar10.shape[0],) + cifar10_shape).astype(np.float32)
+
+    x_train_cifar10_original = x_train_cifar10.copy()
+    y_train_cifar10_original = y_train_cifar10.copy()
+    x_test_cifar10_original = x_test_cifar10.copy()
+    y_test_cifar10_original = y_test_cifar10.copy()
+
+    yield (x_train_cifar10, y_train_cifar10), (x_test_cifar10, y_test_cifar10)
+
+    # Check that the test data has not been modified, only catches changes in attack.generate if self has been used
+    np.testing.assert_array_almost_equal(x_train_cifar10_original, x_train_cifar10, decimal=3)
+    np.testing.assert_array_almost_equal(y_train_cifar10_original, y_train_cifar10, decimal=3)
+    np.testing.assert_array_almost_equal(x_test_cifar10_original, x_test_cifar10, decimal=3)
+    np.testing.assert_array_almost_equal(y_test_cifar10_original, y_test_cifar10, decimal=3)
 
 
 # ART test fixture to skip test for specific framework values
@@ -970,7 +1017,7 @@ def fix_get_goturn():
                 preprocessing=(0, 1),
             )
 
-            import torch  # lgtm [py/repeated-import]
+            import torch
 
             self.channels_first = False
             self._input_shape = None

@@ -42,7 +42,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class ScikitlearnRegressor(RegressorMixin, ScikitlearnEstimator):  # lgtm [py/missing-call-to-init]
+class ScikitlearnRegressor(RegressorMixin, ScikitlearnEstimator):
     """
     Wrapper class for scikit-learn regression models.
     """
@@ -142,13 +142,13 @@ class ScikitlearnRegressor(RegressorMixin, ScikitlearnEstimator):  # lgtm [py/mi
         with open(full_path + ".pickle", "wb") as file_pickle:
             pickle.dump(self.model, file=file_pickle)
 
-    def clone_for_refitting(self) -> "ScikitlearnRegressor":  # lgtm [py/inheritance/incorrect-overridden-signature]
+    def clone_for_refitting(self) -> "ScikitlearnRegressor":
         """
         Create a copy of the classifier that can be refit from scratch.
 
         :return: new estimator
         """
-        import sklearn  # lgtm [py/repeated-import]
+        import sklearn
 
         clone = type(self)(sklearn.base.clone(self.model))
         params = self.get_params()
@@ -174,6 +174,17 @@ class ScikitlearnRegressor(RegressorMixin, ScikitlearnEstimator):  # lgtm [py/mi
         """
 
         return (y - self.predict(x)) ** 2
+
+    def compute_loss_from_predictions(self, pred: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+        """
+        Compute the MSE loss of the regressor for predictions `pred`.
+
+        :param pred: Model predictions.
+        :param y: Target values.
+        :return: Loss values.
+        """
+
+        return (y - pred) ** 2
 
 
 class ScikitlearnDecisionTreeRegressor(ScikitlearnRegressor):
@@ -202,7 +213,7 @@ class ScikitlearnDecisionTreeRegressor(ScikitlearnRegressor):
                be divided by the second one.
         """
         # pylint: disable=E0001
-        import sklearn  # lgtm [py/repeated-import]
+        import sklearn
 
         if not isinstance(model, sklearn.tree.DecisionTreeRegressor):
             raise TypeError("Model must be of type sklearn.tree.DecisionTreeRegressor.")

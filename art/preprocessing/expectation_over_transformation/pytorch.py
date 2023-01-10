@@ -79,7 +79,7 @@ class EoTPyTorch(PreprocessorPyTorch):
         :param y: Label of the samples `x`.
         :return: Transformed samples and labels.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         x_preprocess_list = []
         y_preprocess_list_classification: List[torch.Tensor] = []

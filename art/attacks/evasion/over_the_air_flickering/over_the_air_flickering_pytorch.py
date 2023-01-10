@@ -129,10 +129,10 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
                   (nb_samples,).
         :return: Adversarial examples.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         if y is not None:
-            y = check_and_transform_label_format(y, self.estimator.nb_classes)
+            y = check_and_transform_label_format(y, nb_classes=self.estimator.nb_classes)
         if y is None:
             if self.targeted:  # pragma: no cover
                 raise ValueError("Target labels `y` need to be provided for a targeted attack.")
@@ -171,7 +171,7 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)`.
         :return: Adversarial examples.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         x = x.to(self.estimator.device)
         y = y.to(self.estimator.device)
@@ -223,7 +223,7 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
         :param perturbation: Currently accumulated perturbation
         :return: Perturbations.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         # Get gradient wrt loss
         grad = self._get_loss_gradients(x, y, perturbation)
@@ -243,7 +243,7 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
         """
         Compute custom, framework-specific, regularized loss gradients.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         softmax = torch.nn.Softmax(dim=1).to(self.estimator.device)
 
@@ -310,7 +310,7 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
         :param x: Sample input with shape as expected by the model.
         :return: Clipped and rounded inputs.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         if self.estimator.clip_values is not None:
             x = torch.clamp(x, self.estimator.clip_values[0], self.estimator.clip_values[1])
@@ -329,7 +329,7 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
         :param eps_step: Attack step size (input variation) at each iteration.
         :return: Adversarial examples.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         x_adv = x_adv - eps_step * torch.sign(grad)
 

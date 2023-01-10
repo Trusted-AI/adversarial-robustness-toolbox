@@ -127,7 +127,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         :param device_type: Type of device to be used for model and tensors, if `cpu` run on CPU, if `gpu` run on GPU
                             if available otherwise run on CPU.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
         from deepspeech_pytorch.model import DeepSpeech
         from deepspeech_pytorch.configs.inference_config import LMConfig
         from deepspeech_pytorch.enums import DecoderType
@@ -350,19 +350,19 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
                  - Transcription return is a numpy array of characters. A possible example of a transcription return
                  is `np.array(['SIXTY ONE', 'HELLO'])`.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
-        x_in = np.empty(len(x), dtype=object)
-        x_in[:] = list(x)
+        # Apply preprocessing
+        x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
+
+        x_in = np.empty(len(x_preprocessed), dtype=object)
+        x_in[:] = list(x_preprocessed)
 
         # Put the model in the eval mode
         self._model.eval()
 
-        # Apply preprocessing
-        x_preprocessed, _ = self._apply_preprocessing(x_in, y=None, fit=False)
-
         # Transform x into the model input space
-        inputs, _, input_rates, _, batch_idx = self._transform_model_input(x=x_preprocessed)
+        inputs, _, input_rates, _, batch_idx = self._transform_model_input(x=x_in)
 
         # Compute real input sizes
         input_sizes = input_rates.mul_(inputs.size()[-1]).int()
@@ -437,21 +437,19 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
                   lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`.
         :return: Loss gradients of the same shape as `x`.
         """
-        x_in = np.empty(len(x), dtype=object)
-        x_in[:] = list(x)
+        # Apply preprocessing
+        x_preprocessed, _ = self._apply_preprocessing(x, None, fit=False)
+
+        x_in = np.empty(len(x_preprocessed), dtype=object)
+        x_in[:] = list(x_preprocessed)
 
         # Put the model in the training mode, otherwise CUDA can't backpropagate through the model.
         # However, model uses batch norm layers which need to be frozen
         self._model.train()
         self.set_batchnorm(train=False)
 
-        # Apply preprocessing
-        x_preprocessed, y_preprocessed = self._apply_preprocessing(x_in, y, fit=False)
-
         # Transform data into the model input space
-        inputs, targets, input_rates, target_sizes, _ = self._transform_model_input(
-            x=x_preprocessed, y=y_preprocessed, compute_gradient=True
-        )
+        inputs, targets, input_rates, target_sizes, _ = self._transform_model_input(x=x_in, y=y, compute_gradient=True)
 
         # Compute real input sizes
         input_sizes = input_rates.mul_(inputs.size()[-1]).int()
@@ -484,8 +482,8 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
 
         # Get results
         results_list = []
-        for i, _ in enumerate(x_preprocessed):
-            results_list.append(x_preprocessed[i].grad.cpu().numpy().copy())
+        for i, _ in enumerate(x_in):
+            results_list.append(x_in[i].grad.cpu().numpy().copy())
 
         results = np.array(results_list)
 
@@ -494,7 +492,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
             results_[:] = list(results)
             results = results_
 
-        results = self._apply_preprocessing_gradient(x_in, results)
+        results = self._apply_preprocessing_gradient(x, results)
 
         if x.dtype != object:
             results = np.array([i for i in results], dtype=x.dtype)  # pylint: disable=R1721
@@ -521,17 +519,18 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         """
         import random
 
-        x_in = np.empty(len(x), dtype=object)
-        x_in[:] = list(x)
+        # Apply preprocessing
+        x_preprocessed, _ = self._apply_preprocessing(x, None, fit=True)
+        y_preprocessed = y
+
+        x_in = np.empty(len(x_preprocessed), dtype=object)
+        x_in[:] = list(x_preprocessed)
 
         # Put the model in the training mode
         self._model.train()
 
         if self.optimizer is None:  # pragma: no cover
             raise ValueError("An optimizer is required to train the model, but none was provided.")
-
-        # Apply preprocessing
-        x_preprocessed, y_preprocessed = self._apply_preprocessing(x_in, y, fit=True)
 
         # Train with batch processing
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
@@ -675,7 +674,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
                  - target_sizes: list of real seq_lengths.
                  - batch_idx: original index of inputs.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         # Apply preprocessing
         x_batch = []
@@ -723,7 +722,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
                  - target_sizes: list of real seq_lengths.
                  - batch_idx: original index of inputs.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
         import torchaudio
         from deepspeech_pytorch.loader.data_loader import _collate_fn
 

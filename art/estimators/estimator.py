@@ -28,7 +28,7 @@ from art.config import ART_NUMPY_DTYPE
 
 if TYPE_CHECKING:
     # pylint: disable=R0401
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE, ESTIMATOR_TYPE
     from art.data_generators import DataGenerator
     from art.metrics.verification_decisions_trees import Tree
     from art.defences.postprocessor.postprocessor import Postprocessor
@@ -185,6 +185,12 @@ class BaseEstimator(ABC):
             params[key] = getattr(self, key)
         return params
 
+    def clone_for_refitting(self) -> "ESTIMATOR_TYPE":
+        """
+        Clone estimator for refitting.
+        """
+        raise NotImplementedError
+
     def _check_params(self) -> None:
         from art.defences.postprocessor.postprocessor import Postprocessor
         from art.defences.preprocessor.preprocessor import Preprocessor
@@ -231,7 +237,7 @@ class BaseEstimator(ABC):
             )
 
     @abstractmethod
-    def predict(self, x, **kwargs) -> Any:  # lgtm [py/inheritance/incorrect-overridden-signature]
+    def predict(self, x, **kwargs) -> Any:
         """
         Perform prediction of the estimator for input `x`.
 
@@ -243,7 +249,7 @@ class BaseEstimator(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def fit(self, x, y, **kwargs) -> None:  # lgtm [py/inheritance/incorrect-overridden-signature]
+    def fit(self, x, y, **kwargs) -> None:
         """
         Fit the estimator using the training data `(x, y)`.
 
@@ -335,6 +341,16 @@ class BaseEstimator(ABC):
         :param y: Target values.
         :return: Loss values.
         :rtype: Format as expected by the `model`
+        """
+        raise NotImplementedError
+
+    def compute_loss_from_predictions(self, pred: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+        """
+        Compute the loss of the estimator for predictions `pred`.
+
+        :param pred: Model predictions.
+        :param y: Target values.
+        :return: Loss values.
         """
         raise NotImplementedError
 

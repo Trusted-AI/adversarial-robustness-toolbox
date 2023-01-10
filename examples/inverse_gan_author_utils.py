@@ -367,6 +367,8 @@ class Mnist(Dataset):
         elif split == "test":
             images = test_images
             labels = test_labels
+        else:
+            raise ValueError("Vale for `split` not recognized.")
 
         if randomize:
             rng_state = np.random.get_state()
@@ -521,6 +523,8 @@ def gan_from_config(batch_size, test_mode):
             cfg=cfg,
             test_mode=test_mode,
         )
+    else:
+        raise ValueError("Value for `TYPE` in configuration not recognized.")
 
     return gan
 

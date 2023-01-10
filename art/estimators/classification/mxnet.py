@@ -44,7 +44,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [py/missing-call-to-init]
+class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):
     """
     Class for importing MXNet Gluon models.
     """
@@ -98,7 +98,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         """
-        import mxnet as mx  # lgtm [py/repeated-import]
+        import mxnet as mx
 
         super().__init__(
             model=model,
@@ -173,14 +173,14 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for MXNet
                and providing it takes no effect.
         """
-        import mxnet as mx  # lgtm [py/repeated-import]
+        import mxnet as mx
 
         if self.optimizer is None:
             raise ValueError("An MXNet optimizer is required for fitting the model.")
 
         training_mode = True
 
-        y = check_and_transform_label_format(y, self.nb_classes)
+        y = check_and_transform_label_format(y, nb_classes=self.nb_classes)
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
@@ -225,7 +225,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for MXNet
                and providing it takes no effect.
         """
-        import mxnet as mx  # lgtm [py/repeated-import]
+        import mxnet as mx
         from art.data_generators import MXDataGenerator
 
         if self.optimizer is None:
@@ -271,7 +271,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
         :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
-        import mxnet as mx  # lgtm [py/repeated-import]
+        import mxnet as mx
 
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
@@ -315,7 +315,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         """
-        import mxnet as mx  # lgtm [py/repeated-import]
+        import mxnet as mx
 
         # Check value of label for computing gradients
         if not (  # pragma: no cover
@@ -387,7 +387,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
         :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
         :return: Array of gradients of the same shape as `x`.
         """
-        import mxnet as mx  # lgtm [py/repeated-import]
+        import mxnet as mx
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
@@ -449,7 +449,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
         :param framework: If true, return the intermediate tensor representation of the activation.
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         """
-        import mxnet as mx  # lgtm [py/repeated-import]
+        import mxnet as mx
 
         if isinstance(layer, six.string_types):
             if layer not in self._layer_names:
@@ -516,6 +516,12 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
 
         self._model.save_parameters(full_path + ".params")
         logger.info("Model parameters saved in path: %s.params.", full_path)
+
+    def clone_for_refitting(self) -> "MXClassifier":
+        """
+        Clone classifier for refitting.
+        """
+        raise NotImplementedError
 
     def __repr__(self):
         repr_ = (

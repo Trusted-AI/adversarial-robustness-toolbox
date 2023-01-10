@@ -146,7 +146,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         """
         # pylint: disable=E0401
         if self.is_tensorflow:
-            import tensorflow as tf  # lgtm [py/repeated-import]
+            import tensorflow as tf
 
             if tf.executing_eagerly():  # pragma: no cover
                 raise ValueError("TensorFlow is executing eagerly. Please disable eager execution.")
@@ -155,7 +155,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
             self._losses = keras.losses
         else:
-            import keras  # lgtm [py/repeated-import]
+            import keras
             import keras.backend as k
 
             if hasattr(keras.utils, "losses_utils"):
@@ -295,6 +295,8 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             ),
         ):
             loss_ = loss_function(label_ph, self._output)
+        else:
+            raise ValueError("Type of loss function could not be determined.")
 
         # Define loss gradients
         loss_gradients = k.gradients(loss_, self._input)
@@ -376,7 +378,11 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         else:
             import keras.backend as k
 
+        y = check_and_transform_label_format(y, self.nb_classes)  # type: ignore
+
+        # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
+
         shape_match = [i is None or i == j for i, j in zip(self._input_shape, x_preprocessed.shape[1:])]
         if not all(shape_match):  # pragma: no cover
             raise ValueError(
@@ -563,7 +569,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
                epochs or the number of steps per epoch as part of this argument will result in as error.
         """
         y_ndim = y.ndim
-        y = check_and_transform_label_format(y, self.nb_classes)
+        y = check_and_transform_label_format(y, nb_classes=self.nb_classes)
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
@@ -714,6 +720,20 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
         outputs = self._custom_loss_func[name]
         return outputs(input_values)
+
+    def clone_for_refitting(
+        self,
+    ) -> "KerasClassifier":
+        """
+        Create a copy of the classifier that can be refit from scratch. Will inherit same architecture, optimizer and
+        initialization as cloned model, but without weights.
+
+        :return: new classifier
+        """
+        cloned_classifier = super().clone_for_refitting()
+        if isinstance(cloned_classifier, KerasClassifier):
+            return cloned_classifier
+        raise ValueError("Type of cloned classifier not expected.")
 
     def _init_class_gradients(self, label: Optional[Union[int, List[int], np.ndarray]] = None) -> None:
         # pylint: disable=E0401

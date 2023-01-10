@@ -115,15 +115,9 @@ class BFGSB:  # pragma: no cover
             qk1 = self._subspace_min(qk, var_l, u, x_cp, _gfk.copy(), Hk)
             pk = qk1 - qk
 
-            (
-                alpha_k,
-                fc,
-                gc,
-                old_fval,
-                old_old_fval,
-                gfkp1,
-                fnev,
-            ) = self._line_search_wolfe(fun_and_jac, qk, pk, _gfk, old_fval, old_old_fval, var_l, u, args)
+            alpha_k, fc, gc, old_fval, old_old_fval, gfkp1, fnev = self._line_search_wolfe(
+                fun_and_jac, qk, pk, _gfk, old_fval, old_old_fval, var_l, u, args
+            )
             func_calls += fnev
 
             if alpha_k is None:
@@ -258,7 +252,7 @@ class BFGSB:  # pragma: no cover
                     if dk * alpha < temp2:
                         temp1 = temp2 / dk
                     else:
-                        temp2 = u[i] - x_cp[i]  # lgtm [py/multiple-definition]
+                        temp2 = u[i] - x_cp[i]
             else:
                 temp2 = u[i] - x_cp[i]
                 if temp1 <= 0:
@@ -336,6 +330,10 @@ class BFGSB:  # pragma: no cover
         For the zoom phase it uses an algorithm by
         Outputs: (alpha0, gc, fc)
         """
+        alpha_star = 0.0
+        fval_star = 0.0
+        fprime_star = None
+
         c1 = 1e-4
         c2 = 0.9
         N = xk.shape[0]
@@ -2186,7 +2184,7 @@ class BrendelBethgeAttack(EvasionAttack):
         originals = x.copy()
 
         if y is not None:
-            y = check_and_transform_label_format(y, self.estimator.nb_classes)
+            y = check_and_transform_label_format(y, nb_classes=self.estimator.nb_classes)
 
         if y is None:
             # Throw error if attack is targeted, but no targets are provided
@@ -2400,18 +2398,18 @@ class BrendelBethgeAttack(EvasionAttack):
             threshold = (bounds[1] - bounds[0]) * epsilons
             mask = np.abs(x1 - x0) < threshold
             new_x = np.where(mask, x1, x0)
-        if self.norm == 1:
+        elif self.norm == 1:
             # get epsilons in right shape for broadcasting
             epsilons = epsilons.reshape(epsilons.shape + (1,) * (x0.ndim - 1))
 
             threshold = (bounds[1] - bounds[0]) * (1 - epsilons)
             mask = np.abs(x1 - x0) > threshold
             new_x = np.where(mask, x0 + np.sign(x1 - x0) * (np.abs(x1 - x0) - threshold), x0)
-        if self.norm == 2:
+        elif self.norm == 2:
             # get epsilons in right shape for broadcasting
             epsilons = epsilons.reshape(epsilons.shape + (1,) * (x0.ndim - 1))
             new_x = epsilons * x1 + (1 - epsilons) * x0
-        if self.norm in ["inf", np.inf]:
+        elif self.norm in ["inf", np.inf]:
             delta = x1 - x0
             min_, max_ = bounds
             s = max_ - min_
@@ -2421,6 +2419,8 @@ class BrendelBethgeAttack(EvasionAttack):
             clipped_delta = np.where(delta < -epsilons * s, -epsilons * s, delta)
             clipped_delta = np.where(clipped_delta > epsilons * s, epsilons * s, clipped_delta)
             new_x = x0 + clipped_delta
+        else:
+            raise ValueError("Value of `norm` is not supported.")
 
         return new_x.astype(config.ART_NUMPY_DTYPE)
 

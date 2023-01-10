@@ -160,3 +160,59 @@ def test_shadow_model_default_randomisation(art_warning):
 
     except ARTTestException as e:
         art_warning(e)
+
+
+@pytest.mark.skip_framework("dl_frameworks")
+def test_shadow_model_disjoint(art_warning):
+    try:
+        (x_target, y_target), (x_shadow, y_shadow), _, _ = load_nursery(test_set=0.5)
+
+        target_train_size = len(x_target) // 2
+        x_target_train = x_target[:target_train_size]
+        y_target_train = y_target[:target_train_size]
+
+        model = RandomForestClassifier(random_state=7)
+        model.fit(x_target_train, y_target_train)
+        art_classifier = ScikitlearnRandomForestClassifier(model)
+
+        shadow_models = ShadowModels(art_classifier, num_shadow_models=2, disjoint_datasets=True)
+        shadow_dataset = shadow_models.generate_shadow_dataset(x_shadow, to_categorical(y_shadow, 4))
+        (mem_x, mem_y, mem_pred), (nonmem_x, nonmem_y, nonmem_pred) = shadow_dataset
+        models = shadow_models.get_shadow_models()
+        train_sets = shadow_models.get_shadow_models_train_sets()
+
+        assert len(models) == 2
+        assert len(train_sets) == 2
+        assert len(mem_x) == len(x_target) // 2 - 1
+        assert len(train_sets[0][0]) == len(x_target) // 4
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework("dl_frameworks")
+def test_shadow_model_overlap(art_warning):
+    try:
+        (x_target, y_target), (x_shadow, y_shadow), _, _ = load_nursery(test_set=0.5)
+
+        target_train_size = len(x_target) // 2
+        x_target_train = x_target[:target_train_size]
+        y_target_train = y_target[:target_train_size]
+
+        model = RandomForestClassifier(random_state=7)
+        model.fit(x_target_train, y_target_train)
+        art_classifier = ScikitlearnRandomForestClassifier(model)
+
+        shadow_models = ShadowModels(art_classifier, num_shadow_models=2)
+        shadow_dataset = shadow_models.generate_shadow_dataset(x_shadow, to_categorical(y_shadow, 4))
+        (mem_x, mem_y, mem_pred), (nonmem_x, nonmem_y, nonmem_pred) = shadow_dataset
+        models = shadow_models.get_shadow_models()
+        train_sets = shadow_models.get_shadow_models_train_sets()
+
+        assert len(models) == 2
+        assert len(train_sets) == 2
+        assert len(mem_x) == len(x_target)
+        assert len(train_sets[0][0]) == len(x_target) // 2
+
+    except ARTTestException as e:
+        art_warning(e)

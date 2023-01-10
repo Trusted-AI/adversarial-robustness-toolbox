@@ -22,6 +22,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 
 from art.estimators.estimator import (
@@ -31,6 +33,9 @@ from art.estimators.estimator import (
 )
 
 logger = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    from art.utils import KERAS_ESTIMATOR_TYPE
 
 
 class KerasEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
@@ -83,3 +88,49 @@ class KerasEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         :rtype: Format as expected by the `model`
         """
         raise NotImplementedError
+
+    def clone_for_refitting(
+        self,
+    ) -> "KERAS_ESTIMATOR_TYPE":
+        """
+        Create a copy of the estimator that can be refit from scratch. Will inherit same architecture, optimizer and
+        initialization as cloned model, but without weights.
+
+        :return: new estimator
+        """
+
+        import tensorflow as tf
+        import keras
+
+        try:
+            # only works for functionally defined models
+            model = keras.models.clone_model(self.model, input_tensors=self.model.inputs)
+        except ValueError as error:
+            raise ValueError("Cannot clone custom models") from error
+
+        optimizer = self.model.optimizer
+        # reset optimizer variables
+        for var in optimizer.variables():
+            var.assign(tf.zeros_like(var))
+
+        loss_weights = None
+        weighted_metrics = None
+        if self.model.compiled_loss:
+            loss_weights = self.model.compiled_loss._loss_weights  # pylint: disable=W0212
+        if self.model.compiled_metrics:
+            weighted_metrics = self.model.compiled_metrics._weighted_metrics  # pylint: disable=W0212
+
+        model.compile(
+            optimizer=optimizer,
+            loss=self.model.loss,
+            metrics=[m.name for m in self.model.metrics],  # Need to copy metrics this way for keras
+            loss_weights=loss_weights,
+            weighted_metrics=weighted_metrics,
+            run_eagerly=self.model.run_eagerly,
+        )
+
+        clone = type(self)(model=model)
+        params = self.get_params()
+        del params["model"]
+        clone.set_params(**params)
+        return clone

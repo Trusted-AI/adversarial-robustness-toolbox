@@ -8,6 +8,42 @@ Base Class Preprocessor
    :members:
    :special-members:
 
+CutMix
+------
+.. autoclass:: CutMix
+   :members:
+   :special-members:
+
+CutMix - PyTorch
+----------------
+.. autoclass:: CutMixPyTorch
+   :members:
+   :special-members:
+
+CutMix - TensorFlowV2
+---------------------
+.. autoclass:: CutMixTensorFlowV2
+   :members:
+   :special-members:
+
+Cutout
+------
+.. autoclass:: Cutout
+   :members:
+   :special-members:
+
+Cutout - PyTorch
+----------------
+.. autoclass:: CutoutPyTorch
+   :members:
+   :special-members:
+
+Cutout - TensorFlowV2
+---------------------
+.. autoclass:: CutoutTensorFlowV2
+   :members:
+   :special-members:
+
 Feature Squeezing
 -----------------
 .. autoclass:: FeatureSqueezing
@@ -41,6 +77,24 @@ JPEG Compression
 Label Smoothing
 ---------------
 .. autoclass:: LabelSmoothing
+   :members:
+   :special-members:
+
+Mixup
+-----
+.. autoclass:: Mixup
+   :members:
+   :special-members:
+
+Mixup - PyTorch
+---------------
+.. autoclass:: MixupPyTorch
+   :members:
+   :special-members:
+
+Mixup - TensorFlowV2
+--------------------
+.. autoclass:: MixupTensorFlowV2
    :members:
    :special-members:
 
