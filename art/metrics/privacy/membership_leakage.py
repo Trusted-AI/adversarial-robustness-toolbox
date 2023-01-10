@@ -37,6 +37,7 @@ class ComparisonType(Enum):
     """
     An Enum type for different kinds of comparisons between model outputs.
     """
+
     RATIO = auto()
     DIFFERENCE = auto()
 
@@ -129,14 +130,14 @@ def PDTP(  # pylint: disable=C0103
                 # get max value
                 max_value = max(ratio_1.max(), ratio_2.max())
             elif comparison_type == ComparisonType.DIFFERENCE:
-                max_value = abs(pred_bin - alt_pred_bin)
+                max_value = np.max(abs(pred_bin - alt_pred_bin))
             else:
                 raise ValueError("Unsupported comparison type.")
             iter_results.append(max_value)
         results.append(iter_results)
 
     # get average of iterations for each sample
-    # We now have a list of list, internal lists represent an iteration. We need to transpose and get averages.
+    # We now have a list of lists, internal lists represent an iteration. We need to transpose and get averages.
     per_sample = list(map(list, zip(*results)))
     avg_per_sample = np.array([sum(val) / len(val) for val in per_sample])
     worse_per_sample = np.max(per_sample, axis=1)

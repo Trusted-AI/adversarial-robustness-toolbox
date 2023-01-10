@@ -37,6 +37,7 @@ def test_membership_leakage_shapr_decision_tree(art_warning, decision_tree_estim
         logger.info("Average SHAPr leakage: %.2f", (np.average(leakage)))
         logger.info("Max SHAPr leakage: %.2f", (np.max(leakage)))
         assert leakage.shape[0] == x_train.shape[0]
+        assert len(leakage.shape) == 1
     except ARTTestException as e:
         art_warning(e)
 
@@ -49,6 +50,7 @@ def test_membership_leakage_shapr_tabular(art_warning, tabular_dl_estimator, get
         logger.info("Average SHAPr leakage: %.2f", (np.average(leakage)))
         logger.info("Max SHAPr leakage: %.2f", (np.max(leakage)))
         assert leakage.shape[0] == x_train.shape[0]
+        assert len(leakage.shape) == 1
     except ARTTestException as e:
         art_warning(e)
 
@@ -61,6 +63,7 @@ def test_membership_leakage_shapr_image(art_warning, image_dl_estimator, get_def
         logger.info("Average SHAPr leakage: %.2f", (np.average(leakage)))
         logger.info("Max SHAPr leakage: %.2f", (np.max(leakage)))
         assert leakage.shape[0] == x_train.shape[0]
+        assert len(leakage.shape) == 1
     except ARTTestException as e:
         art_warning(e)
 
@@ -77,7 +80,10 @@ def test_membership_leakage_decision_tree(art_warning, decision_tree_estimator, 
         logger.info("Max PDTP leakage: %.2f", (np.max(avg_leakage)))
         assert classifier.model.tree_ == prev
         assert np.all(avg_leakage >= 1.0)
-        assert np.all(worse_leakage >= avg_leakage)
+        assert np.all(np.around(worse_leakage, decimals=10) >= np.around(avg_leakage, decimals=10))
+        assert len(avg_leakage.shape) == 1
+        assert len(worse_leakage.shape) == 1
+        assert len(std_dev.shape) == 1
         assert avg_leakage.shape[0] == x_train.shape[0]
         assert worse_leakage.shape[0] == x_train.shape[0]
         assert std_dev.shape[0] == x_train.shape[0]
@@ -95,7 +101,10 @@ def test_membership_leakage_tabular(art_warning, tabular_dl_estimator, get_iris_
         logger.info("Average PDTP leakage: %.2f", (np.average(avg_leakage)))
         logger.info("Max PDTP leakage: %.2f", (np.max(avg_leakage)))
         assert np.all(avg_leakage >= 1.0)
-        assert np.all(worse_leakage >= avg_leakage)
+        assert np.all(np.around(worse_leakage, decimals=10) >= np.around(avg_leakage, decimals=10))
+        assert len(avg_leakage.shape) == 1
+        assert len(worse_leakage.shape) == 1
+        assert len(std_dev.shape) == 1
         assert avg_leakage.shape[0] == x_train.shape[0]
         assert worse_leakage.shape[0] == x_train.shape[0]
         assert std_dev.shape[0] == x_train.shape[0]
@@ -116,7 +125,10 @@ def test_membership_leakage_image(art_warning, image_dl_estimator, get_default_m
         logger.info("Average PDTP leakage: %.2f", (np.average(avg_leakage)))
         logger.info("Max PDTP leakage: %.2f", (np.max(avg_leakage)))
         assert np.all(avg_leakage >= 1.0)
-        assert np.all(worse_leakage >= avg_leakage)
+        assert np.all(np.around(worse_leakage, decimals=10) >= np.around(avg_leakage, decimals=10))
+        assert len(avg_leakage.shape) == 1
+        assert len(worse_leakage.shape) == 1
+        assert len(std_dev.shape) == 1
         assert avg_leakage.shape[0] == 100
         assert worse_leakage.shape[0] == 100
         assert std_dev.shape[0] == 100
@@ -138,7 +150,10 @@ def test_membership_leakage_decision_tree_diff(art_warning, decision_tree_estima
         logger.info("Max PDTP leakage: %.2f", (np.max(avg_leakage)))
         assert classifier.model.tree_ == prev
         assert np.all(avg_leakage >= 0.0)
-        assert np.all(worse_leakage >= avg_leakage)
+        assert np.all(np.around(worse_leakage, decimals=10) >= np.around(avg_leakage, decimals=10))
+        assert len(avg_leakage.shape) == 1
+        assert len(worse_leakage.shape) == 1
+        assert len(std_dev.shape) == 1
         assert avg_leakage.shape[0] == x_train.shape[0]
         assert worse_leakage.shape[0] == x_train.shape[0]
         assert std_dev.shape[0] == x_train.shape[0]
@@ -158,7 +173,10 @@ def test_membership_leakage_tabular_diff(art_warning, tabular_dl_estimator, get_
         logger.info("Average PDTP leakage: %.2f", (np.average(avg_leakage)))
         logger.info("Max PDTP leakage: %.2f", (np.max(avg_leakage)))
         assert np.all(avg_leakage >= 0.0)
-        assert np.all(worse_leakage >= avg_leakage)
+        assert np.all(np.around(worse_leakage, decimals=10) >= np.around(avg_leakage, decimals=10))
+        assert len(avg_leakage.shape) == 1
+        assert len(worse_leakage.shape) == 1
+        assert len(std_dev.shape) == 1
         assert avg_leakage.shape[0] == x_train.shape[0]
         assert worse_leakage.shape[0] == x_train.shape[0]
         assert std_dev.shape[0] == x_train.shape[0]
@@ -185,7 +203,10 @@ def test_membership_leakage_image_diff(art_warning, image_dl_estimator, get_defa
         logger.info("Average PDTP leakage: %.2f", (np.average(avg_leakage)))
         logger.info("Max PDTP leakage: %.2f", (np.max(avg_leakage)))
         assert np.all(avg_leakage >= 0.0)
-        assert np.all(worse_leakage >= avg_leakage)
+        assert np.all(np.around(worse_leakage, decimals=10) >= np.around(avg_leakage, decimals=10))
+        assert len(avg_leakage.shape) == 1
+        assert len(worse_leakage.shape) == 1
+        assert len(std_dev.shape) == 1
         assert avg_leakage.shape[0] == len(indexes)
         assert worse_leakage.shape[0] == len(indexes)
         assert std_dev.shape[0] == len(indexes)
