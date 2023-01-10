@@ -280,7 +280,8 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
             inputs_noise_t = inputs_repeat_t + noise
             if self.clip_values is not None:
                 inputs_noise_t.clamp(
-                    torch.tensor(self.clip_values[0]), torch.tensor(self.clip_values[1]),
+                    torch.tensor(self.clip_values[0]),
+                    torch.tensor(self.clip_values[1]),
                 )
 
             model_outputs = self._model(inputs_noise_t)[-1]

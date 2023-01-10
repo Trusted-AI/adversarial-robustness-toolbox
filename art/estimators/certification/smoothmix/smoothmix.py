@@ -24,17 +24,13 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from abc import ABC
 import logging
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import Optional, Tuple
 
 import numpy as np
 from scipy.stats import norm
 from tqdm.auto import tqdm
 
 from art.config import ART_NUMPY_DTYPE
-
-if TYPE_CHECKING:
-    # pylint: disable=C0412
-    import torch  # noqa: F401
 
 logger = logging.getLogger(__name__)
 

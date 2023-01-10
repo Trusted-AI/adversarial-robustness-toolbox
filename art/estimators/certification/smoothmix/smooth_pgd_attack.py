@@ -20,22 +20,25 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This is authors' implementation of SmoothMixPGD
+This is authors' implementation of SmoothMixPGD.
 
 | Paper link: https://arxiv.org/pdf/2111.09277.pdf
 | Authors' implementation: https://github.com/jh-jeong/smoothmix/code/train.py
-
 """
+from __future__ import absolute_import, division, print_function, unicode_literals
 
-from typing import Any, List, Optional
+import logging
+from typing import Any, List, Optional, Tuple
+
 import torch
 import torch.nn.functional as F
 
+logger = logging.getLogger(__name__)
 
-# pylint: disable=useless-object-inheritance
-class SmoothMixPGD(object):
+
+class SmoothMixPGD:
     """
-    Author's original implementation of a Smooth PGD attacker
+    Author's original implementation of a Smooth PGD attacker.
     """
 
     def __init__(
@@ -65,7 +68,9 @@ class SmoothMixPGD(object):
         else:
             self.maxnorm_s = maxnorm_s
 
-    def attack(self, model: torch.nn.Module, inputs: torch.Tensor, labels: torch.Tensor, noises: List[Any]):
+    def attack(
+        self, model: torch.nn.Module, inputs: torch.Tensor, labels: torch.Tensor, noises: List[Any]
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Attacks the model with the given inputs
 

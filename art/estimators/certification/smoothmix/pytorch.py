@@ -31,7 +31,6 @@ from art.config import ART_NUMPY_DTYPE
 from art.estimators.classification.pytorch import PyTorchClassifier
 from art.estimators.certification.smoothmix.smoothmix import SmoothMixMixin
 
-
 if TYPE_CHECKING:
     # pylint: disable=C0412
     import torch
@@ -98,7 +97,7 @@ class PyTorchSmoothMix(SmoothMixMixin, PyTorchClassifier):
         maxnorm_s: Optional[float] = None,
         maxnorm: Optional[float] = None,
         **kwargs,
-    ):
+    ) -> None:
         """
         Create a SmoothMix classifier.
 
@@ -185,7 +184,7 @@ class PyTorchSmoothMix(SmoothMixMixin, PyTorchClassifier):
         nb_epochs: int = 10,
         training_mode: bool = True,
         **kwargs,
-    ):
+    ) -> None:
         """
         Fit the classifier on the training set `(x, y)`.
 
@@ -407,7 +406,8 @@ class PyTorchSmoothMix(SmoothMixMixin, PyTorchClassifier):
             inputs_noise_t = inputs_repeat_t + noise
             if self.clip_values is not None:
                 inputs_noise_t.clamp(
-                    torch.tensor(self.clip_values[0]), torch.tensor(self.clip_values[1]),
+                    torch.tensor(self.clip_values[0]),
+                    torch.tensor(self.clip_values[1]),
                 )
 
             model_outputs = self._model(inputs_noise_t)[-1]
