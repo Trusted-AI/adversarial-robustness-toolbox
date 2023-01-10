@@ -49,7 +49,6 @@ class SmoothMixMixin(ABC):
         scale: float = 0.1,
         alpha: float = 0.001,
         num_noise_vec: int = 1,
-        attack_type: str = "PGD",
         epsilon: float = 64.0,
         num_steps: int = 10,
         warmup: int = 1,
@@ -69,7 +68,6 @@ class SmoothMixMixin(ABC):
         :param scale: Standard deviation of Gaussian noise added.
         :param alpha: The failure probability of smoothing.
         :param num_noise_vec: Number of noise vectors
-        :param attack_type: The type of attack to use
         :param epsilon: Maximum perturbation that the attacker can introduce
         :param num_steps: Number of attack updates
         :param warmup: Warm-up strategy that is gradually increased for the first
@@ -87,7 +85,6 @@ class SmoothMixMixin(ABC):
         self.scale = scale
         self.alpha = alpha
         self.num_noise_vec = num_noise_vec
-        self.attack_type = attack_type
         self.epsilon = epsilon
         self.num_steps = num_steps
         self.warmup = warmup
