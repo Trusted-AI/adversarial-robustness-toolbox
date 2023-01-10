@@ -18,18 +18,21 @@
 """
 This module implements SmoothMix applied to classifier predictions.
 
-| Paper link: https://arxiv.org/pdf/2111.09277.pdf
+| Paper link: https://arxiv.org/abs/2111.09277
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import List, Optional, Tuple, Union, TYPE_CHECKING
+from typing import List, Optional, Tuple, Union, Any, TYPE_CHECKING
 
+import random
+from tqdm import tqdm
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.classification.pytorch import PyTorchClassifier
 from art.estimators.certification.smoothmix.smoothmix import SmoothMixMixin
+from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
@@ -74,7 +77,6 @@ class PyTorchSmoothMix(SmoothMixMixin, PyTorchClassifier):
         input_shape: Tuple[int, ...],
         nb_classes: int,
         optimizer: Optional["torch.optim.Optimizer"] = None,  # type: ignore
-        scheduler: Optional["torch.optim.lr_scheduler"] = None,  # type: ignore
         channels_first: bool = True,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
@@ -108,7 +110,6 @@ class PyTorchSmoothMix(SmoothMixMixin, PyTorchClassifier):
         :param input_shape: The shape of one input instance.
         :param nb_classes: The number of classes of the model.
         :param optimizer: The optimizer used to train the classifier.
-        :param scheduler: The learning rate scheduler used to train the classifier.
         :param channels_first: Set channels first or last.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
@@ -166,7 +167,6 @@ class PyTorchSmoothMix(SmoothMixMixin, PyTorchClassifier):
             maxnorm=maxnorm,
             **kwargs,
         )
-        self.scheduler = scheduler
 
     def _predict_classifier(self, x: np.ndarray, batch_size: int, training_mode: bool, **kwargs) -> np.ndarray:
         x = x.astype(ART_NUMPY_DTYPE)
@@ -183,6 +183,8 @@ class PyTorchSmoothMix(SmoothMixMixin, PyTorchClassifier):
         batch_size: int = 128,
         nb_epochs: int = 10,
         training_mode: bool = True,
+        drop_last: bool = False,
+        scheduler: Optional[Any] = None,
         **kwargs,
     ) -> None:
         """
@@ -198,20 +200,15 @@ class PyTorchSmoothMix(SmoothMixMixin, PyTorchClassifier):
         :type kwargs: `dict`
         :return: `None`
         """
+        import torch
+        import torch.nn.functional as F
+        from art.estimators.certification.smoothmix.smooth_pgd_attack import SmoothMixPGD
 
         # Set model mode
         self._model.train(mode=training_mode)
 
-        import torch  # lgtm [py/repeated-import]
-        import torch.nn.functional as F  # lgtm [py/repeated-import]
-        from art.estimators.certification.smoothmix.smooth_pgd_attack import SmoothMixPGD
-        import random
-
-        x = x.astype(ART_NUMPY_DTYPE)
-        start_epoch = 0
-
-        if self.maxnorm_s is None:
-            self.maxnorm_s = self.alpha * self.mix_step
+        if self._optimizer is None:  # pragma: no cover
+            raise ValueError("An optimizer is needed to train the model, but none for provided")
 
         if self.attack_type == "PGD":
             attacker = SmoothMixPGD(
@@ -222,42 +219,45 @@ class PyTorchSmoothMix(SmoothMixMixin, PyTorchClassifier):
                 maxnorm_s=self.maxnorm_s,
             )
 
-        if self.optimizer is None:  # pragma: no cover
-            raise ValueError(f"An optimizer is needed to train the model, but none for provided: {self.optimizer}")
-        if self.scheduler is None:  # pragma: no cover
-            raise ValueError(f"A scheduler is needed to train the model, but none for provided: {self.scheduler}")
         if attacker is None:
             raise ValueError(
-                f"A attacker is needed to smooth adversarially train the model, but \
-                                none for provided: {self.attack_type}"
+                "A attacker is needed to smooth adversarially train the model, "
+                f"but none for provided: {self.attack_type}"
             )
 
-        num_batch = int(np.ceil(len(x) / float(batch_size)))
+        y = check_and_transform_label_format(y, nb_classes=self.nb_classes)
+
+        # Apply preprocessing
+        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
+
+        # Check label shape
+        y_preprocessed = self.reduce_labels(y_preprocessed)
+
+        num_batch = len(x_preprocessed) / float(batch_size)
+        if drop_last:
+            num_batch = int(np.floor(num_batch))
+        else:
+            num_batch = int(np.ceil(num_batch))
         ind = np.arange(len(x))
 
+        x_preprocessed = torch.from_numpy(x_preprocessed).to(self._device)
+        y_preprocessed = torch.from_numpy(y_preprocessed).to(self._device)
+
         # Start training
-        for epoch_num in range(start_epoch + 1, nb_epochs + 1):
+        for epoch in tqdm(range(nb_epochs)):
             # Shuffle the examples
             random.shuffle(ind)
 
             # SmoothMix Training setup
-            warmup_v = np.min([1.0, (epoch_num + 1) / self.warmup])
+            warmup_v = min(1.0, (epoch + 1) / self.warmup)
             attacker.maxnorm_s = warmup_v * self.maxnorm_s
 
-            # Put the model in the training mode
-            self.model.train()
-            self._requires_grad_(self.model, True)  # pylint: disable=W0212
-
-            for num_batch_index in range(num_batch):
-                input_batch = torch.from_numpy(
-                    x[ind[num_batch_index * batch_size : (num_batch_index + 1) * batch_size]]
-                ).to(self.device)
-                output_batch = torch.from_numpy(
-                    y[ind[num_batch_index * batch_size : (num_batch_index + 1) * batch_size]]
-                ).to(self.device)
+            for m in range(num_batch):
+                i_batch = x_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]
+                o_batch = y_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]
 
                 # pylint: disable=W0212
-                mini_batches = self._get_minibatches(input_batch, output_batch, self.num_noise_vec)
+                mini_batches = self._get_minibatches(i_batch, o_batch, self.num_noise_vec)
 
                 for (inputs, targets) in mini_batches:
                     inputs, targets = inputs.to(self.device), targets.to(self.device)
@@ -297,25 +297,12 @@ class PyTorchSmoothMix(SmoothMixMixin, PyTorchClassifier):
                     loss = loss_xent.mean() + self.eta * warmup_v * (ind_correct * loss_mixup).mean()
 
                     # compute gradient and do SGD step
-                    self.optimizer.zero_grad()
+                    self._optimizer.zero_grad()
                     loss.backward()
-                    self.optimizer.step()
+                    self._optimizer.step()
 
-            self.scheduler.step()
-
-    # pylint: disable=R0201
-    def get_minibatches(self, x, y, num_batches):
-        """
-        Generate batches of the training data and target values
-
-        :param x: Training data
-        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
-                    (nb_samples,).
-        :param num_batches: The number of batches to generate
-        """
-        batch_size = len(x) // num_batches
-        for i in range(num_batches):
-            yield x[i * batch_size : (i + 1) * batch_size], y[i * batch_size : (i + 1) * batch_size]
+            if scheduler is not None:
+                scheduler.step()
 
     # pylint: disable=R0201
     def _mixup_data(self, x_1, x_2, y_1, n_classes) -> Tuple["torch.Tensor", "torch.Tensor"]:
@@ -327,7 +314,7 @@ class PyTorchSmoothMix(SmoothMixMixin, PyTorchClassifier):
         :param y_1: Training labels
         :param n_classes: The number of classes
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         device = x_1.device
 
@@ -380,7 +367,7 @@ class PyTorchSmoothMix(SmoothMixMixin, PyTorchClassifier):
         :type sampling: `bool`
         :return: Array of gradients of the same shape as `x`.
         """
-        import torch  # lgtm [py/repeated-import]
+        import torch
 
         sampling = kwargs.get("sampling")
 

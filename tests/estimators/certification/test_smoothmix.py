@@ -82,7 +82,6 @@ class TestSmoothMix(unittest.TestCase):
             "input_shape": ptc.input_shape,
             "nb_classes": ptc.nb_classes,
             "optimizer": optimizer,
-            "scheduler": scheduler,
             "clip_values": ptc.clip_values,
             "channels_first": ptc.channels_first,
             "sample_size": 100,
@@ -106,7 +105,6 @@ class TestSmoothMix(unittest.TestCase):
             input_shape=ptc.input_shape,
             nb_classes=ptc.nb_classes,
             optimizer=optimizer,
-            scheduler=scheduler,
             clip_values=ptc.clip_values,
             channels_first=ptc.channels_first,
             sample_size=100,
@@ -152,7 +150,7 @@ class TestSmoothMix(unittest.TestCase):
         grad = rs.loss_gradient(x=x_test, y=y_test, sampling=True)
         assert grad.shape == (10, 1, 28, 28)
 
-        # Check if fit method was called with  train_method = smoothmix
+        # Check if fit method was called with train_method = smoothmix
         rs_fit_kwargs = {
             "x": x_test,
             "y": y_test,
@@ -163,7 +161,7 @@ class TestSmoothMix(unittest.TestCase):
         pt_rs_mock.fit.assert_called_once_with(**rs_fit_kwargs)
 
         # fit
-        rs.fit(x=x_test, y=np.argmax(y_test, axis=1))
+        rs.fit(x=x_test, y=y_test)
 
 
 if __name__ == "__main__":

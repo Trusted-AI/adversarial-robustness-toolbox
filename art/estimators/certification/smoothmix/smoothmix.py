@@ -37,9 +37,9 @@ logger = logging.getLogger(__name__)
 
 class SmoothMixMixin(ABC):
     """
-    Implementation of SmoothMix training, as introduced in Jeong et al. (2021)
+    Implementation of SmoothMix training, as introduced in Jeong et al. (2021).
 
-    | Paper link: https://arxiv.org/pdf/2111.09277.pdf
+    | Paper link: https://arxiv.org/abs/2111.09277
     """
 
     def __init__(
@@ -98,6 +98,8 @@ class SmoothMixMixin(ABC):
         self.mix_step = mix_step
         self.maxnorm_s = maxnorm_s
         self.maxnorm = maxnorm
+        if self.maxnorm_s is None:
+            self.maxnorm_s = self.alpha * self.mix_step
 
     def _predict_classifier(self, x: np.ndarray, batch_size: int, training_mode: bool, **kwargs) -> np.ndarray:
         """
@@ -191,7 +193,6 @@ class SmoothMixMixin(ABC):
         radius = []
 
         for x_i in x:
-
             # get sample prediction for classification
             counts_pred = self._prediction_counts(x_i, n=self.sample_size, batch_size=batch_size)
             class_select = int(np.argmax(counts_pred))
