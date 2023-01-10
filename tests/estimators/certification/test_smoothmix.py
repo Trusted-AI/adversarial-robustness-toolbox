@@ -26,13 +26,10 @@ import numpy as np
 import torch
 
 from art.attacks.evasion.fast_gradient import FastGradientMethod
-from art.utils import load_dataset, random_targets
 from art.estimators.certification.smoothmix import PyTorchSmoothMix
+from art.utils import load_dataset, random_targets
 
-from tests.utils import (
-    master_seed,
-    get_image_classifier_pt,
-)
+from tests.utils import master_seed, get_image_classifier_pt
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "True"
 logger = logging.getLogger(__name__)
