@@ -203,8 +203,9 @@ def SHAPr(  # pylint: disable=C0103
         results_test = []
         pred = pred_test[i_test]
         y_0 = y_test[i_test]
-        (_, n_indexes) = knn.kneighbors([pred], n_neighbors=n_train_samples)
-        # from farthest to closest
+        # returns sorted indexes, from closest to farthest
+        n_indexes = knn.kneighbors([pred], n_neighbors=n_train_samples, return_distance=False)
+        # reverse - from farthest to closest
         n_indexes = n_indexes.reshape(-1)[::-1]
         sorted_y_train = y_train[n_indexes]
         sorted_indexes = np.argsort(n_indexes)
