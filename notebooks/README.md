@@ -257,6 +257,9 @@ Agent is the first hidden trigger backdoor attack to be effective against neural
 [output_randomized_smoothing_mnist.ipynb](output_randomized_smoothing_mnist.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/output_randomized_smoothing_mnist.ipynb)]
 shows how to achieve certified adversarial robustness for neural networks via Randomized Smoothing.
 
+[output_smoothmix_cifar10.ipynb](output_smoothmix_cifar10.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/output_smoothmix_cifar10.ipynb)]
+shows how to achieve certified adversarial robustness for neural networks via SmoothMix.
+
 [robustness_verification_clique_method_tree_ensembles_gradient_boosted_decision_trees_classifiers.ipynb](robustness_verification_clique_method_tree_ensembles_gradient_boosted_decision_trees_classifiers.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/robustness_verification_clique_method_tree_ensembles_gradient_boosted_decision_trees_classifiers.ipynb)]
 demonstrates the verification of adversarial robustness in decision tree ensemble classifiers 
 (Gradient Boosted Decision Trees, Random Forests, etc.) using XGBoost, LightGBM and Scikit-learn.
