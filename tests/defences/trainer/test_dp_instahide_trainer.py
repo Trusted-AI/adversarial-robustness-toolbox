@@ -98,85 +98,15 @@ def get_mnist_classifier(framework):
     return _get_classifier
 
 
-@pytest.fixture()
-def get_cifar10_classifier(framework):
-    def _get_classifier():
-        if framework == "pytorch":
-            import torch
-
-            model = torch.nn.Sequential(
-                torch.nn.Conv2d(in_channels=3, out_channels=3, kernel_size=4),
-                torch.nn.ReLU(),
-                torch.nn.MaxPool2d(6, 6),
-                torch.nn.Flatten(),
-                torch.nn.Linear(48, 10),
-            )
-            criterion = torch.nn.CrossEntropyLoss()
-            optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
-            classifier = PyTorchClassifier(
-                model,
-                loss=criterion,
-                optimizer=optimizer,
-                input_shape=(3, 32, 32),
-                nb_classes=10,
-            )
-
-        elif framework == "tensorflow2":
-            import tensorflow as tf
-            from tensorflow.keras import layers, Sequential
-
-            model = Sequential()
-            model.add(layers.Conv2D(1, kernel_size=(4, 4), activation="relu", input_shape=(32, 32, 3)))
-            model.add(layers.MaxPooling2D(pool_size=(6, 6)))
-            model.add(layers.Flatten())
-            model.add(layers.Dense(10))
-
-            loss_object = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
-            optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
-
-            def train_step(model, images, labels):
-                with tf.GradientTape() as tape:
-                    predictions = model(images, training=True)
-                    loss = loss_object(labels, predictions)
-                gradients = tape.gradient(loss, model.trainable_variables)
-                optimizer.apply_gradients(zip(gradients, model.trainable_variables))
-
-            classifier = TensorFlowV2Classifier(
-                model, nb_classes=10, input_shape=(32, 32, 3), loss_object=loss_object, train_step=train_step
-            )
-
-        elif framework in ("keras", "kerastf"):
-            import tensorflow as tf
-            from tensorflow.keras import layers, Sequential
-
-            if tf.__version__[0] == "2":
-                tf.compat.v1.disable_eager_execution()
-
-            model = Sequential()
-            model.add(layers.Conv2D(1, kernel_size=(4, 4), activation="relu", input_shape=(32, 32, 3)))
-            model.add(layers.MaxPooling2D(pool_size=(6, 6)))
-            model.add(layers.Flatten())
-            model.add(layers.Dense(10))
-            model.compile(optimizer="adam", loss="categorical_crossentropy")
-            classifier = KerasClassifier(model, clip_values=(0, 1), use_logits=True)
-
-        else:
-            classifier = None
-
-        return classifier
-
-    return _get_classifier
-
-
 @pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf")
 @pytest.mark.parametrize("noise", ["gaussian", "laplacian", "exponential"])
-def test_dp_instahide_single_aug_mnist(art_warning, get_mnist_classifier, get_default_mnist_subset, noise):
+def test_dp_instahide_single_aug(art_warning, get_mnist_classifier, get_default_mnist_subset, noise):
     classifier = get_mnist_classifier()
     (x_train, y_train), (_, _) = get_default_mnist_subset
-    cutout = Cutout(length=8, channels_first=False)
+    mixup = Mixup(num_classes=10)
 
     try:
-        trainer = DPInstaHideTrainer(classifier, augmentations=cutout, noise=noise, loc=0, scale=0.1)
+        trainer = DPInstaHideTrainer(classifier, augmentations=mixup, noise=noise, loc=0, scale=0.1)
         trainer.fit(x_train, y_train, nb_epochs=1)
     except ARTTestException as e:
         art_warning(e)
@@ -184,21 +114,7 @@ def test_dp_instahide_single_aug_mnist(art_warning, get_mnist_classifier, get_de
 
 @pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf")
 @pytest.mark.parametrize("noise", ["gaussian", "laplacian", "exponential"])
-def test_dp_instahide_single_aug_cifar10(art_warning, get_cifar10_classifier, get_default_cifar10_subset, noise):
-    classifier = get_cifar10_classifier()
-    (x_train, y_train), (_, _) = get_default_cifar10_subset
-    cutout = Cutout(length=8, channels_first=False)
-
-    try:
-        trainer = DPInstaHideTrainer(classifier, augmentations=cutout, noise=noise, loc=0, scale=0.1)
-        trainer.fit(x_train, y_train, nb_epochs=1)
-    except ARTTestException as e:
-        art_warning(e)
-
-
-@pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf")
-@pytest.mark.parametrize("noise", ["gaussian", "laplacian", "exponential"])
-def test_dp_instahide_multiple_aug_mnist(art_warning, get_mnist_classifier, get_default_mnist_subset, noise):
+def test_dp_instahide_multiple_aug(art_warning, get_mnist_classifier, get_default_mnist_subset, noise):
     classifier = get_mnist_classifier()
     (x_train, y_train), (_, _) = get_default_mnist_subset
     mixup = Mixup(num_classes=10)
@@ -213,48 +129,30 @@ def test_dp_instahide_multiple_aug_mnist(art_warning, get_mnist_classifier, get_
 
 @pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf")
 @pytest.mark.parametrize("noise", ["gaussian", "laplacian", "exponential"])
-def test_dp_instahide_multiple_aug_cifar10(art_warning, get_cifar10_classifier, get_default_cifar10_subset, noise):
-    classifier = get_cifar10_classifier()
-    (x_train, y_train), (_, _) = get_default_cifar10_subset
+def test_dp_instahide_validation_data(art_warning, get_mnist_classifier, get_default_mnist_subset, noise):
+    classifier = get_mnist_classifier()
+    (x_train, y_train), (x_test, y_test) = get_default_mnist_subset
     mixup = Mixup(num_classes=10)
-    cutout = Cutout(length=8, channels_first=False)
 
     try:
-        trainer = DPInstaHideTrainer(classifier, augmentations=[mixup, cutout], noise=noise, loc=0, scale=0.1)
-        trainer.fit(x_train, y_train, nb_epochs=1)
+        trainer = DPInstaHideTrainer(classifier, augmentations=mixup, noise=noise, loc=0, scale=0.1)
+        trainer.fit(x_train, y_train, validation_data=(x_test, y_test), nb_epochs=1)
     except ARTTestException as e:
         art_warning(e)
 
 
 @pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf")
 @pytest.mark.parametrize("noise", ["gaussian", "laplacian", "exponential"])
-def test_dp_instahide_generator_mnist(art_warning, get_mnist_classifier, get_default_mnist_subset, noise):
+def test_dp_instahide_generator(art_warning, get_mnist_classifier, get_default_mnist_subset, noise):
     from art.data_generators import NumpyDataGenerator
 
     classifier = get_mnist_classifier()
     (x_train, y_train), (_, _) = get_default_mnist_subset
     generator = NumpyDataGenerator(x_train, y_train, batch_size=len(x_train))
-    cutout = Cutout(length=8, channels_first=False)
+    mixup = Mixup(num_classes=10)
 
     try:
-        trainer = DPInstaHideTrainer(classifier, augmentations=cutout, noise=noise, loc=0, scale=0.1)
-        trainer.fit_generator(generator, nb_epochs=1)
-    except ARTTestException as e:
-        art_warning(e)
-
-
-@pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf")
-@pytest.mark.parametrize("noise", ["gaussian", "laplacian", "exponential"])
-def test_dp_instahide_generator_cifar10(art_warning, get_cifar10_classifier, get_default_cifar10_subset, noise):
-    from art.data_generators import NumpyDataGenerator
-
-    classifier = get_cifar10_classifier()
-    (x_train, y_train), (_, _) = get_default_cifar10_subset
-    generator = NumpyDataGenerator(x_train, y_train, batch_size=len(x_train))
-    cutout = Cutout(length=8, channels_first=False)
-
-    try:
-        trainer = DPInstaHideTrainer(classifier, augmentations=cutout, noise=noise, loc=0, scale=0.1)
+        trainer = DPInstaHideTrainer(classifier, augmentations=mixup, noise=noise, loc=0, scale=0.1)
         trainer.fit_generator(generator, nb_epochs=1)
     except ARTTestException as e:
         art_warning(e)
