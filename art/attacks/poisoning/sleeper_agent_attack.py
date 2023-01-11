@@ -234,6 +234,8 @@ class SleeperAgentAttack(GradientMatchingAttack):
             best_B = B_  # pylint: disable=C0103
             best_x_poisoned = x_poisoned
             best_indices_poison = self.indices_poison
+        # set indices_poison to be the best indices after all trials
+        self.indices_poison = best_indices_poison
 
         # Apply De-Normalization
         if isinstance(

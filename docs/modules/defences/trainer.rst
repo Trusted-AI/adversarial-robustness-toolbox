@@ -37,3 +37,9 @@ Adversarial Training Certified - PyTorch
 .. autoclass:: AdversarialTrainerCertifiedPytorch
    :members:
    :special-members:
+
+DP - InstaHide Training
+-----------------------
+.. autoclass:: DPInstaHideTrainer
+   :members:
+   :special-members:
