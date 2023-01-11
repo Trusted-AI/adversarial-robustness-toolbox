@@ -74,7 +74,6 @@ class TestSmoothMix(unittest.TestCase):
 
         # Initialize RS object and attack with FGSM
         optimizer = torch.optim.SGD(ptc.model.parameters(), lr=0.1, momentum=0.9, weight_decay=1e-4)
-        scheduler = torch.optim.lr_scheduler.StepLR(optimizer=optimizer, step_size=50, gamma=0.1)
 
         rs_constructor_kwargs = {
             "model": ptc.model,
@@ -148,18 +147,22 @@ class TestSmoothMix(unittest.TestCase):
         grad = rs.loss_gradient(x=x_test, y=y_test, sampling=True)
         assert grad.shape == (10, 1, 28, 28)
 
+        # scheduler
+        scheduler = torch.optim.lr_scheduler.StepLR(optimizer=optimizer, step_size=50, gamma=0.1)
+
         # Check if fit method was called with train_method = smoothmix
         rs_fit_kwargs = {
             "x": x_test,
             "y": y_test,
             "batch_size": ANY,
             "nb_epochs": ANY,
+            "scheduler": scheduler,
         }
-        pt_rs_mock.fit(x=x_test, y=y_test, batch_size=128, nb_epochs=10)
+        pt_rs_mock.fit(x=x_test, y=y_test, batch_size=128, nb_epochs=10, scheduler=scheduler)
         pt_rs_mock.fit.assert_called_once_with(**rs_fit_kwargs)
 
         # fit
-        rs.fit(x=x_test, y=y_test)
+        rs.fit(x=x_test, y=y_test, scheduler=scheduler)
 
 
 if __name__ == "__main__":
