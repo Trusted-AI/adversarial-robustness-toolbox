@@ -242,35 +242,35 @@ class PyTorchSmoothMix(SmoothMixMixin, PyTorchClassifier):
 
                 for mini_batch in range(self.num_noise_vec):
                     inputs = i_batch[mini_batch * mini_batch_size : (mini_batch + 1) * mini_batch_size]
-                    targets = o_batch[mini_batch * mini_batch_size : (mini_batch + 1) * mini_batch_size]
+                    labels = o_batch[mini_batch * mini_batch_size : (mini_batch + 1) * mini_batch_size]
 
                     noises = [torch.randn_like(inputs) * self.scale for _ in range(self.num_noise_vec)]
 
                     # Attack and find adversarial examples
                     self._model.eval()
-                    inputs, inputs_adv = self._smoothmix_pgd_attack(inputs, targets, noises, warmup_v)
+                    inputs, inputs_adv = self._smoothmix_pgd_attack(inputs, labels, noises, warmup_v)
                     self._model.train(mode=training_mode)
 
                     in_clean_c = torch.cat([inputs + noise for noise in noises], dim=0)
                     logits_c = self._model(in_clean_c)[-1]
-                    targets_c = targets.repeat(self.num_noise_vec)
+                    labels_c = labels.repeat(self.num_noise_vec)
 
                     logits_c_chunk = torch.chunk(logits_c, self.num_noise_vec, dim=0)
                     clean_sm = F.softmax(torch.stack(logits_c_chunk), dim=-1)
                     clean_avg_sm = torch.mean(clean_sm, dim=0)
-                    loss_xent = F.cross_entropy(logits_c, targets_c, reduction="none")
+                    loss_xent = F.cross_entropy(logits_c, labels_c, reduction="none")
 
-                    in_mix, targets_mix = self._mixup_data(inputs, inputs_adv, clean_avg_sm, self.nb_classes)
-
+                    # mix adversarial examples
+                    in_mix, labels_mix = self._mix_data(inputs, inputs_adv, clean_avg_sm)
                     in_mix_c = torch.cat([in_mix + noise for noise in noises], dim=0)
-                    targets_mix_c = targets_mix.repeat(self.num_noise_vec, 1)
+                    labels_mix_c = labels_mix.repeat(self.num_noise_vec, 1)
                     logits_mix_c = F.log_softmax(self._model(in_mix_c)[-1], dim=1)
 
                     preds = torch.argmax(clean_avg_sm, dim=-1)
-                    ind_correct = (preds == targets).float()
+                    ind_correct = (preds == labels).float()
                     ind_correct = ind_correct.repeat(self.num_noise_vec)
 
-                    loss_mixup = F.kl_div(logits_mix_c, targets_mix_c, reduction="none").sum(1)
+                    loss_mixup = F.kl_div(logits_mix_c, labels_mix_c, reduction="none").sum(1)
                     loss = loss_xent.mean() + self.eta * warmup_v * (ind_correct * loss_mixup).mean()
 
                     # compute gradient and do SGD step
@@ -280,29 +280,6 @@ class PyTorchSmoothMix(SmoothMixMixin, PyTorchClassifier):
 
             if scheduler is not None:
                 scheduler.step()
-
-    # pylint: disable=R0201
-    def _mixup_data(self, x_1, x_2, y_1, n_classes) -> Tuple["torch.Tensor", "torch.Tensor"]:
-        """
-        Returns mixed inputs, pairs of targets, and lambda
-
-        :param x_1: Training data
-        :param x_2: Adversarial training data
-        :param y_1: Training labels
-        :param n_classes: The number of classes
-        """
-        import torch
-
-        device = x_1.device
-
-        _eye = torch.eye(n_classes, device=device)
-        _unif = _eye.mean(0, keepdim=True)
-        lam = torch.rand(x_1.size(0), device=device) / 2
-
-        mixed_x = (1 - lam).view(-1, 1, 1, 1) * x_1 + lam.view(-1, 1, 1, 1) * x_2
-        mixed_y = (1 - lam).view(-1, 1) * y_1 + lam.view(-1, 1) * _unif
-
-        return mixed_x, mixed_y
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:  # type: ignore
         """
@@ -439,7 +416,7 @@ class PyTorchSmoothMix(SmoothMixMixin, PyTorchClassifier):
                 eta = x - x_0
                 eta = eta.renorm(p=2, dim=0, maxnorm=maxnorm)
                 x = x_0 + eta
-            x = torch.clamp(x, self.clip_values[0], self.clip_values[1])
+            x = torch.clamp(x, 0, 1)
             x = x.detach()
             return x
 
@@ -461,6 +438,32 @@ class PyTorchSmoothMix(SmoothMixMixin, PyTorchClassifier):
             adv = adv + self.alpha * grad
 
             adv = _project(adv, inputs, self.maxnorm)
-        init = _project(init, inputs, self.maxnorm_s * warmup_v)
+
+        if self.maxnorm_s is None:
+            maxnorm_s = self.alpha * self.mix_step * warmup_v
+        else:
+            maxnorm_s = self.maxnorm_s * warmup_v
+        init = _project(init, inputs, maxnorm_s)
 
         return init, adv
+
+    def _mix_data(
+        self, inputs: "torch.Tensor", inputs_adv: "torch.Tensor", labels: "torch.Tensor"
+    ) -> Tuple["torch.Tensor", "torch.Tensor"]:
+        """
+        Returns mixed inputs and labels.
+
+        :param inputs: Training data
+        :param inputs_adv: Adversarial training data
+        :param labels: Training labels
+        """
+        import torch
+
+        eye = torch.eye(self.nb_classes, device=self.device)
+        unif = eye.mean(0, keepdim=True)
+        lam = torch.rand(inputs.size(0), device=self.device) / 2
+
+        mixed_inputs = (1 - lam).view(-1, 1, 1, 1) * inputs + lam.view(-1, 1, 1, 1) * inputs_adv
+        mixed_labels = (1 - lam).view(-1, 1) * labels + lam.view(-1, 1) * unif
+
+        return mixed_inputs, mixed_labels

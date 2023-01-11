@@ -95,8 +95,6 @@ class SmoothMixMixin(ABC):
         self.mix_step = mix_step
         self.maxnorm_s = maxnorm_s
         self.maxnorm = maxnorm
-        if self.maxnorm_s is None:
-            self.maxnorm_s = self.alpha * self.mix_step
 
     def _predict_classifier(self, x: np.ndarray, batch_size: int, training_mode: bool, **kwargs) -> np.ndarray:
         """
