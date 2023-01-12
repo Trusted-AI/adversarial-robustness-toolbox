@@ -37,17 +37,17 @@ jobs:
             tensorflow: 2.9.2
             keras: 2.9.0
             tf_addons: 0.17.0
-          - name: Keras 2.10.0 (TensorFlow 2.10.1 Python 3.9)
+          - name: Keras 2.11.0 (TensorFlow 2.11.0 Python 3.9)
             framework: keras
             python: 3.9
-            tensorflow: 2.10.1
-            keras: 2.10.0
+            tensorflow: 2.11.0
+            keras: 2.11.0
             tf_addons: 0.18.0
-          - name: TensorFlow-Keras 2.10.1 (Keras 2.10.0 Python 3.9)
+          - name: TensorFlow-Keras 2.11.0 (Keras 2.11.0 Python 3.9)
             framework: kerastf
             python: 3.9
-            tensorflow: 2.10.1
-            keras: 2.10.0
+            tensorflow: 2.11.0
+            keras: 2.11.0
             tf_addons: 0.18.0
 
     name: ${{ matrix.name }}
