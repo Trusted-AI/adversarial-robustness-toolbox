@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2023
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -22,7 +22,7 @@ detectors.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Tuple, Union, TYPE_CHECKING
+from typing import Tuple, TYPE_CHECKING
 
 import numpy as np
 
@@ -75,79 +75,6 @@ class BinaryInputDetector(EvasionDetector):
                 or not and has the same `batch_size` (first dimension) as `x`.
         """
         predictions = self.detector.predict(x, batch_size=batch_size)
-        is_adversarial = np.argmax(predictions, axis=1).astype(bool)
-        report = {"predictions": predictions}
-
-        return report, is_adversarial
-
-
-class BinaryActivationDetector(EvasionDetector):
-    """
-    Binary detector of adversarial samples coming from evasion attacks. The detector uses an architecture provided by
-    the user and is trained on the values of the activations of a classifier at a given layer.
-    """
-
-    defence_params = ["classifier", "detector", "layer"]
-
-    def __init__(
-        self,
-        classifier: "ClassifierNeuralNetwork",
-        detector: "ClassifierNeuralNetwork",
-        layer: Union[int, str],
-    ) -> None:
-        """
-        Create a `BinaryActivationDetector` instance which performs binary classification on activation information.
-        The shape of the input of the detector has to match that of the output of the chosen layer.
-
-        :param classifier: The classifier of which the activation information is to be used for detection.
-        :param detector: The detector architecture to be trained and applied for the binary classification.
-        :param layer: Layer for computing the activations to use for training the detector.
-        """
-        super().__init__()
-        self.classifier = classifier
-        self.detector = detector
-
-        # Ensure that layer is well-defined:
-        if classifier.layer_names is None:
-            raise ValueError("No layer names identified.")
-
-        if isinstance(layer, int):
-            if layer < 0 or layer >= len(classifier.layer_names):
-                raise ValueError(
-                    f"Layer index {layer} is outside of range (0 to {len(classifier.layer_names) - 1} included)."
-                )
-            self._layer_name = classifier.layer_names[layer]
-        else:
-            if layer not in classifier.layer_names:
-                raise ValueError(f"Layer name {layer} is not part of the graph.")
-            self._layer_name = layer
-
-    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
-        """
-        Fit the detector using training data.
-
-        :param x: Training set to fit the detector.
-        :param y: Labels for the training set.
-        :param batch_size: Size of batches.
-        :param nb_epochs: Number of epochs to use for training.
-        :param kwargs: Other parameters.
-        """
-        x_activations = self.classifier.get_activations(x, self._layer_name, batch_size)
-        self.detector.fit(x_activations, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
-
-    def detect(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> Tuple[dict, np.ndarray]:
-        """
-        Perform detection of adversarial data and return prediction as tuple.
-
-        :param x: Data sample on which to perform detection.
-        :param batch_size: Size of batches.
-        :return: (report, is_adversarial):
-                where report is a dictionary containing the detector model output predictions;
-                where is_adversarial is a boolean list of per-sample prediction whether the sample is adversarial
-                or not and has the same `batch_size` (first dimension) as `x`.
-        """
-        x_activations = self.classifier.get_activations(x, self._layer_name, batch_size)
-        predictions = self.detector.predict(x_activations, batch_size=batch_size)
         is_adversarial = np.argmax(predictions, axis=1).astype(bool)
         report = {"predictions": predictions}
 
