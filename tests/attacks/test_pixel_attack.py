@@ -96,9 +96,9 @@ class TestPixelAttack(TestBase):
         Test with the PyTorchClassifier on a single sample. (Untargeted Attack)
         :return:
         """
-        x_test = np.reshape(self.x_test_mnist[0], (1, 1, 28, 28)).astype(np.float32)
+        x_test = np.reshape(self.x_test_mnist[1], (1, 1, 28, 28)).astype(np.float32)
         classifier = get_image_classifier_pt()
-        self._test_attack(classifier, x_test, self.y_test_mnist, False)
+        self._test_attack(classifier, x_test, self.y_test_mnist[[1]], False)
 
     # def test_7_keras_mnist_targeted(self):
     #     """
