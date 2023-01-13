@@ -124,16 +124,11 @@ class TestMetrics(unittest.TestCase):
     def _cnn_mnist_k(input_shape):
         import tensorflow as tf
 
-        tf_version = [int(v) for v in tf.__version__.split(".")]
-        if tf_version[0] == 2 and tf_version[1] >= 3:
-            tf.compat.v1.disable_eager_execution()
-            from tensorflow import keras
-            from tensorflow.keras.models import Sequential
-            from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
-        else:
-            import keras
-            from keras.models import Sequential
-            from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+        tf.compat.v1.disable_eager_execution()
+
+        import keras
+        from keras.models import Sequential
+        from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 
         # Create simple CNN
         model = Sequential()
@@ -143,7 +138,9 @@ class TestMetrics(unittest.TestCase):
         model.add(Dense(10, activation="softmax"))
 
         model.compile(
-            loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01), metrics=["accuracy"]
+            loss=keras.losses.categorical_crossentropy,
+            optimizer=keras.optimizers.Adam(learning_rate=0.01),
+            metrics=["accuracy"],
         )
 
         classifier = KerasClassifier(model=model, clip_values=(0, 1), use_logits=False)
@@ -200,16 +197,11 @@ class TestMetrics(unittest.TestCase):
         """
         import tensorflow as tf
 
-        tf_version = [int(v) for v in tf.__version__.split(".")]
-        if tf_version[0] == 2 and tf_version[1] >= 3:
-            tf.compat.v1.disable_eager_execution()
-            from tensorflow import keras
-            from tensorflow.keras.models import Sequential
-            from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
-        else:
-            import keras
-            from keras.models import Sequential
-            from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+        tf.compat.v1.disable_eager_execution()
+
+        import keras
+        from keras.models import Sequential
+        from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 
         # Create simple CNN
         model = Sequential()
@@ -219,7 +211,9 @@ class TestMetrics(unittest.TestCase):
         model.add(Dense(10, activation="softmax"))
 
         model.compile(
-            loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01), metrics=["accuracy"]
+            loss=keras.losses.categorical_crossentropy,
+            optimizer=keras.optimizers.Adam(learning_rate=0.01),
+            metrics=["accuracy"],
         )
 
         # Get the classifier
