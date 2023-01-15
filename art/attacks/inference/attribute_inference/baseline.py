@@ -21,11 +21,13 @@ This module implements attribute inference attacks.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Union, TYPE_CHECKING
+from typing import Optional, Union, List, TYPE_CHECKING
 
 import numpy as np
 from sklearn.neural_network import MLPClassifier
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder
+from sklearn.compose import ColumnTransformer
 
 from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.attack import AttributeInferenceAttack
@@ -57,7 +59,9 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
         self,
         attack_model_type: str = "nn",
         attack_model: Optional["CLASSIFIER_TYPE"] = None,
-        attack_feature: Union[int, slice] = 0,
+        attack_feature: Optional[Union[int, slice]] = 0,
+        non_numerical_features: Optional[List[int]] = [],
+        encoder: Optional[Union[OrdinalEncoder, OneHotEncoder, ColumnTransformer]] = None,
     ):
         """
         Create an AttributeInferenceBaseline attack instance.
@@ -68,11 +72,18 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
         :param attack_model: The attack model to train, optional. If none is provided, a default model will be created.
         :param attack_feature: The index of the feature to be attacked or a slice representing multiple indexes in
                                case of a one-hot encoded feature.
+        :param non_numerical_features: a list if feature indexes that require encoding in order to feed into an ML model
+                                       (i.e., strings). Should only be supplied if non-numeric features exist in the
+                                        input data and an encoder is not supplied.
+        :param encoder: An already fit encoder that can be applied to the model's input features without the attacked
+                        feature (i.e., should be fit for n-1 features).
         """
         super().__init__(estimator=None, attack_feature=attack_feature)
 
         self._values: Optional[list] = None
         self._nb_classes: Optional[int] = None
+        self._encoder = encoder
+        self._non_numerical_features = non_numerical_features
 
         if attack_model:
             if ClassifierMixin not in type(attack_model).__mro__:
@@ -126,6 +137,7 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
         # get vector of attacked feature
         y = x[:, self.attack_feature]
         self._values = get_feature_values(y, isinstance(self.attack_feature, int))
+        # number of values in case of single column, number of columns in case of multi-column feature
         self._nb_classes = len(self._values)
         if isinstance(self.attack_feature, int):
             y_one_hot = float_to_categorical(y)
@@ -136,9 +148,29 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
             raise ValueError("None value detected.")
 
         # create training set for attack model
-        x_train = np.delete(x, self.attack_feature, 1).astype(np.float32)
+        x_train = np.delete(x, self.attack_feature, 1)
+
+        if self._non_numerical_features and self._encoder is None:
+            if isinstance(self.attack_feature, int):
+                compare_index = self.attack_feature
+                size = 1
+            else:
+                compare_index = self.attack_feature.start
+                size = (self.attack_feature.stop - self.attack_feature.start) // self.attack_feature.step
+            new_indexes = [(f - size) if f > compare_index else f for f in self._non_numerical_features]
+            categorical_transformer = OrdinalEncoder()
+            self._encoder = ColumnTransformer(
+                transformers=[
+                    ("cat", categorical_transformer, new_indexes),
+                ],
+                remainder="passthrough",
+            )
+            self._encoder.fit(x_train)
 
         # train attack model
+        if self._encoder is not None:
+            x_train = self._encoder.transform(x_train)
+        x_train = x_train.astype(np.float32)
         self.attack_model.fit(x_train, y_ready)
 
     def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
@@ -155,21 +187,27 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
         :type values: list
         :return: The inferred feature values.
         """
-        x_test = x.astype(np.float32)
         values = kwargs.get("values")
 
         # if provided, override the values computed in fit()
         if values is not None:
             self._values = values
 
+        x_test = x
+        if self._encoder is not None:
+            x_test = self._encoder.transform(x)
+        x_test = x_test.astype(np.float32)
         predictions = self.attack_model.predict(x_test).astype(np.float32)
 
         if self._values is not None:
             if isinstance(self.attack_feature, int):
+                # replace 1-hot encoded prediction with correct single feature value
                 predictions = np.array([self._values[np.argmax(arr)] for arr in predictions])
             else:
                 i = 0
+                # replace 1-hot encoded prediction with multi-column feature value
                 for column in predictions.T:
+                    # possible values for ith column
                     for index in range(len(self._values[i])):
                         np.place(column, [column == index], self._values[i][index])
                     i += 1
@@ -182,3 +220,15 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
 
         if isinstance(self.attack_feature, int) and self.attack_feature < 0:
             raise ValueError("Attack feature index must be non-negative.")
+
+        if not isinstance(self._non_numerical_features, list) or (
+            self._non_numerical_features and not all(isinstance(item, int) for item in self._non_numerical_features)
+        ):
+            raise ValueError("non_numerical_features must be a list of int.")
+
+        if self._encoder is not None and (
+            not isinstance(self._encoder, OrdinalEncoder)
+            and not isinstance(self._encoder, OneHotEncoder)
+            and not isinstance(self._encoder, ColumnTransformer)
+        ):
+            raise ValueError("encoder must be a OneHotEncoder, OrdinalEncoder or ColumnTransformer object.")

@@ -921,25 +921,19 @@ def get_feature_values(x: np.ndarray, single_index_feature: bool) -> list:
              For a multi-column feature, a list of lists, where each internal list represents a column and the values
              represent the possible values for that column (in increasing order).
     """
-    values = None
+    values = []
     if single_index_feature:
         values = np.unique(x).tolist()
     else:
         for column in x.T:
-            column_values = np.unique(column)
-            if values is None:
-                values = column_values
-            else:
-                values = np.vstack((values, column_values))
-        if values is not None:
-            values = values.tolist()
+            values.append(np.unique(column).tolist())
     return values
 
 
 def get_feature_index(feature: Union[int, slice]) -> Union[int, slice]:
     """
-    Returns a modified feature index: in case of a slice of size 1, returns the corresponding integer. Otherwise,
-    returns the same value (integer or slice) as passed.
+    Returns a modified feature index: in case of a slice of size 1, returns the corresponding integer. In case
+    of a slice with missing params, tries to fill them. Otherwise, returns the same value (integer or slice) as passed.
 
     :param feature: The index or slice representing a feature to attack
     :return: An integer representing a single column index or a slice representing a multi-column index
@@ -954,10 +948,10 @@ def get_feature_index(feature: Union[int, slice]) -> Union[int, slice]:
         start = 0
     if step is None:
         step = 1
-    if feature.stop is not None and ((stop - start) // step) == 1:
+    if stop is not None and ((stop - start) // step) == 1:
         return start
 
-    return feature
+    return slice(start, stop, step)
 
 
 def compute_success_array(
