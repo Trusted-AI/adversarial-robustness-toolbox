@@ -60,8 +60,8 @@ class CutMixPyTorch(PreprocessorPyTorch):
         alpha: float = 1.0,
         probability: float = 0.5,
         channels_first: bool = False,
-        apply_fit: bool = False,
-        apply_predict: bool = True,
+        apply_fit: bool = True,
+        apply_predict: bool = False,
         device_type: str = "gpu",
         verbose: bool = False,
     ) -> None:
