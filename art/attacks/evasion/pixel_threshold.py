@@ -167,7 +167,7 @@ class PixelThreshold(EvasionAttack):
             if y.ndim > 1 and y.shape[1] > 1:
                 y = np.argmax(y, axis=1)
 
-        y = np.squeeze(y)  # type: ignore
+        y = y.flatten()  # type: ignore
 
         if self.th is None:
             logger.info(
