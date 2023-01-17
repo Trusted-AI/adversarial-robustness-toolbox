@@ -22,6 +22,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import unittest
+import pytest
 
 import keras.backend as k
 import numpy as np

@@ -51,7 +51,7 @@ class SubsetScanningDetector(EvasionDetector):
     | Paper link: https://www.cs.cmu.edu/~neill/papers/mcfowland13a.pdf
     """
 
-    defence_params = ["classifier", "bgd_data", "layer", "scoring_function" "verbose"]
+    defence_params = ["classifier", "bgd_data", "layer", "scoring_function", "verbose"]
 
     def __init__(
         self,
