@@ -150,7 +150,7 @@ class SubsetScanningDetector(EvasionDetector):
         clean_x: np.ndarray,
         adv_x: np.ndarray,
         clean_size: Optional[int] = None,
-        advs_size: Optional[int] = None,
+        adv_size: Optional[int] = None,
         run: int = 10,
     ) -> Tuple[np.ndarray, np.ndarray, float]:
         """
@@ -159,7 +159,7 @@ class SubsetScanningDetector(EvasionDetector):
         :param clean_x: Data presumably without anomalies.
         :param adv_x: Data presumably with anomalies (adversarial samples).
         :param clean_size:
-        :param advs_size:
+        :param adv_size:
         :param run:
         :return: (clean_scores, adv_scores, detection_power).
         """
@@ -169,7 +169,7 @@ class SubsetScanningDetector(EvasionDetector):
         clean_scores = []
         adv_scores = []
 
-        if clean_size is None or advs_size is None:
+        if clean_size is None or adv_size is None:
             # Individual scan
             with tqdm(
                 total=len(clean_pval_ranges) + len(adv_pval_ranges), desc="Subset scanning", disable=not self.verbose
@@ -191,7 +191,7 @@ class SubsetScanningDetector(EvasionDetector):
                 np.random.seed()
 
                 clean_choice = np.random.choice(range(len_clean_x), clean_size, replace=False)
-                adv_choice = np.random.choice(range(len_adv_x), advs_size, replace=False)
+                adv_choice = np.random.choice(range(len_adv_x), adv_size, replace=False)
 
                 combined_pvals = np.concatenate((clean_pval_ranges[clean_choice], adv_pval_ranges[adv_choice]), axis=0)
 

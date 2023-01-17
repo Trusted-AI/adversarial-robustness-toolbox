@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2023
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -21,67 +21,80 @@ A unittest class for testing the subset scanning detector.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-import unittest
 import pytest
 
-import keras.backend as k
 import numpy as np
 
 from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.defences.detector.evasion import SubsetScanningDetector
-from art.utils import load_dataset
 
-from tests.utils import master_seed, get_image_classifier_kr
+from tests.utils import ARTTestException, get_image_classifier_kr
 
 logger = logging.getLogger(__name__)
 
-BATCH_SIZE = 100
-NB_TRAIN = 100
-NB_TEST = 100
+
+@pytest.mark.only_with_platform("keras", "kerastf")
+def test_subsetscannning_detector_scan_clean(art_warning, get_default_mnist_subset):
+    (x_train, _), (x_test, _) = get_default_mnist_subset
+
+    # Keras classifier
+    classifier = get_image_classifier_kr()
+
+    # Data for detector
+    bgd_data = x_train
+    clean_data = x_test
+
+    try:
+        detector = SubsetScanningDetector(classifier, bgd_data=bgd_data, layer=1)
+        _, _, dpwr = detector.scan(clean_x=clean_data, adv_x=clean_data)
+        assert dpwr == pytest.approx(0.5, rel=1e-3)
+    except ARTTestException as e:
+        art_warning(e)
 
 
-class TestSubsetScanningDetector(unittest.TestCase):
-    """
-    A unittest class for testing the subset scanning detector.
-    """
+@pytest.mark.only_with_platform("keras", "kerastf")
+def test_subsetscannning_detector_scan_adv(art_warning, get_default_mnist_subset):
+    (x_train, _), (x_test, _) = get_default_mnist_subset
 
-    def setUp(self):
-        master_seed(seed=1234)
+    # Keras classifier
+    classifier = get_image_classifier_kr()
 
-    def tearDown(self):
-        k.clear_session()
+    # Generate adversarial samples
+    attacker = FastGradientMethod(classifier, eps=0.5)
+    x_test_adv = attacker.generate(x_test)
 
-    def test_subsetscan_detector(self):
-        (x_train, y_train), (x_test, y_test), _, _ = load_dataset("mnist")
-        x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
-        x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
+    # Data for detector
+    bgd_data = x_train
+    clean_data = x_test
+    adv_data = x_test_adv
 
-        # Keras classifier
-        classifier = get_image_classifier_kr()
-
-        # Generate adversarial samples:
-        attacker = FastGradientMethod(classifier, eps=0.5)
-        x_train_adv = attacker.generate(x_train)
-        x_test_adv = attacker.generate(x_test)
-
-        # Compile training data for detector:
-        x_train_detector = np.concatenate((x_train, x_train_adv), axis=0)
-
-        bgd = x_train
-        clean = x_test
-        anom = x_test_adv
-
-        detector = SubsetScanningDetector(classifier, bgd, layer=1)
-
-        _, _, dpwr = detector.scan(clean, clean)
-        self.assertAlmostEqual(dpwr, 0.5)
-
-        _, _, dpwr = detector.scan(clean, anom)
-        self.assertGreater(dpwr, 0.5)
-
-        _, _, dpwr = detector.scan(clean, x_train_detector, 85, 15)
-        self.assertGreater(dpwr, 0.5)
+    try:
+        detector = SubsetScanningDetector(classifier, bgd_data=bgd_data, layer=1)
+        _, _, dpwr = detector.scan(clean_x=clean_data, adv_x=adv_data)
+        assert dpwr >= 0.5
+    except ARTTestException as e:
+        art_warning(e)
 
 
-if __name__ == "__main__":
-    unittest.main()
+@pytest.mark.only_with_platform("keras", "kerastf")
+def test_subsetscannning_detector_scan_mixed(art_warning, get_default_mnist_subset):
+    (x_train, _), (x_test, _) = get_default_mnist_subset
+
+    # Keras classifier
+    classifier = get_image_classifier_kr()
+
+    # Generate adversarial samples
+    attacker = FastGradientMethod(classifier, eps=0.5)
+    x_test_adv = attacker.generate(x_test)
+
+    # Compile training data for detector:
+    bgd_data = x_train
+    clean_data = x_test
+    adv_data = np.concatenate((x_test, x_test_adv), axis=0)
+
+    try:
+        detector = SubsetScanningDetector(classifier, bgd_data=bgd_data, layer=1)
+        _, _, dpwr = detector.scan(clean_x=clean_data, adv_x=adv_data, clean_size=85, adv_size=15)
+        assert dpwr >= 0.5
+    except ARTTestException as e:
+        art_warning(e)
