@@ -202,16 +202,17 @@ class SubsetScanningDetector(EvasionDetector):
                 best_score, _, _, _ = Scanner.fgss_for_nets(combined_pvals, score_function=self.scoring_function)
                 adv_scores.append(best_score)
 
-        clean_scores = np.asarray(clean_scores)
-        adv_scores = np.asarray(adv_scores)
+        clean_scores_array = np.asarray(clean_scores)
+        adv_scores_array = np.asarray(adv_scores)
+
         y_true = np.concatenate([np.ones(len(adv_scores)), np.zeros(len(clean_scores))])
         all_scores = np.concatenate([adv_scores, clean_scores])
 
         fpr, tpr, _ = metrics.roc_curve(y_true, all_scores)
-        roc_auc = metrics.auc(fpr, tpr)
+        roc_auc: float = metrics.auc(fpr, tpr)
         detection_power = roc_auc
 
-        return clean_scores, adv_scores, detection_power
+        return clean_scores_array, adv_scores_array, detection_power
 
     def detect(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> Tuple[dict, np.ndarray]:
         """
@@ -230,10 +231,10 @@ class SubsetScanningDetector(EvasionDetector):
         for pval_range in tqdm(pval_ranges, desc="Subset scanning", disable=not self.verbose):
             best_score, _, _, _ = Scanner.fgss_individ_for_nets(pval_range, score_function=self.scoring_function)
             scores.append(best_score)
-        scores = np.asarray(scores)
+        scores_array = np.asarray(scores)
 
-        is_adversarial = np.greater(scores, self.bgd_scores.max())
-        report = {"scores": scores}
+        is_adversarial = np.greater(scores_array, self.bgd_scores.max())
+        report = {"scores": scores_array}
 
         return report, is_adversarial
 

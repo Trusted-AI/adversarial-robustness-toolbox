@@ -21,7 +21,7 @@ This module implements the abstract base class for all evasion detectors.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import abc
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 
@@ -31,7 +31,7 @@ class EvasionDetector(abc.ABC):
     Abstract base class for all evasion detectors.
     """
 
-    defence_params = []
+    defence_params: List[str] = []
 
     def __init__(self) -> None:
         """
