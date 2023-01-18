@@ -98,3 +98,26 @@ def test_subsetscannning_detector_scan_mixed(art_warning, get_default_mnist_subs
         assert dpwr >= 0.5
     except ARTTestException as e:
         art_warning(e)
+
+
+@pytest.mark.only_with_platform("keras", "kerastf")
+def test_subsetscannning_detector_detect(art_warning, get_default_mnist_subset):
+    (x_train, _), (x_test, _) = get_default_mnist_subset
+
+    # Keras classifier
+    classifier = get_image_classifier_kr()
+
+    # Generate adversarial samples
+    attacker = FastGradientMethod(classifier, eps=0.5)
+    x_test_adv = attacker.generate(x_test)
+
+    # Data for detector
+    bgd_data = x_train
+    adv_data = x_test_adv
+
+    try:
+        detector = SubsetScanningDetector(classifier, bgd_data=bgd_data, layer=1)
+        _, is_adversarial = detector.detect(adv_data)
+        assert np.any(is_adversarial)
+    except ARTTestException as e:
+        art_warning(e)

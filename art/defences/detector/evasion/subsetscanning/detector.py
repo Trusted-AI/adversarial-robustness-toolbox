@@ -29,7 +29,7 @@ import numpy as np
 from sklearn import metrics
 from tqdm.auto import trange, tqdm
 
-from art.defences.detector.evasion import EvasionDetector
+from art.defences.detector.evasion.evasion_detector import EvasionDetector
 from art.defences.detector.evasion.subsetscanning.scanner import Scanner
 from art.defences.detector.evasion.subsetscanning.scoring_functions import ScoringFunctions
 

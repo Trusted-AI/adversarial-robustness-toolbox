@@ -26,7 +26,7 @@ from typing import Tuple, TYPE_CHECKING
 
 import numpy as np
 
-from art.defences.detector.evasion import EvasionDetector
+from art.defences.detector.evasion.evasion_detector import EvasionDetector
 
 if TYPE_CHECKING:
     from art.estimators.classification.classifier import ClassifierNeuralNetwork
