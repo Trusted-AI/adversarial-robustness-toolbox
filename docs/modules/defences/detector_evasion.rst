@@ -2,9 +2,9 @@
 ====================================
 .. automodule:: art.defences.detector.evasion
 
-Base Class EvasionDefense
+Base Class
 ------------------------
-.. autoclass:: EvasionDefense
+.. autoclass:: EvasionDetector
    :members:
 
 Binary Input Detector
