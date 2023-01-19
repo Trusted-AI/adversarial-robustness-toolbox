@@ -104,7 +104,9 @@ if TYPE_CHECKING:
     from art.estimators.object_detection.object_detector import ObjectDetector
     from art.estimators.object_detection.pytorch_object_detector import PyTorchObjectDetector
     from art.estimators.object_detection.pytorch_faster_rcnn import PyTorchFasterRCNN
+    from art.estimators.object_detection.pytorch_yolo import PyTorchYolo
     from art.estimators.object_detection.tensorflow_faster_rcnn import TensorFlowFasterRCNN
+    from art.estimators.object_detection.tensorflow_v2_faster_rcnn import TensorFlowV2FasterRCNN
     from art.estimators.pytorch import PyTorchEstimator
     from art.estimators.keras import KerasEstimator
     from art.estimators.regression.scikitlearn import ScikitlearnRegressor
@@ -202,7 +204,9 @@ if TYPE_CHECKING:
         ObjectDetector,
         PyTorchObjectDetector,
         PyTorchFasterRCNN,
+        PyTorchYolo,
         TensorFlowFasterRCNN,
+        TensorFlowV2FasterRCNN,
     ]
 
     SPEECH_RECOGNIZER_TYPE = Union[  # pylint: disable=C0103
@@ -216,6 +220,7 @@ if TYPE_CHECKING:
         PyTorchEstimator,
         PyTorchObjectDetector,
         PyTorchFasterRCNN,
+        PyTorchYolo,
         PyTorchRegressor,
     ]
 
@@ -228,6 +233,7 @@ if TYPE_CHECKING:
     TENSORFLOWV2_ESTIMATOR_TYPE = Union[  # pylint: disable=C0103
         TensorFlowV2Classifier,
         TensorFlowV2Estimator,
+        TensorFlowV2FasterRCNN,
     ]
 
     ESTIMATOR_TYPE = Union[  # pylint: disable=C0103
