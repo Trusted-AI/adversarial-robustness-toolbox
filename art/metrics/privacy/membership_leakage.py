@@ -20,6 +20,7 @@ This module implements membership leakage metrics.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 from typing import TYPE_CHECKING, Optional, Tuple
+from enum import Enum, auto
 
 import numpy as np
 import scipy
@@ -30,6 +31,15 @@ if TYPE_CHECKING:
     from art.estimators.classification.classifier import Classifier
 
 
+class ComparisonType(Enum):
+    """
+    An Enum type for different kinds of comparisons between model outputs.
+    """
+
+    RATIO = auto()
+    DIFFERENCE = auto()
+
+
 def PDTP(  # pylint: disable=C0103
     target_estimator: "Classifier",
     extra_estimator: "Classifier",
@@ -37,6 +47,7 @@ def PDTP(  # pylint: disable=C0103
     y: np.ndarray,
     indexes: Optional[np.ndarray] = None,
     num_iter: Optional[int] = 10,
+    comparison_type: Optional[ComparisonType] = ComparisonType.RATIO,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Compute the pointwise differential training privacy metric for the given classifier and training set.
@@ -52,6 +63,8 @@ def PDTP(  # pylint: disable=C0103
                     computed for all samples in `x`.
     :param num_iter: the number of iterations of PDTP computation to run for each sample. If not supplied,
                      defaults to 10. The result is the average across iterations.
+    :param comparison_type: the way in which to compare the model outputs between models trained with and without
+                            a certain sample. Default is to compute the ratio.
     :return: A tuple of three arrays, containing the average (worse, standard deviation) PDTP value for each sample in
              the training set respectively. The higher the value, the higher the privacy leakage for that sample.
     """
@@ -88,7 +101,7 @@ def PDTP(  # pylint: disable=C0103
         pred_bin_indexes[pred_bin_indexes == 101] = 100
         pred_bin = bins[pred_bin_indexes] - 0.005
 
-        if not indexes:
+        if indexes is None:
             indexes = range(x.shape[0])
         for row in indexes:
             # create new model without sample in training data
@@ -109,15 +122,20 @@ def PDTP(  # pylint: disable=C0103
             alt_pred_bin_indexes = np.digitize(alt_pred, bins)
             alt_pred_bin_indexes[alt_pred_bin_indexes == 101] = 100
             alt_pred_bin = bins[alt_pred_bin_indexes] - 0.005
-            ratio_1 = pred_bin / alt_pred_bin
-            ratio_2 = alt_pred_bin / pred_bin
-            # get max value
-            max_value = max(ratio_1.max(), ratio_2.max())
+            if comparison_type == ComparisonType.RATIO:
+                ratio_1 = pred_bin / alt_pred_bin
+                ratio_2 = alt_pred_bin / pred_bin
+                # get max value
+                max_value = max(ratio_1.max(), ratio_2.max())
+            elif comparison_type == ComparisonType.DIFFERENCE:
+                max_value = np.max(abs(pred_bin - alt_pred_bin))
+            else:
+                raise ValueError("Unsupported comparison type.")
             iter_results.append(max_value)
         results.append(iter_results)
 
     # get average of iterations for each sample
-    # We now have a list of list, internal lists represent an iteration. We need to transpose and get averages.
+    # We now have a list of lists, internal lists represent an iteration. We need to transpose and get averages.
     per_sample = list(map(list, zip(*results)))
     avg_per_sample = np.array([sum(val) / len(val) for val in per_sample])
     worse_per_sample = np.max(per_sample, axis=1)
