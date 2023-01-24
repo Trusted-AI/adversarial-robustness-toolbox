@@ -747,7 +747,7 @@ def float_to_categorical(labels: np.ndarray, nb_classes: Optional[int] = None):
     """
     Convert an array of floating point labels to binary class matrix.
 
-    :param labels: An array of integer labels of shape `(nb_samples,)`
+    :param labels: An array of floating point labels of shape `(nb_samples,)`
     :param nb_classes: The number of classes (possible labels)
     :return: A binary matrix representation of `labels` in the shape `(nb_samples, nb_classes)`
     :rtype: `np.ndarray`

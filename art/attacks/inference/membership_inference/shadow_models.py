@@ -86,7 +86,7 @@ class ShadowModels:
 
         # Shuffle data set
         random_indices = self._rng.permutation(len(x))
-        x, y = x[random_indices].astype(np.float32), y[random_indices].astype(np.float32)
+        x, y = x[random_indices], y[random_indices]
 
         if self._disjoint_datasets:
             shadow_dataset_size = len(x) // len(self._shadow_models)
