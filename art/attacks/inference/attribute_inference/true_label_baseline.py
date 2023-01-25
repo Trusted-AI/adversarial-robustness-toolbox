@@ -21,12 +21,13 @@ This module implements attribute inference attacks.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Union, Tuple, TYPE_CHECKING
+from typing import Optional, Union, Tuple, List, TYPE_CHECKING
 
 import numpy as np
 from sklearn.neural_network import MLPClassifier
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.preprocessing import minmax_scale
+from sklearn.preprocessing import minmax_scale, OneHotEncoder, OrdinalEncoder
+from sklearn.compose import ColumnTransformer
 
 from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.attack import AttributeInferenceAttack
@@ -62,6 +63,8 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
         is_regression: Optional[bool] = False,
         scale_range: Optional[Tuple[float, float]] = None,
         prediction_normal_factor: float = 1,
+        non_numerical_features: Optional[List[int]] = None,
+        encoder: Optional[Union[OrdinalEncoder, OneHotEncoder, ColumnTransformer]] = None,
     ):
         """
         Create an AttributeInferenceBaseline attack instance.
@@ -79,11 +82,18 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
         :param prediction_normal_factor: If supplied, the class labels (both true and predicted) are multiplied by the
                                          factor when used as inputs to the attack-model. Only applicable when
                                          `is_regression` is True and if `scale_range` is not supplied.
+        :param non_numerical_features: a list if feature indexes that require encoding in order to feed into an ML model
+                                       (i.e., strings). Should only be supplied if non-numeric features exist in the
+                                        input data and an encoder is not supplied.
+        :param encoder: An already fit encoder that can be applied to the model's input features without the attacked
+                        feature (i.e., should be fit for n-1 features).
         """
         super().__init__(estimator=None, attack_feature=attack_feature)
 
         self._values: Optional[list] = None
         self._nb_classes: Optional[int] = None
+        self._encoder = encoder
+        self._non_numerical_features = non_numerical_features
 
         if attack_model:
             if ClassifierMixin not in type(attack_model).__mro__:
@@ -159,9 +169,30 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
             normalized_labels = normalized_labels.reshape(-1, 1)
         else:
             normalized_labels = check_and_transform_label_format(y, nb_classes=None, return_one_hot=True)
-        x_train = np.concatenate((np.delete(x, self.attack_feature, 1), normalized_labels), axis=1).astype(np.float32)
+
+        x_train = (np.delete(x, self.attack_feature, 1))
+
+        if self._non_numerical_features and self._encoder is None:
+            if isinstance(self.attack_feature, int):
+                compare_index = self.attack_feature
+                size = 1
+            else:
+                compare_index = self.attack_feature.start
+                size = (self.attack_feature.stop - self.attack_feature.start) // self.attack_feature.step
+            new_indexes = [(f - size) if f > compare_index else f for f in self._non_numerical_features]
+            categorical_transformer = OrdinalEncoder()
+            self._encoder = ColumnTransformer(
+                transformers=[
+                    ("cat", categorical_transformer, new_indexes),
+                ],
+                remainder="passthrough",
+            )
+            self._encoder.fit(x_train)
 
         # train attack model
+        if self._encoder is not None:
+            x_train = self._encoder.transform(x_train)
+        x_train = np.concatenate((x_train, normalized_labels), axis=1).astype(np.float32)
         self.attack_model.fit(x_train, y_ready)
 
     def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
@@ -195,7 +226,11 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
             normalized_labels = normalized_labels.reshape(-1, 1)
         else:
             normalized_labels = check_and_transform_label_format(y, nb_classes=None, return_one_hot=True)
-        x_test = np.concatenate((x, normalized_labels), axis=1).astype(np.float32)
+
+        x_test = x
+        if self._encoder is not None:
+            x_test = self._encoder.transform(x)
+        x_test = np.concatenate((x_test, normalized_labels), axis=1).astype(np.float32)
 
         predictions = self.attack_model.predict(x_test).astype(np.float32)
 
@@ -216,3 +251,16 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
 
         if isinstance(self.attack_feature, int) and self.attack_feature < 0:
             raise ValueError("Attack feature index must be positive.")
+
+        if self._non_numerical_features and (
+                (not isinstance(self._non_numerical_features, list))
+                or (not all(isinstance(item, int) for item in self._non_numerical_features))
+        ):
+            raise ValueError("non_numerical_features must be a list of int.")
+
+        if self._encoder is not None and (
+                not isinstance(self._encoder, OrdinalEncoder)
+                and not isinstance(self._encoder, OneHotEncoder)
+                and not isinstance(self._encoder, ColumnTransformer)
+        ):
+            raise ValueError("encoder must be a OneHotEncoder, OrdinalEncoder or ColumnTransformer object.")
