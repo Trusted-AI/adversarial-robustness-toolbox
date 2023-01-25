@@ -99,9 +99,9 @@ def test_shadow_model_bb_attack_nonumeric(art_warning, get_iris_dataset):
         from sklearn.preprocessing import OneHotEncoder
         from sklearn.pipeline import Pipeline
 
-        encoder = OneHotEncoder(handle_unknown='ignore')
+        encoder = OneHotEncoder(handle_unknown="ignore")
         model = RandomForestClassifier()
-        pipeline = Pipeline([('encoder', encoder), ('model', model)])
+        pipeline = Pipeline([("encoder", encoder), ("model", model)])
         pipeline.fit(x_target_train, np.argmax(y_target_train, axis=1))
         art_classifier = ScikitlearnClassifier(pipeline, preprocessing=None)
 

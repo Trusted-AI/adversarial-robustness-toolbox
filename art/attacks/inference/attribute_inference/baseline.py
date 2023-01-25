@@ -59,8 +59,8 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
         self,
         attack_model_type: str = "nn",
         attack_model: Optional["CLASSIFIER_TYPE"] = None,
-        attack_feature: Optional[Union[int, slice]] = 0,
-        non_numerical_features: Optional[List[int]] = [],
+        attack_feature: Union[int, slice] = 0,
+        non_numerical_features: Optional[List[int]] = None,
         encoder: Optional[Union[OrdinalEncoder, OneHotEncoder, ColumnTransformer]] = None,
     ):
         """
@@ -221,8 +221,9 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
         if isinstance(self.attack_feature, int) and self.attack_feature < 0:
             raise ValueError("Attack feature index must be non-negative.")
 
-        if not isinstance(self._non_numerical_features, list) or (
-            self._non_numerical_features and not all(isinstance(item, int) for item in self._non_numerical_features)
+        if self._non_numerical_features and (
+            (not isinstance(self._non_numerical_features, list))
+            or (not all(isinstance(item, int) for item in self._non_numerical_features))
         ):
             raise ValueError("non_numerical_features must be a list of int.")
 
