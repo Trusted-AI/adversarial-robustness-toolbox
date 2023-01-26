@@ -30,7 +30,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from art.utils import check_and_transform_label_format, is_probability_array
 
 if TYPE_CHECKING:
-    from art.estimators.classification.classifier import Classifier
+    from art.utils import CLASSIFIER_TYPE
 
 
 class ComparisonType(Enum):
@@ -43,8 +43,8 @@ class ComparisonType(Enum):
 
 
 def PDTP(  # pylint: disable=C0103
-    target_estimator: "Classifier",
-    extra_estimator: "Classifier",
+    target_estimator: "CLASSIFIER_TYPE",
+    extra_estimator: "CLASSIFIER_TYPE",
     x: np.ndarray,
     y: np.ndarray,
     indexes: Optional[np.ndarray] = None,
@@ -148,7 +148,7 @@ def PDTP(  # pylint: disable=C0103
 
 
 def SHAPr(  # pylint: disable=C0103
-    target_estimator: "Classifier",
+    target_estimator: "CLASSIFIER_TYPE",
     x_train: np.ndarray,
     y_train: np.ndarray,
     x_test: np.ndarray,
