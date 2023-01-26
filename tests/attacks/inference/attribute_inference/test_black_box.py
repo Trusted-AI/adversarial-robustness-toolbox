@@ -95,6 +95,44 @@ def test_black_box(art_warning, decision_tree_estimator, get_iris_dataset, model
 
 @pytest.mark.skip_framework("dl_frameworks")
 @pytest.mark.parametrize("model_type", ["nn", "rf"])
+def test_black_box_continuous(art_warning, decision_tree_estimator, get_iris_dataset, model_type):
+    try:
+        attack_feature = 2  # petal length
+
+        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+        # training data without attacked feature
+        x_train_for_attack = np.delete(x_train_iris, attack_feature, 1)
+        # only attacked feature
+        x_train_feature = x_train_iris[:, attack_feature].copy().reshape(-1, 1)
+
+        # test data without attacked feature
+        x_test_for_attack = np.delete(x_test_iris, attack_feature, 1)
+        # only attacked feature
+        x_test_feature = x_test_iris[:, attack_feature].copy().reshape(-1, 1)
+
+        classifier = decision_tree_estimator()
+
+        attack = AttributeInferenceBlackBox(
+            classifier, attack_feature=attack_feature, attack_model_type=model_type, is_continuous=True
+        )
+        # get original model's predictions
+        x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train_iris)]).reshape(-1, 1)
+        x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test_iris)]).reshape(-1, 1)
+        # train attack model
+        attack.fit(x_train_iris)
+        # infer attacked feature
+        inferred_train = attack.infer(x_train_for_attack, pred=x_train_predictions)
+        inferred_test = attack.infer(x_test_for_attack, pred=x_test_predictions)
+        # check accuracy
+        assert np.allclose(inferred_train, x_train_feature.reshape(1, -1), atol=0.2)
+        assert np.allclose(inferred_test, x_test_feature.reshape(1, -1), atol=0.2)
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework("dl_frameworks")
+@pytest.mark.parametrize("model_type", ["nn", "rf"])
 def test_black_box_slice(art_warning, decision_tree_estimator, get_iris_dataset, model_type):
     try:
         attack_feature = 2  # petal length
@@ -1195,6 +1233,9 @@ def test_check_params(art_warning, tabular_dl_estimator_for_attack):
 
         with pytest.raises(ValueError):
             AttributeInferenceBlackBox(classifier, encoder="a")
+
+        with pytest.raises(ValueError):
+            AttributeInferenceBlackBox(classifier, is_continuous="a")
 
     except ARTTestException as e:
         art_warning(e)
