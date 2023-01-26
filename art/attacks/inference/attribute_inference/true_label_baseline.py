@@ -170,7 +170,7 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
         else:
             normalized_labels = check_and_transform_label_format(y, nb_classes=None, return_one_hot=True)
 
-        x_train = (np.delete(x, self.attack_feature, 1))
+        x_train = np.delete(x, self.attack_feature, 1)
 
         if self._non_numerical_features and self._encoder is None:
             if isinstance(self.attack_feature, int):

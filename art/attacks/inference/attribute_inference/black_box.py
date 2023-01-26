@@ -21,12 +21,13 @@ This module implements attribute inference attacks.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Union, Tuple, TYPE_CHECKING
+from typing import Optional, Union, Tuple, List, TYPE_CHECKING
 
 import numpy as np
 from sklearn.neural_network import MLPClassifier
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.preprocessing import minmax_scale
+from sklearn.preprocessing import minmax_scale, OneHotEncoder, OrdinalEncoder
+from sklearn.compose import ColumnTransformer
 
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
@@ -71,6 +72,8 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         attack_feature: Union[int, slice] = 0,
         scale_range: Optional[Tuple[float, float]] = None,
         prediction_normal_factor: Optional[float] = 1,
+        non_numerical_features: Optional[List[int]] = None,
+        encoder: Optional[Union[OrdinalEncoder, OneHotEncoder, ColumnTransformer]] = None,
     ):
         """
         Create an AttributeInferenceBlackBox attack instance.
@@ -86,7 +89,12 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
                             Only applicable when `estimator` is a regressor.
         :param prediction_normal_factor: If supplied, the class labels (both true and predicted) are multiplied by the
                                          factor when used as inputs to the attack-model. Only applicable when
-                                         `estimator` is a regressor and if `scale_range` is not supplied.
+                                         `estimator` is a regressor and if `scale_range` is not supplied
+        :param non_numerical_features: a list if feature indexes that require encoding in order to feed into an ML model
+                                       (i.e., strings). Should only be supplied if non-numeric features exist in the
+                                        input data and an encoder is not supplied.
+        :param encoder: An already fit encoder that can be applied to the model's input features without the attacked
+                        feature (i.e., should be fit for n-1 features).
         """
         super().__init__(estimator=estimator, attack_feature=attack_feature)
 
@@ -94,6 +102,8 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         self._nb_classes: Optional[int] = None
         self._attack_model_type = attack_model_type
         self._attack_model = attack_model
+        self._encoder = encoder
+        self._non_numerical_features = non_numerical_features
 
         if attack_model:
             if ClassifierMixin not in type(attack_model).__mro__:
@@ -179,7 +189,28 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         y_attack_ready = check_and_transform_label_format(y_one_hot, nb_classes=self._nb_classes, return_one_hot=True)
 
         # create training set for attack model
-        x_train = np.concatenate((np.delete(x, self.attack_feature, 1), predictions), axis=1).astype(np.float32)
+        x_train = np.delete(x, self.attack_feature, 1)
+
+        if self._non_numerical_features and self._encoder is None:
+            if isinstance(self.attack_feature, int):
+                compare_index = self.attack_feature
+                size = 1
+            else:
+                compare_index = self.attack_feature.start
+                size = (self.attack_feature.stop - self.attack_feature.start) // self.attack_feature.step
+            new_indexes = [(f - size) if f > compare_index else f for f in self._non_numerical_features]
+            categorical_transformer = OrdinalEncoder()
+            self._encoder = ColumnTransformer(
+                transformers=[
+                    ("cat", categorical_transformer, new_indexes),
+                ],
+                remainder="passthrough",
+            )
+            self._encoder.fit(x_train)
+
+        if self._encoder is not None:
+            x_train = self._encoder.transform(x_train)
+        x_train = np.concatenate((x_train, predictions), axis=1).astype(np.float32)
 
         if y is not None:
             x_train = np.concatenate((x_train, y), axis=1)
@@ -221,21 +252,25 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
             if isinstance(self.attack_feature, int) and self.estimator.input_shape[0] != x.shape[1] + 1:
                 raise ValueError("Number of features in x + 1 does not match input_shape of model")
 
+        x_test = x
+        if self._encoder is not None:
+            x_test = self._encoder.transform(x)
+
         if RegressorMixin in type(self.estimator).__mro__:
             if self.scale_range is not None:
-                x_test = np.concatenate((x, minmax_scale(pred, feature_range=self.scale_range)), axis=1).astype(
+                x_test = np.concatenate((x_test, minmax_scale(pred, feature_range=self.scale_range)), axis=1).astype(
                     np.float32
                 )
                 if y is not None:
                     y = minmax_scale(y, feature_range=self.scale_range)
             else:
-                x_test = np.concatenate((x, pred * self.prediction_normal_factor), axis=1).astype(np.float32)
+                x_test = np.concatenate((x_test, pred * self.prediction_normal_factor), axis=1).astype(np.float32)
                 if y is not None:
                     y = y * self.prediction_normal_factor
             if y is not None:
                 y = y.reshape(-1, 1)
         else:
-            x_test = np.concatenate((x, pred), axis=1).astype(np.float32)
+            x_test = np.concatenate((x_test, pred), axis=1).astype(np.float32)
             if y is not None:
                 y = check_and_transform_label_format(y, nb_classes=self.estimator.nb_classes, return_one_hot=True)
 
@@ -269,3 +304,16 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         if RegressorMixin not in type(self.estimator).__mro__:
             if self.prediction_normal_factor != 1:
                 raise ValueError("Prediction normal factor is only applicable to regressor models.")
+
+        if self._non_numerical_features and (
+            (not isinstance(self._non_numerical_features, list))
+            or (not all(isinstance(item, int) for item in self._non_numerical_features))
+        ):
+            raise ValueError("non_numerical_features must be a list of int.")
+
+        if self._encoder is not None and (
+            not isinstance(self._encoder, OrdinalEncoder)
+            and not isinstance(self._encoder, OneHotEncoder)
+            and not isinstance(self._encoder, ColumnTransformer)
+        ):
+            raise ValueError("encoder must be a OneHotEncoder, OrdinalEncoder or ColumnTransformer object.")
