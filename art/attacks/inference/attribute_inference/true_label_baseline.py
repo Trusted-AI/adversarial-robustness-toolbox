@@ -253,14 +253,14 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
             raise ValueError("Attack feature index must be positive.")
 
         if self._non_numerical_features and (
-                (not isinstance(self._non_numerical_features, list))
-                or (not all(isinstance(item, int) for item in self._non_numerical_features))
+            (not isinstance(self._non_numerical_features, list))
+            or (not all(isinstance(item, int) for item in self._non_numerical_features))
         ):
             raise ValueError("non_numerical_features must be a list of int.")
 
         if self._encoder is not None and (
-                not isinstance(self._encoder, OrdinalEncoder)
-                and not isinstance(self._encoder, OneHotEncoder)
-                and not isinstance(self._encoder, ColumnTransformer)
+            not isinstance(self._encoder, OrdinalEncoder)
+            and not isinstance(self._encoder, OneHotEncoder)
+            and not isinstance(self._encoder, ColumnTransformer)
         ):
             raise ValueError("encoder must be a OneHotEncoder, OrdinalEncoder or ColumnTransformer object.")
