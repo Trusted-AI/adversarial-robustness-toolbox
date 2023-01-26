@@ -87,6 +87,40 @@ def test_black_box_baseline(art_warning, get_iris_dataset, model_type):
 
 @pytest.mark.skip_framework("dl_frameworks")
 @pytest.mark.parametrize("model_type", ["nn", "rf"])
+def test_black_box_baseline_continuous(art_warning, get_iris_dataset, model_type):
+    try:
+        attack_feature = 2  # petal length
+
+        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+
+        # training data without attacked feature
+        x_train_for_attack = np.delete(x_train_iris, attack_feature, 1)
+        # only attacked feature
+        x_train_feature = x_train_iris[:, attack_feature].copy().reshape(-1, 1)
+
+        # test data without attacked feature
+        x_test_for_attack = np.delete(x_test_iris, attack_feature, 1)
+        # only attacked feature
+        x_test_feature = x_test_iris[:, attack_feature].copy().reshape(-1, 1)
+
+        baseline_attack = AttributeInferenceBaseline(
+            attack_feature=attack_feature, attack_model_type=model_type, is_continuous=True
+        )
+        # train attack model
+        baseline_attack.fit(x_train_iris)
+        # infer attacked feature
+        baseline_inferred_train = baseline_attack.infer(x_train_for_attack)
+        baseline_inferred_test = baseline_attack.infer(x_test_for_attack)
+        # check accuracy
+        assert np.allclose(baseline_inferred_train, x_train_feature.reshape(1, -1), atol=0.3)
+        assert np.allclose(baseline_inferred_test, x_test_feature.reshape(1, -1), atol=0.3)
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework("dl_frameworks")
+@pytest.mark.parametrize("model_type", ["nn", "rf"])
 def test_black_box_baseline_slice(art_warning, get_iris_dataset, model_type):
     try:
         attack_feature = 2  # petal length
@@ -567,6 +601,9 @@ def test_check_params(art_warning, get_iris_dataset):
 
         with pytest.raises(ValueError):
             AttributeInferenceBaseline(encoder="a")
+
+        with pytest.raises(ValueError):
+            AttributeInferenceBaseline(is_continuous="a")
 
         attack = AttributeInferenceBaseline(attack_feature=8)
 

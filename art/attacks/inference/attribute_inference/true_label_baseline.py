@@ -24,12 +24,13 @@ import logging
 from typing import Optional, Union, Tuple, List, TYPE_CHECKING
 
 import numpy as np
-from sklearn.neural_network import MLPClassifier
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.neural_network import MLPClassifier, MLPRegressor
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.preprocessing import minmax_scale, OneHotEncoder, OrdinalEncoder
 from sklearn.compose import ColumnTransformer
 
 from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.regression import RegressorMixin
 from art.attacks.attack import AttributeInferenceAttack
 from art.utils import (
     check_and_transform_label_format,
@@ -53,6 +54,15 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
     true label. Should be used to compare with other attribute inference results.
     """
 
+    attack_params = AttributeInferenceAttack.attack_params + [
+        "prediction_normal_factor",
+        "scale_range",
+        "attack_model_type",
+        "is_continuous",
+        "is_regression",
+        "non_numerical_features",
+        "encoder",
+    ]
     _estimator_requirements = ()
 
     def __init__(
@@ -60,6 +70,7 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
         attack_model_type: str = "nn",
         attack_model: Optional["CLASSIFIER_TYPE"] = None,
         attack_feature: Union[int, slice] = 0,
+        is_continuous: Optional[bool] = False,
         is_regression: Optional[bool] = False,
         scale_range: Optional[Tuple[float, float]] = None,
         prediction_normal_factor: float = 1,
@@ -75,7 +86,7 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
         :param attack_model: The attack model to train, optional. If none is provided, a default model will be created.
         :param attack_feature: The index of the feature to be attacked or a slice representing multiple indexes in
                                case of a one-hot encoded feature.
-                               case of a one-hot encoded feature.
+        :param is_continuous: Whether the attacked feature is continuous. Default is False (which means categorical).
         :param is_regression: Whether the model is a regression model. Default is False (classification).
         :param scale_range: If supplied, the class labels (both true and predicted) will be scaled to the given range.
                             Only applicable when `is_regression` is True.
@@ -91,42 +102,75 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
         super().__init__(estimator=None, attack_feature=attack_feature)
 
         self._values: Optional[list] = None
-        self._nb_classes: Optional[int] = None
         self._encoder = encoder
         self._non_numerical_features = non_numerical_features
+        self._is_continuous = is_continuous
 
         if attack_model:
-            if ClassifierMixin not in type(attack_model).__mro__:
-                raise ValueError("Attack model must be of type Classifier.")
+            if self._is_continuous:
+                if RegressorMixin not in type(attack_model).__mro__:
+                    raise ValueError("When attacking a continuous feature the attack model must be of type Regressor.")
+            elif ClassifierMixin not in type(attack_model).__mro__:
+                raise ValueError("When attacking a categorical feature the attack model must be of type Classifier.")
             self.attack_model = attack_model
         elif attack_model_type == "nn":
-            self.attack_model = MLPClassifier(
-                hidden_layer_sizes=(100,),
-                activation="relu",
-                solver="adam",
-                alpha=0.0001,
-                batch_size="auto",
-                learning_rate="constant",
-                learning_rate_init=0.001,
-                power_t=0.5,
-                max_iter=2000,
-                shuffle=True,
-                random_state=None,
-                tol=0.0001,
-                verbose=False,
-                warm_start=False,
-                momentum=0.9,
-                nesterovs_momentum=True,
-                early_stopping=False,
-                validation_fraction=0.1,
-                beta_1=0.9,
-                beta_2=0.999,
-                epsilon=1e-08,
-                n_iter_no_change=10,
-                max_fun=15000,
-            )
+            if self._is_continuous:
+                self.attack_model = MLPRegressor(
+                    hidden_layer_sizes=(100,),
+                    activation="relu",
+                    solver="adam",
+                    alpha=0.0001,
+                    batch_size="auto",
+                    learning_rate="constant",
+                    learning_rate_init=0.001,
+                    power_t=0.5,
+                    max_iter=200,
+                    shuffle=True,
+                    random_state=None,
+                    tol=0.0001,
+                    verbose=False,
+                    warm_start=False,
+                    momentum=0.9,
+                    nesterovs_momentum=True,
+                    early_stopping=False,
+                    validation_fraction=0.1,
+                    beta_1=0.9,
+                    beta_2=0.999,
+                    epsilon=1e-08,
+                    n_iter_no_change=10,
+                    max_fun=15000,
+                )
+            else:
+                self.attack_model = MLPClassifier(
+                    hidden_layer_sizes=(100,),
+                    activation="relu",
+                    solver="adam",
+                    alpha=0.0001,
+                    batch_size="auto",
+                    learning_rate="constant",
+                    learning_rate_init=0.001,
+                    power_t=0.5,
+                    max_iter=2000,
+                    shuffle=True,
+                    random_state=None,
+                    tol=0.0001,
+                    verbose=False,
+                    warm_start=False,
+                    momentum=0.9,
+                    nesterovs_momentum=True,
+                    early_stopping=False,
+                    validation_fraction=0.1,
+                    beta_1=0.9,
+                    beta_2=0.999,
+                    epsilon=1e-08,
+                    n_iter_no_change=10,
+                    max_fun=15000,
+                )
         elif attack_model_type == "rf":
-            self.attack_model = RandomForestClassifier()
+            if self._is_continuous:
+                self.attack_model = RandomForestRegressor()
+            else:
+                self.attack_model = RandomForestClassifier()
         else:
             raise ValueError("Illegal value for parameter `attack_model_type`.")
 
@@ -150,15 +194,17 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
 
         # get vector of attacked feature
         attacked_feature = x[:, self.attack_feature]
-        self._values = get_feature_values(attacked_feature, isinstance(self.attack_feature, int))
-        self._nb_classes = len(self._values)
-        if isinstance(self.attack_feature, int):
-            y_one_hot = float_to_categorical(attacked_feature)
-        else:
-            y_one_hot = floats_to_one_hot(attacked_feature)
-        y_ready = check_and_transform_label_format(y_one_hot, nb_classes=self._nb_classes, return_one_hot=True)
-        if y_ready is None:
-            raise ValueError("None value detected.")
+        y_ready = attacked_feature
+        if not self._is_continuous:
+            self._values = get_feature_values(attacked_feature, isinstance(self.attack_feature, int))
+            nb_classes = len(self._values)
+            if isinstance(self.attack_feature, int):
+                y_one_hot = float_to_categorical(attacked_feature)
+            else:
+                y_one_hot = floats_to_one_hot(attacked_feature)
+            y_ready = check_and_transform_label_format(y_one_hot, nb_classes=nb_classes, return_one_hot=True)
+            if y_ready is None:
+                raise ValueError("None value detected.")
 
         # create training set for attack model
         if self.is_regression:
@@ -234,7 +280,7 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
 
         predictions = self.attack_model.predict(x_test).astype(np.float32)
 
-        if self._values is not None:
+        if not self._is_continuous and self._values is not None:
             if isinstance(self.attack_feature, int):
                 predictions = np.array([self._values[np.argmax(arr)] for arr in predictions])
             else:
@@ -251,6 +297,9 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
 
         if isinstance(self.attack_feature, int) and self.attack_feature < 0:
             raise ValueError("Attack feature index must be positive.")
+
+        if not isinstance(self._is_continuous, bool):
+            raise ValueError("is_continuous must be a boolean.")
 
         if self._non_numerical_features and (
             (not isinstance(self._non_numerical_features, list))

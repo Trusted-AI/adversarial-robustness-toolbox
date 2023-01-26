@@ -88,6 +88,39 @@ def test_true_label_baseline(art_warning, get_iris_dataset, model_type):
 
 @pytest.mark.skip_framework("dl_frameworks")
 @pytest.mark.parametrize("model_type", ["nn", "rf"])
+def test_true_label_baseline_continuous(art_warning, get_iris_dataset, model_type):
+    try:
+        attack_feature = 2  # petal length
+
+        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+        # training data without attacked feature
+        x_train_for_attack = np.delete(x_train_iris, attack_feature, 1)
+        # only attacked feature
+        x_train_feature = x_train_iris[:, attack_feature].copy().reshape(-1, 1)
+
+        # test data without attacked feature
+        x_test_for_attack = np.delete(x_test_iris, attack_feature, 1)
+        # only attacked feature
+        x_test_feature = x_test_iris[:, attack_feature].copy().reshape(-1, 1)
+
+        baseline_attack = AttributeInferenceBaselineTrueLabel(
+            attack_feature=attack_feature, attack_model_type=model_type, is_continuous=True
+        )
+        # train attack model
+        baseline_attack.fit(x_train_iris, y_train_iris)
+        # infer attacked feature
+        baseline_inferred_train = baseline_attack.infer(x_train_for_attack, y=y_train_iris)
+        baseline_inferred_test = baseline_attack.infer(x_test_for_attack, y=y_test_iris)
+        # check accuracy
+        assert np.allclose(baseline_inferred_train, x_train_feature.reshape(1, -1), atol=0.2)
+        assert np.allclose(baseline_inferred_test, x_test_feature.reshape(1, -1), atol=0.2)
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework("dl_frameworks")
+@pytest.mark.parametrize("model_type", ["nn", "rf"])
 def test_true_label_baseline_column(art_warning, get_iris_dataset, model_type):
     try:
         attack_feature = 2  # petal length
@@ -659,6 +692,9 @@ def test_check_params(art_warning):
 
         with pytest.raises(ValueError):
             AttributeInferenceBaselineTrueLabel(encoder="a")
+
+        with pytest.raises(ValueError):
+            AttributeInferenceBaselineTrueLabel(is_continuous="a")
 
     except ARTTestException as e:
         art_warning(e)
