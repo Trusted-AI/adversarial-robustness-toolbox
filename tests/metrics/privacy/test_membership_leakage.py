@@ -123,7 +123,7 @@ def test_membership_leakage_image(art_warning, image_dl_estimator, get_default_m
         classifier, _ = image_dl_estimator()
         extra_classifier, _ = image_dl_estimator()
         (x_train, y_train), _ = get_default_mnist_subset
-        indexes = random.sample(range(x_train.shape[0]), 100)
+        indexes = np.array(random.sample(range(x_train.shape[0]), 100))
         avg_leakage, worse_leakage, std_dev = PDTP(
             classifier, extra_classifier, x_train, y_train, indexes=indexes, num_iter=1
         )
@@ -200,7 +200,7 @@ def test_membership_leakage_image_diff(art_warning, image_dl_estimator, get_defa
         classifier, _ = image_dl_estimator()
         extra_classifier, _ = image_dl_estimator()
         (x_train, y_train), _ = get_default_mnist_subset
-        indexes = random.sample(range(x_train.shape[0]), 100)
+        indexes = np.array(random.sample(range(x_train.shape[0]), 100))
         avg_leakage, worse_leakage, std_dev = PDTP(
             classifier,
             extra_classifier,

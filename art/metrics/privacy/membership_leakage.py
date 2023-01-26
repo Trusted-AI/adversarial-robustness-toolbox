@@ -48,7 +48,7 @@ def PDTP(  # pylint: disable=C0103
     x: np.ndarray,
     y: np.ndarray,
     indexes: Optional[np.ndarray] = None,
-    num_iter: Optional[int] = 10,
+    num_iter: int = 10,
     comparison_type: Optional[ComparisonType] = ComparisonType.RATIO,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
@@ -104,41 +104,42 @@ def PDTP(  # pylint: disable=C0103
         pred_bin = bins[pred_bin_indexes] - 0.005
 
         if indexes is None:
-            indexes = range(x.shape[0])
-        for row in indexes:
-            # create new model without sample in training data
-            alt_x = np.delete(x, row, 0)
-            alt_y = np.delete(y, row, 0)
-            try:
-                extra_estimator.reset()
-            except NotImplementedError as exc:  # pragma: no cover
-                raise ValueError(
-                    "PDTP metric can only be applied to classifiers that implement the reset method."
-                ) from exc
-            extra_estimator.fit(alt_x, alt_y)
-            # get probabilities from new model
-            alt_pred = extra_estimator.predict(x)
-            if not is_probability_array(alt_pred):
-                alt_pred = scipy.special.softmax(alt_pred, axis=1)
-            # divide into 100 bins and return center of bin
-            alt_pred_bin_indexes = np.digitize(alt_pred, bins)
-            alt_pred_bin_indexes[alt_pred_bin_indexes == 101] = 100
-            alt_pred_bin = bins[alt_pred_bin_indexes] - 0.005
-            if comparison_type == ComparisonType.RATIO:
-                ratio_1 = pred_bin / alt_pred_bin
-                ratio_2 = alt_pred_bin / pred_bin
-                # get max value
-                max_value = max(ratio_1.max(), ratio_2.max())
-            elif comparison_type == ComparisonType.DIFFERENCE:
-                max_value = np.max(abs(pred_bin - alt_pred_bin))
-            else:
-                raise ValueError("Unsupported comparison type.")
-            iter_results.append(max_value)
-        results.append(iter_results)
+            indexes = np.array(range(x.shape[0]))
+        if indexes is not None:
+            for row in indexes:
+                # create new model without sample in training data
+                alt_x = np.delete(x, row, 0)
+                alt_y = np.delete(y, row, 0)
+                try:
+                    extra_estimator.reset()
+                except NotImplementedError as exc:  # pragma: no cover
+                    raise ValueError(
+                        "PDTP metric can only be applied to classifiers that implement the reset method."
+                    ) from exc
+                extra_estimator.fit(alt_x, alt_y)
+                # get probabilities from new model
+                alt_pred = extra_estimator.predict(x)
+                if not is_probability_array(alt_pred):
+                    alt_pred = scipy.special.softmax(alt_pred, axis=1)
+                # divide into 100 bins and return center of bin
+                alt_pred_bin_indexes = np.digitize(alt_pred, bins)
+                alt_pred_bin_indexes[alt_pred_bin_indexes == 101] = 100
+                alt_pred_bin = bins[alt_pred_bin_indexes] - 0.005
+                if comparison_type == ComparisonType.RATIO:
+                    ratio_1 = pred_bin / alt_pred_bin
+                    ratio_2 = alt_pred_bin / pred_bin
+                    # get max value
+                    max_value: float = max(ratio_1.max(), ratio_2.max())
+                elif comparison_type == ComparisonType.DIFFERENCE:
+                    max_value: float = np.max(abs(pred_bin - alt_pred_bin))
+                else:
+                    raise ValueError("Unsupported comparison type.")
+                iter_results.append(max_value)
+            results.append(iter_results)
 
     # get average of iterations for each sample
     # We now have a list of lists, internal lists represent an iteration. We need to transpose and get averages.
-    per_sample = list(map(list, zip(*results)))
+    per_sample: list[float] = list(map(list, zip(*results)))
     avg_per_sample = np.array([sum(val) / len(val) for val in per_sample])
     worse_per_sample = np.max(per_sample, axis=1)
     std_dev_per_sample = np.std(per_sample, axis=1)
