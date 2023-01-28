@@ -190,27 +190,112 @@ def test_conv_layer_grads():
 
     output_channels = 12
     input_channels = 3
+    loss_fn = torch.nn.MSELoss()
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    target = torch.rand(size=(32, 12, 21, 21)).to(device)
+
     synthetic_data = torch.rand(32, input_channels, 25, 25).to(device)
     model = SyntheticIntervalModel(
         input_shape=synthetic_data.shape, output_channels=output_channels, kernel_size=5, bias=True, stride=1
     )
-    output_from_equivalent = model.forward(synthetic_data)
-    target = torch.rand(size=output_from_equivalent.shape).to(device)
 
-    loss = torch.sum(output_from_equivalent - target)
+    output_from_equivalent = model.forward(synthetic_data)
+    loss = loss_fn(output_from_equivalent, target)
     loss.backward()
 
     equivalent_grads = model.conv1.conv_flat.weight.grad
     equivalent_grads = torch.reshape(equivalent_grads, shape=(output_channels, input_channels, 5, 5)).detach().clone()
+    equivalent_bias = model.conv1.bias_to_grad.grad.data.detach().clone()
+
+    print('\n')
+    print('equivalent_bias ', equivalent_bias)
 
     model.zero_grad()
     output_from_conv = model.conv1.conv(synthetic_data)
-    loss = torch.sum(output_from_conv - target)
+    loss = loss_fn(output_from_conv, target)
     loss.backward()
 
+    print('ground truth ', model.conv1.conv.bias.grad)
+
     assert torch.allclose(equivalent_grads, model.conv1.conv.weight.grad, atol=1e-05)
+    assert torch.allclose(equivalent_bias, model.conv1.conv.bias.grad, atol=1e-05)
+
+
+
+def test_conv_train_loop():
+
+    output_channels = 12
+    input_channels = 3
+    loss_fn = torch.nn.MSELoss()
+
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    target = torch.rand(size=(32, 12, 21, 21)).to(device)
+
+    synthetic_data = torch.rand(32, input_channels, 25, 25).to(device)
+    model = SyntheticIntervalModel(
+        input_shape=synthetic_data.shape,
+        output_channels=output_channels,
+        kernel_size=5, bias=True, stride=1, to_debug=False,
+    )
+
+    class TestModel(torch.nn.Module):
+        def __init__(self):
+            super().__init__()
+
+            self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+            self.conv = torch.nn.Conv2d(
+                in_channels=3,
+                out_channels=12,
+                kernel_size=5,
+                bias=True,
+                stride=1,
+            ).to(self.device)
+
+        def forward(self, x):
+            x = self.conv(x)
+            return x
+
+    test_model = TestModel()
+
+    # Get the weights we will transfer over
+    # Set the weights in the normal model
+    test_model.conv.weight.data = torch.reshape(torch.tensor(model.conv1.conv_flat.weight.data.detach().numpy()),
+                                                shape=(output_channels, input_channels, 5, 5))
+    test_model.conv.bias.data = torch.tensor(model.conv1.bias_to_grad.data.detach().numpy())
+
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
+    test_opt = torch.optim.Adam(test_model.parameters(), lr=0.0001)
+
+    for _ in range(5):
+
+        model.zero_grad()
+        test_model.zero_grad()
+
+        output_from_equivalent = model.forward(synthetic_data)
+        loss = loss_fn(output_from_equivalent, target)
+        loss.backward()
+
+        equivalent_grads = model.conv1.conv_flat.weight.grad
+        equivalent_grads = torch.reshape(equivalent_grads, shape=(output_channels, input_channels, 5, 5)).detach().clone()
+        equivalent_bias = model.conv1.bias_to_grad.grad
+
+        output_from_conv = test_model.forward(synthetic_data)
+        loss = loss_fn(output_from_conv, target)
+        loss.backward()
+
+        assert torch.allclose(equivalent_grads, test_model.conv.weight.grad, atol=1e-05)
+        assert torch.allclose(equivalent_bias, test_model.conv.bias.grad, atol=1e-05)
+
+        optimizer.step()
+        test_opt.step()
+
+        reshaped_weights = torch.reshape(model.conv1.conv_flat.weight.data.clone().detach(), shape=(output_channels, input_channels, 5, 5))
+
+        assert torch.allclose(reshaped_weights, test_model.conv.weight.data, atol=1e-05)
+
+        # function to re-pop the dense layer
+        model.conv1.re_convert(device)
 
 
 @pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")

@@ -129,7 +129,7 @@ class PyTorchIntervalConv2D(torch.nn.Module):
                 stride=stride,
             )
             if self.conv_bias.bias is not None:
-                self.bias_to_grad = self.conv_bias.bias.data
+                self.bias_to_grad = self.conv_bias.bias
 
         if to_debug:
             self.conv = torch.nn.Conv2d(
@@ -173,7 +173,8 @@ class PyTorchIntervalConv2D(torch.nn.Module):
                 )
 
         if supplied_input_bias is not None:
-            self.bias_to_grad = supplied_input_bias
+            # self.bias_to_grad = supplied_input_bias
+            self.bias_to_grad = torch.nn.Parameter(supplied_input_bias)
 
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -185,6 +186,16 @@ class PyTorchIntervalConv2D(torch.nn.Module):
 
         self.dense_weights, self.bias = self.convert_to_dense(device)
 
+        self.dense_weights = self.dense_weights.to(device)
+        if self.bias is not None:
+            self.bias = self.bias.to(device)
+
+    def re_convert(self, device: Union[str, "torch.device"]) -> None:
+        """
+        Re converts the weights into a dense equivalent layer.
+        This usually called after an update to the convolutional weights.
+        """
+        self.dense_weights, self.bias = self.convert_to_dense(device)
         self.dense_weights = self.dense_weights.to(device)
         if self.bias is not None:
             self.bias = self.bias.to(device)
