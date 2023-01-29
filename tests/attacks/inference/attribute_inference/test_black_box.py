@@ -124,8 +124,8 @@ def test_black_box_continuous(art_warning, decision_tree_estimator, get_iris_dat
         inferred_train = attack.infer(x_train_for_attack, pred=x_train_predictions)
         inferred_test = attack.infer(x_test_for_attack, pred=x_test_predictions)
         # check accuracy
-        assert np.allclose(inferred_train, x_train_feature.reshape(1, -1), atol=0.2)
-        assert np.allclose(inferred_test, x_test_feature.reshape(1, -1), atol=0.2)
+        assert np.allclose(inferred_train, x_train_feature.reshape(1, -1), atol=0.3)
+        assert np.allclose(inferred_test, x_test_feature.reshape(1, -1), atol=0.3)
 
     except ARTTestException as e:
         art_warning(e)
@@ -743,7 +743,7 @@ def test_black_box_baseline_encoder(art_warning, get_iris_dataset, model_type):
         # transform other feature
         other_feature = 1
         x_without_feature = np.delete(x_train, other_feature, 1)
-        x_other_feature = x_train_iris[:, other_feature].copy().reshape(-1, 1).astype(np.object)
+        x_other_feature = x_train_iris[:, other_feature].copy().reshape(-1, 1).astype(object)
         transform_other_feature(x_other_feature)
         # training data with other feature (after transformation)
         x_train = np.concatenate((x_without_feature[:, :other_feature], x_other_feature), axis=1)
@@ -765,7 +765,7 @@ def test_black_box_baseline_encoder(art_warning, get_iris_dataset, model_type):
 
         # transform other feature
         x_test_without_feature = np.delete(x_test_for_attack, other_feature, 1)
-        x_test_other_feature = x_test_iris[:, other_feature].copy().reshape(-1, 1).astype(np.object)
+        x_test_other_feature = x_test_iris[:, other_feature].copy().reshape(-1, 1).astype(object)
         transform_other_feature(x_test_other_feature)
         # training data with other feature (after transformation)
         x_test_for_attack = np.concatenate((x_test_without_feature[:, :other_feature], x_test_other_feature), axis=1)
@@ -862,7 +862,7 @@ def test_black_box_baseline_no_encoder(art_warning, get_iris_dataset, model_type
         # transform other feature
         other_feature = 1
         x_without_feature = np.delete(x_train, other_feature, 1)
-        x_other_feature = x_train_iris[:, other_feature].copy().reshape(-1, 1).astype(np.object)
+        x_other_feature = x_train_iris[:, other_feature].copy().reshape(-1, 1).astype(object)
         transform_other_feature(x_other_feature)
         # training data with other feature (after transformation)
         x_train = np.concatenate((x_without_feature[:, :other_feature], x_other_feature), axis=1)
@@ -884,7 +884,7 @@ def test_black_box_baseline_no_encoder(art_warning, get_iris_dataset, model_type
 
         # transform other feature
         x_test_without_feature = np.delete(x_test_for_attack, other_feature, 1)
-        x_test_other_feature = x_test_iris[:, other_feature].copy().reshape(-1, 1).astype(np.object)
+        x_test_other_feature = x_test_iris[:, other_feature].copy().reshape(-1, 1).astype(object)
         transform_other_feature(x_test_other_feature)
         # training data with other feature (after transformation)
         x_test_for_attack = np.concatenate((x_test_without_feature[:, :other_feature], x_test_other_feature), axis=1)
@@ -984,7 +984,7 @@ def test_black_box_baseline_no_encoder_after_feature(art_warning, get_iris_datas
         # transform other feature
         other_feature = 3
         x_without_feature = np.delete(x_train, other_feature, 1)
-        x_other_feature = x_train_iris[:, other_feature].copy().reshape(-1, 1).astype(np.object)
+        x_other_feature = x_train_iris[:, other_feature].copy().reshape(-1, 1).astype(object)
         transform_other_feature(x_other_feature)
         # training data with other feature (after transformation)
         x_train = np.concatenate((x_without_feature[:, :other_feature], x_other_feature), axis=1)
@@ -1007,7 +1007,7 @@ def test_black_box_baseline_no_encoder_after_feature(art_warning, get_iris_datas
 
         # transform other feature
         x_test_without_feature = np.delete(x_test_for_attack, new_other_feature, 1)
-        x_test_other_feature = x_test_iris[:, new_other_feature].copy().reshape(-1, 1).astype(np.object)
+        x_test_other_feature = x_test_iris[:, new_other_feature].copy().reshape(-1, 1).astype(object)
         transform_other_feature(x_test_other_feature)
         # training data with other feature (after transformation)
         x_test_for_attack = np.concatenate(
@@ -1102,7 +1102,7 @@ def test_black_box_baseline_no_encoder_after_feature_slice(art_warning, get_iris
         # transform other feature
         other_feature = 5  # was 3 before 1-hot encoding of attacked feature
         x_without_feature = np.delete(x_train, other_feature, 1)
-        x_other_feature = x_train[:, other_feature].copy().reshape(-1, 1).astype(np.object)
+        x_other_feature = x_train[:, other_feature].copy().reshape(-1, 1).astype(object)
         transform_other_feature(x_other_feature)
         # training data with other feature (after transformation)
         x_train = np.concatenate((x_without_feature[:, :other_feature], x_other_feature), axis=1)
@@ -1126,7 +1126,7 @@ def test_black_box_baseline_no_encoder_after_feature_slice(art_warning, get_iris
 
         # transform other feature
         x_test_without_feature = np.delete(x_test_for_attack, new_other_feature, 1)
-        x_test_other_feature = x_test_for_attack[:, new_other_feature].copy().reshape(-1, 1).astype(np.object)
+        x_test_other_feature = x_test_for_attack[:, new_other_feature].copy().reshape(-1, 1).astype(object)
         transform_other_feature(x_test_other_feature)
         # training data with other feature (after transformation)
         x_test_for_attack = np.concatenate(

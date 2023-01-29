@@ -77,14 +77,14 @@ def test_shadow_model_bb_attack_nonumeric(art_warning, get_iris_dataset):
 
         feature = 1
         x_without_feature = np.delete(x_target, feature, 1)
-        x_feature = x_target[:, feature].copy().reshape(-1, 1).astype(np.object)
+        x_feature = x_target[:, feature].copy().reshape(-1, 1).astype(object)
         transform_feature(x_feature)
         # training data with feature (after transformation)
         x_target = np.concatenate((x_without_feature[:, :feature], x_feature), axis=1)
         x_target = np.concatenate((x_target, x_without_feature[:, feature:]), axis=1)
 
         x_shadow_without_feature = np.delete(x_shadow, feature, 1)
-        x_shadow_feature = x_shadow[:, feature].copy().reshape(-1, 1).astype(np.object)
+        x_shadow_feature = x_shadow[:, feature].copy().reshape(-1, 1).astype(object)
         transform_feature(x_shadow_feature)
         # shadow data with feature (after transformation)
         x_shadow = np.concatenate((x_shadow_without_feature[:, :feature], x_shadow_feature), axis=1)
