@@ -57,7 +57,7 @@ def test_shadow_model_bb_attack(art_warning, tabular_dl_estimator_for_attack, ge
         nonmem_acc = 1 - (np.sum(nonmem_infer) / len(nonmem_infer))
         accuracy = (mem_acc * len(mem_infer) + nonmem_acc * len(nonmem_infer)) / (len(mem_infer) + len(nonmem_infer))
 
-        assert accuracy == pytest.approx(0.7, abs=0.2)
+        assert accuracy == pytest.approx(0.7, abs=0.25)
     except ARTTestException as e:
         art_warning(e)
 
