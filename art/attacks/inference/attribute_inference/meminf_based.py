@@ -69,7 +69,6 @@ class AttributeInferenceMembership(AttributeInferenceAttack):
 
         self.membership_attack = membership_attack
         self._check_params()
-        self.attack_feature = get_feature_index(self.attack_feature)
 
     def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
@@ -148,9 +147,7 @@ class AttributeInferenceMembership(AttributeInferenceAttack):
         return pred_values
 
     def _check_params(self) -> None:
-        if not isinstance(self.attack_feature, int) and not isinstance(self.attack_feature, slice):
-            raise ValueError("Attack feature must be either an integer or a slice object.")
-        if isinstance(self.attack_feature, int) and self.attack_feature < 0:
-            raise ValueError("Attack feature index must be positive.")
+        self._check_attack_feature(self.attack_feature)
+
         if not isinstance(self.membership_attack, MembershipInferenceAttack):
             raise ValueError("membership_attack should be a sub-class of MembershipInferenceAttack")

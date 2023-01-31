@@ -37,7 +37,6 @@ from art.utils import (
     float_to_categorical,
     floats_to_one_hot,
     get_feature_values,
-    get_feature_index,
 )
 
 if TYPE_CHECKING:
@@ -164,7 +163,6 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
             raise ValueError("Illegal value for parameter `attack_model_type`.")
 
         self._check_params()
-        self.attack_feature = get_feature_index(self.attack_feature)
 
     def fit(self, x: np.ndarray) -> None:
         """
@@ -260,11 +258,7 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
 
     def _check_params(self) -> None:
 
-        if not isinstance(self.attack_feature, int) and not isinstance(self.attack_feature, slice):
-            raise ValueError("Attack feature must be either an integer or a slice object.")
-
-        if isinstance(self.attack_feature, int) and self.attack_feature < 0:
-            raise ValueError("Attack feature index must be non-negative.")
+        self._check_attack_feature(self.attack_feature)
 
         if not isinstance(self._is_continuous, bool):
             raise ValueError("is_continuous must be a boolean.")

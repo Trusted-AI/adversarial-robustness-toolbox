@@ -116,9 +116,9 @@ def test_white_box_lifestyle_regression(art_warning, get_diabetes_dataset):
         art_warning(e)
 
 
-def test_check_params(art_warning, image_dl_estimator_for_attack):
+def test_check_params(art_warning, tabular_dl_estimator_for_attack):
     try:
-        classifier = image_dl_estimator_for_attack(AttributeInferenceWhiteBoxLifestyleDecisionTree)
+        classifier = tabular_dl_estimator_for_attack(AttributeInferenceWhiteBoxLifestyleDecisionTree)
 
         with pytest.raises(ValueError):
             _ = AttributeInferenceWhiteBoxLifestyleDecisionTree(classifier, attack_feature=-5)
