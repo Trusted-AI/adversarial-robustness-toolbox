@@ -954,7 +954,7 @@ def get_feature_index(feature: Union[int, slice]) -> Union[int, slice]:
     return slice(start, stop, step)
 
 
-def remove_attacked_feature(attack_feature: Union[int, slice], non_numerical_features: List[int]):
+def remove_attacked_feature(attack_feature: Union[int, slice], non_numerical_features: Optional[List[int]]):
     """
     Removes the attacked feature from the list of non-numeric features to encode.
 

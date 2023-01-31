@@ -30,7 +30,6 @@ from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.attack import AttributeInferenceAttack, MembershipInferenceAttack
 from art.estimators.regression import RegressorMixin
 from art.exceptions import EstimatorError
-from art.utils import get_feature_index
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE, REGRESSOR_TYPE
