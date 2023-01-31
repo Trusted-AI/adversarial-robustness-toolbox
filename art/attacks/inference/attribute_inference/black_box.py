@@ -38,7 +38,7 @@ from art.utils import (
     float_to_categorical,
     floats_to_one_hot,
     get_feature_values,
-    get_feature_index,
+    remove_attacked_feature,
 )
 
 if TYPE_CHECKING:
@@ -185,6 +185,7 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         self.scale_range = scale_range
 
         self._check_params()
+        remove_attacked_feature(self.attack_feature, self._non_numerical_features)
 
     def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> None:
         """

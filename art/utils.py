@@ -599,7 +599,7 @@ def random_sphere(
             )
 
         a_tmp = np.random.randn(nb_points, nb_dims)
-        s_2 = np.sum(a_tmp ** 2, axis=1)
+        s_2 = np.sum(a_tmp**2, axis=1)
         base = gammainc(nb_dims / 2.0, s_2 / 2.0) ** (1 / nb_dims) * radius / np.sqrt(s_2)
         res = a_tmp * (np.tile(base, (nb_dims, 1))).T
 
@@ -952,6 +952,20 @@ def get_feature_index(feature: Union[int, slice]) -> Union[int, slice]:
         return start
 
     return slice(start, stop, step)
+
+
+def remove_attacked_feature(attack_feature: Union[int, slice], non_numerical_features: List[int]):
+    """
+    Removes the attacked feature from the list of non-numeric features to encode.
+
+    :param attack_feature: The index or slice representing a feature to attack
+    :param non_numerical_features: a list of feature indexes that require encoding in order to feed into an ML model
+                                    (i.e., strings)
+    :return:
+    """
+    if non_numerical_features is not None and isinstance(attack_feature, int):
+        if attack_feature in non_numerical_features:
+            non_numerical_features.remove(attack_feature)
 
 
 def compute_success_array(

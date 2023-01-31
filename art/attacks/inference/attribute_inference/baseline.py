@@ -37,6 +37,7 @@ from art.utils import (
     float_to_categorical,
     floats_to_one_hot,
     get_feature_values,
+    remove_attacked_feature,
 )
 
 if TYPE_CHECKING:
@@ -163,6 +164,7 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
             raise ValueError("Illegal value for parameter `attack_model_type`.")
 
         self._check_params()
+        remove_attacked_feature(self.attack_feature, self._non_numerical_features)
 
     def fit(self, x: np.ndarray) -> None:
         """

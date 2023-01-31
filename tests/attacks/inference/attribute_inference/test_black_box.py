@@ -1186,6 +1186,128 @@ def test_black_box_baseline_no_encoder_after_feature_slice(art_warning, get_iris
         art_warning(e)
 
 
+@pytest.mark.skip_framework("dl_frameworks")
+@pytest.mark.parametrize("model_type", ["nn", "rf"])
+def test_black_box_baseline_no_encoder_remove_attack_feature(art_warning, get_iris_dataset, model_type):
+    try:
+        attack_feature = 2  # petal length
+
+        # need to transform attacked feature into categorical
+        def transform_attacked_feature(x):
+            x[x > 0.5] = 2.0
+            x[(x > 0.2) & (x <= 0.5)] = 1.0
+            x[x <= 0.2] = 0.0
+
+        def transform_other_feature(x):
+            x[x > 0.5] = 2.0
+            x[(x > 0.2) & (x <= 0.5)] = 1.0
+            x[x <= 0.2] = 0.0
+            x[x == 2.0] = "A"
+            x[x == 1.0] = "B"
+            x[x == 0.0] = "C"
+
+        values = [0.0, 1.0, 2.0]
+
+        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+
+        # training data without attacked feature
+        x_train_for_attack = np.delete(x_train_iris, attack_feature, 1)
+        # transform attacked feature
+        x_train_feature = x_train_iris[:, attack_feature].copy().reshape(-1, 1)
+        transform_attacked_feature(x_train_feature)
+        # training data with attacked feature (after transformation)
+        x_train = np.concatenate((x_train_for_attack[:, :attack_feature], x_train_feature), axis=1)
+        x_train = np.concatenate((x_train, x_train_for_attack[:, attack_feature:]), axis=1)
+
+        # transform other feature
+        other_feature = 1
+        x_without_feature = np.delete(x_train, other_feature, 1)
+        x_other_feature = x_train_iris[:, other_feature].copy().reshape(-1, 1).astype(object)
+        transform_other_feature(x_other_feature)
+        # training data with other feature (after transformation)
+        x_train = np.concatenate((x_without_feature[:, :other_feature], x_other_feature), axis=1)
+        x_train = np.concatenate((x_train, x_without_feature[:, other_feature:]), axis=1)
+
+        x_train_for_attack_without_feature = np.delete(x_train_for_attack, other_feature, 1)
+        x_train_for_attack = np.concatenate(
+            (x_train_for_attack_without_feature[:, :other_feature], x_other_feature), axis=1
+        )
+        x_train_for_attack = np.concatenate(
+            (x_train_for_attack, x_train_for_attack_without_feature[:, other_feature:]), axis=1
+        )
+
+        # test data without attacked feature
+        x_test_for_attack = np.delete(x_test_iris, attack_feature, 1)
+        # only attacked feature
+        x_test_feature = x_test_iris[:, attack_feature].copy().reshape(-1, 1)
+        transform_attacked_feature(x_test_feature)
+
+        # transform other feature
+        x_test_without_feature = np.delete(x_test_for_attack, other_feature, 1)
+        x_test_other_feature = x_test_iris[:, other_feature].copy().reshape(-1, 1).astype(object)
+        transform_other_feature(x_test_other_feature)
+        # training data with other feature (after transformation)
+        x_test_for_attack = np.concatenate((x_test_without_feature[:, :other_feature], x_test_other_feature), axis=1)
+        x_test_for_attack = np.concatenate((x_test_for_attack, x_test_without_feature[:, other_feature:]), axis=1)
+
+        # transform other feature for full test data
+        x_test = np.delete(x_test_iris, other_feature, 1)
+        # test data with other feature (after transformation)
+        x_test_for_pred = np.concatenate((x_test[:, :other_feature], x_test_other_feature), axis=1)
+        x_test_for_pred = np.concatenate((x_test_for_pred, x_test[:, other_feature:]), axis=1)
+
+        categorical_transformer = OrdinalEncoder()
+        encoder = ColumnTransformer(
+            transformers=[
+                ("cat", categorical_transformer, [other_feature]),
+            ],
+            remainder="passthrough",
+        )
+        encoder.fit(x_train_for_attack)
+
+        encoder_for_pipeline = ColumnTransformer(
+            transformers=[
+                ("cat", categorical_transformer, [other_feature]),
+            ],
+            remainder="passthrough",
+        )
+        model = DecisionTreeClassifier()
+        pipeline = Pipeline([("encoder", encoder_for_pipeline), ("model", model)])
+        pipeline.fit(x_train, np.argmax(y_train_iris, axis=1))
+        classifier = ScikitlearnClassifier(pipeline, preprocessing=None)
+
+        baseline_attack = AttributeInferenceBlackBox(
+            classifier,
+            attack_feature=attack_feature,
+            attack_model_type=model_type,
+            non_numerical_features=[other_feature, attack_feature],
+        )
+        # train attack model
+        baseline_attack.fit(x_train, y_train_iris)
+        # infer attacked feature
+        x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train)]).reshape(-1, 1)
+        x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test_for_pred)]).reshape(-1, 1)
+        baseline_inferred_train = baseline_attack.infer(
+            x_train_for_attack, y_train_iris, pred=x_train_predictions, values=values
+        )
+        baseline_inferred_test = baseline_attack.infer(
+            x_test_for_attack, y_test_iris, pred=x_test_predictions, values=values
+        )
+        # check accuracy
+        baseline_train_acc = np.sum(baseline_inferred_train == x_train_feature.reshape(1, -1)) / len(
+            baseline_inferred_train
+        )
+        baseline_test_acc = np.sum(baseline_inferred_test == x_test_feature.reshape(1, -1)) / len(
+            baseline_inferred_test
+        )
+
+        assert 0.6 <= baseline_train_acc
+        assert 0.6 <= baseline_test_acc
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
 def test_errors(art_warning, tabular_dl_estimator_for_attack, get_iris_dataset):
     try:
         classifier = tabular_dl_estimator_for_attack(AttributeInferenceBlackBox)
