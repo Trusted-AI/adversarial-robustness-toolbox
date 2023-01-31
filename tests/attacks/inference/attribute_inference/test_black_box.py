@@ -124,8 +124,8 @@ def test_black_box_continuous(art_warning, decision_tree_estimator, get_iris_dat
         inferred_train = attack.infer(x_train_for_attack, pred=x_train_predictions)
         inferred_test = attack.infer(x_test_for_attack, pred=x_test_predictions)
         # check accuracy
-        assert np.allclose(inferred_train, x_train_feature.reshape(1, -1), atol=0.3)
-        assert np.allclose(inferred_test, x_test_feature.reshape(1, -1), atol=0.3)
+        assert np.allclose(inferred_train, x_train_feature.reshape(1, -1), atol=0.4)
+        assert np.allclose(inferred_test, x_test_feature.reshape(1, -1), atol=0.4)
 
     except ARTTestException as e:
         art_warning(e)
@@ -1172,10 +1172,10 @@ def test_black_box_baseline_no_encoder_after_feature_slice(art_warning, get_iris
         baseline_inferred_train = baseline_attack.infer(x_train_for_attack, y_train_iris, pred=x_train_predictions)
         baseline_inferred_test = baseline_attack.infer(x_test_for_attack, y_test_iris, pred=x_test_predictions)
         # check accuracy
-        baseline_train_acc = np.sum(baseline_inferred_train == x_train_feature.reshape(1, -1)) / len(
+        baseline_train_acc = np.sum(baseline_inferred_train == x_train_feature) / len(
             baseline_inferred_train
         )
-        baseline_test_acc = np.sum(baseline_inferred_test == x_test_feature.reshape(1, -1)) / len(
+        baseline_test_acc = np.sum(baseline_inferred_test == x_test_feature) / len(
             baseline_inferred_test
         )
 

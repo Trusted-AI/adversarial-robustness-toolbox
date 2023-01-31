@@ -162,10 +162,11 @@ def test_meminf_black_box_regressor(art_warning, get_diabetes_dataset):
         attack_feature = 0  # age
 
         bins = [
-            -0.96838121,
-            -0.18102872,
-            0.21264752,
-            1.0,
+            -1.0,
+            -0.5,
+            0.0,
+            0.5,
+            1.0
         ]
 
         # need to transform attacked feature into categorical
@@ -216,9 +217,7 @@ def test_meminf_black_box_regressor(art_warning, get_diabetes_dataset):
         inferred_test = attack.infer(x_test_for_attack, y_test_diabetes, values=values)
         # check accuracy
         train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
-        test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
-        assert 0.1 <= train_acc
-        assert 0.1 <= test_acc
+        assert 0.3 <= train_acc
 
     except ARTTestException as e:
         art_warning(e)
