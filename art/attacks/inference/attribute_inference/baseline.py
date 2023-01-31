@@ -81,9 +81,10 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
         :param attack_feature: The index of the feature to be attacked or a slice representing multiple indexes in
                                case of a one-hot encoded feature.
         :param is_continuous: Whether the attacked feature is continuous. Default is False (which means categorical).
-        :param non_numerical_features: a list if feature indexes that require encoding in order to feed into an ML model
-                                       (i.e., strings). Should only be supplied if non-numeric features exist in the
-                                        input data and an encoder is not supplied.
+        :param non_numerical_features: a list of feature indexes that require encoding in order to feed into an ML model
+                                       (i.e., strings), not including the attacked feature. Should only be supplied if
+                                       non-numeric features exist in the input data not including the attacked feature,
+                                       and an encoder is not supplied.
         :param encoder: An already fit encoder that can be applied to the model's input features without the attacked
                         feature (i.e., should be fit for n-1 features).
         """

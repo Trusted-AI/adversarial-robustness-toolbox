@@ -93,9 +93,10 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
         :param prediction_normal_factor: If supplied, the class labels (both true and predicted) are multiplied by the
                                          factor when used as inputs to the attack-model. Only applicable when
                                          `is_regression` is True and if `scale_range` is not supplied.
-        :param non_numerical_features: a list if feature indexes that require encoding in order to feed into an ML model
-                                       (i.e., strings). Should only be supplied if non-numeric features exist in the
-                                        input data and an encoder is not supplied.
+        :param non_numerical_features: a list of feature indexes that require encoding in order to feed into an ML model
+                                       (i.e., strings), not including the attacked feature. Should only be supplied if
+                                       non-numeric features exist in the input data not including the attacked feature,
+                                       and an encoder is not supplied.
         :param encoder: An already fit encoder that can be applied to the model's input features without the attacked
                         feature (i.e., should be fit for n-1 features).
         """
