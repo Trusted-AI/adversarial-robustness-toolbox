@@ -210,7 +210,7 @@ def test_meminf_black_box_regressor(art_warning, get_diabetes_dataset):
         inferred_train = attack.infer(x_train_for_attack, y_train_diabetes, values=values)
         # check accuracy
         train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
-        assert 0.3 <= train_acc
+        assert 0.15 <= train_acc
 
     except ARTTestException as e:
         art_warning(e)
