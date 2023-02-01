@@ -1172,12 +1172,8 @@ def test_black_box_baseline_no_encoder_after_feature_slice(art_warning, get_iris
         baseline_inferred_train = baseline_attack.infer(x_train_for_attack, y_train_iris, pred=x_train_predictions)
         baseline_inferred_test = baseline_attack.infer(x_test_for_attack, y_test_iris, pred=x_test_predictions)
         # check accuracy
-        baseline_train_acc = np.sum(baseline_inferred_train == x_train_feature) / len(
-            baseline_inferred_train
-        )
-        baseline_test_acc = np.sum(baseline_inferred_test == x_test_feature) / len(
-            baseline_inferred_test
-        )
+        baseline_train_acc = np.sum(baseline_inferred_train == x_train_feature) / len(baseline_inferred_train)
+        baseline_test_acc = np.sum(baseline_inferred_test == x_test_feature) / len(baseline_inferred_test)
 
         assert 0.0 <= baseline_train_acc
         assert 0.0 <= baseline_test_acc
