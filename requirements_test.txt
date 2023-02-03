@@ -1,6 +1,6 @@
 # base
 
-numpy>=1.18.5,<1.24
+numpy>=1.18.5,<1.25
 scipy==1.10.0
 matplotlib==3.6.3
 scikit-learn>=0.22.2,<1.2.0
