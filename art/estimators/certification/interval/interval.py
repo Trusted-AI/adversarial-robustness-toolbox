@@ -119,17 +119,7 @@ class PyTorchIntervalConv2D(torch.nn.Module):
         self.bias_to_grad = None
 
         if bias:
-            self.conv_bias = torch.nn.Conv2d(
-                in_channels=in_channels,
-                out_channels=out_channels,
-                kernel_size=kernel_size,
-                padding=padding,
-                dilation=dilation,
-                bias=True,
-                stride=stride,
-            )
-            if self.conv_bias.bias is not None:
-                self.bias_to_grad = self.conv_bias.bias
+            self.bias_to_grad = torch.nn.Parameter(torch.rand(out_channels))
 
         if to_debug:
             self.conv = torch.nn.Conv2d(
@@ -173,7 +163,6 @@ class PyTorchIntervalConv2D(torch.nn.Module):
                 )
 
         if supplied_input_bias is not None:
-            # self.bias_to_grad = supplied_input_bias
             self.bias_to_grad = torch.nn.Parameter(supplied_input_bias)
 
         self.in_channels = in_channels
@@ -194,6 +183,7 @@ class PyTorchIntervalConv2D(torch.nn.Module):
         """
         Re converts the weights into a dense equivalent layer.
         This usually called after an update to the convolutional weights.
+        Must be called after every backwards if multiple gradients wish to be taken (like for crafting pgd).
         """
         self.dense_weights, self.bias = self.convert_to_dense(device)
         self.dense_weights = self.dense_weights.to(device)

@@ -58,6 +58,7 @@ class ConvertedModel(torch.nn.Module):
         self.forward_mode: str
         self.forward_mode = "abstract"
         self.reshape_op_num = -1
+        self.auto_convert = False
 
         # pylint: disable=W0613
         def forward_hook(input_module, hook_input, hook_output):
@@ -133,6 +134,13 @@ class ConvertedModel(torch.nn.Module):
         x[batch_size, 2, feature_1, feature_2, ...] where axis=1 corresponds to the [lower, upper] bounds.
         :return: regular model predictions if in concrete mode, or interval predictions if running in abstract mode
         """
+
+        # Although slow to re-convert the layers, this is requried to interface with many ART adversarial attacks.
+        import time
+        s = time.time()
+        if self.auto_convert:
+            self.re_convert()
+        print('the re-conversion takes ', time.time() - s)
         if self.forward_mode == "concrete":
             return self.concrete_forward(x)
         if self.forward_mode == "abstract":
@@ -186,6 +194,11 @@ class ConvertedModel(torch.nn.Module):
         """
         assert mode in {"concrete", "abstract"}
         self.forward_mode = mode
+
+    def re_convert(self):
+        for op_num, (op, _) in enumerate(zip(self.ops, self.interim_shapes)):
+            if isinstance(op, PyTorchIntervalConv2D):
+                op.re_convert(self.device)
 
 
 class PyTorchIBPClassifier(PyTorchIntervalBounds, PyTorchClassifier):
@@ -255,7 +268,6 @@ class PyTorchIBPClassifier(PyTorchIntervalBounds, PyTorchClassifier):
 
         if TYPE_CHECKING:
             converted_optimizer: Union[torch.optim.Adam, torch.optim.SGD, None]
-
         if optimizer is not None:
             opt_state_dict = optimizer.state_dict()
             if isinstance(optimizer, torch.optim.Adam):
@@ -376,3 +388,35 @@ class PyTorchIBPClassifier(PyTorchIntervalBounds, PyTorchClassifier):
             labels = labels.detach().cpu().numpy()
 
         return np.sum(np.argmax(preds, axis=1) == labels) / len(labels)
+
+    def concrete_loss(self, output: "torch.Tensor", target: "torch.Tensor") -> "torch.Tensor":
+        """
+        Access function to get the classifier loss
+
+        :param output: model predictions
+        :param target: ground truth labels
+
+        :return: loss value
+        """
+        return self._loss(output, target)
+
+    @staticmethod
+    def interval_loss_cce(prediction: "torch.Tensor", target: "torch.Tensor") -> "torch.Tensor":
+        """
+        Computes the categorical cross entropy loss with the correct class having the lower bound prediction,
+        and the other classes having their upper bound predictions.
+
+        :param prediction: model predictions.
+        :param target: target classes. NB not one hot.
+        :return: scalar loss value
+        """
+        print(prediction.shape)
+        # TODO!! Check for bugs
+        criterion = torch.nn.CrossEntropyLoss()
+        # Take the upper bounds
+        upper_preds = prediction[:, 1, :]
+        print('upper_preds ', upper_preds.shape)
+        print('target ', target.shape)
+        # for the prediction corresponding to the target class, take the lower bound predictions
+        upper_preds[:, target] = prediction[:, 0, target]
+        return criterion(upper_preds, target)

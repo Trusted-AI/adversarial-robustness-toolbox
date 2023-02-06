@@ -127,7 +127,7 @@ def test_conv_multi_channel_in_multi_out():
 
 def test_conv_layer_multi_channel_in_multi_out_with_stride():
     """
-    Check that the conversion works  works for multiple input/output channels with strided convolution
+    Check that the conversion works for multiple input/output channels with strided convolution
     """
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     synthetic_data = torch.rand(32, 3, 25, 25).to(device)
@@ -141,7 +141,7 @@ def test_conv_layer_multi_channel_in_multi_out_with_stride():
 
 def test_conv_layer_multi_channel_in_multi_out_with_stride_and_bias():
     """
-    Check that the conversion works  works for multiple input/output channels with strided convolution and bias
+    Check that the conversion works for multiple input/output channels with strided convolution and bias
     """
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     synthetic_data = torch.rand(32, 3, 25, 25).to(device)
@@ -156,7 +156,7 @@ def test_conv_layer_multi_channel_in_multi_out_with_stride_and_bias():
 
 def test_conv_layer_padding():
     """
-    Check that the conversion works  works for multiple input/output channels with strided convolution, bias,
+    Check that the conversion works for multiple input/output channels with strided convolution, bias,
     and padding
     """
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -172,7 +172,7 @@ def test_conv_layer_padding():
 
 def test_conv_layer_dilation():
     """
-    Check that the conversion works  works for multiple input/output channels with strided convolution, bias,
+    Check that the conversion works for multiple input/output channels with strided convolution, bias,
     padding, and dilation
     """
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -270,6 +270,8 @@ def test_conv_train_loop():
     for _ in range(5):
 
         model.zero_grad()
+
+        # Test model is for ground truth comparison
         test_model.zero_grad()
 
         output_from_equivalent = model.forward(synthetic_data)
@@ -297,6 +299,14 @@ def test_conv_train_loop():
         # function to re-pop the dense layer
         model.conv1.re_convert(device)
 
+        # Sanity check! Are the grads still present and the same after the conversion?
+        equivalent_grads = model.conv1.conv_flat.weight.grad
+        equivalent_grads = torch.reshape(equivalent_grads, shape=(output_channels, input_channels, 5, 5)).detach().clone()
+        equivalent_bias = model.conv1.bias_to_grad.grad
+
+        assert torch.allclose(equivalent_grads, test_model.conv.weight.grad, atol=1e-05)
+        assert torch.allclose(equivalent_bias, test_model.conv.bias.grad, atol=1e-05)
+
 
 @pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
 def test_mnist_certification(art_warning, fix_get_mnist_data):
@@ -323,3 +333,72 @@ def test_mnist_certification(art_warning, fix_get_mnist_data):
     interval_preds = box_model.predict_intervals(interval_x, is_interval=True)
     cert_results = box_model.certify(preds=interval_preds, labels=mnist_labels)
     assert np.sum(cert_results) == 48
+
+
+@pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
+def test_mnist_certification_time(art_warning, fix_get_mnist_data):
+    class TestModel(torch.nn.Module):
+        def __init__(self):
+            super().__init__()
+
+            self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+            self.conv1 = torch.nn.Conv2d(
+                in_channels=1,
+                out_channels=32,
+                kernel_size=5,
+                bias=True,
+                stride=1,
+            ).to(self.device)
+
+            self.conv2 = torch.nn.Conv2d(
+                in_channels=32,
+                out_channels=32,
+                kernel_size=5,
+                bias=True,
+                stride=1,
+            ).to(self.device)
+
+            self.fc1 = torch.nn.Linear(in_features=12800, out_features=100)
+            self.fc2 = torch.nn.Linear(in_features=100, out_features=10)
+            self.relu = torch.nn.ReLU()
+
+        def forward(self, x):
+            x = self.relu(self.conv1(x))
+            x = self.relu(self.conv2(x))
+            x = x.reshape(x.shape[0], -1)
+            x = self.relu(self.fc1(x))
+
+            return self.fc2(x)
+
+    bound = 0.05
+    loss_fn = torch.nn.CrossEntropyLoss()
+    model = TestModel()
+
+    box_model = PyTorchIBPClassifier(
+        model=model, clip_values=(0, 1), loss=torch.nn.CrossEntropyLoss(), input_shape=(1, 28, 28), nb_classes=10
+    )
+
+    mnist_data = fix_get_mnist_data[0]
+    mnist_labels = torch.tensor(fix_get_mnist_data[1])
+    box_model.model.set_forward_mode("concrete")
+    for i in range(10):
+        preds = box_model.model.forward(mnist_data)
+        loss = loss_fn(preds, mnist_labels)
+        loss.backward()
+        box_model.model.zero_grad()
+        box_model.model.re_convert()
+
+    '''
+    preds = box_model.predict(mnist_data.astype("float32"))
+    acc = np.sum(np.argmax(preds, axis=1) == mnist_labels)
+    assert acc == 99
+
+    box_model.model.set_forward_mode("abstract")
+    up_bound = np.expand_dims(np.clip(mnist_data + bound, 0, 1), axis=1)
+    low_bound = np.expand_dims(np.clip(mnist_data - bound, 0, 1), axis=1)
+    interval_x = np.concatenate([low_bound, up_bound], axis=1)
+
+    interval_preds = box_model.predict_intervals(interval_x, is_interval=True)
+    cert_results = box_model.certify(preds=interval_preds, labels=mnist_labels)
+    assert np.sum(cert_results) == 48
+    '''
