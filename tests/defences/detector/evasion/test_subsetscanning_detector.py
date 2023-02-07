@@ -28,32 +28,15 @@ import numpy as np
 from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.defences.detector.evasion import SubsetScanningDetector
 
-from tests.utils import ARTTestException, get_image_classifier_kr, get_image_classifier_tf, get_image_classifier_pt
+from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
 
-@pytest.fixture()
-def get_classifier(framework):
-    def _get_classifier():
-        if framework in ("keras", "kerastf"):
-            classifier = get_image_classifier_kr()
-        elif framework == "tensorflow2":
-            classifier, _ = get_image_classifier_tf()
-        elif framework == "pytorch":
-            classifier = get_image_classifier_pt()
-        else:
-            classifier = None
-
-        return classifier
-
-    return _get_classifier
-
-
 @pytest.mark.only_with_platform("keras", "kerastf", "tensorflow2", "pytorch")
-def test_subsetscannning_detector_scan_clean(art_warning, get_default_mnist_subset, get_classifier):
+def test_subsetscannning_detector_scan_clean(art_warning, get_default_mnist_subset, image_dl_estimator):
     (x_train, _), (x_test, _) = get_default_mnist_subset
-    classifier = get_classifier()
+    classifier, _ = image_dl_estimator()
 
     # Data for detector
     bgd_data = x_train
@@ -68,9 +51,9 @@ def test_subsetscannning_detector_scan_clean(art_warning, get_default_mnist_subs
 
 
 @pytest.mark.only_with_platform("keras", "kerastf", "tensorflow2", "pytorch")
-def test_subsetscannning_detector_scan_adv(art_warning, get_default_mnist_subset, get_classifier):
+def test_subsetscannning_detector_scan_adv(art_warning, get_default_mnist_subset, image_dl_estimator):
     (x_train, _), (x_test, _) = get_default_mnist_subset
-    classifier = get_classifier()
+    classifier, _ = image_dl_estimator()
 
     # Generate adversarial samples
     attacker = FastGradientMethod(classifier, eps=0.5)
@@ -90,9 +73,9 @@ def test_subsetscannning_detector_scan_adv(art_warning, get_default_mnist_subset
 
 
 @pytest.mark.only_with_platform("keras", "kerastf", "tensorflow2", "pytorch")
-def test_subsetscannning_detector_scan_size(art_warning, get_default_mnist_subset, get_classifier):
+def test_subsetscannning_detector_scan_size(art_warning, get_default_mnist_subset, image_dl_estimator):
     (x_train, _), (x_test, _) = get_default_mnist_subset
-    classifier = get_classifier()
+    classifier, _ = image_dl_estimator()
 
     # Generate adversarial samples
     attacker = FastGradientMethod(classifier, eps=0.5)
@@ -112,9 +95,9 @@ def test_subsetscannning_detector_scan_size(art_warning, get_default_mnist_subse
 
 
 @pytest.mark.only_with_platform("keras", "kerastf", "tensorflow2", "pytorch")
-def test_subsetscannning_detector_detect(art_warning, get_default_mnist_subset, get_classifier):
+def test_subsetscannning_detector_detect(art_warning, get_default_mnist_subset, image_dl_estimator):
     (x_train, _), (x_test, _) = get_default_mnist_subset
-    classifier = get_classifier()
+    classifier, _ = image_dl_estimator()
 
     # Generate adversarial samples
     attacker = FastGradientMethod(classifier, eps=0.5)

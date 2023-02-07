@@ -29,7 +29,7 @@ import numpy as np
 from art.defences.detector.evasion.evasion_detector import EvasionDetector
 
 if TYPE_CHECKING:
-    from art.estimators.classification.classifier import ClassifierNeuralNetwork
+    from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -44,8 +44,8 @@ class BinaryActivationDetector(EvasionDetector):
 
     def __init__(
         self,
-        classifier: "ClassifierNeuralNetwork",
-        detector: "ClassifierNeuralNetwork",
+        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
+        detector: "CLASSIFIER_NEURALNETWORK_TYPE",
         layer: Union[int, str],
     ) -> None:
         """

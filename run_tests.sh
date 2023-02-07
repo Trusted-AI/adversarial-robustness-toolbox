@@ -19,6 +19,9 @@ then
     echo "############### Running tests with framework $framework ###############"
     echo "#######################################################################"
 
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/detector/evasion --framework=$framework --durations=0
+    if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/detector/evasion tests"; fi
+
     pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/detector/poison/test_spectral_signature_defense.py --framework=$framework --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/detector/poison/test_spectral_signature_defense.py tests"; fi
 

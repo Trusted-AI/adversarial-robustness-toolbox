@@ -29,7 +29,7 @@ import numpy as np
 from art.defences.detector.evasion.evasion_detector import EvasionDetector
 
 if TYPE_CHECKING:
-    from art.estimators.classification.classifier import ClassifierNeuralNetwork
+    from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ class BinaryInputDetector(EvasionDetector):
 
     defence_params = ["detector"]
 
-    def __init__(self, detector: "ClassifierNeuralNetwork") -> None:
+    def __init__(self, detector: "CLASSIFIER_NEURALNETWORK_TYPE") -> None:
         """
         Create a `BinaryInputDetector` instance which performs binary classification on input data.
 

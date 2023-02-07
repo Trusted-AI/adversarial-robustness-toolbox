@@ -39,7 +39,7 @@ else:
     from typing_extensions import Literal
 
 if TYPE_CHECKING:
-    from art.estimators.classification.classifier import ClassifierNeuralNetwork
+    from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +55,7 @@ class SubsetScanningDetector(EvasionDetector):
 
     def __init__(
         self,
-        classifier: "ClassifierNeuralNetwork",
+        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
         bgd_data: np.ndarray,
         layer: Union[int, str],
         scoring_function: Literal["BerkJones", "HigherCriticism", "KolmarovSmirnov"] = "BerkJones",
