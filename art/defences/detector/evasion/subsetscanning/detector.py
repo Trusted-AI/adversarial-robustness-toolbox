@@ -100,29 +100,41 @@ class SubsetScanningDetector(EvasionDetector):
             self._layer_name = layer
 
         # Background data activations
-        bgd_activations = classifier.get_activations(bgd_data, self._layer_name, batch_size=128)
+        bgd_activations = self._get_activations(bgd_data, self._layer_name, batch_size=128)
         if len(bgd_activations.shape) == 4:
             dim2 = bgd_activations.shape[1] * bgd_activations.shape[2] * bgd_activations.shape[3]
             bgd_activations = np.reshape(bgd_activations, (bgd_activations.shape[0], dim2))
         self.sorted_bgd_activations = np.sort(bgd_activations, axis=0)
 
         # Background data scores
-        pval_ranges = self.calculate_pvalue_ranges(bgd_data)
+        pval_ranges = self._calculate_pvalue_ranges(bgd_data)
         bgd_scores = []
         for pval_range in pval_ranges:
             best_score, _, _, _ = Scanner.fgss_individ_for_nets(pval_range, score_function=self.scoring_function)
             bgd_scores.append(best_score)
         self.bgd_scores = np.asarray(bgd_scores)
 
-    def calculate_pvalue_ranges(self, eval_x: np.ndarray) -> np.ndarray:
+    def _get_activations(
+        self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
+    ) -> np.ndarray:
+        x_activations = self.classifier.get_activations(x, layer, batch_size, framework)
+        if x_activations is None:
+            raise ValueError("Classifier activations are null.")
+
+        if isinstance(x_activations, np.ndarray):
+            return x_activations
+
+        return x_activations.numpy()
+
+    def _calculate_pvalue_ranges(self, x: np.ndarray, batch_size: int = 128) -> np.ndarray:
         """
         Returns computed p-value ranges.
 
-        :param eval_x: Data being evaluated for anomalies.
-        :return: P-value ranges.
+        :param x: Data being evaluated for anomalies.
+        :return: p-value ranges.
         """
         bgd_activations = self.sorted_bgd_activations
-        eval_activations = self.classifier.get_activations(eval_x, self._layer_name, batch_size=128)
+        eval_activations = self._get_activations(x, self._layer_name, batch_size)
 
         if len(eval_activations.shape) == 4:
             dim2 = eval_activations.shape[1] * eval_activations.shape[2] * eval_activations.shape[3]
@@ -163,8 +175,8 @@ class SubsetScanningDetector(EvasionDetector):
         :param run:
         :return: (clean_scores, adv_scores, detection_power).
         """
-        clean_pval_ranges = self.calculate_pvalue_ranges(clean_x)
-        adv_pval_ranges = self.calculate_pvalue_ranges(adv_x)
+        clean_pval_ranges = self._calculate_pvalue_ranges(clean_x)
+        adv_pval_ranges = self._calculate_pvalue_ranges(adv_x)
 
         clean_scores = []
         adv_scores = []
@@ -225,7 +237,7 @@ class SubsetScanningDetector(EvasionDetector):
                 where is_adversarial is a boolean list of per-sample prediction whether the sample is adversarial
                 or not and has the same `batch_size` (first dimension) as `x`.
         """
-        pval_ranges = self.calculate_pvalue_ranges(x)
+        pval_ranges = self._calculate_pvalue_ranges(x, batch_size)
         scores = []
 
         for pval_range in tqdm(pval_ranges, desc="Subset scanning", disable=not self.verbose):

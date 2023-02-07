@@ -75,6 +75,18 @@ class BinaryActivationDetector(EvasionDetector):
                 raise ValueError(f"Layer name {layer} is not part of the graph.")
             self._layer_name = layer
 
+    def _get_activations(
+        self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
+    ) -> np.ndarray:
+        x_activations = self.classifier.get_activations(x, layer, batch_size, framework)
+        if x_activations is None:
+            raise ValueError("Classifier activations are null.")
+
+        if isinstance(x_activations, np.ndarray):
+            return x_activations
+
+        return x_activations.numpy()
+
     def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
         """
         Fit the detector using training data.
@@ -85,7 +97,7 @@ class BinaryActivationDetector(EvasionDetector):
         :param nb_epochs: Number of epochs to use for training.
         :param kwargs: Other parameters.
         """
-        x_activations = self.classifier.get_activations(x, self._layer_name, batch_size)
+        x_activations: np.ndarray = self._get_activations(x, self._layer_name, batch_size)
         self.detector.fit(x_activations, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
     def detect(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> Tuple[dict, np.ndarray]:
@@ -99,7 +111,7 @@ class BinaryActivationDetector(EvasionDetector):
                 where is_adversarial is a boolean list of per-sample prediction whether the sample is adversarial
                 or not and has the same `batch_size` (first dimension) as `x`.
         """
-        x_activations = self.classifier.get_activations(x, self._layer_name, batch_size)
+        x_activations: np.ndarray = self._get_activations(x, self._layer_name, batch_size)
         predictions = self.detector.predict(x_activations, batch_size=batch_size)
         is_adversarial = np.argmax(predictions, axis=1).astype(bool)
         report = {"predictions": predictions}

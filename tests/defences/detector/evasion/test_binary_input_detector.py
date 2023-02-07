@@ -25,7 +25,7 @@ from art.attacks.evasion import FastGradientMethod
 from art.estimators.classification import KerasClassifier, TensorFlowV2Classifier, PyTorchClassifier
 from art.defences.detector.evasion import BinaryInputDetector
 
-from tests.utils import ARTTestException, get_image_classifier_kr, get_image_classifier_tf, get_image_classifier_pt
+from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
