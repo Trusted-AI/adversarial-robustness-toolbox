@@ -135,13 +135,13 @@ class ConvertedModel(torch.nn.Module):
         :return: regular model predictions if in concrete mode, or interval predictions if running in abstract mode
         """
 
-        # Although slow to re-convert the layers, this is requried to interface with many ART adversarial attacks.
-        import time
-        s = time.time()
-        if self.auto_convert:
+        # Although slow to re-convert the layers, this can be required for backpropagation.
+        # import time
+        # s = time.time()
+        if self.auto_convert and self.forward_mode == "concrete":
             self.re_convert()
-        print('the re-conversion takes ', time.time() - s)
-        if self.forward_mode == "concrete":
+        # print('the re-conversion takes ', time.time() - s)
+        if self.forward_mode in ["concrete", "attack"]:
             return self.concrete_forward(x)
         if self.forward_mode == "abstract":
             if x.shape[1] == 2:
@@ -183,7 +183,10 @@ class ConvertedModel(torch.nn.Module):
             # as reshapes are not modules we infer when the reshape from convolutional to dense occurs
             if self.reshape_op_num == op_num:
                 x = x.reshape((x.shape[0], -1))
-            x = op.concrete_forward(x)
+            if isinstance(op, PyTorchIntervalConv2D) and self.forward_mode == "attack":
+                x = op.conv_forward(x)
+            else:
+                x = op.concrete_forward(x)
         return x
 
     def set_forward_mode(self, mode: str) -> None:
@@ -192,7 +195,7 @@ class ConvertedModel(torch.nn.Module):
 
         :param mode: either concrete or abstract signifying how to run the forward pass
         """
-        assert mode in {"concrete", "abstract"}
+        assert mode in {"concrete", "abstract", "attack"}
         self.forward_mode = mode
 
     def re_convert(self):
