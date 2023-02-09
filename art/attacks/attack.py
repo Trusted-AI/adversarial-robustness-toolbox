@@ -442,12 +442,15 @@ class AttributeInferenceAttack(InferenceAttack):
         raise NotImplementedError
 
     @staticmethod
-    def _check_attack_feature(attack_feature: Union[int, slice] = 0) -> None:
+    def _check_attack_feature(attack_feature: Union[int, slice]) -> None:
         if not isinstance(attack_feature, int) and not isinstance(attack_feature, slice):
             raise ValueError("Attack feature must be either an integer or a slice object.")
 
         if isinstance(attack_feature, int) and attack_feature < 0:
             raise ValueError("Attack feature index must be non-negative.")
+
+    def _check_params(self) -> None:
+        self._check_attack_feature(self.attack_feature)
 
 
 class MembershipInferenceAttack(InferenceAttack):

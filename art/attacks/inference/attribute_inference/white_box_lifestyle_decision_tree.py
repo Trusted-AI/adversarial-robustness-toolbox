@@ -132,4 +132,4 @@ class AttributeInferenceWhiteBoxLifestyleDecisionTree(AttributeInferenceAttack):
         return phi
 
     def _check_params(self) -> None:
-        self._check_attack_feature(self.attack_feature)
+        super()._check_params()

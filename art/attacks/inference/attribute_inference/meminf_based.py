@@ -146,7 +146,7 @@ class AttributeInferenceMembership(AttributeInferenceAttack):
         return pred_values
 
     def _check_params(self) -> None:
-        self._check_attack_feature(self.attack_feature)
+        super()._check_params()
 
         if not isinstance(self.membership_attack, MembershipInferenceAttack):
             raise ValueError("membership_attack should be a sub-class of MembershipInferenceAttack")

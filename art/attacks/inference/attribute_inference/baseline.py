@@ -260,7 +260,7 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
 
     def _check_params(self) -> None:
 
-        self._check_attack_feature(self.attack_feature)
+        super()._check_params()
 
         if not isinstance(self._is_continuous, bool):
             raise ValueError("is_continuous must be a boolean.")
