@@ -88,10 +88,10 @@ def test_conv_single_channel_in_multi_out(art_warning):
     synthetic_data = torch.rand(32, 1, 25, 25).to(device)
     model = SyntheticIntervalModel(input_shape=synthetic_data.shape, output_channels=4, kernel_size=5)
     output_from_equivalent = model.forward(synthetic_data)
-    output_from_conv = model.conv1.conv(synthetic_data)
+    output_from_conv = model.conv1.conv_debug(synthetic_data)
     output_from_equivalent = torch.reshape(output_from_equivalent, output_from_conv.shape)
     try:
-        torch.equal(output_from_equivalent, output_from_conv)
+        assert torch.allclose(output_from_equivalent, output_from_conv, atol=1e-05)
     except ARTTestException as e:
         art_warning(e)
 
@@ -104,7 +104,7 @@ def test_conv_multi_channel_in_single_out():
     synthetic_data = torch.rand(32, 3, 25, 25).to(device)
     model = SyntheticIntervalModel(input_shape=synthetic_data.shape, output_channels=1, kernel_size=5)
     output_from_equivalent = model.forward(synthetic_data)
-    output_from_conv = model.conv1.conv(synthetic_data)
+    output_from_conv = model.conv1.conv_debug(synthetic_data)
 
     output_from_equivalent = output_from_equivalent.flatten()
     output_from_conv = output_from_conv.flatten()
@@ -120,7 +120,7 @@ def test_conv_multi_channel_in_multi_out():
     synthetic_data = torch.rand(32, 3, 25, 25).to(device)
     model = SyntheticIntervalModel(input_shape=synthetic_data.shape, output_channels=12, kernel_size=5)
     output_from_equivalent = model.forward(synthetic_data)
-    output_from_conv = model.conv1.conv(synthetic_data)
+    output_from_conv = model.conv1.conv_debug(synthetic_data)
 
     assert torch.allclose(output_from_equivalent, output_from_conv, atol=1e-05)
 
@@ -134,7 +134,7 @@ def test_conv_layer_multi_channel_in_multi_out_with_stride():
     model = SyntheticIntervalModel(input_shape=synthetic_data.shape, output_channels=12, kernel_size=5, stride=2)
 
     output_from_equivalent = model.forward(synthetic_data)
-    output_from_conv = model.conv1.conv(synthetic_data)
+    output_from_conv = model.conv1.conv_debug(synthetic_data)
 
     assert torch.allclose(output_from_equivalent, output_from_conv, atol=1e-05)
 
@@ -149,7 +149,7 @@ def test_conv_layer_multi_channel_in_multi_out_with_stride_and_bias():
         input_shape=synthetic_data.shape, output_channels=12, kernel_size=5, bias=True, stride=2
     )
     output_from_equivalent = model.forward(synthetic_data)
-    output_from_conv = model.conv1.conv(synthetic_data)
+    output_from_conv = model.conv1.conv_debug(synthetic_data)
 
     assert torch.allclose(output_from_equivalent, output_from_conv, atol=1e-05)
 
@@ -165,7 +165,7 @@ def test_conv_layer_padding():
         input_shape=synthetic_data.shape, output_channels=12, kernel_size=5, bias=True, padding=2, stride=2
     )
     output_from_equivalent = model.forward(synthetic_data)
-    output_from_conv = model.conv1.conv(synthetic_data)
+    output_from_conv = model.conv1.conv_debug(synthetic_data)
 
     assert torch.allclose(output_from_equivalent, output_from_conv, atol=1e-05)
 
@@ -181,7 +181,7 @@ def test_conv_layer_dilation():
         input_shape=synthetic_data.shape, output_channels=12, kernel_size=5, bias=True, padding=2, stride=2, dilation=3
     )
     output_from_equivalent = model.forward(synthetic_data)
-    output_from_conv = model.conv1.conv(synthetic_data)
+    output_from_conv = model.conv1.conv_debug(synthetic_data)
 
     assert torch.allclose(output_from_equivalent, output_from_conv, atol=1e-05)
 
@@ -204,7 +204,7 @@ def test_conv_layer_grads():
     loss = loss_fn(output_from_equivalent, target)
     loss.backward()
 
-    equivalent_grads = model.conv1.conv_flat.weight.grad
+    equivalent_grads = model.conv1.conv.weight.grad
     equivalent_grads = torch.reshape(equivalent_grads, shape=(output_channels, input_channels, 5, 5)).detach().clone()
     equivalent_bias = model.conv1.bias_to_grad.grad.data.detach().clone()
 
@@ -212,15 +212,14 @@ def test_conv_layer_grads():
     print('equivalent_bias ', equivalent_bias)
 
     model.zero_grad()
-    output_from_conv = model.conv1.conv(synthetic_data)
+    output_from_conv = model.conv1.conv_debug(synthetic_data)
     loss = loss_fn(output_from_conv, target)
     loss.backward()
 
-    print('ground truth ', model.conv1.conv.bias.grad)
+    print('ground truth ', model.conv1.conv_debug.bias.grad)
 
-    assert torch.allclose(equivalent_grads, model.conv1.conv.weight.grad, atol=1e-05)
-    assert torch.allclose(equivalent_bias, model.conv1.conv.bias.grad, atol=1e-05)
-
+    assert torch.allclose(equivalent_grads, model.conv1.conv_debug.weight.grad, atol=1e-05)
+    assert torch.allclose(equivalent_bias, model.conv1.conv_debug.bias.grad, atol=1e-05)
 
 
 def test_conv_train_loop():
@@ -260,7 +259,7 @@ def test_conv_train_loop():
 
     # Get the weights we will transfer over
     # Set the weights in the normal model
-    test_model.conv.weight.data = torch.reshape(torch.tensor(model.conv1.conv_flat.weight.data.detach().numpy()),
+    test_model.conv.weight.data = torch.reshape(torch.tensor(model.conv1.conv.weight.data.detach().numpy()),
                                                 shape=(output_channels, input_channels, 5, 5))
     test_model.conv.bias.data = torch.tensor(model.conv1.bias_to_grad.data.detach().numpy())
 
@@ -278,7 +277,7 @@ def test_conv_train_loop():
         loss = loss_fn(output_from_equivalent, target)
         loss.backward()
 
-        equivalent_grads = model.conv1.conv_flat.weight.grad
+        equivalent_grads = model.conv1.conv.weight.grad
         equivalent_grads = torch.reshape(equivalent_grads, shape=(output_channels, input_channels, 5, 5)).detach().clone()
         equivalent_bias = model.conv1.bias_to_grad.grad
 
@@ -292,7 +291,7 @@ def test_conv_train_loop():
         optimizer.step()
         test_opt.step()
 
-        reshaped_weights = torch.reshape(model.conv1.conv_flat.weight.data.clone().detach(), shape=(output_channels, input_channels, 5, 5))
+        reshaped_weights = torch.reshape(model.conv1.conv.weight.data.clone().detach(), shape=(output_channels, input_channels, 5, 5))
 
         assert torch.allclose(reshaped_weights, test_model.conv.weight.data, atol=1e-05)
 
@@ -300,7 +299,7 @@ def test_conv_train_loop():
         model.conv1.re_convert(device)
 
         # Sanity check! Are the grads still present and the same after the conversion?
-        equivalent_grads = model.conv1.conv_flat.weight.grad
+        equivalent_grads = model.conv1.conv.weight.grad
         equivalent_grads = torch.reshape(equivalent_grads, shape=(output_channels, input_channels, 5, 5)).detach().clone()
         equivalent_bias = model.conv1.bias_to_grad.grad
 
