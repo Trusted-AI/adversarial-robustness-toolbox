@@ -413,13 +413,13 @@ class PyTorchIBPClassifier(PyTorchIntervalBounds, PyTorchClassifier):
         :param target: target classes. NB not one hot.
         :return: scalar loss value
         """
-        print(prediction.shape)
+        # print(prediction.shape)
         # TODO!! Check for bugs
         criterion = torch.nn.CrossEntropyLoss()
         # Take the upper bounds
         upper_preds = prediction[:, 1, :]
-        print('upper_preds ', upper_preds.shape)
-        print('target ', target.shape)
+        # print('upper_preds ', upper_preds.shape)
+        # print('target ', target.shape)
         # for the prediction corresponding to the target class, take the lower bound predictions
         upper_preds[:, target] = prediction[:, 0, target]
         return criterion(upper_preds, target)

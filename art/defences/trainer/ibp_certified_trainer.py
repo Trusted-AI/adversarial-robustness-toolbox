@@ -39,7 +39,6 @@ if sys.version_info >= (3, 8):
     from typing import TypedDict, List, Optional, Any, Tuple, Union, TYPE_CHECKING
 else:
     from typing import Dict, List, Optional, Any, Tuple, Union, TYPE_CHECKING
-    from functools import reduce
 
 if TYPE_CHECKING:
     from art.utils import CERTIFIER_TYPE
@@ -269,7 +268,6 @@ class AdversarialTrainerCertifiedPytorchIBP(Trainer):
                     )
                 else:
                     certified_loss = certification_loss(interval_preds, y_batch)
-
                 samples_certified = self._classifier.certify(preds=interval_preds.cpu().detach(), labels=y_batch)
 
                 # Concrete PGD loss
@@ -281,8 +279,8 @@ class AdversarialTrainerCertifiedPytorchIBP(Trainer):
                 ]
 
                 # Perform prediction
-                self.set_forward_mode("concrete")
-                self._classifier.model.auto_convert = True
+                self.set_forward_mode("attack")
+                # self._classifier.model.auto_convert = True
                 self.attack = ProjectedGradientDescent(
                     estimator=self._classifier,
                     eps=self.pgd_params["eps"],
@@ -291,8 +289,9 @@ class AdversarialTrainerCertifiedPytorchIBP(Trainer):
                     num_random_init=self.pgd_params["num_random_init"],
                 )
                 i_batch = self.attack.generate(i_batch, y=o_batch)
-                self._classifier.model.auto_convert = False
+                # self._classifier.model.auto_convert = False
                 self._classifier.model.zero_grad()
+                self.set_forward_mode("concrete")
 
                 model_outputs = self._classifier.model.forward(i_batch)
                 acc = self._classifier.get_accuracy(model_outputs, o_batch)
@@ -320,7 +319,7 @@ class AdversarialTrainerCertifiedPytorchIBP(Trainer):
                     loss.backward()
 
                 self._classifier._optimizer.step()  # pylint: disable=W0212
-
+                self._classifier.model.re_convert()
             if scheduler is not None:
                 scheduler.step()
 

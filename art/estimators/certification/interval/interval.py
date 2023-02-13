@@ -332,7 +332,7 @@ class PyTorchIntervalConv2D(torch.nn.Module):
 
         self.cnn.weight.data = torch.reshape(torch.tensor(self.conv.weight.data.cpu().detach().numpy()),
                         (self.out_channels, self.in_channels, self.kernel_size[0], self.kernel_size[1]),).to(self.device)
-        self.cnn.bias.data = torch.tensor(self.bias_to_grad.data.cpu().detach().numpy())
+        self.cnn.bias.data = torch.tensor(self.bias_to_grad.data.cpu().detach().numpy()).to(self.device)
         return self.cnn(x)
 
 
