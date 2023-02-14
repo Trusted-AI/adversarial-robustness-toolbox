@@ -805,7 +805,7 @@ def check_and_transform_label_format(
             labels_return = np.expand_dims(labels_return, axis=1)
     elif len(labels.shape) == 2 and labels.shape[1] == 1:
         if nb_classes is None:
-            nb_classes = np.max(labels) + 1
+            nb_classes = int(np.max(labels) + 1)
         if nb_classes > 2:  # multi-class, index labels
             if return_one_hot:
                 labels_return = to_categorical(labels, nb_classes)
