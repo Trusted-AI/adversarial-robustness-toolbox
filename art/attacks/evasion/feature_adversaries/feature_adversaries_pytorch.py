@@ -207,8 +207,8 @@ class FeatureAdversariesPyTorch(EvasionAttack):
             begin, end = m * self.batch_size, min((m + 1) * self.batch_size, nb_samples)
 
             # create batch of adversarial examples
-            source_batch = torch.tensor(x[begin:end])
-            guide_batch = torch.tensor(y[begin:end])
+            source_batch = torch.tensor(x[begin:end]).to(self.estimator.device)
+            guide_batch = torch.tensor(y[begin:end]).to(self.estimator.device)
             x_adversarial[begin:end] = self._generate_batch(source_batch, guide_batch).numpy()
         return np.array(x_adversarial, dtype=x.dtype)
 
