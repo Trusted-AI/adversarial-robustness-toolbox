@@ -641,6 +641,6 @@ def getBeta(gradk, gradk_1, sk_1):
     _gradk = -gradk.reshape(bs, -1)
     _gradk_1 = -gradk_1.reshape(bs, -1)
     yk = _gradk - _gradk_1
-    betak = -(_gradk * yk).sum(axis=1) / (_sk_1 * yk).sum(axis=1)
-    betak[np.isnan(betak)] = 0.0
+    betak = -(_gradk * yk).sum(axis=1) / ((_sk_1 * yk).sum(axis=1) + 1e-12)
+    betak[yk == 0.0] = 0.0
     return betak.reshape((bs, 1, 1 ,1))
