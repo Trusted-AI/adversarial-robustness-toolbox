@@ -22,7 +22,6 @@ This module implements certified adversarial training following techniques from 
     | Paper link: https://arxiv.org/pdf/1810.12715.pdf
 """
 import logging
-import math
 import random
 import sys
 
@@ -41,7 +40,7 @@ else:
     from typing import Dict, List, Optional, Any, Tuple, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from art.utils import CERTIFIER_TYPE
+    from art.utils import IBP_CERTIFIER_TYPE
 
     # if we use python 3.8 or higher use the more informative TypedDict for type hinting
     if sys.version_info >= (3, 8):
@@ -66,25 +65,28 @@ logger = logging.getLogger(__name__)
 
 class DefaultLinearScheduler:
     """
-    Class implementing a simple linear scheduler to grow the certification radius.
+    Class implementing a simple linear scheduler to grow the certification radius or change the loss weightings
     """
 
-    def __init__(self, step_per_epoch: float, initial_bound: float = 0.0) -> None:
+    def __init__(self, step_per_epoch: float, initial_val: float = 0.0, warmup: int = 0) -> None:
         """
         Create a .DefaultLinearScheduler instance.
 
         :param step_per_epoch: how much to increase the certification radius every epoch
-        :param initial_bound: the initial bound to increase from
+        :param initial_val: the initial value
+        :param warmup: if to have an initial warmup period
         """
         self.step_per_epoch = step_per_epoch
-        self.bound = initial_bound
+        self.val = initial_val
+        self.warmup = warmup
 
-    def step(self) -> float:
+    def step(self, epoch) -> float:
         """
-        Grow the certification radius by self.step_per_epoch
+        Grow the value by self.step_per_epoch
         """
-        self.bound += self.step_per_epoch
-        return self.bound
+        if epoch > self.warmup:
+            self.val += self.step_per_epoch
+        return self.val
 
 
 class AdversarialTrainerCertifiedPytorchIBP(Trainer):
@@ -97,13 +99,14 @@ class AdversarialTrainerCertifiedPytorchIBP(Trainer):
 
     def __init__(
         self,
-        classifier: "CERTIFIER_TYPE",
+        classifier: "IBP_CERTIFIER_TYPE",
         nb_epochs: Optional[int] = 20,
         bound: float = 0.1,
         loss_weighting: float = 0.1,
         batch_size: int = 32,
         use_certification_schedule: bool = True,
         certification_schedule: Optional[Any] = None,
+        augment_with_pgd: bool = None,
         pgd_params: Optional["PGDParamDict"] = None,
     ) -> None:
         """
@@ -132,28 +135,31 @@ class AdversarialTrainerCertifiedPytorchIBP(Trainer):
         :param batch_size: Size of batches to use for certified training.
         """
         super().__init__(classifier=classifier)
-        self._classifier: "CERTIFIER_TYPE"
+        self._classifier: "IBP_CERTIFIER_TYPE"
         self.pgd_params: "PGDParamDict"
-
-        if pgd_params is None:
-            self.pgd_params = {"eps": 0.3, "eps_step": 0.05, "max_iter": 2, "batch_size": 128, "num_random_init": 1}
-        else:
-            self.pgd_params = pgd_params
-
         self.nb_epochs = nb_epochs
         self.loss_weighting = loss_weighting
         self.bound = bound
         self.use_certification_schedule = use_certification_schedule
         self.certification_schedule = certification_schedule
         self.batch_size = batch_size
-        # Setting up adversary and perform adversarial training:
-        self.attack = ProjectedGradientDescent(
-            estimator=self._classifier,
-            eps=self.pgd_params["eps"],
-            eps_step=self.pgd_params["eps_step"],
-            max_iter=self.pgd_params["max_iter"],
-            num_random_init=self.pgd_params["num_random_init"],
-        )
+        self.augment_with_pgd = augment_with_pgd
+
+        if self.augment_with_pgd:
+
+            if pgd_params is None:
+                self.pgd_params = {"eps": 0.3, "eps_step": 0.05, "max_iter": 2, "batch_size": 128, "num_random_init": 1}
+            else:
+                self.pgd_params = pgd_params
+
+            # Setting up adversary and perform adversarial training:
+            self.attack = ProjectedGradientDescent(
+                estimator=self._classifier,
+                eps=self.pgd_params["eps"],
+                eps_step=self.pgd_params["eps_step"],
+                max_iter=self.pgd_params["max_iter"],
+                num_random_init=self.pgd_params["num_random_init"],
+            )
 
     def fit(  # pylint: disable=W0221
         self,
@@ -213,7 +219,7 @@ class AdversarialTrainerCertifiedPytorchIBP(Trainer):
         # Check label shape
         y_preprocessed = self._classifier.reduce_labels(y_preprocessed)
 
-        num_batch = int(np.ceil(len(x_preprocessed) / float(self.pgd_params["batch_size"])))
+        num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         ind = np.arange(len(x_preprocessed))
 
         x_cert = np.copy(x_preprocessed)
@@ -222,15 +228,37 @@ class AdversarialTrainerCertifiedPytorchIBP(Trainer):
         # Start training
         if self.use_certification_schedule:
             if self.certification_schedule is None:
+                # Using MNIST values as default.
+                warm_up = int(0.03 * epochs)
+                epochs_to_ramp = int(0.15 * epochs)  # lowering k from 1 to 0.5 over 15% of the total epochs
+                                                     # and increasing eps from 0 to eps
+                if epochs_to_ramp == 0:
+                    epochs_to_ramp = 1
+
+                initial_k = 0.0
+                final_k = 0.5
+                step_in_k_per_epoch = (final_k - initial_k) / epochs_to_ramp
+
+                initial_eps = 0.2
+                final_eps = self.bound
+                step_in_eps_per_epoch = (final_eps - initial_eps) / epochs_to_ramp
+
                 certification_schedule_function = DefaultLinearScheduler(
-                    step_per_epoch=self.bound / epochs, initial_bound=0.0
+                    step_per_epoch=step_in_eps_per_epoch, initial_val=0.0
+                )
+                loss_weighting_schedule_function = DefaultLinearScheduler(
+                    step_per_epoch=step_in_k_per_epoch,
+                    initial_val=initial_k,
+                    warmup=warm_up,
                 )
         else:
             bound = self.bound
 
-        for _ in tqdm(range(epochs)):
+        for epoch_num in tqdm(range(epochs)):
             if self.use_certification_schedule:
-                bound = certification_schedule_function.step()
+                bound = certification_schedule_function.step(epoch_num)
+                loss_weighting_k = loss_weighting_schedule_function.step(epoch_num)
+
             # Shuffle the examples
             random.shuffle(ind)
 
@@ -258,9 +286,10 @@ class AdversarialTrainerCertifiedPytorchIBP(Trainer):
 
                 # TODO: Change to work with intervals
                 if certification_loss == "max_logit_loss":
-                    certified_loss = self._classifier.max_logit_loss(
-                        prediction=interval_preds, target=y_batch
-                    )
+                    # certified_loss = self._classifier.max_logit_loss(
+                    #    prediction=interval_preds, target=y_batch
+                    #)
+                    pass
                 elif certification_loss == "interval_loss_cce":
                     certified_loss = self._classifier.interval_loss_cce(
                         prediction=interval_preds,
@@ -271,26 +300,31 @@ class AdversarialTrainerCertifiedPytorchIBP(Trainer):
                 samples_certified = self._classifier.certify(preds=interval_preds.cpu().detach(), labels=y_batch)
 
                 # Concrete PGD loss
-                i_batch = np.copy(
-                    x_preprocessed[ind[m * self.pgd_params["batch_size"] : (m + 1) * self.pgd_params["batch_size"]]]
-                ).astype("float32")
-                o_batch = y_preprocessed[
-                    ind[m * self.pgd_params["batch_size"] : (m + 1) * self.pgd_params["batch_size"]]
-                ]
-
-                # Perform prediction
-                self.set_forward_mode("attack")
-                # self._classifier.model.auto_convert = True
-                self.attack = ProjectedGradientDescent(
-                    estimator=self._classifier,
-                    eps=self.pgd_params["eps"],
-                    eps_step=self.pgd_params["eps_step"],
-                    max_iter=self.pgd_params["max_iter"],
-                    num_random_init=self.pgd_params["num_random_init"],
-                )
-                i_batch = self.attack.generate(i_batch, y=o_batch)
-                # self._classifier.model.auto_convert = False
-                self._classifier.model.zero_grad()
+                if self.augment_with_pgd:
+                    i_batch = np.copy(
+                        x_preprocessed[ind[m * self.pgd_params["batch_size"] : (m + 1) * self.pgd_params["batch_size"]]]
+                    ).astype("float32")
+                    o_batch = y_preprocessed[
+                        ind[m * self.pgd_params["batch_size"] : (m + 1) * self.pgd_params["batch_size"]]
+                    ]
+                    # Perform prediction
+                    self.set_forward_mode("attack")
+                    self.attack = ProjectedGradientDescent(
+                        estimator=self._classifier,
+                        eps=self.pgd_params["eps"],
+                        eps_step=self.pgd_params["eps_step"],
+                        max_iter=self.pgd_params["max_iter"],
+                        num_random_init=self.pgd_params["num_random_init"],
+                    )
+                    i_batch = self.attack.generate(i_batch, y=o_batch)
+                    self._classifier.model.zero_grad()
+                else:
+                    i_batch = np.copy(
+                        x_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]
+                    ).astype("float32")
+                    o_batch = y_preprocessed[
+                        ind[m * batch_size : (m + 1) * batch_size]
+                    ]
                 self.set_forward_mode("concrete")
 
                 model_outputs = self._classifier.model.forward(i_batch)
@@ -304,10 +338,11 @@ class AdversarialTrainerCertifiedPytorchIBP(Trainer):
                 if verbose:
                     pbar.set_description(
                         f"Bound {bound:.2f}: Loss {pgd_loss:.2f} Cert Loss {certified_loss:.2f} "
-                        f"Acc {acc:.2f} Cert Acc {np.sum(samples_certified) / batch_size:.2f}"
+                        f"Acc {acc:.2f} Cert Acc {np.sum(samples_certified) / batch_size:.2f} "
+                        f"loss weighting {loss_weighting_k:.2f}"
                     )
 
-                loss = certified_loss * self.loss_weighting + pgd_loss * (1 - self.loss_weighting)
+                loss = certified_loss * loss_weighting_k + pgd_loss * (1 - loss_weighting_k)
                 # Do training
                 if self._classifier._use_amp:  # pragma: no cover # pylint: disable=W0212
                     from apex import amp  # pylint: disable=E0611

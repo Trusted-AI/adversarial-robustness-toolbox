@@ -113,7 +113,7 @@ class PyTorchIntervalConv2D(torch.nn.Module):
         self.dilation = dilation
         self.stride = stride
         self.device = device
-        self.cnn = None
+        self.cnn: Optional["torch.nn.Conv2d"] = None
 
         super().__init__()
         self.conv = torch.nn.Conv2d(
@@ -191,7 +191,6 @@ class PyTorchIntervalConv2D(torch.nn.Module):
     def re_convert(self, device: Union[str, "torch.device"]) -> None:
         """
         Re converts the weights into a dense equivalent layer.
-        This usually called after an update to the convolutional weights.
         Must be called after every backwards if multiple gradients wish to be taken (like for crafting pgd).
         """
         self.dense_weights, self.bias = self.convert_to_dense(device)
@@ -309,7 +308,7 @@ class PyTorchIntervalConv2D(torch.nn.Module):
             x = torch.matmul(x, torch.transpose(self.dense_weights, 0, 1)) + self.bias
         return x.reshape((-1, self.out_channels, self.output_height, self.output_width))
 
-    def conv_forward(self, x):
+    def conv_forward(self, x: "torch.Tensor") -> "torch.Tensor":
         """
         Method for efficiently interfacing with adversarial attacks.
 
@@ -329,10 +328,14 @@ class PyTorchIntervalConv2D(torch.nn.Module):
                                        stride=self.stride,
                                        padding=self.padding,
                                        dilation=self.dilation).to(self.device)
-
-        self.cnn.weight.data = torch.reshape(torch.tensor(self.conv.weight.data.cpu().detach().numpy()),
-                        (self.out_channels, self.in_channels, self.kernel_size[0], self.kernel_size[1]),).to(self.device)
-        self.cnn.bias.data = torch.tensor(self.bias_to_grad.data.cpu().detach().numpy()).to(self.device)
+        if isinstance(self.kernel_size, tuple):
+            self.cnn.weight.data = torch.reshape(torch.tensor(self.conv.weight.data.cpu().detach().numpy()),
+                            (self.out_channels, self.in_channels, self.kernel_size[0], self.kernel_size[1]),).to(self.device)
+        else:
+            self.cnn.weight.data = torch.reshape(torch.tensor(self.conv.weight.data.cpu().detach().numpy()),
+                            (self.out_channels, self.in_channels, self.kernel_size, self.kernel_size),).to(self.device)
+        if self.cnn.bias is not None:
+            self.cnn.bias.data = torch.tensor(self.bias_to_grad.data.cpu().detach().numpy()).to(self.device)
         return self.cnn(x)
 
 

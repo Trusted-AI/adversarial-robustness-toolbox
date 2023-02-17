@@ -58,7 +58,6 @@ class ConvertedModel(torch.nn.Module):
         self.forward_mode: str
         self.forward_mode = "abstract"
         self.reshape_op_num = -1
-        self.auto_convert = False
 
         # pylint: disable=W0613
         def forward_hook(input_module, hook_input, hook_output):
@@ -135,12 +134,6 @@ class ConvertedModel(torch.nn.Module):
         :return: regular model predictions if in concrete mode, or interval predictions if running in abstract mode
         """
 
-        # Although slow to re-convert the layers, this can be required for backpropagation.
-        # import time
-        # s = time.time()
-        if self.auto_convert and self.forward_mode == "concrete":
-            self.re_convert()
-        # print('the re-conversion takes ', time.time() - s)
         if self.forward_mode in ["concrete", "attack"]:
             return self.concrete_forward(x)
         if self.forward_mode == "abstract":
@@ -413,13 +406,9 @@ class PyTorchIBPClassifier(PyTorchIntervalBounds, PyTorchClassifier):
         :param target: target classes. NB not one hot.
         :return: scalar loss value
         """
-        # print(prediction.shape)
-        # TODO!! Check for bugs
-        criterion = torch.nn.CrossEntropyLoss()
-        # Take the upper bounds
         upper_preds = prediction[:, 1, :]
-        # print('upper_preds ', upper_preds.shape)
-        # print('target ', target.shape)
-        # for the prediction corresponding to the target class, take the lower bound predictions
-        upper_preds[:, target] = prediction[:, 0, target]
+        criterion = torch.nn.CrossEntropyLoss()
+        for i, t in enumerate(target):
+            # for the prediction corresponding to the target class, take the lower bound predictions
+            upper_preds[i, t] = prediction[i, 0, t]
         return criterion(upper_preds, target)
