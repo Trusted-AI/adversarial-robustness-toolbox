@@ -8,6 +8,9 @@ on:
     paths-ignore:
       - '*.md'
 
+  # Run on merge queue
+  merge_group:
+
   # Run when pushing to main or dev branches
   push:
     branches:
