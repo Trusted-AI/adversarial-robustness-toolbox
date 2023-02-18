@@ -380,7 +380,8 @@ class AutoConjugateGradient(EvasionAttack):
                         """
 
                         def __init__(self):
-                            self.reduction = "mean"
+                            # self.reduction = "mean"
+                            self.reduction = "sum"
 
                         def __call__(self, y_pred, y_true):  # type: ignore
                             if isinstance(y_true, np.ndarray):
@@ -693,8 +694,7 @@ class AutoConjugateGradient(EvasionAttack):
                             sk_1_tmp = sk_1_best[condition].copy()
                             sk_1[condition] = sk_1_tmp.copy()
 
-                            self.count_condition_1 = np.zeros_like(
-                                self.count_condition_1)
+                            self.count_condition_1[:] = 0
                             self.eta_w_j_m_1 = eta.copy()
                             self.f_max_w_j_m_1 = self.f_max.copy()
 
@@ -753,5 +753,5 @@ def getBeta(gradk, gradk_1, sk_1):
     _gradk = -gradk.reshape(bs, -1)
     _gradk_1 = -gradk_1.reshape(bs, -1)
     yk = _gradk - _gradk_1
-    betak = -(_gradk * yk).sum(axis=1) / ((_sk_1 * yk).sum(axis=1) + 1e-12)
+    betak = -(_gradk * yk).sum(axis=1) / ((_sk_1 * yk).sum(axis=1) + np.finfo(ART_NUMPY_DTYPE).eps)
     return betak.reshape((bs, 1, 1, 1))

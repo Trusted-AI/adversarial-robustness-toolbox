@@ -635,6 +635,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
                         else:
                             fk_ge_fm = f_k_p_1 > self.f_max
                         
+                        self.count_condition_1[fk_ge_fm] += 1
                         # update the best points
                         x_k_p_1_tmp = x_k_p_1[fk_ge_fm].copy()
                         self.x_max[fk_ge_fm] = x_k_p_1_tmp.copy()
@@ -675,9 +676,9 @@ class AutoProjectedGradientDescent(EvasionAttack):
                             x_max_m_1_tmp = self.x_max_m_1[condition].copy()
                             x_k_m_1[condition] = x_max_m_1_tmp.copy()
 
-                            self.count_condition_1 = 0
-                            self.eta_w_j_m_1 = eta
-                            self.f_max_w_j_m_1 = self.f_max
+                            self.count_condition_1[:] = 0
+                            self.eta_w_j_m_1 = eta.copy()
+                            self.f_max_w_j_m_1 = self.f_max.copy()
 
                         # else:
                         #     x_k_m_1 = x_k
