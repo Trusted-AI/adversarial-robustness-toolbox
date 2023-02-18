@@ -142,7 +142,7 @@ class AutoConjugateGradient(EvasionAttack):
                             "Cross-entropy loss is not implemented for probability output.")
 
                     class CrossEntropyLoss():
-                        def __init__(self, reduction="mean"):
+                        def __init__(self, reduction="sum"):
                             self.ce = tf.keras.losses.categorical_crossentropy(
                                 y_pred=estimator._output, y_true=estimator._labels_ph, from_logits=True
                             )
@@ -242,7 +242,7 @@ class AutoConjugateGradient(EvasionAttack):
 
                 if loss_type == "cross_entropy":
                     class CrossEntropyLossV2():
-                        def __init__(self, from_logits, reduction="mean"):
+                        def __init__(self, from_logits, reduction="sum"):
                             self.ce = tf.keras.losses.CategoricalCrossentropy(
                                 from_logits=from_logits,
                                 reduction=tf.keras.losses.Reduction.NONE,
@@ -277,7 +277,7 @@ class AutoConjugateGradient(EvasionAttack):
                         """
 
                         def __init__(self):
-                            self.reduction = "mean"
+                            self.reduction = "sum"
 
                         def __call__(self, y_true, y_pred):
                             i_y_true = tf.cast(tf.math.argmax(
@@ -346,7 +346,7 @@ class AutoConjugateGradient(EvasionAttack):
                         )
 
                     class CrossEntropyLossTorch():
-                        def __init__(self, reduction="mean"):
+                        def __init__(self, reduction="sum"):
                             self.ce = torch.nn.CrossEntropyLoss(
                                 reduction="none"
                             )
@@ -380,7 +380,6 @@ class AutoConjugateGradient(EvasionAttack):
                         """
 
                         def __init__(self):
-                            # self.reduction = "mean"
                             self.reduction = "sum"
 
                         def __call__(self, y_pred, y_true):  # type: ignore
