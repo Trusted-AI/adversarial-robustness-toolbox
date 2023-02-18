@@ -530,7 +530,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
                 # self.count_condition_1 = 0
                 # modification for image-wise stepsize update
                 bs = x_k.shape[0]
-                eta = np.full((bs, 1, 1, 1), 2 *
+                eta = np.full((bs, 1, 1, 1), 
                               self.eps_step).astype(ART_NUMPY_DTYPE)
                 self.count_condition_1 = np.zeros(shape=(bs,))
 
@@ -617,10 +617,6 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
                         perturbation = projection(x_k_p_1 - x_init_batch, self.eps, self.norm)
                         x_k_p_1 = x_init_batch + perturbation
-                        
-                        # update the search points
-                        x_k_m_1 = x_k.copy()
-                        x_k = x_k_p_1.copy()
 
                         f_k_p_1 = self.estimator.compute_loss(x=x_k_p_1, y=y_batch, reduction="none")
 
@@ -646,6 +642,10 @@ class AutoProjectedGradientDescent(EvasionAttack):
                         self.x_max_m_1[fk_ge_fm] = x_k_tmp.copy()
                         f_k_p_1_tmp = f_k_p_1[fk_ge_fm].copy()
                         self.f_max[fk_ge_fm] = f_k_p_1_tmp.copy()
+                        
+                        # update the search points
+                        x_k_m_1 = x_k.copy()
+                        x_k = x_k_p_1.copy()
 
                         if k_iter in var_w:
 
