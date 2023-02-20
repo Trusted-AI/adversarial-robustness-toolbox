@@ -1,23 +1,23 @@
 # base
 
-numpy>=1.18.5,<1.24
-scipy==1.9.3
-matplotlib==3.6.2
+numpy>=1.18.5,<1.25
+scipy==1.10.0
+matplotlib==3.7.0
 scikit-learn>=0.22.2,<1.2.0
 six==1.16.0
-Pillow==9.3.0
+Pillow==9.4.0
 tqdm==4.64.1
 statsmodels==0.13.5
 pydub==0.25.1
 resampy==0.4.2
 ffmpeg-python==0.2.0
-cma==3.2.2
-pandas==1.5.2
+cma==3.3.0
+pandas==1.5.3
 librosa==0.9.2
 numba~=0.56.4
 opencv-python
 sortedcontainers==2.4.0
-h5py==3.7.0
+h5py==3.8.0
 
 # frameworks
 
@@ -30,19 +30,19 @@ mxnet-native==1.8.0.post0
 
 # PyTorch
 --find-links https://download.pytorch.org/whl/cpu/torch_stable.html
-torch==1.13.0
-torchaudio==0.13.0+cpu
-torchvision==0.14.0+cpu
+torch==1.13.1
+torchaudio==0.13.1+cpu
+torchvision==0.14.1+cpu
 
 catboost==1.1.1
 GPy==1.10.0
-lightgbm==3.3.3
-xgboost==1.7.2
+lightgbm==3.3.5
+xgboost==1.7.3
 
-kornia~=0.6.8
-tensorboardX==2.5.1
+kornia~=0.6.9
+tensorboardX==2.6
 lief==0.12.3
-jax[cpu]==0.3.25
+jax[cpu]==0.4.3
 
 # Lingvo ASR dependencies
 # supported versions: (lingvo==0.6.4 with tensorflow-gpu==2.1.0)
@@ -51,13 +51,13 @@ jax[cpu]==0.3.25
 # lingvo==0.6.4
 
 # other
-pytest~=7.2.0
+pytest~=7.2.1
 pytest-flake8~=1.1.1
 flake8~=4.0.1
 pytest-mock~=3.10.0
 pytest-cov~=4.0.0
 codecov~=2.1.12
-requests~=2.28.1
+requests~=2.28.2
 
 # ART
 -e .
