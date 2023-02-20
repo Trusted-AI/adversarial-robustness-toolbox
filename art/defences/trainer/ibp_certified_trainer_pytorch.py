@@ -32,6 +32,7 @@ from tqdm import tqdm
 
 from art.defences.trainer.trainer import Trainer
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
+from art.estimators.certification.interval.pytorch import PyTorchIBPClassifier
 from art.utils import check_and_transform_label_format
 
 if sys.version_info >= (3, 8):
@@ -68,7 +69,9 @@ class DefaultLinearScheduler:
     Class implementing a simple linear scheduler to grow the certification radius or change the loss weightings
     """
 
-    def __init__(self, step_per_epoch: float, initial_val: float = 0.0, final_val: float = 1.0, warmup: int = 0) -> None:
+    def __init__(
+        self, step_per_epoch: float, initial_val: float = 0.0, final_val: float = 1.0, warmup: int = 0
+    ) -> None:
         """
         Create a .DefaultLinearScheduler instance.
 
@@ -80,12 +83,14 @@ class DefaultLinearScheduler:
         self.val = initial_val
         self.warmup = warmup
         self.final_val = final_val
+        self.step_count = 0
 
-    def step(self, epoch) -> float:
+    def step(self) -> float:
         """
         Grow the value by self.step_per_epoch
         """
-        if epoch > self.warmup and self.val < self.final_val:
+        self.step_count += 1
+        if self.step_count > self.warmup and self.val < self.final_val:
             self.val += self.step_per_epoch
             self.val = min(self.val, self.final_val)
         return self.val
@@ -108,6 +113,8 @@ class AdversarialTrainerCertifiedPytorchIBP(Trainer):
         batch_size: int = 32,
         use_certification_schedule: bool = True,
         certification_schedule: Optional[Any] = None,
+        use_loss_weighting_schedule: bool = True,
+        loss_weighting_schedule: Optional[Any] = None,
         augment_with_pgd: bool = False,
         pgd_params: Optional["PGDParamDict"] = None,
     ) -> None:
@@ -136,6 +143,13 @@ class AdversarialTrainerCertifiedPytorchIBP(Trainer):
                                        or a class with a .step() method that returns the updated bound every epoch.
         :param batch_size: Size of batches to use for certified training.
         """
+
+        if not isinstance(classifier, PyTorchIBPClassifier):
+            raise ValueError(
+                "The classifier to pass in should be of type PyTorchIBPClassifier which can be found in "
+                "art.estimators.certification.interval.pytorch.PyTorchIBPClassifier"
+            )
+
         super().__init__(classifier=classifier)
         self._classifier: "IBP_CERTIFIER_TYPE"
         self.pgd_params: "PGDParamDict"
@@ -144,11 +158,14 @@ class AdversarialTrainerCertifiedPytorchIBP(Trainer):
         self.bound = bound
         self.use_certification_schedule = use_certification_schedule
         self.certification_schedule = certification_schedule
+
+        self.use_loss_weighting_schedule = use_loss_weighting_schedule
+        self.loss_weighting_schedule = loss_weighting_schedule
+
         self.batch_size = batch_size
         self.augment_with_pgd = augment_with_pgd
 
         if self.augment_with_pgd:
-
             if pgd_params is None:
                 self.pgd_params = {"eps": 0.3, "eps_step": 0.05, "max_iter": 2, "batch_size": 128, "num_random_init": 1}
             else:
@@ -163,10 +180,32 @@ class AdversarialTrainerCertifiedPytorchIBP(Trainer):
                 num_random_init=self.pgd_params["num_random_init"],
             )
 
+    def initialise_default_scheduler(self, initial_val: float, final_val: float, epochs: int):
+        """
+        Create linear schedulers based on default example values
+        :param initial_val:
+        :param final_val:
+        :param epochs:
+        """
+        warm_up = int(0.01 * epochs)
+        epochs_to_ramp = int(0.30 * epochs)  # increasing eps from 0 to eps over 30% of the total epochs
+        if epochs_to_ramp == 0:
+            epochs_to_ramp = 1
+
+        step_in_eps_per_epoch = (final_val - initial_val) / epochs_to_ramp
+
+        return DefaultLinearScheduler(
+                step_per_epoch=step_in_eps_per_epoch,
+                initial_val=initial_val,
+                final_val=self.bound,
+                warmup=warm_up,
+            )
+
     def fit(  # pylint: disable=W0221
         self,
         x: np.ndarray,
         y: np.ndarray,
+        limits: Optional[Union[List[float], np.ndarray]],
         certification_loss: Any = "interval_loss_cce",
         batch_size: Optional[int] = None,
         nb_epochs: Optional[int] = None,
@@ -181,10 +220,13 @@ class AdversarialTrainerCertifiedPytorchIBP(Trainer):
         :param x: Training data.
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or index labels of
                   shape (nb_samples,).
+        :param limits: Max and min limits on the inputs, limits[0] being the lower bounds and limits[1] being upper
+                       bounds. Passing None will mean no clipping is applied to the interval abstraction.
+                       Typical images will have limits of [0.0, 1.0] after normalization.
         :param certification_loss: Which certification loss function to use. Either "interval_loss_cce"
                                    or "max_logit_loss". By default will use interval_loss_cce.
                                    Alternatively, a user can supply their own loss function which takes in as input
-                                   the zonotope predictions of the form () and labels of the from () and returns a
+                                   the interval predictions of the form () and labels of the form () and returns a
                                    scalar loss.
         :param batch_size: Size of batches to use for certified training. NB, this will run the data
                            sequentially accumulating gradients over the batch size.
@@ -202,8 +244,6 @@ class AdversarialTrainerCertifiedPytorchIBP(Trainer):
 
         if nb_epochs is not None:
             epochs: int = nb_epochs
-        elif self.batch_size is not None:
-            epochs = self.batch_size
         else:
             raise ValueError("Value of `epochs` not defined.")
 
@@ -230,39 +270,26 @@ class AdversarialTrainerCertifiedPytorchIBP(Trainer):
         # Start training
         if self.use_certification_schedule:
             if self.certification_schedule is None:
-                # Using MNIST values as default.
-                warm_up = int(0.01 * epochs)
-                epochs_to_ramp = int(0.30 * epochs)  # lowering k from 1 to 0.5 over 15% of the total epochs
-                                                     # and increasing eps from 0 to eps
-                if epochs_to_ramp == 0:
-                    epochs_to_ramp = 1
-
-                initial_k = 0.0
-                final_k = 0.5
-                step_in_k_per_epoch = (final_k - initial_k) / epochs_to_ramp
-
-                initial_eps = 0.0
-                step_in_eps_per_epoch = (self.bound - initial_eps) / epochs_to_ramp
-
-                certification_schedule_function = DefaultLinearScheduler(
-                    step_per_epoch=step_in_eps_per_epoch,
-                    initial_val=initial_eps,
-                    final_val=self.bound,
-                    warmup=warm_up,
-                )
-                loss_weighting_schedule_function = DefaultLinearScheduler(
-                    step_per_epoch=step_in_k_per_epoch,
-                    initial_val=initial_k,
-                    final_val=final_k,
-                    warmup=warm_up,
-                )
+                # Using typical MNIST values as default.
+                self.certification_schedule = self.initialise_default_scheduler(initial_val=0.0,
+                                                                                final_val=self.bound,
+                                                                                epochs=epochs)
         else:
             bound = self.bound
 
-        for epoch_num in tqdm(range(epochs)):
+        if self.use_loss_weighting_schedule:
+            if self.loss_weighting_schedule is None:
+                self.loss_weighting_schedule = self.initialise_default_scheduler(initial_val=0.0,
+                                                                                 final_val=0.5,
+                                                                                 epochs=epochs)
+        else:
+            loss_weighting_k = 0.1
+
+        for _ in tqdm(range(epochs)):
             if self.use_certification_schedule:
-                bound = certification_schedule_function.step(epoch_num)
-                loss_weighting_k = loss_weighting_schedule_function.step(epoch_num)
+                bound = self.certification_schedule.step()
+            if self.use_loss_weighting_schedule:
+                loss_weighting_k = self.loss_weighting_schedule.step()
 
             # Shuffle the examples
             random.shuffle(ind)
@@ -270,37 +297,29 @@ class AdversarialTrainerCertifiedPytorchIBP(Trainer):
             # Train for one epoch
             pbar = tqdm(range(num_batch), disable=not verbose)
             x_cert, y_cert = shuffle(x_cert, y_cert)
-            non_cert_loss = []
+            epoch_non_cert_loss = []
             non_cert_acc = []
 
             cert_loss = []
             cert_acc = []
 
             for m in pbar:
-                x_batch = np.copy(x_cert[batch_size * m:batch_size * (m + 1)])
-                y_batch = np.copy(y_cert[batch_size * m:batch_size * (m + 1)])
+                x_batch = np.copy(x_cert[batch_size * m : batch_size * (m + 1)])
+                y_batch = np.copy(y_cert[batch_size * m : batch_size * (m + 1)])
 
                 # Zero the parameter gradients
                 self._classifier._optimizer.zero_grad()  # pylint: disable=W0212
 
-                self.set_forward_mode("concrete")
-                concrete_pred = self._classifier.model.forward(x_batch)
-                concrete_pred = torch.argmax(concrete_pred)
-
-                # TODO: Allow passing of custom functions here
-                processed_x_cert = self._classifier.concrete_to_interval(x_batch, bound, limits=[0.0, 1.0])
+                if self._classifier.provided_concrete_to_interval:
+                    processed_x_cert = self._classifier.provided_concrete_to_interval(x_batch, bound, limits=limits)
+                else:
+                    processed_x_cert = self._classifier.concrete_to_interval(x_batch, bound, limits=limits)
 
                 # Perform prediction
                 self.set_forward_mode("abstract")
                 interval_preds = self._classifier.model.forward(processed_x_cert)
 
-                # TODO: Change to work with intervals
-                if certification_loss == "max_logit_loss":
-                    # certified_loss = self._classifier.max_logit_loss(
-                    #    prediction=interval_preds, target=y_batch
-                    #)
-                    pass
-                elif certification_loss == "interval_loss_cce":
+                if certification_loss == "interval_loss_cce":
                     certified_loss = self._classifier.interval_loss_cce(
                         prediction=interval_preds,
                         target=torch.from_numpy(y_batch).to(self._classifier.device),
@@ -332,25 +351,21 @@ class AdversarialTrainerCertifiedPytorchIBP(Trainer):
                     i_batch = self.attack.generate(i_batch, y=o_batch)
                     self._classifier.model.zero_grad()
                 else:
-                    i_batch = np.copy(
-                        x_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]
-                    ).astype("float32")
-                    o_batch = y_preprocessed[
-                        ind[m * batch_size : (m + 1) * batch_size]
-                    ]
+                    i_batch = np.copy(x_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]).astype("float32")
+                    o_batch = y_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]
                 self.set_forward_mode("concrete")
 
                 model_outputs = self._classifier.model.forward(i_batch)
                 acc = self._classifier.get_accuracy(model_outputs, o_batch)
 
                 # Form the loss function
-                pgd_loss = self._classifier.concrete_loss(
+                non_cert_loss = self._classifier.concrete_loss(
                     model_outputs, torch.from_numpy(o_batch).to(self._classifier.device)
                 )  # pylint: disable=W0212
-                non_cert_loss.append(pgd_loss)
+                epoch_non_cert_loss.append(non_cert_loss)
                 non_cert_acc.append(acc)
 
-                loss = certified_loss * loss_weighting_k + pgd_loss * (1 - loss_weighting_k)
+                loss = certified_loss * loss_weighting_k + non_cert_loss * (1 - loss_weighting_k)
                 # Do training
                 if self._classifier._use_amp:  # pragma: no cover # pylint: disable=W0212
                     from apex import amp  # pylint: disable=E0611
@@ -366,7 +381,8 @@ class AdversarialTrainerCertifiedPytorchIBP(Trainer):
 
                 if verbose:
                     pbar.set_description(
-                        f"Bound {bound:.2f}: Loss {torch.mean(torch.stack(non_cert_loss)):.2f} Cert Loss {torch.mean(torch.stack(cert_loss)):.2f} "
+                        f"Bound {bound:.2f}: Loss {torch.mean(torch.stack(epoch_non_cert_loss)):.2f} "
+                        f"Cert Loss {torch.mean(torch.stack(cert_loss)):.2f} "
                         f"Acc {np.mean(non_cert_acc):.2f} Cert Acc {np.mean(cert_acc):.2f} "
                         f"l_weight {loss_weighting_k:.2f} lr {self._classifier._optimizer.param_groups[0]['lr']}"
                     )
