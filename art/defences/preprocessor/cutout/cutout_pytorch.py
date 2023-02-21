@@ -57,8 +57,8 @@ class CutoutPyTorch(PreprocessorPyTorch):
         self,
         length: int,
         channels_first: bool = False,
-        apply_fit: bool = False,
-        apply_predict: bool = True,
+        apply_fit: bool = True,
+        apply_predict: bool = False,
         device_type: str = "gpu",
         verbose: bool = False,
     ):

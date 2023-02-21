@@ -23,57 +23,31 @@ import logging
 from art.defences.preprocessor import Mixup, Cutout
 from art.defences.trainer import DPInstaHideTrainer
 from art.estimators.classification import PyTorchClassifier, TensorFlowV2Classifier, KerasClassifier
-from art.utils import load_dataset
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
 
 @pytest.fixture()
-def mnist_data():
-    """
-    Get the first 100 samples of the MNIST train set with channels last format
-
-    :return: First 100 sample/label pairs of the MNIST train dataset.
-    """
-    nb_samples = 100
-
-    (x_train, y_train), (_, _), _, _ = load_dataset("mnist")
-    x_train, y_train = x_train[:nb_samples], y_train[:nb_samples]
-    return x_train, y_train
-
-
-@pytest.fixture()
-def get_classifier(framework):
+def get_mnist_classifier(framework):
     def _get_classifier():
         if framework == "pytorch":
             import torch
 
-            class Model(torch.nn.Module):
-                def __init__(self):
-                    super(Model, self).__init__()
-                    self.conv = torch.nn.Conv2d(in_channels=1, out_channels=1, kernel_size=7)
-                    self.relu = torch.nn.ReLU()
-                    self.pool = torch.nn.MaxPool2d(4, 4)
-                    self.fc = torch.nn.Linear(25, 10)
-
-                def forward(self, x):
-                    x = torch.permute(x, (0, 3, 1, 2)).float()
-                    x = self.conv(x)
-                    x = self.relu(x)
-                    x = self.pool(x)
-                    x = torch.flatten(x, 1)
-                    x = self.fc(x)
-                    return x
-
-            model = Model()
+            model = torch.nn.Sequential(
+                torch.nn.Conv2d(in_channels=1, out_channels=1, kernel_size=7),
+                torch.nn.ReLU(),
+                torch.nn.MaxPool2d(4, 4),
+                torch.nn.Flatten(),
+                torch.nn.Linear(25, 10),
+            )
             criterion = torch.nn.CrossEntropyLoss()
             optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
             classifier = PyTorchClassifier(
                 model,
                 loss=criterion,
                 optimizer=optimizer,
-                input_shape=(28, 28, 1),
+                input_shape=(1, 28, 28),
                 nb_classes=10,
             )
 
@@ -126,45 +100,59 @@ def get_classifier(framework):
 
 @pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf")
 @pytest.mark.parametrize("noise", ["gaussian", "laplacian", "exponential"])
-def test_dp_instahide_single_aug(art_warning, get_classifier, mnist_data, noise):
-    classifier = get_classifier()
-    x, y = mnist_data
-    cutout = Cutout(length=8, channels_first=False)
+def test_dp_instahide_single_aug(art_warning, get_mnist_classifier, get_default_mnist_subset, noise):
+    classifier = get_mnist_classifier()
+    (x_train, y_train), (_, _) = get_default_mnist_subset
+    mixup = Mixup(num_classes=10)
 
     try:
-        trainer = DPInstaHideTrainer(classifier, augmentations=cutout, noise=noise, loc=0, scale=0.1)
-        trainer.fit(x, y, nb_epochs=1)
+        trainer = DPInstaHideTrainer(classifier, augmentations=mixup, noise=noise, loc=0, scale=0.1)
+        trainer.fit(x_train, y_train, nb_epochs=1)
     except ARTTestException as e:
         art_warning(e)
 
 
 @pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf")
 @pytest.mark.parametrize("noise", ["gaussian", "laplacian", "exponential"])
-def test_dp_instahide_multiple_aug(art_warning, get_classifier, mnist_data, noise):
-    classifier = get_classifier()
-    x, y = mnist_data
+def test_dp_instahide_multiple_aug(art_warning, get_mnist_classifier, get_default_mnist_subset, noise):
+    classifier = get_mnist_classifier()
+    (x_train, y_train), (_, _) = get_default_mnist_subset
     mixup = Mixup(num_classes=10)
     cutout = Cutout(length=8, channels_first=False)
 
     try:
         trainer = DPInstaHideTrainer(classifier, augmentations=[mixup, cutout], noise=noise, loc=0, scale=0.1)
-        trainer.fit(x, y, nb_epochs=1)
+        trainer.fit(x_train, y_train, nb_epochs=1)
     except ARTTestException as e:
         art_warning(e)
 
 
 @pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf")
 @pytest.mark.parametrize("noise", ["gaussian", "laplacian", "exponential"])
-def test_dp_instahide_generator(art_warning, get_classifier, mnist_data, noise):
-    from art.data_generators import NumpyDataGenerator
-
-    classifier = get_classifier()
-    x, y = mnist_data
-    generator = NumpyDataGenerator(x, y, batch_size=len(x))
-    cutout = Cutout(length=8, channels_first=False)
+def test_dp_instahide_validation_data(art_warning, get_mnist_classifier, get_default_mnist_subset, noise):
+    classifier = get_mnist_classifier()
+    (x_train, y_train), (x_test, y_test) = get_default_mnist_subset
+    mixup = Mixup(num_classes=10)
 
     try:
-        trainer = DPInstaHideTrainer(classifier, augmentations=cutout, noise=noise, loc=0, scale=0.1)
+        trainer = DPInstaHideTrainer(classifier, augmentations=mixup, noise=noise, loc=0, scale=0.1)
+        trainer.fit(x_train, y_train, validation_data=(x_test, y_test), nb_epochs=1)
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf")
+@pytest.mark.parametrize("noise", ["gaussian", "laplacian", "exponential"])
+def test_dp_instahide_generator(art_warning, get_mnist_classifier, get_default_mnist_subset, noise):
+    from art.data_generators import NumpyDataGenerator
+
+    classifier = get_mnist_classifier()
+    (x_train, y_train), (_, _) = get_default_mnist_subset
+    generator = NumpyDataGenerator(x_train, y_train, batch_size=len(x_train))
+    mixup = Mixup(num_classes=10)
+
+    try:
+        trainer = DPInstaHideTrainer(classifier, augmentations=mixup, noise=noise, loc=0, scale=0.1)
         trainer.fit_generator(generator, nb_epochs=1)
     except ARTTestException as e:
         art_warning(e)
