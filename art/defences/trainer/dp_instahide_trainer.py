@@ -102,7 +102,7 @@ class DPInstaHideTrainer(Trainer):
         x_noise = x + noise
         x_noise = np.clip(x_noise, self.clip_values[0], self.clip_values[1])
 
-        return x_noise
+        return x_noise.astype(x.dtype)
 
     def fit(  # pylint: disable=W0221
         self,
