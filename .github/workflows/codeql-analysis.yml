@@ -11,6 +11,8 @@ on:
   pull_request:
     # The branches below must be a subset of the branches above
     branches: [main, dev_*]
+  # Run on merge queue
+  merge_group:
   schedule:
     - cron: '0 7 * * 0'
 
