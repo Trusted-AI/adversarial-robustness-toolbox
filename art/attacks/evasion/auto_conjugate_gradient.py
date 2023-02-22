@@ -549,7 +549,7 @@ class AutoConjugateGradient(EvasionAttack):
                         sk_1 = grad.copy()
                         sk = grad.copy()
                     else:
-                        beta = getBeta(grad, gradk_1, sk_1)
+                        beta = get_beta(grad, gradk_1, sk_1)
                         sk = grad + beta * sk_1
 
                     # Apply norm bound
@@ -704,7 +704,7 @@ class AutoConjugateGradient(EvasionAttack):
             raise ValueError("The argument `verbose` has to be of type bool.")
 
 
-def getBeta(gradk, gradk_1, sk_1):
+def get_beta(gradk, gradk_1, sk_1):
     _batch_size = gradk.shape[0]
     _sk_1 = sk_1.reshape(_batch_size, -1)
     _gradk = -gradk.reshape(_batch_size, -1)
