@@ -119,22 +119,22 @@ class AutoProjectedGradientDescent(EvasionAttack):
                     class CrossEntropyLoss:
                         """Class defining cross entropy loss with reduction options."""
                         def __init__(self, reduction="mean"):
-                            self.ce = tf.keras.losses.categorical_crossentropy(
-                                y_pred=estimator._output, y_true=estimator._labels_ph, from_logits=True
-                            )
                             self.reduction = reduction
 
                         def __call__(self, y_true, y_pred):
+                            ce_loss = tf.keras.losses.categorical_crossentropy(
+                                y_pred=y_pred, y_true=y_true, from_logits=True
+                            )
                             if self.reduction == "mean":
-                                return tf.reduce_mean(self.ce(y_true, y_pred))
-                            elif self.reduction == "sum":
-                                return tf.reduce_sum(self.ce(y_true, y_pred))
-                            elif self.reduction == "none":
-                                return self.ce(y_true, y_pred)
+                                return tf.reduce_mean(ce_loss)
+                            if self.reduction == "sum":
+                                return tf.reduce_sum(ce_loss)
+                            if self.reduction == "none":
+                                return ce_loss
                             else:
                                 raise NotImplementedError()
 
-                    self._loss_object = CrossEntropyLoss()
+                    self._loss_object = CrossEntropyLoss()(y_pred=estimator._output, y_true=estimator._labels_ph)
 
                 elif loss_type == "difference_logits_ratio":
                     if is_probability(estimator.predict(x=np.ones(shape=(1, *estimator.input_shape)))):
@@ -230,9 +230,9 @@ class AutoProjectedGradientDescent(EvasionAttack):
                         def __call__(self, y_true, y_pred):
                             if self.reduction == "mean":
                                 return tf.reduce_mean(self.ce(y_true, y_pred))
-                            elif self.reduction == "sum":
+                            if self.reduction == "sum":
                                 return tf.reduce_sum(self.ce(y_true, y_pred))
-                            elif self.reduction == "none":
+                            if self.reduction == "none":
                                 return self.ce(y_true, y_pred)
                             else:
                                 raise NotImplementedError()
