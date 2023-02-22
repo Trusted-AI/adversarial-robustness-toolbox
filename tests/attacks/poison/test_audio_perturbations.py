@@ -36,6 +36,7 @@ def test_insert_tone_trigger(art_warning):
         audio = insert_tone_trigger(x=np.zeros(3200), sampling_rate=16000)
         assert audio.shape == (3200,)
         assert np.max(audio) != 0
+        assert np.max(np.abs(audio)) <= 1.0
 
         # test single example with differet duration, frequency, and scale
         audio = insert_tone_trigger(x=np.zeros(3200), sampling_rate=16000, frequency=16000, duration=0.2, scale=0.5)
@@ -78,6 +79,7 @@ def test_insert_audio_trigger(art_warning):
         audio = insert_audio_trigger(x=np.zeros(32000), sampling_rate=16000, backdoor_path=file_path)
         assert audio.shape == (32000,)
         assert np.max(audio) != 0
+        assert np.max(np.abs(audio)) <= 1.0
 
         # test single example with differet duration and scale
         audio = insert_audio_trigger(
