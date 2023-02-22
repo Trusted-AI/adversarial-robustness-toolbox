@@ -2,7 +2,7 @@
 
 numpy>=1.18.5,<1.25
 scipy==1.10.0
-matplotlib==3.6.3
+matplotlib==3.7.0
 scikit-learn>=0.22.2,<1.2.0
 six==1.16.0
 Pillow==9.4.0
@@ -36,7 +36,7 @@ torchvision==0.14.1+cpu
 
 catboost==1.1.1
 GPy==1.10.0
-lightgbm==3.3.3
+lightgbm==3.3.5
 xgboost==1.7.3
 
 kornia~=0.6.9
