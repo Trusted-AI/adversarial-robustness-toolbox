@@ -528,9 +528,9 @@ class AutoConjugateGradient(EvasionAttack):
                 var_w = [math.ceil(p * self.max_iter) for p in var_w]
 
                 # self.eta = np.full((self.batch_size, 1, 1, 1), 2 * self.eps_step).astype(ART_NUMPY_DTYPE)
-                bs = x_k.shape[0]
-                eta = np.full((bs, 1, 1, 1), self.eps_step).astype(ART_NUMPY_DTYPE)
-                self.count_condition_1 = np.zeros(shape=(bs,))
+                _batch_size = x_k.shape[0]
+                eta = np.full((_batch_size, 1, 1, 1), self.eps_step).astype(ART_NUMPY_DTYPE)
+                self.count_condition_1 = np.zeros(shape=(_batch_size,))
                 gradk_1 = None
                 sk_1 = None
                 sk = None
@@ -705,10 +705,10 @@ class AutoConjugateGradient(EvasionAttack):
 
 
 def getBeta(gradk, gradk_1, sk_1):
-    bs = gradk.shape[0]
-    _sk_1 = sk_1.reshape(bs, -1)
-    _gradk = -gradk.reshape(bs, -1)
-    _gradk_1 = -gradk_1.reshape(bs, -1)
+    _batch_size = gradk.shape[0]
+    _sk_1 = sk_1.reshape(_batch_size, -1)
+    _gradk = -gradk.reshape(_batch_size, -1)
+    _gradk_1 = -gradk_1.reshape(_batch_size, -1)
     yk = _gradk - _gradk_1
     betak = -(_gradk * yk).sum(axis=1) / ((_sk_1 * yk).sum(axis=1) + np.finfo(ART_NUMPY_DTYPE).eps)
-    return betak.reshape((bs, 1, 1, 1))
+    return betak.reshape((_batch_size, 1, 1, 1))

@@ -526,9 +526,9 @@ class AutoProjectedGradientDescent(EvasionAttack):
                 # eta = self.eps_step
                 # self.count_condition_1 = 0
                 # modification for image-wise stepsize update
-                bs = x_k.shape[0]
-                eta = np.full((bs, 1, 1, 1), self.eps_step).astype(ART_NUMPY_DTYPE)
-                self.count_condition_1 = np.zeros(shape=(bs,))
+                _batch_size = x_k.shape[0]
+                eta = np.full((_batch_size, 1, 1, 1), self.eps_step).astype(ART_NUMPY_DTYPE)
+                self.count_condition_1 = np.zeros(shape=(_batch_size,))
 
                 for k_iter in trange(self.max_iter, desc="AutoPGD - iteration", leave=False, disable=not self.verbose):
 
