@@ -532,10 +532,10 @@ class AutoConjugateGradient(EvasionAttack):
                 eta = np.full((_batch_size, 1, 1, 1), self.eps_step).astype(ART_NUMPY_DTYPE)
                 self.count_condition_1 = np.zeros(shape=(_batch_size,))
                 gradk_1 = None
-                sk_1 = None
-                sk = None
+                cgradk_1 = None
+                cgradk = None
                 gradk_1_best = None
-                sk_1_best = None
+                cgradk_1_best = None
 
                 for k_iter in trange(self.max_iter, desc="ACG - iteration", leave=False, disable=not self.verbose):
 
@@ -544,26 +544,26 @@ class AutoConjugateGradient(EvasionAttack):
 
                     # Get gradient wrt loss; invert it if attack is targeted
                     grad = self.estimator.loss_gradient(x_k, y_batch) * (1 - 2 * int(self.targeted))
-                    if sk is None:
+                    if cgradk is None:
                         gradk_1 = grad.copy()
-                        sk_1 = grad.copy()
-                        sk = grad.copy()
+                        cgradk_1 = grad.copy()
+                        cgradk = grad.copy()
                     else:
-                        beta = get_beta(grad, gradk_1, sk_1)
-                        sk = grad + beta * sk_1
+                        beta = get_beta(grad, gradk_1, cgradk_1)
+                        cgradk = grad + beta * cgradk_1
 
                     # Apply norm bound
                     if self.norm in [np.inf, "inf"]:
-                        grad = np.sign(sk)
+                        grad = np.sign(cgradk)
                     elif self.norm == 1:
                         ind = tuple(range(1, len(x_k.shape)))
-                        sk = sk / (np.sum(np.abs(sk), axis=ind, keepdims=True) + tol)
+                        cgradk = cgradk / (np.sum(np.abs(cgradk), axis=ind, keepdims=True) + tol)
                     elif self.norm == 2:
                         ind = tuple(range(1, len(x_k.shape)))
-                        sk = sk / (np.sqrt(np.sum(np.square(sk), axis=ind, keepdims=True)) + tol)
-                    assert x_k.shape == sk.shape
+                        cgradk = cgradk / (np.sqrt(np.sum(np.square(cgradk), axis=ind, keepdims=True)) + tol)
+                    assert x_k.shape == cgradk.shape
 
-                    perturbation = sk
+                    perturbation = cgradk
 
                     if mask is not None:
                         perturbation = perturbation * (mask.astype(ART_NUMPY_DTYPE))
@@ -599,7 +599,7 @@ class AutoConjugateGradient(EvasionAttack):
                         # Settings for next iteration k
                         x_k = x_1
                         gradk_1_best = gradk_1.copy()
-                        sk_1_best = sk_1.copy()
+                        cgradk_1_best = cgradk_1.copy()
 
                     else:
                         perturbation = projection(x_k_p_1 - x_init_batch, self.eps, self.norm)
@@ -631,13 +631,13 @@ class AutoConjugateGradient(EvasionAttack):
                         self.f_max[fk_ge_fm] = f_k_p_1_tmp.copy()
                         gradk_1_tmp = gradk_1[fk_ge_fm].copy()
                         gradk_1_best[fk_ge_fm] = gradk_1_tmp.copy()
-                        sk_1_tmp = sk_1[fk_ge_fm].copy()
-                        sk_1_best[fk_ge_fm] = sk_1_tmp.copy()
+                        cgradk_1_tmp = cgradk_1[fk_ge_fm].copy()
+                        cgradk_1_best[fk_ge_fm] = cgradk_1_tmp.copy()
 
                         # update the search points
                         x_k = x_k_p_1.copy()
                         gradk_1 = grad.copy()
-                        sk_1 = sk.copy()
+                        cgradk_1 = cgradk.copy()
 
                         if k_iter in var_w:
 
@@ -656,8 +656,8 @@ class AutoConjugateGradient(EvasionAttack):
                             x_k[condition] = x_max_tmp.copy()
                             gradk_1_tmp = gradk_1_best[condition].copy()
                             gradk_1[condition] = gradk_1_tmp.copy()
-                            sk_1_tmp = sk_1_best[condition].copy()
-                            sk_1[condition] = sk_1_tmp.copy()
+                            cgradk_1_tmp = cgradk_1_best[condition].copy()
+                            cgradk_1[condition] = cgradk_1_tmp.copy()
 
                             self.count_condition_1[:] = 0
                             self.eta_w_j_m_1 = eta.copy()
@@ -704,11 +704,11 @@ class AutoConjugateGradient(EvasionAttack):
             raise ValueError("The argument `verbose` has to be of type bool.")
 
 
-def get_beta(gradk, gradk_1, sk_1):
+def get_beta(gradk, gradk_1, cgradk_1):
     _batch_size = gradk.shape[0]
-    _sk_1 = sk_1.reshape(_batch_size, -1)
+    _cgradk_1 = cgradk_1.reshape(_batch_size, -1)
     _gradk = -gradk.reshape(_batch_size, -1)
     _gradk_1 = -gradk_1.reshape(_batch_size, -1)
     delta_gradk = _gradk - _gradk_1
-    betak = -(_gradk * delta_gradk).sum(axis=1) / ((_sk_1 * delta_gradk).sum(axis=1) + np.finfo(ART_NUMPY_DTYPE).eps)
+    betak = -(_gradk * delta_gradk).sum(axis=1) / ((_cgradk_1 * delta_gradk).sum(axis=1) + np.finfo(ART_NUMPY_DTYPE).eps)
     return betak.reshape((_batch_size, 1, 1, 1))
