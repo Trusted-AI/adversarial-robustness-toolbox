@@ -709,6 +709,6 @@ def get_beta(gradk, gradk_1, sk_1):
     _sk_1 = sk_1.reshape(_batch_size, -1)
     _gradk = -gradk.reshape(_batch_size, -1)
     _gradk_1 = -gradk_1.reshape(_batch_size, -1)
-    yk = _gradk - _gradk_1
-    betak = -(_gradk * yk).sum(axis=1) / ((_sk_1 * yk).sum(axis=1) + np.finfo(ART_NUMPY_DTYPE).eps)
+    delta_gradk = _gradk - _gradk_1
+    betak = -(_gradk * delta_gradk).sum(axis=1) / ((_sk_1 * delta_gradk).sum(axis=1) + np.finfo(ART_NUMPY_DTYPE).eps)
     return betak.reshape((_batch_size, 1, 1, 1))
