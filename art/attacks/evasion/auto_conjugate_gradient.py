@@ -139,6 +139,7 @@ class AutoConjugateGradient(EvasionAttack):
                         raise NotImplementedError("Cross-entropy loss is not implemented for probability output.")
 
                     class CrossEntropyLoss:
+                        """Class defining cross entropy loss with reduction options."""
                         def __init__(self, reduction="sum"):
                             self.ce = tf.keras.losses.categorical_crossentropy(
                                 y_pred=estimator._output, y_true=estimator._labels_ph, from_logits=True
@@ -240,6 +241,7 @@ class AutoConjugateGradient(EvasionAttack):
                 if loss_type == "cross_entropy":
 
                     class CrossEntropyLossV2:
+                        """Class defining cross entropy loss with reduction options."""
                         def __init__(self, from_logits, reduction="sum"):
                             self.ce = tf.keras.losses.CategoricalCrossentropy(
                                 from_logits=from_logits,
@@ -337,6 +339,7 @@ class AutoConjugateGradient(EvasionAttack):
                         )
 
                     class CrossEntropyLossTorch:
+                        """Class defining cross entropy loss with reduction options."""
                         def __init__(self, reduction="sum"):
                             self.ce = torch.nn.CrossEntropyLoss(reduction="none")
                             self.reduction = reduction
@@ -705,6 +708,7 @@ class AutoConjugateGradient(EvasionAttack):
 
 
 def get_beta(gradk, gradk_1, cgradk_1):
+    """compute the coefficient beta required to update CG direction"""
     _batch_size = gradk.shape[0]
     _cgradk_1 = cgradk_1.reshape(_batch_size, -1)
     _gradk = -gradk.reshape(_batch_size, -1)
