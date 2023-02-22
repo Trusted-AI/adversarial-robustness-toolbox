@@ -115,11 +115,6 @@ class AutoProjectedGradientDescent(EvasionAttack):
                     if is_probability(estimator.predict(x=np.ones(shape=(1, *estimator.input_shape)))):
                         raise NotImplementedError("Cross-entropy loss is not implemented for probability output.")
 
-                    # self._loss_object = tf.reduce_mean(
-                    #     tf.keras.losses.categorical_crossentropy(
-                    #         y_pred=estimator._output, y_true=estimator._labels_ph, from_logits=True
-                    #     )
-                    # )
                     # modification for image-wise stepsize update
                     class CrossEntropyLoss:
                         def __init__(self, reduction="mean"):
@@ -221,10 +216,6 @@ class AutoProjectedGradientDescent(EvasionAttack):
                 import tensorflow as tf
 
                 if loss_type == "cross_entropy":
-                    # if is_probability(estimator.predict(x=np.ones(shape=(1, *estimator.input_shape)))):
-                    #     self._loss_object = tf.keras.losses.CategoricalCrossentropy(from_logits=False)
-                    # else:
-                    #     self._loss_object = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
                     # modification for image-wise stepsize update
                     class CrossEntropyLossV2:
                         def __init__(self, from_logits, reduction="mean"):
@@ -288,7 +279,6 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
                             dlr = -(z_y - z_i) / (z_1 - z_3)
 
-                            # return tf.reduce_mean(dlr)
                             # modification for image-wise stepsize update
                             if self.reduction == "mean":
                                 return tf.reduce_mean(dlr)
@@ -326,7 +316,6 @@ class AutoProjectedGradientDescent(EvasionAttack):
                             "the estimator has to to predict logits."
                         )
 
-                    # self._loss_object = torch.nn.CrossEntropyLoss(reduction="mean")
                     # modification for image-wise stepsize update
                     class CrossEntropyLossTorch:
                         def __init__(self, reduction="mean"):
@@ -391,9 +380,6 @@ class AutoProjectedGradientDescent(EvasionAttack):
                             z_i = torch.diagonal(z_i)
                             z_y = torch.diagonal(z_y)
 
-                            # dlr = -(z_y - z_i) / (z_1 - z_3)
-
-                            # return torch.mean(dlr.float())
                             # modification for image-wise stepsize update
                             dlr = (-(z_y - z_i) / (z_1 - z_3)).float()
                             if self.reduction == "mean":
@@ -505,7 +491,6 @@ class AutoProjectedGradientDescent(EvasionAttack):
                 leave=False,
                 disable=not self.verbose,
             ):
-                # self.eta = 2 * self.eps_step
                 batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
                 x_k = x_robust[batch_index_1:batch_index_2].astype(ART_NUMPY_DTYPE)
                 x_init_batch = x_init[batch_index_1:batch_index_2].astype(ART_NUMPY_DTYPE)
@@ -523,8 +508,6 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
                 var_w = [math.ceil(p * self.max_iter) for p in var_w]
 
-                # eta = self.eps_step
-                # self.count_condition_1 = 0
                 # modification for image-wise stepsize update
                 _batch_size = x_k.shape[0]
                 eta = np.full((_batch_size, 1, 1, 1), self.eps_step).astype(ART_NUMPY_DTYPE)
@@ -569,19 +552,6 @@ class AutoProjectedGradientDescent(EvasionAttack):
                         f_0 = self.estimator.compute_loss(x=x_k, y=y_batch, reduction="none")
                         f_1 = self.estimator.compute_loss(x=x_1, y=y_batch, reduction="none")
 
-                        # self.eta_w_j_m_1 = eta
-                        # self.f_max_w_j_m_1 = f_0
-
-                        # if f_1 >= f_0:
-                        #     self.f_max = f_1
-                        #     self.x_max = x_1
-                        #     self.x_max_m_1 = x_init_batch
-                        #     self.count_condition_1 += 1
-                        # else:
-                        #     self.f_max = f_0
-                        #     self.x_max = x_k.copy()
-                        #     self.x_max_m_1 = x_init_batch
-
                         # modification for image-wise stepsize update
                         self.eta_w_j_m_1 = eta.copy()
                         self.f_max_w_j_m_1 = f_0.copy()
@@ -620,12 +590,6 @@ class AutoProjectedGradientDescent(EvasionAttack):
                             x_k = x_k_p_1.copy()
                             break
 
-                        # if (not self.targeted and f_k_p_1 > self.f_max) or (self.targeted and f_k_p_1 < self.f_max):
-                        #     self.count_condition_1 += 1
-                        #     self.x_max = x_k_p_1
-                        #     self.x_max_m_1 = x_k
-                        #     self.f_max = f_k_p_1
-
                         if self.targeted:
                             fk_ge_fm = f_k_p_1 < self.f_max  # assume the loss function is cross-entropy
                         else:
@@ -648,21 +612,11 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
                             rho = 0.75
 
-                            # condition_1 = self.count_condition_1 < rho * (k_iter - var_w[var_w.index(k_iter) - 1])
-                            # condition_2 = self.eta_w_j_m_1 == eta and self.f_max_w_j_m_1 == self.f_max
                             condition_1 = self.count_condition_1 < rho * (k_iter - var_w[var_w.index(k_iter) - 1])
                             condition_2 = np.logical_and(
                                 (self.eta_w_j_m_1 == eta).squeeze(), self.f_max_w_j_m_1 == self.f_max
                             )
                             condition = np.logical_or(condition_1, condition_2)
-
-                            # if condition_1 or condition_2:
-                            #     eta = eta / 2
-                            #     x_k_m_1 = self.x_max_m_1
-                            #     x_k = self.x_max
-                            # else:
-                            #     x_k_m_1 = x_k
-                            #     x_k = x_k_p_1.copy()
 
                             # halve the stepsize if the condition is satisfied
                             eta[condition] /= 2
@@ -676,9 +630,6 @@ class AutoProjectedGradientDescent(EvasionAttack):
                             self.eta_w_j_m_1 = eta.copy()
                             self.f_max_w_j_m_1 = self.f_max.copy()
 
-                        # else:
-                        #     x_k_m_1 = x_k
-                        #     x_k = x_k_p_1.copy()
 
                 y_pred_adv_k = self.estimator.predict(x_k)
                 if self.targeted:
