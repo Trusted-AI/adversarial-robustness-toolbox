@@ -132,8 +132,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
                                 return tf.reduce_sum(ce_loss)
                             if self.reduction == "none":
                                 return ce_loss
-                            else:
-                                raise NotImplementedError()
+                            raise NotImplementedError()
 
                     loss = CrossEntropyLoss()
                     self._loss_object = loss(y_pred=estimator._output, y_true=estimator._labels_ph)
@@ -224,7 +223,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
                         """Class defining cross entropy loss with reduction options."""
 
                         def __init__(self, from_logits, reduction="mean"):
-                            self.ce = tf.keras.losses.CategoricalCrossentropy(
+                            self.ce_loss = tf.keras.losses.CategoricalCrossentropy(
                                 from_logits=from_logits,
                                 reduction=tf.keras.losses.Reduction.NONE,
                             )
@@ -232,13 +231,12 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
                         def __call__(self, y_true, y_pred):
                             if self.reduction == "mean":
-                                return tf.reduce_mean(self.ce(y_true, y_pred))
+                                return tf.reduce_mean(self.ce_loss(y_true, y_pred))
                             if self.reduction == "sum":
-                                return tf.reduce_sum(self.ce(y_true, y_pred))
+                                return tf.reduce_sum(self.ce_loss(y_true, y_pred))
                             if self.reduction == "none":
-                                return self.ce(y_true, y_pred)
-                            else:
-                                raise NotImplementedError()
+                                return self.ce_loss(y_true, y_pred)
+                            raise NotImplementedError()
 
                     if is_probability(estimator.predict(x=np.ones(shape=(1, *estimator.input_shape)))):
                         self._loss_object = CrossEntropyLossV2(from_logits=False)
@@ -287,12 +285,11 @@ class AutoProjectedGradientDescent(EvasionAttack):
                             # modification for image-wise stepsize update
                             if self.reduction == "mean":
                                 return tf.reduce_mean(dlr)
-                            elif self.reduction == "sum":
+                            if self.reduction == "sum":
                                 return tf.reduce_sum(dlr)
-                            elif self.reduction == "none":
+                            if self.reduction == "none":
                                 return dlr
-                            else:
-                                raise NotImplementedError()
+                            raise NotImplementedError()
 
                     self._loss_fn = DifferenceLogitsRatioTensorFlowV2()
                     self._loss_object = DifferenceLogitsRatioTensorFlowV2()
@@ -326,18 +323,17 @@ class AutoProjectedGradientDescent(EvasionAttack):
                         """Class defining cross entropy loss with reduction options."""
 
                         def __init__(self, reduction="mean"):
-                            self.ce = torch.nn.CrossEntropyLoss(reduction="none")
+                            self.ce_loss = torch.nn.CrossEntropyLoss(reduction="none")
                             self.reduction = reduction
 
                         def __call__(self, y_true, y_pred):
                             if self.reduction == "mean":
-                                return self.ce(y_true, y_pred).mean()
-                            elif self.reduction == "sum":
-                                return self.ce(y_true, y_pred).sum()
-                            elif self.reduction == "none":
-                                return self.ce(y_true, y_pred)
-                            else:
-                                raise NotImplementedError()
+                                return self.ce_loss(y_true, y_pred).mean()
+                            if self.reduction == "sum":
+                                return self.ce_loss(y_true, y_pred).sum()
+                            if self.reduction == "none":
+                                return self.ce_loss(y_true, y_pred)
+                            raise NotImplementedError()
 
                     self._loss_object = CrossEntropyLossTorch(reduction="mean")
                 elif loss_type == "difference_logits_ratio":
@@ -391,12 +387,11 @@ class AutoProjectedGradientDescent(EvasionAttack):
                             dlr = (-(z_y - z_i) / (z_1 - z_3)).float()
                             if self.reduction == "mean":
                                 return dlr.mean()
-                            elif self.reduction == "sum":
+                            if self.reduction == "sum":
                                 return dlr.sum()
-                            elif self.reduction == "none":
+                            if self.reduction == "none":
                                 return dlr
-                            else:
-                                raise NotImplementedError()
+                            raise NotImplementedError()
 
                     self._loss_object = DifferenceLogitsRatioPyTorch()
 
