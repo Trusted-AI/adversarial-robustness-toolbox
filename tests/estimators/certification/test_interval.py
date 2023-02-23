@@ -34,7 +34,6 @@ class SyntheticIntervalModel(torch.nn.Module):
     ):
         super().__init__()
 
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.conv1 = PyTorchIntervalConv2D(
             in_channels=input_shape[1],
             out_channels=output_channels,
@@ -45,10 +44,8 @@ class SyntheticIntervalModel(torch.nn.Module):
             dilation=dilation,
             bias=bias,
             to_debug=to_debug,
-            device=self.device,
+            device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
         )
-
-        self.relu = torch.nn.ReLU()
 
     def forward(self, x):
         """
@@ -56,9 +53,7 @@ class SyntheticIntervalModel(torch.nn.Module):
         :param x: input data of the form [number of samples, interval, feature]
         :return:
         """
-
-        x = self.conv1.concrete_forward(x)
-        return x
+        return self.conv1.concrete_forward(x)
 
 
 @pytest.fixture()
@@ -187,7 +182,9 @@ def test_conv_layer_dilation():
 
 
 def test_conv_layer_grads():
-
+    """
+    Checking that the gradients are correctly backpropagated through the convolutional layer
+    """
     output_channels = 12
     input_channels = 3
     loss_fn = torch.nn.MSELoss()
@@ -199,31 +196,33 @@ def test_conv_layer_grads():
     model = SyntheticIntervalModel(
         input_shape=synthetic_data.shape, output_channels=output_channels, kernel_size=5, bias=True, stride=1
     )
-
+    model = model.to(device)
     output_from_equivalent = model.forward(synthetic_data)
     loss = loss_fn(output_from_equivalent, target)
     loss.backward()
 
     equivalent_grads = model.conv1.conv.weight.grad
-    equivalent_grads = torch.reshape(equivalent_grads, shape=(output_channels, input_channels, 5, 5)).detach().clone()
-    equivalent_bias = model.conv1.bias_to_grad.grad.data.detach().clone()
+    equivalent_grads = (
+        torch.reshape(equivalent_grads, shape=(output_channels, input_channels, 5, 5)).detach().clone().to(device)
+    )
+    equivalent_bias = model.conv1.bias_to_grad.grad.data.detach().clone().to(device)
 
-    print('\n')
-    print('equivalent_bias ', equivalent_bias)
+    print("\n")
+    print("equivalent_bias ", equivalent_bias)
 
     model.zero_grad()
     output_from_conv = model.conv1.conv_debug(synthetic_data)
     loss = loss_fn(output_from_conv, target)
     loss.backward()
 
-    print('ground truth ', model.conv1.conv_debug.bias.grad)
+    print("ground truth ", model.conv1.conv_debug.bias.grad)
 
     assert torch.allclose(equivalent_grads, model.conv1.conv_debug.weight.grad, atol=1e-05)
     assert torch.allclose(equivalent_bias, model.conv1.conv_debug.bias.grad, atol=1e-05)
 
 
+@pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
 def test_conv_train_loop():
-
     output_channels = 12
     input_channels = 3
     loss_fn = torch.nn.MSELoss()
@@ -235,51 +234,55 @@ def test_conv_train_loop():
     model = SyntheticIntervalModel(
         input_shape=synthetic_data.shape,
         output_channels=output_channels,
-        kernel_size=5, bias=True, stride=1, to_debug=False,
-    )
+        kernel_size=5,
+        bias=True,
+        stride=1,
+        to_debug=False,
+    ).to(device)
 
     class TestModel(torch.nn.Module):
         def __init__(self):
             super().__init__()
-
-            self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
             self.conv = torch.nn.Conv2d(
                 in_channels=3,
                 out_channels=12,
                 kernel_size=5,
                 bias=True,
                 stride=1,
-            ).to(self.device)
+            )
 
         def forward(self, x):
-            x = self.conv(x)
-            return x
+            return self.conv(x)
 
     test_model = TestModel()
-
     # Get the weights we will transfer over
     # Set the weights in the normal model
-    test_model.conv.weight.data = torch.reshape(torch.tensor(model.conv1.conv.weight.data.detach().numpy()),
-                                                shape=(output_channels, input_channels, 5, 5))
-    test_model.conv.bias.data = torch.tensor(model.conv1.bias_to_grad.data.detach().numpy())
+    test_model.conv.weight = torch.nn.Parameter(
+        torch.reshape(
+            torch.tensor(model.conv1.conv.weight.data.cpu().detach().numpy()),
+            shape=(output_channels, input_channels, 5, 5),
+        )
+    )
+    test_model.conv.bias = torch.nn.Parameter(torch.tensor(model.conv1.bias_to_grad.data.cpu().detach().numpy()))
+    test_model.to(device)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
     test_opt = torch.optim.Adam(test_model.parameters(), lr=0.0001)
 
     for _ in range(5):
-
         model.zero_grad()
 
         # Test model is for ground truth comparison
         test_model.zero_grad()
-
         output_from_equivalent = model.forward(synthetic_data)
         loss = loss_fn(output_from_equivalent, target)
         loss.backward()
 
         equivalent_grads = model.conv1.conv.weight.grad
-        equivalent_grads = torch.reshape(equivalent_grads, shape=(output_channels, input_channels, 5, 5)).detach().clone()
-        equivalent_bias = model.conv1.bias_to_grad.grad
+        equivalent_grads = (
+            torch.reshape(equivalent_grads, shape=(output_channels, input_channels, 5, 5)).detach().clone().to(device)
+        )
+        equivalent_bias = model.conv1.bias_to_grad.grad.clone().to(device)
 
         output_from_conv = test_model.forward(synthetic_data)
         loss = loss_fn(output_from_conv, target)
@@ -291,7 +294,9 @@ def test_conv_train_loop():
         optimizer.step()
         test_opt.step()
 
-        reshaped_weights = torch.reshape(model.conv1.conv.weight.data.clone().detach(), shape=(output_channels, input_channels, 5, 5))
+        reshaped_weights = torch.reshape(
+            model.conv1.conv.weight.data.clone().detach(), shape=(output_channels, input_channels, 5, 5)
+        ).to(device)
 
         assert torch.allclose(reshaped_weights, test_model.conv.weight.data, atol=1e-05)
 
@@ -300,7 +305,9 @@ def test_conv_train_loop():
 
         # Sanity check! Are the grads still present and the same after the conversion?
         equivalent_grads = model.conv1.conv.weight.grad
-        equivalent_grads = torch.reshape(equivalent_grads, shape=(output_channels, input_channels, 5, 5)).detach().clone()
+        equivalent_grads = (
+            torch.reshape(equivalent_grads, shape=(output_channels, input_channels, 5, 5)).detach().clone().to(device)
+        )
         equivalent_bias = model.conv1.bias_to_grad.grad
 
         assert torch.allclose(equivalent_grads, test_model.conv.weight.grad, atol=1e-05)
@@ -309,12 +316,20 @@ def test_conv_train_loop():
 
 @pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
 def test_mnist_certification(art_warning, fix_get_mnist_data):
+    """
+    Assert the certification performance on sample MNIST data
+    """
     bound = 0.05
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     ptc = get_image_classifier_pt(from_logits=True, use_maxpool=False)
 
     box_model = PyTorchIBPClassifier(
-        model=ptc.model, clip_values=(0, 1), loss=torch.nn.CrossEntropyLoss(), input_shape=(1, 28, 28), nb_classes=10
+        model=ptc.model.to(device),
+        clip_values=(0, 1),
+        loss=torch.nn.CrossEntropyLoss(),
+        input_shape=(1, 28, 28),
+        nb_classes=10,
     )
 
     mnist_data = fix_get_mnist_data[0]
@@ -335,7 +350,7 @@ def test_mnist_certification(art_warning, fix_get_mnist_data):
 
 
 @pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
-def test_mnist_certification_time(art_warning, fix_get_mnist_data):
+def test_mnist_certification_conversion(art_warning, fix_get_mnist_data):
     class TestModel(torch.nn.Module):
         def __init__(self):
             super().__init__()
@@ -371,33 +386,53 @@ def test_mnist_certification_time(art_warning, fix_get_mnist_data):
 
     bound = 0.05
     loss_fn = torch.nn.CrossEntropyLoss()
-    model = TestModel()
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    model = TestModel().to(device)
 
     box_model = PyTorchIBPClassifier(
         model=model, clip_values=(0, 1), loss=torch.nn.CrossEntropyLoss(), input_shape=(1, 28, 28), nb_classes=10
     )
 
     mnist_data = fix_get_mnist_data[0]
-    mnist_labels = torch.tensor(fix_get_mnist_data[1])
+    mnist_labels = torch.tensor(fix_get_mnist_data[1]).to(device)
     box_model.model.set_forward_mode("concrete")
-    for i in range(10):
+    for _ in range(10):
         preds = box_model.model.forward(mnist_data)
         loss = loss_fn(preds, mnist_labels)
         loss.backward()
         box_model.model.zero_grad()
         box_model.model.re_convert()
 
-    '''
-    preds = box_model.predict(mnist_data.astype("float32"))
-    acc = np.sum(np.argmax(preds, axis=1) == mnist_labels)
-    assert acc == 99
 
-    box_model.model.set_forward_mode("abstract")
-    up_bound = np.expand_dims(np.clip(mnist_data + bound, 0, 1), axis=1)
-    low_bound = np.expand_dims(np.clip(mnist_data - bound, 0, 1), axis=1)
-    interval_x = np.concatenate([low_bound, up_bound], axis=1)
+@pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
+def test_mnist_certification_training(art_warning, fix_get_mnist_data):
+    """
+    Assert that the training loop runs without errors
+    """
+    from art.defences.trainer import AdversarialTrainerCertifiedPytorchIBP
 
-    interval_preds = box_model.predict_intervals(interval_x, is_interval=True)
-    cert_results = box_model.certify(preds=interval_preds, labels=mnist_labels)
-    assert np.sum(cert_results) == 48
-    '''
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    ptc = get_image_classifier_pt(from_logits=True, use_maxpool=False)
+    ptc.model.to(device)
+
+    optimizer = torch.optim.Adam(ptc.model.parameters(), lr=0.0001)
+
+    box_model = PyTorchIBPClassifier(
+        model=ptc.model,
+        clip_values=(0, 1),
+        loss=torch.nn.CrossEntropyLoss(),
+        optimizer=optimizer,
+        input_shape=(1, 28, 28),
+        nb_classes=10,
+    )
+
+    mnist_data = fix_get_mnist_data[0]
+    mnist_labels = torch.tensor(fix_get_mnist_data[1])
+
+    from torch.optim.lr_scheduler import MultiStepLR
+
+    scheduler = MultiStepLR(box_model._optimizer, milestones=[2, 5], gamma=0.1)
+    trainer = AdversarialTrainerCertifiedPytorchIBP(classifier=box_model, bound=0.2)
+    trainer.fit(x=mnist_data, y=mnist_labels, scheduler=scheduler, batch_size=32, nb_epochs=10, limits=[0, 1])

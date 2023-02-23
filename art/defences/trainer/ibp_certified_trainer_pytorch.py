@@ -36,9 +36,9 @@ from art.estimators.certification.interval.pytorch import PyTorchIBPClassifier
 from art.utils import check_and_transform_label_format
 
 if sys.version_info >= (3, 8):
-    from typing import TypedDict, List, Optional, Any, Tuple, Union, TYPE_CHECKING
+    from typing import TypedDict, List, Optional, Any, Union, TYPE_CHECKING
 else:
-    from typing import Dict, List, Optional, Any, Tuple, Union, TYPE_CHECKING
+    from typing import Dict, List, Optional, Any, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from art.utils import IBP_CERTIFIER_TYPE
@@ -182,10 +182,11 @@ class AdversarialTrainerCertifiedPytorchIBP(Trainer):
 
     def initialise_default_scheduler(self, initial_val: float, final_val: float, epochs: int):
         """
-        Create linear schedulers based on default example values
-        :param initial_val:
-        :param final_val:
-        :param epochs:
+        Create linear schedulers based on default example values.
+
+        :param initial_val: initial value to begin the scheduler from
+        :param final_val: final value to end the scheduler at
+        :param epochs: total number of epochs
         """
         warm_up = int(0.01 * epochs)
         epochs_to_ramp = int(0.30 * epochs)  # increasing eps from 0 to eps over 30% of the total epochs
@@ -195,17 +196,17 @@ class AdversarialTrainerCertifiedPytorchIBP(Trainer):
         step_in_eps_per_epoch = (final_val - initial_val) / epochs_to_ramp
 
         return DefaultLinearScheduler(
-                step_per_epoch=step_in_eps_per_epoch,
-                initial_val=initial_val,
-                final_val=self.bound,
-                warmup=warm_up,
-            )
+            step_per_epoch=step_in_eps_per_epoch,
+            initial_val=initial_val,
+            final_val=self.bound,
+            warmup=warm_up,
+        )
 
     def fit(  # pylint: disable=W0221
         self,
         x: np.ndarray,
         y: np.ndarray,
-        limits: Optional[Union[List[float], np.ndarray]],
+        limits: Optional[Union[List[float], np.ndarray]] = None,
         certification_loss: Any = "interval_loss_cce",
         batch_size: Optional[int] = None,
         nb_epochs: Optional[int] = None,
@@ -247,6 +248,12 @@ class AdversarialTrainerCertifiedPytorchIBP(Trainer):
         else:
             raise ValueError("Value of `epochs` not defined.")
 
+        if limits is None:
+            raise ValueError(
+                "Please provide values for the clipping limits of the data. "
+                "Typical images will have limits of [0.0, 1.0]. "
+            )
+
         # Set model mode
         self._classifier._model.train(mode=training_mode)  # pylint: disable=W0212
 
@@ -271,24 +278,24 @@ class AdversarialTrainerCertifiedPytorchIBP(Trainer):
         if self.use_certification_schedule:
             if self.certification_schedule is None:
                 # Using typical MNIST values as default.
-                self.certification_schedule = self.initialise_default_scheduler(initial_val=0.0,
-                                                                                final_val=self.bound,
-                                                                                epochs=epochs)
+                self.certification_schedule = self.initialise_default_scheduler(
+                    initial_val=0.0, final_val=self.bound, epochs=epochs
+                )
         else:
             bound = self.bound
 
         if self.use_loss_weighting_schedule:
             if self.loss_weighting_schedule is None:
-                self.loss_weighting_schedule = self.initialise_default_scheduler(initial_val=0.0,
-                                                                                 final_val=0.5,
-                                                                                 epochs=epochs)
+                self.loss_weighting_schedule = self.initialise_default_scheduler(
+                    initial_val=0.0, final_val=0.5, epochs=epochs
+                )
         else:
             loss_weighting_k = 0.1
 
         for _ in tqdm(range(epochs)):
-            if self.use_certification_schedule:
+            if self.use_certification_schedule and self.certification_schedule is not None:
                 bound = self.certification_schedule.step()
-            if self.use_loss_weighting_schedule:
+            if self.use_loss_weighting_schedule and self.loss_weighting_schedule is not None:
                 loss_weighting_k = self.loss_weighting_schedule.step()
 
             # Shuffle the examples
@@ -377,11 +384,11 @@ class AdversarialTrainerCertifiedPytorchIBP(Trainer):
                     loss.backward()
 
                 self._classifier._optimizer.step()  # pylint: disable=W0212
-                self._classifier.model.re_convert()
+                self._classifier.re_convert()
 
                 if verbose:
                     pbar.set_description(
-                        f"Bound {bound:.2f}: Loss {torch.mean(torch.stack(epoch_non_cert_loss)):.2f} "
+                        f"Bound {bound:.2f}: Loss {torch.mean(torch.stack(epoch_non_cert_loss)):.2f} "  # pylint: disable=W0212
                         f"Cert Loss {torch.mean(torch.stack(cert_loss)):.2f} "
                         f"Acc {np.mean(non_cert_acc):.2f} Cert Acc {np.mean(cert_acc):.2f} "
                         f"l_weight {loss_weighting_k:.2f} lr {self._classifier._optimizer.param_groups[0]['lr']}"
@@ -406,12 +413,28 @@ class AdversarialTrainerCertifiedPytorchIBP(Trainer):
 
         return self._classifier.predict(x, **kwargs)
 
-    def predict_interval(self, cent: np.ndarray, bound, **kwargs) -> Tuple[List[np.ndarray], List[np.ndarray]]:
+    def predict_intervals(
+        self,
+        x: np.ndarray,
+        is_interval: bool = False,
+        bounds: Optional[Union[float, List[float], np.ndarray]] = None,
+        limits: Optional[Union[List[float], np.ndarray]] = None,
+        batch_size: int = 128,
+        **kwargs,
+    ) -> np.ndarray:
         """
         Perform prediction using the adversarially trained classifier using zonotopes
 
-        :param cent: The datapoint, representing the zonotope center.
-        :param bound: The perturbation range for the zonotope.
+        :param x: The datapoint, either:
+
+                1. In the interval format of x[batch_size, 2, feature_1, feature_2, ...]
+                   where axis=1 corresponds to the [lower, upper] bounds.
+
+                2. Or in regular concrete form, in which case the bounds/limits need to be supplied.
+        :param is_interval: if the datapoint is already in the correct interval format.
+        :param bounds: The perturbation range.
+        :param limits: The clipping to apply to the interval data.
+        :param batch_size: batch size to use when looping through the data
         """
 
         if self._classifier._model._model.forward_mode != "abstract":  # pylint: disable=W0212
@@ -419,8 +442,7 @@ class AdversarialTrainerCertifiedPytorchIBP(Trainer):
                 "For interval predictions, the model must be running in abstract mode. If a concrete "
                 "prediction is wanted then use predict instead"
             )
-
-        return self._classifier.predict_zonotopes(cent, bound, **kwargs)
+        return self._classifier.predict_intervals(x, is_interval, bounds, limits, batch_size, **kwargs)
 
     def set_forward_mode(self, mode: str) -> None:
         """

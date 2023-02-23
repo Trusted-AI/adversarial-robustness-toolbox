@@ -113,6 +113,7 @@ class PyTorchIntervalConv2D(torch.nn.Module):
         self.dilation = dilation
         self.stride = stride
         self.device = device
+        self.include_bias = bias
         self.cnn: Optional["torch.nn.Conv2d"] = None
 
         super().__init__()
@@ -124,11 +125,11 @@ class PyTorchIntervalConv2D(torch.nn.Module):
             dilation=dilation,
             bias=False,
             stride=stride,
-        )
+        ).to(device)
         self.bias_to_grad = None
 
         if bias:
-            self.bias_to_grad = torch.nn.Parameter(torch.rand(out_channels))
+            self.bias_to_grad = torch.nn.Parameter(torch.rand(out_channels).to(device))
 
         if to_debug:
             self.conv_debug = torch.nn.Conv2d(
@@ -156,7 +157,7 @@ class PyTorchIntervalConv2D(torch.nn.Module):
                     ).to(device)
                 )
             if bias and self.conv_debug.bias is not None:
-                self.bias_to_grad = torch.nn.Parameter(torch.tensor(self.conv_debug.bias.data.cpu().detach().numpy()))
+                self.bias_to_grad = torch.nn.Parameter(torch.tensor(self.conv_debug.bias.data.cpu().detach().numpy()).to(device))
 
         if supplied_input_weights is not None:
             if isinstance(kernel_size, tuple):
@@ -172,7 +173,7 @@ class PyTorchIntervalConv2D(torch.nn.Module):
                 )
 
         if supplied_input_bias is not None:
-            self.bias_to_grad = torch.nn.Parameter(supplied_input_bias)
+            self.bias_to_grad = torch.nn.Parameter(supplied_input_bias.to(device))
 
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -312,19 +313,19 @@ class PyTorchIntervalConv2D(torch.nn.Module):
         """
         Method for efficiently interfacing with adversarial attacks.
 
-        backpropagating through concrete_forward is too slow if adversarial attacks need to be generated on-the fly
+        Backpropagating through concrete_forward is too slow if adversarial attacks need to be generated on-the fly
         or require a large amount of iterations.
 
         This method will create a regular conv layer with the right parameters to use.
 
-        Returns
-        -------
+        :param x: concrete input to the convolutional layer.
+        :return: output of the convolutional layer on x
         """
         if self.cnn is None:
             self.cnn = torch.nn.Conv2d(in_channels=self.in_channels,
                                        out_channels=self.out_channels,
                                        kernel_size=self.kernel_size,
-                                       bias=True,
+                                       bias=self.include_bias,
                                        stride=self.stride,
                                        padding=self.padding,
                                        dilation=self.dilation).to(self.device)
@@ -334,9 +335,12 @@ class PyTorchIntervalConv2D(torch.nn.Module):
         else:
             self.cnn.weight.data = torch.reshape(torch.tensor(self.conv.weight.data.cpu().detach().numpy()),
                             (self.out_channels, self.in_channels, self.kernel_size, self.kernel_size),).to(self.device)
-        if self.cnn.bias is not None:
+        if self.cnn.bias is not None and self.bias_to_grad is not None:
             self.cnn.bias.data = torch.tensor(self.bias_to_grad.data.cpu().detach().numpy()).to(self.device)
-        return self.cnn(x)
+
+        if self.cnn is not None:
+            return self.cnn(x)
+        raise ValueError("The convolutional layer for attack mode was not created properly")
 
 
 class PyTorchIntervalFlatten(torch.nn.Module):

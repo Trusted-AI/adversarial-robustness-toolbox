@@ -191,8 +191,11 @@ class ConvertedModel(torch.nn.Module):
         assert mode in {"concrete", "abstract", "attack"}
         self.forward_mode = mode
 
-    def re_convert(self):
-        for op_num, (op, _) in enumerate(zip(self.ops, self.interim_shapes)):
+    def re_convert(self) -> None:
+        """
+        After an update on the convolutional weights, we re-convert them into the equivalent dense layer
+        """
+        for op, _ in zip(self.ops, self.interim_shapes):
             if isinstance(op, PyTorchIntervalConv2D):
                 op.re_convert(self.device)
 
@@ -329,15 +332,16 @@ class PyTorchIBPClassifier(PyTorchIntervalBounds, PyTorchClassifier):
 
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
         self._model.train(mode=training_mode)
-        if not is_interval:
-            if bounds is None:
-                raise ValueError("If x is not provided as an interval please provide bounds (and optionally limits)")
+
+        if is_interval:
+            x_interval = x_preprocessed
+        elif bounds is None:
+            raise ValueError("If x is not provided as an interval please provide bounds (and optionally limits)")
+        else:
             if self.provided_concrete_to_interval is None:
                 x_interval = self.concrete_to_interval(x=x_preprocessed, bounds=bounds, limits=limits)
             else:
                 x_interval = self.provided_concrete_to_interval(x_preprocessed, bounds, limits)
-        else:
-            x_interval = x_preprocessed
 
         num_batches = int(len(x_interval) / batch_size)
 
@@ -408,7 +412,13 @@ class PyTorchIBPClassifier(PyTorchIntervalBounds, PyTorchClassifier):
         """
         upper_preds = prediction[:, 1, :]
         criterion = torch.nn.CrossEntropyLoss()
-        for i, t in enumerate(target):
+        for i, j in enumerate(target):
             # for the prediction corresponding to the target class, take the lower bound predictions
-            upper_preds[i, t] = prediction[i, 0, t]
+            upper_preds[i, j] = prediction[i, 0, j]
         return criterion(upper_preds, target)
+
+    def re_convert(self) -> None:
+        """
+        Convert all the convolutional layers into their dense representations
+        """
+        self.model.re_convert()
