@@ -157,7 +157,8 @@ class AutoConjugateGradient(EvasionAttack):
                             else:
                                 raise NotImplementedError()
 
-                    self._loss_object = CrossEntropyLoss()(y_pred=estimator._output, y_true=estimator._labels_ph)
+                    loss = CrossEntropyLoss()
+                    self._loss_object = loss(y_pred=estimator._output, y_true=estimator._labels_ph)
 
                 elif loss_type == "difference_logits_ratio":
                     if is_probability(estimator.predict(x=np.ones(shape=(1, *estimator.input_shape)))):
