@@ -140,6 +140,7 @@ class AutoConjugateGradient(EvasionAttack):
 
                     class CrossEntropyLoss:
                         """Class defining cross entropy loss with reduction options."""
+
                         def __init__(self, reduction="mean"):
                             self.reduction = reduction
 
@@ -242,6 +243,7 @@ class AutoConjugateGradient(EvasionAttack):
 
                     class CrossEntropyLossV2:
                         """Class defining cross entropy loss with reduction options."""
+
                         def __init__(self, from_logits, reduction="sum"):
                             self.ce = tf.keras.losses.CategoricalCrossentropy(
                                 from_logits=from_logits,
@@ -340,6 +342,7 @@ class AutoConjugateGradient(EvasionAttack):
 
                     class CrossEntropyLossTorch:
                         """Class defining cross entropy loss with reduction options."""
+
                         def __init__(self, reduction="sum"):
                             self.ce = torch.nn.CrossEntropyLoss(reduction="none")
                             self.reduction = reduction
@@ -534,11 +537,11 @@ class AutoConjugateGradient(EvasionAttack):
                 _batch_size = x_k.shape[0]
                 eta = np.full((_batch_size, 1, 1, 1), self.eps_step).astype(ART_NUMPY_DTYPE)
                 self.count_condition_1 = np.zeros(shape=(_batch_size,))
-                gradk_1 = None
-                cgradk_1 = None
-                cgradk = None
-                gradk_1_best = None
-                cgradk_1_best = None
+                gradk_1 = np.zeros_like(x_k)
+                cgradk_1 = np.zeros_like(x_k)
+                cgradk = np.zeros_like(x_k)
+                gradk_1_best = np.zeros_like(x_k)
+                cgradk_1_best = np.zeros_like(x_k)
 
                 for k_iter in trange(self.max_iter, desc="ACG - iteration", leave=False, disable=not self.verbose):
 
@@ -547,7 +550,7 @@ class AutoConjugateGradient(EvasionAttack):
 
                     # Get gradient wrt loss; invert it if attack is targeted
                     grad = self.estimator.loss_gradient(x_k, y_batch) * (1 - 2 * int(self.targeted))
-                    if cgradk is None:
+                    if k_iter == 0:
                         gradk_1 = grad.copy()
                         cgradk_1 = grad.copy()
                         cgradk = grad.copy()
@@ -714,5 +717,7 @@ def get_beta(gradk, gradk_1, cgradk_1):
     _gradk = -gradk.reshape(_batch_size, -1)
     _gradk_1 = -gradk_1.reshape(_batch_size, -1)
     delta_gradk = _gradk - _gradk_1
-    betak = -(_gradk * delta_gradk).sum(axis=1) / ((_cgradk_1 * delta_gradk).sum(axis=1) + np.finfo(ART_NUMPY_DTYPE).eps)
+    betak = -(_gradk * delta_gradk).sum(axis=1) / (
+        (_cgradk_1 * delta_gradk).sum(axis=1) + np.finfo(ART_NUMPY_DTYPE).eps
+    )
     return betak.reshape((_batch_size, 1, 1, 1))

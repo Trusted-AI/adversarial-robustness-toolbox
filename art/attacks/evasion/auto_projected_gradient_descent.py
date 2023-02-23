@@ -118,6 +118,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
                     # modification for image-wise stepsize update
                     class CrossEntropyLoss:
                         """Class defining cross entropy loss with reduction options."""
+
                         def __init__(self, reduction="mean"):
                             self.reduction = reduction
 
@@ -220,6 +221,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
                     # modification for image-wise stepsize update
                     class CrossEntropyLossV2:
                         """Class defining cross entropy loss with reduction options."""
+
                         def __init__(self, from_logits, reduction="mean"):
                             self.ce = tf.keras.losses.CategoricalCrossentropy(
                                 from_logits=from_logits,
@@ -321,6 +323,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
                     # modification for image-wise stepsize update
                     class CrossEntropyLossTorch:
                         """Class defining cross entropy loss with reduction options."""
+
                         def __init__(self, reduction="mean"):
                             self.ce = torch.nn.CrossEntropyLoss(reduction="none")
                             self.reduction = reduction
@@ -632,7 +635,6 @@ class AutoProjectedGradientDescent(EvasionAttack):
                             self.count_condition_1[:] = 0
                             self.eta_w_j_m_1 = eta.copy()
                             self.f_max_w_j_m_1 = self.f_max.copy()
-
 
                 y_pred_adv_k = self.estimator.predict(x_k)
                 if self.targeted:
