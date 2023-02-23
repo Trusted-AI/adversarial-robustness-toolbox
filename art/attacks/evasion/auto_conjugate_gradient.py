@@ -542,6 +542,8 @@ class AutoConjugateGradient(EvasionAttack):
                 cgradk = np.zeros_like(x_k)
                 gradk_1_best = np.zeros_like(x_k)
                 cgradk_1_best = np.zeros_like(x_k)
+                gradk_1_tmp = np.zeros_like(x_k)
+                cgradk_1_tmp = np.zeros_like(x_k)
 
                 for k_iter in trange(self.max_iter, desc="ACG - iteration", leave=False, disable=not self.verbose):
 
