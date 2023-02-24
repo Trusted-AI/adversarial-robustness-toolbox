@@ -91,6 +91,9 @@ class AutoProjectedGradientDescent(EvasionAttack):
         """
         from art.estimators.classification import TensorFlowClassifier, TensorFlowV2Classifier, PyTorchClassifier
 
+        if isinstance(estimator, TensorFlowClassifier):
+            raise ValueError("This attack does not support TensorFlow  v1.")
+
         if loss_type not in self._predefined_losses:
             raise ValueError(
                 f"The argument loss_type has an invalid value. The following options for `loss_type` are currently "
@@ -108,113 +111,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
             estimator_apgd = estimator
         else:
-            if isinstance(estimator, TensorFlowClassifier):
-                import tensorflow as tf
-
-                if loss_type == "cross_entropy":
-                    if is_probability(estimator.predict(x=np.ones(shape=(1, *estimator.input_shape)))):
-                        raise NotImplementedError("Cross-entropy loss is not implemented for probability output.")
-
-                    # modification for image-wise stepsize update
-                    class CrossEntropyLoss:
-                        """Class defining cross entropy loss with reduction options."""
-
-                        def __init__(self, reduction="mean"):
-                            self.reduction = reduction
-
-                        def __call__(self, y_true, y_pred):
-                            ce_loss = tf.keras.losses.categorical_crossentropy(
-                                y_pred=y_pred, y_true=y_true, from_logits=True
-                            )
-                            if self.reduction == "mean":
-                                return tf.reduce_mean(ce_loss)
-                            if self.reduction == "sum":
-                                return tf.reduce_sum(ce_loss)
-                            if self.reduction == "none":
-                                return ce_loss
-                            raise NotImplementedError()
-
-                    loss = CrossEntropyLoss()
-                    self._loss_object = loss(y_pred=estimator._output, y_true=estimator._labels_ph)
-
-                elif loss_type == "difference_logits_ratio":
-                    if is_probability(estimator.predict(x=np.ones(shape=(1, *estimator.input_shape)))):
-                        raise ValueError(  # pragma: no cover
-                            "The provided estimator seems to predict probabilities. "
-                            "If loss_type='difference_logits_ratio' the estimator has to to predict logits."
-                        )
-
-                    raise ValueError(
-                        "The loss `difference_logits_ratio` has not been validated completely. It seems that the "
-                        "commented implemented below is failing to selected the second largest logit for cases "
-                        "where the largest logit is the true logit. For future work `difference_logits_ratio` and "
-                        "loss_fn should return the same loss value."
-                    )
-
-                    # def difference_logits_ratio(y_true, y_pred):
-                    #     i_y_true = tf.cast(tf.math.argmax(tf.cast(y_true, tf.int32), axis=1), tf.int32)
-                    #     i_y_pred_arg = tf.argsort(y_pred, axis=1)
-                    #     # Not completely sure if the following line is correct.
-                    #     # `i_y_pred_arg[:, -2], i_y_pred_arg[:, -1]` seems closer to the output of `loss_fn` than
-                    #     # `i_y_pred_arg[:, -1], i_y_pred_arg[:, -2]`
-                    #     i_z_i = tf.where(i_y_pred_arg[:, -1] != i_y_true[:], i_y_pred_arg[:, -2],
-                    #                      i_y_pred_arg[:, -1])
-                    #
-                    #     z_1 = tf.gather(y_pred, i_y_pred_arg[:, -1], axis=1, batch_dims=0)
-                    #     z_3 = tf.gather(y_pred, i_y_pred_arg[:, -3], axis=1, batch_dims=0)
-                    #     z_i = tf.gather(y_pred, i_z_i, axis=1, batch_dims=0)
-                    #     z_y = tf.gather(y_pred, i_y_true, axis=1, batch_dims=0)
-                    #
-                    #     z_1 = tf.linalg.diag_part(z_1)
-                    #     z_3 = tf.linalg.diag_part(z_3)
-                    #     z_i = tf.linalg.diag_part(z_i)
-                    #     z_y = tf.linalg.diag_part(z_y)
-                    #
-                    #     dlr = -(z_y - z_i) / (z_1 - z_3)
-                    #
-                    #     return tf.reduce_mean(dlr)
-                    #
-                    # def loss_fn(y_true, y_pred):
-                    #     i_y_true = np.argmax(y_true, axis=1)
-                    #     i_y_pred_arg = np.argsort(y_pred, axis=1)
-                    #     i_z_i = np.where(i_y_pred_arg[:, -1] != i_y_true[:], i_y_pred_arg[:, -1],
-                    #                      i_y_pred_arg[:, -2])
-                    #
-                    #     z_1 = y_pred[:, i_y_pred_arg[:, -1]]
-                    #     z_3 = y_pred[:, i_y_pred_arg[:, -3]]
-                    #     z_i = y_pred[:, i_z_i]
-                    #     z_y = y_pred[:, i_y_true]
-                    #
-                    #     z_1 = np.diag(z_1)
-                    #     z_3 = np.diag(z_3)
-                    #     z_i = np.diag(z_i)
-                    #     z_y = np.diag(z_y)
-                    #
-                    #     dlr = -(z_y - z_i) / (z_1 - z_3)
-                    #
-                    #     return np.mean(dlr)
-                    #
-                    # self._loss_fn = loss_fn
-                    # self._loss_object = difference_logits_ratio(y_true=estimator._labels_ph,
-                    #                                             y_pred=estimator._output)
-
-                estimator_apgd = TensorFlowClassifier(
-                    input_ph=estimator._input_ph,
-                    output=estimator._output,
-                    labels_ph=estimator._labels_ph,
-                    train=estimator._train,
-                    loss=self._loss_object,
-                    learning=estimator._learning,
-                    sess=estimator._sess,
-                    channels_first=estimator.channels_first,
-                    clip_values=estimator.clip_values,
-                    preprocessing_defences=estimator.preprocessing_defences,
-                    postprocessing_defences=estimator.postprocessing_defences,
-                    preprocessing=estimator.preprocessing,
-                    feed_dict=estimator._feed_dict,
-                )
-
-            elif isinstance(estimator, TensorFlowV2Classifier):
+            if isinstance(estimator, TensorFlowV2Classifier):
                 import tensorflow as tf
 
                 if loss_type == "cross_entropy":
