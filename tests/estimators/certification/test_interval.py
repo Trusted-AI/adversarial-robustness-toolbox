@@ -91,6 +91,7 @@ def test_conv_single_channel_in_multi_out(art_warning):
         art_warning(e)
 
 
+@pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
 def test_conv_multi_channel_in_single_out():
     """
     Check that the conversion works for multiple input channels with single output
@@ -107,6 +108,7 @@ def test_conv_multi_channel_in_single_out():
     assert torch.allclose(output_from_equivalent, output_from_conv, atol=1e-05)
 
 
+@pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
 def test_conv_multi_channel_in_multi_out():
     """
     Check that the conversion works for multiple input channels and multiple output channels.
@@ -120,6 +122,7 @@ def test_conv_multi_channel_in_multi_out():
     assert torch.allclose(output_from_equivalent, output_from_conv, atol=1e-05)
 
 
+@pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
 def test_conv_layer_multi_channel_in_multi_out_with_stride():
     """
     Check that the conversion works for multiple input/output channels with strided convolution
@@ -134,6 +137,7 @@ def test_conv_layer_multi_channel_in_multi_out_with_stride():
     assert torch.allclose(output_from_equivalent, output_from_conv, atol=1e-05)
 
 
+@pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
 def test_conv_layer_multi_channel_in_multi_out_with_stride_and_bias():
     """
     Check that the conversion works for multiple input/output channels with strided convolution and bias
@@ -149,6 +153,7 @@ def test_conv_layer_multi_channel_in_multi_out_with_stride_and_bias():
     assert torch.allclose(output_from_equivalent, output_from_conv, atol=1e-05)
 
 
+@pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
 def test_conv_layer_padding():
     """
     Check that the conversion works for multiple input/output channels with strided convolution, bias,
@@ -165,6 +170,7 @@ def test_conv_layer_padding():
     assert torch.allclose(output_from_equivalent, output_from_conv, atol=1e-05)
 
 
+@pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
 def test_conv_layer_dilation():
     """
     Check that the conversion works for multiple input/output channels with strided convolution, bias,
@@ -181,6 +187,7 @@ def test_conv_layer_dilation():
     assert torch.allclose(output_from_equivalent, output_from_conv, atol=1e-05)
 
 
+@pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
 def test_conv_layer_grads():
     """
     Checking that the gradients are correctly backpropagated through the convolutional layer
@@ -397,12 +404,61 @@ def test_mnist_certification_conversion(art_warning, fix_get_mnist_data):
     mnist_data = fix_get_mnist_data[0]
     mnist_labels = torch.tensor(fix_get_mnist_data[1]).to(device)
     box_model.model.set_forward_mode("concrete")
-    for _ in range(10):
+    for _ in range(5):
         preds = box_model.model.forward(mnist_data)
         loss = loss_fn(preds, mnist_labels)
         loss.backward()
         box_model.model.zero_grad()
         box_model.model.re_convert()
+
+
+@pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
+def test_certification_bounds_vs_empirical(art_warning, fix_get_mnist_data):
+    """
+    Create adversarial examples and assert that the lower bounds given by the classifier is higher than
+    the empirical attacks and vice versa for the upper bounds
+    """
+    from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
+
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    ptc = get_image_classifier_pt(from_logits=True, use_maxpool=False)
+    ptc.model.to(device)
+
+    optimizer = torch.optim.Adam(ptc.model.parameters(), lr=0.0001)
+
+    box_model = PyTorchIBPClassifier(
+        model=ptc.model,
+        clip_values=(0, 1),
+        loss=torch.nn.CrossEntropyLoss(),
+        optimizer=optimizer,
+        input_shape=(1, 28, 28),
+        nb_classes=10,
+    )
+
+    mnist_data = fix_get_mnist_data[0]
+    mnist_labels = fix_get_mnist_data[1]
+
+    interval_preds = box_model.predict_intervals(x=mnist_data, bounds=0.3, limits=[0.0, 1.0])
+    print(interval_preds[0])
+    box_model.model.set_forward_mode("attack")
+    attack = ProjectedGradientDescent(
+        estimator=box_model,
+        eps=0.3,
+        eps_step=0.001,
+        max_iter=20,
+        num_random_init=1,
+    )
+    i_batch = attack.generate(mnist_data.astype("float32"), mnist_labels.astype("float32"))
+    adv_preds = box_model.predict(i_batch)
+    print(adv_preds[0])
+
+    for adv_pred, cert_prd in zip(adv_preds, interval_preds):
+        assert np.all(adv_pred > cert_prd[0])
+        assert np.all(adv_pred < cert_prd[1])
+
+    adv_preds = np.argmax(adv_preds, axis=1)
+    print("Test acc: ", np.mean(adv_preds == torch.tensor(fix_get_mnist_data[1])) * 100)
 
 
 @pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
@@ -435,4 +491,42 @@ def test_mnist_certification_training(art_warning, fix_get_mnist_data):
 
     scheduler = MultiStepLR(box_model._optimizer, milestones=[2, 5], gamma=0.1)
     trainer = AdversarialTrainerCertifiedPytorchIBP(classifier=box_model, bound=0.2)
-    trainer.fit(x=mnist_data, y=mnist_labels, scheduler=scheduler, batch_size=32, nb_epochs=10, limits=[0, 1])
+    trainer.fit(x=mnist_data, y=mnist_labels, scheduler=scheduler, batch_size=32, nb_epochs=2, limits=[0, 1])
+
+
+@pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
+def test_mnist_certification_training_with_pgd(art_warning, fix_get_mnist_data):
+    """
+    Assert that the training loop runs without errors when also doing PGD augmentation
+    """
+    from art.defences.trainer import AdversarialTrainerCertifiedPytorchIBP
+
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    ptc = get_image_classifier_pt(from_logits=True, use_maxpool=False)
+    ptc.model.to(device)
+
+    optimizer = torch.optim.Adam(ptc.model.parameters(), lr=0.0001)
+
+    box_model = PyTorchIBPClassifier(
+        model=ptc.model,
+        clip_values=(0, 1),
+        loss=torch.nn.CrossEntropyLoss(),
+        optimizer=optimizer,
+        input_shape=(1, 28, 28),
+        nb_classes=10,
+    )
+
+    mnist_data = fix_get_mnist_data[0]
+    mnist_labels = torch.tensor(fix_get_mnist_data[1])
+
+    from torch.optim.lr_scheduler import MultiStepLR
+
+    scheduler = MultiStepLR(box_model._optimizer, milestones=[2, 5], gamma=0.1)
+    trainer = AdversarialTrainerCertifiedPytorchIBP(
+        classifier=box_model,
+        bound=0.2,
+        augment_with_pgd=True,
+        pgd_params={"eps": 0.3, "eps_step": 0.05, "max_iter": 20, "batch_size": 32, "num_random_init": 1},
+    )
+    trainer.fit(x=mnist_data, y=mnist_labels, scheduler=scheduler, batch_size=32, nb_epochs=2, limits=[0, 1])

@@ -171,7 +171,6 @@ class ConvertedModel(torch.nn.Module):
             x = torch.from_numpy(in_x.astype("float32")).to(self.device)
         else:
             x = in_x
-
         for op_num, (op, _) in enumerate(zip(self.ops, self.interim_shapes)):
             # as reshapes are not modules we infer when the reshape from convolutional to dense occurs
             if self.reshape_op_num == op_num:
@@ -207,6 +206,13 @@ class PyTorchIBPClassifier(PyTorchIntervalBounds, PyTorchClassifier):
     to then verify if it can have its class changed given a certain perturbation.
 
     | Paper link: https://ieeexplore.ieee.org/document/8418593
+
+    This classifier has 3 modes which can be set via: classifier.model.set_forward_mode('mode')
+
+    'mode' can be one of:
+        + 'abstract': When we wish to certifiy datapoints and have abstract predictions
+        + 'concrete': When normal predictions need to be made
+        + 'attack': When we are interfacing with an ART attack (for example PGD).
     """
 
     estimator_params = PyTorchClassifier.estimator_params

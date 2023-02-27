@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2022
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2023
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -133,7 +133,8 @@ class AdversarialTrainerCertifiedPytorchIBP(Trainer):
                            * *max_iter*: The maximum number of iterations.
                            * *batch_size*: Size of the batch on which adversarial samples are generated.
                            * *num_random_init*: Number of random initialisations within the epsilon ball.
-        :param bound: The perturbation range for the zonotope. Will be ignored if a certification_schedule is used.
+        :param bound: The perturbation range for the interval. If the default certification schedule is used
+                      will be the upper limit.
         :param loss_weighting: Weighting factor for the certified loss.
         :param nb_epochs: Number of training epochs.
         :param use_certification_schedule: If to use a training schedule for the certification radius.
@@ -167,7 +168,13 @@ class AdversarialTrainerCertifiedPytorchIBP(Trainer):
 
         if self.augment_with_pgd:
             if pgd_params is None:
-                self.pgd_params = {"eps": 0.3, "eps_step": 0.05, "max_iter": 2, "batch_size": 128, "num_random_init": 1}
+                self.pgd_params = {
+                    "eps": 0.3,
+                    "eps_step": 0.05,
+                    "max_iter": 20,
+                    "batch_size": 128,
+                    "num_random_init": 1,
+                }
             else:
                 self.pgd_params = pgd_params
 
@@ -180,7 +187,8 @@ class AdversarialTrainerCertifiedPytorchIBP(Trainer):
                 num_random_init=self.pgd_params["num_random_init"],
             )
 
-    def initialise_default_scheduler(self, initial_val: float, final_val: float, epochs: int):
+    @staticmethod
+    def initialise_default_scheduler(initial_val: float, final_val: float, epochs: int) -> DefaultLinearScheduler:
         """
         Create linear schedulers based on default example values.
 
@@ -198,7 +206,7 @@ class AdversarialTrainerCertifiedPytorchIBP(Trainer):
         return DefaultLinearScheduler(
             step_per_epoch=step_in_eps_per_epoch,
             initial_val=initial_val,
-            final_val=self.bound,
+            final_val=final_val,
             warmup=warm_up,
         )
 
