@@ -32,7 +32,6 @@ from tqdm import tqdm
 
 from art.defences.trainer.trainer import Trainer
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
-from art.estimators.certification.interval.pytorch import PyTorchIBPClassifier
 from art.utils import check_and_transform_label_format
 
 if sys.version_info >= (3, 8):
@@ -144,6 +143,7 @@ class AdversarialTrainerCertifiedIBPPytorch(Trainer):
                                        or a class with a .step() method that returns the updated bound every epoch.
         :param batch_size: Size of batches to use for certified training.
         """
+        from art.estimators.certification.interval.pytorch import PyTorchIBPClassifier
 
         if not isinstance(classifier, PyTorchIBPClassifier):
             raise ValueError(
