@@ -20,6 +20,7 @@ This module implements the `Auto Projected Gradient Descent` attack.
 
 | Paper link: https://arxiv.org/abs/2003.01690
 """
+import abc
 import logging
 import math
 from typing import Optional, Union, TYPE_CHECKING
@@ -114,9 +115,16 @@ class AutoProjectedGradientDescent(EvasionAttack):
             if isinstance(estimator, TensorFlowV2Classifier):
                 import tensorflow as tf
 
+                class TensorFlowV2Loss:
+                    """abstract class of loss function of tensorflow v2"""
+
+                    @abc.abstractmethod
+                    def __call__(self, *args, **kwargs):
+                        raise NotImplementedError()
+
                 if loss_type == "cross_entropy":
                     # modification for image-wise stepsize update
-                    class CrossEntropyLossV2:
+                    class CrossEntropyLossV2(TensorFlowV2Loss):
                         """Class defining cross entropy loss with reduction options."""
 
                         def __init__(self, from_logits, reduction="mean"):
@@ -136,9 +144,9 @@ class AutoProjectedGradientDescent(EvasionAttack):
                             raise NotImplementedError()
 
                     if is_probability(estimator.predict(x=np.ones(shape=(1, *estimator.input_shape)))):
-                        self._loss_object = CrossEntropyLossV2(from_logits=False)
+                        _loss_object_tf: TensorFlowV2Loss = CrossEntropyLossV2(from_logits=False)
                     else:
-                        self._loss_object = CrossEntropyLossV2(from_logits=True)
+                        _loss_object_tf = CrossEntropyLossV2(from_logits=True)
                 elif loss_type == "difference_logits_ratio":
                     if is_probability(estimator.predict(x=np.ones(shape=(1, *estimator.input_shape)))):
                         raise ValueError(  # pragma: no cover
@@ -146,7 +154,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
                             "If loss_type='difference_logits_ratio' the estimator has to to predict logits."
                         )
 
-                    class DifferenceLogitsRatioTensorFlowV2:
+                    class DifferenceLogitsRatioTensorFlowV2(TensorFlowV2Loss):
                         """
                         Callable class for Difference Logits Ratio loss in TensorFlow v2.
                         """
@@ -188,14 +196,13 @@ class AutoProjectedGradientDescent(EvasionAttack):
                                 return dlr
                             raise NotImplementedError()
 
-                    self._loss_fn = DifferenceLogitsRatioTensorFlowV2()
-                    self._loss_object = DifferenceLogitsRatioTensorFlowV2()
+                    _loss_object_tf = DifferenceLogitsRatioTensorFlowV2()
 
                 estimator_apgd = TensorFlowV2Classifier(
                     model=estimator.model,
                     nb_classes=estimator.nb_classes,
                     input_shape=estimator.input_shape,
-                    loss_object=self._loss_object,
+                    loss_object=_loss_object_tf,
                     train_step=estimator._train_step,
                     channels_first=estimator.channels_first,
                     clip_values=estimator.clip_values,
@@ -216,10 +223,11 @@ class AutoProjectedGradientDescent(EvasionAttack):
                         )
 
                     # modification for image-wise stepsize update
-                    class CrossEntropyLossTorch:
+                    class CrossEntropyLossTorch(torch.nn.modules.loss._Loss):
                         """Class defining cross entropy loss with reduction options."""
 
                         def __init__(self, reduction="mean"):
+                            super().__init__()
                             self.ce_loss = torch.nn.CrossEntropyLoss(reduction="none")
                             self.reduction = reduction
 
@@ -232,7 +240,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
                                 return self.ce_loss(y_true, y_pred)
                             raise NotImplementedError()
 
-                    self._loss_object = CrossEntropyLossTorch(reduction="mean")
+                    _loss_object_pt: torch.nn.modules.loss._Loss = CrossEntropyLossTorch(reduction="mean")
                 elif loss_type == "difference_logits_ratio":
                     if is_probability(
                         estimator.predict(x=np.ones(shape=(1, *estimator.input_shape), dtype=ART_NUMPY_DTYPE))
@@ -242,12 +250,13 @@ class AutoProjectedGradientDescent(EvasionAttack):
                             "If loss_type='difference_logits_ratio' the estimator has to to predict logits."
                         )
 
-                    class DifferenceLogitsRatioPyTorch:
+                    class DifferenceLogitsRatioPyTorch(torch.nn.modules.loss._Loss):
                         """
                         Callable class for Difference Logits Ratio loss in PyTorch.
                         """
 
                         def __init__(self):
+                            super().__init__()
                             self.reduction = "mean"
 
                         def __call__(self, y_pred, y_true):  # type: ignore
@@ -290,11 +299,11 @@ class AutoProjectedGradientDescent(EvasionAttack):
                                 return dlr
                             raise NotImplementedError()
 
-                    self._loss_object = DifferenceLogitsRatioPyTorch()
+                    _loss_object_pt = DifferenceLogitsRatioPyTorch()
 
                 estimator_apgd = PyTorchClassifier(
                     model=estimator.model,
-                    loss=self._loss_object,
+                    loss=_loss_object_pt,
                     input_shape=estimator.input_shape,
                     nb_classes=estimator.nb_classes,
                     optimizer=None,
