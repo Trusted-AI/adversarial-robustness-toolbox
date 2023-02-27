@@ -96,7 +96,7 @@ class DefaultLinearScheduler:
         return self.val
 
 
-class AdversarialTrainerCertifiedPytorchIBP(Trainer):
+class AdversarialTrainerCertifiedIBPPytorch(Trainer):
     """
     Class performing certified adversarial training from methods such as
 
@@ -396,7 +396,8 @@ class AdversarialTrainerCertifiedPytorchIBP(Trainer):
 
                 if verbose:
                     pbar.set_description(
-                        f"Bound {bound:.2f}: Loss {torch.mean(torch.stack(epoch_non_cert_loss)):.2f} "  # pylint: disable=W0212
+                        f"Bound {bound:.2f}: "  # pylint: disable=W0212
+                        f"Loss {torch.mean(torch.stack(epoch_non_cert_loss)):.2f} "
                         f"Cert Loss {torch.mean(torch.stack(cert_loss)):.2f} "
                         f"Acc {np.mean(non_cert_acc):.2f} Cert Acc {np.mean(cert_acc):.2f} "
                         f"l_weight {loss_weighting_k:.2f} lr {self._classifier._optimizer.param_groups[0]['lr']}"
