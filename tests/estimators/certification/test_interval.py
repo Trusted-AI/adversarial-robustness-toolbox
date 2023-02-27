@@ -28,32 +28,35 @@ from tests.utils import ARTTestException
 from tests.utils import get_image_classifier_pt
 
 
-class SyntheticIntervalModel(torch.nn.Module):
-    def __init__(
-        self, input_shape, output_channels, kernel_size, stride=1, bias=False, padding=0, dilation=1, to_debug=True
-    ):
-        super().__init__()
+def get_synthetic_model():
+    class SyntheticIntervalModel(torch.nn.Module):
+        def __init__(
+            self, input_shape, output_channels, kernel_size, stride=1, bias=False, padding=0, dilation=1, to_debug=True
+        ):
+            super().__init__()
 
-        self.conv1 = PyTorchIntervalConv2D(
-            in_channels=input_shape[1],
-            out_channels=output_channels,
-            kernel_size=kernel_size,
-            input_shape=input_shape,
-            stride=stride,
-            padding=padding,
-            dilation=dilation,
-            bias=bias,
-            to_debug=to_debug,
-            device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
-        )
+            self.conv1 = PyTorchIntervalConv2D(
+                in_channels=input_shape[1],
+                out_channels=output_channels,
+                kernel_size=kernel_size,
+                input_shape=input_shape,
+                stride=stride,
+                padding=padding,
+                dilation=dilation,
+                bias=bias,
+                to_debug=to_debug,
+                device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
+            )
 
-    def forward(self, x):
-        """
-        Computes the forward pass though the neural network
-        :param x: input data of the form [number of samples, interval, feature]
-        :return:
-        """
-        return self.conv1.concrete_forward(x)
+        def forward(self, x):
+            """
+            Computes the forward pass though the neural network
+            :param x: input data of the form [number of samples, interval, feature]
+            :return:
+            """
+            return self.conv1.concrete_forward(x)
+
+    return SyntheticIntervalModel
 
 
 @pytest.fixture()
@@ -79,9 +82,10 @@ def test_conv_single_channel_in_multi_out(art_warning):
     """
     Check that the conversion works for a single input channel.
     """
+    synth_model = get_synthetic_model()
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     synthetic_data = torch.rand(32, 1, 25, 25).to(device)
-    model = SyntheticIntervalModel(input_shape=synthetic_data.shape, output_channels=4, kernel_size=5)
+    model = synth_model(input_shape=synthetic_data.shape, output_channels=4, kernel_size=5)
     output_from_equivalent = model.forward(synthetic_data)
     output_from_conv = model.conv1.conv_debug(synthetic_data)
     output_from_equivalent = torch.reshape(output_from_equivalent, output_from_conv.shape)
@@ -96,9 +100,10 @@ def test_conv_multi_channel_in_single_out():
     """
     Check that the conversion works for multiple input channels with single output
     """
+    synth_model = get_synthetic_model()
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     synthetic_data = torch.rand(32, 3, 25, 25).to(device)
-    model = SyntheticIntervalModel(input_shape=synthetic_data.shape, output_channels=1, kernel_size=5)
+    model = synth_model(input_shape=synthetic_data.shape, output_channels=1, kernel_size=5)
     output_from_equivalent = model.forward(synthetic_data)
     output_from_conv = model.conv1.conv_debug(synthetic_data)
 
@@ -113,9 +118,10 @@ def test_conv_multi_channel_in_multi_out():
     """
     Check that the conversion works for multiple input channels and multiple output channels.
     """
+    synth_model = get_synthetic_model()
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     synthetic_data = torch.rand(32, 3, 25, 25).to(device)
-    model = SyntheticIntervalModel(input_shape=synthetic_data.shape, output_channels=12, kernel_size=5)
+    model = synth_model(input_shape=synthetic_data.shape, output_channels=12, kernel_size=5)
     output_from_equivalent = model.forward(synthetic_data)
     output_from_conv = model.conv1.conv_debug(synthetic_data)
 
@@ -127,9 +133,10 @@ def test_conv_layer_multi_channel_in_multi_out_with_stride():
     """
     Check that the conversion works for multiple input/output channels with strided convolution
     """
+    synth_model = get_synthetic_model()
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     synthetic_data = torch.rand(32, 3, 25, 25).to(device)
-    model = SyntheticIntervalModel(input_shape=synthetic_data.shape, output_channels=12, kernel_size=5, stride=2)
+    model = synth_model(input_shape=synthetic_data.shape, output_channels=12, kernel_size=5, stride=2)
 
     output_from_equivalent = model.forward(synthetic_data)
     output_from_conv = model.conv1.conv_debug(synthetic_data)
@@ -142,9 +149,10 @@ def test_conv_layer_multi_channel_in_multi_out_with_stride_and_bias():
     """
     Check that the conversion works for multiple input/output channels with strided convolution and bias
     """
+    synth_model = get_synthetic_model()
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     synthetic_data = torch.rand(32, 3, 25, 25).to(device)
-    model = SyntheticIntervalModel(
+    model = synth_model(
         input_shape=synthetic_data.shape, output_channels=12, kernel_size=5, bias=True, stride=2
     )
     output_from_equivalent = model.forward(synthetic_data)
@@ -159,9 +167,10 @@ def test_conv_layer_padding():
     Check that the conversion works for multiple input/output channels with strided convolution, bias,
     and padding
     """
+    synth_model = get_synthetic_model()
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     synthetic_data = torch.rand(32, 3, 25, 25).to(device)
-    model = SyntheticIntervalModel(
+    model = synth_model(
         input_shape=synthetic_data.shape, output_channels=12, kernel_size=5, bias=True, padding=2, stride=2
     )
     output_from_equivalent = model.forward(synthetic_data)
@@ -176,9 +185,10 @@ def test_conv_layer_dilation():
     Check that the conversion works for multiple input/output channels with strided convolution, bias,
     padding, and dilation
     """
+    synth_model = get_synthetic_model()
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     synthetic_data = torch.rand(32, 3, 25, 25).to(device)
-    model = SyntheticIntervalModel(
+    model = synth_model(
         input_shape=synthetic_data.shape, output_channels=12, kernel_size=5, bias=True, padding=2, stride=2, dilation=3
     )
     output_from_equivalent = model.forward(synthetic_data)
@@ -192,6 +202,7 @@ def test_conv_layer_grads():
     """
     Checking that the gradients are correctly backpropagated through the convolutional layer
     """
+    synth_model = get_synthetic_model()
     output_channels = 12
     input_channels = 3
     loss_fn = torch.nn.MSELoss()
@@ -200,7 +211,7 @@ def test_conv_layer_grads():
     target = torch.rand(size=(32, 12, 21, 21)).to(device)
 
     synthetic_data = torch.rand(32, input_channels, 25, 25).to(device)
-    model = SyntheticIntervalModel(
+    model = synth_model(
         input_shape=synthetic_data.shape, output_channels=output_channels, kernel_size=5, bias=True, stride=1
     )
     model = model.to(device)
@@ -230,15 +241,19 @@ def test_conv_layer_grads():
 
 @pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
 def test_conv_train_loop():
+    """
+    Assert that training the interval conv layer gives the same results as a regular layer
+    """
     output_channels = 12
     input_channels = 3
     loss_fn = torch.nn.MSELoss()
+    synth_model = get_synthetic_model()
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     target = torch.rand(size=(32, 12, 21, 21)).to(device)
 
     synthetic_data = torch.rand(32, input_channels, 25, 25).to(device)
-    model = SyntheticIntervalModel(
+    model = synth_model(
         input_shape=synthetic_data.shape,
         output_channels=output_channels,
         kernel_size=5,
@@ -358,6 +373,9 @@ def test_mnist_certification(art_warning, fix_get_mnist_data):
 
 @pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
 def test_mnist_certification_conversion(art_warning, fix_get_mnist_data):
+    """
+    Assert that the re-convert method does not throw errors
+    """
     class TestModel(torch.nn.Module):
         def __init__(self):
             super().__init__()

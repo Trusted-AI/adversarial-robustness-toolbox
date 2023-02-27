@@ -171,7 +171,7 @@ class ConvertedModel(torch.nn.Module):
             x = torch.from_numpy(in_x.astype("float32")).to(self.device)
         else:
             x = in_x
-        for op_num, (op, _) in enumerate(zip(self.ops, self.interim_shapes)):
+        for op_num, op in enumerate(self.ops):
             # as reshapes are not modules we infer when the reshape from convolutional to dense occurs
             if self.reshape_op_num == op_num:
                 x = x.reshape((x.shape[0], -1))
@@ -194,7 +194,7 @@ class ConvertedModel(torch.nn.Module):
         """
         After an update on the convolutional weights, we re-convert them into the equivalent dense layer
         """
-        for op, _ in zip(self.ops, self.interim_shapes):
+        for op in self.ops:
             if isinstance(op, PyTorchIntervalConv2D):
                 op.re_convert(self.device)
 
@@ -427,4 +427,4 @@ class PyTorchIBPClassifier(PyTorchIntervalBounds, PyTorchClassifier):
         """
         Convert all the convolutional layers into their dense representations
         """
-        self.model.re_convert()
+        self.model.re_convert()  # type: ignore

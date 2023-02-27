@@ -157,7 +157,9 @@ class PyTorchIntervalConv2D(torch.nn.Module):
                     ).to(device)
                 )
             if bias and self.conv_debug.bias is not None:
-                self.bias_to_grad = torch.nn.Parameter(torch.tensor(self.conv_debug.bias.data.cpu().detach().numpy()).to(device))
+                self.bias_to_grad = torch.nn.Parameter(
+                    torch.tensor(self.conv_debug.bias.data.cpu().detach().numpy()).to(device)
+                )
 
         if supplied_input_weights is not None:
             if isinstance(kernel_size, tuple):
@@ -322,19 +324,25 @@ class PyTorchIntervalConv2D(torch.nn.Module):
         :return: output of the convolutional layer on x
         """
         if self.cnn is None:
-            self.cnn = torch.nn.Conv2d(in_channels=self.in_channels,
-                                       out_channels=self.out_channels,
-                                       kernel_size=self.kernel_size,
-                                       bias=self.include_bias,
-                                       stride=self.stride,
-                                       padding=self.padding,
-                                       dilation=self.dilation).to(self.device)
+            self.cnn = torch.nn.Conv2d(
+                in_channels=self.in_channels,
+                out_channels=self.out_channels,
+                kernel_size=self.kernel_size,
+                bias=self.include_bias,
+                stride=self.stride,
+                padding=self.padding,
+                dilation=self.dilation,
+            ).to(self.device)
         if isinstance(self.kernel_size, tuple):
-            self.cnn.weight.data = torch.reshape(torch.tensor(self.conv.weight.data.cpu().detach().numpy()),
-                            (self.out_channels, self.in_channels, self.kernel_size[0], self.kernel_size[1]),).to(self.device)
+            self.cnn.weight.data = torch.reshape(
+                torch.tensor(self.conv.weight.data.cpu().detach().numpy()),
+                (self.out_channels, self.in_channels, self.kernel_size[0], self.kernel_size[1]),
+            ).to(self.device)
         else:
-            self.cnn.weight.data = torch.reshape(torch.tensor(self.conv.weight.data.cpu().detach().numpy()),
-                            (self.out_channels, self.in_channels, self.kernel_size, self.kernel_size),).to(self.device)
+            self.cnn.weight.data = torch.reshape(
+                torch.tensor(self.conv.weight.data.cpu().detach().numpy()),
+                (self.out_channels, self.in_channels, self.kernel_size, self.kernel_size),
+            ).to(self.device)
         if self.cnn.bias is not None and self.bias_to_grad is not None:
             self.cnn.bias.data = torch.tensor(self.bias_to_grad.data.cpu().detach().numpy()).to(self.device)
 
