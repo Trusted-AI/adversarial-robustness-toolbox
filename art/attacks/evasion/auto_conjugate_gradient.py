@@ -142,7 +142,7 @@ class AutoConjugateGradient(EvasionAttack):
                     """abstract class of loss function of tensorflow v2"""
 
                     @abc.abstractmethod
-                    def __call__(self, *args, **kwargs):
+                    def __call__(self, y_true: tf.Tensor, y_pred: tf.Tensor, *args, **kwargs) -> tf.Tensor:
                         raise NotImplementedError
 
                 if loss_type == "cross_entropy":
@@ -157,7 +157,7 @@ class AutoConjugateGradient(EvasionAttack):
                             )
                             self.reduction = reduction
 
-                        def __call__(self, y_true, y_pred):
+                        def __call__(self, y_true: tf.Tensor, y_pred: tf.Tensor, *args, **kwargs):
                             if self.reduction == "mean":
                                 return tf.reduce_mean(self.ce_loss(y_true, y_pred))
                             if self.reduction == "sum":
@@ -185,7 +185,7 @@ class AutoConjugateGradient(EvasionAttack):
                         def __init__(self):
                             self.reduction = "sum"
 
-                        def __call__(self, y_true, y_pred):
+                        def __call__(self, y_true: tf.Tensor, y_pred: tf.Tensor, *args, **kwargs):
                             i_y_true = tf.cast(tf.math.argmax(tf.cast(y_true, tf.int32), axis=1), tf.int32)
                             i_y_pred_arg = tf.argsort(y_pred, axis=1)
                             i_z_i_list = []
@@ -243,7 +243,7 @@ class AutoConjugateGradient(EvasionAttack):
                             "the estimator has to to predict logits."
                         )
 
-                    class CrossEntropyLossTorch(torch.nn.modules.loss._Loss):
+                    class CrossEntropyLossTorch(torch.nn.modules.loss._Loss):  # pylint: disable=W0212
                         """Class defining cross entropy loss with reduction options."""
 
                         def __init__(self, reduction="sum"):
@@ -251,7 +251,7 @@ class AutoConjugateGradient(EvasionAttack):
                             self.ce_loss = torch.nn.CrossEntropyLoss(reduction="none")
                             self.reduction = reduction
 
-                        def __call__(self, y_true, y_pred):
+                        def __call__(self, y_true: torch.Tensor, y_pred: torch.Tensor, *args, **kwargs) -> torch.Tensor:
                             if self.reduction == "mean":
                                 return self.ce_loss(y_true, y_pred).mean()
                             if self.reduction == "sum":
@@ -259,6 +259,17 @@ class AutoConjugateGradient(EvasionAttack):
                             if self.reduction == "none":
                                 return self.ce_loss(y_true, y_pred)
                             raise NotImplementedError()
+
+                        def forward(
+                            self, input: torch.Tensor, target: torch.Tensor  # pylint: disable=W0622
+                        ) -> torch.Tensor:
+                            """
+                            Forward method.
+                            :param input: Predicted labels of shape (nb_samples, nb_classes).
+                            :param target: Target labels of shape (nb_samples, nb_classes).
+                            :return: Difference Logits Ratio Loss.
+                            """
+                            return self.__call__(y_true=target, y_pred=input)
 
                     _loss_object_pt: torch.nn.modules.loss._Loss = CrossEntropyLossTorch(reduction="mean")
 
@@ -271,7 +282,7 @@ class AutoConjugateGradient(EvasionAttack):
                             "If loss_type='difference_logits_ratio' the estimator has to to predict logits."
                         )
 
-                    class DifferenceLogitsRatioPyTorch(torch.nn.modules.loss._Loss):
+                    class DifferenceLogitsRatioPyTorch(torch.nn.modules.loss._Loss):  # pylint: disable=W0212
                         """
                         Callable class for Difference Logits Ratio loss in PyTorch.
                         """
@@ -280,7 +291,7 @@ class AutoConjugateGradient(EvasionAttack):
                             super().__init__()
                             self.reduction = "sum"
 
-                        def __call__(self, y_pred, y_true):  # type: ignore
+                        def __call__(self, y_pred: torch.Tensor, y_true: torch.Tensor) -> torch.Tensor:
                             if isinstance(y_true, np.ndarray):
                                 y_true = torch.from_numpy(y_true)
                             if isinstance(y_pred, np.ndarray):
@@ -288,8 +299,8 @@ class AutoConjugateGradient(EvasionAttack):
 
                             y_true = y_true.float()
 
-                            i_y_true = torch.argmax(y_true, axis=1)
-                            i_y_pred_arg = torch.argsort(y_pred, axis=1)
+                            i_y_true = torch.argmax(y_true, dim=1)
+                            i_y_pred_arg = torch.argsort(y_pred, dim=1)
                             i_z_i_list = []
 
                             for i in range(y_true.shape[0]):
@@ -318,6 +329,17 @@ class AutoConjugateGradient(EvasionAttack):
                             if self.reduction == "none":
                                 return dlr
                             raise NotImplementedError()
+
+                        def forward(
+                            self, input: torch.Tensor, target: torch.Tensor  # pylint: disable=W0622
+                        ) -> torch.Tensor:
+                            """
+                            Forward method.
+                            :param input: Predicted labels of shape (nb_samples, nb_classes).
+                            :param target: Target labels of shape (nb_samples, nb_classes).
+                            :return: Difference Logits Ratio Loss.
+                            """
+                            return self.__call__(y_true=target, y_pred=input)
 
                     _loss_object_pt = DifferenceLogitsRatioPyTorch()
 
