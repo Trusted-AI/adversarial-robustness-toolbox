@@ -42,15 +42,6 @@ class ComparisonType(Enum):
     DIFFERENCE = auto()
 
 
-class ComparisonType(Enum):
-    """
-    An Enum type for different kinds of comparisons between model outputs.
-    """
-
-    RATIO = auto()
-    DIFFERENCE = auto()
-
-
 def PDTP(  # pylint: disable=C0103
     target_estimator: "CLASSIFIER_TYPE",
     extra_estimator: "CLASSIFIER_TYPE",
