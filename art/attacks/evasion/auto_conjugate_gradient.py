@@ -157,7 +157,7 @@ class AutoConjugateGradient(EvasionAttack):
                             )
                             self.reduction = reduction
 
-                        def __call__(self, y_true: tf.Tensor, y_pred: tf.Tensor, *args, **kwargs):
+                        def __call__(self, y_true: tf.Tensor, y_pred: tf.Tensor, *args, **kwargs) -> tf.Tensor:
                             if self.reduction == "mean":
                                 return tf.reduce_mean(self.ce_loss(y_true, y_pred))
                             if self.reduction == "sum":
@@ -185,7 +185,7 @@ class AutoConjugateGradient(EvasionAttack):
                         def __init__(self):
                             self.reduction = "sum"
 
-                        def __call__(self, y_true: tf.Tensor, y_pred: tf.Tensor, *args, **kwargs):
+                        def __call__(self, y_true: tf.Tensor, y_pred: tf.Tensor, *args, **kwargs) -> tf.Tensor:
                             i_y_true = tf.cast(tf.math.argmax(tf.cast(y_true, tf.int32), axis=1), tf.int32)
                             i_y_pred_arg = tf.argsort(y_pred, axis=1)
                             i_z_i_list = []
@@ -342,6 +342,8 @@ class AutoConjugateGradient(EvasionAttack):
                             return self.__call__(y_true=target, y_pred=input)
 
                     _loss_object_pt = DifferenceLogitsRatioPyTorch()
+                else:
+                    raise NotImplementedError()
 
                 estimator_acg = PyTorchClassifier(
                     model=estimator.model,

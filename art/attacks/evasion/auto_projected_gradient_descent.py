@@ -271,7 +271,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
                             super().__init__()
                             self.reduction = "mean"
 
-                        def __call__(self, y_true: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
+                        def __call__(self, y_pred: torch.Tensor, y_true: torch.Tensor) -> torch.Tensor:
                             if isinstance(y_true, np.ndarray):
                                 y_true = torch.from_numpy(y_true)
                             if isinstance(y_pred, np.ndarray):
@@ -323,6 +323,8 @@ class AutoProjectedGradientDescent(EvasionAttack):
                             return self.__call__(y_true=target, y_pred=input)
 
                     _loss_object_pt = DifferenceLogitsRatioPyTorch()
+                else:
+                    raise NotImplementedError()
 
                 estimator_apgd = PyTorchClassifier(
                     model=estimator.model,
