@@ -29,6 +29,10 @@ from tests.utils import get_image_classifier_pt
 
 
 def get_synthetic_model():
+    """
+    Get a model with just one convolutional layer to test the convolutional to dense conversion
+    """
+
     class SyntheticIntervalModel(torch.nn.Module):
         def __init__(
             self, input_shape, output_channels, kernel_size, stride=1, bias=False, padding=0, dilation=1, to_debug=True
@@ -152,9 +156,7 @@ def test_conv_layer_multi_channel_in_multi_out_with_stride_and_bias():
     synth_model = get_synthetic_model()
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     synthetic_data = torch.rand(32, 3, 25, 25).to(device)
-    model = synth_model(
-        input_shape=synthetic_data.shape, output_channels=12, kernel_size=5, bias=True, stride=2
-    )
+    model = synth_model(input_shape=synthetic_data.shape, output_channels=12, kernel_size=5, bias=True, stride=2)
     output_from_equivalent = model.forward(synthetic_data)
     output_from_conv = model.conv1.conv_debug(synthetic_data)
 
@@ -225,15 +227,10 @@ def test_conv_layer_grads():
     )
     equivalent_bias = model.conv1.bias_to_grad.grad.data.detach().clone().to(device)
 
-    print("\n")
-    print("equivalent_bias ", equivalent_bias)
-
     model.zero_grad()
     output_from_conv = model.conv1.conv_debug(synthetic_data)
     loss = loss_fn(output_from_conv, target)
     loss.backward()
-
-    print("ground truth ", model.conv1.conv_debug.bias.grad)
 
     assert torch.allclose(equivalent_grads, model.conv1.conv_debug.weight.grad, atol=1e-05)
     assert torch.allclose(equivalent_bias, model.conv1.conv_debug.bias.grad, atol=1e-05)
@@ -376,6 +373,7 @@ def test_mnist_certification_conversion(art_warning, fix_get_mnist_data):
     """
     Assert that the re-convert method does not throw errors
     """
+
     class TestModel(torch.nn.Module):
         def __init__(self):
             super().__init__()
