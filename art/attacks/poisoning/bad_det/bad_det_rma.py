@@ -23,7 +23,7 @@ This module implements the BadDet Regional Misclassification Attack (RMA) on obj
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Dict, List, Tuple, TYPE_CHECKING
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -107,12 +107,12 @@ class BadDetRegionalMisclassificationAttack(PoisoningAttackBlackBox):
             labels = y_i["labels"].copy()
             scores = y_i["scores"].copy()
 
-            label_dict = {
+            target_dict = {
                 "boxes": boxes,
                 "labels": labels,
                 "scores": scores,
             }
-            y_poison.append(label_dict)
+            y_poison.append(target_dict)
 
             if self.class_source in labels:
                 source_indices.append(i)
@@ -131,18 +131,18 @@ class BadDetRegionalMisclassificationAttack(PoisoningAttackBlackBox):
             for j in range(len(labels)):
                 if labels[j] == self.class_source:
                     # extract the bounding box from the image
-                    x1, y1, x2, y2 = boxes[j]
+                    x_1, y_1, x_2, y_2 = boxes[j].astype(int)
                     if self.channels_first:
-                        bounding_box = image[:, x1:x2, y1:y2]
+                        bounding_box = image[:, y_1:y_2, x_1:x_2]
                     else:
-                        bounding_box = image[x1:x2, y1:y2, :]
+                        bounding_box = image[y_1:y_2, x_1:x_2, :]
 
                     # insert backdoor into the bounding box
-                    poisoned_input, _ = self.backdoor.poison(bounding_box, self.class_source)
+                    poisoned_input, _ = self.backdoor.poison(bounding_box, labels[j])
                     if self.channels_first:
-                        image[:, x1:x2, y1:y2] = poisoned_input
+                        image[:, y_1:y_2, x_1:x_2] = poisoned_input
                     else:
-                        image[x1:x2, y1:y2, :] = poisoned_input
+                        image[y_1:y_2, x_1:x_2, :] = poisoned_input
 
                     # change the source label to the target label
                     labels[j] = self.class_target
@@ -152,5 +152,5 @@ class BadDetRegionalMisclassificationAttack(PoisoningAttackBlackBox):
     def _check_params(self) -> None:
         if not isinstance(self.backdoor, PoisoningAttackBackdoor):
             raise ValueError("Backdoor must be of type PoisoningAttackBackdoor")
-        if not 0 < self.percent_poison < 1:
+        if not 0 < self.percent_poison <= 1:
             raise ValueError("percent_poison must be between 0 and 1")
