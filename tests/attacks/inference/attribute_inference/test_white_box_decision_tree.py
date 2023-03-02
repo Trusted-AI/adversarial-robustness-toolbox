@@ -59,9 +59,10 @@ def test_white_box(art_warning, decision_tree_estimator, get_iris_dataset):
         art_warning(e)
 
 
-def test_check_params(art_warning, image_dl_estimator_for_attack):
+@pytest.mark.skip_framework("dl_frameworks")
+def test_check_params(art_warning, decision_tree_estimator):
     try:
-        classifier = image_dl_estimator_for_attack(AttributeInferenceWhiteBoxDecisionTree)
+        classifier = decision_tree_estimator()
 
         with pytest.raises(ValueError):
             _ = AttributeInferenceWhiteBoxDecisionTree(classifier, attack_feature=-5)
