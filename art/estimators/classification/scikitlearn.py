@@ -200,7 +200,7 @@ class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):
         elif callable(getattr(self.model, "predict", None)):
             y_pred = to_categorical(
                 self.model.predict(x_preprocessed),
-                nb_classes=self.model.classes_.shape[0],
+                nb_classes=self._get_nb_classes(),
             )
         else:  # pragma: no cover
             raise ValueError("The provided model does not have methods `predict_proba` or `predict`.")

@@ -55,8 +55,8 @@ class Mixup(Preprocessor):
         num_classes: int,
         alpha: float = 1.0,
         num_mix: int = 2,
-        apply_fit: bool = False,
-        apply_predict: bool = True,
+        apply_fit: bool = True,
+        apply_predict: bool = False,
     ) -> None:
         """
         Create an instance of a Mixup data augmentation object.
