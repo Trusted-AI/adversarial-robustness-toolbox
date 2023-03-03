@@ -26,62 +26,62 @@ from PIL import Image
 
 def add_single_bd(x: np.ndarray, distance: int = 2, pixel_value: int = 1) -> np.ndarray:
     """
-    Augments a matrix by setting value some `distance` away from the bottom-right edge to 1. Works for single images
+    Augments a matrix by setting value some `distance` away from the bottom-right edge to 1. Works for a single image
     or a batch of images.
 
-    :param x: N X W X H matrix or W X H matrix
+    :param x: A single image or batch of images of shape NWHC, NHW, or HC. Pixels will be added to all channels.
     :param distance: Distance from bottom-right walls.
     :param pixel_value: Value used to replace the entries of the image matrix.
     :return: Backdoored image.
     """
-    x = np.array(x)
+    x = np.copy(x)
     shape = x.shape
     if len(shape) == 4:
-        width, height = x.shape[1:3]
-        x[:, width - distance, height - distance, :] = pixel_value
+        height, width = x.shape[1:3]
+        x[:, height - distance, width - distance, :] = pixel_value
     elif len(shape) == 3:
-        width, height = x.shape[1:]
-        x[:, width - distance, height - distance] = pixel_value
+        height, width = x.shape[1:]
+        x[:, height - distance, width - distance] = pixel_value
     elif len(shape) == 2:
-        width, height = x.shape
-        x[width - distance, height - distance] = pixel_value
+        height, width = x.shape
+        x[height - distance, width - distance] = pixel_value
     else:
-        raise ValueError("Invalid array shape: " + str(shape))
+        raise ValueError(f"Invalid array shape: {shape}")
     return x
 
 
 def add_pattern_bd(x: np.ndarray, distance: int = 2, pixel_value: int = 1) -> np.ndarray:
     """
-    Augments a matrix by setting a checkboard-like pattern of values some `distance` away from the bottom-right
+    Augments a matrix by setting a checkerboard-like pattern of values some `distance` away from the bottom-right
     edge to 1. Works for single images or a batch of images.
 
-    :param x: N X W X H matrix or W X H matrix or N X W X H X C matrix, pixels will ne added to all channels
+    :param x: A single image or batch of images of shape NWHC, NHW, or HC. Pixels will be added to all channels.
     :param distance: Distance from bottom-right walls.
     :param pixel_value: Value used to replace the entries of the image matrix.
     :return: Backdoored image.
     """
-    x = np.array(x)
+    x = np.copy(x)
     shape = x.shape
     if len(shape) == 4:
-        width, height = x.shape[1:3]
-        x[:, width - distance, height - distance, :] = pixel_value
-        x[:, width - distance - 1, height - distance - 1, :] = pixel_value
-        x[:, width - distance, height - distance - 2, :] = pixel_value
-        x[:, width - distance - 2, height - distance, :] = pixel_value
+        height, width = x.shape[1:3]
+        x[:, height - distance, width - distance, :] = pixel_value
+        x[:, height - distance - 1, width - distance - 1, :] = pixel_value
+        x[:, height - distance, width - distance - 2, :] = pixel_value
+        x[:, height - distance - 2, width - distance, :] = pixel_value
     elif len(shape) == 3:
-        width, height = x.shape[1:]
-        x[:, width - distance, height - distance] = pixel_value
-        x[:, width - distance - 1, height - distance - 1] = pixel_value
-        x[:, width - distance, height - distance - 2] = pixel_value
-        x[:, width - distance - 2, height - distance] = pixel_value
+        height, width = x.shape[1:]
+        x[:, height - distance, width - distance] = pixel_value
+        x[:, height - distance - 1, width - distance - 1] = pixel_value
+        x[:, height - distance, width - distance - 2] = pixel_value
+        x[:, height - distance - 2, width - distance] = pixel_value
     elif len(shape) == 2:
-        width, height = x.shape
-        x[width - distance, height - distance] = pixel_value
-        x[width - distance - 1, height - distance - 1] = pixel_value
-        x[width - distance, height - distance - 2] = pixel_value
-        x[width - distance - 2, height - distance] = pixel_value
+        height, width = x.shape
+        x[height - distance, width - distance] = pixel_value
+        x[height - distance - 1, width - distance - 1] = pixel_value
+        x[height - distance, width - distance - 2] = pixel_value
+        x[height - distance - 2, width - distance] = pixel_value
     else:
-        raise ValueError("Invalid array shape: " + str(shape))
+        raise ValueError(f"Invalid array shape: {shape}")
     return x
 
 
@@ -100,13 +100,13 @@ def insert_image(
     Augments a matrix by setting a checkerboard-like pattern of values some `distance` away from the bottom-right
     edge to 1. Works for single images or a batch of images.
 
-    :param x: N x W x H x C or N x C x W x H or N x W x H x C matrix or W x H x C matrix. X is in range [0,1]
+    :param x: A single image or batch of images of shape NHWC, NCHW, or HWC. Input is in range [0,1].
     :param backdoor_path: The path to the image to insert as a trigger.
     :param channels_first: Whether the channels axis is in the first or last dimension
     :param random: Whether or not the image should be randomly placed somewhere on the image.
     :param x_shift: Number of pixels from the left to shift the trigger (when not using random placement).
     :param y_shift: Number of pixels from the right to shift the trigger (when not using random placement).
-    :param size: The size the trigger image should be (width, height). Default `None` if no resizing necessary.
+    :param size: The size the trigger image should be (height, width). Default `None` if no resizing necessary.
     :param mode: The mode the image should be read in. See PIL documentation
                  (https://pillow.readthedocs.io/en/stable/handbook/concepts.html#concept-modes).
     :param blend: The blending factor
@@ -122,18 +122,18 @@ def insert_image(
         )
 
     if n_dim != 3:
-        raise ValueError("Invalid array shape " + str(x.shape))
+        raise ValueError(f"Invalid array shape {x.shape}")
 
     original_dtype = x.dtype
     data = np.copy(x)
     if channels_first:
         data = data.transpose([1, 2, 0])
 
-    width, height, num_channels = data.shape
+    height, width, num_channels = data.shape
 
     no_color = num_channels == 1
-    orig_img = Image.new("RGBA", (width, height), 0)
-    backdoored_img = Image.new("RGBA", (width, height), 0)
+    orig_img = Image.new("RGBA", (width, height), 0)  # height and width are swapped for PIL
+    backdoored_img = Image.new("RGBA", (width, height), 0)  # height and width are swapped for PIL
 
     if no_color:
         backdoored_input = Image.fromarray((data * 255).astype("uint8").squeeze(axis=2), mode=mode)
@@ -146,7 +146,7 @@ def insert_image(
     if size:
         trigger = trigger.resize(size)
 
-    backdoor_width, backdoor_height = trigger.size
+    backdoor_width, backdoor_height = trigger.size  # height and width are swapped for PIL
 
     if backdoor_width > width or backdoor_height > height:
         raise ValueError("Backdoor does not fit inside original image")
