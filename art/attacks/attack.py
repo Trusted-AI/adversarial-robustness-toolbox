@@ -22,7 +22,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import abc
 import logging
-from typing import Any, List, Optional, Tuple, Union, TYPE_CHECKING
+from typing import Any, Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 
@@ -321,6 +321,39 @@ class PoisoningAttackTransformer(PoisoningAttack):
         :param x: Training data
         :param y: Training labels
         :return: A poisoned classifier
+        """
+        raise NotImplementedError
+
+
+class PoisoningAttackObjectDetector(Attack):
+    """
+    Abstract base class for poisoning attack classes on object detection models.
+    """
+
+    def __init__(self):
+        """
+        Initializes object detector poisoning attack.
+        """
+        super().__init__(None)  # type: ignore
+
+    @abc.abstractmethod
+    def poison(
+        self,
+        x: np.ndarray,
+        y: List[Dict[str, np.ndarray]],
+        **kwargs,
+    ) -> Tuple[np.ndarray, List[Dict[str, np.ndarray]]]:
+        """
+        Generate poisoning examples and return them as an array. This method should be overridden by all concrete
+        poisoning attack implementations.
+
+        :param x: An array with the original inputs to be attacked.
+        :param y: True labels of type `List[Dict[np.ndarray]]`, one dictionary per input image.
+                  The keys and values of the dictionary are:
+                  - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
+                  - labels [N]: the labels for each image
+                  - scores [N]: the scores or each prediction.
+        :return: An tuple holding the `(poisoning_examples, poisoning_labels)`.
         """
         raise NotImplementedError
 

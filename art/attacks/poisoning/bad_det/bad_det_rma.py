@@ -23,25 +23,25 @@ This module implements the BadDet Regional Misclassification Attack (RMA) on obj
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 import numpy as np
 from tqdm.auto import tqdm
 
-from art.attacks.attack import PoisoningAttackBlackBox
+from art.attacks.attack import PoisoningAttackObjectDetector
 from art.attacks.poisoning.backdoor_attack import PoisoningAttackBackdoor
 
 logger = logging.getLogger(__name__)
 
 
-class BadDetRegionalMisclassificationAttack(PoisoningAttackBlackBox):
+class BadDetRegionalMisclassificationAttack(PoisoningAttackObjectDetector):
     """
     Implementation of the BadDet Regional Misclassification Attack.
 
     | Paper link: https://arxiv.org/abs/2205.14497
     """
 
-    attack_params = PoisoningAttackBlackBox.attack_params + [
+    attack_params = PoisoningAttackObjectDetector.attack_params + [
         "backdoor",
         "source_class",
         "target_class",
@@ -128,17 +128,17 @@ class BadDetRegionalMisclassificationAttack(PoisoningAttackBlackBox):
             labels = y_poison[i]["labels"]
             scores = y_poison[i]["scores"]
 
-            for j in range(len(labels)):
-                if labels[j] == self.class_source:
+            for j, (box, label) in enumerate(zip(boxes, labels)):
+                if label == self.class_source:
                     # extract the bounding box from the image
-                    x_1, y_1, x_2, y_2 = boxes[j].astype(int)
+                    x_1, y_1, x_2, y_2 = box.astype(int)
                     if self.channels_first:
                         bounding_box = image[:, y_1:y_2, x_1:x_2]
                     else:
                         bounding_box = image[y_1:y_2, x_1:x_2, :]
 
                     # insert backdoor into the bounding box
-                    poisoned_input, _ = self.backdoor.poison(bounding_box, labels[j])
+                    poisoned_input, _ = self.backdoor.poison(bounding_box, label)
                     if self.channels_first:
                         image[:, y_1:y_2, x_1:x_2] = poisoned_input
                     else:
