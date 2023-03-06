@@ -138,11 +138,12 @@ class BadDetRegionalMisclassificationAttack(PoisoningAttackObjectDetector):
                         bounding_box = image[y_1:y_2, x_1:x_2, :]
 
                     # insert backdoor into the bounding box
-                    poisoned_input, _ = self.backdoor.poison(bounding_box, label)
+                    # add an additional dimension to create a batch of size 1
+                    poisoned_input, _ = self.backdoor.poison(bounding_box[np.newaxis], label)
                     if self.channels_first:
-                        image[:, y_1:y_2, x_1:x_2] = poisoned_input
+                        image[:, y_1:y_2, x_1:x_2] = poisoned_input[0]
                     else:
-                        image[y_1:y_2, x_1:x_2, :] = poisoned_input
+                        image[y_1:y_2, x_1:x_2, :] = poisoned_input[0]
 
                     # change the source label to the target label
                     labels[j] = self.class_target
