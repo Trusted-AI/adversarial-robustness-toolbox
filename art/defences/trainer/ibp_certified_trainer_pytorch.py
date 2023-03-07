@@ -26,7 +26,6 @@ import random
 import sys
 
 import numpy as np
-
 from sklearn.utils import shuffle
 from tqdm import tqdm
 
