@@ -401,7 +401,6 @@ class PyTorchIBPClassifier(PyTorchIntervalBounds, PyTorchClassifier):
 
         :param output: model predictions
         :param target: ground truth labels
-
         :return: loss value
         """
         return self._loss(output, target)
