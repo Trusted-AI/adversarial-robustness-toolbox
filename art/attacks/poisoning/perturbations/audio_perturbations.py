@@ -17,7 +17,7 @@
 # SOFTWARE.
 """
 Adversarial perturbations designed to work for audio.
-Uses classes, rather than pure functions as in image_perturbations.py, 
+Uses classes, rather than pure functions as in image_perturbations.py,
 because loading the audio trigger from disk (librosa.load()) is very slow
 and should be done only once.
 """
@@ -72,7 +72,7 @@ class CacheTrigger:
         if shift + bd_length > length:
             raise ValueError("Shift + Backdoor length is greater than audio's length.")
 
-        audio[shift : shift + bd_length] += self.scaled_trigger
+        audio[shift: shift + bd_length] += self.scaled_trigger
         audio = np.clip(audio, -1.0, 1.0)
         return audio.astype(original_dtype)
 
