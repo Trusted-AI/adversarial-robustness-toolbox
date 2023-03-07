@@ -266,7 +266,7 @@ class PoisoningAttackGenerator(Attack):
         max_iter: int,
         lambda_p: float,
         verbose: int,
-        **kwargs
+        **kwargs,
     ) -> "GENERATOR_TYPE":
         """
         Returns a poisoned version of the generator used to initialize the attack

@@ -126,7 +126,6 @@ class BadDetRegionalMisclassificationAttack(PoisoningAttackObjectDetector):
 
             boxes = y_poison[i]["boxes"]
             labels = y_poison[i]["labels"]
-            scores = y_poison[i]["scores"]
 
             for j, (box, label) in enumerate(zip(boxes, labels)):
                 if label == self.class_source:
