@@ -104,6 +104,12 @@ demonstrates a MembershipInferenceBlackBox membership inference attack using sha
 [label_only_membership_inference.ipynb](label_only_membership_inference.ipynb) [[on nbviewer](https://nbviewer.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/label_only_membership_inference.ipynb)]
 demonstrates a LabelOnlyDecisionBoundary membership inference attack on a PyTorch classifier for the MNIST dataset.
 
+## Metrics
+
+[privacy_metric.ipynb](privacy_metric.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/privacy_metric.ipynb)] 
+demonstrates how to apply both the PDTP and the SHAPr privacy metrics to random forest and decision tree classifiers
+trained on the nursery dataset.
+
 ## Classifiers
 
 [classifier_blackbox.ipynb](classifier_blackbox.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/classifier_blackbox.ipynb)] demonstrates BlackBoxClassifier, the most general and
