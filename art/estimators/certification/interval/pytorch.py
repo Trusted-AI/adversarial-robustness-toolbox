@@ -192,7 +192,7 @@ class ConvertedModel(torch.nn.Module):
 
     def re_convert(self) -> None:
         """
-        After an update on the convolutional weights, we re-convert them into the equivalent dense layer
+        After an update on the convolutional weights, re-convert weights into the equivalent dense layer.
         """
         for op in self.ops:
             if isinstance(op, PyTorchIntervalConv2D):
