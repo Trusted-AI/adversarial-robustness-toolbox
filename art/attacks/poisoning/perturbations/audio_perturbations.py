@@ -26,6 +26,16 @@ import librosa
 
 
 class CacheTrigger:
+    """
+    Adds an audio backdoor trigger to a set of audio examples. Works for a single example or a batch of examples.
+
+    :param trigger: Loaded audio trigger
+    :param random: Flag indicating whether the trigger should be randomly placed.
+    :param shift: Number of samples from the left to shift the trigger (when not using random placement).
+    :param scale: Scaling factor for mixing the trigger.
+    :return: Backdoored audio.
+    """
+
     def __init__(
         self,
         trigger: np.ndarray,
@@ -33,15 +43,6 @@ class CacheTrigger:
         shift: int = 0,
         scale: float = 0.1,
     ):
-        """
-        Adds an audio backdoor trigger to a set of audio examples. Works for a single example or a batch of examples.
-
-        :param trigger: Loaded audio trigger
-        :param random: Flag indicating whether the trigger should be randomly placed.
-        :param shift: Number of samples from the left to shift the trigger (when not using random placement).
-        :param scale: Scaling factor for mixing the trigger.
-        :return: Backdoored audio.
-        """
         self.trigger = trigger
         self.scaled_trigger = self.trigger * scale
         self.random = random
@@ -72,12 +73,20 @@ class CacheTrigger:
         if shift + bd_length > length:
             raise ValueError("Shift + Backdoor length is greater than audio's length.")
 
-        audio[shift: shift + bd_length] += self.scaled_trigger
+        audio[shift : shift + bd_length] += self.scaled_trigger
         audio = np.clip(audio, -1.0, 1.0)
         return audio.astype(original_dtype)
 
 
 class CacheAudioTrigger(CacheTrigger):
+    """
+    Adds an audio backdoor trigger to a set of audio examples. Works for a single example or a batch of examples.
+
+    :param sampling_rate: Positive integer denoting the sampling rate for x.
+    :param backdoor_path: The path to the audio to insert as a trigger.
+    :param duration: Duration of the trigger in seconds. Default `None` if full trigger is to be used.
+    """
+
     def __init__(
         self,
         sampling_rate: int = 16000,
@@ -85,18 +94,11 @@ class CacheAudioTrigger(CacheTrigger):
         duration: float = None,
         **kwargs,
     ):
-        """
-        Adds an audio backdoor trigger to a set of audio examples. Works for a single example or a batch of examples.
-
-        :param sampling_rate: Positive integer denoting the sampling rate for x.
-        :param backdoor_path: The path to the audio to insert as a trigger.
-        :param duration: Duration of the trigger in seconds. Default `None` if full trigger is to be used.
-        """
         trigger, bd_sampling_rate = librosa.load(backdoor_path, mono=True, sr=None, duration=duration)
 
         if sampling_rate != bd_sampling_rate:
             print(
-                f"Backdoor sampling rate {bd_sampling_rate} does not match with the sampling rate provided. "
+                f"Backdoor sampling rate {bd_sampling_rate} does not match with the sampling rate provided."
                 "Resampling the backdoor to match the sampling rate."
             )
             trigger, _ = librosa.load(backdoor_path, mono=True, sr=sampling_rate, duration=duration)
@@ -104,6 +106,14 @@ class CacheAudioTrigger(CacheTrigger):
 
 
 class CacheToneTrigger(CacheTrigger):
+    """
+    Adds an audio backdoor trigger to a set of audio examples. Works for a single example or a batch of examples.
+
+    :param sampling_rate: Positive integer denoting the sampling rate for x.
+    :param frequency: Frequency of the tone to be added.
+    :param duration: Duration of the tone to be added.
+    """
+
     def __init__(
         self,
         sampling_rate: int = 16000,
@@ -111,12 +121,5 @@ class CacheToneTrigger(CacheTrigger):
         duration: float = 0.1,
         **kwargs,
     ):
-        """
-        Adds an audio backdoor trigger to a set of audio examples. Works for a single example or a batch of examples.
-
-        :param sampling_rate: Positive integer denoting the sampling rate for x.
-        :param frequency: Frequency of the tone to be added.
-        :param duration: Duration of the tone to be added.
-        """
         trigger = librosa.tone(frequency, sr=sampling_rate, duration=duration)
         super().__init__(trigger, **kwargs)
