@@ -143,5 +143,4 @@ class AttributeInferenceWhiteBoxDecisionTree(AttributeInferenceAttack):
         )
 
     def _check_params(self) -> None:
-        if self.attack_feature < 0:
-            raise ValueError("Attack feature must be positive.")
+        super()._check_params()
