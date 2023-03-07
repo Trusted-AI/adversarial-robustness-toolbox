@@ -455,7 +455,6 @@ def test_certification_bounds_vs_empirical(art_warning, fix_get_mnist_data):
     mnist_labels = fix_get_mnist_data[1]
 
     interval_preds = box_model.predict_intervals(x=mnist_data, bounds=0.3, limits=[0.0, 1.0])
-    print(interval_preds[0])
     box_model.model.set_forward_mode("attack")
     attack = ProjectedGradientDescent(
         estimator=box_model,
@@ -466,14 +465,10 @@ def test_certification_bounds_vs_empirical(art_warning, fix_get_mnist_data):
     )
     i_batch = attack.generate(mnist_data.astype("float32"), mnist_labels.astype("float32"))
     adv_preds = box_model.predict(i_batch)
-    print(adv_preds[0])
 
     for adv_pred, cert_prd in zip(adv_preds, interval_preds):
         assert np.all(adv_pred > cert_prd[0])
         assert np.all(adv_pred < cert_prd[1])
-
-    adv_preds = np.argmax(adv_preds, axis=1)
-    print("Test acc: ", np.mean(adv_preds == torch.tensor(fix_get_mnist_data[1])) * 100)
 
 
 @pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")

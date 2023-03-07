@@ -152,7 +152,7 @@ class AdversarialTrainerCertifiedIBPPytorch(Trainer):
             )
 
         super().__init__(classifier=classifier)
-        self._classifier: "IBP_CERTIFIER_TYPE"
+        self.classifier: "IBP_CERTIFIER_TYPE"
         self.pgd_params: "PGDParamDict"
         self.nb_epochs = nb_epochs
         self.loss_weighting = loss_weighting
@@ -180,7 +180,7 @@ class AdversarialTrainerCertifiedIBPPytorch(Trainer):
 
             # Setting up adversary and perform adversarial training:
             self.attack = ProjectedGradientDescent(
-                estimator=self._classifier,
+                estimator=self.classifier,
                 eps=self.pgd_params["eps"],
                 eps_step=self.pgd_params["eps_step"],
                 max_iter=self.pgd_params["max_iter"],
@@ -263,18 +263,18 @@ class AdversarialTrainerCertifiedIBPPytorch(Trainer):
             )
 
         # Set model mode
-        self._classifier._model.train(mode=training_mode)  # pylint: disable=W0212
+        self.classifier._model.train(mode=training_mode)  # pylint: disable=W0212
 
-        if self._classifier._optimizer is None:  # pragma: no cover # pylint: disable=W0212
+        if self.classifier.optimizer is None:  # pragma: no cover
             raise ValueError("An optimizer is needed to train the model, but none is provided.")
 
-        y = check_and_transform_label_format(y, nb_classes=self._classifier.nb_classes)
+        y = check_and_transform_label_format(y, nb_classes=self.classifier.nb_classes)
 
         # Apply preprocessing
-        x_preprocessed, y_preprocessed = self._classifier.apply_preprocessing(x, y, fit=True)
+        x_preprocessed, y_preprocessed = self.classifier.apply_preprocessing(x, y, fit=True)
 
         # Check label shape
-        y_preprocessed = self._classifier.reduce_labels(y_preprocessed)
+        y_preprocessed = self.classifier.reduce_labels(y_preprocessed)
 
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         ind = np.arange(len(x_preprocessed))
@@ -323,25 +323,25 @@ class AdversarialTrainerCertifiedIBPPytorch(Trainer):
                 y_batch = np.copy(y_cert[batch_size * m : batch_size * (m + 1)])
 
                 # Zero the parameter gradients
-                self._classifier._optimizer.zero_grad()  # pylint: disable=W0212
+                self.classifier.optimizer.zero_grad()
 
-                if self._classifier.provided_concrete_to_interval:
-                    processed_x_cert = self._classifier.provided_concrete_to_interval(x_batch, bound, limits=limits)
+                if self.classifier.provided_concrete_to_interval:
+                    processed_x_cert = self.classifier.provided_concrete_to_interval(x_batch, bound, limits=limits)
                 else:
-                    processed_x_cert = self._classifier.concrete_to_interval(x_batch, bound, limits=limits)
+                    processed_x_cert = self.classifier.concrete_to_interval(x_batch, bound, limits=limits)
 
                 # Perform prediction
                 self.set_forward_mode("abstract")
-                interval_preds = self._classifier.model.forward(processed_x_cert)
+                interval_preds = self.classifier.model.forward(processed_x_cert)
 
                 if certification_loss == "interval_loss_cce":
-                    certified_loss = self._classifier.interval_loss_cce(
+                    certified_loss = self.classifier.interval_loss_cce(
                         prediction=interval_preds,
-                        target=torch.from_numpy(y_batch).to(self._classifier.device),
+                        target=torch.from_numpy(y_batch).to(self.classifier.device),
                     )
                 else:
                     certified_loss = certification_loss(interval_preds, y_batch)
-                samples_certified = self._classifier.certify(preds=interval_preds.cpu().detach(), labels=y_batch)
+                samples_certified = self.classifier.certify(preds=interval_preds.cpu().detach(), labels=y_batch)
 
                 cert_loss.append(certified_loss)
                 cert_acc.append(np.sum(samples_certified) / batch_size)
@@ -357,50 +357,50 @@ class AdversarialTrainerCertifiedIBPPytorch(Trainer):
                     # Perform prediction
                     self.set_forward_mode("attack")
                     self.attack = ProjectedGradientDescent(
-                        estimator=self._classifier,
+                        estimator=self.classifier,
                         eps=self.pgd_params["eps"],
                         eps_step=self.pgd_params["eps_step"],
                         max_iter=self.pgd_params["max_iter"],
                         num_random_init=self.pgd_params["num_random_init"],
                     )
                     i_batch = self.attack.generate(i_batch, y=o_batch)
-                    self._classifier.model.zero_grad()
+                    self.classifier.model.zero_grad()
                 else:
                     i_batch = np.copy(x_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]).astype("float32")
                     o_batch = y_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]
                 self.set_forward_mode("concrete")
 
-                model_outputs = self._classifier.model.forward(i_batch)
-                acc = self._classifier.get_accuracy(model_outputs, o_batch)
+                model_outputs = self.classifier.model.forward(i_batch)
+                acc = self.classifier.get_accuracy(model_outputs, o_batch)
 
                 # Form the loss function
-                non_cert_loss = self._classifier.concrete_loss(
-                    model_outputs, torch.from_numpy(o_batch).to(self._classifier.device)
-                )  # pylint: disable=W0212
+                non_cert_loss = self.classifier.concrete_loss(
+                    model_outputs, torch.from_numpy(o_batch).to(self.classifier.device)
+                )
                 epoch_non_cert_loss.append(non_cert_loss)
                 non_cert_acc.append(acc)
 
                 loss = certified_loss * loss_weighting_k + non_cert_loss * (1 - loss_weighting_k)
                 # Do training
-                if self._classifier._use_amp:  # pragma: no cover # pylint: disable=W0212
+                if self.classifier._use_amp:  # pragma: no cover # pylint: disable=W0212
                     from apex import amp  # pylint: disable=E0611
 
-                    with amp.scale_loss(loss, self._classifier._optimizer) as scaled_loss:  # pylint: disable=W0212
+                    with amp.scale_loss(loss, self.classifier.optimizer) as scaled_loss:
                         scaled_loss.backward()
 
                 else:
                     loss.backward()
 
-                self._classifier._optimizer.step()  # pylint: disable=W0212
-                self._classifier.re_convert()
+                self.classifier.optimizer.step()
+                self.classifier.re_convert()
 
                 if verbose:
                     pbar.set_description(
-                        f"Bound {bound:.2f}: "  # pylint: disable=W0212
+                        f"Bound {bound:.2f}: "
                         f"Loss {torch.mean(torch.stack(epoch_non_cert_loss)):.2f} "
                         f"Cert Loss {torch.mean(torch.stack(cert_loss)):.2f} "
                         f"Acc {np.mean(non_cert_acc):.2f} Cert Acc {np.mean(cert_acc):.2f} "
-                        f"l_weight {loss_weighting_k:.2f} lr {self._classifier._optimizer.param_groups[0]['lr']}"
+                        f"l_weight {loss_weighting_k:.2f} lr {self.classifier.optimizer.param_groups[0]['lr']}"
                     )
 
             if scheduler is not None:
@@ -414,13 +414,13 @@ class AdversarialTrainerCertifiedIBPPytorch(Trainer):
         :param kwargs: Other parameters to be passed on to the `predict` function of the classifier.
         :return: Predictions for test set.
         """
-        if self._classifier._model._model.forward_mode != "concrete":  # pylint: disable=W0212
+        if self.classifier.model.forward_mode != "concrete":
             raise ValueError(
                 "For normal predictions, the model must be running in concrete mode. If an abstract "
                 "prediction is wanted then use predict_interval instead"
             )
 
-        return self._classifier.predict(x, **kwargs)
+        return self.classifier.predict(x, **kwargs)
 
     def predict_intervals(
         self,
@@ -446,12 +446,12 @@ class AdversarialTrainerCertifiedIBPPytorch(Trainer):
         :param batch_size: batch size to use when looping through the data
         """
 
-        if self._classifier._model._model.forward_mode != "abstract":  # pylint: disable=W0212
+        if self.classifier.model.forward_mode != "abstract":
             raise ValueError(
                 "For interval predictions, the model must be running in abstract mode. If a concrete "
                 "prediction is wanted then use predict instead"
             )
-        return self._classifier.predict_intervals(x, is_interval, bounds, limits, batch_size, **kwargs)
+        return self.classifier.predict_intervals(x, is_interval, bounds, limits, batch_size, **kwargs)
 
     def set_forward_mode(self, mode: str) -> None:
         """
@@ -459,4 +459,4 @@ class AdversarialTrainerCertifiedIBPPytorch(Trainer):
 
         :param mode: either concrete or abstract signifying how to run the forward pass
         """
-        self._classifier._model._model.set_forward_mode(mode)  # pylint: disable=W0212
+        self.classifier.model.set_forward_mode(mode)
