@@ -35,6 +35,7 @@ class CacheTrigger:
     ):
         """
         Adds an audio backdoor trigger to a set of audio examples. Works for a single example or a batch of examples.
+
         :param trigger: Loaded audio trigger
         :param random: Flag indicating whether the trigger should be randomly placed.
         :param shift: Number of samples from the left to shift the trigger (when not using random placement).
@@ -85,6 +86,8 @@ class CacheAudioTrigger(CacheTrigger):
         **kwargs,
     ):
         """
+        Adds an audio backdoor trigger to a set of audio examples. Works for a single example or a batch of examples.
+
         :param sampling_rate: Positive integer denoting the sampling rate for x.
         :param backdoor_path: The path to the audio to insert as a trigger.
         :param duration: Duration of the trigger in seconds. Default `None` if full trigger is to be used.
@@ -109,6 +112,8 @@ class CacheToneTrigger(CacheTrigger):
         **kwargs,
     ):
         """
+        Adds an audio backdoor trigger to a set of audio examples. Works for a single example or a batch of examples.
+
         :param sampling_rate: Positive integer denoting the sampling rate for x.
         :param frequency: Frequency of the tone to be added.
         :param duration: Duration of the tone to be added.
