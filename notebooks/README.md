@@ -252,6 +252,9 @@ demonstrates working Sleeper Agent poisoning attack implemented in PyTorch Frame
 which employs gradient matching, data selection, and target model re-training during the crafting process. Sleeper
 Agent is the first hidden trigger backdoor attack to be effective against neural networks trained from scratch.
 
+[poisoning_attack_bad_det_rma.ipynb](poisoning_attack_bad_det_rma.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_attack_bad_det_rma.ipynb)]
+demonstrates using the BadDet Regional Misclassification Attack (RMA) to insert backdoors and create poisoned samples for object detector models. This is a dirty label attack where a trigger is inserted into a bounding box and the corresponding classification label is changed.
+
 ## Certification and Verification
 
 [output_randomized_smoothing_mnist.ipynb](output_randomized_smoothing_mnist.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/output_randomized_smoothing_mnist.ipynb)]
