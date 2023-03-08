@@ -476,7 +476,7 @@ def test_mnist_certification_training(art_warning, fix_get_mnist_data):
     """
     Assert that the training loop runs without errors
     """
-    from art.defences.trainer import AdversarialTrainerCertifiedIBPPytorch
+    from art.defences.trainer import AdversarialTrainerCertifiedIBPPyTorch
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -500,7 +500,7 @@ def test_mnist_certification_training(art_warning, fix_get_mnist_data):
     from torch.optim.lr_scheduler import MultiStepLR
 
     scheduler = MultiStepLR(box_model._optimizer, milestones=[2, 5], gamma=0.1)
-    trainer = AdversarialTrainerCertifiedIBPPytorch(classifier=box_model, bound=0.2)
+    trainer = AdversarialTrainerCertifiedIBPPyTorch(classifier=box_model, bound=0.2)
     trainer.fit(x=mnist_data, y=mnist_labels, scheduler=scheduler, batch_size=32, nb_epochs=2, limits=[0, 1])
 
 
@@ -509,7 +509,7 @@ def test_mnist_certification_training_with_pgd(art_warning, fix_get_mnist_data):
     """
     Assert that the training loop runs without errors when also doing PGD augmentation
     """
-    from art.defences.trainer import AdversarialTrainerCertifiedIBPPytorch
+    from art.defences.trainer import AdversarialTrainerCertifiedIBPPyTorch
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -533,7 +533,7 @@ def test_mnist_certification_training_with_pgd(art_warning, fix_get_mnist_data):
     from torch.optim.lr_scheduler import MultiStepLR
 
     scheduler = MultiStepLR(box_model._optimizer, milestones=[2, 5], gamma=0.1)
-    trainer = AdversarialTrainerCertifiedIBPPytorch(
+    trainer = AdversarialTrainerCertifiedIBPPyTorch(
         classifier=box_model,
         bound=0.2,
         augment_with_pgd=True,

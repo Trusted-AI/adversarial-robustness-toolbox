@@ -185,7 +185,7 @@ class ConvertedModel(torch.nn.Module):
         """
         Helper function to set the forward mode of the model
 
-        :param mode: either concrete or abstract signifying how to run the forward pass
+        :param mode: either concrete, abstract, or attack to signify how to run the forward pass
         """
         assert mode in {"concrete", "abstract", "attack"}
         self.forward_mode = mode

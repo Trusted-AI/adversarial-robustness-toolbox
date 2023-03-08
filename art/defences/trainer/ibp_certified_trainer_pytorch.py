@@ -73,9 +73,9 @@ class DefaultLinearScheduler:
         """
         Create a .DefaultLinearScheduler instance.
 
-        :param step_per_epoch: how much to increase the certification radius every epoch
-        :param initial_val: the initial value
-        :param warmup: if to have an initial warmup period
+        :param step_per_epoch: How much to increase the certification radius every epoch.
+        :param initial_val: The initial value.
+        :param warmup: If to have an initial warmup period.
         """
         self.step_per_epoch = step_per_epoch
         self.val = initial_val
@@ -85,7 +85,9 @@ class DefaultLinearScheduler:
 
     def step(self) -> float:
         """
-        Grow the value by self.step_per_epoch
+        Grow the value by self.step_per_epoch.
+
+        :return: The updated scheduler value.
         """
         self.step_count += 1
         if self.step_count > self.warmup and self.val < self.final_val:
@@ -94,7 +96,7 @@ class DefaultLinearScheduler:
         return self.val
 
 
-class AdversarialTrainerCertifiedIBPPytorch(Trainer):
+class AdversarialTrainerCertifiedIBPPyTorch(Trainer):
     """
     Class performing certified adversarial training from methods such as
 
