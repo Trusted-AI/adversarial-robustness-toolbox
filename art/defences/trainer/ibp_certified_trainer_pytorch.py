@@ -193,9 +193,11 @@ class AdversarialTrainerCertifiedIBPPyTorch(Trainer):
         """
         Create linear schedulers based on default example values.
 
-        :param initial_val: initial value to begin the scheduler from
-        :param final_val: final value to end the scheduler at
-        :param epochs: total number of epochs
+        :param initial_val: Initial value to begin the scheduler from.
+        :param final_val: Final value to end the scheduler at.
+        :param epochs: Total number of epochs.
+
+        :return: A linear scheduler initialised with default example values.
         """
         warm_up = int(0.01 * epochs)
         epochs_to_ramp = int(0.30 * epochs)  # increasing eps from 0 to eps over 30% of the total epochs
