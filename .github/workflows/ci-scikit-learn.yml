@@ -37,6 +37,14 @@ jobs:
             framework: scikitlearn
             scikit-learn: 1.1.0
             python: 3.9
+          - name: scikit-learn 1.1.0 (Python 3.10)
+            framework: scikitlearn
+            scikit-learn: 1.1.0
+            python: 3.10
+          - name: scikit-learn 1.1.0 (Python 3.11)
+            framework: scikitlearn
+            scikit-learn: 1.1.0
+            python: 3.11
 
     name: ${{ matrix.name }}
     steps:
