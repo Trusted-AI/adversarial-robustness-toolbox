@@ -78,6 +78,7 @@ def insert_tone_trigger(
     trigger_shifted[shift : shift + bd_length] = np.copy(tone_trigger)
 
     audio += scale * trigger_shifted
+    audio = np.clip(audio, -1.0, 1.0)
 
     return audio.astype(original_dtype)
 
@@ -145,5 +146,6 @@ def insert_audio_trigger(
     trigger_shifted[shift : shift + bd_length] = np.copy(trigger)
 
     audio += scale * trigger_shifted
+    audio = np.clip(audio, -1.0, 1.0)
 
     return audio.astype(original_dtype)
