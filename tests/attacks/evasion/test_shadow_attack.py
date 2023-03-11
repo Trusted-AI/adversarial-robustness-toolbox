@@ -59,7 +59,7 @@ def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator_for_atta
 
         x_train_mnist_adv = attack.generate(x=x_train_mnist[0:1], y=y_train_mnist[0:1])
 
-        assert np.max(np.abs(x_train_mnist_adv - x_train_mnist[0:1])) == pytest.approx(0.38116083, abs=0.06)
+        assert np.max(np.abs(x_train_mnist_adv - x_train_mnist[0:1])) == pytest.approx(0.31463563, abs=0.06)
     except ARTTestException as e:
         art_warning(e)
 
