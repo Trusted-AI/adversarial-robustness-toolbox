@@ -51,6 +51,15 @@ class Trainer(abc.ABC):
         """
         raise NotImplementedError
 
+    @property
+    def classifier(self) -> "CLASSIFIER_LOSS_GRADIENTS_TYPE":
+        """
+        Access function to get the classifier.
+
+        :return: The classifier.
+        """
+        return self._classifier
+
     def get_classifier(self) -> "CLASSIFIER_LOSS_GRADIENTS_TYPE":
         """
         Return the classifier trained via adversarial training.

@@ -38,6 +38,12 @@ Adversarial Training Certified - PyTorch
    :members:
    :special-members:
 
+Adversarial Training Certified Interval Bound Propagation - PyTorch
+-------------------------------------------------------------------
+.. autoclass:: AdversarialTrainerCertifiedIBPPyTorch
+   :members:
+   :special-members:
+
 DP - InstaHide Training
 -----------------------
 .. autoclass:: DPInstaHideTrainer
