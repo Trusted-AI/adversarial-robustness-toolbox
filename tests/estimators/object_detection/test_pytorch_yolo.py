@@ -63,8 +63,11 @@ def get_pytorch_yolo(get_default_cifar10_subset):
 
     model = YoloV3(model)
 
+    params = [p for p in model.parameters() if p.requires_grad]
+    optimizer = torch.optim.SGD(params, lr=0.01)
+
     object_detector = PyTorchYolo(
-        model=model, input_shape=(3, 416, 416), clip_values=(0, 1), attack_losses=("loss_total",)
+        model=model, input_shape=(3, 416, 416), optimizer=optimizer, clip_values=(0, 1), attack_losses=("loss_total",)
     )
 
     n_test = 10
@@ -131,6 +134,18 @@ def test_predict(art_warning, get_pytorch_yolo):
         assert result[0]["labels"].shape == (10647,)
         expected_detection_classes = np.asarray([0, 0, 14, 14, 14, 14, 14, 14, 14, 0])
         np.testing.assert_array_almost_equal(result[0]["labels"][:10], expected_detection_classes, decimal=6)
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.only_with_platform("pytorch")
+def test_fit(art_warning, get_pytorch_yolo):
+
+    try:
+        object_detector, x_test, y_test = get_pytorch_yolo
+
+        object_detector.fit(x_test, y_test, nb_epochs=1)
 
     except ARTTestException as e:
         art_warning(e)
