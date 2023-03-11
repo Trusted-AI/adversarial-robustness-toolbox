@@ -120,7 +120,7 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
     | Paper link: https://arxiv.org/abs/1804.02767
     """
 
-    estimator_params = PyTorchEstimator.estimator_params + ["attack_losses"]
+    estimator_params = PyTorchEstimator.estimator_params + ["input_shape", "optimizer", "attack_losses"]
 
     def __init__(
         self,
