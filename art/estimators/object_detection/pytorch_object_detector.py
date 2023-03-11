@@ -381,32 +381,57 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
                  - labels [N]: the labels for each image
                  - scores [N]: the scores or each prediction.
         """
+        import torch
         import torchvision
 
+        # Set model to evaluation mode
         self._model.eval()
 
         # Apply preprocessing
-        x, _ = self._apply_preprocessing(x, y=None, fit=False)
+        x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
+        # Convert samples into tensors
         transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
-        image_tensor_list: List[np.ndarray] = []
 
         if self.clip_values is not None:
             norm_factor = self.clip_values[1]
         else:
             norm_factor = 1.0
-        for i in range(x.shape[0]):
-            image_tensor_list.append(transform(x[i] / norm_factor).to(self.device))
-        predictions = self._model(image_tensor_list)
 
-        for i_prediction, _ in enumerate(predictions):
-            predictions[i_prediction]["boxes"] = predictions[i_prediction]["boxes"].detach().cpu().numpy()
-            predictions[i_prediction]["labels"] = predictions[i_prediction]["labels"].detach().cpu().numpy()
-            predictions[i_prediction]["scores"] = predictions[i_prediction]["scores"].detach().cpu().numpy()
-            if "masks" in predictions[i_prediction]:
-                predictions[i_prediction]["masks"] = predictions[i_prediction]["masks"].detach().cpu().numpy().squeeze()
+        if self.channels_first:
+            x_preprocessed = torch.from_numpy(x_preprocessed / norm_factor).to(self.device)
+        else:
+            x_preprocessed = torch.stack([transform(x_i / norm_factor) for x_i in x_preprocessed]).to(self.device)
 
-        return predictions
+        results_list = []
+
+        # Run prediction
+        num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
+        for m in range(num_batch):
+            # Batch indexes
+            begin, end = (
+                m * batch_size,
+                min((m + 1) * batch_size, x_preprocessed.shape[0]),
+            )
+
+            with torch.no_grad():
+                predictions_x1y1x2y2 = self._model(x_preprocessed[begin:end])
+
+            for prediction_x1y1x2y2 in predictions_x1y1x2y2:
+                prediction = {}
+
+                prediction["boxes"] = prediction_x1y1x2y2["boxes"].detach().cpu().numpy()
+                prediction["labels"] = prediction_x1y1x2y2["labels"].detach().cpu().numpy()
+                prediction["scores"] = prediction_x1y1x2y2["scores"].detach().cpu().numpy()
+                if "masks" in prediction_x1y1x2y2:
+                    prediction["masks"] = prediction_x1y1x2y2["masks"].detach().cpu().numpy().squeeze()
+
+                results_list.append(prediction)
+
+        # Apply postprocessing
+        predictions = self._apply_postprocessing(preds=results_list, fit=False)
+
+        return predictions  # type: ignore
 
     def fit(  # pylint: disable=W0221
         self,
