@@ -19,7 +19,7 @@
 This module implements the task specific estimator for PyTorch object detectors.
 """
 import logging
-from typing import List, Dict, Optional, Tuple, Union, TYPE_CHECKING
+from typing import List, Dict, Any, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 
@@ -43,13 +43,15 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
     output formats of torchvision.
     """
 
-    estimator_params = PyTorchEstimator.estimator_params + ["attack_losses"]
+    estimator_params = PyTorchEstimator.estimator_params + ["input_shape", "optimizer", "attack_losses"]
 
     def __init__(
         self,
-        model,
+        model: "torch.nn.Module",
+        input_shape: Tuple[int, ...] = (-1, -1, -1),
+        optimizer: Optional["torch.optim.Optimizer"] = None,  # type: ignore
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        channels_first: Optional[bool] = None,
+        channels_first: Optional[bool] = False,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
         preprocessing: "PREPROCESSING_TYPE" = None,
@@ -67,10 +69,12 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         :param model: Object detection model. The output of the model is `List[Dict[Tensor]]`, one for each input
                       image. The fields of the Dict are as follows:
 
-                      - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values \
+                      - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values
                         between 0 and H and 0 and W
                       - labels (Int64Tensor[N]): the predicted labels for each image
                       - scores (Tensor[N]): the scores or each prediction
+        :param input_shape: The shape of one input instance.
+        :param optimizer: The optimizer used to train the classifier.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
@@ -109,7 +113,9 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
             preprocessing=preprocessing,
         )
 
-        self._input_shape = (-1, -1, -1)
+        self._input_shape = input_shape
+        self._optimizer = optimizer
+        self._attack_losses = attack_losses
 
         if self.clip_values is not None:
             if self.clip_values[0] != 0:
@@ -130,9 +136,9 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
             cuda_idx = torch.cuda.current_device()
             self._device = torch.device(f"cuda:{cuda_idx}")
 
+        self._model: torch.nn.Module
         self._model.to(self._device)
         self._model.eval()
-        self.attack_losses: Tuple[str, ...] = attack_losses
 
     @property
     def native_label_is_pytorch_format(self) -> bool:
@@ -142,13 +148,32 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         return True
 
     @property
+    def model(self) -> "torch.nn.Module":
+        return self._model
+
+    @property
     def input_shape(self) -> Tuple[int, ...]:
         """
         Return the shape of one input sample.
-
         :return: Shape of one input sample.
         """
-        return self._input_shape  # type: ignore
+        return self._input_shape
+
+    @property
+    def optimizer(self) -> "torch.optim.Optimizer":
+        """
+        Return the optimizer.
+        :return: The optimizer.
+        """
+        return self._optimizer  # type: ignore
+
+    @property
+    def attack_losses(self) -> Tuple[str, ...]:
+        """
+        Return the combination of strings of the loss components.
+        :return: The combination of strings of the loss components.
+        """
+        return self._attack_losses
 
     @property
     def device(self) -> "torch.device":
@@ -276,7 +301,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         :param y: Target values of format `List[Dict[Tensor]]`, one for each input image. The
                   fields of the Dict are as follows:
 
-                  - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values \
+                  - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values
                     between 0 and H and 0 and W
                   - labels (Int64Tensor[N]): the predicted labels for each image
                   - scores (Tensor[N]): the scores or each prediction.
@@ -383,8 +408,106 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
 
         return predictions
 
-    def fit(self, x: np.ndarray, y, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
-        raise NotImplementedError
+    def fit(  # pylint: disable=W0221
+        self,
+        x: np.ndarray,
+        y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]],
+        batch_size: int = 128,
+        nb_epochs: int = 10,
+        drop_last: bool = False,
+        scheduler: Optional[Any] = None,
+        **kwargs,
+    ) -> None:
+        """
+        Fit the classifier on the training set `(x, y)`.
+        :param x: Samples of shape (nb_samples, height, width, nb_channels).
+        :param y: Target values of format `List[Dict[Tensor]]`, one for each input image. The
+                  fields of the Dict are as follows:
+                  - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values
+                    between 0 and H and 0 and W
+                  - labels (Int64Tensor[N]): the predicted labels for each image
+                  - scores (Tensor[N]): the scores or each prediction.
+        :param batch_size: Size of batches.
+        :param nb_epochs: Number of epochs to use for training.
+        :param drop_last: Set to ``True`` to drop the last incomplete batch, if the dataset size is not divisible by
+                          the batch size. If ``False`` and the size of dataset is not divisible by the batch size, then
+                          the last batch will be smaller. (default: ``False``)
+        :param scheduler: Learning rate scheduler to run at the start of every epoch.
+        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
+                       and providing it takes no effect.
+        """
+        import torch
+        import torchvision
+
+        # Set model to train mode
+        self._model.train()
+
+        if self._optimizer is None:  # pragma: no cover
+            raise ValueError("An optimizer is needed to train the model, but none for provided.")
+
+        # Apply preprocessing
+        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y=y, fit=False, no_grad=True)
+
+        # Convert samples into tensors
+        transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
+
+        if self.clip_values is not None:
+            norm_factor = self.clip_values[1]
+        else:
+            norm_factor = 1.0
+
+        if self.channels_first:
+            x_preprocessed = torch.from_numpy(x_preprocessed / norm_factor).to(self.device)
+        else:
+            x_preprocessed = torch.stack([transform(x_i / norm_factor) for x_i in x_preprocessed]).to(self.device)
+
+        # Convert labels into tensors, if needed
+        if isinstance(y_preprocessed[0]["boxes"], np.ndarray):
+            y_preprocessed_tensor = []
+            for y_i in y_preprocessed:
+                y_preprocessed_t = {
+                    "boxes": torch.from_numpy(y_i["boxes"]).type(torch.float).to(self.device),
+                    "labels": torch.from_numpy(y_i["labels"]).type(torch.int64).to(self.device),
+                }
+                if "masks" in y_i:
+                    y_preprocessed_t["masks"] = torch.from_numpy(y_i["masks"]).type(torch.uint8).to(self.device)
+                y_preprocessed_tensor.append(y_preprocessed_t)
+            y_preprocessed = y_preprocessed_tensor
+        y_preprocessed = np.asarray(y_preprocessed)
+
+        num_batch = len(x_preprocessed) / float(batch_size)
+        if drop_last:
+            num_batch = int(np.floor(num_batch))
+        else:
+            num_batch = int(np.ceil(num_batch))
+        ind = np.arange(len(x_preprocessed))
+
+        # Start training
+        for _ in range(nb_epochs):
+            # Shuffle the examples
+            np.random.shuffle(ind)
+
+            # Train for one epoch
+            for m in range(num_batch):
+                i_batch = x_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]
+                o_batch = y_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]
+
+                # Zero the parameter gradients
+                self._optimizer.zero_grad()
+
+                # Form the loss function
+                loss_components = self._model(i_batch, o_batch)
+                if isinstance(loss_components, dict):
+                    loss = sum(loss_components.values())
+                else:
+                    loss = loss_components
+
+                # Do training
+                loss.backward()  # type: ignore
+                self._optimizer.step()
+
+            if scheduler is not None:
+                scheduler.step()
 
     def get_activations(
         self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
@@ -402,7 +525,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         :param y: Target values of format `List[Dict[Tensor]]`, one for each input image. The
                   fields of the Dict are as follows:
 
-                  - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values \
+                  - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values
                     between 0 and H and 0 and W
                   - labels (Int64Tensor[N]): the predicted labels for each image
                   - scores (Tensor[N]): the scores or each prediction.
@@ -425,7 +548,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         :param y: Target values of format `List[Dict[Tensor]]`, one for each input image. The
                   fields of the Dict are as follows:
 
-                  - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values \
+                  - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values
                     between 0 and H and 0 and W
                   - labels (Int64Tensor[N]): the predicted labels for each image
                   - scores (Tensor[N]): the scores or each prediction.

@@ -44,8 +44,10 @@ class PyTorchFasterRCNN(PyTorchObjectDetector):
     def __init__(
         self,
         model: Optional["torchvision.models.detection.fasterrcnn_resnet50_fpn"] = None,
+        input_shape: Tuple[int, ...] = (-1, -1, -1),
+        optimizer: Optional["torch.optim.Optimizer"] = None,  # type: ignore
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        channels_first: Optional[bool] = None,
+        channels_first: Optional[bool] = False,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
         preprocessing: "PREPROCESSING_TYPE" = None,
@@ -67,6 +69,8 @@ class PyTorchFasterRCNN(PyTorchObjectDetector):
                         between 0 and H and 0 and W
                       - labels (Int64Tensor[N]): the predicted labels for each image
                       - scores (Tensor[N]): the scores or each prediction
+        :param input_shape: The shape of one input instance.
+        :param optimizer: The optimizer used to train the classifier.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
@@ -91,6 +95,8 @@ class PyTorchFasterRCNN(PyTorchObjectDetector):
 
         super().__init__(
             model=model,
+            input_shape=input_shape,
+            optimizer=optimizer,
             clip_values=clip_values,
             channels_first=channels_first,
             preprocessing_defences=preprocessing_defences,
