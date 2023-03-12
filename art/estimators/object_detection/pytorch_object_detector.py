@@ -399,23 +399,20 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
             norm_factor = 1.0
 
         if self.channels_first:
-            x_preprocessed = torch.from_numpy(x_preprocessed / norm_factor).to(self.device)
+            x_preprocessed = [torch.from_numpy(x_i / norm_factor).to(self.device) for x_i in x_preprocessed]
         else:
-            x_preprocessed = torch.stack([transform(x_i / norm_factor) for x_i in x_preprocessed]).to(self.device)
+            x_preprocessed = [transform(x_i / norm_factor).to(self.device) for x_i in x_preprocessed]
 
         results_list = []
 
         # Run prediction
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         for m in range(num_batch):
-            # Batch indexes
-            begin, end = (
-                m * batch_size,
-                min((m + 1) * batch_size, x_preprocessed.shape[0]),
-            )
+            # Batch using indices
+            i_batch = x_preprocessed[m * batch_size : (m + 1) * batch_size]
 
             with torch.no_grad():
-                predictions_x1y1x2y2 = self._model(x_preprocessed[begin:end])
+                predictions_x1y1x2y2 = self._model(i_batch)
 
             for prediction_x1y1x2y2 in predictions_x1y1x2y2:
                 prediction = {}

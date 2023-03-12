@@ -442,14 +442,11 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
         # Run prediction
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         for m in range(num_batch):
-            # Batch indexes
-            begin, end = (
-                m * batch_size,
-                min((m + 1) * batch_size, x_preprocessed.shape[0]),
-            )
+            # Batch using indices
+            i_batch = x_preprocessed[m * batch_size : (m + 1) * batch_size]
 
             with torch.no_grad():
-                predictions_xcycwh = self._model(x_preprocessed[begin:end])
+                predictions_xcycwh = self._model(i_batch)
 
             predictions_x1y1x2y2 = translate_predictions_xcycwh_to_x1y1x2y2(
                 y_pred_xcycwh=predictions_xcycwh, input_height=self.input_shape[1], input_width=self.input_shape[2]
