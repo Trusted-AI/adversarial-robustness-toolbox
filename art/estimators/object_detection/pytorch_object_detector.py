@@ -372,7 +372,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         """
         Perform prediction for a batch of inputs.
 
-        :param x: Samples of shape (nb_samples, height, width, nb_channels).
+        :param x: Samples of shape NCHW or NHWC.
         :param batch_size: Batch size.
         :return: Predictions of format `List[Dict[str, np.ndarray]]`, one for each input image. The fields of the Dict
                  are as follows:
@@ -442,7 +442,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
     ) -> None:
         """
         Fit the classifier on the training set `(x, y)`.
-        :param x: Samples of shape (nb_samples, height, width, nb_channels).
+        :param x: Samples of shape NCHW or NHWC.
         :param y: Target values of format `List[Dict[Tensor]]`, one for each input image. The
                   fields of the Dict are as follows:
                   - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values

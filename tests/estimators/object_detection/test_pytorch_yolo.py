@@ -67,7 +67,12 @@ def get_pytorch_yolo(get_default_cifar10_subset):
     optimizer = torch.optim.SGD(params, lr=0.01)
 
     object_detector = PyTorchYolo(
-        model=model, input_shape=(3, 416, 416), optimizer=optimizer, clip_values=(0, 1), attack_losses=("loss_total",)
+        model=model,
+        input_shape=(3, 416, 416),
+        optimizer=optimizer,
+        clip_values=(0, 1),
+        channels_first=True,
+        attack_losses=("loss_total",),
     )
 
     n_test = 10

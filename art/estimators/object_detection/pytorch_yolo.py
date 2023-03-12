@@ -157,7 +157,7 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
                the shape of clip values needs to match the total number of features.
-        :param channels_first: [Currently unused] Set channels first or last.
+        :param channels_first: Set channels first or last.
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
         :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
@@ -413,7 +413,7 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
         """
         Perform prediction for a batch of inputs.
 
-        :param x: Samples of shape (nb_samples, height, width, nb_channels).
+        :param x: Samples of shape NCHW or NHWC.
         :param batch_size: Batch size.
         :return: Predictions of format `List[Dict[str, np.ndarray]]`, one for each input image. The fields of the Dict
                  are as follows:
@@ -423,6 +423,7 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
                  - scores [N]: the scores or each prediction.
         """
         import torch
+        import torchvision
 
         # Set model to evaluation mode
         self._model.eval()
@@ -430,12 +431,18 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
-        # Convert samples into tensor
+        # Convert samples into tensors
+        transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
+
         if self.clip_values is not None:
             norm_factor = self.clip_values[1]
         else:
             norm_factor = 1.0
-        x_preprocessed = torch.from_numpy(x_preprocessed / norm_factor).to(self.device)
+
+        if self.channels_first:
+            x_preprocessed = torch.from_numpy(x_preprocessed / norm_factor).to(self.device)
+        else:
+            x_preprocessed = torch.stack([transform(x_i / norm_factor).to(self.device) for x_i in x_preprocessed])
 
         results_list = []
 
@@ -481,7 +488,7 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
         """
         Fit the classifier on the training set `(x, y)`.
 
-        :param x: Samples of shape (nb_samples, height, width, nb_channels).
+        :param x: Samples of shape NCHW or NHWC.
         :param y: Target values of format `List[Dict[Tensor]]`, one for each input image. The
                   fields of the Dict are as follows:
 
@@ -499,6 +506,7 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
                        and providing it takes no effect.
         """
         import torch
+        import torchvision
 
         # Set model to train mode
         self._model.train()
@@ -510,11 +518,17 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y=y, fit=False, no_grad=True)
 
         # Convert samples into tensors
+        transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
+
         if self.clip_values is not None:
             norm_factor = self.clip_values[1]
         else:
             norm_factor = 1.0
-        x_preprocessed = torch.from_numpy(x_preprocessed / norm_factor).to(self.device)
+
+        if self.channels_first:
+            x_preprocessed = torch.from_numpy(x_preprocessed / norm_factor).to(self.device)
+        else:
+            x_preprocessed = torch.stack([transform(x_i / norm_factor).to(self.device) for x_i in x_preprocessed])
 
         # Convert labels into tensors, if needed
         if isinstance(y_preprocessed[0]["boxes"], np.ndarray):
