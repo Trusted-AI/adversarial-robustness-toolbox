@@ -438,7 +438,7 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
         else:
             x_preprocessed = torch.stack([transform(x_i / norm_factor).to(self.device) for x_i in x_preprocessed])
 
-        results_list = []
+        predictions: List[Dict[str, np.ndarray]] = []
 
         # Run prediction
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
@@ -462,12 +462,9 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
                 if "masks" in prediction_x1y1x2y2:
                     prediction["masks"] = prediction_x1y1x2y2["masks"].detach().cpu().numpy().squeeze()
 
-                results_list.append(prediction)
+                predictions.append(prediction)
 
-        # Apply postprocessing
-        predictions = self._apply_postprocessing(preds=results_list, fit=False)
-
-        return predictions  # type: ignore
+        return predictions
 
     def fit(  # pylint: disable=W0221
         self,
