@@ -105,6 +105,7 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
         batch_size: int = 10,
         use_certification_schedule: bool = True,
         certification_schedule: Optional[Any] = None,
+        augment_with_pgd: bool = True,
         pgd_params: Optional["PGDParamDict"] = None,
     ) -> None:
         """
@@ -133,7 +134,7 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
         :param batch_size: Size of batches to use for certified training. NB, this will run the data
                            sequentially accumulating gradients over the batch size.
         """
-        from art.estimators.certification.interval.pytorch import PytorchDeepZ
+        from art.estimators.certification.deep_z.pytorch import PytorchDeepZ
 
         if not isinstance(classifier, PytorchDeepZ):
             raise ValueError(
@@ -155,6 +156,7 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
         self.use_certification_schedule = use_certification_schedule
         self.certification_schedule = certification_schedule
         self.batch_size = batch_size
+        self.augment_with_pgd = augment_with_pgd
         # Setting up adversary and perform adversarial training:
         self.attack = ProjectedGradientDescent(
             estimator=self.classifier,
@@ -238,8 +240,15 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
             bound = self.bound
 
         for _ in tqdm(range(epochs)):
+            epoch_non_cert_loss = []
+            epoch_non_cert_acc = []
+
+            epoch_cert_loss = []
+            epoch_cert_acc = []
+
             if self.use_certification_schedule:
                 bound = certification_schedule_function.step()
+
             # Shuffle the examples
             random.shuffle(ind)
 
@@ -291,7 +300,7 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
                     certification_results = []
                     bias = torch.squeeze(bias).detach().cpu().numpy()
                     eps = eps.detach().cpu().numpy()
-
+                    # TODO change this to samples_certified = self.classifier.certify(preds=interval_preds.cpu().detach(), labels=y_batch)
                     for k in range(self.classifier.nb_classes):
                         if k != concrete_pred:
                             cert_via_sub = self.classifier.certify_via_subtraction(
@@ -306,6 +315,9 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
                         break
 
                 certified_loss /= batch_size
+                epoch_cert_loss.append(certified_loss)
+                epoch_cert_acc.append(np.sum(samples_certified) / batch_size)
+
                 # Concrete PGD loss
                 i_batch = np.copy(
                     x_preprocessed[ind[m * self.pgd_params["batch_size"] : (m + 1) * self.pgd_params["batch_size"]]]
@@ -316,30 +328,39 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
 
                 # Perform prediction
                 self.set_forward_mode("concrete")
-                self.attack = ProjectedGradientDescent(
-                    estimator=self.classifier,
-                    eps=self.pgd_params["eps"],
-                    eps_step=self.pgd_params["eps_step"],
-                    max_iter=self.pgd_params["max_iter"],
-                    num_random_init=self.pgd_params["num_random_init"],
-                )
-                i_batch = self.attack.generate(i_batch, y=o_batch)
+
+                if self.augment_with_pgd:
+                    self.attack = ProjectedGradientDescent(
+                        estimator=self.classifier,
+                        eps=self.pgd_params["eps"],
+                        eps_step=self.pgd_params["eps_step"],
+                        max_iter=self.pgd_params["max_iter"],
+                        num_random_init=self.pgd_params["num_random_init"],
+                    )
+                    i_batch = self.attack.generate(i_batch, y=o_batch)
+                else:
+                    i_batch = np.copy(x_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]).astype("float32")
+                    o_batch = y_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]
+
                 self.classifier.model.zero_grad()
                 model_outputs = self.classifier.model.forward(i_batch)
-                acc = self.classifier.get_accuracy(model_outputs, o_batch)
 
                 # Form the loss function
-                pgd_loss = self.classifier.concrete_loss(
+                non_cert_loss = self.classifier.concrete_loss(
                     model_outputs, torch.from_numpy(o_batch).to(self.classifier.device)
-                )  # pylint: disable=W0212
+                )
+                epoch_non_cert_loss.append(non_cert_loss)
+                epoch_non_cert_acc.append(self.classifier.get_accuracy(model_outputs, o_batch))
 
                 if verbose:
                     pbar.set_description(
-                        f"Bound {bound:.2f}: Loss {pgd_loss:.2f} Cert Loss {certified_loss:.2f} "
-                        f"Acc {acc:.2f} Cert Acc {samples_certified / batch_size:.2f}"
+                        f"Bound {bound:.3f}: "
+                        f"Loss {torch.mean(torch.stack(epoch_non_cert_loss)):.2f} "
+                        f"Cert Loss {torch.mean(torch.stack(epoch_cert_loss)):.2f} "
+                        f"Acc {np.mean(epoch_non_cert_acc):.2f} Cert Acc {np.mean(epoch_cert_acc):.2f}"
                     )
 
-                loss = certified_loss * self.loss_weighting + pgd_loss * (1 - self.loss_weighting)
+                loss = certified_loss * self.loss_weighting + non_cert_loss * (1 - self.loss_weighting)
                 # Do training
                 if self.classifier._use_amp:  # pragma: no cover # pylint: disable=W0212
                     from apex import amp  # pylint: disable=E0611
