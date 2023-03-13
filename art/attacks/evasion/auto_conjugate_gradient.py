@@ -1,4 +1,26 @@
 # MIT License
+
+# Copyright (c) 2022 Keiichiro Yamamura
+
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+# MIT License
 #
 # Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
 #
@@ -16,9 +38,9 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the `Auto Projected Gradient Descent` attack.
+This module implements the 'Auto Conjugate Gradient' attack.
 
-| Paper link: https://arxiv.org/abs/2003.01690
+| Paper link: https://arxiv.org/abs/2206.09628
 """
 import abc
 import logging
@@ -40,11 +62,12 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class AutoProjectedGradientDescent(EvasionAttack):
+class AutoConjugateGradient(EvasionAttack):
     """
-    Implementation of the `Auto Projected Gradient Descent` attack.
+    Implementation of the 'Auto Conjugate Gradient' attack.
+    The original implementation is https://github.com/yamamura-k/ACG.
 
-    | Paper link: https://arxiv.org/abs/2003.01690
+    | Paper link: https://arxiv.org/abs/2206.09628
     """
 
     attack_params = EvasionAttack.attack_params + [
@@ -75,7 +98,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
         verbose: bool = True,
     ):
         """
-        Create a :class:`.AutoProjectedGradientDescent` instance.
+        Create a :class:`.AutoConjugateGradient` instance.
 
         :param estimator: An trained estimator.
         :param norm: The norm of the adversarial perturbation. Possible values: "inf", np.inf, 1 or 2.
@@ -110,7 +133,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
                     "estimator seems to predict probabilities."
                 )
 
-            estimator_apgd = estimator
+            estimator_acg = estimator
         else:
             if isinstance(estimator, TensorFlowV2Classifier):
                 import tensorflow as tf
@@ -120,14 +143,14 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
                     @abc.abstractmethod
                     def __call__(self, y_true: tf.Tensor, y_pred: tf.Tensor, *args, **kwargs) -> tf.Tensor:
-                        raise NotImplementedError()
+                        raise NotImplementedError
 
                 if loss_type == "cross_entropy":
-                    # modification for image-wise stepsize update
+
                     class CrossEntropyLossV2(TensorFlowV2Loss):
                         """Class defining cross entropy loss with reduction options."""
 
-                        def __init__(self, from_logits, reduction="mean"):
+                        def __init__(self, from_logits, reduction="sum"):
                             self.ce_loss = tf.keras.losses.CategoricalCrossentropy(
                                 from_logits=from_logits,
                                 reduction=tf.keras.losses.Reduction.NONE,
@@ -160,7 +183,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
                         """
 
                         def __init__(self):
-                            self.reduction = "mean"
+                            self.reduction = "sum"
 
                         def __call__(self, y_true: tf.Tensor, y_pred: tf.Tensor, *args, **kwargs) -> tf.Tensor:
                             i_y_true = tf.cast(tf.math.argmax(tf.cast(y_true, tf.int32), axis=1), tf.int32)
@@ -186,8 +209,6 @@ class AutoProjectedGradientDescent(EvasionAttack):
                             z_y = tf.linalg.diag_part(z_y)
 
                             dlr = -(z_y - z_i) / (z_1 - z_3)
-
-                            # modification for image-wise stepsize update
                             if self.reduction == "mean":
                                 return tf.reduce_mean(dlr)
                             if self.reduction == "sum":
@@ -198,7 +219,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
                     _loss_object_tf = DifferenceLogitsRatioTensorFlowV2()
 
-                estimator_apgd = TensorFlowV2Classifier(
+                estimator_acg = TensorFlowV2Classifier(
                     model=estimator.model,
                     nb_classes=estimator.nb_classes,
                     input_shape=estimator.input_shape,
@@ -222,16 +243,15 @@ class AutoProjectedGradientDescent(EvasionAttack):
                             "the estimator has to to predict logits."
                         )
 
-                    # modification for image-wise stepsize update
                     class CrossEntropyLossTorch(torch.nn.modules.loss._Loss):  # pylint: disable=W0212
                         """Class defining cross entropy loss with reduction options."""
 
-                        def __init__(self, reduction="mean"):
+                        def __init__(self, reduction="sum"):
                             super().__init__()
                             self.ce_loss = torch.nn.CrossEntropyLoss(reduction="none")
                             self.reduction = reduction
 
-                        def __call__(self, y_true: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
+                        def __call__(self, y_true: torch.Tensor, y_pred: torch.Tensor, *args, **kwargs) -> torch.Tensor:
                             if self.reduction == "mean":
                                 return self.ce_loss(y_true, y_pred).mean()
                             if self.reduction == "sum":
@@ -269,7 +289,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
                         def __init__(self):
                             super().__init__()
-                            self.reduction = "mean"
+                            self.reduction = "sum"
 
                         def __call__(self, y_pred: torch.Tensor, y_true: torch.Tensor) -> torch.Tensor:
                             if isinstance(y_true, np.ndarray):
@@ -301,7 +321,6 @@ class AutoProjectedGradientDescent(EvasionAttack):
                             z_i = torch.diagonal(z_i)
                             z_y = torch.diagonal(z_y)
 
-                            # modification for image-wise stepsize update
                             dlr = (-(z_y - z_i) / (z_1 - z_3)).float()
                             if self.reduction == "mean":
                                 return dlr.mean()
@@ -326,7 +345,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
                 else:
                     raise NotImplementedError()
 
-                estimator_apgd = PyTorchClassifier(
+                estimator_acg = PyTorchClassifier(
                     model=estimator.model,
                     loss=_loss_object_pt,
                     input_shape=estimator.input_shape,
@@ -343,7 +362,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
             else:  # pragma: no cover
                 raise ValueError(f"The loss type {loss_type} is not supported for the provided estimator.")
 
-        super().__init__(estimator=estimator_apgd)
+        super().__init__(estimator=estimator_acg)
         self.norm = norm
         self.eps = eps
         self.eps_step = eps_step
@@ -387,7 +406,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
-        for _ in trange(max(1, self.nb_random_init), desc="AutoPGD - restart", disable=not self.verbose):
+        for _ in trange(max(1, self.nb_random_init), desc="ACG - restart", disable=not self.verbose):
             # Determine correctly predicted samples
             y_pred = self.estimator.predict(x_adv)
             if self.targeted:
@@ -420,7 +439,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
             # Compute perturbation with implicit batching
             for batch_id in trange(
                 int(np.ceil(x_robust.shape[0] / float(self.batch_size))),
-                desc="AutoPGD - batch",
+                desc="ACG - batch",
                 leave=False,
                 disable=not self.verbose,
             ):
@@ -441,56 +460,69 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
                 var_w = [math.ceil(p * self.max_iter) for p in var_w]
 
-                # modification for image-wise stepsize update
+                # self.eta = np.full((self.batch_size, 1, 1, 1), 2 * self.eps_step).astype(ART_NUMPY_DTYPE)
                 _batch_size = x_k.shape[0]
                 eta = np.full((_batch_size, 1, 1, 1), self.eps_step).astype(ART_NUMPY_DTYPE)
                 self.count_condition_1 = np.zeros(shape=(_batch_size,))
+                gradk_1 = np.zeros_like(x_k)
+                cgradk_1 = np.zeros_like(x_k)
+                cgradk = np.zeros_like(x_k)
+                gradk_1_best = np.zeros_like(x_k)
+                cgradk_1_best = np.zeros_like(x_k)
+                gradk_1_tmp = np.zeros_like(x_k)
+                cgradk_1_tmp = np.zeros_like(x_k)
 
-                for k_iter in trange(self.max_iter, desc="AutoPGD - iteration", leave=False, disable=not self.verbose):
+                for k_iter in trange(self.max_iter, desc="ACG - iteration", leave=False, disable=not self.verbose):
 
                     # Get perturbation, use small scalar to avoid division by 0
                     tol = 10e-8
 
                     # Get gradient wrt loss; invert it if attack is targeted
                     grad = self.estimator.loss_gradient(x_k, y_batch) * (1 - 2 * int(self.targeted))
+                    if k_iter == 0:
+                        gradk_1 = grad.copy()
+                        cgradk_1 = grad.copy()
+                        cgradk = grad.copy()
+                    else:
+                        beta = get_beta(grad, gradk_1, cgradk_1)
+                        cgradk = grad + beta * cgradk_1
 
                     # Apply norm bound
                     if self.norm in [np.inf, "inf"]:
-                        grad = np.sign(grad)
+                        grad = np.sign(cgradk)
                     elif self.norm == 1:
                         ind = tuple(range(1, len(x_k.shape)))
-                        grad = grad / (np.sum(np.abs(grad), axis=ind, keepdims=True) + tol)
+                        cgradk = cgradk / (np.sum(np.abs(cgradk), axis=ind, keepdims=True) + tol)
                     elif self.norm == 2:
                         ind = tuple(range(1, len(x_k.shape)))
-                        grad = grad / (np.sqrt(np.sum(np.square(grad), axis=ind, keepdims=True)) + tol)
-                    assert x_k.shape == grad.shape
+                        cgradk = cgradk / (np.sqrt(np.sum(np.square(cgradk), axis=ind, keepdims=True)) + tol)
+                    assert x_k.shape == cgradk.shape
 
-                    perturbation = grad
+                    perturbation = cgradk
 
                     if mask is not None:
                         perturbation = perturbation * (mask.astype(ART_NUMPY_DTYPE))
 
                     # Apply perturbation and clip
-                    z_k_p_1 = x_k + eta * perturbation
+                    x_k_p_1 = x_k + eta * perturbation
 
                     if self.estimator.clip_values is not None:
                         clip_min, clip_max = self.estimator.clip_values
-                        z_k_p_1 = np.clip(z_k_p_1, clip_min, clip_max)
+                        x_k_p_1 = np.clip(x_k_p_1, clip_min, clip_max)
 
                     if k_iter == 0:
-                        x_1 = z_k_p_1
+                        x_1 = x_k_p_1
                         perturbation = projection(x_1 - x_init_batch, self.eps, self.norm)
                         x_1 = x_init_batch + perturbation
 
                         f_0 = self.estimator.compute_loss(x=x_k, y=y_batch, reduction="none")
                         f_1 = self.estimator.compute_loss(x=x_1, y=y_batch, reduction="none")
 
-                        # modification for image-wise stepsize update
                         self.eta_w_j_m_1 = eta.copy()
                         self.f_max_w_j_m_1 = f_0.copy()
+
                         self.f_max = f_0.copy()
                         self.x_max = x_k.copy()
-                        self.x_max_m_1 = x_init_batch.copy()
 
                         f1_ge_f0 = f_1 >= f_0
                         f_1_tmp = f_1[f1_ge_f0].copy()
@@ -498,17 +530,15 @@ class AutoProjectedGradientDescent(EvasionAttack):
                         x_1_tmp = x_1[f1_ge_f0].copy()
                         self.x_max[f1_ge_f0] = x_1_tmp.copy()
                         self.count_condition_1[f1_ge_f0] += 1
+
                         # Settings for next iteration k
-                        x_k_m_1 = x_k.copy()
-                        x_k = x_1.copy()
+                        x_k = x_1
+                        gradk_1_best = gradk_1.copy()
+                        cgradk_1_best = cgradk_1.copy()
 
                     else:
-                        perturbation = projection(z_k_p_1 - x_init_batch, self.eps, self.norm)
-                        z_k_p_1 = x_init_batch + perturbation
-
-                        alpha = 0.75
-
-                        x_k_p_1 = x_k + alpha * (z_k_p_1 - x_k) + (1 - alpha) * (x_k - x_k_m_1)
+                        perturbation = projection(x_k_p_1 - x_init_batch, self.eps, self.norm)
+                        x_k_p_1 = x_init_batch + perturbation
 
                         if self.estimator.clip_values is not None:
                             clip_min, clip_max = self.estimator.clip_values
@@ -519,7 +549,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
                         f_k_p_1 = self.estimator.compute_loss(x=x_k_p_1, y=y_batch, reduction="none")
 
-                        if (f_k_p_1 == 0.0).all():  # modification for image-wise stepsize update
+                        if (f_k_p_1 == 0.0).all():
                             x_k = x_k_p_1.copy()
                             break
 
@@ -532,14 +562,17 @@ class AutoProjectedGradientDescent(EvasionAttack):
                         # update the best points
                         x_k_p_1_tmp = x_k_p_1[fk_ge_fm].copy()
                         self.x_max[fk_ge_fm] = x_k_p_1_tmp.copy()
-                        x_k_tmp = x_k[fk_ge_fm].copy()
-                        self.x_max_m_1[fk_ge_fm] = x_k_tmp.copy()
                         f_k_p_1_tmp = f_k_p_1[fk_ge_fm].copy()
                         self.f_max[fk_ge_fm] = f_k_p_1_tmp.copy()
+                        gradk_1_tmp = gradk_1[fk_ge_fm].copy()
+                        gradk_1_best[fk_ge_fm] = gradk_1_tmp.copy()
+                        cgradk_1_tmp = cgradk_1[fk_ge_fm].copy()
+                        cgradk_1_best[fk_ge_fm] = cgradk_1_tmp.copy()
 
                         # update the search points
-                        x_k_m_1 = x_k.copy()
                         x_k = x_k_p_1.copy()
+                        gradk_1 = grad.copy()
+                        cgradk_1 = cgradk.copy()
 
                         if k_iter in var_w:
 
@@ -556,8 +589,10 @@ class AutoProjectedGradientDescent(EvasionAttack):
                             # move to the best point
                             x_max_tmp = self.x_max[condition].copy()
                             x_k[condition] = x_max_tmp.copy()
-                            x_max_m_1_tmp = self.x_max_m_1[condition].copy()
-                            x_k_m_1[condition] = x_max_m_1_tmp.copy()
+                            gradk_1_tmp = gradk_1_best[condition].copy()
+                            gradk_1[condition] = gradk_1_tmp.copy()
+                            cgradk_1_tmp = cgradk_1_best[condition].copy()
+                            cgradk_1[condition] = cgradk_1_tmp.copy()
 
                             self.count_condition_1[:] = 0
                             self.eta_w_j_m_1 = eta.copy()
@@ -602,3 +637,16 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
         if not isinstance(self.verbose, bool):
             raise ValueError("The argument `verbose` has to be of type bool.")
+
+
+def get_beta(gradk, gradk_1, cgradk_1):
+    """compute the coefficient beta required to update CG direction"""
+    _batch_size = gradk.shape[0]
+    _cgradk_1 = cgradk_1.reshape(_batch_size, -1)
+    _gradk = -gradk.reshape(_batch_size, -1)
+    _gradk_1 = -gradk_1.reshape(_batch_size, -1)
+    delta_gradk = _gradk - _gradk_1
+    betak = -(_gradk * delta_gradk).sum(axis=1) / (
+        (_cgradk_1 * delta_gradk).sum(axis=1) + np.finfo(ART_NUMPY_DTYPE).eps
+    )
+    return betak.reshape((_batch_size, 1, 1, 1))

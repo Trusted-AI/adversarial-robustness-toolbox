@@ -44,6 +44,12 @@ Auto Projected Gradient Descent (Auto-PGD)
    :members:
    :special-members:
 
+Auto Conjugate Gradient (Auto-CG)
+------------------------------------------
+.. autoclass:: AutoConjugateGradient
+   :members:
+   :special-members:
+
 Boundary Attack / Decision-Based Attack
 ---------------------------------------
 .. autoclass:: BoundaryAttack
