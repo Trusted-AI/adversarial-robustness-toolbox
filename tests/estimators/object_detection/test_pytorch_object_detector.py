@@ -37,7 +37,7 @@ def get_pytorch_object_detector(get_default_mnist_subset):
 
     from art.estimators.object_detection.pytorch_object_detector import PyTorchObjectDetector
 
-    # Define object detectors
+    # Define object detector
     model = torchvision.models.detection.fasterrcnn_resnet50_fpn(
         pretrained=True, progress=True, num_classes=91, pretrained_backbone=True
     )
@@ -86,7 +86,7 @@ def get_pytorch_object_detector_mask(get_default_mnist_subset):
 
     from art.estimators.object_detection.pytorch_object_detector import PyTorchObjectDetector
 
-    # Define object detectors
+    # Define object detector
     model = torchvision.models.detection.maskrcnn_resnet50_fpn(
         pretrained=True, progress=True, num_classes=91, pretrained_backbone=True
     )
@@ -201,7 +201,6 @@ def test_fit_mask(art_warning, get_pytorch_object_detector_mask):
 
 @pytest.mark.only_with_platform("pytorch")
 def test_loss_gradient(art_warning, get_pytorch_object_detector):
-
     try:
         object_detector, x_test, y_test = get_pytorch_object_detector
 
@@ -283,7 +282,6 @@ def test_loss_gradient(art_warning, get_pytorch_object_detector):
 
 @pytest.mark.only_with_platform("pytorch")
 def test_loss_gradient_mask(art_warning, get_pytorch_object_detector_mask):
-
     try:
         object_detector, x_test, y_test = get_pytorch_object_detector_mask
 

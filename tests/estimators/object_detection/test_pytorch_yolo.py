@@ -105,7 +105,6 @@ def get_pytorch_yolo(get_default_cifar10_subset):
 
 @pytest.mark.only_with_platform("pytorch")
 def test_predict(art_warning, get_pytorch_yolo):
-
     try:
         object_detector, x_test, _ = get_pytorch_yolo
 
@@ -156,7 +155,6 @@ def test_fit(art_warning, get_pytorch_yolo):
 
 @pytest.mark.only_with_platform("pytorch")
 def test_loss_gradient(art_warning, get_pytorch_yolo):
-
     try:
         object_detector, x_test, y_test = get_pytorch_yolo
 
@@ -282,8 +280,7 @@ def test_loss_gradient(art_warning, get_pytorch_yolo):
 
 
 @pytest.mark.only_with_platform("pytorch")
-def test_errors(art_warning, get_pytorch_yolo):
-
+def test_errors(art_warning):
     try:
         from pytorchyolo import models
 
@@ -324,9 +321,7 @@ def test_errors(art_warning, get_pytorch_yolo):
 
 @pytest.mark.only_with_platform("pytorch")
 def test_preprocessing_defences(art_warning, get_pytorch_yolo):
-
     try:
-
         from art.defences.preprocessor.spatial_smoothing import SpatialSmoothing
 
         pre_def = SpatialSmoothing()
@@ -346,7 +341,6 @@ def test_preprocessing_defences(art_warning, get_pytorch_yolo):
 
 @pytest.mark.only_with_platform("pytorch")
 def test_compute_losses(art_warning, get_pytorch_yolo):
-
     try:
         object_detector, x_test, y_test = get_pytorch_yolo
         losses = object_detector.compute_losses(x=x_test, y=y_test)
@@ -358,14 +352,13 @@ def test_compute_losses(art_warning, get_pytorch_yolo):
 
 @pytest.mark.only_with_platform("pytorch")
 def test_compute_loss(art_warning, get_pytorch_yolo):
-
     try:
         object_detector, x_test, y_test = get_pytorch_yolo
 
         # Compute loss
         loss = object_detector.compute_loss(x=x_test, y=y_test)
 
-        assert pytest.approx(0.0078019718639552, abs=0.01) == float(loss)
+        assert pytest.approx(0.0078019718, abs=0.01) == float(loss)
 
     except ARTTestException as e:
         art_warning(e)
@@ -373,7 +366,6 @@ def test_compute_loss(art_warning, get_pytorch_yolo):
 
 @pytest.mark.only_with_platform("pytorch")
 def test_pgd(art_warning, get_pytorch_yolo):
-
     try:
         from art.attacks.evasion import ProjectedGradientDescent
 
