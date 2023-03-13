@@ -133,6 +133,13 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
         :param batch_size: Size of batches to use for certified training. NB, this will run the data
                            sequentially accumulating gradients over the batch size.
         """
+        from art.estimators.certification.interval.pytorch import PytorchDeepZ
+
+        if not isinstance(classifier, PytorchDeepZ):
+            raise ValueError(
+                "The classifier to pass in should be of type PytorchDeepZ which can be found in "
+                "art.estimators.certification.deep_z.pytorch.PytorchDeepZ"
+            )
         super().__init__(classifier=classifier)
         self._classifier: "CERTIFIER_TYPE"
         self.pgd_params: "PGDParamDict"
@@ -356,7 +363,7 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
         :param kwargs: Other parameters to be passed on to the `predict` function of the classifier.
         :return: Predictions for test set.
         """
-        if self._classifier._model._model.forward_mode != "concrete":  # pylint: disable=W0212
+        if self._classifier.model.forward_mode != "concrete":
             raise ValueError(
                 "For normal predictions, the model must be running in concrete mode. If an abstract "
                 "prediction is wanted then use predict_zonotopes instead"
@@ -372,7 +379,7 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
         :param bound: The perturbation range for the zonotope.
         """
 
-        if self._classifier._model._model.forward_mode != "abstract":  # pylint: disable=W0212
+        if self._classifier.model.forward_mode != "abstract":
             raise ValueError(
                 "For zonotope predictions, the model must be running in abstract mode. If a concrete "
                 "prediction is wanted then use predict instead"
@@ -386,4 +393,4 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
 
         :param mode: either concrete or abstract signifying how to run the forward pass
         """
-        self._classifier._model._model.set_forward_mode(mode)  # pylint: disable=W0212
+        self._classifier.model.set_forward_mode(mode)
