@@ -979,7 +979,7 @@ class ScikitlearnGaussianNB(ScikitlearnClassifier):
         :return: A tuple of trainable attributes.
         """
         # For scikit-learn <=0.24
-        if hasattr(self.model, "simga_"):
+        if hasattr(self.model, "sigma_"):
             return "sigma_", "theta_"
 
         return "var_", "theta_"
