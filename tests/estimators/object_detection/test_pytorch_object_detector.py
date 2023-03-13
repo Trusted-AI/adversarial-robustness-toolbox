@@ -52,12 +52,28 @@ def get_pytorch_object_detector(get_default_mnist_subset):
         attack_losses=["loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg"],
     )
 
-    n_test = 10
     (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-    x_test_mnist = x_test_mnist[0:n_test].transpose(0, 2, 3, 1)
-    y_test_mnist = y_test_mnist[0:n_test]
 
-    yield object_detector, x_test_mnist, y_test_mnist
+    x_test = np.transpose(x_test_mnist[:2], (0, 2, 3, 1))
+    x_test = np.repeat(x_test.astype(np.float32), repeats=3, axis=3)
+
+    # Create labels
+    result = object_detector.predict(x=x_test)
+
+    y_test = [
+        {
+            "boxes": result[0]["boxes"],
+            "labels": result[0]["labels"],
+            "scores": np.ones_like(result[0]["labels"]),
+        },
+        {
+            "boxes": result[1]["boxes"],
+            "labels": result[1]["labels"],
+            "scores": np.ones_like(result[1]["labels"]),
+        },
+    ]
+
+    yield object_detector, x_test, y_test
 
 
 @pytest.fixture()
@@ -85,20 +101,38 @@ def get_pytorch_object_detector_mask(get_default_mnist_subset):
         attack_losses=["loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg"],
     )
 
-    n_test = 10
     (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-    x_test_mnist = x_test_mnist[0:n_test].transpose(0, 2, 3, 1)
-    y_test_mnist = y_test_mnist[0:n_test]
 
-    yield object_detector, x_test_mnist, y_test_mnist
+    x_test = np.transpose(x_test_mnist[:2], (0, 2, 3, 1))
+    x_test = np.repeat(x_test.astype(np.float32), repeats=3, axis=3)
+
+    # Create labels
+    result = object_detector.predict(x=x_test)
+
+    y_test = [
+        {
+            "boxes": result[0]["boxes"],
+            "labels": result[0]["labels"],
+            "scores": np.ones_like(result[0]["labels"]),
+            "masks": result[0]["masks"],
+        },
+        {
+            "boxes": result[1]["boxes"],
+            "labels": result[1]["labels"],
+            "scores": np.ones_like(result[1]["labels"]),
+            "masks": result[0]["masks"],
+        },
+    ]
+
+    yield object_detector, x_test, y_test
 
 
 @pytest.mark.only_with_platform("pytorch")
 def test_predict(art_warning, get_pytorch_object_detector):
     try:
-        object_detector, x_test_mnist, _ = get_pytorch_object_detector
+        object_detector, x_test, _ = get_pytorch_object_detector
 
-        result = object_detector.predict(x_test_mnist.astype(np.float32))
+        result = object_detector.predict(x_test)
         assert list(result[0].keys()) == ["boxes", "labels", "scores"]
 
         assert result[0]["boxes"].shape == (7, 4)
@@ -122,9 +156,9 @@ def test_predict(art_warning, get_pytorch_object_detector):
 @pytest.mark.only_with_platform("pytorch")
 def test_predict_mask(art_warning, get_pytorch_object_detector_mask):
     try:
-        object_detector, x_test_mnist, _ = get_pytorch_object_detector_mask
+        object_detector, x_test, _ = get_pytorch_object_detector_mask
 
-        result = object_detector.predict(x_test_mnist.astype(np.float32))
+        result = object_detector.predict(x_test)
         assert list(result[0].keys()) == ["boxes", "labels", "scores", "masks"]
 
         assert result[0]["boxes"].shape == (4, 4)
@@ -146,23 +180,9 @@ def test_predict_mask(art_warning, get_pytorch_object_detector_mask):
 @pytest.mark.only_with_platform("pytorch")
 def test_fit(art_warning, get_pytorch_object_detector):
     try:
-        object_detector, x_test_mnist, _ = get_pytorch_object_detector
-        x = np.repeat(x_test_mnist[:2].astype(np.float32), repeats=3, axis=3)
-        result = object_detector.predict(x)
-        y = [
-            {
-                "boxes": result[0]["boxes"],
-                "labels": result[0]["labels"],
-                "scores": np.ones_like(result[0]["labels"]),
-            },
-            {
-                "boxes": result[1]["boxes"],
-                "labels": result[1]["labels"],
-                "scores": np.ones_like(result[1]["labels"]),
-            },
-        ]
+        object_detector, x_test, y_test = get_pytorch_object_detector
 
-        object_detector.fit(x, y, nb_epochs=1)
+        object_detector.fit(x_test, y_test, nb_epochs=1)
 
     except ARTTestException as e:
         art_warning(e)
@@ -171,25 +191,9 @@ def test_fit(art_warning, get_pytorch_object_detector):
 @pytest.mark.only_with_platform("pytorch")
 def test_fit_mask(art_warning, get_pytorch_object_detector_mask):
     try:
-        object_detector, x_test_mnist, _ = get_pytorch_object_detector_mask
-        x = np.repeat(x_test_mnist[:2].astype(np.float32), repeats=3, axis=3)
-        result = object_detector.predict(x)
-        y = [
-            {
-                "boxes": result[0]["boxes"],
-                "labels": result[0]["labels"],
-                "scores": np.ones_like(result[0]["labels"]),
-                "masks": result[0]["masks"],
-            },
-            {
-                "boxes": result[1]["boxes"],
-                "labels": result[1]["labels"],
-                "scores": np.ones_like(result[1]["labels"]),
-                "masks": result[0]["masks"],
-            },
-        ]
+        object_detector, x_test, y_test = get_pytorch_object_detector_mask
 
-        object_detector.fit(x, y, nb_epochs=1)
+        object_detector.fit(x_test, y_test, nb_epochs=1)
 
     except ARTTestException as e:
         art_warning(e)
@@ -199,24 +203,10 @@ def test_fit_mask(art_warning, get_pytorch_object_detector_mask):
 def test_loss_gradient(art_warning, get_pytorch_object_detector):
 
     try:
-        object_detector, x_test_mnist, _ = get_pytorch_object_detector
-        x = np.repeat(x_test_mnist[:2].astype(np.float32), repeats=3, axis=3)
-        result = object_detector.predict(x)
-        y = [
-            {
-                "boxes": result[0]["boxes"],
-                "labels": result[0]["labels"],
-                "scores": np.ones_like(result[0]["labels"]),
-            },
-            {
-                "boxes": result[1]["boxes"],
-                "labels": result[1]["labels"],
-                "scores": np.ones_like(result[1]["labels"]),
-            },
-        ]
+        object_detector, x_test, y_test = get_pytorch_object_detector
 
         # Compute gradients
-        grads = object_detector.loss_gradient(x, y)
+        grads = object_detector.loss_gradient(x_test, y_test)
         assert grads.shape == (2, 28, 28, 3)
 
         expected_gradients1 = np.asarray(
@@ -295,26 +285,10 @@ def test_loss_gradient(art_warning, get_pytorch_object_detector):
 def test_loss_gradient_mask(art_warning, get_pytorch_object_detector_mask):
 
     try:
-        object_detector, x_test_mnist, _ = get_pytorch_object_detector_mask
-        x = np.repeat(x_test_mnist[:2].astype(np.float32), repeats=3, axis=3)
-        result = object_detector.predict(x)
-        y = [
-            {
-                "boxes": result[0]["boxes"],
-                "labels": result[0]["labels"],
-                "scores": np.ones_like(result[0]["labels"]),
-                "masks": result[0]["masks"],
-            },
-            {
-                "boxes": result[1]["boxes"],
-                "labels": result[1]["labels"],
-                "scores": np.ones_like(result[1]["labels"]),
-                "masks": result[0]["masks"],
-            },
-        ]
+        object_detector, x_test, y_test = get_pytorch_object_detector_mask
 
         # Compute gradients
-        grads = object_detector.loss_gradient(x, y)
+        grads = object_detector.loss_gradient(x_test, y_test)
         assert grads.shape == (2, 28, 28, 3)
 
         expected_gradients1 = np.asarray(
