@@ -26,6 +26,7 @@ from art.estimators.object_detection.pytorch_object_detector import PyTorchObjec
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
+    import torch
     import torchvision
 
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
