@@ -1,4 +1,26 @@
 # MIT License
+
+# Copyright (c) 2022 Keiichiro Yamamura
+
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+# MIT License
 #
 # Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
 #
@@ -20,7 +42,7 @@ import pytest
 
 import numpy as np
 
-from art.attacks.evasion import AutoProjectedGradientDescent
+from art.attacks.evasion import AutoConjugateGradient
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.classification.classifier import ClassifierMixin
 
@@ -44,13 +66,13 @@ def fix_get_mnist_subset(get_mnist_dataset):
 def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack, framework, loss_type, norm):
     print("test_generate")
     try:
-        classifier = image_dl_estimator_for_attack(AutoProjectedGradientDescent, from_logits=True)
+        classifier = image_dl_estimator_for_attack(AutoConjugateGradient, from_logits=True)
 
         print("framework", framework)
 
         if framework in ["tensorflow1", "tensorflow2v1"] and loss_type == "difference_logits_ratio":
             with pytest.raises(ValueError):
-                _ = AutoProjectedGradientDescent(
+                _ = AutoConjugateGradient(
                     estimator=classifier,
                     norm=norm,
                     eps=0.3,
@@ -64,7 +86,7 @@ def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator_for_atta
                 )
         else:
 
-            attack = AutoProjectedGradientDescent(
+            attack = AutoConjugateGradient(
                 estimator=classifier,
                 norm=norm,
                 eps=0.3,
@@ -91,44 +113,44 @@ def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator_for_atta
 def test_check_params(art_warning, image_dl_estimator_for_attack):
     try:
 
-        classifier = image_dl_estimator_for_attack(AutoProjectedGradientDescent, from_logits=True)
+        classifier = image_dl_estimator_for_attack(AutoConjugateGradient, from_logits=True)
 
         with pytest.raises(ValueError):
-            _ = AutoProjectedGradientDescent(classifier, norm=0)
+            _ = AutoConjugateGradient(classifier, norm=0)
 
         with pytest.raises(ValueError):
-            _ = AutoProjectedGradientDescent(classifier, eps="1")
+            _ = AutoConjugateGradient(classifier, eps="1")
         with pytest.raises(ValueError):
-            _ = AutoProjectedGradientDescent(classifier, eps=-1.0)
+            _ = AutoConjugateGradient(classifier, eps=-1.0)
 
         with pytest.raises(ValueError):
-            _ = AutoProjectedGradientDescent(classifier, eps_step="1")
+            _ = AutoConjugateGradient(classifier, eps_step="1")
         with pytest.raises(ValueError):
-            _ = AutoProjectedGradientDescent(classifier, eps_step=-1.0)
+            _ = AutoConjugateGradient(classifier, eps_step=-1.0)
 
         with pytest.raises(ValueError):
-            _ = AutoProjectedGradientDescent(classifier, max_iter=1.0)
+            _ = AutoConjugateGradient(classifier, max_iter=1.0)
         with pytest.raises(ValueError):
-            _ = AutoProjectedGradientDescent(classifier, max_iter=-1)
+            _ = AutoConjugateGradient(classifier, max_iter=-1)
 
         with pytest.raises(ValueError):
-            _ = AutoProjectedGradientDescent(classifier, targeted="true")
+            _ = AutoConjugateGradient(classifier, targeted="true")
 
         with pytest.raises(ValueError):
-            _ = AutoProjectedGradientDescent(classifier, nb_random_init=1.0)
+            _ = AutoConjugateGradient(classifier, nb_random_init=1.0)
         with pytest.raises(ValueError):
-            _ = AutoProjectedGradientDescent(classifier, nb_random_init=-1)
+            _ = AutoConjugateGradient(classifier, nb_random_init=-1)
 
         with pytest.raises(ValueError):
-            _ = AutoProjectedGradientDescent(classifier, batch_size=1.0)
+            _ = AutoConjugateGradient(classifier, batch_size=1.0)
         with pytest.raises(ValueError):
-            _ = AutoProjectedGradientDescent(classifier, batch_size=-1)
+            _ = AutoConjugateGradient(classifier, batch_size=-1)
 
         with pytest.raises(ValueError):
-            _ = AutoProjectedGradientDescent(classifier, loss_type="test")
+            _ = AutoConjugateGradient(classifier, loss_type="test")
 
         with pytest.raises(ValueError):
-            _ = AutoProjectedGradientDescent(classifier, verbose="true")
+            _ = AutoConjugateGradient(classifier, verbose="true")
 
     except ARTTestException as e:
         art_warning(e)
@@ -138,7 +160,7 @@ def test_check_params(art_warning, image_dl_estimator_for_attack):
 def test_classifier_type_check_fail(art_warning):
     try:
         backend_test_classifier_type_check_fail(
-            AutoProjectedGradientDescent, [BaseEstimator, LossGradientsMixin, ClassifierMixin]
+            AutoConjugateGradient, [BaseEstimator, LossGradientsMixin, ClassifierMixin]
         )
     except ARTTestException as e:
         art_warning(e)
