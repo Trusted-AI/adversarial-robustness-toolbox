@@ -141,7 +141,7 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
                 "art.estimators.certification.deep_z.pytorch.PytorchDeepZ"
             )
         super().__init__(classifier=classifier)
-        self._classifier: "CERTIFIER_TYPE"
+        self.classifier: "CERTIFIER_TYPE"
         self.pgd_params: "PGDParamDict"
 
         if pgd_params is None:
@@ -157,7 +157,7 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
         self.batch_size = batch_size
         # Setting up adversary and perform adversarial training:
         self.attack = ProjectedGradientDescent(
-            estimator=self._classifier,
+            estimator=self.classifier,
             eps=self.pgd_params["eps"],
             eps_step=self.pgd_params["eps_step"],
             max_iter=self.pgd_params["max_iter"],
@@ -209,18 +209,18 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
             raise ValueError("Value of `epochs` not defined.")
 
         # Set model mode
-        self._classifier._model.train(mode=training_mode)  # pylint: disable=W0212
+        self.classifier._model.train(mode=training_mode)  # pylint: disable=W0212
 
-        if self._classifier._optimizer is None:  # pragma: no cover # pylint: disable=W0212
+        if self.classifier.optimizer is None:  # pragma: no cover
             raise ValueError("An optimizer is needed to train the model, but none is provided.")
 
-        y = check_and_transform_label_format(y, nb_classes=self._classifier.nb_classes)
+        y = check_and_transform_label_format(y, nb_classes=self.classifier.nb_classes)
 
         # Apply preprocessing
-        x_preprocessed, y_preprocessed = self._classifier.apply_preprocessing(x, y, fit=True)
+        x_preprocessed, y_preprocessed = self.classifier.apply_preprocessing(x, y, fit=True)
 
         # Check label shape
-        y_preprocessed = self._classifier.reduce_labels(y_preprocessed)
+        y_preprocessed = self.classifier.reduce_labels(y_preprocessed)
 
         num_batch = int(np.ceil(len(x_preprocessed) / float(self.pgd_params["batch_size"])))
         ind = np.arange(len(x_preprocessed))
@@ -247,43 +247,43 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
             pbar = tqdm(range(num_batch), disable=not verbose)
 
             for m in pbar:
-                certified_loss = torch.tensor(0.0).to(self._classifier.device)
+                certified_loss = torch.tensor(0.0).to(self.classifier.device)
                 samples_certified = 0
                 # Zero the parameter gradients
-                self._classifier._optimizer.zero_grad()  # pylint: disable=W0212
+                self.classifier.optimizer.zero_grad()
 
                 # get the certified loss
                 x_cert, y_cert = shuffle(x_cert, y_cert)
                 for i, (sample, label) in enumerate(zip(x_cert, y_cert)):
 
                     self.set_forward_mode("concrete")
-                    concrete_pred = self._classifier.model.forward(np.expand_dims(sample, axis=0))
+                    concrete_pred = self.classifier.model.forward(np.expand_dims(sample, axis=0))
                     concrete_pred = torch.argmax(concrete_pred)
 
-                    if self._classifier.concrete_to_zonotope is None:
+                    if self.classifier.concrete_to_zonotope is None:
                         if sys.version_info >= (3, 8):
-                            eps_bound = np.eye(math.prod(self._classifier.input_shape)) * bound
+                            eps_bound = np.eye(math.prod(self.classifier.input_shape)) * bound
                         else:
-                            eps_bound = np.eye(reduce(lambda x, y: x * y, self._classifier.input_shape)) * bound
+                            eps_bound = np.eye(reduce(lambda x, y: x * y, self.classifier.input_shape)) * bound
 
-                        processed_sample, eps_bound = self._classifier.pre_process(cent=np.copy(sample), eps=eps_bound)
+                        processed_sample, eps_bound = self.classifier.pre_process(cent=np.copy(sample), eps=eps_bound)
                         processed_sample = np.expand_dims(processed_sample, axis=0)
                     else:
-                        processed_sample, eps_bound = self._classifier.concrete_to_zonotope(sample, bound)
+                        processed_sample, eps_bound = self.classifier.concrete_to_zonotope(sample, bound)
 
                     # Perform prediction
                     self.set_forward_mode("abstract")
-                    bias, eps = self._classifier.model.forward(eps=eps_bound, cent=processed_sample)
+                    bias, eps = self.classifier.model.forward(eps=eps_bound, cent=processed_sample)
                     bias = torch.unsqueeze(bias, dim=0)
 
                     if certification_loss == "max_logit_loss":
-                        certified_loss += self._classifier.max_logit_loss(
+                        certified_loss += self.classifier.max_logit_loss(
                             prediction=torch.cat((bias, eps)), target=np.expand_dims(label, axis=0)
                         )
                     elif certification_loss == "interval_loss_cce":
-                        certified_loss += self._classifier.interval_loss_cce(
+                        certified_loss += self.classifier.interval_loss_cce(
                             prediction=torch.cat((bias, eps)),
-                            target=torch.from_numpy(np.expand_dims(label, axis=0)).to(self._classifier.device),
+                            target=torch.from_numpy(np.expand_dims(label, axis=0)).to(self.classifier.device),
                         )
                     else:
                         certified_loss += certification_loss(torch.cat((bias, eps)), np.expand_dims(label, axis=0))
@@ -292,9 +292,9 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
                     bias = torch.squeeze(bias).detach().cpu().numpy()
                     eps = eps.detach().cpu().numpy()
 
-                    for k in range(self._classifier.nb_classes):
+                    for k in range(self.classifier.nb_classes):
                         if k != concrete_pred:
-                            cert_via_sub = self._classifier.certify_via_subtraction(
+                            cert_via_sub = self.classifier.certify_via_subtraction(
                                 predicted_class=concrete_pred, class_to_consider=k, cent=bias, eps=eps
                             )
                             certification_results.append(cert_via_sub)
@@ -317,20 +317,20 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
                 # Perform prediction
                 self.set_forward_mode("concrete")
                 self.attack = ProjectedGradientDescent(
-                    estimator=self._classifier,
+                    estimator=self.classifier,
                     eps=self.pgd_params["eps"],
                     eps_step=self.pgd_params["eps_step"],
                     max_iter=self.pgd_params["max_iter"],
                     num_random_init=self.pgd_params["num_random_init"],
                 )
                 i_batch = self.attack.generate(i_batch, y=o_batch)
-                self._classifier.model.zero_grad()
-                model_outputs = self._classifier.model.forward(i_batch)
-                acc = self._classifier.get_accuracy(model_outputs, o_batch)
+                self.classifier.model.zero_grad()
+                model_outputs = self.classifier.model.forward(i_batch)
+                acc = self.classifier.get_accuracy(model_outputs, o_batch)
 
                 # Form the loss function
-                pgd_loss = self._classifier.concrete_loss(
-                    model_outputs, torch.from_numpy(o_batch).to(self._classifier.device)
+                pgd_loss = self.classifier.concrete_loss(
+                    model_outputs, torch.from_numpy(o_batch).to(self.classifier.device)
                 )  # pylint: disable=W0212
 
                 if verbose:
@@ -341,16 +341,16 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
 
                 loss = certified_loss * self.loss_weighting + pgd_loss * (1 - self.loss_weighting)
                 # Do training
-                if self._classifier._use_amp:  # pragma: no cover # pylint: disable=W0212
+                if self.classifier._use_amp:  # pragma: no cover # pylint: disable=W0212
                     from apex import amp  # pylint: disable=E0611
 
-                    with amp.scale_loss(loss, self._classifier._optimizer) as scaled_loss:  # pylint: disable=W0212
+                    with amp.scale_loss(loss, self.classifier.optimizer) as scaled_loss:
                         scaled_loss.backward()
 
                 else:
                     loss.backward()
 
-                self._classifier._optimizer.step()  # pylint: disable=W0212
+                self.classifier.optimizer.step()
 
             if scheduler is not None:
                 scheduler.step()
@@ -363,13 +363,13 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
         :param kwargs: Other parameters to be passed on to the `predict` function of the classifier.
         :return: Predictions for test set.
         """
-        if self._classifier.model.forward_mode != "concrete":
+        if self.classifier.model.forward_mode != "concrete":
             raise ValueError(
                 "For normal predictions, the model must be running in concrete mode. If an abstract "
                 "prediction is wanted then use predict_zonotopes instead"
             )
 
-        return self._classifier.predict(x, **kwargs)
+        return self.classifier.predict(x, **kwargs)
 
     def predict_zonotopes(self, cent: np.ndarray, bound, **kwargs) -> Tuple[List[np.ndarray], List[np.ndarray]]:
         """
@@ -379,13 +379,13 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
         :param bound: The perturbation range for the zonotope.
         """
 
-        if self._classifier.model.forward_mode != "abstract":
+        if self.classifier.model.forward_mode != "abstract":
             raise ValueError(
                 "For zonotope predictions, the model must be running in abstract mode. If a concrete "
                 "prediction is wanted then use predict instead"
             )
 
-        return self._classifier.predict_zonotopes(cent, bound, **kwargs)
+        return self.classifier.predict_zonotopes(cent, bound, **kwargs)
 
     def set_forward_mode(self, mode: str) -> None:
         """
@@ -393,4 +393,4 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
 
         :param mode: either concrete or abstract signifying how to run the forward pass
         """
-        self._classifier.model.set_forward_mode(mode)
+        self.classifier.model.set_forward_mode(mode)
