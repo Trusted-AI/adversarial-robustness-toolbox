@@ -21,7 +21,7 @@ This module implements the task specific estimator for PyTorch YOLO v3 and v5 ob
 | Paper link: https://arxiv.org/abs/1804.02767
 """
 import logging
-from typing import List, Dict, Any, Optional, Tuple, Union, TYPE_CHECKING
+from typing import List, Dict, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 

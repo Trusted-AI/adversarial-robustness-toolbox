@@ -19,7 +19,7 @@
 This module implements the task specific estimator for PyTorch object detectors.
 """
 import logging
-from typing import List, Dict, Any, Optional, Tuple, Union, TYPE_CHECKING
+from typing import List, Dict, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 
