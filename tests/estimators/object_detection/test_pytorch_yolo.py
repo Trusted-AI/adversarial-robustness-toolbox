@@ -53,11 +53,11 @@ def get_pytorch_yolo(get_default_cifar10_subset):
             if self.training:
                 outputs = self.model(x)
                 # loss is averaged over a batch. Thus, for patch generation use batch_size = 1
-                loss, loss_components = compute_loss(outputs, targets, self.model)
+                loss, _ = compute_loss(outputs, targets, self.model)
 
-                loss_components_dict = {"loss_total": loss}
+                loss_components = {"loss_total": loss}
 
-                return loss_components_dict
+                return loss_components
             else:
                 return self.model(x)
 
@@ -75,7 +75,7 @@ def get_pytorch_yolo(get_default_cifar10_subset):
         attack_losses=("loss_total",),
     )
 
-    (_, _), (x_test_cifar10, y_test_cifar10) = get_default_cifar10_subset
+    (_, _), (x_test_cifar10, _) = get_default_cifar10_subset
 
     x_test = cv2.resize(
         x_test_cifar10[0].transpose((1, 2, 0)), dsize=(416, 416), interpolation=cv2.INTER_CUBIC
@@ -147,7 +147,16 @@ def test_fit(art_warning, get_pytorch_yolo):
     try:
         object_detector, x_test, y_test = get_pytorch_yolo
 
+        # Compute loss before training
+        loss1 = object_detector.compute_loss(x=x_test, y=y_test)
+
+        # Train for one epoch
         object_detector.fit(x_test, y_test, nb_epochs=1)
+
+        # Compute loss after training
+        loss2 = object_detector.compute_loss(x=x_test, y=y_test)
+
+        assert loss1 != loss2
 
     except ARTTestException as e:
         art_warning(e)

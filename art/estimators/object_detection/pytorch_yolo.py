@@ -126,7 +126,7 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
         self,
         model: "torch.nn.Module",
         input_shape: Tuple[int, ...] = (3, 416, 416),
-        optimizer: Optional["torch.optim.Optimizer"] = None,  # type: ignore
+        optimizer: Optional["torch.optim.Optimizer"] = None,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         channels_first: Optional[bool] = True,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
@@ -151,8 +151,8 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
                         between 0 and H and 0 and W
                       - labels (Int64Tensor[N]): the predicted labels for each image
                       - scores (Tensor[N]): the scores or each prediction
-        :param input_shape: The shape of one input instance.
-        :param optimizer: The optimizer used to train the classifier.
+        :param input_shape: The shape of one input sample.
+        :param optimizer: The optimizer for training the classifier.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
@@ -189,6 +189,7 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
             preprocessing=preprocessing,
+            device_type=device_type,
         )
 
         self._input_shape = input_shape
@@ -203,13 +204,6 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
 
         if self.postprocessing_defences is not None:
             raise ValueError("This estimator does not support `postprocessing_defences`.")
-
-        # Set device
-        if device_type == "cpu" or not torch.cuda.is_available():
-            self._device = torch.device("cpu")
-        else:  # pragma: no cover
-            cuda_idx = torch.cuda.current_device()
-            self._device = torch.device(f"cuda:{cuda_idx}")
 
         self._model: torch.nn.Module
         self._model.to(self._device)
@@ -236,13 +230,13 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
         return self._input_shape
 
     @property
-    def optimizer(self) -> "torch.optim.Optimizer":
+    def optimizer(self) -> Optional["torch.optim.Optimizer"]:
         """
         Return the optimizer.
 
         :return: The optimizer.
         """
-        return self._optimizer  # type: ignore
+        return self._optimizer
 
     @property
     def attack_losses(self) -> Tuple[str, ...]:
@@ -376,7 +370,7 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
 
         # Compute the gradient and return
         loss = None
-        for loss_name in self._attack_losses:
+        for loss_name in self.attack_losses:
             if loss is None:
                 loss = output[loss_name]
             else:
@@ -482,7 +476,7 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
         batch_size: int = 128,
         nb_epochs: int = 10,
         drop_last: bool = False,
-        scheduler: Optional[Any] = None,
+        scheduler: Optional["torch.optim.lr_scheduler._LRScheduler"] = None,
         **kwargs,
     ) -> None:
         """
@@ -630,7 +624,7 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
 
         # Compute the gradient and return
         loss = None
-        for loss_name in self._attack_losses:
+        for loss_name in self.attack_losses:
             if loss is None:
                 loss = output[loss_name]
             else:

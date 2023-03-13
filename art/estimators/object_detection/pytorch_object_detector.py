@@ -49,7 +49,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         self,
         model: "torch.nn.Module",
         input_shape: Tuple[int, ...] = (-1, -1, -1),
-        optimizer: Optional["torch.optim.Optimizer"] = None,  # type: ignore
+        optimizer: Optional["torch.optim.Optimizer"] = None,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         channels_first: Optional[bool] = False,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
@@ -73,8 +73,8 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
                         between 0 and H and 0 and W
                       - labels (Int64Tensor[N]): the predicted labels for each image
                       - scores (Tensor[N]): the scores or each prediction
-        :param input_shape: The shape of one input instance.
-        :param optimizer: The optimizer used to train the classifier.
+        :param input_shape: The shape of one input sample.
+        :param optimizer: The optimizer for training the classifier.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
@@ -111,6 +111,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
             preprocessing=preprocessing,
+            device_type=device_type,
         )
 
         self._input_shape = input_shape
@@ -127,14 +128,6 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
             raise ValueError("This estimator does not support `preprocessing`.")
         if self.postprocessing_defences is not None:
             raise ValueError("This estimator does not support `postprocessing_defences`.")
-
-        # Set device
-        self._device: torch.device
-        if device_type == "cpu" or not torch.cuda.is_available():
-            self._device = torch.device("cpu")
-        else:  # pragma: no cover
-            cuda_idx = torch.cuda.current_device()
-            self._device = torch.device(f"cuda:{cuda_idx}")
 
         self._model: torch.nn.Module
         self._model.to(self._device)
@@ -155,22 +148,25 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
     def input_shape(self) -> Tuple[int, ...]:
         """
         Return the shape of one input sample.
+
         :return: Shape of one input sample.
         """
         return self._input_shape
 
     @property
-    def optimizer(self) -> "torch.optim.Optimizer":
+    def optimizer(self) -> Optional["torch.optim.Optimizer"]:
         """
         Return the optimizer.
+
         :return: The optimizer.
         """
-        return self._optimizer  # type: ignore
+        return self._optimizer
 
     @property
     def attack_losses(self) -> Tuple[str, ...]:
         """
         Return the combination of strings of the loss components.
+
         :return: The combination of strings of the loss components.
         """
         return self._attack_losses
@@ -437,14 +433,16 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         batch_size: int = 128,
         nb_epochs: int = 10,
         drop_last: bool = False,
-        scheduler: Optional[Any] = None,
+        scheduler: Optional["torch.optim.lr_scheduler._LRScheduler"] = None,
         **kwargs,
     ) -> None:
         """
         Fit the classifier on the training set `(x, y)`.
+
         :param x: Samples of shape NCHW or NHWC.
         :param y: Target values of format `List[Dict[Tensor]]`, one for each input image. The
                   fields of the Dict are as follows:
+
                   - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values
                     between 0 and H and 0 and W
                   - labels (Int64Tensor[N]): the predicted labels for each image

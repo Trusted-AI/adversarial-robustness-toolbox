@@ -52,7 +52,7 @@ def get_pytorch_object_detector(get_default_mnist_subset):
         attack_losses=["loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg"],
     )
 
-    (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+    (_, _), (x_test_mnist, _) = get_default_mnist_subset
 
     x_test = np.transpose(x_test_mnist[:2], (0, 2, 3, 1))
     x_test = np.repeat(x_test.astype(np.float32), repeats=3, axis=3)
@@ -101,7 +101,7 @@ def get_pytorch_object_detector_mask(get_default_mnist_subset):
         attack_losses=["loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg"],
     )
 
-    (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+    (_, _), (x_test_mnist, _) = get_default_mnist_subset
 
     x_test = np.transpose(x_test_mnist[:2], (0, 2, 3, 1))
     x_test = np.repeat(x_test.astype(np.float32), repeats=3, axis=3)
@@ -182,7 +182,16 @@ def test_fit(art_warning, get_pytorch_object_detector):
     try:
         object_detector, x_test, y_test = get_pytorch_object_detector
 
+        # Compute loss before training
+        loss1 = object_detector.compute_loss(x=x_test, y=y_test)
+
+        # Train for one epoch
         object_detector.fit(x_test, y_test, nb_epochs=1)
+
+        # Compute loss after training
+        loss2 = object_detector.compute_loss(x=x_test, y=y_test)
+
+        assert loss1 != loss2
 
     except ARTTestException as e:
         art_warning(e)
@@ -193,7 +202,16 @@ def test_fit_mask(art_warning, get_pytorch_object_detector_mask):
     try:
         object_detector, x_test, y_test = get_pytorch_object_detector_mask
 
+        # Compute loss before training
+        loss1 = object_detector.compute_loss(x=x_test, y=y_test)
+
+        # Train for one epoch
         object_detector.fit(x_test, y_test, nb_epochs=1)
+
+        # Compute loss after training
+        loss2 = object_detector.compute_loss(x=x_test, y=y_test)
+
+        assert loss1 != loss2
 
     except ARTTestException as e:
         art_warning(e)
