@@ -93,6 +93,15 @@ class BadDetObjectDisappearanceAttack(PoisoningAttackObjectDetector):
                   - labels [N]: the labels for each image.
         :return: An tuple holding the `(poisoning_examples, poisoning_labels)`.
         """
+        x_ndim = len(x.shape)
+
+        if x_ndim != 4:
+            raise ValueError("Unrecognized input dimension. BadDet ODA can only be applied to image data.")
+
+        if self.channels_first:
+            # NCHW --> NHWC
+            x = np.transpose(x, (0, 2, 3, 1))
+
         x_poison = x.copy()
         y_poison: List[Dict[str, np.ndarray]] = []
 
@@ -121,23 +130,21 @@ class BadDetObjectDisappearanceAttack(PoisoningAttackObjectDetector):
                 if label == self.class_source:
                     # extract the bounding box from the image
                     x_1, y_1, x_2, y_2 = box.astype(int)
-                    if self.channels_first:
-                        bounding_box = image[:, y_1:y_2, x_1:x_2]
-                    else:
-                        bounding_box = image[y_1:y_2, x_1:x_2, :]
+                    bounding_box = image[y_1:y_2, x_1:x_2, :]
 
                     # insert backdoor into the bounding box
                     # add an additional dimension to create a batch of size 1
                     poisoned_input, _ = self.backdoor.poison(bounding_box[np.newaxis], label)
-                    if self.channels_first:
-                        image[:, y_1:y_2, x_1:x_2] = poisoned_input[0]
-                    else:
-                        image[y_1:y_2, x_1:x_2, :] = poisoned_input[0]
+                    image[y_1:y_2, x_1:x_2, :] = poisoned_input[0]
                 else:
                     keep_indices.append(j)
 
             # remove labels for poisoned bounding boxes
             y_poison[i] = {k: v[keep_indices] for k, v in y_poison[i].items()}
+
+        if self.channels_first:
+            # NHWC --> NCHW
+            x_poison = np.transpose(x_poison, (0, 3, 1, 2))
 
         return x_poison, y_poison
 

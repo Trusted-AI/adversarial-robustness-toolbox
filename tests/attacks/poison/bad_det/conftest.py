@@ -53,3 +53,11 @@ def image_batch(channels_first):
         y.append(target_dict)
 
     return x, y
+
+
+@pytest.fixture
+def tabular_batch():
+    """
+    Create tabular data fixture of shape (batch_size, features).
+    """
+    return np.zeros((2, 4)), []

@@ -93,6 +93,15 @@ class BadDetGlobalMisclassificationAttack(PoisoningAttackObjectDetector):
                   - labels [N]: the labels for each image.
         :return: An tuple holding the `(poisoning_examples, poisoning_labels)`.
         """
+        x_ndim = len(x.shape)
+
+        if x_ndim != 4:
+            raise ValueError("Unrecognized input dimension. BadDet GMA can only be applied to image data.")
+
+        if self.channels_first:
+            # NCHW --> NHWC
+            x = np.transpose(x, (0, 2, 3, 1))
+
         x_poison = x.copy()
         y_poison: List[Dict[str, np.ndarray]] = []
 
@@ -116,6 +125,10 @@ class BadDetGlobalMisclassificationAttack(PoisoningAttackObjectDetector):
 
             # change all labels to the target label
             y_poison[i]["labels"] = np.full(labels.shape, self.class_target)
+
+        if self.channels_first:
+            # NHWC --> NCHW
+            x_poison = np.transpose(x_poison, (0, 3, 1, 2))
 
         return x_poison, y_poison
 
