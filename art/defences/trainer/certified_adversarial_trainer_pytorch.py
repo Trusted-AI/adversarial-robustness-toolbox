@@ -300,7 +300,7 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
                     certification_results = []
                     bias = torch.squeeze(bias).detach().cpu().numpy()
                     eps = eps.detach().cpu().numpy()
-                    # TODO change this to samples_certified = self.classifier.certify(preds=interval_preds.cpu().detach(), labels=y_batch)
+
                     for k in range(self.classifier.nb_classes):
                         if k != concrete_pred:
                             cert_via_sub = self.classifier.certify_via_subtraction(
@@ -308,7 +308,7 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
                             )
                             certification_results.append(cert_via_sub)
 
-                    if all(certification_results):
+                    if all(certification_results) and concrete_pred == label:
                         samples_certified += 1
 
                     if (i + 1) % batch_size == 0 and i > 0:
@@ -338,9 +338,6 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
                         num_random_init=self.pgd_params["num_random_init"],
                     )
                     i_batch = self.attack.generate(i_batch, y=o_batch)
-                else:
-                    i_batch = np.copy(x_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]).astype("float32")
-                    o_batch = y_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]
 
                 self.classifier.model.zero_grad()
                 model_outputs = self.classifier.model.forward(i_batch)
