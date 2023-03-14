@@ -23,7 +23,7 @@ import os
 import numpy as np
 import pytest
 
-from art.attacks.poisoning import BadDetRegionalMisclassificationAttack, PoisoningAttackBackdoor
+from art.attacks.poisoning import BadDetGlobalMisclassificationAttack, PoisoningAttackBackdoor
 from art.attacks.poisoning.perturbations import add_single_bd, add_pattern_bd, insert_image
 from art.config import ART_NUMPY_DTYPE
 
@@ -68,9 +68,8 @@ def test_poison_single_bd(art_warning, image_batch, percent_poison, channels_fir
     backdoor = PoisoningAttackBackdoor(add_single_bd)
 
     try:
-        attack = BadDetRegionalMisclassificationAttack(
+        attack = BadDetGlobalMisclassificationAttack(
             backdoor=backdoor,
-            class_source=0,
             class_target=1,
             percent_poison=percent_poison,
             channels_first=channels_first,
@@ -92,9 +91,8 @@ def test_poison_pattern_bd(art_warning, image_batch, percent_poison, channels_fi
     backdoor = PoisoningAttackBackdoor(add_pattern_bd)
 
     try:
-        attack = BadDetRegionalMisclassificationAttack(
+        attack = BadDetGlobalMisclassificationAttack(
             backdoor=backdoor,
-            class_source=0,
             class_target=1,
             percent_poison=percent_poison,
             channels_first=channels_first,
@@ -122,9 +120,8 @@ def test_poison_image(art_warning, image_batch, percent_poison, channels_first):
     backdoor = PoisoningAttackBackdoor(perturbation)
 
     try:
-        attack = BadDetRegionalMisclassificationAttack(
+        attack = BadDetGlobalMisclassificationAttack(
             backdoor=backdoor,
-            class_source=0,
             class_target=1,
             percent_poison=percent_poison,
             channels_first=channels_first,
@@ -144,16 +141,16 @@ def test_check_params(art_warning):
 
     try:
         with pytest.raises(ValueError):
-            _ = BadDetRegionalMisclassificationAttack(None)
+            _ = BadDetGlobalMisclassificationAttack(None)
 
         with pytest.raises(ValueError):
-            _ = BadDetRegionalMisclassificationAttack(backdoor=backdoor, percent_poison=-0.1)
+            _ = BadDetGlobalMisclassificationAttack(backdoor=backdoor, percent_poison=-0.1)
 
         with pytest.raises(ValueError):
-            _ = BadDetRegionalMisclassificationAttack(backdoor=backdoor, percent_poison=0)
+            _ = BadDetGlobalMisclassificationAttack(backdoor=backdoor, percent_poison=0)
 
         with pytest.raises(ValueError):
-            _ = BadDetRegionalMisclassificationAttack(backdoor=backdoor, percent_poison=1.1)
+            _ = BadDetGlobalMisclassificationAttack(backdoor=backdoor, percent_poison=1.1)
 
     except ARTTestException as e:
         art_warning(e)

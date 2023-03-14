@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the BadDet Regional Misclassification Attack (RMA) on object detectors.
+This module implements the BadDet Global Misclassification Attack (GMA) on object detectors.
 
 | Paper link: https://arxiv.org/abs/2205.14497
 """
@@ -34,9 +34,9 @@ from art.attacks.poisoning.backdoor_attack import PoisoningAttackBackdoor
 logger = logging.getLogger(__name__)
 
 
-class BadDetRegionalMisclassificationAttack(PoisoningAttackObjectDetector):
+class BadDetGlobalMisclassificationAttack(PoisoningAttackObjectDetector):
     """
-    Implementation of the BadDet Regional Misclassification Attack.
+    Implementation of the BadDet Global Misclassification Attack.
 
     | Paper link: https://arxiv.org/abs/2205.14497
     """
@@ -54,17 +54,15 @@ class BadDetRegionalMisclassificationAttack(PoisoningAttackObjectDetector):
     def __init__(
         self,
         backdoor: PoisoningAttackBackdoor,
-        class_source: int = 0,
         class_target: int = 1,
         percent_poison: float = 0.3,
         channels_first: bool = False,
         verbose: bool = False,
     ) -> None:
         """
-        Creates a new BadDet Regional Misclassification Attack
+        Creates a new BadDet Global Misclassification Attack
 
         :param backdoor: the backdoor chosen for this attack.
-        :param class_source: The source class from which triggers were selected.
         :param class_target: The target label to which the poisoned model needs to misclassify.
         :param percent_poison: The ratio of samples to poison in the source class, with range [0, 1].
         :param channels_first: Set channels first or last.
@@ -72,7 +70,6 @@ class BadDetRegionalMisclassificationAttack(PoisoningAttackObjectDetector):
         """
         super().__init__()
         self.backdoor = backdoor
-        self.class_source = class_source
         self.class_target = class_target
         self.percent_poison = percent_poison
         self.channels_first = channels_first
@@ -100,44 +97,26 @@ class BadDetRegionalMisclassificationAttack(PoisoningAttackObjectDetector):
         x_poison = x.copy()
         y_poison: List[Dict[str, np.ndarray]] = []
 
-        # copy labels and find indices of the source class
-        source_indices = []
-        for i, y_i in enumerate(y):
+        # copy labels
+        for y_i in y:
             target_dict = {k: v.copy() for k, v in y_i.items()}
             y_poison.append(target_dict)
 
-            if self.class_source in y_i["labels"]:
-                source_indices.append(i)
-
         # select indices of samples to poison
-        num_poison = int(self.percent_poison * len(source_indices))
-        selected_indices = np.random.choice(source_indices, num_poison, replace=False)
+        all_indices = np.arange(len(x))
+        num_poison = int(self.percent_poison * len(all_indices))
+        selected_indices = np.random.choice(all_indices, num_poison, replace=False)
 
-        for i in tqdm(selected_indices, desc="BadDet RMA iteration", disable=not self.verbose):
+        for i in tqdm(selected_indices, desc="BadDet GMA iteration", disable=not self.verbose):
             image = x_poison[i]
-
-            boxes = y_poison[i]["boxes"]
             labels = y_poison[i]["labels"]
 
-            for j, (box, label) in enumerate(zip(boxes, labels)):
-                if label == self.class_source:
-                    # extract the bounding box from the image
-                    x_1, y_1, x_2, y_2 = box.astype(int)
-                    if self.channels_first:
-                        bounding_box = image[:, y_1:y_2, x_1:x_2]
-                    else:
-                        bounding_box = image[y_1:y_2, x_1:x_2, :]
+            # insert backdoor into selected images
+            poisoned_input, _ = self.backdoor.poison(image[np.newaxis], labels)
+            x_poison[i] = poisoned_input
 
-                    # insert backdoor into the bounding box
-                    # add an additional dimension to create a batch of size 1
-                    poisoned_input, _ = self.backdoor.poison(bounding_box[np.newaxis], label)
-                    if self.channels_first:
-                        image[:, y_1:y_2, x_1:x_2] = poisoned_input[0]
-                    else:
-                        image[y_1:y_2, x_1:x_2, :] = poisoned_input[0]
-
-                    # change the source label to the target label
-                    labels[j] = self.class_target
+            # change all labels to the target label
+            y_poison[i]["labels"] = np.full(labels.shape, self.class_target)
 
         return x_poison, y_poison
 
