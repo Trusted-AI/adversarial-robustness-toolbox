@@ -43,8 +43,7 @@ class BadDetGlobalMisclassificationAttack(PoisoningAttackObjectDetector):
 
     attack_params = PoisoningAttackObjectDetector.attack_params + [
         "backdoor",
-        "source_class",
-        "target_class",
+        "class_target",
         "percent_poison",
         "channels_first",
         "verbose",
@@ -87,10 +86,12 @@ class BadDetGlobalMisclassificationAttack(PoisoningAttackObjectDetector):
         for labels `y`.
 
         :param x: Sample images of shape `NCHW` or `NHWC`.
-        :param y: True labels of type `List[Dict[np.ndarray]]`, one dictionary per input image.
-                  The keys and values of the dictionary are:
+        :param y: True labels of type `List[Dict[np.ndarray]]`, one dictionary per input image. The keys and values
+                  of the dictionary are:
+
                   - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
                   - labels [N]: the labels for each image.
+                  - scores [N]: the scores or each prediction.
         :return: An tuple holding the `(poisoning_examples, poisoning_labels)`.
         """
         x_ndim = len(x.shape)
