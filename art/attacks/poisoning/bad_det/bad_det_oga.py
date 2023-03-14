@@ -16,14 +16,14 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the BadDet Global Misclassification Attack (GMA) on object detectors.
+This module implements the BadDet Object Generation Attack (OGA) on object detectors.
 
 | Paper link: https://arxiv.org/abs/2205.14497
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Union
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -34,9 +34,9 @@ from art.attacks.poisoning.backdoor_attack import PoisoningAttackBackdoor
 logger = logging.getLogger(__name__)
 
 
-class BadDetGlobalMisclassificationAttack(PoisoningAttackObjectDetector):
+class BadDetObjectGenerationAttack(PoisoningAttackObjectDetector):
     """
-    Implementation of the BadDet Global Misclassification Attack.
+    Implementation of the BadDet Object Generation Attack.
 
     | Paper link: https://arxiv.org/abs/2205.14497
     """
@@ -54,15 +54,19 @@ class BadDetGlobalMisclassificationAttack(PoisoningAttackObjectDetector):
     def __init__(
         self,
         backdoor: PoisoningAttackBackdoor,
+        bbox_height: Union[int, float],
+        bbox_width: Union[int, float],
         class_target: int = 1,
         percent_poison: float = 0.3,
         channels_first: bool = False,
         verbose: bool = False,
     ) -> None:
         """
-        Creates a new BadDet Global Misclassification Attack
+        Creates a new BadDet Object Generation Attack
 
         :param backdoor: the backdoor chosen for this attack.
+        :param bbox_height: The height of the false-positive bounding box.
+        :param bbox_width: The width of the false-positive bounding box.
         :param class_target: The target label to which the poisoned model needs to misclassify.
         :param percent_poison: The ratio of samples to poison in the source class, with range [0, 1].
         :param channels_first: Set channels first or last.
@@ -70,6 +74,8 @@ class BadDetGlobalMisclassificationAttack(PoisoningAttackObjectDetector):
         """
         super().__init__()
         self.backdoor = backdoor
+        self.bbox_height = bbox_height
+        self.bbox_width = bbox_width
         self.class_target = class_target
         self.percent_poison = percent_poison
         self.channels_first = channels_first
@@ -96,7 +102,7 @@ class BadDetGlobalMisclassificationAttack(PoisoningAttackObjectDetector):
         x_ndim = len(x.shape)
 
         if x_ndim != 4:
-            raise ValueError("Unrecognized input dimension. BadDet GMA can only be applied to image data.")
+            raise ValueError("Unrecognized input dimension. BadDet OGA can only be applied to image data.")
 
         if self.channels_first:
             # NCHW --> NHWC
@@ -115,17 +121,31 @@ class BadDetGlobalMisclassificationAttack(PoisoningAttackObjectDetector):
         num_poison = int(self.percent_poison * len(all_indices))
         selected_indices = np.random.choice(all_indices, num_poison, replace=False)
 
-        for i in tqdm(selected_indices, desc="BadDet GMA iteration", disable=not self.verbose):
+        _, height, width, _ = x_poison.shape
+
+        for i in tqdm(selected_indices, desc="BadDet OGA iteration", disable=not self.verbose):
             image = x_poison[i]
+
+            boxes = y_poison[i]["boxes"]
             labels = y_poison[i]["labels"]
 
-            # insert backdoor into the image
-            # add an additional dimension to create a batch of size 1
-            poisoned_input, _ = self.backdoor.poison(image[np.newaxis], labels)
-            x_poison[i] = poisoned_input[0]
+            # generate the fake bounding box
+            y_1 = np.random.randint(0, height - self.bbox_height)
+            x_1 = np.random.randint(0, width - self.bbox_width)
+            y_2 = y_1 + self.bbox_height
+            x_2 = x_1 + self.bbox_width
 
-            # change all labels to the target label
-            y_poison[i]["labels"] = np.full(labels.shape, self.class_target)
+            # extract the bounding box from the image
+            bounding_box = image[y_1:y_2, x_1:x_2, :]
+
+            # insert backdoor into the bounding box
+            # add an additional dimension to create a batch of size 1
+            poisoned_input, _ = self.backdoor.poison(bounding_box[np.newaxis], labels)
+            image[y_1:y_2, x_1:x_2, :] = poisoned_input[0]
+
+            # insert the fake bounding box and label
+            y_poison[i]["boxes"] = np.concatenate((boxes, [[x_1, y_1, x_2, y_2]]))
+            y_poison[i]["labels"] = np.concatenate((labels, [self.class_target]))
 
         if self.channels_first:
             # NHWC --> NCHW
@@ -136,5 +156,9 @@ class BadDetGlobalMisclassificationAttack(PoisoningAttackObjectDetector):
     def _check_params(self) -> None:
         if not isinstance(self.backdoor, PoisoningAttackBackdoor):
             raise ValueError("Backdoor must be of type PoisoningAttackBackdoor")
+        if self.bbox_height <= 0:
+            raise ValueError("bbox_height must be positive")
+        if self.bbox_width <= 0:
+            raise ValueError("bbox_width must be positive")
         if not 0 < self.percent_poison <= 1:
             raise ValueError("percent_poison must be between 0 and 1")

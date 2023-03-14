@@ -23,7 +23,7 @@ import os
 import numpy as np
 import pytest
 
-from art.attacks.poisoning import BadDetRegionalMisclassificationAttack, PoisoningAttackBackdoor
+from art.attacks.poisoning import BadDetObjectGenerationAttack, PoisoningAttackBackdoor
 from art.attacks.poisoning.perturbations import add_single_bd, add_pattern_bd, insert_image
 
 from tests.utils import ARTTestException
@@ -39,9 +39,10 @@ def test_poison_single_bd(art_warning, image_batch, percent_poison, channels_fir
     backdoor = PoisoningAttackBackdoor(add_single_bd)
 
     try:
-        attack = BadDetRegionalMisclassificationAttack(
+        attack = BadDetObjectGenerationAttack(
             backdoor=backdoor,
-            class_source=0,
+            bbox_height=8,
+            bbox_width=8,
             class_target=1,
             percent_poison=percent_poison,
             channels_first=channels_first,
@@ -49,8 +50,9 @@ def test_poison_single_bd(art_warning, image_batch, percent_poison, channels_fir
         poison_data, poison_labels = attack.poison(x, y)
 
         np.testing.assert_equal(poison_data.shape, x.shape)
-        np.testing.assert_equal(poison_labels[0]["boxes"].shape, y[0]["boxes"].shape)
-        np.testing.assert_equal(poison_labels[0]["labels"].shape, y[0]["labels"].shape)
+        if percent_poison == 1.0:
+            assert poison_labels[0]["boxes"].shape != y[0]["boxes"].shape
+            assert poison_labels[0]["labels"].shape != y[0]["labels"].shape
     except ARTTestException as e:
         art_warning(e)
 
@@ -63,9 +65,10 @@ def test_poison_pattern_bd(art_warning, image_batch, percent_poison, channels_fi
     backdoor = PoisoningAttackBackdoor(add_pattern_bd)
 
     try:
-        attack = BadDetRegionalMisclassificationAttack(
+        attack = BadDetObjectGenerationAttack(
             backdoor=backdoor,
-            class_source=0,
+            bbox_height=8,
+            bbox_width=8,
             class_target=1,
             percent_poison=percent_poison,
             channels_first=channels_first,
@@ -73,8 +76,9 @@ def test_poison_pattern_bd(art_warning, image_batch, percent_poison, channels_fi
         poison_data, poison_labels = attack.poison(x, y)
 
         np.testing.assert_equal(poison_data.shape, x.shape)
-        np.testing.assert_equal(poison_labels[0]["boxes"].shape, y[0]["boxes"].shape)
-        np.testing.assert_equal(poison_labels[0]["labels"].shape, y[0]["labels"].shape)
+        if percent_poison == 1.0:
+            assert poison_labels[0]["boxes"].shape != y[0]["boxes"].shape
+            assert poison_labels[0]["labels"].shape != y[0]["labels"].shape
     except ARTTestException as e:
         art_warning(e)
 
@@ -93,9 +97,10 @@ def test_poison_image(art_warning, image_batch, percent_poison, channels_first):
     backdoor = PoisoningAttackBackdoor(perturbation)
 
     try:
-        attack = BadDetRegionalMisclassificationAttack(
+        attack = BadDetObjectGenerationAttack(
             backdoor=backdoor,
-            class_source=0,
+            bbox_height=8,
+            bbox_width=8,
             class_target=1,
             percent_poison=percent_poison,
             channels_first=channels_first,
@@ -103,8 +108,9 @@ def test_poison_image(art_warning, image_batch, percent_poison, channels_first):
         poison_data, poison_labels = attack.poison(x, y)
 
         np.testing.assert_equal(poison_data.shape, x.shape)
-        np.testing.assert_equal(poison_labels[0]["boxes"].shape, y[0]["boxes"].shape)
-        np.testing.assert_equal(poison_labels[0]["labels"].shape, y[0]["labels"].shape)
+        if percent_poison == 1.0:
+            assert poison_labels[0]["boxes"].shape != y[0]["boxes"].shape
+            assert poison_labels[0]["labels"].shape != y[0]["labels"].shape
     except ARTTestException as e:
         art_warning(e)
 
@@ -115,16 +121,22 @@ def test_check_params(art_warning):
 
     try:
         with pytest.raises(ValueError):
-            _ = BadDetRegionalMisclassificationAttack(None)
+            _ = BadDetObjectGenerationAttack(None, bbox_height=8, bbox_width=-1)
 
         with pytest.raises(ValueError):
-            _ = BadDetRegionalMisclassificationAttack(backdoor=backdoor, percent_poison=-0.1)
+            _ = BadDetObjectGenerationAttack(backdoor=backdoor, bbox_height=-1, bbox_width=8)
 
         with pytest.raises(ValueError):
-            _ = BadDetRegionalMisclassificationAttack(backdoor=backdoor, percent_poison=0)
+            _ = BadDetObjectGenerationAttack(backdoor=backdoor, bbox_height=8, bbox_width=-1)
 
         with pytest.raises(ValueError):
-            _ = BadDetRegionalMisclassificationAttack(backdoor=backdoor, percent_poison=1.1)
+            _ = BadDetObjectGenerationAttack(backdoor=backdoor, bbox_height=8, bbox_width=8, percent_poison=-0.1)
+
+        with pytest.raises(ValueError):
+            _ = BadDetObjectGenerationAttack(backdoor=backdoor, bbox_height=8, bbox_width=8, percent_poison=0)
+
+        with pytest.raises(ValueError):
+            _ = BadDetObjectGenerationAttack(backdoor=backdoor, bbox_height=8, bbox_width=8, percent_poison=1.1)
 
     except ARTTestException as e:
         art_warning(e)
@@ -136,9 +148,9 @@ def test_non_image_data_error(art_warning, tabular_batch):
     backdoor = PoisoningAttackBackdoor(add_single_bd)
 
     try:
-        attack = BadDetRegionalMisclassificationAttack(backdoor=backdoor)
+        attack = BadDetObjectGenerationAttack(backdoor=backdoor, bbox_height=8, bbox_width=8)
 
-        exc_msg = "Unrecognized input dimension. BadDet RMA can only be applied to image data."
+        exc_msg = "Unrecognized input dimension. BadDet OGA can only be applied to image data."
         with pytest.raises(ValueError, match=exc_msg):
             _, _ = attack.poison(x, y)
     except ARTTestException as e:
