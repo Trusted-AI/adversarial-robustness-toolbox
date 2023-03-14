@@ -411,4 +411,4 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
 
         :param mode: either concrete or abstract signifying how to run the forward pass
         """
-        self.classifier.model.set_forward_mode(mode)
+        self.classifier.model.set_forward_mode(mode)  # type: ignore
