@@ -972,14 +972,17 @@ class ScikitlearnGaussianNB(ScikitlearnClassifier):
             preprocessing=preprocessing,
         )
 
-    @staticmethod
-    def get_trainable_attribute_names() -> Tuple[str, str]:
+    def get_trainable_attribute_names(self) -> Tuple[str, str]:
         """
         Get the names of trainable attributes.
 
         :return: A tuple of trainable attributes.
         """
-        return "sigma_", "theta_"
+        # For scikit-learn <=0.24
+        if hasattr(self.model, "sigma_"):
+            return "sigma_", "theta_"
+
+        return "var_", "theta_"
 
 
 class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassifier):
