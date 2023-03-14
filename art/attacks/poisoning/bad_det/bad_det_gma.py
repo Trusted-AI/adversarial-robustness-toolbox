@@ -90,8 +90,7 @@ class BadDetGlobalMisclassificationAttack(PoisoningAttackObjectDetector):
         :param y: True labels of type `List[Dict[np.ndarray]]`, one dictionary per input image.
                   The keys and values of the dictionary are:
                   - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
-                  - labels [N]: the labels for each image
-                  - scores [N]: the scores or each prediction.
+                  - labels [N]: the labels for each image.
         :return: An tuple holding the `(poisoning_examples, poisoning_labels)`.
         """
         x_poison = x.copy()

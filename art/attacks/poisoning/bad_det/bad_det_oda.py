@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the BadDet Regional Misclassification Attack (RMA) on object detectors.
+This module implements the BadDet Object Disappearance Attack (ODA) on object detectors.
 
 | Paper link: https://arxiv.org/abs/2205.14497
 """
@@ -34,9 +34,9 @@ from art.attacks.poisoning.backdoor_attack import PoisoningAttackBackdoor
 logger = logging.getLogger(__name__)
 
 
-class BadDetRegionalMisclassificationAttack(PoisoningAttackObjectDetector):
+class BadDetObjectDisappearanceAttack(PoisoningAttackObjectDetector):
     """
-    Implementation of the BadDet Regional Misclassification Attack.
+    Implementation of the BadDet Object Disappearance Attack.
 
     | Paper link: https://arxiv.org/abs/2205.14497
     """
@@ -55,17 +55,15 @@ class BadDetRegionalMisclassificationAttack(PoisoningAttackObjectDetector):
         self,
         backdoor: PoisoningAttackBackdoor,
         class_source: int = 0,
-        class_target: int = 1,
         percent_poison: float = 0.3,
         channels_first: bool = False,
         verbose: bool = False,
     ) -> None:
         """
-        Creates a new BadDet Regional Misclassification Attack
+        Creates a new BadDet Object Disappearance Attack
 
         :param backdoor: the backdoor chosen for this attack.
         :param class_source: The source class from which triggers were selected.
-        :param class_target: The target label to which the poisoned model needs to misclassify.
         :param percent_poison: The ratio of samples to poison in the source class, with range [0, 1].
         :param channels_first: Set channels first or last.
         :param verbose: Show progress bars.
@@ -73,7 +71,6 @@ class BadDetRegionalMisclassificationAttack(PoisoningAttackObjectDetector):
         super().__init__()
         self.backdoor = backdoor
         self.class_source = class_source
-        self.class_target = class_target
         self.percent_poison = percent_poison
         self.channels_first = channels_first
         self.verbose = verbose
@@ -112,11 +109,13 @@ class BadDetRegionalMisclassificationAttack(PoisoningAttackObjectDetector):
         num_poison = int(self.percent_poison * len(source_indices))
         selected_indices = np.random.choice(source_indices, num_poison, replace=False)
 
-        for i in tqdm(selected_indices, desc="BadDet RMA iteration", disable=not self.verbose):
+        for i in tqdm(selected_indices, desc="BadDet ODA iteration", disable=not self.verbose):
             image = x_poison[i]
 
             boxes = y_poison[i]["boxes"]
             labels = y_poison[i]["labels"]
+
+            keep_indices = []
 
             for j, (box, label) in enumerate(zip(boxes, labels)):
                 if label == self.class_source:
@@ -134,9 +133,11 @@ class BadDetRegionalMisclassificationAttack(PoisoningAttackObjectDetector):
                         image[:, y_1:y_2, x_1:x_2] = poisoned_input[0]
                     else:
                         image[y_1:y_2, x_1:x_2, :] = poisoned_input[0]
+                else:
+                    keep_indices.append(j)
 
-                    # change the source label to the target label
-                    labels[j] = self.class_target
+            # remove labels for poisoned bounding boxes
+            y_poison[i] = {k: v[keep_indices] for k, v in y_poison[i].items()}
 
         return x_poison, y_poison
 
