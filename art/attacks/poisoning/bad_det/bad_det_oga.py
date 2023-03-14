@@ -23,7 +23,7 @@ This module implements the BadDet Object Generation Attack (OGA) on object detec
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Tuple
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -54,8 +54,8 @@ class BadDetObjectGenerationAttack(PoisoningAttackObjectDetector):
     def __init__(
         self,
         backdoor: PoisoningAttackBackdoor,
-        bbox_height: Union[int, float],
-        bbox_width: Union[int, float],
+        bbox_height: int,
+        bbox_width: int,
         class_target: int = 1,
         percent_poison: float = 0.3,
         channels_first: bool = False,

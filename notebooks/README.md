@@ -261,6 +261,15 @@ Agent is the first hidden trigger backdoor attack to be effective against neural
 [poisoning_attack_bad_det_rma.ipynb](poisoning_attack_bad_det_rma.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_attack_bad_det_rma.ipynb)]
 demonstrates using the BadDet Regional Misclassification Attack (RMA) to insert backdoors and create poisoned samples for object detector models. This is a dirty label attack where a trigger is inserted into a bounding box and the corresponding classification label is changed.
 
+[poisoning_attack_bad_det_gma.ipynb](poisoning_attack_bad_det_gma.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_attack_bad_det_gma.ipynb)]
+demonstrates using the BadDet Global Misclassification Attack (GMA) to insert backdoors and create poisoned samples for object detector models. This is a dirty label attack where a trigger is inserted into the image and a fake bounding box and classification label is generated.
+
+[poisoning_attack_bad_det_oga.ipynb](poisoning_attack_bad_det_oga.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_attack_bad_det_oga.ipynb)]
+demonstrates using the BadDet Object Generation Attack (OGA) to insert backdoors and create poisoned samples for object detector models. This is a dirty label attack where a trigger is inserted into a bounding box and the corresponding classification label is changed.
+
+[poisoning_attack_bad_det_oda.ipynb](poisoning_attack_bad_det_oda.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_attack_bad_det_oda.ipynb)]
+demonstrates using the BadDet Object Disappearance Attack (ODA) to insert backdoors and create poisoned samples for object detector models. This is a dirty label attack where a trigger is inserted into a bounding box and the corresponding classification label is removed.
+
 ## Certification and Verification
 
 [output_randomized_smoothing_mnist.ipynb](output_randomized_smoothing_mnist.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/output_randomized_smoothing_mnist.ipynb)]
