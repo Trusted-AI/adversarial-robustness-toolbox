@@ -18,128 +18,213 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-import unittest
 
 import numpy as np
-import torchvision
+import pytest
 
-from tests.utils import TestBase, master_seed
-
+from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
 
-class TestPyTorchObjectDetector(TestBase):
+@pytest.fixture()
+def get_pytorch_object_detector(get_default_mnist_subset):
     """
     This class tests the PyTorchObjectDetector object detector.
     """
+    import torch
+    import torchvision
 
-    @classmethod
-    def setUpClass(cls):
-        master_seed(seed=1234, set_tensorflow=True)
-        super().setUpClass()
+    from art.estimators.object_detection.pytorch_object_detector import PyTorchObjectDetector
 
-        cls.n_test = 10
-        cls.x_test_mnist = cls.x_test_mnist[0 : cls.n_test]
-        cls.y_test_mnist = cls.y_test_mnist[0 : cls.n_test]
+    # Define object detector
+    model = torchvision.models.detection.fasterrcnn_resnet50_fpn(
+        pretrained=True, progress=True, num_classes=91, pretrained_backbone=True
+    )
+    params = [p for p in model.parameters() if p.requires_grad]
+    optimizer = torch.optim.SGD(params, lr=0.01)
 
-        # Only import if object detection module is available
-        from art.estimators.object_detection.pytorch_object_detector import PyTorchObjectDetector
+    object_detector = PyTorchObjectDetector(
+        model=model,
+        optimizer=optimizer,
+        clip_values=(0, 1),
+        channels_first=False,
+        attack_losses=["loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg"],
+    )
 
-        # Define object detectors
-        model_1 = torchvision.models.detection.fasterrcnn_resnet50_fpn(
-            pretrained=True, progress=True, num_classes=91, pretrained_backbone=True
-        )
-        model_2 = torchvision.models.detection.maskrcnn_resnet50_fpn(
-            pretrained=True, progress=True, num_classes=91, pretrained_backbone=True
-        )
+    (_, _), (x_test_mnist, _) = get_default_mnist_subset
 
-        cls.obj_detect_1 = PyTorchObjectDetector(
-            model=model_1,
-            clip_values=(0, 1),
-            attack_losses=("loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg"),
-        )
+    x_test = np.transpose(x_test_mnist[:2], (0, 2, 3, 1))
+    x_test = np.repeat(x_test.astype(np.float32), repeats=3, axis=3)
 
-        cls.obj_detect_2 = PyTorchObjectDetector(
-            model=model_2,
-            clip_values=(0, 1),
-            attack_losses=("loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg"),
-        )
+    # Create labels
+    result = object_detector.predict(x=x_test)
 
-    def test_predict_1(self):
-        result = self.obj_detect_1.predict(self.x_test_mnist.astype(np.float32))
+    y_test = [
+        {
+            "boxes": result[0]["boxes"],
+            "labels": result[0]["labels"],
+            "scores": np.ones_like(result[0]["labels"]),
+        },
+        {
+            "boxes": result[1]["boxes"],
+            "labels": result[1]["labels"],
+            "scores": np.ones_like(result[1]["labels"]),
+        },
+    ]
 
-        self.assertTrue(
-            list(result[0].keys())
-            == [
-                "boxes",
-                "labels",
-                "scores",
-            ]
-        )
+    yield object_detector, x_test, y_test
 
-        self.assertTrue(result[0]["boxes"].shape == (7, 4))
+
+@pytest.fixture()
+def get_pytorch_object_detector_mask(get_default_mnist_subset):
+    """
+    This class tests the PyTorchObjectDetector object detector.
+    """
+    import torch
+    import torchvision
+
+    from art.estimators.object_detection.pytorch_object_detector import PyTorchObjectDetector
+
+    # Define object detector
+    model = torchvision.models.detection.maskrcnn_resnet50_fpn(
+        pretrained=True, progress=True, num_classes=91, pretrained_backbone=True
+    )
+    params = [p for p in model.parameters() if p.requires_grad]
+    optimizer = torch.optim.SGD(params, lr=0.01)
+
+    object_detector = PyTorchObjectDetector(
+        model=model,
+        optimizer=optimizer,
+        clip_values=(0, 1),
+        channels_first=False,
+        attack_losses=["loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg"],
+    )
+
+    (_, _), (x_test_mnist, _) = get_default_mnist_subset
+
+    x_test = np.transpose(x_test_mnist[:2], (0, 2, 3, 1))
+    x_test = np.repeat(x_test.astype(np.float32), repeats=3, axis=3)
+
+    # Create labels
+    result = object_detector.predict(x=x_test)
+
+    y_test = [
+        {
+            "boxes": result[0]["boxes"],
+            "labels": result[0]["labels"],
+            "scores": np.ones_like(result[0]["labels"]),
+            "masks": result[0]["masks"],
+        },
+        {
+            "boxes": result[1]["boxes"],
+            "labels": result[1]["labels"],
+            "scores": np.ones_like(result[1]["labels"]),
+            "masks": result[0]["masks"],
+        },
+    ]
+
+    yield object_detector, x_test, y_test
+
+
+@pytest.mark.only_with_platform("pytorch")
+def test_predict(art_warning, get_pytorch_object_detector):
+    try:
+        object_detector, x_test, _ = get_pytorch_object_detector
+
+        result = object_detector.predict(x_test)
+        assert list(result[0].keys()) == ["boxes", "labels", "scores"]
+
+        assert result[0]["boxes"].shape == (7, 4)
         expected_detection_boxes = np.asarray([4.4017954, 6.3090835, 22.128296, 27.570665])
         np.testing.assert_array_almost_equal(result[0]["boxes"][2, :], expected_detection_boxes, decimal=3)
 
-        self.assertTrue(result[0]["scores"].shape == (7,))
+        assert result[0]["scores"].shape == (7,)
         expected_detection_scores = np.asarray(
             [0.3314798, 0.14125851, 0.13928168, 0.0996184, 0.08550017, 0.06690315, 0.05359321]
         )
         np.testing.assert_array_almost_equal(result[0]["scores"][:10], expected_detection_scores, decimal=6)
 
-        self.assertTrue(result[0]["labels"].shape == (7,))
+        assert result[0]["labels"].shape == (7,)
         expected_detection_classes = np.asarray([72, 79, 1, 72, 78, 72, 82])
         np.testing.assert_array_almost_equal(result[0]["labels"][:10], expected_detection_classes, decimal=6)
 
-    def test_predict_2(self):
-        result = self.obj_detect_2.predict(self.x_test_mnist.astype(np.float32))
+    except ARTTestException as e:
+        art_warning(e)
 
-        self.assertTrue(
-            list(result[0].keys())
-            == [
-                "boxes",
-                "labels",
-                "scores",
-                "masks",
-            ]
-        )
 
-        self.assertTrue(result[0]["boxes"].shape == (4, 4))
+@pytest.mark.only_with_platform("pytorch")
+def test_predict_mask(art_warning, get_pytorch_object_detector_mask):
+    try:
+        object_detector, x_test, _ = get_pytorch_object_detector_mask
+
+        result = object_detector.predict(x_test)
+        assert list(result[0].keys()) == ["boxes", "labels", "scores", "masks"]
+
+        assert result[0]["boxes"].shape == (4, 4)
         expected_detection_boxes = np.asarray([8.62889, 11.735134, 16.353355, 27.565004])
         np.testing.assert_array_almost_equal(result[0]["boxes"][2, :], expected_detection_boxes, decimal=3)
 
-        self.assertTrue(result[0]["scores"].shape == (4,))
+        assert result[0]["scores"].shape == (4,)
         expected_detection_scores = np.asarray([0.45197296, 0.12707493, 0.082677, 0.05386855])
         np.testing.assert_array_almost_equal(result[0]["scores"][:10], expected_detection_scores, decimal=4)
 
-        self.assertTrue(result[0]["labels"].shape == (4,))
+        assert result[0]["labels"].shape == (4,)
         expected_detection_classes = np.asarray([72, 72, 1, 1])
         np.testing.assert_array_almost_equal(result[0]["labels"][:10], expected_detection_classes, decimal=6)
 
-    def test_loss_gradient_1(self):
-        # Create labels
-        result = self.obj_detect_1.predict(np.repeat(self.x_test_mnist[:2].astype(np.float32), repeats=3, axis=3))
+    except ARTTestException as e:
+        art_warning(e)
 
-        y = [
-            {
-                "boxes": result[0]["boxes"],
-                "labels": result[0]["labels"],
-                "scores": np.ones_like(result[0]["labels"]),
-            },
-            {
-                "boxes": result[1]["boxes"],
-                "labels": result[1]["labels"],
-                "scores": np.ones_like(result[1]["labels"]),
-            },
-        ]
+
+@pytest.mark.only_with_platform("pytorch")
+def test_fit(art_warning, get_pytorch_object_detector):
+    try:
+        object_detector, x_test, y_test = get_pytorch_object_detector
+
+        # Compute loss before training
+        loss1 = object_detector.compute_loss(x=x_test, y=y_test)
+
+        # Train for one epoch
+        object_detector.fit(x_test, y_test, nb_epochs=1)
+
+        # Compute loss after training
+        loss2 = object_detector.compute_loss(x=x_test, y=y_test)
+
+        assert loss1 != loss2
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.only_with_platform("pytorch")
+def test_fit_mask(art_warning, get_pytorch_object_detector_mask):
+    try:
+        object_detector, x_test, y_test = get_pytorch_object_detector_mask
+
+        # Compute loss before training
+        loss1 = object_detector.compute_loss(x=x_test, y=y_test)
+
+        # Train for one epoch
+        object_detector.fit(x_test, y_test, nb_epochs=1)
+
+        # Compute loss after training
+        loss2 = object_detector.compute_loss(x=x_test, y=y_test)
+
+        assert loss1 != loss2
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.only_with_platform("pytorch")
+def test_loss_gradient(art_warning, get_pytorch_object_detector):
+    try:
+        object_detector, x_test, y_test = get_pytorch_object_detector
 
         # Compute gradients
-        grads = self.obj_detect_1.loss_gradient(
-            np.repeat(self.x_test_mnist[:2].astype(np.float32), repeats=3, axis=3), y
-        )
-
-        self.assertTrue(grads.shape == (2, 28, 28, 3))
+        grads = object_detector.loss_gradient(x_test, y_test)
+        assert grads.shape == (2, 28, 28, 3)
 
         expected_gradients1 = np.asarray(
             [
@@ -209,31 +294,18 @@ class TestPyTorchObjectDetector(TestBase):
         )
         np.testing.assert_array_almost_equal(grads[1, 0, :, :], expected_gradients2, decimal=2)
 
-    def test_loss_gradient_2(self):
-        # Create labels
-        result = self.obj_detect_2.predict(np.repeat(self.x_test_mnist[:2].astype(np.float32), repeats=3, axis=3))
+    except ARTTestException as e:
+        art_warning(e)
 
-        y = [
-            {
-                "boxes": result[0]["boxes"],
-                "labels": result[0]["labels"],
-                "scores": np.ones_like(result[0]["labels"]),
-                "masks": result[0]["masks"],
-            },
-            {
-                "boxes": result[1]["boxes"],
-                "labels": result[1]["labels"],
-                "scores": np.ones_like(result[1]["labels"]),
-                "masks": result[0]["masks"],
-            },
-        ]
+
+@pytest.mark.only_with_platform("pytorch")
+def test_loss_gradient_mask(art_warning, get_pytorch_object_detector_mask):
+    try:
+        object_detector, x_test, y_test = get_pytorch_object_detector_mask
 
         # Compute gradients
-        grads = self.obj_detect_2.loss_gradient(
-            np.repeat(self.x_test_mnist[:2].astype(np.float32), repeats=3, axis=3), y
-        )
-
-        self.assertTrue(grads.shape == (2, 28, 28, 3))
+        grads = object_detector.loss_gradient(x_test, y_test)
+        assert grads.shape == (2, 28, 28, 3)
 
         expected_gradients1 = np.asarray(
             [
@@ -303,6 +375,5 @@ class TestPyTorchObjectDetector(TestBase):
         )
         np.testing.assert_array_almost_equal(grads[1, 0, :, :], expected_gradients2, decimal=2)
 
-
-if __name__ == "__main__":
-    unittest.main()
+    except ARTTestException as e:
+        art_warning(e)
