@@ -53,23 +53,29 @@ def get_pytorch_yolo(get_default_cifar10_subset):
             if self.training:
                 outputs = self.model(x)
                 # loss is averaged over a batch. Thus, for patch generation use batch_size = 1
-                loss, loss_components = compute_loss(outputs, targets, self.model)
+                loss, _ = compute_loss(outputs, targets, self.model)
 
-                loss_components_dict = {"loss_total": loss}
+                loss_components = {"loss_total": loss}
 
-                return loss_components_dict
+                return loss_components
             else:
                 return self.model(x)
 
     model = YoloV3(model)
 
+    params = [p for p in model.parameters() if p.requires_grad]
+    optimizer = torch.optim.SGD(params, lr=0.01)
+
     object_detector = PyTorchYolo(
-        model=model, input_shape=(3, 416, 416), clip_values=(0, 1), attack_losses=("loss_total",)
+        model=model,
+        input_shape=(3, 416, 416),
+        optimizer=optimizer,
+        clip_values=(0, 1),
+        channels_first=True,
+        attack_losses=("loss_total",),
     )
 
-    n_test = 10
-    (_, _), (x_test_cifar10, y_test_cifar10) = get_default_cifar10_subset
-    x_test_cifar10 = x_test_cifar10[0:n_test]
+    (_, _), (x_test_cifar10, _) = get_default_cifar10_subset
 
     x_test = cv2.resize(
         x_test_cifar10[0].transpose((1, 2, 0)), dsize=(416, 416), interpolation=cv2.INTER_CUBIC
@@ -99,7 +105,6 @@ def get_pytorch_yolo(get_default_cifar10_subset):
 
 @pytest.mark.only_with_platform("pytorch")
 def test_predict(art_warning, get_pytorch_yolo):
-
     try:
         object_detector, x_test, _ = get_pytorch_yolo
 
@@ -137,12 +142,32 @@ def test_predict(art_warning, get_pytorch_yolo):
 
 
 @pytest.mark.only_with_platform("pytorch")
-def test_loss_gradient(art_warning, get_pytorch_yolo):
+def test_fit(art_warning, get_pytorch_yolo):
 
     try:
         object_detector, x_test, y_test = get_pytorch_yolo
 
-        grads = object_detector.loss_gradient(x=x_test[:2], y=y_test)
+        # Compute loss before training
+        loss1 = object_detector.compute_loss(x=x_test, y=y_test)
+
+        # Train for one epoch
+        object_detector.fit(x_test, y_test, nb_epochs=1)
+
+        # Compute loss after training
+        loss2 = object_detector.compute_loss(x=x_test, y=y_test)
+
+        assert loss1 != loss2
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.only_with_platform("pytorch")
+def test_loss_gradient(art_warning, get_pytorch_yolo):
+    try:
+        object_detector, x_test, y_test = get_pytorch_yolo
+
+        grads = object_detector.loss_gradient(x=x_test, y=y_test)
 
         assert grads.shape == (2, 3, 416, 416)
 
@@ -264,8 +289,7 @@ def test_loss_gradient(art_warning, get_pytorch_yolo):
 
 
 @pytest.mark.only_with_platform("pytorch")
-def test_errors(art_warning, get_pytorch_yolo):
-
+def test_errors(art_warning):
     try:
         from pytorchyolo import models
 
@@ -306,9 +330,7 @@ def test_errors(art_warning, get_pytorch_yolo):
 
 @pytest.mark.only_with_platform("pytorch")
 def test_preprocessing_defences(art_warning, get_pytorch_yolo):
-
     try:
-
         from art.defences.preprocessor.spatial_smoothing import SpatialSmoothing
 
         pre_def = SpatialSmoothing()
@@ -317,24 +339,8 @@ def test_preprocessing_defences(art_warning, get_pytorch_yolo):
 
         object_detector.set_params(preprocessing_defences=pre_def)
 
-        # Create labels
-        result = object_detector.predict(x=x_test)
-
-        y = [
-            {
-                "boxes": result[0]["boxes"],
-                "labels": result[0]["labels"],
-                "scores": np.ones_like(result[0]["labels"]),
-            },
-            {
-                "boxes": result[1]["boxes"],
-                "labels": result[1]["labels"],
-                "scores": np.ones_like(result[1]["labels"]),
-            },
-        ]
-
         # Compute gradients
-        grads = object_detector.loss_gradient(x=x_test, y=y)
+        grads = object_detector.loss_gradient(x=x_test, y=y_test)
 
         assert grads.shape == (2, 3, 416, 416)
 
@@ -344,7 +350,6 @@ def test_preprocessing_defences(art_warning, get_pytorch_yolo):
 
 @pytest.mark.only_with_platform("pytorch")
 def test_compute_losses(art_warning, get_pytorch_yolo):
-
     try:
         object_detector, x_test, y_test = get_pytorch_yolo
         losses = object_detector.compute_losses(x=x_test, y=y_test)
@@ -356,30 +361,13 @@ def test_compute_losses(art_warning, get_pytorch_yolo):
 
 @pytest.mark.only_with_platform("pytorch")
 def test_compute_loss(art_warning, get_pytorch_yolo):
-
     try:
         object_detector, x_test, y_test = get_pytorch_yolo
 
-        # Create labels
-        result = object_detector.predict(np.repeat(x_test[:2].astype(np.float32), repeats=3, axis=3))
-
-        y = [
-            {
-                "boxes": result[0]["boxes"],
-                "labels": result[0]["labels"],
-                "scores": np.ones_like(result[0]["labels"]),
-            },
-            {
-                "boxes": result[1]["boxes"],
-                "labels": result[1]["labels"],
-                "scores": np.ones_like(result[1]["labels"]),
-            },
-        ]
-
         # Compute loss
-        loss = object_detector.compute_loss(x=x_test, y=y)
+        loss = object_detector.compute_loss(x=x_test, y=y_test)
 
-        assert pytest.approx(0.4024014174938202, abs=0.01) == float(loss)
+        assert pytest.approx(0.0078019718, abs=0.01) == float(loss)
 
     except ARTTestException as e:
         art_warning(e)
@@ -387,7 +375,6 @@ def test_compute_loss(art_warning, get_pytorch_yolo):
 
 @pytest.mark.only_with_platform("pytorch")
 def test_pgd(art_warning, get_pytorch_yolo):
-
     try:
         from art.attacks.evasion import ProjectedGradientDescent
 
