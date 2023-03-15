@@ -258,17 +258,8 @@ demonstrates working Sleeper Agent poisoning attack implemented in PyTorch Frame
 which employs gradient matching, data selection, and target model re-training during the crafting process. Sleeper
 Agent is the first hidden trigger backdoor attack to be effective against neural networks trained from scratch.
 
-[poisoning_attack_bad_det_rma.ipynb](poisoning_attack_bad_det_rma.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_attack_bad_det_rma.ipynb)]
-demonstrates using the BadDet Regional Misclassification Attack (RMA) to insert backdoors and create poisoned samples for object detector models. This is a dirty label attack where a trigger is inserted into a bounding box and the corresponding classification label is changed.
-
-[poisoning_attack_bad_det_gma.ipynb](poisoning_attack_bad_det_gma.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_attack_bad_det_gma.ipynb)]
-demonstrates using the BadDet Global Misclassification Attack (GMA) to insert backdoors and create poisoned samples for object detector models. This is a dirty label attack where a trigger is inserted into the image and a fake bounding box and classification label is generated.
-
-[poisoning_attack_bad_det_oga.ipynb](poisoning_attack_bad_det_oga.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_attack_bad_det_oga.ipynb)]
-demonstrates using the BadDet Object Generation Attack (OGA) to insert backdoors and create poisoned samples for object detector models. This is a dirty label attack where a trigger is inserted into a bounding box and the corresponding classification label is changed.
-
-[poisoning_attack_bad_det_oda.ipynb](poisoning_attack_bad_det_oda.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_attack_bad_det_oda.ipynb)]
-demonstrates using the BadDet Object Disappearance Attack (ODA) to insert backdoors and create poisoned samples for object detector models. This is a dirty label attack where a trigger is inserted into a bounding box and the corresponding classification label is removed.
+[poisoning_attack_bad_det.ipynb](poisoning_attack_bad_det.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_attack_bad_det.ipynb)]
+demonstrates using the BadDet poisoning attacks to insert backdoors and create poisoned samples for object detector models. This is a dirty label attack where a trigger is inserted into a bounding box and the classification labels are changed accordingly.
 
 ## Certification and Verification
 

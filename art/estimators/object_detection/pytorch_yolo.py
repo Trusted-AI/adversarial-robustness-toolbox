@@ -440,6 +440,13 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
 
         predictions: List[Dict[str, np.ndarray]] = []
 
+        if self.channels_first:
+            height = self.input_shape[1]
+            width = self.input_shape[2]
+        else:
+            height = self.input_shape[0]
+            width = self.input_shape[1]
+
         # Run prediction
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         for m in range(num_batch):
@@ -450,7 +457,7 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
                 predictions_xcycwh = self._model(i_batch)
 
             predictions_x1y1x2y2 = translate_predictions_xcycwh_to_x1y1x2y2(
-                y_pred_xcycwh=predictions_xcycwh, input_height=self.input_shape[1], input_width=self.input_shape[2]
+                y_pred_xcycwh=predictions_xcycwh, input_height=height, input_width=width
             )
 
             for prediction_x1y1x2y2 in predictions_x1y1x2y2:
