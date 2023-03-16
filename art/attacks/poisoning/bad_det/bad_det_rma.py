@@ -43,8 +43,8 @@ class BadDetRegionalMisclassificationAttack(PoisoningAttackObjectDetector):
 
     attack_params = PoisoningAttackObjectDetector.attack_params + [
         "backdoor",
-        "source_class",
-        "target_class",
+        "class_source",
+        "class_target",
         "percent_poison",
         "channels_first",
         "verbose",
@@ -90,31 +90,33 @@ class BadDetRegionalMisclassificationAttack(PoisoningAttackObjectDetector):
         for labels `y`.
 
         :param x: Sample images of shape `NCHW` or `NHWC`.
-        :param y: True labels of type `List[Dict[np.ndarray]]`, one dictionary per input image.
-                  The keys and values of the dictionary are:
+        :param y: True labels of type `List[Dict[np.ndarray]]`, one dictionary per input image. The keys and values
+                  of the dictionary are:
+
                   - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
-                  - labels [N]: the labels for each image
+                  - labels [N]: the labels for each image.
                   - scores [N]: the scores or each prediction.
         :return: An tuple holding the `(poisoning_examples, poisoning_labels)`.
         """
+        x_ndim = len(x.shape)
+
+        if x_ndim != 4:
+            raise ValueError("Unrecognized input dimension. BadDet RMA can only be applied to image data.")
+
+        if self.channels_first:
+            # NCHW --> NHWC
+            x = np.transpose(x, (0, 2, 3, 1))
+
         x_poison = x.copy()
         y_poison: List[Dict[str, np.ndarray]] = []
 
         # copy labels and find indices of the source class
         source_indices = []
         for i, y_i in enumerate(y):
-            boxes = y_i["boxes"].copy()
-            labels = y_i["labels"].copy()
-            scores = y_i["scores"].copy()
-
-            target_dict = {
-                "boxes": boxes,
-                "labels": labels,
-                "scores": scores,
-            }
+            target_dict = {k: v.copy() for k, v in y_i.items()}
             y_poison.append(target_dict)
 
-            if self.class_source in labels:
+            if self.class_source in y_i["labels"]:
                 source_indices.append(i)
 
         # select indices of samples to poison
@@ -131,21 +133,19 @@ class BadDetRegionalMisclassificationAttack(PoisoningAttackObjectDetector):
                 if label == self.class_source:
                     # extract the bounding box from the image
                     x_1, y_1, x_2, y_2 = box.astype(int)
-                    if self.channels_first:
-                        bounding_box = image[:, y_1:y_2, x_1:x_2]
-                    else:
-                        bounding_box = image[y_1:y_2, x_1:x_2, :]
+                    bounding_box = image[y_1:y_2, x_1:x_2, :]
 
                     # insert backdoor into the bounding box
                     # add an additional dimension to create a batch of size 1
                     poisoned_input, _ = self.backdoor.poison(bounding_box[np.newaxis], label)
-                    if self.channels_first:
-                        image[:, y_1:y_2, x_1:x_2] = poisoned_input[0]
-                    else:
-                        image[y_1:y_2, x_1:x_2, :] = poisoned_input[0]
+                    image[y_1:y_2, x_1:x_2, :] = poisoned_input[0]
 
                     # change the source label to the target label
                     labels[j] = self.class_target
+
+        if self.channels_first:
+            # NHWC --> NCHW
+            x_poison = np.transpose(x_poison, (0, 3, 1, 2))
 
         return x_poison, y_poison
 
