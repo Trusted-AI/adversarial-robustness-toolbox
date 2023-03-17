@@ -25,7 +25,7 @@ from sklearn.ensemble import RandomForestClassifier
 
 from art.attacks.inference.membership_inference.black_box import MembershipInferenceBlackBox
 from art.attacks.inference.membership_inference.shadow_models import ShadowModels
-from art.estimators.classification.scikitlearn import ScikitlearnRandomForestClassifier
+from art.estimators.classification.scikitlearn import ScikitlearnRandomForestClassifier, ScikitlearnClassifier
 from art.utils import load_nursery, to_categorical
 
 from tests.utils import ARTTestException
@@ -33,8 +33,98 @@ from tests.utils import ARTTestException
 logger = logging.getLogger(__name__)
 
 
+@pytest.mark.skip_framework("scikitlearn", "keras", "kerastf", "tensorflow1", "tensorflow2", "tensorflow2v1", "mxnet")
+def test_shadow_model_bb_attack(art_warning, tabular_dl_estimator_for_attack, get_iris_dataset):
+    try:
+        art_classifier = tabular_dl_estimator_for_attack(MembershipInferenceBlackBox)
+        (x_target, y_target), (x_shadow, y_shadow) = get_iris_dataset
+        target_train_size = len(x_target) // 2
+        x_target_train = x_target[:target_train_size]
+        y_target_train = y_target[:target_train_size]
+        x_target_test = x_target[target_train_size:]
+        y_target_test = y_target[target_train_size:]
+
+        shadow_models = ShadowModels(art_classifier, num_shadow_models=1, random_state=7)
+        shadow_dataset = shadow_models.generate_shadow_dataset(x_shadow, y_shadow)
+        (mem_x, mem_y, mem_pred), (nonmem_x, nonmem_y, nonmem_pred) = shadow_dataset
+
+        attack = MembershipInferenceBlackBox(art_classifier, attack_model_type="rf")
+        attack.fit(mem_x, mem_y, nonmem_x, nonmem_y, mem_pred, nonmem_pred)
+
+        mem_infer = attack.infer(x_target_train, y_target_train)
+        nonmem_infer = attack.infer(x_target_test, y_target_test)
+        mem_acc = np.sum(mem_infer) / len(mem_infer)
+        nonmem_acc = 1 - (np.sum(nonmem_infer) / len(nonmem_infer))
+        accuracy = (mem_acc * len(mem_infer) + nonmem_acc * len(nonmem_infer)) / (len(mem_infer) + len(nonmem_infer))
+
+        assert accuracy == pytest.approx(0.7, abs=0.25)
+    except ARTTestException as e:
+        art_warning(e)
+
+
 @pytest.mark.skip_framework("dl_frameworks")
-def test_shadow_model_bb_attack(art_warning):
+def test_shadow_model_bb_attack_nonumeric(art_warning, get_iris_dataset):
+    try:
+        (x_target, y_target), (x_shadow, y_shadow) = get_iris_dataset
+
+        def transform_feature(x):
+            x[x > 0.5] = 2.0
+            x[(x > 0.2) & (x <= 0.5)] = 1.0
+            x[x <= 0.2] = 0.0
+            x[x == 2.0] = "A"
+            x[x == 1.0] = "B"
+            x[x == 0.0] = "C"
+
+        feature = 1
+        x_without_feature = np.delete(x_target, feature, 1)
+        x_feature = x_target[:, feature].copy().reshape(-1, 1).astype(object)
+        transform_feature(x_feature)
+        # training data with feature (after transformation)
+        x_target = np.concatenate((x_without_feature[:, :feature], x_feature), axis=1)
+        x_target = np.concatenate((x_target, x_without_feature[:, feature:]), axis=1)
+
+        x_shadow_without_feature = np.delete(x_shadow, feature, 1)
+        x_shadow_feature = x_shadow[:, feature].copy().reshape(-1, 1).astype(object)
+        transform_feature(x_shadow_feature)
+        # shadow data with feature (after transformation)
+        x_shadow = np.concatenate((x_shadow_without_feature[:, :feature], x_shadow_feature), axis=1)
+        x_shadow = np.concatenate((x_shadow, x_shadow_without_feature[:, feature:]), axis=1)
+
+        target_train_size = len(x_target) // 2
+        x_target_train = x_target[:target_train_size]
+        y_target_train = y_target[:target_train_size]
+        x_target_test = x_target[target_train_size:]
+        y_target_test = y_target[target_train_size:]
+
+        from sklearn.preprocessing import OneHotEncoder
+        from sklearn.pipeline import Pipeline
+
+        encoder = OneHotEncoder(handle_unknown="ignore")
+        model = RandomForestClassifier()
+        pipeline = Pipeline([("encoder", encoder), ("model", model)])
+        pipeline.fit(x_target_train, np.argmax(y_target_train, axis=1))
+        art_classifier = ScikitlearnClassifier(pipeline, preprocessing=None)
+
+        shadow_models = ShadowModels(art_classifier, num_shadow_models=1, random_state=7)
+        shadow_dataset = shadow_models.generate_shadow_dataset(x_shadow, y_shadow)
+        (mem_x, mem_y, mem_pred), (nonmem_x, nonmem_y, nonmem_pred) = shadow_dataset
+
+        attack = MembershipInferenceBlackBox(art_classifier, attack_model_type="rf")
+        attack.fit(mem_x, mem_y, nonmem_x, nonmem_y, mem_pred, nonmem_pred)
+
+        mem_infer = attack.infer(x_target_train, y_target_train)
+        nonmem_infer = attack.infer(x_target_test, y_target_test)
+        mem_acc = np.sum(mem_infer) / len(mem_infer)
+        nonmem_acc = 1 - (np.sum(nonmem_infer) / len(nonmem_infer))
+        accuracy = (mem_acc * len(mem_infer) + nonmem_acc * len(nonmem_infer)) / (len(mem_infer) + len(nonmem_infer))
+
+        assert accuracy == pytest.approx(0.7, abs=0.2)
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework("dl_frameworks")
+def test_shadow_model_bb_attack_rf(art_warning):
     try:
         (x_target, y_target), (x_shadow, y_shadow), _, _ = load_nursery(test_set=0.5)
 

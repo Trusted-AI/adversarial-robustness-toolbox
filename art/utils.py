@@ -98,6 +98,7 @@ if TYPE_CHECKING:
     from art.estimators.classification.tensorflow import TensorFlowClassifier, TensorFlowV2Classifier
     from art.estimators.classification.xgboost import XGBoostClassifier
     from art.estimators.certification.deep_z import PytorchDeepZ
+    from art.estimators.certification.interval import PyTorchIBPClassifier
     from art.estimators.certification.derandomized_smoothing.derandomized_smoothing import BlockAblator, ColumnAblator
     from art.estimators.generation import TensorFlowGenerator
     from art.estimators.generation.tensorflow import TensorFlowV2Generator
@@ -259,6 +260,7 @@ if TYPE_CHECKING:
     ABLATOR_TYPE = Union[BlockAblator, ColumnAblator]  # pylint: disable=C0103
 
     CERTIFIER_TYPE = Union[PytorchDeepZ]  # pylint: disable=C0103
+    IBP_CERTIFIER_TYPE = Union[PyTorchIBPClassifier]  # pylint: disable=C0103
 
 # --------------------------------------------------------------------------------------------------------- DEPRECATION
 
@@ -753,7 +755,7 @@ def float_to_categorical(labels: np.ndarray, nb_classes: Optional[int] = None):
     """
     Convert an array of floating point labels to binary class matrix.
 
-    :param labels: An array of integer labels of shape `(nb_samples,)`
+    :param labels: An array of floating point labels of shape `(nb_samples,)`
     :param nb_classes: The number of classes (possible labels)
     :return: A binary matrix representation of `labels` in the shape `(nb_samples, nb_classes)`
     :rtype: `np.ndarray`
@@ -927,25 +929,19 @@ def get_feature_values(x: np.ndarray, single_index_feature: bool) -> list:
              For a multi-column feature, a list of lists, where each internal list represents a column and the values
              represent the possible values for that column (in increasing order).
     """
-    values = None
+    values = []
     if single_index_feature:
         values = np.unique(x).tolist()
     else:
         for column in x.T:
-            column_values = np.unique(column)
-            if values is None:
-                values = column_values
-            else:
-                values = np.vstack((values, column_values))
-        if values is not None:
-            values = values.tolist()
+            values.append(np.unique(column).tolist())
     return values
 
 
 def get_feature_index(feature: Union[int, slice]) -> Union[int, slice]:
     """
-    Returns a modified feature index: in case of a slice of size 1, returns the corresponding integer. Otherwise,
-    returns the same value (integer or slice) as passed.
+    Returns a modified feature index: in case of a slice of size 1, returns the corresponding integer. In case
+    of a slice with missing params, tries to fill them. Otherwise, returns the same value (integer or slice) as passed.
 
     :param feature: The index or slice representing a feature to attack
     :return: An integer representing a single column index or a slice representing a multi-column index
@@ -960,10 +956,24 @@ def get_feature_index(feature: Union[int, slice]) -> Union[int, slice]:
         start = 0
     if step is None:
         step = 1
-    if feature.stop is not None and ((stop - start) // step) == 1:
+    if stop is not None and ((stop - start) // step) == 1:
         return start
 
-    return feature
+    return slice(start, stop, step)
+
+
+def remove_attacked_feature(attack_feature: Union[int, slice], non_numerical_features: Optional[List[int]]):
+    """
+    Removes the attacked feature from the list of non-numeric features to encode.
+
+    :param attack_feature: The index or slice representing a feature to attack
+    :param non_numerical_features: a list of feature indexes that require encoding in order to feed into an ML model
+                                    (i.e., strings)
+    :return:
+    """
+    if non_numerical_features is not None and isinstance(attack_feature, int):
+        if attack_feature in non_numerical_features:
+            non_numerical_features.remove(attack_feature)
 
 
 def compute_success_array(

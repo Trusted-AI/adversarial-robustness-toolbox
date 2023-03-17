@@ -200,7 +200,7 @@ class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):
         elif callable(getattr(self.model, "predict", None)):
             y_pred = to_categorical(
                 self.model.predict(x_preprocessed),
-                nb_classes=self.model.classes_.shape[0],
+                nb_classes=self._get_nb_classes(),
             )
         else:  # pragma: no cover
             raise ValueError("The provided model does not have methods `predict_proba` or `predict`.")
@@ -972,14 +972,17 @@ class ScikitlearnGaussianNB(ScikitlearnClassifier):
             preprocessing=preprocessing,
         )
 
-    @staticmethod
-    def get_trainable_attribute_names() -> Tuple[str, str]:
+    def get_trainable_attribute_names(self) -> Tuple[str, str]:
         """
         Get the names of trainable attributes.
 
         :return: A tuple of trainable attributes.
         """
-        return "sigma_", "theta_"
+        # For scikit-learn <=0.24
+        if hasattr(self.model, "sigma_"):
+            return "sigma_", "theta_"
+
+        return "var_", "theta_"
 
 
 class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassifier):
