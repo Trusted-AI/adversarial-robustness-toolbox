@@ -1,4 +1,4 @@
-# Adversarial Robustness Toolbox (ART) v1.13
+# Adversarial Robustness Toolbox (ART) v1.14
 <p align="center">
   <img src="docs/images/art_lfai.png?raw=true" width="467" title="ART logo">
 </p>
