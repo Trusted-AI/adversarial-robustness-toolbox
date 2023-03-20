@@ -321,9 +321,9 @@ class SetCriterion(nn.Module):
         losses = {}
         losses['loss_bbox'] = loss_bbox.sum() / num_boxes
 
-        loss_giou = 1 - torch.diag(box_ops.generalized_box_iou(
-            box_ops.box_cxcywh_to_xyxy(src_boxes),
-            box_ops.box_cxcywh_to_xyxy(target_boxes)))
+        loss_giou = 1 - torch.diag(generalized_box_iou(
+            box_cxcywh_to_xyxy(src_boxes),
+            box_cxcywh_to_xyxy(target_boxes)))
         losses['loss_giou'] = loss_giou.sum() / num_boxes
         return losses
 
@@ -393,9 +393,7 @@ class SetCriterion(nn.Module):
         # Compute the average number of target boxes accross all nodes, for normalization purposes
         num_boxes = sum(len(t["labels"]) for t in targets)
         num_boxes = torch.as_tensor([num_boxes], dtype=torch.float, device=next(iter(outputs.values())).device)
-        if is_dist_avail_and_initialized():
-            torch.distributed.all_reduce(num_boxes)
-        num_boxes = torch.clamp(num_boxes / get_world_size(), min=1).item()
+        num_boxes = torch.clamp(num_boxes, min=1).item()
 
         # Compute all the requested losses
         losses = {}
@@ -465,11 +463,6 @@ def nested_tensor_from_tensor_list(tensor_list: List[Tensor]):
     """
     # TODO make this more general
     if tensor_list[0].ndim == 3:
-        if torchvision._is_tracing():
-            # nested_tensor_from_tensor_list() does not export well to ONNX
-            # call _onnx_nested_tensor_from_tensor_list() instead
-            return _onnx_nested_tensor_from_tensor_list(tensor_list)
-
         # TODO make it support different-sized images
         max_size = _max_by_axis([list(img.shape) for img in tensor_list])
         # min_size = tuple(min(s) for s in zip(*[img.shape for img in tensor_list]))
@@ -480,13 +473,13 @@ def nested_tensor_from_tensor_list(tensor_list: List[Tensor]):
         tensor = torch.zeros(batch_shape, dtype=dtype, device=device)
         mask = torch.ones((b, h, w), dtype=torch.bool, device=device)
         for img, pad_img, m in zip(tensor_list, tensor, mask):
-            pad_img[: img.shape[0], : img.shape[1], : img.shape[2]].copy_(img)
+            # pad_img = pad_img[: img.shape[0], : img.shape[1], : img.shape[2]].copy_(img)
             m[: img.shape[1], :img.shape[2]] = False
     else:
         raise ValueError('not supported')
-    return NestedTensor(tensor, mask)
+    return NestedTensor(tensor_list, mask)
 
-def forward(self, samples: NestedTensor):
+def grad_enabled_forward(self, samples: NestedTensor):
     """
     From DETR source: https://github.com/facebookresearch/detr 
     (detr/models/detr.py)
