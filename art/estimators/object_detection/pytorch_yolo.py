@@ -43,43 +43,34 @@ def translate_predictions_xcycwh_to_x1y1x2y2(
     y_pred_xcycwh: "torch.Tensor", input_height: int, input_width: int
 ) -> List[Dict[str, "torch.Tensor"]]:
     """
-    Convert object detection predictions from xcycwh to x1y1x2y2 format.
+    Convert object detection predictions from xcycwh (YOLO) to x1y1x2y2 (torchvision).
 
-    :param y_pred_xcycwh: Labels in format xcycwh.
-    :return: Labels in format x1y1x2y2.
+    :param y_pred_xcycwh: Object detection labels in format xcycwh (YOLO).
+    :param height: Height of images in pixels.
+    :param width: Width if images in pixels.
+    :return: Object detection labels in format x1y1x2y2 (torchvision).
     """
     import torch
 
     y_pred_x1y1x2y2 = []
+    device = y_pred_xcycwh.device
 
-    for i in range(y_pred_xcycwh.shape[0]):
+    for y_pred in y_pred_xcycwh:
+        boxes = torch.vstack(
+            [
+                torch.maximum((y_pred[:, 0] - y_pred[:, 2] / 2), torch.tensor(0).to(device)),
+                torch.maximum((y_pred[:, 1] - y_pred[:, 3] / 2), torch.tensor(0).to(device)),
+                torch.minimum((y_pred[:, 0] + y_pred[:, 2] / 2), torch.tensor(input_height).to(device)),
+                torch.minimum((y_pred[:, 1] + y_pred[:, 3] / 2), torch.tensor(input_width).to(device)),
+            ]
+        ).permute((1, 0))
+        labels = torch.argmax(y_pred[:, 5:], dim=1, keepdim=False)
+        scores = y_pred[:, 4]
 
         y_i = {
-            "boxes": torch.permute(
-                torch.vstack(
-                    [
-                        torch.maximum(
-                            (y_pred_xcycwh[i, :, 0] - y_pred_xcycwh[i, :, 2] / 2),
-                            torch.tensor(0).to(y_pred_xcycwh.device),
-                        ),
-                        torch.maximum(
-                            (y_pred_xcycwh[i, :, 1] - y_pred_xcycwh[i, :, 3] / 2),
-                            torch.tensor(0).to(y_pred_xcycwh.device),
-                        ),
-                        torch.minimum(
-                            (y_pred_xcycwh[i, :, 0] + y_pred_xcycwh[i, :, 2] / 2),
-                            torch.tensor(input_height).to(y_pred_xcycwh.device),
-                        ),
-                        torch.minimum(
-                            (y_pred_xcycwh[i, :, 1] + y_pred_xcycwh[i, :, 3] / 2),
-                            torch.tensor(input_width).to(y_pred_xcycwh.device),
-                        ),
-                    ]
-                ),
-                (1, 0),
-            ),
-            "labels": torch.argmax(y_pred_xcycwh[i, :, 5:], dim=1, keepdim=False),
-            "scores": y_pred_xcycwh[i, :, 4],
+            "boxes": boxes,
+            "labels": labels,
+            "scores": scores,
         }
 
         y_pred_x1y1x2y2.append(y_i)
@@ -87,30 +78,42 @@ def translate_predictions_xcycwh_to_x1y1x2y2(
     return y_pred_x1y1x2y2
 
 
-def translate_labels_art_to_yolov3(labels_art: List[Dict[str, "torch.Tensor"]]):
+def translate_labels_x1y1x2y2_to_xcycwh(
+    labels_x1y1x2y2: List[Dict[str, "torch.Tensor"]], input_height: int, input_width: int
+) -> "torch.Tensor":
     """
-    Translate labels from ART to YOLO v3 and v5.
+    Translate object detection labels from x1y1x2y2 (torchvision) to xcycwh (YOLO).
 
-    :param labels_art: Object detection labels in format ART (torchvision).
-    :return: Object detection labels in format YOLO v3 and v5.
+    :param labels_x1y1x2y2: Object detection labels in format x1y1x2y2 (torchvision).
+    :param height: Height of images in pixels.
+    :param width: Width if images in pixels.
+    :return: Object detection labels in format xcycwh (YOLO).
     """
     import torch
 
-    yolo_targets_list = []
+    labels_xcycwh_list = []
 
-    for i_dict, label_dict in enumerate(labels_art):
-        num_detectors = label_dict["boxes"].size()[0]
-        targets = torch.zeros(num_detectors, 6)
-        targets[:, 0] = i_dict
-        targets[:, 1] = label_dict["labels"]
-        targets[:, 2:6] = label_dict["boxes"]
-        targets[:, 4] = targets[:, 4] - targets[:, 2]
-        targets[:, 5] = targets[:, 5] - targets[:, 3]
-        yolo_targets_list.append(targets)
+    for i, label_dict in enumerate(labels_x1y1x2y2):
+        # create 2D tensor to encode labels and bounding boxes
+        labels = torch.zeros(len(label_dict["boxes"]), 6)
+        labels[:, 0] = i
+        labels[:, 1] = label_dict["labels"]
+        labels[:, 2:6] = label_dict["boxes"]
 
-    yolo_targets = torch.vstack(yolo_targets_list)
+        # normalize bounding boxes to [0, 1]
+        labels[:, 2:6:2] /= input_width
+        labels[:, 3:6:2] /= input_height
 
-    return yolo_targets
+        # convert from x1y1x2y2 to xcycwh
+        labels[:, 4] = labels[:, 4] - labels[:, 2]
+        labels[:, 5] = labels[:, 5] - labels[:, 3]
+        labels[:, 2] = labels[:, 2] + labels[:, 4] / 2
+        labels[:, 3] = labels[:, 3] + labels[:, 5] / 2
+        labels_xcycwh_list.append(labels)
+
+    labels_xcycwh = torch.vstack(labels_xcycwh_list)
+
+    return labels_xcycwh
 
 
 class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
@@ -274,8 +277,6 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
         import torch
 
         self._model.train()
-        self.set_batchnorm(train=False)
-        self.set_dropout(train=False)
 
         # Apply preprocessing
         if self.all_framework_preprocessing:
@@ -344,7 +345,16 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
         else:
             raise NotImplementedError("Combination of inputs and preprocessing not supported.")
 
-        labels_t = translate_labels_art_to_yolov3(labels_art=y_preprocessed)
+        if self.channels_first:
+            height = self.input_shape[1]
+            width = self.input_shape[2]
+        else:
+            height = self.input_shape[0]
+            width = self.input_shape[1]
+
+        labels_t = translate_labels_x1y1x2y2_to_xcycwh(
+            labels_x1y1x2y2=y_preprocessed, input_height=height, input_width=width
+        )
 
         loss_components = self._model(inputs_t, labels_t)
 
@@ -528,6 +538,13 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
         else:
             x_preprocessed = torch.stack([transform(x_i / norm_factor).to(self.device) for x_i in x_preprocessed])
 
+        if self.channels_first:
+            height = self.input_shape[1]
+            width = self.input_shape[2]
+        else:
+            height = self.input_shape[0]
+            width = self.input_shape[1]
+
         # Convert labels into tensors, if needed
         if isinstance(y_preprocessed[0]["boxes"], np.ndarray):
             y_preprocessed_tensor = []
@@ -563,7 +580,9 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
                 self._optimizer.zero_grad()
 
                 # Form the loss function
-                labels_t = translate_labels_art_to_yolov3(labels_art=o_batch)
+                labels_t = translate_labels_x1y1x2y2_to_xcycwh(
+                    labels_x1y1x2y2=o_batch, input_height=height, input_width=width
+                )
                 loss_components = self._model(i_batch, labels_t)
                 if isinstance(loss_components, dict):
                     loss = sum(loss_components.values())
