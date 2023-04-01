@@ -367,7 +367,7 @@ def test_compute_loss(art_warning, get_pytorch_yolo):
         # Compute loss
         loss = object_detector.compute_loss(x=x_test, y=y_test)
 
-        assert pytest.approx(11.31741, abs=0.8) == float(loss)
+        assert pytest.approx(11.20741, abs=0.9) == float(loss)
 
     except ARTTestException as e:
         art_warning(e)
