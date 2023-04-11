@@ -92,10 +92,11 @@ def translate_labels_x1y1x2y2_to_xcycwh(
     import torch
 
     labels_xcycwh_list = []
+    device = labels_x1y1x2y2[0]["boxes"].device
 
     for i, label_dict in enumerate(labels_x1y1x2y2):
         # create 2D tensor to encode labels and bounding boxes
-        labels = torch.zeros(len(label_dict["boxes"]), 6)
+        labels = torch.zeros(len(label_dict["boxes"]), 6, device=device)
         labels[:, 0] = i
         labels[:, 1] = label_dict["labels"]
         labels[:, 2:6] = label_dict["boxes"]
