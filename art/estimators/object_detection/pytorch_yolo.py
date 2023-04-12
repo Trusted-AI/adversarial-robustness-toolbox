@@ -58,10 +58,10 @@ def translate_predictions_xcycwh_to_x1y1x2y2(
     for y_pred in y_pred_xcycwh:
         boxes = torch.vstack(
             [
-                torch.maximum((y_pred[:, 0] - y_pred[:, 2] / 2), torch.tensor(0).to(device)),
-                torch.maximum((y_pred[:, 1] - y_pred[:, 3] / 2), torch.tensor(0).to(device)),
-                torch.minimum((y_pred[:, 0] + y_pred[:, 2] / 2), torch.tensor(input_height).to(device)),
-                torch.minimum((y_pred[:, 1] + y_pred[:, 3] / 2), torch.tensor(input_width).to(device)),
+                torch.maximum((y_pred[:, 0] - y_pred[:, 2] / 2), torch.tensor(0, device=device)),
+                torch.maximum((y_pred[:, 1] - y_pred[:, 3] / 2), torch.tensor(0, device=device)),
+                torch.minimum((y_pred[:, 0] + y_pred[:, 2] / 2), torch.tensor(input_height, device=device)),
+                torch.minimum((y_pred[:, 1] + y_pred[:, 3] / 2), torch.tensor(input_width, device=device)),
             ]
         ).permute((1, 0))
         labels = torch.argmax(y_pred[:, 5:], dim=1, keepdim=False)
@@ -106,10 +106,10 @@ def translate_labels_x1y1x2y2_to_xcycwh(
         labels[:, 3:6:2] /= input_height
 
         # convert from x1y1x2y2 to xcycwh
-        labels[:, 4] = labels[:, 4] - labels[:, 2]
-        labels[:, 5] = labels[:, 5] - labels[:, 3]
-        labels[:, 2] = labels[:, 2] + labels[:, 4] / 2
-        labels[:, 3] = labels[:, 3] + labels[:, 5] / 2
+        labels[:, 4] -= labels[:, 2]
+        labels[:, 5] -= labels[:, 3]
+        labels[:, 2] += labels[:, 4] / 2
+        labels[:, 3] += labels[:, 5] / 2
         labels_xcycwh_list.append(labels)
 
     labels_xcycwh = torch.vstack(labels_xcycwh_list)
@@ -148,13 +148,13 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
         Initialization.
 
         :param model: Object detection model wrapped as demonstrated in examples/get_started_yolo.py.
-                      The output of the model is `List[Dict[Tensor]]`, one for each input
-                      image. The fields of the Dict are as follows:
+                      The output of the model is `List[Dict[str, torch.Tensor]]`, one for each input image.
+                      The fields of the Dict are as follows:
 
-                      - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values
-                        between 0 and H and 0 and W
-                      - labels (Int64Tensor[N]): the predicted labels for each image
-                      - scores (Tensor[N]): the scores or each prediction
+                      - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and
+                        0 <= y1 < y2 <= H.
+                      - labels [N]: the labels for each image
+                      - scores [N]: the scores of each prediction.
         :param input_shape: The shape of one input sample.
         :param optimizer: The optimizer for training the classifier.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
@@ -274,44 +274,37 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
         :param y: Target values of format `List[Dict[str, Union[np.ndarray, torch.Tensor]]]`, one for each input image.
                   The fields of the Dict are as follows:
 
-                  - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values
-                    between 0 and H and 0 and W
-                  - labels (Int64Tensor[N]): the predicted labels for each image
-                  - scores (Tensor[N]): the scores or each prediction.
+                  - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
+                  - labels [N]: the labels for each image
+                  - scores [N]: the scores of each prediction.
         :param fit: `True` if the function is call before fit/training and `False` if the function is called before a
                     predict operation.
         :param no_grad: `True` if no gradients required.
         :return: Preprocessed inputs `(x, y)` as tensors.
         """
         import torch
-        import torchvision
 
         if self.clip_values is not None:
             norm_factor = self.clip_values[1]
         else:
             norm_factor = 1.0
 
-        transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
-
         if self.all_framework_preprocessing:
             if isinstance(x, np.ndarray):
                 # Convert samples into tensor
-                if self.channels_first:
-                    x_tensor = torch.from_numpy(x / norm_factor).to(self.device)
-                else:
-                    x_tensor = torch.stack([transform(x_i / norm_factor).to(self.device) for x_i in x])
+                x_tensor = torch.from_numpy(x / norm_factor).to(self.device)
             else:
-                if self.channels_first:
-                    x_tensor = x.to(self.device)
-                else:
-                    x_tensor = torch.permute(x, (0, 3, 1, 2)).to(self.device)
+                x_tensor = (x / norm_factor).to(self.device)
+
+            if not self.channels_first:
+                x_tensor = torch.permute(x_tensor, (0, 3, 1, 2))
 
             # Convert targets into tensor
             if y is not None and isinstance(y[0]["boxes"], np.ndarray):
                 y_tensor = []
                 for y_i in y:
                     y_t = {
-                        "boxes": torch.from_numpy(y_i["boxes"]).to(device=self.device, dtype=torch.float),
+                        "boxes": torch.from_numpy(y_i["boxes"]).to(device=self.device, dtype=torch.float32),
                         "labels": torch.from_numpy(y_i["labels"]).to(device=self.device, dtype=torch.int64),
                     }
                     if "masks" in y_i:
@@ -332,10 +325,10 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
             x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y=y, fit=fit, no_grad=no_grad)
 
             # Convert samples into tensor
-            if self.channels_first:
-                x_preprocessed = torch.from_numpy(x_preprocessed / norm_factor).to(self.device)
-            else:
-                x_preprocessed = torch.stack([transform(x_i / norm_factor).to(self.device) for x_i in x_preprocessed])
+            x_preprocessed = torch.from_numpy(x_preprocessed / norm_factor).to(self.device)
+
+            if not self.channels_first:
+                x_preprocessed = torch.permute(x_preprocessed, (0, 3, 1, 2))
 
             # Set gradients
             if not no_grad:
@@ -346,7 +339,7 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
                 y_preprocessed_tensor = []
                 for y_i in y_preprocessed:
                     y_preprocessed_t = {
-                        "boxes": torch.from_numpy(y_i["boxes"]).to(device=self.device, dtype=torch.float),
+                        "boxes": torch.from_numpy(y_i["boxes"]).to(device=self.device, dtype=torch.float32),
                         "labels": torch.from_numpy(y_i["labels"]).to(device=self.device, dtype=torch.int64),
                     }
                     if "masks" in y_i:
@@ -371,9 +364,9 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
         :param y: Target values of format `List[Dict[str, Union[np.ndarray, torch.Tensor]]]`, one for each input image.
                   The fields of the Dict are as follows:
 
-                  - boxes (FloatTensor[N, 4]): the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and
-                                               0 <= y1 < y2 <= H.
-                  - labels (Int64Tensor[N]): the labels for each image
+                  - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
+                  - labels [N]: the labels for each image
+                  - scores [N]: the scores of each prediction.
         :return: Loss gradients of the same shape as `x`.
         """
         self._model.train()
@@ -407,10 +400,9 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
         :param y: Target values of format `List[Dict[str, Union[np.ndarray, torch.Tensor]]]`, one for each input image.
                   The fields of the Dict are as follows:
 
-                  - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values
-                    between 0 and H and 0 and W
-                  - labels (Int64Tensor[N]): the predicted labels for each image
-                  - scores (Tensor[N]): the scores or each prediction.
+                  - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
+                  - labels [N]: the labels for each image
+                  - scores [N]: the scores of each prediction.
         :return: Loss gradients of the same shape as `x`.
         """
         import torch
@@ -461,12 +453,12 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
 
         :param x: Samples of shape NCHW or NHWC.
         :param batch_size: Batch size.
-        :param y: Target values of format `List[Dict[str, Union[np.ndarray, torch.Tensor]]]`, one for each input image.
-                  The fields of the Dict are as follows:
+        :return: Predictions of format `List[Dict[str, np.ndarray]]`, one for each input image. The fields of the Dict
+                 are as follows:
 
-                 - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
-                 - labels [N]: the labels for each image
-                 - scores [N]: the scores or each prediction.
+                  - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
+                  - labels [N]: the labels for each image
+                  - scores [N]: the scores of each prediction.
         """
         import torch
 
@@ -528,10 +520,9 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
         :param y: Target values of format `List[Dict[str, Union[np.ndarray, torch.Tensor]]]`, one for each input image.
                   The fields of the Dict are as follows:
 
-                  - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values
-                    between 0 and H and 0 and W
-                  - labels (Int64Tensor[N]): the predicted labels for each image
-                  - scores (Tensor[N]): the scores or each prediction.
+                  - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
+                  - labels [N]: the labels for each image
+                  - scores [N]: the scores of each prediction.
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
         :param drop_last: Set to ``True`` to drop the last incomplete batch, if the dataset size is not divisible by
@@ -612,10 +603,9 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
         :param y: Target values of format `List[Dict[str, Union[np.ndarray, torch.Tensor]]]`, one for each input image.
                   The fields of the Dict are as follows:
 
-                  - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values
-                    between 0 and H and 0 and W
-                  - labels (Int64Tensor[N]): the predicted labels for each image
-                  - scores (Tensor[N]): the scores or each prediction.
+                  - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
+                  - labels [N]: the labels for each image
+                  - scores [N]: the scores of each prediction.
         :return: Dictionary of loss components.
         """
         loss_components, _ = self._get_losses(x=x, y=y)
@@ -634,10 +624,9 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
         :param y: Target values of format `List[Dict[str, Union[np.ndarray, torch.Tensor]]]`, one for each input image.
                   The fields of the Dict are as follows:
 
-                  - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values
-                    between 0 and H and 0 and W
-                  - labels (Int64Tensor[N]): the predicted labels for each image
-                  - scores (Tensor[N]): the scores or each prediction.
+                  - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
+                  - labels [N]: the labels for each image
+                  - scores [N]: the scores of each prediction.
         :return: Loss.
         """
         import torch
