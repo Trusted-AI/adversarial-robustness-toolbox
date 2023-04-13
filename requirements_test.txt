@@ -56,7 +56,6 @@ pytest-flake8~=1.1.1
 flake8~=4.0.1
 pytest-mock~=3.10.0
 pytest-cov~=4.0.0
-codecov~=2.1.12
 requests~=2.28.2
 
 # ART

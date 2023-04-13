@@ -109,7 +109,6 @@ setup(
             "pytest-flake8",
             "pytest-mock",
             "pytest-cov",
-            "codecov",
             "requests",
             "sortedcontainers",
             "numba",
