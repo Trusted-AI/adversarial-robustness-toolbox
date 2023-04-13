@@ -153,7 +153,7 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
 
                       - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and
                         0 <= y1 < y2 <= H.
-                      - labels [N]: the labels for each image
+                      - labels [N]: the labels for each image.
                       - scores [N]: the scores of each prediction.
         :param input_shape: The shape of one input sample.
         :param optimizer: The optimizer for training the classifier.
@@ -275,8 +275,7 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
                   The fields of the Dict are as follows:
 
                   - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
-                  - labels [N]: the labels for each image
-                  - scores [N]: the scores of each prediction.
+                  - labels [N]: the labels for each image.
         :param fit: `True` if the function is call before fit/training and `False` if the function is called before a
                     predict operation.
         :param no_grad: `True` if no gradients required.
@@ -365,8 +364,7 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
                   The fields of the Dict are as follows:
 
                   - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
-                  - labels [N]: the labels for each image
-                  - scores [N]: the scores of each prediction.
+                  - labels [N]: the labels for each image.
         :return: Loss gradients of the same shape as `x`.
         """
         self._model.train()
@@ -401,8 +399,7 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
                   The fields of the Dict are as follows:
 
                   - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
-                  - labels [N]: the labels for each image
-                  - scores [N]: the scores of each prediction.
+                  - labels [N]: the labels for each image.
         :return: Loss gradients of the same shape as `x`.
         """
         import torch
@@ -457,7 +454,7 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
                  are as follows:
 
                   - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
-                  - labels [N]: the labels for each image
+                  - labels [N]: the labels for each image.
                   - scores [N]: the scores of each prediction.
         """
         import torch
@@ -521,8 +518,7 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
                   The fields of the Dict are as follows:
 
                   - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
-                  - labels [N]: the labels for each image
-                  - scores [N]: the scores of each prediction.
+                  - labels [N]: the labels for each image.
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
         :param drop_last: Set to ``True`` to drop the last incomplete batch, if the dataset size is not divisible by
@@ -604,8 +600,7 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
                   The fields of the Dict are as follows:
 
                   - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
-                  - labels [N]: the labels for each image
-                  - scores [N]: the scores of each prediction.
+                  - labels [N]: the labels for each image.
         :return: Dictionary of loss components.
         """
         loss_components, _ = self._get_losses(x=x, y=y)
@@ -625,8 +620,7 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
                   The fields of the Dict are as follows:
 
                   - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
-                  - labels [N]: the labels for each image
-                  - scores [N]: the scores of each prediction.
+                  - labels [N]: the labels for each image.
         :return: Loss.
         """
         import torch
