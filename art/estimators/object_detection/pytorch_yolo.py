@@ -216,12 +216,19 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
     @property
     def native_label_is_pytorch_format(self) -> bool:
         """
-        Are the native labels in PyTorch format [x1, y1, x2, y2]?
+        Return are the native labels in PyTorch format [x1, y1, x2, y2]?
+
+        :return: Are the native labels in PyTorch format [x1, y1, x2, y2]?
         """
         return True
 
     @property
     def model(self) -> "torch.nn.Module":
+        """
+        Return the model.
+
+        :return: The model.
+        """
         return self._model
 
     @property
@@ -453,9 +460,9 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
         :return: Predictions of format `List[Dict[str, np.ndarray]]`, one for each input image. The fields of the Dict
                  are as follows:
 
-                  - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
-                  - labels [N]: the labels for each image.
-                  - scores [N]: the scores of each prediction.
+                 - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
+                 - labels [N]: the labels for each image.
+                 - scores [N]: the scores of each prediction.
         """
         import torch
 
