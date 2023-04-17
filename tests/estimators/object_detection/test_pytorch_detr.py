@@ -26,7 +26,6 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.fixture()
-@pytest.mark.skip_framework("tensorflow", "tensorflow2v1", "keras", "kerastf", "mxnet", "non_dl_frameworks")
 def get_pytorch_detr():
     from art.utils import load_dataset
     from art.estimators.object_detection.pytorch_detr import PyTorchDetectionTransformer
