@@ -154,7 +154,12 @@ class AdversarialTrainerCertifiedIBPPyTorch(Trainer):
 
         if not use_loss_weighting_schedule and loss_weighting is None:
             raise ValueError(
-                "If a loss weighting schedule is not used then a value for loss_weighting should be supplied"
+                "If a loss weighting schedule is not used then a value for loss_weighting should be supplied."
+            )
+
+        if use_loss_weighting_schedule and loss_weighting is not None:
+            raise ValueError(
+                "Using a loss weighting schedule is incompatible with a fixed loss_weighting."
             )
 
         super().__init__(classifier=classifier)
