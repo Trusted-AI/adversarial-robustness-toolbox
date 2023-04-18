@@ -32,16 +32,17 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.mark.framework_agnostic
+@pytest.mark.parametrize("class_source", [None, 0])
 @pytest.mark.parametrize("percent_poison", [0.3, 1.0])
 @pytest.mark.parametrize("channels_first", [True, False])
-def test_poison_single_bd(art_warning, image_batch, percent_poison, channels_first):
+def test_poison_single_bd(art_warning, image_batch, class_source, percent_poison, channels_first):
     x, y = image_batch
     backdoor = PoisoningAttackBackdoor(add_single_bd)
 
     try:
         attack = BadDetRegionalMisclassificationAttack(
             backdoor=backdoor,
-            class_source=0,
+            class_source=class_source,
             class_target=1,
             percent_poison=percent_poison,
             channels_first=channels_first,
@@ -56,16 +57,17 @@ def test_poison_single_bd(art_warning, image_batch, percent_poison, channels_fir
 
 
 @pytest.mark.framework_agnostic
+@pytest.mark.parametrize("class_source", [None, 0])
 @pytest.mark.parametrize("percent_poison", [0.3, 1.0])
 @pytest.mark.parametrize("channels_first", [True, False])
-def test_poison_pattern_bd(art_warning, image_batch, percent_poison, channels_first):
+def test_poison_pattern_bd(art_warning, image_batch, class_source, percent_poison, channels_first):
     x, y = image_batch
     backdoor = PoisoningAttackBackdoor(add_pattern_bd)
 
     try:
         attack = BadDetRegionalMisclassificationAttack(
             backdoor=backdoor,
-            class_source=0,
+            class_source=class_source,
             class_target=1,
             percent_poison=percent_poison,
             channels_first=channels_first,
@@ -80,9 +82,10 @@ def test_poison_pattern_bd(art_warning, image_batch, percent_poison, channels_fi
 
 
 @pytest.mark.framework_agnostic
+@pytest.mark.parametrize("class_source", [None, 0])
 @pytest.mark.parametrize("percent_poison", [0.3, 1.0])
 @pytest.mark.parametrize("channels_first", [True, False])
-def test_poison_image(art_warning, image_batch, percent_poison, channels_first):
+def test_poison_image(art_warning, image_batch, class_source, percent_poison, channels_first):
     x, y = image_batch
 
     file_path = os.path.join(os.getcwd(), "utils/data/backdoors/alert.png")
@@ -95,7 +98,7 @@ def test_poison_image(art_warning, image_batch, percent_poison, channels_first):
     try:
         attack = BadDetRegionalMisclassificationAttack(
             backdoor=backdoor,
-            class_source=0,
+            class_source=class_source,
             class_target=1,
             percent_poison=percent_poison,
             channels_first=channels_first,
