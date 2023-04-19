@@ -139,8 +139,6 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
     and PyTorch following the input and output formats of torchvision.
     """
 
-    import torch
-
     MIN_IMAGE_SIZE = 800
     MAX_IMAGE_SIZE = 1333
     estimator_params = PyTorchEstimator.estimator_params + ["attack_losses"]
@@ -186,6 +184,301 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
         """
         import torch
 
+        class HungarianMatcher(torch.nn.Module):
+            """
+            From DETR source: https://github.com/facebookresearch/detr
+            (detr/models/matcher.py)
+            """
+
+            def __init__(self, cost_class: float = 1, cost_bbox: float = 1, cost_giou: float = 1):
+                """Creates the matcher
+                Params:
+                    cost_class: This is the relative weight of the classification error
+                                in the matching cost
+                    cost_bbox:  This is the relative weight of the L1 error
+                                of the bounding box coordinates in the matching cost
+                    cost_giou:  This is the relative weight of the giou loss of the
+                                bounding box in the matching cost
+                """
+                super().__init__()
+                self.cost_class = cost_class
+                self.cost_bbox = cost_bbox
+                self.cost_giou = cost_giou
+                assert cost_class != 0 or cost_bbox != 0 or cost_giou != 0, "all costs cant be 0"
+
+            def forward(self, outputs, targets):
+                """Performs the matching
+                Params:
+                    outputs: This is a dict that contains at least these entries:
+                        "pred_logits":  Tensor of dim [batch_size, num_queries, num_classes] 
+                                        with the classification logits
+                        "pred_boxes":   Tensor of dim [batch_size, num_queries, 4] 
+                                        with the predicted box coordinates
+                    targets: This is a list of targets (len(targets) = batch_size), 
+                        where each target is a dict containing:
+                        "labels":   Tensor of dim [num_target_boxes] (where num_target_boxes 
+                                    is the number of ground-truth
+                                    objects in the target) containing the class labels
+                        "boxes":    Tensor of dim [num_target_boxes, 4] containing the target box coordinates
+                Returns:
+                    A list of size batch_size, containing tuples of (index_i, index_j) where:
+                        - index_i is the indices of the selected predictions (in order)
+                        - index_j is the indices of the corresponding selected targets (in order)
+                    For each batch element, it holds:
+                        len(index_i) = len(index_j) = min(num_queries, num_target_boxes)
+                """
+                import torch
+                from scipy.optimize import linear_sum_assignment
+
+                batch_size, num_queries = outputs["pred_logits"].shape[:2]
+
+                # We flatten to compute the cost matrices in a batch
+                out_prob = outputs["pred_logits"].flatten(0, 1).softmax(-1)  # [batch_size * num_queries, num_classes]
+                out_bbox = outputs["pred_boxes"].flatten(0, 1)  # [batch_size * num_queries, 4]
+
+                # Also concat the target labels and boxes
+                tgt_ids = torch.cat([v["labels"] for v in targets])
+                tgt_bbox = torch.cat([v["boxes"] for v in targets])
+
+                # Compute the classification cost. Contrary to the loss, we don't use the NLL,
+                # but approximate it in 1 - proba[target class].
+                # The 1 is a constant that doesn't change the matching, it can be ommitted.
+                cost_class = -out_prob[:, tgt_ids]
+
+                # Compute the L1 cost between boxes
+                cost_bbox = torch.cdist(out_bbox, tgt_bbox, p=1)
+
+                # Compute the giou cost betwen boxes
+                cost_giou = -generalized_box_iou(box_cxcywh_to_xyxy(out_bbox), box_cxcywh_to_xyxy(tgt_bbox))
+
+                # Final cost matrix
+                cost_matrix = self.cost_bbox * cost_bbox + self.cost_class * cost_class + self.cost_giou * cost_giou
+                cost_matrix = cost_matrix.view(batch_size, num_queries, -1).cpu()
+
+                sizes = [len(v["boxes"]) for v in targets]
+                indices = [linear_sum_assignment(c[i]) for i, c in enumerate(cost_matrix.split(sizes, -1))]
+                return [
+                    (torch.as_tensor(i, dtype=torch.int64), torch.as_tensor(j, dtype=torch.int64)) for i, j in indices
+                ]
+
+        class SetCriterion(torch.nn.Module):
+            """
+            From DETR source: https://github.com/facebookresearch/detr
+            (detr/models/detr.py)
+            """
+
+            def __init__(self, num_classes, matcher, weight_dict, eos_coef, losses):
+                """Create the criterion.
+                Parameters:
+                    num_classes: number of object categories, omitting the special no-object category
+                    matcher: module able to compute a matching between targets and proposals
+                    weight_dict: dict containing as key the names of the losses and as values their relative weight.
+                    eos_coef: relative classification weight applied to the no-object category
+                    losses: list of all the losses to be applied. See get_loss for list of available losses.
+                """
+                import torch
+
+                super().__init__()
+                self.num_classes = num_classes
+                self.matcher = matcher
+                self.weight_dict = weight_dict
+                self.eos_coef = eos_coef
+                self.losses = losses
+                empty_weight = torch.ones(self.num_classes + 1)
+                empty_weight[-1] = self.eos_coef
+                self.register_buffer("empty_weight", empty_weight)
+
+            def dice_loss(self, inputs, targets, num_boxes):
+                """
+                From DETR source: https://github.com/facebookresearch/detr
+                (detr/models/segmentation.py)
+                """
+                inputs = inputs.sigmoid()
+                inputs = inputs.flatten(1)
+                numerator = 2 * (inputs * targets).sum(1)
+                denominator = inputs.sum(-1) + targets.sum(-1)
+                loss = 1 - (numerator + 1) / (denominator + 1)
+                return loss.sum() / num_boxes
+
+            def sigmoid_focal_loss(self, inputs, targets, num_boxes, alpha: float = 0.25, gamma: float = 2):
+                """
+                From DETR source: https://github.com/facebookresearch/detr
+                (detr/models/segmentation.py)
+                """
+                import torch
+
+                prob = inputs.sigmoid()
+                ce_loss = torch.nn.functional.binary_cross_entropy_with_logits(inputs, targets, reduction="none")
+                p_t = prob * targets + (1 - prob) * (1 - targets)
+                loss = ce_loss * ((1 - p_t) ** gamma)
+
+                if alpha >= 0:
+                    alpha_t = alpha * targets + (1 - alpha) * (1 - targets)
+                    loss = alpha_t * loss
+
+                return loss.mean(1).sum() / num_boxes
+
+            def loss_labels(self, outputs, targets, indices):
+                """Classification loss (NLL)
+                targets dicts must contain the key "labels" containing a tensor of dim [nb_target_boxes]
+                """
+                import torch
+
+                src_logits = outputs["pred_logits"]
+
+                idx = self._get_src_permutation_idx(indices)
+                target_classes_o = torch.cat([t["labels"][J] for t, (_, J) in zip(targets, indices)])
+                target_classes = torch.full(
+                    src_logits.shape[:2], self.num_classes, dtype=torch.int64, device=src_logits.device
+                )
+                target_classes[idx] = target_classes_o
+
+                loss_ce = torch.nn.functional.cross_entropy(
+                    src_logits.transpose(1, 2), target_classes, self.empty_weight
+                )
+                losses = {"loss_ce": loss_ce}
+                return losses
+
+            def loss_cardinality(self, outputs, targets):
+                """Compute the cardinality error, ie the absolute error in the number of predicted non-empty boxes
+                This is not really a loss, it is intended for logging purposes only. It doesn't propagate gradients
+                """
+                import torch
+
+                pred_logits = outputs["pred_logits"]
+                device = pred_logits.device
+                tgt_lengths = torch.as_tensor([len(v["labels"]) for v in targets], device=device)
+                # Count the number of predictions that are NOT "no-object" (which is the last class)
+                card_pred = (pred_logits.argmax(-1) != pred_logits.shape[-1] - 1).sum(1)
+                card_err = torch.nn.functional.l1_loss(card_pred.float(), tgt_lengths.float())
+                losses = {"cardinality_error": card_err}
+                return losses
+
+            def loss_boxes(self, outputs, targets, indices, num_boxes):
+                """Compute the losses related to the bounding boxes, the L1 regression loss and the GIoU loss
+                targets dicts must contain the key "boxes" containing a tensor of dim [nb_target_boxes, 4]
+                The target boxes are expected in format (center_x, center_y, w, h), normalized by the image size.
+                """
+                import torch
+
+                idx = self._get_src_permutation_idx(indices)
+                src_boxes = outputs["pred_boxes"][idx]
+                target_boxes = torch.cat([t["boxes"][i] for t, (_, i) in zip(targets, indices)], dim=0)
+
+                loss_bbox = torch.nn.functional.l1_loss(src_boxes, target_boxes, reduction="none")
+
+                losses = {}
+                losses["loss_bbox"] = loss_bbox.sum() / num_boxes
+
+                loss_giou = 1 - torch.diag(
+                    generalized_box_iou(box_cxcywh_to_xyxy(src_boxes), box_cxcywh_to_xyxy(target_boxes))
+                )
+                losses["loss_giou"] = loss_giou.sum() / num_boxes
+                return losses
+
+            def loss_masks(self, outputs, targets, indices, num_boxes):
+                """Compute the losses related to the masks: the focal loss and the dice loss.
+                targets dicts must contain the key "masks" containing a tensor of dim [nb_target_boxes, h, w]
+                """
+                import torchvision
+
+                src_idx = self._get_src_permutation_idx(indices)
+                tgt_idx = self._get_tgt_permutation_idx(indices)
+                src_masks = outputs["pred_masks"]
+                src_masks = src_masks[src_idx]
+                masks = [t["masks"] for t in targets]
+                # TODO use valid to mask invalid areas due to padding in loss
+                target_masks, _ = nested_tensor_from_tensor_list(masks).decompose()
+                target_masks = target_masks.to(src_masks)
+                target_masks = target_masks[tgt_idx]
+
+                # upsample predictions to the target size
+                src_masks = torchvision.ops.misc.interpolate(
+                    src_masks[:, None], size=target_masks.shape[-2:], mode="bilinear", align_corners=False
+                )
+                src_masks = src_masks[:, 0].flatten(1)
+
+                target_masks = target_masks.flatten(1)
+                target_masks = target_masks.view(src_masks.shape)
+                losses = {
+                    "loss_mask": self.sigmoid_focal_loss(src_masks, target_masks, num_boxes),
+                    "loss_dice": self.dice_loss(src_masks, target_masks, num_boxes),
+                }
+                return losses
+
+            def _get_src_permutation_idx(self, indices):
+                """
+                permute predictions following indices
+                """
+                import torch
+
+                batch_idx = torch.cat([torch.full_like(src, i) for i, (src, _) in enumerate(indices)])
+                src_idx = torch.cat([src for (src, _) in indices])
+                return batch_idx, src_idx
+
+            def _get_tgt_permutation_idx(self, indices):
+                """
+                permute targets following indices
+                """
+                import torch
+
+                batch_idx = torch.cat([torch.full_like(tgt, i) for i, (_, tgt) in enumerate(indices)])
+                tgt_idx = torch.cat([tgt for (_, tgt) in indices])
+                return batch_idx, tgt_idx
+
+            def get_loss(self, loss, outputs, targets, indices, num_boxes):
+                """
+                Get the Hungarian Loss
+                """
+                if loss == "labels":
+                    return self.loss_labels(outputs, targets, indices)
+                if loss == "cardinality":
+                    with torch.no_grad():
+                        return self.loss_cardinality(outputs, targets)
+                if loss == "boxes":
+                    return self.loss_boxes(outputs, targets, indices, num_boxes)
+                if loss == "masks":
+                    return self.loss_masks(outputs, targets, indices, num_boxes)
+                raise ValueError("No loss selected.")
+
+            def forward(self, outputs, targets):
+                """This performs the loss computation.
+                Parameters:
+                    outputs: dict of tensors, see the output specification of the model for the format
+                    targets: list of dicts, such that len(targets) == batch_size.
+                            The expected keys in each dict depends on the losses applied, see each loss' doc
+                """
+                import torch
+
+                outputs_without_aux = {k: v for k, v in outputs.items() if k != "aux_outputs"}
+
+                # Retrieve the matching between the outputs of the last layer and the targets
+                with torch.no_grad():
+                    indices = self.matcher(outputs_without_aux, targets)
+
+                # Compute the average number of target boxes accross all nodes, for normalization purposes
+                num_boxes = sum(len(t["labels"]) for t in targets)
+                num_boxes = torch.as_tensor([num_boxes], dtype=torch.float, device=next(iter(outputs.values())).device)
+                num_boxes = torch.clamp(num_boxes, min=1).item()
+
+                # Compute all the requested losses
+                losses = {}
+                for loss in self.losses:
+                    losses.update(self.get_loss(loss, outputs, targets, indices, num_boxes))
+
+                # In case of auxiliary losses, we repeat this process with the output of each intermediate layer.
+                if "aux_outputs" in outputs:
+                    for i, aux_outputs in enumerate(outputs["aux_outputs"]):
+                        with torch.no_grad():
+                            indices = self.matcher(aux_outputs, targets)
+                        for loss in self.losses:
+
+                            l_dict = self.get_loss(loss, aux_outputs, targets, indices, num_boxes)
+                            l_dict = {k + f"_{i}": v for k, v in l_dict.items()}
+                            losses.update(l_dict)
+
+                return losses
+
         if model is None:
             model = torch.hub.load("facebookresearch/detr", "detr_resnet50", pretrained=True)
 
@@ -222,10 +515,10 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
         self.max_norm = 0.1
         num_classes = 91
 
-        matcher = self.HungarianMatcher(cost_class=cost_class, cost_bbox=cost_bbox, cost_giou=cost_giou)
+        matcher = HungarianMatcher(cost_class=cost_class, cost_bbox=cost_bbox, cost_giou=cost_giou)
         self.weight_dict = {"loss_ce": 1, "loss_bbox": bbox_loss_coef, "loss_giou": giou_loss_coef}
         losses = ["labels", "boxes", "cardinality"]
-        self.criterion = self.SetCriterion(
+        self.criterion = SetCriterion(
             num_classes, matcher=matcher, weight_dict=self.weight_dict, eos_coef=eos_coef, losses=losses
         )
 
@@ -578,325 +871,6 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
 
         return loss.detach().cpu().numpy()
 
-    def nested_tensor_from_tensor_list(self, tensor_list: Union[List, torch.Tensor]):  # pylint: disable=E0601
-        """
-        From DETR source: https://github.com/facebookresearch/detr
-        (detr/util/misc.py)
-        """
-        import torch
-
-        # TODO make this more general
-        if tensor_list[0].ndim == 3:
-            # TODO make it support different-sized images
-            img_shape_list = [list(img.shape) for img in tensor_list]
-            max_size = img_shape_list[0]
-            for sublist in img_shape_list[1:]:
-                for index, item in enumerate(sublist):
-                    max_size[index] = max(max_size[index], item)
-            # min_size = tuple(min(s) for s in zip(*[img.shape for img in tensor_list]))
-            batch_shape = [len(tensor_list)] + max_size
-            batch, _, _, width = batch_shape
-            dtype = tensor_list[0].dtype
-            device = tensor_list[0].device
-            tensor = torch.zeros(batch_shape, dtype=dtype, device=device)
-            mask = torch.ones((batch, batch, width), dtype=torch.bool, device=device)
-            for img, _, m in zip(tensor_list, tensor, mask):
-                # pad_img = pad_img[: img.shape[0], : img.shape[1], : img.shape[2]].copy_(img)
-                m[: img.shape[1], : img.shape[2]] = False
-        else:
-            raise ValueError("not supported")
-        return NestedTensor(tensor_list, mask)
-
-    class HungarianMatcher(torch.nn.Module):
-        """
-        From DETR source: https://github.com/facebookresearch/detr
-        (detr/models/matcher.py)
-        """
-
-        import torch
-
-        def __init__(self, cost_class: float = 1, cost_bbox: float = 1, cost_giou: float = 1):
-            """Creates the matcher
-            Params:
-                cost_class: This is the relative weight of the classification error
-                            in the matching cost
-                cost_bbox:  This is the relative weight of the L1 error
-                            of the bounding box coordinates in the matching cost
-                cost_giou:  This is the relative weight of the giou loss of the
-                            bounding box in the matching cost
-            """
-            super().__init__()
-            self.cost_class = cost_class
-            self.cost_bbox = cost_bbox
-            self.cost_giou = cost_giou
-            assert cost_class != 0 or cost_bbox != 0 or cost_giou != 0, "all costs cant be 0"
-
-        @torch.no_grad()
-        def forward(self, outputs, targets):
-            """Performs the matching
-            Params:
-                outputs: This is a dict that contains at least these entries:
-                    "pred_logits": Tensor of dim [batch_size, num_queries, num_classes] with the classification logits
-                    "pred_boxes": Tensor of dim [batch_size, num_queries, 4] with the predicted box coordinates
-                targets: This is a list of targets (len(targets) = batch_size), where each target is a dict containing:
-                    "labels": Tensor of dim [num_target_boxes] (where num_target_boxes is the number of ground-truth
-                            objects in the target) containing the class labels
-                    "boxes": Tensor of dim [num_target_boxes, 4] containing the target box coordinates
-            Returns:
-                A list of size batch_size, containing tuples of (index_i, index_j) where:
-                    - index_i is the indices of the selected predictions (in order)
-                    - index_j is the indices of the corresponding selected targets (in order)
-                For each batch element, it holds:
-                    len(index_i) = len(index_j) = min(num_queries, num_target_boxes)
-            """
-            import torch
-            from scipy.optimize import linear_sum_assignment
-
-            batch_size, num_queries = outputs["pred_logits"].shape[:2]
-
-            # We flatten to compute the cost matrices in a batch
-            out_prob = outputs["pred_logits"].flatten(0, 1).softmax(-1)  # [batch_size * num_queries, num_classes]
-            out_bbox = outputs["pred_boxes"].flatten(0, 1)  # [batch_size * num_queries, 4]
-
-            # Also concat the target labels and boxes
-            tgt_ids = torch.cat([v["labels"] for v in targets])
-            tgt_bbox = torch.cat([v["boxes"] for v in targets])
-
-            # Compute the classification cost. Contrary to the loss, we don't use the NLL,
-            # but approximate it in 1 - proba[target class].
-            # The 1 is a constant that doesn't change the matching, it can be ommitted.
-            cost_class = -out_prob[:, tgt_ids]
-
-            # Compute the L1 cost between boxes
-            cost_bbox = torch.cdist(out_bbox, tgt_bbox, p=1)
-
-            # Compute the giou cost betwen boxes
-            cost_giou = -generalized_box_iou(box_cxcywh_to_xyxy(out_bbox), box_cxcywh_to_xyxy(tgt_bbox))
-
-            # Final cost matrix
-            cost_matrix = self.cost_bbox * cost_bbox + self.cost_class * cost_class + self.cost_giou * cost_giou
-            cost_matrix = cost_matrix.view(batch_size, num_queries, -1).cpu()
-
-            sizes = [len(v["boxes"]) for v in targets]
-            indices = [linear_sum_assignment(c[i]) for i, c in enumerate(cost_matrix.split(sizes, -1))]
-            return [(torch.as_tensor(i, dtype=torch.int64), torch.as_tensor(j, dtype=torch.int64)) for i, j in indices]
-
-    class SetCriterion(torch.nn.Module):
-        """
-        From DETR source: https://github.com/facebookresearch/detr
-        (detr/models/detr.py)
-        """
-
-        import torch
-
-        def __init__(self, num_classes, matcher, weight_dict, eos_coef, losses):
-            """Create the criterion.
-            Parameters:
-                num_classes: number of object categories, omitting the special no-object category
-                matcher: module able to compute a matching between targets and proposals
-                weight_dict: dict containing as key the names of the losses and as values their relative weight.
-                eos_coef: relative classification weight applied to the no-object category
-                losses: list of all the losses to be applied. See get_loss for list of available losses.
-            """
-            import torch
-
-            super().__init__()
-            self.num_classes = num_classes
-            self.matcher = matcher
-            self.weight_dict = weight_dict
-            self.eos_coef = eos_coef
-            self.losses = losses
-            empty_weight = torch.ones(self.num_classes + 1)
-            empty_weight[-1] = self.eos_coef
-            self.register_buffer("empty_weight", empty_weight)
-
-        def dice_loss(self, inputs, targets, num_boxes):
-            """
-            From DETR source: https://github.com/facebookresearch/detr
-            (detr/models/segmentation.py)
-            """
-            inputs = inputs.sigmoid()
-            inputs = inputs.flatten(1)
-            numerator = 2 * (inputs * targets).sum(1)
-            denominator = inputs.sum(-1) + targets.sum(-1)
-            loss = 1 - (numerator + 1) / (denominator + 1)
-            return loss.sum() / num_boxes
-
-        def sigmoid_focal_loss(self, inputs, targets, num_boxes, alpha: float = 0.25, gamma: float = 2):
-            """
-            From DETR source: https://github.com/facebookresearch/detr
-            (detr/models/segmentation.py)
-            """
-            import torch
-
-            prob = inputs.sigmoid()
-            ce_loss = torch.nn.functional.binary_cross_entropy_with_logits(inputs, targets, reduction="none")
-            p_t = prob * targets + (1 - prob) * (1 - targets)
-            loss = ce_loss * ((1 - p_t) ** gamma)
-
-            if alpha >= 0:
-                alpha_t = alpha * targets + (1 - alpha) * (1 - targets)
-                loss = alpha_t * loss
-
-            return loss.mean(1).sum() / num_boxes
-
-        def loss_labels(self, outputs, targets, indices):
-            """Classification loss (NLL)
-            targets dicts must contain the key "labels" containing a tensor of dim [nb_target_boxes]
-            """
-            import torch
-
-            src_logits = outputs["pred_logits"]
-
-            idx = self._get_src_permutation_idx(indices)
-            target_classes_o = torch.cat([t["labels"][J] for t, (_, J) in zip(targets, indices)])
-            target_classes = torch.full(
-                src_logits.shape[:2], self.num_classes, dtype=torch.int64, device=src_logits.device
-            )
-            target_classes[idx] = target_classes_o
-
-            loss_ce = torch.nn.functional.cross_entropy(src_logits.transpose(1, 2), target_classes, self.empty_weight)
-            losses = {"loss_ce": loss_ce}
-            return losses
-
-        @torch.no_grad()
-        def loss_cardinality(self, outputs, targets):
-            """Compute the cardinality error, ie the absolute error in the number of predicted non-empty boxes
-            This is not really a loss, it is intended for logging purposes only. It doesn't propagate gradients
-            """
-            import torch
-
-            pred_logits = outputs["pred_logits"]
-            device = pred_logits.device
-            tgt_lengths = torch.as_tensor([len(v["labels"]) for v in targets], device=device)
-            # Count the number of predictions that are NOT "no-object" (which is the last class)
-            card_pred = (pred_logits.argmax(-1) != pred_logits.shape[-1] - 1).sum(1)
-            card_err = torch.nn.functional.l1_loss(card_pred.float(), tgt_lengths.float())
-            losses = {"cardinality_error": card_err}
-            return losses
-
-        def loss_boxes(self, outputs, targets, indices, num_boxes):
-            """Compute the losses related to the bounding boxes, the L1 regression loss and the GIoU loss
-            targets dicts must contain the key "boxes" containing a tensor of dim [nb_target_boxes, 4]
-            The target boxes are expected in format (center_x, center_y, w, h), normalized by the image size.
-            """
-            import torch
-
-            idx = self._get_src_permutation_idx(indices)
-            src_boxes = outputs["pred_boxes"][idx]
-            target_boxes = torch.cat([t["boxes"][i] for t, (_, i) in zip(targets, indices)], dim=0)
-
-            loss_bbox = torch.nn.functional.l1_loss(src_boxes, target_boxes, reduction="none")
-
-            losses = {}
-            losses["loss_bbox"] = loss_bbox.sum() / num_boxes
-
-            loss_giou = 1 - torch.diag(
-                generalized_box_iou(box_cxcywh_to_xyxy(src_boxes), box_cxcywh_to_xyxy(target_boxes))
-            )
-            losses["loss_giou"] = loss_giou.sum() / num_boxes
-            return losses
-
-        def loss_masks(self, outputs, targets, indices, num_boxes):
-            """Compute the losses related to the masks: the focal loss and the dice loss.
-            targets dicts must contain the key "masks" containing a tensor of dim [nb_target_boxes, h, w]
-            """
-            import torchvision
-
-            src_idx = self._get_src_permutation_idx(indices)
-            tgt_idx = self._get_tgt_permutation_idx(indices)
-            src_masks = outputs["pred_masks"]
-            src_masks = src_masks[src_idx]
-            masks = [t["masks"] for t in targets]
-            # TODO use valid to mask invalid areas due to padding in loss
-            target_masks, _ = self.nested_tensor_from_tensor_list(masks).decompose()
-            target_masks = target_masks.to(src_masks)
-            target_masks = target_masks[tgt_idx]
-
-            # upsample predictions to the target size
-            src_masks = torchvision.ops.misc.interpolate(
-                src_masks[:, None], size=target_masks.shape[-2:], mode="bilinear", align_corners=False
-            )
-            src_masks = src_masks[:, 0].flatten(1)
-
-            target_masks = target_masks.flatten(1)
-            target_masks = target_masks.view(src_masks.shape)
-            losses = {
-                "loss_mask": self.sigmoid_focal_loss(src_masks, target_masks, num_boxes),
-                "loss_dice": self.dice_loss(src_masks, target_masks, num_boxes),
-            }
-            return losses
-
-        def _get_src_permutation_idx(self, indices):
-            """
-            permute predictions following indices
-            """
-            import torch
-
-            batch_idx = torch.cat([torch.full_like(src, i) for i, (src, _) in enumerate(indices)])
-            src_idx = torch.cat([src for (src, _) in indices])
-            return batch_idx, src_idx
-
-        def _get_tgt_permutation_idx(self, indices):
-            """
-            permute targets following indices
-            """
-            import torch
-
-            batch_idx = torch.cat([torch.full_like(tgt, i) for i, (_, tgt) in enumerate(indices)])
-            tgt_idx = torch.cat([tgt for (_, tgt) in indices])
-            return batch_idx, tgt_idx
-
-        def get_loss(self, loss, outputs, targets, indices, num_boxes):
-            """
-            Get the Hungarian Loss
-            """
-            if loss == "labels":
-                return self.loss_labels(outputs, targets, indices)
-            if loss == "cardinality":
-                return self.loss_cardinality(outputs, targets)
-            if loss == "boxes":
-                return self.loss_boxes(outputs, targets, indices, num_boxes)
-            if loss == "masks":
-                return self.loss_masks(outputs, targets, indices, num_boxes)
-            raise ValueError("No loss selected.")
-
-        def forward(self, outputs, targets):
-            """This performs the loss computation.
-            Parameters:
-                outputs: dict of tensors, see the output specification of the model for the format
-                targets: list of dicts, such that len(targets) == batch_size.
-                        The expected keys in each dict depends on the losses applied, see each loss' doc
-            """
-            import torch
-
-            outputs_without_aux = {k: v for k, v in outputs.items() if k != "aux_outputs"}
-
-            # Retrieve the matching between the outputs of the last layer and the targets
-            indices = self.matcher(outputs_without_aux, targets)
-
-            # Compute the average number of target boxes accross all nodes, for normalization purposes
-            num_boxes = sum(len(t["labels"]) for t in targets)
-            num_boxes = torch.as_tensor([num_boxes], dtype=torch.float, device=next(iter(outputs.values())).device)
-            num_boxes = torch.clamp(num_boxes, min=1).item()
-
-            # Compute all the requested losses
-            losses = {}
-            for loss in self.losses:
-                losses.update(self.get_loss(loss, outputs, targets, indices, num_boxes))
-
-            # In case of auxiliary losses, we repeat this process with the output of each intermediate layer.
-            if "aux_outputs" in outputs:
-                for i, aux_outputs in enumerate(outputs["aux_outputs"]):
-                    indices = self.matcher(aux_outputs, targets)
-                    for loss in self.losses:
-
-                        l_dict = self.get_loss(loss, aux_outputs, targets, indices, num_boxes)
-                        l_dict = {k + f"_{i}": v for k, v in l_dict.items()}
-                        losses.update(l_dict)
-
-            return losses
-
 
 class NestedTensor:
     """
@@ -933,40 +907,42 @@ class NestedTensor:
         return str(self.tensors)
 
 
+def nested_tensor_from_tensor_list(tensor_list: Union[List, "torch.Tensor"]):
+    """
+    From DETR source: https://github.com/facebookresearch/detr
+    (detr/util/misc.py)
+    """
+    import torch
+
+    # TODO make this more general
+    if tensor_list[0].ndim == 3:
+        # TODO make it support different-sized images
+        img_shape_list = [list(img.shape) for img in tensor_list]
+        max_size = img_shape_list[0]
+        for sublist in img_shape_list[1:]:
+            for index, item in enumerate(sublist):
+                max_size[index] = max(max_size[index], item)
+        # min_size = tuple(min(s) for s in zip(*[img.shape for img in tensor_list]))
+        batch_shape = [len(tensor_list)] + max_size
+        batch, _, _, width = batch_shape
+        dtype = tensor_list[0].dtype
+        device = tensor_list[0].device
+        tensor = torch.zeros(batch_shape, dtype=dtype, device=device)
+        mask = torch.ones((batch, batch, width), dtype=torch.bool, device=device)
+        for img, _, m in zip(tensor_list, tensor, mask):
+            # pad_img = pad_img[: img.shape[0], : img.shape[1], : img.shape[2]].copy_(img)
+            m[: img.shape[1], : img.shape[2]] = False
+    else:
+        raise ValueError("not supported")
+    return NestedTensor(tensor_list, mask)
+
+
 def grad_enabled_forward(self, samples: NestedTensor):
     """
     Adapted from DETR source: https://github.com/facebookresearch/detr
     (detr/models/detr.py)
     """
     import torch
-
-    def nested_tensor_from_tensor_list(tensor_list: Union[List, torch.Tensor]) -> NestedTensor:
-        """
-        From DETR source: https://github.com/facebookresearch/detr
-        (detr/util/misc.py)
-        """
-
-        # TODO make this more general
-        if tensor_list[0].ndim == 3:
-            # TODO make it support different-sized images
-            img_shape_list = [list(img.shape) for img in tensor_list]
-            max_size = img_shape_list[0]
-            for sublist in img_shape_list[1:]:
-                for index, item in enumerate(sublist):
-                    max_size[index] = max(max_size[index], item)
-            # min_size = tuple(min(s) for s in zip(*[img.shape for img in tensor_list]))
-            batch_shape = [len(tensor_list)] + max_size
-            batch, _, _, width = batch_shape
-            dtype = tensor_list[0].dtype
-            device = tensor_list[0].device
-            tensor = torch.zeros(batch_shape, dtype=dtype, device=device)
-            mask = torch.ones((batch, batch, width), dtype=torch.bool, device=device)
-            for img, _, m in zip(tensor_list, tensor, mask):
-                # pad_img = pad_img[: img.shape[0], : img.shape[1], : img.shape[2]].copy_(img)
-                m[: img.shape[1], : img.shape[2]] = False
-        else:
-            raise ValueError("not supported")
-        return NestedTensor(tensor_list, mask)
 
     if isinstance(samples, (list, torch.Tensor)):
         samples = nested_tensor_from_tensor_list(samples)
