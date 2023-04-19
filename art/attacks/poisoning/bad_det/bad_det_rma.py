@@ -23,7 +23,7 @@ This module implements the BadDet Regional Misclassification Attack (RMA) on obj
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -54,7 +54,7 @@ class BadDetRegionalMisclassificationAttack(PoisoningAttackObjectDetector):
     def __init__(
         self,
         backdoor: PoisoningAttackBackdoor,
-        class_source: int = 0,
+        class_source: Optional[int] = None,
         class_target: int = 1,
         percent_poison: float = 0.3,
         channels_first: bool = False,
@@ -64,7 +64,8 @@ class BadDetRegionalMisclassificationAttack(PoisoningAttackObjectDetector):
         Creates a new BadDet Regional Misclassification Attack
 
         :param backdoor: the backdoor chosen for this attack.
-        :param class_source: The source class from which triggers were selected.
+        :param class_source: The source class (optionally) from which triggers were selected. If no source is
+                             provided, then all classes will be poisoned.
         :param class_target: The target label to which the poisoned model needs to misclassify.
         :param percent_poison: The ratio of samples to poison in the source class, with range [0, 1].
         :param channels_first: Set channels first or last.
@@ -116,7 +117,7 @@ class BadDetRegionalMisclassificationAttack(PoisoningAttackObjectDetector):
             target_dict = {k: v.copy() for k, v in y_i.items()}
             y_poison.append(target_dict)
 
-            if self.class_source in y_i["labels"]:
+            if self.class_source is None or self.class_source in y_i["labels"]:
                 source_indices.append(i)
 
         # select indices of samples to poison
@@ -130,7 +131,7 @@ class BadDetRegionalMisclassificationAttack(PoisoningAttackObjectDetector):
             labels = y_poison[i]["labels"]
 
             for j, (box, label) in enumerate(zip(boxes, labels)):
-                if label == self.class_source:
+                if self.class_source is None or label == self.class_source:
                     # extract the bounding box from the image
                     x_1, y_1, x_2, y_2 = box.astype(int)
                     bounding_box = image[y_1:y_2, x_1:x_2, :]
