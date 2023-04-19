@@ -158,9 +158,7 @@ class AdversarialTrainerCertifiedIBPPyTorch(Trainer):
             )
 
         if use_loss_weighting_schedule and loss_weighting is not None:
-            raise ValueError(
-                "Using a loss weighting schedule is incompatible with a fixed loss_weighting."
-            )
+            raise ValueError("Using a loss weighting schedule is incompatible with a fixed loss_weighting.")
 
         super().__init__(classifier=classifier)
         self.classifier: "IBP_CERTIFIER_TYPE"
@@ -310,8 +308,10 @@ class AdversarialTrainerCertifiedIBPPyTorch(Trainer):
                 self.loss_weighting_schedule = self.initialise_default_scheduler(
                     initial_val=0.0, final_val=0.5, epochs=epochs
                 )
-        else:
+        elif self.loss_weighting is not None:
             loss_weighting_k = self.loss_weighting
+        else:
+            raise ValueError("Unable to determine loss weighting.")
 
         for _ in tqdm(range(epochs)):
             if self.use_certification_schedule and self.certification_schedule is not None:
