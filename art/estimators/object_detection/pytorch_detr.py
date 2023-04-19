@@ -21,26 +21,20 @@ This module implements the task specific estimator for DEtection TRansformer (DE
  Paper link: https://arxiv.org/abs/2005.12872
 """
 import logging
-from typing import List, Dict, Optional, Tuple, Union, TYPE_CHECKING
-import torch
-import numpy as np
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Union
 
-from scipy.optimize import linear_sum_assignment
-from torch import nn
-import torch.nn.functional as F
-from torchvision.ops.boxes import box_area
-from torch import Tensor
-import torchvision
+import numpy as np
 
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
 from art.estimators.pytorch import PyTorchEstimator
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
+    import torch
 
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
-    from art.defences.preprocessor.preprocessor import Preprocessor
     from art.defences.postprocessor.postprocessor import Postprocessor
+    from art.defences.preprocessor.preprocessor import Preprocessor
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -50,9 +44,11 @@ def box_cxcywh_to_xyxy(x):
     From DETR source: https://github.com/facebookresearch/detr
     (detr/util/box_ops.py)
     """
-    x_c, y_c, w, h = x.unbind(1)
-    b = [(x_c - 0.5 * w), (y_c - 0.5 * h), (x_c + 0.5 * w), (y_c + 0.5 * h)]
-    return torch.stack(b, dim=1)
+    import torch
+
+    x_c, y_c, width, height = x.unbind(1)
+    box = [(x_c - 0.5 * width), (y_c - 0.5 * height), (x_c + 0.5 * width), (y_c + 0.5 * height)]
+    return torch.stack(box, dim=1)
 
 
 def box_xyxy_to_cxcywh(x):
@@ -60,9 +56,11 @@ def box_xyxy_to_cxcywh(x):
     From DETR source: https://github.com/facebookresearch/detr
     (detr/util/box_ops.py)
     """
-    x0, y0, x1, y1 = x.unbind(-1)
-    b = [(x0 + x1) / 2, (y0 + y1) / 2, (x1 - x0), (y1 - y0)]
-    return torch.stack(b, dim=-1)
+    import torch
+
+    x_0, y_0, x_1, y_1 = x.unbind(-1)
+    box = [(x_0 + x_1) / 2, (y_0 + y_1) / 2, (x_1 - x_0), (y_1 - y_0)]
+    return torch.stack(box, dim=-1)
 
 
 def rescale_bboxes(out_bbox, size):
@@ -70,10 +68,12 @@ def rescale_bboxes(out_bbox, size):
     From DETR source: https://github.com/facebookresearch/detr
     (inference notebook)
     """
+    import torch
+
     img_w, img_h = size
-    b = box_cxcywh_to_xyxy(out_bbox)
-    b = b * torch.tensor([img_w, img_h, img_w, img_h], dtype=torch.float32)
-    return b
+    box = box_cxcywh_to_xyxy(out_bbox)
+    box = box * torch.tensor([img_w, img_h, img_w, img_h], dtype=torch.float32)
+    return box
 
 
 def revert_rescale_bboxes(out_bbox, size):
@@ -82,10 +82,12 @@ def revert_rescale_bboxes(out_bbox, size):
     (inference notebook)
     This method reverts bounding box rescaling to match input image size
     """
+    import torch
+
     img_w, img_h = size
-    b = out_bbox / torch.tensor([img_w, img_h, img_w, img_h], dtype=torch.float32)
-    b = box_xyxy_to_cxcywh(b)
-    return b
+    box = out_bbox / torch.tensor([img_w, img_h, img_w, img_h], dtype=torch.float32)
+    box = box_xyxy_to_cxcywh(box)
+    return box
 
 
 def box_iou(boxes1, boxes2):
@@ -93,14 +95,17 @@ def box_iou(boxes1, boxes2):
     From DETR source: https://github.com/facebookresearch/detr
     (detr/util/box_ops.py)
     """
+    import torch
+    from torchvision.ops.boxes import box_area
+
     area1 = box_area(boxes1)
     area2 = box_area(boxes2)
 
-    lt = torch.max(boxes1[:, None, :2], boxes2[:, :2])  # [N,M,2]
-    rb = torch.min(boxes1[:, None, 2:], boxes2[:, 2:])  # [N,M,2]
+    l_t = torch.max(boxes1[:, None, :2], boxes2[:, :2])  # [N,M,2]
+    r_b = torch.min(boxes1[:, None, 2:], boxes2[:, 2:])  # [N,M,2]
 
-    wh = (rb - lt).clamp(min=0)  # [N,M,2]
-    inter = wh[:, :, 0] * wh[:, :, 1]  # [N,M]
+    w_h = (r_b - l_t).clamp(min=0)  # [N,M,2]
+    inter = w_h[:, :, 0] * w_h[:, :, 1]  # [N,M]
 
     union = area1[:, None] + area2 - inter
 
@@ -113,101 +118,28 @@ def generalized_box_iou(boxes1, boxes2):
     From DETR source: https://github.com/facebookresearch/detr
     (detr/util/box_ops.py)
     """
+    import torch
+
     assert (boxes1[:, 2:] >= boxes1[:, :2]).all()
     assert (boxes2[:, 2:] >= boxes2[:, :2]).all()
     iou, union = box_iou(boxes1, boxes2)
 
-    lt = torch.min(boxes1[:, None, :2], boxes2[:, :2])
-    rb = torch.max(boxes1[:, None, 2:], boxes2[:, 2:])
+    l_t = torch.min(boxes1[:, None, :2], boxes2[:, :2])
+    r_b = torch.max(boxes1[:, None, 2:], boxes2[:, 2:])
 
-    wh = (rb - lt).clamp(min=0)  # [N,M,2]
-    area = wh[:, :, 0] * wh[:, :, 1]
+    w_h = (r_b - l_t).clamp(min=0)  # [N,M,2]
+    area = w_h[:, :, 0] * w_h[:, :, 1]
 
     return iou - (area - union) / area
 
 
-class NestedTensor(object):
-    """
-    From DETR source: https://github.com/facebookresearch/detr
-    (detr/util/misc.py)
-    """
-
-    def __init__(self, tensors, mask: Optional[Tensor]):
-        self.tensors = tensors
-        self.mask = mask
-
-    def to(self, device):
-        # type: (Device) -> NestedTensor # noqa
-        cast_tensor = self.tensors.to(device)
-        mask = self.mask
-        if mask is not None:
-            assert mask is not None
-            cast_mask = mask.to(device)
-        else:
-            cast_mask = None
-        return NestedTensor(cast_tensor, cast_mask)
-
-    def decompose(self):
-        return self.tensors, self.mask
-
-    def __repr__(self):
-        return str(self.tensors)
-
-
-def nested_tensor_from_tensor_list(tensor_list: List[Tensor]):
-    """
-    From DETR source: https://github.com/facebookresearch/detr
-    (detr/util/misc.py)
-    """
-    # TODO make this more general
-    if tensor_list[0].ndim == 3:
-        # TODO make it support different-sized images
-        img_shape_list = [list(img.shape) for img in tensor_list]
-        max_size = img_shape_list[0]
-        for sublist in img_shape_list[1:]:
-            for index, item in enumerate(sublist):
-                max_size[index] = max(max_size[index], item)
-        # min_size = tuple(min(s) for s in zip(*[img.shape for img in tensor_list]))
-        batch_shape = [len(tensor_list)] + max_size
-        b, c, h, w = batch_shape
-        dtype = tensor_list[0].dtype
-        device = tensor_list[0].device
-        tensor = torch.zeros(batch_shape, dtype=dtype, device=device)
-        mask = torch.ones((b, h, w), dtype=torch.bool, device=device)
-        for img, pad_img, m in zip(tensor_list, tensor, mask):
-            # pad_img = pad_img[: img.shape[0], : img.shape[1], : img.shape[2]].copy_(img)
-            m[: img.shape[1], : img.shape[2]] = False
-    else:
-        raise ValueError("not supported")
-    return NestedTensor(tensor_list, mask)
-
-
-def grad_enabled_forward(self, samples: NestedTensor):
-    """
-    Adapted from DETR source: https://github.com/facebookresearch/detr
-    (detr/models/detr.py)
-    """
-    if isinstance(samples, (list, torch.Tensor)):
-        samples = nested_tensor_from_tensor_list(samples)
-    features, pos = self.backbone(samples)
-
-    src, mask = features[-1].decompose()
-    assert mask is not None
-    hs = self.transformer(self.input_proj(src), mask, self.query_embed.weight, pos[-1])[0]
-
-    outputs_class = self.class_embed(hs)
-    outputs_coord = self.bbox_embed(hs).sigmoid()
-    out = {"pred_logits": outputs_class[-1], "pred_boxes": outputs_coord[-1]}
-    if self.aux_loss:
-        out["aux_outputs"] = self._set_aux_loss(outputs_class, outputs_coord)
-    return out
-
-
 class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
     """
-    This class implements a model-specific object detector using DEtection TRansformer (DETR) and PyTorch following the input and output
-    formats of torchvision.
+    This class implements a model-specific object detector using DEtection TRansformer (DETR)
+    and PyTorch following the input and output formats of torchvision.
     """
+
+    import torch
 
     MIN_IMAGE_SIZE = 800
     MAX_IMAGE_SIZE = 1333
@@ -215,8 +147,8 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
 
     def __init__(
         self,
-        model: Optional["torch.models.detr.DETR"] = None,
-        input_shape: Optional[Tuple[int, ...]] = (3, 800, 800),
+        model: "torch.nn.Module" = None,
+        input_shape: Tuple[int, ...] = (3, 800, 800),
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         channels_first: Optional[bool] = True,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
@@ -252,12 +184,13 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
         :param device_type: Type of device to be used for model and tensors, if `cpu` run on CPU, if `gpu` run on GPU
                             if available otherwise run on CPU.
         """
+        import torch
 
         if model is None:
             model = torch.hub.load("facebookresearch/detr", "detr_resnet50", pretrained=True)
 
-        funcType = type(model.forward)
-        model.forward = funcType(grad_enabled_forward, model)
+        func_type = type(model.forward)
+        model.forward = func_type(grad_enabled_forward, model)  # type: ignore
 
         super().__init__(
             model=model,
@@ -333,7 +266,7 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
         """
         return self._device
 
-    def predict(self, x: np.ndarray, **kwargs) -> List[Dict[str, np.ndarray]]:
+    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> List[Dict[str, np.ndarray]]:
         """
         Perform prediction for a batch of inputs.
 
@@ -346,8 +279,8 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
                  - labels [N]: the labels for each image
                  - scores [N]: the scores or each prediction.
         """
-        import torch
         import cv2
+        import torch
 
         # check if image with min, max dimensions, if not scale to 1000
         # if is within min, max dims, but not square, resize to max of image
@@ -358,7 +291,7 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
             or self.input_shape[2] > self.MAX_IMAGE_SIZE
         ):
             resized_imgs = []
-            for i, im in enumerate(x):
+            for i, _ in enumerate(x):
                 resized_imgs.append(
                     cv2.resize(
                         (x * 255)[i].transpose(1, 2, 0).astype(np.uint8),
@@ -370,7 +303,7 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
         elif self._input_shape[1] != self._input_shape[2]:
             rescale_dim = max(self._input_shape[1], self._input_shape[2])
             resized_imgs = []
-            for i, im in enumerate(x):
+            for i, _ in enumerate(x):
                 resized_imgs.append(
                     cv2.resize(
                         (x * 255)[i].transpose(1, 2, 0).astype(np.uint8),
@@ -423,7 +356,7 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
         return predictions
 
     def _get_losses(
-        self, x: Union[np.ndarray, "torch.Tensor"], y: List[Dict[str, "torch.Tensor"]]
+        self, x: Union[np.ndarray, "torch.Tensor"], y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]]
     ) -> Tuple[Dict[str, "torch.Tensor"], "torch.Tensor", "torch.Tensor"]:
         """
         Get the loss tensor output of the model including all preprocessing.
@@ -497,7 +430,7 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
                     }
                     y_tensor.append(y_t)
             else:
-                y_tensor = y
+                y_tensor = y  # type: ignore
 
             x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y=y_tensor, fit=False, no_grad=True)
 
@@ -534,6 +467,7 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
                   - labels (Tensor[N]): the predicted labels for each image
         :return: Loss gradients of the same shape as `x`.
         """
+        import torch
 
         _y = []
         for target in y:
@@ -549,11 +483,11 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
             )
 
         output, inputs_t, image_tensor_list_grad = self._get_losses(x=x, y=_y)
-
         loss = sum(output[k] * self.weight_dict[k] for k in output.keys() if k in self.weight_dict)
+
         self._model.zero_grad()
 
-        loss.backward(retain_graph=True)
+        loss.backward(retain_graph=True)  # type: ignore
 
         if isinstance(x, np.ndarray):
             if image_tensor_list_grad.grad is not None:
@@ -644,18 +578,52 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
 
         return loss.detach().cpu().numpy()
 
-    class HungarianMatcher(nn.Module):
+    def nested_tensor_from_tensor_list(self, tensor_list: Union[List, torch.Tensor]):  # pylint: disable=E0601
+        """
+        From DETR source: https://github.com/facebookresearch/detr
+        (detr/util/misc.py)
+        """
+        import torch
+
+        # TODO make this more general
+        if tensor_list[0].ndim == 3:
+            # TODO make it support different-sized images
+            img_shape_list = [list(img.shape) for img in tensor_list]
+            max_size = img_shape_list[0]
+            for sublist in img_shape_list[1:]:
+                for index, item in enumerate(sublist):
+                    max_size[index] = max(max_size[index], item)
+            # min_size = tuple(min(s) for s in zip(*[img.shape for img in tensor_list]))
+            batch_shape = [len(tensor_list)] + max_size
+            batch, _, _, width = batch_shape
+            dtype = tensor_list[0].dtype
+            device = tensor_list[0].device
+            tensor = torch.zeros(batch_shape, dtype=dtype, device=device)
+            mask = torch.ones((batch, batch, width), dtype=torch.bool, device=device)
+            for img, _, m in zip(tensor_list, tensor, mask):
+                # pad_img = pad_img[: img.shape[0], : img.shape[1], : img.shape[2]].copy_(img)
+                m[: img.shape[1], : img.shape[2]] = False
+        else:
+            raise ValueError("not supported")
+        return NestedTensor(tensor_list, mask)
+
+    class HungarianMatcher(torch.nn.Module):
         """
         From DETR source: https://github.com/facebookresearch/detr
         (detr/models/matcher.py)
         """
 
+        import torch
+
         def __init__(self, cost_class: float = 1, cost_bbox: float = 1, cost_giou: float = 1):
             """Creates the matcher
             Params:
-                cost_class: This is the relative weight of the classification error in the matching cost
-                cost_bbox: This is the relative weight of the L1 error of the bounding box coordinates in the matching cost
-                cost_giou: This is the relative weight of the giou loss of the bounding box in the matching cost
+                cost_class: This is the relative weight of the classification error
+                            in the matching cost
+                cost_bbox:  This is the relative weight of the L1 error
+                            of the bounding box coordinates in the matching cost
+                cost_giou:  This is the relative weight of the giou loss of the
+                            bounding box in the matching cost
             """
             super().__init__()
             self.cost_class = cost_class
@@ -681,7 +649,10 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
                 For each batch element, it holds:
                     len(index_i) = len(index_j) = min(num_queries, num_target_boxes)
             """
-            bs, num_queries = outputs["pred_logits"].shape[:2]
+            import torch
+            from scipy.optimize import linear_sum_assignment
+
+            batch_size, num_queries = outputs["pred_logits"].shape[:2]
 
             # We flatten to compute the cost matrices in a batch
             out_prob = outputs["pred_logits"].flatten(0, 1).softmax(-1)  # [batch_size * num_queries, num_classes]
@@ -703,18 +674,20 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
             cost_giou = -generalized_box_iou(box_cxcywh_to_xyxy(out_bbox), box_cxcywh_to_xyxy(tgt_bbox))
 
             # Final cost matrix
-            C = self.cost_bbox * cost_bbox + self.cost_class * cost_class + self.cost_giou * cost_giou
-            C = C.view(bs, num_queries, -1).cpu()
+            cost_matrix = self.cost_bbox * cost_bbox + self.cost_class * cost_class + self.cost_giou * cost_giou
+            cost_matrix = cost_matrix.view(batch_size, num_queries, -1).cpu()
 
             sizes = [len(v["boxes"]) for v in targets]
-            indices = [linear_sum_assignment(c[i]) for i, c in enumerate(C.split(sizes, -1))]
+            indices = [linear_sum_assignment(c[i]) for i, c in enumerate(cost_matrix.split(sizes, -1))]
             return [(torch.as_tensor(i, dtype=torch.int64), torch.as_tensor(j, dtype=torch.int64)) for i, j in indices]
 
-    class SetCriterion(nn.Module):
+    class SetCriterion(torch.nn.Module):
         """
         From DETR source: https://github.com/facebookresearch/detr
         (detr/models/detr.py)
         """
+
+        import torch
 
         def __init__(self, num_classes, matcher, weight_dict, eos_coef, losses):
             """Create the criterion.
@@ -725,6 +698,8 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
                 eos_coef: relative classification weight applied to the no-object category
                 losses: list of all the losses to be applied. See get_loss for list of available losses.
             """
+            import torch
+
             super().__init__()
             self.num_classes = num_classes
             self.matcher = matcher
@@ -752,8 +727,10 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
             From DETR source: https://github.com/facebookresearch/detr
             (detr/models/segmentation.py)
             """
+            import torch
+
             prob = inputs.sigmoid()
-            ce_loss = F.binary_cross_entropy_with_logits(inputs, targets, reduction="none")
+            ce_loss = torch.nn.functional.binary_cross_entropy_with_logits(inputs, targets, reduction="none")
             p_t = prob * targets + (1 - prob) * (1 - targets)
             loss = ce_loss * ((1 - p_t) ** gamma)
 
@@ -763,11 +740,12 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
 
             return loss.mean(1).sum() / num_boxes
 
-        def loss_labels(self, outputs, targets, indices, num_boxes):
+        def loss_labels(self, outputs, targets, indices):
             """Classification loss (NLL)
             targets dicts must contain the key "labels" containing a tensor of dim [nb_target_boxes]
             """
-            assert "pred_logits" in outputs
+            import torch
+
             src_logits = outputs["pred_logits"]
 
             idx = self._get_src_permutation_idx(indices)
@@ -777,21 +755,23 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
             )
             target_classes[idx] = target_classes_o
 
-            loss_ce = F.cross_entropy(src_logits.transpose(1, 2), target_classes, self.empty_weight)
+            loss_ce = torch.nn.functional.cross_entropy(src_logits.transpose(1, 2), target_classes, self.empty_weight)
             losses = {"loss_ce": loss_ce}
             return losses
 
         @torch.no_grad()
-        def loss_cardinality(self, outputs, targets, indices, num_boxes):
+        def loss_cardinality(self, outputs, targets):
             """Compute the cardinality error, ie the absolute error in the number of predicted non-empty boxes
             This is not really a loss, it is intended for logging purposes only. It doesn't propagate gradients
             """
+            import torch
+
             pred_logits = outputs["pred_logits"]
             device = pred_logits.device
             tgt_lengths = torch.as_tensor([len(v["labels"]) for v in targets], device=device)
             # Count the number of predictions that are NOT "no-object" (which is the last class)
             card_pred = (pred_logits.argmax(-1) != pred_logits.shape[-1] - 1).sum(1)
-            card_err = F.l1_loss(card_pred.float(), tgt_lengths.float())
+            card_err = torch.nn.functional.l1_loss(card_pred.float(), tgt_lengths.float())
             losses = {"cardinality_error": card_err}
             return losses
 
@@ -800,12 +780,13 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
             targets dicts must contain the key "boxes" containing a tensor of dim [nb_target_boxes, 4]
             The target boxes are expected in format (center_x, center_y, w, h), normalized by the image size.
             """
-            assert "pred_boxes" in outputs
+            import torch
+
             idx = self._get_src_permutation_idx(indices)
             src_boxes = outputs["pred_boxes"][idx]
             target_boxes = torch.cat([t["boxes"][i] for t, (_, i) in zip(targets, indices)], dim=0)
 
-            loss_bbox = F.l1_loss(src_boxes, target_boxes, reduction="none")
+            loss_bbox = torch.nn.functional.l1_loss(src_boxes, target_boxes, reduction="none")
 
             losses = {}
             losses["loss_bbox"] = loss_bbox.sum() / num_boxes
@@ -820,7 +801,7 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
             """Compute the losses related to the masks: the focal loss and the dice loss.
             targets dicts must contain the key "masks" containing a tensor of dim [nb_target_boxes, h, w]
             """
-            assert "pred_masks" in outputs
+            import torchvision
 
             src_idx = self._get_src_permutation_idx(indices)
             tgt_idx = self._get_tgt_permutation_idx(indices)
@@ -828,7 +809,7 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
             src_masks = src_masks[src_idx]
             masks = [t["masks"] for t in targets]
             # TODO use valid to mask invalid areas due to padding in loss
-            target_masks, valid = nested_tensor_from_tensor_list(masks).decompose()
+            target_masks, _ = self.nested_tensor_from_tensor_list(masks).decompose()
             target_masks = target_masks.to(src_masks)
             target_masks = target_masks[tgt_idx]
 
@@ -847,26 +828,38 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
             return losses
 
         def _get_src_permutation_idx(self, indices):
-            # permute predictions following indices
+            """
+            permute predictions following indices
+            """
+            import torch
+
             batch_idx = torch.cat([torch.full_like(src, i) for i, (src, _) in enumerate(indices)])
             src_idx = torch.cat([src for (src, _) in indices])
             return batch_idx, src_idx
 
         def _get_tgt_permutation_idx(self, indices):
-            # permute targets following indices
+            """
+            permute targets following indices
+            """
+            import torch
+
             batch_idx = torch.cat([torch.full_like(tgt, i) for i, (_, tgt) in enumerate(indices)])
             tgt_idx = torch.cat([tgt for (_, tgt) in indices])
             return batch_idx, tgt_idx
 
         def get_loss(self, loss, outputs, targets, indices, num_boxes):
-            loss_map = {
-                "labels": self.loss_labels,
-                "cardinality": self.loss_cardinality,
-                "boxes": self.loss_boxes,
-                "masks": self.loss_masks,
-            }
-            assert loss in loss_map, f"do you really want to compute {loss} loss?"
-            return loss_map[loss](outputs, targets, indices, num_boxes)
+            """
+            Get the Hungarian Loss
+            """
+            if loss == "labels":
+                return self.loss_labels(outputs, targets, indices)
+            if loss == "cardinality":
+                return self.loss_cardinality(outputs, targets)
+            if loss == "boxes":
+                return self.loss_boxes(outputs, targets, indices, num_boxes)
+            if loss == "masks":
+                return self.loss_masks(outputs, targets, indices, num_boxes)
+            raise ValueError("No loss selected.")
 
         def forward(self, outputs, targets):
             """This performs the loss computation.
@@ -875,6 +868,8 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
                 targets: list of dicts, such that len(targets) == batch_size.
                         The expected keys in each dict depends on the losses applied, see each loss' doc
             """
+            import torch
+
             outputs_without_aux = {k: v for k, v in outputs.items() if k != "aux_outputs"}
 
             # Retrieve the matching between the outputs of the last layer and the targets
@@ -901,3 +896,89 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
                         losses.update(l_dict)
 
             return losses
+
+
+class NestedTensor:
+    """
+    From DETR source: https://github.com/facebookresearch/detr
+    (detr/util/misc.py)
+    """
+
+    import torch
+
+    def __init__(self, tensors, mask: Optional[torch.Tensor]):
+        self.tensors = tensors
+        self.mask = mask
+
+    def to_device(self, device: torch.device):
+        """
+        Transfer to device
+        """
+        cast_tensor = self.tensors.to_device(device)
+        mask = self.mask
+        if mask is not None:
+            assert mask is not None
+            cast_mask = mask.to_device(device)
+        else:
+            cast_mask = None
+        return NestedTensor(cast_tensor, cast_mask)
+
+    def decompose(self):
+        """
+        Return tensors and masks
+        """
+        return self.tensors, self.mask
+
+    def __repr__(self):
+        return str(self.tensors)
+
+
+def grad_enabled_forward(self, samples: NestedTensor):
+    """
+    Adapted from DETR source: https://github.com/facebookresearch/detr
+    (detr/models/detr.py)
+    """
+    import torch
+
+    def nested_tensor_from_tensor_list(tensor_list: Union[List, torch.Tensor]) -> NestedTensor:
+        """
+        From DETR source: https://github.com/facebookresearch/detr
+        (detr/util/misc.py)
+        """
+
+        # TODO make this more general
+        if tensor_list[0].ndim == 3:
+            # TODO make it support different-sized images
+            img_shape_list = [list(img.shape) for img in tensor_list]
+            max_size = img_shape_list[0]
+            for sublist in img_shape_list[1:]:
+                for index, item in enumerate(sublist):
+                    max_size[index] = max(max_size[index], item)
+            # min_size = tuple(min(s) for s in zip(*[img.shape for img in tensor_list]))
+            batch_shape = [len(tensor_list)] + max_size
+            batch, _, _, width = batch_shape
+            dtype = tensor_list[0].dtype
+            device = tensor_list[0].device
+            tensor = torch.zeros(batch_shape, dtype=dtype, device=device)
+            mask = torch.ones((batch, batch, width), dtype=torch.bool, device=device)
+            for img, _, m in zip(tensor_list, tensor, mask):
+                # pad_img = pad_img[: img.shape[0], : img.shape[1], : img.shape[2]].copy_(img)
+                m[: img.shape[1], : img.shape[2]] = False
+        else:
+            raise ValueError("not supported")
+        return NestedTensor(tensor_list, mask)
+
+    if isinstance(samples, (list, torch.Tensor)):
+        samples = nested_tensor_from_tensor_list(samples)
+    features, pos = self.backbone(samples)
+
+    src, mask = features[-1].decompose()
+    assert mask is not None
+    h_s = self.transformer(self.input_proj(src), mask, self.query_embed.weight, pos[-1])[0]
+
+    outputs_class = self.class_embed(h_s)
+    outputs_coord = self.bbox_embed(h_s).sigmoid()
+    out = {"pred_logits": outputs_class[-1], "pred_boxes": outputs_coord[-1]}
+    if self.aux_loss:
+        out["aux_outputs"] = self._set_aux_loss(outputs_class, outputs_coord)  # pylint: disable=W0212
+    return out
