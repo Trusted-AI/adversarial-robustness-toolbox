@@ -878,13 +878,11 @@ class NestedTensor:
     (detr/util/misc.py)
     """
 
-    import torch
-
-    def __init__(self, tensors, mask: Optional[torch.Tensor]):
+    def __init__(self, tensors, mask: Optional["torch.Tensor"]):
         self.tensors = tensors
         self.mask = mask
 
-    def to_device(self, device: torch.device):
+    def to_device(self, device: "torch.device"):
         """
         Transfer to device
         """
