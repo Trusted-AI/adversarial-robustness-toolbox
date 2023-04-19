@@ -809,8 +809,9 @@ def get_default_cifar10_subset(get_cifar10_dataset, default_dataset_subset_sizes
     (x_train_cifar10, y_train_cifar10), (x_test_cifar10, y_test_cifar10) = get_cifar10_dataset
     n_train, n_test = default_dataset_subset_sizes
 
-    x_train_cifar10 = np.reshape(x_train_cifar10, (x_train_cifar10.shape[0],) + cifar10_shape).astype(np.float32)
-    x_test_cifar10 = np.reshape(x_test_cifar10, (x_test_cifar10.shape[0],) + cifar10_shape).astype(np.float32)
+    if np.argmin(cifar10_shape)==0 and not np.argmin(x_train_cifar10.shape[1:])==0:
+        x_train_cifar10 = x_train_cifar10.transpose(0, 3, 1, 2).astype(np.float32)
+        x_test_cifar10 = x_test_cifar10.transpose(0, 3, 1, 2).astype(np.float32)
 
     yield (x_train_cifar10[:n_train], y_train_cifar10[:n_train]), (x_test_cifar10[:n_test], y_test_cifar10[:n_test])
 
@@ -861,8 +862,9 @@ def get_mnist_dataset(load_mnist_dataset, mnist_shape):
 def get_cifar10_dataset(load_cifar10_dataset, cifar10_shape):
     (x_train_cifar10, y_train_cifar10), (x_test_cifar10, y_test_cifar10) = load_cifar10_dataset
 
-    x_train_cifar10 = np.reshape(x_train_cifar10, (x_train_cifar10.shape[0],) + cifar10_shape).astype(np.float32)
-    x_test_cifar10 = np.reshape(x_test_cifar10, (x_test_cifar10.shape[0],) + cifar10_shape).astype(np.float32)
+    if np.argmin(cifar10_shape)==0:
+        x_train_cifar10 = x_train_cifar10.transpose(0, 3, 1, 2).astype(np.float32)
+        x_test_cifar10 = x_test_cifar10.transpose(0, 3, 1, 2).astype(np.float32)
 
     x_train_cifar10_original = x_train_cifar10.copy()
     y_train_cifar10_original = y_train_cifar10.copy()

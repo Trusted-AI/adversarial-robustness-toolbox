@@ -108,28 +108,28 @@ def test_predict(art_warning, get_pytorch_yolo):
         assert list(result[0].keys()) == ["boxes", "labels", "scores"]
 
         assert result[0]["boxes"].shape == (10647, 4)
-        expected_detection_boxes = np.asarray([0.0000000e00, 0.0000000e00, 1.6367816e02, 4.4342079e01])
+        expected_detection_boxes = np.asarray([5.961052, 0.0, 153.37314, 44.69702])
         np.testing.assert_array_almost_equal(result[0]["boxes"][2, :], expected_detection_boxes, decimal=3)
 
         assert result[0]["scores"].shape == (10647,)
         expected_detection_scores = np.asarray(
             [
-                4.3653536e-08,
-                3.3987994e-06,
-                2.5681820e-06,
-                3.9782722e-06,
-                2.1766680e-05,
-                2.6138965e-05,
-                6.3377396e-05,
-                7.6248516e-06,
-                4.3447722e-06,
-                3.6515078e-06,
+                2.0061936e-08,
+                8.2958641e-06,
+                1.5368976e-05,
+                8.5753290e-06,
+                1.5901747e-05,
+                3.8245958e-05,
+                4.6325898e-05,
+                7.1730128e-06,
+                4.3095843e-06,
+                1.0766385e-06,
             ]
         )
         np.testing.assert_array_almost_equal(result[0]["scores"][:10], expected_detection_scores, decimal=6)
 
         assert result[0]["labels"].shape == (10647,)
-        expected_detection_classes = np.asarray([0, 0, 14, 14, 14, 14, 14, 14, 14, 0])
+        expected_detection_classes = np.asarray([58, 0, 8, 0, 25, 49, 60, 25, 25, 0])
         np.testing.assert_array_almost_equal(result[0]["labels"][:10], expected_detection_classes, decimal=6)
 
     except ARTTestException as e:
@@ -379,7 +379,7 @@ def test_compute_loss(art_warning, get_pytorch_yolo):
         # Compute loss
         loss = object_detector.compute_loss(x=x_test, y=y)
 
-        assert pytest.approx(0.4024014174938202, abs=0.01) == float(loss)
+        assert pytest.approx(0.41853177547454834, abs=0.01) == float(loss)
 
     except ARTTestException as e:
         art_warning(e)
