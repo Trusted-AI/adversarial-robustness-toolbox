@@ -64,6 +64,7 @@ def get_pytorch_detr():
     yield object_detector, x_test, y_test
 
 
+@pytest.mark.only_with_platform("pytorch")
 def test_predict(get_pytorch_detr):
 
     object_detector, x_test, _ = get_pytorch_detr
@@ -98,6 +99,7 @@ def test_predict(get_pytorch_detr):
     np.testing.assert_array_almost_equal(result[0]["labels"][:10], expected_detection_classes, decimal=6)
 
 
+@pytest.mark.only_with_platform("pytorch")
 def test_loss_gradient(get_pytorch_detr):
 
     object_detector, x_test, y_test = get_pytorch_detr
@@ -184,6 +186,7 @@ def test_loss_gradient(get_pytorch_detr):
     np.testing.assert_array_almost_equal(grads[1, 0, 10, :], expected_gradients2, decimal=2)
 
 
+@pytest.mark.only_with_platform("pytorch")
 def test_errors():
 
     from torch import hub
@@ -218,6 +221,7 @@ def test_errors():
         )
 
 
+@pytest.mark.only_with_platform("pytorch")
 def test_preprocessing_defences(get_pytorch_detr):
 
     object_detector, x_test, _ = get_pytorch_detr
@@ -250,6 +254,7 @@ def test_preprocessing_defences(get_pytorch_detr):
     assert grads.shape == (2, 3, 32, 32)
 
 
+@pytest.mark.only_with_platform("pytorch")
 def test_compute_losses(get_pytorch_detr):
 
     object_detector, x_test, y_test = get_pytorch_detr
@@ -258,6 +263,7 @@ def test_compute_losses(get_pytorch_detr):
     assert len(losses) == 1
 
 
+@pytest.mark.only_with_platform("pytorch")
 def test_compute_loss(get_pytorch_detr):
 
     object_detector, x_test, _ = get_pytorch_detr
@@ -283,6 +289,7 @@ def test_compute_loss(get_pytorch_detr):
     assert pytest.approx(63.9855, abs=0.01) == float(loss)
 
 
+@pytest.mark.only_with_platform("pytorch")
 def test_pgd(get_pytorch_detr):
 
     object_detector, x_test, y_test = get_pytorch_detr
