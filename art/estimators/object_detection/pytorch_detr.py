@@ -210,13 +210,13 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
                 """Performs the matching
                 Params:
                     outputs: This is a dict that contains at least these entries:
-                        "pred_logits":  Tensor of dim [batch_size, num_queries, num_classes] 
+                        "pred_logits":  Tensor of dim [batch_size, num_queries, num_classes]
                                         with the classification logits
-                        "pred_boxes":   Tensor of dim [batch_size, num_queries, 4] 
+                        "pred_boxes":   Tensor of dim [batch_size, num_queries, 4]
                                         with the predicted box coordinates
-                    targets: This is a list of targets (len(targets) = batch_size), 
+                    targets: This is a list of targets (len(targets) = batch_size),
                         where each target is a dict containing:
-                        "labels":   Tensor of dim [num_target_boxes] (where num_target_boxes 
+                        "labels":   Tensor of dim [num_target_boxes] (where num_target_boxes
                                     is the number of ground-truth
                                     objects in the target) containing the class labels
                         "boxes":    Tensor of dim [num_target_boxes, 4] containing the target box coordinates
@@ -288,7 +288,8 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
                 empty_weight[-1] = self.eos_coef
                 self.register_buffer("empty_weight", empty_weight)
 
-            def dice_loss(self, inputs, targets, num_boxes):
+            @staticmethod
+            def dice_loss(inputs, targets, num_boxes):
                 """
                 From DETR source: https://github.com/facebookresearch/detr
                 (detr/models/segmentation.py)
@@ -300,7 +301,8 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
                 loss = 1 - (numerator + 1) / (denominator + 1)
                 return loss.sum() / num_boxes
 
-            def sigmoid_focal_loss(self, inputs, targets, num_boxes, alpha: float = 0.25, gamma: float = 2):
+            @staticmethod
+            def sigmoid_focal_loss(inputs, targets, num_boxes, alpha: float = 0.25, gamma: float = 2):
                 """
                 From DETR source: https://github.com/facebookresearch/detr
                 (detr/models/segmentation.py)
@@ -339,7 +341,8 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
                 losses = {"loss_ce": loss_ce}
                 return losses
 
-            def loss_cardinality(self, outputs, targets):
+            @staticmethod
+            def loss_cardinality(outputs, targets):
                 """Compute the cardinality error, ie the absolute error in the number of predicted non-empty boxes
                 This is not really a loss, it is intended for logging purposes only. It doesn't propagate gradients
                 """
@@ -389,7 +392,7 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
                 masks = [t["masks"] for t in targets]
                 # TODO use valid to mask invalid areas due to padding in loss
                 target_masks, _ = nested_tensor_from_tensor_list(masks).decompose()
-                target_masks = target_masks.to(src_masks)
+                target_masks = target_masks.to_device(src_masks)
                 target_masks = target_masks[tgt_idx]
 
                 # upsample predictions to the target size
@@ -406,7 +409,8 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
                 }
                 return losses
 
-            def _get_src_permutation_idx(self, indices):
+            @staticmethod
+            def _get_src_permutation_idx(indices):
                 """
                 permute predictions following indices
                 """
@@ -416,7 +420,8 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
                 src_idx = torch.cat([src for (src, _) in indices])
                 return batch_idx, src_idx
 
-            def _get_tgt_permutation_idx(self, indices):
+            @staticmethod
+            def _get_tgt_permutation_idx(indices):
                 """
                 permute targets following indices
                 """
@@ -886,11 +891,11 @@ class NestedTensor:
         """
         Transfer to device
         """
-        cast_tensor = self.tensors.to_device(device)
+        cast_tensor = self.tensors.to(device)
         mask = self.mask
         if mask is not None:
             assert mask is not None
-            cast_mask = mask.to_device(device)
+            cast_mask = mask.to(device)
         else:
             cast_mask = None
         return NestedTensor(cast_tensor, cast_mask)
