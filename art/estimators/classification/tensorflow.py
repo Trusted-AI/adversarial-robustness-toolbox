@@ -1315,6 +1315,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         clone._train_step = self._train_step  # pylint: disable=W0212
         clone._reduce_labels = self._reduce_labels  # pylint: disable=W0212
         clone._loss_object = self._loss_object  # pylint: disable=W0212
+        clone._optimizer = self._optimizer  # pylint: disable=W0212
         return clone
 
     def reset(self) -> None:
