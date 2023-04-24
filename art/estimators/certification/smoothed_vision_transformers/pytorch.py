@@ -9,6 +9,9 @@ from tqdm import tqdm
 
 from art.estimators.classification.pytorch import PyTorchClassifier
 from art.estimators.certification.smoothed_vision_transformers.smooth_vit import ColumnAblator
+from art.utils import check_and_transform_label_format
+
+logger = logging.getLogger(__name__)
 
 
 class PyTorchSmoothedViT(PyTorchClassifier):
@@ -69,9 +72,114 @@ class PyTorchSmoothedViT(PyTorchClassifier):
             postprocessing_defences=postprocessing_defences,
             preprocessing=preprocessing,
             device_type=device_type,
-            logits=logits,
         )
 
         self.ablation_type = ablation_type
         self.ablation_size = ablation_size,
         self.threshold = threshold
+        self.logits = logits
+
+        print(self.model)
+        self.ablator = ColumnAblator(ablation_size=ablation_size,
+                                     channels_first=True,
+                                     row_ablation_mode=False)
+
+    def fit(  # pylint: disable=W0221
+            self,
+            x: np.ndarray,
+            y: np.ndarray,
+            batch_size: int = 128,
+            nb_epochs: int = 10,
+            training_mode: bool = True,
+            drop_last: bool = False,
+            scheduler: Optional[Any] = None,
+            verbose=True,
+            **kwargs,
+    ) -> None:
+        """
+        Fit the classifier on the training set `(x, y)`.
+        :param x: Training data.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or index labels of
+                  shape (nb_samples,).
+        :param batch_size: Size of batches.
+        :param nb_epochs: Number of epochs to use for training.
+        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :param drop_last: Set to ``True`` to drop the last incomplete batch, if the dataset size is not divisible by
+                          the batch size. If ``False`` and the size of dataset is not divisible by the batch size, then
+                          the last batch will be smaller. (default: ``False``)
+        :param scheduler: Learning rate scheduler to run at the start of every epoch.
+        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
+               and providing it takes no effect.
+        """
+        import torch
+
+        # Set model mode
+        self._model.train(mode=training_mode)
+
+        if self._optimizer is None:  # pragma: no cover
+            raise ValueError("An optimizer is needed to train the model, but none for provided.")
+
+        y = check_and_transform_label_format(y, nb_classes=self.nb_classes)
+
+        # Apply preprocessing
+        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
+
+        # Check label shape
+        y_preprocessed = self.reduce_labels(y_preprocessed)
+
+        num_batch = len(x_preprocessed) / float(batch_size)
+        if drop_last:
+            num_batch = int(np.floor(num_batch))
+        else:
+            num_batch = int(np.ceil(num_batch))
+        ind = np.arange(len(x_preprocessed))
+
+        # Start training
+        for _ in tqdm(range(nb_epochs)):
+            # Shuffle the examples
+            random.shuffle(ind)
+            pbar = tqdm(range(num_batch), disable=not verbose)
+
+            # Train for one epoch
+            for m in pbar:
+                i_batch = torch.from_numpy(np.copy(x_preprocessed[ind[m * batch_size: (m + 1) * batch_size]])).to(self._device)
+                i_batch = self.ablator.forward(i_batch, column_pos=random.randint(0, x.shape[3]))
+
+                o_batch = torch.from_numpy(y_preprocessed[ind[m * batch_size: (m + 1) * batch_size]]).to(
+                    self._device)
+
+                # Zero the parameter gradients
+                self._optimizer.zero_grad()
+
+                # Perform prediction
+                try:
+                    model_outputs = self._model(i_batch)
+                except ValueError as err:
+                    if "Expected more than 1 value per channel when training" in str(err):
+                        logger.exception(
+                            "Try dropping the last incomplete batch by setting drop_last=True in "
+                            "method PyTorchClassifier.fit."
+                        )
+                    raise err
+                # Form the loss function
+                loss = self._loss(model_outputs[-1], o_batch)
+
+                # Do training
+                if self._use_amp:  # pragma: no cover
+                    from apex import amp  # pylint: disable=E0611
+
+                    with amp.scale_loss(loss, self._optimizer) as scaled_loss:
+                        scaled_loss.backward()
+
+                else:
+                    loss.backward()
+
+                self._optimizer.step()
+
+                if verbose:
+                    pbar.set_description(
+                        f"Loss {loss}:.2f"
+                    )
+
+            if scheduler is not None:
+                scheduler.step()
