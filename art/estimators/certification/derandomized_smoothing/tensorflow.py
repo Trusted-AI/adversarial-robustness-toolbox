@@ -150,6 +150,8 @@ class TensorFlowV2DeRandomizedSmoothing(DeRandomizedSmoothingMixin, TensorFlowV2
                        "scheduler" which is an optional function that will be called at the end of every
                        epoch to adjust the learning rate.
         """
+        import tensorflow as tf
+
         if self._train_step is None:  # pragma: no cover
             if self._loss_object is None:  # pragma: no cover
                 raise TypeError(
