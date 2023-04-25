@@ -827,9 +827,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         :param input_shape: shape of one input for the classifier, e.g. for MNIST input_shape=(28, 28, 1).
         :param loss_object: The loss function for which to compute gradients. This parameter is applied for training
                the model and computing gradients of the loss w.r.t. the input.
-        :type loss_object: `tf.keras.losses.Loss`
         :param optimizer: The optimizer used to train the classifier.
-        :type optimizer: `tf.keras.optimizers.Optimizer`
         :param train_step: A function that applies a gradient update to the trainable variables with signature
                `train_step(model, images, labels)`. This will override the default training loop that uses the
                provided `loss_object` and `optimizer` parameters. It is recommended to use the `@tf.function`

@@ -203,6 +203,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
                     nb_classes=estimator.nb_classes,
                     input_shape=estimator.input_shape,
                     loss_object=_loss_object_tf,
+                    optimizer=estimator._optimizer,
                     train_step=estimator._train_step,
                     channels_first=estimator.channels_first,
                     clip_values=estimator.clip_values,
