@@ -21,18 +21,15 @@ import numpy as np
 import pytest
 
 from art.config import ART_NUMPY_DTYPE
+from art.preprocessing.image import ImageSquarePad
+from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
 
 @pytest.fixture()
-def image_batch(channels_first, label_type):
-    """
-    Image fixtures of shape NHWC and NCHW and sample labels for classification adn object detection.
-    """
+def image_batch(height, width, channels_first, label_type):
     channels = 3
-    height = 20
-    width = 16
 
     if channels_first:
         data_shape = (2, channels, height, width)
@@ -56,3 +53,52 @@ def image_batch(channels_first, label_type):
         y = None
 
     return x, y
+
+
+@pytest.mark.framework_agnostic
+@pytest.mark.parametrize("height", [16, 20, 24])
+@pytest.mark.parametrize("width", [16, 20, 24])
+@pytest.mark.parametrize("channels_first", [True, False])
+@pytest.mark.parametrize("label_type", [None, "classification", "object_detection"])
+@pytest.mark.parametrize("pad_mode", ["constant", "edge", "reflect"])
+def test_square_pad_numpy(height, width, channels_first, label_type, pad_mode, image_batch, art_warning):
+    x, y = image_batch
+    length = max(height, width)
+
+    try:
+        resize = ImageSquarePad(
+            channels_first=channels_first,
+            label_type=label_type,
+            pad_mode=pad_mode,
+        )
+
+        x_preprocess, y_preprocess = resize(x, y)
+
+        if channels_first:
+            assert x_preprocess.shape == (x.shape[0], x.shape[1], length, length)
+        else:
+            assert x_preprocess.shape == (x.shape[0], length, length, x.shape[3])
+
+        if label_type == "classification":
+            np.testing.assert_array_equal(y, y_preprocess)
+        elif label_type == "object_detection":
+            assert y[0]["boxes"].shape == y_preprocess[0]["boxes"].shape
+            np.testing.assert_array_equal(y[0]["labels"], y_preprocess[0]["labels"])
+        else:
+            assert y is None
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.framework_agnostic
+def test_check_params_numpy(art_warning):
+    try:
+        with pytest.raises(ValueError):
+            _ = ImageSquarePad(pad_mode="constant", clip_values=(0,))
+
+        with pytest.raises(ValueError):
+            _ = ImageSquarePad(pad_mode="constant", clip_values=(1, 0))
+
+    except ARTTestException as e:
+        art_warning(e)

@@ -21,10 +21,41 @@ import numpy as np
 import cv2
 import pytest
 
+from art.config import ART_NUMPY_DTYPE
 from art.preprocessing.image import ImageResize
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
+
+
+@pytest.fixture()
+def image_batch(channels_first, label_type):
+    channels = 3
+    height = 20
+    width = 16
+
+    if channels_first:
+        data_shape = (2, channels, height, width)
+    else:
+        data_shape = (2, height, width, channels)
+    x = (0.5 * np.ones((data_shape))).astype(ART_NUMPY_DTYPE)
+
+    if label_type == "classification":
+        y = np.arange(len(x))
+    elif label_type == "object_detection":
+        y = []
+        for _ in range(len(x)):
+            y_1, x_1 = np.random.uniform(0, (height / 2, width / 2))
+            y_2, x_2 = np.random.uniform((y_1 + 3, x_1 + 3), (height, width))
+            target_dict = {
+                "boxes": np.array([[x_1, y_1, x_2, y_2]]),
+                "labels": np.array([0]),
+            }
+            y.append(target_dict)
+    else:
+        y = None
+
+    return x, y
 
 
 @pytest.mark.framework_agnostic

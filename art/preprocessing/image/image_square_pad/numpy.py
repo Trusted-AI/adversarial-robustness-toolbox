@@ -59,7 +59,7 @@ class ImageSquarePad(Preprocessor):
         :param width: The width of the resized image.
         :param channels_first: Set channels first or last.
         :param label_type: String defining the label type. Currently supported: `classification`, `object_detection`
-        :param pad_mode: The desired method to pad the image defined by the `np.pad` function.
+        :param pad_mode: String defining the padding method. Supported by options in the `np.pad` function.
         :param pad_kwargs: A dictionary of additional keyword arguments used by the `np.pad` function.
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
@@ -93,7 +93,7 @@ class ImageSquarePad(Preprocessor):
         else:
             y_preprocess = y
 
-        for i, x_i in enumerate(tqdm(x, desc="SquarePad", disable=not self.verbose)):
+        for i, x_i in enumerate(tqdm(x, desc="ImageSquarePad", disable=not self.verbose)):
             if self.channels_first:
                 x_i = np.transpose(x_i, (1, 2, 0))
 
@@ -135,7 +135,7 @@ class ImageSquarePad(Preprocessor):
                 y_preprocess.append(y_pad)  # type: ignore
 
         if isinstance(x, np.ndarray):
-            return np.asarray(x_preprocess), y_preprocess
+            return np.stack(x_preprocess, axis=0), y_preprocess
 
         return x_preprocess, y_preprocess
 
@@ -144,5 +144,5 @@ class ImageSquarePad(Preprocessor):
             if len(self.clip_values) != 2:
                 raise ValueError("`clip_values` should be a tuple of 2 floats containing the allowed data range.")
 
-            if np.array(self.clip_values[0] >= self.clip_values[1]).any():
+            if self.clip_values[0] >= self.clip_values[1]:
                 raise ValueError("Invalid `clip_values`: min >= max.")
