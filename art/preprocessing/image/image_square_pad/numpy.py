@@ -19,7 +19,7 @@
 This module implements square padding for images and object detection bounding boxes.
 """
 import logging
-from typing import Dict, List, Optional, TYPE_CHECKING, Tuple, Union
+from typing import Dict, List, Any, Optional, TYPE_CHECKING, Tuple, Union
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -37,7 +37,7 @@ class ImageSquarePad(Preprocessor):
     This module implements square padding for images and object detection bounding boxes.
     """
 
-    params = ["channels_first", "label_type", "pad_mode", "pad_fill", "clip_values", "verbose"]
+    params = ["channels_first", "label_type", "pad_mode", "pad_kwargs", "clip_values", "verbose"]
 
     label_types = ["classification", "object_detection"]
 
@@ -46,7 +46,7 @@ class ImageSquarePad(Preprocessor):
         channels_first: bool = False,
         label_type: str = "classification",
         pad_mode: str = "constant",
-        pad_fill: Union[int, float] = 0,
+        pad_kwargs: Optional[Dict[str, Any]] = None,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         apply_fit: bool = True,
         apply_predict: bool = False,
@@ -60,7 +60,7 @@ class ImageSquarePad(Preprocessor):
         :param channels_first: Set channels first or last.
         :param label_type: String defining the label type. Currently supported: `classification`, `object_detection`
         :param pad_mode: The desired method to pad the image defined by the `np.pad` function.
-        :param pad_fill: The fill value when `pad_mode` is selected as `constant`.
+        :param pad_kwargs: A dictionary of additional keyword arguments used by the `np.pad` function.
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :param apply_fit: True if applied during fitting/training.
@@ -71,7 +71,7 @@ class ImageSquarePad(Preprocessor):
         self.channels_first = channels_first
         self.label_type = label_type
         self.pad_mode = pad_mode
-        self.pad_fill = pad_fill
+        self.pad_kwargs = pad_kwargs if pad_kwargs is not None else {}
         self.clip_values = clip_values
         self.verbose = verbose
         self._check_params()
@@ -112,7 +112,7 @@ class ImageSquarePad(Preprocessor):
 
             # Pad image to square size
             padding = [[pad_top, pad_bottom], [pad_left, pad_right], [0, 0]]
-            x_pad = np.pad(x_i, padding, mode=self.pad_mode, constant_values=self.pad_fill)  # type: ignore
+            x_pad = np.pad(x_i, padding, mode=self.pad_mode, **self.pad_kwargs)  # type: ignore
 
             if self.channels_first:
                 x_pad = np.transpose(x_pad, (2, 0, 1))
