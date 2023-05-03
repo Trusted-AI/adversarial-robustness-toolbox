@@ -71,16 +71,16 @@ if os.path.exists(_config_path):
                 except IOError:
                     logger.warning("Unable to update configuration file", exc_info=True)
 
-    except ValueError:  # pragma: no cover
+    except ValueError as e:  # pragma: no cover
+        logger.warning("Received the following error when loading configuration: %s", e)
         _config = {}
+else:
+    if not os.path.exists(_folder):
+        try:
+            os.makedirs(_folder)
+        except OSError:  # pragma: no cover
+            logger.warning("Unable to create folder for configuration file.", exc_info=True)
 
-if not os.path.exists(_folder):
-    try:
-        os.makedirs(_folder)
-    except OSError:  # pragma: no cover
-        logger.warning("Unable to create folder for configuration file.", exc_info=True)
-
-if not os.path.exists(_config_path):
     # Generate default config
     _config = {"ART_DATA_PATH": os.path.join(_folder, "data")}
 
@@ -92,3 +92,5 @@ if not os.path.exists(_config_path):
 
 if "ART_DATA_PATH" in _config:  # pragma: no cover
     set_data_path(_config["ART_DATA_PATH"])
+else:
+    logger.warning("Received configuration file without ART_DATA_PATH: %s", _config)
