@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements square padding for images and object detection bounding boxes.
+This module implements square padding for images and object detection bounding boxes in TensorFlow v2.
 """
 import logging
 from typing import Dict, List, Any, Optional, TYPE_CHECKING, Tuple, Union
@@ -35,10 +35,10 @@ logger = logging.getLogger(__name__)
 
 class ImageSquarePadTensorFlowV2(PreprocessorTensorFlowV2):
     """
-    This module implements square padding for images and object detection bounding boxes.
+    This module implements square padding for images and object detection bounding boxes in TensorFlow v2.
     """
 
-    params = ["channels_first", "label_type", "pad_mode", "constant_values", "clip_values", "verbose"]
+    params = ["channels_first", "label_type", "pad_mode", "pad_kwargs", "clip_values", "verbose"]
 
     label_types = ["classification", "object_detection"]
 
@@ -54,7 +54,7 @@ class ImageSquarePadTensorFlowV2(PreprocessorTensorFlowV2):
         verbose: bool = False,
     ):
         """
-        Create an instance of SquarePad.
+        Create an instance of ImageSquarePadTensorFlowV2.
 
         :param height: The height of the resized image.
         :param width: The width of the resized image.
@@ -98,7 +98,7 @@ class ImageSquarePadTensorFlowV2(PreprocessorTensorFlowV2):
         else:
             y_preprocess = y
 
-        for i, x_i in enumerate(tqdm(x, desc="ImageSquarePad", disable=not self.verbose)):
+        for i, x_i in enumerate(tqdm(x, desc="ImageSquarePadTensorFlowV2", disable=not self.verbose)):
             if self.channels_first:
                 x_i = tf.transpose(x_i, (1, 2, 0))
 
@@ -127,17 +127,22 @@ class ImageSquarePadTensorFlowV2(PreprocessorTensorFlowV2):
 
             x_preprocess.append(x_pad)
 
-            if y is not None and self.label_type == "object_detection":
-                # Ensure labels are lists
-                assert isinstance(y, list)
-                assert isinstance(y_preprocess, list)
+            if self.label_type == "object_detection" and y is not None:
+                y_pad: Dict[str, tf.Tensor] = {}
 
-                # Copy labels
-                y_pad = {k: tf.identity(v) for k, v in y[i].items()}
+                # Copy labels and ensure types
+                if isinstance(y, list) and isinstance(y_preprocess, list):
+                    y_i = y[i]
+                    if isinstance(y_i, dict):
+                        y_pad = {k: tf.identity(v) for k, v in y_i.items()}
+                    else:
+                        raise TypeError("Wrong type for `y` and label_type=object_detection.")
+                else:
+                    raise TypeError("Wrong type for `y` and label_type=object_detection.")
 
                 # Shift bounding boxes
                 boxes = y_pad["boxes"]
-                boxes = boxes + tf.constant([pad_left, pad_top, pad_left, pad_top], dtype=boxes.dtype)
+                boxes += tf.constant([pad_left, pad_top, pad_left, pad_top], dtype=boxes.dtype)
                 y_pad["boxes"] = boxes
 
                 y_preprocess.append(y_pad)

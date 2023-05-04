@@ -53,7 +53,7 @@ class ImageSquarePad(Preprocessor):
         verbose: bool = False,
     ):
         """
-        Create an instance of SquarePad.
+        Create an instance of ImageSquarePad.
 
         :param height: The height of the resized image.
         :param width: The width of the resized image.
@@ -122,13 +122,18 @@ class ImageSquarePad(Preprocessor):
 
             x_preprocess.append(x_pad)
 
-            if y is not None and self.label_type == "object_detection":
-                # Ensure labels are lists
-                assert isinstance(y, list)
-                assert isinstance(y_preprocess, list)
+            if self.label_type == "object_detection" and y is not None:
+                y_pad: Dict[str, np.ndarray] = {}
 
-                # Copy labels
-                y_pad = {k: v.copy() for k, v in y[i].items()}
+                # Copy labels and ensure types
+                if isinstance(y, list) and isinstance(y_preprocess, list):
+                    y_i = y[i]
+                    if isinstance(y_i, dict):
+                        y_pad = {k: np.copy(v) for k, v in y_i.items()}
+                    else:
+                        raise TypeError("Wrong type for `y` and label_type=object_detection.")
+                else:
+                    raise TypeError("Wrong type for `y` and label_type=object_detection.")
 
                 # Shift bounding boxes
                 y_pad["boxes"][:, 0] += pad_left
