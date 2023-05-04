@@ -127,11 +127,15 @@ class ImageSquarePadPyTorch(PreprocessorPyTorch):
                 x_pad = torch.permute(x_pad, (1, 2, 0))
 
             if self.clip_values is not None:
-                x_pad = torch.clamp(x_pad, self.clip_values[0], self.clip_values[1])
+                x_pad = torch.clamp(x_pad, self.clip_values[0], self.clip_values[1])  # type: ignore
 
             x_preprocess.append(x_pad)
 
             if y is not None and self.label_type == "object_detection":
+                # Ensure labels are lists
+                assert isinstance(y, list)
+                assert isinstance(y_preprocess, list)
+
                 # Copy labels
                 y_pad = {k: v.detach().clone() for k, v in y[i].items()}
 
@@ -141,7 +145,7 @@ class ImageSquarePadPyTorch(PreprocessorPyTorch):
                 y_pad["boxes"][:, 2] += pad_left
                 y_pad["boxes"][:, 3] += pad_top
 
-                y_preprocess.append(y_pad)  # type: ignore
+                y_preprocess.append(y_pad)
 
         if isinstance(x, torch.Tensor):
             return torch.stack(x_preprocess, dim=0), y_preprocess

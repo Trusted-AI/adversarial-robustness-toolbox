@@ -24,20 +24,21 @@ from typing import Dict, List, Any, Optional, TYPE_CHECKING, Tuple, Union
 import numpy as np
 from tqdm.auto import tqdm
 
-from art.preprocessing.preprocessing import Preprocessor
+from art.preprocessing.preprocessing import PreprocessorTensorFlowV2
 
 if TYPE_CHECKING:
+    import tensorflow as tf
     from art.utils import CLIP_VALUES_TYPE
 
 logger = logging.getLogger(__name__)
 
 
-class ImageSquarePad(Preprocessor):
+class ImageSquarePadTensorFlowV2(PreprocessorTensorFlowV2):
     """
     This module implements square padding for images and object detection bounding boxes.
     """
 
-    params = ["channels_first", "label_type", "pad_mode", "pad_kwargs", "clip_values", "verbose"]
+    params = ["channels_first", "label_type", "pad_mode", "constant_values", "clip_values", "verbose"]
 
     label_types = ["classification", "object_detection"]
 
@@ -45,7 +46,7 @@ class ImageSquarePad(Preprocessor):
         self,
         channels_first: bool = False,
         label_type: str = "classification",
-        pad_mode: str = "constant",
+        pad_mode: str = "CONSTANT",
         pad_kwargs: Optional[Dict[str, Any]] = None,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         apply_fit: bool = True,
@@ -59,8 +60,8 @@ class ImageSquarePad(Preprocessor):
         :param width: The width of the resized image.
         :param channels_first: Set channels first or last.
         :param label_type: String defining the label type. Currently supported: `classification`, `object_detection`
-        :param pad_mode: String defining the padding method. Supported by options in the `np.pad` function.
-        :param pad_kwargs: A dictionary of additional keyword arguments used by the `np.pad` function.
+        :param pad_mode: String defining the padding method. Currently supported: `CONSTANT`, `REFLECT`, 'SYMMETRIC`
+        :param pad_kwargs: A dictionary of additional keyword arguments used by the `tf.pad` function.
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :param apply_fit: True if applied during fitting/training.
@@ -76,9 +77,11 @@ class ImageSquarePad(Preprocessor):
         self.verbose = verbose
         self._check_params()
 
-    def __call__(  # type: ignore
-        self, x: Union[np.ndarray, List[np.ndarray]], y: Optional[Union[np.ndarray, List[Dict[str, np.ndarray]]]] = None
-    ) -> Tuple[Union[np.ndarray, List[np.ndarray]], Optional[Union[np.ndarray, List[Dict[str, np.ndarray]]]]]:
+    def forward(  # type: ignore
+        self,
+        x: Union["tf.Tensor", List["tf.Tensor"]],
+        y: Optional[Union["tf.Tensor", List[Dict[str, "tf.Tensor"]]]] = None,
+    ) -> Tuple[Union["tf.Tensor", List["tf.Tensor"]], Optional[Union["tf.Tensor", List[Dict[str, "tf.Tensor"]]]]]:
         """
         Square pad `x` and adjust bounding boxes for labels `y` accordingly.
 
@@ -86,8 +89,10 @@ class ImageSquarePad(Preprocessor):
         :param y: Label of the samples `x`.
         :return: Transformed samples and labels.
         """
+        import tensorflow as tf
+
         x_preprocess = []
-        y_preprocess: Optional[Union[np.ndarray, List[Dict[str, np.ndarray]]]]
+        y_preprocess: Optional[Union[tf.Tensor, List[Dict[str, tf.Tensor]]]]
         if y is not None and self.label_type == "object_detection":
             y_preprocess = []
         else:
@@ -95,7 +100,7 @@ class ImageSquarePad(Preprocessor):
 
         for i, x_i in enumerate(tqdm(x, desc="ImageSquarePad", disable=not self.verbose)):
             if self.channels_first:
-                x_i = np.transpose(x_i, (1, 2, 0))
+                x_i = tf.transpose(x_i, (1, 2, 0))
 
             # Calculate padding
             height, width, _ = x_i.shape
@@ -112,13 +117,13 @@ class ImageSquarePad(Preprocessor):
 
             # Pad image to square size
             padding = [[pad_top, pad_bottom], [pad_left, pad_right], [0, 0]]
-            x_pad = np.pad(x_i, padding, mode=self.pad_mode, **self.pad_kwargs)  # type: ignore
+            x_pad = tf.pad(x_i, padding, mode=self.pad_mode, **self.pad_kwargs)
 
             if self.channels_first:
-                x_pad = np.transpose(x_pad, (2, 0, 1))
+                x_pad = tf.transpose(x_pad, (2, 0, 1))
 
             if self.clip_values is not None:
-                x_pad = np.clip(x_pad, self.clip_values[0], self.clip_values[1])
+                x_pad = tf.clip_by_value(x_pad, self.clip_values[0], self.clip_values[1])
 
             x_preprocess.append(x_pad)
 
@@ -128,18 +133,17 @@ class ImageSquarePad(Preprocessor):
                 assert isinstance(y_preprocess, list)
 
                 # Copy labels
-                y_pad = {k: v.copy() for k, v in y[i].items()}
+                y_pad = {k: tf.identity(v) for k, v in y[i].items()}
 
                 # Shift bounding boxes
-                y_pad["boxes"][:, 0] += pad_left
-                y_pad["boxes"][:, 1] += pad_top
-                y_pad["boxes"][:, 2] += pad_left
-                y_pad["boxes"][:, 3] += pad_top
+                boxes = y_pad["boxes"]
+                boxes = boxes + tf.constant([pad_left, pad_top, pad_left, pad_top], dtype=boxes.dtype)
+                y_pad["boxes"] = boxes
 
                 y_preprocess.append(y_pad)
 
-        if isinstance(x, np.ndarray):
-            return np.stack(x_preprocess, axis=0), y_preprocess
+        if isinstance(x, tf.Tensor):
+            return tf.stack(x_preprocess, axis=0), y_preprocess
 
         return x_preprocess, y_preprocess
 
