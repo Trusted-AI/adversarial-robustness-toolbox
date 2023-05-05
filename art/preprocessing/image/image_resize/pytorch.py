@@ -101,7 +101,7 @@ class ImageResizePyTorch(PreprocessorPyTorch):
         else:
             y_preprocess = y
 
-        for i, x_i in enumerate(tqdm(x, desc="ImageResize", disable=not self.verbose)):
+        for i, x_i in enumerate(tqdm(x, desc="ImageResizePyTorch", disable=not self.verbose)):
             if not self.channels_first:
                 x_i = torch.permute(x_i, (2, 0, 1))
 

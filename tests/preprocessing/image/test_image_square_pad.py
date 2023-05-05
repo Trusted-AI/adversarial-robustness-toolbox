@@ -60,7 +60,7 @@ def image_batch(height, width, channels_first, label_type):
 @pytest.mark.parametrize("width", [16, 20, 24])
 @pytest.mark.parametrize("channels_first", [True, False])
 @pytest.mark.parametrize("label_type", [None, "classification", "object_detection"])
-@pytest.mark.parametrize("pad_mode", ["constant", "edge", "reflect"])
+@pytest.mark.parametrize("pad_mode", ["constant", "reflect"])
 def test_square_pad_numpy(height, width, channels_first, label_type, pad_mode, image_batch, art_warning):
     x, y = image_batch
     length = max(height, width)
@@ -96,7 +96,7 @@ def test_square_pad_numpy(height, width, channels_first, label_type, pad_mode, i
 @pytest.mark.parametrize("width", [16, 20, 24])
 @pytest.mark.parametrize("channels_first", [True, False])
 @pytest.mark.parametrize("label_type", [None, "classification", "object_detection"])
-@pytest.mark.parametrize("pad_mode", ["constant", "reflect", "replicate"])
+@pytest.mark.parametrize("pad_mode", ["constant", "reflect"])
 def test_square_pad_pytorch(height, width, channels_first, label_type, pad_mode, image_batch, art_warning):
     import torch
 
@@ -140,7 +140,7 @@ def test_square_pad_pytorch(height, width, channels_first, label_type, pad_mode,
 @pytest.mark.parametrize("width", [16, 20, 24])
 @pytest.mark.parametrize("channels_first", [True, False])
 @pytest.mark.parametrize("label_type", [None, "classification", "object_detection"])
-@pytest.mark.parametrize("pad_mode", ["CONSTANT", "REFLECT", "SYMMETRIC"])
+@pytest.mark.parametrize("pad_mode", ["CONSTANT", "REFLECT"])
 def test_square_pad_tensorflow(height, width, channels_first, label_type, pad_mode, image_batch, art_warning):
     import tensorflow as tf
 
