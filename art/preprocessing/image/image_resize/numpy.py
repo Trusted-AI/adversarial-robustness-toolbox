@@ -107,9 +107,18 @@ class ImageResize(Preprocessor):
 
             x_preprocess_list.append(x_resized)
 
-            if y is not None and self.label_type == "object_detection":
-                # Copy labels
-                y_resized = {k: v.copy() for k, v in y[i].items()}
+            if self.label_type == "object_detection" and y is not None:
+                y_resized: Dict[str, np.ndarray] = {}
+
+                # Copy labels and ensure types
+                if isinstance(y, list) and isinstance(y_preprocess, list):
+                    y_i = y[i]
+                    if isinstance(y_i, dict):
+                        y_resized = {k: np.copy(v) for k, v in y_i.items()}
+                    else:
+                        raise TypeError("Wrong type for `y` and label_type=object_detection.")
+                else:
+                    raise TypeError("Wrong type for `y` and label_type=object_detection.")
 
                 # Calculate scaling factor
                 height, width, _ = x_i.shape
@@ -122,9 +131,9 @@ class ImageResize(Preprocessor):
                 y_resized["boxes"][:, 2] *= width_scale
                 y_resized["boxes"][:, 3] *= height_scale
 
-                y_preprocess.append(y_resized)  # type: ignore
+                y_preprocess.append(y_resized)
 
-        x_preprocess = np.asarray(x_preprocess_list)
+        x_preprocess = np.stack(x_preprocess_list)
         if self.clip_values is not None:
             x_preprocess = np.clip(x_preprocess, self.clip_values[0], self.clip_values[1])
 

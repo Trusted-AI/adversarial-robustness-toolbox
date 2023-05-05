@@ -16,52 +16,54 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements square padding for images and object detection bounding boxes.
+This module implements resizing for images and object detection bounding boxes in PyTorch.
 """
 import logging
-from typing import Dict, List, Any, Optional, TYPE_CHECKING, Tuple, Union
+from typing import Dict, List, Optional, TYPE_CHECKING, Tuple, Union
 
-import numpy as np
 from tqdm.auto import tqdm
 
-from art.preprocessing.preprocessing import Preprocessor
+from art.preprocessing.preprocessing import PreprocessorPyTorch
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
+    import torch
+    import torchvision
     from art.utils import CLIP_VALUES_TYPE
 
 logger = logging.getLogger(__name__)
 
 
-class ImageSquarePad(Preprocessor):
+class ImageResizePyTorch(PreprocessorPyTorch):
     """
-    This module implements square padding for images and object detection bounding boxes.
+    This module implements resizing for images and object detection bounding boxes in PyTorch.
     """
 
-    params = ["channels_first", "label_type", "pad_mode", "pad_kwargs", "clip_values", "verbose"]
+    params = ["height", "width", "channels_first", "label_type", "interpolation", "clip_values", "verbose"]
 
     label_types = ["classification", "object_detection"]
 
     def __init__(
         self,
-        channels_first: bool = False,
+        height: int,
+        width: int,
+        channels_first: bool = True,
         label_type: str = "classification",
-        pad_mode: str = "constant",
-        pad_kwargs: Optional[Dict[str, Any]] = None,
+        interpolation: str = "bilinear",
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         apply_fit: bool = True,
         apply_predict: bool = False,
         verbose: bool = False,
     ):
         """
-        Create an instance of ImageSquarePad.
+        Create an instance of ImageResizePyTorch.
 
         :param height: The height of the resized image.
         :param width: The width of the resized image.
         :param channels_first: Set channels first or last.
         :param label_type: String defining the label type. Currently supported: `classification`, `object_detection`
-        :param pad_mode: String defining the padding method. Currently supported: `constant`, `edge`, `linear_ramp`,
-               `maximum`, `mean`, `median`, `minimum`, `reflect`, `symmetric`, `wrap`, `empty`
-        :param pad_kwargs: A dictionary of additional keyword arguments used by the `np.pad` function.
+        :param interpolation: String defining the resizing method. Currently supported: `nearest`, `linear`,
+               `bilinear`, `bicubic`, `trilinear`, `area`, `nearest-exact`
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :param apply_fit: True if applied during fitting/training.
@@ -69,87 +71,89 @@ class ImageSquarePad(Preprocessor):
         :param verbose: Show progress bars.
         """
         super().__init__(is_fitted=True, apply_fit=apply_fit, apply_predict=apply_predict)
+        self.height = height
+        self.width = width
         self.channels_first = channels_first
         self.label_type = label_type
-        self.pad_mode = pad_mode
-        self.pad_kwargs = pad_kwargs if pad_kwargs is not None else {}
+        self.interpolation = interpolation
         self.clip_values = clip_values
         self.verbose = verbose
         self._check_params()
 
-    def __call__(  # type: ignore
-        self, x: Union[np.ndarray, List[np.ndarray]], y: Optional[Union[np.ndarray, List[Dict[str, np.ndarray]]]] = None
-    ) -> Tuple[Union[np.ndarray, List[np.ndarray]], Optional[Union[np.ndarray, List[Dict[str, np.ndarray]]]]]:
+    def forward(  # type: ignore
+        self,
+        x: Union["torch.Tensor", List["torch.Tensor"]],
+        y: Optional[Union["torch.Tensor", List[Dict[str, "torch.Tensor"]]]] = None,
+    ) -> Tuple["torch.Tensor", Optional[Union["torch.Tensor", List[Dict[str, "torch.Tensor"]]]]]:
         """
-        Square pad `x` and adjust bounding boxes for labels `y` accordingly.
+        Resize `x` and adjust bounding boxes for labels `y` accordingly.
 
         :param x: Input samples.
         :param y: Label of the samples `x`.
         :return: Transformed samples and labels.
         """
-        x_preprocess = []
-        y_preprocess: Optional[Union[np.ndarray, List[Dict[str, np.ndarray]]]]
+        import torch
+
+        x_preprocess_list = []
+        y_preprocess: Optional[Union[torch.Tensor, List[Dict[str, torch.Tensor]]]]
         if y is not None and self.label_type == "object_detection":
             y_preprocess = []
         else:
             y_preprocess = y
 
-        for i, x_i in enumerate(tqdm(x, desc="ImageSquarePad", disable=not self.verbose)):
-            if self.channels_first:
-                x_i = np.transpose(x_i, (1, 2, 0))
+        for i, x_i in enumerate(tqdm(x, desc="ImageResize", disable=not self.verbose)):
+            if not self.channels_first:
+                x_i = torch.permute(x_i, (2, 0, 1))
 
-            # Calculate padding
-            height, width, _ = x_i.shape
-            if height > width:
-                pad_top = 0
-                pad_bottom = 0
-                pad_left = int(np.floor((height - width) / 2))
-                pad_right = int(np.ceil((height - width) / 2))
-            else:
-                pad_top = int(np.floor((width - height) / 2))
-                pad_bottom = int(np.ceil((width - height) / 2))
-                pad_left = 0
-                pad_right = 0
+            # OpenCV swaps height and width
+            x_resized = torch.nn.functional.interpolate(
+                x_i.unsqueeze(0), size=(self.height, self.width), mode=self.interpolation
+            ).squeeze()
 
-            # Pad image to square size
-            padding = [[pad_top, pad_bottom], [pad_left, pad_right], [0, 0]]
-            x_pad = np.pad(x_i, padding, mode=self.pad_mode, **self.pad_kwargs)  # type: ignore
+            if not self.channels_first:
+                x_resized = torch.permute(x_resized, (1, 2, 0))
 
-            if self.channels_first:
-                x_pad = np.transpose(x_pad, (2, 0, 1))
-
-            if self.clip_values is not None:
-                x_pad = np.clip(x_pad, self.clip_values[0], self.clip_values[1])
-
-            x_preprocess.append(x_pad)
+            x_preprocess_list.append(x_resized)
 
             if self.label_type == "object_detection" and y is not None:
-                y_pad: Dict[str, np.ndarray] = {}
+                y_resized: Dict[str, torch.Tensor] = {}
 
                 # Copy labels and ensure types
                 if isinstance(y, list) and isinstance(y_preprocess, list):
                     y_i = y[i]
                     if isinstance(y_i, dict):
-                        y_pad = {k: np.copy(v) for k, v in y_i.items()}
+                        y_resized = {k: torch.clone(v) for k, v in y_i.items()}
                     else:
                         raise TypeError("Wrong type for `y` and label_type=object_detection.")
                 else:
                     raise TypeError("Wrong type for `y` and label_type=object_detection.")
 
-                # Shift bounding boxes
-                y_pad["boxes"][:, 0] += pad_left
-                y_pad["boxes"][:, 1] += pad_top
-                y_pad["boxes"][:, 2] += pad_left
-                y_pad["boxes"][:, 3] += pad_top
+                # Calculate scaling factor
+                _, height, width = x_i.shape
+                height_scale = self.height / height
+                width_scale = self.width / width
 
-                y_preprocess.append(y_pad)
+                # Resize bounding boxes
+                y_resized["boxes"][:, 0] *= width_scale
+                y_resized["boxes"][:, 1] *= height_scale
+                y_resized["boxes"][:, 2] *= width_scale
+                y_resized["boxes"][:, 3] *= height_scale
 
-        if isinstance(x, np.ndarray):
-            return np.stack(x_preprocess, axis=0), y_preprocess
+                y_preprocess.append(y_resized)
+
+        x_preprocess = torch.stack(x_preprocess_list)
+        if self.clip_values is not None:
+            x_preprocess = torch.clamp(x_preprocess, self.clip_values[0], self.clip_values[1])  # type: ignore
 
         return x_preprocess, y_preprocess
 
     def _check_params(self) -> None:
+        if self.height <= 0:
+            raise ValueError("The desired image height must be positive.")
+
+        if self.width <= 0:
+            raise ValueError("The desired image width must be positive")
+
         if self.clip_values is not None:
             if len(self.clip_values) != 2:
                 raise ValueError("`clip_values` should be a tuple of 2 floats containing the allowed data range.")
