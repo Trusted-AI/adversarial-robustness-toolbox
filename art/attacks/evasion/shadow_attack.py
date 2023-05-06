@@ -163,7 +163,7 @@ class ShadowAttack(EvasionAttack):
                 axis=0,
                 keepdims=True,
             )
-            gradients = gradients_ce - self._get_regularisation_loss_gradients(perturbation)
+            gradients = gradients_ce - self._get_regularization_loss_gradients(perturbation)
             perturbation += self.learning_rate * gradients
 
         x_p = x + perturbation
@@ -173,7 +173,7 @@ class ShadowAttack(EvasionAttack):
 
         return x_adv
 
-    def _get_regularisation_loss_gradients(self, perturbation: np.ndarray) -> np.ndarray:
+    def _get_regularization_loss_gradients(self, perturbation: np.ndarray) -> np.ndarray:
         """
         Get regularisation loss gradients.
 
