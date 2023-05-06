@@ -39,6 +39,20 @@ class ColumnAblator(torch.nn.Module):
         return x
 
     def forward(self, x, column_pos):
+        assert x.shape[1] == 3
+        ones = torch.torch.ones_like(x[:, 0:1, :, :]).cuda()
+        x = torch.cat([x, ones], dim=1)
         x = self.ablate(x, column_pos=column_pos)
-        x = self.upsample(x)
-        return x
+        return self.upsample(x)
+
+    def certify(self, predictions, size_to_certify, label):
+
+        num_of_classes = predictions.shape[-1]
+
+        top_class_counts, top_predicted_class = predictions.kthvalue(num_of_classes, dim=1)
+        second_class_counts, second_predicted_class = predictions.kthvalue(num_of_classes - 1, dim=1)
+
+        cert = (top_class_counts - second_class_counts) > 2 * (size_to_certify + self.ablation_size - 1)
+        cert_and_correct = cert & label == top_predicted_class
+
+        return cert, cert_and_correct
