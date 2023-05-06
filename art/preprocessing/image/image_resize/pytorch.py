@@ -28,7 +28,6 @@ from art.preprocessing.preprocessing import PreprocessorPyTorch
 if TYPE_CHECKING:
     # pylint: disable=C0412
     import torch
-    import torchvision
     from art.utils import CLIP_VALUES_TYPE
 
 logger = logging.getLogger(__name__)
@@ -105,7 +104,7 @@ class ImageResizePyTorch(PreprocessorPyTorch):
             if not self.channels_first:
                 x_i = torch.permute(x_i, (2, 0, 1))
 
-            # OpenCV swaps height and width
+            # Resize image: requires a batch so create batch of size 1
             x_resized = torch.nn.functional.interpolate(
                 x_i.unsqueeze(0), size=(self.height, self.width), mode=self.interpolation
             ).squeeze()
