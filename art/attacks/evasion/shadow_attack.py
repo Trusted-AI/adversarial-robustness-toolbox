@@ -175,9 +175,9 @@ class ShadowAttack(EvasionAttack):
 
     def _get_regularisation_loss_gradients(self, perturbation: np.ndarray) -> np.ndarray:
         """
-        Get regularisation loss gradients.
+        Get regularization loss gradients.
 
-        :param perturbation: The perturbation to be regularised.
+        :param perturbation: The perturbation to be regularized.
         :return: The loss gradients of the perturbation.
         """
         if not self.estimator.channels_first:
