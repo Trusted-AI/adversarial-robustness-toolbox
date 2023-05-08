@@ -143,8 +143,8 @@ def insert_image(
     orig_img.paste(backdoored_input)
 
     trigger = Image.open(backdoor_path).convert("RGBA")
-    if size:
-        trigger = trigger.resize(size)
+    if size is not None:
+        trigger = trigger.resize(size[1], size[0])  # height and width are swapped for PIL
 
     backdoor_width, backdoor_height = trigger.size  # height and width are swapped for PIL
 
@@ -152,8 +152,8 @@ def insert_image(
         raise ValueError("Backdoor does not fit inside original image")
 
     if random:
-        x_shift = np.random.randint(width - backdoor_width)
-        y_shift = np.random.randint(height - backdoor_height)
+        x_shift = np.random.randint(width - backdoor_width + 1)
+        y_shift = np.random.randint(height - backdoor_height + 1)
 
     backdoored_img.paste(trigger, (x_shift, y_shift), mask=trigger)
     composite = Image.alpha_composite(orig_img, backdoored_img)
