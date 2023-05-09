@@ -127,7 +127,7 @@ def insert_image(
     original_dtype = x.dtype
     data = np.copy(x)
     if channels_first:
-        data = data.transpose([1, 2, 0])
+        data = np.transpose(data, (1, 2, 0))
 
     height, width, num_channels = data.shape
 
@@ -136,15 +136,15 @@ def insert_image(
     backdoored_img = Image.new("RGBA", (width, height), 0)  # height and width are swapped for PIL
 
     if no_color:
-        backdoored_input = Image.fromarray((data * 255).astype("uint8").squeeze(axis=2), mode=mode)
+        backdoored_input = Image.fromarray((data * 255).astype(np.uint8).squeeze(axis=2), mode=mode)
     else:
-        backdoored_input = Image.fromarray((data * 255).astype("uint8"), mode=mode)
+        backdoored_input = Image.fromarray((data * 255).astype(np.uint8), mode=mode)
 
     orig_img.paste(backdoored_input)
 
     trigger = Image.open(backdoor_path).convert("RGBA")
-    if size:
-        trigger = trigger.resize(size)
+    if size is not None:
+        trigger = trigger.resize((size[1], size[0]))  # height and width are swapped for PIL
 
     backdoor_width, backdoor_height = trigger.size  # height and width are swapped for PIL
 
@@ -152,21 +152,20 @@ def insert_image(
         raise ValueError("Backdoor does not fit inside original image")
 
     if random:
-        x_shift = np.random.randint(width - backdoor_width)
-        y_shift = np.random.randint(height - backdoor_height)
+        x_shift = np.random.randint(width - backdoor_width + 1)
+        y_shift = np.random.randint(height - backdoor_height + 1)
 
     backdoored_img.paste(trigger, (x_shift, y_shift), mask=trigger)
     composite = Image.alpha_composite(orig_img, backdoored_img)
     backdoored_img = Image.blend(orig_img, composite, blend)
-
     backdoored_img = backdoored_img.convert(mode)
 
-    res = np.array(backdoored_img) / 255.0
+    res = np.asarray(backdoored_img) / 255.0
 
     if no_color:
         res = np.expand_dims(res, 2)
 
     if channels_first:
-        res = res.transpose([2, 0, 1])
+        res = np.transpose(res, (2, 0, 1))
 
     return res.astype(original_dtype)
