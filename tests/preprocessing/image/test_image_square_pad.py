@@ -35,7 +35,7 @@ def image_batch(height, width, channels_first, label_type):
         data_shape = (2, channels, height, width)
     else:
         data_shape = (2, height, width, channels)
-    x = (0.5 * np.ones((data_shape))).astype(ART_NUMPY_DTYPE)
+    x = (0.5 * np.ones(data_shape)).astype(ART_NUMPY_DTYPE)
 
     if label_type == "classification":
         y = np.arange(len(x))
