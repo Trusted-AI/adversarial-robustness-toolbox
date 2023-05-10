@@ -1,8 +1,13 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+import sys
 from typing import List, Optional, Tuple, Union, Any, TYPE_CHECKING
 import random
+import torch
+import copy
+
+from timm.models.vision_transformer import VisionTransformer
 
 import numpy as np
 from tqdm import tqdm
@@ -12,6 +17,125 @@ from art.estimators.certification.smoothed_vision_transformers.smooth_vit import
 from art.utils import check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
+class PatchEmbed(torch.nn.Module):
+    """ Image to Patch Embedding
+
+    Class adapted from the implementation in https://github.com/MadryLab/smoothed-vit
+
+    Original License:
+
+    MIT License
+
+    Copyright (c) 2021 Madry Lab
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+
+    """
+    def __init__(self, img_size=224, patch_size=16, in_chans=3, embed_dim=768):
+        super().__init__()
+        num_patches = (img_size // patch_size) * (img_size // patch_size)
+        self.img_size = img_size
+        self.patch_size = patch_size
+        self.num_patches = num_patches
+
+        self.proj = torch.nn.Conv2d(in_chans, embed_dim, kernel_size=patch_size, stride=patch_size, bias=False)
+        w_shape = self.proj.weight.shape
+        self.proj.weight = torch.nn.Parameter(torch.ones(w_shape).to(device))
+
+    def forward(self, x):
+        with torch.no_grad():
+            x = self.proj(x).flatten(2).transpose(1, 2)
+        return x
+
+
+class ArtViT(VisionTransformer):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def loop_drop_tokens(self, x, indexes):
+        # print('applying masked_select')
+        # print('x ', x.shape)
+        # print('indexes ', indexes.shape)
+        x_no_cl, cls_token = x[:, 1:], x[:, 0:1]
+
+        # loop for now: change later to be batched
+        x_selected = []
+        for sample, i in zip(x_no_cl, indexes):
+            i = (i == True).nonzero(as_tuple=True)[0]
+            # print('indexes ', i)
+            # print('indexes shape', i.shape)
+            tmp = torch.index_select(sample, dim=0, index=i)
+            # print('tmp ', tmp.shape)
+            x_selected.append(tmp)
+
+        x_selected = torch.stack(x_selected, dim=0)
+        # print('x dropped ', x_selected.shape)
+        # print('cls_token ', cls_token.shape)
+        return torch.cat((cls_token, x_selected), dim=1)
+
+    def batch_drop_tokens(self, x, indexes):
+        x_no_cl, cls_token = x[:, 1:], x[:, 0:1]
+        shape = x_no_cl.shape
+
+        # reshape to temporarily remove batch
+        x_no_cl = torch.reshape(x_no_cl, shape=(-1, shape[-1]))
+        indexes = torch.reshape(indexes, shape=(-1,))
+        indexes = (indexes == True).nonzero(as_tuple=True)[0]
+
+        x_no_cl = torch.index_select(x_no_cl, dim=0, index=indexes)
+        x_no_cl = torch.reshape(x_no_cl, shape=(shape[0], -1, shape[-1]))
+        return torch.cat((cls_token, x_no_cl), dim=1)
+
+    def forward_features(self, x):
+        """
+        The forward pass of the ViT.
+
+        """
+        drop_tokens = True
+
+        if x.shape[1] == 4:
+            x, ablation_mask = x[:, :3], x[:, 3:4]
+
+        x = self.patch_embed(x)
+        x = self._pos_embed(x)
+
+        if drop_tokens:
+            ablation_mask_embedder = PatchEmbed(in_chans=1)
+            ones = ablation_mask_embedder(ablation_mask)
+            to_drop = torch.sum(ones, dim=2)
+            indexes = torch.gt(torch.where(to_drop > 1, 1, 0), 0)
+
+            check_i = indexes[0]
+            check_val = to_drop[0]
+            for i, s in zip(indexes, to_drop):
+                if not torch.equal(check_i, i):
+                    for ci, ei, val, cval in zip(check_i, i, s, check_val):
+                        print(f'{ci} with {cval} vs {ei} with {val}')
+                    sys.exit()
+
+            x = self.batch_drop_tokens(x, indexes)
+
+        x = self.blocks(x)
+        return self.norm(x)
 
 
 class PyTorchSmoothedViT(PyTorchClassifier):
@@ -36,8 +160,7 @@ class PyTorchSmoothedViT(PyTorchClassifier):
         """
         Create a smoothed ViT classifier.
 
-        :param model: PyTorch model. The output of the model can be logits, probabilities or anything else. Logits
-               output should be preferred where possible to ensure attack efficiency.
+        :param model: string specifying which ViT architecture to load
         :param loss: The loss function for which to compute gradients for training. The target label must be raw
                categorical, i.e. not converted to one-hot encoding.
         :param input_shape: The shape of one input instance.
@@ -60,6 +183,15 @@ class PyTorchSmoothedViT(PyTorchClassifier):
                be divided by the second one.
         :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
         """
+        import timm
+        from timm.models.vision_transformer import VisionTransformer, vit_small_patch16_224
+        timm.models.vision_transformer._create_vision_transformer = self.art_create_vision_transformer
+        model = vit_small_patch16_224()
+        model.head = torch.nn.Linear(model.head.in_features, nb_classes)
+
+        # TODO: enable users to pass in opt hyperparameters
+        optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9, weight_decay=0.0001)
+
         super().__init__(
             model=model,
             loss=loss,
@@ -84,6 +216,46 @@ class PyTorchSmoothedViT(PyTorchClassifier):
                                      channels_first=True,
                                      row_ablation_mode=False)
 
+    @staticmethod
+    def art_create_vision_transformer(variant: str, pretrained: bool = False, **kwargs) -> ArtViT:
+        """
+        Creates a vision transformer using ArtViT which controls the forward pass of the model
+
+        :param variant: The name of the vision transformer to load
+        :param pretrained: If to load pre-trained weights
+        """
+        from timm.models._builder import build_model_with_cfg
+        from timm.models.vision_transformer import checkpoint_filter_fn
+        return build_model_with_cfg(
+            ArtViT, variant, pretrained,
+            pretrained_filter_fn=checkpoint_filter_fn,
+            **kwargs,
+        )
+
+    def update_batchnorm(self, x: np.ndarray, batch_size: int) -> None:
+        """
+        Method to update the batchnorm of a ViT on small datasets
+        :param x:
+        :param batch_size: Size of batches.
+        """
+        import random
+        import time
+
+        self.model.train()
+
+        ind = np.arange(len(x))
+        num_batch = int(len(x) / float(batch_size))
+
+        print('updating batchnorm')
+        s = time.time()
+        with torch.no_grad():
+            for _ in tqdm(range(1)):
+                for m in tqdm(range(num_batch)):
+                    i_batch = torch.from_numpy(np.copy(x[ind[m * batch_size: (m + 1) * batch_size]])).to(device)
+                    i_batch = self.ablator.forward(i_batch, column_pos=random.randint(0, x.shape[3]))
+                    _ = self.model(i_batch)
+        print('total time taken is ', time.time() - s)
+
     def fit(  # pylint: disable=W0221
             self,
             x: np.ndarray,
@@ -93,7 +265,8 @@ class PyTorchSmoothedViT(PyTorchClassifier):
             training_mode: bool = True,
             drop_last: bool = False,
             scheduler: Optional[Any] = None,
-            verbose=True,
+            update_batchnorm: bool = True,
+            verbose: bool = True,
             **kwargs,
     ) -> None:
         """
@@ -108,6 +281,8 @@ class PyTorchSmoothedViT(PyTorchClassifier):
                           the batch size. If ``False`` and the size of dataset is not divisible by the batch size, then
                           the last batch will be smaller. (default: ``False``)
         :param scheduler: Learning rate scheduler to run at the start of every epoch.
+        :param update_batchnorm: ...
+        :param verbose: ...
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
         """
@@ -124,6 +299,9 @@ class PyTorchSmoothedViT(PyTorchClassifier):
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
 
+        if update_batchnorm:
+            self.update_batchnorm(x_preprocessed, batch_size)
+
         # Check label shape
         y_preprocessed = self.reduce_labels(y_preprocessed)
 
@@ -138,6 +316,9 @@ class PyTorchSmoothedViT(PyTorchClassifier):
         for _ in tqdm(range(nb_epochs)):
             # Shuffle the examples
             random.shuffle(ind)
+            epoch_acc = []
+            epoch_loss = []
+
             pbar = tqdm(range(num_batch), disable=not verbose)
 
             # Train for one epoch
@@ -153,7 +334,7 @@ class PyTorchSmoothedViT(PyTorchClassifier):
 
                 # Perform prediction
                 try:
-                    model_outputs = self._model(i_batch)
+                    model_outputs = self.model(i_batch)
                 except ValueError as err:
                     if "Expected more than 1 value per channel when training" in str(err):
                         logger.exception(
@@ -162,7 +343,11 @@ class PyTorchSmoothedViT(PyTorchClassifier):
                         )
                     raise err
                 # Form the loss function
-                loss = self._loss(model_outputs[-1], o_batch)
+                # print('the model outputs are ', model_outputs.shape)
+                loss = self.loss(model_outputs, o_batch)
+                acc = self.get_accuracy(preds=model_outputs, labels=o_batch)
+                epoch_acc.append(acc)
+                epoch_loss.append(loss)
 
                 # Do training
                 if self._use_amp:  # pragma: no cover
@@ -178,8 +363,68 @@ class PyTorchSmoothedViT(PyTorchClassifier):
 
                 if verbose:
                     pbar.set_description(
-                        f"Loss {loss}:.2f"
+                        f"Loss {torch.mean(torch.stack(epoch_loss)):.2f}"
+                        f" Acc {np.mean(epoch_acc):.2f}"
                     )
 
             if scheduler is not None:
                 scheduler.step()
+
+    def certify(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128):
+        # set to eval
+        # self._model.train(mode=training_mode)
+        drop_last = True
+        verbose = True
+        y = check_and_transform_label_format(y, nb_classes=self.nb_classes)
+
+        # Apply preprocessing
+        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
+
+        # Check label shape
+        y_preprocessed = self.reduce_labels(y_preprocessed)
+
+        num_batch = len(x_preprocessed) / float(batch_size)
+        if drop_last:
+            num_batch = int(np.floor(num_batch))
+        else:
+            num_batch = int(np.ceil(num_batch))
+        pbar = tqdm(range(num_batch), disable=not verbose)
+
+        with torch.no_grad():
+            for m in pbar:
+                i_batch = torch.from_numpy(np.copy(x_preprocessed[m * batch_size: (m + 1) * batch_size])).to(self._device)
+                o_batch = torch.from_numpy(y_preprocessed[m * batch_size: (m + 1) * batch_size]).to(self._device)
+                predictions = []
+                pred_counts = torch.zeros((batch_size, 10)).to(self._device)
+                for pos in range(0, 30):
+                    # print(i_batch.shape)
+                    ablated_batch = self.ablator.forward(i_batch, column_pos=pos)
+
+                    # Perform prediction
+                    model_outputs = self.model(ablated_batch)
+                    # print(model_outputs.argmax(dim=-1))
+                    # print(model_outputs.argmax(dim=-1).shape)
+                    pred_counts[np.arange(0, batch_size), model_outputs.argmax(dim=-1)] += 1
+
+                    predictions.append(model_outputs)
+
+                cert, cert_and_correct = self.ablator.certify(pred_counts, size_to_certify=5, label=o_batch)
+                print(torch.sum(cert))
+                print(torch.sum(cert_and_correct) / batch_size)
+
+    @staticmethod
+    def get_accuracy(preds: Union[np.ndarray, "torch.Tensor"], labels: Union[np.ndarray, "torch.Tensor"]) -> np.ndarray:
+        """
+        Helper function to print out the accuracy during training
+
+        :param preds: (concrete) model predictions
+        :param labels: ground truth labels (not one hot)
+        :return: prediction accuracy
+        """
+        if isinstance(preds, torch.Tensor):
+            preds = preds.detach().cpu().numpy()
+
+        if isinstance(labels, torch.Tensor):
+            labels = labels.detach().cpu().numpy()
+
+        return np.sum(np.argmax(preds, axis=1) == labels) / len(labels)
