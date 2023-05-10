@@ -53,6 +53,7 @@ class ColumnAblator(torch.nn.Module):
         second_class_counts, second_predicted_class = predictions.kthvalue(num_of_classes - 1, dim=1)
 
         cert = (top_class_counts - second_class_counts) > 2 * (size_to_certify + self.ablation_size - 1)
-        cert_and_correct = cert & label == top_predicted_class
 
-        return cert, cert_and_correct
+        cert_and_correct = cert & (label == top_predicted_class)
+
+        return cert, cert_and_correct, top_predicted_class

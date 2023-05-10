@@ -1,11 +1,6 @@
 import torch
-import torch.nn as nn
 
-from timm.models.vision_transformer import VisionTransformer
-from timm.models.vision_transformer import checkpoint_filter_fn
-from functools import partial
 from art.estimators.certification.smoothed_vision_transformers import PyTorchSmoothedViT, ArtViT
-import copy
 import numpy as np
 from torchvision import datasets
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -44,8 +39,11 @@ art_model = PyTorchSmoothedViT(model='vit_small_patch16_224',
                                ablation_type='column',
                                ablation_size=4,
                                threshold=0.01,
-                               logits=True)
+                               logits=True,
+                               load_pretrained=True)
 
 scheduler = torch.optim.lr_scheduler.MultiStepLR(art_model.optimizer, milestones=[10, 20], gamma=0.1)
-art_model.fit(x_train, y_train, update_batchnorm=True, scheduler=scheduler)
-art_model.certify(x_train, y_train)
+art_model.fit(x_train, y_train, nb_epochs=30, update_batchnorm=True, scheduler=scheduler)
+torch.save(art_model.model.state_dict(), 'trained.pt')
+art_model.model.load_state_dict(torch.load('trained.pt'))
+art_model.eval_and_certify(x_train, y_train)
