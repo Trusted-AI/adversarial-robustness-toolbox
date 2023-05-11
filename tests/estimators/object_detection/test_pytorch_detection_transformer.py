@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 @pytest.mark.skip_framework("tensorflow", "tensorflow2v1", "keras", "kerastf", "mxnet", "non_dl_frameworks")
 def get_pytorch_detr():
     from art.utils import load_dataset
-    from art.estimators.object_detection.pytorch_detr import PyTorchDetectionTransformer
+    from art.estimators.object_detection.pytorch_detection_transformer import PyTorchDetectionTransformer
 
     MEAN = [0.485, 0.456, 0.406]
     STD = [0.229, 0.224, 0.225]
@@ -191,7 +191,7 @@ def test_errors():
 
     from torch import hub
 
-    from art.estimators.object_detection.pytorch_detr import PyTorchDetectionTransformer
+    from art.estimators.object_detection.pytorch_detection_transformer import PyTorchDetectionTransformer
 
     model = hub.load("facebookresearch/detr", "detr_resnet50", pretrained=True)
 
