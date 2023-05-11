@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2023
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -18,7 +18,7 @@
 """
 This module implements the task specific estimator for DEtection TRansformer (DETR) in PyTorch.
 
- Paper link: https://arxiv.org/abs/2005.12872
+ | Paper link: https://arxiv.org/abs/2005.12872
 """
 import logging
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Union
@@ -39,7 +39,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def box_cxcywh_to_xyxy(x):
+def box_cxcywh_to_xyxy(x: "torch.Tensor"):
     """
     From DETR source: https://github.com/facebookresearch/detr
     (detr/util/box_ops.py)
@@ -51,7 +51,7 @@ def box_cxcywh_to_xyxy(x):
     return torch.stack(box, dim=1)
 
 
-def box_xyxy_to_cxcywh(x):
+def box_xyxy_to_cxcywh(x: "torch.Tensor"):
     """
     From DETR source: https://github.com/facebookresearch/detr
     (detr/util/box_ops.py)
@@ -63,7 +63,7 @@ def box_xyxy_to_cxcywh(x):
     return torch.stack(box, dim=-1)
 
 
-def rescale_bboxes(out_bbox, size):
+def rescale_bboxes(out_bbox: "torch.Tensor", size: Tuple[int, int]):
     """
     From DETR source: https://github.com/facebookresearch/detr
     (inference notebook)
@@ -76,7 +76,7 @@ def rescale_bboxes(out_bbox, size):
     return box
 
 
-def revert_rescale_bboxes(out_bbox, size):
+def revert_rescale_bboxes(out_bbox: "torch.Tensor", size: Tuple[int, int]):
     """
     Adapted rom DETR source: https://github.com/facebookresearch/detr
     (inference notebook)
@@ -90,7 +90,7 @@ def revert_rescale_bboxes(out_bbox, size):
     return box
 
 
-def box_iou(boxes1, boxes2):
+def box_iou(boxes1: "torch.Tensor", boxes2: "torch.Tensor"):
     """
     From DETR source: https://github.com/facebookresearch/detr
     (detr/util/box_ops.py)
@@ -113,7 +113,7 @@ def box_iou(boxes1, boxes2):
     return iou, union
 
 
-def generalized_box_iou(boxes1, boxes2):
+def generalized_box_iou(boxes1: "torch.Tensor", boxes2: "torch.Tensor"):
     """
     From DETR source: https://github.com/facebookresearch/detr
     (detr/util/box_ops.py)
