@@ -12,7 +12,7 @@ pydub==0.25.1
 resampy==0.4.2
 ffmpeg-python==0.2.0
 cma==3.3.0
-pandas==1.5.3
+pandas==2.0.1
 librosa==0.10.0.post2
 numba~=0.56.4
 opencv-python
@@ -42,7 +42,7 @@ xgboost==1.7.4
 kornia~=0.6.10
 tensorboardX==2.6
 lief==0.12.3
-jax[cpu]==0.4.6
+jax[cpu]==0.4.8
 
 # Lingvo ASR dependencies
 # supported versions: (lingvo==0.6.4 with tensorflow-gpu==2.1.0)
@@ -51,7 +51,7 @@ jax[cpu]==0.4.6
 # lingvo==0.6.4
 
 # other
-pytest~=7.2.2
+pytest~=7.3.1
 pytest-flake8~=1.1.1
 flake8~=4.0.1
 pytest-mock~=3.10.0
