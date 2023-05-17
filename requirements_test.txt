@@ -34,6 +34,9 @@ torch==1.13.1
 torchaudio==0.13.1+cpu
 torchvision==0.14.1+cpu
 
+# PyTorch image transformers
+timm @ git+https://github.com/huggingface/pytorch-image-models.git@9fcc01930aae865ec9ef8aae8849ca2ba241f816
+
 catboost==1.1.1
 GPy==1.10.0
 lightgbm==3.3.5

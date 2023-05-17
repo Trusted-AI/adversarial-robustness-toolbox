@@ -50,23 +50,35 @@ class PatchEmbed(torch.nn.Module):
     SOFTWARE.
 
     """
-    def __init__(self, img_size=224, patch_size=16, in_chans=3, embed_dim=768):
-        super().__init__()
-        num_patches = (img_size // patch_size) * (img_size // patch_size)
-        self.img_size = img_size
-        self.patch_size = patch_size
-        self.num_patches = num_patches
-        self.in_chans = in_chans
-        self.embed_dim = embed_dim
+    def __init__(self, patch_size=16, in_channels=1, embed_dim=768):
+        """
+        Specifies the configuration for the convolutional layer.
+        :param patch_size: The patch size used by the ViT
+        :param in_chans: Number of input channels.
+        :param embed_dim: The embedding dimension used by the ViT
 
-    def create(self, patch_size=None, embed_dim=None, **kwargs):
+        """
+        super().__init__()
+        self.patch_size = patch_size
+        self.in_channels = in_channels
+        self.embed_dim = embed_dim
+        self.proj: Optional[torch.nn.Conv2d] = None
+
+    def create(self, patch_size=None, embed_dim=None, **kwargs) -> None:
+        """
+        Creates a convolution that mimics the embedding layer to be used for the ablation mask to
+        track where the image was ablated.
+
+        :param patch_size: The patch size used by the ViT
+        :param embed_dim: The embedding dimension used by the ViT
+        """
 
         if patch_size is not None:
             self.patch_size = patch_size
         if embed_dim is not None:
             self.embed_dim = embed_dim
 
-        self.proj = torch.nn.Conv2d(in_channels=1,
+        self.proj = torch.nn.Conv2d(in_channels=self.in_channels,
                                     out_channels=self.embed_dim,
                                     kernel_size=self.patch_size,
                                     stride=self.patch_size,
@@ -75,7 +87,14 @@ class PatchEmbed(torch.nn.Module):
         w_shape = self.proj.weight.shape
         self.proj.weight = torch.nn.Parameter(torch.ones(w_shape).to(device))
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Forward pass through the embedder. We are simply tracking the positions of the ablation mask so no gradients
+        are required.
+
+        :param x: Input data corresponding to the ablation mask
+        :return: The embedded input
+        """
         with torch.no_grad():
             x = self.proj(x).flatten(2).transpose(1, 2)
         return x
@@ -85,19 +104,20 @@ class ArtViT(VisionTransformer):
 
     # Make as a class attribute to avoid being included in the
     # state dictionaries of the ViT Model.
-    ablation_mask_embedder = PatchEmbed(in_chans=1)
+    ablation_mask_embedder = PatchEmbed(in_channels=1)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.ablation_mask_embedder.create(**kwargs)
 
     @staticmethod
-    def drop_tokens(x, indexes):
+    def drop_tokens(x: torch.Tensor, indexes) -> torch.Tensor:
         """
         Drops the tokens which correspond to fully masked inputs
+
         :param x: Input data in .... format
         :param indexes: positions to be ablated
-        return
+        :return: Input with tokens dropped where the input was fully ablated.
         """
         x_no_cl, cls_token = x[:, 1:], x[:, 0:1]
         shape = x_no_cl.shape
@@ -111,7 +131,7 @@ class ArtViT(VisionTransformer):
         x_no_cl = torch.reshape(x_no_cl, shape=(shape[0], -1, shape[-1]))
         return torch.cat((cls_token, x_no_cl), dim=1)
 
-    def forward_features(self, x):
+    def forward_features(self, x: torch.Tensor) -> torch.Tensor:
         """
         The forward pass of the ViT.
         #TODO! check for 1 channel inputs!
@@ -199,9 +219,11 @@ class PyTorchSmoothedViT(PyTorchClassifier):
         if type(model) is str:
             model = timm.create_model(model, pretrained=load_pretrained)
             model.head = torch.nn.Linear(model.head.in_features, nb_classes)
-            # TODO: enable users to pass in opt hyperparameters
-            # optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9, weight_decay=0.0001)
-            optimizer = optimizer(model.parameters(), **optimizer_params)
+            if optimizer is not None:
+                if optimizer_params is not None:
+                    optimizer = optimizer(model.parameters(), **optimizer_params)
+                else:
+                    raise ValueError("If providing an optimiser please also supply its parameters")
 
         else:
             pretrained_cfg = model.pretrained_cfg
@@ -222,6 +244,13 @@ class PyTorchSmoothedViT(PyTorchClassifier):
                 else:
                     raise ValueError("Optimiser not supported for conversion")
                 converted_optimizer.load_state_dict(opt_state_dict)
+
+        self.to_reshape = False
+        if model.default_cfg['input_size'] != input_shape:
+            print(f"ViT expects input shape of {model.default_cfg['input_size']}, "
+                  f"but {input_shape} specified as the input shape. "
+                  f"The input will be rescaled to {model.default_cfg['input_size']}")
+            self.to_reshape = True
 
         super().__init__(
             model=model,
@@ -244,7 +273,9 @@ class PyTorchSmoothedViT(PyTorchClassifier):
         print(self.model)
         self.ablator = ColumnAblator(ablation_size=ablation_size,
                                      channels_first=True,
-                                     row_ablation_mode=False)
+                                     to_reshape=self.to_reshape,
+                                     original_shape=input_shape,
+                                     output_shape=model.default_cfg['input_size'])
 
     @staticmethod
     def art_create_vision_transformer(variant: str, pretrained: bool = False, **kwargs) -> ArtViT:
@@ -264,14 +295,14 @@ class PyTorchSmoothedViT(PyTorchClassifier):
             **kwargs,
         )
 
-    def update_batchnorm(self, x: np.ndarray, batch_size: int) -> None:
+    def update_batchnorm(self, x: np.ndarray, batch_size: int, nb_epochs: int = 1) -> None:
         """
         Method to update the batchnorm of a ViT on small datasets
-        :param x:
+        :param x: Training data.
         :param batch_size: Size of batches.
+        :param nb_epochs: How many times to forward pass over the input data
         """
         import random
-        import time
 
         self.model.train()
 
@@ -279,14 +310,12 @@ class PyTorchSmoothedViT(PyTorchClassifier):
         num_batch = int(len(x) / float(batch_size))
 
         print('updating batchnorm')
-        s = time.time()
         with torch.no_grad():
-            for _ in tqdm(range(1)):
+            for _ in tqdm(range(nb_epochs)):
                 for m in tqdm(range(num_batch)):
                     i_batch = torch.from_numpy(np.copy(x[ind[m * batch_size: (m + 1) * batch_size]])).to(device)
                     i_batch = self.ablator.forward(i_batch, column_pos=random.randint(0, x.shape[3]))
                     _ = self.model(i_batch)
-        print('total time taken is ', time.time() - s)
 
     def fit(  # pylint: disable=W0221
             self,
