@@ -28,9 +28,6 @@ from typing import Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import trange
-import torch
-from torch import nn
-import torch.nn.functional as F
 
 from art.defences.trainer.adversarial_trainer_trades import AdversarialTrainerTRADES
 
@@ -49,7 +46,6 @@ class AdversarialTrainerTRADESPyTorch(AdversarialTrainerTRADES):
     Class performing adversarial training following TRADES protocol.
 
     | Paper link: https://proceedings.mlr.press/v97/zhang19p.html
-
     """
 
     def __init__(self, classifier: "PyTorchClassifier", attack: "EvasionAttack", beta: float):
@@ -58,8 +54,7 @@ class AdversarialTrainerTRADESPyTorch(AdversarialTrainerTRADES):
 
         :param classifier: Model to train adversarially.
         :param attack: attack to use for data augmentation in adversarial training
-        :param beta: The scaling factor controlling tradeoff between clean loss and
-                    adversarial loss
+        :param beta: The scaling factor controlling tradeoff between clean loss and adversarial loss
         """
         super().__init__(classifier, attack, beta)
         self._classifier: "PyTorchClassifier"
@@ -89,6 +84,8 @@ class AdversarialTrainerTRADESPyTorch(AdversarialTrainerTRADES):
         :param kwargs: Dictionary of framework-specific arguments. These will be passed as such to the `fit` function of
                                   the target classifier.
         """
+        import torch
+
         logger.info("Performing adversarial training with TRADES protocol")
         # pylint: disable=W0212
         if (scheduler is not None) and (
@@ -165,6 +162,8 @@ class AdversarialTrainerTRADESPyTorch(AdversarialTrainerTRADES):
         :param kwargs: Dictionary of framework-specific arguments. These will be passed as such to the `fit` function of
                                   the target classifier.
         """
+        import torch
+
         logger.info("Performing adversarial training with TRADES protocol")
 
         # pylint: disable=W0212
@@ -219,7 +218,11 @@ class AdversarialTrainerTRADESPyTorch(AdversarialTrainerTRADES):
 
         :param x_batch: batch of x.
         :param y_batch: batch of y.
+        :return: tuple containing batch data loss, batch data accuracy and number of samples in the batch
         """
+        import torch
+        from torch import nn
+        import torch.nn.functional as F
 
         if self._classifier._optimizer is None:  # pylint: disable=W0212
             raise ValueError("Optimizer of classifier is currently None, but is required for adversarial training.")

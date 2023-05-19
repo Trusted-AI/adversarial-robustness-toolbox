@@ -116,9 +116,7 @@ dataset = CIFAR10_dataset(x_train, y_train, transform=transform)
 dataloader = DataLoader(dataset, batch_size=128, shuffle=True)
 
 # Step 2: create the PyTorch model
-# model = ResNet18()
-# For running on GPU replace the model with the
-model = ResNet18().cuda()
+model = ResNet18()
 
 opt = torch.optim.SGD(model.parameters(), lr=0.1, momentum=0.9, weight_decay=2e-4)
 lr_scheduler = MultiStepLR(opt, milestones=[74, 89], gamma=0.1)
@@ -129,7 +127,7 @@ criterion = nn.CrossEntropyLoss()
 
 classifier = PyTorchClassifier(
     model=model,
-    clip_values=(0.0, 1.0),
+    clip_values=(min_pixel_value, max_pixel_value),
     loss=criterion,
     optimizer=opt,
     input_shape=(3, 32, 32),

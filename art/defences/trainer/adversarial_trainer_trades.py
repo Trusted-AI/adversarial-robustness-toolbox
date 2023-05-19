@@ -20,8 +20,9 @@ This module implements adversarial training with TRADES protocol.
 
 | Paper link: https://proceedings.mlr.press/v97/zhang19p.html
 
-| It was noted that this protocol uses a modified loss. Consequently, framework specific implementations
-    are being provided in ART.
+| It was noted that this protocol uses a modified loss called TRADES loss which is a combination of cross entropy
+loss on clean data and KL divergence loss between clean data and adversarial data. Consequently, framework specific
+implementations are being provided in ART.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
