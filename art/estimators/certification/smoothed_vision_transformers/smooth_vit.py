@@ -1,3 +1,20 @@
+# MIT License
+#
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2023
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+# documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+# persons to whom the Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+# Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+# WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 """
 This module implements Certified Patch Robustness via Smoothed Vision Transformers
 
@@ -8,7 +25,7 @@ This module implements Certified Patch Robustness via Smoothed Vision Transforme
 """
 import torch
 
-from typing import List, Optional, Tuple, Union, Any, TYPE_CHECKING
+from typing import Optional, Tuple
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -18,6 +35,7 @@ class UpSampler(torch.nn.Module):
     Resizes datasets to the specified size.
     Usually for upscaling datasets like CIFAR to Imagenet format
     """
+
     def __init__(self, input_size: int, final_size: int) -> None:
         """
         Creates an upsampler to make the supplied data match the pre-trained ViT format
@@ -25,7 +43,7 @@ class UpSampler(torch.nn.Module):
         :param final_size: Desired final size
         """
         super(UpSampler, self).__init__()
-        self.upsample = torch.nn.Upsample(scale_factor=final_size/input_size)
+        self.upsample = torch.nn.Upsample(scale_factor=final_size / input_size)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -41,9 +59,15 @@ class ColumnAblator(torch.nn.Module):
     """
     Pure Pytorch implementation of stripe/column ablation.
     """
-    def __init__(self, ablation_size: int, channels_first: bool,
-                 to_reshape: bool = False, original_shape: Optional[Tuple] = None,
-                 output_shape: Optional[Tuple] = None):
+
+    def __init__(
+        self,
+        ablation_size: int,
+        channels_first: bool,
+        to_reshape: bool = False,
+        original_shape: Optional[Tuple] = None,
+        output_shape: Optional[Tuple] = None,
+    ):
         """
         Creates a column ablator
 
@@ -57,7 +81,8 @@ class ColumnAblator(torch.nn.Module):
         self.ablation_size = ablation_size
         self.channels_first = channels_first
         self.to_reshape = to_reshape
-        self.upsample = UpSampler(input_size=original_shape[1], final_size=output_shape[1])
+        if original_shape is not None and output_shape is not None:
+            self.upsample = UpSampler(input_size=original_shape[1], final_size=output_shape[1])
 
     def ablate(self, x: torch.Tensor, column_pos: int) -> torch.Tensor:
         """
@@ -69,10 +94,10 @@ class ColumnAblator(torch.nn.Module):
         """
         k = self.ablation_size
         if column_pos + k > x.shape[-1]:
-            x[:, :, :, (column_pos + k) % x.shape[-1]:column_pos] = 0.0
+            x[:, :, :, (column_pos + k) % x.shape[-1] : column_pos] = 0.0
         else:
             x[:, :, :, :column_pos] = 0.0
-            x[:, :, :, column_pos + k:] = 0.0
+            x[:, :, :, column_pos + k :] = 0.0
         return x
 
     def forward(self, x: torch.Tensor, column_pos: int) -> torch.Tensor:
@@ -91,7 +116,9 @@ class ColumnAblator(torch.nn.Module):
             x = self.upsample(x)
         return x
 
-    def certify(self, pred_counts: torch.Tensor, size_to_certify: int, label: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def certify(
+        self, pred_counts: torch.Tensor, size_to_certify: int, label: torch.Tensor
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Performs certification of the predictions
 
