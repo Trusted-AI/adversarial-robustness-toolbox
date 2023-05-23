@@ -32,11 +32,11 @@ from typing import Optional, Tuple, TYPE_CHECKING
 import numpy as np
 
 from art.defences.trainer.trainer import Trainer
+from art.attacks.attack import EvasionAttack
+from art.data_generators import DataGenerator
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
-    from art.attacks.attack import EvasionAttack
-    from art.data_generators import DataGenerator
 
 
 class AdversarialTrainerTRADES(Trainer, abc.ABC):
@@ -50,7 +50,7 @@ class AdversarialTrainerTRADES(Trainer, abc.ABC):
     def __init__(
         self,
         classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
-        attack: "EvasionAttack",
+        attack: EvasionAttack,
         beta: float = 6.0,
     ):
         """
@@ -87,7 +87,7 @@ class AdversarialTrainerTRADES(Trainer, abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs):
+    def fit_generator(self, generator: DataGenerator, nb_epochs: int = 20, **kwargs):
         """
         Train a model adversarially using a data generator.
         See class documentation for more information on the exact procedure.

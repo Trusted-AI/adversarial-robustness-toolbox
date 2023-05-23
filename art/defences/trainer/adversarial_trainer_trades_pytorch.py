@@ -30,12 +30,12 @@ import numpy as np
 from tqdm.auto import trange
 
 from art.defences.trainer.adversarial_trainer_trades import AdversarialTrainerTRADES
-
+from art.estimators.classification.pytorch import PyTorchClassifier
+from art.data_generators import DataGenerator
+from art.attacks.attack import EvasionAttack
 
 if TYPE_CHECKING:
-    from art.data_generators import DataGenerator
-    from art.attacks.attack import EvasionAttack
-    from art.estimators.classification.pytorch import PyTorchClassifier
+    import torch
 
 logger = logging.getLogger(__name__)
 EPS = 1e-8
@@ -48,7 +48,7 @@ class AdversarialTrainerTRADESPyTorch(AdversarialTrainerTRADES):
     | Paper link: https://proceedings.mlr.press/v97/zhang19p.html
     """
 
-    def __init__(self, classifier: "PyTorchClassifier", attack: "EvasionAttack", beta: float):
+    def __init__(self, classifier: PyTorchClassifier, attack: EvasionAttack, beta: float):
         """
         Create an :class:`.AdversarialTrainerTRADESPyTorch` instance.
 
@@ -57,8 +57,8 @@ class AdversarialTrainerTRADESPyTorch(AdversarialTrainerTRADES):
         :param beta: The scaling factor controlling tradeoff between clean loss and adversarial loss
         """
         super().__init__(classifier, attack, beta)
-        self._classifier: "PyTorchClassifier"
-        self._attack: "EvasionAttack"
+        self._classifier: PyTorchClassifier
+        self._attack: EvasionAttack
         self._beta: float
 
     def fit(
@@ -147,7 +147,7 @@ class AdversarialTrainerTRADESPyTorch(AdversarialTrainerTRADES):
 
     def fit_generator(
         self,
-        generator: "DataGenerator",
+        generator: DataGenerator,
         nb_epochs: int = 20,
         scheduler: "torch.optim.lr_scheduler._LRScheduler" = None,
         **kwargs
