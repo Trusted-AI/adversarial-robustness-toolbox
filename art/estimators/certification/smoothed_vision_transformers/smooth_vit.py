@@ -23,9 +23,10 @@ This module implements Certified Patch Robustness via Smoothed Vision Transforme
 
 | Paper link Arxiv version (more detail): https://arxiv.org/pdf/2110.07719.pdf
 """
-import torch
 
 from typing import Optional, Tuple
+
+import torch
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -42,7 +43,7 @@ class UpSampler(torch.nn.Module):
         :param input_size: Size of the current input data
         :param final_size: Desired final size
         """
-        super(UpSampler, self).__init__()
+        super().__init__()
         self.upsample = torch.nn.Upsample(scale_factor=final_size / input_size)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -125,14 +126,15 @@ class ColumnAblator(torch.nn.Module):
         :param pred_counts: The model predictions over the ablated data.
         :param size_to_certify: The patch size we wish to check certification against
         :param label: The ground truth labels
-        :return: A tuple consisting of: the certified predictions, the predictions which were certified and also correct,
-        and the most predicted class across the different ablations on the input
+        :return: A tuple consisting of: the certified predictions,
+                 the predictions which were certified and also correct,
+                 and the most predicted class across the different ablations on the input.
         """
 
         num_of_classes = pred_counts.shape[-1]
 
         top_class_counts, top_predicted_class = pred_counts.kthvalue(num_of_classes, dim=1)
-        second_class_counts, second_predicted_class = pred_counts.kthvalue(num_of_classes - 1, dim=1)
+        second_class_counts, _ = pred_counts.kthvalue(num_of_classes - 1, dim=1)
 
         cert = (top_class_counts - second_class_counts) > 2 * (size_to_certify + self.ablation_size - 1)
 

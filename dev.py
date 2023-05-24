@@ -1,9 +1,11 @@
 import torch
 import ssl
 ssl._create_default_https_context = ssl._create_unverified_context
-from art.estimators.certification.smoothed_vision_transformers import PyTorchSmoothedViT, ArtViT
+from art.estimators.certification.smoothed_vision_transformers import PyTorchSmoothedViT
 import numpy as np
 from torchvision import datasets
+from torchvision import transforms
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
@@ -39,13 +41,18 @@ art_model = PyTorchSmoothedViT(model='vit_small_patch16_224',
                                optimizer_params={"lr": 0.01},
                                input_shape=(3, 32, 32),
                                nb_classes=10,
-                               ablation_type='column',
                                ablation_size=4,
-                               threshold=0.01,
-                               load_pretrained=True)
+                               replace_last_layer=True,
+                               load_pretrained=True,
+                               )
 
 scheduler = torch.optim.lr_scheduler.MultiStepLR(art_model.optimizer, milestones=[10, 20], gamma=0.1)
-# art_model.fit(x_train, y_train, nb_epochs=30, update_batchnorm=True, scheduler=scheduler)
+art_model.fit(x_train, y_train,
+              nb_epochs=30,
+              update_batchnorm=True,
+              scheduler=scheduler,
+              transform=transforms.Compose([transforms.RandomHorizontalFlip()]))
+
 # torch.save(art_model.model.state_dict(), 'trained.pt')
 # art_model.model.load_state_dict(torch.load('trained.pt'))
 art_model.eval_and_certify(x_train, y_train)
