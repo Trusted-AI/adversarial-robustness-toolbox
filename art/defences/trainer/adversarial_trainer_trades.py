@@ -57,7 +57,8 @@ class AdversarialTrainerTRADES(Trainer, abc.ABC):
         Create an :class:`.AdversarialTrainerTRADES` instance.
 
         :param classifier: Model to train adversarially.
-        :param eps: Maximum perturbation that the attacker can introduce.
+        :param attack: attack to use for data augmentation in adversarial training
+        :param beta: The scaling factor controlling tradeoff between clean loss and adversarial loss
         """
         self._attack = attack
         self._beta = beta
