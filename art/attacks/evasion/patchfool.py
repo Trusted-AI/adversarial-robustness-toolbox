@@ -20,7 +20,7 @@ This module implements the Patch-Fool attack in PyTorch.
 
 | Paper link: https://arxiv.org/abs/2203.08392
 """
-from typing import TYPE_CHECKING, Optional, Union
+from typing import Optional, Union
 
 import numpy as np
 
@@ -73,7 +73,7 @@ class PatchFool(EvasionAttack):
         self.random_start = random_start
         self._check_params()
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
@@ -110,12 +110,12 @@ class PatchFool(EvasionAttack):
         x = x.to(self.estimator.device)
         y = y.to(self.estimator.device)
 
-        p = self._get_patch_index(x, layer=self.patch_layer)
+        patches = self._get_patch_index(x, layer=self.patch_layer)
 
         patch_size = self.estimator.patch_size
         mask = torch.zeros(x.shape).to(self.estimator.device)
 
-        for n, patch_idx in enumerate(p):
+        for n, patch_idx in enumerate(patches):
             row = (patch_idx // (x.shape[2] // patch_size)) * patch_size
             col = (patch_idx % (x.shape[2] // patch_size)) * patch_size
             mask[n, :, row : row + patch_size, col : col + patch_size] = 1
@@ -136,7 +136,7 @@ class PatchFool(EvasionAttack):
         for i_max_iter in range(self.max_iter):
             optim.zero_grad()
 
-            loss_att = self._get_attention_loss(x_adv, p)
+            loss_att = self._get_attention_loss(x_adv, patches)
             loss_att_batch = torch.sum(loss_att, dim=1)
 
             model_outputs, _ = self.estimator._predict_framework(x_adv)

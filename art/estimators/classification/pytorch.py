@@ -1263,7 +1263,6 @@ class PyTorchClassifierViT(PyTorchClassifier):
                be divided by the second one.
         :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
         """
-        import torch
 
         super().__init__(
             model=model,
@@ -1284,12 +1283,19 @@ class PyTorchClassifierViT(PyTorchClassifier):
 
     @property
     def patch_size(self):
+        """
+        TODO
+        """
         return self.model.patch_size
 
-    def get_attention_weights(self, x: Union[np.ndarray, "torch.Tensor"], batch_size: int = 128):
+    def get_attention_weights(self, x: Union[np.ndarray, "torch.Tensor"]) -> "torch.Tensor":
+        """
+        TODO
+        """
+
         import torch
         from torch import fx
-        from torchvision.models.feature_extraction import get_graph_node_names, create_feature_extractor
+        from torchvision.models.feature_extraction import create_feature_extractor
 
         graph: fx.Graph = fx.Tracer().trace(self.model)
         # 'need_weights' is set to False in the implementation
