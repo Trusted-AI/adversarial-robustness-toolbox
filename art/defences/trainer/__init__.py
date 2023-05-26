@@ -8,4 +8,6 @@ from art.defences.trainer.ibp_certified_trainer_pytorch import AdversarialTraine
 from art.defences.trainer.adversarial_trainer_madry_pgd import AdversarialTrainerMadryPGD
 from art.defences.trainer.adversarial_trainer_fbf import AdversarialTrainerFBF
 from art.defences.trainer.adversarial_trainer_fbf_pytorch import AdversarialTrainerFBFPyTorch
+from art.defences.trainer.adversarial_trainer_trades import AdversarialTrainerTRADES
+from art.defences.trainer.adversarial_trainer_trades_pytorch import AdversarialTrainerTRADESPyTorch
 from art.defences.trainer.dp_instahide_trainer import DPInstaHideTrainer
