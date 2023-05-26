@@ -125,8 +125,8 @@ def test_pytorch_training(art_warning, fix_get_mnist_data, fix_get_cifar10_data)
     """
     import torch
     try:
-        cifar_data = fix_get_cifar10_data[0][0:50]
-        cifar_labels = fix_get_cifar10_data[1][0:50]
+        cifar_data = fix_get_cifar10_data[0][:50]
+        cifar_labels = fix_get_cifar10_data[1][:50]
 
         art_model = PyTorchSmoothedViT(model='vit_small_patch16_224',
                                        loss=torch.nn.CrossEntropyLoss(),
@@ -134,10 +134,9 @@ def test_pytorch_training(art_warning, fix_get_mnist_data, fix_get_cifar10_data)
                                        optimizer_params={"lr": 0.01},
                                        input_shape=(3, 32, 32),
                                        nb_classes=10,
-                                       ablation_type='column',
                                        ablation_size=4,
-                                       threshold=0.01,
-                                       load_pretrained=True)
+                                       load_pretrained=True,
+                                       replace_last_layer=True)
 
         scheduler = torch.optim.lr_scheduler.MultiStepLR(art_model.optimizer, milestones=[1], gamma=0.1)
         art_model.fit(cifar_data, cifar_labels, nb_epochs=2, update_batchnorm=True, scheduler=scheduler)
@@ -149,10 +148,7 @@ def test_pytorch_training(art_warning, fix_get_mnist_data, fix_get_cifar10_data)
 @pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
 def test_certification_function(art_warning, fix_get_mnist_data, fix_get_cifar10_data):
     """
-    Check that the training loop for pytorch does not result in errors
-    """
-    """
-    Check that the ablation is being performed correctly
+    Check that ...
     """
     from art.estimators.certification.smoothed_vision_transformers.smooth_vit import ColumnAblator
     import torch
@@ -171,4 +167,3 @@ def test_certification_function(art_warning, fix_get_mnist_data, fix_get_cifar10
         assert torch.equal(cert_and_correct, torch.tensor([True, False, False]))
     except ARTTestException as e:
         art_warning(e)
-

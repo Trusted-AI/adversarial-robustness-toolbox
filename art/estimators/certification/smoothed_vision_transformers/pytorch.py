@@ -101,7 +101,7 @@ class PatchEmbed(torch.nn.Module):
 
         :param patch_size: The patch size used by the ViT
         :param embed_dim: The embedding dimension used by the ViT
-        :param  kwargs: Handles the remaining kwargs from the ViT configuration.
+        :param kwargs: Handles the remaining kwargs from the ViT configuration.
         """
 
         if patch_size is not None:
@@ -146,7 +146,7 @@ class ArtViT(VisionTransformer):
     def __init__(self, **kwargs):
         """
         Create a ArtViT instance
-        :param **kwargs: keyword arguments required to create the mask embedder.
+        :param kwargs: keyword arguments required to create the mask embedder.
         """
         self.to_drop_tokens = kwargs['drop_tokens']
         del kwargs['drop_tokens']
@@ -179,6 +179,7 @@ class ArtViT(VisionTransformer):
     def forward_features(self, x: torch.Tensor) -> torch.Tensor:
         """
         The forward pass of the ViT.
+
         :param x: Input data.
         :return: The input processed by the ViT backbone
         """
@@ -230,6 +231,7 @@ class PyTorchSmoothedViT(PyTorchClassifier):
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
         preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
         device_type: str = "gpu",
+        verbose: bool = True,
     ):
         """
         Create a smoothed ViT classifier.
@@ -276,7 +278,11 @@ class PyTorchSmoothedViT(PyTorchClassifier):
         elif isinstance(model, VisionTransformer):
             pretrained_cfg = model.pretrained_cfg
             supplied_state_dict = model.state_dict()
-            model = timm.create_model(pretrained_cfg["architecture"])
+            supported_models = self.get_models()
+            if pretrained_cfg["architecture"] not in supported_models:
+                raise ValueError('Architecture not supported. Use PyTorchSmoothedViT.get_models() '
+                                 'to get the supported model architectures.')
+            model = timm.create_model(pretrained_cfg["architecture"], drop_tokens=drop_tokens)
             model.load_state_dict(supplied_state_dict)
             if replace_last_layer:
                 model.head = torch.nn.Linear(model.head.in_features, nb_classes)
@@ -298,21 +304,21 @@ class PyTorchSmoothedViT(PyTorchClassifier):
                 converted_optimizer.load_state_dict(opt_state_dict)
 
         self.to_reshape = False
-        if isinstance(model, ArtViT):
+        if not isinstance(model, ArtViT):
+            raise ValueError("Vision transformer is not of ArtViT. Error occurred in ArtViT creation.")
 
-            if model.default_cfg['input_size'][0] != input_shape[0]:
-                raise ValueError(f'ViT requires {model.default_cfg["input_size"][0]} channel input,'
-                                 f' but {input_shape[0]} channels were provided.')
+        if model.default_cfg['input_size'][0] != input_shape[0]:
+            raise ValueError(f'ViT requires {model.default_cfg["input_size"][0]} channel input,'
+                             f' but {input_shape[0]} channels were provided.')
 
-            if model.default_cfg["input_size"] != input_shape:
+        if model.default_cfg["input_size"] != input_shape:
+            if verbose:
                 print(
                     f"ViT expects input shape of {model.default_cfg['input_size']}, "
                     f"but {input_shape} specified as the input shape. "
                     f"The input will be rescaled to {model.default_cfg['input_size']}"
                 )
-                self.to_reshape = True
-        else:
-            raise ValueError("Vision transformer is not of ArtViT. Error occurred in ArtViT creation.")
+            self.to_reshape = True
 
         if optimizer is None or isinstance(optimizer, torch.optim.Optimizer):
             super().__init__(
@@ -333,7 +339,9 @@ class PyTorchSmoothedViT(PyTorchClassifier):
 
         self.ablation_size = (ablation_size,)
 
-        print(self.model)
+        if verbose:
+            print(self.model)
+
         self.ablator = ColumnAblator(
             ablation_size=ablation_size,
             channels_first=True,
@@ -341,6 +349,71 @@ class PyTorchSmoothedViT(PyTorchClassifier):
             original_shape=input_shape,
             output_shape=model.default_cfg["input_size"],
         )
+
+    @classmethod
+    def get_models(cls, generate_from_null: bool = False) -> List[str]:
+        """
+        Return the supported model names to the user.
+
+        :param generate_from_null: If to re-check the creation of all the ViTs in timm from scratch.
+                                   Can be time-consuming.
+        :return: A list of compatible models
+        """
+        import timm
+
+        supported_models = ['vit_base_patch8_224',
+                            'vit_base_patch16_18x2_224', 'vit_base_patch16_224',
+                            'vit_base_patch16_224_miil', 'vit_base_patch16_384',
+                            'vit_base_patch16_clip_224', 'vit_base_patch16_clip_384',
+                            'vit_base_patch16_gap_224', 'vit_base_patch16_plus_240',
+                            'vit_base_patch16_rpn_224', 'vit_base_patch16_xp_224',
+                            'vit_base_patch32_224', 'vit_base_patch32_384',
+                            'vit_base_patch32_clip_224', 'vit_base_patch32_clip_384',
+                            'vit_base_patch32_clip_448', 'vit_base_patch32_plus_256',
+                            'vit_giant_patch14_224', 'vit_giant_patch14_clip_224',
+                            'vit_gigantic_patch14_224', 'vit_gigantic_patch14_clip_224',
+                            'vit_huge_patch14_224', 'vit_huge_patch14_clip_224',
+                            'vit_huge_patch14_clip_336', 'vit_huge_patch14_xp_224',
+                            'vit_large_patch14_224', 'vit_large_patch14_clip_224',
+                            'vit_large_patch14_clip_336', 'vit_large_patch14_xp_224',
+                            'vit_large_patch16_224', 'vit_large_patch16_384', 'vit_large_patch32_224',
+                            'vit_large_patch32_384', 'vit_medium_patch16_gap_240',
+                            'vit_medium_patch16_gap_256', 'vit_medium_patch16_gap_384',
+                            'vit_small_patch16_18x2_224', 'vit_small_patch16_36x1_224',
+                            'vit_small_patch16_224', 'vit_small_patch16_384',
+                            'vit_small_patch32_224', 'vit_small_patch32_384',
+                            'vit_tiny_patch16_224', 'vit_tiny_patch16_384']
+
+        if not generate_from_null:
+            return supported_models
+
+        supported = []
+        unsupported = []
+
+        models = timm.list_models('vit_*')
+        for model in models:
+            print(f'Testing {model} creation')
+            try:
+                _ = PyTorchSmoothedViT(model=model,
+                                       loss=torch.nn.CrossEntropyLoss(),
+                                       optimizer=torch.optim.SGD,
+                                       optimizer_params={"lr": 0.01},
+                                       input_shape=(3, 32, 32),
+                                       nb_classes=10,
+                                       ablation_size=4,
+                                       load_pretrained=False,
+                                       replace_last_layer=True,
+                                       verbose=False)
+                supported.append(model)
+            except Exception:
+                unsupported.append(model)
+
+        if supported != supported_models:
+            print('Difference between the generated and fixed model list. Although not necessarily '
+                  'an error, this may point to the timm library being updated.')
+
+        return supported
+
 
     @staticmethod
     def art_create_vision_transformer(variant: str, pretrained: bool = False, **kwargs) -> ArtViT:
@@ -500,13 +573,14 @@ class PyTorchSmoothedViT(PyTorchClassifier):
             if scheduler is not None:
                 scheduler.step()
 
-    def eval_and_certify(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128):
+    def eval_and_certify(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128) -> Tuple["torch.Tensor", "torch.Tensor"]:
         """
         Evaluates the ViT's normal and certified performance over the supplied data.
 
         :param x: Evaluation data.
         :param y: Evaluation labels.
         :param batch_size: batch size when evaluating.
+        :return: The accuracy and certtified accuracy over the dataset
         """
 
         self.model.eval()
@@ -555,6 +629,7 @@ class PyTorchSmoothedViT(PyTorchClassifier):
                     f"Normal Acc {torch.mean(torch.stack(accuracy)):.2f} " 
                     f"Cert Acc {torch.mean(torch.stack(cert_acc)):.2f}"
                 )
+        return torch.mean(torch.stack(accuracy)), torch.mean(torch.stack(cert_acc))
 
     @staticmethod
     def get_accuracy(preds: Union[np.ndarray, "torch.Tensor"], labels: Union[np.ndarray, "torch.Tensor"]) -> np.ndarray:
