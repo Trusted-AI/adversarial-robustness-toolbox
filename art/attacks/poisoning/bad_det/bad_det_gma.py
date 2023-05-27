@@ -129,7 +129,7 @@ class BadDetGlobalMisclassificationAttack(PoisoningAttackObjectDetector):
             # insert backdoor into the image
             # add an additional dimension to create a batch of size 1
             poisoned_input, _ = self.backdoor.poison(image[np.newaxis], labels)
-            x_poison[i] = poisoned_input[0]
+            image = poisoned_input[0]
 
             # replace the original image with the poisoned image
             if self.channels_first:
