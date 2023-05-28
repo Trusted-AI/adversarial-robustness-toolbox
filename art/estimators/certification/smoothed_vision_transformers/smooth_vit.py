@@ -28,8 +28,6 @@ from typing import Optional, Tuple
 
 import torch
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 
 class UpSampler(torch.nn.Module):
     """
@@ -68,6 +66,7 @@ class ColumnAblator(torch.nn.Module):
         to_reshape: bool = False,
         original_shape: Optional[Tuple] = None,
         output_shape: Optional[Tuple] = None,
+        device_type: str = "gpu",
     ):
         """
         Creates a column ablator
@@ -82,6 +81,13 @@ class ColumnAblator(torch.nn.Module):
         self.ablation_size = ablation_size
         self.channels_first = channels_first
         self.to_reshape = to_reshape
+
+        if device_type == "cpu" or not torch.cuda.is_available():
+            self.device = torch.device("cpu")
+        else:  # pragma: no cover
+            cuda_idx = torch.cuda.current_device()
+            self.device = torch.device(f"cuda:{cuda_idx}")
+
         if original_shape is not None and output_shape is not None:
             self.upsample = UpSampler(input_size=original_shape[1], final_size=output_shape[1])
 
@@ -110,7 +116,7 @@ class ColumnAblator(torch.nn.Module):
         :return: The albated input with an extra channel indicating the location of the ablation
         """
         assert x.shape[1] == 3
-        ones = torch.torch.ones_like(x[:, 0:1, :, :]).to(device)
+        ones = torch.torch.ones_like(x[:, 0:1, :, :]).to(self.device)
         x = torch.cat([x, ones], dim=1)
         x = self.ablate(x, column_pos=column_pos)
         if self.to_reshape:
