@@ -59,15 +59,12 @@ def get_classifier(framework):
             loss_object = tf.keras.losses.CategoricalCrossentropy(from_logits=False)
             optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
 
-            def train_step(model, images, labels):
-                with tf.GradientTape() as tape:
-                    predictions = model(images, training=True)
-                    loss = loss_object(labels, predictions)
-                gradients = tape.gradient(loss, model.trainable_variables)
-                optimizer.apply_gradients(zip(gradients, model.trainable_variables))
-
             classifier = TensorFlowV2Classifier(
-                model, nb_classes=2, input_shape=(22, 22, 1), loss_object=loss_object, train_step=train_step
+                model,
+                nb_classes=2,
+                input_shape=(22, 22, 1),
+                loss_object=loss_object,
+                optimizer=optimizer,
             )
         elif framework == "pytorch":
             import torch
