@@ -321,7 +321,10 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
 
             # Set gradients
             if not no_grad:
-                x_tensor.requires_grad = True
+                if x_tensor.is_leaf:
+                    x_tensor.requires_grad = True
+                else:
+                    x_tensor.retain_grad()
 
             # Apply framework-specific preprocessing
             x_preprocessed, y_preprocessed = self._apply_preprocessing(x=x_tensor, y=y_tensor, fit=fit, no_grad=no_grad)
@@ -375,6 +378,8 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
         :return: Loss gradients of the same shape as `x`.
         """
         self._model.train()
+        self.set_batchnorm(train=False)
+        self.set_dropout(train=False)
 
         # Apply preprocessing and convert to tensors
         x_preprocessed, y_preprocessed = self._preprocess_and_convert_inputs(x=x, y=y, fit=False, no_grad=False)
