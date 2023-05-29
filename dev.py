@@ -33,7 +33,6 @@ def get_cifar_data():
 
 
 (x_train, y_train), (x_test, y_test) = get_cifar_data()
-x_test = torch.from_numpy(x_test)
 
 art_model = PyTorchSmoothedViT(model='vit_small_patch16_224',
                                loss=torch.nn.CrossEntropyLoss(),
@@ -47,12 +46,12 @@ art_model = PyTorchSmoothedViT(model='vit_small_patch16_224',
                                )
 
 scheduler = torch.optim.lr_scheduler.MultiStepLR(art_model.optimizer, milestones=[10, 20], gamma=0.1)
-art_model.fit(x_train, y_train,
-              nb_epochs=30,
-              update_batchnorm=True,
-              scheduler=scheduler,
-              transform=transforms.Compose([transforms.RandomHorizontalFlip()]))
+# art_model.fit(x_train, y_train,
+#              nb_epochs=30,
+#              update_batchnorm=True,
+#              scheduler=scheduler,
+#              transform=transforms.Compose([transforms.RandomHorizontalFlip()]))
 
 # torch.save(art_model.model.state_dict(), 'trained.pt')
 # art_model.model.load_state_dict(torch.load('trained.pt'))
-art_model.eval_and_certify(x_train, y_train)
+art_model.eval_and_certify(x_test, y_test, size_to_certify=4)

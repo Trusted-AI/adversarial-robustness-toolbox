@@ -629,20 +629,28 @@ class PyTorchSmoothedViT(PyTorchClassifier):
                 scheduler.step()
 
     def eval_and_certify(
-        self, x: np.ndarray, y: np.ndarray, batch_size: int = 128
+        self,
+        x: np.ndarray,
+        y: np.ndarray,
+        size_to_certify: int,
+        batch_size: int = 128,
+        drop_last: bool = False,
+        verbose: bool = True,
     ) -> Tuple["torch.Tensor", "torch.Tensor"]:
         """
         Evaluates the ViT's normal and certified performance over the supplied data.
 
         :param x: Evaluation data.
         :param y: Evaluation labels.
+        :param size_to_certify: The size of the patch to certify against.
+                                If not provided will default to the ablation size.
         :param batch_size: batch size when evaluating.
+        :param drop_last:
+        :param verbose: If to display the progress bar
         :return: The accuracy and certified accuracy over the dataset
         """
 
         self.model.eval()
-        drop_last = True
-        verbose = True
         y = check_and_transform_label_format(y, nb_classes=self.nb_classes)
 
         # Apply preprocessing
@@ -659,12 +667,17 @@ class PyTorchSmoothedViT(PyTorchClassifier):
         pbar = tqdm(range(num_batch), disable=not verbose)
         accuracy = []
         cert_acc = []
+
         with torch.no_grad():
             for m in pbar:
-                i_batch = torch.from_numpy(np.copy(x_preprocessed[m * batch_size : (m + 1) * batch_size])).to(
-                    self._device
-                )
-                o_batch = torch.from_numpy(y_preprocessed[m * batch_size : (m + 1) * batch_size]).to(self._device)
+                if m == num_batch and not drop_last:
+                    i_batch = torch.from_numpy(np.copy(x_preprocessed[m * batch_size :])).to(self._device)
+                    o_batch = torch.from_numpy(y_preprocessed[m * batch_size :]).to(self._device)
+                else:
+                    i_batch = torch.from_numpy(np.copy(x_preprocessed[m * batch_size : (m + 1) * batch_size])).to(
+                        self._device
+                    )
+                    o_batch = torch.from_numpy(y_preprocessed[m * batch_size : (m + 1) * batch_size]).to(self._device)
                 predictions = []
                 pred_counts = torch.zeros((batch_size, self.nb_classes)).to(self._device)
                 for pos in range(i_batch.shape[-1]):
@@ -676,7 +689,7 @@ class PyTorchSmoothedViT(PyTorchClassifier):
                     predictions.append(model_outputs)
 
                 _, cert_and_correct, top_predicted_class = self.ablator.certify(
-                    pred_counts, size_to_certify=4, label=o_batch
+                    pred_counts, size_to_certify=size_to_certify, label=o_batch
                 )
                 cert_acc.append(torch.sum(cert_and_correct) / batch_size)
                 acc = torch.sum(top_predicted_class == o_batch) / batch_size
