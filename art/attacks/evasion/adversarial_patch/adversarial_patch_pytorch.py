@@ -600,23 +600,29 @@ class AdversarialPatchPyTorch(EvasionAttack):
                     if isinstance(target, torch.Tensor):
                         target = target.to(self.estimator.device)
                     else:
-                        target["boxes"] = target["boxes"][0].to(self.estimator.device)
-                        target["labels"] = target["labels"][0].to(self.estimator.device)
-                        target["scores"] = target["scores"][0].to(self.estimator.device)
-                        target = [target]
-                    _ = self._train_step(images=images, target=target, mask=None)
+                        targets = []
+                        for idx in range(target['boxes'].shape[0]):
+                            targets.append({
+                                'boxes': target['boxes'][idx].to(self.estimator.device),
+                                'labels': target['labels'][idx].to(self.estimator.device),
+                                'scores': target['scores'][idx].to(self.estimator.device),
+                            })
+                    _ = self._train_step(images=images, target=targets, mask=None)
             else:
                 for images, target, mask_i in data_loader:
                     images = images.to(self.estimator.device)
                     if isinstance(target, torch.Tensor):
                         target = target.to(self.estimator.device)
                     else:
-                        target["boxes"] = target["boxes"][0].to(self.estimator.device)
-                        target["labels"] = target["labels"][0].to(self.estimator.device)
-                        target["scores"] = target["scores"][0].to(self.estimator.device)
-                        target = [target]
+                        targets = []
+                        for idx in range(target['boxes'].shape[0]):
+                            targets.append({
+                                'boxes': target['boxes'][idx].to(self.estimator.device),
+                                'labels': target['labels'][idx].to(self.estimator.device),
+                                'scores': target['scores'][idx].to(self.estimator.device),
+                            })
                     mask_i = mask_i.to(self.estimator.device)
-                    _ = self._train_step(images=images, target=target, mask=mask_i)
+                    _ = self._train_step(images=images, target=targets, mask=mask_i)
 
             # Write summary
             if self.summary_writer is not None:  # pragma: no cover
