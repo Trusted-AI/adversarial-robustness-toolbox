@@ -162,15 +162,8 @@ def test_tf2_training(art_warning, fix_get_mnist_data, fix_get_cifar10_data):
         x = tf.keras.layers.Dense(10)(x)
         return tf.keras.Model(inputs=img_inputs, outputs=x)
 
-    optimizer = tf.keras.optimizers.SGD(learning_rate=0.01)
     loss_object = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
-
-    def train_step(model, images, labels):
-        with tf.GradientTape() as tape:
-            predictions = model(images, training=True)
-            loss = loss_object(labels, predictions)
-        gradients = tape.gradient(loss, model.trainable_variables)
-        optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+    optimizer = tf.keras.optimizers.SGD(learning_rate=0.01)
 
     for dataset, dataset_name in zip([fix_get_mnist_data, fix_get_cifar10_data], ["mnist", "cifar"]):
         if dataset_name == "mnist":
@@ -186,7 +179,7 @@ def test_tf2_training(art_warning, fix_get_mnist_data, fix_get_cifar10_data):
                     model=net,
                     clip_values=(0, 1),
                     loss_object=loss_object,
-                    train_step=train_step,
+                    optimizer=optimizer,
                     input_shape=input_shape,
                     nb_classes=10,
                     ablation_type=ablation_type,
@@ -332,15 +325,8 @@ def test_tf2_mnist_certification(art_warning, fix_get_mnist_data):
     net = build_model(input_shape=(28, 28, 2))
     net.set_weights(get_weights())
 
-    optimizer = tf.keras.optimizers.SGD(learning_rate=0.01)
     loss_object = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
-
-    def train_step(model, images, labels):
-        with tf.GradientTape() as tape:
-            predictions = model(images, training=True)
-            loss = loss_object(labels, predictions)
-        gradients = tape.gradient(loss, model.trainable_variables)
-        optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+    optimizer = tf.keras.optimizers.SGD(learning_rate=0.01)
 
     try:
         for ablation_type in ["column", "block"]:
@@ -359,7 +345,7 @@ def test_tf2_mnist_certification(art_warning, fix_get_mnist_data):
                 model=net,
                 clip_values=(0, 1),
                 loss_object=loss_object,
-                train_step=train_step,
+                optimizer=optimizer,
                 input_shape=(28, 28, 2),
                 nb_classes=10,
                 ablation_type=ablation_type,
