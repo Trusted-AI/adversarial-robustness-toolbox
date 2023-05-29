@@ -573,8 +573,10 @@ class PyTorchSmoothedViT(PyTorchClassifier):
         for _ in tqdm(range(nb_epochs)):
             # Shuffle the examples
             random.shuffle(ind)
+
             epoch_acc = []
             epoch_loss = []
+            epoch_batch_sizes = []
 
             pbar = tqdm(range(num_batch), disable=not verbose)
 
@@ -605,8 +607,6 @@ class PyTorchSmoothedViT(PyTorchClassifier):
 
                 loss = self.loss(model_outputs, o_batch)
                 acc = self.get_accuracy(preds=model_outputs, labels=o_batch)
-                epoch_acc.append(acc)
-                epoch_loss.append(loss)
 
                 # Do training
                 if self._use_amp:  # pragma: no cover
@@ -620,9 +620,14 @@ class PyTorchSmoothedViT(PyTorchClassifier):
 
                 self.optimizer.step()
 
+                epoch_acc.append(acc)
+                epoch_loss.append(loss.cpu().detach().numpy())
+                epoch_batch_sizes.append(len(i_batch))
+
                 if verbose:
                     pbar.set_description(
-                        f"Loss {torch.mean(torch.stack(epoch_loss)):.2f}" f" Acc {np.mean(epoch_acc):.2f}"
+                        f"Loss {np.average(epoch_loss, weights=epoch_batch_sizes):.3f} "
+                        f"Acc {np.average(epoch_acc, weights=epoch_batch_sizes):.3f} "
                     )
 
             if scheduler is not None:
@@ -634,7 +639,6 @@ class PyTorchSmoothedViT(PyTorchClassifier):
         y: np.ndarray,
         size_to_certify: int,
         batch_size: int = 128,
-        drop_last: bool = False,
         verbose: bool = True,
     ) -> Tuple["torch.Tensor", "torch.Tensor"]:
         """
@@ -645,7 +649,6 @@ class PyTorchSmoothedViT(PyTorchClassifier):
         :param size_to_certify: The size of the patch to certify against.
                                 If not provided will default to the ablation size.
         :param batch_size: batch size when evaluating.
-        :param drop_last:
         :param verbose: If to display the progress bar
         :return: The accuracy and certified accuracy over the dataset
         """
@@ -659,18 +662,15 @@ class PyTorchSmoothedViT(PyTorchClassifier):
         # Check label shape
         y_preprocessed = self.reduce_labels(y_preprocessed)
 
-        num_batch = len(x_preprocessed) / float(batch_size)
-        if drop_last:
-            num_batch = int(np.floor(num_batch))
-        else:
-            num_batch = int(np.ceil(num_batch))
+        num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         pbar = tqdm(range(num_batch), disable=not verbose)
-        accuracy = []
-        cert_acc = []
+        accuracy = torch.tensor(0.0).to(self._device)
+        cert_sum = torch.tensor(0.0).to(self._device)
+        n_samples = 0
 
         with torch.no_grad():
             for m in pbar:
-                if m == num_batch and not drop_last:
+                if m == (num_batch - 1):
                     i_batch = torch.from_numpy(np.copy(x_preprocessed[m * batch_size :])).to(self._device)
                     o_batch = torch.from_numpy(y_preprocessed[m * batch_size :]).to(self._device)
                 else:
@@ -678,33 +678,32 @@ class PyTorchSmoothedViT(PyTorchClassifier):
                         self._device
                     )
                     o_batch = torch.from_numpy(y_preprocessed[m * batch_size : (m + 1) * batch_size]).to(self._device)
+
                 predictions = []
-                pred_counts = torch.zeros((batch_size, self.nb_classes)).to(self._device)
+                pred_counts = torch.zeros((len(i_batch), self.nb_classes)).to(self._device)
                 for pos in range(i_batch.shape[-1]):
                     ablated_batch = self.ablator.forward(i_batch, column_pos=pos)
 
                     # Perform prediction
                     model_outputs = self.model(ablated_batch)
-                    pred_counts[np.arange(0, batch_size), model_outputs.argmax(dim=-1)] += 1
+                    pred_counts[np.arange(0, len(i_batch)), model_outputs.argmax(dim=-1)] += 1
                     predictions.append(model_outputs)
 
                 _, cert_and_correct, top_predicted_class = self.ablator.certify(
                     pred_counts, size_to_certify=size_to_certify, label=o_batch
                 )
-                cert_acc.append(torch.sum(cert_and_correct) / batch_size)
-                acc = torch.sum(top_predicted_class == o_batch) / batch_size
-                accuracy.append(acc)
+                cert_sum += torch.sum(cert_and_correct)
+                accuracy += torch.sum(top_predicted_class == o_batch)
+                n_samples += len(cert_and_correct)
 
-                pbar.set_description(
-                    f"Normal Acc {torch.mean(torch.stack(accuracy)):.2f} "
-                    f"Cert Acc {torch.mean(torch.stack(cert_acc)):.2f}"
-                )
-        return torch.mean(torch.stack(accuracy)), torch.mean(torch.stack(cert_acc))
+                pbar.set_description(f"Normal Acc {accuracy / n_samples:.3f} " f"Cert Acc {cert_sum / n_samples:.3f}")
+
+        return (accuracy / n_samples), (cert_sum / n_samples)
 
     @staticmethod
     def get_accuracy(preds: Union[np.ndarray, "torch.Tensor"], labels: Union[np.ndarray, "torch.Tensor"]) -> np.ndarray:
         """
-        Helper function to print out the accuracy during training.
+        Helper function to get the accuracy during training.
 
         :param preds: model predictions.
         :param labels: ground truth labels (not one hot).
