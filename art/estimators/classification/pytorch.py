@@ -322,13 +322,13 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=False)
 
         results_list = []
-        for images in dataloader:
+        for x_batch in dataloader:
             # Move inputs to device
-            images = images.to(self._device)
+            x_batch = x_batch.to(self._device)
 
             # Run prediction
             with torch.no_grad():
-                model_outputs = self._model(images)
+                model_outputs = self._model(x_batch)
             output = model_outputs[-1]
             output = output.detach().cpu().numpy().astype(np.float32)
             if len(output.shape) == 1:
@@ -373,7 +373,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         nb_epochs: int = 10,
         training_mode: bool = True,
         drop_last: bool = False,
-        scheduler: Optional[Any] = None,
+        scheduler: Optional["torch.optim.lr_scheduler._LRScheduler"] = None,
         **kwargs,
     ) -> None:
         """
@@ -417,17 +417,17 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         # Start training
         for _ in range(nb_epochs):
-            for images, labels in dataloader:
+            for x_batch, y_batch in dataloader:
                 # Move inputs to device
-                images = images.to(self._device)
-                labels = labels.to(self._device)
+                x_batch = x_batch.to(self._device)
+                y_batch = y_batch.to(self._device)
 
                 # Zero the parameter gradients
                 self._optimizer.zero_grad()
 
                 # Perform prediction
                 try:
-                    model_outputs = self._model(images)
+                    model_outputs = self._model(x_batch)
                 except ValueError as err:
                     if "Expected more than 1 value per channel when training" in str(err):
                         logger.exception(
@@ -437,7 +437,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                     raise err
 
                 # Form the loss function
-                loss = self._loss(model_outputs[-1], labels)
+                loss = self._loss(model_outputs[-1], y_batch)
 
                 # Do training
                 if self._use_amp:  # pragma: no cover
