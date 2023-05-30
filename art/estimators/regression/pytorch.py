@@ -260,7 +260,7 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):
         dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=False)
 
         results_list = []
-        for x_batch in dataloader:
+        for (x_batch,) in dataloader:
             # Move inputs to device
             x_batch = x_batch.to(self._device)
 
