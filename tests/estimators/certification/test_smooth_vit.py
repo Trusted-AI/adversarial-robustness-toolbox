@@ -66,17 +66,21 @@ def test_ablation(art_warning, fix_get_mnist_data, fix_get_cifar10_data):
     Check that the ablation is being performed correctly
     """
     import torch
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     from art.estimators.certification.smoothed_vision_transformers.smooth_vit import ColumnAblator
+
     try:
         cifar_data = fix_get_cifar10_data[0]
         cifar_labels = fix_get_cifar10_data[1]
 
-        col_ablator = ColumnAblator(ablation_size=4,
-                                    channels_first=True,
-                                    to_reshape=False,  # do not upsample initially
-                                    original_shape=(3, 32, 32),
-                                    output_shape=(3, 224, 224))
+        col_ablator = ColumnAblator(
+            ablation_size=4,
+            channels_first=True,
+            to_reshape=False,  # do not upsample initially
+            original_shape=(3, 32, 32),
+            output_shape=(3, 224, 224),
+        )
 
         cifar_data = torch.from_numpy(cifar_data).to(device)
         # check that the ablation functioned when in the middle of the image
@@ -96,26 +100,28 @@ def test_ablation(art_warning, fix_get_mnist_data, fix_get_cifar10_data):
         assert torch.sum(ablated[:, :, :, :2]) > 0
 
         # check that upsampling works as expected
-        col_ablator = ColumnAblator(ablation_size=4,
-                                    channels_first=True,
-                                    to_reshape=True,
-                                    original_shape=(3, 32, 32),
-                                    output_shape=(3, 224, 224))
+        col_ablator = ColumnAblator(
+            ablation_size=4,
+            channels_first=True,
+            to_reshape=True,
+            original_shape=(3, 32, 32),
+            output_shape=(3, 224, 224),
+        )
 
         ablated = col_ablator.forward(cifar_data, column_pos=10)
 
         assert ablated.shape[1] == 4
-        assert torch.sum(ablated[:, :, :, :10*7]) == 0
-        assert torch.sum(ablated[:, :, :, 10*7:14*7]) > 0
-        assert torch.sum(ablated[:, :, :, 14*7:]) == 0
+        assert torch.sum(ablated[:, :, :, : 10 * 7]) == 0
+        assert torch.sum(ablated[:, :, :, 10 * 7 : 14 * 7]) > 0
+        assert torch.sum(ablated[:, :, :, 14 * 7 :]) == 0
 
         # check that the ablation wraps when on the edge of the image
         ablated = col_ablator.forward(cifar_data, column_pos=30)
 
         assert ablated.shape[1] == 4
-        assert torch.sum(ablated[:, :, :, 30*7:]) > 0
-        assert torch.sum(ablated[:, :, :, 2*7:30*7]) == 0
-        assert torch.sum(ablated[:, :, :, :2*7]) > 0
+        assert torch.sum(ablated[:, :, :, 30 * 7 :]) > 0
+        assert torch.sum(ablated[:, :, :, 2 * 7 : 30 * 7]) == 0
+        assert torch.sum(ablated[:, :, :, : 2 * 7]) > 0
 
     except ARTTestException as e:
         art_warning(e)
@@ -127,19 +133,22 @@ def test_pytorch_training(art_warning, fix_get_mnist_data, fix_get_cifar10_data)
     Check that the training loop for pytorch does not result in errors
     """
     import torch
+
     try:
         cifar_data = fix_get_cifar10_data[0][:50]
         cifar_labels = fix_get_cifar10_data[1][:50]
 
-        art_model = PyTorchSmoothedViT(model='vit_small_patch16_224',
-                                       loss=torch.nn.CrossEntropyLoss(),
-                                       optimizer=torch.optim.SGD,
-                                       optimizer_params={"lr": 0.01},
-                                       input_shape=(3, 32, 32),
-                                       nb_classes=10,
-                                       ablation_size=4,
-                                       load_pretrained=True,
-                                       replace_last_layer=True)
+        art_model = PyTorchSmoothedViT(
+            model="vit_small_patch16_224",
+            loss=torch.nn.CrossEntropyLoss(),
+            optimizer=torch.optim.SGD,
+            optimizer_params={"lr": 0.01},
+            input_shape=(3, 32, 32),
+            nb_classes=10,
+            ablation_size=4,
+            load_pretrained=True,
+            replace_last_layer=True,
+        )
 
         scheduler = torch.optim.lr_scheduler.MultiStepLR(art_model.optimizer, milestones=[1], gamma=0.1)
         art_model.fit(cifar_data, cifar_labels, nb_epochs=2, update_batchnorm=True, scheduler=scheduler)
@@ -157,15 +166,19 @@ def test_certification_function(art_warning, fix_get_mnist_data, fix_get_cifar10
     import torch
 
     try:
-        col_ablator = ColumnAblator(ablation_size=4,
-                                    channels_first=True,
-                                    to_reshape=True,  # do not upsample initially
-                                    original_shape=(3, 32, 32),
-                                    output_shape=(3, 224, 224))
+        col_ablator = ColumnAblator(
+            ablation_size=4,
+            channels_first=True,
+            to_reshape=True,  # do not upsample initially
+            original_shape=(3, 32, 32),
+            output_shape=(3, 224, 224),
+        )
         pred_counts = torch.from_numpy(np.asarray([[20, 5, 1], [10, 5, 1], [1, 16, 1]]))
-        cert, cert_and_correct, top_predicted_class = col_ablator.certify(pred_counts=pred_counts,
-                                                                          size_to_certify=4,
-                                                                          label=0,)
+        cert, cert_and_correct, top_predicted_class = col_ablator.certify(
+            pred_counts=pred_counts,
+            size_to_certify=4,
+            label=0,
+        )
         assert torch.equal(cert, torch.tensor([True, False, True]))
         assert torch.equal(cert_and_correct, torch.tensor([True, False, False]))
     except ARTTestException as e:
@@ -216,6 +229,7 @@ def test_equivalence(fix_get_cifar10_data):
             The implementation of dropping tokens has been done slightly differently in this tool.
             Here we check that it is equivalent to the original implementation
             """
+
             class MaskProcessor(torch.nn.Module):
                 def __init__(self, patch_size=16):
                     super().__init__()
@@ -237,7 +251,7 @@ def test_equivalence(fix_get_cifar10_data):
             if patch_mask is not None:
                 # patch_mask is B, K
                 B, N, C = x.shape
-                if len(patch_mask.shape) == 1: # not a separate one per batch
+                if len(patch_mask.shape) == 1:  # not a separate one per batch
                     x = x[:, patch_mask]
                 else:
                     patch_mask = patch_mask.unsqueeze(-1).expand(-1, -1, C)
@@ -271,7 +285,7 @@ def test_equivalence(fix_get_cifar10_data):
             ablated_input = True
 
         if ablated_input:
-            x, ablation_mask = x[:, :self.in_chans], x[:, self.in_chans:self.in_chans + 1]
+            x, ablation_mask = x[:, : self.in_chans], x[:, self.in_chans : self.in_chans + 1]
 
         x = self.patch_embed(x)
 
@@ -299,15 +313,17 @@ def test_equivalence(fix_get_cifar10_data):
     # Replace the forward_features with the forward_features code with checks.
     ArtViT.forward_features = forward_features
 
-    art_model = PyTorchSmoothedViT(model='vit_small_patch16_224',
-                                   loss=torch.nn.CrossEntropyLoss(),
-                                   optimizer=torch.optim.SGD,
-                                   optimizer_params={"lr": 0.01},
-                                   input_shape=(3, 32, 32),
-                                   nb_classes=10,
-                                   ablation_size=4,
-                                   load_pretrained=False,
-                                   replace_last_layer=True)
+    art_model = PyTorchSmoothedViT(
+        model="vit_small_patch16_224",
+        loss=torch.nn.CrossEntropyLoss(),
+        optimizer=torch.optim.SGD,
+        optimizer_params={"lr": 0.01},
+        input_shape=(3, 32, 32),
+        nb_classes=10,
+        ablation_size=4,
+        load_pretrained=False,
+        replace_last_layer=True,
+    )
 
     cifar_data = fix_get_cifar10_data[0][:50]
     cifar_labels = fix_get_cifar10_data[1][:50]
