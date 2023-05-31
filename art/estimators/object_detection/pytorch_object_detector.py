@@ -24,6 +24,7 @@ from typing import List, Dict, Optional, Tuple, Union, TYPE_CHECKING
 import numpy as np
 
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
+from art.estimators.object_detection.utils import cast_inputs_to_pt
 from art.estimators.pytorch import PyTorchEstimator
 
 if TYPE_CHECKING:
@@ -179,6 +180,69 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         :return: Current used device.
         """
         return self._device
+
+    def _preprocess_and_convert_inputs(
+        self,
+        x: Union[np.ndarray, "torch.Tensor"],
+        y: Optional[List[Dict[str, Union[np.ndarray, "torch.Tensor"]]]] = None,
+        fit: bool = False,
+        no_grad: bool = True,
+    ) -> Tuple["torch.Tensor", List[Dict[str, "torch.Tensor"]]]:
+        """
+        Apply preprocessing on inputs `(x, y)` and convert to tensors, if needed.
+
+        :param x: Samples of shape NCHW or NHWC.
+        :param y: Target values of format `List[Dict[str, Union[np.ndarray, torch.Tensor]]]`, one for each input image.
+                  The fields of the Dict are as follows:
+
+                  - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
+                  - labels [N]: the labels for each image.
+        :param fit: `True` if the function is call before fit/training and `False` if the function is called before a
+                    predict operation.
+        :param no_grad: `True` if no gradients required.
+        :return: Preprocessed inputs `(x, y)` as tensors.
+        """
+        import torch
+
+        if self.clip_values is not None:
+            norm_factor = self.clip_values[1]
+        else:
+            norm_factor = 1.0
+
+        if self.all_framework_preprocessing:
+            # Convert samples into tensor
+            x_tensor, y_tensor = cast_inputs_to_pt(x, y)
+
+            if not self.channels_first:
+                x_tensor = torch.permute(x_tensor, (0, 3, 1, 2))
+            x_tensor /= norm_factor
+
+            # Set gradients
+            if not no_grad:
+                x_tensor.requires_grad = True
+
+            # Apply framework-specific preprocessing
+            x_preprocessed, y_preprocessed = self._apply_preprocessing(x=x_tensor, y=y_tensor, fit=fit, no_grad=no_grad)
+
+        elif isinstance(x, np.ndarray):
+            # Apply preprocessing
+            x_preprocessed, y_preprocessed = self._apply_preprocessing(x=x, y=y, fit=fit, no_grad=no_grad)
+
+            # Convert inputs into tensor
+            x_preprocessed, y_preprocessed = cast_inputs_to_pt(x_preprocessed, y_preprocessed)
+
+            if not self.channels_first:
+                x_preprocessed = torch.permute(x_preprocessed, (0, 3, 1, 2))
+            x_preprocessed /= norm_factor
+
+            # Set gradients
+            if not no_grad:
+                x_preprocessed.requires_grad = True
+
+        else:
+            raise NotImplementedError("Combination of inputs and preprocessing not supported.")
+
+        return x_preprocessed, y_preprocessed
 
     def _get_losses(
         self, x: np.ndarray, y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]]

@@ -18,9 +18,13 @@
 """
 This module contains utility functions for object detection.
 """
-from typing import Dict, List
+from typing import Dict, List, Any, Tuple, Union, Optional, TYPE_CHECKING
 
 import numpy as np
+
+if TYPE_CHECKING:
+    # pylint: disable=C0412
+    import torch
 
 
 def convert_tf_to_pt(y: List[Dict[str, np.ndarray]], height: int, width: int) -> List[Dict[str, np.ndarray]]:
@@ -88,3 +92,50 @@ def convert_pt_to_tf(y: List[Dict[str, np.ndarray]], height: int, width: int) ->
         y[i]["labels"] = y[i]["labels"] - 1
 
     return y
+
+
+def cast_inputs_to_pt(
+    x: np.ndarray,
+    y: Optional[List[Dict[str, np.ndarray]]] = None,
+) -> Tuple["torch.Tensor", List[Dict[str, "torch.Tensor"]]]:
+    """
+    Cast object detection inputs `(x, y)` to PyTorch tensors.
+
+    :param x: Samples of shape NCHW or NHWC.
+    :param y: Target values of format `List[Dict[str, Union[np.ndarray, torch.Tensor]]]`, one for each input image.
+                The fields of the Dict are as follows:
+
+                - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
+                - labels [N]: the labels for each image.
+    :return: Object detection inputs `(x, y)` as tensors.
+    """
+    import torch
+
+    # Convert images into tensor
+    if isinstance(x, np.ndarray):
+        x_tensor = torch.from_numpy(x)
+    else:
+        x_tensor = x
+
+    # Convert labels into tensor
+    if y is not None and isinstance(y, list) and isinstance(y[0]["boxes"], np.ndarray):
+        y_tensor = []
+        for y_i in y:
+            y_t = {
+                "boxes": torch.from_numpy(y_i["boxes"]).to(dtype=torch.float32),
+                "labels": torch.from_numpy(y_i["labels"]).to(dtype=torch.int64),
+            }
+            if "masks" in y_i:
+                y_t["masks"] = torch.from_numpy(y_i["masks"]).to(dtype=torch.uint8)
+            y_tensor.append(y_t)
+    elif y is not None and isinstance(y, dict):
+        y_tensor = []
+        for i in range(y["boxes"].shape[0]):
+            y_t = {}
+            y_t["boxes"] = y["boxes"][i]
+            y_t["labels"] = y["labels"][i]
+            y_tensor.append(y_t)
+    else:
+        y_tensor = y  # type: ignore
+
+    return x_tensor, y_tensor
