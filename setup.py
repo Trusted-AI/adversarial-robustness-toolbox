@@ -112,6 +112,7 @@ setup(
             "requests",
             "sortedcontainers",
             "numba",
+            # "timm" to be added as a dependency after the next timm release
         ],
     },
     classifiers=[

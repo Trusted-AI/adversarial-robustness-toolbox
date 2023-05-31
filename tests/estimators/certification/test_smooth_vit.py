@@ -72,7 +72,6 @@ def test_ablation(art_warning, fix_get_mnist_data, fix_get_cifar10_data):
 
     try:
         cifar_data = fix_get_cifar10_data[0]
-        cifar_labels = fix_get_cifar10_data[1]
 
         col_ablator = ColumnAblator(
             ablation_size=4,
@@ -240,7 +239,7 @@ def test_equivalence(fix_get_cifar10_data):
                     ones_mask = ones_mask[0].unsqueeze(0)  # take the first mask
                     ones_mask = self.avg_pool(ones_mask)[0]
                     ones_mask = torch.where(ones_mask.view(-1) > 0)[0] + 1
-                    ones_mask = torch.cat([torch.cuda.IntTensor(1).fill_(0), ones_mask]).unsqueeze(0)
+                    ones_mask = torch.cat([torch.IntTensor(1).fill_(0), ones_mask]).unsqueeze(0)
                     ones_mask = ones_mask.expand(B, -1)
                     return ones_mask
 
