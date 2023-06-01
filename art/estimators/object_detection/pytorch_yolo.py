@@ -174,18 +174,6 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
                             if available otherwise run on CPU.
         """
         import torch
-        import torchvision
-
-        torch_version = list(map(int, torch.__version__.lower().split("+", maxsplit=1)[0].split(".")))
-        torchvision_version = list(map(int, torchvision.__version__.lower().split("+", maxsplit=1)[0].split(".")))
-        assert not (torch_version[0] == 1 and (torch_version[1] == 8 or torch_version[1] == 9)), (
-            "PyTorchYolo does not support torch==1.8 and torch==1.9 because of "
-            "https://github.com/pytorch/vision/issues/4153. Support will return for torch==1.10."
-        )
-        assert not (torchvision_version[0] == 0 and (torchvision_version[1] == 9 or torchvision_version[1] == 10)), (
-            "PyTorchYolo does not support torchvision==0.9 and torchvision==0.10 because of "
-            "https://github.com/pytorch/vision/issues/4153. Support will return for torchvision==0.11."
-        )
 
         super().__init__(
             model=model,
@@ -337,19 +325,18 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
         """
         Get the loss tensor output of the model including all preprocessing.
 
-        :param x: Samples of shape (nb_samples, height, width, nb_channels).
+        :param x: Samples of shape NCHW or NHWC.
         :param y: Target values of format `List[Dict[str, Union[np.ndarray, torch.Tensor]]]`, one for each input image.
                   The fields of the Dict are as follows:
 
                   - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
                   - labels [N]: the labels for each image.
-        :return: Loss gradients of the same shape as `x`.
+        :return: Loss components and gradients of the input `x`.
         """
         self._model.train()
 
         # Apply preprocessing and convert to tensors
         x_preprocessed, y_preprocessed = self._preprocess_and_convert_inputs(x=x, y=y, fit=False, no_grad=False)
-        x_grad = x_preprocessed
 
         # Extract height and width
         if self.channels_first:
@@ -359,11 +346,17 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
             height = self.input_shape[0]
             width = self.input_shape[1]
 
-        labels_t = translate_labels_x1y1x2y2_to_xcycwh(labels_x1y1x2y2=y_preprocessed, height=height, width=width)
+        # Convert labels to YOLO format
+        y_preprocessed_yolo = translate_labels_x1y1x2y2_to_xcycwh(labels_x1y1x2y2=y_preprocessed, height=height, width=width)
 
-        loss_components = self._model(x_grad.to(self.device), labels_t.to(self.device))
+        # Move inputs to device
+        x_preprocessed = x_preprocessed.to(self.device)
+        y_preprocessed_yolo = y_preprocessed_yolo.to(self.device)
 
-        return loss_components, x_grad
+        # Calculate loss components
+        loss_components = self._model(x_preprocessed, y_preprocessed_yolo)
+
+        return loss_components, x_preprocessed
 
     def loss_gradient(  # pylint: disable=W0613
         self, x: Union[np.ndarray, "torch.Tensor"], y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]], **kwargs
@@ -462,7 +455,7 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
 
             # Run prediction
             with torch.no_grad():
-                predictions_xcycwh = self._model(x_batch.to(self.device))
+                predictions_xcycwh = self._model(x_batch)
 
             predictions_x1y1x2y2 = translate_predictions_xcycwh_to_x1y1x2y2(
                 y_pred_xcycwh=predictions_xcycwh, height=height, width=width
