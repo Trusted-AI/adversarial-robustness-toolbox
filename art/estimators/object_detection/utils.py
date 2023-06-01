@@ -18,7 +18,7 @@
 """
 This module contains utility functions for object detection.
 """
-from typing import Dict, List, Any, Tuple, Union, Optional, TYPE_CHECKING
+from typing import Dict, List, Union, Tuple, Optional, TYPE_CHECKING
 
 import numpy as np
 
@@ -95,8 +95,8 @@ def convert_pt_to_tf(y: List[Dict[str, np.ndarray]], height: int, width: int) ->
 
 
 def cast_inputs_to_pt(
-    x: np.ndarray,
-    y: Optional[List[Dict[str, np.ndarray]]] = None,
+    x: Union[np.ndarray, "torch.Tensor"],
+    y: Optional[List[Dict[str, Union[np.ndarray, "torch.Tensor"]]]] = None,
 ) -> Tuple["torch.Tensor", List[Dict[str, "torch.Tensor"]]]:
     """
     Cast object detection inputs `(x, y)` to PyTorch tensors.

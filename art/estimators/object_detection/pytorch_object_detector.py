@@ -415,7 +415,11 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         # Apply preprocessing and convert to tensors
         x_preprocessed, y_preprocessed = self._preprocess_and_convert_inputs(x=x, y=y, fit=True, no_grad=True)
 
-        class ObjectDetectorDataset(Dataset):
+        class ObjectDetectionDataset(Dataset):
+            """
+            Object detection dataset in PyTorch.
+            """
+
             def __init__(self, x, y):
                 self.x = x
                 self.y = y
@@ -427,7 +431,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
                 return self.x[idx], self.y[idx]
 
         # Create dataloader
-        dataset = ObjectDetectorDataset(x_preprocessed, y_preprocessed)
+        dataset = ObjectDetectionDataset(x_preprocessed, y_preprocessed)
         dataloader = DataLoader(
             dataset=dataset,
             batch_size=batch_size,
@@ -442,7 +446,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
             for x_batch, y_batch in dataloader:
                 # Move inputs to device
                 x_batch = torch.stack(x_batch).to(self.device)
-                y_batch = y_batch = [{k: v.to(self.device) for k, v in y_i.items()} for y_i in y_batch]
+                y_batch = [{k: v.to(self.device) for k, v in y_i.items()} for y_i in y_batch]
 
                 # Zero the parameter gradients
                 self._optimizer.zero_grad()

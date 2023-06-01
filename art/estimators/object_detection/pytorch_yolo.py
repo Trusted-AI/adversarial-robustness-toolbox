@@ -347,7 +347,9 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
             width = self.input_shape[1]
 
         # Convert labels to YOLO format
-        y_preprocessed_yolo = translate_labels_x1y1x2y2_to_xcycwh(labels_x1y1x2y2=y_preprocessed, height=height, width=width)
+        y_preprocessed_yolo = translate_labels_x1y1x2y2_to_xcycwh(
+            labels_x1y1x2y2=y_preprocessed, height=height, width=width
+        )
 
         # Move inputs to device
         x_preprocessed = x_preprocessed.to(self.device)
@@ -514,7 +516,11 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
         # Apply preprocessing and convert to tensors
         x_preprocessed, y_preprocessed = self._preprocess_and_convert_inputs(x=x, y=y, fit=True, no_grad=True)
 
-        class ObjectDetectorDataset(Dataset):
+        class ObjectDetectionDataset(Dataset):
+            """
+            Object detection dataset in PyTorch.
+            """
+
             def __init__(self, x, y):
                 self.x = x
                 self.y = y
@@ -526,7 +532,7 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
                 return self.x[idx], self.y[idx]
 
         # Create dataloader
-        dataset = ObjectDetectorDataset(x_preprocessed, y_preprocessed)
+        dataset = ObjectDetectionDataset(x_preprocessed, y_preprocessed)
         dataloader = DataLoader(
             dataset=dataset,
             batch_size=batch_size,
