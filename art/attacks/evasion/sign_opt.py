@@ -306,14 +306,14 @@ class SignOPTAttack(EvasionAttack):
         lbd = initial_lbd
         # For targeted: we want to expand(x1.01) boundary away from targeted dataset
         # For untargeted, we want to slim(x0.99) the boundary toward the original dataset
-        if (not self._is_label(x_0 + lbd * theta, target) and self.targeted) or (
-            self._is_label(x_0 + lbd * theta, y_0) and not self.targeted
+        if (self.targeted and not self._is_label(x_0 + lbd * theta, target)) or (
+            not self.targeted and self._is_label(x_0 + lbd * theta, y_0)
         ):
             lbd_lo = lbd
             lbd_hi = lbd * 1.01
             nquery += 1
-            while (not self._is_label(x_0 + lbd_hi * theta, target) and self.targeted) or (
-                self._is_label(x_0 + lbd_hi * theta, y_0) and not self.targeted
+            while (self.targeted and not self._is_label(x_0 + lbd_hi * theta, target)) or (
+                not self.targeted and self._is_label(x_0 + lbd_hi * theta, y_0)
             ):
                 lbd_hi = lbd_hi * 1.01
                 nquery += 1
@@ -323,8 +323,8 @@ class SignOPTAttack(EvasionAttack):
             lbd_hi = lbd
             lbd_lo = lbd * 0.99
             nquery += 1
-            while (self._is_label(x_0 + lbd_lo * theta, target) and self.targeted) or (
-                not self._is_label(x_0 + lbd_lo * theta, y_0) and not self.targeted
+            while (self.targeted and self._is_label(x_0 + lbd_lo * theta, target)) or (
+                not self.targeted and not self._is_label(x_0 + lbd_lo * theta, y_0)
             ):
                 lbd_lo = lbd_lo * 0.99
                 nquery += 1
@@ -332,8 +332,8 @@ class SignOPTAttack(EvasionAttack):
         while (lbd_hi - lbd_lo) > tol:
             lbd_mid = (lbd_lo + lbd_hi) / 2.0
             nquery += 1
-            if (self._is_label(x_0 + lbd_mid * theta, target) and self.targeted) or (
-                not self._is_label(x_0 + lbd_mid * theta, y_0) and not self.targeted
+            if (self.targeted and self._is_label(x_0 + lbd_mid * theta, target)) or (
+                not self.targeted and not self._is_label(x_0 + lbd_mid * theta, y_0)
             ):
                 lbd_hi = lbd_mid
             else:

@@ -269,7 +269,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         inputs = x.to(self.estimator.device)
         targets = targets.to(self.estimator.device)
         adv_x = torch.clone(inputs)
-        momentum = torch.zeros(inputs.shape)
+        momentum = torch.zeros(inputs.shape).to(self.estimator.device)
 
         if mask is not None:
             mask = mask.to(self.estimator.device)
