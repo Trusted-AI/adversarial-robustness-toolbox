@@ -24,7 +24,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import copy
 import logging
 import os
-import random
 import time
 from typing import Any, Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 
@@ -375,7 +374,7 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):
                     loss.backward()
 
                 self._optimizer.step()
-            
+
             if scheduler is not None:
                 scheduler.step()
 
