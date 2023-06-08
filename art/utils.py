@@ -1508,7 +1508,6 @@ def get_file(
 
     if download:
         logger.info("Downloading data from %s", url)
-        error_msg = "URL fetch failure on {}: {} -- {}"
         try:
             for url_i in url_list:
                 try:
