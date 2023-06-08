@@ -77,13 +77,13 @@ class ImageSquarePad(Preprocessor):
         self.verbose = verbose
         self._check_params()
 
-    def __call__(  # type: ignore
-        self, x: Union[np.ndarray, List[np.ndarray]], y: Optional[Union[np.ndarray, List[Dict[str, np.ndarray]]]] = None
-    ) -> Tuple[Union[np.ndarray, List[np.ndarray]], Optional[Union[np.ndarray, List[Dict[str, np.ndarray]]]]]:
+    def __call__(
+        self, x: np.ndarray, y: Optional[Union[np.ndarray, List[Dict[str, np.ndarray]]]] = None
+    ) -> Tuple[np.ndarray, Optional[Union[np.ndarray, List[Dict[str, np.ndarray]]]]]:
         """
         Square pad `x` and adjust bounding boxes for labels `y` accordingly.
 
-        :param x: Input samples.
+        :param x: Input samples. A list of samples is also supported.
         :param y: Label of the samples `x`.
         :return: Transformed samples and labels.
         """

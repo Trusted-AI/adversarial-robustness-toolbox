@@ -77,15 +77,15 @@ class ImageSquarePadTensorFlowV2(PreprocessorTensorFlowV2):
         self.verbose = verbose
         self._check_params()
 
-    def forward(  # type: ignore
+    def forward(
         self,
-        x: Union["tf.Tensor", List["tf.Tensor"]],
+        x: "tf.Tensor",
         y: Optional[Union["tf.Tensor", List[Dict[str, "tf.Tensor"]]]] = None,
-    ) -> Tuple[Union["tf.Tensor", List["tf.Tensor"]], Optional[Union["tf.Tensor", List[Dict[str, "tf.Tensor"]]]]]:
+    ) -> Tuple["tf.Tensor", Optional[Union["tf.Tensor", List[Dict[str, "tf.Tensor"]]]]]:
         """
         Square pad `x` and adjust bounding boxes for labels `y` accordingly.
 
-        :param x: Input samples.
+        :param x: Input samples. A list of samples is also supported.
         :param y: Label of the samples `x`.
         :return: Transformed samples and labels.
         """

@@ -79,17 +79,15 @@ class ImageSquarePadPyTorch(PreprocessorPyTorch):
         self.verbose = verbose
         self._check_params()
 
-    def forward(  # type: ignore
+    def forward(
         self,
-        x: Union["torch.Tensor", List["torch.Tensor"]],
+        x: "torch.Tensor",
         y: Optional[Union["torch.Tensor", List[Dict[str, "torch.Tensor"]]]] = None,
-    ) -> Tuple[
-        Union["torch.Tensor", List["torch.Tensor"]], Optional[Union["torch.Tensor", List[Dict[str, "torch.Tensor"]]]]
-    ]:
+    ) -> Tuple["torch.Tensor", Optional[Union["torch.Tensor", List[Dict[str, "torch.Tensor"]]]]]:
         """
         Square pad `x` and adjust bounding boxes for labels `y` accordingly.
 
-        :param x: Input samples.
+        :param x: Input samples. A list of samples is also supported.
         :param y: Label of the samples `x`.
         :return: Transformed samples and labels.
         """
