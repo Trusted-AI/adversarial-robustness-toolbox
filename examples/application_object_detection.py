@@ -99,6 +99,7 @@ COCO_INSTANCE_CATEGORY_NAMES = [
     "toothbrush",
 ]
 
+
 def extract_predictions(predictions_):
     # Get the predicted class
     predictions_class = [COCO_INSTANCE_CATEGORY_NAMES[i] for i in list(predictions_["labels"])]
