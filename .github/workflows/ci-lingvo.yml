@@ -61,7 +61,6 @@ jobs:
           pip install lingvo==${{ matrix.lingvo }}
           pip install tensorflow-addons==0.9.1
           pip install model-pruning-google-research==0.0.3
-          pip install jax[cpu]==0.2.17
           pip install h5py==2.10.0
           pip install pytest~=7.0.1
           pip install pytest-flake8~=1.1.0
