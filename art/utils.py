@@ -1324,7 +1324,6 @@ def load_nursery(
         path=config.ART_DATA_PATH,
         extract=False,
         url=[
-            "https://archive.ics.uci.edu/ml/machine-learning-databases/nursery/nursery.data",
             "https://www.dropbox.com/s/l24hwvkuueor6lp/nursery.data?dl=1",
         ],
     )
@@ -1509,7 +1508,6 @@ def get_file(
 
     if download:
         logger.info("Downloading data from %s", url)
-        error_msg = "URL fetch failure on {}: {} -- {}"
         try:
             for url_i in url_list:
                 try:
@@ -1545,13 +1543,9 @@ def get_file(
                         urlretrieve(url_i, full_path)
 
                 except HTTPError as exception:  # pragma: no cover
-                    raise Exception(
-                        error_msg.format(url_i, exception.code, exception.msg)  # type: ignore
-                    ) from HTTPError  # type: ignore
+                    logger.error(url_i, exception)
                 except URLError as exception:  # pragma: no cover
-                    raise Exception(
-                        error_msg.format(url_i, exception.errno, exception.reason)  # type: ignore
-                    ) from HTTPError  # type: ignore
+                    logger.error(url_i, exception)
         except (Exception, KeyboardInterrupt):  # pragma: no cover
             if os.path.exists(full_path):
                 os.remove(full_path)
