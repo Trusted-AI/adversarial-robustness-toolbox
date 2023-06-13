@@ -169,6 +169,7 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
                         between 0 and H and 0 and W
                       - labels (Tensor[N]): the predicted labels for each image
                       - scores (Tensor[N]): the scores or each prediction
+        :param input_shape: Tuple of the form `(height, width)` of ints representing input image height and width
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
@@ -577,43 +578,10 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
                  - labels [N]: the labels for each image
                  - scores [N]: the scores or each prediction.
         """
-        import cv2
         import torch
 
-        # check if image with min, max dimensions, if not scale to 1000
-        # if is within min, max dims, but not square, resize to max of image
-        if (
-            self._input_shape[1] < self.MIN_IMAGE_SIZE
-            or self._input_shape[1] > self.MAX_IMAGE_SIZE
-            or self._input_shape[2] < self.MIN_IMAGE_SIZE
-            or self.input_shape[2] > self.MAX_IMAGE_SIZE
-        ):
-            resized_imgs = []
-            for i, _ in enumerate(x):
-                resized_imgs.append(
-                    cv2.resize(
-                        (x * 255)[i].transpose(1, 2, 0).astype(np.uint8),
-                        dsize=(1000, 1000),
-                        interpolation=cv2.INTER_CUBIC,
-                    )
-                )
-            x = (np.array(resized_imgs) / 255).transpose(0, 3, 1, 2).astype(np.float32)
-        elif self._input_shape[1] != self._input_shape[2]:
-            rescale_dim = max(self._input_shape[1], self._input_shape[2])
-            resized_imgs = []
-            for i, _ in enumerate(x):
-                resized_imgs.append(
-                    cv2.resize(
-                        (x * 255)[i].transpose(1, 2, 0).astype(np.uint8),
-                        dsize=(rescale_dim, rescale_dim),
-                        interpolation=cv2.INTER_CUBIC,
-                    )
-                )
-            x = (np.array(resized_imgs) / 255).transpose(0, 3, 1, 2).astype(np.float32)
-
-        x = x.copy()
-
         self._model.eval()
+        x, _ = self._apply_resizing(x, None)
 
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
@@ -633,7 +601,7 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
             predictions.append(
                 {
                     "boxes": rescale_bboxes(
-                        model_output["pred_boxes"][i, :, :], (self._input_shape[1], self._input_shape[2])
+                        model_output["pred_boxes"][i, :, :], (self._input_shape[2], self._input_shape[1])
                     )
                     .detach()
                     .numpy(),
@@ -765,22 +733,8 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
                   - labels (Tensor[N]): the predicted labels for each image
         :return: Loss gradients of the same shape as `x`.
         """
-        import torch
-
-        _y = []
-        for target in y:
-            cxcy_norm = revert_rescale_bboxes(
-                torch.from_numpy(target["boxes"]), (self.input_shape[1], self.input_shape[2])
-            )
-            _y.append(
-                {
-                    "labels": torch.from_numpy(target["labels"]).type(torch.int64).to(self.device),
-                    "boxes": cxcy_norm.to(self.device),
-                    "scores": torch.from_numpy(target["scores"]).type(torch.float).to(self.device),
-                }
-            )
-
-        output, inputs_t, image_tensor_list_grad = self._get_losses(x=x, y=_y)
+        x, y = self._apply_resizing(x, y)
+        output, inputs_t, image_tensor_list_grad = self._get_losses(x=x, y=y)
         loss = sum(output[k] * self.weight_dict[k] for k in output.keys() if k in self.weight_dict)
 
         self._model.zero_grad()
@@ -833,6 +787,7 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
                   - scores (Tensor[N]): the scores or each prediction.
         :return: Dictionary of loss components.
         """
+        x, y = self._apply_resizing(x, y)
         output_tensor, _, _ = self._get_losses(x=x, y=y)
         output = {}
         for key, value in output_tensor.items():
@@ -859,6 +814,7 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
         """
         import torch
 
+        x, y = self._apply_resizing(x, y)
         output, _, _ = self._get_losses(x=x, y=y)
 
         # Compute the gradient and return
@@ -876,6 +832,90 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
 
         return loss.detach().cpu().numpy()
 
+    def _apply_resizing(self, x: Union[np.ndarray, "torch.Tensor"],
+                        y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]], 
+                        height: int = 800, 
+                        width: int = 800):
+        """
+        Resize the input and targets to dimensions expected by DETR.
+
+        :param x: Array or Tensor representing images of any size
+        :param y: List of targets to be transformed
+        :param height: Int representing desired height, the default is compatible with DETR
+        :param width: Int representing desired width, the default is compatible with DETR
+        """
+        import cv2
+        import torchvision.transforms as T
+        import torch
+
+        if (
+            self._input_shape[1] < self.MIN_IMAGE_SIZE
+            or self._input_shape[1] > self.MAX_IMAGE_SIZE
+            or self._input_shape[2] < self.MIN_IMAGE_SIZE
+            or self.input_shape[2] > self.MAX_IMAGE_SIZE
+        ):
+            resized_imgs = []
+            if isinstance(x, torch.Tensor):
+                x = T.Resize(size = (height, width))(x)
+            else:
+                for i, _ in enumerate(x):
+                    resized = cv2.resize(
+                            (x)[i].transpose(1, 2, 0),
+                            dsize=(height, width),
+                            interpolation=cv2.INTER_CUBIC,
+                        )
+                    resized = resized.transpose(2, 0, 1)
+                    resized_imgs.append(
+                        resized
+                    )
+                x = np.array(resized_imgs)
+
+        elif self._input_shape[1] != self._input_shape[2]:
+            rescale_dim = max(self._input_shape[1], self._input_shape[2])
+            resized_imgs = []
+            if isinstance(x, torch.Tensor):
+                x = T.Resize(size = (rescale_dim,rescale_dim))(x)
+            else:
+                for i, _ in enumerate(x):
+                    resized = cv2.resize(
+                            (x)[i].transpose(1, 2, 0),
+                            dsize=(rescale_dim, rescale_dim),
+                            interpolation=cv2.INTER_CUBIC,
+                        )
+                    resized = resized.transpose(2, 0, 1)
+                    resized_imgs.append(
+                        resized
+                    )
+                x = np.array(resized_imgs)
+        
+        targets = []
+        if y is not None:
+            if isinstance(y[0]['boxes'], torch.Tensor):
+                for target in y:
+                    cxcy_norm = revert_rescale_bboxes(
+                        target["boxes"], (self.input_shape[2], self.input_shape[1])
+                    )
+                    targets.append(
+                        {
+                            "labels": target["labels"].type(torch.int64).to(self.device),
+                            "boxes": cxcy_norm.to(self.device),
+                            "scores": target["scores"].type(torch.float).to(self.device),
+                        }
+                    )
+            else:
+                for target in y:
+                    cxcy_norm = revert_rescale_bboxes(
+                        torch.from_numpy(target["boxes"]), (self.input_shape[2], self.input_shape[1])
+                    )
+                    targets.append(
+                        {
+                            "labels": torch.from_numpy(target["labels"]).type(torch.int64).to(self.device),
+                            "boxes": cxcy_norm.to(self.device),
+                            "scores": torch.from_numpy(target["scores"]).type(torch.float).to(self.device),
+                        }
+                    )
+
+        return x, targets
 
 class NestedTensor:
     """

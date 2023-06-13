@@ -73,28 +73,18 @@ def test_predict(get_pytorch_detr):
     assert list(result[0].keys()) == ["boxes", "labels", "scores"]
 
     assert result[0]["boxes"].shape == (100, 4)
-    expected_detection_boxes = np.asarray([9.0386868e-03, 5.1708374e00, 7.4301929e00, 3.1964935e01])
+    expected_detection_boxes = np.asarray([-5.9490204e-03,  1.1947733e+01,  3.1993944e+01,  3.1925127e+01])
     np.testing.assert_array_almost_equal(result[0]["boxes"][2, :], expected_detection_boxes, decimal=3)
 
     assert result[0]["scores"].shape == (100,)
     expected_detection_scores = np.asarray(
-        [
-            0.00383973,
-            0.0167976,
-            0.01714019,
-            0.00073999,
-            0.00467391,
-            0.02399586,
-            0.00093301,
-            0.02143953,
-            0.00202136,
-            0.00266351,
-        ]
+        [0.00679839, 0.0250559 , 0.07205943, 0.01115368, 0.03321039,
+        0.10407761, 0.00113309, 0.01442852, 0.00527624, 0.01240906]
     )
     np.testing.assert_array_almost_equal(result[0]["scores"][:10], expected_detection_scores, decimal=6)
 
     assert result[0]["labels"].shape == (100,)
-    expected_detection_classes = np.asarray([17, 17, 17, 3, 88, 17, 17, 17, 88, 17])
+    expected_detection_classes = np.asarray([17, 17, 33, 17, 17, 17, 74, 17, 17, 17])
     np.testing.assert_array_almost_equal(result[0]["labels"][:10], expected_detection_classes, decimal=6)
 
 
@@ -105,84 +95,31 @@ def test_loss_gradient(get_pytorch_detr):
 
     grads = object_detector.loss_gradient(x=x_test, y=y_test)
 
-    assert grads.shape == (2, 3, 32, 32)
+    assert grads.shape == (2, 3, 800, 800)
 
     expected_gradients1 = np.asarray(
-        [
-            0.04711548,
-            0.25275955,
-            0.3609573,
-            -0.02207462,
-            0.02886475,
-            0.05820496,
-            0.04151949,
-            -0.07008387,
-            0.24270807,
-            0.17703517,
-            -0.29346713,
-            -0.11548031,
-            -0.15658003,
-            -0.1412788,
-            0.02577158,
-            -0.00550455,
-            0.05846804,
-            -0.04419752,
-            0.06333683,
-            -0.15242189,
-            -0.06642783,
-            -0.09545745,
-            -0.01154867,
-            0.07477856,
-            0.05444539,
-            0.01678686,
-            0.01427085,
-            0.01382115,
-            -0.15745601,
-            -0.13278124,
-            0.06169066,
-            -0.03915803,
-        ]
+        [-0.00061366,  0.00322502, -0.00039866, -0.00807413, -0.00476555,
+            0.00181204,  0.01007765,  0.00415828, -0.00073114,  0.00018387,
+        -0.00146992, -0.00119636, -0.00098966, -0.00295517, -0.0024271 ,
+        -0.00131314, -0.00149217, -0.00104926, -0.00154239, -0.00110989,
+            0.00092887,  0.00049146, -0.00292508, -0.00124526,  0.00140347,
+            0.00019833,  0.00191074, -0.00117537, -0.00080604,  0.00057427,
+        -0.00061728, -0.00206535]
     )
 
-    np.testing.assert_array_almost_equal(grads[0, 0, 10, :], expected_gradients1, decimal=2)
+    np.testing.assert_array_almost_equal(grads[0, 0, 10, :32], expected_gradients1, decimal=2)
 
     expected_gradients2 = np.asarray(
-        [
-            -0.10913675,
-            0.00539385,
-            0.11588555,
-            0.02486979,
-            -0.23739402,
-            -0.01673118,
-            -0.09709811,
-            0.00763445,
-            0.10815062,
-            -0.3278629,
-            -0.23222731,
-            0.28806347,
-            -0.14222082,
-            -0.24168995,
-            -0.20170388,
-            -0.24570045,
-            -0.01220985,
-            -0.18616645,
-            -0.19678666,
-            -0.12424485,
-            -0.36253023,
-            0.08978511,
-            -0.02874891,
-            -0.09320692,
-            -0.26761073,
-            -0.34595487,
-            -0.34932154,
-            -0.21606845,
-            -0.07342689,
-            -0.0573133,
-            -0.04900078,
-            0.03462576,
-        ]
+        [-1.1787530e-03, -2.8500680e-03,  5.0884970e-03,  6.4504531e-04,
+        -6.8841036e-05,  2.8184296e-03,  3.0257765e-03,  2.8565727e-04,
+        -1.0701057e-04,  1.2945699e-03,  7.3593057e-04,  1.0177144e-03,
+        -2.4692707e-03, -1.3801848e-03,  6.3182280e-04, -4.2305476e-04,
+            4.4307750e-04,  8.5821096e-04, -7.1204413e-04, -3.1404425e-03,
+        -1.5964351e-03, -1.9222996e-03, -5.3157361e-04, -9.9202688e-04,
+        -1.5815455e-03,  2.0060266e-04, -2.0584739e-03,  6.6960667e-04,
+            9.7393827e-04, -1.6040013e-03, -6.9741381e-04,  1.4657658e-04]
     )
-    np.testing.assert_array_almost_equal(grads[1, 0, 10, :], expected_gradients2, decimal=2)
+    np.testing.assert_array_almost_equal(grads[1, 0, 10, :32], expected_gradients2, decimal=2)
 
 
 @pytest.mark.only_with_platform("pytorch")
@@ -250,7 +187,7 @@ def test_preprocessing_defences(get_pytorch_detr):
     # Compute gradients
     grads = object_detector.loss_gradient(x=x_test, y=y)
 
-    assert grads.shape == (2, 3, 32, 32)
+    assert grads.shape == (2, 3, 800, 800)
 
 
 @pytest.mark.only_with_platform("pytorch")
@@ -285,7 +222,7 @@ def test_compute_loss(get_pytorch_detr):
     # Compute loss
     loss = object_detector.compute_loss(x=x_test, y=y)
 
-    assert pytest.approx(63.9855, abs=0.01) == float(loss)
+    assert pytest.approx(3.9634, abs=0.01) == float(loss)
 
 
 @pytest.mark.only_with_platform("pytorch")
@@ -294,6 +231,14 @@ def test_pgd(get_pytorch_detr):
     object_detector, x_test, y_test = get_pytorch_detr
 
     from art.attacks.evasion import ProjectedGradientDescent
+    from PIL import Image
+
+    imgs = []
+    for i in x_test:
+        img = Image.fromarray((i*255).astype(np.uint8).transpose(1,2,0))
+        img = img.resize(size=(800, 800))
+        imgs.append(np.array(img))
+    x_test = np.array(imgs).transpose(0, 3, 1, 2)
 
     attack = ProjectedGradientDescent(estimator=object_detector, max_iter=2)
     x_test_adv = attack.generate(x=x_test, y=y_test)
