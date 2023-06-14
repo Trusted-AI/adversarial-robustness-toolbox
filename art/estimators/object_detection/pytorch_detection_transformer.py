@@ -21,7 +21,7 @@ This module implements the task specific estimator for DEtection TRansformer (DE
  | Paper link: https://arxiv.org/abs/2005.12872
 """
 import logging
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Union, Any
 
 import numpy as np
 
@@ -581,10 +581,10 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
         import torch
 
         self._model.eval()
-        x, _ = self._apply_resizing(x, None)
+        x_resized, _ = self._apply_resizing(x)
 
         # Apply preprocessing
-        x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
+        x_preprocessed, _ = self._apply_preprocessing(x_resized, y=None, fit=False)
 
         if self.clip_values is not None:
             norm_factor = self.clip_values[1]
@@ -644,6 +644,7 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
 
         # Apply preprocessing
         if self.all_framework_preprocessing:
+            print(y)
             if y is not None and isinstance(y, list) and isinstance(y[0]["boxes"], np.ndarray):
                 y_tensor = []
                 for y_i in y:
@@ -733,15 +734,15 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
                   - labels (Tensor[N]): the predicted labels for each image
         :return: Loss gradients of the same shape as `x`.
         """
-        x, y = self._apply_resizing(x, y)
-        output, inputs_t, image_tensor_list_grad = self._get_losses(x=x, y=y)
+        x_resized, y_resized = self._apply_resizing(x, y)
+        output, inputs_t, image_tensor_list_grad = self._get_losses(x=x_resized, y=y_resized)
         loss = sum(output[k] * self.weight_dict[k] for k in output.keys() if k in self.weight_dict)
 
         self._model.zero_grad()
 
         loss.backward(retain_graph=True)  # type: ignore
 
-        if isinstance(x, np.ndarray):
+        if isinstance(x_resized, np.ndarray):
             if image_tensor_list_grad.grad is not None:
                 grads = image_tensor_list_grad.grad.cpu().numpy().copy()
             else:
@@ -756,9 +757,7 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
             grads = grads / self.clip_values[1]
 
         if not self.all_framework_preprocessing:
-            grads = self._apply_preprocessing_gradient(x, grads)
-
-        assert grads.shape == x.shape
+            grads = self._apply_preprocessing_gradient(x_resized, grads)
 
         return grads
 
@@ -787,8 +786,8 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
                   - scores (Tensor[N]): the scores or each prediction.
         :return: Dictionary of loss components.
         """
-        x, y = self._apply_resizing(x, y)
-        output_tensor, _, _ = self._get_losses(x=x, y=y)
+        x_resized, y = self._apply_resizing(x, y)
+        output_tensor, _, _ = self._get_losses(x=x_resized, y=y)
         output = {}
         for key, value in output_tensor.items():
             if key in self.attack_losses:
@@ -824,7 +823,6 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
                 loss = output[loss_name]
             else:
                 loss = loss + output[loss_name]
-
         assert loss is not None
 
         if isinstance(x, torch.Tensor):
@@ -835,10 +833,10 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
     def _apply_resizing(
         self,
         x: Union[np.ndarray, "torch.Tensor"],
-        y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]],
+        y: Any = None,
         height: int = 800,
         width: int = 800,
-    ):
+    ) -> Tuple[Union[np.ndarray, "torch.Tensor"], List[Any]]:
         """
         Resize the input and targets to dimensions expected by DETR.
 
@@ -861,9 +859,9 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
             if isinstance(x, torch.Tensor):
                 x = T.Resize(size=(height, width))(x)
             else:
-                for i, _ in enumerate(x):
+                for i in x:
                     resized = cv2.resize(
-                        (x)[i].transpose(1, 2, 0),
+                        i.transpose(1, 2, 0),
                         dsize=(height, width),
                         interpolation=cv2.INTER_CUBIC,
                     )
@@ -877,9 +875,9 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
             if isinstance(x, torch.Tensor):
                 x = T.Resize(size=(rescale_dim, rescale_dim))(x)
             else:
-                for i, _ in enumerate(x):
+                for i in x:
                     resized = cv2.resize(
-                        (x)[i].transpose(1, 2, 0),
+                        i.transpose(1, 2, 0),
                         dsize=(rescale_dim, rescale_dim),
                         interpolation=cv2.INTER_CUBIC,
                     )
@@ -887,10 +885,13 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
                     resized_imgs.append(resized)
                 x = np.array(resized_imgs)
 
-        targets = []
+        targets: List[Any] = []
         if y is not None:
             if isinstance(y[0]["boxes"], torch.Tensor):
                 for target in y:
+                    assert isinstance(target["boxes"], torch.Tensor)
+                    assert isinstance(target["labels"], torch.Tensor)
+                    assert isinstance(target["scores"], torch.Tensor)
                     cxcy_norm = revert_rescale_bboxes(target["boxes"], (self.input_shape[2], self.input_shape[1]))
                     targets.append(
                         {
@@ -901,9 +902,8 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
                     )
             else:
                 for target in y:
-                    cxcy_norm = revert_rescale_bboxes(
-                        torch.from_numpy(target["boxes"]), (self.input_shape[2], self.input_shape[1])
-                    )
+                    tensor_box = torch.from_numpy(target["boxes"])
+                    cxcy_norm = revert_rescale_bboxes(tensor_box, (self.input_shape[2], self.input_shape[1]))
                     targets.append(
                         {
                             "labels": torch.from_numpy(target["labels"]).type(torch.int64).to(self.device),
@@ -988,11 +988,9 @@ def grad_enabled_forward(self, samples: NestedTensor):
     if isinstance(samples, (list, torch.Tensor)):
         samples = nested_tensor_from_tensor_list(samples)
     features, pos = self.backbone(samples)
-
     src, mask = features[-1].decompose()
     assert mask is not None
     h_s = self.transformer(self.input_proj(src), mask, self.query_embed.weight, pos[-1])[0]
-
     outputs_class = self.class_embed(h_s)
     outputs_coord = self.bbox_embed(h_s).sigmoid()
     out = {"pred_logits": outputs_class[-1], "pred_boxes": outputs_coord[-1]}
