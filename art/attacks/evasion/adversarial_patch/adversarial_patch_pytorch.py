@@ -609,7 +609,8 @@ class AdversarialPatchPyTorch(EvasionAttack):
                                     "scores": target["scores"][idx].to(self.estimator.device),
                                 }
                             )
-                    _ = self._train_step(images=images, target=targets, mask=None)
+                        target = targets
+                    _ = self._train_step(images=images, target=target, mask=None)
             else:
                 for images, target, mask_i in data_loader:
                     images = images.to(self.estimator.device)
@@ -625,8 +626,9 @@ class AdversarialPatchPyTorch(EvasionAttack):
                                     "scores": target["scores"][idx].to(self.estimator.device),
                                 }
                             )
+                        target = targets
                     mask_i = mask_i.to(self.estimator.device)
-                    _ = self._train_step(images=images, target=targets, mask=mask_i)
+                    _ = self._train_step(images=images, target=target, mask=mask_i)
 
             # Write summary
             if self.summary_writer is not None:  # pragma: no cover
