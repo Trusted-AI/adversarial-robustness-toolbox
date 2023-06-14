@@ -601,12 +601,14 @@ class AdversarialPatchPyTorch(EvasionAttack):
                         target = target.to(self.estimator.device)
                     else:
                         targets = []
-                        for idx in range(target['boxes'].shape[0]):
-                            targets.append({
-                                'boxes': target['boxes'][idx].to(self.estimator.device),
-                                'labels': target['labels'][idx].to(self.estimator.device),
-                                'scores': target['scores'][idx].to(self.estimator.device),
-                            })
+                        for idx in range(target["boxes"].shape[0]):
+                            targets.append(
+                                {
+                                    "boxes": target["boxes"][idx].to(self.estimator.device),
+                                    "labels": target["labels"][idx].to(self.estimator.device),
+                                    "scores": target["scores"][idx].to(self.estimator.device),
+                                }
+                            )
                     _ = self._train_step(images=images, target=targets, mask=None)
             else:
                 for images, target, mask_i in data_loader:
@@ -615,12 +617,14 @@ class AdversarialPatchPyTorch(EvasionAttack):
                         target = target.to(self.estimator.device)
                     else:
                         targets = []
-                        for idx in range(target['boxes'].shape[0]):
-                            targets.append({
-                                'boxes': target['boxes'][idx].to(self.estimator.device),
-                                'labels': target['labels'][idx].to(self.estimator.device),
-                                'scores': target['scores'][idx].to(self.estimator.device),
-                            })
+                        for idx in range(target["boxes"].shape[0]):
+                            targets.append(
+                                {
+                                    "boxes": target["boxes"][idx].to(self.estimator.device),
+                                    "labels": target["labels"][idx].to(self.estimator.device),
+                                    "scores": target["scores"][idx].to(self.estimator.device),
+                                }
+                            )
                     mask_i = mask_i.to(self.estimator.device)
                     _ = self._train_step(images=images, target=targets, mask=mask_i)
 

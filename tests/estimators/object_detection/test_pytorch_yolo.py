@@ -387,29 +387,41 @@ def test_pgd(art_warning, get_pytorch_yolo):
     except ARTTestException as e:
         art_warning(e)
 
+
 @pytest.mark.only_with_platform("pytorch")
 def test_patch(art_warning, get_pytorch_yolo):
     try:
-        
+
         from art.attacks.evasion import AdversarialPatchPyTorch
 
-        rotation_max=0.0
-        scale_min=0.1
-        scale_max=0.3
-        distortion_scale_max=0.0
-        learning_rate=1.99
-        max_iter=2
-        batch_size=16
-        patch_shape=(3, 5, 5)
-        patch_type="circle"
-        optimizer="pgd"
+        rotation_max = 0.0
+        scale_min = 0.1
+        scale_max = 0.3
+        distortion_scale_max = 0.0
+        learning_rate = 1.99
+        max_iter = 2
+        batch_size = 16
+        patch_shape = (3, 5, 5)
+        patch_type = "circle"
+        optimizer = "pgd"
 
         object_detector, x_test, y_test = get_pytorch_yolo
 
-        ap = AdversarialPatchPyTorch(estimator=object_detector, rotation_max=rotation_max, 
-                      scale_min=scale_min, scale_max=scale_max, optimizer=optimizer, distortion_scale_max=distortion_scale_max,
-                      learning_rate=learning_rate, max_iter=max_iter, batch_size=batch_size,
-                      patch_shape=patch_shape, patch_type=patch_type, verbose=True, targeted=False)
+        ap = AdversarialPatchPyTorch(
+            estimator=object_detector,
+            rotation_max=rotation_max,
+            scale_min=scale_min,
+            scale_max=scale_max,
+            optimizer=optimizer,
+            distortion_scale_max=distortion_scale_max,
+            learning_rate=learning_rate,
+            max_iter=max_iter,
+            batch_size=batch_size,
+            patch_shape=patch_shape,
+            patch_type=patch_type,
+            verbose=True,
+            targeted=False,
+        )
 
         _, _ = ap.generate(x=x_test, y=y_test)
 
@@ -431,7 +443,9 @@ def test_patch(art_warning, get_pytorch_yolo):
                 3.6515078e-06,
             ]
         )
-        np.testing.assert_raises(AssertionError, np.testing.assert_array_almost_equal, result[0]["scores"][:10], expected_detection_scores, 6)
+        np.testing.assert_raises(
+            AssertionError, np.testing.assert_array_almost_equal, result[0]["scores"][:10], expected_detection_scores, 6
+        )
 
     except ARTTestException as e:
         art_warning(e)
