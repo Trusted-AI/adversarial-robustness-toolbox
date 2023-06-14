@@ -832,10 +832,13 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
 
         return loss.detach().cpu().numpy()
 
-    def _apply_resizing(self, x: Union[np.ndarray, "torch.Tensor"],
-                        y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]], 
-                        height: int = 800, 
-                        width: int = 800):
+    def _apply_resizing(
+        self,
+        x: Union[np.ndarray, "torch.Tensor"],
+        y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]],
+        height: int = 800,
+        width: int = 800,
+    ):
         """
         Resize the input and targets to dimensions expected by DETR.
 
@@ -856,45 +859,39 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
         ):
             resized_imgs = []
             if isinstance(x, torch.Tensor):
-                x = T.Resize(size = (height, width))(x)
+                x = T.Resize(size=(height, width))(x)
             else:
                 for i, _ in enumerate(x):
                     resized = cv2.resize(
-                            (x)[i].transpose(1, 2, 0),
-                            dsize=(height, width),
-                            interpolation=cv2.INTER_CUBIC,
-                        )
-                    resized = resized.transpose(2, 0, 1)
-                    resized_imgs.append(
-                        resized
+                        (x)[i].transpose(1, 2, 0),
+                        dsize=(height, width),
+                        interpolation=cv2.INTER_CUBIC,
                     )
+                    resized = resized.transpose(2, 0, 1)
+                    resized_imgs.append(resized)
                 x = np.array(resized_imgs)
 
         elif self._input_shape[1] != self._input_shape[2]:
             rescale_dim = max(self._input_shape[1], self._input_shape[2])
             resized_imgs = []
             if isinstance(x, torch.Tensor):
-                x = T.Resize(size = (rescale_dim,rescale_dim))(x)
+                x = T.Resize(size=(rescale_dim, rescale_dim))(x)
             else:
                 for i, _ in enumerate(x):
                     resized = cv2.resize(
-                            (x)[i].transpose(1, 2, 0),
-                            dsize=(rescale_dim, rescale_dim),
-                            interpolation=cv2.INTER_CUBIC,
-                        )
-                    resized = resized.transpose(2, 0, 1)
-                    resized_imgs.append(
-                        resized
+                        (x)[i].transpose(1, 2, 0),
+                        dsize=(rescale_dim, rescale_dim),
+                        interpolation=cv2.INTER_CUBIC,
                     )
+                    resized = resized.transpose(2, 0, 1)
+                    resized_imgs.append(resized)
                 x = np.array(resized_imgs)
-        
+
         targets = []
         if y is not None:
-            if isinstance(y[0]['boxes'], torch.Tensor):
+            if isinstance(y[0]["boxes"], torch.Tensor):
                 for target in y:
-                    cxcy_norm = revert_rescale_bboxes(
-                        target["boxes"], (self.input_shape[2], self.input_shape[1])
-                    )
+                    cxcy_norm = revert_rescale_bboxes(target["boxes"], (self.input_shape[2], self.input_shape[1]))
                     targets.append(
                         {
                             "labels": target["labels"].type(torch.int64).to(self.device),
@@ -916,6 +913,7 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
                     )
 
         return x, targets
+
 
 class NestedTensor:
     """
