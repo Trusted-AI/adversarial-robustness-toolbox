@@ -378,8 +378,6 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
         :return: Loss gradients of the same shape as `x`.
         """
         self._model.train()
-        self.set_batchnorm(train=False)
-        self.set_dropout(train=False)
 
         # Apply preprocessing and convert to tensors
         x_preprocessed, y_preprocessed = self._preprocess_and_convert_inputs(x=x, y=y, fit=False, no_grad=False)
