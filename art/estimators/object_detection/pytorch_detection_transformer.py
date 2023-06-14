@@ -644,7 +644,6 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
 
         # Apply preprocessing
         if self.all_framework_preprocessing:
-            print(y)
             if y is not None and isinstance(y, list) and isinstance(y[0]["boxes"], np.ndarray):
                 y_tensor = []
                 for y_i in y:
