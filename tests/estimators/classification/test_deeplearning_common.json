@@ -389,7 +389,7 @@
         "nb_classes=10",
         "input_shape=(28, 28, 1)",
         "loss_object=",
-        "train_step=<function get_image_classifier_tf_v2.<locals>.train_step",
+        "optimizer=",
         "channels_first=False, ",
         "clip_values=array([0., 1.], dtype=float32), ",
         "preprocessing_defences=None, postprocessing_defences=None, preprocessing=StandardisationMeanStdTensorFlow(mean=0.0, std=1.0, apply_fit=True, apply_predict=True)"
