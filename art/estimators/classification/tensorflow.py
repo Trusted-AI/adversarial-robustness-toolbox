@@ -913,22 +913,21 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
-        import tensorflow as tf
-
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
-        @tf.function
-        def test_step(model, images):
-            out = model(images, training=training_mode)
-            return out
-
-        test_ds = tf.data.Dataset.from_tensor_slices(x_preprocessed).batch(batch_size)
-
+        # Run prediction with batch processing
         results_list = []
-        for images in test_ds:
-            out = test_step(self._model, images)
-            results_list.append(out.numpy())
+        num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
+        for m in range(num_batch):
+            # Batch indexes
+            begin, end = (
+                m * batch_size,
+                min((m + 1) * batch_size, x_preprocessed.shape[0]),
+            )
+
+            # Run prediction
+            results_list.append(self._model(x_preprocessed[begin:end], training=training_mode))
 
         results = np.vstack(results_list)
 
