@@ -360,7 +360,6 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
                 pred_logits = outputs["pred_logits"]
                 device = pred_logits.device
                 tgt_lengths = torch.as_tensor([len(v["labels"]) for v in targets], device=device)
-                # Count the number of predictions that are NOT "no-object" (which is the last class)
                 card_pred = (pred_logits.argmax(-1) != pred_logits.shape[-1] - 1).sum(1)
                 card_err = torch.nn.functional.l1_loss(card_pred.float(), tgt_lengths.float())
                 losses = {"cardinality_error": card_err}
@@ -399,12 +398,10 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
                 src_masks = outputs["pred_masks"]
                 src_masks = src_masks[src_idx]
                 masks = [t["masks"] for t in targets]
-                # TODO use valid to mask invalid areas due to padding in loss
                 target_masks, _ = nested_tensor_from_tensor_list(masks).decompose()
                 target_masks = target_masks.to_device(src_masks)
                 target_masks = target_masks[tgt_idx]
 
-                # upsample predictions to the target size
                 src_masks = torchvision.ops.misc.interpolate(
                     src_masks[:, None], size=target_masks.shape[-2:], mode="bilinear", align_corners=False
                 )
@@ -591,7 +588,6 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
         self._model.eval()
         x_resized, _ = self._apply_resizing(x)
 
-        # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x_resized, y=None, fit=False)
 
         if self.clip_values is not None:
@@ -650,7 +646,6 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
         self.set_dropout(False)
         self.set_multihead_attention(False)
 
-        # Apply preprocessing
         if self.all_framework_preprocessing:
             if y is not None and isinstance(y, list) and isinstance(y[0]["boxes"], np.ndarray):
                 y_tensor = []
@@ -823,7 +818,6 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
         x, y = self._apply_resizing(x, y)
         output, _, _ = self._get_losses(x=x, y=y)
 
-        # Compute the gradient and return
         loss = None
         for loss_name in self.attack_losses:
             if loss is None:
@@ -962,15 +956,12 @@ def nested_tensor_from_tensor_list(tensor_list: Union[List, "torch.Tensor"]):
     """
     import torch
 
-    # TODO make this more general
     if tensor_list[0].ndim == 3:
-        # TODO make it support different-sized images
         img_shape_list = [list(img.shape) for img in tensor_list]
         max_size = img_shape_list[0]
         for sublist in img_shape_list[1:]:
             for index, item in enumerate(sublist):
                 max_size[index] = max(max_size[index], item)
-        # min_size = tuple(min(s) for s in zip(*[img.shape for img in tensor_list]))
         batch_shape = [len(tensor_list)] + max_size
         batch, _, _, width = batch_shape
         dtype = tensor_list[0].dtype
@@ -978,7 +969,6 @@ def nested_tensor_from_tensor_list(tensor_list: Union[List, "torch.Tensor"]):
         tensor = torch.zeros(batch_shape, dtype=dtype, device=device)
         mask = torch.ones((batch, batch, width), dtype=torch.bool, device=device)
         for img, _, m in zip(tensor_list, tensor, mask):
-            # pad_img = pad_img[: img.shape[0], : img.shape[1], : img.shape[2]].copy_(img)
             m[: img.shape[1], : img.shape[2]] = False
     else:
         raise ValueError("not supported")
