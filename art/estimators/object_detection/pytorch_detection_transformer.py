@@ -912,7 +912,6 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
                             "scores": torch.from_numpy(target["scores"]).type(torch.float).to(self.device),
                         }
                     )
-
         return x, targets
 
 
@@ -920,6 +919,7 @@ class NestedTensor:
     """
     From DETR source: https://github.com/facebookresearch/detr
     (detr/util/misc.py)
+    License: Apache 2.0
     """
 
     def __init__(self, tensors, mask: Optional["torch.Tensor"]):
@@ -953,6 +953,7 @@ def nested_tensor_from_tensor_list(tensor_list: Union[List, "torch.Tensor"]):
     """
     From DETR source: https://github.com/facebookresearch/detr
     (detr/util/misc.py)
+    License: Apache 2.0
     """
     import torch
 
