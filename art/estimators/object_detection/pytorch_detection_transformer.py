@@ -43,6 +43,7 @@ def box_cxcywh_to_xyxy(x: "torch.Tensor"):
     """
     From DETR source: https://github.com/facebookresearch/detr
     (detr/util/box_ops.py)
+    License: Apache 2.0
     """
     import torch
 
@@ -55,6 +56,7 @@ def box_xyxy_to_cxcywh(x: "torch.Tensor"):
     """
     From DETR source: https://github.com/facebookresearch/detr
     (detr/util/box_ops.py)
+    License: Apache 2.0
     """
     import torch
 
@@ -67,6 +69,7 @@ def rescale_bboxes(out_bbox: "torch.Tensor", size: Tuple[int, int]):
     """
     From DETR source: https://github.com/facebookresearch/detr
     (inference notebook)
+    License: Apache 2.0
     """
     import torch
 
@@ -78,8 +81,9 @@ def rescale_bboxes(out_bbox: "torch.Tensor", size: Tuple[int, int]):
 
 def revert_rescale_bboxes(out_bbox: "torch.Tensor", size: Tuple[int, int]):
     """
-    Adapted rom DETR source: https://github.com/facebookresearch/detr
+    Adapted from DETR source: https://github.com/facebookresearch/detr
     (inference notebook)
+    License: Apache 2.0
     This method reverts bounding box rescaling to match input image size
     """
     import torch
@@ -94,6 +98,7 @@ def box_iou(boxes1: "torch.Tensor", boxes2: "torch.Tensor"):
     """
     From DETR source: https://github.com/facebookresearch/detr
     (detr/util/box_ops.py)
+    License: Apache 2.0
     """
     import torch
     from torchvision.ops.boxes import box_area
@@ -117,6 +122,7 @@ def generalized_box_iou(boxes1: "torch.Tensor", boxes2: "torch.Tensor"):
     """
     From DETR source: https://github.com/facebookresearch/detr
     (detr/util/box_ops.py)
+    License: Apache 2.0
     """
     import torch
 
@@ -189,6 +195,7 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
             """
             From DETR source: https://github.com/facebookresearch/detr
             (detr/models/matcher.py)
+            License: Apache 2.0
             """
 
             def __init__(self, cost_class: float = 1, cost_bbox: float = 1, cost_giou: float = 1):
@@ -266,6 +273,7 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
             """
             From DETR source: https://github.com/facebookresearch/detr
             (detr/models/detr.py)
+            License: Apache 2.0
             """
 
             def __init__(self, num_classes, matcher, weight_dict, eos_coef, losses):
@@ -981,6 +989,7 @@ def grad_enabled_forward(self, samples: NestedTensor):
     """
     Adapted from DETR source: https://github.com/facebookresearch/detr
     (detr/models/detr.py)
+    License: Apache 2.0
     """
     import torch
 
