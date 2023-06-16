@@ -292,7 +292,7 @@ def test_equivalence(fix_get_cifar10_data):
         x = self._pos_embed(x)
         assert torch.equal(madry_embed, x)
 
-        # pass the x into the token dropping code from ...
+        # pass the x into the token dropping code
         madry_dropped = MadrylabImplementations.token_dropper(copy.copy(x), ablation_mask)
 
         if self.to_drop_tokens and ablated_input:
@@ -301,7 +301,6 @@ def test_equivalence(fix_get_cifar10_data):
             indexes = torch.gt(torch.where(to_drop > 1, 1, 0), 0)
             x = self.drop_tokens(x, indexes)
 
-        print(torch.equal(madry_dropped, x))
         assert torch.equal(madry_dropped, x)
 
         x = self.norm_pre(x)

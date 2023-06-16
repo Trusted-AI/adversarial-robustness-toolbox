@@ -44,6 +44,7 @@ if TYPE_CHECKING:
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
 
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -145,7 +146,8 @@ class ArtViT(VisionTransformer):
     def __init__(self, **kwargs):
         """
         Create a ArtViT instance
-        :param kwargs: keyword arguments required to create the mask embedder.
+        :param kwargs: keyword arguments required to create the mask embedder and the vision transformer class
+        Must contain ...
         """
         self.to_drop_tokens = kwargs["drop_tokens"]
 
@@ -333,7 +335,7 @@ class PyTorchSmoothedViT(PyTorchClassifier):
 
         if model.default_cfg["input_size"] != input_shape:
             if verbose:
-                print(
+                logger.warning(
                     f"ViT expects input shape of {model.default_cfg['input_size']}, "
                     f"but {input_shape} specified as the input shape. "
                     f"The input will be rescaled to {model.default_cfg['input_size']}"
@@ -360,7 +362,7 @@ class PyTorchSmoothedViT(PyTorchClassifier):
         self.ablation_size = (ablation_size,)
 
         if verbose:
-            print(self.model)
+            logger.info(self.model)
 
         self.ablator = ColumnAblator(
             ablation_size=ablation_size,
@@ -439,7 +441,7 @@ class PyTorchSmoothedViT(PyTorchClassifier):
 
         models = timm.list_models("vit_*")
         for model in models:
-            print(f"Testing {model} creation")
+            logger.info(f"Testing {model} creation")
             try:
                 _ = PyTorchSmoothedViT(
                     model=model,
@@ -458,7 +460,7 @@ class PyTorchSmoothedViT(PyTorchClassifier):
                 unsupported.append(model)
 
         if supported != supported_models:
-            print(
+            logger.warning(
                 "Difference between the generated and fixed model list. Although not necessarily "
                 "an error, this may point to the timm library being updated."
             )
