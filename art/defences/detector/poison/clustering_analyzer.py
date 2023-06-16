@@ -98,7 +98,6 @@ class ClusteringAnalyzer:
             report["Class_" + str(i)] = report_class
 
         report["suspicious_clusters"] = report["suspicious_clusters"] + np.sum(summary_poison_clusters)
-        # return np.asarray(all_assigned_clean), summary_poison_clusters, report
         return np.asarray(all_assigned_clean, dtype=object), summary_poison_clusters, report
 
     def analyze_by_distance(
