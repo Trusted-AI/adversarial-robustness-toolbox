@@ -12,6 +12,8 @@ from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 import numpy as np
 import tensorflow as tf
 
+tf.compat.v1.disable_eager_execution()
+
 from art.attacks.evasion import DeepFool
 from art.estimators.classification import KerasClassifier, TensorFlowClassifier
 from art.utils import load_mnist
@@ -60,7 +62,7 @@ def cnn_mnist_k(input_shape):
 
 
 # Get session
-session = tf.Session()
+session = tf.compat.v1.Session()
 k.set_session(session)
 
 # Read MNIST dataset
