@@ -28,11 +28,10 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 from typing import List, Optional, Tuple, Union, Any, TYPE_CHECKING
 import random
-import torch
-
-from timm.models.vision_transformer import VisionTransformer
 
 import numpy as np
+from timm.models.vision_transformer import VisionTransformer
+import torch
 from tqdm import tqdm
 
 from art.estimators.classification.pytorch import PyTorchClassifier
@@ -49,7 +48,8 @@ logger = logging.getLogger(__name__)
 
 
 class PatchEmbed(torch.nn.Module):
-    """Image to Patch Embedding
+    """
+    Image to Patch Embedding
 
     Class adapted from the implementation in https://github.com/MadryLab/smoothed-vit
 
@@ -75,8 +75,7 @@ class PatchEmbed(torch.nn.Module):
     AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
     LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-    SOFTWARE.
-
+    SOFTWARE
     """
 
     def __init__(self, patch_size: int = 16, in_channels: int = 1, embed_dim: int = 768):
@@ -381,7 +380,6 @@ class PyTorchSmoothedViT(PyTorchClassifier):
         Return the supported model names to the user.
 
         :param generate_from_null: If to re-check the creation of all the ViTs in timm from scratch.
-                                   Can be time-consuming.
         :return: A list of compatible models
         """
         import timm
@@ -491,6 +489,7 @@ class PyTorchSmoothedViT(PyTorchClassifier):
     def update_batchnorm(self, x: np.ndarray, batch_size: int, nb_epochs: int = 1) -> None:
         """
         Method to update the batchnorm of a ViT on small datasets
+
         :param x: Training data.
         :param batch_size: Size of batches.
         :param nb_epochs: How many times to forward pass over the input data
@@ -525,6 +524,7 @@ class PyTorchSmoothedViT(PyTorchClassifier):
     ) -> None:
         """
         Fit the classifier on the training set `(x, y)`.
+
         :param x: Training data.
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or index labels of
                   shape (nb_samples,).

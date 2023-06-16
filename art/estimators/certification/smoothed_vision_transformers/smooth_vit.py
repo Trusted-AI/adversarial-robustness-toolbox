@@ -38,6 +38,7 @@ class UpSampler(torch.nn.Module):
     def __init__(self, input_size: int, final_size: int) -> None:
         """
         Creates an upsampler to make the supplied data match the pre-trained ViT format
+        
         :param input_size: Size of the current input data
         :param final_size: Desired final size
         """
