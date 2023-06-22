@@ -1323,6 +1323,8 @@ class PyTorchClassifierViT(PyTorchClassifier):
         ]
 
         feature_extractor = create_feature_extractor(new_model, return_nodes=return_nodes)
-        out = feature_extractor(x)
+
+        x_preprocessed, _ = self._apply_preprocessing(x=x, y=None, no_grad=False)
+        out = feature_extractor(x_preprocessed)
         att_weights = [v[1] for v in out.values()]
         return torch.stack(att_weights, dim=1)
