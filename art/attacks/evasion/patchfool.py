@@ -168,6 +168,8 @@ class PatchFool(EvasionAttack):
         import torch
 
         att = self.estimator.get_attention_weights(x)
+        # skip class token
+        att = att[:, :, 1:, 1:]
         s_l = torch.sum(att[:, layer, ...], dim=1)
         patch_idx = torch.argmax(s_l, dim=1)
 
@@ -181,6 +183,8 @@ class PatchFool(EvasionAttack):
         import torch
 
         att = self.estimator.get_attention_weights(x)
+        # skip class token
+        att = att[:, :, 1:, 1:]
         att_loss = [torch.sum(att[i, :, :, idx], dim=1) for i, idx in enumerate(patch_idx)]
 
         return torch.stack(att_loss)
