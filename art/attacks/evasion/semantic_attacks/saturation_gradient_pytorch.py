@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements a semantic attack by adversarially perturbing the hue component of the inputs. It uses the
+This module implements a semantic attack by adversarially perturbing the saturation component of the inputs. It uses the
 iterative gradient sign method to optimise the semantic perturbations (see `FastGradientmethod` and
 `BasicIterativeMethod`). This implementation extends the original optimization method to other norms as well.
 
@@ -50,12 +50,12 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class HueGradientPyTorch(EvasionAttack):
+class SaturationGradientPyTorch(EvasionAttack):
     """
-    Implementation of the hue attack on image classifiers in PyTorch. The attack is constructed by adversarially
-    perturbing the hue component of the inputs. It uses the iterative gradient sign method to optimise the semantic
-    perturbations (see `FastGradientmethod` and `BasicIterativeMethod`). This implementation extends the original
-    optimisation method to other norms as well.
+    Implementation of the saturation attack on image classifiers in PyTorch. The attack is constructed by adversarially
+    perturbing the saturation component of the inputs. It uses the iterative gradient sign method to optimise the
+    semantic perturbations (see `FastGradientmethod` and `BasicIterativeMethod`). This implementation extends the
+    original optimisation method to other norms as well.
 
     Note that this attack is intended for only PyTorch image classifiers with RGB images in the range [0, 1] as inputs.
 
@@ -81,8 +81,8 @@ class HueGradientPyTorch(EvasionAttack):
         self,
         classifier: "PyTorchClassifier",
         norm: Union[int, float, str] = np.inf,
-        factor_min: float = -np.pi,
-        factor_max: float = np.pi,
+        factor_min: float = 0.7,
+        factor_max: float = 1.3,
         step_size: Union[int, float] = 0.1,
         max_iter: int = 10,
         targeted: bool = False,
@@ -92,22 +92,22 @@ class HueGradientPyTorch(EvasionAttack):
         verbose: bool = True,
     ) -> None:
         """
-        Create an instance of the :class:`.HueGradientPyTorch`.
+        Create an instance of the :class:`.SaturationGradientPyTorch`.
 
         :param classifier: A trained PyTorch classifier.
         :param norm: The norm of the adversarial perturbation. Possible values: `"inf"`, `np.inf`, `1` or `2`.
-        :param factor_min: The lower bound of the hue perturbation. The value is expected to be in the interval
-                           `[-np.pi, np.pi]`. Perturbation of `0` means no shift and `-np.pi` and `np.pi` give a
-                           complete reversal of the hue channel in the HSV colour space in the positive and negative
-                           directions, respectively. See `kornia.enhance.adjust_hue` for more details.
-        :param factor_max: The upper bound of the hue perturbation. The value is expected to be in the interval
-                           `[-np.pi, np.pi]` and greater than `factor_min`.
+        :param factor_min: The lower bound of the saturation perturbation. The value is expected to be in the interval
+                           `[0, np.inf)`. Perturbation of `0` gives a black and white image, `1` gives the original
+                           image, while `2` enhances the saturation by a factor of 2. See
+                           `kornia.enhance.adjust_saturation` for more details.
+        :param factor_max: The upper bound of the saturation perturbation. The value is expected to be in the interval
+                           `[0, np.inf)` and greater than `factor_min`.
         :param step_size: Attack step size at each iteration.
         :param max_iter: The maximum number of iterations.
         :param targeted: Indicates whether the attack is targeted (`True`) or untargeted (`False`).
-        :param num_random_init: Number of random hue initialisations to try within the `[factor_min, factor_max]`
+        :param num_random_init: Number of random saturation initialisations to try within the `[factor_min, factor_max]`
                                 interval. For `num_random_init=0`, the attack starts at the original input i.e., the
-                                initial hue factor (perturbation) is set to `0`.
+                                initial saturation factor (perturbation) is set to `1`.
         :param batch_size: The batch size to use during the generation of adversarial samples.
         :param summary_writer: Activate summary writer for TensorBoard.
                                Default is `False` and deactivated summary writer.
@@ -142,11 +142,11 @@ class HueGradientPyTorch(EvasionAttack):
         if self.norm not in [1, 2, np.inf, "inf"]:
             raise ValueError('Norm order must be either 1, 2, `np.inf` or "inf".')
 
-        if not isinstance(self.factor_min, float) or not (-np.pi <= self.factor_min <= np.pi):
-            raise ValueError("The argument `factor_min` must be in [-np.pi, np.pi] and of type float.")
+        if not isinstance(self.factor_min, float) or not (0 <= self.factor_min < np.inf):
+            raise ValueError("The argument `factor_min` must be in [0, np.inf) and of type float.")
 
-        if not isinstance(self.factor_max, float) or not (-np.pi <= self.factor_max <= np.pi):
-            raise ValueError("The argument `factor_max` must be in [-np.pi, np.pi] and of type float.")
+        if not isinstance(self.factor_max, float) or not (0 <= self.factor_max < np.inf):
+            raise ValueError("The argument `factor_max` must be in [0, np.inf) and of type float.")
 
         if not (self.factor_min < self.factor_max):
             raise ValueError("The argument `factor_min` must be less than the argument `factor_max`.")
@@ -304,7 +304,7 @@ class HueGradientPyTorch(EvasionAttack):
 
         # Compute perturbations with batching.
         for (batch_id, batch_all) in enumerate(
-            tqdm(data_loader, desc="HueGradientAttack", leave=False, disable=not self.verbose)
+            tqdm(data_loader, desc="SaturationGradientAttack", leave=False, disable=not self.verbose)
         ):
             self._batch_id = batch_id
 
@@ -378,17 +378,17 @@ class HueGradientPyTorch(EvasionAttack):
             # Initialise factors to random values sampled from [factor_min, factor_max].
             f_np = np.random.uniform(self.factor_min, self.factor_max, size=x.size(0))
         else:
-            # Initialise factors to 0 i.e., no perturbation.
-            f_np = np.zeros(shape=x.size(0))
+            # Initialise factors to 1 i.e., no perturbation.
+            f_np = np.ones(shape=x.size(0))
 
         f_init = torch.asarray(f_np, dtype=torch.float32, device=self.estimator.device)
         if mask is not None:
-            f_init = torch.where(mask == 0.0, torch.tensor(0.0).to(self.estimator.device), f_init)
+            f_init = torch.where(mask == 0.0, torch.tensor(1.0).to(self.estimator.device), f_init)
 
         # Start to compute adversarial factors.
         f_adv = f_init.clone().detach()
 
-        x_adv = kornia.enhance.adjust_hue(image=x, factor=f_adv)
+        x_adv = kornia.enhance.adjust_saturation(image=x, factor=f_adv)
         x_adv = self._clip_input(x_adv)
 
         for i_max_iter in range(self.max_iter):
@@ -405,14 +405,14 @@ class HueGradientPyTorch(EvasionAttack):
             factor: "torch.Tensor"
     ) -> Tuple["torch.Tensor", "torch.Tensor"]:
         """
-        Compute adversarial samples and hue factors for one iteration.
+        Compute adversarial samples and saturation factors for one iteration.
 
         :param x: Original inputs.
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)`
         :param mask: A 1D array of masks defining which samples to perturb. Shape needs to be `(nb_samples,)`.
                      Samples for which the mask is zero will not be adversarially perturbed.
-        :param factor: Current hue factors.
-        :return: A tuple holding the current adversarial examples and the hue factors.
+        :param factor: Current saturation factors.
+        :return: A tuple holding the current adversarial examples and the saturation factors.
         """
         import kornia
 
@@ -422,7 +422,7 @@ class HueGradientPyTorch(EvasionAttack):
         # Apply the perturbation and clip.
         f_adv = self._apply_factor_perturbation(factor, f_perturbation)
 
-        x_adv = kornia.enhance.adjust_hue(x, f_adv)
+        x_adv = kornia.enhance.adjust_saturation(x, f_adv)
         x_adv = self._clip_input(x_adv)
 
         return x_adv, f_adv
@@ -435,14 +435,14 @@ class HueGradientPyTorch(EvasionAttack):
             mask: Optional["torch.Tensor"]
     ) -> "torch.Tensor":
         """
-        Compute hue perturbations for the given batch of inputs.
+        Compute saturation perturbations for the given batch of inputs.
 
-        :param factor: Current hue factors.
+        :param factor: Current saturation factors.
         :param x: Original inputs.
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)`.
         :param mask: A 1D array of masks defining which samples to perturb. Shape needs to be `(nb_samples,)`.
                      Samples for which the mask is zero will not be adversarially perturbed.
-        :return: Hue perturbations.
+        :return: Saturation perturbations.
         """
         import torch
         import kornia
@@ -454,8 +454,8 @@ class HueGradientPyTorch(EvasionAttack):
         f = factor.clone().detach().requires_grad_(True)
 
         # Compute the current adversarial examples by applying
-        # the current hue factors to the original inputs.
-        x = kornia.enhance.adjust_hue(x, f)
+        # the current saturation factors to the original inputs.
+        x = kornia.enhance.adjust_saturation(x, f)
         x = self._clip_input(x)
 
         # Get the gradient of the loss w.r.t. factors; invert them if the attack is targeted.
@@ -509,11 +509,11 @@ class HueGradientPyTorch(EvasionAttack):
             factor_perturbation: "torch.Tensor",
     ) -> "torch.Tensor":
         """
-        Apply perturbations to the hue factors.
+        Apply perturbations to the saturation factors.
 
-        :param factor: Current hue factors.
-        :param factor_perturbation: Current hue perturbations.
-        :return: Updated hue factors.
+        :param factor: Current saturation factors.
+        :param factor_perturbation: Current saturation perturbations.
+        :return: Updated saturation factors.
         """
         import torch
 

@@ -21,7 +21,10 @@ import numpy as np
 import pytest
 import torch
 
-from art.attacks.evasion.semantic_attacks import HueGradientPyTorch
+from art.attacks.evasion.semantic_attacks import (
+    HueGradientPyTorch,
+    SaturationGradientPyTorch
+)
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.classification.classifier import ClassifierMixin
 
@@ -89,7 +92,7 @@ def test_hue_generate(art_warning, fix_get_cifar10_subset):
 @pytest.mark.skip_framework(
     "tensorflow1", "tensorflow2", "tensorflow2v1", "keras", "non_dl_frameworks", "mxnet", "kerastf"
 )
-def test_check_params(art_warning):
+def test_hue_check_params(art_warning):
     try:
         classifier = get_cifar10_image_classifier_pt(from_logits=False, load_init=True)
 
@@ -132,10 +135,112 @@ def test_check_params(art_warning):
 
 
 @pytest.mark.framework_agnostic
-def test_classifier_type_check_fail(art_warning):
+def test_hue_classifier_type_check_fail(art_warning):
     try:
         backend_test_classifier_type_check_fail(
             HueGradientPyTorch, [BaseEstimator, LossGradientsMixin, ClassifierMixin]
+        )
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework(
+    "tensorflow1", "tensorflow2", "tensorflow2v1", "keras", "non_dl_frameworks", "mxnet", "kerastf"
+)
+def test_saturation_compute_factor_perturbation(art_warning, fix_get_cifar10_subset):
+    try:
+        (x_train, y_train, x_test, y_test) = fix_get_cifar10_subset
+        factor = np.ones((x_train.shape[0],)).astype(np.float32)
+
+        assert np.min(x_test) >= 0.0
+        assert np.max(x_test) <= 1.0
+
+        classifier = get_cifar10_image_classifier_pt(from_logits=False, load_init=True)
+        attack = SaturationGradientPyTorch(classifier, verbose=False)
+
+        gradients = attack._compute_factor_perturbation(
+            factor=torch.from_numpy(factor),
+            x=torch.from_numpy(x_train),
+            y=torch.from_numpy(y_train),
+            mask=None
+        )
+
+        assert gradients.shape == factor.shape
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework(
+    "tensorflow1", "tensorflow2", "tensorflow2v1", "keras", "non_dl_frameworks", "mxnet", "kerastf"
+)
+def test_saturation_generate(art_warning, fix_get_cifar10_subset):
+    try:
+        (x_train, y_train, x_test, y_test) = fix_get_cifar10_subset
+
+        classifier = get_cifar10_image_classifier_pt(from_logits=False, load_init=True)
+        attack = SaturationGradientPyTorch(classifier, verbose=False)
+
+        x_train_adv = attack.generate(x=x_train, y=y_train)
+
+        assert x_train.shape == x_train_adv.shape
+        assert np.min(x_train_adv) >= 0.0
+        assert np.max(x_train_adv) <= 1.0
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework(
+    "tensorflow1", "tensorflow2", "tensorflow2v1", "keras", "non_dl_frameworks", "mxnet", "kerastf"
+)
+def test_saturation_check_params(art_warning):
+    try:
+        classifier = get_cifar10_image_classifier_pt(from_logits=False, load_init=True)
+
+        with pytest.raises(ValueError):
+            _ = SaturationGradientPyTorch(classifier, norm=0)
+        with pytest.raises(ValueError):
+            _ = SaturationGradientPyTorch(classifier, norm=22)
+
+        with pytest.raises(ValueError):
+            _ = SaturationGradientPyTorch(classifier, factor_min=0, factor_max=0)
+        with pytest.raises(ValueError):
+            _ = SaturationGradientPyTorch(classifier, factor_min=-2, factor_max=2)
+
+        with pytest.raises(ValueError):
+            _ = SaturationGradientPyTorch(classifier, step_size="test")
+        with pytest.raises(ValueError):
+            _ = SaturationGradientPyTorch(classifier, step_size=-0.5)
+
+        with pytest.raises(ValueError):
+            _ = SaturationGradientPyTorch(classifier, max_iter="test")
+        with pytest.raises(ValueError):
+            _ = SaturationGradientPyTorch(classifier, max_iter=-5)
+
+        with pytest.raises(ValueError):
+            _ = SaturationGradientPyTorch(classifier, targeted="true")
+
+        with pytest.raises(TypeError):
+            _ = SaturationGradientPyTorch(classifier, num_random_init=1.0)
+        with pytest.raises(ValueError):
+            _ = SaturationGradientPyTorch(classifier, num_random_init=-1)
+
+        with pytest.raises(ValueError):
+            _ = SaturationGradientPyTorch(classifier, batch_size=-1)
+
+        with pytest.raises(ValueError):
+            _ = SaturationGradientPyTorch(classifier, verbose="true")
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.framework_agnostic
+def test_saturation_classifier_type_check_fail(art_warning):
+    try:
+        backend_test_classifier_type_check_fail(
+            SaturationGradientPyTorch, [BaseEstimator, LossGradientsMixin, ClassifierMixin]
         )
     except ARTTestException as e:
         art_warning(e)
