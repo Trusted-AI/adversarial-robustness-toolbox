@@ -18,7 +18,7 @@
 """
 This module implements a semantic attack by adversarially perturbing the hue component of the inputs. It uses the
 iterative gradient sign method to optimise the semantic perturbations (see `FastGradientmethod` and
-`BasicIterativeMethod`). This implementation extends the original optimization method to other norms as well.
+`BasicIterativeMethod`). This implementation extends the original optimisation method to other norms as well.
 
 | Paper link: https://arxiv.org/abs/2202.04235
 """
