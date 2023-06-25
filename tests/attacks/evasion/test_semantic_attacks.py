@@ -23,6 +23,7 @@ import torch
 
 from art.attacks.evasion.semantic_attacks import (
     BrightnessGradientPyTorch,
+    ContrastGradientPyTorch,
     HueGradientPyTorch,
     SaturationGradientPyTorch
 )
@@ -344,6 +345,108 @@ def test_brightness_classifier_type_check_fail(art_warning):
     try:
         backend_test_classifier_type_check_fail(
             BrightnessGradientPyTorch, [BaseEstimator, LossGradientsMixin, ClassifierMixin]
+        )
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework(
+    "tensorflow1", "tensorflow2", "tensorflow2v1", "keras", "non_dl_frameworks", "mxnet", "kerastf"
+)
+def test_contrast_compute_factor_perturbation(art_warning, fix_get_cifar10_subset):
+    try:
+        (x_train, y_train, x_test, y_test) = fix_get_cifar10_subset
+        factor = np.ones((x_train.shape[0],)).astype(np.float32)
+
+        assert np.min(x_test) >= 0.0
+        assert np.max(x_test) <= 1.0
+
+        classifier = get_cifar10_image_classifier_pt(from_logits=False, load_init=True)
+        attack = ContrastGradientPyTorch(classifier, verbose=False)
+
+        gradients = attack._compute_factor_perturbation(
+            factor=torch.from_numpy(factor),
+            x=torch.from_numpy(x_train),
+            y=torch.from_numpy(y_train),
+            mask=None
+        )
+
+        assert gradients.shape == factor.shape
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework(
+    "tensorflow1", "tensorflow2", "tensorflow2v1", "keras", "non_dl_frameworks", "mxnet", "kerastf"
+)
+def test_contrast_generate(art_warning, fix_get_cifar10_subset):
+    try:
+        (x_train, y_train, x_test, y_test) = fix_get_cifar10_subset
+
+        classifier = get_cifar10_image_classifier_pt(from_logits=False, load_init=True)
+        attack = ContrastGradientPyTorch(classifier, verbose=False)
+
+        x_train_adv = attack.generate(x=x_train, y=y_train)
+
+        assert x_train.shape == x_train_adv.shape
+        assert np.min(x_train_adv) >= 0.0
+        assert np.max(x_train_adv) <= 1.0
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework(
+    "tensorflow1", "tensorflow2", "tensorflow2v1", "keras", "non_dl_frameworks", "mxnet", "kerastf"
+)
+def test_contrast_check_params(art_warning):
+    try:
+        classifier = get_cifar10_image_classifier_pt(from_logits=False, load_init=True)
+
+        with pytest.raises(ValueError):
+            _ = ContrastGradientPyTorch(classifier, norm=0)
+        with pytest.raises(ValueError):
+            _ = ContrastGradientPyTorch(classifier, norm=22)
+
+        with pytest.raises(ValueError):
+            _ = ContrastGradientPyTorch(classifier, factor_min=0, factor_max=0)
+        with pytest.raises(ValueError):
+            _ = ContrastGradientPyTorch(classifier, factor_min=-2, factor_max=2)
+
+        with pytest.raises(ValueError):
+            _ = ContrastGradientPyTorch(classifier, step_size="test")
+        with pytest.raises(ValueError):
+            _ = ContrastGradientPyTorch(classifier, step_size=-0.5)
+
+        with pytest.raises(ValueError):
+            _ = ContrastGradientPyTorch(classifier, max_iter="test")
+        with pytest.raises(ValueError):
+            _ = ContrastGradientPyTorch(classifier, max_iter=-5)
+
+        with pytest.raises(ValueError):
+            _ = ContrastGradientPyTorch(classifier, targeted="true")
+
+        with pytest.raises(TypeError):
+            _ = ContrastGradientPyTorch(classifier, num_random_init=1.0)
+        with pytest.raises(ValueError):
+            _ = ContrastGradientPyTorch(classifier, num_random_init=-1)
+
+        with pytest.raises(ValueError):
+            _ = ContrastGradientPyTorch(classifier, batch_size=-1)
+
+        with pytest.raises(ValueError):
+            _ = ContrastGradientPyTorch(classifier, verbose="true")
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.framework_agnostic
+def test_contrast_classifier_type_check_fail(art_warning):
+    try:
+        backend_test_classifier_type_check_fail(
+            ContrastGradientPyTorch, [BaseEstimator, LossGradientsMixin, ClassifierMixin]
         )
     except ARTTestException as e:
         art_warning(e)

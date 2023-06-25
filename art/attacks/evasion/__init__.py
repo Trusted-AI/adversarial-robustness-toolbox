@@ -57,6 +57,7 @@ from art.attacks.evasion.over_the_air_flickering.over_the_air_flickering_pytorch
 from art.attacks.evasion.saliency_map import SaliencyMapMethod
 from art.attacks.evasion.semantic_attacks import (
     BrightnessGradientPyTorch,
+    ContrastGradientPyTorch,
     HueGradientPyTorch,
     SaturationGradientPyTorch
 )
