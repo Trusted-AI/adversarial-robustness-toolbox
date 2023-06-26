@@ -46,7 +46,7 @@ epsilon_values = [0.01, 0.1, 0.15, 0.2, 0.25, 0.3]
 for epsilon in epsilon_values:
     # Craft adversarial samples with FGSM
     adv_crafter = FastGradientMethod(classifier, eps=epsilon)
-    x_test_adv = adv_crafter.generate(x=x_test)
+    x_test_adv = adv_crafter.generate(x=x_test, y=y_test)
 
     # Evaluate the classifier on the adversarial examples
     preds = np.argmax(classifier.predict(x_test_adv), axis=1)
