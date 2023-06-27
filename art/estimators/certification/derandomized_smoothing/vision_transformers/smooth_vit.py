@@ -24,7 +24,7 @@ This module implements Certified Patch Robustness via Smoothed Vision Transforme
 | Paper link Arxiv version (more detail): https://arxiv.org/pdf/2110.07719.pdf
 """
 
-from typing import Optional, Tuple
+from typing import Optional, Union, Tuple
 import random
 
 import numpy as np
@@ -110,7 +110,7 @@ class ColumnAblator(torch.nn.Module):
             x[:, :, :, column_pos + k :] = 0.0
         return x
 
-    def forward(self, x: torch.Tensor, column_pos: Optional[int] = None) -> torch.Tensor:
+    def forward(self, x: Union[torch.Tensor, np.ndarray], column_pos: Optional[int] = None) -> torch.Tensor:
         """
         Forward pass though the ablator. We insert a new channel to keep track of the ablation location.
 
@@ -134,7 +134,7 @@ class ColumnAblator(torch.nn.Module):
         return x
 
     def certify(
-        self, pred_counts: torch.Tensor, size_to_certify: int, label: torch.Tensor
+        self, pred_counts: Union[torch.Tensor, np.ndarray], size_to_certify: int, label: Union[torch.Tensor, np.ndarray]
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Performs certification of the predictions
@@ -146,6 +146,11 @@ class ColumnAblator(torch.nn.Module):
                  the predictions which were certified and also correct,
                  and the most predicted class across the different ablations on the input.
         """
+        if isinstance(pred_counts, np.ndarray):
+            pred_counts = torch.from_numpy(pred_counts).to(self.device)
+
+        if isinstance(label, np.ndarray):
+            label = torch.from_numpy(label).to(self.device)
 
         num_of_classes = pred_counts.shape[-1]
 

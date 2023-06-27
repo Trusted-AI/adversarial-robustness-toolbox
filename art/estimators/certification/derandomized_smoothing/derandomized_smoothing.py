@@ -159,13 +159,14 @@ class BaseAblator(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def certify(self, preds: np.ndarray, size_to_certify: int):
+    def certify(self, preds: np.ndarray, size_to_certify: int, label: Optional[np.ndarray] = None):
         """
         Checks if based on the predictions supplied the classifications over the ablated datapoints result in a
         certified prediction against a patch attack of size size_to_certify.
 
         :param preds: The cumulative predictions of the classifier over the ablation locations.
         :param size_to_certify: The size of the patch to check against.
+        :param label: ground truth labels
         """
         raise NotImplementedError
 
@@ -230,13 +231,14 @@ class ColumnAblator(BaseAblator):
         """
         return self.forward(x=x, column_pos=column_pos)
 
-    def certify(self, preds: np.ndarray, size_to_certify: int) -> np.ndarray:
+    def certify(self, preds: np.ndarray, size_to_certify: int, label: Optional[np.ndarray] = None) -> np.ndarray:
         """
         Checks if based on the predictions supplied the classifications over the ablated datapoints result in a
         certified prediction against a patch attack of size size_to_certify.
 
         :param preds: The cumulative predictions of the classifier over the ablation locations.
         :param size_to_certify: The size of the patch to check against.
+        :param label: Ground truth labels
         :return: Array of bools indicating if a point is certified against the given patch dimensions.
         """
         indices = np.argsort(-preds, axis=1, kind="stable")
@@ -348,13 +350,14 @@ class BlockAblator(BaseAblator):
         """
         return self.forward(x=x, row_pos=row_pos, column_pos=column_pos)
 
-    def certify(self, preds: np.ndarray, size_to_certify: int) -> np.ndarray:
+    def certify(self, preds: np.ndarray, size_to_certify: int, label: Optional[np.ndarray] = None) -> np.ndarray:
         """
         Checks if based on the predictions supplied the classifications over the ablated datapoints result in a
         certified prediction against a patch attack of size size_to_certify.
 
         :param preds: The cumulative predictions of the classifier over the ablation locations.
         :param size_to_certify: The size of the patch to check against.
+        :param label: Ground truth labels
         :return: Array of bools indicating if a point is certified against the given patch dimensions.
         """
         indices = np.argsort(-preds, axis=1, kind="stable")
