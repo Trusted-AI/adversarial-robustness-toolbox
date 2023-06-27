@@ -294,7 +294,10 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
 
             # Set gradients
             if not no_grad:
-                x_tensor.requires_grad = True
+                if x_tensor.is_leaf:
+                    x_tensor.requires_grad = True
+                else:
+                    x_tensor.retain_grad()
 
             # Apply framework-specific preprocessing
             x_preprocessed, y_preprocessed = self._apply_preprocessing(x=x_tensor, y=y_tensor, fit=fit, no_grad=no_grad)
