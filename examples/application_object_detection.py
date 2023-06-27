@@ -129,11 +129,24 @@ def plot_image_with_boxes(img, boxes, pred_cls):
 
     for i in range(len(boxes)):
         # Draw Rectangle with the coordinates
-        cv2.rectangle(img, boxes[i][0], boxes[i][1], color=(0, 255, 0), thickness=rect_th)
 
+        cv2.rectangle(
+            img,
+            (int(boxes[i][0][0]), int(boxes[i][0][1])),
+            (int(boxes[i][1][0]), int(boxes[i][1][1])),
+            color=(0, 255, 0),
+            thickness=rect_th,
+        )
         # Write the prediction class
-        cv2.putText(img, pred_cls[i], boxes[i][0], cv2.FONT_HERSHEY_SIMPLEX, text_size, (0, 255, 0), thickness=text_th)
-
+        cv2.putText(
+            img,
+            pred_cls[i],
+            (int(boxes[i][0][0]), int(boxes[i][0][1])),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            text_size,
+            (0, 255, 0),
+            thickness=text_th,
+        )
     plt.axis("off")
     plt.imshow(img.astype(np.uint8), interpolation="nearest")
     plt.show()
