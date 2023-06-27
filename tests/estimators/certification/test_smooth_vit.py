@@ -20,8 +20,6 @@ import pytest
 import numpy as np
 
 from art.utils import load_dataset
-from art.estimators.certification.smoothed_vision_transformers import PyTorchSmoothedViT
-from art.estimators.certification.smoothed_vision_transformers.pytorch import ArtViT
 
 from tests.utils import ARTTestException
 
@@ -68,7 +66,7 @@ def test_ablation(art_warning, fix_get_mnist_data, fix_get_cifar10_data):
     import torch
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    from art.estimators.certification.smoothed_vision_transformers.smooth_vit import ColumnAblator
+    from art.estimators.certification.derandomized_smoothing.vision_transformers.smooth_vit import ColumnAblator
 
     try:
         cifar_data = fix_get_cifar10_data[0]
@@ -132,12 +130,13 @@ def test_pytorch_training(art_warning, fix_get_mnist_data, fix_get_cifar10_data)
     Check that the training loop for pytorch does not result in errors
     """
     import torch
+    from art.estimators.certification.derandomized_smoothing import PyTorchDeRandomizedSmoothing
 
     try:
         cifar_data = fix_get_cifar10_data[0][:50]
         cifar_labels = fix_get_cifar10_data[1][:50]
 
-        art_model = PyTorchSmoothedViT(
+        art_model = PyTorchDeRandomizedSmoothing(
             model="vit_small_patch16_224",
             loss=torch.nn.CrossEntropyLoss(),
             optimizer=torch.optim.SGD,
@@ -147,6 +146,7 @@ def test_pytorch_training(art_warning, fix_get_mnist_data, fix_get_cifar10_data)
             ablation_size=4,
             load_pretrained=True,
             replace_last_layer=True,
+            verbose=False,
         )
 
         scheduler = torch.optim.lr_scheduler.MultiStepLR(art_model.optimizer, milestones=[1], gamma=0.1)
@@ -161,7 +161,7 @@ def test_certification_function(art_warning, fix_get_mnist_data, fix_get_cifar10
     """
     Check that ...
     """
-    from art.estimators.certification.smoothed_vision_transformers.smooth_vit import ColumnAblator
+    from art.estimators.certification.derandomized_smoothing.vision_transformers.smooth_vit import ColumnAblator
     import torch
 
     try:
@@ -187,6 +187,8 @@ def test_certification_function(art_warning, fix_get_mnist_data, fix_get_cifar10
 @pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
 def test_equivalence(fix_get_cifar10_data):
     import torch
+    from art.estimators.certification.derandomized_smoothing import PyTorchDeRandomizedSmoothing
+    from art.estimators.certification.derandomized_smoothing.vision_transformers.vit import PyTorchViT
 
     class MadrylabImplementations:
         """
@@ -309,9 +311,9 @@ def test_equivalence(fix_get_cifar10_data):
         return self.norm(x)
 
     # Replace the forward_features with the forward_features code with checks.
-    ArtViT.forward_features = forward_features
+    PyTorchViT.forward_features = forward_features
 
-    art_model = PyTorchSmoothedViT(
+    art_model = PyTorchDeRandomizedSmoothing(
         model="vit_small_patch16_224",
         loss=torch.nn.CrossEntropyLoss(),
         optimizer=torch.optim.SGD,
@@ -321,6 +323,7 @@ def test_equivalence(fix_get_cifar10_data):
         ablation_size=4,
         load_pretrained=False,
         replace_last_layer=True,
+        verbose=False,
     )
 
     cifar_data = fix_get_cifar10_data[0][:50]

@@ -26,7 +26,7 @@ This module implements Certified Patch Robustness via Smoothed Vision Transforme
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import List, Optional, Tuple, Union, Any, TYPE_CHECKING
+from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 import random
 
 import numpy as np
@@ -37,7 +37,9 @@ from art.estimators.certification.derandomized_smoothing.vision_transformers.smo
 from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
-    import torchvision
+    import torch
+    from timm.models.vision_transformer import VisionTransformer
+    from art.estimators.certification.derandomized_smoothing.vision_transformers.vit import PyTorchViT
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
@@ -108,7 +110,7 @@ class PyTorchSmoothedViT(PyTorchClassifier):
         import timm
         import torch
         from timm.models.vision_transformer import VisionTransformer
-        from art.estimators.certification.derandomized_smoothing.vision_transformers.vit import ArtViT
+        from art.estimators.certification.derandomized_smoothing.vision_transformers.vit import PyTorchViT
 
         # temporarily assign the original method to tmp_func
         tmp_func = timm.models.vision_transformer._create_vision_transformer
@@ -158,8 +160,8 @@ class PyTorchSmoothedViT(PyTorchClassifier):
                 converted_optimizer.load_state_dict(opt_state_dict)
 
         self.to_reshape = False
-        if not isinstance(model, ArtViT):
-            raise ValueError("Vision transformer is not of ArtViT. Error occurred in ArtViT creation.")
+        if not isinstance(model, PyTorchViT):
+            raise ValueError("Vision transformer is not of PyTorchViT. Error occurred in PyTorchViT creation.")
 
         if model.default_cfg["input_size"][0] != input_shape[0]:
             raise ValueError(
@@ -170,10 +172,12 @@ class PyTorchSmoothedViT(PyTorchClassifier):
         if model.default_cfg["input_size"] != input_shape:
             if verbose:
                 logger.warning(
-                    f"ViT expects input shape of {model.default_cfg['input_size']}, "
-                    f"but {input_shape} specified as the input shape. "
-                    f"The input will be rescaled to {model.default_cfg['input_size']}"
+                    " ViT expects input shape of: (%i, %i, %i) but (%i, %i, %i) specified as the input shape. The input will be rescaled to (%i, %i, %i)",
+                    *model.default_cfg["input_size"],
+                    *input_shape,
+                    *model.default_cfg["input_size"],
                 )
+
             self.to_reshape = True
 
         if optimizer is None or isinstance(optimizer, torch.optim.Optimizer):
@@ -276,7 +280,7 @@ class PyTorchSmoothedViT(PyTorchClassifier):
 
         models = timm.list_models("vit_*")
         for model in models:
-            logger.info(f"Testing {model} creation")
+            logger.info("Testing %s creation", model)
             try:
                 _ = PyTorchSmoothedViT(
                     model=model,
@@ -303,9 +307,9 @@ class PyTorchSmoothedViT(PyTorchClassifier):
         return supported
 
     @staticmethod
-    def art_create_vision_transformer(variant: str, pretrained: bool = False, **kwargs) -> "ArtViT":
+    def art_create_vision_transformer(variant: str, pretrained: bool = False, **kwargs) -> "PyTorchViT":
         """
-        Creates a vision transformer using ArtViT which controls the forward pass of the model
+        Creates a vision transformer using PyTorchViT which controls the forward pass of the model
 
         :param variant: The name of the vision transformer to load
         :param pretrained: If to load pre-trained weights
@@ -314,10 +318,10 @@ class PyTorchSmoothedViT(PyTorchClassifier):
 
         from timm.models._builder import build_model_with_cfg
         from timm.models.vision_transformer import checkpoint_filter_fn
-        from art.estimators.certification.derandomized_smoothing.vision_transformers.vit import ArtViT
+        from art.estimators.certification.derandomized_smoothing.vision_transformers.vit import PyTorchViT
 
         return build_model_with_cfg(
-            ArtViT,
+            PyTorchViT,
             variant,
             pretrained,
             pretrained_filter_fn=checkpoint_filter_fn,
@@ -326,13 +330,14 @@ class PyTorchSmoothedViT(PyTorchClassifier):
 
     def update_batchnorm(self, x: np.ndarray, batch_size: int, nb_epochs: int = 1) -> None:
         """
-        Method to update the batchnorm of a ViT on small datasets
+        Method to update the batchnorm of a neural network on small datasets when it was pre-trained
 
         :param x: Training data.
         :param batch_size: Size of batches.
         :param nb_epochs: How many times to forward pass over the input data
         """
         import torch
+
         self.model.train()
 
         ind = np.arange(len(x))
@@ -344,133 +349,6 @@ class PyTorchSmoothedViT(PyTorchClassifier):
                     i_batch = torch.from_numpy(np.copy(x[ind[m * batch_size : (m + 1) * batch_size]])).to(self.device)
                     i_batch = self.ablator.forward(i_batch, column_pos=random.randint(0, x.shape[3]))
                     _ = self.model(i_batch)
-
-    def fit_old(  # pylint: disable=W0221
-        self,
-        x: np.ndarray,
-        y: np.ndarray,
-        batch_size: int = 128,
-        nb_epochs: int = 10,
-        training_mode: bool = True,
-        drop_last: bool = False,
-        scheduler: Optional[Any] = None,
-        update_batchnorm: bool = True,
-        batchnorm_update_epochs: int = 1,
-        transform: Optional["torchvision.transforms.transforms.Compose"] = None,
-        verbose: bool = True,
-        **kwargs,
-    ) -> None:
-        """
-        Fit the classifier on the training set `(x, y)`.
-
-        :param x: Training data.
-        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or index labels of
-                  shape (nb_samples,).
-        :param batch_size: Size of batches.
-        :param nb_epochs: Number of epochs to use for training.
-        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
-        :param drop_last: Set to ``True`` to drop the last incomplete batch, if the dataset size is not divisible by
-                          the batch size. If ``False`` and the size of dataset is not divisible by the batch size, then
-                          the last batch will be smaller. (default: ``False``)
-        :param scheduler: Learning rate scheduler to run at the start of every epoch.
-        :param update_batchnorm: if to run the training data through the model to update any batch norm statistics prior
-        to training. Useful on small datasets when using pre-trained ViTs.
-        :param batchnorm_update_epochs: how many times to forward pass over the training data
-                                        to pre-adjust the batchnorm statistics.
-        :param transform: Torchvision compose of relevant augmentation transformations to apply.
-        :param verbose: if to display training progress bars
-        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
-               and providing it takes no effect.
-        """
-        import torch
-
-        # Set model mode
-        self._model.train(mode=training_mode)
-
-        if self._optimizer is None:  # pragma: no cover
-            raise ValueError("An optimizer is needed to train the model, but none for provided.")
-
-        y = check_and_transform_label_format(y, nb_classes=self.nb_classes)
-
-        # Apply preprocessing
-        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
-
-        if update_batchnorm:
-            self.update_batchnorm(x_preprocessed, batch_size, nb_epochs=batchnorm_update_epochs)
-
-        # Check label shape
-        y_preprocessed = self.reduce_labels(y_preprocessed)
-
-        num_batch = len(x_preprocessed) / float(batch_size)
-        if drop_last:
-            num_batch = int(np.floor(num_batch))
-        else:
-            num_batch = int(np.ceil(num_batch))
-        ind = np.arange(len(x_preprocessed))
-
-        # Start training
-        for _ in tqdm(range(nb_epochs)):
-            # Shuffle the examples
-            random.shuffle(ind)
-
-            epoch_acc = []
-            epoch_loss = []
-            epoch_batch_sizes = []
-
-            pbar = tqdm(range(num_batch), disable=not verbose)
-
-            # Train for one epoch
-            for m in pbar:
-                i_batch = torch.from_numpy(np.copy(x_preprocessed[ind[m * batch_size : (m + 1) * batch_size]])).to(
-                    self._device
-                )
-                if transform is not None:
-                    i_batch = transform(i_batch)
-                i_batch = self.ablator.forward(i_batch, column_pos=random.randint(0, x.shape[3]))
-
-                o_batch = torch.from_numpy(y_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]).to(self._device)
-
-                # Zero the parameter gradients
-                self._optimizer.zero_grad()
-
-                # Perform prediction
-                try:
-                    model_outputs = self.model(i_batch)
-                except ValueError as err:
-                    if "Expected more than 1 value per channel when training" in str(err):
-                        logger.exception(
-                            "Try dropping the last incomplete batch by setting drop_last=True in "
-                            "method PyTorchClassifier.fit."
-                        )
-                    raise err
-
-                loss = self.loss(model_outputs, o_batch)
-                acc = self.get_accuracy(preds=model_outputs, labels=o_batch)
-
-                # Do training
-                if self._use_amp:  # pragma: no cover
-                    from apex import amp  # pylint: disable=E0611
-
-                    with amp.scale_loss(loss, self._optimizer) as scaled_loss:
-                        scaled_loss.backward()
-
-                else:
-                    loss.backward()
-
-                self.optimizer.step()
-
-                epoch_acc.append(acc)
-                epoch_loss.append(loss.cpu().detach().numpy())
-                epoch_batch_sizes.append(len(i_batch))
-
-                if verbose:
-                    pbar.set_description(
-                        f"Loss {np.average(epoch_loss, weights=epoch_batch_sizes):.3f} "
-                        f"Acc {np.average(epoch_acc, weights=epoch_batch_sizes):.3f} "
-                    )
-
-            if scheduler is not None:
-                scheduler.step()
 
     def eval_and_certify(
         self,
@@ -539,21 +417,3 @@ class PyTorchSmoothedViT(PyTorchClassifier):
                 pbar.set_description(f"Normal Acc {accuracy / n_samples:.3f} " f"Cert Acc {cert_sum / n_samples:.3f}")
 
         return (accuracy / n_samples), (cert_sum / n_samples)
-
-    @staticmethod
-    def get_accuracy(preds: Union[np.ndarray, "torch.Tensor"], labels: Union[np.ndarray, "torch.Tensor"]) -> np.ndarray:
-        """
-        Helper function to get the accuracy during training.
-
-        :param preds: model predictions.
-        :param labels: ground truth labels (not one hot).
-        :return: prediction accuracy.
-        """
-
-        if not isinstance(preds, np.ndarray):
-            preds = preds.detach().cpu().numpy()
-
-        if not isinstance(preds, np.ndarray):
-            labels = labels.detach().cpu().numpy()
-
-        return np.sum(np.argmax(preds, axis=1) == labels) / len(labels)

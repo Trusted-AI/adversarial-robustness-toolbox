@@ -27,6 +27,7 @@ This module implements Certified Patch Robustness via Smoothed Vision Transforme
 from typing import Optional, Tuple
 import random
 
+import numpy as np
 import torch
 
 
@@ -39,7 +40,7 @@ class UpSampler(torch.nn.Module):
     def __init__(self, input_size: int, final_size: int) -> None:
         """
         Creates an upsampler to make the supplied data match the pre-trained ViT format
-        
+
         :param input_size: Size of the current input data
         :param final_size: Desired final size
         """
@@ -93,7 +94,7 @@ class ColumnAblator(torch.nn.Module):
         if original_shape is not None and output_shape is not None:
             self.upsample = UpSampler(input_size=original_shape[1], final_size=output_shape[1])
 
-    def ablate(self, x: torch.Tensor, column_pos: Optional[int] = None) -> torch.Tensor:
+    def ablate(self, x: torch.Tensor, column_pos: int) -> torch.Tensor:
         """
         Ablates the input colum wise
 
@@ -102,9 +103,6 @@ class ColumnAblator(torch.nn.Module):
         :return: The ablated input with 0s where the ablation occurred
         """
         k = self.ablation_size
-        if column_pos is None:
-            column_pos = random.randint(0, x.shape[3])
-
         if column_pos + k > x.shape[-1]:
             x[:, :, :, (column_pos + k) % x.shape[-1] : column_pos] = 0.0
         else:
@@ -112,7 +110,7 @@ class ColumnAblator(torch.nn.Module):
             x[:, :, :, column_pos + k :] = 0.0
         return x
 
-    def forward(self, x: torch.Tensor, column_pos: int) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, column_pos: Optional[int] = None) -> torch.Tensor:
         """
         Forward pass though the ablator. We insert a new channel to keep track of the ablation location.
 
@@ -121,6 +119,13 @@ class ColumnAblator(torch.nn.Module):
         :return: The albated input with an extra channel indicating the location of the ablation
         """
         assert x.shape[1] == 3
+
+        if column_pos is None:
+            column_pos = random.randint(0, x.shape[3])
+
+        if isinstance(x, np.ndarray):
+            x = torch.from_numpy(x).to(self.device)
+
         ones = torch.torch.ones_like(x[:, 0:1, :, :]).to(self.device)
         x = torch.cat([x, ones], dim=1)
         x = self.ablate(x, column_pos=column_pos)
