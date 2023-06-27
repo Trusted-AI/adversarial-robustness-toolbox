@@ -24,7 +24,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import copy
 import logging
 import os
-import random
 import time
 from typing import Any, Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 
@@ -246,6 +245,7 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
         import torch
+        from torch.utils.data import TensorDataset, DataLoader
 
         # Set model mode
         self._model.train(mode=training_mode)
@@ -253,19 +253,19 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
+        # Create dataloader
+        x_tensor = torch.from_numpy(x_preprocessed)
+        dataset = TensorDataset(x_tensor)
+        dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=False)
+
         results_list = []
+        for (x_batch,) in dataloader:
+            # Move inputs to device
+            x_batch = x_batch.to(self._device)
 
-        # Run prediction with batch processing
-        num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
-        for m in range(num_batch):
-            # Batch indexes
-            begin, end = (
-                m * batch_size,
-                min((m + 1) * batch_size, x_preprocessed.shape[0]),
-            )
-
+            # Run prediction
             with torch.no_grad():
-                model_outputs = self._model(torch.from_numpy(x_preprocessed[begin:end]).to(self._device))
+                model_outputs = self._model(x_batch)
             output = model_outputs[-1]
             output = output.detach().cpu().numpy().astype(np.float32)
             if len(output.shape) == 1:
@@ -309,6 +309,8 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):
         batch_size: int = 128,
         nb_epochs: int = 10,
         training_mode: bool = True,
+        drop_last: bool = False,
+        scheduler: Optional["torch.optim.lr_scheduler._LRScheduler"] = None,
         **kwargs,
     ) -> None:
         """
@@ -320,10 +322,15 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
         :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :param drop_last: Set to ``True`` to drop the last incomplete batch, if the dataset size is not divisible by
+                          the batch size. If ``False`` and the size of dataset is not divisible by the batch size, then
+                          the last batch will be smaller. (default: ``False``)
+        :param scheduler: Learning rate scheduler to run at the start of every epoch.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
         """
         import torch
+        from torch.utils.data import TensorDataset, DataLoader
 
         # Set model mode
         self._model.train(mode=training_mode)
@@ -334,32 +341,28 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
 
-        num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
-        ind = np.arange(len(x_preprocessed))
+        # Create dataloader
+        x_tensor = torch.from_numpy(x_preprocessed)
+        y_tensor = torch.from_numpy(y_preprocessed)
+        dataset = TensorDataset(x_tensor, y_tensor)
+        dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=True, drop_last=drop_last)
 
         # Start training
         for _ in range(nb_epochs):
-            # Shuffle the examples
-            random.shuffle(ind)
-
             # Train for one epoch
-            for m in range(num_batch):
-                i_batch = torch.from_numpy(x_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]).to(self._device)
-                o_batch = torch.from_numpy(y_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]).to(self._device)
+            for x_batch, y_batch in dataloader:
+                # Move inputs to device
+                x_batch = x_batch.to(self._device)
+                y_batch = y_batch.to(self._device)
 
                 # Zero the parameter gradients
                 self._optimizer.zero_grad()
 
                 # Perform prediction
-                model_outputs = self._model(i_batch)
+                model_outputs = self._model(x_batch)
 
                 # Form the loss function
-                loss = self._loss(
-                    model_outputs[-1].reshape(
-                        -1,
-                    ),
-                    o_batch,
-                )
+                loss = self._loss(model_outputs[-1].reshape(-1), y_batch)
 
                 # Do training
                 if self._use_amp:  # pragma: no cover
@@ -367,11 +370,13 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):
 
                     with amp.scale_loss(loss, self._optimizer) as scaled_loss:
                         scaled_loss.backward()
-
                 else:
                     loss.backward()
 
                 self._optimizer.step()
+
+            if scheduler is not None:
+                scheduler.step()
 
     def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs) -> None:
         """
