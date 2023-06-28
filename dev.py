@@ -1,6 +1,6 @@
 import torch
 import ssl
-ssl._create_default_https_context = ssl._create_unverified_context
+# ssl._create_default_https_context = ssl._create_unverified_context
 from art.estimators.certification.derandomized_smoothing import PyTorchDeRandomizedSmoothing
 import numpy as np
 from torchvision import datasets
@@ -31,6 +31,26 @@ def get_cifar_data():
 
     return (x_train, y_train), (x_test, y_test)
 
+def get_mnist_data():
+    """
+    Get the MNIST data.
+    """
+    train_set = datasets.MNIST('./data', train=True, download=True)
+    test_set = datasets.MNIST('./data', train=False, download=True)
+
+    x_train = train_set.data.numpy().astype(np.float32)
+    y_train = train_set.targets.numpy()
+
+    x_test = test_set.data.numpy().astype(np.float32)
+    y_test = test_set.targets.numpy()
+
+    x_train = np.expand_dims(x_train, axis=1)
+    x_test = np.expand_dims(x_test, axis=1)
+
+    x_train = x_train / 255.0
+    x_test = x_test / 255.0
+
+    return (x_train, y_train), (x_test, y_test)
 
 def vit_dev():
     (x_train, y_train), (x_test, y_test) = get_cifar_data()
@@ -59,24 +79,27 @@ def vit_dev():
 
 
 def cnn_dev():
-    class CIFARModel(torch.nn.Module):
+    class MNISTModel(torch.nn.Module):
 
         def __init__(self, number_of_classes: int):
-            super(CIFARModel, self).__init__()
+            super(MNISTModel, self).__init__()
 
             self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-            self.conv_1 = torch.nn.Conv2d(in_channels=6,
-                                          out_channels=32,
+            self.conv_1 = torch.nn.Conv2d(in_channels=2,
+                                          out_channels=64,
                                           kernel_size=4,
-                                          stride=2)
+                                          stride=2,
+                                          padding=1)
 
-            self.conv_2 = torch.nn.Conv2d(in_channels=32,
-                                          out_channels=32,
+            self.conv_2 = torch.nn.Conv2d(in_channels=64,
+                                          out_channels=128,
                                           kernel_size=4,
-                                          stride=1)
+                                          stride=2, padding=1)
 
-            self.fc1 = torch.nn.Linear(in_features=4608, out_features=number_of_classes)
+            self.fc1 = torch.nn.Linear(in_features=128*7*7, out_features=500)
+            self.fc2 = torch.nn.Linear(in_features=500, out_features=100)
+            self.fc3 = torch.nn.Linear(in_features=100, out_features=10)
 
             self.relu = torch.nn.ReLU()
 
@@ -89,29 +112,31 @@ def cnn_dev():
             x = self.relu(self.conv_1(x))
             x = self.relu(self.conv_2(x))
             x = torch.flatten(x, 1)
-            return self.fc1(x)
+            x = self.relu(self.fc1(x))
+            x = self.relu(self.fc2(x))
+            x = self.fc3(x)
+            return x
 
-    model = CIFARModel(number_of_classes=10)
-    (x_train, y_train), (x_test, y_test) = get_cifar_data()
+    model = MNISTModel(number_of_classes=10)
+    # (x_train, y_train), (x_test, y_test) = get_cifar_data()
+    (x_train, y_train), (x_test, y_test) = get_mnist_data()
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9, weight_decay=0.0005)
 
     art_model = PyTorchDeRandomizedSmoothing(model=model,
                                              loss=torch.nn.CrossEntropyLoss(),
-                                             optimizer=torch.optim.SGD(model.parameters(), lr=0.001),
-                                             input_shape=(3, 32, 32),
+                                             optimizer=optimizer,
+                                             input_shape=(1, 28, 28),
                                              nb_classes=10,
                                              ablation_type='column',
-                                             ablation_size=4,
-                                             threshold=0.1,
-                                             logits=False)
+                                             ablation_size=2,
+                                             threshold=0.3,
+                                             logits=True)
 
-    scheduler = torch.optim.lr_scheduler.MultiStepLR(art_model.optimizer, milestones=[10, 20], gamma=0.1)
-    art_model.predict(x_train[0:10])
-    print(art_model)
+    scheduler = torch.optim.lr_scheduler.MultiStepLR(art_model.optimizer, milestones=[200], gamma=0.1)
 
     art_model.fit(x_train, y_train,
-                  nb_epochs=30,
-                  update_batchnorm=True,
+                  nb_epochs=400,
                   scheduler=scheduler)
 
-vit_dev()
-# cnn_dev()
+# vit_dev()
+cnn_dev()
