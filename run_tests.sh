@@ -37,6 +37,9 @@ then
     pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/preprocessing/audio --framework=$framework --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed preprocessing/audio tests"; fi
 
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/preprocessing/image --framework=$framework --durations=0
+    if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed preprocessing/image tests"; fi
+
     pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/preprocessing/expectation_over_transformation --framework=$framework --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed preprocessing/expectation_over_transformation tests"; fi
 

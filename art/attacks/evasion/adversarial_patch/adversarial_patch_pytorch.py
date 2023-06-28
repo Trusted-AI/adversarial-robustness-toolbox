@@ -575,9 +575,9 @@ class AdversarialPatchPyTorch(EvasionAttack):
                     img = torch.from_numpy(self.x[idx])
 
                     target = {}
-                    target["boxes"] = torch.from_numpy(y[idx]["boxes"])
-                    target["labels"] = torch.from_numpy(y[idx]["labels"])
-                    target["scores"] = torch.from_numpy(y[idx]["scores"])
+                    target["boxes"] = torch.from_numpy(self.y[idx]["boxes"])
+                    target["labels"] = torch.from_numpy(self.y[idx]["labels"])
+                    target["scores"] = torch.from_numpy(self.y[idx]["scores"])
                     mask_i = torch.from_numpy(self.mask[idx])
 
                     return img, target, mask_i
@@ -602,9 +602,16 @@ class AdversarialPatchPyTorch(EvasionAttack):
                     if isinstance(target, torch.Tensor):
                         target = target.to(self.estimator.device)
                     else:
-                        target["boxes"] = target["boxes"].to(self.estimator.device)
-                        target["labels"] = target["labels"].to(self.estimator.device)
-                        target["scores"] = target["scores"].to(self.estimator.device)
+                        targets = []
+                        for idx in range(target["boxes"].shape[0]):
+                            targets.append(
+                                {
+                                    "boxes": target["boxes"][idx].to(self.estimator.device),
+                                    "labels": target["labels"][idx].to(self.estimator.device),
+                                    "scores": target["scores"][idx].to(self.estimator.device),
+                                }
+                            )
+                        target = targets
                     _ = self._train_step(images=images, target=target, mask=None)
             else:
                 for images, target, mask_i in data_loader:
@@ -612,9 +619,16 @@ class AdversarialPatchPyTorch(EvasionAttack):
                     if isinstance(target, torch.Tensor):
                         target = target.to(self.estimator.device)
                     else:
-                        target["boxes"] = target["boxes"].to(self.estimator.device)
-                        target["labels"] = target["labels"].to(self.estimator.device)
-                        target["scores"] = target["scores"].to(self.estimator.device)
+                        targets = []
+                        for idx in range(target["boxes"].shape[0]):
+                            targets.append(
+                                {
+                                    "boxes": target["boxes"][idx].to(self.estimator.device),
+                                    "labels": target["labels"][idx].to(self.estimator.device),
+                                    "scores": target["scores"][idx].to(self.estimator.device),
+                                }
+                            )
+                        target = targets
                     mask_i = mask_i.to(self.estimator.device)
                     _ = self._train_step(images=images, target=target, mask=mask_i)
 

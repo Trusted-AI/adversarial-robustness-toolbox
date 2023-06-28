@@ -80,7 +80,7 @@ class Preprocessor(abc.ABC):
         return self._apply_predict
 
     @abc.abstractmethod
-    def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+    def __call__(self, x: np.ndarray, y: Optional[Any] = None) -> Tuple[np.ndarray, Optional[Any]]:
         """
         Perform data preprocessing and return preprocessed data as tuple.
 
@@ -250,7 +250,7 @@ class PreprocessorTensorFlowV2(Preprocessor):
     """
 
     @abc.abstractmethod
-    def forward(self, x: "tf.Tensor", y: Optional["tf.Tensor"] = None) -> Tuple["tf.Tensor", Optional["tf.Tensor"]]:
+    def forward(self, x: "tf.Tensor", y: Optional[Any] = None) -> Tuple["tf.Tensor", Optional[Any]]:
         """
         Perform data preprocessing in TensorFlow v2 and return preprocessed data as tuple.
 
