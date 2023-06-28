@@ -158,11 +158,24 @@ def plot_image_with_boxes(img, boxes, pred_cls):
 
     for i in range(len(boxes)):
         # Draw Rectangle with the coordinates
-        cv2.rectangle(img, boxes[i][0], boxes[i][1], color=(0, 255, 0), thickness=rect_th)
 
+        cv2.rectangle(
+            img,
+            (int(boxes[i][0][0]), int(boxes[i][0][1])),
+            (int(boxes[i][1][0]), int(boxes[i][1][1])),
+            color=(0, 255, 0),
+            thickness=rect_th,
+        )
         # Write the prediction class
-        cv2.putText(img, pred_cls[i], boxes[i][0], cv2.FONT_HERSHEY_SIMPLEX, text_size, (0, 255, 0), thickness=text_th)
-
+        cv2.putText(
+            img,
+            pred_cls[i],
+            (int(boxes[i][0][0]), int(boxes[i][0][1])),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            text_size,
+            (0, 255, 0),
+            thickness=text_th,
+        )
     plt.axis("off")
     plt.imshow(img.astype(np.uint8), interpolation="nearest")
     plt.show()
@@ -215,7 +228,7 @@ if __name__ == "__main__":
             "batch_size": 1,
             "image_file": "banner-diverse-group-of-people-2.jpg",
             "resume": False,
-            "path": "xp/",
+            "path": "",
         }
 
     pp = pprint.PrettyPrinter(indent=4)
@@ -280,3 +293,14 @@ if __name__ == "__main__":
             file.write(json.dumps(loss_history))
 
         np.save(os.path.join(config["path"], "patch"), attack._patch)
+
+    predictions_adv = frcnn.predict(x=x_patch)
+
+    for i in range(image.shape[0]):
+        print("\nPredictions adversarial image {}:".format(i))
+
+        # Process predictions
+        predictions_adv_class, predictions_adv_boxes, predictions_adv_class = extract_predictions(predictions_adv[i])
+
+        # Plot predictions
+        plot_image_with_boxes(img=x_patch[i].copy(), boxes=predictions_adv_boxes, pred_cls=predictions_adv_class)
