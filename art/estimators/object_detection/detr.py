@@ -17,11 +17,13 @@ Utility methods for DEtection TRansformer (DETR) in PyTorch.
  | Paper link: https://arxiv.org/abs/2005.12872
 
  Changes/differences to original code:
- - Line 241: remove reference to box_ops import
- - Line 325: remove check for distributed computing
- - Lines 454-5: remove copy_()
- - Line 458: returning original tensor list
- - Line 461: function name changed to distinguish that it now facilitates gradients
+ - Line 209: add device
+ - Line 243: remove reference to box_ops import
+ - Line 327: remove check for distributed computing
+ - Line 391: add device
+ - Lines 456-7: remove copy_()
+ - Line 459: returning original tensor list
+ - Line 462: function name changed to distinguish that it now facilitates gradients
 """
 
 from typing import List, Optional, Tuple, Union
@@ -205,7 +207,9 @@ class SetCriterion(torch.nn.Module):
         target_classes = torch.full(src_logits.shape[:2], self.num_classes, dtype=torch.int64, device=src_logits.device)
         target_classes[idx] = target_classes_o
 
-        loss_ce = torch.nn.functional.cross_entropy(src_logits.transpose(1, 2), target_classes, self.empty_weight)
+        loss_ce = torch.nn.functional.cross_entropy(
+            src_logits.transpose(1, 2), target_classes, self.empty_weight.to(src_logits.device)
+        )
         losses = {"loss_ce": loss_ce}
         return losses
 
@@ -386,7 +390,7 @@ def revert_rescale_bboxes(out_bbox: "torch.Tensor", size: Tuple[int, int]):
     """
 
     img_w, img_h = size
-    box = out_bbox / torch.tensor([img_w, img_h, img_w, img_h], dtype=torch.float32)
+    box = out_bbox / torch.tensor([img_w, img_h, img_w, img_h], dtype=torch.float32).to(out_bbox.device)
     box = box_xyxy_to_cxcywh(box)
     return box
 

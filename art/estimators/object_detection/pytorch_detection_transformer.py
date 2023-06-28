@@ -135,14 +135,6 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
             num_classes, matcher=matcher, weight_dict=self.weight_dict, eos_coef=eos_coef, losses=losses
         )
 
-        # Set device
-        self._device: torch.device
-        if device_type == "cpu" or not torch.cuda.is_available():
-            self._device = torch.device("cpu")
-        else:  # pragma: no cover
-            cuda_idx = torch.cuda.current_device()
-            self._device = torch.device(f"cuda:{cuda_idx}")
-
         self._model.to(self._device)
         self._model.eval()
         self.attack_losses: Tuple[str, ...] = attack_losses
@@ -208,7 +200,7 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
             predictions.append(
                 {
                     "boxes": rescale_bboxes(
-                        model_output["pred_boxes"][i, :, :], (self._input_shape[2], self._input_shape[1])
+                        model_output["pred_boxes"][i, :, :].cpu(), (self._input_shape[2], self._input_shape[1])
                     )
                     .detach()
                     .numpy(),
@@ -217,12 +209,14 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
                     .softmax(-1)[0, :, :-1]
                     .max(dim=1)[1]
                     .detach()
+                    .cpu()
                     .numpy(),
                     "scores": model_output["pred_logits"][i, :, :]
                     .unsqueeze(0)
                     .softmax(-1)[0, :, :-1]
                     .max(dim=1)[0]
                     .detach()
+                    .cpu()
                     .numpy(),
                 }
             )
@@ -278,7 +272,7 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
             else:
                 x_grad = x.to(self.device)
                 if x_grad.shape[2] < x_grad.shape[0] and x_grad.shape[2] < x_grad.shape[1]:
-                    x_grad = torch.permute(x_grad, (2, 0, 1))
+                    x_grad = torch.permute(x_grad, (2, 0, 1)).to(self.device)
 
             image_tensor_list_grad = x_grad
             x_preprocessed, y_preprocessed = self._apply_preprocessing(x_grad, y=y_tensor, fit=False, no_grad=False)
@@ -304,7 +298,9 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
             else:
                 y_tensor = y  # type: ignore
 
-            x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y=y_tensor, fit=False, no_grad=True)
+            x_preprocessed, y_preprocessed = self._apply_preprocessing(
+                x.to(self.device), y=y_tensor, fit=False, no_grad=True
+            )
 
             if self.clip_values is not None:
                 norm_factor = self.clip_values[1]
@@ -462,7 +458,7 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
         ):
             resized_imgs = []
             if isinstance(x, torch.Tensor):
-                x = T.Resize(size=(height, width))(x)
+                x = T.Resize(size=(height, width))(x).to(self.device)
             else:
                 for i in x:
                     resized = cv2.resize(
@@ -478,7 +474,7 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
             rescale_dim = max(self._input_shape[1], self._input_shape[2])
             resized_imgs = []
             if isinstance(x, torch.Tensor):
-                x = T.Resize(size=(rescale_dim, rescale_dim))(x)
+                x = T.Resize(size=(rescale_dim, rescale_dim))(x).to(self.device)
             else:
                 for i in x:
                     resized = cv2.resize(
