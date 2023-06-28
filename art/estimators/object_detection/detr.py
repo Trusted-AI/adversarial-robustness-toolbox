@@ -25,7 +25,6 @@ class NestedTensor:
     """
     From DETR source: https://github.com/facebookresearch/detr
     (detr/util/misc.py)
-    License: Apache 2.0
     """
 
     def __init__(self, tensors, mask: Optional["torch.Tensor"]):
@@ -59,7 +58,6 @@ class HungarianMatcher(torch.nn.Module):
     """
     From DETR source: https://github.com/facebookresearch/detr
     (detr/models/matcher.py)
-    License: Apache 2.0
     """
 
     def __init__(self, cost_class: float = 1, cost_bbox: float = 1, cost_giou: float = 1):
@@ -135,7 +133,6 @@ class SetCriterion(torch.nn.Module):
     """
     From DETR source: https://github.com/facebookresearch/detr
     (detr/models/detr.py)
-    License: Apache 2.0
     """
 
     def __init__(self, num_classes, matcher, weight_dict, eos_coef, losses):
@@ -343,7 +340,6 @@ def box_cxcywh_to_xyxy(x: "torch.Tensor"):
     """
     From DETR source: https://github.com/facebookresearch/detr
     (detr/util/box_ops.py)
-    License: Apache 2.0
     """
 
     x_c, y_c, width, height = x.unbind(1)
@@ -355,7 +351,6 @@ def box_xyxy_to_cxcywh(x: "torch.Tensor"):
     """
     From DETR source: https://github.com/facebookresearch/detr
     (detr/util/box_ops.py)
-    License: Apache 2.0
     """
 
     x_0, y_0, x_1, y_1 = x.unbind(-1)
@@ -367,7 +362,6 @@ def rescale_bboxes(out_bbox: "torch.Tensor", size: Tuple[int, int]):
     """
     From DETR source: https://github.com/facebookresearch/detr
     (inference notebook)
-    License: Apache 2.0
     """
 
     img_w, img_h = size
@@ -380,7 +374,7 @@ def revert_rescale_bboxes(out_bbox: "torch.Tensor", size: Tuple[int, int]):
     """
     Adapted from DETR source: https://github.com/facebookresearch/detr
     (inference notebook)
-    License: Apache 2.0
+
     This method reverts bounding box rescaling to match input image size
     """
 
@@ -394,7 +388,6 @@ def box_iou(boxes1: "torch.Tensor", boxes2: "torch.Tensor"):
     """
     From DETR source: https://github.com/facebookresearch/detr
     (detr/util/box_ops.py)
-    License: Apache 2.0
     """
     from torchvision.ops.boxes import box_area
 
@@ -417,7 +410,6 @@ def generalized_box_iou(boxes1: "torch.Tensor", boxes2: "torch.Tensor"):
     """
     From DETR source: https://github.com/facebookresearch/detr
     (detr/util/box_ops.py)
-    License: Apache 2.0
     """
 
     assert (boxes1[:, 2:] >= boxes1[:, :2]).all()
@@ -437,7 +429,6 @@ def nested_tensor_from_tensor_list(tensor_list: Union[List, "torch.Tensor"]):
     """
     From DETR source: https://github.com/facebookresearch/detr
     (detr/util/misc.py)
-    License: Apache 2.0
     """
 
     if tensor_list[0].ndim == 3:
@@ -463,7 +454,6 @@ def grad_enabled_forward(self, samples: NestedTensor):
     """
     Adapted from DETR source: https://github.com/facebookresearch/detr
     (detr/models/detr.py)
-    License: Apache 2.0
     """
 
     if isinstance(samples, (list, torch.Tensor)):
