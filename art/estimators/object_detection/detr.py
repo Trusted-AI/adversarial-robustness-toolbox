@@ -15,6 +15,13 @@
 Utility methods for DEtection TRansformer (DETR) in PyTorch.
 
  | Paper link: https://arxiv.org/abs/2005.12872
+
+ Changes/differences to original code:
+ - Line 241: remove reference to box_ops import
+ - Line 325: remove check for distributed computing
+ - Lines 454-5: remove copy_()
+ - Line 458: returning original tensor list
+ - Line 461: function name changed to distinguish that it now facilitates gradients
 """
 
 from typing import List, Optional, Tuple, Union
