@@ -299,7 +299,7 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
                 y_tensor = y  # type: ignore
 
             x_preprocessed, y_preprocessed = self._apply_preprocessing(
-                x.to(self.device), y=y_tensor, fit=False, no_grad=True
+                x, y=y_tensor, fit=False, no_grad=True
             )
 
             if self.clip_values is not None:
