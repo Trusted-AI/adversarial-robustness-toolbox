@@ -427,7 +427,7 @@ def generalized_box_iou(boxes1: "torch.Tensor", boxes2: "torch.Tensor"):
 
 def nested_tensor_from_tensor_list(tensor_list: Union[List, "torch.Tensor"]):
     """
-    From DETR source: https://github.com/facebookresearch/detr
+    Adapted from DETR source: https://github.com/facebookresearch/detr
     (detr/util/misc.py)
     """
 
