@@ -142,13 +142,13 @@ class SaturationGradientPyTorch(EvasionAttack):
         if self.norm not in [1, 2, np.inf, "inf"]:
             raise ValueError('Norm order must be either 1, 2, `np.inf` or "inf".')
 
-        if not isinstance(self.factor_min, float) or not (0 <= self.factor_min < np.inf):
+        if not isinstance(self.factor_min, float) or not 0 <= self.factor_min < np.inf:
             raise ValueError("The argument `factor_min` must be in [0, np.inf) and of type float.")
 
-        if not isinstance(self.factor_max, float) or not (0 <= self.factor_max < np.inf):
+        if not isinstance(self.factor_max, float) or not 0 <= self.factor_max < np.inf:
             raise ValueError("The argument `factor_max` must be in [0, np.inf) and of type float.")
 
-        if not (self.factor_min < self.factor_max):
+        if self.factor_min >= self.factor_max:
             raise ValueError("The argument `factor_min` must be less than the argument `factor_max`.")
 
         if not isinstance(self.step_size, (int, float)) or self.step_size <= 0.0:
@@ -198,7 +198,7 @@ class SaturationGradientPyTorch(EvasionAttack):
                     "or positive values."
                 )
 
-            if not (mask.shape == (x.shape[0],)):  # pragma: no cover
+            if not mask.shape == (x.shape[0],):  # pragma: no cover
                 raise ValueError(
                     "The `mask` should be 1D and of shape `(nb_samples,)`."
                 )
@@ -463,7 +463,7 @@ class SaturationGradientPyTorch(EvasionAttack):
         x_grad = self.estimator.loss_gradient(x=x, y=y) * (1 - 2 * int(self.targeted))
         # Step 2: backprop the gradients from x to f.
         x.backward(x_grad)
-        f_grad = f.grad.detach()
+        f_grad = f.grad.detach()  # type: ignore
         f.grad = None
 
         # Write summary.
