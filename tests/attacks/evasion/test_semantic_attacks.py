@@ -50,7 +50,7 @@ def fix_get_cifar10_subset(get_cifar10_dataset):
 def test_hue_compute_factor_perturbation(art_warning, fix_get_cifar10_subset):
     try:
         (x_train, y_train, x_test, y_test) = fix_get_cifar10_subset
-        factor = np.zeros((x_train.shape[0],)).astype(np.float32)
+        factor = np.zeros((x_test.shape[0],)).astype(np.float32)
 
         assert np.min(x_test) >= 0.0
         assert np.max(x_test) <= 1.0
@@ -60,8 +60,8 @@ def test_hue_compute_factor_perturbation(art_warning, fix_get_cifar10_subset):
 
         gradients = attack._compute_factor_perturbation(
             factor=torch.from_numpy(factor),
-            x=torch.from_numpy(x_train),
-            y=torch.from_numpy(y_train),
+            x=torch.from_numpy(x_test),
+            y=torch.from_numpy(y_test),
             mask=None
         )
 
@@ -81,11 +81,37 @@ def test_hue_generate(art_warning, fix_get_cifar10_subset):
         classifier = get_cifar10_image_classifier_pt(from_logits=False, load_init=True)
         attack = HueGradientPyTorch(classifier, verbose=False)
 
-        x_train_adv = attack.generate(x=x_train, y=y_train)
+        x_train_adv = attack.generate(x=x_train, y=None)
 
         assert x_train.shape == x_train_adv.shape
         assert np.min(x_train_adv) >= 0.0
         assert np.max(x_train_adv) <= 1.0
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework(
+    "tensorflow1", "tensorflow2", "tensorflow2v1", "keras", "non_dl_frameworks", "mxnet", "kerastf"
+)
+def test_hue_generate_masked(art_warning, fix_get_cifar10_subset):
+    try:
+        (x_train, y_train, x_test, y_test) = fix_get_cifar10_subset
+
+        classifier = get_cifar10_image_classifier_pt(from_logits=False, load_init=True)
+        attack = HueGradientPyTorch(classifier, norm=1, num_random_init=1)
+
+        # Generate a random mask.
+        mask = np.random.binomial(n=1, p=0.5, size=x_train.shape[0]).astype(np.float32)
+        x_train_adv = attack.generate(x=x_train, y=None, mask=mask)
+
+        assert x_train.shape == x_train_adv.shape
+        assert np.min(x_train_adv) >= 0.0
+        assert np.max(x_train_adv) <= 1.0
+
+        idx = np.where(mask == 0)
+        diff = x_train_adv[idx] - x_train[idx]
+        np.testing.assert_array_almost_equal(diff, np.zeros(diff.shape), decimal=3)
 
     except ARTTestException as e:
         art_warning(e)
@@ -104,9 +130,15 @@ def test_hue_check_params(art_warning):
             _ = HueGradientPyTorch(classifier, norm=22)
 
         with pytest.raises(ValueError):
-            _ = HueGradientPyTorch(classifier, factor_min=0, factor_max=0)
+            _ = HueGradientPyTorch(classifier, factor_min=-10.0, factor_max=0.0)
         with pytest.raises(ValueError):
-            _ = HueGradientPyTorch(classifier, factor_min=2, factor_max=-2)
+            _ = HueGradientPyTorch(classifier, factor_min=0.0, factor_max=10.0)
+        with pytest.raises(ValueError):
+            _ = HueGradientPyTorch(classifier, factor_min=-1, factor_max=2.0)
+        with pytest.raises(ValueError):
+            _ = HueGradientPyTorch(classifier, factor_min=-1.0, factor_max=2)
+        with pytest.raises(ValueError):
+            _ = HueGradientPyTorch(classifier, factor_min=1.0, factor_max=-1.0)
 
         with pytest.raises(ValueError):
             _ = HueGradientPyTorch(classifier, step_size="test")
@@ -152,7 +184,7 @@ def test_hue_classifier_type_check_fail(art_warning):
 def test_saturation_compute_factor_perturbation(art_warning, fix_get_cifar10_subset):
     try:
         (x_train, y_train, x_test, y_test) = fix_get_cifar10_subset
-        factor = np.ones((x_train.shape[0],)).astype(np.float32)
+        factor = np.ones((x_test.shape[0],)).astype(np.float32)
 
         assert np.min(x_test) >= 0.0
         assert np.max(x_test) <= 1.0
@@ -162,8 +194,8 @@ def test_saturation_compute_factor_perturbation(art_warning, fix_get_cifar10_sub
 
         gradients = attack._compute_factor_perturbation(
             factor=torch.from_numpy(factor),
-            x=torch.from_numpy(x_train),
-            y=torch.from_numpy(y_train),
+            x=torch.from_numpy(x_test),
+            y=torch.from_numpy(y_test),
             mask=None
         )
 
@@ -196,6 +228,32 @@ def test_saturation_generate(art_warning, fix_get_cifar10_subset):
 @pytest.mark.skip_framework(
     "tensorflow1", "tensorflow2", "tensorflow2v1", "keras", "non_dl_frameworks", "mxnet", "kerastf"
 )
+def test_saturation_generate_masked(art_warning, fix_get_cifar10_subset):
+    try:
+        (x_train, y_train, x_test, y_test) = fix_get_cifar10_subset
+
+        classifier = get_cifar10_image_classifier_pt(from_logits=False, load_init=True)
+        attack = SaturationGradientPyTorch(classifier, norm=1, num_random_init=1)
+
+        # Generate a random mask.
+        mask = np.random.binomial(n=1, p=0.5, size=x_train.shape[0]).astype(np.float32)
+        x_train_adv = attack.generate(x=x_train, y=None, mask=mask)
+
+        assert x_train.shape == x_train_adv.shape
+        assert np.min(x_train_adv) >= 0.0
+        assert np.max(x_train_adv) <= 1.0
+
+        idx = np.where(mask == 0)
+        diff = x_train_adv[idx] - x_train[idx]
+        np.testing.assert_array_almost_equal(diff, np.zeros(diff.shape), decimal=3)
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework(
+    "tensorflow1", "tensorflow2", "tensorflow2v1", "keras", "non_dl_frameworks", "mxnet", "kerastf"
+)
 def test_saturation_check_params(art_warning):
     try:
         classifier = get_cifar10_image_classifier_pt(from_logits=False, load_init=True)
@@ -206,9 +264,15 @@ def test_saturation_check_params(art_warning):
             _ = SaturationGradientPyTorch(classifier, norm=22)
 
         with pytest.raises(ValueError):
-            _ = SaturationGradientPyTorch(classifier, factor_min=0, factor_max=0)
+            _ = SaturationGradientPyTorch(classifier, factor_min=-10.0, factor_max=10.0)
         with pytest.raises(ValueError):
-            _ = SaturationGradientPyTorch(classifier, factor_min=-2, factor_max=2)
+            _ = SaturationGradientPyTorch(classifier, factor_min=0.0, factor_max=-10.0)
+        with pytest.raises(ValueError):
+            _ = SaturationGradientPyTorch(classifier, factor_min=1, factor_max=2.0)
+        with pytest.raises(ValueError):
+            _ = SaturationGradientPyTorch(classifier, factor_min=1.0, factor_max=2)
+        with pytest.raises(ValueError):
+            _ = SaturationGradientPyTorch(classifier, factor_min=2.0, factor_max=1.0)
 
         with pytest.raises(ValueError):
             _ = SaturationGradientPyTorch(classifier, step_size="test")
@@ -254,7 +318,7 @@ def test_saturation_classifier_type_check_fail(art_warning):
 def test_brightness_compute_factor_perturbation(art_warning, fix_get_cifar10_subset):
     try:
         (x_train, y_train, x_test, y_test) = fix_get_cifar10_subset
-        factor = np.ones((x_train.shape[0],)).astype(np.float32)
+        factor = np.ones((x_test.shape[0],)).astype(np.float32)
 
         assert np.min(x_test) >= 0.0
         assert np.max(x_test) <= 1.0
@@ -264,8 +328,8 @@ def test_brightness_compute_factor_perturbation(art_warning, fix_get_cifar10_sub
 
         gradients = attack._compute_factor_perturbation(
             factor=torch.from_numpy(factor),
-            x=torch.from_numpy(x_train),
-            y=torch.from_numpy(y_train),
+            x=torch.from_numpy(x_test),
+            y=torch.from_numpy(y_test),
             mask=None
         )
 
@@ -298,6 +362,32 @@ def test_brightness_generate(art_warning, fix_get_cifar10_subset):
 @pytest.mark.skip_framework(
     "tensorflow1", "tensorflow2", "tensorflow2v1", "keras", "non_dl_frameworks", "mxnet", "kerastf"
 )
+def test_brightness_generate_masked(art_warning, fix_get_cifar10_subset):
+    try:
+        (x_train, y_train, x_test, y_test) = fix_get_cifar10_subset
+
+        classifier = get_cifar10_image_classifier_pt(from_logits=False, load_init=True)
+        attack = BrightnessGradientPyTorch(classifier, norm=1, num_random_init=1)
+
+        # Generate a random mask.
+        mask = np.random.binomial(n=1, p=0.5, size=x_train.shape[0]).astype(np.float32)
+        x_train_adv = attack.generate(x=x_train, y=None, mask=mask)
+
+        assert x_train.shape == x_train_adv.shape
+        assert np.min(x_train_adv) >= 0.0
+        assert np.max(x_train_adv) <= 1.0
+
+        idx = np.where(mask == 0)
+        diff = x_train_adv[idx] - x_train[idx]
+        np.testing.assert_array_almost_equal(diff, np.zeros(diff.shape), decimal=3)
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework(
+    "tensorflow1", "tensorflow2", "tensorflow2v1", "keras", "non_dl_frameworks", "mxnet", "kerastf"
+)
 def test_brightness_check_params(art_warning):
     try:
         classifier = get_cifar10_image_classifier_pt(from_logits=False, load_init=True)
@@ -308,9 +398,15 @@ def test_brightness_check_params(art_warning):
             _ = BrightnessGradientPyTorch(classifier, norm=22)
 
         with pytest.raises(ValueError):
-            _ = BrightnessGradientPyTorch(classifier, factor_min=0, factor_max=0)
+            _ = BrightnessGradientPyTorch(classifier, factor_min=-10.0, factor_max=0.0)
         with pytest.raises(ValueError):
-            _ = BrightnessGradientPyTorch(classifier, factor_min=-2, factor_max=2)
+            _ = BrightnessGradientPyTorch(classifier, factor_min=0.0, factor_max=10.0)
+        with pytest.raises(ValueError):
+            _ = BrightnessGradientPyTorch(classifier, factor_min=-1, factor_max=1.0)
+        with pytest.raises(ValueError):
+            _ = BrightnessGradientPyTorch(classifier, factor_min=-1.0, factor_max=1)
+        with pytest.raises(ValueError):
+            _ = BrightnessGradientPyTorch(classifier, factor_min=1.0, factor_max=-1.0)
 
         with pytest.raises(ValueError):
             _ = BrightnessGradientPyTorch(classifier, step_size="test")
@@ -356,7 +452,7 @@ def test_brightness_classifier_type_check_fail(art_warning):
 def test_contrast_compute_factor_perturbation(art_warning, fix_get_cifar10_subset):
     try:
         (x_train, y_train, x_test, y_test) = fix_get_cifar10_subset
-        factor = np.ones((x_train.shape[0],)).astype(np.float32)
+        factor = np.ones((x_test.shape[0],)).astype(np.float32)
 
         assert np.min(x_test) >= 0.0
         assert np.max(x_test) <= 1.0
@@ -366,8 +462,8 @@ def test_contrast_compute_factor_perturbation(art_warning, fix_get_cifar10_subse
 
         gradients = attack._compute_factor_perturbation(
             factor=torch.from_numpy(factor),
-            x=torch.from_numpy(x_train),
-            y=torch.from_numpy(y_train),
+            x=torch.from_numpy(x_test),
+            y=torch.from_numpy(y_test),
             mask=None
         )
 
@@ -400,6 +496,32 @@ def test_contrast_generate(art_warning, fix_get_cifar10_subset):
 @pytest.mark.skip_framework(
     "tensorflow1", "tensorflow2", "tensorflow2v1", "keras", "non_dl_frameworks", "mxnet", "kerastf"
 )
+def test_contrast_generate_masked(art_warning, fix_get_cifar10_subset):
+    try:
+        (x_train, y_train, x_test, y_test) = fix_get_cifar10_subset
+
+        classifier = get_cifar10_image_classifier_pt(from_logits=False, load_init=True)
+        attack = ContrastGradientPyTorch(classifier, norm=1, num_random_init=1)
+
+        # Generate a random mask.
+        mask = np.random.binomial(n=1, p=0.5, size=x_train.shape[0]).astype(np.float32)
+        x_train_adv = attack.generate(x=x_train, y=None, mask=mask)
+
+        assert x_train.shape == x_train_adv.shape
+        assert np.min(x_train_adv) >= 0.0
+        assert np.max(x_train_adv) <= 1.0
+
+        idx = np.where(mask == 0)
+        diff = x_train_adv[idx] - x_train[idx]
+        np.testing.assert_array_almost_equal(diff, np.zeros(diff.shape), decimal=3)
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework(
+    "tensorflow1", "tensorflow2", "tensorflow2v1", "keras", "non_dl_frameworks", "mxnet", "kerastf"
+)
 def test_contrast_check_params(art_warning):
     try:
         classifier = get_cifar10_image_classifier_pt(from_logits=False, load_init=True)
@@ -410,9 +532,15 @@ def test_contrast_check_params(art_warning):
             _ = ContrastGradientPyTorch(classifier, norm=22)
 
         with pytest.raises(ValueError):
-            _ = ContrastGradientPyTorch(classifier, factor_min=0, factor_max=0)
+            _ = ContrastGradientPyTorch(classifier, factor_min=-10.0, factor_max=10.0)
         with pytest.raises(ValueError):
-            _ = ContrastGradientPyTorch(classifier, factor_min=-2, factor_max=2)
+            _ = ContrastGradientPyTorch(classifier, factor_min=0.0, factor_max=-10.0)
+        with pytest.raises(ValueError):
+            _ = ContrastGradientPyTorch(classifier, factor_min=1, factor_max=2.0)
+        with pytest.raises(ValueError):
+            _ = ContrastGradientPyTorch(classifier, factor_min=1.0, factor_max=2)
+        with pytest.raises(ValueError):
+            _ = ContrastGradientPyTorch(classifier, factor_min=2.0, factor_max=1.0)
 
         with pytest.raises(ValueError):
             _ = ContrastGradientPyTorch(classifier, step_size="test")

@@ -494,11 +494,11 @@ class SaturationGradientPyTorch(EvasionAttack):
             f_grad = f_grad.sign()
 
         elif self.norm == 1:
-            ind = tuple(range(1, len(x.shape)))
+            ind = tuple(range(1, len(f.shape)))
             f_grad = f_grad / (torch.sum(f_grad.abs(), dim=ind, keepdims=True) + tol)  # type: ignore
 
         elif self.norm == 2:
-            ind = tuple(range(1, len(x.shape)))
+            ind = tuple(range(1, len(f.shape)))
             f_grad = f_grad / (torch.sqrt(torch.sum(f_grad * f_grad, axis=ind, keepdims=True)) + tol)  # type: ignore
 
         return f_grad
