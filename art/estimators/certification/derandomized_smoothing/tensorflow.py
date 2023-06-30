@@ -68,6 +68,7 @@ class TensorFlowV2DeRandomizedSmoothing(DeRandomizedSmoothingMixin, TensorFlowV2
         logits: bool,
         input_shape: Tuple[int, ...],
         loss_object: Optional["tf.Tensor"] = None,
+        optimizer: Optional["tf.keras.optimizers.Optimizer"] = None,
         train_step: Optional[Callable] = None,
         channels_first: bool = False,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
@@ -88,8 +89,12 @@ class TensorFlowV2DeRandomizedSmoothing(DeRandomizedSmoothingMixin, TensorFlowV2
         :param logits: if the model returns logits or normalized probabilities
         :param input_shape: Shape of one input for the classifier, e.g. for MNIST input_shape=(28, 28, 1).
         :param loss_object: The loss function for which to compute gradients. This parameter is applied for training
-            the model and computing gradients of the loss w.r.t. the input.
-        :param train_step: A function that applies a gradient update to the trainable variables.
+               the model and computing gradients of the loss w.r.t. the input.
+        :param optimizer: The optimizer used to train the classifier.
+        :param train_step: A function that applies a gradient update to the trainable variables with signature
+               `train_step(model, images, labels)`. This will override the default training loop that uses the
+               provided `loss_object` and `optimizer` parameters. It is recommended to use the `@tf.function`
+               decorator, if possible, for efficient training.
         :param channels_first: Set channels first or last.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
@@ -106,6 +111,7 @@ class TensorFlowV2DeRandomizedSmoothing(DeRandomizedSmoothingMixin, TensorFlowV2
             nb_classes=nb_classes,
             input_shape=input_shape,
             loss_object=loss_object,
+            optimizer=optimizer,
             train_step=train_step,
             channels_first=channels_first,
             clip_values=clip_values,
@@ -144,10 +150,30 @@ class TensorFlowV2DeRandomizedSmoothing(DeRandomizedSmoothingMixin, TensorFlowV2
                        "scheduler" which is an optional function that will be called at the end of every
                        epoch to adjust the learning rate.
         """
+        import tensorflow as tf
+
         if self._train_step is None:  # pragma: no cover
-            raise TypeError(
-                "The training function `train_step` is required for fitting a model but it has not been " "defined."
-            )
+            if self._loss_object is None:  # pragma: no cover
+                raise TypeError(
+                    "A loss function `loss_object` or training function `train_step` is required for fitting the "
+                    "model, but it has not been defined."
+                )
+            if self._optimizer is None:  # pragma: no cover
+                raise ValueError(
+                    "An optimizer `optimizer` or training function `train_step` is required for fitting the "
+                    "model, but it has not been defined."
+                )
+
+            @tf.function
+            def train_step(model, images, labels):
+                with tf.GradientTape() as tape:
+                    predictions = model(images, training=True)
+                    loss = self.loss_object(labels, predictions)
+                gradients = tape.gradient(loss, model.trainable_variables)
+                self.optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+
+        else:
+            train_step = self._train_step
 
         scheduler = kwargs.get("scheduler")
 
@@ -167,7 +193,7 @@ class TensorFlowV2DeRandomizedSmoothing(DeRandomizedSmoothingMixin, TensorFlowV2
                 i_batch = np.copy(x_preprocessed[ind[m * batch_size : (m + 1) * batch_size]])
                 labels = y_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]
                 images = self.ablator.forward(i_batch)
-                self._train_step(self.model, images, labels)
+                train_step(self.model, images, labels)
 
             if scheduler is not None:
                 scheduler(epoch)
