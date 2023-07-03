@@ -1,0 +1,1 @@
+from art.estimators.hugging_face.hugging_face import HuggingFaceClassifier
