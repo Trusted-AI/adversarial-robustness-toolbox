@@ -1,4 +1,4 @@
-"""Trains a pytorch classifier on the MNIST dataset, then attacks it with the targeted universal adversarial perturbation attack."""
+"""Train a PyTorch classifier on MNIST dataset, then attack it with targeted universal adversarial perturbations."""
 
 from torch import nn
 from torch import optim
