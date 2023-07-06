@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2022
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2023
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -28,7 +28,7 @@ from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 from tqdm import tqdm
 import numpy as np
 
-from art.estimators.certification.randomized_smoothing import PyTorchRandomizedSmoothing
+from art.estimators.certification.randomized_smoothing.pytorch import PyTorchRandomizedSmoothing
 from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
@@ -228,7 +228,7 @@ class PyTorchSmoothMix(PyTorchRandomizedSmoothing):
 
                     # Attack and find adversarial examples
                     self._model.eval()
-                    inputs, inputs_adv = self._smoothmix_pgd_attack(inputs, labels, noises, warmup_v)
+                    inputs, inputs_adv = self._smooth_mix_pgd_attack(inputs, labels, noises, warmup_v)
                     self._model.train(mode=training_mode)
 
                     in_clean_c = torch.cat([inputs + noise for noise in noises], dim=0)
@@ -261,7 +261,7 @@ class PyTorchSmoothMix(PyTorchRandomizedSmoothing):
             if scheduler is not None:
                 scheduler.step()
 
-    def _smoothmix_pgd_attack(
+    def _smooth_mix_pgd_attack(
         self,
         inputs: "torch.Tensor",
         labels: "torch.Tensor",
@@ -279,7 +279,7 @@ class PyTorchSmoothMix(PyTorchRandomizedSmoothing):
         import torch
         import torch.nn.functional as F
 
-        def _batch_l2norm(x: torch.Tensor) -> torch.Tensor:
+        def _batch_l2_norm(x: torch.Tensor) -> torch.Tensor:
             """
             Perform a batch L2 norm
 
@@ -317,7 +317,7 @@ class PyTorchSmoothMix(PyTorchRandomizedSmoothing):
             loss = F.nll_loss(log_softmax, labels, reduction="sum")
 
             grad = torch.autograd.grad(loss, [adv])[0]
-            grad_norm = _batch_l2norm(grad).view(-1, 1, 1, 1)
+            grad_norm = _batch_l2_norm(grad).view(-1, 1, 1, 1)
             grad = grad / (grad_norm + 1e-8)
             adv = adv + self.alpha * grad
 
