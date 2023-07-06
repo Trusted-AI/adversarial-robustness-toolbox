@@ -49,15 +49,10 @@ class PyTorchSmoothMix(PyTorchRandomizedSmoothing):
     """
 
     estimator_params = PyTorchRandomizedSmoothing.estimator_params + [
+        "eta",
         "num_noise_vec",
-        "epsilon",
         "num_steps",
         "warmup",
-        "lbd",
-        "gamma",
-        "beta",
-        "gauss_num",
-        "eta",
         "mix_step",
         "maxnorm_s",
         "maxnorm",
@@ -79,14 +74,10 @@ class PyTorchSmoothMix(PyTorchRandomizedSmoothing):
         sample_size: int = 32,
         scale: float = 0.1,
         alpha: float = 0.001,
+        eta: float = 1.0,
         num_noise_vec: int = 1,
-        epsilon: float = 64.0,
         num_steps: int = 10,
         warmup: int = 1,
-        lbd: float = 12.0,
-        gamma: float = 8.0,
-        gauss_num: int = 16,
-        eta: float = 1.0,
         mix_step: int = 0,
         maxnorm_s: Optional[float] = None,
         maxnorm: Optional[float] = None,
@@ -115,18 +106,13 @@ class PyTorchSmoothMix(PyTorchRandomizedSmoothing):
         :param sample_size: Number of samples for smoothing.
         :param scale: Standard deviation of Gaussian noise added.
         :param alpha: The failure probability of smoothing.
-        :param num_noise_vec: Number of noise vectors
-        :param epsilon: Maximum perturbation that the attacker can introduce
-        :param num_steps: Number of attack updates
-        :param warmup: Warm-up strategy that is gradually increased for the first
-                       10 epochs up to the original value of epsilon
-        :param lbd: Weight of robustness loss in Macer
-        :param gamma: Value to multiply the LR by
-        :param gauss_num: Number of gaussian samples per input
-        :param eta: Hyperparameter to control the relative strength of the mixup loss in SmoothMix
-        :param mix_step: Determines which sample to use for the clean side in SmoothMix
-        :param maxnorm_s: initial value of alpha * mix_step
-        :param maxnorm: initial value of alpha * mix_step for adversarial examples
+        :param eta: The relative strength of the mixup loss.
+        :param num_noise_vec: The number of noise vectors.
+        :param num_steps: The number of attack updates.
+        :param warmup: The warm-up strategy that is gradually increased up to the original value.
+        :param mix_step: Determines which sample to use for the clean side.
+        :param maxnorm_s: The initial value of `alpha * mix_step`.
+        :param maxnorm: The initial value of `alpha * mix_step` for adversarial examples.
         """
         super().__init__(
             model=model,
@@ -144,14 +130,10 @@ class PyTorchSmoothMix(PyTorchRandomizedSmoothing):
             scale=scale,
             alpha=alpha,
         )
+        self.eta = eta
         self.num_noise_vec = num_noise_vec
-        self.epsilon = epsilon
         self.num_steps = num_steps
         self.warmup = warmup
-        self.lbd = lbd
-        self.gamma = gamma
-        self.gauss_num = gauss_num
-        self.eta = eta
         self.mix_step = mix_step
         self.maxnorm_s = maxnorm_s
         self.maxnorm = maxnorm
