@@ -47,10 +47,11 @@ def get_mnist_classifier(framework):
             import torch
 
             classifier = get_image_classifier_pt()
+            optimizer = torch.optim.Adam(classifier.model.parameters(), lr=0.01)
             rs = PyTorchRandomizedSmoothing(
                 model=classifier.model,
                 loss=classifier._loss,
-                optimizer=torch.optim.Adam(classifier.model.parameters(), lr=0.01),
+                optimizer=optimizer,
                 input_shape=classifier.input_shape,
                 nb_classes=classifier.nb_classes,
                 channels_first=classifier.channels_first,
