@@ -206,21 +206,21 @@ class PyTorchMACER(PyTorchRandomizedSmoothing):
 
                 # Classification loss
                 outputs_softmax = F.softmax(outputs, dim=2).mean(dim=1)
-                outputs_log_softmax = torch.log(outputs_softmax + 1e-10)  # avoid nan
+                outputs_log_softmax = torch.log(outputs_softmax + 1e-10)
                 classification_loss = F.nll_loss(outputs_log_softmax, y_batch, reduction="sum")
 
                 # Robustness loss
-                beta_outputs = outputs * self.beta  # only apply beta to the robustness loss
+                beta_outputs = outputs * self.beta
                 beta_outputs_softmax = F.softmax(beta_outputs, dim=2).mean(dim=1)
                 top2_score, top2_idx = torch.topk(beta_outputs_softmax, 2)
-                indices_correct = top2_idx[:, 0] == y_batch  # G_theta
+                indices_correct = top2_idx[:, 0] == y_batch
                 out0, out1 = top2_score[indices_correct, 0], top2_score[indices_correct, 1]
                 robustness_loss = m.icdf(out1) - m.icdf(out0)
                 indices = (
                     ~torch.isnan(robustness_loss)
                     & ~torch.isinf(robustness_loss)
                     & (torch.abs(robustness_loss) <= self.gamma)
-                )  # hinge
+                )
                 out0, out1 = out0[indices], out1[indices]
                 robustness_loss = m.icdf(out1) - m.icdf(out0) + self.gamma
                 robustness_loss = torch.sum(robustness_loss) * self.scale / 2

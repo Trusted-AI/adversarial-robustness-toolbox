@@ -154,10 +154,9 @@ class TensorFlowV2MACER(TensorFlowV2RandomizedSmoothing):
             @tf.function
             def train_step(model, images, labels):
                 with tf.GradientTape() as tape:
-                    predictions = model(images, training=True)
-                    loss = self.loss_object(labels, predictions)
-
                     input_size = len(labels)
+
+                    outputs = self.model(images, training=True)
                     outputs = tf.reshape(outputs, [input_size, self.gaussian_samples, self.nb_classes])
 
                     # Classification loss
@@ -171,7 +170,7 @@ class TensorFlowV2MACER(TensorFlowV2RandomizedSmoothing):
                     beta_outputs = outputs * self.beta
                     beta_outputs_softmax = tf.reduce_mean(tf.nn.softmax(beta_outputs, axis=2), axis=1)
                     top2_score, top2_idx = tf.math.top_k(beta_outputs_softmax, k=2)
-                    indices_correct = top2_idx[:, 0] == labels
+                    indices_correct = tf.cast(top2_idx[:, 0], labels.dtype) == labels
                     out = tf.boolean_mask(top2_score, indices_correct)
                     out0, out1 = out[:, 0], out[:, 1]
                     icdf_out1 = tf.math.erfinv(2 * out1 - 1) * np.sqrt(2)
