@@ -9,3 +9,4 @@ from art.estimators.certification.randomized_smoothing.tensorflow import TensorF
 from art.estimators.certification.randomized_smoothing.smooth_mix.pytorch import PyTorchSmoothMix
 from art.estimators.certification.randomized_smoothing.macer.pytorch import PyTorchMACER
 from art.estimators.certification.randomized_smoothing.macer.tensorflow import TensorFlowV2MACER
+from art.estimators.certification.randomized_smoothing.smooth_adv.pytorch import PyTorchSmoothAdv
