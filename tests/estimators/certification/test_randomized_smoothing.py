@@ -133,7 +133,7 @@ def test_randomized_smoothing_mnist_predict(art_warning, get_default_mnist_subse
         y_test_smooth = rs.predict(x=x_test)
 
         np.testing.assert_array_equal(y_test_smooth.shape, y_test_base.shape)
-        np.testing.assert_array_almost_equal(np.sum(y_test_smooth, axis=1), np.ones((len(y_test))))
+        np.testing.assert_array_almost_equal(np.sum(y_test_smooth, axis=1), np.ones(len(y_test)))
         np.testing.assert_array_almost_equal(np.argmax(y_test_smooth, axis=1), np.argmax(y_test_base, axis=1))
 
     except ARTTestException as e:
