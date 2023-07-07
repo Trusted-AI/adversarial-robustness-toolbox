@@ -21,8 +21,8 @@ import logging
 import pytest
 import numpy as np
 
-from art.estimators.certification.randomized_smoothing import PyTorchMACER
-from tests.utils import ARTTestException, get_image_classifier_pt
+from art.estimators.certification.randomized_smoothing import PyTorchMACER, TensorFlowV2MACER
+from tests.utils import ARTTestException, get_image_classifier_pt, get_image_classifier_tf
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +53,33 @@ def get_mnist_classifier(framework):
                 gaussian_samples=16,
             )
 
+        elif framework == "tensorflow2":
+            import tensorflow as tf
+
+            classifier, _ = get_image_classifier_tf()
+            optimizer = tf.keras.optimizers.SGD(learning_rate=0.01, momentum=0.9, name="SGD", decay=5e-4)
+            scheduler = tf.keras.optimizers.schedules.PiecewiseConstantDecay([250, 400], [0.01, 0.001, 0.0001])
+            rs = TensorFlowV2MACER(
+                model=classifier.model,
+                nb_classes=classifier.nb_classes,
+                input_shape=classifier.input_shape,
+                loss_object=classifier.loss_object,
+                optimizer=optimizer,
+                train_step=None,
+                channels_first=classifier.channels_first,
+                clip_values=classifier.clip_values,
+                preprocessing_defences=classifier.preprocessing_defences,
+                postprocessing_defences=classifier.postprocessing_defences,
+                preprocessing=classifier.preprocessing,
+                sample_size=100,
+                scale=0.01,
+                alpha=0.001,
+                beta=16.0,
+                gamma=8.0,
+                lmbda=12.0,
+                gaussian_samples=16,
+            )
+
         else:
             classifier, scheduler, rs = None, None, None
 
@@ -61,7 +88,7 @@ def get_mnist_classifier(framework):
     return _get_classifier
 
 
-@pytest.mark.only_with_platform("pytorch")
+@pytest.mark.only_with_platform("pytorch", "tensorflow2")
 def test_smoothmix_mnist_predict(art_warning, get_default_mnist_subset, get_mnist_classifier):
     (_, _), (x_test, y_test) = get_default_mnist_subset
     x_test, y_test = x_test[:10], y_test[:10]
@@ -79,7 +106,7 @@ def test_smoothmix_mnist_predict(art_warning, get_default_mnist_subset, get_mnis
         art_warning(e)
 
 
-@pytest.mark.only_with_platform("pytorch")
+@pytest.mark.only_with_platform("pytorch", "tensorflow2")
 def test_smoothmix_mnist_fit(art_warning, get_default_mnist_subset, get_mnist_classifier):
     (_, _), (x_test, y_test) = get_default_mnist_subset
     x_test, y_test = x_test[:10], y_test[:10]
@@ -92,7 +119,7 @@ def test_smoothmix_mnist_fit(art_warning, get_default_mnist_subset, get_mnist_cl
         art_warning(e)
 
 
-@pytest.mark.only_with_platform("pytorch")
+@pytest.mark.only_with_platform("pytorch", "tensorflow2")
 def test_smoothmix_mnist_certification(art_warning, get_default_mnist_subset, get_mnist_classifier):
     (_, _), (x_test, y_test) = get_default_mnist_subset
     x_test, y_test = x_test[:10], y_test[:10]
