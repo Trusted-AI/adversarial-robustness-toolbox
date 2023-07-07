@@ -191,11 +191,16 @@ class PyTorchMACER(PyTorchRandomizedSmoothing):
 
                 input_size = len(x_batch)
 
+                # Tile samples for Gaussian augmentation
                 new_shape = [input_size * self.gaussian_samples]
                 new_shape.extend(x_batch[0].shape)
                 x_batch = x_batch.repeat((1, self.gaussian_samples, 1, 1)).view(new_shape)
+
+                # Add random noise for randomized smoothing
                 noise = torch.randn_like(x_batch, device=self.device) * self.scale
                 noisy_inputs = x_batch + noise
+
+                # Get model outputs
                 outputs = self.model(noisy_inputs)
                 outputs = outputs.reshape((input_size, self.gaussian_samples, self.nb_classes))
 
