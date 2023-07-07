@@ -83,6 +83,23 @@ def get_mnist_classifier(framework):
             model.compile(optimizer="adam", loss="categorical_crossentropy")
             classifier = KerasClassifier(model, clip_values=(0, 1), use_logits=True)
 
+        elif framework == "huggingface":
+            import transformers
+            import torch
+            from art.estimators.hugging_face import HuggingFaceClassifier
+
+            model = transformers.AutoModelForImageClassification.from_pretrained('facebook/deit-tiny-patch16-224', # takes 3 min
+                                                                                 ignore_mismatched_sizes=True,
+                                                                                 num_labels=10)
+
+            print('num of parameters is ', sum(p.numel() for p in model.parameters() if p.requires_grad))
+            optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+
+            classifier = HuggingFaceClassifier(model,
+                                               loss_fn=torch.nn.CrossEntropyLoss(),
+                                               optimizer=optimizer,
+                                               processor=None)
+
         else:
             classifier = None
 
@@ -91,12 +108,26 @@ def get_mnist_classifier(framework):
     return _get_classifier
 
 
-@pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf")
+@pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf", "huggingface")
 @pytest.mark.parametrize("noise", ["gaussian", "laplacian", "exponential"])
-def test_dp_instahide_single_aug(art_warning, get_mnist_classifier, get_default_mnist_subset, noise):
+def test_dp_instahide_single_aug(art_warning, get_mnist_classifier, get_default_mnist_subset, get_default_cifar10_subset, noise, framework):
     classifier = get_mnist_classifier()
-    (x_train, y_train), (_, _) = get_default_mnist_subset
-    mixup = Mixup(num_classes=10)
+
+    if framework == "huggingface":
+        import numpy as np
+        import torch
+        upsampler = torch.nn.Upsample(scale_factor=7, mode='nearest')
+
+        (x_train, y_train), (_, _) = get_default_cifar10_subset
+        x_train = np.rollaxis(x_train, 3, 1)
+        x_train = np.float32(upsampler(torch.from_numpy(x_train)).cpu().numpy())
+        x_train = x_train[0:64]  # large model so select only a small portion
+        y_train = y_train[0:64]
+
+        mixup = Mixup(num_classes=10)
+    else:
+        (x_train, y_train), (_, _) = get_default_mnist_subset
+        mixup = Mixup(num_classes=10)
 
     try:
         trainer = DPInstaHideTrainer(classifier, augmentations=mixup, noise=noise, loc=0, scale=0.1)
@@ -105,12 +136,27 @@ def test_dp_instahide_single_aug(art_warning, get_mnist_classifier, get_default_
         art_warning(e)
 
 
-@pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf")
+@pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf", "huggingface")
 @pytest.mark.parametrize("noise", ["gaussian", "laplacian", "exponential"])
-def test_dp_instahide_multiple_aug(art_warning, get_mnist_classifier, get_default_mnist_subset, noise):
+def test_dp_instahide_multiple_aug(art_warning, get_mnist_classifier, get_default_mnist_subset, get_default_cifar10_subset, noise, framework):
     classifier = get_mnist_classifier()
-    (x_train, y_train), (_, _) = get_default_mnist_subset
-    mixup = Mixup(num_classes=10)
+
+    if framework == "huggingface":
+        import numpy as np
+        import torch
+        upsampler = torch.nn.Upsample(scale_factor=7, mode='nearest')
+
+        (x_train, y_train), (_, _) = get_default_cifar10_subset
+        x_train = np.rollaxis(x_train, 3, 1)
+        x_train = np.float32(upsampler(torch.from_numpy(x_train)).cpu().numpy())
+        x_train = x_train[0:64]  # large model so select only a small portion
+        y_train = y_train[0:64]
+
+        mixup = Mixup(num_classes=10)
+    else:
+        (x_train, y_train), (_, _) = get_default_mnist_subset
+        mixup = Mixup(num_classes=10)
+
     cutout = Cutout(length=8, channels_first=False)
 
     try:
@@ -120,12 +166,33 @@ def test_dp_instahide_multiple_aug(art_warning, get_mnist_classifier, get_defaul
         art_warning(e)
 
 
-@pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf")
+@pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf", "huggingface")
 @pytest.mark.parametrize("noise", ["gaussian", "laplacian", "exponential"])
-def test_dp_instahide_validation_data(art_warning, get_mnist_classifier, get_default_mnist_subset, noise):
+def test_dp_instahide_validation_data(art_warning, get_mnist_classifier, get_default_mnist_subset, get_default_cifar10_subset, noise, framework):
     classifier = get_mnist_classifier()
-    (x_train, y_train), (x_test, y_test) = get_default_mnist_subset
-    mixup = Mixup(num_classes=10)
+
+    if framework == "huggingface":
+        import numpy as np
+        import torch
+        upsampler = torch.nn.Upsample(scale_factor=7, mode='nearest')
+
+        (x_train, y_train), (x_test, y_test) = get_default_cifar10_subset
+
+        x_train = np.rollaxis(x_train, 3, 1)
+        x_test = np.rollaxis(x_test, 3, 1)
+
+        x_train = np.float32(upsampler(torch.from_numpy(x_train)).cpu().numpy())
+        x_train = x_train[0:64]  # large model so select only a small portion
+        y_train = y_train[0:64]
+
+        x_test = np.float32(upsampler(torch.from_numpy(x_test)).cpu().numpy())
+        x_test = x_test[0:64]  # large model so select only a small portion
+        y_test = y_test[0:64]
+
+        mixup = Mixup(num_classes=10)
+    else:
+        (x_train, y_train), (_, _) = get_default_mnist_subset
+        mixup = Mixup(num_classes=10)
 
     try:
         trainer = DPInstaHideTrainer(classifier, augmentations=mixup, noise=noise, loc=0, scale=0.1)
@@ -134,15 +201,29 @@ def test_dp_instahide_validation_data(art_warning, get_mnist_classifier, get_def
         art_warning(e)
 
 
-@pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf")
+@pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf", "huggingface")
 @pytest.mark.parametrize("noise", ["gaussian", "laplacian", "exponential"])
-def test_dp_instahide_generator(art_warning, get_mnist_classifier, get_default_mnist_subset, noise):
+def test_dp_instahide_generator(art_warning, get_mnist_classifier, get_default_mnist_subset, get_default_cifar10_subset, noise, framework):
     from art.data_generators import NumpyDataGenerator
 
     classifier = get_mnist_classifier()
-    (x_train, y_train), (_, _) = get_default_mnist_subset
+
+    if framework == "huggingface":
+        import numpy as np
+        import torch
+        upsampler = torch.nn.Upsample(scale_factor=7, mode='nearest')
+
+        (x_train, y_train), (_, _) = get_default_cifar10_subset
+        x_train = np.rollaxis(x_train, 3, 1)
+        x_train = np.float32(upsampler(torch.from_numpy(x_train)).cpu().numpy())
+        x_train = x_train[0:64] # large model so select only a small portion
+        y_train = y_train[0:64]
+        mixup = Mixup(num_classes=10)
+    else:
+        (x_train, y_train), (_, _) = get_default_mnist_subset
+        mixup = Mixup(num_classes=10)
+
     generator = NumpyDataGenerator(x_train, y_train, batch_size=len(x_train))
-    mixup = Mixup(num_classes=10)
 
     try:
         trainer = DPInstaHideTrainer(classifier, augmentations=mixup, noise=noise, loc=0, scale=0.1)

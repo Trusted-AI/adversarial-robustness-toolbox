@@ -37,6 +37,23 @@ def get_adv_trainer(framework, image_dl_estimator):
             trainer = AdversarialTrainerFBFPyTorch(classifier, eps=0.05)
         if framework == "scikitlearn":
             trainer = None
+        if framework == "huggingface":
+            import transformers
+            import torch
+            from art.estimators.hugging_face import HuggingFaceClassifier
+
+            model = transformers.AutoModelForImageClassification.from_pretrained('facebook/deit-tiny-patch16-224',
+                                                                                 ignore_mismatched_sizes=True,
+                                                                                 num_labels=10)
+
+            print('num of parameters is ', sum(p.numel() for p in model.parameters() if p.requires_grad))
+            optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+
+            hf_model = HuggingFaceClassifier(model,
+                                             loss_fn=torch.nn.CrossEntropyLoss(),
+                                             optimizer=optimizer,
+                                             processor=None)
+            trainer = AdversarialTrainerFBFPyTorch(hf_model, eps=0.05)
 
         return trainer
 
@@ -51,7 +68,44 @@ def fix_get_mnist_subset(get_mnist_dataset):
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
-@pytest.mark.skip_framework("tensorflow", "keras", "scikitlearn", "mxnet", "kerastf")
+@pytest.mark.skip_framework("tensorflow", "keras", "scikitlearn", "mxnet", "kerastf", "pytorch")
+def test_adversarial_trainer_fbf_huggingface_fit_and_predict(get_adv_trainer, get_default_cifar10_subset):
+    (x_train, y_train), (x_test, y_test) = get_default_cifar10_subset
+    x_train = x_train[0:100]
+    y_train = y_train[0:100]
+
+    x_train = np.rollaxis(x_train, 3, 1)
+    x_test = np.rollaxis(x_test, 3, 1)
+
+    import torch
+    upsampler = torch.nn.Upsample(scale_factor=7, mode='nearest')
+
+    x_train = np.float32(upsampler(torch.from_numpy(x_train)).cpu().numpy())
+    x_test = np.float32(upsampler(torch.from_numpy(x_test)).cpu().numpy())
+    x_test_original = x_test.copy()
+
+    trainer = get_adv_trainer()
+    if trainer is None:
+        logging.warning("Couldn't perform  this test because no trainer is defined for this framework configuration")
+        return
+
+    predictions = np.argmax(trainer.predict(x_test), axis=1)
+    accuracy = np.sum(predictions == np.argmax(y_test, axis=1)) / x_test.shape[0]
+
+    trainer.fit(x_train, y_train, nb_epochs=1,  validation_data=(x_test, y_test))
+    predictions_new = np.argmax(trainer.predict(x_test), axis=1)
+    accuracy_new = np.sum(predictions_new == np.argmax(y_test, axis=1)) / x_test.shape[0]
+
+    np.testing.assert_array_almost_equal(
+        float(np.mean(x_test_original - x_test)),
+        0.0,
+        decimal=4,
+    )
+
+    # assert accuracy == 0.32
+    # assert accuracy_new == 0.63
+
+@pytest.mark.skip_framework("tensorflow", "keras", "scikitlearn", "mxnet", "kerastf", "huggingface")
 def test_adversarial_trainer_fbf_pytorch_fit_and_predict(get_adv_trainer, fix_get_mnist_subset):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
     x_test_mnist_original = x_test_mnist.copy()
@@ -80,7 +134,7 @@ def test_adversarial_trainer_fbf_pytorch_fit_and_predict(get_adv_trainer, fix_ge
     trainer.fit(x_train_mnist, y_train_mnist, nb_epochs=20, validation_data=(x_train_mnist, y_train_mnist))
 
 
-@pytest.mark.skip_framework("tensorflow", "keras", "scikitlearn", "mxnet", "kerastf")
+@pytest.mark.skip_framework("tensorflow", "keras", "scikitlearn", "mxnet", "kerastf", "huggingface")
 def test_adversarial_trainer_fbf_pytorch_fit_generator_and_predict(
     get_adv_trainer, fix_get_mnist_subset, image_data_generator
 ):

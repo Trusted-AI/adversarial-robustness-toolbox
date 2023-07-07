@@ -21,6 +21,7 @@ import pytest
 import logging
 import numpy as np
 
+from art.utils import load_dataset
 from art.defences.trainer import AdversarialTrainerTRADESPyTorch
 from art.attacks.evasion import ProjectedGradientDescent
 
@@ -47,6 +48,38 @@ def get_adv_trainer(framework, image_dl_estimator):
                 verbose=False,
             )
             trainer = AdversarialTrainerTRADESPyTorch(classifier, attack, beta=6.0)
+
+        if framework == "huggingface":
+            import transformers
+            import torch
+            from art.estimators.hugging_face import HuggingFaceClassifier
+
+            model = transformers.AutoModelForImageClassification.from_pretrained('facebook/deit-tiny-patch16-224',
+                                                                                 ignore_mismatched_sizes=True,
+                                                                                 num_labels=10)
+
+            print('num of parameters is ', sum(p.numel() for p in model.parameters() if p.requires_grad))
+            optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+
+            hf_model = HuggingFaceClassifier(model,
+                                             loss_fn=torch.nn.CrossEntropyLoss(),
+                                             optimizer=optimizer,
+                                             processor=None)
+
+            attack = ProjectedGradientDescent(
+                hf_model,
+                norm=np.inf,
+                eps=0.3,
+                eps_step=0.03,
+                max_iter=5,
+                targeted=False,
+                num_random_init=1,
+                batch_size=128,
+                verbose=False,
+            )
+
+            trainer = AdversarialTrainerTRADESPyTorch(hf_model, attack, beta=6.0)
+
         if framework == "scikitlearn":
             trainer = None
 
@@ -57,13 +90,75 @@ def get_adv_trainer(framework, image_dl_estimator):
 
 @pytest.fixture()
 def fix_get_mnist_subset(get_mnist_dataset):
-    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_dataset
+    # (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_dataset
+    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist), _, _ = load_dataset("mnist")
+
     n_train = 100
     n_test = 100
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
+@pytest.fixture()
+def fix_get_cifar10_data():
+    """
+    Get the first 128 samples of the cifar10 test set
 
-@pytest.mark.skip_framework("tensorflow", "keras", "scikitlearn", "mxnet", "kerastf")
+    :return: First 128 sample/label pairs of the cifar10 test dataset.
+    """
+    nb_test = 128
+
+    (x_train, y_train), (x_test, y_test), _, _ = load_dataset("cifar10")
+    y_test = np.argmax(y_test, axis=1)
+    x_test, y_test = x_test[:nb_test], y_test[:nb_test]
+    x_test = np.transpose(x_test, (0, 3, 1, 2))  # return in channels first format
+
+    y_train = np.argmax(y_train, axis=1)
+    x_train, y_train = x_train[:nb_test], y_train[:nb_test]
+    x_train = np.transpose(x_train, (0, 3, 1, 2))  # return in channels first format
+    return x_train.astype(np.float32), y_train, x_test.astype(np.float32), y_test
+
+
+@pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2", "tensorflow2v1")
+def test_adversarial_trainer_trades_pytorch_huggingface_fit_and_predict(get_adv_trainer, fix_get_cifar10_data):
+
+    import torch
+    upsampler = torch.nn.Upsample(scale_factor=7, mode='nearest')
+
+    (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_cifar10_data
+    x_test_mnist_original = x_test_mnist.copy()
+    x_train_mnist_original = x_train_mnist.copy()
+
+    x_test_mnist = np.float32(upsampler(torch.from_numpy(x_test_mnist)).cpu().numpy())
+    x_train_mnist = np.float32(upsampler(torch.from_numpy(x_train_mnist)).cpu().numpy())
+    x_test_mnist_original = np.float32(upsampler(torch.from_numpy(x_test_mnist_original)).cpu().numpy())
+    x_train_mnist_original = np.float32(upsampler(torch.from_numpy(x_train_mnist_original)).cpu().numpy())
+
+    trainer = get_adv_trainer()
+    trainer._classifier._reduce_labels = False  # TODO: Where is this set internally?
+    if trainer is None:
+        logging.warning("Couldn't perform  this test because no trainer is defined for this framework configuration")
+        return
+
+    predictions = np.argmax(trainer.predict(x_test_mnist), axis=1)
+    accuracy = np.sum(predictions == y_test_mnist) / x_test_mnist.shape[0]
+
+    trainer.fit(x_train_mnist, y_train_mnist, nb_epochs=2)
+    print('pred shape is ', trainer.predict(x_test_mnist).shape)
+    predictions_new = np.argmax(trainer.predict(x_test_mnist), axis=1)
+    accuracy_new = np.sum(predictions_new == y_test_mnist) / x_test_mnist.shape[0]
+
+    np.testing.assert_array_almost_equal(
+        float(np.mean(x_test_mnist_original - x_test_mnist)),
+        0.0,
+        decimal=4,
+    )
+
+    # TODO: model is not trained so does not give accuracy
+    # assert accuracy == 0.32
+    # assert accuracy_new > 0.32
+    trainer.fit(x_train_mnist, y_train_mnist, nb_epochs=2, validation_data=(x_train_mnist, y_train_mnist))
+
+
+@pytest.mark.skip_framework("tensorflow", "keras", "scikitlearn", "mxnet", "kerastf", "huggingface")
 def test_adversarial_trainer_trades_pytorch_fit_and_predict(get_adv_trainer, fix_get_mnist_subset):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
     x_test_mnist_original = x_test_mnist.copy()
@@ -92,7 +187,7 @@ def test_adversarial_trainer_trades_pytorch_fit_and_predict(get_adv_trainer, fix
     trainer.fit(x_train_mnist, y_train_mnist, nb_epochs=20, validation_data=(x_train_mnist, y_train_mnist))
 
 
-@pytest.mark.skip_framework("tensorflow", "keras", "scikitlearn", "mxnet", "kerastf")
+@pytest.mark.skip_framework("tensorflow", "keras", "scikitlearn", "mxnet", "kerastf", "huggingface")
 def test_adversarial_trainer_trades_pytorch_fit_generator_and_predict(
     get_adv_trainer, fix_get_mnist_subset, image_data_generator
 ):
