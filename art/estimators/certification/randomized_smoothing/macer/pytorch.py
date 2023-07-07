@@ -177,7 +177,9 @@ class PyTorchMACER(PyTorchRandomizedSmoothing):
         dataset = TensorDataset(x_tensor, y_tensor)
         dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=True, drop_last=drop_last)
 
-        m = torch.distributions.normal.Normal(torch.tensor([0.0], device=self.device), torch.tensor([1.0], device=self.device))
+        m = torch.distributions.normal.Normal(
+            torch.tensor([0.0], device=self.device), torch.tensor([1.0], device=self.device)
+        )
 
         # Start training
         for _ in tqdm(range(nb_epochs)):
