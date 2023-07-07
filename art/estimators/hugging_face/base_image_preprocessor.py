@@ -36,21 +36,6 @@ from transformers.utils.import_utils import (
 )
 import torch
 
-'''
-if is_vision_available():
-    import PIL
-
-    from .image_utils import PILImageResampling
-
-if is_torch_available():
-    import torch
-
-if is_tf_available():
-    import tensorflow as tf
-
-if is_flax_available():
-    import jax.numpy as jnp
-'''
 
 def to_channel_dimension_format(
     image: np.ndarray,

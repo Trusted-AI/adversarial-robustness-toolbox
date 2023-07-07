@@ -34,6 +34,11 @@ class HuggingFaceClassifier(PyTorchClassifier):
         import functools
 
         def prefix_function(function, postfunction):
+            """
+            Huggingface returns logit under outputs.logits.
+            To make this compatible with ART we wrap the forward pass function
+            of a HF model here, which automatically extracts the logits.
+            """
             @functools.wraps(function)
             def run(*args, **kwargs):
                 outputs = function(*args, **kwargs)
@@ -71,9 +76,10 @@ class HuggingFaceClassifier(PyTorchClassifier):
         exit()
         return outputs.logits
 
-    def get_grad(self, image, labels):
+    def get_grad(self, image, labels, loss_fn):
         """
-        Get gradient wrt input image
+        Get gradient wrt input image.
+        Testing function. To be removed in final PR
 
         :param image:
         :param labels:
@@ -94,14 +100,17 @@ class HuggingFaceClassifier(PyTorchClassifier):
             image['pixel_values'].requires_grad = True
             loss = self.model(**image, labels=labels)[0]
         else:
-            loss = self.model(image, labels=labels)[0]
-
+            out = self.model(image)
+            loss = loss_fn(out, labels)
         loss.backward()
         self.model.eval()
 
         return image.grad
 
     def make_adv_example(self, x, y):
+        """
+        Testing function: to be removed in final PR
+        """
         self.epsilon = 8 / 255
         self.attack_lr = 1 / 255
         upsampler = torch.nn.Upsample(scale_factor=7, mode='nearest')
@@ -111,7 +120,7 @@ class HuggingFaceClassifier(PyTorchClassifier):
 
         x = upsampler(x)  # hard code resize for now
         model_outputs = self.model(x)
-        acc = self.get_accuracy(model_outputs.logits, y)
+        acc = self.get_accuracy(model_outputs, y)
         print('clean acc is ', acc)
 
         x_adv = x.detach().clone()
@@ -120,7 +129,7 @@ class HuggingFaceClassifier(PyTorchClassifier):
         for _ in range(30):
             self.model.zero_grad()
             # x_adv.zero_grad()
-            grad = self.get_grad(x_adv, y)
+            grad = self.get_grad(x_adv, y, loss_fn=torch.nn.CrossEntropyLoss())
             with torch.no_grad():
                 grad = grad.sign()
                 x_adv = x_adv + self.attack_lr * grad
@@ -130,7 +139,7 @@ class HuggingFaceClassifier(PyTorchClassifier):
                 x_adv = torch.clamp(x + noise, min=0, max=1)
 
         model_outputs = self.model(x_adv)
-        acc = self.get_accuracy(model_outputs.logits, y)
+        acc = self.get_accuracy(model_outputs, y)
         print('adv acc is ', acc)
 
     def train(self, x, y,
@@ -163,7 +172,6 @@ class HuggingFaceClassifier(PyTorchClassifier):
         else:
             num_batch = int(np.ceil(num_batch))
         ind = np.arange(len(x_preprocessed))
-        # upsampler = torch.nn.Upsample(scale_factor=7, mode='nearest')
 
         # Start training
         for _ in tqdm(range(nb_epochs)):
@@ -222,7 +230,7 @@ class HuggingFaceClassifier(PyTorchClassifier):
         """
         Helper function to print out the accuracy during training
 
-        :param preds: (concrete) model predictions
+        :param preds: model predictions
         :param labels: ground truth labels (not one hot)
         :return: prediction accuracy
         """
