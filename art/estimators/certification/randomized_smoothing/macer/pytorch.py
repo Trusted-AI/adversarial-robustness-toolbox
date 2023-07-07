@@ -198,13 +198,13 @@ class PyTorchMACER(PyTorchRandomizedSmoothing):
                 outputs = outputs.reshape((input_size, self.gaussian_samples, self.nb_classes))
 
                 # Classification loss
-                outputs_softmax = F.softmax(outputs, dim=2).mean(1)
-                outputs_logsoftmax = torch.log(outputs_softmax + 1e-10)  # avoid nan
-                classification_loss = F.nll_loss(outputs_logsoftmax, y_batch, reduction="sum")
+                outputs_softmax = F.softmax(outputs, dim=2).mean(dim=1)
+                outputs_log_softmax = torch.log(outputs_softmax + 1e-10)  # avoid nan
+                classification_loss = F.nll_loss(outputs_log_softmax, y_batch, reduction="sum")
 
                 # Robustness loss
                 beta_outputs = outputs * self.beta  # only apply beta to the robustness loss
-                beta_outputs_softmax = F.softmax(beta_outputs, dim=2).mean(1)
+                beta_outputs_softmax = F.softmax(beta_outputs, dim=2).mean(dim=1)
                 top2_score, top2_idx = torch.topk(beta_outputs_softmax, 2)
                 indices_correct = top2_idx[:, 0] == y_batch  # G_theta
                 out0, out1 = top2_score[indices_correct, 0], top2_score[indices_correct, 1]
@@ -216,105 +216,14 @@ class PyTorchMACER(PyTorchRandomizedSmoothing):
                 )  # hinge
                 out0, out1 = out0[indices], out1[indices]
                 robustness_loss = m.icdf(out1) - m.icdf(out0) + self.gamma
-                robustness_loss = robustness_loss.sum() * self.scale / 2
+                robustness_loss = torch.sum(robustness_loss) * self.scale / 2
 
                 # Final objective function
                 loss = classification_loss + self.lmbda * robustness_loss
                 loss /= input_size
-                self.optimizer.zero_grad()
+                self._optimizer.zero_grad()
                 loss.backward()
-                self.optimizer.step()
+                self._optimizer.step()
 
             if scheduler is not None:
                 scheduler.step()
-
-    def _smooth_mix_pgd_attack(
-        self,
-        inputs: "torch.Tensor",
-        labels: "torch.Tensor",
-        noises: List["torch.Tensor"],
-        warmup_v: float,
-    ) -> Tuple["torch.Tensor", "torch.Tensor"]:
-        """
-        The authors' implementation of the SmoothMixPGD attack.
-        Code modified from https://github.com/jh-jeong/smoothmix/code/train.py
-
-        :param inputs: The batch inputs
-        :param labels: The batch labels for the inputs
-        :param noises: The noise applied to each input in the attack
-        """
-        import torch
-        import torch.nn.functional as F
-
-        def _batch_l2_norm(x: torch.Tensor) -> torch.Tensor:
-            """
-            Perform a batch L2 norm
-
-            :param x: The inputs to compute the batch L2 norm of
-            """
-            x_flat = x.reshape(x.size(0), -1)
-            return torch.norm(x_flat, dim=1)
-
-        def _project(x: torch.Tensor, x_0: torch.Tensor, maxnorm: Optional[float] = None):
-            """
-            Apply a projection of the current inputs with the maxnorm
-
-            :param x: The inputs to apply a projection on (either original or adversarial)
-            :param x_0: The unperterbed inputs to apply the projection on
-            :param maxnorm: The maxnorm value to apply to x
-            """
-            if maxnorm is not None:
-                eta = x - x_0
-                eta = eta.renorm(p=2, dim=0, maxnorm=maxnorm)
-                x = x_0 + eta
-            x = torch.clamp(x, 0, 1)
-            x = x.detach()
-            return x
-
-        adv = inputs.detach()
-        init = inputs.detach()
-        for i in range(self.num_steps):
-            if i == self.mix_step:
-                init = adv.detach()
-            adv.requires_grad_()
-
-            softmax = [F.softmax(self._model(adv + noise)[-1], dim=1) for noise in noises]
-            avg_softmax = torch.mean(torch.stack(softmax), dim=0)
-            log_softmax = torch.log(avg_softmax.clamp(min=1e-20))
-            loss = F.nll_loss(log_softmax, labels, reduction="sum")
-
-            grad = torch.autograd.grad(loss, [adv])[0]
-            grad_norm = _batch_l2_norm(grad).view(-1, 1, 1, 1)
-            grad = grad / (grad_norm + 1e-8)
-            adv = adv + self.alpha * grad
-
-            adv = _project(adv, inputs, self.maxnorm)
-
-        if self.maxnorm_s is None:
-            maxnorm_s = self.alpha * self.mix_step * warmup_v
-        else:
-            maxnorm_s = self.maxnorm_s * warmup_v
-        init = _project(init, inputs, maxnorm_s)
-
-        return init, adv
-
-    def _mix_data(
-        self, inputs: "torch.Tensor", inputs_adv: "torch.Tensor", labels: "torch.Tensor"
-    ) -> Tuple["torch.Tensor", "torch.Tensor"]:
-        """
-        Returns mixed inputs and labels.
-
-        :param inputs: Training data
-        :param inputs_adv: Adversarial training data
-        :param labels: Training labels
-        """
-        import torch
-
-        eye = torch.eye(self.nb_classes, device=self.device)
-        unif = eye.mean(0, keepdim=True)
-        lam = torch.rand(inputs.size(0), device=self.device) / 2
-
-        mixed_inputs = (1 - lam).view(-1, 1, 1, 1) * inputs + lam.view(-1, 1, 1, 1) * inputs_adv
-        mixed_labels = (1 - lam).view(-1, 1) * labels + lam.view(-1, 1) * unif
-
-        return mixed_inputs, mixed_labels
