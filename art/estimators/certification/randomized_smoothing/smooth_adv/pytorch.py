@@ -16,9 +16,9 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements SmoothMix applied to classifier predictions.
+This module implements SmoothAdv applied to classifier predictions.
 
-| Paper link: https://arxiv.org/abs/2111.09277
+| Paper link: https://arxiv.org/abs/1906.04584
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -28,6 +28,7 @@ from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 from tqdm import tqdm
 import numpy as np
 
+from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
 from art.estimators.certification.randomized_smoothing.pytorch import PyTorchRandomizedSmoothing
 from art.utils import check_and_transform_label_format
 
@@ -41,21 +42,18 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class PyTorchSmoothMix(PyTorchRandomizedSmoothing):
+class PyTorchSmoothAdv(PyTorchRandomizedSmoothing):
     """
-    Implementation of SmoothMix training, as introduced in Jeong et al. (2021)
+    Implementation of SmoothAdv training, as introduced in Salman et al. (2019)
 
-    | Paper link: https://arxiv.org/abs/2111.09277
+    | Paper link: https://arxiv.org/abs/1906.04584
     """
 
     estimator_params = PyTorchRandomizedSmoothing.estimator_params + [
-        "eta",
+        "epsilon",
         "num_noise_vec",
         "num_steps",
         "warmup",
-        "mix_step",
-        "maxnorm_s",
-        "maxnorm",
     ]
 
     def __init__(
@@ -74,16 +72,13 @@ class PyTorchSmoothMix(PyTorchRandomizedSmoothing):
         sample_size: int = 32,
         scale: float = 0.1,
         alpha: float = 0.001,
-        eta: float = 1.0,
+        epsilon: float = 1.0,
         num_noise_vec: int = 1,
         num_steps: int = 10,
         warmup: int = 1,
-        mix_step: int = 0,
-        maxnorm_s: Optional[float] = None,
-        maxnorm: Optional[float] = None,
     ) -> None:
         """
-        Create a SmoothMix classifier.
+        Create a SmoothAdv classifier.
 
         :param model: PyTorch model. The output of the model can be logits, probabilities or anything else. Logits
                output should be preferred where possible to ensure attack efficiency.
@@ -106,13 +101,10 @@ class PyTorchSmoothMix(PyTorchRandomizedSmoothing):
         :param sample_size: Number of samples for smoothing.
         :param scale: Standard deviation of Gaussian noise added.
         :param alpha: The failure probability of smoothing.
-        :param eta: The relative strength of the mixup loss.
+        :param epsilon: The maximum perturbation that can be induced.
         :param num_noise_vec: The number of noise vectors.
         :param num_steps: The number of attack updates.
         :param warmup: The warm-up strategy that is gradually increased up to the original value.
-        :param mix_step: Determines which sample to use for the clean side.
-        :param maxnorm_s: The initial value of `alpha * mix_step`.
-        :param maxnorm: The initial value of `alpha * mix_step` for adversarial examples.
         """
         super().__init__(
             model=model,
@@ -130,13 +122,10 @@ class PyTorchSmoothMix(PyTorchRandomizedSmoothing):
             scale=scale,
             alpha=alpha,
         )
-        self.eta = eta
+        self.epsilon = epsilon
         self.num_noise_vec = num_noise_vec
         self.num_steps = num_steps
         self.warmup = warmup
-        self.mix_step = mix_step
-        self.maxnorm_s = maxnorm_s
-        self.maxnorm = maxnorm
 
     def fit(  # pylint: disable=W0221
         self,
@@ -189,9 +178,11 @@ class PyTorchSmoothMix(PyTorchRandomizedSmoothing):
         dataset = TensorDataset(x_tensor, y_tensor)
         dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=True, drop_last=drop_last)
 
+        attack = ProjectedGradientDescent(self.model, eps=self.epsilon, max_iter=1, verbose=False)
+
         # Start training
         for epoch in tqdm(range(nb_epochs)):
-            warmup_v = min(1.0, (epoch + 1) / self.warmup)
+            attack.norm = min(self.epsilon, (epoch + 1) * self.epsilon / self.warmup)
 
             for x_batch, y_batch in dataloader:
                 mini_batch_size = len(x_batch) // self.num_noise_vec
@@ -205,130 +196,31 @@ class PyTorchSmoothMix(PyTorchRandomizedSmoothing):
                     inputs = inputs.to(self.device)
                     labels = labels.to(self.device)
 
-                    noises = [torch.randn_like(inputs) * self.scale for _ in range(self.num_noise_vec)]
+                    noise = torch.randn_like(inputs) * self.scale
 
                     # Attack and find adversarial examples
-                    self._model.eval()
-                    inputs, inputs_adv = self._smooth_mix_pgd_attack(inputs, labels, noises, warmup_v)
-                    self._model.train(mode=training_mode)
+                    self.model.eval()
+                    original_inputs = inputs.cpu().detach().numpy()
+                    noise_for_attack = noise.cpu().detach().numpy()
+                    perturbation_delta = np.zeros_like(original_inputs)
+                    for _ in range(self.num_steps):
+                        perturbed_inputs = original_inputs + perturbation_delta
+                        adv_ex = attack.generate(perturbed_inputs + noise_for_attack)
+                        perturbation_delta = adv_ex - perturbed_inputs - noise_for_attack
 
-                    in_clean_c = torch.cat([inputs + noise for noise in noises], dim=0)
-                    logits_c = self._model(in_clean_c)[-1]
-                    labels_c = labels.repeat(self.num_noise_vec)
+                    # Update perturbed inputs after last iteration
+                    perturbed_inputs = original_inputs + perturbation_delta
+                    self.model.train()
+                    noisy_inputs = torch.from_numpy(perturbed_inputs).to(self.device) + noise
 
-                    logits_c_chunk = torch.chunk(logits_c, self.num_noise_vec, dim=0)
-                    clean_sm = F.softmax(torch.stack(logits_c_chunk), dim=-1)
-                    clean_avg_sm = torch.mean(clean_sm, dim=0)
-                    loss_xent = F.cross_entropy(logits_c, labels_c, reduction="none")
+                    targets = targets.unsqueeze(1).repeat(1, self.num_noise_vec).reshape(-1, 1).squeeze()
+                    outputs = self.model(noisy_inputs)
+                    loss = self.loss(outputs, targets)
 
-                    # mix adversarial examples
-                    in_mix, labels_mix = self._mix_data(inputs, inputs_adv, clean_avg_sm)
-                    in_mix_c = torch.cat([in_mix + noise for noise in noises], dim=0)
-                    labels_mix_c = labels_mix.repeat(self.num_noise_vec, 1)
-                    logits_mix_c = F.log_softmax(self._model(in_mix_c)[-1], dim=1)
-
-                    preds = torch.argmax(clean_avg_sm, dim=-1)
-                    ind_correct = (preds == labels).float()
-                    ind_correct = ind_correct.repeat(self.num_noise_vec)
-
-                    loss_mixup = F.kl_div(logits_mix_c, labels_mix_c, reduction="none").sum(1)
-                    loss = loss_xent.mean() + self.eta * warmup_v * (ind_correct * loss_mixup).mean()
-
-                    # compute gradient and do SGD step
-                    self._optimizer.zero_grad()
+                    # Compute gradient and do SGD step
+                    self.optimizer.zero_grad()
                     loss.backward()
-                    self._optimizer.step()
+                    self.optimizer.step()
 
             if scheduler is not None:
                 scheduler.step()
-
-    def _smooth_mix_pgd_attack(
-        self,
-        inputs: "torch.Tensor",
-        labels: "torch.Tensor",
-        noises: List["torch.Tensor"],
-        warmup_v: float,
-    ) -> Tuple["torch.Tensor", "torch.Tensor"]:
-        """
-        The authors' implementation of the SmoothMixPGD attack.
-        Code modified from https://github.com/jh-jeong/smoothmix/code/train.py
-
-        :param inputs: The batch inputs
-        :param labels: The batch labels for the inputs
-        :param noises: The noise applied to each input in the attack
-        """
-        import torch
-        import torch.nn.functional as F
-
-        def _batch_l2_norm(x: torch.Tensor) -> torch.Tensor:
-            """
-            Perform a batch L2 norm
-
-            :param x: The inputs to compute the batch L2 norm of
-            """
-            x_flat = x.reshape(x.size(0), -1)
-            return torch.norm(x_flat, dim=1)
-
-        def _project(x: torch.Tensor, x_0: torch.Tensor, maxnorm: Optional[float] = None):
-            """
-            Apply a projection of the current inputs with the maxnorm
-
-            :param x: The inputs to apply a projection on (either original or adversarial)
-            :param x_0: The unperterbed inputs to apply the projection on
-            :param maxnorm: The maxnorm value to apply to x
-            """
-            if maxnorm is not None:
-                eta = x - x_0
-                eta = eta.renorm(p=2, dim=0, maxnorm=maxnorm)
-                x = x_0 + eta
-            x = torch.clamp(x, 0, 1)
-            x = x.detach()
-            return x
-
-        adv = inputs.detach()
-        init = inputs.detach()
-        for i in range(self.num_steps):
-            if i == self.mix_step:
-                init = adv.detach()
-            adv.requires_grad_()
-
-            softmax = [F.softmax(self._model(adv + noise)[-1], dim=1) for noise in noises]
-            avg_softmax = torch.mean(torch.stack(softmax), dim=0)
-            log_softmax = torch.log(avg_softmax.clamp(min=1e-20))
-            loss = F.nll_loss(log_softmax, labels, reduction="sum")
-
-            grad = torch.autograd.grad(loss, [adv])[0]
-            grad_norm = _batch_l2_norm(grad).view(-1, 1, 1, 1)
-            grad = grad / (grad_norm + 1e-8)
-            adv = adv + self.alpha * grad
-
-            adv = _project(adv, inputs, self.maxnorm)
-
-        if self.maxnorm_s is None:
-            maxnorm_s = self.alpha * self.mix_step * warmup_v
-        else:
-            maxnorm_s = self.maxnorm_s * warmup_v
-        init = _project(init, inputs, maxnorm_s)
-
-        return init, adv
-
-    def _mix_data(
-        self, inputs: "torch.Tensor", inputs_adv: "torch.Tensor", labels: "torch.Tensor"
-    ) -> Tuple["torch.Tensor", "torch.Tensor"]:
-        """
-        Returns mixed inputs and labels.
-
-        :param inputs: Training data
-        :param inputs_adv: Adversarial training data
-        :param labels: Training labels
-        """
-        import torch
-
-        eye = torch.eye(self.nb_classes, device=self.device)
-        unif = eye.mean(0, keepdim=True)
-        lam = torch.rand(inputs.size(0), device=self.device) / 2
-
-        mixed_inputs = (1 - lam).view(-1, 1, 1, 1) * inputs + lam.view(-1, 1, 1, 1) * inputs_adv
-        mixed_labels = (1 - lam).view(-1, 1) * labels + lam.view(-1, 1) * unif
-
-        return mixed_inputs, mixed_labels

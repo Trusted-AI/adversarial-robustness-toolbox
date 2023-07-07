@@ -16,9 +16,9 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements SmoothMix applied to classifier predictions.
+This module implements MACER applied to classifier predictions.
 
-| Paper link: https://arxiv.org/abs/2111.09277
+| Paper link: https://arxiv.org/abs/2001.02378
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -183,7 +183,6 @@ class PyTorchMACER(PyTorchRandomizedSmoothing):
 
         # Start training
         for _ in tqdm(range(nb_epochs)):
-            # MACER Training setup
             for x_batch, y_batch in dataloader:
                 # Move inputs to GPU
                 x_batch = x_batch.to(self.device)
