@@ -134,6 +134,7 @@ class HueGradientPyTorch(EvasionAttack):
 
         self._check_params()
 
+        self._description = "Hue Attack"
         self._batch_id = 0
         self._i_max_iter = 0
 
@@ -304,7 +305,7 @@ class HueGradientPyTorch(EvasionAttack):
 
         # Compute perturbations with batching.
         for (batch_id, batch_all) in enumerate(
-            tqdm(data_loader, desc="HueGradientAttack", leave=False, disable=not self.verbose)
+            tqdm(data_loader, desc=self._description, leave=False, disable=not self.verbose)
         ):
             self._batch_id = batch_id
 
@@ -351,6 +352,47 @@ class HueGradientPyTorch(EvasionAttack):
 
         return x_adv
 
+    def _init_factor(self, x: "torch.Tensor", mask: "torch.Tensor") -> "torch.Tensor":
+        """
+        Initialise the hue factors.
+
+        :param x: Original inputs.
+        :param mask: A 1D array of masks defining which samples to perturb. Shape needs to be `(nb_samples,)`.
+                     Samples for which the mask is zero will not be adversarially perturbed.
+        :return: Initial hue factors.
+        """
+        import torch
+
+        shape = torch.Size((x.size(0),))
+
+        if self.num_random_init > 0:
+            # Initialise factors to random values sampled from [factor_min, factor_max].
+            f_init = torch.distributions.uniform.Uniform(self.factor_min, self.factor_max).sample(shape)
+        else:
+            # Initialise factors to 0 i.e., no perturbation.
+            f_init = torch.zeros(shape)
+        f_init = torch.asarray(f_init, dtype=torch.float32, device=self.estimator.device)
+
+        if mask is not None:
+            f_init = torch.where(mask == 0.0, torch.tensor(0.0).to(self.estimator.device), f_init)
+
+        return f_init.clone().detach()
+
+    @staticmethod
+    def _apply_factor(x: "torch.Tensor", factor: "torch.Tensor"):
+        """
+        Compute adversarial samples by applying the current hue factors.
+
+        :param x: Original inputs.
+        :param factor: Current hue factors.
+        :return: A tuple holding the current adversarial examples.
+        """
+        import kornia
+
+        x_adv = kornia.enhance.adjust_hue(image=x, factor=factor)
+
+        return x_adv
+
     def _generate_batch(
         self,
         x: "torch.Tensor",
@@ -366,29 +408,16 @@ class HueGradientPyTorch(EvasionAttack):
                      Samples for which the mask is zero will not be adversarially perturbed.
         :return: Adversarial examples.
         """
-        import torch
-        import kornia
 
         x = x.to(self.estimator.device)
         y = y.to(self.estimator.device)
         if mask is not None:
             mask = mask.to(self.estimator.device)
 
-        if self.num_random_init > 0:
-            # Initialise factors to random values sampled from [factor_min, factor_max].
-            f_np = np.random.uniform(self.factor_min, self.factor_max, size=x.size(0))
-        else:
-            # Initialise factors to 0 i.e., no perturbation.
-            f_np = np.zeros(shape=x.size(0))
-
-        f_init = torch.asarray(f_np, dtype=torch.float32, device=self.estimator.device)
-        if mask is not None:
-            f_init = torch.where(mask == 0.0, torch.tensor(0.0).to(self.estimator.device), f_init)
-
         # Start to compute adversarial factors.
-        f_adv = f_init.clone().detach()
+        f_adv = self._init_factor(x, mask)
 
-        x_adv = kornia.enhance.adjust_hue(image=x, factor=f_adv)
+        x_adv = self._apply_factor(x, f_adv)
         x_adv = self._clip_input(x_adv)
 
         for i_max_iter in range(self.max_iter):
@@ -405,24 +434,23 @@ class HueGradientPyTorch(EvasionAttack):
             factor: "torch.Tensor"
     ) -> Tuple["torch.Tensor", "torch.Tensor"]:
         """
-        Compute adversarial samples and hue factors for one iteration.
+        Compute adversarial samples and factors for one iteration.
 
         :param x: Original inputs.
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)`
         :param mask: A 1D array of masks defining which samples to perturb. Shape needs to be `(nb_samples,)`.
                      Samples for which the mask is zero will not be adversarially perturbed.
-        :param factor: Current hue factors.
-        :return: A tuple holding the current adversarial examples and the hue factors.
+        :param factor: Current factors.
+        :return: A tuple holding the current adversarial examples and the factors.
         """
-        import kornia
 
         # Compute the current factor perturbation.
         f_perturbation = self._compute_factor_perturbation(factor, x, y, mask)
 
         # Apply the perturbation and clip.
-        f_adv = self._apply_factor_perturbation(factor, f_perturbation)
+        f_adv = self._update_factor(factor, f_perturbation)
 
-        x_adv = kornia.enhance.adjust_hue(x, f_adv)
+        x_adv = self._apply_factor(x, f_adv)
         x_adv = self._clip_input(x_adv)
 
         return x_adv, f_adv
@@ -435,17 +463,16 @@ class HueGradientPyTorch(EvasionAttack):
             mask: Optional["torch.Tensor"]
     ) -> "torch.Tensor":
         """
-        Compute hue perturbations for the given batch of inputs.
+        Compute factor perturbations for the given batch of inputs.
 
-        :param factor: Current hue factors.
+        :param factor: Current factors.
         :param x: Original inputs.
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)`.
         :param mask: A 1D array of masks defining which samples to perturb. Shape needs to be `(nb_samples,)`.
                      Samples for which the mask is zero will not be adversarially perturbed.
-        :return: Hue perturbations.
+        :return: Factor perturbations.
         """
         import torch
-        import kornia
 
         # Pick a small scalar to avoid division by 0.
         tol = 10e-8
@@ -454,8 +481,8 @@ class HueGradientPyTorch(EvasionAttack):
         f = factor.clone().detach().requires_grad_(True)
 
         # Compute the current adversarial examples by applying
-        # the current hue factors to the original inputs.
-        x = kornia.enhance.adjust_hue(x, f)
+        # the current factors to the original inputs.
+        x = self._apply_factor(x, f)
         x = self._clip_input(x)
 
         # Get the gradient of the loss w.r.t. factors; invert them if the attack is targeted.
@@ -503,17 +530,17 @@ class HueGradientPyTorch(EvasionAttack):
 
         return f_grad
 
-    def _apply_factor_perturbation(
+    def _update_factor(
             self,
             factor: "torch.Tensor",
             factor_perturbation: "torch.Tensor",
     ) -> "torch.Tensor":
         """
-        Apply perturbations to the hue factors.
+        Apply perturbations to the factors.
 
-        :param factor: Current hue factors.
-        :param factor_perturbation: Current hue perturbations.
-        :return: Updated hue factors.
+        :param factor: Current factors.
+        :param factor_perturbation: Current factor perturbations.
+        :return: Updated factors.
         """
         import torch
 
