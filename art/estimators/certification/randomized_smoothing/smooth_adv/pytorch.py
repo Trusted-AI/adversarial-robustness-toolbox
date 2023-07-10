@@ -171,7 +171,6 @@ class PyTorchSmoothAdv(PyTorchRandomizedSmoothing):
                and providing it takes no effect.
         """
         import torch
-        import torch.nn.functional as F
         from torch.utils.data import TensorDataset, DataLoader
 
         # Set model mode

@@ -226,4 +226,3 @@ class TensorFlowV2MACER(TensorFlowV2RandomizedSmoothing):
 
             if scheduler is not None:
                 scheduler(epoch)
-

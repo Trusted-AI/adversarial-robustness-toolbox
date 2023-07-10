@@ -228,4 +228,3 @@ class TensorFlowV2SmoothAdv(TensorFlowV2RandomizedSmoothing):
 
             if scheduler is not None:
                 scheduler(epoch)
-
