@@ -25,7 +25,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
-from tqdm import tqdm
+from tqdm.auto import trange
 import numpy as np
 
 from art.estimators.certification.randomized_smoothing.pytorch import PyTorchRandomizedSmoothing
@@ -81,6 +81,7 @@ class PyTorchSmoothMix(PyTorchRandomizedSmoothing):
         mix_step: int = 0,
         maxnorm_s: Optional[float] = None,
         maxnorm: Optional[float] = None,
+        verbose: bool = False,
     ) -> None:
         """
         Create a SmoothMix classifier.
@@ -113,6 +114,7 @@ class PyTorchSmoothMix(PyTorchRandomizedSmoothing):
         :param mix_step: Determines which sample to use for the clean side.
         :param maxnorm_s: The initial value of `alpha * mix_step`.
         :param maxnorm: The initial value of `alpha * mix_step` for adversarial examples.
+        :param verbose: Show progress bars.
         """
         super().__init__(
             model=model,
@@ -129,6 +131,7 @@ class PyTorchSmoothMix(PyTorchRandomizedSmoothing):
             sample_size=sample_size,
             scale=scale,
             alpha=alpha,
+            verbose=verbose,
         )
         self.eta = eta
         self.num_noise_vec = num_noise_vec
@@ -190,7 +193,7 @@ class PyTorchSmoothMix(PyTorchRandomizedSmoothing):
         dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=True, drop_last=drop_last)
 
         # Start training
-        for epoch in tqdm(range(nb_epochs)):
+        for epoch in trange(nb_epochs, disable=not self.verbose):
             warmup_v = min(1.0, (epoch + 1) / self.warmup)
 
             for x_batch, y_batch in dataloader:

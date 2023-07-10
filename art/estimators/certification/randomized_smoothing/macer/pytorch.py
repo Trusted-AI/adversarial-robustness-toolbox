@@ -25,7 +25,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
-from tqdm import tqdm
+from tqdm.auto import trange
 import numpy as np
 
 from art.estimators.certification.randomized_smoothing.pytorch import PyTorchRandomizedSmoothing
@@ -75,6 +75,7 @@ class PyTorchMACER(PyTorchRandomizedSmoothing):
         gamma: float = 8.0,
         lmbda: float = 12.0,
         gaussian_samples: int = 16,
+        verbose: bool = False,
     ) -> None:
         """
         Create a MACER classifier.
@@ -104,6 +105,7 @@ class PyTorchMACER(PyTorchRandomizedSmoothing):
         :param gamma: The hinge factor.
         :param lmbda: The trade-off factor.
         :param gaussian_samples: The number of gaussian samples per input.
+        :param verbose: Show progress bars.
         """
         super().__init__(
             model=model,
@@ -120,6 +122,7 @@ class PyTorchMACER(PyTorchRandomizedSmoothing):
             sample_size=sample_size,
             scale=scale,
             alpha=alpha,
+            verbose=verbose,
         )
         self.beta = beta
         self.gamma = gamma
@@ -182,7 +185,7 @@ class PyTorchMACER(PyTorchRandomizedSmoothing):
         )
 
         # Start training
-        for _ in tqdm(range(nb_epochs)):
+        for _ in trange(nb_epochs, disable=not self.verbose):
             for x_batch, y_batch in dataloader:
                 # Move inputs to GPU
                 x_batch = x_batch.to(self.device)

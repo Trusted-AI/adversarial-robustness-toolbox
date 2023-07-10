@@ -25,7 +25,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
-from tqdm import tqdm
+from tqdm.auto import trange
 import numpy as np
 
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
@@ -77,6 +77,7 @@ class PyTorchSmoothAdv(PyTorchRandomizedSmoothing):
         num_noise_vec: int = 1,
         num_steps: int = 10,
         warmup: int = 1,
+        verbose: bool = False,
     ) -> None:
         """
         Create a SmoothAdv classifier.
@@ -106,6 +107,7 @@ class PyTorchSmoothAdv(PyTorchRandomizedSmoothing):
         :param num_noise_vec: The number of noise vectors.
         :param num_steps: The number of attack updates.
         :param warmup: The warm-up strategy that is gradually increased up to the original value.
+        :param verbose: Show progress bars.
         """
         super().__init__(
             model=model,
@@ -122,6 +124,7 @@ class PyTorchSmoothAdv(PyTorchRandomizedSmoothing):
             sample_size=sample_size,
             scale=scale,
             alpha=alpha,
+            verbose=verbose,
         )
         self.epsilon = epsilon
         self.num_noise_vec = num_noise_vec
@@ -194,7 +197,7 @@ class PyTorchSmoothAdv(PyTorchRandomizedSmoothing):
         dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=True, drop_last=drop_last)
 
         # Start training
-        for epoch in tqdm(range(nb_epochs)):
+        for epoch in trange(nb_epochs, disable=not self.verbose):
             self.attack.norm = min(self.epsilon, (epoch + 1) * self.epsilon / self.warmup)
 
             for x_batch, y_batch in dataloader:

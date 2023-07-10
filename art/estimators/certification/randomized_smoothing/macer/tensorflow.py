@@ -25,7 +25,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 from typing import Callable, List, Optional, Tuple, Union, TYPE_CHECKING
 
-from tqdm import tqdm
+from tqdm.auto import trange
 import numpy as np
 
 from art.estimators.certification.randomized_smoothing.tensorflow import TensorFlowV2RandomizedSmoothing
@@ -75,6 +75,7 @@ class TensorFlowV2MACER(TensorFlowV2RandomizedSmoothing):
         gamma: float = 8.0,
         lmbda: float = 12.0,
         gaussian_samples: int = 16,
+        verbose: bool = False,
     ) -> None:
         """
         Create a MACER classifier.
@@ -107,6 +108,7 @@ class TensorFlowV2MACER(TensorFlowV2RandomizedSmoothing):
         :param gamma: The hinge factor.
         :param lmbda: The trade-off factor.
         :param gaussian_samples: The number of gaussian samples per input.
+        :param verbose: Show progress bars.
         """
         super().__init__(
             model=model,
@@ -123,6 +125,7 @@ class TensorFlowV2MACER(TensorFlowV2RandomizedSmoothing):
             sample_size=sample_size,
             scale=scale,
             alpha=alpha,
+            verbose=verbose,
         )
         self.beta = beta
         self.gamma = gamma
@@ -210,7 +213,7 @@ class TensorFlowV2MACER(TensorFlowV2RandomizedSmoothing):
 
         train_ds = tf.data.Dataset.from_tensor_slices((x_preprocessed, y_preprocessed)).shuffle(10000).batch(batch_size)
 
-        for epoch in tqdm(range(nb_epochs)):
+        for epoch in trange(nb_epochs, disable=not self.verbose):
             for images, labels in train_ds:
                 # Tile samples for Gaussian augmentation
                 input_size = len(images)
