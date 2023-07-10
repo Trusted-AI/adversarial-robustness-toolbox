@@ -25,7 +25,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 from typing import Callable, List, Optional, Tuple, Union, TYPE_CHECKING
 
-from tqdm import tqdm
+from tqdm.auto import trange
 import numpy as np
 
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
@@ -77,6 +77,7 @@ class TensorFlowV2SmoothAdv(TensorFlowV2RandomizedSmoothing):
         num_noise_vec: int = 1,
         num_steps: int = 10,
         warmup: int = 1,
+        verbose: bool = False,
     ) -> None:
         """
         Create a MACER classifier.
@@ -105,10 +106,11 @@ class TensorFlowV2SmoothAdv(TensorFlowV2RandomizedSmoothing):
         :param sample_size: Number of samples for smoothing.
         :param scale: Standard deviation of Gaussian noise added.
         :param alpha: The failure probability of smoothing.
-        :param beta: The inverse temperature.
-        :param gamma: The hinge factor.
-        :param lmbda: The trade-off factor.
-        :param gaussian_samples: The number of gaussian samples per input.
+        :param epsilon: The maximum perturbation that can be induced.
+        :param num_noise_vec: The number of noise vectors.
+        :param num_steps: The number of attack updates.
+        :param warmup: The warm-up strategy that is gradually increased up to the original value.
+        :param verbose: Show progress bars.
         """
         super().__init__(
             model=model,
@@ -125,6 +127,7 @@ class TensorFlowV2SmoothAdv(TensorFlowV2RandomizedSmoothing):
             sample_size=sample_size,
             scale=scale,
             alpha=alpha,
+            verbose=verbose,
         )
         self.epsilon = epsilon
         self.num_noise_vec = num_noise_vec
@@ -197,7 +200,7 @@ class TensorFlowV2SmoothAdv(TensorFlowV2RandomizedSmoothing):
 
         train_ds = tf.data.Dataset.from_tensor_slices((x_preprocessed, y_preprocessed)).shuffle(10000).batch(batch_size)
 
-        for epoch in tqdm(range(nb_epochs)):
+        for epoch in trange(nb_epochs, disable=not self.verbose):
             self.attack.norm = min(self.epsilon, (epoch + 1) * self.epsilon / self.warmup)
 
             for x_batch, y_batch in train_ds:

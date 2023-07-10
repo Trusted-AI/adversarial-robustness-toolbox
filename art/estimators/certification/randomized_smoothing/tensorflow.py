@@ -26,7 +26,7 @@ import logging
 from typing import Callable, List, Optional, Tuple, Union, TYPE_CHECKING
 
 import warnings
-from tqdm import tqdm
+from tqdm.auto import trange
 import numpy as np
 
 from art.estimators.classification.tensorflow import TensorFlowV2Classifier
@@ -70,6 +70,7 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
         sample_size: int = 32,
         scale: float = 0.1,
         alpha: float = 0.001,
+        verbose: bool = False,
     ):
         """
         Create a randomized smoothing classifier.
@@ -98,6 +99,7 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
         :param sample_size: Number of samples for smoothing.
         :param scale: Standard deviation of Gaussian noise added.
         :param alpha: The failure probability of smoothing.
+        :param verbose: Show progress bars.
         """
         if preprocessing_defences is not None:
             warnings.warn(
@@ -120,6 +122,7 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
             sample_size=sample_size,
             scale=scale,
             alpha=alpha,
+            verbose=verbose,
         )
 
     def _predict_classifier(self, x: np.ndarray, batch_size: int, training_mode: bool, **kwargs) -> np.ndarray:
@@ -179,7 +182,7 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
 
         train_ds = tf.data.Dataset.from_tensor_slices((x_preprocessed, y_preprocessed)).shuffle(10000).batch(batch_size)
 
-        for epoch in tqdm(range(nb_epochs)):
+        for epoch in trange(nb_epochs, disable=not self.verbose):
             for images, labels in train_ds:
                 # Add random noise for randomized smoothing
                 images += tf.random.normal(shape=images.shape, mean=0.0, stddev=self.scale)

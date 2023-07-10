@@ -49,6 +49,7 @@ class RandomizedSmoothingMixin(ABC):
         *args,
         scale: float = 0.1,
         alpha: float = 0.001,
+        verbose: bool = False,
         **kwargs,
     ) -> None:
         """
@@ -57,11 +58,13 @@ class RandomizedSmoothingMixin(ABC):
         :param sample_size: Number of samples for smoothing.
         :param scale: Standard deviation of Gaussian noise added.
         :param alpha: The failure probability of smoothing.
+        :param verbose: Show progress bars.
         """
         super().__init__(*args, **kwargs)  # type: ignore
         self.sample_size = sample_size
         self.scale = scale
         self.alpha = alpha
+        self.verbose = verbose
 
     def _predict_classifier(self, x: np.ndarray, batch_size: int, training_mode: bool, **kwargs) -> np.ndarray:
         """
@@ -95,7 +98,7 @@ class RandomizedSmoothingMixin(ABC):
         logger.info("Applying randomized smoothing.")
         n_abstained = 0
         prediction = []
-        for x_i in tqdm(x, desc="Randomized smoothing"):
+        for x_i in tqdm(x, desc="Randomized smoothing", disable=not self.verbose):
             # get class counts
             counts_pred = self._prediction_counts(x_i, batch_size=batch_size)
             top = counts_pred.argsort()[::-1]
