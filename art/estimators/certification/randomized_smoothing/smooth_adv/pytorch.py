@@ -30,6 +30,7 @@ import numpy as np
 
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
 from art.estimators.certification.randomized_smoothing.pytorch import PyTorchRandomizedSmoothing
+from art.estimators.classification.pytorch import PyTorchClassifier
 from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
@@ -178,7 +179,20 @@ class PyTorchSmoothAdv(PyTorchRandomizedSmoothing):
         dataset = TensorDataset(x_tensor, y_tensor)
         dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=True, drop_last=drop_last)
 
-        attack = ProjectedGradientDescent(self.model, eps=self.epsilon, max_iter=1, verbose=False)
+        classifier = PyTorchClassifier(
+            model=self.model,
+            loss=self.loss,
+            input_shape=self.input_shape,
+            nb_classes=self.nb_classes,
+            optimizer=self.optimizer,
+            channels_first=self.channels_first,
+            clip_values=self.clip_values,
+            preprocessing_defences=self.preprocessing_defences,
+            postprocessing_defences=self.postprocessing_defences,
+            preprocessing=self.preprocessing,
+            device_type=self.device_type,
+        )
+        attack = ProjectedGradientDescent(classifier, eps=self.epsilon, max_iter=1, verbose=False)
 
         # Start training
         for epoch in tqdm(range(nb_epochs)):
@@ -213,7 +227,7 @@ class PyTorchSmoothAdv(PyTorchRandomizedSmoothing):
                     self.model.train()
                     noisy_inputs = torch.from_numpy(perturbed_inputs).to(self.device) + noise
 
-                    targets = targets.unsqueeze(1).repeat(1, self.num_noise_vec).reshape(-1, 1).squeeze()
+                    targets = labels.unsqueeze(1).repeat(1, self.num_noise_vec).reshape(-1, 1).squeeze()
                     outputs = self.model(noisy_inputs)
                     loss = self.loss(outputs, targets)
 
