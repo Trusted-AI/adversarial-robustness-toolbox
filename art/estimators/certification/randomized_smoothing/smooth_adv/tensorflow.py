@@ -23,19 +23,19 @@ This module implements SmoothAdv applied to classifier predictions.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import List, Optional, Tuple, Union, TYPE_CHECKING
+from typing import Callable, List, Optional, Tuple, Union, TYPE_CHECKING
 
 from tqdm import tqdm
 import numpy as np
 
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
-from art.estimators.certification.randomized_smoothing.pytorch import PyTorchRandomizedSmoothing
-from art.estimators.classification.pytorch import PyTorchClassifier
+from art.estimators.certification.randomized_smoothing.tensorflow import TensorFlowV2RandomizedSmoothing
+from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
-    import torch
+    import tensorflow as tf
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
@@ -43,14 +43,14 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class PyTorchSmoothAdv(PyTorchRandomizedSmoothing):
+class TensorFlowV2SmoothAdv(TensorFlowV2RandomizedSmoothing):
     """
     Implementation of SmoothAdv training, as introduced in Salman et al. (2019)
 
     | Paper link: https://arxiv.org/abs/1906.04584
     """
 
-    estimator_params = PyTorchRandomizedSmoothing.estimator_params + [
+    estimator_params = TensorFlowV2RandomizedSmoothing.estimator_params + [
         "epsilon",
         "num_noise_vec",
         "num_steps",
@@ -59,17 +59,17 @@ class PyTorchSmoothAdv(PyTorchRandomizedSmoothing):
 
     def __init__(
         self,
-        model: "torch.nn.Module",
-        loss: "torch.nn.modules.loss._Loss",
-        input_shape: Tuple[int, ...],
+        model,
         nb_classes: int,
-        optimizer: Optional["torch.optim.Optimizer"] = None,  # type: ignore
-        channels_first: bool = True,
+        input_shape: Tuple[int, ...],
+        loss_object: Optional["tf.Tensor"] = None,
+        optimizer: Optional["tf.keras.optimizers.Optimizer"] = None,
+        train_step: Optional[Callable] = None,
+        channels_first: bool = False,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
         preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
-        device_type: str = "gpu",
         sample_size: int = 32,
         scale: float = 0.1,
         alpha: float = 0.001,
@@ -79,15 +79,19 @@ class PyTorchSmoothAdv(PyTorchRandomizedSmoothing):
         warmup: int = 1,
     ) -> None:
         """
-        Create a SmoothAdv classifier.
+        Create a MACER classifier.
 
-        :param model: PyTorch model. The output of the model can be logits, probabilities or anything else. Logits
-               output should be preferred where possible to ensure attack efficiency.
-        :param loss: The loss function for which to compute gradients for training. The target label must be raw
-               categorical, i.e. not converted to one-hot encoding.
-        :param input_shape: The shape of one input instance.
-        :param nb_classes: The number of classes of the model.
+        :param model: a python functions or callable class defining the model and providing it prediction as output.
+        :type model: `function` or `callable class`
+        :param nb_classes: the number of classes in the classification task.
+        :param input_shape: Shape of one input for the classifier, e.g. for MNIST input_shape=(28, 28, 1).
+        :param loss_object: The loss function for which to compute gradients. This parameter is applied for training
+               the model and computing gradients of the loss w.r.t. the input.
         :param optimizer: The optimizer used to train the classifier.
+        :param train_step: A function that applies a gradient update to the trainable variables with signature
+               `train_step(model, images, labels)`. This will override the default training loop that uses the
+               provided `loss_object` and `optimizer` parameters. It is recommended to use the `@tf.function`
+               decorator, if possible, for efficient training.
         :param channels_first: Set channels first or last.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
@@ -98,27 +102,26 @@ class PyTorchSmoothAdv(PyTorchRandomizedSmoothing):
         :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
-        :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
         :param sample_size: Number of samples for smoothing.
         :param scale: Standard deviation of Gaussian noise added.
         :param alpha: The failure probability of smoothing.
-        :param epsilon: The maximum perturbation that can be induced.
-        :param num_noise_vec: The number of noise vectors.
-        :param num_steps: The number of attack updates.
-        :param warmup: The warm-up strategy that is gradually increased up to the original value.
+        :param beta: The inverse temperature.
+        :param gamma: The hinge factor.
+        :param lmbda: The trade-off factor.
+        :param gaussian_samples: The number of gaussian samples per input.
         """
         super().__init__(
             model=model,
-            loss=loss,
-            input_shape=input_shape,
             nb_classes=nb_classes,
+            input_shape=input_shape,
+            loss_object=loss_object,
             optimizer=optimizer,
+            train_step=train_step,
             channels_first=channels_first,
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
             preprocessing=preprocessing,
-            device_type=device_type,
             sample_size=sample_size,
             scale=scale,
             alpha=alpha,
@@ -128,57 +131,60 @@ class PyTorchSmoothAdv(PyTorchRandomizedSmoothing):
         self.num_steps = num_steps
         self.warmup = warmup
 
-        classifier = PyTorchClassifier(
+        classifier = TensorFlowV2Classifier(
             model=model,
-            loss=loss,
-            input_shape=input_shape,
             nb_classes=nb_classes,
+            input_shape=input_shape,
+            loss_object=loss_object,
             optimizer=optimizer,
+            train_step=train_step,
             channels_first=channels_first,
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
             preprocessing=preprocessing,
-            device_type=device_type,
         )
         self.attack = ProjectedGradientDescent(classifier, eps=self.epsilon, max_iter=1, verbose=False)
 
-    def fit(  # pylint: disable=W0221
-        self,
-        x: np.ndarray,
-        y: np.ndarray,
-        batch_size: int = 128,
-        nb_epochs: int = 10,
-        training_mode: bool = True,
-        drop_last: bool = False,
-        scheduler: Optional["torch.optim.lr_scheduler._LRScheduler"] = None,
-        **kwargs,
-    ) -> None:
+    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, **kwargs) -> None:
         """
         Fit the classifier on the training set `(x, y)`.
 
         :param x: Training data.
-        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or index labels of
+        :param y: Labels, one-hot-encoded of shape (nb_samples, nb_classes) or index labels of
                   shape (nb_samples,).
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
-        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
-        :param drop_last: Set to ``True`` to drop the last incomplete batch, if the dataset size is not divisible by
-                          the batch size. If ``False`` and the size of dataset is not divisible by the batch size, then
-                          the last batch will be smaller. (default: ``False``)
-        :param scheduler: Learning rate scheduler to run at the start of every epoch.
-        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
-               and providing it takes no effect.
+        :param kwargs: Dictionary of framework-specific arguments. This parameter currently only supports
+                       "scheduler" which is an optional function that will be called at the end of every
+                       epoch to adjust the learning rate.
         """
-        import torch
-        import torch.nn.functional as F
-        from torch.utils.data import TensorDataset, DataLoader
+        import tensorflow as tf
 
-        # Set model mode
-        self._model.train(mode=training_mode)
+        if self._train_step is None:  # pragma: no cover
+            if self._loss_object is None:  # pragma: no cover
+                raise TypeError(
+                    "A loss function `loss_object` or training function `train_step` is required for fitting the "
+                    "model, but it has not been defined."
+                )
+            if self._optimizer is None:  # pragma: no cover
+                raise ValueError(
+                    "An optimizer `optimizer` or training function `train_step` is required for fitting the "
+                    "model, but it has not been defined."
+                )
 
-        if self._optimizer is None:  # pragma: no cover
-            raise ValueError("An optimizer is needed to train the model, but none for provided")
+            @tf.function
+            def train_step(model, images, labels):
+                with tf.GradientTape() as tape:
+                    predictions = model(images, training=True)
+                    loss = self.loss_object(labels, predictions)
+                gradients = tape.gradient(loss, model.trainable_variables)
+                self.optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+
+        else:
+            train_step = self._train_step
+
+        scheduler = kwargs.get("scheduler")
 
         y = check_and_transform_label_format(y, nb_classes=self.nb_classes)
 
@@ -186,19 +192,15 @@ class PyTorchSmoothAdv(PyTorchRandomizedSmoothing):
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
 
         # Check label shape
-        y_preprocessed = self.reduce_labels(y_preprocessed)
+        if self._reduce_labels:
+            y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
-        # Create dataloader
-        x_tensor = torch.from_numpy(x_preprocessed)
-        y_tensor = torch.from_numpy(y_preprocessed)
-        dataset = TensorDataset(x_tensor, y_tensor)
-        dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=True, drop_last=drop_last)
+        train_ds = tf.data.Dataset.from_tensor_slices((x_preprocessed, y_preprocessed)).shuffle(10000).batch(batch_size)
 
-        # Start training
         for epoch in tqdm(range(nb_epochs)):
             self.attack.norm = min(self.epsilon, (epoch + 1) * self.epsilon / self.warmup)
 
-            for x_batch, y_batch in dataloader:
+            for x_batch, y_batch in train_ds:
                 mini_batch_size = len(x_batch) // self.num_noise_vec
 
                 for mini_batch in range(self.num_noise_vec):
@@ -206,35 +208,24 @@ class PyTorchSmoothAdv(PyTorchRandomizedSmoothing):
                     inputs = x_batch[mini_batch * mini_batch_size : (mini_batch + 1) * mini_batch_size]
                     labels = y_batch[mini_batch * mini_batch_size : (mini_batch + 1) * mini_batch_size]
 
-                    # Move inputs to GPU
-                    inputs = inputs.to(self.device)
-                    labels = labels.to(self.device)
+                    # Tile samples for Gaussian augmentation
+                    inputs = tf.reshape(tf.tile(inputs, (1, self.num_noise_vec, 1, 1)), x_batch.shape)
+                    noise = tf.random.normal(inputs.shape, mean=0.0, stddev=self.scale)
 
-                    noise = torch.randn_like(inputs) * self.scale
-
-                    # Attack and find adversarial examples
-                    self.model.eval()
-                    original_inputs = inputs.cpu().detach().numpy()
-                    noise_for_attack = noise.cpu().detach().numpy()
+                    original_inputs = inputs.numpy()
+                    noise_for_attack = noise.numpy()
                     perturbation_delta = np.zeros_like(original_inputs)
                     for _ in range(self.num_steps):
                         perturbed_inputs = original_inputs + perturbation_delta
                         adv_ex = self.attack.generate(perturbed_inputs + noise_for_attack)
                         perturbation_delta = adv_ex - perturbed_inputs - noise_for_attack
 
-                    # Update perturbed inputs after last iteration
+                    # Add random noise for randomized smoothing
                     perturbed_inputs = original_inputs + perturbation_delta
-                    self.model.train()
-                    noisy_inputs = torch.from_numpy(perturbed_inputs).to(self.device) + noise
+                    noisy_inputs = tf.convert_to_tensor(perturbed_inputs) + noise
 
-                    targets = labels.unsqueeze(1).repeat(1, self.num_noise_vec).reshape(-1, 1).squeeze()
-                    outputs = self.model(noisy_inputs)
-                    loss = self.loss(outputs, targets)
-
-                    # Compute gradient and do SGD step
-                    self.optimizer.zero_grad()
-                    loss.backward()
-                    self.optimizer.step()
+                    train_step(self.model, noisy_inputs, labels)
 
             if scheduler is not None:
-                scheduler.step()
+                scheduler(epoch)
+

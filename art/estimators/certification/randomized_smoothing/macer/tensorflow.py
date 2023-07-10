@@ -219,7 +219,7 @@ class TensorFlowV2MACER(TensorFlowV2RandomizedSmoothing):
                 images = tf.reshape(tf.tile(images, (1, 1, 1, self.gaussian_samples)), new_shape)
 
                 # Add random noise for randomized smoothing
-                noise = tf.random.normal(shape=images.shape, mean=0.0, stddev=1)
+                noise = tf.random.normal(shape=images.shape, mean=0.0, stddev=self.scale)
                 noisy_inputs = images + noise
 
                 train_step(self.model, noisy_inputs, labels)

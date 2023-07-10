@@ -21,7 +21,7 @@ import logging
 import pytest
 import numpy as np
 
-from art.estimators.certification.randomized_smoothing import PyTorchSmoothAdv, TensorFlowV2MACER
+from art.estimators.certification.randomized_smoothing import PyTorchSmoothAdv, TensorFlowV2SmoothAdv
 from tests.utils import ARTTestException, get_image_classifier_pt, get_image_classifier_tf
 
 logger = logging.getLogger(__name__)
@@ -57,9 +57,9 @@ def get_mnist_classifier(framework):
             import tensorflow as tf
 
             classifier, _ = get_image_classifier_tf()
-            optimizer = tf.keras.optimizers.SGD(learning_rate=0.01, momentum=0.9, name="SGD", decay=5e-4)
-            scheduler = tf.keras.optimizers.schedules.PiecewiseConstantDecay([250, 400], [0.01, 0.001, 0.0001])
-            rs = TensorFlowV2MACER(
+            optimizer = tf.keras.optimizers.SGD(learning_rate=0.01, momentum=0.9, name="SGD", decay=1e-4)
+            scheduler = tf.keras.optimizers.schedules.PiecewiseConstantDecay([50, 100], [0.01, 0.001, 0.0001])
+            rs = TensorFlowV2SmoothAdv(
                 model=classifier.model,
                 nb_classes=classifier.nb_classes,
                 input_shape=classifier.input_shape,
@@ -74,10 +74,10 @@ def get_mnist_classifier(framework):
                 sample_size=100,
                 scale=0.01,
                 alpha=0.001,
-                beta=16.0,
-                gamma=8.0,
-                lmbda=12.0,
-                gaussian_samples=16,
+                epsilon=1.0,
+                num_noise_vec=1,
+                num_steps=10,
+                warmup=1,
             )
 
         else:
