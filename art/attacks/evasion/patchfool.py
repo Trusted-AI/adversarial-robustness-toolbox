@@ -25,7 +25,7 @@ from typing import Optional, Union
 import numpy as np
 
 from art.attacks.attack import EvasionAttack
-from art.estimators.classification.pytorch import PyTorchClassifierViT
+from art.estimators.classification.pytorch import PyTorchClassifierDeiT
 from art.utils import get_labels_np_array
 
 
@@ -38,7 +38,7 @@ class PatchFool(EvasionAttack):
 
     attack_params = EvasionAttack.attack_params
 
-    _estimator_requirements = (PyTorchClassifierViT,)
+    _estimator_requirements = (PyTorchClassifierDeiT,)
 
     def __init__(
         self,
@@ -82,6 +82,7 @@ class PatchFool(EvasionAttack):
         :return: Adversarial examples.
         """
         import torch
+        from torchvision.transforms import functional as F
 
         nb_samples = x.shape[0]
         x_adv = [None] * nb_samples
@@ -94,12 +95,12 @@ class PatchFool(EvasionAttack):
 
             begin, end = idx * self.batch_size, min((idx + 1) * self.batch_size, nb_samples)
 
-            x_batch = torch.tensor(x[begin:end], dtype=torch.float32)
-            y_batch = torch.tensor(y[begin:end], dtype=torch.float32)
+            x_batch = F.convert_image_dtype(torch.from_numpy(x[begin:end]), torch.float32)
+            y_batch = torch.from_numpy(y[begin:end]).to(dtype=torch.float32)
 
             x_adv[begin:end] = self._generate_batch(x_batch, y_batch).cpu().detach().numpy()
 
-        return np.array(x_adv, dtype=np.float32)
+        return np.array(x_adv)
 
     def _generate_batch(self, x: "torch.Tensor", y: Optional["torch.Tensor"] = None) -> "torch.Tensor":
         """
@@ -129,32 +130,43 @@ class PatchFool(EvasionAttack):
         perturbation.requires_grad = True
 
         optim = torch.optim.Adam([perturbation], lr=self.learning_rate)
-        scheduler = torch.optim.lr_scheduler.StepLR(optim, step_size=self.step_size, gamma=self.step_size_decay)
+        scheduler = torch.optim.lr_scheduler.StepLR(
+            optim, step_size=self.step_size, gamma=self.step_size_decay, verbose=True
+        )
 
         x_adv += torch.mul(perturbation, mask)
 
         for i_max_iter in range(self.max_iter):
+            self.estimator.model.zero_grad()
             optim.zero_grad()
-
-            loss_att = self._get_attention_loss(x_adv, patches)
-            loss_att_batch = torch.sum(loss_att, dim=1)
 
             model_outputs, _ = self.estimator._predict_framework(x_adv)
             loss_ce = self.estimator._loss(model_outputs, y)
-
             grad_ce = torch.autograd.grad(loss_ce, perturbation, retain_graph=True)[0]
-            grad_att = torch.autograd.grad(torch.sum(loss_att_batch), perturbation, retain_graph=True)[0]
 
-            # Reshape for PCgrad
-            grad_att_tmp = grad_att.reshape(grad_att.shape[0], -1)
-            grad_ce_tmp = grad_ce.reshape(grad_ce.shape[0], -1)
-            grad_att_tmp = self.pcgrad(grad_att_tmp, grad_ce_tmp)
-            grad_att = grad_att_tmp.reshape(grad_att.shape)
+            loss_att = self._get_attention_loss(x_adv, patches)
 
-            grad_ce += self.alpha * grad_att
+            for layer in range(loss_att.shape[1] // 2):
+                loss_att_layer = loss_att[:, layer]
+                grad_att = torch.autograd.grad(torch.mean(loss_att_layer), perturbation, retain_graph=True)[0]
+
+                # Reshape for PCgrad
+                grad_att_tmp = grad_att.reshape(grad_att.shape[0], -1)
+                grad_ce_tmp = grad_ce.reshape(grad_ce.shape[0], -1)
+                grad_att_tmp = self.pcgrad(grad_att_tmp, grad_ce_tmp)
+                grad_att = grad_att_tmp.reshape(grad_att.shape)
+
+                grad_ce += self.alpha * grad_att
+
+            optim.zero_grad()
             perturbation.grad = -grad_ce
             optim.step()
             scheduler.step()
+
+            with torch.no_grad():
+                perturbation.data = torch.clamp(
+                    perturbation, min=self.estimator.clip_values[0], max=self.estimator.clip_values[1]
+                )
 
             x_adv += torch.mul(perturbation, mask)
 
@@ -168,12 +180,17 @@ class PatchFool(EvasionAttack):
         import torch
 
         att = self.estimator.get_attention_weights(x)
+        # shape: batch x layer x head x (token x token)
         # skip class token
-        att = att[:, :, 1:, 1:]
-        s_l = torch.sum(att[:, layer, ...], dim=1)
-        patch_idx = torch.argmax(s_l, dim=1)
+        att = att[:, :, :, 1:, 1:]
+        # average over heads
+        att = torch.mean(att, dim=2)
+        # shape: batch x layer x (token x token)
+        att = torch.sum(att, dim=2)
+        # fix layer
+        max_patch_idx = torch.argmax(att[:, layer, :], dim=1)
 
-        return patch_idx
+        return max_patch_idx
 
     def _get_attention_loss(self, x: "torch.Tensor", patch_idx: "torch.Tensor") -> "torch.Tensor":
         """
@@ -183,9 +200,15 @@ class PatchFool(EvasionAttack):
         import torch
 
         att = self.estimator.get_attention_weights(x)
+        # shape: batch x layer x head x (token x token)
         # skip class token
-        att = att[:, :, 1:, 1:]
-        att_loss = [torch.sum(att[i, :, :, idx], dim=1) for i, idx in enumerate(patch_idx)]
+        att = att[:, :, :, 1:, 1:]
+        # average over heads
+        att = torch.mean(att, dim=2)
+        # shape: batch x layer x (token x token)
+        att = torch.mean(att, dim=2)
+        # batch x layer x token
+        att_loss = [att[i, :, idx] for i, idx in enumerate(patch_idx)]
 
         return torch.stack(att_loss)
 

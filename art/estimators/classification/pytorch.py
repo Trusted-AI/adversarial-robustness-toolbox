@@ -1211,7 +1211,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             raise ImportError("Could not find PyTorch (`torch`) installation.") from ImportError
 
 
-class PyTorchClassifierViT(PyTorchClassifier):
+class PyTorchClassifierDeiT(PyTorchClassifier):
     """
     This class implements a ViT classifier with the PyTorch framework.
     """
@@ -1234,34 +1234,7 @@ class PyTorchClassifierViT(PyTorchClassifier):
         device_type: str = "gpu",
     ) -> None:
         """
-        Initialization specifically for the PyTorch-based implementation.
-
-        :param model: PyTorch model. The output of the model can be logits, probabilities or anything else. Logits
-               output should be preferred where possible to ensure attack efficiency.
-        :param loss: The loss function for which to compute gradients for training. The target label must be raw
-               categorical, i.e. not converted to one-hot encoding.
-        :param input_shape: The shape of one input instance.
-        :param optimizer: The optimizer used to train the classifier.
-        :param use_amp: Whether to use the automatic mixed precision tool to enable mixed precision training or
-                        gradient computation, e.g. with loss gradient computation. When set to True, this option is
-                        only triggered if there are GPUs available.
-        :param opt_level: Specify a pure or mixed precision optimization level. Used when use_amp is True. Accepted
-                          values are `O0`, `O1`, `O2`, and `O3`.
-        :param loss_scale: Loss scaling. Used when use_amp is True. If passed as a string, must be a string
-                           representing a number, e.g., “1.0”, or the string “dynamic”.
-        :param nb_classes: The number of classes of the model.
-        :param optimizer: The optimizer used to train the classifier.
-        :param channels_first: Set channels first or last.
-        :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
-               maximum values allowed for features. If floats are provided, these will be used as the range of all
-               features. If arrays are provided, each value will be considered the bound for a feature, thus
-               the shape of clip values needs to match the total number of features.
-        :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
-        :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-        :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
-               used for data preprocessing. The first value will be subtracted from the input. The input will then
-               be divided by the second one.
-        :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
+        TODO
         """
 
         super().__init__(
@@ -1286,7 +1259,7 @@ class PyTorchClassifierViT(PyTorchClassifier):
         """
         TODO
         """
-        return self.model.patch_size
+        return self.model.patch_embed.patch_size[0]
 
     def get_attention_weights(self, x: Union[np.ndarray, "torch.Tensor"]) -> "torch.Tensor":
         """
@@ -1294,37 +1267,27 @@ class PyTorchClassifierViT(PyTorchClassifier):
         """
 
         import torch
-        from torch import fx
         from torchvision.models.feature_extraction import create_feature_extractor
 
-        graph: fx.Graph = fx.Tracer().trace(self.model)
-        # 'need_weights' is set to False in the implementation
-        for node in graph.nodes:
-            new_kwargs = {"need_weights": True}
-            if node.op == "call_module":
-                if node.target.endswith("self_attention"):
-                    node.kwargs = new_kwargs
-        graph.lint()
-        new_model = fx.GraphModule(self.model, graph)
-
         return_nodes = [
-            "encoder.layers.encoder_layer_0.self_attention",
-            "encoder.layers.encoder_layer_1.self_attention",
-            "encoder.layers.encoder_layer_2.self_attention",
-            "encoder.layers.encoder_layer_3.self_attention",
-            "encoder.layers.encoder_layer_4.self_attention",
-            "encoder.layers.encoder_layer_5.self_attention",
-            "encoder.layers.encoder_layer_6.self_attention",
-            "encoder.layers.encoder_layer_7.self_attention",
-            "encoder.layers.encoder_layer_8.self_attention",
-            "encoder.layers.encoder_layer_9.self_attention",
-            "encoder.layers.encoder_layer_10.self_attention",
-            "encoder.layers.encoder_layer_11.self_attention",
+            "blocks.0.attn.softmax",
+            "blocks.1.attn.softmax",
+            "blocks.2.attn.softmax",
+            "blocks.3.attn.softmax",
+            "blocks.4.attn.softmax",
+            "blocks.5.attn.softmax",
+            "blocks.6.attn.softmax",
+            "blocks.7.attn.softmax",
+            "blocks.8.attn.softmax",
+            "blocks.9.attn.softmax",
+            "blocks.10.attn.softmax",
+            "blocks.11.attn.softmax",
         ]
 
-        feature_extractor = create_feature_extractor(new_model, return_nodes=return_nodes)
+        feature_extractor = create_feature_extractor(self.model, return_nodes=return_nodes)
 
         x_preprocessed, _ = self._apply_preprocessing(x=x, y=None, no_grad=False)
         out = feature_extractor(x_preprocessed)
-        att_weights = [v[1] for v in out.values()]
+        att_weights = [v for v in out.values()]
+
         return torch.stack(att_weights, dim=1)
