@@ -66,10 +66,11 @@ class ColumnAblator(torch.nn.Module):
         self,
         ablation_size: int,
         channels_first: bool,
-        to_reshape: bool = False,
+        mode,
+        to_reshape: bool,
         original_shape: Optional[Tuple] = None,
         output_shape: Optional[Tuple] = None,
-        add_ablation_mask: bool = True,
+        algorithm: str = 'salman2021',
         device_type: str = "gpu",
     ):
         """
@@ -82,11 +83,19 @@ class ColumnAblator(torch.nn.Module):
         :param output_shape: Input shape expected by the ViT. Usually means upscaling the input to 224 x 224.
         """
         super().__init__()
+
         self.ablation_size = ablation_size
         self.channels_first = channels_first
         self.to_reshape = to_reshape
-        self.expected_input_channels = 1
-        self.add_ablation_mask = add_ablation_mask
+        self.add_ablation_mask = False
+        self.additional_channels = False
+        self.algorithm = algorithm
+        self.original_shape = original_shape
+
+        if self.algorithm == 'levine2020':
+            self.additional_channels = True
+        if self.algorithm == 'salman2021' and mode == 'ViT':
+            self.add_ablation_mask = True
 
         if device_type == "cpu" or not torch.cuda.is_available():
             self.device = torch.device("cpu")
@@ -121,7 +130,9 @@ class ColumnAblator(torch.nn.Module):
         :param column_pos: The start position of the albation
         :return: The albated input with an extra channel indicating the location of the ablation
         """
-        assert x.shape[1] == self.expected_input_channels
+
+        if x.shape[1] != self.original_shape[0]:
+            raise ValueError(f"Ablator expected {self.original_shape[0]} input channels. Recived shape of {x.shape[1]}")
 
         if column_pos is None:
             column_pos = random.randint(0, x.shape[3])
@@ -133,14 +144,19 @@ class ColumnAblator(torch.nn.Module):
             ones = torch.torch.ones_like(x[:, 0:1, :, :]).to(self.device)
             x = torch.cat([x, ones], dim=1)
 
+        if self.additional_channels:
+            x = torch.cat([x, 1.0 - x], dim=1)
+
         x = self.ablate(x, column_pos=column_pos)
+
         if self.to_reshape:
             x = self.upsample(x)
         return x
 
-    def certify(
-        self, pred_counts: Union[torch.Tensor, np.ndarray], size_to_certify: int, label: Union[torch.Tensor, np.ndarray]
-    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def certify(self,
+                pred_counts: Union[torch.Tensor, np.ndarray],
+                size_to_certify: int,
+                label: Union[torch.Tensor, np.ndarray] = None) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Performs certification of the predictions
 
@@ -151,6 +167,7 @@ class ColumnAblator(torch.nn.Module):
                  the predictions which were certified and also correct,
                  and the most predicted class across the different ablations on the input.
         """
+
         if isinstance(pred_counts, np.ndarray):
             pred_counts = torch.from_numpy(pred_counts).to(self.device)
 
@@ -160,10 +177,14 @@ class ColumnAblator(torch.nn.Module):
         num_of_classes = pred_counts.shape[-1]
 
         top_class_counts, top_predicted_class = pred_counts.kthvalue(num_of_classes, dim=1)
-        second_class_counts, _ = pred_counts.kthvalue(num_of_classes - 1, dim=1)
+        second_class_counts, second_predicted_class = pred_counts.kthvalue(num_of_classes - 1, dim=1)
 
         cert = (top_class_counts - second_class_counts) > 2 * (size_to_certify + self.ablation_size - 1)
 
         cert_and_correct = cert & (label == top_predicted_class)
 
+        if self.algorithm == 'levine2020':
+            tie_break_certs = ((top_class_counts - second_class_counts) == 2 * (size_to_certify + self.ablation_size - 1))\
+                              & (top_predicted_class < second_predicted_class)
+            cert = torch.logical_or(cert, tie_break_certs)
         return cert, cert_and_correct, top_predicted_class
