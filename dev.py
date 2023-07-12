@@ -78,59 +78,108 @@ def vit_dev():
     art_model.eval_and_certify(x_test, y_test, size_to_certify=4)
 
 
-def cnn_dev():
-    class MNISTModel(torch.nn.Module):
+def cnn_dev(algo='salman2021'):
 
-        def __init__(self, number_of_classes: int):
-            super(MNISTModel, self).__init__()
+    assert algo in ['levine2020', 'salman2021']
 
-            self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    if algo == 'salman2021':
+        class MNISTModel(torch.nn.Module):
 
-            self.conv_1 = torch.nn.Conv2d(in_channels=2,
-                                          out_channels=64,
-                                          kernel_size=4,
-                                          stride=2,
-                                          padding=1)
+            def __init__(self):
+                super(MNISTModel, self).__init__()
 
-            self.conv_2 = torch.nn.Conv2d(in_channels=64,
-                                          out_channels=128,
-                                          kernel_size=4,
-                                          stride=2, padding=1)
+                self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-            self.fc1 = torch.nn.Linear(in_features=128*7*7, out_features=500)
-            self.fc2 = torch.nn.Linear(in_features=500, out_features=100)
-            self.fc3 = torch.nn.Linear(in_features=100, out_features=10)
+                self.conv_1 = torch.nn.Conv2d(in_channels=1,
+                                              out_channels=64,
+                                              kernel_size=4,
+                                              stride=2,
+                                              padding=1)
 
-            self.relu = torch.nn.ReLU()
+                self.conv_2 = torch.nn.Conv2d(in_channels=64,
+                                              out_channels=128,
+                                              kernel_size=4,
+                                              stride=2, padding=1)
 
-        def forward(self, x: "torch.Tensor") -> "torch.Tensor":
-            """
-            Computes the forward pass though the neural network
-            :param x: input data of shape (batch size, N features)
-            :return: model prediction
-            """
-            x = self.relu(self.conv_1(x))
-            x = self.relu(self.conv_2(x))
-            x = torch.flatten(x, 1)
-            x = self.relu(self.fc1(x))
-            x = self.relu(self.fc2(x))
-            x = self.fc3(x)
-            return x
+                self.fc1 = torch.nn.Linear(in_features=128*7*7, out_features=500)
+                self.fc2 = torch.nn.Linear(in_features=500, out_features=100)
+                self.fc3 = torch.nn.Linear(in_features=100, out_features=10)
 
-    model = MNISTModel(number_of_classes=10)
+                self.relu = torch.nn.ReLU()
+
+            def forward(self, x: "torch.Tensor") -> "torch.Tensor":
+                """
+                Computes the forward pass though the neural network
+                :param x: input data of shape (batch size, N features)
+                :return: model prediction
+                """
+                x = self.relu(self.conv_1(x))
+                x = self.relu(self.conv_2(x))
+                x = torch.flatten(x, 1)
+                x = self.relu(self.fc1(x))
+                x = self.relu(self.fc2(x))
+                x = self.fc3(x)
+                return x
+    else:
+        class MNISTModel(torch.nn.Module):
+
+            def __init__(self):
+                super(MNISTModel, self).__init__()
+
+                self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+                self.conv_1 = torch.nn.Conv2d(in_channels=2,
+                                              out_channels=64,
+                                              kernel_size=4,
+                                              stride=2,
+                                              padding=1)
+
+                self.conv_2 = torch.nn.Conv2d(in_channels=64,
+                                              out_channels=128,
+                                              kernel_size=4,
+                                              stride=2, padding=1)
+
+                self.fc1 = torch.nn.Linear(in_features=128*7*7, out_features=500)
+                self.fc2 = torch.nn.Linear(in_features=500, out_features=100)
+                self.fc3 = torch.nn.Linear(in_features=100, out_features=10)
+
+                self.relu = torch.nn.ReLU()
+
+            def forward(self, x: "torch.Tensor") -> "torch.Tensor":
+                x = self.relu(self.conv_1(x))
+                x = self.relu(self.conv_2(x))
+                x = torch.flatten(x, 1)
+                x = self.relu(self.fc1(x))
+                x = self.relu(self.fc2(x))
+                x = self.fc3(x)
+                return x
+
+    model = MNISTModel()
     # (x_train, y_train), (x_test, y_test) = get_cifar_data()
     (x_train, y_train), (x_test, y_test) = get_mnist_data()
     optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9, weight_decay=0.0005)
 
-    art_model = PyTorchDeRandomizedSmoothing(model=model,
-                                             loss=torch.nn.CrossEntropyLoss(),
-                                             optimizer=optimizer,
-                                             input_shape=(1, 28, 28),
-                                             nb_classes=10,
-                                             ablation_type='column',
-                                             ablation_size=2,
-                                             threshold=0.3,
-                                             logits=True)
+    if algo == 'salman2021':
+        art_model = PyTorchDeRandomizedSmoothing(model=model,
+                                                 loss=torch.nn.CrossEntropyLoss(),
+                                                 optimizer=optimizer,
+                                                 input_shape=(1, 28, 28),
+                                                 nb_classes=10,
+                                                 ablation_type='column',
+                                                 ablation_size=2,
+                                                 algorithm=algo,
+                                                 logits=True)
+    else:
+        art_model = PyTorchDeRandomizedSmoothing(model=model,
+                                                 loss=torch.nn.CrossEntropyLoss(),
+                                                 optimizer=optimizer,
+                                                 input_shape=(1, 28, 28),
+                                                 nb_classes=10,
+                                                 ablation_type='column',
+                                                 ablation_size=2,
+                                                 algorithm=algo,
+                                                 threshold=0.3,
+                                                 logits=True)
 
     scheduler = torch.optim.lr_scheduler.MultiStepLR(art_model.optimizer, milestones=[200], gamma=0.1)
 
@@ -138,5 +187,5 @@ def cnn_dev():
                   nb_epochs=400,
                   scheduler=scheduler)
 
-# vit_dev()
-cnn_dev()
+vit_dev()
+# cnn_dev()

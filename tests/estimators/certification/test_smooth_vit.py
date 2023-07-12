@@ -186,6 +186,7 @@ def test_certification_function(art_warning, fix_get_mnist_data, fix_get_cifar10
     except ARTTestException as e:
         art_warning(e)
 
+@pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
 def test_end_to_end_equivalence(art_warning, fix_get_mnist_data, fix_get_cifar10_data):
     """
     Assert implementations matches original with a forward pass through the same model architecture.
@@ -197,6 +198,11 @@ def test_end_to_end_equivalence(art_warning, fix_get_mnist_data, fix_get_cifar10
     import sys
 
     from art.estimators.certification.derandomized_smoothing import PyTorchDeRandomizedSmoothing
+    from pathlib import Path
+    import shutil
+
+    # if os.path.exists('smoothed-vit'):
+    #    shutil.rmtree('smoothed-vit')
 
     os.system("git clone https://github.com/MadryLab/smoothed-vit")
     sys.path.append('smoothed-vit/src/utils/')
@@ -229,7 +235,7 @@ def test_end_to_end_equivalence(art_warning, fix_get_mnist_data, fix_get_cifar10
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
     """
-
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     class MaskProcessor(torch.nn.Module):
         def __init__(self, patch_size=16):
             super().__init__()
@@ -240,7 +246,7 @@ def test_end_to_end_equivalence(art_warning, fix_get_mnist_data, fix_get_cifar10
             ones_mask = ones_mask[0].unsqueeze(0)  # take the first mask
             ones_mask = self.avg_pool(ones_mask)[0]
             ones_mask = torch.where(ones_mask.view(-1) > 0)[0] + 1
-            ones_mask = torch.cat([torch.IntTensor(1).fill_(0), ones_mask]).unsqueeze(0)
+            ones_mask = torch.cat([torch.IntTensor(1).fill_(0).to(device), ones_mask]).unsqueeze(0)
             ones_mask = ones_mask.expand(B, -1)
             return ones_mask
 
@@ -311,7 +317,7 @@ def test_end_to_end_equivalence(art_warning, fix_get_mnist_data, fix_get_cifar10
     madry_vit.head = torch.nn.Linear(madry_vit.head.in_features, 10)
 
     madry_vit.load_state_dict(art_sd)
-
+    madry_vit = madry_vit.to(device)
     col_ablator = ColumnAblator(
         ablation_size=4,
         channels_first=True,
@@ -328,10 +334,103 @@ def test_end_to_end_equivalence(art_warning, fix_get_mnist_data, fix_get_cifar10
     assert torch.allclose(madry_preds, art_preds, rtol=1e-04, atol=1e-04)
 
 @pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
+def test_certification_equivalence(art_warning, fix_get_mnist_data, fix_get_cifar10_data):
+    """
+    With the forward pass equivalence asserted, we now confirm that the certification functions in the same
+    way by doing a full end to end prediction and certification test over the data.
+    """
+    import torch
+    import os
+    import sys
+    from torch.utils.data import Dataset
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+    class ArgClass:
+        def __init__(self):
+            self.certify_patch_size = 4
+            self.certify_ablation_size = 4
+            self.certify_stride = 1
+            self.dataset = 'cifar10'
+            self.certify_out_dir = './'
+            self.exp_name = 'tests'
+            self.certify_mode = 'col'
+            self.batch_id = None
+
+    class DataSet(Dataset):
+        def __init__(self, x, y):
+            self.x = x
+            self.y = y
+
+        def __len__(self):
+            return len(self.y)
+
+        def __getitem__(self, idx):
+            return self.x[idx], self.y[idx]
+
+    from art.estimators.certification.derandomized_smoothing import PyTorchDeRandomizedSmoothing
+    import shutil
+    from torch.utils.data import DataLoader
+
+    if os.path.exists('smoothed-vit'):
+        shutil.rmtree('smoothed-vit')
+
+    if os.path.exists('tests'):
+        shutil.rmtree('tests')
+
+    os.system("git clone https://github.com/MadryLab/smoothed-vit")
+    sys.path.append('smoothed-vit/src/utils/')
+    from smoothing import certify
+
+    art_model = PyTorchDeRandomizedSmoothing(
+        model="vit_small_patch16_224",
+        loss=torch.nn.CrossEntropyLoss(),
+        optimizer=torch.optim.SGD,
+        optimizer_params={"lr": 0.01},
+        input_shape=(3, 224, 224),
+        nb_classes=10,
+        ablation_size=4,
+        load_pretrained=True,
+        replace_last_layer=True,
+        verbose=False,
+    )
+
+    class WrappedModel(torch.nn.Module):
+        def __init__(self, my_model):
+            super().__init__()
+            self.model = my_model
+
+        def forward(self, x):
+            x = self.model(x)
+            return x, 'filler_arg'
+
+    cifar_data = torch.from_numpy(fix_get_cifar10_data[0][:100]).to(device)
+    cifar_labels = torch.from_numpy(fix_get_cifar10_data[1][:100]).to(device)
+    upsample = torch.nn.Upsample(scale_factor=224 / 32)
+    cifar_data = upsample(cifar_data)
+    dataset = DataSet(cifar_data, cifar_labels)
+    validation_loader = DataLoader(dataset, batch_size=64)
+    args = ArgClass()
+
+    model = WrappedModel(my_model=art_model.model)
+    certify(args=args,
+            model=model,
+            validation_loader=validation_loader,
+            store=None)
+    summary = torch.load('tests/m4_s4_summary.pth')
+    print('the summary is ', summary)
+    acc, cert_acc = art_model.eval_and_certify(x=cifar_data.cpu().numpy(), y=cifar_labels.cpu().numpy(), size_to_certify=4)
+    print('cert_acc ', cert_acc)
+    print('acc ', acc)
+    assert cert_acc == summary['cert_acc']
+    assert acc == summary['smooth_acc']
+
+
+@pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
 def test_equivalence(fix_get_cifar10_data):
     import torch
     from art.estimators.certification.derandomized_smoothing import PyTorchDeRandomizedSmoothing
     from art.estimators.certification.derandomized_smoothing.vision_transformers.vit import PyTorchViT
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     class MadrylabImplementations:
         """
@@ -384,7 +483,7 @@ def test_equivalence(fix_get_cifar10_data):
                     ones_mask = ones_mask[0].unsqueeze(0)  # take the first mask
                     ones_mask = self.avg_pool(ones_mask)[0]
                     ones_mask = torch.where(ones_mask.view(-1) > 0)[0] + 1
-                    ones_mask = torch.cat([torch.IntTensor(1).fill_(0), ones_mask]).unsqueeze(0)
+                    ones_mask = torch.cat([torch.IntTensor(1).fill_(0).to(device), ones_mask]).unsqueeze(0)
                     ones_mask = ones_mask.expand(B, -1)
                     return ones_mask
 
