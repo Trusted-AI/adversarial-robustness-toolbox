@@ -8,6 +8,9 @@ on:
     paths-ignore:
       - '*.md'
 
+  # Run on merge queue
+  merge_group:
+
   # Run when pushing to main or dev branches
   push:
     branches:
@@ -42,6 +45,13 @@ jobs:
           - name: TensorFlow 2.10.1 (Keras 2.10.0 Python 3.9)
             framework: tensorflow
             python: 3.9
+            tensorflow: 2.10.1
+            tf_version: v2
+            keras: 2.10.0
+            tf_addons: 0.18.0
+          - name: TensorFlow 2.10.1 (Keras 2.10.0 Python 3.10)
+            framework: tensorflow
+            python: '3.10'
             tensorflow: 2.10.1
             tf_version: v2
             keras: 2.10.0

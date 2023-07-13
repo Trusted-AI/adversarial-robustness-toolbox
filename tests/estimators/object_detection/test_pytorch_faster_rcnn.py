@@ -18,173 +18,205 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-import unittest
 
 import numpy as np
+import pytest
 
-from tests.utils import TestBase, master_seed
-
+from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
 
-class TestPyTorchFasterRCNN(TestBase):
+@pytest.fixture()
+def get_pytorch_faster_rcnn(get_default_mnist_subset):
     """
     This class tests the PyTorchFasterRCNN object detector.
     """
+    from art.estimators.object_detection.pytorch_faster_rcnn import PyTorchFasterRCNN
 
-    @classmethod
-    def setUpClass(cls):
-        master_seed(seed=1234, set_tensorflow=True)
-        super().setUpClass()
+    # Define object detector
+    object_detector = PyTorchFasterRCNN(
+        clip_values=(0, 1),
+        channels_first=False,
+        attack_losses=["loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg"],
+    )
 
-        cls.n_test = 10
-        cls.x_test_mnist = cls.x_test_mnist[0 : cls.n_test]
-        cls.y_test_mnist = cls.y_test_mnist[0 : cls.n_test]
+    (_, _), (x_test_mnist, _) = get_default_mnist_subset
 
-        # Only import if object detection module is available
-        from art.estimators.object_detection.pytorch_faster_rcnn import PyTorchFasterRCNN
+    x_test = np.transpose(x_test_mnist[:2], (0, 2, 3, 1))
+    x_test = np.repeat(x_test.astype(np.float32), repeats=3, axis=3)
 
-        # Define object detector
-        cls.obj_detect = PyTorchFasterRCNN(
-            clip_values=(0, 1), attack_losses=("loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg")
-        )
+    # Create labels
+    result = object_detector.predict(x=x_test)
 
-        # Create labels
-        cls.x_test = np.repeat(cls.x_test_mnist[:2].astype(np.float32), repeats=3, axis=3)
+    y_test = [
+        {
+            "boxes": result[0]["boxes"],
+            "labels": result[0]["labels"],
+            "scores": np.ones_like(result[0]["labels"]),
+        },
+        {
+            "boxes": result[1]["boxes"],
+            "labels": result[1]["labels"],
+            "scores": np.ones_like(result[1]["labels"]),
+        },
+    ]
 
-        result = cls.obj_detect.predict(x=cls.x_test)
+    yield object_detector, x_test, y_test
 
-        cls.y_test = [
-            {
-                "boxes": result[0]["boxes"],
-                "labels": result[0]["labels"],
-                "scores": np.ones_like(result[0]["labels"]),
-            },
-            {
-                "boxes": result[1]["boxes"],
-                "labels": result[1]["labels"],
-                "scores": np.ones_like(result[1]["labels"]),
-            },
-        ]
 
-    def test_predict(self):
-        result = self.obj_detect.predict(self.x_test_mnist.astype(np.float32))
+@pytest.mark.only_with_platform("pytorch")
+def test_predict(art_warning, get_pytorch_faster_rcnn):
+    try:
+        object_detector, x_test, _ = get_pytorch_faster_rcnn
 
-        self.assertTrue(
-            list(result[0].keys())
-            == [
-                "boxes",
-                "labels",
-                "scores",
-            ]
-        )
+        result = object_detector.predict(x_test)
+        assert list(result[0].keys()) == ["boxes", "labels", "scores"]
 
-        self.assertTrue(result[0]["boxes"].shape == (7, 4))
+        assert result[0]["boxes"].shape == (7, 4)
         expected_detection_boxes = np.asarray([4.4017954, 6.3090835, 22.128296, 27.570665])
         np.testing.assert_array_almost_equal(result[0]["boxes"][2, :], expected_detection_boxes, decimal=3)
 
-        self.assertTrue(result[0]["scores"].shape == (7,))
+        assert result[0]["scores"].shape == (7,)
         expected_detection_scores = np.asarray(
             [0.3314798, 0.14125851, 0.13928168, 0.0996184, 0.08550017, 0.06690315, 0.05359321]
         )
         np.testing.assert_array_almost_equal(result[0]["scores"][:10], expected_detection_scores, decimal=6)
 
-        self.assertTrue(result[0]["labels"].shape == (7,))
+        assert result[0]["labels"].shape == (7,)
         expected_detection_classes = np.asarray([72, 79, 1, 72, 78, 72, 82])
         np.testing.assert_array_almost_equal(result[0]["labels"][:10], expected_detection_classes, decimal=6)
 
-    def test_loss_gradient(self):
-        grads = self.obj_detect.loss_gradient(
-            np.repeat(self.x_test_mnist[:2].astype(np.float32), repeats=3, axis=3), self.y_test
-        )
+    except ARTTestException as e:
+        art_warning(e)
 
-        self.assertTrue(grads.shape == (2, 28, 28, 3))
+
+@pytest.mark.only_with_platform("pytorch")
+def test_fit(art_warning, get_pytorch_faster_rcnn):
+    try:
+        import torch
+
+        object_detector, x_test, y_test = get_pytorch_faster_rcnn
+
+        params = [p for p in object_detector.model.parameters() if p.requires_grad]
+        optimizer = torch.optim.SGD(params, lr=0.01)
+
+        object_detector.set_params(optimizer=optimizer)
+
+        # Compute loss before training
+        loss1 = object_detector.compute_loss(x=x_test, y=y_test)
+
+        # Train for one epoch
+        object_detector.fit(x_test, y_test, nb_epochs=1)
+
+        # Compute loss after training
+        loss2 = object_detector.compute_loss(x=x_test, y=y_test)
+
+        assert loss1 != loss2
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.only_with_platform("pytorch")
+def test_loss_gradient(art_warning, get_pytorch_faster_rcnn):
+    try:
+        object_detector, x_test, y_test = get_pytorch_faster_rcnn
+
+        # Compute gradients
+        grads = object_detector.loss_gradient(x_test, y_test)
+        assert grads.shape == (2, 28, 28, 3)
 
         expected_gradients1 = np.asarray(
             [
-                [5.7717459e-04, 2.2427551e-03, 2.7338031e-03],
-                [-5.4135895e-04, -6.8901619e-03, -5.3023611e-04],
-                [1.7901474e-03, -6.0165934e-03, 1.2608932e-03],
-                [2.2302025e-03, -4.1366839e-03, 8.1665488e-04],
-                [5.0025941e-03, -2.0607577e-03, 1.3738470e-03],
-                [6.7711552e-03, 2.4779334e-03, 3.2517519e-03],
-                [7.7946498e-03, 3.8083603e-03, 3.9150072e-03],
-                [6.2914360e-03, 3.2317259e-03, 2.4392023e-03],
-                [6.8533504e-03, 4.6805567e-03, 2.1657508e-03],
-                [6.4596147e-03, 1.6440222e-03, 2.1018654e-03],
-                [7.3140049e-03, 4.9051084e-03, 2.1954530e-03],
-                [7.3917350e-03, 5.3877393e-03, 2.5017208e-03],
-                [7.1420427e-03, 4.5424267e-03, 1.7418499e-03],
-                [7.6933270e-03, 7.0741987e-03, 1.3693030e-03],
-                [7.9037091e-03, 8.1887292e-03, 1.0207348e-03],
-                [4.7930530e-03, 1.2661386e-04, -2.0549579e-03],
-                [4.7417181e-03, 1.1090005e-03, -2.1967045e-03],
-                [4.0628687e-03, -1.0743369e-03, -2.7016401e-03],
-                [4.1211918e-03, -9.3981961e-04, -3.3123612e-03],
-                [2.7677750e-03, -2.0360684e-03, -2.4159362e-03],
-                [1.5355040e-03, -2.3622375e-03, -2.2277990e-03],
-                [-8.2429928e-05, -2.7951330e-03, -2.4791150e-03],
-                [8.6106811e-05, -1.1048347e-03, -1.8214922e-03],
-                [1.3870616e-03, 1.4906849e-03, -3.1876419e-04],
-                [1.1308161e-03, 6.2550785e-04, 7.9436734e-04],
-                [-1.0549244e-03, -2.1480548e-03, -8.4300683e-04],
-                [7.4692059e-04, 6.3713623e-04, -2.2322751e-04],
-                [1.6337358e-04, -1.2138729e-03, -8.6526090e-04],
+                [4.6265591e-04, 1.2323459e-03, 1.3915040e-03],
+                [-3.2658060e-04, -3.6941725e-03, -4.5638453e-04],
+                [7.8702159e-04, -3.3072452e-03, 3.0583731e-04],
+                [1.0381485e-03, -2.0846087e-03, 2.3015277e-04],
+                [2.1460971e-03, -1.3157589e-03, 3.5176644e-04],
+                [3.3839934e-03, 1.3083456e-03, 1.6155940e-03],
+                [3.8621046e-03, 1.6645766e-03, 1.8313043e-03],
+                [3.0887076e-03, 1.4632678e-03, 1.1174511e-03],
+                [3.3404885e-03, 2.0578136e-03, 9.6874911e-04],
+                [3.2202434e-03, 7.2660763e-04, 8.9162006e-04],
+                [3.5761783e-03, 2.3615893e-03, 8.8510796e-04],
+                [3.4721815e-03, 1.9500104e-03, 9.2907902e-04],
+                [3.4767685e-03, 2.1154548e-03, 5.5654044e-04],
+                [3.9492580e-03, 3.5505455e-03, 6.5863604e-04],
+                [3.9963769e-03, 4.0338552e-03, 3.9539216e-04],
+                [2.2312226e-03, 5.1399925e-06, -1.0743635e-03],
+                [2.3955442e-03, 6.7116896e-04, -1.2389944e-03],
+                [1.9969011e-03, -4.5717746e-04, -1.5225793e-03],
+                [1.8131963e-03, -7.7948131e-04, -1.6078206e-03],
+                [1.4277012e-03, -7.7973347e-04, -1.3463887e-03],
+                [7.3705515e-04, -1.1704378e-03, -9.8979671e-04],
+                [1.0899740e-04, -1.2144407e-03, -1.1339665e-03],
+                [1.2254890e-04, -4.7438752e-04, -8.8673591e-04],
+                [7.0695346e-04, 7.2568876e-04, -2.5591519e-04],
+                [5.0835893e-04, 2.6866698e-04, 2.2731400e-04],
+                [-5.9932750e-04, -1.1667561e-03, -4.8044650e-04],
+                [4.0421321e-04, 3.1692928e-04, -8.3296909e-05],
+                [4.0506107e-05, -3.1728629e-04, -4.4132984e-04],
             ]
         )
         np.testing.assert_array_almost_equal(grads[0, 0, :, :], expected_gradients1, decimal=2)
 
         expected_gradients2 = np.asarray(
             [
-                [8.09008547e-04, 1.46970048e-03, 2.30784086e-03],
-                [1.57560175e-03, -3.95192811e-03, -3.42682266e-04],
-                [1.17776252e-03, -4.75858618e-03, -1.83509255e-03],
-                [-3.62795522e-03, -7.03671249e-03, -2.61869049e-03],
-                [-5.65498043e-03, -9.36302636e-03, -2.72479979e-03],
-                [-6.13390049e-03, -1.91371012e-02, -8.64498038e-03],
-                [4.13261494e-03, -5.83548984e-03, -5.41773997e-03],
-                [2.10555550e-02, 1.75252277e-02, 1.19110784e-02],
-                [2.86780880e-03, -2.02223212e-02, 4.42323042e-03],
-                [1.66129377e-02, 4.57757805e-03, 3.99308838e-03],
-                [-5.31449541e-03, -2.39533130e-02, -1.50507865e-02],
-                [-1.55420639e-02, -6.57757046e-03, -1.95033997e-02],
-                [-1.71425883e-02, -8.82681739e-03, -1.03681823e-02],
-                [-1.52608315e-02, -2.59394385e-02, -8.74401908e-03],
-                [-1.98556799e-02, -4.51070368e-02, -2.01500412e-02],
-                [-1.76412370e-02, -4.00045775e-02, -2.76774243e-02],
-                [-3.39970365e-02, -5.27175590e-02, -2.48762686e-02],
-                [-1.01934038e-02, -1.34583283e-02, 2.92114611e-03],
-                [9.27460939e-03, -1.07238982e-02, 1.69319492e-02],
-                [1.32648731e-02, 7.15299882e-03, 1.81243364e-02],
-                [1.04831355e-02, 3.29193124e-03, 1.09448479e-02],
-                [5.21936268e-03, -1.08520268e-03, 4.44627739e-03],
-                [4.43769246e-03, 1.22211361e-03, 1.76453649e-03],
-                [2.82945228e-03, 1.39565568e-03, 5.05451404e-04],
-                [6.36306650e-04, -7.02011574e-04, 8.36413165e-05],
-                [2.80080014e-04, -9.24700813e-04, -6.42473227e-04],
-                [1.44194404e-03, 9.39335907e-04, -1.95080182e-04],
-                [1.05228636e-03, -4.52511711e-03, -5.74906298e-04],
+                [4.7986404e-04, 7.7701372e-04, 1.1786318e-03],
+                [7.3503907e-04, -2.3474507e-03, -3.9008856e-04],
+                [4.1874062e-04, -2.5707064e-03, -1.1054531e-03],
+                [-1.7942721e-03, -3.3968450e-03, -1.4989552e-03],
+                [-2.9697213e-03, -4.6922294e-03, -1.3162185e-03],
+                [-3.1759157e-03, -9.8660104e-03, -4.7163852e-03],
+                [1.8666144e-03, -2.8793041e-03, -3.1324378e-03],
+                [1.0555880e-02, 7.6373261e-03, 5.3013843e-03],
+                [8.9815725e-04, -1.0321697e-02, 1.4192325e-03],
+                [8.5643278e-03, 3.0152409e-03, 2.0114987e-03],
+                [-2.7870361e-03, -1.1686913e-02, -7.0649502e-03],
+                [-7.7482774e-03, -1.3334424e-03, -9.1927368e-03],
+                [-8.1487820e-03, -3.8133820e-03, -4.3300558e-03],
+                [-7.7006700e-03, -1.2594147e-02, -3.9680018e-03],
+                [-9.5743872e-03, -2.1007264e-02, -9.1963671e-03],
+                [-8.6777220e-03, -1.7278835e-02, -1.3328674e-02],
+                [-1.7368209e-02, -2.3461722e-02, -1.1538444e-02],
+                [-4.6307812e-03, -5.7058665e-03, 1.3555109e-03],
+                [4.8570461e-03, -5.8050654e-03, 8.1082489e-03],
+                [6.4304657e-03, 2.8407066e-03, 8.7463465e-03],
+                [5.0593228e-03, 1.4102085e-03, 5.2116364e-03],
+                [2.5003455e-03, -6.0178695e-04, 2.0183939e-03],
+                [2.1247163e-03, 4.7659015e-04, 7.5940741e-04],
+                [1.3499497e-03, 6.2203623e-04, 1.2288829e-04],
+                [2.8991612e-04, -4.0216290e-04, -7.2287643e-05],
+                [6.6898909e-05, -6.3778006e-04, -3.6294860e-04],
+                [5.3613615e-04, 9.9137833e-05, -1.6657988e-05],
+                [-3.9828232e-05, -3.8453130e-04, -2.3702848e-04],
             ]
         )
         np.testing.assert_array_almost_equal(grads[1, 0, :, :], expected_gradients2, decimal=2)
 
-    def test_errors(self):
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.only_with_platform("pytorch")
+def test_errors(art_warning):
+    try:
         from art.estimators.object_detection.pytorch_faster_rcnn import PyTorchFasterRCNN
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             PyTorchFasterRCNN(
                 clip_values=(1, 2),
                 attack_losses=("loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg"),
             )
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             PyTorchFasterRCNN(
                 clip_values=(-1, 1),
                 attack_losses=("loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg"),
             )
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             PyTorchFasterRCNN(
                 clip_values=(0, 1),
                 attack_losses=("loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg"),
@@ -194,90 +226,68 @@ class TestPyTorchFasterRCNN(TestBase):
         from art.defences.postprocessor.rounded import Rounded
 
         post_def = Rounded()
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             PyTorchFasterRCNN(
                 clip_values=(0, 1),
                 attack_losses=("loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg"),
                 postprocessing_defences=post_def,
             )
 
-    def test_preprocessing_defences(self):
-        from art.estimators.object_detection.pytorch_faster_rcnn import PyTorchFasterRCNN
+    except ARTTestException as e:
+        art_warning(e)
+
+
+def test_preprocessing_defences(art_warning, get_pytorch_faster_rcnn):
+    try:
         from art.defences.preprocessor.spatial_smoothing import SpatialSmoothing
 
         pre_def = SpatialSmoothing()
 
-        frcnn = PyTorchFasterRCNN(
-            clip_values=(0, 1),
-            attack_losses=("loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg"),
-            preprocessing_defences=pre_def,
-        )
+        object_detector, x_test, y_test = get_pytorch_faster_rcnn
 
-        # Create labels
-        result = frcnn.predict(x=self.x_test)
-
-        y = [
-            {
-                "boxes": result[0]["boxes"],
-                "labels": result[0]["labels"],
-                "scores": np.ones_like(result[0]["labels"]),
-            },
-            {
-                "boxes": result[1]["boxes"],
-                "labels": result[1]["labels"],
-                "scores": np.ones_like(result[1]["labels"]),
-            },
-        ]
+        object_detector.set_params(preprocessing_defences=pre_def)
 
         # Compute gradients
-        grads = frcnn.loss_gradient(x=self.x_test, y=y)
+        grads = object_detector.loss_gradient(x=x_test, y=y_test)
 
-        self.assertTrue(grads.shape == (2, 28, 28, 3))
+        assert grads.shape == (2, 28, 28, 3)
 
-    def test_compute_losses(self):
-        losses = self.obj_detect.compute_losses(x=self.x_test, y=self.y_test)
-        self.assertTrue(len(losses) == 4)
+    except ARTTestException as e:
+        art_warning(e)
 
-    def test_compute_loss(self):
-        from art.estimators.object_detection.pytorch_faster_rcnn import PyTorchFasterRCNN
-        from art.defences.preprocessor.spatial_smoothing import SpatialSmoothing
 
-        pre_def = SpatialSmoothing()
+def test_compute_losses(art_warning, get_pytorch_faster_rcnn):
+    try:
+        object_detector, x_test, y_test = get_pytorch_faster_rcnn
+        losses = object_detector.compute_losses(x=x_test, y=y_test)
+        assert len(losses) == 4
 
-        frcnn = PyTorchFasterRCNN(
-            clip_values=(0, 1),
-            attack_losses=("loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg"),
-            preprocessing_defences=pre_def,
-        )
+    except ARTTestException as e:
+        art_warning(e)
 
-        # Create labels
-        result = frcnn.predict(np.repeat(self.x_test_mnist[:2].astype(np.float32), repeats=3, axis=3))
 
-        y = [
-            {
-                "boxes": result[0]["boxes"],
-                "labels": result[0]["labels"],
-                "scores": np.ones_like(result[0]["labels"]),
-            },
-            {
-                "boxes": result[1]["boxes"],
-                "labels": result[1]["labels"],
-                "scores": np.ones_like(result[1]["labels"]),
-            },
-        ]
+def test_compute_loss(art_warning, get_pytorch_faster_rcnn):
+    try:
+        object_detector, x_test, y_test = get_pytorch_faster_rcnn
 
         # Compute loss
-        loss = frcnn.compute_loss(x=self.x_test, y=y)
+        loss = object_detector.compute_loss(x=x_test, y=y_test)
 
-        self.assertAlmostEqual(float(loss), 0.6324392, delta=0.01)
+        assert pytest.approx(0.84883332, abs=0.01) == float(loss)
 
-    def test_pgd(self):
+    except ARTTestException as e:
+        art_warning(e)
+
+
+def test_pgd(art_warning, get_pytorch_faster_rcnn):
+    try:
         from art.attacks.evasion import ProjectedGradientDescent
 
-        attack = ProjectedGradientDescent(estimator=self.obj_detect, max_iter=2)
-        x_test_adv = attack.generate(x=self.x_test, y=self.y_test)
-        np.testing.assert_raises(AssertionError, np.testing.assert_array_equal, x_test_adv, self.x_test)
+        object_detector, x_test, y_test = get_pytorch_faster_rcnn
 
+        attack = ProjectedGradientDescent(estimator=object_detector, max_iter=2)
+        x_test_adv = attack.generate(x=x_test, y=y_test)
+        np.testing.assert_raises(AssertionError, np.testing.assert_array_equal, x_test_adv, x_test)
 
-if __name__ == "__main__":
-    unittest.main()
+    except ARTTestException as e:
+        art_warning(e)

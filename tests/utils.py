@@ -459,15 +459,6 @@ def get_image_classifier_tf_v2(from_logits=False):
     if tf.__version__[0] != "2":
         raise ImportError("This function requires TensorFlow v2.")
 
-    optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
-
-    def train_step(model, images, labels):
-        with tf.GradientTape() as tape:
-            predictions = model(images, training=True)
-            loss = loss_object(labels, predictions)
-        gradients = tape.gradient(loss, model.trainable_variables)
-        optimizer.apply_gradients(zip(gradients, model.trainable_variables))
-
     model = Sequential()
     model.add(
         Conv2D(
@@ -503,6 +494,7 @@ def get_image_classifier_tf_v2(from_logits=False):
     loss_object = tf.keras.losses.SparseCategoricalCrossentropy(
         from_logits=from_logits, reduction=tf.keras.losses.Reduction.SUM
     )
+    optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
 
     model.compile(optimizer=optimizer, loss=loss_object)
 
@@ -510,7 +502,7 @@ def get_image_classifier_tf_v2(from_logits=False):
     tfc = TensorFlowV2Classifier(
         model=model,
         loss_object=loss_object,
-        train_step=train_step,
+        optimizer=optimizer,
         nb_classes=10,
         input_shape=(28, 28, 1),
         clip_values=(0, 1),
@@ -1622,21 +1614,13 @@ def get_tabular_classifier_tf_v2():
             x = self.logits(x)
             return x
 
-    optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
-
-    def train_step(model, images, labels):
-        with tf.GradientTape() as tape:
-            predictions = model(images, training=True)
-            loss = loss_object(labels, predictions)
-        gradients = tape.gradient(loss, model.trainable_variables)
-        optimizer.apply_gradients(zip(gradients, model.trainable_variables))
-
     model = TensorFlowModel()
     loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+    optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
 
     # Create the classifier
     tfc = TensorFlowV2Classifier(
-        model=model, loss_object=loss_object, train_step=train_step, nb_classes=3, input_shape=(4,), clip_values=(0, 1)
+        model=model, loss_object=loss_object, optimizer=optimizer, nb_classes=3, input_shape=(4,), clip_values=(0, 1)
     )
 
     return tfc

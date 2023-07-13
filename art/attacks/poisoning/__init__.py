@@ -4,6 +4,10 @@ Module providing poisoning attacks under a common interface.
 from art.attacks.poisoning.backdoor_attack_dgm.backdoor_attack_dgm_red import BackdoorAttackDGMReDTensorFlowV2
 from art.attacks.poisoning.backdoor_attack_dgm.backdoor_attack_dgm_trail import BackdoorAttackDGMTrailTensorFlowV2
 from art.attacks.poisoning.backdoor_attack import PoisoningAttackBackdoor
+from art.attacks.poisoning.bad_det.bad_det_rma import BadDetRegionalMisclassificationAttack
+from art.attacks.poisoning.bad_det.bad_det_gma import BadDetGlobalMisclassificationAttack
+from art.attacks.poisoning.bad_det.bad_det_oga import BadDetObjectGenerationAttack
+from art.attacks.poisoning.bad_det.bad_det_oda import BadDetObjectDisappearanceAttack
 from art.attacks.poisoning.poisoning_attack_svm import PoisoningAttackSVM
 from art.attacks.poisoning.feature_collision_attack import FeatureCollisionAttack
 from art.attacks.poisoning.adversarial_embedding_attack import PoisoningAttackAdversarialEmbedding
@@ -13,3 +17,4 @@ from art.attacks.poisoning.gradient_matching_attack import GradientMatchingAttac
 from art.attacks.poisoning.hidden_trigger_backdoor.hidden_trigger_backdoor import HiddenTriggerBackdoor
 from art.attacks.poisoning.hidden_trigger_backdoor.hidden_trigger_backdoor_pytorch import HiddenTriggerBackdoorPyTorch
 from art.attacks.poisoning.hidden_trigger_backdoor.hidden_trigger_backdoor_keras import HiddenTriggerBackdoorKeras
+from art.attacks.poisoning.sleeper_agent_attack import SleeperAgentAttack

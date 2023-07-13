@@ -29,7 +29,7 @@ import random
 import numpy as np
 from tqdm.auto import trange
 
-from art.attacks.poisoning import GradientMatchingAttack
+from art.attacks.poisoning.gradient_matching_attack import GradientMatchingAttack
 from art.estimators.classification.pytorch import PyTorchClassifier
 from art.estimators.classification import TensorFlowV2Classifier
 from art.preprocessing.standardisation_mean_std.pytorch import StandardisationMeanStdPyTorch

@@ -41,7 +41,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
-@pytest.mark.skip_framework("tensorflow1", "tensorflow2v1", "keras", "pytorch", "non_dl_frameworks", "mxnet", "kerastf")
+@pytest.mark.skip_framework("tensorflow1", "tensorflow2v1", "keras", "non_dl_frameworks", "mxnet", "kerastf")
 def test_generate_default(art_warning, fix_get_mnist_subset, image_dl_estimator):
     try:
         classifier, _ = image_dl_estimator(from_logits=True)
@@ -66,7 +66,7 @@ def test_generate_default(art_warning, fix_get_mnist_subset, image_dl_estimator)
         art_warning(e)
 
 
-@pytest.mark.skip_framework("tensorflow1", "tensorflow2v1", "keras", "pytorch", "non_dl_frameworks", "mxnet", "kerastf")
+@pytest.mark.skip_framework("tensorflow1", "tensorflow2v1", "keras", "non_dl_frameworks", "mxnet", "kerastf")
 def test_generate_attacks_and_targeted(art_warning, fix_get_mnist_subset, image_dl_estimator):
     try:
         classifier, _ = image_dl_estimator(from_logits=True)

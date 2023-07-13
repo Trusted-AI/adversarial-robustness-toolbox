@@ -22,7 +22,7 @@ import numpy as np
 import pytest
 import os
 
-from art.attacks.poisoning.perturbations.audio_perturbations import insert_tone_trigger, insert_audio_trigger
+from art.attacks.poisoning.perturbations.audio_perturbations import CacheToneTrigger, CacheAudioTrigger
 
 from tests.utils import ARTTestException
 
@@ -33,38 +33,45 @@ logger = logging.getLogger(__name__)
 def test_insert_tone_trigger(art_warning):
     try:
         # test single example
-        audio = insert_tone_trigger(x=np.zeros(3200), sampling_rate=16000)
+        trigger = CacheToneTrigger(sampling_rate=16000)
+        audio = trigger.insert(x=np.zeros(3200))
         assert audio.shape == (3200,)
         assert np.max(audio) != 0
+        assert np.max(np.abs(audio)) <= 1.0
 
         # test single example with differet duration, frequency, and scale
-        audio = insert_tone_trigger(x=np.zeros(3200), sampling_rate=16000, frequency=16000, duration=0.2, scale=0.5)
+        trigger = CacheToneTrigger(sampling_rate=16000, frequency=16000, duration=0.2, scale=0.5)
+        audio = trigger.insert(x=np.zeros(3200))
         assert audio.shape == (3200,)
         assert np.max(audio) != 0
 
         # test a batch of examples
-        audio = insert_tone_trigger(x=np.zeros((10, 3200)), sampling_rate=16000)
+        audio = trigger.insert(x=np.zeros((10, 3200)))
         assert audio.shape == (10, 3200)
         assert np.max(audio) != 0
 
         # test single example with shift
-        audio = insert_tone_trigger(x=np.zeros(3200), sampling_rate=16000, shift=10)
+        trigger = CacheToneTrigger(sampling_rate=16000, shift=10)
+        audio = trigger.insert(x=np.zeros(3200))
         assert audio.shape == (3200,)
         assert np.max(audio) != 0
         assert np.sum(audio[:10]) == 0
 
         # test a batch of examples with random shift
-        audio = insert_tone_trigger(x=np.zeros((10, 3200)), sampling_rate=16000, random=True)
+        trigger = CacheToneTrigger(sampling_rate=16000, random=True)
+        audio = trigger.insert(x=np.zeros((10, 3200)))
         assert audio.shape == (10, 3200)
         assert np.max(audio) != 0
 
         # test when length of backdoor is larger than that of audio signal
         with pytest.raises(ValueError):
-            _ = insert_tone_trigger(x=np.zeros(3200), sampling_rate=16000, duration=0.3)
+            trigger = CacheToneTrigger(sampling_rate=16000, duration=0.3)
+            _ = trigger.insert(x=np.zeros(3200))
 
         # test when shift + backdoor is larger than that of audio signal
         with pytest.raises(ValueError):
-            _ = insert_tone_trigger(x=np.zeros(3200), sampling_rate=16000, duration=0.2, shift=5)
+            trigger = CacheToneTrigger(sampling_rate=16000, duration=0.2, shift=5)
+            _ = trigger.insert(x=np.zeros(3200))
 
     except ARTTestException as e:
         art_warning(e)
@@ -75,55 +82,57 @@ def test_insert_audio_trigger(art_warning):
     file_path = os.path.join(os.getcwd(), "utils/data/backdoors/cough_trigger.wav")
     try:
         # test single example
-        audio = insert_audio_trigger(x=np.zeros(32000), sampling_rate=16000, backdoor_path=file_path)
+        trigger = CacheAudioTrigger(sampling_rate=16000, backdoor_path=file_path)
+        audio = trigger.insert(x=np.zeros(32000))
         assert audio.shape == (32000,)
         assert np.max(audio) != 0
+        assert np.max(np.abs(audio)) <= 1.0
 
         # test single example with differet duration and scale
-        audio = insert_audio_trigger(
-            x=np.zeros(32000),
+        trigger = CacheAudioTrigger(
             sampling_rate=16000,
             backdoor_path=file_path,
             duration=0.8,
             scale=0.5,
         )
+        audio = trigger.insert(x=np.zeros(32000))
         assert audio.shape == (32000,)
         assert np.max(audio) != 0
 
         # test a batch of examples
-        audio = insert_audio_trigger(x=np.zeros((10, 16000)), sampling_rate=16000, backdoor_path=file_path)
+        trigger = CacheAudioTrigger(sampling_rate=16000, backdoor_path=file_path)
+        audio = trigger.insert(x=np.zeros((10, 16000)))
+
         assert audio.shape == (10, 16000)
         assert np.max(audio) != 0
 
         # test single example with shift
-        audio = insert_audio_trigger(x=np.zeros(32000), sampling_rate=16000, backdoor_path=file_path, shift=10)
+        trigger = CacheAudioTrigger(sampling_rate=16000, backdoor_path=file_path, shift=10)
+        audio = trigger.insert(x=np.zeros(32000))
         assert audio.shape == (32000,)
         assert np.max(audio) != 0
         assert np.sum(audio[:10]) == 0
 
         # test a batch of examples with random shift
-        audio = insert_audio_trigger(
-            x=np.zeros((10, 32000)),
-            sampling_rate=16000,
-            backdoor_path=file_path,
-            random=True,
-        )
+        trigger = CacheAudioTrigger(sampling_rate=16000, backdoor_path=file_path, random=True)
+        audio = trigger.insert(x=np.zeros((10, 32000)))
         assert audio.shape == (10, 32000)
         assert np.max(audio) != 0
 
         # test when length of backdoor is larger than that of audio signal
         with pytest.raises(ValueError):
-            _ = insert_audio_trigger(x=np.zeros(15000), sampling_rate=16000, backdoor_path=file_path)
+            trigger = CacheAudioTrigger(sampling_rate=16000, backdoor_path=file_path)
+            _ = trigger.insert(x=np.zeros(15000))
 
         # test when shift + backdoor is larger than that of audio signal
         with pytest.raises(ValueError):
-            _ = insert_audio_trigger(
-                x=np.zeros(16000),
+            trigger = CacheAudioTrigger(
                 sampling_rate=16000,
                 backdoor_path=file_path,
                 duration=1,
                 shift=5,
             )
+            _ = trigger.insert(x=np.zeros(16000))
 
     except ARTTestException as e:
         art_warning(e)

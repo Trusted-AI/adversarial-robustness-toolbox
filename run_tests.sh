@@ -19,6 +19,9 @@ then
     echo "############### Running tests with framework $framework ###############"
     echo "#######################################################################"
 
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/detector/evasion --framework=$framework --durations=0
+    if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/detector/evasion tests"; fi
+
     pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/detector/poison/test_spectral_signature_defense.py --framework=$framework --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/detector/poison/test_spectral_signature_defense.py tests"; fi
 
@@ -33,6 +36,9 @@ then
 
     pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/preprocessing/audio --framework=$framework --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed preprocessing/audio tests"; fi
+
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/preprocessing/image --framework=$framework --durations=0
+    if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed preprocessing/image tests"; fi
 
     pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/preprocessing/expectation_over_transformation --framework=$framework --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed preprocessing/expectation_over_transformation tests"; fi
@@ -143,8 +149,6 @@ else
                          "tests/defences/test_rounded.py" \
                          "tests/defences/test_thermometer_encoding.py" \
                          "tests/defences/test_variance_minimization.py" \
-                         "tests/defences/detector/evasion/subsetscanning/test_detector.py" \
-                         "tests/defences/detector/evasion/test_detector.py" \
                          "tests/defences/detector/poison/test_activation_defence.py" \
                          "tests/defences/detector/poison/test_clustering_analyzer.py" \
                          "tests/defences/detector/poison/test_ground_truth_evaluator.py" \

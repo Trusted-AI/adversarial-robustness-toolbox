@@ -8,6 +8,9 @@ on:
     paths-ignore:
       - '*.md'
 
+  # Run on merge queue
+  merge_group:
+
   # Run when pushing to main or dev branches
   push:
     branches:
@@ -20,7 +23,7 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:

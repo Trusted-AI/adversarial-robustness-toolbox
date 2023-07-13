@@ -143,6 +143,7 @@ class TestRandomizedSmoothing(unittest.TestCase):
                 nb_classes=classifier.nb_classes,
                 input_shape=classifier.input_shape,
                 loss_object=classifier.loss_object,
+                optimizer=classifier.optimizer,
                 train_step=classifier.train_step,
                 channels_first=classifier.channels_first,
                 clip_values=classifier.clip_values,

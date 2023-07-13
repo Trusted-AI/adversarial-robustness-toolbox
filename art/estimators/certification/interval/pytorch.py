@@ -133,7 +133,8 @@ class ConvertedModel(torch.nn.Module):
         x[batch_size, 2, feature_1, feature_2, ...] where axis=1 corresponds to the [lower, upper] bounds.
         :return: regular model predictions if in concrete mode, or interval predictions if running in abstract mode
         """
-        if self.forward_mode == "concrete":
+
+        if self.forward_mode in ["concrete", "attack"]:
             return self.concrete_forward(x)
         if self.forward_mode == "abstract":
             if x.shape[1] == 2:
@@ -170,22 +171,32 @@ class ConvertedModel(torch.nn.Module):
             x = torch.from_numpy(in_x.astype("float32")).to(self.device)
         else:
             x = in_x
-
-        for op_num, (op, _) in enumerate(zip(self.ops, self.interim_shapes)):
+        for op_num, op in enumerate(self.ops):
             # as reshapes are not modules we infer when the reshape from convolutional to dense occurs
             if self.reshape_op_num == op_num:
                 x = x.reshape((x.shape[0], -1))
-            x = op.concrete_forward(x)
+            if isinstance(op, PyTorchIntervalConv2D) and self.forward_mode == "attack":
+                x = op.conv_forward(x)
+            else:
+                x = op.concrete_forward(x)
         return x
 
     def set_forward_mode(self, mode: str) -> None:
         """
         Helper function to set the forward mode of the model
 
-        :param mode: either concrete or abstract signifying how to run the forward pass
+        :param mode: either concrete, abstract, or attack to signify how to run the forward pass
         """
-        assert mode in {"concrete", "abstract"}
+        assert mode in {"concrete", "abstract", "attack"}
         self.forward_mode = mode
+
+    def re_convert(self) -> None:
+        """
+        After an update on the convolutional weights, re-convert weights into the equivalent dense layer.
+        """
+        for op in self.ops:
+            if isinstance(op, PyTorchIntervalConv2D):
+                op.re_convert(self.device)
 
 
 class PyTorchIBPClassifier(PyTorchIntervalBounds, PyTorchClassifier):
@@ -195,6 +206,13 @@ class PyTorchIBPClassifier(PyTorchIntervalBounds, PyTorchClassifier):
     to then verify if it can have its class changed given a certain perturbation.
 
     | Paper link: https://ieeexplore.ieee.org/document/8418593
+
+    This classifier has 3 modes which can be set via: classifier.model.set_forward_mode('mode')
+
+    'mode' can be one of:
+        + 'abstract': When we wish to certifiy datapoints and have abstract predictions
+        + 'concrete': When normal predictions need to be made
+        + 'attack': When we are interfacing with an ART attack (for example PGD).
     """
 
     estimator_params = PyTorchClassifier.estimator_params
@@ -255,7 +273,6 @@ class PyTorchIBPClassifier(PyTorchIntervalBounds, PyTorchClassifier):
 
         if TYPE_CHECKING:
             converted_optimizer: Union[torch.optim.Adam, torch.optim.SGD, None]
-
         if optimizer is not None:
             opt_state_dict = optimizer.state_dict()
             if isinstance(optimizer, torch.optim.Adam):
@@ -321,15 +338,16 @@ class PyTorchIBPClassifier(PyTorchIntervalBounds, PyTorchClassifier):
 
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
         self._model.train(mode=training_mode)
-        if not is_interval:
-            if bounds is None:
-                raise ValueError("If x is not provided as an interval please provide bounds (and optionally limits)")
+
+        if is_interval:
+            x_interval = x_preprocessed
+        elif bounds is None:
+            raise ValueError("If x is not provided as an interval please provide bounds (and optionally limits)")
+        else:
             if self.provided_concrete_to_interval is None:
                 x_interval = self.concrete_to_interval(x=x_preprocessed, bounds=bounds, limits=limits)
             else:
                 x_interval = self.provided_concrete_to_interval(x_preprocessed, bounds, limits)
-        else:
-            x_interval = x_preprocessed
 
         num_batches = int(len(x_interval) / batch_size)
 
@@ -376,3 +394,36 @@ class PyTorchIBPClassifier(PyTorchIntervalBounds, PyTorchClassifier):
             labels = labels.detach().cpu().numpy()
 
         return np.sum(np.argmax(preds, axis=1) == labels) / len(labels)
+
+    def concrete_loss(self, output: "torch.Tensor", target: "torch.Tensor") -> "torch.Tensor":
+        """
+        Access function to get the classifier loss
+
+        :param output: model predictions
+        :param target: ground truth labels
+        :return: loss value
+        """
+        return self._loss(output, target)
+
+    @staticmethod
+    def interval_loss_cce(prediction: "torch.Tensor", target: "torch.Tensor") -> "torch.Tensor":
+        """
+        Computes the categorical cross entropy loss with the correct class having the lower bound prediction,
+        and the other classes having their upper bound predictions.
+
+        :param prediction: model predictions.
+        :param target: target classes. NB not one hot.
+        :return: scalar loss value
+        """
+        upper_preds = prediction[:, 1, :]
+        criterion = torch.nn.CrossEntropyLoss()
+        for i, j in enumerate(target):
+            # for the prediction corresponding to the target class, take the lower bound predictions
+            upper_preds[i, j] = prediction[i, 0, j]
+        return criterion(upper_preds, target)
+
+    def re_convert(self) -> None:
+        """
+        Convert all the convolutional layers into their dense representations
+        """
+        self.model.re_convert()  # type: ignore
