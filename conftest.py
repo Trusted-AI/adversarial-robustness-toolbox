@@ -65,7 +65,14 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 deep_learning_frameworks = [
-    "keras", "tensorflow1", "tensorflow2", "tensorflow2v1", "pytorch", "kerastf", "mxnet", "jax"
+    "keras",
+    "tensorflow1",
+    "tensorflow2",
+    "tensorflow2v1",
+    "pytorch",
+    "kerastf",
+    "mxnet",
+    "jax",
 ]
 non_deep_learning_frameworks = ["scikitlearn"]
 
@@ -334,7 +341,7 @@ def store_expected_values(request):
         expected_values[test_name] = values_to_store
 
         with open(
-                os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "w"
+            os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "w"
         ) as f:
             json.dump(expected_values, f, indent=4)
 
@@ -809,7 +816,7 @@ def get_default_cifar10_subset(get_cifar10_dataset, default_dataset_subset_sizes
     (x_train_cifar10, y_train_cifar10), (x_test_cifar10, y_test_cifar10) = get_cifar10_dataset
     n_train, n_test = default_dataset_subset_sizes
 
-    if np.argmin(cifar10_shape)==0 and not np.argmin(x_train_cifar10.shape[1:])==0:
+    if np.argmin(cifar10_shape) == 0 and not np.argmin(x_train_cifar10.shape[1:]) == 0:
         x_train_cifar10 = x_train_cifar10.transpose(0, 3, 1, 2).astype(np.float32)
         x_test_cifar10 = x_test_cifar10.transpose(0, 3, 1, 2).astype(np.float32)
 
@@ -862,7 +869,7 @@ def get_mnist_dataset(load_mnist_dataset, mnist_shape):
 def get_cifar10_dataset(load_cifar10_dataset, cifar10_shape):
     (x_train_cifar10, y_train_cifar10), (x_test_cifar10, y_test_cifar10) = load_cifar10_dataset
 
-    if np.argmin(cifar10_shape)==0:
+    if np.argmin(cifar10_shape) == 0:
         x_train_cifar10 = x_train_cifar10.transpose(0, 3, 1, 2).astype(np.float32)
         x_test_cifar10 = x_test_cifar10.transpose(0, 3, 1, 2).astype(np.float32)
 
