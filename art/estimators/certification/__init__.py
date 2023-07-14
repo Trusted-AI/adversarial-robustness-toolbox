@@ -4,6 +4,7 @@ This module contains certified classifiers.
 import importlib
 from art.estimators.certification import randomized_smoothing
 from art.estimators.certification import derandomized_smoothing
+from art.estimators.certification import object_seeker
 
 if importlib.util.find_spec("torch") is not None:
     from art.estimators.certification import deep_z

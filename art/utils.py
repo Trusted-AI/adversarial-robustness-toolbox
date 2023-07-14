@@ -1086,6 +1086,28 @@ def intersection_over_union(bbox_1: np.ndarray, bbox_2: np.ndarray) -> float:
     return intersection / union
 
 
+def intersection_over_area(bbox_1: np.ndarray, bbox_2: np.ndarray) -> float:
+    """
+    Compute the intersection over area (IoA) of two bounding boxes.
+    Both bounding boxes are expected to be in torchvision format [x1, y1, x2, y2].
+
+    param bbox_1: Bounding box 1 in torchvision format [x1, y1, x2, y2].
+    param bbox_2: Bounding box 2 in torchvision format [x1, y2, x2, y2].
+    return: The intersection over area (IoA) of the two bounding boxes.
+    """
+    # Calculate area of the intersection
+    x1 = max(bbox_1[0], bbox_2[0])
+    y1 = max(bbox_1[1], bbox_2[1])
+    x2 = min(bbox_1[2], bbox_2[2])
+    y2 = min(bbox_1[3], bbox_2[3])
+    intersection = max(0, x2 - x1 + 1) * max(0, y2 - y1 + 1)
+
+    # Calculate the area of bbox_1
+    bbox_1_area = (bbox_1[2] - bbox_1[0] + 1) * (bbox_1[3] - bbox_1[1] + 1)
+
+    return intersection / bbox_1_area
+
+
 def non_maximum_supression(
     preds: Dict[str, np.ndarray], iou_threshold: float, confidence_threshold: Optional[float] = None
 ) -> Dict[str, np.ndarray]:

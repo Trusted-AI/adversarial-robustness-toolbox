@@ -27,7 +27,6 @@ import logging
 from typing import Optional, Tuple
 
 import numpy as np
-from sklearn.cluster import DBSCAN
 from tqdm.auto import tqdm
 
 from art.config import ART_NUMPY_DTYPE
@@ -39,6 +38,7 @@ logger = logging.getLogger(__name__)
 class ObjectSeekerMixin(abc.ABC):
     """
     Implementation of the ObjectSeeker certifiable robust defense applied to object detection models.
+    The original implementation is https://github.com/inspire-group/ObjectSeeker
 
     | Paper link: https://arxiv.org/abs/2202.01811
     """
