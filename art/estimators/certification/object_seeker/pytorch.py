@@ -212,6 +212,21 @@ class PyTorchObjectSeeker(ObjectDetectorMixin, PyTorchEstimator):
                  - labels [N]: the labels for each image
                  - scores [N]: the scores or each prediction.
         """
+        base_preds = self.detector.predict(x=x, batch_size=batch_size, **kwargs)
+        filtered_base_preds = [
+            non_maximum_supression(p, iou_threshold=self.iou_threshold, confidence_threshold=self.confidence_threshold)
+            for p in base_preds
+        ]
+
+        masked_preds = self._masked_predictions(x=x, batch_size=batch_size, **kwargs)
+        filtered_masked_preds = [
+            non_maximum_supression(p, iou_threshold=self.iou_threshold, confidence_threshold=self.confidence_threshold)
+            for p in masked_preds
+        ]
+
+        pruned_preds = self._prune_boxes(filtered_masked_preds, filtered_base_preds)
+
+    def _masked_predictions(self, x: np.ndarray, batch_size: int = 128, **kwargs)->  List[Dict[str, np.ndarray]]:
         # Extract height and width
         if self.channels_first:
             height = self.input_shape[1]
@@ -226,7 +241,6 @@ class PyTorchObjectSeeker(ObjectDetectorMixin, PyTorchEstimator):
         x_mask = np.copy(x)
         for k in range(1, self.num_lines + 1):
             boundary = int(width / (self.num_lines + 1) * k)
-            print('left boundary:', boundary)
             x_mask[:, :, :, :boundary] = 0
 
             masked_preds = self.detector.predict(x=x_mask, batch_size=batch_size, **kwargs)
@@ -242,7 +256,6 @@ class PyTorchObjectSeeker(ObjectDetectorMixin, PyTorchEstimator):
         x_mask = np.copy(x)
         for k in range(1, self.num_lines + 1):
             boundary = width - int(width / (self.num_lines + 1) * k)
-            print('right boundary:', boundary)
             x_mask[:, :, :, boundary:] = 0
 
             masked_preds = self.detector.predict(x=x_mask, batch_size=batch_size, **kwargs)
@@ -258,7 +271,6 @@ class PyTorchObjectSeeker(ObjectDetectorMixin, PyTorchEstimator):
         x_mask = np.copy(x)
         for k in range(1, self.num_lines + 1):
             boundary = int(height / (self.num_lines + 1) * k)
-            print('top boundary:', boundary)
             x_mask[:, :, :boundary, :] = 0
 
             masked_preds = self.detector.predict(x=x_mask, batch_size=batch_size, **kwargs)
@@ -274,7 +286,6 @@ class PyTorchObjectSeeker(ObjectDetectorMixin, PyTorchEstimator):
         x_mask = np.copy(x)
         for k in range(1, self.num_lines + 1):
             boundary = height - int(height / (self.num_lines + 1) * k)
-            print('bottom boundary:', boundary)
             x_mask[:, :, boundary:, :] = 0
 
             masked_preds = self.detector.predict(x=x_mask, batch_size=batch_size, **kwargs)
@@ -306,6 +317,34 @@ class PyTorchObjectSeeker(ObjectDetectorMixin, PyTorchEstimator):
             combined_predictions.append(prediction)
 
         return combined_predictions
+
+    def _prune_boxes(self, masked_preds: Dict[str, np.ndarray], base_preds: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
+        masked_boxes = masked_preds['boxes']
+        masked_labels = masked_preds['labels']
+        masked_scores = masked_preds['scores']
+
+        base_boxes = base_preds['boxes']
+        base_labels = base_preds['labels']
+
+        keep_indices = []
+        for idx, (masked_box, masked_label) in enumerate(zip(masked_boxes, masked_labels)):
+            keep = True
+            for (base_box, base_label) in zip(base_boxes, base_labels):
+                if masked_label == base_label:
+                    ioa = intersection_over_area(masked_box, base_box)
+                    if ioa >= self.prune_threshold:
+                        keep = False
+                        break
+
+            if keep:
+                keep_indices.append(idx)
+
+        pruned_preds = {
+            "boxes": masked_boxes[keep_indices],
+            "labels": masked_labels[keep_indices],
+            "scores": masked_scores[keep_indices],
+        }
+        return pruned_preds
 
     def fit(  # pylint: disable=W0221
         self,
