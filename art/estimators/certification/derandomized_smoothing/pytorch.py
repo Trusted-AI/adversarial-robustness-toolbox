@@ -215,21 +215,27 @@ class PyTorchDeRandomizedSmoothing(PyTorchSmoothedViT, PyTorchClassifier):
                         )
 
                     self.to_reshape = True
-                    output_shape = model.default_cfg["input_size"]
+                output_shape = model.default_cfg["input_size"]
 
                 # set the method back to avoid unexpected side effects later on should timm need to be reused.
                 timm.models.vision_transformer._create_vision_transformer = tmp_func
                 self.mode = "ViT"
             else:
                 if isinstance(model, torch.nn.Module):
-                    if algorithm == 'levine2020':
-                        if ablation_type is None or threshold is None or logits is None:
-                            raise ValueError(
-                                "If using CNN please specify if the model returns logits, "
-                                " the prediction threshold, and ablation type"
-                            )
                     self.mode = "CNN"
                     output_shape = input_shape
+                    self.to_reshape = False
+                    print('We are here!')
+
+        elif algorithm == 'levine2020':
+            if ablation_type is None or threshold is None or logits is None:
+                raise ValueError(
+                    "If using CNN please specify if the model returns logits, "
+                    " the prediction threshold, and ablation type"
+                            )
+            self.mode = "CNN"
+            output_shape = input_shape
+            self.to_reshape = False
 
         if optimizer is None or isinstance(optimizer, torch.optim.Optimizer):
             super().__init__(
@@ -255,17 +261,32 @@ class PyTorchDeRandomizedSmoothing(PyTorchSmoothedViT, PyTorchClassifier):
         if verbose:
             logger.info(self.model)
 
-        from art.estimators.certification.derandomized_smoothing.derandomized_smoothing_pytorch import ColumnAblator
-        self.ablator = ColumnAblator(
-            ablation_size=ablation_size,
-            channels_first=True,
-            to_reshape=self.to_reshape,
-            original_shape=input_shape,
-            output_shape=output_shape,
-            device_type=device_type,
-            algorithm=algorithm,
-            mode=self.mode,
-        )
+        from art.estimators.certification.derandomized_smoothing.derandomized_smoothing_pytorch import ColumnAblator, BlockAblator
+
+        if ablation_type == 'column':
+            self.ablator = ColumnAblator(
+                ablation_size=ablation_size,
+                channels_first=True,
+                to_reshape=self.to_reshape,
+                original_shape=input_shape,
+                output_shape=output_shape,
+                device_type=device_type,
+                algorithm=algorithm,
+                mode=self.mode,
+            )
+        elif ablation_type == 'block':
+            self.ablator = BlockAblator(
+                ablation_size=ablation_size,
+                channels_first=True,
+                to_reshape=self.to_reshape,
+                original_shape=input_shape,
+                output_shape=output_shape,
+                device_type=device_type,
+                algorithm=algorithm,
+                mode=self.mode,
+            )
+        else:
+            raise ValueError(f"ablation_type of {ablation_type} not recognized. Must be either column or block")
 
         if self.mode is None:
             raise ValueError("Model type not recognized.")
@@ -344,8 +365,7 @@ class PyTorchDeRandomizedSmoothing(PyTorchSmoothedViT, PyTorchClassifier):
 
             # Train for one epoch
             for m in pbar:
-                i_batch = np.copy(x_preprocessed[ind[m * batch_size : (m + 1) * batch_size]])
-                i_batch = self.ablator.forward(i_batch)
+                i_batch = self.ablator.forward(np.copy(x_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]))
 
                 if transform is not None and self.mode == "ViT":  # VIT specific
                     i_batch = transform(i_batch)
@@ -442,8 +462,8 @@ class PyTorchDeRandomizedSmoothing(PyTorchSmoothedViT, PyTorchClassifier):
         with torch.no_grad():
             for _ in tqdm(range(nb_epochs)):
                 for m in tqdm(range(num_batch)):
-                    i_batch = np.copy(x[ind[m * batch_size : (m + 1) * batch_size]])
-                    i_batch = self.ablator.forward(i_batch, column_pos=random.randint(0, x.shape[3]))
+                    i_batch = self.ablator.forward(np.copy(x[ind[m * batch_size : (m + 1) * batch_size]]),
+                                                   column_pos=random.randint(0, x.shape[3]))
                     _ = self.model(i_batch)
 
     def eval_and_certify(
@@ -466,8 +486,6 @@ class PyTorchDeRandomizedSmoothing(PyTorchSmoothedViT, PyTorchClassifier):
         :return: The accuracy and certified accuracy over the dataset
         """
         import torch
-        if self.mode != 'ViT': # TODO, adapt for cnn first
-            raise ValueError('Accessing a ViT specific functionality while running in CNN mode')
 
         self.model.eval()
         y = check_and_transform_label_format(y, nb_classes=self.nb_classes)
@@ -493,15 +511,20 @@ class PyTorchDeRandomizedSmoothing(PyTorchSmoothedViT, PyTorchClassifier):
                     i_batch = np.copy(x_preprocessed[m * batch_size : (m + 1) * batch_size])
                     o_batch = y_preprocessed[m * batch_size : (m + 1) * batch_size]
 
-                predictions = []
                 pred_counts = np.zeros((len(i_batch), self.nb_classes))
                 for pos in range(i_batch.shape[-1]):
                     ablated_batch = self.ablator.forward(i_batch, column_pos=pos)
 
                     # Perform prediction
                     model_outputs = self.model(ablated_batch)
-                    pred_counts[np.arange(0, len(i_batch)), model_outputs.argmax(dim=-1).cpu()] += 1
-                    predictions.append(model_outputs)
+
+                    if self.algorithm == 'levine2020':
+                        if self.logits:
+                            model_outputs = torch.nn.functional.softmax(model_outputs, dim=1)
+                        model_outputs = model_outputs >= self.threshold
+                        pred_counts += model_outputs.cpu().numpy()
+                    else:
+                        pred_counts[np.arange(0, len(i_batch)), model_outputs.argmax(dim=-1).cpu()] += 1
 
                 _, cert_and_correct, top_predicted_class = self.ablator.certify(
                     pred_counts, size_to_certify=size_to_certify, label=o_batch
