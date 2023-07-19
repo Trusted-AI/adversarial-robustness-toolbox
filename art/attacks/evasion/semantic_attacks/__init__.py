@@ -1,6 +1,7 @@
 """
 Module providing semantic adversarial attacks.
 """
+from art.attacks.evasion.semantic_attacks.affine_gradient_pytorch import AffineGradientPyTorch
 from art.attacks.evasion.semantic_attacks.brightness_gradient_pytorch import BrightnessGradientPyTorch
 from art.attacks.evasion.semantic_attacks.contrast_gradient_pytorch import ContrastGradientPyTorch
 from art.attacks.evasion.semantic_attacks.hue_gradient_pytorch import HueGradientPyTorch

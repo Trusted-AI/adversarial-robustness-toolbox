@@ -22,6 +22,7 @@ import pytest
 import torch
 
 from art.attacks.evasion.semantic_attacks import (
+    AffineGradientPyTorch,
     BrightnessGradientPyTorch,
     ContrastGradientPyTorch,
     HueGradientPyTorch,
@@ -575,6 +576,193 @@ def test_contrast_classifier_type_check_fail(art_warning):
     try:
         backend_test_classifier_type_check_fail(
             ContrastGradientPyTorch, [BaseEstimator, LossGradientsMixin, ClassifierMixin]
+        )
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework(
+    "tensorflow1", "tensorflow2", "tensorflow2v1", "keras", "non_dl_frameworks", "mxnet", "kerastf"
+)
+def test_affine_compute_factors_perturbation(art_warning, fix_get_cifar10_subset):
+    try:
+        (x_train, y_train, x_test, y_test) = fix_get_cifar10_subset
+        factors = {
+            "angle": torch.zeros((x_test.shape[0],), dtype=torch.float32),
+            "scale_x": torch.ones((x_test.shape[0],), dtype=torch.float32),
+            "scale_y": torch.ones((x_test.shape[0],), dtype=torch.float32),
+            "shear_x": torch.zeros((x_test.shape[0],), dtype=torch.float32),
+            "shear_y": torch.zeros((x_test.shape[0],), dtype=torch.float32),
+            "translate_x": torch.zeros((x_test.shape[0],), dtype=torch.float32),
+            "translate_y": torch.zeros((x_test.shape[0],), dtype=torch.float32),
+        }
+
+        assert np.min(x_test) >= 0.0
+        assert np.max(x_test) <= 1.0
+
+        classifier = get_cifar10_image_classifier_pt(from_logits=False, load_init=True)
+        attack = AffineGradientPyTorch(classifier, verbose=False)
+
+        gradients = attack._compute_factors_perturbation(
+            factors=factors,
+            x=torch.from_numpy(x_test),
+            y=torch.from_numpy(y_test),
+            mask=None
+        )
+
+        for key in factors:
+            assert gradients[key].shape == factors[key].shape
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework(
+    "tensorflow1", "tensorflow2", "tensorflow2v1", "keras", "non_dl_frameworks", "mxnet", "kerastf"
+)
+def test_affine_generate(art_warning, fix_get_cifar10_subset):
+    try:
+        (x_train, y_train, x_test, y_test) = fix_get_cifar10_subset
+
+        classifier = get_cifar10_image_classifier_pt(from_logits=False, load_init=True)
+        attack = AffineGradientPyTorch(classifier, verbose=False)
+
+        x_train_adv = attack.generate(x=x_train, y=y_train)
+
+        assert x_train.shape == x_train_adv.shape
+        assert np.min(x_train_adv) >= 0.0
+        assert np.max(x_train_adv) <= 1.0
+
+        # Generated samples should be different from the original inputs.
+        with np.testing.assert_raises(AssertionError):
+            np.testing.assert_array_almost_equal(x_train_adv, x_train, decimal=2)
+
+        # If all the affine parameters' ranges are None, the inputs must not be perturbed, i.e.,
+        # x_train_adv should be the same as x_train.
+        attack = AffineGradientPyTorch(
+            classifier,
+            angle_range=None,
+            scale_x_range=None,
+            scale_y_range=None,
+            shear_x_range=None,
+            shear_y_range=None,
+            translate_x_range=None,
+            translate_y_range=None,
+            verbose=False
+        )
+        x_train_adv = attack.generate(x=x_train, y=y_train)
+
+        np.testing.assert_array_almost_equal(x_train_adv, x_train, decimal=3)
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework(
+    "tensorflow1", "tensorflow2", "tensorflow2v1", "keras", "non_dl_frameworks", "mxnet", "kerastf"
+)
+def test_affine_generate_masked(art_warning, fix_get_cifar10_subset):
+    try:
+        (x_train, y_train, x_test, y_test) = fix_get_cifar10_subset
+
+        classifier = get_cifar10_image_classifier_pt(from_logits=False, load_init=True)
+        attack = AffineGradientPyTorch(classifier, norm=1, num_random_init=1)
+
+        # Generate a random mask.
+        mask = np.random.binomial(n=1, p=0.5, size=x_train.shape[0]).astype(np.float32)
+        x_train_adv = attack.generate(x=x_train, y=None, mask=mask)
+
+        assert x_train.shape == x_train_adv.shape
+        assert np.min(x_train_adv) >= 0.0
+        assert np.max(x_train_adv) <= 1.0
+
+        idx = np.where(mask == 0)
+        diff = x_train_adv[idx] - x_train[idx]
+        np.testing.assert_array_almost_equal(diff, np.zeros(diff.shape), decimal=3)
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework(
+    "tensorflow1", "tensorflow2", "tensorflow2v1", "keras", "non_dl_frameworks", "mxnet", "kerastf"
+)
+def test_affine_check_params(art_warning):
+    try:
+        classifier = get_cifar10_image_classifier_pt(from_logits=False, load_init=True)
+
+        with pytest.raises(ValueError):
+            _ = AffineGradientPyTorch(classifier, norm=0)
+        with pytest.raises(ValueError):
+            _ = AffineGradientPyTorch(classifier, norm=22)
+
+        with pytest.raises(ValueError):
+            _ = AffineGradientPyTorch(classifier, angle_range=10)
+        with pytest.raises(ValueError):
+            _ = AffineGradientPyTorch(classifier, angle_range=(10, 10, 10))
+        with pytest.raises(ValueError):
+            _ = AffineGradientPyTorch(classifier, angle_range=(-10, 10))
+        with pytest.raises(ValueError):
+            _ = AffineGradientPyTorch(classifier, angle_range=(10.0, -10.0))
+
+        with pytest.raises(ValueError):
+            _ = AffineGradientPyTorch(classifier, center=10)
+        with pytest.raises(ValueError):
+            _ = AffineGradientPyTorch(classifier, center=(10, 10, 10))
+        with pytest.raises(ValueError):
+            _ = AffineGradientPyTorch(classifier, center=("test", "test"))
+
+        with pytest.raises(ValueError):
+            _ = AffineGradientPyTorch(classifier, angle_step_size="test")
+        with pytest.raises(ValueError):
+            _ = AffineGradientPyTorch(classifier, angle_step_size=-10)
+
+        with pytest.raises(TypeError):
+            _ = AffineGradientPyTorch(classifier, interpolation=None)
+        with pytest.raises(ValueError):
+            _ = AffineGradientPyTorch(classifier, interpolation="test")
+
+        with pytest.raises(TypeError):
+            _ = AffineGradientPyTorch(classifier, padding_mode=None)
+        with pytest.raises(ValueError):
+            _ = AffineGradientPyTorch(classifier, padding_mode="test")
+
+        with pytest.raises(ValueError):
+            _ = AffineGradientPyTorch(classifier, fill_value=10)
+        with pytest.raises(ValueError):
+            _ = AffineGradientPyTorch(classifier, fill_value=(128, 128, 128))
+
+        with pytest.raises(ValueError):
+            _ = AffineGradientPyTorch(classifier, align_corners="true")
+
+        with pytest.raises(ValueError):
+            _ = AffineGradientPyTorch(classifier, max_iter="test")
+        with pytest.raises(ValueError):
+            _ = AffineGradientPyTorch(classifier, max_iter=-10)
+
+        with pytest.raises(ValueError):
+            _ = AffineGradientPyTorch(classifier, targeted="true")
+
+        with pytest.raises(TypeError):
+            _ = AffineGradientPyTorch(classifier, num_random_init=1.0)
+        with pytest.raises(ValueError):
+            _ = AffineGradientPyTorch(classifier, num_random_init=-1)
+
+        with pytest.raises(ValueError):
+            _ = AffineGradientPyTorch(classifier, batch_size=-1)
+
+        with pytest.raises(ValueError):
+            _ = AffineGradientPyTorch(classifier, verbose="true")
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.framework_agnostic
+def test_affine_classifier_type_check_fail(art_warning):
+    try:
+        backend_test_classifier_type_check_fail(
+            AffineGradientPyTorch, [BaseEstimator, LossGradientsMixin, ClassifierMixin]
         )
     except ARTTestException as e:
         art_warning(e)

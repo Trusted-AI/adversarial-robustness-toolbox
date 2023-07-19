@@ -17,7 +17,7 @@
 # SOFTWARE.
 """
 This module implements a semantic attack by adversarially perturbing the contrast component of the inputs. It uses the
-iterative gradient sign method to optimise the semantic perturbations (see `FastGradientmethod` and
+iterative gradient sign method to optimise the semantic perturbations (see `FastGradientMethod` and
 `BasicIterativeMethod`). This implementation extends the original optimisation method to other norms as well.
 
 | Paper link: https://arxiv.org/abs/2202.04235
@@ -45,7 +45,7 @@ class ContrastGradientPyTorch(HueGradientPyTorch):
     """
     Implementation of the contrast attack on image classifiers in PyTorch. The attack is constructed by adversarially
     perturbing the contrast component of the inputs. It uses the iterative gradient sign method to optimise the semantic
-    perturbations (see `FastGradientmethod` and `BasicIterativeMethod`). This implementation extends the original
+    perturbations (see `FastGradientMethod` and `BasicIterativeMethod`). This implementation extends the original
     optimisation method to other norms as well.
 
     Note that this attack is intended for only PyTorch image classifiers with RGB images in the range [0, 1] as inputs.

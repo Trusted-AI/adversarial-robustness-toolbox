@@ -56,6 +56,7 @@ from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_t
 from art.attacks.evasion.over_the_air_flickering.over_the_air_flickering_pytorch import OverTheAirFlickeringPyTorch
 from art.attacks.evasion.saliency_map import SaliencyMapMethod
 from art.attacks.evasion.semantic_attacks import (
+    AffineGradientPyTorch,
     BrightnessGradientPyTorch,
     ContrastGradientPyTorch,
     HueGradientPyTorch,
