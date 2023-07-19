@@ -30,7 +30,7 @@ import numpy as np
 from tqdm.auto import tqdm
 
 from art.config import ART_NUMPY_DTYPE
-from art.utils import non_maximum_supression
+from art.utils import non_maximum_suppression
 
 logger = logging.getLogger(__name__)
 

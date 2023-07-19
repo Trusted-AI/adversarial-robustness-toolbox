@@ -23,7 +23,13 @@ This module implements the ObjectSeeker certifiably robust defense.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+import sys
 from typing import List, Dict, Optional, Tuple, Union, TYPE_CHECKING
+
+if sys.version_info >= (3, 8):
+    from typing import Literal
+else:
+    from typing_extensions import Literal
 
 import numpy as np
 from sklearn.cluster import DBSCAN
@@ -32,7 +38,7 @@ from tqdm import tqdm
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.object_detection import ObjectDetectorMixin, PyTorchObjectDetector, PyTorchFasterRCNN, PyTorchYolo
 from art.estimators.pytorch import PyTorchEstimator
-from art.utils import intersection_over_union, intersection_over_area, non_maximum_supression
+from art.utils import intersection_over_union, intersection_over_area, non_maximum_suppression
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
@@ -62,6 +68,7 @@ class PyTorchObjectSeeker(ObjectDetectorMixin, PyTorchEstimator):
         "confidence_threshold",
         "iou_threshold",
         "prune_threshold",
+        "epsilon",
     ]
 
     def __init__(
@@ -80,11 +87,12 @@ class PyTorchObjectSeeker(ObjectDetectorMixin, PyTorchEstimator):
             "loss_objectness",
             "loss_rpn_box_reg",
         ),
-        detector_type: str = "YOLO",
+        detector_type: Literal["YOLO", "Faster-RCNN"] = "YOLO",
         num_lines: int = 3,
         confidence_threshold: float = 0.3,
         iou_threshold: float = 0.5,
         prune_threshold: float = 0.5,
+        epsilon: float = 0.1,
         device_type: str = "gpu",
         verbose: bool = False,
     ):
@@ -107,7 +115,7 @@ class PyTorchObjectSeeker(ObjectDetectorMixin, PyTorchEstimator):
         self.confidence_threshold = confidence_threshold
         self.iou_threshold = iou_threshold
         self.prune_threshold = prune_threshold
-        self.dbscan = DBSCAN(eps=0.1, min_samples=1, metric="precomputed")
+        self.epsilon = epsilon
         self.verbose = verbose
 
         if detector_type == "YOLO":
@@ -212,119 +220,102 @@ class PyTorchObjectSeeker(ObjectDetectorMixin, PyTorchEstimator):
                  - labels [N]: the labels for each image
                  - scores [N]: the scores or each prediction.
         """
-        base_preds = self.detector.predict(x=x, batch_size=batch_size, **kwargs)
-        filtered_base_preds = [
-            non_maximum_supression(p, iou_threshold=self.iou_threshold, confidence_threshold=self.confidence_threshold)
-            for p in base_preds
-        ]
+        predictions = []
 
-        masked_preds = self._masked_predictions(x=x, batch_size=batch_size, **kwargs)
-        filtered_masked_preds = [
-            non_maximum_supression(p, iou_threshold=self.iou_threshold, confidence_threshold=self.confidence_threshold)
-            for p in masked_preds
-        ]
+        for x_i in tqdm(x, desc="ObjectSeeker", disable=not self.verbose):
+            base_preds = self.detector.predict(x_i[np.newaxis], batch_size=batch_size, **kwargs)[0]
+            filtered_base_preds = non_maximum_suppression(
+                base_preds, iou_threshold=self.iou_threshold, confidence_threshold=self.confidence_threshold
+            )
 
-        pruned_preds = self._prune_boxes(filtered_masked_preds, filtered_base_preds)
+            masked_preds = self._masked_predictions(x_i, batch_size=batch_size, **kwargs)
+            filtered_masked_preds = non_maximum_suppression(
+                masked_preds, iou_threshold=self.iou_threshold, confidence_threshold=self.confidence_threshold
+            )
 
-    def _masked_predictions(self, x: np.ndarray, batch_size: int = 128, **kwargs)->  List[Dict[str, np.ndarray]]:
-        # Extract height and width
+            pruned_preds = self._prune_boxes(filtered_masked_preds, filtered_base_preds)
+            unionized_preds = self._unionize_clusters(pruned_preds)
+
+            preds = {
+                "boxes": np.concatenate([filtered_base_preds["boxes"], unionized_preds["boxes"]]),
+                "labels": np.concatenate([filtered_base_preds["labels"], unionized_preds["labels"]]),
+                "scores": np.concatenate([filtered_base_preds["scores"], unionized_preds["scores"]]),
+            }
+
+            predictions.append(preds)
+
+        return predictions
+
+    def _masked_predictions(self, x_i: np.ndarray, batch_size: int = 128, **kwargs) -> Dict[str, np.ndarray]:
+        x_mask = np.repeat(x_i[np.newaxis, ...], self.num_lines * 4, axis=0)
+
         if self.channels_first:
             height = self.input_shape[1]
             width = self.input_shape[2]
         else:
             height = self.input_shape[0]
             width = self.input_shape[1]
+            x_mask = np.transpose(x_mask, (0, 3, 1, 2))
 
-        stacked_predictions = []
+        idx = 0
 
         # Left masks
-        x_mask = np.copy(x)
         for k in range(1, self.num_lines + 1):
             boundary = int(width / (self.num_lines + 1) * k)
-            x_mask[:, :, :, :boundary] = 0
-
-            masked_preds = self.detector.predict(x=x_mask, batch_size=batch_size, **kwargs)
-            filtered_preds = [
-                non_maximum_supression(
-                    p, iou_threshold=self.iou_threshold, confidence_threshold=self.confidence_threshold
-                )
-                for p in masked_preds
-            ]
-            stacked_predictions.append(filtered_preds)
+            x_mask[idx, :, :, :boundary] = 0
+            idx += 1
 
         # Right masks
-        x_mask = np.copy(x)
         for k in range(1, self.num_lines + 1):
             boundary = width - int(width / (self.num_lines + 1) * k)
-            x_mask[:, :, :, boundary:] = 0
-
-            masked_preds = self.detector.predict(x=x_mask, batch_size=batch_size, **kwargs)
-            filtered_preds = [
-                non_maximum_supression(
-                    p, iou_threshold=self.iou_threshold, confidence_threshold=self.confidence_threshold
-                )
-                for p in masked_preds
-            ]
-            stacked_predictions.append(filtered_preds)
+            x_mask[idx, :, :, boundary:] = 0
+            idx += 1
 
         # Top masks
-        x_mask = np.copy(x)
         for k in range(1, self.num_lines + 1):
             boundary = int(height / (self.num_lines + 1) * k)
-            x_mask[:, :, :boundary, :] = 0
-
-            masked_preds = self.detector.predict(x=x_mask, batch_size=batch_size, **kwargs)
-            filtered_preds = [
-                non_maximum_supression(
-                    p, iou_threshold=self.iou_threshold, confidence_threshold=self.confidence_threshold
-                )
-                for p in masked_preds
-            ]
-            stacked_predictions.append(filtered_preds)
+            x_mask[idx, :, :boundary, :] = 0
+            idx += 1
 
         # Bottom masks
-        x_mask = np.copy(x)
         for k in range(1, self.num_lines + 1):
             boundary = height - int(height / (self.num_lines + 1) * k)
-            x_mask[:, :, boundary:, :] = 0
+            x_mask[idx, :, boundary:, :] = 0
+            idx += 1
 
-            masked_preds = self.detector.predict(x=x_mask, batch_size=batch_size, **kwargs)
-            filtered_preds = [
-                non_maximum_supression(
-                    p, iou_threshold=self.iou_threshold, confidence_threshold=self.confidence_threshold
-                )
-                for p in masked_preds
-            ]
-            stacked_predictions.append(filtered_preds)
+        if not self.channels_first:
+            x_mask = np.transpose(x_mask, (0, 2, 3, 1))
+
+        masked_preds = self.detector.predict(x=x_mask, batch_size=batch_size, **kwargs)
+        filtered_preds = [
+            non_maximum_suppression(
+                pred, iou_threshold=self.iou_threshold, confidence_threshold=self.confidence_threshold
+            )
+            for pred in masked_preds
+        ]
 
         # Merge predictions
-        combined_predictions = []
-        for i in range(len(x)):
-            boxes = stacked_predictions[0][i]["boxes"]
-            labels = stacked_predictions[0][i]["labels"]
-            scores = stacked_predictions[0][i]["scores"]
+        boxes = np.concatenate([pred["boxes"] for pred in filtered_preds])
+        labels = np.concatenate([pred["labels"] for pred in filtered_preds])
+        scores = np.concatenate([pred["scores"] for pred in filtered_preds])
 
-            for preds in stacked_predictions:
-                boxes = np.concatenate((boxes, preds[i]["boxes"]))
-                labels = np.concatenate((labels, preds[i]["labels"]))
-                scores = np.concatenate((scores, preds[i]["scores"]))
+        merged_predictions = {
+            "boxes": boxes,
+            "labels": labels,
+            "scores": scores,
+        }
 
-            prediction = {
-                "boxes": boxes,
-                "labels": labels,
-                "scores": scores,
-            }
-            combined_predictions.append(prediction)
+        return merged_predictions
 
-        return combined_predictions
+    def _prune_boxes(
+        self, masked_preds: Dict[str, np.ndarray], base_preds: Dict[str, np.ndarray]
+    ) -> Dict[str, np.ndarray]:
+        masked_boxes = masked_preds["boxes"]
+        masked_labels = masked_preds["labels"]
+        masked_scores = masked_preds["scores"]
 
-    def _prune_boxes(self, masked_preds: Dict[str, np.ndarray], base_preds: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
-        masked_boxes = masked_preds['boxes']
-        masked_labels = masked_preds['labels']
-        masked_scores = masked_preds['scores']
-
-        base_boxes = base_preds['boxes']
-        base_labels = base_preds['labels']
+        base_boxes = base_preds["boxes"]
+        base_labels = base_preds["labels"]
 
         keep_indices = []
         for idx, (masked_box, masked_label) in enumerate(zip(masked_boxes, masked_labels)):
@@ -345,6 +336,54 @@ class PyTorchObjectSeeker(ObjectDetectorMixin, PyTorchEstimator):
             "scores": masked_scores[keep_indices],
         }
         return pruned_preds
+
+    def _unionize_clusters(self, masked_preds: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
+        boxes = masked_preds["boxes"]
+        labels = masked_preds["labels"]
+        scores = masked_preds["scores"]
+
+        unionized_boxes = []
+        unionized_labels = []
+        unionized_scores = []
+
+        unique_labels = np.unique(labels)
+        for label in unique_labels:
+            mask = labels == label
+            selected_boxes = boxes[mask]
+            selected_scores = scores[mask]
+
+            areas = (selected_boxes[:, 2] - selected_boxes[:, 0]) * (selected_boxes[:, 3] - selected_boxes[:, 1])
+            rb = np.minimum(selected_boxes[:, None, 2:], selected_boxes[:, 2:])
+            lt = np.maximum(selected_boxes[:, None, :2], selected_boxes[:, :2])
+            pairwise_intersection = np.prod(np.clip(rb - lt, 0, None), axis=2)
+            pairwise_ioa = pairwise_intersection / (areas[:, None])
+            distances = 1 - np.maximum(pairwise_ioa, pairwise_ioa.T)
+
+            dbscan = DBSCAN(eps=0.1, min_samples=1, metric="precomputed")
+            clusters = dbscan.fit_predict(distances)
+            num_clusters = np.max(clusters) + 1
+
+            for cluster in range(num_clusters):
+                clustered_boxes = selected_boxes[clusters == cluster]
+
+                clustered_box = [
+                    np.min(clustered_boxes[:, 0]),
+                    np.min(clustered_boxes[:, 1]),
+                    np.max(clustered_boxes[:, 2]),
+                    np.max(clustered_boxes[:, 3]),
+                ]
+                clustered_score = np.max(selected_scores)
+
+                unionized_boxes.append(clustered_box)
+                unionized_labels.append(label)
+                unionized_scores.append(clustered_score)
+
+        unionized_predictions = {
+            "boxes": np.array(unionized_boxes),
+            "labels": np.array(unionized_labels),
+            "scores": np.array(unionized_scores),
+        }
+        return unionized_predictions
 
     def fit(  # pylint: disable=W0221
         self,

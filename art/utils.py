@@ -1108,11 +1108,11 @@ def intersection_over_area(bbox_1: np.ndarray, bbox_2: np.ndarray) -> float:
     return intersection / bbox_1_area
 
 
-def non_maximum_supression(
+def non_maximum_suppression(
     preds: Dict[str, np.ndarray], iou_threshold: float, confidence_threshold: Optional[float] = None
 ) -> Dict[str, np.ndarray]:
     """
-    Perform non-maximum supression on the predicted object detection labels of a single image.
+    Perform non-maximum suppression on the predicted object detection labels of a single image.
 
     :param preds: Predicted labels of format `Dict[str, np.ndarray]` for a single image. The fields of the Dict are
                   as follows:
