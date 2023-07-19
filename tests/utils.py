@@ -39,7 +39,7 @@ from art.utils import load_dataset
 logger = logging.getLogger(__name__)
 
 # ----------------------------------------------------------------------------------------------------- TEST BASE CLASS
-art_supported_frameworks = ["keras", "tensorflow", "tensorflow2v1", "pytorch", "scikitlearn"]
+art_supported_frameworks = ["keras", "tensorflow", "tensorflow2v1", "pytorch", "scikitlearn", "huggingface"]
 
 
 class TestBase(unittest.TestCase):
@@ -1036,6 +1036,116 @@ def get_image_classifier_kr_tf_with_wildcard():
 
     return krc
 
+
+def get_image_classifier_hf(from_logits=False, load_init=True, use_maxpool=True):
+    import torch
+    from transformers.modeling_utils import PreTrainedModel
+    from transformers.configuration_utils import PretrainedConfig
+    from transformers.modeling_outputs import ImageClassifierOutput
+    from art.estimators.hugging_face import HuggingFaceClassifier
+
+    class ModelConfig(PretrainedConfig):
+        def __init__(
+                self,
+                hidden_size=768,
+                num_hidden_layers=12,
+                num_attention_heads=12,
+                intermediate_size=3072,
+                hidden_act="gelu",
+                hidden_dropout_prob=0.0,
+                attention_probs_dropout_prob=0.0,
+                initializer_range=0.02,
+                layer_norm_eps=1e-12,
+                image_size=224,
+                patch_size=16,
+                num_channels=3,
+                qkv_bias=True,
+                encoder_stride=16,
+                **kwargs,
+        ):
+            super().__init__(**kwargs)
+            self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    class Model(PreTrainedModel):
+        """
+        Create model for pytorch.
+
+        The weights and biases are identical to the TensorFlow model in get_classifier_tf().
+        """
+
+        def __init__(self, config):
+            super().__init__(config)
+
+            self.conv = torch.nn.Conv2d(in_channels=1, out_channels=1, kernel_size=7)
+            self.relu = torch.nn.ReLU()
+            self.pool = torch.nn.MaxPool2d(4, 4)
+            self.fullyconnected = torch.nn.Linear(25, 10)
+
+            if load_init:
+                w_conv2d = np.load(
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_CONV2D_MNIST.npy"
+                    )
+                )
+                b_conv2d = np.load(
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_CONV2D_MNIST.npy"
+                    )
+                )
+                w_dense = np.load(
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_DENSE_MNIST.npy"
+                    )
+                )
+                b_dense = np.load(
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_DENSE_MNIST.npy"
+                    )
+                )
+
+                w_conv2d_pt = w_conv2d.reshape((1, 1, 7, 7))
+
+                self.conv.weight = torch.nn.Parameter(torch.Tensor(w_conv2d_pt))
+                self.conv.bias = torch.nn.Parameter(torch.Tensor(b_conv2d))
+                self.fullyconnected.weight = torch.nn.Parameter(torch.Tensor(np.transpose(w_dense)))
+                self.fullyconnected.bias = torch.nn.Parameter(torch.Tensor(b_dense))
+
+        # pylint: disable=W0221
+        # disable pylint because of API requirements for function
+        def forward(self, x):
+            """
+            Forward function to evaluate the model
+            :param x: Input to the model
+            :return: Prediction of the model
+            """
+            x = self.conv(x)
+            x = self.relu(x)
+            x = self.pool(x)
+            x = x.reshape(-1, 25)
+            x = self.fullyconnected(x)
+            if not from_logits:
+                x = torch.nn.functional.softmax(x, dim=1)
+            return ImageClassifierOutput(  # loss=loss,
+                logits=x,
+                # hidden_states=outputs.hidden_states,
+                # attentions=outputs.attentions
+            )
+
+
+    # labels = ds['train'].features['labels'].names
+    config = ModelConfig()
+    pt_model = Model(config=config)
+    optimizer = torch.optim.Adam(pt_model.parameters(), lr=1e-4)
+
+    hf_classifier = HuggingFaceClassifier(pt_model,
+                                          loss=torch.nn.CrossEntropyLoss(reduction="sum"),
+                                          optimizer=optimizer,
+                                          input_shape=(1, 28, 28),
+                                          nb_classes=10,
+                                          clip_values=(0, 1),
+                                          processor=None)
+
+    return hf_classifier
 
 def get_image_classifier_pt(from_logits=False, load_init=True, use_maxpool=True):
     """

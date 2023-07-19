@@ -11,7 +11,8 @@ from art.utils import check_and_transform_label_format
 
 class HuggingFaceClassifier(PyTorchClassifier):
 
-    def __init__(self, model, loss_fn, optimizer, processor=None):
+    def __init__(self, model, loss, input_shape, nb_classes, optimizer, clip_values=(0, 1),
+                 preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0), processor=None):
         import transformers
 
         assert isinstance(model, transformers.PreTrainedModel)
@@ -20,15 +21,15 @@ class HuggingFaceClassifier(PyTorchClassifier):
 
         super().__init__(
             model=model,
-            loss=loss_fn,
-            input_shape=(3, 224, 224),
-            nb_classes=10,
+            loss=loss,
+            input_shape=input_shape,
+            nb_classes=nb_classes,
             optimizer=optimizer,
             channels_first=True,
-            clip_values=(0, 1),
+            clip_values=clip_values,
             preprocessing_defences=None,
             postprocessing_defences=None,
-            preprocessing=None,
+            preprocessing=preprocessing,
             device_type='gpu')
 
         import functools
@@ -60,10 +61,9 @@ class HuggingFaceClassifier(PyTorchClassifier):
             if not isinstance(image, torch.Tensor):
                 image = torch.from_numpy(image).to(self._device)
             outputs = self.model(image)
-        return outputs.logits
+        return outputs
 
     def forward(self, image):
-
         if self.processor is not None:
             image = self.processor(images=image, return_tensors="pt")
             image.to(self._device)
@@ -72,9 +72,7 @@ class HuggingFaceClassifier(PyTorchClassifier):
             if not isinstance(image, torch.Tensor):
                 image = torch.from_numpy(image).to(self._device)
             outputs = self.model(image)
-        print('we are here!')
-        exit()
-        return outputs.logits
+        return outputs
 
     def get_grad(self, image, labels, loss_fn):
         """
