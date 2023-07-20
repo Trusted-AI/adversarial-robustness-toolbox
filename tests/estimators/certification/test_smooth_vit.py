@@ -198,7 +198,6 @@ def test_end_to_end_equivalence(art_warning, fix_get_mnist_data, fix_get_cifar10
     import sys
 
     from art.estimators.certification.derandomized_smoothing import PyTorchDeRandomizedSmoothing
-    from pathlib import Path
     import shutil
 
     # if os.path.exists('smoothed-vit'):
@@ -342,6 +341,8 @@ def test_certification_equivalence(art_warning, fix_get_mnist_data, fix_get_cifa
     import torch
     import os
     import sys
+    import types
+
     from torch.utils.data import Dataset
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -371,8 +372,8 @@ def test_certification_equivalence(art_warning, fix_get_mnist_data, fix_get_cifa
     import shutil
     from torch.utils.data import DataLoader
 
-    if os.path.exists('smoothed-vit'):
-        shutil.rmtree('smoothed-vit')
+    # if os.path.exists('smoothed-vit'):
+    #    shutil.rmtree('smoothed-vit')
 
     if os.path.exists('tests'):
         shutil.rmtree('tests')
@@ -395,6 +396,9 @@ def test_certification_equivalence(art_warning, fix_get_mnist_data, fix_get_cifa
     )
 
     class WrappedModel(torch.nn.Module):
+        """
+        Original implementation requires to return a tuple. We add a dummy return to satisfy this.
+        """
         def __init__(self, my_model):
             super().__init__()
             self.model = my_model
@@ -403,12 +407,50 @@ def test_certification_equivalence(art_warning, fix_get_mnist_data, fix_get_cifa
             x = self.model(x)
             return x, 'filler_arg'
 
-    cifar_data = torch.from_numpy(fix_get_cifar10_data[0][:100]).to(device)
-    cifar_labels = torch.from_numpy(fix_get_cifar10_data[1][:100]).to(device)
+    def _cuda(self):
+        return self
+
+    class MyDataloader(Dataset):
+        """
+        Original implementation made use of .cuda() without device checks. Thus, for cpu only machines
+        (such as those run for ART CI checks) the test will fail. Here we override .cuda() for the
+        instances to just return self.
+        """
+        def __init__(self, x, y):
+            self.x = x
+            self.y = y
+            self.bsize = 2
+
+        def __len__(self):
+            return 2
+
+        def __getitem__(self, idx):
+            if idx >= 2:
+                raise IndexError
+            else:
+                x = self.x[idx*self.bsize:idx*self.bsize+self.bsize]
+                y = self.y[idx*self.bsize:idx*self.bsize+self.bsize]
+
+                x.cuda = types.MethodType(_cuda, x)
+                y.cuda = types.MethodType(_cuda, y)
+                return x, y
+
+    if torch.cuda.is_available():
+        num_to_fetch = 100
+    else:
+        num_to_fetch = 4
+
+    cifar_data = torch.from_numpy(fix_get_cifar10_data[0][:num_to_fetch]).to(device)
+    cifar_labels = torch.from_numpy(fix_get_cifar10_data[1][:num_to_fetch]).to(device)
     upsample = torch.nn.Upsample(scale_factor=224 / 32)
     cifar_data = upsample(cifar_data)
-    dataset = DataSet(cifar_data, cifar_labels)
-    validation_loader = DataLoader(dataset, batch_size=64)
+
+    if torch.cuda.is_available():
+        dataset = DataSet(cifar_data, cifar_labels)
+        validation_loader = DataLoader(dataset, batch_size=64)
+    else:
+        validation_loader = MyDataloader(cifar_data, cifar_labels)
+
     args = ArgClass()
 
     model = WrappedModel(my_model=art_model.model)
@@ -421,8 +463,8 @@ def test_certification_equivalence(art_warning, fix_get_mnist_data, fix_get_cifa
     acc, cert_acc = art_model.eval_and_certify(x=cifar_data.cpu().numpy(), y=cifar_labels.cpu().numpy(), size_to_certify=4)
     print('cert_acc ', cert_acc)
     print('acc ', acc)
-    assert cert_acc == summary['cert_acc']
-    assert acc == summary['smooth_acc']
+    assert cert_acc == torch.tensor(summary['cert_acc'])
+    assert acc == torch.tensor(summary['smooth_acc'])
 
 
 @pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")

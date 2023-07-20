@@ -77,13 +77,13 @@ class PyTorchDeRandomizedSmoothing(PyTorchSmoothedViT, PyTorchClassifier):
         nb_classes: int,
         ablation_size: int,
         algorithm: str = 'salman2021',
+        ablation_type: str = 'column',
         replace_last_layer: Optional[bool] = None,
         drop_tokens: bool = True,
         load_pretrained: bool = True,
         optimizer: Union[type, "torch.optim.Optimizer", None] = None,
         optimizer_params: Optional[dict] = None,
         channels_first: bool = True,
-        ablation_type: Optional[str] = None,
         threshold: Optional[float] = None,
         logits: Optional[bool] = True,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
@@ -514,7 +514,6 @@ class PyTorchDeRandomizedSmoothing(PyTorchSmoothedViT, PyTorchClassifier):
                 pred_counts = np.zeros((len(i_batch), self.nb_classes))
                 for pos in range(i_batch.shape[-1]):
                     ablated_batch = self.ablator.forward(i_batch, column_pos=pos)
-
                     # Perform prediction
                     model_outputs = self.model(ablated_batch)
 
