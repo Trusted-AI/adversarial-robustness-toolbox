@@ -84,7 +84,39 @@ def add_pattern_bd(x: np.ndarray, distance: int = 2, pixel_value: int = 1) -> np
         raise ValueError(f"Invalid array shape: {shape}")
     return x
 
+def add_pattern_bd_pytorch(x: np.ndarray, distance: int = 2, pixel_value: int = 1) -> np.ndarray:
+    """
+    Augments a matrix by setting a checkerboard-like pattern of values some `distance` away from the bottom-right
+    edge to 1. Works for single images or a batch of images.
 
+    :param x: A single image or batch of images of shape NWHC, NHW, or HC. Pixels will be added to all channels.
+    :param distance: Distance from bottom-right walls.
+    :param pixel_value: Value used to replace the entries of the image matrix.
+    :return: Backdoored image.
+    """
+    x = np.copy(x)
+    shape = x.shape
+    if len(shape) == 4:
+        height, width = x.shape[1:3]
+        x[:, :, height - distance, width - distance] = pixel_value
+        x[:, :, height - distance - 1, width - distance - 1] = pixel_value
+        x[:, :, height - distance, width - distance - 2] = pixel_value
+        x[:, :, height - distance - 2, width - distance] = pixel_value
+    elif len(shape) == 3:
+        height, width = x.shape[1:]
+        x[height - distance, width - distance, :] = pixel_value
+        x[height - distance - 1, width - distance - 1, :] = pixel_value
+        x[height - distance, width - distance - 2, :] = pixel_value
+        x[height - distance - 2, width - distance, :] = pixel_value
+    elif len(shape) == 2:
+        height, width = x.shape
+        x[height - distance, width - distance] = pixel_value
+        x[height - distance - 1, width - distance - 1] = pixel_value
+        x[height - distance, width - distance - 2] = pixel_value
+        x[height - distance - 2, width - distance] = pixel_value
+    else:
+        raise ValueError(f"Invalid array shape: {shape}")
+    return x
 def insert_image(
     x: np.ndarray,
     backdoor_path: str = "../utils/data/backdoors/alert.png",
