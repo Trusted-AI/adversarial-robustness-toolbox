@@ -375,7 +375,7 @@ class AdversarialTrainerAWPPyTorch(AdversarialTrainerAWP):
         return train_loss, train_acc, train_n
 
     def _weight_perturbation(
-        self, x_batch: np.ndarray, x_batch_pert: np.ndarray, y_batch: np.ndarray
+        self, x_batch: "torch.Tensor", x_batch_pert: "torch.Tensor", y_batch: "torch.Tensor"
     ) -> Dict[str, "torch.Tensor"]:
         """
         Calculate wight perturbation for a batch of data.
@@ -416,15 +416,15 @@ class AdversarialTrainerAWPPyTorch(AdversarialTrainerAWP):
                 "Incorrect mode provided for base adversarial training. 'mode' must be among 'PGD' and 'TRADES'."
             )
 
-        self._proxy_classifier._optimizer.zero_grad()  # pylint: disable=W0212
+        self._proxy_classifier._optimizer.zero_grad()  # type: ignore  # pylint: disable=W0212
         loss.backward()
-        self._proxy_classifier._optimizer.step()  # pylint: disable=W0212
+        self._proxy_classifier._optimizer.step()  # type: ignore  # pylint: disable=W0212
 
         params_dict_proxy, _ = self._calculate_model_params(self._proxy_classifier)
 
         for name in list_keys:
             perturbation = params_dict_proxy[name]["param"] - params_dict[name]["param"]
-            perturbation = perturbation.reshape(params_dict[name]["size"])
+            perturbation = torch.reshape(perturbation, params_dict[name]["size"])  # type: ignore
             scale = params_dict[name]["norm"] / (perturbation.norm() + EPS)
             w_perturb[name] = scale * perturbation
 
@@ -444,7 +444,7 @@ class AdversarialTrainerAWPPyTorch(AdversarialTrainerAWP):
 
         import torch
 
-        params_dict = OrderedDict()
+        params_dict = OrderedDict()  # type: ignore
         list_params = []
         for name, param in p_classifier._model.state_dict().items():  # pylint: disable=W0212
             if len(param.size()) <= 1:
