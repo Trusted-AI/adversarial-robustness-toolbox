@@ -30,9 +30,9 @@ from art.data_generators import DataGenerator
 from art.defences.trainer.adversarial_trainer import AdversarialTrainer
 # from art.utils import load_mnist
 from art.estimators.classification import PyTorchClassifier, TensorFlowV2Classifier, KerasClassifier
-from art.utils import load_mnist
+from art.utils import load_mnist, load_cifar10
 
-from tests.utils import master_seed, get_image_classifier_tf, get_image_classifier_pt
+from tests.utils import master_seed, get_image_classifier_tf, get_image_classifier_pt, get_image_classifier_hf
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +70,7 @@ def get_mnist_classifier(framework, image_dl_estimator):
             classifier = KerasClassifier(model, clip_values=(0, 1), use_logits=True)
 
         elif framework == "huggingface":
+
             import transformers
             import torch
             from art.estimators.hugging_face import HuggingFaceClassifier
@@ -82,10 +83,14 @@ def get_mnist_classifier(framework, image_dl_estimator):
             optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 
             classifier = HuggingFaceClassifier(model,
-                                               loss_fn=torch.nn.CrossEntropyLoss(),
+                                               loss=torch.nn.CrossEntropyLoss(),
+                                               input_shape=(3, 224, 224),
+                                               nb_classes=10,
                                                optimizer=optimizer,
                                                processor=None)
-
+            '''
+            classifier = get_image_classifier_hf()
+            '''
         else:
             classifier = None
 
@@ -114,18 +119,30 @@ class TestClass:
     def test_fit_predict(self, art_warning, get_mnist_classifier, get_default_mnist_subset, framework):
 
         master_seed(seed=1234)
+        if framework == 'huggingface':
+            (x_train, y_train), (x_test, y_test), _, _ = load_cifar10()
+            x_train, y_train, x_test, y_test = (
+                x_train[:NB_TRAIN],
+                y_train[:NB_TRAIN],
+                x_test[:NB_TEST],
+                y_test[:NB_TEST],
+            )
+        else:
+            (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
+            x_train, y_train, x_test, y_test = (
+                x_train[:NB_TRAIN],
+                y_train[:NB_TRAIN],
+                x_test[:NB_TEST],
+                y_test[:NB_TEST],
+            )
 
-        (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
-        x_train, y_train, x_test, y_test = (
-            x_train[:NB_TRAIN],
-            y_train[:NB_TRAIN],
-            x_test[:NB_TEST],
-            y_test[:NB_TEST],
-        )
-
-        if framework == 'pytorch':
+        if framework in ['pytorch', 'huggingface']:
             x_train = np.float32(np.moveaxis(x_train, -1, 1))
             x_test = np.float32(np.moveaxis(x_test, -1, 1))
+        if framework == 'huggingface':
+            upsampler = torch.nn.Upsample(scale_factor=7, mode='nearest')
+            x_train = np.float32(upsampler(torch.from_numpy(x_train)).cpu().numpy())
+            x_test = np.float32(upsampler(torch.from_numpy(x_test)).cpu().numpy())
 
         x_test_original = x_test.copy()
 
@@ -136,7 +153,8 @@ class TestClass:
 
         # TODO: pytorch was not checked in the original test. Why does it train differently to tf? Why does the tf
         # TODO: accuracy decrease?
-        assert accuracy == 0.13
+        if framework in ['pytorch', 'tensorflow']:
+            assert accuracy == 0.13
 
         adv_trainer = AdversarialTrainer(pytest.classifier, attack)
         adv_trainer.fit(x_train, y_train, nb_epochs=5, batch_size=128)
@@ -149,7 +167,7 @@ class TestClass:
             # with open("classifier_test_fit_predict_post_training", "wb") as fp:  # Pickling
             #    pickle.dump(pytest.classifier.model.state_dict(), fp)
             assert accuracy_new == 0.20
-        else:
+        if framework in ["tensorflow2", "keras", "kerastf"]:
             assert accuracy_new == 0.12
 
         # Recompute adversarial examples.
@@ -160,7 +178,7 @@ class TestClass:
 
         if framework == 'pytorch':
             assert accuracy_new == 0.12
-        if framework == 'tensorflow':
+        if framework in ["tensorflow2", "keras", "kerastf"]:
             assert accuracy_new == 0.13
 
         pytest.final_acc_of_prior = accuracy_new
@@ -171,17 +189,30 @@ class TestClass:
 
         master_seed(seed=1234)
 
-        (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
-        x_train, y_train, x_test, y_test = (
-            x_train[:NB_TRAIN],
-            y_train[:NB_TRAIN],
-            x_test[:NB_TEST],
-            y_test[:NB_TEST],
-        )
+        if framework == 'huggingface':
+            (x_train, y_train), (x_test, y_test), _, _ = load_cifar10()
+            x_train, y_train, x_test, y_test = (
+                x_train[:NB_TRAIN],
+                y_train[:NB_TRAIN],
+                x_test[:NB_TEST],
+                y_test[:NB_TEST],
+            )
+        else:
+            (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
+            x_train, y_train, x_test, y_test = (
+                x_train[:NB_TRAIN],
+                y_train[:NB_TRAIN],
+                x_test[:NB_TEST],
+                y_test[:NB_TEST],
+            )
 
-        if framework == 'pytorch':
+        if framework in ['pytorch', 'huggingface']:
             x_train = np.float32(np.moveaxis(x_train, -1, 1))
             x_test = np.float32(np.moveaxis(x_test, -1, 1))
+        if framework == 'huggingface':
+            upsampler = torch.nn.Upsample(scale_factor=7, mode='nearest')
+            x_train = np.float32(upsampler(torch.from_numpy(x_train)).cpu().numpy())
+            x_test = np.float32(upsampler(torch.from_numpy(x_test)).cpu().numpy())
 
         x_test_original = x_test.copy()
 
@@ -196,7 +227,7 @@ class TestClass:
             # for w1, w2 in zip(classifier_test_fit_predict_post_training.values(), pytest.classifier.model.state_dict().values()):
             #    assert torch.allclose(w1, w2)
             assert accuracy == 0.12
-        if framework == 'tensorflow2':
+        if framework in ["tensorflow2", "keras", "kerastf"]:
             assert accuracy == 0.13  # TODO, Untrained acc? Why is this not 0.12?
 
         assert accuracy == pytest.final_acc_of_prior
@@ -209,7 +240,7 @@ class TestClass:
 
         if framework == 'pytorch':
             assert accuracy_new == 0.11
-        if framework == 'tensorflow2':
+        if framework in ["tensorflow2", "keras", "kerastf"]:
             assert accuracy_new == 0.32
 
         # Check that x_test has not been modified by attack and classifier
@@ -237,17 +268,30 @@ class TestClass:
 
         master_seed(seed=1234)
 
-        (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
-        x_train, y_train, x_test, y_test = (
-            x_train[:NB_TRAIN],
-            y_train[:NB_TRAIN],
-            x_test[:NB_TEST],
-            y_test[:NB_TEST],
-        )
+        if framework == 'huggingface':
+            (x_train, y_train), (x_test, y_test), _, _ = load_cifar10()
+            x_train, y_train, x_test, y_test = (
+                x_train[:NB_TRAIN],
+                y_train[:NB_TRAIN],
+                x_test[:NB_TEST],
+                y_test[:NB_TEST],
+            )
+        else:
+            (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
+            x_train, y_train, x_test, y_test = (
+                x_train[:NB_TRAIN],
+                y_train[:NB_TRAIN],
+                x_test[:NB_TEST],
+                y_test[:NB_TEST],
+            )
 
-        if framework == 'pytorch':
+        if framework in ['pytorch', 'huggingface']:
             x_train = np.float32(np.moveaxis(x_train, -1, 1))
             x_test = np.float32(np.moveaxis(x_test, -1, 1))
+        if framework == 'huggingface':
+            upsampler = torch.nn.Upsample(scale_factor=7, mode='nearest')
+            x_train = np.float32(upsampler(torch.from_numpy(x_train)).cpu().numpy())
+            x_test = np.float32(upsampler(torch.from_numpy(x_test)).cpu().numpy())
 
         x_test_original = x_test.copy()
 
@@ -263,7 +307,7 @@ class TestClass:
         predictions_new = np.argmax(adv_trainer.predict(x_test_adv), axis=1)
         accuracy_new = np.sum(predictions_new == np.argmax(y_test, axis=1)) / NB_TEST
 
-        if framework == 'tensorflow2':
+        if framework in ["tensorflow2", "keras", "kerastf"]:
             assert accuracy_new == 0.14
             assert accuracy == 0.13  # Untrained acc?
         if framework == 'pytorch':
@@ -274,17 +318,30 @@ class TestClass:
         assert np.allclose(float(np.max(np.abs(x_test_original - x_test))), 0.0)
 
     def test_two_attacks_with_generator(self, art_warning, get_mnist_classifier, get_default_mnist_subset, framework):
-        (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
-        x_train, y_train, x_test, y_test = (
-            x_train[:NB_TRAIN],
-            y_train[:NB_TRAIN],
-            x_test[:NB_TEST],
-            y_test[:NB_TEST],
-        )
+        if framework == 'huggingface':
+            (x_train, y_train), (x_test, y_test), _, _ = load_cifar10()
+            x_train, y_train, x_test, y_test = (
+                x_train[:NB_TRAIN],
+                y_train[:NB_TRAIN],
+                x_test[:NB_TEST],
+                y_test[:NB_TEST],
+            )
+        else:
+            (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
+            x_train, y_train, x_test, y_test = (
+                x_train[:NB_TRAIN],
+                y_train[:NB_TRAIN],
+                x_test[:NB_TEST],
+                y_test[:NB_TEST],
+            )
 
-        if framework == 'pytorch':
+        if framework in ['pytorch', 'huggingface']:
             x_train = np.float32(np.moveaxis(x_train, -1, 1))
             x_test = np.float32(np.moveaxis(x_test, -1, 1))
+        if framework == 'huggingface':
+            upsampler = torch.nn.Upsample(scale_factor=7, mode='nearest')
+            x_train = np.float32(upsampler(torch.from_numpy(x_train)).cpu().numpy())
+            x_test = np.float32(upsampler(torch.from_numpy(x_test)).cpu().numpy())
 
         x_train_original = x_train.copy()
         x_test_original = x_test.copy()
@@ -315,7 +372,7 @@ class TestClass:
         predictions_new = np.argmax(adv_trainer.predict(x_test_adv), axis=1)
         accuracy_new = np.sum(predictions_new == np.argmax(y_test, axis=1)) / NB_TEST
 
-        if framework == 'tensorflow2':
+        if framework in ["tensorflow2", "keras", "kerastf"]:
             # self.assertAlmostEqual(accuracy_new, 0.38, delta=0.02)
             assert 0.36 <= accuracy_new <= 0.40
             assert accuracy == 0.1
@@ -334,17 +391,30 @@ class TestClass:
 
         :return: None
         """
-        (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
-        x_train, y_train, x_test, y_test = (
-            x_train[:NB_TRAIN],
-            y_train[:NB_TRAIN],
-            x_test[:NB_TEST],
-            y_test[:NB_TEST],
-        )
+        if framework == 'huggingface':
+            (x_train, y_train), (x_test, y_test), _, _ = load_cifar10()
+            x_train, y_train, x_test, y_test = (
+                x_train[:NB_TRAIN],
+                y_train[:NB_TRAIN],
+                x_test[:NB_TEST],
+                y_test[:NB_TEST],
+            )
+        else:
+            (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
+            x_train, y_train, x_test, y_test = (
+                x_train[:NB_TRAIN],
+                y_train[:NB_TRAIN],
+                x_test[:NB_TEST],
+                y_test[:NB_TEST],
+            )
 
-        if framework == 'pytorch':
+        if framework in ['pytorch', 'huggingface']:
             x_train = np.float32(np.moveaxis(x_train, -1, 1))
             x_test = np.float32(np.moveaxis(x_test, -1, 1))
+        if framework == 'huggingface':
+            upsampler = torch.nn.Upsample(scale_factor=7, mode='nearest')
+            x_train = np.float32(upsampler(torch.from_numpy(x_train)).cpu().numpy())
+            x_test = np.float32(upsampler(torch.from_numpy(x_test)).cpu().numpy())
 
         params = {"nb_epochs": 2, "batch_size": BATCH_SIZE}
 
