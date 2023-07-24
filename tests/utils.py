@@ -1047,20 +1047,6 @@ def get_image_classifier_hf(from_logits=False, load_init=True, use_maxpool=True)
     class ModelConfig(PretrainedConfig):
         def __init__(
                 self,
-                hidden_size=768,
-                num_hidden_layers=12,
-                num_attention_heads=12,
-                intermediate_size=3072,
-                hidden_act="gelu",
-                hidden_dropout_prob=0.0,
-                attention_probs_dropout_prob=0.0,
-                initializer_range=0.02,
-                layer_norm_eps=1e-12,
-                image_size=224,
-                patch_size=16,
-                num_channels=3,
-                qkv_bias=True,
-                encoder_stride=16,
                 **kwargs,
         ):
             super().__init__(**kwargs)
@@ -1131,11 +1117,10 @@ def get_image_classifier_hf(from_logits=False, load_init=True, use_maxpool=True)
                 # attentions=outputs.attentions
             )
 
-
     # labels = ds['train'].features['labels'].names
     config = ModelConfig()
     pt_model = Model(config=config)
-    optimizer = torch.optim.Adam(pt_model.parameters(), lr=1e-4)
+    optimizer = torch.optim.Adam(pt_model.parameters(), lr=0.01)
 
     hf_classifier = HuggingFaceClassifier(pt_model,
                                           loss=torch.nn.CrossEntropyLoss(reduction="sum"),
