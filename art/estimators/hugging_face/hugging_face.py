@@ -1,12 +1,14 @@
 import torch
 import numpy as np
 import random
-
+import logging
+import six
 from tqdm import tqdm
 
 from typing import List, Optional, Tuple, Union, Any, TYPE_CHECKING
 from art.estimators.classification.pytorch import PyTorchClassifier
 from art.utils import check_and_transform_label_format
+logger = logging.getLogger(__name__)
 
 
 class HuggingFaceClassifier(PyTorchClassifier):
@@ -73,6 +75,270 @@ class HuggingFaceClassifier(PyTorchClassifier):
                 image = torch.from_numpy(image).to(self._device)
             outputs = self.model(image)
         return outputs
+
+    def _make_model_wrapper(self, model: "torch.nn.Module") -> "torch.nn.Module":
+        # Try to import PyTorch and create an internal class that acts like a model wrapper extending torch.nn.Module
+        input_shape = self._input_shape
+        try:
+            import torch
+
+            # Define model wrapping class only if not defined before
+            if not hasattr(self, "_model_wrapper"):
+
+                class ModelWrapper(torch.nn.Module):
+                    """
+                    This is a wrapper for the input model.
+                    """
+
+                    import torch
+
+                    def __init__(self, model: torch.nn.Module):
+                        """
+                        Initialization by storing the input model.
+
+                        :param model: PyTorch model. The forward function of the model must return the logit output.
+                        """
+                        super().__init__()
+                        self._model = model
+
+                    # pylint: disable=W0221
+                    # disable pylint because of API requirements for function
+                    def forward(self, x):
+                        """
+                        This is where we get outputs from the input model.
+
+                        :param x: Input data.
+                        :type x: `torch.Tensor`
+                        :return: a list of output layers, where the last 2 layers are logit and final outputs.
+                        :rtype: `list`
+                        """
+                        # pylint: disable=W0212
+                        # disable pylint because access to _model required
+
+                        result = []
+                        if isinstance(self._model, torch.nn.Sequential):
+                            for _, module_ in self._model._modules.items():
+                                x = module_(x)
+                                result.append(x)
+
+                        elif isinstance(self._model, torch.nn.Module):
+                            x = self._model(x)
+                            result.append(x)
+
+                        else:  # pragma: no cover
+                            raise TypeError("The input model must inherit from `nn.Module`.")
+
+                        return result
+
+                    @property
+                    def get_layers(self) -> List[str]:
+                        """
+                        Return the hidden layers in the model, if applicable.
+
+                        :return: The hidden layers in the model, input and output layers excluded.
+
+                        .. warning:: `get_layers` tries to infer the internal structure of the model.
+                                     This feature comes with no guarantees on the correctness of the result.
+                                     The intended order of the layers tries to match their order in the model, but this
+                                     is not guaranteed either. In addition, the function can only infer the internal
+                                     layers if the input model is of type `nn.Sequential`, otherwise, it will only
+                                     return the logit layer.
+                        """
+                        import torch
+                        import transformers
+
+                        result = []
+
+                        result_dict = {}
+                        # ids = []
+                        if isinstance(self._model, torch.nn.Module):
+                            for name, arg_2 in self._model._modules.items():  # pylint: disable=W0212
+                                print(f'arg2 is {arg_2} with address {id(arg_2)} and name {name}')
+                                result.append(name)
+                                # result_dict[id(arg_2)] = name
+                        else:  # pragma: no cover
+                            raise TypeError("The input model must inherit from `nn.Module`.")
+                        logger.info(
+                            "Inferred %i hidden layers on PyTorch classifier.",
+                            len(result),
+                        )
+                        print('old result is ', result)
+                        print('mapping from id to name is ', result_dict)
+                        modules = []
+
+                        def forward_hook(input_module, hook_input, hook_output):
+                            print(f'input_module is {input_module} with id {id(input_module)}')
+                            modules.append(id(input_module))
+
+                        handles = []
+                        i = 0
+                        j = 0
+                        for module in model.children():
+                            print(f'found {module} with type {type(module)}')
+                            if isinstance(module, transformers.models.vit.modeling_vit.ViTModel):
+                                for hf_mod in module.children():
+                                    print(f'hf_mod {hf_mod} with type {type(hf_mod)}')
+                                    if isinstance(hf_mod, transformers.models.vit.modeling_vit.ViTEncoder):
+                                        for sub_mod in hf_mod.children():
+                                            print(f'sub_mod {sub_mod} with type {type(sub_mod)}')
+                                            for s in sub_mod:
+                                                print(f's {s} with type {type(s)} and id {id(s)}')
+                                                handles.append(s.register_forward_hook(forward_hook))
+                                                result_dict[id(s)] = 'layer_' + str(i)
+                                                i += 1
+                                    else:
+                                        handles.append(hf_mod.register_forward_hook(forward_hook))
+                                        result_dict[id(hf_mod)] = 'embedding_' + str(j)
+                                        j += 1
+                            else:
+                                handles.append(module.register_forward_hook(forward_hook))
+                                result_dict[id(module)] = 'head'
+
+                        print('\n')
+                        print(result_dict)
+                        print('------ Finished Registering Hooks------')
+                        input_for_hook = torch.rand(input_shape)
+                        print(input_for_hook.shape)
+                        input_for_hook = torch.unsqueeze(input_for_hook, dim=0)
+                        model(input_for_hook)  # hooks are fired sequentially from model input to the output
+
+                        print('------ Finished Fire Hooks------')
+
+                        # Remove the hooks
+                        for h in handles:
+                            h.remove()
+
+                        print('new result is ')
+                        name_order = []
+                        for module in modules:
+                            name_order.append(result_dict[module])
+
+                        print(name_order)
+
+                        return name_order
+
+                # Set newly created class as private attribute
+                self._model_wrapper = ModelWrapper
+
+            # Use model wrapping class to wrap the PyTorch model received as argument
+            return self._model_wrapper(model)
+
+        except ImportError:  # pragma: no cover
+            raise ImportError("Could not find PyTorch (`torch`) installation.") from ImportError
+
+    def get_activations(  # type: ignore
+        self,
+        x: Union[np.ndarray, "torch.Tensor"],
+        layer: Optional[Union[int, str]] = None,
+        batch_size: int = 128,
+        framework: bool = False,
+    ) -> Union[np.ndarray, "torch.Tensor"]:
+        """
+        Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
+        `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
+        calling `layer_names`.
+
+        :param x: Input for computing the activations.
+        :param layer: Layer for computing the activations
+        :param batch_size: Size of batches.
+        :param framework: If true, return the intermediate tensor representation of the activation.
+        :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
+        """
+        import torch
+
+        self._model.eval()
+
+        # Apply defences
+        if framework:
+            no_grad = False
+        else:
+            no_grad = True
+        x_preprocessed, _ = self._apply_preprocessing(x=x, y=None, fit=False, no_grad=no_grad)
+
+        # Get index of the extracted layer
+        if isinstance(layer, six.string_types):
+            if layer not in self._layer_names:  # pragma: no cover
+                raise ValueError(f"Layer name {layer} not supported")
+            layer_index = self._layer_names.index(layer)
+
+        elif isinstance(layer, int):
+            layer_index = layer
+
+        else:  # pragma: no cover
+            raise TypeError("Layer must be of type str or int")
+
+        def get_feature(name):
+            # the hook signature
+            def hook(model, input, output):  # pylint: disable=W0622,W0613
+                self._features[name] = output
+
+            return hook
+
+        if not hasattr(self, "_features"):
+            self._features: Dict[str, torch.Tensor] = {}
+            # register forward hooks on the layers of choice
+        import transformers
+        handles = []
+        i = 0
+        j = 0
+        print('self._layer_names ', self._layer_names)
+        lname = self._layer_names[layer_index]
+        if layer not in self._features:
+            # interim_layer = dict([*self._model._model.named_modules()])[  # pylint: disable=W0212,W0622,W0613
+            #    self._layer_names[layer_index]
+            # ]
+            # interim_layer.register_forward_hook(get_feature(self._layer_names[layer_index]))
+            for classifier in self._model.children():
+                print(f'found {classifier} with type {type(classifier)}')
+                for module in classifier.children():
+                    print(f'found {module} with type {type(module)}')
+                    if isinstance(module, transformers.models.vit.modeling_vit.ViTModel):
+                        for hf_mod in module.children():
+                            print(f'hf_mod {hf_mod} with type {type(hf_mod)}')
+                            if isinstance(hf_mod, transformers.models.vit.modeling_vit.ViTEncoder):
+                                for sub_mod in hf_mod.children():
+                                    print(f'sub_mod {sub_mod} with type {type(sub_mod)}')
+                                    for s in sub_mod:
+                                        print(f's {s} with type {type(s)} and id {id(s)}')
+                                        if 'layer_' + str(i) == lname:
+                                            print('registering ', lname)
+                                            handles.append(s.register_forward_hook(get_feature(lname)))
+                                        i += 1
+                            else:
+                                if 'embedding_' + str(j) == lname:
+                                    handles.append(hf_mod.register_forward_hook(get_feature))
+                                j += 1
+                    else:
+                        if 'head' == lname:
+                            handles.append(module.register_forward_hook(get_feature))
+
+        if framework:
+            if isinstance(x_preprocessed, torch.Tensor):
+                self._model(x_preprocessed)
+                return self._features[self._layer_names[layer_index]]
+            input_tensor = torch.from_numpy(x_preprocessed)
+            self._model(input_tensor.to(self._device))
+            return self._features[self._layer_names[layer_index]]  # pylint: disable=W0212
+
+        # Run prediction with batch processing
+        results = []
+        num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
+
+        for m in range(num_batch):
+            # Batch indexes
+            begin, end = (
+                m * batch_size,
+                min((m + 1) * batch_size, x_preprocessed.shape[0]),
+            )
+
+            # Run prediction for the current batch
+            self._model(torch.from_numpy(x_preprocessed[begin:end]).to(self._device))
+            layer_output = self._features[self._layer_names[layer_index]]  # pylint: disable=W0212
+            results.append(layer_output[0].detach().cpu().numpy())
+
+        results_array = np.concatenate(results)
+
+        return results_array
 
     def get_grad(self, image, labels, loss_fn):
         """
@@ -239,4 +505,3 @@ class HuggingFaceClassifier(PyTorchClassifier):
             labels = labels.detach().cpu().numpy()
 
         return np.sum(np.argmax(preds, axis=1) == labels) / len(labels)
-
