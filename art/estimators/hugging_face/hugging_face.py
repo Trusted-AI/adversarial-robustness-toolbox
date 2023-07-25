@@ -151,6 +151,7 @@ class HuggingFaceClassifier(PyTorchClassifier):
 
                         result_dict = {}
                         # ids = []
+
                         if isinstance(self._model, torch.nn.Module):
                             for name, arg_2 in self._model._modules.items():  # pylint: disable=W0212
                                 print(f'arg2 is {arg_2} with address {id(arg_2)} and name {name}')
@@ -173,10 +174,20 @@ class HuggingFaceClassifier(PyTorchClassifier):
                         handles = []
                         i = 0
                         j = 0
-                        for module in model.children():
-                            print(f'found {module} with type {type(module)}')
+                        for name, module in self._model.named_modules():
+                            print(f'found {module} with type {type(module)} and id {id(module)} '
+                                  f'and name {name} with submods {len(list(module.named_modules()))}')
+                            if name != '' and len(list(module.named_modules())) == 1:
+                                handles.append(module.register_forward_hook(forward_hook))
+                                result_dict[id(module)] = name
+
+                        '''
+                        # Manual unpacking as a different option
+
+                        for name, module in self._model._modules.items():
+                            print(f'found {module} with type {type(module)} and name {name}')
                             if isinstance(module, transformers.models.vit.modeling_vit.ViTModel):
-                                for hf_mod in module.children():
+                                for name, hf_mod in module.children():
                                     print(f'hf_mod {hf_mod} with type {type(hf_mod)}')
                                     if isinstance(hf_mod, transformers.models.vit.modeling_vit.ViTEncoder):
                                         for sub_mod in hf_mod.children():
@@ -193,9 +204,10 @@ class HuggingFaceClassifier(PyTorchClassifier):
                             else:
                                 handles.append(module.register_forward_hook(forward_hook))
                                 result_dict[id(module)] = 'head'
-
+                        '''
                         print('\n')
                         print(result_dict)
+
                         print('------ Finished Registering Hooks------')
                         input_for_hook = torch.rand(input_shape)
                         print(input_for_hook.shape)
@@ -281,13 +293,24 @@ class HuggingFaceClassifier(PyTorchClassifier):
         handles = []
         i = 0
         j = 0
-        print('self._layer_names ', self._layer_names)
+
         lname = self._layer_names[layer_index]
+
+
         if layer not in self._features:
             # interim_layer = dict([*self._model._model.named_modules()])[  # pylint: disable=W0212,W0622,W0613
             #    self._layer_names[layer_index]
             # ]
             # interim_layer.register_forward_hook(get_feature(self._layer_names[layer_index]))
+
+            for name, module in self.model.named_modules():
+                # print(f'{name} vs {lname}')
+                if name == lname and len(list(module.named_modules())) == 1:
+                    print('registering ', lname)
+                    handles.append(module.register_forward_hook(get_feature(name)))
+
+            '''
+            # manual unpacking
             for classifier in self._model.children():
                 print(f'found {classifier} with type {type(classifier)}')
                 for module in classifier.children():
@@ -311,7 +334,7 @@ class HuggingFaceClassifier(PyTorchClassifier):
                     else:
                         if 'head' == lname:
                             handles.append(module.register_forward_hook(get_feature))
-
+                '''
         if framework:
             if isinstance(x_preprocessed, torch.Tensor):
                 self._model(x_preprocessed)
@@ -334,7 +357,11 @@ class HuggingFaceClassifier(PyTorchClassifier):
             # Run prediction for the current batch
             self._model(torch.from_numpy(x_preprocessed[begin:end]).to(self._device))
             layer_output = self._features[self._layer_names[layer_index]]  # pylint: disable=W0212
-            results.append(layer_output[0].detach().cpu().numpy())
+
+            if isinstance(layer_output, Tuple):
+                results.append(layer_output[0].detach().cpu().numpy())
+            else:
+                results.append(layer_output.detach().cpu().numpy())
 
         results_array = np.concatenate(results)
 
