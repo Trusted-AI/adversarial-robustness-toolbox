@@ -96,8 +96,10 @@ def get_mnist_classifier(framework):
             optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 
             classifier = HuggingFaceClassifier(model,
-                                               loss_fn=torch.nn.CrossEntropyLoss(),
+                                               loss=torch.nn.CrossEntropyLoss(),
                                                optimizer=optimizer,
+                                               input_shape=(3, 224, 224),
+                                               nb_classes=10,
                                                processor=None)
 
         else:

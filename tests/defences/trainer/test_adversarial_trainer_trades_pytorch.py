@@ -62,8 +62,10 @@ def get_adv_trainer(framework, image_dl_estimator):
             optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 
             hf_model = HuggingFaceClassifier(model,
-                                             loss_fn=torch.nn.CrossEntropyLoss(),
+                                             loss=torch.nn.CrossEntropyLoss(),
                                              optimizer=optimizer,
+                                             input_shape=(3, 224, 224),
+                                             nb_classes=10,
                                              processor=None)
 
             attack = ProjectedGradientDescent(
