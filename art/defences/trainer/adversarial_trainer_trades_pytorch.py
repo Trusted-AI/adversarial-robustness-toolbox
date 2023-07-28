@@ -126,8 +126,13 @@ class AdversarialTrainerTRADESPyTorch(AdversarialTrainerTRADES):
             # compute accuracy
             if validation_data is not None:
                 (x_test, y_test) = validation_data
+
                 output = np.argmax(self.predict(x_test), axis=1)
-                nb_correct_pred = np.sum(output == np.argmax(y_test, axis=1))
+                if y_test.ndim > 1:
+                    nb_correct_pred = np.sum(output == np.argmax(y_test, axis=1))
+                else:
+                    nb_correct_pred = np.sum(output == y_test)
+
                 logger.info(
                     "epoch: %s time(s): %.1f loss: %.4f acc(tr): %.4f acc(val): %.4f",
                     i_epoch,
@@ -240,7 +245,7 @@ class AdversarialTrainerTRADESPyTorch(AdversarialTrainerTRADES):
         )
 
         # Check label shape
-        if self._classifier._reduce_labels:  # pylint: disable=W0212
+        if self._classifier._reduce_labels and y_preprocessed.ndim > 1:  # pylint: disable=W0212
             y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
         i_batch = torch.from_numpy(x_preprocessed).to(self._classifier._device)  # pylint: disable=W0212
