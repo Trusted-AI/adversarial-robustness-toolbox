@@ -24,6 +24,9 @@ from art.defences.preprocessor import Mixup, Cutout
 from art.defences.trainer import DPInstaHideTrainer
 from art.estimators.classification import PyTorchClassifier, TensorFlowV2Classifier, KerasClassifier
 from tests.utils import ARTTestException
+from tests.utils import get_image_classifier_hf
+
+HF_MODEL_SIZE = 'SMALL'
 
 logger = logging.getLogger(__name__)
 
@@ -84,23 +87,25 @@ def get_mnist_classifier(framework):
             classifier = KerasClassifier(model, clip_values=(0, 1), use_logits=True)
 
         elif framework == "huggingface":
-            import transformers
-            import torch
-            from art.estimators.hugging_face import HuggingFaceClassifier
+            if HF_MODEL_SIZE == 'LARGE':  # NB: is killed on CI github actions.
+                import transformers
+                import torch
+                from art.estimators.hugging_face import HuggingFaceClassifier
 
-            model = transformers.AutoModelForImageClassification.from_pretrained('facebook/deit-tiny-patch16-224', # takes 3 min
-                                                                                 ignore_mismatched_sizes=True,
-                                                                                 num_labels=10)
+                model = transformers.AutoModelForImageClassification.from_pretrained('facebook/deit-tiny-patch16-224', # takes 3 min
+                                                                                     ignore_mismatched_sizes=True,
+                                                                                     num_labels=10)
 
-            print('num of parameters is ', sum(p.numel() for p in model.parameters() if p.requires_grad))
-            optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
-
-            classifier = HuggingFaceClassifier(model,
-                                               loss=torch.nn.CrossEntropyLoss(),
-                                               optimizer=optimizer,
-                                               input_shape=(3, 224, 224),
-                                               nb_classes=10,
-                                               processor=None)
+                print('num of parameters is ', sum(p.numel() for p in model.parameters() if p.requires_grad))
+                optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+                classifier = HuggingFaceClassifier(model,
+                                                   loss=torch.nn.CrossEntropyLoss(),
+                                                   optimizer=optimizer,
+                                                   input_shape=(3, 224, 224),
+                                                   nb_classes=10,
+                                                   processor=None)
+            else:
+                classifier = get_image_classifier_hf(from_logits=True)
 
         else:
             classifier = None
@@ -115,7 +120,7 @@ def get_mnist_classifier(framework):
 def test_dp_instahide_single_aug(art_warning, get_mnist_classifier, get_default_mnist_subset, get_default_cifar10_subset, noise, framework):
     classifier = get_mnist_classifier()
 
-    if framework == "huggingface":
+    if framework == "huggingface" and HF_MODEL_SIZE == "LARGE":
         import numpy as np
         import torch
         upsampler = torch.nn.Upsample(scale_factor=7, mode='nearest')
@@ -126,10 +131,10 @@ def test_dp_instahide_single_aug(art_warning, get_mnist_classifier, get_default_
         x_train = x_train[0:64]  # large model so select only a small portion
         y_train = y_train[0:64]
 
-        mixup = Mixup(num_classes=10)
     else:
         (x_train, y_train), (_, _) = get_default_mnist_subset
-        mixup = Mixup(num_classes=10)
+
+    mixup = Mixup(num_classes=10)
 
     try:
         trainer = DPInstaHideTrainer(classifier, augmentations=mixup, noise=noise, loc=0, scale=0.1)
@@ -143,7 +148,7 @@ def test_dp_instahide_single_aug(art_warning, get_mnist_classifier, get_default_
 def test_dp_instahide_multiple_aug(art_warning, get_mnist_classifier, get_default_mnist_subset, get_default_cifar10_subset, noise, framework):
     classifier = get_mnist_classifier()
 
-    if framework == "huggingface":
+    if framework == "huggingface" and HF_MODEL_SIZE == "LARGE":
         import numpy as np
         import torch
         upsampler = torch.nn.Upsample(scale_factor=7, mode='nearest')
@@ -154,11 +159,10 @@ def test_dp_instahide_multiple_aug(art_warning, get_mnist_classifier, get_defaul
         x_train = x_train[0:64]  # large model so select only a small portion
         y_train = y_train[0:64]
 
-        mixup = Mixup(num_classes=10)
     else:
         (x_train, y_train), (_, _) = get_default_mnist_subset
-        mixup = Mixup(num_classes=10)
 
+    mixup = Mixup(num_classes=10)
     cutout = Cutout(length=8, channels_first=False)
 
     try:
@@ -173,7 +177,7 @@ def test_dp_instahide_multiple_aug(art_warning, get_mnist_classifier, get_defaul
 def test_dp_instahide_validation_data(art_warning, get_mnist_classifier, get_default_mnist_subset, get_default_cifar10_subset, noise, framework):
     classifier = get_mnist_classifier()
 
-    if framework == "huggingface":
+    if framework == "huggingface" and HF_MODEL_SIZE == "LARGE":
         import numpy as np
         import torch
         upsampler = torch.nn.Upsample(scale_factor=7, mode='nearest')
@@ -191,10 +195,9 @@ def test_dp_instahide_validation_data(art_warning, get_mnist_classifier, get_def
         x_test = x_test[0:64]  # large model so select only a small portion
         y_test = y_test[0:64]
 
-        mixup = Mixup(num_classes=10)
     else:
-        (x_train, y_train), (_, _) = get_default_mnist_subset
-        mixup = Mixup(num_classes=10)
+        (x_train, y_train), (x_test, y_test) = get_default_mnist_subset
+    mixup = Mixup(num_classes=10)
 
     try:
         trainer = DPInstaHideTrainer(classifier, augmentations=mixup, noise=noise, loc=0, scale=0.1)
@@ -210,7 +213,7 @@ def test_dp_instahide_generator(art_warning, get_mnist_classifier, get_default_m
 
     classifier = get_mnist_classifier()
 
-    if framework == "huggingface":
+    if framework == "huggingface" and HF_MODEL_SIZE == "LARGE":
         import numpy as np
         import torch
         upsampler = torch.nn.Upsample(scale_factor=7, mode='nearest')
