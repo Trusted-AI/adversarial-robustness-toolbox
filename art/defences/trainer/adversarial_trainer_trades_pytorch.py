@@ -28,6 +28,7 @@ from typing import Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import trange
+from tqdm import tqdm
 
 from art.defences.trainer.adversarial_trainer_trades import AdversarialTrainerTRADES
 from art.estimators.classification.pytorch import PyTorchClassifier
@@ -69,6 +70,7 @@ class AdversarialTrainerTRADESPyTorch(AdversarialTrainerTRADES):
         batch_size: int = 128,
         nb_epochs: int = 20,
         scheduler: "torch.optim.lr_scheduler._LRScheduler" = None,
+        verbose: bool = True,
         **kwargs
     ):  # pylint: disable=W0221
         """
@@ -81,6 +83,7 @@ class AdversarialTrainerTRADESPyTorch(AdversarialTrainerTRADES):
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for trainings.
         :param scheduler: Learning rate scheduler to run at the end of every epoch.
+        :param verbose: If to display progress bars within epochs
         :param kwargs: Dictionary of framework-specific arguments. These will be passed as such to the `fit` function of
                                   the target classifier.
         """
@@ -105,8 +108,9 @@ class AdversarialTrainerTRADESPyTorch(AdversarialTrainerTRADES):
             train_loss = 0.0
             train_acc = 0.0
             train_n = 0.0
+            pbar = tqdm(range(nb_batches), disable=not verbose)
 
-            for batch_id in range(nb_batches):
+            for batch_id in pbar:
 
                 # Create batch data
                 x_batch = x[ind[batch_id * batch_size : min((batch_id + 1) * batch_size, x.shape[0])]].copy()
@@ -118,6 +122,12 @@ class AdversarialTrainerTRADESPyTorch(AdversarialTrainerTRADES):
                 train_acc += _train_acc
                 train_n += _train_n
 
+                if verbose:
+                    pbar.set_description(
+                        f"Loss {train_loss / train_n:.2f} "
+                        f"Acc {train_acc / train_n:.2f} "
+                    )
+
             if scheduler:
                 scheduler.step()
 
@@ -127,7 +137,10 @@ class AdversarialTrainerTRADESPyTorch(AdversarialTrainerTRADES):
             if validation_data is not None:
                 (x_test, y_test) = validation_data
                 output = np.argmax(self.predict(x_test), axis=1)
-                nb_correct_pred = np.sum(output == np.argmax(y_test, axis=1))
+                if y_test.ndim > 1:
+                    nb_correct_pred = np.sum(output == np.argmax(y_test, axis=1))
+                else:
+                    nb_correct_pred = np.sum(output == y_test)
                 logger.info(
                     "epoch: %s time(s): %.1f loss: %.4f acc(tr): %.4f acc(val): %.4f",
                     i_epoch,
@@ -240,7 +253,7 @@ class AdversarialTrainerTRADESPyTorch(AdversarialTrainerTRADES):
         )
 
         # Check label shape
-        if self._classifier._reduce_labels:  # pylint: disable=W0212
+        if self._classifier._reduce_labels and y_preprocessed.ndim > 1:  # pylint: disable=W0212
             y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
         i_batch = torch.from_numpy(x_preprocessed).to(self._classifier._device)  # pylint: disable=W0212

@@ -49,6 +49,8 @@ class HuggingFaceClassifier(PyTorchClassifier):
             return run
 
         def get_logits(outputs):
+            if isinstance(outputs, torch.Tensor):
+                return outputs
             return outputs.logits
 
         self.model.forward = prefix_function(self.model.forward, get_logits)
@@ -147,11 +149,11 @@ class HuggingFaceClassifier(PyTorchClassifier):
                         import torch
                         import transformers
 
-                        result = []
 
                         result_dict = {}
-                        # ids = []
 
+                        '''
+                        result = []
                         if isinstance(self._model, torch.nn.Module):
                             for name, arg_2 in self._model._modules.items():  # pylint: disable=W0212
                                 print(f'arg2 is {arg_2} with address {id(arg_2)} and name {name}')
@@ -164,6 +166,8 @@ class HuggingFaceClassifier(PyTorchClassifier):
                             len(result),
                         )
                         print('old result is ', result)
+                        '''
+
                         print('mapping from id to name is ', result_dict)
                         modules = []
 
@@ -282,29 +286,23 @@ class HuggingFaceClassifier(PyTorchClassifier):
         def get_feature(name):
             # the hook signature
             def hook(model, input, output):  # pylint: disable=W0622,W0613
-                self._features[name] = output
+                # TODO: this is using the input, rather than the output, to circumvent the fact that flatten is not a layer
+                # TODO: in pytorch, and the activation defence expects a flattened input. A better option is to
+                # TODO: refactor the activation defence to not crash if non 2D inputs are provided.
+                self._features[name] = input
 
             return hook
 
         if not hasattr(self, "_features"):
             self._features: Dict[str, torch.Tensor] = {}
             # register forward hooks on the layers of choice
-        import transformers
         handles = []
-        i = 0
-        j = 0
 
         lname = self._layer_names[layer_index]
 
 
         if layer not in self._features:
-            # interim_layer = dict([*self._model._model.named_modules()])[  # pylint: disable=W0212,W0622,W0613
-            #    self._layer_names[layer_index]
-            # ]
-            # interim_layer.register_forward_hook(get_feature(self._layer_names[layer_index]))
-
             for name, module in self.model.named_modules():
-                # print(f'{name} vs {lname}')
                 if name == lname and len(list(module.named_modules())) == 1:
                     print('registering ', lname)
                     handles.append(module.register_forward_hook(get_feature(name)))
