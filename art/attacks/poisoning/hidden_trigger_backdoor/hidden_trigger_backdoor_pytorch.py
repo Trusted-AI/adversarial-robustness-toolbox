@@ -219,6 +219,7 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
 
             feat1 = self.estimator.get_activations(trigger_samples, self.feature_layer, 1, framework=True)
             feat1 = feat1.detach().clone()
+            print('feat1 ', feat1.shape)
 
             for i in range(self.max_iter):
                 poison_samples.requires_grad_()
@@ -240,6 +241,8 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
 
                 for _ in range(feat2.size(0)):
                     dist_min_index = (dist == torch.min(dist)).nonzero().squeeze()
+                    if dist_min_index.dim() > 1:  # If multiple values in dist equal torch.min(dist), return the first.
+                        dist_min_index = dist_min_index[0]
                     feat1[dist_min_index[1]] = feat11[dist_min_index[0]]
                     dist[dist_min_index[0], dist_min_index[1]] = 1e5
 
