@@ -149,22 +149,6 @@ class HuggingFaceClassifier(PyTorchClassifier):
                         import torch
                         import transformers
                         result_dict = {}
-                        '''
-                        
-                        result = []
-                        if isinstance(self._model, torch.nn.Module):
-                            for name, arg_2 in self._model._modules.items():  # pylint: disable=W0212
-                                print(f'arg2 is {arg_2} with address {id(arg_2)} and name {name}')
-                                result.append(name)
-                                # result_dict[id(arg_2)] = name
-                        else:  # pragma: no cover
-                            raise TypeError("The input model must inherit from `nn.Module`.")
-                        logger.info(
-                            "Inferred %i hidden layers on PyTorch classifier.",
-                            len(result),
-                        )
-                        print('old result is ', result)
-                        '''
 
                         modules = []
 
@@ -181,32 +165,6 @@ class HuggingFaceClassifier(PyTorchClassifier):
                                 handles.append(module.register_forward_hook(forward_hook))
                                 result_dict[id(module)] = name
 
-                        '''
-                        i = 0
-                        j = 0
-                        # Manual unpacking as a different option
-
-                        for name, module in self._model._modules.items():
-                            print(f'found {module} with type {type(module)} and name {name}')
-                            if isinstance(module, transformers.models.vit.modeling_vit.ViTModel):
-                                for name, hf_mod in module.children():
-                                    print(f'hf_mod {hf_mod} with type {type(hf_mod)}')
-                                    if isinstance(hf_mod, transformers.models.vit.modeling_vit.ViTEncoder):
-                                        for sub_mod in hf_mod.children():
-                                            print(f'sub_mod {sub_mod} with type {type(sub_mod)}')
-                                            for s in sub_mod:
-                                                print(f's {s} with type {type(s)} and id {id(s)}')
-                                                handles.append(s.register_forward_hook(forward_hook))
-                                                result_dict[id(s)] = 'layer_' + str(i)
-                                                i += 1
-                                    else:
-                                        handles.append(hf_mod.register_forward_hook(forward_hook))
-                                        result_dict[id(hf_mod)] = 'embedding_' + str(j)
-                                        j += 1
-                            else:
-                                handles.append(module.register_forward_hook(forward_hook))
-                                result_dict[id(module)] = 'head'
-                        '''
                         print('\n')
                         print('mapping from id to name is ', result_dict)
 

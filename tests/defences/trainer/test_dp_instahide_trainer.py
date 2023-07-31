@@ -223,11 +223,10 @@ def test_dp_instahide_generator(art_warning, get_mnist_classifier, get_default_m
         x_train = np.float32(upsampler(torch.from_numpy(x_train)).cpu().numpy())
         x_train = x_train[0:64] # large model so select only a small portion
         y_train = y_train[0:64]
-        mixup = Mixup(num_classes=10)
     else:
         (x_train, y_train), (_, _) = get_default_mnist_subset
-        mixup = Mixup(num_classes=10)
 
+    mixup = Mixup(num_classes=10)
     generator = NumpyDataGenerator(x_train, y_train, batch_size=len(x_train))
 
     try:
