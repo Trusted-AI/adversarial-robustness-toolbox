@@ -107,6 +107,7 @@ class PatchFool(EvasionAttack):
         TODO
         """
         import torch
+        from torch.nn import functional as F
 
         x = x.to(self.estimator.device)
         y = y.to(self.estimator.device)
@@ -125,6 +126,10 @@ class PatchFool(EvasionAttack):
         x_adv = torch.mul(x_adv, 1 - mask)
         if self.random_start:
             perturbation = torch.rand(x.shape).to(self.estimator.device)
+            with torch.no_grad():
+                perturbation.data = torch.clamp(
+                    perturbation, min=self.estimator.clip_values[0], max=self.estimator.clip_values[1]
+                )
         else:
             perturbation = torch.zeros(x.shape).to(self.estimator.device)
         perturbation.requires_grad = True
@@ -147,8 +152,10 @@ class PatchFool(EvasionAttack):
             loss_att = self._get_attention_loss(x_adv, patches)
 
             for layer in range(loss_att.shape[1] // 2):
-                loss_att_layer = loss_att[:, layer]
-                grad_att = torch.autograd.grad(torch.mean(loss_att_layer), perturbation, retain_graph=True)[0]
+                loss_att_layer = loss_att[:, layer, :]
+                loss_att_layer = -torch.log(loss_att_layer)
+                att_nll_loss = F.nll_loss(loss_att_layer, patches)
+                grad_att = torch.autograd.grad(att_nll_loss, perturbation, retain_graph=True)[0]
 
                 # Reshape for PCgrad
                 grad_att_tmp = grad_att.reshape(grad_att.shape[0], -1)
@@ -207,10 +214,8 @@ class PatchFool(EvasionAttack):
         att = torch.mean(att, dim=2)
         # shape: batch x layer x (token x token)
         att = torch.mean(att, dim=2)
-        # batch x layer x token
-        att_loss = [att[i, :, idx] for i, idx in enumerate(patch_idx)]
 
-        return torch.stack(att_loss)
+        return att
 
     def pcgrad(self, grad1, grad2):
         """
