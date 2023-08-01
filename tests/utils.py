@@ -1986,6 +1986,96 @@ class ARTTestFixtureNotImplemented(ARTTestException):
             "{2}' for the following parameters: {3}".format(framework, fixture_name, message, parameters_dict)
         )
 
+def get_tabular_classifier_hf(load_init=True):
+    import torch
+    from transformers.modeling_utils import PreTrainedModel
+    from transformers.configuration_utils import PretrainedConfig
+    from transformers.modeling_outputs import ImageClassifierOutput
+    from art.estimators.hugging_face import HuggingFaceClassifier
+
+    class ModelConfig(PretrainedConfig):
+        def __init__(
+                self,
+                **kwargs,
+        ):
+            super().__init__(**kwargs)
+            self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    class Model(PreTrainedModel):
+        """
+        Create Iris model.
+
+        The weights and biases are identical to the TensorFlow model in `get_iris_classifier_tf`.
+        """
+
+        def __init__(self, config):
+            super().__init__(config)
+
+            self.fully_connected1 = torch.nn.Linear(4, 10)
+            self.fully_connected2 = torch.nn.Linear(10, 10)
+            self.fully_connected3 = torch.nn.Linear(10, 3)
+
+            if load_init:
+                w_dense1 = np.load(
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_DENSE1_IRIS.npy"
+                    )
+                )
+                b_dense1 = np.load(
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_DENSE1_IRIS.npy"
+                    )
+                )
+                w_dense2 = np.load(
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_DENSE2_IRIS.npy"
+                    )
+                )
+                b_dense2 = np.load(
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_DENSE2_IRIS.npy"
+                    )
+                )
+                w_dense3 = np.load(
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_DENSE3_IRIS.npy"
+                    )
+                )
+                b_dense3 = np.load(
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_DENSE3_IRIS.npy"
+                    )
+                )
+
+                self.fully_connected1.weight = torch.nn.Parameter(torch.Tensor(np.transpose(w_dense1)))
+                self.fully_connected1.bias = torch.nn.Parameter(torch.Tensor(b_dense1))
+                self.fully_connected2.weight = torch.nn.Parameter(torch.Tensor(np.transpose(w_dense2)))
+                self.fully_connected2.bias = torch.nn.Parameter(torch.Tensor(b_dense2))
+                self.fully_connected3.weight = torch.nn.Parameter(torch.Tensor(np.transpose(w_dense3)))
+                self.fully_connected3.bias = torch.nn.Parameter(torch.Tensor(b_dense3))
+
+        # pylint: disable=W0221
+        # disable pylint because of API requirements for function
+        def forward(self, x):
+            x = self.fully_connected1(x)
+            x = self.fully_connected2(x)
+            logit_output = self.fully_connected3(x)
+            return ImageClassifierOutput(logits=logit_output)
+
+    config = ModelConfig()
+    pt_model = Model(config=config)
+    optimizer = torch.optim.Adam(pt_model.parameters(), lr=0.01)
+
+    hf_classifier = HuggingFaceClassifier(pt_model,
+                                          loss=torch.nn.CrossEntropyLoss(),
+                                          optimizer=optimizer,
+                                          input_shape=(4,),
+                                          nb_classes=3,
+                                          clip_values=(0, 1),
+                                          processor=None)
+
+    return hf_classifier
+
 
 def get_tabular_classifier_pt(load_init=True):
     """
