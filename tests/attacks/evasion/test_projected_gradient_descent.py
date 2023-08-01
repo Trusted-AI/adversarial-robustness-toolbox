@@ -28,7 +28,8 @@ from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_n
     ProjectedGradientDescentNumpy,
     ProjectedGradientDescentCommon,
 )
-from art.estimators.classification import KerasClassifier
+from art.estimators.classification import KerasClassifier, PyTorchClassifier, TensorFlowV2Classifier
+from art.estimators.hugging_face import HuggingFaceClassifier
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.utils import get_labels_np_array, random_targets
 from tests.attacks.utils import backend_test_classifier_type_check_fail
@@ -41,6 +42,7 @@ from tests.utils import (
     get_tabular_classifier_kr,
     get_tabular_classifier_pt,
     get_tabular_classifier_tf,
+    get_tabular_classifier_hf,
     master_seed,)
 
 logger = logging.getLogger(__name__)
@@ -89,49 +91,100 @@ def get_mnist_classifier(framework, image_dl_estimator):
 
     return _get_classifier
 
+@pytest.fixture()
+def get_tabular_classifier(framework, image_dl_estimator):
+
+    def _get_classifier():
+        if framework == "pytorch":
+            import torch
+            # NB, uses CROSSENTROPYLOSS thus should use logits in output
+            classifier = get_tabular_classifier_pt()
+
+        elif framework == "tensorflow2":
+            classifier, _ = get_tabular_classifier_tf()
+        elif framework in ("keras", "kerastf"):
+            classifier = get_tabular_classifier_kr()
+        elif framework == "huggingface":
+            if HF_MODEL_SIZE == 'LARGE':
+                import transformers
+                import torch
+                from art.estimators.hugging_face import HuggingFaceClassifier
+
+                model = transformers.AutoModelForImageClassification.from_pretrained('facebook/deit-tiny-patch16-224', # takes 3 min
+                                                                                     ignore_mismatched_sizes=True,
+                                                                                     num_labels=10)
+
+                print('num of parameters is ', sum(p.numel() for p in model.parameters() if p.requires_grad))
+                optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+
+                classifier = HuggingFaceClassifier(model,
+                                                   loss=torch.nn.CrossEntropyLoss(),
+                                                   input_shape=(3, 224, 224),
+                                                   nb_classes=10,
+                                                   optimizer=optimizer,
+                                                   processor=None)
+            elif HF_MODEL_SIZE == 'SMALL':
+                classifier = get_tabular_classifier_hf()
+            else:
+                raise ValueError('HF_MODEL_SIZE must be either SMALL or LARGE')
+        else:
+            classifier = None
+
+        return classifier
+
+    return _get_classifier
+
 
 class TestPGD:
-    '''
-    @pytest.mark.only_with_platform("keras", "kerastf")
-    def test_9a_keras_mnist(self, get_default_mnist_subset, get_mnist_classifier, framework):
-        (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-        classifier = get_image_classifier_kr()
 
-        scores = classifier._model.evaluate(x_train_mnist, y_train_mnist)
-        logger.info("[Keras, MNIST] Accuracy on training set: %.2f%%", scores[1] * 100)
-        scores = classifier._model.evaluate(x_test_mnist, y_test_mnist)
-        logger.info("[Keras, MNIST] Accuracy on test set: %.2f%%", scores[1] * 100)
+    @pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf", "scikitlearn")
+    def test_classifier_type_check_fail(self):
+        backend_test_classifier_type_check_fail(ProjectedGradientDescent, [BaseEstimator, LossGradientsMixin])
 
-        self._test_backend_mnist(
-            classifier, x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist
-        )
+    @pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf")
+    def test_check_params(self, get_mnist_classifier):
 
-    @pytest.mark.only_with_platform("tensorflow2")
-    def test_3_tensorflow_mnist(self, get_default_mnist_subset, get_mnist_classifier, framework):
         classifier = get_mnist_classifier()
-        (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
-        scores = get_labels_np_array(classifier.predict(x_train_mnist))
-        acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_train_mnist, axis=1)) / y_train_mnist.shape[0]
-        logger.info("[TF, MNIST] Accuracy on training set: %.2f%%", acc * 100)
+        with pytest.raises(ValueError):
+            _ = ProjectedGradientDescentCommon(classifier, norm=-1)
 
-        scores = get_labels_np_array(classifier.predict(x_test_mnist))
-        acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_test_mnist, axis=1)) / y_test_mnist.shape[0]
-        logger.info("[TF, MNIST] Accuracy on test set: %.2f%%", acc * 100)
+        with pytest.raises(TypeError):
+            _ = ProjectedGradientDescentCommon(classifier, eps="1", eps_step=0.1)
 
-        self._test_backend_mnist(
-            classifier, x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist
-        )
-        # Test with clip values of array type
-        classifier.set_params(clip_values=(np.zeros_like(x_test_mnist[0]), np.ones_like(x_test_mnist[0])))
-        self._test_backend_mnist(classifier, x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist)
+        with pytest.raises(ValueError):
+            _ = ProjectedGradientDescentCommon(classifier, eps=-1)
 
-        classifier.set_params(clip_values=(np.zeros_like(x_test_mnist[0][0]), np.ones_like(x_test_mnist[0][0])))
-        self._test_backend_mnist(classifier, x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist)
+        with pytest.raises(TypeError):
+            _ = ProjectedGradientDescentCommon(classifier, eps=np.array([-1]))
 
-        classifier.set_params(clip_values=(np.zeros_like(x_test_mnist[0][0][0]), np.ones_like(x_test_mnist[0][0][0])))
-        self._test_backend_mnist(classifier, x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist)
-    '''
+        with pytest.raises(ValueError):
+            _ = ProjectedGradientDescentCommon(classifier, eps_step=-1)
+
+        with pytest.raises(TypeError):
+            _ = ProjectedGradientDescentCommon(classifier, eps_step=np.array([-1]))
+
+        with pytest.raises(ValueError):
+            _ = ProjectedGradientDescentCommon(classifier, eps=np.array([1.0, 1.0]), eps_step=np.array([1.0]))
+
+        with pytest.raises(ValueError):
+            _ = ProjectedGradientDescentCommon(classifier, targeted="False")
+
+        with pytest.raises(TypeError):
+            _ = ProjectedGradientDescentCommon(classifier, num_random_init="1")
+
+        with pytest.raises(ValueError):
+            _ = ProjectedGradientDescentCommon(classifier, num_random_init=-1)
+
+        with pytest.raises(ValueError):
+            _ = ProjectedGradientDescentCommon(classifier, batch_size=-1)
+
+        with pytest.raises(ValueError):
+            _ = ProjectedGradientDescentCommon(classifier, max_iter=-1)
+
+        with pytest.raises(ValueError):
+            _ = ProjectedGradientDescentCommon(classifier, verbose="False")
+
     @pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf")
     def test_mnist(self, get_default_mnist_subset, get_mnist_classifier, framework):
         classifier = get_mnist_classifier()
@@ -139,11 +192,11 @@ class TestPGD:
 
         scores = get_labels_np_array(classifier.predict(x_train_mnist))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_train_mnist, axis=1)) / y_train_mnist.shape[0]
-        logger.info("[PyTorch, MNIST] Accuracy on training set: %.2f%%", acc * 100)
+        logger.info("[%s MNIST] Accuracy on training set: %.2f%%" % (framework, acc * 100))
 
         scores = get_labels_np_array(classifier.predict(x_test_mnist))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_test_mnist, axis=1)) / y_test_mnist.shape[0]
-        logger.info("[PyTorch, MNIST] Accuracy on test set: %.2f%%", acc * 100)
+        logger.info("[%s, MNIST] Accuracy on test set: %.2f%%" % (framework, acc * 100))
 
         self._test_backend_mnist(classifier, x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist)
 
@@ -266,237 +319,13 @@ class TestPGD:
         test_y_pred = get_labels_np_array(classifier.predict(x_test_adv))
         assert not ((y_test == test_y_pred).all())
 
-'''
-class TestPGD(TestBase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
+    @pytest.mark.only_with_platform("tensorflow2", "pytorch", "huggingface")
+    def test_4_framework_mnist(self, get_mnist_classifier, get_default_mnist_subset):
+        classifier = get_mnist_classifier()
+        (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+        self._test_framework_vs_numpy(classifier, x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist)
 
-        cls.n_train = 10
-        cls.n_test = 10
-        cls.x_train_mnist = cls.x_train_mnist[0 : cls.n_train]
-        cls.y_train_mnist = cls.y_train_mnist[0 : cls.n_train]
-        cls.x_test_mnist = cls.x_test_mnist[0 : cls.n_test]
-        cls.y_test_mnist = cls.y_test_mnist[0 : cls.n_test]
-
-
-
-    def test_check_params(self):
-
-        krc = get_image_classifier_kr(from_logits=True)
-
-        with self.assertRaises(ValueError):
-            _ = ProjectedGradientDescentCommon(krc, norm=-1)
-
-        with self.assertRaises(TypeError):
-            _ = ProjectedGradientDescentCommon(krc, eps="1", eps_step=0.1)
-
-        with self.assertRaises(ValueError):
-            _ = ProjectedGradientDescentCommon(krc, eps=-1)
-
-        with self.assertRaises(TypeError):
-            _ = ProjectedGradientDescentCommon(krc, eps=np.array([-1]))
-
-        with self.assertRaises(ValueError):
-            _ = ProjectedGradientDescentCommon(krc, eps_step=-1)
-
-        with self.assertRaises(TypeError):
-            _ = ProjectedGradientDescentCommon(krc, eps_step=np.array([-1]))
-
-        with self.assertRaises(ValueError):
-            _ = ProjectedGradientDescentCommon(krc, eps=np.array([1.0, 1.0]), eps_step=np.array([1.0]))
-
-        with self.assertRaises(ValueError):
-            _ = ProjectedGradientDescentCommon(krc, targeted="False")
-
-        with self.assertRaises(TypeError):
-            _ = ProjectedGradientDescentCommon(krc, num_random_init="1")
-
-        with self.assertRaises(ValueError):
-            _ = ProjectedGradientDescentCommon(krc, num_random_init=-1)
-
-        with self.assertRaises(ValueError):
-            _ = ProjectedGradientDescentCommon(krc, batch_size=-1)
-
-        with self.assertRaises(ValueError):
-            _ = ProjectedGradientDescentCommon(krc, max_iter=-1)
-
-        with self.assertRaises(ValueError):
-            _ = ProjectedGradientDescentCommon(krc, verbose="False")
-
-
-    def test_1_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(ProjectedGradientDescent, [BaseEstimator, LossGradientsMixin])
-
-    def test_8_keras_iris_clipped(self):
-        classifier = get_tabular_classifier_kr()
-
-        # Test untargeted attack
-        attack = ProjectedGradientDescent(classifier, eps=1.0, eps_step=0.1, max_iter=5, verbose=False)
-        x_test_adv = attack.generate(self.x_test_iris)
-        self.assertFalse((self.x_test_iris == x_test_adv).all())
-        self.assertTrue((x_test_adv <= 1).all())
-        self.assertTrue((x_test_adv >= 0).all())
-
-        preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
-        self.assertFalse((np.argmax(self.y_test_iris, axis=1) == preds_adv).all())
-        acc = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
-        logger.info("Accuracy on Iris with PGD adversarial examples: %.2f%%", (acc * 100))
-
-        # Test targeted attack
-        targets = random_targets(self.y_test_iris, nb_classes=3)
-        attack = ProjectedGradientDescent(classifier, targeted=True, eps=1.0, eps_step=0.1, max_iter=5, verbose=False)
-        x_test_adv = attack.generate(self.x_test_iris, **{"y": targets})
-        self.assertFalse((self.x_test_iris == x_test_adv).all())
-        self.assertTrue((x_test_adv <= 1).all())
-        self.assertTrue((x_test_adv >= 0).all())
-
-        preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
-        self.assertTrue((np.argmax(targets, axis=1) == preds_adv).any())
-        acc = np.sum(preds_adv == np.argmax(targets, axis=1)) / self.y_test_iris.shape[0]
-        logger.info("Success rate of targeted PGD on Iris: %.2f%%", (acc * 100))
-
-    def test_keras_9_iris_unbounded(self):
-        classifier = get_tabular_classifier_kr()
-
-        # Recreate a classifier without clip values
-        classifier = KerasClassifier(model=classifier._model, use_logits=False, channels_first=True)
-        attack = ProjectedGradientDescent(classifier, eps=1.0, eps_step=0.2, max_iter=5, verbose=False)
-        x_test_adv = attack.generate(self.x_test_iris)
-        self.assertFalse((self.x_test_iris == x_test_adv).all())
-        self.assertTrue((x_test_adv > 1).any())
-        self.assertTrue((x_test_adv < 0).any())
-
-        preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
-        self.assertFalse((np.argmax(self.y_test_iris, axis=1) == preds_adv).all())
-        acc = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
-        logger.info("Accuracy on Iris with PGD adversarial examples: %.2f%%", (acc * 100))
-
-    def test_2_tensorflow_iris(self):
-        classifier, _ = get_tabular_classifier_tf()
-
-        # Test untargeted attack
-        attack = ProjectedGradientDescent(classifier, eps=1.0, eps_step=0.1, max_iter=5, verbose=False)
-        x_test_adv = attack.generate(self.x_test_iris)
-        self.assertFalse((self.x_test_iris == x_test_adv).all())
-        self.assertTrue((x_test_adv <= 1).all())
-        self.assertTrue((x_test_adv >= 0).all())
-
-        preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
-        self.assertFalse((np.argmax(self.y_test_iris, axis=1) == preds_adv).all())
-        acc = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
-        logger.info("Accuracy on Iris with PGD adversarial examples: %.2f%%", (acc * 100))
-
-        # Test targeted attack
-        targets = random_targets(self.y_test_iris, nb_classes=3)
-        attack = ProjectedGradientDescent(classifier, targeted=True, eps=1.0, eps_step=0.1, max_iter=5, verbose=False)
-        x_test_adv = attack.generate(self.x_test_iris, **{"y": targets})
-        self.assertFalse((self.x_test_iris == x_test_adv).all())
-        self.assertTrue((x_test_adv <= 1).all())
-        self.assertTrue((x_test_adv >= 0).all())
-
-        preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
-        self.assertTrue((np.argmax(targets, axis=1) == preds_adv).any())
-        acc = np.sum(preds_adv == np.argmax(targets, axis=1)) / self.y_test_iris.shape[0]
-        logger.info("Success rate of targeted PGD on Iris: %.2f%%", (acc * 100))
-
-    def test_4_pytorch_iris_pt(self):
-        classifier = get_tabular_classifier_pt()
-
-        # Test untargeted attack
-        attack = ProjectedGradientDescent(classifier, eps=1.0, eps_step=0.1, max_iter=5, verbose=False)
-        x_test_adv = attack.generate(self.x_test_iris)
-        self.assertFalse((self.x_test_iris == x_test_adv).all())
-        self.assertTrue((x_test_adv <= 1).all())
-        self.assertTrue((x_test_adv >= 0).all())
-
-        preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
-        self.assertFalse((np.argmax(self.y_test_iris, axis=1) == preds_adv).all())
-        acc = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
-        logger.info("Accuracy on Iris with PGD adversarial examples: %.2f%%", (acc * 100))
-
-        # Test targeted attack
-        targets = random_targets(self.y_test_iris, nb_classes=3)
-        attack = ProjectedGradientDescent(classifier, targeted=True, eps=1.0, eps_step=0.1, max_iter=5, verbose=False)
-        x_test_adv = attack.generate(self.x_test_iris, **{"y": targets})
-        self.assertFalse((self.x_test_iris == x_test_adv).all())
-        self.assertTrue((x_test_adv <= 1).all())
-        self.assertTrue((x_test_adv >= 0).all())
-
-        preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
-        self.assertTrue((np.argmax(targets, axis=1) == preds_adv).any())
-        acc = np.sum(preds_adv == np.argmax(targets, axis=1)) / self.y_test_iris.shape[0]
-        logger.info("Success rate of targeted PGD on Iris: %.2f%%", (acc * 100))
-
-    def test_7_scikitlearn(self):
-        from sklearn.linear_model import LogisticRegression
-        from sklearn.svm import SVC, LinearSVC
-
-        from art.estimators.classification.scikitlearn import SklearnClassifier
-
-        scikitlearn_test_cases = [
-            LogisticRegression(solver="lbfgs", multi_class="auto"),
-            SVC(gamma="auto"),
-            LinearSVC(),
-        ]
-
-        x_test_original = self.x_test_iris.copy()
-
-        for model in scikitlearn_test_cases:
-            classifier = SklearnClassifier(model=model, clip_values=(0, 1))
-            classifier.fit(x=self.x_test_iris, y=self.y_test_iris)
-
-            # Test untargeted attack
-            attack = ProjectedGradientDescent(classifier, eps=1.0, eps_step=0.1, max_iter=5, verbose=False)
-            x_test_adv = attack.generate(self.x_test_iris)
-            self.assertFalse((self.x_test_iris == x_test_adv).all())
-            self.assertTrue((x_test_adv <= 1).all())
-            self.assertTrue((x_test_adv >= 0).all())
-
-            preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
-            self.assertFalse((np.argmax(self.y_test_iris, axis=1) == preds_adv).all())
-            acc = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
-            logger.info(
-                "Accuracy of " + classifier.__class__.__name__ + " on Iris with PGD adversarial examples: " "%.2f%%",
-                (acc * 100),
-            )
-
-            # Test targeted attack
-            targets = random_targets(self.y_test_iris, nb_classes=3)
-            attack = ProjectedGradientDescent(
-                classifier, targeted=True, eps=1.0, eps_step=0.1, max_iter=5, verbose=False
-            )
-            x_test_adv = attack.generate(self.x_test_iris, **{"y": targets})
-            self.assertFalse((self.x_test_iris == x_test_adv).all())
-            self.assertTrue((x_test_adv <= 1).all())
-            self.assertTrue((x_test_adv >= 0).all())
-
-            preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
-            self.assertTrue((np.argmax(targets, axis=1) == preds_adv).any())
-            acc = np.sum(preds_adv == np.argmax(targets, axis=1)) / self.y_test_iris.shape[0]
-            logger.info(
-                "Success rate of " + classifier.__class__.__name__ + " on targeted PGD on Iris: %.2f%%", (acc * 100)
-            )
-
-            # Check that x_test has not been modified by attack and classifier
-            self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_iris))), 0.0, delta=0.00001)
-
-    @unittest.skipIf(tf.__version__[0] != "2", "")
-    def test_4_framework_tensorflow_v2_mnist(self):
-        classifier, _ = get_image_classifier_tf()
-        self._test_framework_vs_numpy(classifier)
-
-    def test_6_framework_pytorch_mnist(self):
-        self.x_train_mnist = np.swapaxes(self.x_train_mnist, 1, 3).astype(np.float32)
-        self.x_test_mnist = np.swapaxes(self.x_test_mnist, 1, 3).astype(np.float32)
-
-        classifier = get_image_classifier_pt()
-        self._test_framework_vs_numpy(classifier)
-
-        self.x_train_mnist = np.swapaxes(self.x_train_mnist, 1, 3).astype(np.float32)
-        self.x_test_mnist = np.swapaxes(self.x_test_mnist, 1, 3).astype(np.float32)
-
-    def _test_framework_vs_numpy(self, classifier):
+    def _test_framework_vs_numpy(self, classifier, x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist):
         # Test PGD with np.inf norm
         attack_np = ProjectedGradientDescentNumpy(
             classifier,
@@ -510,8 +339,8 @@ class TestPGD(TestBase):
             random_eps=False,
             verbose=False,
         )
-        x_train_adv_np = attack_np.generate(self.x_train_mnist)
-        x_test_adv_np = attack_np.generate(self.x_test_mnist)
+        x_train_adv_np = attack_np.generate(x_train_mnist)
+        x_test_adv_np = attack_np.generate(x_test_mnist)
 
         attack_fw = ProjectedGradientDescent(
             classifier,
@@ -525,15 +354,15 @@ class TestPGD(TestBase):
             random_eps=False,
             verbose=False,
         )
-        x_train_adv_fw = attack_fw.generate(self.x_train_mnist)
-        x_test_adv_fw = attack_fw.generate(self.x_test_mnist)
+        x_train_adv_fw = attack_fw.generate(x_train_mnist)
+        x_test_adv_fw = attack_fw.generate(x_test_mnist)
 
         # Test
-        self.assertAlmostEqual(
-            np.mean(x_train_adv_np - self.x_train_mnist), np.mean(x_train_adv_fw - self.x_train_mnist), places=6
+        assert np.allclose(
+            np.mean(x_train_adv_np - x_train_mnist), np.mean(x_train_adv_fw - x_train_mnist), atol=1e-06
         )
-        self.assertAlmostEqual(
-            np.mean(x_test_adv_np - self.x_test_mnist), np.mean(x_test_adv_fw - self.x_test_mnist), places=6
+        np.allclose(
+            np.mean(x_test_adv_np - x_test_mnist), np.mean(x_test_adv_fw - x_test_mnist), atol=1e-06
         )
 
         # Test PGD with L1 norm
@@ -549,8 +378,8 @@ class TestPGD(TestBase):
             random_eps=False,
             verbose=False,
         )
-        x_train_adv_np = attack_np.generate(self.x_train_mnist)
-        x_test_adv_np = attack_np.generate(self.x_test_mnist)
+        x_train_adv_np = attack_np.generate(x_train_mnist)
+        x_test_adv_np = attack_np.generate(x_test_mnist)
 
         attack_fw = ProjectedGradientDescent(
             classifier,
@@ -564,15 +393,15 @@ class TestPGD(TestBase):
             random_eps=False,
             verbose=False,
         )
-        x_train_adv_fw = attack_fw.generate(self.x_train_mnist)
-        x_test_adv_fw = attack_fw.generate(self.x_test_mnist)
+        x_train_adv_fw = attack_fw.generate(x_train_mnist)
+        x_test_adv_fw = attack_fw.generate(x_test_mnist)
 
         # Test
-        self.assertAlmostEqual(
-            np.mean(x_train_adv_np - self.x_train_mnist), np.mean(x_train_adv_fw - self.x_train_mnist), places=6
+        np.allclose(
+            np.mean(x_train_adv_np - x_train_mnist), np.mean(x_train_adv_fw - x_train_mnist), atol=1e-06
         )
-        self.assertAlmostEqual(
-            np.mean(x_test_adv_np - self.x_test_mnist), np.mean(x_test_adv_fw - self.x_test_mnist), places=6
+        np.allclose(
+            np.mean(x_test_adv_np - x_test_mnist), np.mean(x_test_adv_fw - x_test_mnist), atol=1e-06
         )
 
         # Test PGD with L2 norm
@@ -588,8 +417,8 @@ class TestPGD(TestBase):
             random_eps=False,
             verbose=False,
         )
-        x_train_adv_np = attack_np.generate(self.x_train_mnist)
-        x_test_adv_np = attack_np.generate(self.x_test_mnist)
+        x_train_adv_np = attack_np.generate(x_train_mnist)
+        x_test_adv_np = attack_np.generate(x_test_mnist)
 
         attack_fw = ProjectedGradientDescent(
             classifier,
@@ -603,15 +432,15 @@ class TestPGD(TestBase):
             random_eps=False,
             verbose=False,
         )
-        x_train_adv_fw = attack_fw.generate(self.x_train_mnist)
-        x_test_adv_fw = attack_fw.generate(self.x_test_mnist)
+        x_train_adv_fw = attack_fw.generate(x_train_mnist)
+        x_test_adv_fw = attack_fw.generate(x_test_mnist)
 
         # Test
-        self.assertAlmostEqual(
-            np.mean(x_train_adv_np - self.x_train_mnist), np.mean(x_train_adv_fw - self.x_train_mnist), places=6
+        np.allclose(
+            np.mean(x_train_adv_np - x_train_mnist), np.mean(x_train_adv_fw - x_train_mnist), atol=1e-06
         )
-        self.assertAlmostEqual(
-            np.mean(x_test_adv_np - self.x_test_mnist), np.mean(x_test_adv_fw - self.x_test_mnist), places=6
+        np.allclose(
+            np.mean(x_test_adv_np - x_test_mnist), np.mean(x_test_adv_fw - x_test_mnist), atol=1e-06
         )
 
         # Test PGD with True targeted
@@ -627,8 +456,8 @@ class TestPGD(TestBase):
             random_eps=False,
             verbose=False,
         )
-        x_train_adv_np = attack_np.generate(self.x_train_mnist, self.y_train_mnist)
-        x_test_adv_np = attack_np.generate(self.x_test_mnist, self.y_test_mnist)
+        x_train_adv_np = attack_np.generate(x_train_mnist, y_train_mnist)
+        x_test_adv_np = attack_np.generate(x_test_mnist, y_test_mnist)
 
         attack_fw = ProjectedGradientDescent(
             classifier,
@@ -642,15 +471,15 @@ class TestPGD(TestBase):
             random_eps=False,
             verbose=False,
         )
-        x_train_adv_fw = attack_fw.generate(self.x_train_mnist, self.y_train_mnist)
-        x_test_adv_fw = attack_fw.generate(self.x_test_mnist, self.y_test_mnist)
+        x_train_adv_fw = attack_fw.generate(x_train_mnist, y_train_mnist)
+        x_test_adv_fw = attack_fw.generate(x_test_mnist, y_test_mnist)
 
         # Test
-        self.assertAlmostEqual(
-            np.mean(x_train_adv_np - self.x_train_mnist), np.mean(x_train_adv_fw - self.x_train_mnist), places=6
+        np.allclose(
+            np.mean(x_train_adv_np - x_train_mnist), np.mean(x_train_adv_fw - x_train_mnist), atol=1e-06
         )
-        self.assertAlmostEqual(
-            np.mean(x_test_adv_np - self.x_test_mnist), np.mean(x_test_adv_fw - self.x_test_mnist), places=6
+        np.allclose(
+            np.mean(x_test_adv_np - x_test_mnist), np.mean(x_test_adv_fw - x_test_mnist), atol=1e-06
         )
 
         # Test PGD with num_random_init=2
@@ -667,8 +496,8 @@ class TestPGD(TestBase):
             random_eps=False,
             verbose=False,
         )
-        x_train_adv_np = attack_np.generate(self.x_train_mnist)
-        x_test_adv_np = attack_np.generate(self.x_test_mnist)
+        x_train_adv_np = attack_np.generate(x_train_mnist)
+        x_test_adv_np = attack_np.generate(x_test_mnist)
 
         master_seed(1234)
         attack_fw = ProjectedGradientDescent(
@@ -683,15 +512,15 @@ class TestPGD(TestBase):
             random_eps=False,
             verbose=False,
         )
-        x_train_adv_fw = attack_fw.generate(self.x_train_mnist)
-        x_test_adv_fw = attack_fw.generate(self.x_test_mnist)
+        x_train_adv_fw = attack_fw.generate(x_train_mnist)
+        x_test_adv_fw = attack_fw.generate(x_test_mnist)
 
         # Test
-        self.assertAlmostEqual(
-            np.mean(x_train_adv_np - self.x_train_mnist), np.mean(x_train_adv_fw - self.x_train_mnist), places=6
+        np.allclose(
+            np.mean(x_train_adv_np - x_train_mnist), np.mean(x_train_adv_fw - x_train_mnist), atol=1e-06
         )
-        self.assertAlmostEqual(
-            np.mean(x_test_adv_np - self.x_test_mnist), np.mean(x_test_adv_fw - self.x_test_mnist), places=6
+        np.allclose(
+            np.mean(x_test_adv_np - x_test_mnist), np.mean(x_test_adv_fw - x_test_mnist), atol=1e-06
         )
 
         # Test PGD with random_eps=True
@@ -708,8 +537,8 @@ class TestPGD(TestBase):
             random_eps=True,
             verbose=False,
         )
-        x_train_adv_np = attack_np.generate(self.x_train_mnist)
-        x_test_adv_np = attack_np.generate(self.x_test_mnist)
+        x_train_adv_np = attack_np.generate(x_train_mnist)
+        x_test_adv_np = attack_np.generate(x_test_mnist)
 
         master_seed(1234)
         attack_fw = ProjectedGradientDescent(
@@ -724,15 +553,15 @@ class TestPGD(TestBase):
             random_eps=True,
             verbose=False,
         )
-        x_train_adv_fw = attack_fw.generate(self.x_train_mnist)
-        x_test_adv_fw = attack_fw.generate(self.x_test_mnist)
+        x_train_adv_fw = attack_fw.generate(x_train_mnist)
+        x_test_adv_fw = attack_fw.generate(x_test_mnist)
 
         # Test
-        self.assertAlmostEqual(
-            np.mean(x_train_adv_np - self.x_train_mnist), np.mean(x_train_adv_fw - self.x_train_mnist), places=6
+        np.allclose(
+            np.mean(x_train_adv_np - x_train_mnist), np.mean(x_train_adv_fw - x_train_mnist), atol=1e-06
         )
-        self.assertAlmostEqual(
-            np.mean(x_test_adv_np - self.x_test_mnist), np.mean(x_test_adv_fw - self.x_test_mnist), places=6
+        np.allclose(
+            np.mean(x_test_adv_np - x_test_mnist), np.mean(x_test_adv_fw - x_test_mnist), atol=1e-06
         )
 
         # Test the masking 1
@@ -750,13 +579,13 @@ class TestPGD(TestBase):
             verbose=False,
         )
 
-        mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_train_mnist.shape))
-        mask = mask.reshape(self.x_train_mnist.shape).astype(np.float32)
-        x_train_adv_np = attack_np.generate(self.x_train_mnist, mask=mask)
+        mask = np.random.binomial(n=1, p=0.5, size=np.prod(x_train_mnist.shape))
+        mask = mask.reshape(x_train_mnist.shape).astype(np.float32)
+        x_train_adv_np = attack_np.generate(x_train_mnist, mask=mask)
 
-        mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_test_mnist.shape))
-        mask = mask.reshape(self.x_test_mnist.shape).astype(np.float32)
-        x_test_adv_np = attack_np.generate(self.x_test_mnist, mask=mask)
+        mask = np.random.binomial(n=1, p=0.5, size=np.prod(x_test_mnist.shape))
+        mask = mask.reshape(x_test_mnist.shape).astype(np.float32)
+        x_test_adv_np = attack_np.generate(x_test_mnist, mask=mask)
 
         master_seed(1234)
         attack_fw = ProjectedGradientDescent(
@@ -772,20 +601,20 @@ class TestPGD(TestBase):
             verbose=False,
         )
 
-        mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_train_mnist.shape))
-        mask = mask.reshape(self.x_train_mnist.shape).astype(np.float32)
-        x_train_adv_fw = attack_fw.generate(self.x_train_mnist, mask=mask)
+        mask = np.random.binomial(n=1, p=0.5, size=np.prod(x_train_mnist.shape))
+        mask = mask.reshape(x_train_mnist.shape).astype(np.float32)
+        x_train_adv_fw = attack_fw.generate(x_train_mnist, mask=mask)
 
-        mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_test_mnist.shape))
-        mask = mask.reshape(self.x_test_mnist.shape).astype(np.float32)
-        x_test_adv_fw = attack_fw.generate(self.x_test_mnist, mask=mask)
+        mask = np.random.binomial(n=1, p=0.5, size=np.prod(x_test_mnist.shape))
+        mask = mask.reshape(x_test_mnist.shape).astype(np.float32)
+        x_test_adv_fw = attack_fw.generate(x_test_mnist, mask=mask)
 
         # Test
-        self.assertAlmostEqual(
-            np.mean(x_train_adv_np - self.x_train_mnist), np.mean(x_train_adv_fw - self.x_train_mnist), places=6
+        np.allclose(
+            np.mean(x_train_adv_np - x_train_mnist), np.mean(x_train_adv_fw - x_train_mnist), atol=1e-06
         )
-        self.assertAlmostEqual(
-            np.mean(x_test_adv_np - self.x_test_mnist), np.mean(x_test_adv_fw - self.x_test_mnist), places=6
+        np.allclose(
+            np.mean(x_test_adv_np - x_test_mnist), np.mean(x_test_adv_fw - x_test_mnist), atol=1e-06
         )
 
         # Test the masking 2
@@ -803,13 +632,13 @@ class TestPGD(TestBase):
             verbose=False,
         )
 
-        mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_train_mnist.shape[1:]))
-        mask = mask.reshape(self.x_train_mnist.shape[1:]).astype(np.float32)
-        x_train_adv_np = attack_np.generate(self.x_train_mnist, mask=mask)
+        mask = np.random.binomial(n=1, p=0.5, size=np.prod(x_train_mnist.shape[1:]))
+        mask = mask.reshape(x_train_mnist.shape[1:]).astype(np.float32)
+        x_train_adv_np = attack_np.generate(x_train_mnist, mask=mask)
 
-        mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_test_mnist.shape[1:]))
-        mask = mask.reshape(self.x_test_mnist.shape[1:]).astype(np.float32)
-        x_test_adv_np = attack_np.generate(self.x_test_mnist, mask=mask)
+        mask = np.random.binomial(n=1, p=0.5, size=np.prod(x_test_mnist.shape[1:]))
+        mask = mask.reshape(x_test_mnist.shape[1:]).astype(np.float32)
+        x_test_adv_np = attack_np.generate(x_test_mnist, mask=mask)
 
         master_seed(1234)
         attack_fw = ProjectedGradientDescent(
@@ -825,21 +654,160 @@ class TestPGD(TestBase):
             verbose=False,
         )
 
-        mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_train_mnist.shape[1:]))
-        mask = mask.reshape(self.x_train_mnist.shape[1:]).astype(np.float32)
-        x_train_adv_fw = attack_fw.generate(self.x_train_mnist, mask=mask)
+        mask = np.random.binomial(n=1, p=0.5, size=np.prod(x_train_mnist.shape[1:]))
+        mask = mask.reshape(x_train_mnist.shape[1:]).astype(np.float32)
+        x_train_adv_fw = attack_fw.generate(x_train_mnist, mask=mask)
 
-        mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_test_mnist.shape[1:]))
-        mask = mask.reshape(self.x_test_mnist.shape[1:]).astype(np.float32)
-        x_test_adv_fw = attack_fw.generate(self.x_test_mnist, mask=mask)
+        mask = np.random.binomial(n=1, p=0.5, size=np.prod(x_test_mnist.shape[1:]))
+        mask = mask.reshape(x_test_mnist.shape[1:]).astype(np.float32)
+        x_test_adv_fw = attack_fw.generate(x_test_mnist, mask=mask)
 
         # Test
-        self.assertAlmostEqual(
-            np.mean(x_train_adv_np - self.x_train_mnist), np.mean(x_train_adv_fw - self.x_train_mnist), places=6
+        np.allclose(
+            np.mean(x_train_adv_np - x_train_mnist), np.mean(x_train_adv_fw - x_train_mnist), atol=1e-06
         )
-        self.assertAlmostEqual(
-            np.mean(x_test_adv_np - self.x_test_mnist), np.mean(x_test_adv_fw - self.x_test_mnist), places=6
+        np.allclose(
+            np.mean(x_test_adv_np - x_test_mnist), np.mean(x_test_adv_fw - x_test_mnist), atol=1e-06
         )
+
+    @pytest.mark.only_with_platform("pytorch", "huggingface", "tensorflow2", "keras", "kerastf")
+    def test_iris_pt(self, get_iris_dataset, get_tabular_classifier):
+        classifier = get_tabular_classifier()
+        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+
+        # Test untargeted attack
+        attack = ProjectedGradientDescent(classifier, eps=1.0, eps_step=0.1, max_iter=5, verbose=False)
+        x_test_adv = attack.generate(x_test_iris)
+        assert not (x_test_iris == x_test_adv).all()
+        assert (x_test_adv <= 1).all()
+        assert (x_test_adv >= 0).all()
+
+        preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+        assert not (np.argmax(y_test_iris, axis=1) == preds_adv).all()
+        acc = np.sum(preds_adv == np.argmax(y_test_iris, axis=1)) / y_test_iris.shape[0]
+        logger.info("Accuracy on Iris with PGD adversarial examples: %.2f%%", (acc * 100))
+
+        # Test targeted attack
+        targets = random_targets(y_test_iris, nb_classes=3)
+        attack = ProjectedGradientDescent(classifier, targeted=True, eps=1.0, eps_step=0.1, max_iter=5, verbose=False)
+        x_test_adv = attack.generate(x_test_iris, **{"y": targets})
+        assert not (x_test_iris == x_test_adv).all()
+        assert (x_test_adv <= 1).all()
+        assert (x_test_adv >= 0).all()
+
+        preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+        assert (np.argmax(targets, axis=1) == preds_adv).any()
+        acc = np.sum(preds_adv == np.argmax(targets, axis=1)) / y_test_iris.shape[0]
+        logger.info("Success rate of targeted PGD on Iris: %.2f%%", (acc * 100))
+
+    @pytest.mark.only_with_platform("pytorch", "huggingface", "tensorflow2", "keras", "kerastf")
+    def test_iris_unbounded(self, framework, get_iris_dataset, get_tabular_classifier):
+        classifier = get_tabular_classifier()
+        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+
+        # Recreate a classifier without clip values
+        if framework in ["keras", "kerastf"]:
+            classifier = KerasClassifier(model=classifier._model, use_logits=False, channels_first=True)
+        elif framework == "pytorch":
+            classifier = PyTorchClassifier(model=classifier.model,
+                                           nb_classes=classifier.nb_classes,
+                                           input_shape=classifier._input_shape,
+                                           loss=classifier._loss,
+                                           channels_first=True)
+        elif framework == "tensorflow2":
+            classifier = TensorFlowV2Classifier(model=classifier._model,
+                                                nb_classes=classifier.nb_classes,
+                                                input_shape=classifier.input_shape,
+                                                loss_object=classifier.loss_object,
+                                                channels_first=True)
+        elif framework == "huggingface":
+            classifier = HuggingFaceClassifier(model=classifier.model,
+                                               nb_classes=classifier.nb_classes,
+                                               loss=classifier.loss,
+                                               input_shape=classifier._input_shape)
+
+        attack = ProjectedGradientDescent(classifier, eps=1.0, eps_step=0.2, max_iter=5, verbose=False)
+        x_test_adv = attack.generate(x_test_iris)
+        assert not (x_test_iris == x_test_adv).all()
+
+        assert (x_test_adv > 1).any()
+        assert (x_test_adv < 0).any()
+
+        preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+        assert not (np.argmax(y_test_iris, axis=1) == preds_adv).all()
+        acc = np.sum(preds_adv == np.argmax(y_test_iris, axis=1)) / y_test_iris.shape[0]
+        logger.info("Accuracy on Iris with PGD adversarial examples: %.2f%%", (acc * 100))
+
+    @pytest.mark.only_with_platform("scikitlearn")
+    def test_scikitlearn(self, get_iris_dataset):
+        from sklearn.linear_model import LogisticRegression
+        from sklearn.svm import SVC, LinearSVC
+
+        from art.estimators.classification.scikitlearn import SklearnClassifier
+
+        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+
+        scikitlearn_test_cases = [
+            LogisticRegression(solver="lbfgs", multi_class="auto"),
+            SVC(gamma="auto"),
+            LinearSVC(),
+        ]
+
+        x_test_original = x_test_iris.copy()
+
+        for model in scikitlearn_test_cases:
+            classifier = SklearnClassifier(model=model, clip_values=(0, 1))
+            classifier.fit(x=x_test_iris, y=y_test_iris)
+
+            # Test untargeted attack
+            attack = ProjectedGradientDescent(classifier, eps=1.0, eps_step=0.1, max_iter=5, verbose=False)
+            x_test_adv = attack.generate(x_test_iris)
+            assert not ((x_test_iris == x_test_adv).all())
+            assert ((x_test_adv <= 1).all())
+            assert ((x_test_adv >= 0).all())
+
+            preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+            assert not (np.argmax(y_test_iris, axis=1) == preds_adv).all()
+            acc = np.sum(preds_adv == np.argmax(y_test_iris, axis=1)) / y_test_iris.shape[0]
+            logger.info(
+                "Accuracy of " + classifier.__class__.__name__ + " on Iris with PGD adversarial examples: " "%.2f%%",
+                (acc * 100),
+            )
+
+            # Test targeted attack
+            targets = random_targets(y_test_iris, nb_classes=3)
+            attack = ProjectedGradientDescent(
+                classifier, targeted=True, eps=1.0, eps_step=0.1, max_iter=5, verbose=False
+            )
+            x_test_adv = attack.generate(x_test_iris, **{"y": targets})
+            assert not ((x_test_iris == x_test_adv).all())
+            assert ((x_test_adv <= 1).all())
+            assert ((x_test_adv >= 0).all())
+
+            preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
+            assert ((np.argmax(targets, axis=1) == preds_adv).any())
+            acc = np.sum(preds_adv == np.argmax(targets, axis=1)) / y_test_iris.shape[0]
+            logger.info(
+                "Success rate of " + classifier.__class__.__name__ + " on targeted PGD on Iris: %.2f%%", (acc * 100)
+            )
+
+            # Check that x_test has not been modified by attack and classifier
+            assert np.allclose(float(np.max(np.abs(x_test_original - x_test_iris))), 0.0, atol=1e-06)
+
+
+'''
+class TestPGD(TestBase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+
+        cls.n_train = 10
+        cls.n_test = 10
+        cls.x_train_mnist = cls.x_train_mnist[0 : cls.n_train]
+        cls.y_train_mnist = cls.y_train_mnist[0 : cls.n_train]
+        cls.x_test_mnist = cls.x_test_mnist[0 : cls.n_test]
+        cls.y_test_mnist = cls.y_test_mnist[0 : cls.n_test]
+
 
     def test_check_params_pt(self):
 

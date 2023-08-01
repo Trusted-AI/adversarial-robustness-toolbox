@@ -13,7 +13,13 @@ logger = logging.getLogger(__name__)
 
 class HuggingFaceClassifier(PyTorchClassifier):
 
-    def __init__(self, model, loss, input_shape, nb_classes, optimizer, clip_values=(0, 1),
+    def __init__(self,
+                 model,
+                 loss: "torch.nn.modules.loss._Loss",
+                 input_shape: Tuple[int, ...],
+                 nb_classes: int,
+                 optimizer: Optional["torch.optim.Optimizer"] = None,  # type: ignore
+                 clip_values: Optional["CLIP_VALUES_TYPE"] = None,
                  preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0), processor=None):
         import transformers
 
