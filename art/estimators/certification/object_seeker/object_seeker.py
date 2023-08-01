@@ -24,13 +24,12 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import abc
 import logging
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 import numpy as np
 from sklearn.cluster import DBSCAN
 from tqdm.auto import tqdm
 
-from art.config import ART_NUMPY_DTYPE
 from art.utils import intersection_over_area, non_maximum_suppression
 
 logger = logging.getLogger(__name__)
@@ -51,6 +50,7 @@ class ObjectSeekerMixin(abc.ABC):
         iou_threshold: float = 0.5,
         prune_threshold: float = 0.5,
         epsilon: float = 0.1,
+        verbose: bool = False,
         *args,
         **kwargs,
     ) -> None:
@@ -62,6 +62,7 @@ class ObjectSeekerMixin(abc.ABC):
         :param iou_threshold: The IoU threshold to discard overlapping bounding boxes.
         :param prune_threshold: The IoA threshold for pruning and duplicated bounding boxes.
         :param epsilon: The maximum distance between bounding boxes when merging using DBSCAN.
+        :param verbose: Show progress bars.
         """
         super().__init__(*args, **kwargs)  # type: ignore
         self.num_lines = num_lines
@@ -69,6 +70,7 @@ class ObjectSeekerMixin(abc.ABC):
         self.iou_threshold = iou_threshold
         self.prune_threshold = prune_threshold
         self.epsilon = epsilon
+        self.verbose = verbose
 
     @property
     @abc.abstractmethod
@@ -131,8 +133,10 @@ class ObjectSeekerMixin(abc.ABC):
             predictions.append(preds)
 
         return predictions
-    
-    def _masked_predictions(self, x_i: np.ndarray, batch_size: int = 128, **kwargs) -> Tuple[Dict[str, np.ndarray], Dict[str, np.ndarray]]:
+
+    def _masked_predictions(
+        self, x_i: np.ndarray, batch_size: int = 128, **kwargs
+    ) -> Tuple[Dict[str, np.ndarray], Dict[str, np.ndarray]]:
         """
         Create masked copies of the image
         """
@@ -200,7 +204,7 @@ class ObjectSeekerMixin(abc.ABC):
         )
 
         return base_predictions, masked_predictions
-    
+
     def _prune_boxes(
         self, masked_preds: Dict[str, np.ndarray], base_preds: Dict[str, np.ndarray]
     ) -> Dict[str, np.ndarray]:
@@ -253,9 +257,9 @@ class ObjectSeekerMixin(abc.ABC):
 
             # Calculate pairwise distances between bounding boxes
             areas = (selected_boxes[:, 2] - selected_boxes[:, 0]) * (selected_boxes[:, 3] - selected_boxes[:, 1])
-            rb = np.minimum(selected_boxes[:, None, 2:], selected_boxes[:, 2:])
-            lt = np.maximum(selected_boxes[:, None, :2], selected_boxes[:, :2])
-            pairwise_intersection = np.prod(np.clip(rb - lt, 0, None), axis=2)
+            top_left = np.maximum(selected_boxes[:, None, :2], selected_boxes[:, :2])
+            bottom_right = np.minimum(selected_boxes[:, None, 2:], selected_boxes[:, 2:])
+            pairwise_intersection = np.prod(np.clip(bottom_right - top_left, 0, None), axis=2)
             pairwise_ioa = pairwise_intersection / (areas[:, None])
             distances = 1 - np.maximum(pairwise_ioa, pairwise_ioa.T)
 

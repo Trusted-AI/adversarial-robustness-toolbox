@@ -26,18 +26,16 @@ import logging
 import sys
 from typing import List, Dict, Optional, Tuple, Union, TYPE_CHECKING
 
-if sys.version_info >= (3, 8):
-    from typing import Literal
-else:
-    from typing_extensions import Literal
-
 import numpy as np
-from tqdm import tqdm
 
 from art.estimators.certification.object_seeker.object_seeker import ObjectSeekerMixin
 from art.estimators.object_detection import ObjectDetectorMixin, PyTorchObjectDetector, PyTorchFasterRCNN, PyTorchYolo
 from art.estimators.pytorch import PyTorchEstimator
-from art.utils import intersection_over_area, non_maximum_suppression
+
+if sys.version_info >= (3, 8):
+    from typing import Literal
+else:
+    from typing_extensions import Literal
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
@@ -142,14 +140,15 @@ class PyTorchObjectSeeker(ObjectSeekerMixin, ObjectDetectorMixin, PyTorchEstimat
             iou_threshold=iou_threshold,
             prune_threshold=prune_threshold,
             epsilon=epsilon,
+            verbose=verbose,
         )
 
         self._input_shape = input_shape
         self._optimizer = optimizer
         self._attack_losses = attack_losses
         self.detector_type = detector_type
-        self.verbose = verbose
 
+        self.detector: Union[PyTorchYolo, PyTorchFasterRCNN, PyTorchObjectDetector]
         if detector_type == "YOLO":
             self.detector = PyTorchYolo(
                 model=model,
@@ -209,6 +208,15 @@ class PyTorchObjectSeeker(ObjectSeekerMixin, ObjectDetectorMixin, PyTorchEstimat
         return self._model
 
     @property
+    def channels_first(self) -> bool:
+        """
+        Return a boolean to indicate the index of the color channels for each image.
+
+        :return: Boolean to indicate the index of the color channels for each image.
+        """
+        return self._channels_first
+
+    @property
     def input_shape(self) -> Tuple[int, ...]:
         """
         Return the shape of one input sample.
@@ -243,7 +251,7 @@ class PyTorchObjectSeeker(ObjectSeekerMixin, ObjectDetectorMixin, PyTorchEstimat
         :return: Current used device.
         """
         return self._device
-    
+
     def _predict_classifier(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> List[Dict[str, np.ndarray]]:
         """
         Perform prediction for a batch of inputs.
@@ -320,7 +328,7 @@ class PyTorchObjectSeeker(ObjectSeekerMixin, ObjectDetectorMixin, PyTorchEstimat
 
     def loss_gradient(  # pylint: disable=W0613
         self, x: np.ndarray, y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]], **kwargs
-    ) -> np.ndarray:
+    ) -> Union[np.ndarray, "torch.Tensor"]:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
