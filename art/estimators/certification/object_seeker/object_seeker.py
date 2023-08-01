@@ -138,7 +138,12 @@ class ObjectSeekerMixin(abc.ABC):
         self, x_i: np.ndarray, batch_size: int = 128, **kwargs
     ) -> Tuple[Dict[str, np.ndarray], Dict[str, np.ndarray]]:
         """
-        Create masked copies of the image
+        Create masked copies of the image for each of lines following the ObjectSeeker algorithm. Then creates
+        predictions on the base unmasked image and each of the masked image.
+
+        :param x_i: A single image of shape CHW or HWC.
+        :batch_size: Batch size.
+        :return: Predictions for the base unmasked image and merged predictions for the masked image.
         """
         x_mask = np.repeat(x_i[np.newaxis], self.num_lines * 4 + 1, axis=0)
 
@@ -208,6 +213,14 @@ class ObjectSeekerMixin(abc.ABC):
     def _prune_boxes(
         self, masked_preds: Dict[str, np.ndarray], base_preds: Dict[str, np.ndarray]
     ) -> Dict[str, np.ndarray]:
+        """
+        Remove bounding boxes from the masked predictions of a single image based on the IoA score with the boxes
+        on the base unmasked predictions.
+
+        :param masked_preds: The merged masked predictions of a single image.
+        :param base_preds: The base unmasked predictions of a single image.
+        :return: The filtered masked predictions with extraneous boxes removed.
+        """
         masked_boxes = masked_preds["boxes"]
         masked_labels = masked_preds["labels"]
         masked_scores = masked_preds["scores"]
@@ -236,6 +249,12 @@ class ObjectSeekerMixin(abc.ABC):
         return pruned_preds
 
     def _unionize_clusters(self, masked_preds: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
+        """
+        Cluster the bounding boxes for the pruned masked predictions.
+
+        :param masked_preds: The merged masked predictions of a single image already pruned.
+        :return: The clustered masked predictions with overlapping boxes merged. 
+        """
         boxes = masked_preds["boxes"]
         labels = masked_preds["labels"]
         scores = masked_preds["scores"]
