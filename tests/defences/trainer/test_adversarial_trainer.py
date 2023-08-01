@@ -39,6 +39,7 @@ NB_TRAIN = 100
 NB_TEST = 100
 HF_MODEL_SIZE = "SMALL"
 
+
 @pytest.fixture()
 def get_mnist_classifier(framework, image_dl_estimator):
 
@@ -390,6 +391,7 @@ class TestClass:
         with pytest.raises(NotImplementedError):
             adv_trainer.fit(x_train, y_train, **params)
 
+    @pytest.mark.only_with_platform("pytorch", "tensorflow2", "huggingface")
     def test_excpetions(self):
         with pytest.raises(ValueError):
             _ = AdversarialTrainer(pytest.classifier, "attack")
@@ -398,6 +400,7 @@ class TestClass:
             attack = FastGradientMethod(pytest.classifier)
             _ = AdversarialTrainer(pytest.classifier, attack, ratio=1.5)
 
+    @pytest.mark.only_with_platform("pytorch", "tensorflow2", "huggingface")
     def test_classifier_match(self):
         attack = FastGradientMethod(pytest.classifier)
         adv_trainer = AdversarialTrainer(pytest.classifier, attack)
