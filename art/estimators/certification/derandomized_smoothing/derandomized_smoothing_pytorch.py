@@ -176,6 +176,13 @@ class ColumnAblator(torch.nn.Module):
 
         num_of_classes = pred_counts.shape[-1]
 
+        # NB! argmax and kthvalue handle ties between predicted counts differently.
+        # The original implementation: https://github.com/MadryLab/smoothed-vit/blob/main/src/utils/smoothing.py#L98
+        # uses argmax for the model predictions (later called https://github.com/MadryLab/smoothed-vit/blob/main/src/utils/smoothing.py#L230)
+        # and kthvalue for the certified predictions.
+        # to be consistent with the original implementation we also follow this here.
+        top_predicted_class_argmax = torch.argmax(pred_counts, dim=1)
+
         top_class_counts, top_predicted_class = pred_counts.kthvalue(num_of_classes, dim=1)
         second_class_counts, second_predicted_class = pred_counts.kthvalue(num_of_classes - 1, dim=1)
 
@@ -187,8 +194,7 @@ class ColumnAblator(torch.nn.Module):
             tie_break_certs = ((top_class_counts - second_class_counts) == 2 * (size_to_certify + self.ablation_size - 1))\
                               & (top_predicted_class < second_predicted_class)
             cert = torch.logical_or(cert, tie_break_certs)
-        return cert, cert_and_correct, top_predicted_class
-
+        return cert, cert_and_correct, top_predicted_class_argmax
 
 
 class BlockAblator(torch.nn.Module):
@@ -320,6 +326,13 @@ class BlockAblator(torch.nn.Module):
         if isinstance(label, np.ndarray):
             label = torch.from_numpy(label).to(self.device)
 
+        # NB! argmax and kthvalue handle ties between predicted counts differently.
+        # The original implementation: https://github.com/MadryLab/smoothed-vit/blob/main/src/utils/smoothing.py#L145
+        # uses argmax for the model predictions (later called https://github.com/MadryLab/smoothed-vit/blob/main/src/utils/smoothing.py#L230)
+        # and kthvalue for the certified predictions.
+        # to be consistent with the original implementation we also follow this here.
+        top_predicted_class_argmax = torch.argmax(pred_counts, dim=1)
+
         num_of_classes = pred_counts.shape[-1]
 
         top_class_counts, top_predicted_class = pred_counts.kthvalue(num_of_classes, dim=1)
@@ -333,4 +346,4 @@ class BlockAblator(torch.nn.Module):
             tie_break_certs = ((top_class_counts - second_class_counts) == 2 * (size_to_certify + self.ablation_size - 1))\
                               & (top_predicted_class < second_predicted_class)
             cert = torch.logical_or(cert, tie_break_certs)
-        return cert, cert_and_correct, top_predicted_class
+        return cert, cert_and_correct, top_predicted_class_argmax

@@ -258,6 +258,8 @@ class PyTorchDeRandomizedSmoothing(PyTorchSmoothedViT, PyTorchClassifier):
         self.logits = logits
         self.ablation_size = (ablation_size,)
         self.algorithm = algorithm
+        self.ablation_type = ablation_type
+
         if verbose:
             logger.info(self.model)
 
@@ -512,18 +514,36 @@ class PyTorchDeRandomizedSmoothing(PyTorchSmoothedViT, PyTorchClassifier):
                     o_batch = y_preprocessed[m * batch_size : (m + 1) * batch_size]
 
                 pred_counts = np.zeros((len(i_batch), self.nb_classes))
-                for pos in range(i_batch.shape[-1]):
-                    ablated_batch = self.ablator.forward(i_batch, column_pos=pos)
-                    # Perform prediction
-                    model_outputs = self.model(ablated_batch)
+                if self.ablation_type == 'column':
+                    for pos in range(i_batch.shape[-1]):
+                        ablated_batch = self.ablator.forward(i_batch, column_pos=pos)
+                        # Perform prediction
+                        model_outputs = self.model(ablated_batch)
 
-                    if self.algorithm == 'levine2020':
-                        if self.logits:
-                            model_outputs = torch.nn.functional.softmax(model_outputs, dim=1)
-                        model_outputs = model_outputs >= self.threshold
-                        pred_counts += model_outputs.cpu().numpy()
-                    else:
-                        pred_counts[np.arange(0, len(i_batch)), model_outputs.argmax(dim=-1).cpu()] += 1
+                        if self.algorithm == 'levine2020':
+                            if self.logits:
+                                model_outputs = torch.nn.functional.softmax(model_outputs, dim=1)
+                            model_outputs = model_outputs >= self.threshold
+                            pred_counts += model_outputs.cpu().numpy()
+                        else:
+                            pred_counts[np.arange(0, len(i_batch)), model_outputs.argmax(dim=-1).cpu()] += 1
+                else:
+                    for column_pos in range(i_batch.shape[-1]):
+                        for row_pos in range(i_batch.shape[-2]):
+                            ablated_batch = self.ablator.forward(i_batch, column_pos=column_pos, row_pos=row_pos)
+                            model_outputs = self.model(ablated_batch)
+                            if self.algorithm == 'levine2020':
+                                if self.logits:
+                                    model_outputs = torch.nn.functional.softmax(model_outputs, dim=1)
+                                model_outputs = model_outputs >= self.threshold
+                                pred_counts += model_outputs.cpu().numpy()
+                            else:
+
+                                # model_outputs = torch.nn.functional.softmax(model_outputs, dim=1)
+                                # model_outputs = model_outputs >= 0.3
+                                # pred_counts += model_outputs.cpu().numpy()
+
+                                pred_counts[np.arange(0, len(i_batch)), model_outputs.argmax(dim=-1).cpu()] += 1
 
                 _, cert_and_correct, top_predicted_class = self.ablator.certify(
                     pred_counts, size_to_certify=size_to_certify, label=o_batch

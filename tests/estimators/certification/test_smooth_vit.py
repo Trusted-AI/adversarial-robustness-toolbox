@@ -187,7 +187,8 @@ def test_certification_function(art_warning, fix_get_mnist_data, fix_get_cifar10
         art_warning(e)
 
 @pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
-def test_end_to_end_equivalence(art_warning, fix_get_mnist_data, fix_get_cifar10_data):
+@pytest.mark.parametrize("ablation", ["block", "column"])
+def test_end_to_end_equivalence(art_warning, fix_get_mnist_data, fix_get_cifar10_data, ablation):
     """
     Assert implementations matches original with a forward pass through the same model architecture.
     Note, there are some differences in architecture between the same model names.
@@ -252,7 +253,7 @@ def test_end_to_end_equivalence(art_warning, fix_get_mnist_data, fix_get_cifar10
     from custom_models import preprocess
     preprocess.MaskProcessor = MaskProcessor
 
-    from art.estimators.certification.derandomized_smoothing.derandomized_smoothing_pytorch import ColumnAblator
+    from art.estimators.certification.derandomized_smoothing.derandomized_smoothing_pytorch import ColumnAblator, BlockAblator
     from custom_models.vision_transformer import vit_small_patch16_224, vit_base_patch16_224
 
     cifar_data = fix_get_cifar10_data[0][:50]
@@ -317,23 +318,34 @@ def test_end_to_end_equivalence(art_warning, fix_get_mnist_data, fix_get_cifar10
 
     madry_vit.load_state_dict(art_sd)
     madry_vit = madry_vit.to(device)
-    col_ablator = ColumnAblator(
-        ablation_size=4,
-        channels_first=True,
-        to_reshape=True,
-        mode='ViT',
-        original_shape=(3, 32, 32),
-        output_shape=(3, 224, 224),
-    )
-
-    ablated = col_ablator.forward(cifar_data, column_pos=10)
+    if ablation == 'column':
+        ablator = ColumnAblator(
+            ablation_size=4,
+            channels_first=True,
+            to_reshape=True,
+            mode='ViT',
+            original_shape=(3, 32, 32),
+            output_shape=(3, 224, 224),
+        )
+        ablated = ablator.forward(cifar_data, column_pos=10)
+    elif ablation == 'block':
+        ablator = BlockAblator(
+            ablation_size=4,
+            channels_first=True,
+            to_reshape=True,
+            original_shape=(3, 32, 32),
+            output_shape=(3, 224, 224),
+            mode='ViT',
+        )
+        ablated = ablator.forward(cifar_data, column_pos=10, row_pos=28)
 
     madry_preds = madry_vit(ablated)
     art_preds = art_model.model(ablated)
     assert torch.allclose(madry_preds, art_preds, rtol=1e-04, atol=1e-04)
 
 @pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
-def test_certification_equivalence(art_warning, fix_get_mnist_data, fix_get_cifar10_data):
+@pytest.mark.parametrize("ablation", ["block", "column"])
+def test_certification_equivalence(art_warning, fix_get_mnist_data, fix_get_cifar10_data, ablation):
     """
     With the forward pass equivalence asserted, we now confirm that the certification functions in the same
     way by doing a full end to end prediction and certification test over the data.
@@ -354,7 +366,10 @@ def test_certification_equivalence(art_warning, fix_get_mnist_data, fix_get_cifa
             self.dataset = 'cifar10'
             self.certify_out_dir = './'
             self.exp_name = 'tests'
-            self.certify_mode = 'col'
+            if ablation == 'column':
+                self.certify_mode = 'col'
+            if ablation == 'block':
+                self.certify_mode = 'block'
             self.batch_id = None
 
     class DataSet(Dataset):
@@ -387,13 +402,17 @@ def test_certification_equivalence(art_warning, fix_get_mnist_data, fix_get_cifa
         loss=torch.nn.CrossEntropyLoss(),
         optimizer=torch.optim.SGD,
         optimizer_params={"lr": 0.01},
-        input_shape=(3, 224, 224),
+        # input_shape=(3, 224, 224),
+        input_shape=(3, 32, 32),
         nb_classes=10,
+        ablation_type=ablation,
         ablation_size=4,
         load_pretrained=True,
         replace_last_layer=True,
         verbose=False,
     )
+    if os.path.isfile('vit_small_patch16_224_block.pt'):
+        art_model.model.load_state_dict(torch.load('vit_small_patch16_224_block.pt'))
 
     class WrappedModel(torch.nn.Module):
         """
@@ -402,8 +421,11 @@ def test_certification_equivalence(art_warning, fix_get_mnist_data, fix_get_cifa
         def __init__(self, my_model):
             super().__init__()
             self.model = my_model
+            self.upsample = torch.nn.Upsample(scale_factor=224 / 32)
 
         def forward(self, x):
+            if x.shape[-1] != 224:
+                x = self.upsample(x)
             x = self.model(x)
             return x, 'filler_arg'
 
@@ -442,12 +464,12 @@ def test_certification_equivalence(art_warning, fix_get_mnist_data, fix_get_cifa
 
     cifar_data = torch.from_numpy(fix_get_cifar10_data[0][:num_to_fetch]).to(device)
     cifar_labels = torch.from_numpy(fix_get_cifar10_data[1][:num_to_fetch]).to(device)
-    upsample = torch.nn.Upsample(scale_factor=224 / 32)
-    cifar_data = upsample(cifar_data)
+    # upsample = torch.nn.Upsample(scale_factor=224 / 32)
+    # cifar_data = upsample(cifar_data)
 
     if torch.cuda.is_available():
         dataset = DataSet(cifar_data, cifar_labels)
-        validation_loader = DataLoader(dataset, batch_size=64)
+        validation_loader = DataLoader(dataset, batch_size=num_to_fetch)
     else:
         validation_loader = MyDataloader(cifar_data, cifar_labels)
 
@@ -460,11 +482,20 @@ def test_certification_equivalence(art_warning, fix_get_mnist_data, fix_get_cifa
             store=None)
     summary = torch.load('tests/m4_s4_summary.pth')
     print('the summary is ', summary)
-    acc, cert_acc = art_model.eval_and_certify(x=cifar_data.cpu().numpy(), y=cifar_labels.cpu().numpy(), size_to_certify=4)
-    print('cert_acc ', cert_acc)
-    print('acc ', acc)
-    assert cert_acc == torch.tensor(summary['cert_acc'])
-    assert acc == torch.tensor(summary['smooth_acc'])
+    acc, cert_acc = art_model.eval_and_certify(x=cifar_data.cpu().numpy(),
+                                               y=cifar_labels.cpu().numpy(),
+                                               batch_size=num_to_fetch,
+                                               size_to_certify=4)
+
+    assert torch.allclose(torch.tensor(cert_acc), torch.tensor(summary['cert_acc']))
+    assert torch.tensor(acc) == torch.tensor(summary['smooth_acc'])
+
+    upsample = torch.nn.Upsample(scale_factor=224 / 32)
+    cifar_data = upsample(cifar_data)
+    acc_non_ablation = art_model.model(cifar_data)
+    acc_non_ablation = art_model.get_accuracy(acc_non_ablation, cifar_labels)
+    print('acc non ablation ', acc_non_ablation)
+    assert np.allclose(acc_non_ablation.astype(float), summary['acc'])
 
 
 @pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
