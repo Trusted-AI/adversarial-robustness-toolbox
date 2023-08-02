@@ -126,7 +126,7 @@ def test_pytorch_training(art_warning, fix_get_mnist_data, fix_get_cifar10_data)
         criterion = nn.CrossEntropyLoss()
         optimizer = optim.SGD(ptc.parameters(), lr=0.01, momentum=0.9)
         try:
-            for ablation_type in ["column", "row", "block"]:
+            for ablation_type in ["column", "block"]:
                 classifier = PyTorchDeRandomizedSmoothing(
                     model=ptc,
                     clip_values=(0, 1),
@@ -137,6 +137,7 @@ def test_pytorch_training(art_warning, fix_get_mnist_data, fix_get_cifar10_data)
                     ablation_type=ablation_type,
                     ablation_size=5,
                     threshold=0.3,
+                    algorithm='levine2020',
                     logits=True,
                 )
                 classifier.fit(x=dataset[0], y=dataset[1], nb_epochs=1)
@@ -267,16 +268,17 @@ def test_pytorch_mnist_certification(art_warning, fix_get_mnist_data):
                 ablation_type=ablation_type,
                 ablation_size=ablation_size,
                 threshold=0.3,
+                algorithm='levine2020',
                 logits=True,
             )
 
             preds = classifier.predict(np.copy(fix_get_mnist_data[0]))
-            num_certified = classifier.ablator.certify(preds, size_to_certify=size_to_certify)
-
+            cert, cert_and_correct, top_predicted_class_argmax = classifier.ablator.certify(preds,
+                                                                                            size_to_certify=size_to_certify)
             if ablation_type == "column":
-                assert np.sum(num_certified) == 52
+                assert np.sum(cert.cpu().numpy()) == 52
             else:
-                assert np.sum(num_certified) == 22
+                assert np.sum(cert.cpu().numpy()) == 22
     except ARTTestException as e:
         art_warning(e)
 

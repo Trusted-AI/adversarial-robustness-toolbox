@@ -131,7 +131,7 @@ class ColumnAblator(torch.nn.Module):
         :return: The albated input with an extra channel indicating the location of the ablation
         """
 
-        if x.shape[1] != self.original_shape[0]:
+        if x.shape[1] != self.original_shape[0] and self.algorithm == 'salman2021':
             raise ValueError(f"Ablator expected {self.original_shape[0]} input channels. Recived shape of {x.shape[1]}")
 
         if column_pos is None:
@@ -146,6 +146,9 @@ class ColumnAblator(torch.nn.Module):
 
         if self.additional_channels:
             x = torch.cat([x, 1.0 - x], dim=1)
+
+        if x.shape[1] != self.original_shape[0] and self.additional_channels:
+            raise ValueError(f"Ablator expected {self.original_shape[0]} input channels. Recived shape of {x.shape[1]}")
 
         x = self.ablate(x, column_pos=column_pos)
 
@@ -280,7 +283,7 @@ class BlockAblator(torch.nn.Module):
         :return: The albated input with an extra channel indicating the location of the ablation
         """
 
-        if x.shape[1] != self.original_shape[0]:
+        if x.shape[1] != self.original_shape[0] and self.algorithm == 'salman2021':
             raise ValueError(f"Ablator expected {self.original_shape[0]} input channels. Recived shape of {x.shape[1]}")
 
         if column_pos is None:
@@ -298,6 +301,9 @@ class BlockAblator(torch.nn.Module):
 
         if self.additional_channels:
             x = torch.cat([x, 1.0 - x], dim=1)
+
+        if x.shape[1] != self.original_shape[0] and self.additional_channels:
+            raise ValueError(f"Ablator expected {self.original_shape[0]} input channels. Recived shape of {x.shape[1]}")
 
         x = self.ablate(x, column_pos=column_pos, row_pos=row_pos)
 
@@ -343,7 +349,7 @@ class BlockAblator(torch.nn.Module):
         cert_and_correct = cert & (label == top_predicted_class)
 
         if self.algorithm == 'levine2020':
-            tie_break_certs = ((top_class_counts - second_class_counts) == 2 * (size_to_certify + self.ablation_size - 1))\
+            tie_break_certs = ((top_class_counts - second_class_counts) == 2 * (size_to_certify + self.ablation_size - 1)**2)\
                               & (top_predicted_class < second_predicted_class)
             cert = torch.logical_or(cert, tie_break_certs)
         return cert, cert_and_correct, top_predicted_class_argmax

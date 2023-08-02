@@ -435,15 +435,6 @@ class PyTorchDeRandomizedSmoothing(PyTorchSmoothedViT, PyTorchClassifier):
 
         return np.sum(np.argmax(preds, axis=1) == labels) / len(labels)
 
-    '''
-    def predict(self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs) -> np.ndarray:
-        if self.mode == "ViT":
-            return PyTorchClassifier.predict(self, x, batch_size, training_mode, **kwargs)
-        if self.mode == "CNN":
-            return PyTorchDeRandomizedSmoothingCNN.predict(self, x, batch_size, training_mode, **kwargs)
-        raise ValueError('mode is not ViT or CNN')
-    '''
-
     def update_batchnorm(self, x: np.ndarray, batch_size: int, nb_epochs: int = 1) -> None:
         """
         Method to update the batchnorm of a neural network on small datasets when it was pre-trained
@@ -560,7 +551,9 @@ class PyTorchDeRandomizedSmoothing(PyTorchSmoothedViT, PyTorchClassifier):
     def _predict_classifier(self, x: np.ndarray, batch_size: int, training_mode: bool, **kwargs) -> np.ndarray:
         import torch
 
-        x = x.astype(ART_NUMPY_DTYPE)
+        if isinstance(x, torch.Tensor):
+            x = x.cpu().numpy()
+
         outputs = PyTorchClassifier.predict(self, x=x, batch_size=batch_size, training_mode=training_mode, **kwargs)
 
         if self.algorithm == 'levine2020':
@@ -571,7 +564,8 @@ class PyTorchDeRandomizedSmoothing(PyTorchSmoothedViT, PyTorchClassifier):
             )
         return outputs
 
-    def predict(self, x, batch_size, training_mode, **kwargs):
+    def predict(self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs) -> np.ndarray:
+
         if self._channels_first:
             columns_in_data = x.shape[-1]
             rows_in_data = x.shape[-2]
