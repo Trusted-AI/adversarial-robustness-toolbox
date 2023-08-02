@@ -70,7 +70,7 @@ class ColumnAblator(torch.nn.Module):
         to_reshape: bool,
         original_shape: Optional[Tuple] = None,
         output_shape: Optional[Tuple] = None,
-        algorithm: str = 'salman2021',
+        algorithm: str = "salman2021",
         device_type: str = "gpu",
     ):
         """
@@ -92,9 +92,9 @@ class ColumnAblator(torch.nn.Module):
         self.algorithm = algorithm
         self.original_shape = original_shape
 
-        if self.algorithm == 'levine2020':
+        if self.algorithm == "levine2020":
             self.additional_channels = True
-        if self.algorithm == 'salman2021' and mode == 'ViT':
+        if self.algorithm == "salman2021" and mode == "ViT":
             self.add_ablation_mask = True
 
         if device_type == "cpu" or not torch.cuda.is_available():
@@ -122,16 +122,21 @@ class ColumnAblator(torch.nn.Module):
             x[:, :, :, column_pos + k :] = 0.0
         return x
 
-    def forward(self, x: Union[torch.Tensor, np.ndarray], column_pos: Optional[int] = None) -> torch.Tensor:
+    def forward(self, x: Union[torch.Tensor, np.ndarray], column_pos: Optional[int] = None, row_pos=None) -> torch.Tensor:
         """
         Forward pass though the ablator. We insert a new channel to keep track of the ablation location.
 
         :param x: Input data
         :param column_pos: The start position of the albation
+        :param row_pos: Unused.
         :return: The albated input with an extra channel indicating the location of the ablation
         """
 
-        if x.shape[1] != self.original_shape[0] and self.algorithm == 'salman2021':
+        if (
+            self.original_shape is not None
+            and x.shape[1] != self.original_shape[0]
+            and self.algorithm == "salman2021"
+        ):
             raise ValueError(f"Ablator expected {self.original_shape[0]} input channels. Recived shape of {x.shape[1]}")
 
         if column_pos is None:
@@ -147,19 +152,25 @@ class ColumnAblator(torch.nn.Module):
         if self.additional_channels:
             x = torch.cat([x, 1.0 - x], dim=1)
 
-        if x.shape[1] != self.original_shape[0] and self.additional_channels:
+        if (
+            self.original_shape is not None
+            and x.shape[1] != self.original_shape[0]
+            and self.additional_channels
+        ):
             raise ValueError(f"Ablator expected {self.original_shape[0]} input channels. Recived shape of {x.shape[1]}")
 
-        x = self.ablate(x, column_pos=column_pos)
+        ablated_x = self.ablate(x, column_pos=column_pos)
 
         if self.to_reshape:
-            x = self.upsample(x)
-        return x
+            ablated_x = self.upsample(ablated_x)
+        return ablated_x
 
-    def certify(self,
-                pred_counts: Union[torch.Tensor, np.ndarray],
-                size_to_certify: int,
-                label: Union[torch.Tensor, np.ndarray] = None) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def certify(
+        self,
+        pred_counts: Union[torch.Tensor, np.ndarray],
+        size_to_certify: int,
+        label: Union[torch.Tensor, np.ndarray],
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Performs certification of the predictions
 
@@ -193,9 +204,10 @@ class ColumnAblator(torch.nn.Module):
 
         cert_and_correct = cert & (label == top_predicted_class)
 
-        if self.algorithm == 'levine2020':
-            tie_break_certs = ((top_class_counts - second_class_counts) == 2 * (size_to_certify + self.ablation_size - 1))\
-                              & (top_predicted_class < second_predicted_class)
+        if self.algorithm == "levine2020":
+            tie_break_certs = (
+                (top_class_counts - second_class_counts) == 2 * (size_to_certify + self.ablation_size - 1)
+            ) & (top_predicted_class < second_predicted_class)
             cert = torch.logical_or(cert, tie_break_certs)
         return cert, cert_and_correct, top_predicted_class_argmax
 
@@ -213,7 +225,7 @@ class BlockAblator(torch.nn.Module):
         to_reshape: bool,
         original_shape: Optional[Tuple] = None,
         output_shape: Optional[Tuple] = None,
-        algorithm: str = 'salman2021',
+        algorithm: str = "salman2021",
         device_type: str = "gpu",
     ):
         """
@@ -235,9 +247,9 @@ class BlockAblator(torch.nn.Module):
         self.algorithm = algorithm
         self.original_shape = original_shape
 
-        if self.algorithm == 'levine2020':
+        if self.algorithm == "levine2020":
             self.additional_channels = True
-        if self.algorithm == 'salman2021' and mode == 'ViT':
+        if self.algorithm == "salman2021" and mode == "ViT":
             self.add_ablation_mask = True
 
         if device_type == "cpu" or not torch.cuda.is_available():
@@ -274,7 +286,9 @@ class BlockAblator(torch.nn.Module):
             x[:, :, row_pos + k :, :] = 0.0
         return x
 
-    def forward(self, x: Union[torch.Tensor, np.ndarray], column_pos: Optional[int] = None, row_pos: Optional[int] = None) -> torch.Tensor:
+    def forward(
+        self, x: Union[torch.Tensor, np.ndarray], column_pos: Optional[int] = None, row_pos: Optional[int] = None
+    ) -> torch.Tensor:
         """
         Forward pass though the ablator. We insert a new channel to keep track of the ablation location.
 
@@ -282,8 +296,11 @@ class BlockAblator(torch.nn.Module):
         :param column_pos: The start position of the albation
         :return: The albated input with an extra channel indicating the location of the ablation
         """
-
-        if x.shape[1] != self.original_shape[0] and self.algorithm == 'salman2021':
+        if (
+            self.original_shape is not None
+            and x.shape[1] != self.original_shape[0]
+            and self.algorithm == "salman2021"
+        ):
             raise ValueError(f"Ablator expected {self.original_shape[0]} input channels. Recived shape of {x.shape[1]}")
 
         if column_pos is None:
@@ -302,19 +319,25 @@ class BlockAblator(torch.nn.Module):
         if self.additional_channels:
             x = torch.cat([x, 1.0 - x], dim=1)
 
-        if x.shape[1] != self.original_shape[0] and self.additional_channels:
+        if (
+            self.original_shape is not None
+            and x.shape[1] != self.original_shape[0]
+            and self.additional_channels
+        ):
             raise ValueError(f"Ablator expected {self.original_shape[0]} input channels. Recived shape of {x.shape[1]}")
 
-        x = self.ablate(x, column_pos=column_pos, row_pos=row_pos)
+        ablated_x = self.ablate(x, column_pos=column_pos, row_pos=row_pos)
 
         if self.to_reshape:
-            x = self.upsample(x)
-        return x
+            ablated_x = self.upsample(ablated_x)
+        return ablated_x
 
-    def certify(self,
-                pred_counts: Union[torch.Tensor, np.ndarray],
-                size_to_certify: int,
-                label: Union[torch.Tensor, np.ndarray] = None) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def certify(
+        self,
+        pred_counts: Union[torch.Tensor, np.ndarray],
+        size_to_certify: int,
+        label: Union[torch.Tensor, np.ndarray],
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Performs certification of the predictions
 
@@ -344,12 +367,13 @@ class BlockAblator(torch.nn.Module):
         top_class_counts, top_predicted_class = pred_counts.kthvalue(num_of_classes, dim=1)
         second_class_counts, second_predicted_class = pred_counts.kthvalue(num_of_classes - 1, dim=1)
 
-        cert = (top_class_counts - second_class_counts) > 2 * (size_to_certify + self.ablation_size - 1)**2
+        cert = (top_class_counts - second_class_counts) > 2 * (size_to_certify + self.ablation_size - 1) ** 2
 
         cert_and_correct = cert & (label == top_predicted_class)
 
-        if self.algorithm == 'levine2020':
-            tie_break_certs = ((top_class_counts - second_class_counts) == 2 * (size_to_certify + self.ablation_size - 1)**2)\
-                              & (top_predicted_class < second_predicted_class)
+        if self.algorithm == "levine2020":
+            tie_break_certs = (
+                (top_class_counts - second_class_counts) == 2 * (size_to_certify + self.ablation_size - 1) ** 2
+            ) & (top_predicted_class < second_predicted_class)
             cert = torch.logical_or(cert, tie_break_certs)
         return cert, cert_and_correct, top_predicted_class_argmax
