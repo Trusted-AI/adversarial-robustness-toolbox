@@ -127,7 +127,7 @@ def test_ablation(art_warning, fix_get_mnist_data, fix_get_cifar10_data):
 
 
 @pytest.mark.only_with_platform("pytorch")
-def test_ablation(art_warning, fix_get_mnist_data, fix_get_cifar10_data):
+def test_ablation_row(art_warning, fix_get_mnist_data, fix_get_cifar10_data):
     """
     Check that the ablation is being performed correctly
     """
@@ -270,8 +270,8 @@ def test_end_to_end_equivalence(art_warning, fix_get_mnist_data, fix_get_cifar10
     import sys
 
     from art.estimators.certification.derandomized_smoothing import PyTorchDeRandomizedSmoothing
-    import shutil
 
+    # import shutil
     # if os.path.exists('smoothed-vit'):
     #    shutil.rmtree('smoothed-vit')
 
@@ -330,33 +330,36 @@ def test_end_to_end_equivalence(art_warning, fix_get_mnist_data, fix_get_cifar10
         ColumnAblator,
         BlockAblator,
     )
-    from custom_models.vision_transformer import vit_small_patch16_224, vit_base_patch16_224
+    from custom_models.vision_transformer import vit_base_patch16_224
 
     cifar_data = fix_get_cifar10_data[0][:50]
-    cifar_labels = fix_get_cifar10_data[1][:50]
 
     '''
-    timm config for: 
+    timm config for:
         def vit_base_patch16_224(pretrained=False, **kwargs) -> VisionTransformer:
             """ ViT-Base (ViT-B/16) from original paper (https://arxiv.org/abs/2010.11929).
-            ImageNet-1k weights fine-tuned from in21k @ 224x224, source https://github.com/google-research/vision_transformer.
+            ImageNet-1k weights fine-tuned from in21k @ 224x224,
+            source https://github.com/google-research/vision_transformer.
             """
             model_args = dict(patch_size=16, embed_dim=768, depth=12, num_heads=12)
-            model = _create_vision_transformer('vit_base_patch16_224', pretrained=pretrained, **dict(model_args, **kwargs))
+            model = _create_vision_transformer('vit_base_patch16_224',
+            pretrained=pretrained, **dict(model_args, **kwargs))
             return model
-    
-        
+
+
         def vit_small_patch16_224(pretrained=False, **kwargs) -> VisionTransformer:
             """ ViT-Small (ViT-S/16)
             """
             model_args = dict(patch_size=16, embed_dim=384, depth=12, num_heads=6)
-            model = _create_vision_transformer('vit_small_patch16_224', pretrained=pretrained, **dict(model_args, **kwargs))
+            model = _create_vision_transformer('vit_small_patch16_224',
+            pretrained=pretrained, **dict(model_args, **kwargs))
             return model
-        
-    smooth repo config for: 
+
+    smooth repo config for:
         def vit_small_patch16_224(pretrained=False, **kwargs):
             if pretrained:
-                # NOTE my scale was wrong for original weights, leaving this here until I have better ones for this model
+                # NOTE my scale was wrong for original weights, leaving this here
+                # until I have better ones for this model
                 kwargs.setdefault('qk_scale', 768 ** -0.5)
             model = VisionTransformer(patch_size=16, embed_dim=768, depth=8, num_heads=8, mlp_ratio=3., **kwargs)
             model.default_cfg = default_cfgs['vit_small_patch16_224']
@@ -364,16 +367,18 @@ def test_end_to_end_equivalence(art_warning, fix_get_mnist_data, fix_get_cifar10
                 load_pretrained(
                     model, num_classes=model.num_classes, in_chans=kwargs.get('in_chans', 3), filter_fn=_conv_filter)
             return model
-            
-            
+
+
         def vit_base_patch16_224(pretrained=False, **kwargs) -> VisionTransformer:
             """ ViT-Base (ViT-B/16) from original paper (https://arxiv.org/abs/2010.11929).
-            ImageNet-1k weights fine-tuned from in21k @ 224x224, source https://github.com/google-research/vision_transformer.
+            ImageNet-1k weights fine-tuned from in21k @ 224x224,
+            source https://github.com/google-research/vision_transformer.
             """
             model_args = dict(patch_size=16, embed_dim=768, depth=12, num_heads=12)
-            model = _create_vision_transformer('vit_base_patch16_224', pretrained=pretrained, **dict(model_args, **kwargs))
+            model = _create_vision_transformer('vit_base_patch16_224',
+                                                pretrained=pretrained, **dict(model_args, **kwargs))
             return model
-        
+
     '''
 
     art_model = PyTorchDeRandomizedSmoothing(
@@ -404,6 +409,10 @@ def test_end_to_end_equivalence(art_warning, fix_get_mnist_data, fix_get_cifar10
             output_shape=(3, 224, 224),
         )
         ablated = ablator.forward(cifar_data, column_pos=10)
+        madry_preds = madry_vit(ablated)
+        art_preds = art_model.model(ablated)
+        assert torch.allclose(madry_preds, art_preds, rtol=1e-04, atol=1e-04)
+
     elif ablation == "block":
         ablator = BlockAblator(
             ablation_size=4,
@@ -414,10 +423,11 @@ def test_end_to_end_equivalence(art_warning, fix_get_mnist_data, fix_get_cifar10
             mode="ViT",
         )
         ablated = ablator.forward(cifar_data, column_pos=10, row_pos=28)
+        madry_preds = madry_vit(ablated)
+        art_preds = art_model.model(ablated)
+        assert torch.allclose(madry_preds, art_preds, rtol=1e-04, atol=1e-04)
 
-    madry_preds = madry_vit(ablated)
-    art_preds = art_model.model(ablated)
-    assert torch.allclose(madry_preds, art_preds, rtol=1e-04, atol=1e-04)
+    sys.path.remove("smoothed-vit/src/utils/")
 
 
 @pytest.mark.only_with_platform("pytorch")
@@ -435,6 +445,7 @@ def test_certification_equivalence(art_warning, fix_get_mnist_data, fix_get_cifa
     from torch.utils.data import Dataset
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    experiment_file_directory = "smooth_vit_tests"
 
     class ArgClass:
         def __init__(self):
@@ -443,7 +454,7 @@ def test_certification_equivalence(art_warning, fix_get_mnist_data, fix_get_cifa
             self.certify_stride = 1
             self.dataset = "cifar10"
             self.certify_out_dir = "./"
-            self.exp_name = "tests"
+            self.exp_name = experiment_file_directory
             if ablation == "column":
                 self.certify_mode = "col"
             if ablation == "block":
@@ -465,11 +476,8 @@ def test_certification_equivalence(art_warning, fix_get_mnist_data, fix_get_cifa
     import shutil
     from torch.utils.data import DataLoader
 
-    # if os.path.exists('smoothed-vit'):
-    #    shutil.rmtree('smoothed-vit')
-
-    if os.path.exists("tests"):
-        shutil.rmtree("tests")
+    if os.path.exists(experiment_file_directory):
+        shutil.rmtree(experiment_file_directory)
 
     os.system("git clone https://github.com/MadryLab/smoothed-vit")
     sys.path.append("smoothed-vit/src/utils/")
@@ -480,7 +488,6 @@ def test_certification_equivalence(art_warning, fix_get_mnist_data, fix_get_cifa
         loss=torch.nn.CrossEntropyLoss(),
         optimizer=torch.optim.SGD,
         optimizer_params={"lr": 0.01},
-        # input_shape=(3, 224, 224),
         input_shape=(3, 32, 32),
         nb_classes=10,
         ablation_type=ablation,
@@ -510,6 +517,7 @@ def test_certification_equivalence(art_warning, fix_get_mnist_data, fix_get_cifa
             x = self.model(x)
             return x, "filler_arg"
 
+    # Replacement function for .cuda() to enable original code to run without gpu.
     def _cuda(self):
         return self
 
@@ -557,8 +565,8 @@ def test_certification_equivalence(art_warning, fix_get_mnist_data, fix_get_cifa
 
     model = WrappedModel(my_model=art_model.model)
     certify(args=args, model=model, validation_loader=validation_loader, store=None)
-    summary = torch.load("tests/m4_s4_summary.pth")
-    print("the summary is ", summary)
+    summary = torch.load(experiment_file_directory + "/m4_s4_summary.pth")
+
     acc, cert_acc = art_model.eval_and_certify(
         x=cifar_data.cpu().numpy(), y=cifar_labels.cpu().numpy(), batch_size=num_to_fetch, size_to_certify=4
     )
@@ -570,8 +578,9 @@ def test_certification_equivalence(art_warning, fix_get_mnist_data, fix_get_cifa
     cifar_data = upsample(cifar_data)
     acc_non_ablation = art_model.model(cifar_data)
     acc_non_ablation = art_model.get_accuracy(acc_non_ablation, cifar_labels)
-    print("acc non ablation ", acc_non_ablation)
+
     assert np.allclose(acc_non_ablation.astype(float), summary["acc"])
+    sys.path.remove("smoothed-vit/src/utils/")
 
 
 @pytest.mark.only_with_platform("pytorch")
@@ -661,7 +670,9 @@ def test_equivalence(fix_get_cifar10_data):
             self.pos_embed = nn.Parameter(torch.randn(1, embed_len, embed_dim) * .02)
 
             From timm dvit:
-            self.pos_embed = nn.Parameter(torch.zeros(1, self.patch_embed.num_patches + self.num_prefix_tokens, self.embed_dim))
+            self.pos_embed = nn.Parameter(torch.zeros(1,
+                                                     self.patch_embed.num_patches + self.num_prefix_tokens,
+                                                     self.embed_dim))
 
             From repo:
             self.pos_embed = nn.Parameter(torch.zeros(1, num_patches + 1, embed_dim))

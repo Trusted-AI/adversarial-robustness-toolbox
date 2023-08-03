@@ -135,9 +135,10 @@ class PyTorchDeRandomizedSmoothing(PyTorchSmoothedViT, PyTorchClassifier):
 
         if not channels_first:
             raise ValueError("Channels must be set to first")
+        logging.info("Running algorithm: %s" % algorithm)
 
-        print(algorithm)
-
+        # Default value for output shape
+        output_shape = input_shape
         self.mode = None
         if importlib.util.find_spec("timm") is not None and algorithm == "salman2021":
             from timm.models.vision_transformer import VisionTransformer
@@ -229,7 +230,6 @@ class PyTorchDeRandomizedSmoothing(PyTorchSmoothedViT, PyTorchClassifier):
                     self.mode = "CNN"
                     output_shape = input_shape
                     self.to_reshape = False
-                    print("We are here!")
 
         elif algorithm == "levine2020":
             if ablation_type is None or threshold is None or logits is None:
@@ -238,6 +238,8 @@ class PyTorchDeRandomizedSmoothing(PyTorchSmoothedViT, PyTorchClassifier):
                     " the prediction threshold, and ablation type"
                 )
             self.mode = "CNN"
+            # input channels are internally doubled.
+            input_shape = (input_shape[0] * 2, input_shape[1], input_shape[2])
             output_shape = input_shape
             self.to_reshape = False
 

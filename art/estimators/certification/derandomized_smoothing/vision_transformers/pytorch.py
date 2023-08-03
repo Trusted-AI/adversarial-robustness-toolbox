@@ -30,7 +30,6 @@ from typing import List, TYPE_CHECKING
 
 
 if TYPE_CHECKING:
-    import torch
     from art.estimators.certification.derandomized_smoothing.vision_transformers.vit import PyTorchViT
 
 logging.basicConfig(level=logging.INFO)
