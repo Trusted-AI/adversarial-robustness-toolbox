@@ -41,7 +41,6 @@ import random
 import numpy as np
 from tqdm import tqdm
 
-from art.config import ART_NUMPY_DTYPE
 from art.estimators.classification.pytorch import PyTorchClassifier
 from art.estimators.certification.derandomized_smoothing.vision_transformers.pytorch import PyTorchSmoothedViT
 from art.utils import check_and_transform_label_format
@@ -98,8 +97,8 @@ class PyTorchDeRandomizedSmoothing(PyTorchSmoothedViT, PyTorchClassifier):
         Create a smoothed classifier.
 
         :param model: Either a CNN or a VIT. For a ViT supply a string specifying which ViT architecture to load from
-                      the ViT library, or a vision transformer already created with the Pytorch Image Models (timm) library.
-                      To run Levine et al. (2020) provide a regular pytorch model.
+                      the ViT library, or a vision transformer already created with the
+                      Pytorch Image Models (timm) library. To run Levine et al. (2020) provide a regular pytorch model.
         :param loss: The loss function for which to compute gradients for training. The target label must be raw
                      categorical, i.e. not converted to one-hot encoding.
         :param input_shape: The shape of one input instance.
@@ -133,6 +132,9 @@ class PyTorchDeRandomizedSmoothing(PyTorchSmoothedViT, PyTorchClassifier):
         """
 
         import torch
+
+        if not channels_first:
+            raise ValueError("Channels must be set to first")
 
         print(algorithm)
 
@@ -209,7 +211,8 @@ class PyTorchDeRandomizedSmoothing(PyTorchSmoothedViT, PyTorchClassifier):
                 if model.default_cfg["input_size"] != input_shape:
                     if verbose:
                         logger.warning(
-                            " ViT expects input shape of: (%i, %i, %i) but (%i, %i, %i) specified as the input shape. The input will be rescaled to (%i, %i, %i)",
+                            " ViT expects input shape of: (%i, %i, %i) but (%i, %i, %i) specified as the input shape."
+                            " The input will be rescaled to (%i, %i, %i)",
                             *model.default_cfg["input_size"],
                             *input_shape,
                             *model.default_cfg["input_size"],
@@ -271,10 +274,11 @@ class PyTorchDeRandomizedSmoothing(PyTorchSmoothedViT, PyTorchClassifier):
         if TYPE_CHECKING:
             self.ablator: Union[ColumnAblator, BlockAblator]
 
-        if ablation_type == "column":
+        if ablation_type in {"column", "row"}:
             self.ablator = ColumnAblator(
                 ablation_size=ablation_size,
                 channels_first=True,
+                ablation_mode=ablation_type,
                 to_reshape=self.to_reshape,
                 original_shape=input_shape,
                 output_shape=output_shape,
@@ -513,35 +517,33 @@ class PyTorchDeRandomizedSmoothing(PyTorchSmoothedViT, PyTorchClassifier):
                     o_batch = y_preprocessed[m * batch_size : (m + 1) * batch_size]
 
                 pred_counts = np.zeros((len(i_batch), self.nb_classes))
-                if self.ablation_type == "column":
+                if self.ablation_type in {"column", "row"}:
                     for pos in range(i_batch.shape[-1]):
                         ablated_batch = self.ablator.forward(i_batch, column_pos=pos)
                         # Perform prediction
                         model_outputs = self.model(ablated_batch)
 
-                        if self.algorithm == "levine2020":
+                        if self.algorithm == "salman2021":
+                            pred_counts[np.arange(0, len(i_batch)), model_outputs.argmax(dim=-1).cpu()] += 1
+                        else:
                             if self.logits:
                                 model_outputs = torch.nn.functional.softmax(model_outputs, dim=1)
                             model_outputs = model_outputs >= self.threshold
                             pred_counts += model_outputs.cpu().numpy()
-                        else:
-                            pred_counts[np.arange(0, len(i_batch)), model_outputs.argmax(dim=-1).cpu()] += 1
+
                 else:
                     for column_pos in range(i_batch.shape[-1]):
                         for row_pos in range(i_batch.shape[-2]):
                             ablated_batch = self.ablator.forward(i_batch, column_pos=column_pos, row_pos=row_pos)
                             model_outputs = self.model(ablated_batch)
-                            if self.algorithm == "levine2020":
+
+                            if self.algorithm == "salman2021":
+                                pred_counts[np.arange(0, len(i_batch)), model_outputs.argmax(dim=-1).cpu()] += 1
+                            else:
                                 if self.logits:
                                     model_outputs = torch.nn.functional.softmax(model_outputs, dim=1)
                                 model_outputs = model_outputs >= self.threshold
                                 pred_counts += model_outputs.cpu().numpy()
-                            else:
-                                # model_outputs = torch.nn.functional.softmax(model_outputs, dim=1)
-                                # model_outputs = model_outputs >= 0.3
-                                # pred_counts += model_outputs.cpu().numpy()
-
-                                pred_counts[np.arange(0, len(i_batch)), model_outputs.argmax(dim=-1).cpu()] += 1
 
                 _, cert_and_correct, top_predicted_class = self.ablator.certify(
                     pred_counts, size_to_certify=size_to_certify, label=o_batch

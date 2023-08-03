@@ -126,7 +126,7 @@ def test_pytorch_training(art_warning, fix_get_mnist_data, fix_get_cifar10_data)
         criterion = nn.CrossEntropyLoss()
         optimizer = optim.SGD(ptc.parameters(), lr=0.01, momentum=0.9)
         try:
-            for ablation_type in ["column", "block"]:
+            for ablation_type in ["column", "row", "block"]:
                 classifier = PyTorchDeRandomizedSmoothing(
                     model=ptc,
                     clip_values=(0, 1),
@@ -137,7 +137,7 @@ def test_pytorch_training(art_warning, fix_get_mnist_data, fix_get_cifar10_data)
                     ablation_type=ablation_type,
                     ablation_size=5,
                     threshold=0.3,
-                    algorithm='levine2020',
+                    algorithm="levine2020",
                     logits=True,
                 )
                 classifier.fit(x=dataset[0], y=dataset[1], nb_epochs=1)
@@ -227,7 +227,6 @@ def test_pytorch_mnist_certification(art_warning, fix_get_mnist_data):
             return self.fc2(x)
 
         def load_weights(self):
-
             fpath = os.path.join(
                 os.path.dirname(os.path.dirname(__file__)), "../../utils/resources/models/certification/derandomized/"
             )
@@ -268,13 +267,14 @@ def test_pytorch_mnist_certification(art_warning, fix_get_mnist_data):
                 ablation_type=ablation_type,
                 ablation_size=ablation_size,
                 threshold=0.3,
-                algorithm='levine2020',
+                algorithm="levine2020",
                 logits=True,
             )
 
             preds = classifier.predict(np.copy(fix_get_mnist_data[0]))
-            cert, cert_and_correct, top_predicted_class_argmax = classifier.ablator.certify(preds,
-                                                                                            size_to_certify=size_to_certify)
+            cert, cert_and_correct, top_predicted_class_argmax = classifier.ablator.certify(
+                preds, label=fix_get_mnist_data[1], size_to_certify=size_to_certify
+            )
             if ablation_type == "column":
                 assert np.sum(cert.cpu().numpy()) == 52
             else:
@@ -360,7 +360,9 @@ def test_tf2_mnist_certification(art_warning, fix_get_mnist_data):
             x = np.squeeze(x)
             x = np.expand_dims(x, axis=-1)
             preds = classifier.predict(x)
-            num_certified = classifier.ablator.certify(preds, size_to_certify=size_to_certify)
+            num_certified = classifier.ablator.certify(
+                preds, label=fix_get_mnist_data[1], size_to_certify=size_to_certify
+            )
 
             if ablation_type == "column":
                 assert np.sum(num_certified) == 52

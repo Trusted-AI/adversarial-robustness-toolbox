@@ -68,6 +68,7 @@ class ColumnAblator(torch.nn.Module):
         channels_first: bool,
         mode,
         to_reshape: bool,
+        ablation_mode: str = "column",
         original_shape: Optional[Tuple] = None,
         output_shape: Optional[Tuple] = None,
         algorithm: str = "salman2021",
@@ -91,6 +92,7 @@ class ColumnAblator(torch.nn.Module):
         self.additional_channels = False
         self.algorithm = algorithm
         self.original_shape = original_shape
+        self.ablation_mode = ablation_mode
 
         if self.algorithm == "levine2020":
             self.additional_channels = True
@@ -122,7 +124,9 @@ class ColumnAblator(torch.nn.Module):
             x[:, :, :, column_pos + k :] = 0.0
         return x
 
-    def forward(self, x: Union[torch.Tensor, np.ndarray], column_pos: Optional[int] = None, row_pos=None) -> torch.Tensor:
+    def forward(
+        self, x: Union[torch.Tensor, np.ndarray], column_pos: Optional[int] = None, row_pos=None
+    ) -> torch.Tensor:
         """
         Forward pass though the ablator. We insert a new channel to keep track of the ablation location.
 
@@ -131,16 +135,11 @@ class ColumnAblator(torch.nn.Module):
         :param row_pos: Unused.
         :return: The albated input with an extra channel indicating the location of the ablation
         """
+        if row_pos is not None:
+            raise ValueError("Use column_pos for a ColumnAblator. The row_pos argument is unused")
 
-        if (
-            self.original_shape is not None
-            and x.shape[1] != self.original_shape[0]
-            and self.algorithm == "salman2021"
-        ):
+        if self.original_shape is not None and x.shape[1] != self.original_shape[0] and self.algorithm == "salman2021":
             raise ValueError(f"Ablator expected {self.original_shape[0]} input channels. Recived shape of {x.shape[1]}")
-
-        if column_pos is None:
-            column_pos = random.randint(0, x.shape[3])
 
         if isinstance(x, np.ndarray):
             x = torch.from_numpy(x).to(self.device)
@@ -152,14 +151,19 @@ class ColumnAblator(torch.nn.Module):
         if self.additional_channels:
             x = torch.cat([x, 1.0 - x], dim=1)
 
-        if (
-            self.original_shape is not None
-            and x.shape[1] != self.original_shape[0]
-            and self.additional_channels
-        ):
+        if self.original_shape is not None and x.shape[1] != self.original_shape[0] and self.additional_channels:
             raise ValueError(f"Ablator expected {self.original_shape[0]} input channels. Recived shape of {x.shape[1]}")
 
+        if self.ablation_mode == "row":
+            x = torch.transpose(x, 3, 2)
+
+        if column_pos is None:
+            column_pos = random.randint(0, x.shape[3])
+
         ablated_x = self.ablate(x, column_pos=column_pos)
+
+        if self.ablation_mode == "row":
+            ablated_x = torch.transpose(ablated_x, 3, 2)
 
         if self.to_reshape:
             ablated_x = self.upsample(ablated_x)
@@ -192,7 +196,8 @@ class ColumnAblator(torch.nn.Module):
 
         # NB! argmax and kthvalue handle ties between predicted counts differently.
         # The original implementation: https://github.com/MadryLab/smoothed-vit/blob/main/src/utils/smoothing.py#L98
-        # uses argmax for the model predictions (later called https://github.com/MadryLab/smoothed-vit/blob/main/src/utils/smoothing.py#L230)
+        # uses argmax for the model predictions
+        # (later called y_smoothed https://github.com/MadryLab/smoothed-vit/blob/main/src/utils/smoothing.py#L230)
         # and kthvalue for the certified predictions.
         # to be consistent with the original implementation we also follow this here.
         top_predicted_class_argmax = torch.argmax(pred_counts, dim=1)
@@ -214,7 +219,7 @@ class ColumnAblator(torch.nn.Module):
 
 class BlockAblator(torch.nn.Module):
     """
-    Pure Pytorch implementation of stripe/column ablation.
+    Pure Pytorch implementation of block ablation.
     """
 
     def __init__(
@@ -231,7 +236,7 @@ class BlockAblator(torch.nn.Module):
         """
         Creates a column ablator
 
-        :param ablation_size: The size of the column we will retain.
+        :param ablation_size: The size of the block we will retain.
         :param channels_first: If the input is in channels first format. Currently required to be True.
         :param to_reshape: If the input requires reshaping.
         :param original_shape: Original shape of the input.
@@ -294,13 +299,9 @@ class BlockAblator(torch.nn.Module):
 
         :param x: Input data
         :param column_pos: The start position of the albation
-        :return: The albated input with an extra channel indicating the location of the ablation
+        :return: The albated input with an extra channel indicating the location of the ablation if running in
         """
-        if (
-            self.original_shape is not None
-            and x.shape[1] != self.original_shape[0]
-            and self.algorithm == "salman2021"
-        ):
+        if self.original_shape is not None and x.shape[1] != self.original_shape[0] and self.algorithm == "salman2021":
             raise ValueError(f"Ablator expected {self.original_shape[0]} input channels. Recived shape of {x.shape[1]}")
 
         if column_pos is None:
@@ -319,11 +320,7 @@ class BlockAblator(torch.nn.Module):
         if self.additional_channels:
             x = torch.cat([x, 1.0 - x], dim=1)
 
-        if (
-            self.original_shape is not None
-            and x.shape[1] != self.original_shape[0]
-            and self.additional_channels
-        ):
+        if self.original_shape is not None and x.shape[1] != self.original_shape[0] and self.additional_channels:
             raise ValueError(f"Ablator expected {self.original_shape[0]} input channels. Recived shape of {x.shape[1]}")
 
         ablated_x = self.ablate(x, column_pos=column_pos, row_pos=row_pos)
@@ -357,7 +354,8 @@ class BlockAblator(torch.nn.Module):
 
         # NB! argmax and kthvalue handle ties between predicted counts differently.
         # The original implementation: https://github.com/MadryLab/smoothed-vit/blob/main/src/utils/smoothing.py#L145
-        # uses argmax for the model predictions (later called https://github.com/MadryLab/smoothed-vit/blob/main/src/utils/smoothing.py#L230)
+        # uses argmax for the model predictions
+        # (later called y_smoothed https://github.com/MadryLab/smoothed-vit/blob/main/src/utils/smoothing.py#L230)
         # and kthvalue for the certified predictions.
         # to be consistent with the original implementation we also follow this here.
         top_predicted_class_argmax = torch.argmax(pred_counts, dim=1)

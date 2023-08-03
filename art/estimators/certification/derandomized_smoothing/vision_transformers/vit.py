@@ -74,8 +74,8 @@ class PatchEmbed(torch.nn.Module):
         Creates a convolution that mimics the embedding layer to be used for the ablation mask to
         track where the image was ablated.
 
-        :param patch_size: The patch size used by the ViT
-        :param embed_dim: The embedding dimension used by the ViT
+        :param patch_size: The patch size used by the ViT.
+        :param embed_dim: The embedding dimension used by the ViT.
         :param device: Which device to set the emdedding layer to.
         :param kwargs: Handles the remaining kwargs from the ViT configuration.
         """
@@ -123,7 +123,6 @@ class PyTorchViT(VisionTransformer):
         """
         Create a ArtViT instance
         :param kwargs: keyword arguments required to create the mask embedder and the vision transformer class
-        Must contain ...
         """
         self.to_drop_tokens = kwargs["drop_tokens"]
 
