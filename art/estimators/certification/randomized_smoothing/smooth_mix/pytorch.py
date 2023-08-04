@@ -15,6 +15,28 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+
+# MIT License
+#
+# Copyright (c) 2021 Jongheon Jeong
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 """
 This module implements SmoothMix applied to classifier predictions.
 
@@ -64,7 +86,7 @@ class PyTorchSmoothMix(PyTorchRandomizedSmoothing):
         loss: "torch.nn.modules.loss._Loss",
         input_shape: Tuple[int, ...],
         nb_classes: int,
-        optimizer: Optional["torch.optim.Optimizer"] = None,  # type: ignore
+        optimizer: Optional["torch.optim.Optimizer"] = None,
         channels_first: bool = True,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
@@ -254,7 +276,7 @@ class PyTorchSmoothMix(PyTorchRandomizedSmoothing):
     ) -> Tuple["torch.Tensor", "torch.Tensor"]:
         """
         The authors' implementation of the SmoothMixPGD attack.
-        Code modified from https://github.com/jh-jeong/smoothmix/code/train.py
+        Code modified from https://github.com/jh-jeong/smoothmix/blob/main/code/train.py
 
         :param inputs: The batch inputs
         :param labels: The batch labels for the inputs
