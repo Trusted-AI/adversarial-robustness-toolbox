@@ -135,7 +135,7 @@ class PyTorchDeRandomizedSmoothing(PyTorchSmoothedViT, PyTorchClassifier):
 
         if not channels_first:
             raise ValueError("Channels must be set to first")
-        logging.info("Running algorithm: %s" % algorithm)
+        logging.info("Running algorithm: %s", algorithm)
 
         # Default value for output shape
         output_shape = input_shape

@@ -118,10 +118,10 @@ def test_pytorch_training(art_warning, fix_get_mnist_data, fix_get_cifar10_data)
     for dataset, dataset_name in zip([fix_get_mnist_data, fix_get_cifar10_data], ["mnist", "cifar"]):
         if dataset_name == "mnist":
             ptc = SmallMNISTModel().to(device)
-            input_shape = (2, 28, 28)
+            input_shape = (1, 28, 28)
         else:
             ptc = SmallCIFARModel().to(device)
-            input_shape = (6, 32, 32)
+            input_shape = (3, 32, 32)
 
         criterion = nn.CrossEntropyLoss()
         optimizer = optim.SGD(ptc.parameters(), lr=0.01, momentum=0.9)
@@ -153,7 +153,7 @@ def test_tf2_training(art_warning, fix_get_mnist_data, fix_get_cifar10_data):
     import tensorflow as tf
 
     def build_model(input_shape):
-        img_inputs = tf.keras.Input(shape=input_shape)
+        img_inputs = tf.keras.Input(shape=(input_shape[0], input_shape[1], input_shape[2] * 2))
         x = tf.keras.layers.Conv2D(filters=32, kernel_size=(4, 4), strides=(2, 2), activation="relu")(img_inputs)
         x = tf.keras.layers.MaxPool2D(pool_size=(2, 2), strides=2)(x)
         # tensorflow uses channels last and we are loading weights from an originally trained pytorch model
@@ -168,9 +168,9 @@ def test_tf2_training(art_warning, fix_get_mnist_data, fix_get_cifar10_data):
 
     for dataset, dataset_name in zip([fix_get_mnist_data, fix_get_cifar10_data], ["mnist", "cifar"]):
         if dataset_name == "mnist":
-            input_shape = (28, 28, 2)
+            input_shape = (28, 28, 1)
         else:
-            input_shape = (32, 32, 6)
+            input_shape = (32, 32, 3)
         net = build_model(input_shape=input_shape)
 
         try:
@@ -262,7 +262,7 @@ def test_pytorch_mnist_certification(art_warning, fix_get_mnist_data):
                 clip_values=(0, 1),
                 loss=criterion,
                 optimizer=optimizer,
-                input_shape=(2, 28, 28),
+                input_shape=(1, 28, 28),
                 nb_classes=10,
                 ablation_type=ablation_type,
                 ablation_size=ablation_size,
@@ -292,7 +292,7 @@ def test_tf2_mnist_certification(art_warning, fix_get_mnist_data):
     import tensorflow as tf
 
     def build_model(input_shape):
-        img_inputs = tf.keras.Input(shape=input_shape)
+        img_inputs = tf.keras.Input(shape=(input_shape[0], input_shape[1], input_shape[2] * 2))
         x = tf.keras.layers.Conv2D(filters=32, kernel_size=(4, 4), strides=(2, 2), activation="relu")(img_inputs)
         x = tf.keras.layers.MaxPool2D(pool_size=(2, 2), strides=2)(x)
         # tensorflow uses channels last and we are loading weights from an originally trained pytorch model
@@ -324,7 +324,7 @@ def test_tf2_mnist_certification(art_warning, fix_get_mnist_data):
             weight_list.append(w)
         return weight_list
 
-    net = build_model(input_shape=(28, 28, 2))
+    net = build_model(input_shape=(28, 28, 1))
     net.set_weights(get_weights())
 
     loss_object = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
@@ -348,7 +348,7 @@ def test_tf2_mnist_certification(art_warning, fix_get_mnist_data):
                 clip_values=(0, 1),
                 loss_object=loss_object,
                 optimizer=optimizer,
-                input_shape=(28, 28, 2),
+                input_shape=(28, 28, 1),
                 nb_classes=10,
                 ablation_type=ablation_type,
                 ablation_size=ablation_size,

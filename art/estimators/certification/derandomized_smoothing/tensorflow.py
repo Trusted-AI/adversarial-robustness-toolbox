@@ -106,6 +106,8 @@ class TensorFlowV2DeRandomizedSmoothing(DeRandomizedSmoothingMixin, TensorFlowV2
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         """
+        # input channels are internally doubled for the certification algorithm.
+        input_shape = (input_shape[0], input_shape[1], input_shape[2] * 2)
         super().__init__(
             model=model,
             nb_classes=nb_classes,
