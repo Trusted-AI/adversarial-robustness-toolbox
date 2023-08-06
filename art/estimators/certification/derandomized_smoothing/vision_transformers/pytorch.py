@@ -32,7 +32,6 @@ from typing import List, TYPE_CHECKING
 if TYPE_CHECKING:
     from art.estimators.certification.derandomized_smoothing.vision_transformers.vit import PyTorchViT
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
