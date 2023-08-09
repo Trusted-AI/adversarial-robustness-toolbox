@@ -267,6 +267,21 @@ class PyTorchObjectSeeker(ObjectSeekerMixin, ObjectDetectorMixin, PyTorchEstimat
         """
         return self.detector.predict(x=x, batch_size=batch_size, **kwargs)
 
+    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> List[Dict[str, np.ndarray]]:
+        """
+        Perform prediction for a batch of inputs.
+
+        :param x: Samples of shape NCHW or NHWC.
+        :param batch_size: Batch size.
+        :return: Predictions of format `List[Dict[str, np.ndarray]]`, one for each input image. The fields of the Dict
+                 are as follows:
+
+                 - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
+                 - labels [N]: the labels for each image
+                 - scores [N]: the scores or each prediction.
+        """
+        return ObjectSeekerMixin.predict(self, x=x, batch_size=batch_size, **kwargs)
+
     def fit(  # pylint: disable=W0221
         self,
         x: np.ndarray,

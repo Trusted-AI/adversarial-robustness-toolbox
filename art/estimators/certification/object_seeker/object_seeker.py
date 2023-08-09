@@ -24,6 +24,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import abc
 import logging
+from collections import defaultdict
 from typing import Dict, List, Tuple
 
 import numpy as np
@@ -309,3 +310,75 @@ class ObjectSeekerMixin(abc.ABC):
             "scores": np.asarray(unionized_scores),
         }
         return unionized_predictions
+
+    def certify(self, x: np.ndarray, patch_size: int, certify_threshold: float, batch_size: int = 128):
+        if self.channels_first:
+            _, _, height, width = self.input_shape
+        else:
+            _, height, width, _ = self.input_shape
+
+        patch_size = np.sqrt(height * width * patch_size)
+
+        far_vulnerable_count = 0
+        close_vulnerable_count = 0
+        over_vulnerable_count = 0
+
+        height_offset = height * 0.1
+        width_offset = width * 0.1
+
+        for x_i in tqdm(x, desc="ObjectSeeker", disable=not self.verbose):
+            # Get predictions
+            base_preds, masked_preds = self._masked_predictions(x_i, batch_size=batch_size)
+            base_boxes = base_preds['boxes']
+            masked_boxes = masked_preds['boxes']
+
+            # Calculate images within IoA
+            area1 = (base_boxes[:, 2] - base_boxes[:, 0]) * (base_boxes[:, 3] - base_boxes[:, 1])
+            area2 = (masked_boxes[:, 2] - masked_boxes[:, 0]) * (masked_boxes[:, 3] - masked_boxes[:, 1])
+            top_left = np.maximum(base_boxes[:, None, :2], masked_boxes[:, :2])
+            bottom_right = np.minimum(base_boxes[:, None, 2:], masked_boxes[:, 2:])
+            intersection = np.prod(np.clip(bottom_right - top_left, 0, None), axis=2)
+            intersection = area2 * self.prune_threshold - area2 - intersection
+            ioa = intersection / (area1[:, None])
+            flag = ioa > certify_threshold
+            flag_ioa = np.any(flag, axis=1)
+
+            # Vulnerable patches map
+            vulnerable_map = np.zeros((len(masked_boxes), height, width), dtype=bool)
+            vulnerable_map[flag_ioa] = True
+
+            # Far patch
+            location_map = np.ones_like(vulnerable_map)
+            for i, box in enumerate(base_boxes):
+                a = int(max(0, box[1] - patch_size - height_offset))
+                b = int(min(box[3] + height_offset + 1, height))
+                c = int(max(0, box[0] - patch_size - width_offset))
+                d = int(min(box[2] + width_offset + 1, width))
+                location_map[i, a:b, c:d] = False
+
+            far_vulnerable = np.any(np.logical_and(location_map, vulnerable_map), dim=(-2, -1))
+            far_vulnerable_count += np.sum(far_vulnerable)
+
+            # Close patch
+            location_map = np.ones_like(vulnerable_map)
+            for i, box in enumerate(base_boxes):
+                a = int(max(0, box[1] - patch_size))
+                b = int(min(box[3] + 1, height))
+                c = int(max(0, box[0] - patch_size))
+                d = int(min(box[2] + 1, width))
+                location_map[i, a:b, c:d] = False
+
+            close_vulnerable = np.any(np.logical_and(location_map, vulnerable_map), dim=(-2, -1))
+            close_vulnerable_count += np.sum(close_vulnerable)
+
+            # Over patch
+            location_map = np.zeros_like(vulnerable_map)
+            for i, box in enumerate(base_boxes):
+                a = int(max(0, box[1] - patch_size))
+                b = int(min(box[3] + 1, height))
+                c = int(max(0, box[0] - patch_size))
+                d = int(min(box[2] + 1, width))
+                location_map[i, a:b, c:d] = True
+
+            over_vulnerable = np.any(np.logical_and(location_map, vulnerable_map), dim=(-2, -1))
+            over_vulnerable_count += np.sum(over_vulnerable)
