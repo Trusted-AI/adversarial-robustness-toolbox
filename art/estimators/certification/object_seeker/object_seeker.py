@@ -254,7 +254,7 @@ class ObjectSeekerMixin(abc.ABC):
         Cluster the bounding boxes for the pruned masked predictions.
 
         :param masked_preds: The merged masked predictions of a single image already pruned.
-        :return: The clustered masked predictions with overlapping boxes merged. 
+        :return: The clustered masked predictions with overlapping boxes merged.
         """
         boxes = masked_preds["boxes"]
         labels = masked_preds["labels"]
@@ -311,74 +311,70 @@ class ObjectSeekerMixin(abc.ABC):
         }
         return unionized_predictions
 
-    def certify(self, x: np.ndarray, patch_size: int, certify_threshold: float, batch_size: int = 128):
+    def certify(
+        self,
+        x: np.ndarray,
+        patch_size: float = 0.01,
+        offset: float = 0.1,
+        batch_size: int = 128,
+    ) -> List[np.ndarray]:
+        """
+        Checks if there is certifiable IoA robustness for each predicted bounding box.
+
+        :param x: Sample input with shape as expected by the model.
+        :param patch_size: The size of the patch to check against.
+        :param offset: The offset to distinguish between the far and near patches.
+        :return: A list containing an array of bools for each bounding box per image indicating if the bounding
+                 box is certified against the given patch.
+        """
         if self.channels_first:
-            _, _, height, width = self.input_shape
+            _, height, width = self.input_shape
         else:
-            _, height, width, _ = self.input_shape
+            height, width, _ = self.input_shape
 
         patch_size = np.sqrt(height * width * patch_size)
+        height_offset = offset * height
+        width_offset = offset * width
 
-        far_vulnerable_count = 0
-        close_vulnerable_count = 0
-        over_vulnerable_count = 0
+        # Get predictions
+        predictions = self.predict(x, batch_size=batch_size)
 
-        height_offset = height * 0.1
-        width_offset = width * 0.1
+        certifications: List[np.ndarray] = []
 
-        for x_i in tqdm(x, desc="ObjectSeeker", disable=not self.verbose):
-            # Get predictions
-            base_preds, masked_preds = self._masked_predictions(x_i, batch_size=batch_size)
-            base_boxes = base_preds['boxes']
-            masked_boxes = masked_preds['boxes']
-
-            # Calculate images within IoA
-            area1 = (base_boxes[:, 2] - base_boxes[:, 0]) * (base_boxes[:, 3] - base_boxes[:, 1])
-            area2 = (masked_boxes[:, 2] - masked_boxes[:, 0]) * (masked_boxes[:, 3] - masked_boxes[:, 1])
-            top_left = np.maximum(base_boxes[:, None, :2], masked_boxes[:, :2])
-            bottom_right = np.minimum(base_boxes[:, None, 2:], masked_boxes[:, 2:])
-            intersection = np.prod(np.clip(bottom_right - top_left, 0, None), axis=2)
-            intersection = area2 * self.prune_threshold - area2 - intersection
-            ioa = intersection / (area1[:, None])
-            flag = ioa > certify_threshold
-            flag_ioa = np.any(flag, axis=1)
-
-            # Vulnerable patches map
-            vulnerable_map = np.zeros((len(masked_boxes), height, width), dtype=bool)
-            vulnerable_map[flag_ioa] = True
+        for pred in tqdm(predictions, desc="ObjectSeeker", disable=not self.verbose):
+            boxes = pred["boxes"]
 
             # Far patch
-            location_map = np.ones_like(vulnerable_map)
-            for i, box in enumerate(base_boxes):
+            far_patch_map = np.ones((len(boxes), height, width), dtype=bool)
+            for i, box in enumerate(boxes):
                 a = int(max(0, box[1] - patch_size - height_offset))
                 b = int(min(box[3] + height_offset + 1, height))
                 c = int(max(0, box[0] - patch_size - width_offset))
                 d = int(min(box[2] + width_offset + 1, width))
-                location_map[i, a:b, c:d] = False
-
-            far_vulnerable = np.any(np.logical_and(location_map, vulnerable_map), dim=(-2, -1))
-            far_vulnerable_count += np.sum(far_vulnerable)
+                far_patch_map[i, a:b, c:d] = False
+            far_vulnerable = np.any(far_patch_map, axis=(-2, -1))
 
             # Close patch
-            location_map = np.ones_like(vulnerable_map)
-            for i, box in enumerate(base_boxes):
+            close_patch_map = np.ones((len(boxes), height, width), dtype=bool)
+            for i, box in enumerate(boxes):
                 a = int(max(0, box[1] - patch_size))
                 b = int(min(box[3] + 1, height))
                 c = int(max(0, box[0] - patch_size))
                 d = int(min(box[2] + 1, width))
-                location_map[i, a:b, c:d] = False
-
-            close_vulnerable = np.any(np.logical_and(location_map, vulnerable_map), dim=(-2, -1))
-            close_vulnerable_count += np.sum(close_vulnerable)
+                close_patch_map[i, a:b, c:d] = False
+            close_vulnerable = np.any(close_patch_map, axis=(-2, -1))
 
             # Over patch
-            location_map = np.zeros_like(vulnerable_map)
-            for i, box in enumerate(base_boxes):
+            close_patch_map = np.ones((len(boxes), height, width), dtype=bool)
+            for i, box in enumerate(boxes):
                 a = int(max(0, box[1] - patch_size))
                 b = int(min(box[3] + 1, height))
                 c = int(max(0, box[0] - patch_size))
                 d = int(min(box[2] + 1, width))
-                location_map[i, a:b, c:d] = True
+                close_patch_map[i, a:b, c:d] = True
+            over_vulnerable = np.any(close_patch_map, axis=(-2, -1))
 
-            over_vulnerable = np.any(np.logical_and(location_map, vulnerable_map), dim=(-2, -1))
-            over_vulnerable_count += np.sum(over_vulnerable)
+            cert = np.logical_and.reduce((far_vulnerable, close_vulnerable, over_vulnerable))
+            certifications.append(cert)
+
+        return certifications
