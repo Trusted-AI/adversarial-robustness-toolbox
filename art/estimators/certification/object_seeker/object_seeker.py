@@ -24,7 +24,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import abc
 import logging
-from collections import defaultdict
 from typing import Dict, List, Tuple
 
 import numpy as np
@@ -46,13 +45,13 @@ class ObjectSeekerMixin(abc.ABC):
 
     def __init__(
         self,
+        *args,
         num_lines: int = 3,
         confidence_threshold: float = 0.3,
         iou_threshold: float = 0.5,
         prune_threshold: float = 0.5,
         epsilon: float = 0.1,
         verbose: bool = False,
-        *args,
         **kwargs,
     ) -> None:
         """
@@ -347,31 +346,31 @@ class ObjectSeekerMixin(abc.ABC):
             # Far patch
             far_patch_map = np.ones((len(boxes), height, width), dtype=bool)
             for i, box in enumerate(boxes):
-                a = int(max(0, box[1] - patch_size - height_offset))
-                b = int(min(box[3] + height_offset + 1, height))
-                c = int(max(0, box[0] - patch_size - width_offset))
-                d = int(min(box[2] + width_offset + 1, width))
-                far_patch_map[i, a:b, c:d] = False
+                x_1 = int(max(0, box[1] - patch_size - height_offset))
+                x_2 = int(min(box[3] + height_offset + 1, height))
+                y_1 = int(max(0, box[0] - patch_size - width_offset))
+                y_2 = int(min(box[2] + width_offset + 1, width))
+                far_patch_map[i, x_1:x_2, y_1:y_2] = False
             far_vulnerable = np.any(far_patch_map, axis=(-2, -1))
 
             # Close patch
             close_patch_map = np.ones((len(boxes), height, width), dtype=bool)
             for i, box in enumerate(boxes):
-                a = int(max(0, box[1] - patch_size))
-                b = int(min(box[3] + 1, height))
-                c = int(max(0, box[0] - patch_size))
-                d = int(min(box[2] + 1, width))
-                close_patch_map[i, a:b, c:d] = False
+                x_1 = int(max(0, box[1] - patch_size))
+                x_2 = int(min(box[3] + 1, height))
+                y_1 = int(max(0, box[0] - patch_size))
+                y_2 = int(min(box[2] + 1, width))
+                close_patch_map[i, x_1:x_2, y_1:y_2] = False
             close_vulnerable = np.any(close_patch_map, axis=(-2, -1))
 
             # Over patch
             close_patch_map = np.ones((len(boxes), height, width), dtype=bool)
             for i, box in enumerate(boxes):
-                a = int(max(0, box[1] - patch_size))
-                b = int(min(box[3] + 1, height))
-                c = int(max(0, box[0] - patch_size))
-                d = int(min(box[2] + 1, width))
-                close_patch_map[i, a:b, c:d] = True
+                x_1 = int(max(0, box[1] - patch_size))
+                x_2 = int(min(box[3] + 1, height))
+                y_1 = int(max(0, box[0] - patch_size))
+                y_2 = int(min(box[2] + 1, width))
+                close_patch_map[i, x_1:x_2, y_1:y_2] = True
             over_vulnerable = np.any(close_patch_map, axis=(-2, -1))
 
             cert = np.logical_and.reduce((far_vulnerable, close_vulnerable, over_vulnerable))
