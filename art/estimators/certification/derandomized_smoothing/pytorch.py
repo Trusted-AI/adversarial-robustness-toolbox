@@ -132,6 +132,7 @@ class PyTorchDeRandomizedSmoothing(PyTorchSmoothedViT, PyTorchClassifier):
         """
 
         import torch
+
         logging.basicConfig()
         logger.setLevel(logging.INFO)
 

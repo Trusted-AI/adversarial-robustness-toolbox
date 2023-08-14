@@ -58,6 +58,7 @@ class PyTorchSmoothedViT:
         """
         import timm
         import torch
+
         logging.basicConfig()
         logger.setLevel(logging.INFO)
 
