@@ -4,5 +4,10 @@ Randomized smoothing estimators.
 from art.estimators.certification.randomized_smoothing.randomized_smoothing import RandomizedSmoothingMixin
 
 from art.estimators.certification.randomized_smoothing.numpy import NumpyRandomizedSmoothing
-from art.estimators.certification.randomized_smoothing.tensorflow import TensorFlowV2RandomizedSmoothing
 from art.estimators.certification.randomized_smoothing.pytorch import PyTorchRandomizedSmoothing
+from art.estimators.certification.randomized_smoothing.tensorflow import TensorFlowV2RandomizedSmoothing
+from art.estimators.certification.randomized_smoothing.smooth_mix.pytorch import PyTorchSmoothMix
+from art.estimators.certification.randomized_smoothing.macer.pytorch import PyTorchMACER
+from art.estimators.certification.randomized_smoothing.macer.tensorflow import TensorFlowV2MACER
+from art.estimators.certification.randomized_smoothing.smooth_adv.pytorch import PyTorchSmoothAdv
+from art.estimators.certification.randomized_smoothing.smooth_adv.tensorflow import TensorFlowV2SmoothAdv

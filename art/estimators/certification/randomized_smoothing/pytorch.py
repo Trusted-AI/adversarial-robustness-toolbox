@@ -26,7 +26,7 @@ import logging
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
 import warnings
-from tqdm import tqdm
+from tqdm.auto import trange
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
@@ -61,7 +61,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         loss: "torch.nn.modules.loss._Loss",
         input_shape: Tuple[int, ...],
         nb_classes: int,
-        optimizer: Optional["torch.optim.Optimizer"] = None,  # type: ignore
+        optimizer: Optional["torch.optim.Optimizer"] = None,
         channels_first: bool = True,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
@@ -71,6 +71,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         sample_size: int = 32,
         scale: float = 0.1,
         alpha: float = 0.001,
+        verbose: bool = False,
     ):
         """
         Create a randomized smoothing classifier.
@@ -96,6 +97,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         :param sample_size: Number of samples for smoothing.
         :param scale: Standard deviation of Gaussian noise added.
         :param alpha: The failure probability of smoothing.
+        :param verbose: Show progress bars.
         """
         if preprocessing_defences is not None:
             warnings.warn(
@@ -118,6 +120,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
             sample_size=sample_size,
             scale=scale,
             alpha=alpha,
+            verbose=verbose,
         )
 
     def _predict_classifier(self, x: np.ndarray, batch_size: int, training_mode: bool, **kwargs) -> np.ndarray:
@@ -179,7 +182,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=True, drop_last=drop_last)
 
         # Start training
-        for _ in tqdm(range(nb_epochs)):
+        for _ in trange(nb_epochs, disable=not self.verbose):
             for x_batch, y_batch in dataloader:
                 # Move inputs to device
                 x_batch = x_batch.to(self._device)

@@ -26,7 +26,7 @@ import logging
 from typing import Callable, List, Optional, Tuple, Union, TYPE_CHECKING
 
 import warnings
-from tqdm import tqdm
+from tqdm.auto import trange
 import numpy as np
 
 from art.estimators.classification.tensorflow import TensorFlowV2Classifier
@@ -70,6 +70,7 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
         sample_size: int = 32,
         scale: float = 0.1,
         alpha: float = 0.001,
+        verbose: bool = False,
     ):
         """
         Create a randomized smoothing classifier.
@@ -98,6 +99,7 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
         :param sample_size: Number of samples for smoothing.
         :param scale: Standard deviation of Gaussian noise added.
         :param alpha: The failure probability of smoothing.
+        :param verbose: Show progress bars.
         """
         if preprocessing_defences is not None:
             warnings.warn(
@@ -120,6 +122,7 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
             sample_size=sample_size,
             scale=scale,
             alpha=alpha,
+            verbose=verbose,
         )
 
     def _predict_classifier(self, x: np.ndarray, batch_size: int, training_mode: bool, **kwargs) -> np.ndarray:
@@ -137,8 +140,9 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
                   shape (nb_samples,).
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
-        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for
-               TensorFlow and providing it takes no effect.
+        :param kwargs: Dictionary of framework-specific arguments. This parameter currently only supports
+                       "scheduler" which is an optional function that will be called at the end of every
+                       epoch to adjust the learning rate.
         """
         import tensorflow as tf
 
@@ -165,6 +169,8 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
         else:
             train_step = self._train_step
 
+        scheduler = kwargs.get("scheduler")
+
         y = check_and_transform_label_format(y, nb_classes=self.nb_classes)
 
         # Apply preprocessing
@@ -176,11 +182,14 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
 
         train_ds = tf.data.Dataset.from_tensor_slices((x_preprocessed, y_preprocessed)).shuffle(10000).batch(batch_size)
 
-        for _ in tqdm(range(nb_epochs)):
+        for epoch in trange(nb_epochs, disable=not self.verbose):
             for images, labels in train_ds:
                 # Add random noise for randomized smoothing
                 images += tf.random.normal(shape=images.shape, mean=0.0, stddev=self.scale)
                 train_step(self.model, images, labels)
+
+            if scheduler is not None:
+                scheduler(epoch)
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:  # type: ignore
         """
