@@ -58,6 +58,8 @@ class PyTorchSmoothedViT:
         """
         import timm
         import torch
+        logging.basicConfig()
+        logger.setLevel(logging.INFO)
 
         supported_models = [
             "vit_base_patch8_224",
@@ -116,7 +118,7 @@ class PyTorchSmoothedViT:
         for model in models:
             logger.info("Testing %s creation", model)
             try:
-                _ = PyTorchSmoothedViT(
+                _ = cls(
                     model=model,
                     loss=torch.nn.CrossEntropyLoss(),
                     optimizer=torch.optim.SGD,

@@ -132,10 +132,12 @@ class PyTorchDeRandomizedSmoothing(PyTorchSmoothedViT, PyTorchClassifier):
         """
 
         import torch
+        logging.basicConfig()
+        logger.setLevel(logging.INFO)
 
         if not channels_first:
             raise ValueError("Channels must be set to first")
-        logging.info("Running algorithm: %s", algorithm)
+        logger.info("Running algorithm: %s", algorithm)
 
         # Default value for output shape
         output_shape = input_shape
@@ -173,7 +175,7 @@ class PyTorchDeRandomizedSmoothing(PyTorchSmoothedViT, PyTorchClassifier):
                     supported_models = self.get_models()
                     if pretrained_cfg["architecture"] not in supported_models:
                         raise ValueError(
-                            "Architecture not supported. Use PyTorchSmoothedViT.get_models() "
+                            "Architecture not supported. Use PyTorchDeRandomizedSmoothing.get_models() "
                             "to get the supported model architectures."
                         )
                     model = timm.create_model(
