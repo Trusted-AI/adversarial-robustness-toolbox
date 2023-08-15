@@ -30,9 +30,6 @@ logger = logging.getLogger(__name__)
 
 @pytest.fixture()
 def get_pytorch_yolo(get_default_cifar10_subset):
-    """
-    This class tests the PyTorchYolo object detector.
-    """
     import cv2
     import torch
 
@@ -53,11 +50,8 @@ def get_pytorch_yolo(get_default_cifar10_subset):
         def forward(self, x, targets=None):
             if self.training:
                 outputs = self.model(x)
-                # loss is averaged over a batch. Thus, for patch generation use batch_size = 1
                 loss, _ = compute_loss(outputs, targets, self.model)
-
                 loss_components = {"loss_total": loss}
-
                 return loss_components
             else:
                 return self.model(x)
@@ -157,7 +151,9 @@ def test_pytorch_predict(art_warning, get_pytorch_yolo):
     try:
         result = object_seeker.predict(x=x_test)
 
+        assert len(result) == len(x_test)
         assert list(result[0].keys()) == ["boxes", "labels", "scores"]
+        assert np.all(result[0]["scores"] >= 0.3)
 
     except ARTTestException as e:
         art_warning(e)
@@ -184,6 +180,7 @@ def test_pytorch_certify(art_warning, get_pytorch_yolo):
         result = object_seeker.certify(x=x_test, patch_size=0.01, offset=0.1)
 
         assert len(result) == len(x_test)
+        assert np.any(result[0])
 
     except ARTTestException as e:
         art_warning(e)
