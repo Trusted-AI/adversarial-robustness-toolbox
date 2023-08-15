@@ -20,6 +20,7 @@ This module implements the Patch-Fool attack in PyTorch.
 
 | Paper link: https://arxiv.org/abs/2203.08392
 """
+
 from typing import Optional, Union
 
 import numpy as np
@@ -51,6 +52,7 @@ class PatchFool(EvasionAttack):
         step_size_decay: Union[int, float] = 0.95,
         patch_layer: int = 4,
         random_start: bool = False,
+        skip_att_loss: bool = False,
     ):
         """
         Create a :class:`PatchFool` instance.
@@ -71,6 +73,7 @@ class PatchFool(EvasionAttack):
         self.step_size_decay = step_size_decay
         self.patch_layer = patch_layer
         self.random_start = random_start
+        self.skip_att_loss = skip_att_loss
         self._check_params()
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
@@ -95,7 +98,7 @@ class PatchFool(EvasionAttack):
 
             begin, end = idx * self.batch_size, min((idx + 1) * self.batch_size, nb_samples)
 
-            x_batch = F.convert_image_dtype(torch.from_numpy(x[begin:end]), torch.float32)
+            x_batch = torch.from_numpy(x[begin:end]).to(dtype=torch.float32)
             y_batch = torch.from_numpy(y[begin:end]).to(dtype=torch.float32)
 
             x_adv[begin:end] = self._generate_batch(x_batch, y_batch).cpu().detach().numpy()
@@ -112,58 +115,55 @@ class PatchFool(EvasionAttack):
         x = x.to(self.estimator.device)
         y = y.to(self.estimator.device)
 
-        patches = self._get_patch_index(x, layer=self.patch_layer)
+        patch_list = self._get_patch_index(x, layer=self.patch_layer)
 
         patch_size = self.estimator.patch_size
         mask = torch.zeros(x.shape).to(self.estimator.device)
 
-        for n, patch_idx in enumerate(patches):
+        for n, patch_idx in enumerate(patch_list):
             row = (patch_idx // (x.shape[2] // patch_size)) * patch_size
             col = (patch_idx % (x.shape[2] // patch_size)) * patch_size
             mask[n, :, row : row + patch_size, col : col + patch_size] = 1
 
         x_adv = torch.clone(x).to(self.estimator.device)
         x_adv = torch.mul(x_adv, 1 - mask)
+
         if self.random_start:
             perturbation = torch.rand(x.shape).to(self.estimator.device)
-            with torch.no_grad():
-                perturbation.data = torch.clamp(
-                    perturbation, min=self.estimator.clip_values[0], max=self.estimator.clip_values[1]
-                )
         else:
             perturbation = torch.zeros(x.shape).to(self.estimator.device)
         perturbation.requires_grad = True
 
         optim = torch.optim.Adam([perturbation], lr=self.learning_rate)
-        scheduler = torch.optim.lr_scheduler.StepLR(
-            optim, step_size=self.step_size, gamma=self.step_size_decay, verbose=True
-        )
-
-        x_adv += torch.mul(perturbation, mask)
+        scheduler = torch.optim.lr_scheduler.StepLR(optim, step_size=self.step_size, gamma=self.step_size_decay)
 
         for i_max_iter in range(self.max_iter):
+
             self.estimator.model.zero_grad()
             optim.zero_grad()
 
-            model_outputs, _ = self.estimator._predict_framework(x_adv)
+            adv_patch = torch.mul(perturbation, mask)
+            model_outputs, _ = self.estimator._predict_framework(x_adv + adv_patch)
             loss_ce = self.estimator._loss(model_outputs, y)
+
             grad_ce = torch.autograd.grad(loss_ce, perturbation, retain_graph=True)[0]
 
-            loss_att = self._get_attention_loss(x_adv, patches)
+            if not self.skip_att_loss:
+                loss_att = self._get_attention_loss(x_adv + adv_patch, patch_list)
 
-            for layer in range(loss_att.shape[1] // 2):
-                loss_att_layer = loss_att[:, layer, :]
-                loss_att_layer = -torch.log(loss_att_layer)
-                att_nll_loss = F.nll_loss(loss_att_layer, patches)
-                grad_att = torch.autograd.grad(att_nll_loss, perturbation, retain_graph=True)[0]
+                for layer in range(loss_att.shape[1] // 2):
+                    loss_att_layer = loss_att[:, layer, :]
+                    loss_att_layer = -torch.log(loss_att_layer)
+                    att_nll_loss = F.nll_loss(loss_att_layer, patch_list)
+                    grad_att = torch.autograd.grad(att_nll_loss, perturbation, retain_graph=True)[0]
 
-                # Reshape for PCgrad
-                grad_att_tmp = grad_att.reshape(grad_att.shape[0], -1)
-                grad_ce_tmp = grad_ce.reshape(grad_ce.shape[0], -1)
-                grad_att_tmp = self.pcgrad(grad_att_tmp, grad_ce_tmp)
-                grad_att = grad_att_tmp.reshape(grad_att.shape)
+                    # Reshape for PCgrad
+                    grad_att_tmp = grad_att.reshape(grad_att.shape[0], -1)
+                    grad_ce_tmp = grad_ce.reshape(grad_ce.shape[0], -1)
+                    grad_att_tmp = self.pcgrad(grad_att_tmp, grad_ce_tmp)
+                    grad_att = grad_att_tmp.reshape(grad_att.shape)
 
-                grad_ce += self.alpha * grad_att
+                    grad_ce += self.alpha * grad_att
 
             optim.zero_grad()
             perturbation.grad = -grad_ce
@@ -172,11 +172,10 @@ class PatchFool(EvasionAttack):
 
             with torch.no_grad():
                 perturbation.data = torch.clamp(
-                    perturbation, min=self.estimator.clip_values[0], max=self.estimator.clip_values[1]
+                    perturbation, self.estimator.clip_values[0], self.estimator.clip_values[1]
                 )
 
-            x_adv += torch.mul(perturbation, mask)
-
+        x_adv += torch.mul(perturbation, mask)
         return x_adv
 
     def _get_patch_index(self, x: "torch.Tensor", layer: int) -> "torch.Tensor":

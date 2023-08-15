@@ -1227,7 +1227,7 @@ class PyTorchClassifierDeiT(PyTorchClassifier):
         opt_level: str = "O1",
         loss_scale: Optional[Union[float, str]] = "dynamic",
         channels_first: bool = True,
-        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
+        clip_values: "CLIP_VALUES_TYPE" = (0.0, 1.0),
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
         preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
