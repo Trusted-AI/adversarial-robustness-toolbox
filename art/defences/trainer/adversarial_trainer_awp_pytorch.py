@@ -151,10 +151,19 @@ class AdversarialTrainerAWPPyTorch(AdversarialTrainerAWP):
             if validation_data is not None:
                 (x_test, y_test) = validation_data
                 output_clean = np.argmax(self.predict(x_test), axis=1)
-                nb_correct_clean = np.sum(output_clean == np.argmax(y_test, axis=1))
+
+                if y_test.ndim > 1:
+                    nb_correct_clean = np.sum(output_clean == np.argmax(y_test, axis=1))
+                else:
+                    nb_correct_clean = np.sum(output_clean == y_test)
+
                 x_test_adv = self._attack.generate(x_test, y=y_test)
                 output_adv = np.argmax(self.predict(x_test_adv), axis=1)
-                nb_correct_adv = np.sum(output_adv == np.argmax(y_test, axis=1))
+
+                if y_test.ndim > 1:
+                    nb_correct_adv = np.sum(output_adv == np.argmax(y_test, axis=1))
+                else:
+                    nb_correct_adv = np.sum(output_adv == y_test)
 
                 logger.info(
                     "epoch: %s time(s): %.1f loss: %.4f acc-adv (tr): %.4f acc-clean (val): %.4f acc-adv (val): %.4f",
@@ -254,10 +263,19 @@ class AdversarialTrainerAWPPyTorch(AdversarialTrainerAWP):
             if validation_data is not None:
                 (x_test, y_test) = validation_data
                 output_clean = np.argmax(self.predict(x_test), axis=1)
-                nb_correct_clean = np.sum(output_clean == np.argmax(y_test, axis=1))
+
+                if y_test.ndim > 1:
+                    nb_correct_clean = np.sum(output_clean == np.argmax(y_test, axis=1))
+                else:
+                    nb_correct_clean = np.sum(output_clean == y_test)
+
                 x_test_adv = self._attack.generate(x_test, y=y_test)
                 output_adv = np.argmax(self.predict(x_test_adv), axis=1)
-                nb_correct_adv = np.sum(output_adv == np.argmax(y_test, axis=1))
+
+                if y_test.ndim > 1:
+                    nb_correct_adv = np.sum(output_adv == np.argmax(y_test, axis=1))
+                else:
+                    nb_correct_adv = np.sum(output_adv == y_test)
 
                 logger.info(
                     "epoch: %s time(s): %.1f loss: %.4f acc-adv (tr): %.4f acc-clean (val): %.4f acc-adv (val): %.4f",
@@ -319,7 +337,7 @@ class AdversarialTrainerAWPPyTorch(AdversarialTrainerAWP):
         )
 
         # Check label shape
-        if self._classifier._reduce_labels:  # pylint: disable=W0212
+        if self._classifier._reduce_labels and y_preprocessed.ndim > 1:  # pylint: disable=W0212
             y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
         i_batch = torch.from_numpy(x_preprocessed).to(self._classifier._device)  # pylint: disable=W0212
