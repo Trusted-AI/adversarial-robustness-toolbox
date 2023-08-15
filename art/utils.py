@@ -1072,11 +1072,11 @@ def intersection_over_union(bbox_1: np.ndarray, bbox_2: np.ndarray) -> float:
     return: The intersection over union (IoU) of the two bounding boxes.
     """
     # Calculate area of the intersection
-    x1 = max(bbox_1[0], bbox_2[0])
-    y1 = max(bbox_1[1], bbox_2[1])
-    x2 = min(bbox_1[2], bbox_2[2])
-    y2 = min(bbox_1[3], bbox_2[3])
-    intersection = max(0, x2 - x1 + 1) * max(0, y2 - y1 + 1)
+    x_1 = max(bbox_1[0], bbox_2[0])
+    y_1 = max(bbox_1[1], bbox_2[1])
+    x_2 = min(bbox_1[2], bbox_2[2])
+    y_2 = min(bbox_1[3], bbox_2[3])
+    intersection = max(0, x_2 - x_1 + 1) * max(0, y_2 - y_1 + 1)
 
     # Calculate the area of the union
     bbox_1_area = (bbox_1[2] - bbox_1[0] + 1) * (bbox_1[3] - bbox_1[1] + 1)
@@ -1096,11 +1096,11 @@ def intersection_over_area(bbox_1: np.ndarray, bbox_2: np.ndarray) -> float:
     return: The intersection over area (IoA) of the two bounding boxes.
     """
     # Calculate area of the intersection
-    x1 = max(bbox_1[0], bbox_2[0])
-    y1 = max(bbox_1[1], bbox_2[1])
-    x2 = min(bbox_1[2], bbox_2[2])
-    y2 = min(bbox_1[3], bbox_2[3])
-    intersection = max(0, x2 - x1 + 1) * max(0, y2 - y1 + 1)
+    x_1 = max(bbox_1[0], bbox_2[0])
+    y_1 = max(bbox_1[1], bbox_2[1])
+    x_2 = min(bbox_1[2], bbox_2[2])
+    y_2 = min(bbox_1[3], bbox_2[3])
+    intersection = max(0, x_2 - x_1 + 1) * max(0, y_2 - y_1 + 1)
 
     # Calculate the area of bbox_1
     bbox_1_area = (bbox_1[2] - bbox_1[0] + 1) * (bbox_1[3] - bbox_1[1] + 1)
