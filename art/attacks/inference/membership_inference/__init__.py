@@ -7,3 +7,11 @@ from art.attacks.inference.membership_inference.white_box import MembershipInfer
 from art.attacks.inference.membership_inference.label_only_gap_attack import LabelOnlyGapAttack
 from art.attacks.inference.membership_inference.label_only_boundary_distance import LabelOnlyDecisionBoundary
 from art.attacks.inference.membership_inference.shadow_models import ShadowModels
+from art.attacks.inference.membership_inference.blindMI_attack import MembershipInferenceBlindMI
+from art.attacks.inference.membership_inference.utils import (
+    compute_pairwise_distances,
+    gaussian_kernel_matrix,
+    maximum_mean_discrepancy,
+    sobel,
+    mmd_loss,
+)
