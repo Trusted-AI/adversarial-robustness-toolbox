@@ -205,7 +205,6 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
         original_images = torch.from_numpy(np.copy(data[poison_indices])).to(self.estimator.device)
 
         for batch_id in trange(batches, desc="Hidden Trigger", disable=not self.verbose):
-
             cur_index = self.batch_size * batch_id
             offset = min(self.batch_size, num_poison - cur_index)
             poison_batch_indices = poison_indices[cur_index : cur_index + offset]
@@ -219,7 +218,6 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
 
             feat1 = self.estimator.get_activations(trigger_samples, self.feature_layer, 1, framework=True)
             feat1 = feat1.detach().clone()
-            print('feat1 ', feat1.shape)
 
             for i in range(self.max_iter):
                 poison_samples.requires_grad_()
@@ -231,7 +229,7 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
                         decay_exp = 0
                     else:
                         decay_exp = max(max_index) + 1
-                learning_rate = self.learning_rate * (self.decay_coeff ** decay_exp)
+                learning_rate = self.learning_rate * (self.decay_coeff**decay_exp)
 
                 # Compute the feature representation of the current poisons and
                 # identify the closest trigger sample for each poison

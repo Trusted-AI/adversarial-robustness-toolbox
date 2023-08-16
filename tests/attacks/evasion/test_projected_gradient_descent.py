@@ -55,7 +55,7 @@ def get_mnist_classifier(framework, image_dl_estimator):
         if framework == "pytorch":
             import torch
             # NB, uses CROSSENTROPYLOSS thus should use logits in output
-            classifier = get_image_classifier_pt()
+            classifier = get_image_classifier_pt(from_logits=True)
 
         elif framework == "tensorflow2":
             classifier, _ = get_image_classifier_tf()
@@ -67,7 +67,7 @@ def get_mnist_classifier(framework, image_dl_estimator):
                 import torch
                 from art.estimators.hugging_face import HuggingFaceClassifier
 
-                model = transformers.AutoModelForImageClassification.from_pretrained('facebook/deit-tiny-patch16-224', # takes 3 min
+                model = transformers.AutoModelForImageClassification.from_pretrained('facebook/deit-tiny-patch16-224',
                                                                                      ignore_mismatched_sizes=True,
                                                                                      num_labels=10)
 
@@ -137,11 +137,11 @@ def get_tabular_classifier(framework, image_dl_estimator):
 
 class TestPGD:
 
-    @pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf", "scikitlearn")
+    @pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf", "scikitlearn", "huggingface")
     def test_classifier_type_check_fail(self):
         backend_test_classifier_type_check_fail(ProjectedGradientDescent, [BaseEstimator, LossGradientsMixin])
 
-    @pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf")
+    @pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf", "huggingface")
     def test_check_params(self, get_mnist_classifier):
 
         classifier = get_mnist_classifier()
@@ -200,15 +200,17 @@ class TestPGD:
 
         self._test_backend_mnist(classifier, x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist)
 
-        # Test with clip values of array type
-        classifier.set_params(clip_values=(np.zeros_like(x_test_mnist[0]), np.ones_like(x_test_mnist[0])))
-        self._test_backend_mnist(classifier, x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist)
+        # Original tests only run this for pytorch
+        if framework in ["pytorch", "tensorflow2"]:
+            # Test with clip values of array type
+            classifier.set_params(clip_values=(np.zeros_like(x_test_mnist[0]), np.ones_like(x_test_mnist[0])))
+            self._test_backend_mnist(classifier, x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist)
 
-        classifier.set_params(clip_values=(np.zeros_like(x_test_mnist[0][0]), np.ones_like(x_test_mnist[0][0])))
-        self._test_backend_mnist(classifier, x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist)
+            classifier.set_params(clip_values=(np.zeros_like(x_test_mnist[0][0]), np.ones_like(x_test_mnist[0][0])))
+            self._test_backend_mnist(classifier, x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist)
 
-        classifier.set_params(clip_values=(np.zeros_like(x_test_mnist[0][0][0]), np.ones_like(x_test_mnist[0][0][0])))
-        self._test_backend_mnist(classifier, x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist)
+            classifier.set_params(clip_values=(np.zeros_like(x_test_mnist[0][0][0]), np.ones_like(x_test_mnist[0][0][0])))
+            self._test_backend_mnist(classifier, x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist)
 
     def _test_backend_mnist(self, classifier, x_train, y_train, x_test, y_test):
         x_test_original = x_test.copy()

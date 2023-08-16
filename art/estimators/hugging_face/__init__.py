@@ -1,1 +1,4 @@
-from art.estimators.hugging_face.hugging_face import HuggingFaceClassifier
+import importlib
+
+if importlib.util.find_spec("torch") is not None:
+    from art.estimators.hugging_face.hugging_face import HuggingFaceClassifier

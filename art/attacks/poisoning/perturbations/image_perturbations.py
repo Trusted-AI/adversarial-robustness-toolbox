@@ -84,6 +84,7 @@ def add_pattern_bd(x: np.ndarray, distance: int = 2, pixel_value: int = 1) -> np
         raise ValueError(f"Invalid array shape: {shape}")
     return x
 
+
 def add_pattern_bd_pytorch(x: np.ndarray, distance: int = 2, pixel_value: int = 1) -> np.ndarray:
     """
     Augments a matrix by setting a checkerboard-like pattern of values some `distance` away from the bottom-right
@@ -117,6 +118,8 @@ def add_pattern_bd_pytorch(x: np.ndarray, distance: int = 2, pixel_value: int = 
     else:
         raise ValueError(f"Invalid array shape: {shape}")
     return x
+
+
 def insert_image(
     x: np.ndarray,
     backdoor_path: str = "../utils/data/backdoors/alert.png",

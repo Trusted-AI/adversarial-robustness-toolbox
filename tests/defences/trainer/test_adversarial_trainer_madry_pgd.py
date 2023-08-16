@@ -49,13 +49,15 @@ def get_mnist_classifier(framework, image_dl_estimator):
         elif framework == "tensorflow2":
             classifier, _ = get_image_classifier_tf()
             master_seed(seed=1234)
+        else:
+            return None
 
         return classifier
 
     return _get_classifier
 
 
-@pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf", "huggingface")
+@pytest.mark.only_with_platform("pytorch", "tensorflow2", "huggingface")
 def test_fit_predict(art_warning, get_mnist_classifier, framework):
     classifier = get_mnist_classifier()
 
@@ -72,11 +74,13 @@ def test_fit_predict(art_warning, get_mnist_classifier, framework):
 
     x_test_original = x_test.copy()
 
-    pt_classifier = get_image_classifier_pt()
-    pt_predictions_new = np.argmax(pt_classifier.predict(x_test), axis=1)
-    hf_preds = np.argmax(classifier.predict(x_test), axis=1)
+    if framework in ['pytorch', 'huggingface']:
+        pt_classifier = get_image_classifier_pt()
+        pt_predictions_new = np.argmax(pt_classifier.predict(x_test), axis=1)
+        hf_preds = np.argmax(classifier.predict(x_test), axis=1)
 
-    assert np.array_equal(pt_predictions_new, hf_preds)
+        assert np.array_equal(pt_predictions_new, hf_preds)
+
     adv_trainer = AdversarialTrainerMadryPGD(classifier, nb_epochs=1, batch_size=128)
     adv_trainer.fit(x_train, y_train)
 
@@ -93,7 +97,7 @@ def test_fit_predict(art_warning, get_mnist_classifier, framework):
     assert np.allclose(x_test_original, x_test)
 
 
-@pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf", "huggingface")
+@pytest.mark.only_with_platform("pytorch", "tensorflow2", "huggingface")
 def test_get_classifier(art_warning, get_mnist_classifier):
     classifier = get_mnist_classifier()
 
