@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements adversarial training with AWP protocol.
+This module implements adversarial training with Adversarial Weight Perturbation (AWP) protocol.
 
 | Paper link: https://proceedings.neurips.cc/paper/2020/file/1ef91c212e30e14bf125e9374262401f-Paper.pdf
 
@@ -38,7 +38,7 @@ if TYPE_CHECKING:
     from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
 
 
-class AdversarialTrainerAWP(Trainer, abc.ABC):
+class AdversarialTrainerAWP(Trainer):
     """
     This is abstract class for different backend-specific implementations of AWP protocol
     for adversarial training.

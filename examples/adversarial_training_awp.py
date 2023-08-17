@@ -209,7 +209,7 @@ trainer = AdversarialTrainerAWPPyTorch(
 )
 
 
-# Build a Keras image augmentation object and wrap it in ART
+# Build a PyTorch data generator in ART
 art_datagen = PyTorchDataGenerator(iterator=dataloader, size=x_train.shape[0], batch_size=128)
 
 # Step 5: fit the trainer
