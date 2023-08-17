@@ -69,6 +69,7 @@ def get_data(framework):
 @pytest.fixture()
 def get_data_gen(framework, get_data):
     (x_train, y_train), (x_test, y_test), min_, max_ = get_data
+    data_gen = None
 
     if framework == "tensorflow2":
         datagen = ImageDataGenerator()
@@ -101,6 +102,8 @@ def get_data_gen(framework, get_data):
 @pytest.fixture()
 def get_mnist_classifier(framework, image_dl_estimator, get_data):
     def _get_classifier():
+        classifier = None
+
         if framework == "huggingface":
             if HF_MODEL_SIZE == "LARGE":
                 import torch
